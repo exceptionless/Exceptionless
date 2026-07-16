@@ -21,7 +21,9 @@ public sealed record EventIngestionV3Response
 
         int remaining = 100 - Errors.Count;
         if (remaining > 0 && other.Errors.Count > 0)
+        {
             Errors.AddRange(other.Errors.Take(remaining));
+        }
     }
 }
 

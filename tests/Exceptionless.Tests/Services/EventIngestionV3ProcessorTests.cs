@@ -68,6 +68,16 @@ public sealed class EventIngestionV3ProcessorTests
         [
             reservedFirstClassData,
             reservedLegacyData,
+            CreateEvent("source-empty") with { Source = String.Empty },
+            CreateEvent("message-empty") with { Message = String.Empty },
+            CreateEvent("title-empty") with
+            {
+                Stacking = new EventIngestionV3Stacking
+                {
+                    Title = String.Empty,
+                    SignatureData = new Dictionary<string, string> { ["key"] = "value" }
+                }
+            },
             CreateEvent("message-too-long") with { Message = new string('m', EventIngestionV3Limits.MaximumMessageLength + 1) },
             CreateEvent("tag-too-long") with { Tags = [new string('t', EventIngestionV3Limits.MaximumTagLength + 1)] },
             CreateEvent("title-too-long") with
@@ -83,8 +93,8 @@ public sealed class EventIngestionV3ProcessorTests
             CreateEvent("long-reference") with { ReferenceId = new string('r', EventIngestionV3Limits.MaximumReferenceIdLength + 1) }
         ], _organization, _project, CancellationToken.None);
 
-        Assert.Equal(8, response.Invalid);
-        Assert.Equal(8, response.Errors.Count);
+        Assert.Equal(11, response.Invalid);
+        Assert.Equal(11, response.Errors.Count);
         Assert.Contains(response.Errors, error => error.Message.Contains("reserved top-level key '@request'", StringComparison.Ordinal));
         Assert.Contains(response.Errors, error => error.Message.Contains("reserved top-level key 'haserror'", StringComparison.Ordinal));
         Assert.Contains(response.Errors, error => error.Message.Contains("reference_id must contain between", StringComparison.Ordinal));

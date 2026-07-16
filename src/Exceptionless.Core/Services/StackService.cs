@@ -45,7 +45,9 @@ public class StackService
         ArgumentException.ThrowIfNullOrEmpty(projectId);
         ArgumentException.ThrowIfNullOrEmpty(stackId);
         if (count <= 0)
+        {
             return;
+        }
 
         await Task.WhenAll(
             _cache.ListAddAsync(GetStackOccurrenceSetCacheKey(), new StackUsageKey(organizationId, projectId, stackId)),
@@ -70,7 +72,9 @@ public class StackService
             foreach (var usage in stackUsageSet.Value)
             {
                 if (cancellationToken.IsCancellationRequested)
+                {
                     break;
+                }
 
                 string organizationId = usage.OrganizationId;
                 string projectId = usage.ProjectId;
@@ -135,7 +139,9 @@ public class StackService
     {
         var claims = await _ingestionStackUsageStore.ClaimPendingAsync(_bulkBatchSize, cancellationToken);
         if (claims.Count == 0)
+        {
             return;
+        }
 
         var acknowledged = new ConcurrentBag<StackUsageClaim>();
         try
@@ -191,7 +197,9 @@ public class StackService
         finally
         {
             if (!acknowledged.IsEmpty)
+            {
                 await _ingestionStackUsageStore.AcknowledgeAsync(acknowledged.ToArray(), CancellationToken.None);
+            }
         }
     }
 

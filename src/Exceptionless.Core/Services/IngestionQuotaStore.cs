@@ -40,10 +40,14 @@ public sealed class InMemoryIngestionQuotaStore(TimeProvider timeProvider) : IIn
         ArgumentOutOfRangeException.ThrowIfNegative(requestedCount);
         ArgumentOutOfRangeException.ThrowIfNegative(availableCount);
         if (expiresIn <= TimeSpan.Zero)
+        {
             throw new ArgumentOutOfRangeException(nameof(expiresIn));
+        }
 
         if (requestedCount == 0)
+        {
             return Task.FromResult(0);
+        }
 
         var state = _organizations.GetOrAdd(organizationId, static _ => new ReservationState());
         lock (state.SyncRoot)
@@ -51,13 +55,17 @@ public sealed class InMemoryIngestionQuotaStore(TimeProvider timeProvider) : IIn
             DateTimeOffset utcNow = timeProvider.GetUtcNow();
             RemoveExpired(state, utcNow);
             if (state.Reservations.TryGetValue(reservationId, out Reservation existing))
+            {
                 return Task.FromResult(existing.Count);
+            }
 
             int admittedCount = (int)Math.Min(
                 requestedCount,
                 Math.Max(0L, (long)availableCount - state.ActiveCount));
             if (admittedCount == 0)
+            {
                 return Task.FromResult(0);
+            }
 
             state.Reservations.Add(reservationId, new Reservation(admittedCount, utcNow.Add(expiresIn)));
             state.ActiveCount += admittedCount;
@@ -75,13 +83,17 @@ public sealed class InMemoryIngestionQuotaStore(TimeProvider timeProvider) : IIn
         ArgumentException.ThrowIfNullOrWhiteSpace(reservationId);
 
         if (!_organizations.TryGetValue(organizationId, out ReservationState? state))
+        {
             return Task.CompletedTask;
+        }
 
         lock (state.SyncRoot)
         {
             RemoveExpired(state, timeProvider.GetUtcNow());
             if (state.Reservations.Remove(reservationId, out Reservation reservation))
+            {
                 state.ActiveCount -= reservation.Count;
+            }
         }
 
         return Task.CompletedTask;
@@ -96,7 +108,9 @@ public sealed class InMemoryIngestionQuotaStore(TimeProvider timeProvider) : IIn
         foreach (string reservationId in expiredReservationIds)
         {
             if (state.Reservations.Remove(reservationId, out Reservation reservation))
+            {
                 state.ActiveCount -= reservation.Count;
+            }
         }
     }
 

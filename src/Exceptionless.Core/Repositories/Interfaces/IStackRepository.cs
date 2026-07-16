@@ -1,7 +1,7 @@
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Ingestion;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Exceptionless.Core.Models.Ingestion;
 
 namespace Exceptionless.Core.Repositories;
 

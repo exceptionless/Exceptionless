@@ -22,7 +22,9 @@ internal sealed class EventIngestionV3BufferedRecord : IDisposable
         ArgumentNullException.ThrowIfNull(routingEvent);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(length);
         if (length > owner.Memory.Length)
+        {
             throw new ArgumentOutOfRangeException(nameof(length));
+        }
 
         _owner = owner;
         Length = length;
@@ -38,7 +40,9 @@ internal sealed class EventIngestionV3BufferedRecord : IDisposable
     public EventIngestionV3Event Materialize()
     {
         if (_materializedEvent is not null)
+        {
             return _materializedEvent;
+        }
 
         ObjectDisposedException.ThrowIf(_owner is null, this);
         var payload = JsonSerializer.Deserialize(

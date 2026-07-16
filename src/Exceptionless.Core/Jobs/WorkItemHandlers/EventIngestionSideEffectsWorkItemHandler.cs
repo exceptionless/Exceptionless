@@ -45,11 +45,15 @@ public sealed class EventIngestionSideEffectsWorkItemHandler(
         var organization = await organizationRepository.GetByIdAsync(workItem.OrganizationId, o => o.Cache());
         var project = await projectRepository.GetByIdAsync(workItem.ProjectId, o => o.Cache());
         if (organization is null || project is null)
+        {
             return;
+        }
 
         var events = await eventRepository.GetByIdsAsync(workItem.EventIds);
         if (events.Count == 0)
+        {
             return;
+        }
 
         if (options.EnableArchive)
         {
@@ -57,7 +61,9 @@ public sealed class EventIngestionSideEffectsWorkItemHandler(
             string archivePath = GetArchivePath(workItem, archiveDate);
             bool archived = await storage.SaveObjectAsync(archivePath, events.OrderBy(ev => ev.Id).ToArray(), context.CancellationToken);
             if (!archived)
+            {
                 throw new InvalidOperationException($"Unable to archive V3 ingestion side-effect batch '{workItem.UniqueIdentifier}'.");
+            }
         }
 
         var stacks = await stackRepository.GetByIdsAsync(events.Select(e => e.StackId).Distinct().ToArray());
@@ -66,7 +72,9 @@ public sealed class EventIngestionSideEffectsWorkItemHandler(
         foreach (var ev in events)
         {
             if (!stacksById.TryGetValue(ev.StackId, out var stack))
+            {
                 continue;
+            }
 
             contexts.Add(new EventContext(ev, organization, project)
             {
@@ -79,7 +87,9 @@ public sealed class EventIngestionSideEffectsWorkItemHandler(
         }
 
         if (contexts.Count == 0)
+        {
             return;
+        }
 
         if (!project.IsConfigured.GetValueOrDefault())
         {
@@ -101,7 +111,10 @@ public sealed class EventIngestionSideEffectsWorkItemHandler(
         {
             await requestInfoPlugin.EventBatchProcessingAsync(enrichmentContexts);
             foreach (var eventContext in enrichmentContexts)
+            {
                 await environmentInfoPlugin.EventProcessingAsync(eventContext);
+            }
+
             await geoPlugin.EventBatchProcessingAsync(enrichmentContexts);
             await eventRepository.SaveAsync(enrichmentContexts.Select(eventContext => eventContext.Event), o => o.Notifications(false));
         }
@@ -120,9 +133,14 @@ public sealed class EventIngestionSideEffectsWorkItemHandler(
             {
                 stack.TotalOccurrences += usage.Count;
                 if (stack.FirstOccurrence > usage.MinimumOccurrenceDateUtc)
+                {
                     stack.FirstOccurrence = usage.MinimumOccurrenceDateUtc;
+                }
+
                 if (stack.LastOccurrence < usage.MaximumOccurrenceDateUtc)
+                {
                     stack.LastOccurrence = usage.MaximumOccurrenceDateUtc;
+                }
             }
         }
 

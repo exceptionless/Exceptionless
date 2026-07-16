@@ -13,7 +13,9 @@ public sealed class EventIngestionV3ContractSchemaTransformer : IOpenApiSchemaTr
     public Task TransformAsync(OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken cancellationToken)
     {
         if (schema.Properties is null)
+        {
             return Task.CompletedTask;
+        }
 
         if (context.JsonTypeInfo.Type == typeof(EventIngestionV3Event)
             && JsonPropertyNameResolver.TryGetSchemaProperty(
@@ -42,7 +44,9 @@ public sealed class EventIngestionV3ContractSchemaTransformer : IOpenApiSchemaTr
             signature.MinProperties = 1;
             signature.MaxProperties = EventIngestionV3Limits.MaximumMetadataEntries;
             if (signature.AdditionalProperties is OpenApiSchema value)
+            {
                 value.MaxLength = EventIngestionV3Limits.MaximumMetadataValueLength;
+            }
         }
 
         return Task.CompletedTask;

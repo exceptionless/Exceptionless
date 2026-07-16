@@ -41,18 +41,26 @@ public static class EventPostProcessingEndpoints
         AppOptions options)
     {
         if (!options.EventIngestionV3.EnableProcessingStatus)
+        {
             return TypedResults.NotFound();
+        }
 
         string? claimProjectId = httpRequest.GetProjectId();
         if (claimProjectId is null || !String.Equals(projectId, claimProjectId, StringComparison.Ordinal))
+        {
             return TypedResults.NotFound();
+        }
 
         if (request.Ids is not { Count: >= 1 and <= 1000 })
+        {
             return InvalidIdentifiers("Between 1 and 1000 event-post identifiers are required.");
+        }
 
         string[] ids = request.Ids.Distinct(StringComparer.Ordinal).ToArray();
         if (ids.Any(id => String.IsNullOrWhiteSpace(id) || id.Length > 256))
+        {
             return InvalidIdentifiers("Event-post identifiers must contain between 1 and 256 characters.");
+        }
 
         var statuses = await eventPostService.GetProcessingStatusesAsync(ids);
         int completed = statuses.Count(pair => String.Equals(pair.Value.ProjectId, projectId, StringComparison.Ordinal) && pair.Value.IsCompleted);

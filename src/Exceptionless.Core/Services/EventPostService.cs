@@ -37,7 +37,9 @@ public class EventPostService
             bool statusAdded = await _cache.AddAsync(GetProcessingStatusCacheKey(correlationId), status, _processingTrackingTtl);
             bool pendingAdded = await _cache.AddAsync(GetProcessingPendingCacheKey(correlationId), 1L, _processingTrackingTtl);
             if (statusAdded && pendingAdded)
+            {
                 return true;
+            }
 
             var existingStatus = await _cache.GetAsync<EventPostProcessingStatus>(GetProcessingStatusCacheKey(correlationId));
             var existingPending = await _cache.GetAsync<long>(GetProcessingPendingCacheKey(correlationId));
@@ -56,7 +58,9 @@ public class EventPostService
     public async Task<bool> AddPendingProcessingUnitsAsync(EventPost eventPost, int count)
     {
         if (String.IsNullOrEmpty(eventPost.ProcessingCorrelationId) || count <= 0)
+        {
             return true;
+        }
 
         try
         {
@@ -79,24 +83,32 @@ public class EventPostService
     public async Task MarkProcessingCompletedAsync(string queueEntryId, EventPost eventPost, bool completeTracking = true)
     {
         if (!completeTracking || String.IsNullOrEmpty(eventPost.ProcessingCorrelationId))
+        {
             return;
+        }
 
         try
         {
             var pendingState = await _cache.GetAsync<long>(GetProcessingPendingCacheKey(eventPost.ProcessingCorrelationId));
             if (!pendingState.HasValue || pendingState.Value <= 0)
+            {
                 return;
+            }
 
             string completedUnitKey = GetProcessingCompletedUnitCacheKey(eventPost.ProcessingCorrelationId, queueEntryId);
             if (!await _cache.AddAsync(completedUnitKey, true, _processingTrackingTtl))
+            {
                 return;
+            }
 
             long pending = await _cache.DecrementAsync(
                 GetProcessingPendingCacheKey(eventPost.ProcessingCorrelationId),
                 1,
                 _processingTrackingTtl);
             if (pending > 0)
+            {
                 return;
+            }
 
             if (pending < 0)
             {
@@ -124,7 +136,9 @@ public class EventPostService
         foreach (string id in ids)
         {
             if (cached.TryGetValue(keys[id], out var value) && value.HasValue)
+            {
                 statuses[id] = value.Value;
+            }
         }
 
         return statuses;
@@ -165,7 +179,9 @@ public class EventPostService
         if (!infoSaved)
         {
             using (_logger.BeginScope(new ExceptionlessState().Organization(data.OrganizationId).Property(nameof(EventPostInfo), data)))
+            {
                 _logger.LogError("Unable to save event post info");
+            }
 
             return EventPostEnqueueResult.Failed;
         }
@@ -173,7 +189,9 @@ public class EventPostService
         if (!payloadSaved)
         {
             using (_logger.BeginScope(new ExceptionlessState().Organization(data.OrganizationId).Property(nameof(EventPostInfo), data)))
+            {
                 _logger.LogError("Unable to save event post payload");
+            }
 
             return EventPostEnqueueResult.Failed;
         }
@@ -185,7 +203,9 @@ public class EventPostService
     public async Task<byte[]?> GetEventPostPayloadAsync(string path)
     {
         if (String.IsNullOrEmpty(path))
+        {
             return null;
+        }
 
         byte[]? data;
         try
@@ -204,11 +224,15 @@ public class EventPostService
     public async Task<bool> CompleteEventPostAsync(string path, string projectId, DateTime created, bool shouldArchive = true)
     {
         if (String.IsNullOrEmpty(path))
+        {
             return false;
+        }
 
         // don't move files that are already in the archive
         if (path.StartsWith("archive"))
+        {
             return true;
+        }
 
         try
         {
@@ -248,7 +272,9 @@ public class EventPostService
     private async Task DeleteSavedEventPostFilesAsync(EventPost data)
     {
         if (String.IsNullOrEmpty(data.FilePath))
+        {
             return;
+        }
 
         try
         {
@@ -258,14 +284,18 @@ public class EventPostService
             };
 
             if (data.ShouldArchive)
+            {
                 tasks.Add(_storage.DeleteFileAsync(data.FilePath));
+            }
 
             await Task.WhenAll(tasks);
         }
         catch (StorageException ex)
         {
             using (_logger.BeginScope(new ExceptionlessState().Organization(data.OrganizationId).Property(nameof(EventPostInfo), data)))
+            {
                 _logger.LogWarning(ex, "Unable to delete rejected event post payload");
+            }
         }
     }
 }

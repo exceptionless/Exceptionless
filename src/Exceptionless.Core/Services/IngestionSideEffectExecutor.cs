@@ -38,15 +38,21 @@ public sealed class IngestionSideEffectExecutor(
             .Order(StringComparer.Ordinal)
             .ToArray();
         if (uniqueIdentities.Length == 0)
+        {
             return 0;
+        }
 
         int stageFlag = GetStageFlag(stage);
         if (stageFlag == 0)
+        {
             return await ExecuteStandaloneStageAsync(stage, uniqueIdentities, action, cancellationToken);
+        }
 
         var pendingStates = await GetPendingStatesAsync(stageFlag, projectId, uniqueIdentities);
         if (pendingStates.Count == 0)
+        {
             return 0;
+        }
 
         string[] lockKeys = pendingStates.Keys.Select(identity => GetStateLockKey(projectId, identity)).ToArray();
         await using (ILock locks = await lockProvider.AcquireAsync(
@@ -56,7 +62,9 @@ public sealed class IngestionSideEffectExecutor(
             // A competing worker may have completed while this worker waited for its locks.
             pendingStates = await GetPendingStatesAsync(stageFlag, projectId, pendingStates.Keys);
             if (pendingStates.Count == 0)
+            {
                 return 0;
+            }
 
             await action(pendingStates.Keys.ToArray());
 
@@ -69,7 +77,9 @@ public sealed class IngestionSideEffectExecutor(
                     stageFlag,
                     options.EventIngestionV3.IdempotencyWindow)));
             if (completedStates.Any(state => (((long)state) & stageFlag) == 0))
+            {
                 throw new InvalidOperationException($"Unable to record completion for ingestion side-effect stage '{stage}'.");
+            }
 
             return pendingStates.Count;
         }
@@ -89,13 +99,17 @@ public sealed class IngestionSideEffectExecutor(
             .Distinct(StringComparer.Ordinal)
             .ToArray();
         if (uniqueIdentities.Length == 0)
+        {
             return new HashSet<string>(StringComparer.Ordinal);
+        }
 
         int stageFlag = GetStageFlag(stage);
         if (stageFlag == 0)
         {
             if (!String.Equals(stage, ProjectConfiguredStage, StringComparison.Ordinal))
+            {
                 throw new ArgumentOutOfRangeException(nameof(stage), stage, "Unknown ingestion side-effect stage.");
+            }
 
             return await GetStandaloneCompletedIdentitiesAsync(stage, uniqueIdentities);
         }
@@ -119,11 +133,15 @@ public sealed class IngestionSideEffectExecutor(
         CancellationToken cancellationToken)
     {
         if (!String.Equals(stage, ProjectConfiguredStage, StringComparison.Ordinal))
+        {
             throw new ArgumentOutOfRangeException(nameof(stage), stage, "Unknown ingestion side-effect stage.");
+        }
 
         var pendingIdentities = await GetStandalonePendingIdentitiesAsync(stage, identities);
         if (pendingIdentities.Count == 0)
+        {
             return 0;
+        }
 
         string[] lockKeys = pendingIdentities.Select(identity => GetStandaloneLockKey(stage, identity)).ToArray();
         await using (ILock locks = await lockProvider.AcquireAsync(
@@ -133,7 +151,9 @@ public sealed class IngestionSideEffectExecutor(
             // A competing worker may have completed while this worker waited for its locks.
             pendingIdentities = await GetStandalonePendingIdentitiesAsync(stage, pendingIdentities);
             if (pendingIdentities.Count == 0)
+            {
                 return 0;
+            }
 
             await action(pendingIdentities);
 
@@ -143,7 +163,9 @@ public sealed class IngestionSideEffectExecutor(
                 StringComparer.Ordinal);
             int completedCount = await cache.SetAllAsync(completed, options.EventIngestionV3.IdempotencyWindow);
             if (completedCount != completed.Count)
+            {
                 throw new InvalidOperationException($"Unable to record completion for ingestion side-effect stage '{stage}'.");
+            }
 
             return pendingIdentities.Count;
         }
@@ -173,7 +195,9 @@ public sealed class IngestionSideEffectExecutor(
             var state = states[pair.Value];
             int stateValue = state.HasValue ? state.Value : 0;
             if ((stateValue & stageFlag) == 0)
+            {
                 pending[pair.Key] = stateValue;
+            }
         }
 
         return pending;
@@ -188,7 +212,10 @@ public sealed class IngestionSideEffectExecutor(
         foreach (string identity in identities)
         {
             if (!states[completionKeys[index]].HasValue)
+            {
                 pending.Add(identity);
+            }
+
             index++;
         }
 

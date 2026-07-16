@@ -16,7 +16,9 @@ public sealed class StackTraceParser
             remaining = newline >= 0 ? remaining[(newline + 1)..] : [];
 
             if (TryParseFrame(line, out var frame))
+            {
                 frames.Add(frame);
+            }
         }
 
         return frames;
@@ -59,7 +61,10 @@ public sealed class StackTraceParser
             if (trimmedLine.StartsWith("--- End of inner exception", StringComparison.OrdinalIgnoreCase))
             {
                 if (parents.TryPop(out var parent))
+                {
                     current = parent;
+                }
+
                 continue;
             }
 
@@ -71,7 +76,9 @@ public sealed class StackTraceParser
             }
 
             if (!trimmedLine.IsEmpty && !IsOuterExceptionHeader(trimmedLine, exceptionType))
+            {
                 isComplete = false;
+            }
         }
 
         return new StackTraceParseResult(error, isComplete);
@@ -117,22 +124,31 @@ public sealed class StackTraceParser
             if (trimmedLine.StartsWith("--- End of inner exception", StringComparison.OrdinalIgnoreCase))
             {
                 if (parents.TryPop(out var parent))
+                {
                     current = parent;
+                }
+
                 continue;
             }
 
             if (!TryParseFrame(line, out var frame))
+            {
                 continue;
+            }
 
             current.FirstFrame ??= frame;
             if (current.MatchingFrame is null && predicate(frame))
+            {
                 current.MatchingFrame = frame;
+            }
         }
 
         for (int index = segments.Count - 1; index >= 0; index--)
         {
             if (segments[index].MatchingFrame is null)
+            {
                 continue;
+            }
 
             matchingFrame = segments[index].MatchingFrame;
             selectedExceptionType = segments[index].ExceptionType;
@@ -142,7 +158,9 @@ public sealed class StackTraceParser
         FingerprintSegment innermost = segments[^1];
         firstFrame = innermost.FirstFrame;
         if (matchingFrame is null)
+        {
             selectedExceptionType = innermost.ExceptionType;
+        }
 
         return firstFrame is not null || matchingFrame is not null;
     }
@@ -152,10 +170,14 @@ public sealed class StackTraceParser
         frame = null!;
         ReadOnlySpan<char> line = rawLine.Trim();
         if (line.IsEmpty)
+        {
             return false;
+        }
 
         if (line.StartsWith("File \"", StringComparison.Ordinal))
+        {
             return TryParsePythonFrame(line, out frame);
+        }
 
         ReadOnlySpan<char> methodPart;
         ReadOnlySpan<char> locationPart = [];
@@ -168,7 +190,10 @@ public sealed class StackTraceParser
         {
             int space = line.IndexOf(' ');
             if (space < 0)
+            {
                 return false;
+            }
+
             line = line[(space + 1)..].TrimStart();
             methodPart = line;
         }
@@ -176,7 +201,10 @@ public sealed class StackTraceParser
         {
             int atSign = line.IndexOf('@');
             if (atSign <= 0)
+            {
                 return false;
+            }
+
             methodPart = line[..atSign];
             locationPart = line[(atSign + 1)..];
         }
@@ -203,10 +231,14 @@ public sealed class StackTraceParser
 
         methodPart = StripParameters(methodPart.Trim());
         if (methodPart.StartsWith("async ", StringComparison.Ordinal))
+        {
             methodPart = methodPart[6..].TrimStart();
+        }
 
         if (methodPart.IsEmpty || methodPart.SequenceEqual("<anonymous>"))
+        {
             return false;
+        }
 
         frame = CreateFrame(methodPart);
         ApplyLocation(frame, locationPart);
@@ -218,7 +250,9 @@ public sealed class StackTraceParser
         frame = null!;
         int fileEnd = line[6..].IndexOf('"');
         if (fileEnd < 0)
+        {
             return false;
+        }
 
         fileEnd += 6;
         string fileName = line[6..fileEnd].ToString();
@@ -235,9 +269,14 @@ public sealed class StackTraceParser
             ReadOnlySpan<char> number = remainder[(lineIndex + 5)..];
             int comma = number.IndexOf(',');
             if (comma >= 0)
+            {
                 number = number[..comma];
+            }
+
             if (Int32.TryParse(number, out int lineNumber))
+            {
                 frame.LineNumber = lineNumber;
+            }
         }
 
         return true;
@@ -256,21 +295,28 @@ public sealed class StackTraceParser
         {
             int arrow = line.IndexOf("---> ", StringComparison.Ordinal);
             if (arrow < 0)
+            {
                 return false;
+            }
+
             line = line[(arrow + 5)..].TrimStart();
         }
 
         int separator = line.IndexOf(':');
         ReadOnlySpan<char> type = separator >= 0 ? line[..separator].Trim() : line;
         if (type.IsEmpty || type.Contains(' '))
+        {
             return false;
+        }
 
         exceptionType = type.ToString();
         if (separator >= 0)
         {
             ReadOnlySpan<char> messageValue = line[(separator + 1)..].Trim();
             if (!messageValue.IsEmpty)
+            {
                 message = messageValue.ToString();
+            }
         }
 
         return true;
@@ -280,7 +326,9 @@ public sealed class StackTraceParser
     {
         if (String.IsNullOrWhiteSpace(exceptionType)
             || !line.StartsWith(exceptionType.AsSpan(), StringComparison.Ordinal))
+        {
             return false;
+        }
 
         ReadOnlySpan<char> remainder = line[exceptionType.Length..];
         return remainder.IsEmpty || remainder[0] == ':';
@@ -296,7 +344,9 @@ public sealed class StackTraceParser
     {
         int lastDot = method.LastIndexOf('.');
         if (lastDot < 0)
+        {
             return new StackFrame { Name = method.ToString() };
+        }
 
         ReadOnlySpan<char> name = method[(lastDot + 1)..];
         ReadOnlySpan<char> declaring = method[..lastDot];
@@ -314,14 +364,19 @@ public sealed class StackTraceParser
     {
         location = location.Trim();
         if (location.IsEmpty || location.SequenceEqual("Unknown Source") || location.SequenceEqual("Native Method"))
+        {
             return;
+        }
 
         int lineMarker = location.LastIndexOf(":line ", StringComparison.Ordinal);
         if (lineMarker >= 0)
         {
             frame.FileName = location[..lineMarker].ToString();
             if (Int32.TryParse(location[(lineMarker + 6)..], out int lineNumber))
+            {
                 frame.LineNumber = lineNumber;
+            }
+
             return;
         }
 

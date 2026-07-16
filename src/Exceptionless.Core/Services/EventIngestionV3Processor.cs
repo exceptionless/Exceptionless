@@ -1,8 +1,8 @@
+using System.Text.Json;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Ingestion;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
-using System.Text.Json;
 
 namespace Exceptionless.Core.Services;
 
@@ -46,7 +46,9 @@ public sealed class EventIngestionV3Processor(
         var sources = new SourceEvent[sourceEvents.Count];
         int index = 0;
         foreach (EventIngestionV3Event sourceEvent in sourceEvents)
+        {
             sources[index++] = new SourceEvent(sourceEvent);
+        }
 
         return ProcessCoreAsync(sources, organization, project, cancellationToken);
     }
@@ -60,7 +62,9 @@ public sealed class EventIngestionV3Processor(
         var sources = new SourceEvent[sourceRecords.Count];
         int index = 0;
         foreach (EventIngestionV3BufferedRecord sourceRecord in sourceRecords)
+        {
             sources[index++] = new SourceEvent(sourceRecord);
+        }
 
         return ProcessCoreAsync(sources, organization, project, cancellationToken);
     }
@@ -79,7 +83,9 @@ public sealed class EventIngestionV3Processor(
         try
         {
             if (sourceEvents.Count == 0)
+            {
                 return response;
+            }
 
             DateTime utcNow = timeProvider.GetUtcNow().UtcDateTime;
             var candidates = new List<Candidate>(sourceEvents.Count);
@@ -103,7 +109,9 @@ public sealed class EventIngestionV3Processor(
             }
 
             if (candidates.Count == 0)
+            {
                 return response;
+            }
 
             var routes = await stackRouteResolver.ResolveAsync(project.Id, candidates.Select(c => c.Fingerprint.SignatureHash).ToArray(), cancellationToken);
             var survivors = new List<Candidate>(candidates.Count);
@@ -130,10 +138,14 @@ public sealed class EventIngestionV3Processor(
 
             int stackDiscarded = candidates.Count - survivors.Count;
             if (stackDiscarded > 0)
+            {
                 await quotaService.TrackDiscardedAsync(organization.Id, project.Id, stackDiscarded);
+            }
 
             if (survivors.Count == 0)
+            {
                 return response;
+            }
 
             // Discard routing needs only the small grouping envelope. Validate optional context
             // after known-discarded stacks have terminated so free events do not pay to traverse
@@ -144,7 +156,9 @@ public sealed class EventIngestionV3Processor(
                 candidate.Materialize();
                 string? validationError = Validate(candidate.Source);
                 if (validationError is null)
+                {
                     continue;
+                }
 
                 response.Invalid++;
                 AddError(response, candidate.Source.Id, "validation_error", validationError);
@@ -152,7 +166,9 @@ public sealed class EventIngestionV3Processor(
             }
 
             if (survivors.Count == 0)
+            {
                 return response;
+            }
 
             IReadOnlyList<EventIngestionIdentity> identities = await eventBatchWriter.PrepareAsync(
                 survivors.Select(candidate => candidate.Source).ToArray(),
@@ -181,7 +197,9 @@ public sealed class EventIngestionV3Processor(
                     if (identity.PersistedStackId is null
                         || identity.PersistedStackStatus is null or StackStatus.Discarded
                         || !identity.IsRecoveryEligible)
+                    {
                         continue;
+                    }
 
                     duplicateReconciliations.Add(new EventIngestionReconciliation(
                         identity.EventId,
@@ -201,15 +219,22 @@ public sealed class EventIngestionV3Processor(
             }
 
             if (duplicateReconciliations.Count > 0)
+            {
                 await eventBatchWriter.ReconcileAsync(duplicateReconciliations, organization, project, cancellationToken);
+            }
 
             if (uniqueSurvivors.Count == 0)
+            {
                 return response;
+            }
 
             EventIngestionReservation reservation;
             using (AppDiagnostics.StartActivity("Ingestion V3 Quota Reserve"))
             using (AppDiagnostics.IngestionV3QuotaTime.StartTimer())
+            {
                 reservation = await quotaService.ReserveAsync(organization.Id, uniqueSurvivors.Count);
+            }
+
             int admittedCount = reservation.Count;
             if (admittedCount < uniqueSurvivors.Count)
             {
@@ -218,7 +243,9 @@ public sealed class EventIngestionV3Processor(
             }
 
             if (admittedCount == 0)
+            {
                 return response;
+            }
 
             MarkRegressionCandidates(uniqueSurvivors.Take(admittedCount), utcNow, semanticVersionParser);
 
@@ -232,12 +259,18 @@ public sealed class EventIngestionV3Processor(
                     Candidate candidate = uniqueSurvivors[i];
                     PersistentEvent ev;
                     using (AppDiagnostics.IngestionV3MaterializationTime.StartTimer())
+                    {
                         ev = eventMaterializer.Materialize(candidate.Source, candidate.Fingerprint, organization, project);
+                    }
+
                     ev.Id = candidate.Identity!.EventId;
                     ev.CreatedUtc = candidate.Identity.CreatedUtc;
                     ev.Date = candidate.Identity.EventDate;
                     if (candidate.Route?.OccurrencesAreCritical is true)
+                    {
                         ev.MarkAsCritical();
+                    }
+
                     writes.Add(new EventIngestionWrite(
                         candidate.Source.Id,
                         ev,
@@ -248,7 +281,10 @@ public sealed class EventIngestionV3Processor(
 
                 EventBatchWriteResult result;
                 using (AppDiagnostics.IngestionV3WriteTime.StartTimer())
+                {
                     result = await eventBatchWriter.WriteAsync(writes, organization, project, cancellationToken);
+                }
+
                 response.Persisted = result.Persisted;
                 response.Duplicate += result.Duplicate;
 
@@ -257,7 +293,10 @@ public sealed class EventIngestionV3Processor(
                     retainReservationOnFailure = true;
                     using (AppDiagnostics.StartActivity("Ingestion V3 Quota Settle"))
                     using (AppDiagnostics.IngestionV3SettlementTime.StartTimer())
+                    {
                         await quotaService.CommitAsync(organization.Id, project.Id, result.Settlements);
+                    }
+
                     AppDiagnostics.IngestionV3UsageCommitted.Add(result.Settlements.Count);
                     retainReservationOnFailure = false;
                 }
@@ -269,7 +308,10 @@ public sealed class EventIngestionV3Processor(
                 retainReservationOnFailure = true;
                 using (AppDiagnostics.StartActivity("Ingestion V3 Partial Write Quota Reconcile"))
                 using (AppDiagnostics.IngestionV3SettlementTime.StartTimer())
+                {
                     await quotaService.CommitAsync(organization.Id, project.Id, ex.Settlements);
+                }
+
                 AppDiagnostics.IngestionV3UsageCommitted.Add(ex.Settlements.Count);
                 retainReservationOnFailure = false;
                 throw;
@@ -277,7 +319,9 @@ public sealed class EventIngestionV3Processor(
             finally
             {
                 if (!retainReservationOnFailure)
+                {
                     await quotaService.ReleaseAsync(reservation);
+                }
             }
         }
         finally
@@ -296,56 +340,102 @@ public sealed class EventIngestionV3Processor(
     {
         string? routingError = ValidateRoutingFields(source);
         if (routingError is not null)
+        {
             return routingError;
+        }
 
         if (source.Date?.UtcDateTime < DateTime.UnixEpoch)
+        {
             return "date cannot be earlier than 1970-01-01T00:00:00Z.";
-        if (source.Message?.Length > EventIngestionV3Limits.MaximumMessageLength)
-            return $"message cannot exceed {EventIngestionV3Limits.MaximumMessageLength} characters.";
+        }
+
+        if (source.Message is not null && source.Message.Length is < 1 or > EventIngestionV3Limits.MaximumMessageLength)
+        {
+            return $"message must contain between 1 and {EventIngestionV3Limits.MaximumMessageLength} characters.";
+        }
+
         if (source.ReferenceId is not null
             && (source.ReferenceId.Length is < EventIngestionV3Limits.MinimumReferenceIdLength or > EventIngestionV3Limits.MaximumReferenceIdLength
                 || !source.ReferenceId.IsValidIdentifier()))
+        {
             return $"reference_id must contain between {EventIngestionV3Limits.MinimumReferenceIdLength} and {EventIngestionV3Limits.MaximumReferenceIdLength} alphanumeric or '-' characters.";
+        }
+
         if (source.Version is not null && (String.IsNullOrWhiteSpace(source.Version) || source.Version.Length > EventIngestionV3Limits.MaximumVersionLength))
+        {
             return $"version must contain between 1 and {EventIngestionV3Limits.MaximumVersionLength} characters.";
+        }
+
         if (source.Level is not null && (String.IsNullOrWhiteSpace(source.Level) || source.Level.Length > EventIngestionV3Limits.MaximumLevelLength))
+        {
             return $"level must contain between 1 and {EventIngestionV3Limits.MaximumLevelLength} characters.";
+        }
+
         if (source.Client is not null)
         {
             if (String.IsNullOrWhiteSpace(source.Client.Name) || source.Client.Name.Length > EventIngestionV3Limits.MaximumClientNameLength)
+            {
                 return $"client.name must contain between 1 and {EventIngestionV3Limits.MaximumClientNameLength} characters.";
+            }
+
             if (String.IsNullOrWhiteSpace(source.Client.Version) || source.Client.Version.Length > EventIngestionV3Limits.MaximumClientVersionLength)
+            {
                 return $"client.version must contain between 1 and {EventIngestionV3Limits.MaximumClientVersionLength} characters.";
+            }
         }
-        if (source.Stacking?.Title?.Length > EventIngestionV3Limits.MaximumStackTitleLength)
-            return $"stacking.title cannot exceed {EventIngestionV3Limits.MaximumStackTitleLength} characters.";
+        if (source.Stacking?.Title is not null && source.Stacking.Title.Length is < 1 or > EventIngestionV3Limits.MaximumStackTitleLength)
+        {
+            return $"stacking.title must contain between 1 and {EventIngestionV3Limits.MaximumStackTitleLength} characters.";
+        }
+
         if (source.Tags is { Length: > EventIngestionV3Limits.MaximumTags })
+        {
             return $"tags cannot contain more than {EventIngestionV3Limits.MaximumTags} values.";
+        }
+
         if (source.Tags?.Any(tag => tag is null || String.IsNullOrWhiteSpace(tag) || tag.Length > EventIngestionV3Limits.MaximumTagLength) is true)
+        {
             return $"tags must be non-empty and cannot exceed {EventIngestionV3Limits.MaximumTagLength} characters.";
+        }
+
         if (source.User?.Identity?.Length > EventIngestionV3Limits.MaximumUserIdentityLength)
+        {
             return $"user.identity cannot exceed {EventIngestionV3Limits.MaximumUserIdentityLength} characters.";
+        }
+
         if (source.User?.Name?.Length > EventIngestionV3Limits.MaximumUserNameLength)
+        {
             return $"user.name cannot exceed {EventIngestionV3Limits.MaximumUserNameLength} characters.";
+        }
+
         if (source.Request is not null)
         {
             string? requestError = ValidateRequest(source.Request);
             if (requestError is not null)
+            {
                 return requestError;
+            }
         }
         if (source.Environment is not null)
         {
             string? environmentError = ValidateEnvironment(source.Environment);
             if (environmentError is not null)
+            {
                 return environmentError;
+            }
         }
 
         string? dataError = ValidateEventData(source.Data);
         if (dataError is not null)
+        {
             return dataError;
+        }
+
         dataError = ValidateJsonObject(source.User?.Data, "user.data");
         if (dataError is not null)
+        {
             return dataError;
+        }
 
         return null;
     }
@@ -353,23 +443,49 @@ public sealed class EventIngestionV3Processor(
     private static string? ValidateRoutingFields(EventIngestionV3Event source)
     {
         if (String.IsNullOrWhiteSpace(source.Id) || source.Id.Length > EventIngestionV3Limits.MaximumEventIdLength)
+        {
             return $"id must contain between 1 and {EventIngestionV3Limits.MaximumEventIdLength} characters.";
+        }
+
         if (String.IsNullOrWhiteSpace(source.Type) || source.Type.Length > EventIngestionV3Limits.MaximumTypeLength)
+        {
             return $"type must contain between 1 and {EventIngestionV3Limits.MaximumTypeLength} characters.";
+        }
+
         if (_legacyPipelineOnlyTypes.Contains(source.Type))
+        {
             return $"type '{source.Type}' is not supported by V3 ingestion; use the V2 endpoint for this legacy stateful event type.";
-        if (source.Source?.Length > EventIngestionV3Limits.MaximumSourceLength)
-            return $"source cannot exceed {EventIngestionV3Limits.MaximumSourceLength} characters.";
+        }
+
+        if (source.Source is not null && source.Source.Length is < 1 or > EventIngestionV3Limits.MaximumSourceLength)
+        {
+            return $"source must contain between 1 and {EventIngestionV3Limits.MaximumSourceLength} characters.";
+        }
+
         if (source.ExceptionType?.Length > EventIngestionV3Limits.MaximumExceptionTypeLength)
+        {
             return $"exception_type cannot exceed {EventIngestionV3Limits.MaximumExceptionTypeLength} characters.";
+        }
+
         if (source.StackTrace?.Length > EventIngestionV3Limits.MaximumStackTraceLength)
+        {
             return $"stack_trace cannot exceed {EventIngestionV3Limits.MaximumStackTraceLength} characters.";
+        }
+
         if (source.Stacking is null)
+        {
             return null;
+        }
+
         if (source.Stacking.SignatureData is not { Count: > 0 })
+        {
             return "stacking.signature_data must contain at least one value.";
+        }
+
         if (source.Stacking.SignatureData.Any(pair => pair.Value is null))
+        {
             return "stacking.signature_data values cannot be null.";
+        }
 
         return ValidateDictionary(
             source.Stacking.SignatureData,
@@ -380,29 +496,54 @@ public sealed class EventIngestionV3Processor(
     private static string? ValidateRequest(EventIngestionV3Request request)
     {
         if (request.UserAgent?.Length > EventIngestionV3Limits.MaximumMetadataValueLength)
+        {
             return $"request.user_agent cannot exceed {EventIngestionV3Limits.MaximumMetadataValueLength} characters.";
+        }
+
         if (request.HttpMethod?.Length > 32)
+        {
             return "request.http_method cannot exceed 32 characters.";
+        }
+
         if (request.Host?.Length > 255)
+        {
             return "request.host cannot exceed 255 characters.";
+        }
+
         if (request.Path?.Length > EventIngestionV3Limits.MaximumMetadataValueLength)
+        {
             return $"request.path cannot exceed {EventIngestionV3Limits.MaximumMetadataValueLength} characters.";
+        }
+
         if (request.Referrer?.Length > EventIngestionV3Limits.MaximumMetadataValueLength)
+        {
             return $"request.referrer cannot exceed {EventIngestionV3Limits.MaximumMetadataValueLength} characters.";
+        }
+
         if (request.ClientIpAddress?.Length > 64)
+        {
             return "request.client_ip_address cannot exceed 64 characters.";
+        }
 
         string? dictionaryError = ValidateDictionary(request.Headers, "request.headers", values => values is not null
             && values.Length <= EventIngestionV3Limits.MaximumMetadataEntries
             && values.All(value => value is not null && value.Length <= EventIngestionV3Limits.MaximumMetadataValueLength));
         if (dictionaryError is not null)
+        {
             return dictionaryError;
+        }
+
         dictionaryError = ValidateDictionary(request.Cookies, "request.cookies", value => value.Length <= EventIngestionV3Limits.MaximumMetadataValueLength);
         if (dictionaryError is not null)
+        {
             return dictionaryError;
+        }
+
         dictionaryError = ValidateDictionary(request.QueryString, "request.query_string", value => value.Length <= EventIngestionV3Limits.MaximumMetadataValueLength);
         if (dictionaryError is not null)
+        {
             return dictionaryError;
+        }
 
         string? dataError = ValidateJson(request.PostData, "request.post_data");
         return dataError ?? ValidateJsonObject(request.Data, "request.data");
@@ -423,7 +564,9 @@ public sealed class EventIngestionV3Processor(
             environment.ThreadId
         ];
         if (values.Any(value => value?.Length > EventIngestionV3Limits.MaximumMetadataValueLength))
+        {
             return $"environment string values cannot exceed {EventIngestionV3Limits.MaximumMetadataValueLength} characters.";
+        }
 
         return ValidateJsonObject(environment.Data, "environment.data");
     }
@@ -431,21 +574,32 @@ public sealed class EventIngestionV3Processor(
     private static string? ValidateDictionary<TValue>(IReadOnlyDictionary<string, TValue>? dictionary, string path, Func<TValue, bool> validateValue)
     {
         if (dictionary is null)
+        {
             return null;
+        }
+
         if (dictionary.Count > EventIngestionV3Limits.MaximumMetadataEntries)
+        {
             return $"{path} cannot contain more than {EventIngestionV3Limits.MaximumMetadataEntries} entries.";
+        }
+
         if (dictionary.Any(pair => String.IsNullOrEmpty(pair.Key)
             || pair.Key.Length > EventIngestionV3Limits.MaximumMetadataKeyLength
             || pair.Value is null
             || !validateValue(pair.Value)))
+        {
             return $"{path} contains a key or value that exceeds its limit.";
+        }
+
         return null;
     }
 
     private static string? ValidateJson(JsonElement? element, string path)
     {
         if (element is null)
+        {
             return null;
+        }
 
         int tokens = 0;
         return ValidateJsonValue(element.Value, path, ref tokens);
@@ -454,7 +608,9 @@ public sealed class EventIngestionV3Processor(
     private static string? ValidateJsonObject(JsonElement? element, string path)
     {
         if (element is { ValueKind: not JsonValueKind.Object })
+        {
             return $"{path} must be a JSON object.";
+        }
 
         return ValidateJson(element, path);
     }
@@ -462,14 +618,21 @@ public sealed class EventIngestionV3Processor(
     private static string? ValidateEventData(JsonElement? element)
     {
         if (element is { ValueKind: not JsonValueKind.Object })
+        {
             return "data must be a JSON object.";
+        }
+
         if (element is null)
+        {
             return null;
+        }
 
         foreach (JsonProperty property in element.Value.EnumerateObject())
         {
             if (property.Name.StartsWith('@') || _reservedLegacyDataKeys.Contains(property.Name))
+            {
                 return $"data contains reserved top-level key '{property.Name}'. Use the corresponding first-class V3 field instead.";
+            }
         }
 
         return ValidateJson(element, "data");
@@ -479,20 +642,29 @@ public sealed class EventIngestionV3Processor(
     {
         tokens++;
         if (tokens > EventIngestionV3Limits.MaximumDataTokens)
+        {
             return $"{path} cannot contain more than {EventIngestionV3Limits.MaximumDataTokens} JSON values.";
+        }
 
         if (element.ValueKind == JsonValueKind.String && element.GetString()?.Length > EventIngestionV3Limits.MaximumDataStringLength)
+        {
             return $"{path} contains a string longer than {EventIngestionV3Limits.MaximumDataStringLength} characters.";
+        }
 
         if (element.ValueKind == JsonValueKind.Object)
         {
             foreach (JsonProperty property in element.EnumerateObject())
             {
                 if (property.Name.Length > EventIngestionV3Limits.MaximumMetadataKeyLength)
+                {
                     return $"{path} contains a property name longer than {EventIngestionV3Limits.MaximumMetadataKeyLength} characters.";
+                }
+
                 string? error = ValidateJsonValue(property.Value, path, ref tokens);
                 if (error is not null)
+                {
                     return error;
+                }
             }
         }
         else if (element.ValueKind == JsonValueKind.Array)
@@ -501,7 +673,9 @@ public sealed class EventIngestionV3Processor(
             {
                 string? error = ValidateJsonValue(item, path, ref tokens);
                 if (error is not null)
+                {
                     return error;
+                }
             }
         }
 
@@ -511,7 +685,9 @@ public sealed class EventIngestionV3Processor(
     private static void AddError(EventIngestionV3Response response, string id, string code, string message)
     {
         if (response.Errors.Count < 100)
+        {
             response.Errors.Add(new EventIngestionV3Error(id, code, message));
+        }
     }
 
     private static void MarkRegressionCandidates(
@@ -542,7 +718,9 @@ public sealed class EventIngestionV3Processor(
                     {
                         var version = semanticVersionParser.Parse(versionGroup.Key) ?? semanticVersionParser.Default;
                         if (version < fixedVersion)
+                        {
                             continue;
+                        }
 
                         regression = versionGroup.First();
                         break;
@@ -551,7 +729,9 @@ public sealed class EventIngestionV3Processor(
             }
 
             if (regression is not null)
+            {
                 regression.IsRegressionCandidate = true;
+            }
         }
     }
 
@@ -570,7 +750,9 @@ public sealed class EventIngestionV3Processor(
         });
 
         if (!organization.HasPremiumFeatures)
+        {
             return discarded;
+        }
 
         foreach (var routeGroup in uniqueCandidates
             .Where(candidate => candidate.Route is { Status: StackStatus.Fixed, DateFixed: not null, FixedInVersion: not null })
@@ -580,16 +762,22 @@ public sealed class EventIngestionV3Processor(
             StackRoute route = routeGroup.First().Route!;
             var fixedVersion = semanticVersionParser.Parse(route.FixedInVersion);
             if (fixedVersion is null)
+            {
                 continue;
+            }
 
             foreach (Candidate candidate in routeGroup.ToArray())
             {
                 var version = semanticVersionParser.Parse(candidate.Source.Version) ?? semanticVersionParser.Default;
                 if (version >= fixedVersion)
+                {
                     continue;
+                }
 
                 if (uniqueCandidates.Remove(candidate))
+                {
                     discarded++;
+                }
             }
         }
 
@@ -630,7 +818,9 @@ public sealed class EventIngestionV3Processor(
         {
             Source = _source.Materialize();
             if (Source.Stacking is not null)
+            {
                 Fingerprint = Fingerprint with { Title = Source.Stacking.Title };
+            }
         }
     }
 }

@@ -61,11 +61,15 @@ public sealed class EventPostRequestBodyStream : Stream, IEventPostBodyReadState
         ValidateBufferArguments(buffer, offset, count);
 
         if (count == 0 || RejectedStatusCode.HasValue)
+        {
             return 0;
+        }
 
         int readLength = GetReadLength(count);
         if (readLength == 0)
+        {
             return 0;
+        }
 
         try
         {
@@ -87,11 +91,15 @@ public sealed class EventPostRequestBodyStream : Stream, IEventPostBodyReadState
     public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
     {
         if (buffer.Length == 0 || RejectedStatusCode.HasValue)
+        {
             return 0;
+        }
 
         int readLength = GetReadLength(buffer.Length);
         if (readLength == 0)
+        {
             return 0;
+        }
 
         try
         {
@@ -141,10 +149,14 @@ public sealed class EventPostRequestBodyStream : Stream, IEventPostBodyReadState
         }
 
         if (remaining == 0)
+        {
             return 1;
+        }
 
         if (remaining >= requestedLength)
+        {
             return requestedLength;
+        }
 
         return (int)remaining + 1;
     }
@@ -152,7 +164,9 @@ public sealed class EventPostRequestBodyStream : Stream, IEventPostBodyReadState
     private int HandleReadResult(int bytesRead)
     {
         if (bytesRead == 0)
+        {
             return 0;
+        }
 
         long totalBytesRead = _bytesRead + bytesRead;
         if (totalBytesRead > _maximumBytes)

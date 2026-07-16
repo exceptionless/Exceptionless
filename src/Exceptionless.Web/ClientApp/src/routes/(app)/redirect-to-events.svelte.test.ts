@@ -10,6 +10,48 @@ vi.mock('$app/paths', () => ({
 }));
 
 describe('redirect-to-events', () => {
+    it('clears every list filter query parameter without changing unrelated state', async () => {
+        // Arrange
+        const { clearListFilterQueryParams } = await import('./redirect-to-events.svelte');
+        const queryParams = {
+            bot: 'true',
+            filter: 'message:test',
+            first: 'false',
+            level: 'error',
+            limit: 20,
+            project: 'project-1',
+            reference: 'reference-1',
+            session: 'session-1',
+            stack: 'stack-1',
+            status: 'open',
+            tag: 'important',
+            time: '1h',
+            type: 'error',
+            version: '1.0.0'
+        };
+
+        // Act
+        clearListFilterQueryParams(queryParams);
+
+        // Assert
+        expect(queryParams).toEqual({
+            bot: null,
+            filter: null,
+            first: null,
+            level: null,
+            limit: 20,
+            project: null,
+            reference: null,
+            session: null,
+            stack: null,
+            status: null,
+            tag: null,
+            time: null,
+            type: null,
+            version: null
+        });
+    });
+
     it('uses an explicit all-time query value for stack event drilldowns', async () => {
         // Arrange
         const { ALL_TIME_QUERY_VALUE, buildListPageHref, getEventsNavigationOptionsForFilter } = await import('./redirect-to-events.svelte');

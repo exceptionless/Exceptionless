@@ -35,11 +35,15 @@ public class RequiredPropertySchemaTransformer : IOpenApiSchemaTransformer
     public Task TransformAsync(OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken cancellationToken)
     {
         if (schema.Properties is null || schema.Properties.Count == 0)
+        {
             return Task.CompletedTask;
+        }
 
         var type = context.JsonTypeInfo.Type;
         if (!type.IsClass && !type.IsValueType)
+        {
             return Task.CompletedTask;
+        }
 
         // Initialize Required collection if needed
         schema.Required ??= new HashSet<string>();
@@ -53,21 +57,29 @@ public class RequiredPropertySchemaTransformer : IOpenApiSchemaTransformer
             // Use JsonTypeInfo to get the effective JSON property name (respects [JsonPropertyName] and naming policy)
             string? schemaPropertyName = JsonPropertyNameResolver.GetJsonPropertyName(context.JsonTypeInfo, property);
             if (schemaPropertyName is null)
+            {
                 continue;
+            }
 
             // Check if property exists in schema
             if (!schema.Properties.ContainsKey(schemaPropertyName))
+            {
                 continue;
+            }
 
             // Skip properties that are already marked as required
             if (schema.Required.Contains(schemaPropertyName))
+            {
                 continue;
+            }
 
             // A conditionally ignored property can be absent from valid serialized output,
             // even when its CLR type is non-nullable. Advertising it as required would make
             // the OpenAPI contract stricter than the JSON produced by System.Text.Json.
             if (CanBeOmittedWhenWriting(property, context.JsonTypeInfo.Options.DefaultIgnoreCondition))
+            {
                 continue;
+            }
 
             // Determine if property should be required
             if (IsPropertyRequired(property, nullabilityContext))
@@ -89,9 +101,14 @@ public class RequiredPropertySchemaTransformer : IOpenApiSchemaTransformer
     {
         JsonIgnoreAttribute? ignoreAttribute = property.GetCustomAttribute<JsonIgnoreAttribute>();
         if (ignoreAttribute?.Condition is JsonIgnoreCondition.WhenWritingDefault or JsonIgnoreCondition.WhenWritingNull)
+        {
             return true;
+        }
+
         if (ignoreAttribute?.Condition is JsonIgnoreCondition.Never)
+        {
             return false;
+        }
 
         // The application currently uses WhenWritingNull globally, which does not change the
         // required status of a correctly populated non-nullable property. WhenWritingDefault,

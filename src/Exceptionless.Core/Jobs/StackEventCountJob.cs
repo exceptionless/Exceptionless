@@ -42,10 +42,14 @@ public class StackEventCountJob : JobWithLockBase, IHealthCheck
     public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
         if (!_lastRun.HasValue)
+        {
             return Task.FromResult(HealthCheckResult.Healthy("Job has not been run yet."));
+        }
 
         if (_timeProvider.GetUtcNow().UtcDateTime.Subtract(_lastRun.Value) > TimeSpan.FromSeconds(15))
+        {
             return Task.FromResult(HealthCheckResult.Unhealthy("Job has not run in the last 15 seconds."));
+        }
 
         return Task.FromResult(HealthCheckResult.Healthy("Job has run in the last 15 seconds."));
     }

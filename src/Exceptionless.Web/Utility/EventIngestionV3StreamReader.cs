@@ -44,19 +44,28 @@ internal static class EventIngestionV3StreamReader
                 while (true)
                 {
                     if (examinedLength > remaining.Length)
+                    {
                         throw new InvalidOperationException("The ingestion pipe returned less data than it retained.");
+                    }
 
                     ReadOnlySequence<byte> unexamined = remaining.Slice(examinedLength);
                     if (unexamined.PositionOf((byte)'\n') is not { } newline)
+                    {
                         break;
+                    }
 
                     ReadOnlySequence<byte> record = remaining.Slice(0, newline);
                     SequencePosition consumed = remaining.GetPosition(1, newline);
                     if (record.Length > maximumEventSize)
+                    {
                         throw new EventIngestionV3RecordTooLargeException();
+                    }
 
                     if (!objectPrefixValidated)
+                    {
                         objectPrefixValidated = EnsureObjectPrefix(unexamined.Slice(0, newline));
+                    }
+
                     if (IsJsonWhitespace(record))
                     {
                         remaining = remaining.Slice(consumed);
@@ -72,9 +81,14 @@ internal static class EventIngestionV3StreamReader
 
                 ReadOnlySequence<byte> newlyExamined = remaining.Slice(examinedLength);
                 if (!objectPrefixValidated)
+                {
                     objectPrefixValidated = EnsureObjectPrefix(newlyExamined);
+                }
+
                 if (remaining.Length > maximumEventSize)
+                {
                     throw new EventIngestionV3RecordTooLargeException();
+                }
 
                 if (readResult.IsCompleted)
                 {
@@ -121,7 +135,9 @@ internal static class EventIngestionV3StreamReader
     {
         var jsonReader = new Utf8JsonReader(record, isFinalBlock: true, new JsonReaderState(_readerOptions));
         if (!jsonReader.Read() || jsonReader.TokenType != JsonTokenType.StartObject)
+        {
             throw new JsonException("Each NDJSON line must contain one event object.");
+        }
 
         string? id = null;
         string? type = null;
@@ -132,7 +148,9 @@ internal static class EventIngestionV3StreamReader
         while (jsonReader.Read() && jsonReader.TokenType != JsonTokenType.EndObject)
         {
             if (jsonReader.TokenType != JsonTokenType.PropertyName)
+            {
                 throw new JsonException("The event record must be a JSON object.");
+            }
 
             bool isId = jsonReader.ValueTextEquals("id"u8);
             bool isType = jsonReader.ValueTextEquals("type"u8);
@@ -141,26 +159,44 @@ internal static class EventIngestionV3StreamReader
             bool isStackTrace = jsonReader.ValueTextEquals("stack_trace"u8);
             bool isStacking = jsonReader.ValueTextEquals("stacking"u8);
             if (!jsonReader.Read())
+            {
                 throw new JsonException("The event record ended before a property value was complete.");
+            }
 
             if (isId)
+            {
                 id = ReadNullableString(ref jsonReader);
+            }
             else if (isType)
+            {
                 type = ReadNullableString(ref jsonReader);
+            }
             else if (isSource)
+            {
                 source = ReadNullableString(ref jsonReader);
+            }
             else if (isExceptionType)
+            {
                 exceptionType = ReadNullableString(ref jsonReader);
+            }
             else if (isStackTrace)
+            {
                 stackTrace = ReadNullableString(ref jsonReader);
+            }
             else if (isStacking)
+            {
                 stacking = ReadStacking(ref jsonReader);
+            }
             else
+            {
                 jsonReader.Skip();
+            }
         }
 
         if (jsonReader.TokenType != JsonTokenType.EndObject || jsonReader.Read())
+        {
             throw new JsonException("Each NDJSON line must contain exactly one event object.");
+        }
 
         return new EventIngestionV3Event
         {
@@ -176,28 +212,43 @@ internal static class EventIngestionV3StreamReader
     private static EventIngestionV3Stacking? ReadStacking(ref Utf8JsonReader jsonReader)
     {
         if (jsonReader.TokenType == JsonTokenType.Null)
+        {
             return null;
+        }
+
         if (jsonReader.TokenType != JsonTokenType.StartObject)
+        {
             throw new JsonException("stacking must be a JSON object.");
+        }
 
         Dictionary<string, string>? signatureData = null;
         while (jsonReader.Read() && jsonReader.TokenType != JsonTokenType.EndObject)
         {
             if (jsonReader.TokenType != JsonTokenType.PropertyName)
+            {
                 throw new JsonException("stacking must be a JSON object.");
+            }
 
             bool isSignatureData = jsonReader.ValueTextEquals("signature_data"u8);
             if (!jsonReader.Read())
+            {
                 throw new JsonException("stacking ended before a property value was complete.");
+            }
 
             if (isSignatureData)
+            {
                 signatureData = ReadSignatureData(ref jsonReader);
+            }
             else
+            {
                 jsonReader.Skip();
+            }
         }
 
         if (jsonReader.TokenType != JsonTokenType.EndObject)
+        {
             throw new JsonException("stacking must be a complete JSON object.");
+        }
 
         return new EventIngestionV3Stacking
         {
@@ -208,24 +259,36 @@ internal static class EventIngestionV3StreamReader
     private static Dictionary<string, string>? ReadSignatureData(ref Utf8JsonReader jsonReader)
     {
         if (jsonReader.TokenType == JsonTokenType.Null)
+        {
             return null;
+        }
+
         if (jsonReader.TokenType != JsonTokenType.StartObject)
+        {
             throw new JsonException("stacking.signature_data must be a JSON object.");
+        }
 
         var values = new Dictionary<string, string>();
         while (jsonReader.Read() && jsonReader.TokenType != JsonTokenType.EndObject)
         {
             if (jsonReader.TokenType != JsonTokenType.PropertyName)
+            {
                 throw new JsonException("stacking.signature_data must be a JSON object.");
+            }
 
             string key = jsonReader.GetString()!;
             if (!jsonReader.Read())
+            {
                 throw new JsonException("stacking.signature_data ended before a value was complete.");
+            }
+
             values[key] = ReadNullableString(ref jsonReader)!;
         }
 
         if (jsonReader.TokenType != JsonTokenType.EndObject)
+        {
             throw new JsonException("stacking.signature_data must be a complete JSON object.");
+        }
 
         return values;
     }
@@ -233,9 +296,14 @@ internal static class EventIngestionV3StreamReader
     private static string? ReadNullableString(ref Utf8JsonReader jsonReader)
     {
         if (jsonReader.TokenType == JsonTokenType.Null)
+        {
             return null;
+        }
+
         if (jsonReader.TokenType != JsonTokenType.String)
+        {
             throw new JsonException("The event property must be a JSON string or null.");
+        }
 
         return jsonReader.GetString();
     }
@@ -247,7 +315,9 @@ internal static class EventIngestionV3StreamReader
             foreach (byte item in segment.Span)
             {
                 if (item is not (0x20 or 0x09 or 0x0A or 0x0D))
+                {
                     return false;
+                }
             }
         }
 
@@ -261,10 +331,14 @@ internal static class EventIngestionV3StreamReader
             foreach (byte item in segment.Span)
             {
                 if (item is 0x20 or 0x09 or 0x0A or 0x0D)
+                {
                     continue;
+                }
 
                 if (item != (byte)'{')
+                {
                     throw new JsonException("Each NDJSON line must contain one event object.");
+                }
 
                 return true;
             }

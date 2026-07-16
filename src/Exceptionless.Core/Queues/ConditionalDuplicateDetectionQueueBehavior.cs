@@ -19,7 +19,9 @@ public class ConditionalDuplicateDetectionQueueBehavior<T>(
     {
         string? identifier = GetIdentifier(args.Data);
         if (String.IsNullOrEmpty(identifier) || await cache.AddAsync(identifier, true, detectionWindow))
+        {
             return;
+        }
 
         _logger.LogInformation("Discarding queue entry due to duplicate {UniqueIdentifier}", identifier);
         args.Cancel = true;
@@ -29,13 +31,17 @@ public class ConditionalDuplicateDetectionQueueBehavior<T>(
     {
         string? identifier = GetIdentifier(args.Entry.Value);
         if (!String.IsNullOrEmpty(identifier))
+        {
             await cache.RemoveAsync(identifier);
+        }
     }
 
     private static string? GetIdentifier(T data)
     {
         if (data is IHaveDurableUniqueIdentifier { UseDurableDeduplication: true })
+        {
             return null;
+        }
 
         return (data as IHaveUniqueIdentifier)?.UniqueIdentifier;
     }

@@ -58,7 +58,9 @@ public sealed class StackRouteCache(ICacheClient cache, ILockProvider lockProvid
     public Task RemoveAllAsync(IReadOnlyCollection<string> keys, TimeSpan expiresIn)
     {
         if (keys.Count == 0)
+        {
             return Task.CompletedTask;
+        }
 
         var tombstones = keys
             .Distinct(StringComparer.Ordinal)
@@ -75,7 +77,9 @@ public sealed class StackRouteCache(ICacheClient cache, ILockProvider lockProvid
         bool authoritative)
     {
         if (entries.Count == 0)
+        {
             return Task.CompletedTask;
+        }
 
         return Task.WhenAll(entries
             .GroupBy(pair => GetLockKey(pair.Key), StringComparer.Ordinal)
@@ -100,7 +104,10 @@ public sealed class StackRouteCache(ICacheClient cache, ILockProvider lockProvid
                 if (!authoritative)
                 {
                     if (!hasCurrent || pair.Value.Version > currentVersion)
+                    {
                         updates[pair.Key] = pair.Value;
+                    }
+
                     continue;
                 }
 
@@ -109,22 +116,30 @@ public sealed class StackRouteCache(ICacheClient cache, ILockProvider lockProvid
             }
 
             if (updates.Count == 0)
+            {
                 return;
+            }
 
             int updated = await cache.SetAllAsync(updates, expiresIn);
             if (updated != updates.Count)
+            {
                 throw new InvalidOperationException("Unable to update every stack route cache entry.");
+            }
         }, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10));
 
         if (!acquired)
+        {
             throw new InvalidOperationException($"Unable to update stack route cache scope '{lockKey}'.");
+        }
     }
 
     private static string GetLockKey(string key)
     {
         int signatureSeparator = key.LastIndexOf(':');
         if (signatureSeparator <= 0)
+        {
             throw new ArgumentException("The stack route cache key is invalid.", nameof(key));
+        }
 
         // Route keys end in the signature hash. One generation-scoped project lock allows a cold
         // microbatch to compare and fill every route with two bulk cache calls instead of taking
@@ -148,7 +163,9 @@ public sealed class StackRouteResolver(
         string[] distinctHashes = signatureHashes.Distinct(StringComparer.Ordinal).ToArray();
         AppDiagnostics.IngestionV3RouteLocalDeduplicated.Add(signatureHashes.Count - distinctHashes.Length);
         if (distinctHashes.Length == 0)
+        {
             return new Dictionary<string, StackRoute>();
+        }
 
         long projectGeneration = await routeCache.GetProjectGenerationAsync(projectId);
         var cacheKeys = distinctHashes.Select(hash => GetCacheKey(projectId, hash, projectGeneration)).ToArray();
@@ -183,7 +200,10 @@ public sealed class StackRouteResolver(
         if (misses.Count == 0)
         {
             if (await routeCache.GetProjectGenerationAsync(projectId) != projectGeneration)
+            {
                 return await ResolveAsync(projectId, distinctHashes, cancellationToken);
+            }
+
             return routes;
         }
 
@@ -206,9 +226,14 @@ public sealed class StackRouteResolver(
         }
 
         if (positiveEntries.Count > 0)
+        {
             await routeCache.SetAllAsync(positiveEntries, options.EventIngestionV3.StackRouteCacheDuration);
+        }
+
         if (negativeEntries.Count > 0)
+        {
             await routeCache.SetAllAsync(negativeEntries, options.EventIngestionV3.NegativeStackRouteCacheDuration);
+        }
 
         // A status update may have won while the repository lookup was in flight. Re-read
         // the versioned entries so this request observes the same winner as later requests.
@@ -216,20 +241,28 @@ public sealed class StackRouteResolver(
         foreach (string hash in misses)
         {
             if (!effectiveEntries.TryGetValue(GetCacheKey(projectId, hash, projectGeneration), out var effective) || !effective.HasValue)
+            {
                 continue;
+            }
 
             StackRoute? effectiveRoute = effective.Value.ToRoute();
             if (effectiveRoute is null)
+            {
                 routes.Remove(hash);
+            }
             else
+            {
                 routes[hash] = effectiveRoute;
+            }
         }
 
         // A project-wide delete can rotate the generation while the repository lookup is
         // in flight. The old fill is isolated, and this request must also re-resolve against
         // the new generation before it is allowed to route an event.
         if (await routeCache.GetProjectGenerationAsync(projectId) != projectGeneration)
+        {
             return await ResolveAsync(projectId, distinctHashes, cancellationToken);
+        }
 
         return routes;
     }
@@ -256,7 +289,9 @@ public sealed class StackRouteResolver(
                 || stack.Status != StackStatus.Fixed
                 || stack.DateFixed != route.DateFixed
                 || !String.Equals(stack.FixedInVersion, route.FixedInVersion, StringComparison.Ordinal))
+            {
                 return;
+            }
 
             stack.Status = StackStatus.Regressed;
             stack.RegressionEventId = eventId;
@@ -267,7 +302,9 @@ public sealed class StackRouteResolver(
 
         cancellationToken.ThrowIfCancellationRequested();
         if (!acquired)
+        {
             throw new InvalidOperationException($"Unable to update regression state for stack '{route.StackId}'.");
+        }
 
         return transitioned;
     }

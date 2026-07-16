@@ -30,7 +30,9 @@ public static class AppDiagnostics
     public static void Counter(string name, int value = 1)
     {
         if (!_counters.TryGetValue(_metricsPrefix + name, out var counter))
+        {
             counter = _counters.GetOrAdd(_metricsPrefix + name, key => Meter.CreateCounter<int>(key));
+        }
 
         counter.Add(value);
     }
@@ -38,7 +40,9 @@ public static class AppDiagnostics
     public static void Gauge(string name, double value)
     {
         if (!_gauges.TryGetValue(_metricsPrefix + name, out var gauge))
+        {
             gauge = _gauges.GetOrAdd(_metricsPrefix + name, key => new GaugeInfo(Meter, key));
+        }
 
         gauge.Value = value;
     }
@@ -46,7 +50,9 @@ public static class AppDiagnostics
     public static void Timer(string name, int milliseconds)
     {
         if (!_timers.TryGetValue(_metricsPrefix + name, out var timer))
+        {
             timer = _timers.GetOrAdd(_metricsPrefix + name, key => Meter.CreateHistogram<double>(key, "ms"));
+        }
 
         timer.Record(milliseconds);
     }
@@ -54,7 +60,9 @@ public static class AppDiagnostics
     public static IDisposable StartTimer(string name)
     {
         if (!_timers.TryGetValue(_metricsPrefix + name, out var timer))
+        {
             timer = _timers.GetOrAdd(_metricsPrefix + name, key => Meter.CreateHistogram<double>(key, "ms"));
+        }
 
         return timer.StartTimer();
     }
@@ -62,19 +70,25 @@ public static class AppDiagnostics
     public static async Task TimeAsync(Func<Task> action, string name)
     {
         using (StartTimer(name))
+        {
             await action();
+        }
     }
 
     public static void Time(Action action, string name)
     {
         using (StartTimer(name))
+        {
             action();
+        }
     }
 
     public static async Task<T> TimeAsync<T>(Func<Task<T>> func, string name)
     {
         using (StartTimer(name))
+        {
             return await func();
+        }
     }
 
     private class GaugeInfo
@@ -166,19 +180,25 @@ public static class MetricsClientExtensions
     public static async Task TimeAsync(this Histogram<double> histogram, Func<Task> action)
     {
         using (histogram.StartTimer())
+        {
             await action();
+        }
     }
 
     public static void Time(this Histogram<double> histogram, Action action)
     {
         using (histogram.StartTimer())
+        {
             action();
+        }
     }
 
     public static async Task<T> TimeAsync<T>(this Histogram<double> histogram, Func<Task<T>> func)
     {
         using (histogram.StartTimer())
+        {
             return await func();
+        }
     }
 }
 
@@ -197,7 +217,9 @@ public class HistogramTimer : IDisposable
     public void Dispose()
     {
         if (_disposed)
+        {
             return;
+        }
 
         _disposed = true;
         _stopWatch.Stop();

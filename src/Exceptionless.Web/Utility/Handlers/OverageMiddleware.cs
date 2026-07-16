@@ -66,14 +66,18 @@ public sealed class OverageMiddleware
 
             long size = contentLength.GetValueOrDefault();
             if (size > 0)
+            {
                 AppDiagnostics.PostsSize.Record(size);
+            }
 
             if (size > _appOptions.MaximumEventPostSize)
             {
                 if (_logger.IsEnabled(LogLevel.Warning))
                 {
                     using (_logger.BeginScope(new ExceptionlessState().Value(size).Tag(context.Request.Headers.TryGetAndReturn(Headers.ContentEncoding))))
+                    {
                         _logger.SubmissionTooLarge(size);
+                    }
                 }
 
                 tooBig = true;

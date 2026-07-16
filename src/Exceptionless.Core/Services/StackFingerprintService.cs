@@ -1,11 +1,11 @@
-using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Data;
-using Exceptionless.Core.Models.Ingestion;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Text;
+using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
+using Exceptionless.Core.Models.Ingestion;
 
 namespace Exceptionless.Core.Services;
 
@@ -58,7 +58,9 @@ public sealed class StackFingerprintService(StackTraceParser stackTraceParser) :
 
             var target = userFrame ?? firstFrame;
             if (target is not null)
+            {
                 method = target.GetSignature();
+            }
             else
             {
                 fallbackTraceHash = NormalizeFallback(source.StackTrace).ToSHA1();
@@ -71,7 +73,9 @@ public sealed class StackFingerprintService(StackTraceParser stackTraceParser) :
         AddIfNotEmpty(signature, "StackTrace", fallbackTraceHash);
 
         if (signature.Count == 0)
+        {
             AddIfNotEmpty(signature, "Type", source.Type);
+        }
 
         return new StackFingerprint(signature.Values.ToSHA1(), signature);
     }
@@ -91,7 +95,10 @@ public sealed class StackFingerprintService(StackTraceParser stackTraceParser) :
             if (Char.IsDigit(value))
             {
                 if (!inDigits)
+                {
                     normalized.Append('#');
+                }
+
                 inDigits = true;
                 inWhitespace = false;
                 continue;
@@ -101,7 +108,10 @@ public sealed class StackFingerprintService(StackTraceParser stackTraceParser) :
             if (Char.IsWhiteSpace(value))
             {
                 if (!inWhitespace && normalized.Length > 0)
+                {
                     normalized.Append(' ');
+                }
+
                 inWhitespace = true;
                 continue;
             }
@@ -145,14 +155,18 @@ public sealed class StackFingerprintService(StackTraceParser stackTraceParser) :
         finally
         {
             if (rented is not null)
+            {
                 ArrayPool<byte>.Shared.Return(rented);
+            }
         }
     }
 
     private static bool IsUserFrame(StackFrame frame, string[] userNamespaces, string[] commonMethods)
     {
         if (String.IsNullOrEmpty(frame.Name))
+        {
             return false;
+        }
 
         string? frameNamespace = frame.DeclaringNamespace;
         bool isUserNamespace = String.IsNullOrEmpty(frameNamespace)
@@ -166,6 +180,8 @@ public sealed class StackFingerprintService(StackTraceParser stackTraceParser) :
     private static void AddIfNotEmpty(IDictionary<string, string> values, string key, string? value)
     {
         if (!String.IsNullOrWhiteSpace(value))
+        {
             values[key] = value;
+        }
     }
 }

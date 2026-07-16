@@ -76,21 +76,33 @@ namespace Exceptionless.Core.Repositories.Queries
         {
             var stackIds = ctx.Source.GetStacks();
             if (stackIds.Count == 1)
+            {
                 ctx.Filter &= new TermQuery { Field = StackIdField, Value = stackIds.Single() };
+            }
             else if (stackIds.Count > 1)
+            {
                 ctx.Filter &= new TermsQuery { Field = StackIdField, Terms = new TermsQueryField(stackIds.Select(FieldValueHelper.ToFieldValue).ToList()) };
+            }
 
             var excludedStackIds = ctx.Source.GetExcludedStacks();
             if (excludedStackIds.Count == 1)
+            {
                 ctx.Filter &= new BoolQuery { MustNot = [new TermQuery { Field = StackIdField, Value = excludedStackIds.Single() }] };
+            }
             else if (excludedStackIds.Count > 1)
+            {
                 ctx.Filter &= new BoolQuery { MustNot = [new TermsQuery { Field = StackIdField, Terms = new TermsQueryField(excludedStackIds.Select(FieldValueHelper.ToFieldValue).ToList()) }] };
+            }
 
             var signatureHashes = ctx.Source.GetSignatureHashes();
             if (signatureHashes.Count == 1)
+            {
                 ctx.Filter &= new TermQuery { Field = SignatureHashField, Value = signatureHashes.Single() };
+            }
             else if (signatureHashes.Count > 1)
+            {
                 ctx.Filter &= new TermsQuery { Field = SignatureHashField, Terms = new TermsQueryField(signatureHashes.Select(FieldValueHelper.ToFieldValue).ToList()) };
+            }
 
             return Task.CompletedTask;
         }

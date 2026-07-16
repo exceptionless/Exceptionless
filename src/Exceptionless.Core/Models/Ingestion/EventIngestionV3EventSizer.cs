@@ -14,12 +14,20 @@ public static class EventIngestionV3EventSizer
         size += GetSize(source.Tags);
         size += GetSize(source.Data);
         if (source.Client is not null)
+        {
             size += 32 + GetSize(source.Client.Name) + GetSize(source.Client.Version);
+        }
+
         if (source.Stacking is not null)
+        {
             size += 32 + GetSize(source.Stacking.Title) + GetSize(source.Stacking.SignatureData);
+        }
 
         if (source.User is not null)
+        {
             size += 32 + GetSize(source.User.Identity) + GetSize(source.User.Name) + GetSize(source.User.Data);
+        }
+
         if (source.Request is not null)
         {
             size += 96 + GetSize(source.Request.UserAgent) + GetSize(source.Request.HttpMethod) + GetSize(source.Request.Host);
@@ -44,37 +52,57 @@ public static class EventIngestionV3EventSizer
     private static long GetSize(IEnumerable<string>? values)
     {
         if (values is null)
+        {
             return 0;
+        }
+
         long size = 0;
         foreach (string value in values)
+        {
             size += GetSize(value);
+        }
+
         return size;
     }
 
     private static long GetSize(IReadOnlyDictionary<string, string>? values)
     {
         if (values is null)
+        {
             return 0;
+        }
+
         long size = 0;
         foreach (var pair in values)
+        {
             size += GetSize(pair.Key) + GetSize(pair.Value);
+        }
+
         return size;
     }
 
     private static long GetSize(IReadOnlyDictionary<string, string[]>? values)
     {
         if (values is null)
+        {
             return 0;
+        }
+
         long size = 0;
         foreach (var pair in values)
+        {
             size += GetSize(pair.Key) + GetSize(pair.Value);
+        }
+
         return size;
     }
 
     private static long GetSize(JsonElement? element)
     {
         if (element is null)
+        {
             return 0;
+        }
 
         return GetSize(element.Value);
     }
@@ -85,14 +113,20 @@ public static class EventIngestionV3EventSizer
         {
             long size = 0;
             foreach (JsonProperty property in element.EnumerateObject())
+            {
                 size += GetSize(property.Name) + GetSize(property.Value) + 4;
+            }
+
             return size;
         }
         if (element.ValueKind == JsonValueKind.Array)
         {
             long size = 0;
             foreach (JsonElement item in element.EnumerateArray())
+            {
                 size += GetSize(item) + 1;
+            }
+
             return size;
         }
 

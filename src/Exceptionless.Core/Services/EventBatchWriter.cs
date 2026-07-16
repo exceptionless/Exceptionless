@@ -47,7 +47,9 @@ public sealed class EventBatchWriter(
         CancellationToken cancellationToken)
     {
         if (events.Count == 0)
+        {
             return [];
+        }
 
         var sources = events.ToArray();
         var idCandidates = new EventIngestionIdCandidate[sources.Length];
@@ -68,7 +70,9 @@ public sealed class EventBatchWriter(
             if (options.EventIngestionV3.EnableProcessingStatus
                 || sources[i].Date is null
                 || sources[i].Date > receiptDate)
+            {
                 (mappedClientIds ??= new HashSet<string>(StringComparer.Ordinal)).Add(sources[i].Id);
+            }
         }
 
         IReadOnlyDictionary<string, EventIngestionId>? assignedIds = null;
@@ -139,7 +143,9 @@ public sealed class EventBatchWriter(
         CancellationToken cancellationToken)
     {
         if (reconciliations.Count == 0)
+        {
             return;
+        }
 
         var requestedStackIds = reconciliations
             .GroupBy(item => item.EventId, StringComparer.Ordinal)
@@ -171,7 +177,9 @@ public sealed class EventBatchWriter(
                 || !String.Equals(requestedStackId, ev.StackId, StringComparison.Ordinal)
                 || !stacksById.TryGetValue(ev.StackId, out Stack? stack)
                 || stack.Status == StackStatus.Discarded)
+            {
                 continue;
+            }
 
             activeEventIds.Add(ev.Id);
             StackRoute? regressionRoute = null;
@@ -213,7 +221,9 @@ public sealed class EventBatchWriter(
     {
         using var activity = AppDiagnostics.StartActivity("Ingestion V3 Batch Write");
         if (writes.Count == 0)
+        {
             return new EventBatchWriteResult(0, 0, []);
+        }
 
         var uniqueWrites = writes
             .GroupBy(write => write.Event.Id, StringComparer.Ordinal)
@@ -225,7 +235,10 @@ public sealed class EventBatchWriter(
         var existing = new List<PersistentEvent>();
         var writesToAdd = uniqueWrites;
         using (AppDiagnostics.StartActivity("Ingestion V3 Stack Resolve Create"))
+        {
             await AssignStacksAsync(writesToAdd, organization, project, cancellationToken);
+        }
+
         var eventsToAdd = writesToAdd.Select(write => write.Event).ToList();
         foreach (var write in writesToAdd)
         {
@@ -308,7 +321,9 @@ public sealed class EventBatchWriter(
     private static EventUsageSettlement[] GetPersistedSettlements(IReadOnlyCollection<PersistentEvent> events)
     {
         if (events.Count == 0)
+        {
             return [];
+        }
 
         return events
             .DistinctBy(ev => ev.Id, StringComparer.Ordinal)
@@ -323,7 +338,9 @@ public sealed class EventBatchWriter(
         PersistentEvent? knownCompleteEvent = null)
     {
         if (route is null)
+        {
             return;
+        }
 
         bool isRegression = route.RegressionEventId == eventId;
         if (!isRegression && route.Status == StackStatus.Fixed)
@@ -337,11 +354,15 @@ public sealed class EventBatchWriter(
         }
 
         if (!isRegression)
+        {
             return;
+        }
 
         var ev = knownCompleteEvent ?? await eventRepository.GetByIdAsync(eventId);
         if (ev is null || ev.IsRegression)
+        {
             return;
+        }
 
         ev.IsRegression = true;
         await eventRepository.SaveAsync(ev, o => o.Notifications(false));
@@ -350,11 +371,14 @@ public sealed class EventBatchWriter(
     private async Task EnqueueSideEffectsAsync(string[] eventIds, string organizationId, string projectId)
     {
         if (eventIds.Length == 0)
+        {
             return;
+        }
 
         Array.Sort(eventIds, StringComparer.Ordinal);
         using (AppDiagnostics.StartActivity("Ingestion V3 Outbox Write"))
         using (AppDiagnostics.IngestionV3OutboxWriteTime.StartTimer())
+        {
             await workItemQueue.EnqueueAsync(new EventIngestionSideEffectsWorkItem
             {
                 OrganizationId = organizationId,
@@ -362,6 +386,7 @@ public sealed class EventBatchWriter(
                 BatchId = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(String.Join(':', eventIds)))).ToLowerInvariant(),
                 EventIds = eventIds
             });
+        }
     }
 
     private Task AssignStacksAsync(List<EventIngestionWrite> writes, Organization organization, Project project, CancellationToken cancellationToken)
@@ -392,7 +417,9 @@ public sealed class EventBatchWriter(
             {
                 stack = await stackRepository.GetStackBySignatureHashAsync(project.Id, group.Key);
                 if (stack is not null)
+                {
                     return;
+                }
 
                 EventIngestionWrite first = group.First();
                 EventIngestionWrite firstOccurrence = group
@@ -421,7 +448,9 @@ public sealed class EventBatchWriter(
             }, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10));
 
             if (!acquired || stack is null)
+            {
                 throw new InvalidOperationException($"Unable to resolve stack for signature '{group.Key}'.");
+            }
 
             foreach (var write in group)
             {
@@ -435,7 +464,9 @@ public sealed class EventBatchWriter(
             // AddAsync publishes an authoritative route through repository invalidation. A stack
             // found after our earlier route miss still needs to replace that negative entry.
             if (!isNew)
+            {
                 await stackRouteResolver.UpdateAsync(project.Id, group.Key, StackRouteResolver.CreateRoute(stack));
+            }
         });
     }
 
@@ -452,21 +483,35 @@ public sealed class EventBatchWriter(
     private static DateTimeOffset GetCanonicalEventDate(DateTimeOffset? requestedDate, DateTimeOffset receiptDate)
     {
         if (requestedDate is not { } date || date > receiptDate)
+        {
             return receiptDate;
+        }
+
         return date < DateTimeOffset.UnixEpoch ? DateTimeOffset.UnixEpoch : date;
     }
 
     private static string GetStackTitle(EventIngestionWrite write)
     {
         if (!String.IsNullOrWhiteSpace(write.Fingerprint.Title))
+        {
             return write.Fingerprint.Title;
+        }
+
         if (write.Fingerprint.SignatureData.TryGetValue("ExceptionType", out string? exceptionType))
+        {
             return String.IsNullOrWhiteSpace(write.Event.Message) ? exceptionType : String.Concat(exceptionType, ": ", write.Event.Message);
+        }
 
         if (!String.IsNullOrWhiteSpace(write.Event.Message))
+        {
             return write.Event.Message;
+        }
+
         if (!String.IsNullOrWhiteSpace(write.Event.Source))
+        {
             return write.Event.Source;
+        }
+
         return write.Event.Type ?? Event.KnownTypes.Log;
     }
 }

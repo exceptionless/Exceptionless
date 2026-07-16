@@ -58,15 +58,25 @@ public sealed class EventMaterializer(StackTraceParser stackTraceParser, TimePro
         if (String.Equals(source.Type, Event.KnownTypes.Error, StringComparison.OrdinalIgnoreCase) || source.Stacking is not null)
         {
             if (String.IsNullOrWhiteSpace(fingerprint.Title))
+            {
                 ev.SetManualStackingInfo(fingerprint.SignatureData.ToDictionary(pair => pair.Key, pair => pair.Value));
+            }
             else
+            {
                 ev.SetManualStackingInfo(fingerprint.Title, fingerprint.SignatureData.ToDictionary(pair => pair.Key, pair => pair.Value));
+            }
         }
 
         if (!String.IsNullOrWhiteSpace(source.Version))
+        {
             ev.SetVersion(source.Version);
+        }
+
         if (!String.IsNullOrWhiteSpace(source.Level))
+        {
             ev.SetLevel(source.Level.Trim());
+        }
+
         if (source.Client is not null)
         {
             ev.SetSubmissionClient(new SubmissionClient
@@ -104,10 +114,14 @@ public sealed class EventMaterializer(StackTraceParser stackTraceParser, TimePro
         }
 
         if (source.Environment is not null)
+        {
             ev.SetEnvironmentInfo(Map(source.Environment));
+        }
 
         if (utcNow.UtcDateTime < ev.Date.UtcDateTime)
+        {
             ev.Date = utcNow;
+        }
 
         ev.Tags?.RemoveExcessTags();
         ev.Message = String.IsNullOrWhiteSpace(ev.Message) ? null : ev.Message.Truncate(2000);
@@ -122,11 +136,15 @@ public sealed class EventMaterializer(StackTraceParser stackTraceParser, TimePro
         {
             ev.RemoveUserIdentity();
             if (ev.Data.TryGetValue(Event.KnownDataKeys.EnvironmentInfo, out object? environmentValue) && environmentValue is EnvironmentInfo environment)
+            {
                 environment.MachineName = null;
+            }
         }
 
         if (organization.HasPremiumFeatures)
+        {
             ev.CopyDataToIndex([]);
+        }
 
         return ev;
     }
@@ -169,11 +187,16 @@ public sealed class EventMaterializer(StackTraceParser stackTraceParser, TimePro
     private static DataDictionary ConvertData(JsonElement? element)
     {
         if (element is not { ValueKind: JsonValueKind.Object } value)
+        {
             return [];
+        }
 
         var data = new DataDictionary();
         foreach (JsonProperty property in value.EnumerateObject())
+        {
             data[property.Name] = JsonElementConverter.Convert(property.Value);
+        }
+
         return data;
     }
 }

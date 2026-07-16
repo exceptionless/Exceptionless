@@ -41,9 +41,14 @@ public sealed class EventIngestionIdStore(ICacheClient cache) : IEventIngestionI
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(projectId);
         if (expiresIn <= TimeSpan.Zero)
+        {
             throw new ArgumentOutOfRangeException(nameof(expiresIn));
+        }
+
         if (candidates.Count == 0)
+        {
             return new Dictionary<string, EventIngestionId>(StringComparer.Ordinal);
+        }
 
         cancellationToken.ThrowIfCancellationRequested();
         var distinctCandidates = new Dictionary<string, EventIngestionIdCandidate>(StringComparer.Ordinal);
@@ -65,13 +70,19 @@ public sealed class EventIngestionIdStore(ICacheClient cache) : IEventIngestionI
         foreach ((string clientId, EventIngestionIdCandidate candidate) in distinctCandidates)
         {
             if (cached.TryGetValue(keysByClientId[clientId], out CacheValue<EventIngestionId>? value) && value is { HasValue: true })
+            {
                 results.Add(clientId, value.Value);
+            }
             else
+            {
                 missing.Add(candidate);
+            }
         }
 
         if (missing.Count == 0)
+        {
             return results;
+        }
 
         // Start all conditional writes before awaiting so Redis can pipeline a whole microbatch.
         Task<bool>[] claims = missing
@@ -87,13 +98,19 @@ public sealed class EventIngestionIdStore(ICacheClient cache) : IEventIngestionI
         for (int i = 0; i < missing.Count; i++)
         {
             if (claimed[i])
+            {
                 results.Add(missing[i].ClientId, missing[i].Identity);
+            }
             else
+            {
                 lostClientIds.Add(missing[i].ClientId);
+            }
         }
 
         if (lostClientIds.Count == 0)
+        {
             return results;
+        }
 
         var winners = await cache.GetAllAsync<EventIngestionId>(lostClientIds.Select(clientId => keysByClientId[clientId]));
         cancellationToken.ThrowIfCancellationRequested();
@@ -101,7 +118,9 @@ public sealed class EventIngestionIdStore(ICacheClient cache) : IEventIngestionI
         {
             string key = keysByClientId[clientId];
             if (!winners.TryGetValue(key, out CacheValue<EventIngestionId>? winner) || winner is not { HasValue: true })
+            {
                 throw new InvalidOperationException("The event ingestion identity claim could not be resolved.");
+            }
 
             results.Add(clientId, winner.Value);
         }
@@ -116,7 +135,9 @@ public sealed class EventIngestionIdStore(ICacheClient cache) : IEventIngestionI
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(projectId);
         if (clientIds.Count == 0)
+        {
             return new Dictionary<string, EventIngestionId>(StringComparer.Ordinal);
+        }
 
         cancellationToken.ThrowIfCancellationRequested();
         string[] distinctClientIds = clientIds.Distinct(StringComparer.Ordinal).ToArray();
@@ -131,7 +152,9 @@ public sealed class EventIngestionIdStore(ICacheClient cache) : IEventIngestionI
         foreach ((string clientId, string key) in keysByClientId)
         {
             if (cached.TryGetValue(key, out CacheValue<EventIngestionId>? value) && value is { HasValue: true })
+            {
                 results.Add(clientId, value.Value);
+            }
         }
 
         return results;

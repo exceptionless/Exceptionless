@@ -23,15 +23,21 @@ public sealed class EventIngestionV3DataSchemaTransformer : IOpenApiSchemaTransf
     public Task TransformAsync(OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken cancellationToken)
     {
         if (!_objectDataTypes.Contains(context.JsonTypeInfo.Type) || schema.Properties is null)
+        {
             return Task.CompletedTask;
+        }
 
         PropertyInfo? dataProperty = context.JsonTypeInfo.Type.GetProperty(nameof(EventIngestionV3Event.Data));
         if (dataProperty?.PropertyType != typeof(JsonElement?))
+        {
             return Task.CompletedTask;
+        }
 
         string? propertyName = JsonPropertyNameResolver.GetJsonPropertyName(context.JsonTypeInfo, dataProperty);
         if (propertyName is null || !schema.Properties.ContainsKey(propertyName))
+        {
             return Task.CompletedTask;
+        }
 
         // Nullable JsonElement properties are emitted as reference wrappers that are not
         // mutable OpenApiSchema instances. Replace the property schema at the parent.

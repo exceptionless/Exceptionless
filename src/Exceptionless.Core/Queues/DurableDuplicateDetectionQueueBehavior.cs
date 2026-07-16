@@ -25,11 +25,15 @@ public class DurableDuplicateDetectionQueueBehavior<T>(
     {
         string? identifier = GetIdentifier(args.Data);
         if (String.IsNullOrEmpty(identifier))
+        {
             return;
+        }
 
         string key = GetCacheKey(identifier);
         if (await cache.AddAsync(key, "pending", PendingWindow))
+        {
             return;
+        }
 
         var existing = await cache.GetAsync<string>(key);
         if (existing.HasValue && String.Equals(existing.Value, "completed", StringComparison.Ordinal))
@@ -48,7 +52,9 @@ public class DurableDuplicateDetectionQueueBehavior<T>(
     {
         string? identifier = GetIdentifier(args.Entry.Value);
         if (String.IsNullOrEmpty(identifier))
+        {
             return;
+        }
 
         await cache.SetAsync(GetCacheKey(identifier), "completed", detectionWindow);
     }

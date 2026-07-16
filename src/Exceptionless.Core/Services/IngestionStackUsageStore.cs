@@ -67,7 +67,9 @@ public sealed class InMemoryIngestionStackUsageStore(
     {
         var normalized = IngestionStackUsageStore.Normalize(usages);
         if (normalized.Count == 0)
+        {
             return [];
+        }
 
         string[] lockKeys = normalized
             .Select(usage => IngestionStackUsageStore.GetStateLockKey(usage.ProjectId, usage.EventId))
@@ -107,14 +109,18 @@ public sealed class InMemoryIngestionStackUsageStore(
                 }
 
                 if ((state & IngestionStackUsageStore.StatisticsStageFlag) == 0)
+                {
                     stateUpdates[stateKey] = state | IngestionStackUsageStore.StatisticsStageFlag;
+                }
             }
 
             if (stateUpdates.Count > 0)
             {
                 int completedCount = await cache.SetAllAsync(stateUpdates, options.EventIngestionV3.IdempotencyWindow);
                 if (completedCount != stateUpdates.Count)
+                {
                     throw new InvalidOperationException("Unable to record ingestion stack-statistics completion.");
+                }
             }
 
             return IngestionStackUsageStore.Summarize(newlySettled);
@@ -152,7 +158,9 @@ public sealed class InMemoryIngestionStackUsageStore(
             }
 
             if (result.Count >= maximumCount)
+            {
                 return result;
+            }
 
             StackUsageKey[][] partitions = _pendingUsages.Keys
                 .Where(key => !_inFlightUsages.ContainsKey(key))
@@ -161,7 +169,9 @@ public sealed class InMemoryIngestionStackUsageStore(
                 .Select(group => group.OrderBy(key => key.StackId, StringComparer.Ordinal).ToArray())
                 .ToArray();
             if (partitions.Length == 0)
+            {
                 return result;
+            }
 
             int startIndex = (int)((uint)Interlocked.Increment(ref _takeCursor) % (uint)partitions.Length);
             partitions = Enumerable.Range(0, partitions.Length)
@@ -207,7 +217,9 @@ public sealed class InMemoryIngestionStackUsageStore(
     {
         ArgumentNullException.ThrowIfNull(claims);
         if (claims.Count == 0)
+        {
             return;
+        }
 
         await _gate.WaitAsync(cancellationToken);
         try
@@ -253,9 +265,14 @@ public sealed class InMemoryIngestionStackUsageStore(
         {
             current.Count += usage.Count;
             if (usage.MinimumOccurrenceDateUtc < current.MinimumOccurrenceDateUtc)
+            {
                 current.MinimumOccurrenceDateUtc = usage.MinimumOccurrenceDateUtc;
+            }
+
             if (usage.MaximumOccurrenceDateUtc > current.MaximumOccurrenceDateUtc)
+            {
                 current.MaximumOccurrenceDateUtc = usage.MaximumOccurrenceDateUtc;
+            }
         }
         else
         {
@@ -331,7 +348,9 @@ public static class IngestionStackUsageStore
     {
         ArgumentNullException.ThrowIfNull(usages);
         if (usages.Count == 0)
+        {
             return [];
+        }
 
         var unique = new Dictionary<(string ProjectId, string EventId), IngestionStackUsage>(usages.Count);
         foreach (var usage in usages)
@@ -352,7 +371,9 @@ public static class IngestionStackUsageStore
             };
             var identity = (usage.ProjectId, usage.EventId);
             if (unique.TryGetValue(identity, out var existing) && existing != normalized)
+            {
                 throw new InvalidOperationException($"Event '{usage.EventId}' has conflicting stack-statistics data.");
+            }
 
             unique[identity] = normalized;
         }

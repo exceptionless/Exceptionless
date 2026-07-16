@@ -1,5 +1,5 @@
-﻿using Exceptionless.Core.Queues;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
+using Exceptionless.Core.Queues;
 
 namespace Exceptionless.Core.Queues.Models;
 

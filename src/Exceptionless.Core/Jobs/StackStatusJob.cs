@@ -1,6 +1,6 @@
 ﻿using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models.Ingestion;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
 using Foundatio.Caching;
 using Foundatio.Jobs;
@@ -47,7 +47,9 @@ public class StackStatusJob : JobWithLockBase, IHealthCheck
         while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
         {
             foreach (var stack in results.Documents)
+            {
                 stack.MarkOpen();
+            }
 
             await _stackRepository.SaveAsync(results.Documents);
             await Task.WhenAll(results.Documents.Select(stack =>
@@ -57,10 +59,14 @@ public class StackStatusJob : JobWithLockBase, IHealthCheck
             await Task.Delay(TimeSpan.FromSeconds(2.5), _timeProvider);
 
             if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync())
+            {
                 break;
+            }
 
             if (results.Documents.Count > 0)
+            {
                 await context.RenewLockAsync();
+            }
         }
 
         _logger.LogTrace("Finished save stack event counts");
@@ -70,10 +76,14 @@ public class StackStatusJob : JobWithLockBase, IHealthCheck
     public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
         if (!_lastRun.HasValue)
+        {
             return Task.FromResult(HealthCheckResult.Healthy("Job has not been run yet."));
+        }
 
         if (_timeProvider.GetUtcNow().UtcDateTime.Subtract(_lastRun.Value) > TimeSpan.FromMinutes(1))
+        {
             return Task.FromResult(HealthCheckResult.Unhealthy("Job has not run in the last minute."));
+        }
 
         return Task.FromResult(HealthCheckResult.Healthy("Job has run in the last minute."));
     }

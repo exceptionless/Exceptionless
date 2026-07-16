@@ -30,13 +30,19 @@ public class QueueNotificationAction : EventPipelineActionBase
     {
         // if they don't have premium features, then we don't need to queue notifications
         if (!ctx.Organization.HasPremiumFeatures)
+        {
             return;
+        }
 
         if (ctx.Stack is null || !ctx.Stack.AllowNotifications)
+        {
             return;
+        }
 
         if (ShouldQueueNotification(ctx))
+        {
             await QueueEventNotificationAsync(ctx);
+        }
 
         var webHooks = await GetWebHooksAsync(ctx.Event.OrganizationId, ctx.Event.ProjectId);
         await QueueWebHooksAsync(ctx, webHooks.Documents);
@@ -61,7 +67,9 @@ public class QueueNotificationAction : EventPipelineActionBase
             foreach (var ctx in group)
             {
                 if (ShouldQueueNotification(ctx))
+                {
                     await QueueEventNotificationAsync(ctx);
+                }
 
                 await QueueWebHooksAsync(ctx, webHooks.Documents);
             }
@@ -91,7 +99,9 @@ public class QueueNotificationAction : EventPipelineActionBase
         foreach (var hook in webHooks)
         {
             if (!ShouldCallWebHook(hook, ctx))
+            {
                 continue;
+            }
 
             var context = new WebHookDataContext(hook, ctx.Organization, ctx.Project, ctx.Stack!, ctx.Event, ctx.IsNew, ctx.IsRegression);
             var notification = new WebHookNotification
@@ -120,25 +130,39 @@ public class QueueNotificationAction : EventPipelineActionBase
     private bool ShouldCallWebHook(WebHook hook, EventContext ctx)
     {
         if (!hook.IsEnabled)
+        {
             return false;
+        }
 
         if (!String.IsNullOrEmpty(hook.ProjectId) && !String.Equals(ctx.Project.Id, hook.ProjectId))
+        {
             return false;
+        }
 
         if (ctx.IsNew && ctx.Event.IsError() && hook.EventTypes.Contains(WebHook.KnownEventTypes.NewError))
+        {
             return true;
+        }
 
         if (ctx.Event.IsCritical() && ctx.Event.IsError() && hook.EventTypes.Contains(WebHook.KnownEventTypes.CriticalError))
+        {
             return true;
+        }
 
         if (ctx.IsRegression && hook.EventTypes.Contains(WebHook.KnownEventTypes.StackRegression))
+        {
             return true;
+        }
 
         if (ctx.IsNew && hook.EventTypes.Contains(WebHook.KnownEventTypes.NewEvent))
+        {
             return true;
+        }
 
         if (ctx.Event.IsCritical() && hook.EventTypes.Contains(WebHook.KnownEventTypes.CriticalEvent))
+        {
             return true;
+        }
 
         return false;
     }
@@ -146,22 +170,34 @@ public class QueueNotificationAction : EventPipelineActionBase
     private bool ShouldQueueNotification(EventContext ctx)
     {
         if (ctx.Project.NotificationSettings.Count == 0)
+        {
             return false;
+        }
 
         if (ctx.IsNew && ctx.Event.IsError() && ctx.Project.NotificationSettings.Any(n => n.Value.ReportNewErrors))
+        {
             return true;
+        }
 
         if (ctx.Event.IsCritical() && ctx.Event.IsError() && ctx.Project.NotificationSettings.Any(n => n.Value.ReportCriticalErrors))
+        {
             return true;
+        }
 
         if (ctx.IsRegression && ctx.Project.NotificationSettings.Any(n => n.Value.ReportEventRegressions))
+        {
             return true;
+        }
 
         if (ctx.IsNew && ctx.Project.NotificationSettings.Any(n => n.Value.ReportNewEvents))
+        {
             return true;
+        }
 
         if (ctx.Event.IsCritical() && ctx.Project.NotificationSettings.Any(n => n.Value.ReportCriticalEvents))
+        {
             return true;
+        }
 
         return false;
     }

@@ -60,18 +60,26 @@ public static class EventIngestionV3Endpoints
         CancellationToken cancellationToken)
     {
         if (!options.EventIngestionV3.EnableProcessingStatus)
+        {
             return Results.NotFound();
+        }
 
         string? claimProjectId = request.GetProjectId();
         if (claimProjectId is null || !String.Equals(projectId, claimProjectId, StringComparison.Ordinal))
+        {
             return Results.NotFound();
+        }
 
         if (statusRequest.ClientIds is not { Count: >= 1 and <= 1000 })
+        {
             return InvalidProcessingIdentifiers("Between 1 and 1000 client event ids are required.");
+        }
 
         string[] clientIds = statusRequest.ClientIds.Distinct(StringComparer.Ordinal).ToArray();
         if (clientIds.Any(id => String.IsNullOrWhiteSpace(id) || id.Length > EventIngestionV3Limits.MaximumEventIdLength))
+        {
             return InvalidProcessingIdentifiers($"Client event ids must contain between 1 and {EventIngestionV3Limits.MaximumEventIdLength} characters.");
+        }
 
         var assignedIds = await eventIngestionIdStore.GetAsync(projectId, clientIds, cancellationToken);
         string[] eventIds = assignedIds.Values
@@ -160,46 +168,71 @@ public static class EventIngestionV3Endpoints
         CancellationToken cancellationToken)
     {
         if (!options.EventIngestionV3.Enabled || options.EventSubmissionDisabled)
+        {
             return Results.Problem(statusCode: StatusCodes.Status503ServiceUnavailable, title: "Event ingestion is unavailable.");
+        }
 
         if (!MediaTypeHeaderValue.TryParse(request.ContentType, out MediaTypeHeaderValue? mediaType)
             || !String.Equals(mediaType.MediaType.Value, ContentType, StringComparison.OrdinalIgnoreCase))
+        {
             return Results.Problem(statusCode: StatusCodes.Status415UnsupportedMediaType, title: $"Content-Type must be {ContentType}.");
+        }
 
         string[] contentEncodings = request.Headers.ContentEncoding
             .SelectMany(value => value?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [])
             .ToArray();
         if (contentEncodings.Length > 1)
+        {
             return Results.Problem(statusCode: StatusCodes.Status415UnsupportedMediaType, title: "Only one Content-Encoding may be specified.");
+        }
 
         string? contentEncoding = contentEncodings.FirstOrDefault();
         if (!String.IsNullOrEmpty(contentEncoding)
             && !String.Equals(contentEncoding, "identity", StringComparison.OrdinalIgnoreCase)
             && !String.Equals(contentEncoding, "gzip", StringComparison.OrdinalIgnoreCase)
             && !String.Equals(contentEncoding, "br", StringComparison.OrdinalIgnoreCase))
+        {
             return Results.Problem(statusCode: StatusCodes.Status415UnsupportedMediaType, title: "Content-Encoding must be gzip, br, or identity.");
+        }
 
         string? claimProjectId = request.GetProjectId();
         if (projectId is not null && claimProjectId is not null && !String.Equals(projectId, claimProjectId, StringComparison.Ordinal))
+        {
             return Results.NotFound();
+        }
 
         projectId ??= claimProjectId ?? request.GetDefaultProjectId();
         if (String.IsNullOrEmpty(projectId))
+        {
             return Results.Problem(statusCode: StatusCodes.Status400BadRequest, title: "No project was specified and no default project was found.");
+        }
 
         var project = await projectRepository.GetByIdAsync(projectId, o => o.Cache());
         if (project is null || !request.CanAccessOrganization(project.OrganizationId))
+        {
             return Results.NotFound();
+        }
+
         if (options.EventIngestionV3.AllowedProjectIds.Count > 0 && !options.EventIngestionV3.AllowedProjectIds.Contains(project.Id))
+        {
             return Results.NotFound();
+        }
+
         if (options.EventIngestionV3.AllowedOrganizationIds.Count > 0 && !options.EventIngestionV3.AllowedOrganizationIds.Contains(project.OrganizationId))
+        {
             return Results.NotFound();
+        }
 
         var organization = await organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache());
         if (organization is null)
+        {
             return Results.NotFound();
+        }
+
         if (organization.IsSuspended)
+        {
             return Results.Problem(statusCode: StatusCodes.Status402PaymentRequired, title: "The organization cannot accept events.");
+        }
 
         using RateLimitLease organizationStreamLease = await concurrencyLimiter.AcquireOrganizationActiveStreamAsync(organization.Id, cancellationToken);
         if (!organizationStreamLease.IsAcquired)
@@ -227,7 +260,10 @@ public static class EventIngestionV3Endpoints
 
         using var activity = AppDiagnostics.StartActivity("Ingestion V3 Request");
         if (request.ContentLength.HasValue)
+        {
             AppDiagnostics.IngestionV3CompressedSize.Record(request.ContentLength.Value);
+        }
+
         AppDiagnostics.IngestionV3ActiveStreams.Add(1);
         try
         {
@@ -239,7 +275,9 @@ public static class EventIngestionV3Endpoints
                 {
                     received++;
                     if (received > options.EventIngestionV3.MaximumEventsPerRequest)
+                    {
                         return Problem(response, StatusCodes.Status413RequestEntityTooLarge, "The request contains too many events.");
+                    }
 
                     long eventSize = record.Size;
                     if (batch.Count > 0 && batchBytes + eventSize > options.EventIngestionV3.MaximumMicroBatchBytes)
@@ -252,7 +290,9 @@ public static class EventIngestionV3Endpoints
                     addedToBatch = true;
                     batchBytes += eventSize;
                     if (batch.Count < options.EventIngestionV3.MicroBatchSize)
+                    {
                         continue;
+                    }
 
                     response.Add(await ProcessBatchAsync(processor, concurrencyLimiter, batch, organization, project, cancellationToken));
                     batchBytes = 0;
@@ -260,7 +300,9 @@ public static class EventIngestionV3Endpoints
                 finally
                 {
                     if (!addedToBatch)
+                    {
                         bufferedRecord.Dispose();
+                    }
                 }
             }
 
@@ -270,7 +312,9 @@ public static class EventIngestionV3Endpoints
             }
 
             if (batch.Count > 0)
+            {
                 response.Add(await ProcessBatchAsync(processor, concurrencyLimiter, batch, organization, project, cancellationToken));
+            }
         }
         catch (EventIngestionV3RecordTooLargeException)
         {
@@ -323,7 +367,9 @@ public static class EventIngestionV3Endpoints
         }
 
         if (response.Received > 0 && response.Invalid == response.Received)
+        {
             return Problem(response, StatusCodes.Status422UnprocessableEntity, "The stream did not contain any valid event records.");
+        }
 
         return Results.Json(response, EventIngestionJsonContext.Default.EventIngestionV3Response);
     }
@@ -340,7 +386,9 @@ public static class EventIngestionV3Endpoints
         {
             using RateLimitLease lease = await concurrencyLimiter.AcquireProcessingAsync(organization.Id, cancellationToken);
             if (!lease.IsAcquired)
+            {
                 throw new ProcessingConcurrencyRejectedException();
+            }
 
             return await processor.ProcessBufferedAsync(batch, organization, project, cancellationToken);
         }
@@ -353,7 +401,10 @@ public static class EventIngestionV3Endpoints
     private static void DisposeBatch(List<EventIngestionV3BufferedRecord> batch)
     {
         foreach (EventIngestionV3BufferedRecord record in batch)
+        {
             record.Dispose();
+        }
+
         batch.Clear();
     }
 
@@ -362,9 +413,14 @@ public static class EventIngestionV3Endpoints
         EventIngestionV3RequestBodyState? compressedBodyState)
     {
         if (decompressedBody.RejectedStatusCode is { } decompressedStatusCode)
+        {
             return new BodyRejection(decompressedStatusCode, decompressedBody.RejectionReason);
+        }
+
         if (compressedBodyState?.CompressedBody.RejectedStatusCode is { } compressedStatusCode)
+        {
             return new BodyRejection(compressedStatusCode, compressedBodyState.CompressedBody.RejectionReason);
+        }
 
         return null;
     }

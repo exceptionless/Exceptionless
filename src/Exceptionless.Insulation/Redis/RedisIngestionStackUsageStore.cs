@@ -290,7 +290,9 @@ public sealed class RedisIngestionStackUsageStore(
         cancellationToken.ThrowIfCancellationRequested();
         var normalized = IngestionStackUsageStore.Normalize(usages);
         if (normalized.Count == 0)
+        {
             return [];
+        }
 
         var first = normalized[0];
         if (normalized.Any(usage => !String.Equals(usage.ProjectId, first.ProjectId, StringComparison.Ordinal)
@@ -313,13 +315,17 @@ public sealed class RedisIngestionStackUsageStore(
         RedisResult result = await _database.ScriptEvaluateAsync(SettleScript, keys, values);
         var resultValues = (RedisResult[]?)result ?? [];
         if (resultValues.Length != normalized.Count)
+        {
             throw new InvalidOperationException("Redis returned an invalid ingestion stack-statistics settlement result.");
+        }
 
         var newlySettled = new List<IngestionStackUsage>(normalized.Count);
         for (int index = 0; index < normalized.Count; index++)
         {
             if ((long)resultValues[index] == 1)
+            {
                 newlySettled.Add(normalized[index]);
+            }
         }
         // Always activate after the atomic settlement, including an idempotent retry that
         // accepted no new events. A previous attempt may have committed the aggregate and
@@ -339,7 +345,9 @@ public sealed class RedisIngestionStackUsageStore(
             Math.Min(maximumCount, MaximumProjectsPerClaim),
             cancellationToken);
         if (partitions.Count == 0)
+        {
             return [];
+        }
 
         var claims = new List<StackUsageClaim>(Math.Min(maximumCount, partitions.Count));
         for (int partitionIndex = 0; partitionIndex < partitions.Count && claims.Count < maximumCount; partitionIndex++)
@@ -356,7 +364,9 @@ public sealed class RedisIngestionStackUsageStore(
             var values = (RedisResult[]?)result ?? [];
             AggregateState state = ParseAggregateState(values, 4, "claim");
             if ((values.Length - 4) % 5 != 0)
+            {
                 throw new InvalidOperationException("Redis returned an invalid pending stack-statistics claim result.");
+            }
 
             for (int index = 4; index < values.Length; index += 5)
             {
@@ -372,7 +382,9 @@ public sealed class RedisIngestionStackUsageStore(
             }
 
             if (values.Length == 4)
+            {
                 await FinalizeRegistryAsync(partition, state);
+            }
         }
 
         return claims;
@@ -385,7 +397,9 @@ public sealed class RedisIngestionStackUsageStore(
         cancellationToken.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(claims);
         if (claims.Count == 0)
+        {
             return;
+        }
 
         foreach (var group in claims.GroupBy(claim => (claim.OrganizationId, claim.ProjectId, claim.LeaseToken)))
         {
@@ -484,10 +498,14 @@ public sealed class RedisIngestionStackUsageStore(
                 [maximumCount - partitions.Count, GetExpirationMilliseconds(_claimLease)]);
             var values = (RedisResult[]?)result ?? [];
             if (values.Length % 2 != 0)
+            {
                 throw new InvalidOperationException("Redis returned an invalid stack-statistics registry claim result.");
+            }
 
             for (int index = 0; index < values.Length; index += 2)
+            {
                 partitions.Add(DecodeRegistryMember(registryKey, (string)values[index]!, (long)values[index + 1]));
+            }
         }
         return partitions;
     }
@@ -503,7 +521,10 @@ public sealed class RedisIngestionStackUsageStore(
             [member, GetExpirationMilliseconds(_claimLease)]);
         var values = (RedisResult[]?)result ?? [];
         if (values.Length != 2)
+        {
             throw new InvalidOperationException("Redis returned an invalid stack-statistics registry reservation result.");
+        }
+
         return new RegistryReservation(registryKey, reservationKey, member, (string?)values[0] ?? String.Empty);
     }
 
@@ -527,7 +548,10 @@ public sealed class RedisIngestionStackUsageStore(
     private static AggregateState ParseAggregateState(RedisResult[] values, int minimumLength, string operation)
     {
         if (values.Length < minimumLength)
+        {
             throw new InvalidOperationException($"Redis returned an invalid stack-statistics {operation} result.");
+        }
+
         return new AggregateState(
             (long)values[0],
             (long)values[1],
@@ -551,7 +575,10 @@ public sealed class RedisIngestionStackUsageStore(
     {
         uint hash = 2166136261;
         foreach (char character in projectId)
+        {
             hash = (hash ^ character) * 16777619;
+        }
+
         return (int)(hash % RegistryShardCount);
     }
 
@@ -566,7 +593,10 @@ public sealed class RedisIngestionStackUsageStore(
         string organizationId = ReadPart(value, ref offset);
         string projectId = ReadPart(value, ref offset);
         if (offset != value.Length)
+        {
             throw new InvalidOperationException("Redis returned an invalid stack-statistics registry member.");
+        }
+
         return new RegistryPartition(
             registryKey,
             String.Concat(registryKey.ToString(), ":reservations"),
@@ -603,7 +633,10 @@ public sealed class RedisIngestionStackUsageStore(
         TimeSpan claimLease = NormalizeClaimLease(ingestionOptions.StackUsageClaimLease);
         long safetyTicks = checked(claimLease.Ticks + TimeSpan.FromDays(1).Ticks);
         if (idempotencyWindow.Ticks > TimeSpan.MaxValue.Ticks - safetyTicks)
+        {
             return TimeSpan.MaxValue;
+        }
+
         return idempotencyWindow.Add(TimeSpan.FromTicks(safetyTicks));
     }
 

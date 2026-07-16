@@ -5,8 +5,8 @@ using Exceptionless.Core.Models.Ingestion;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
-using Foundatio.Messaging;
 using Foundatio.Lock;
+using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Microsoft.Extensions.Logging;
 
@@ -63,7 +63,9 @@ public class UsageService
         // last usage save is the last time we processed usage
         var lastUsageSaveCache = await _cache.GetAsync<DateTime>("usage:last-organization-save");
         if (lastUsageSaveCache.HasValue)
+        {
             lastUsageSave = lastUsageSaveCache.Value.Add(_bucketSize);
+        }
 
         _logger.LogInformation("Saving organization usage starting from: {LastUsageSave}...", lastUsageSave);
 
@@ -72,7 +74,9 @@ public class UsageService
         var processingCutoffUtc = currentBucketUtc.Subtract(_bucketSize);
 
         if (bucketUtc >= processingCutoffUtc)
+        {
             return;
+        }
 
         // do not process current bucket, should only be processing buckets whose window of time are complete
         while (bucketUtc < processingCutoffUtc)
@@ -85,13 +89,17 @@ public class UsageService
                     TimeSpan.FromMinutes(1),
                     TimeSpan.FromSeconds(30));
                 if (usageLock is null)
+                {
                     throw new InvalidOperationException($"Unable to acquire usage bucket lock for organization '{organizationId}'.");
+                }
 
                 var organization = await _organizationRepository.GetByIdAsync(organizationId);
                 if (organization is null)
+                {
                     return;
+                }
 
-                _logger.LogInformation("Saving org ({OrganizationId}-{OrganizationName}) event usage for time bucket: {BucketUtc}...", organizationId, organization.Name, pendingBucketUtc);
+                _logger.LogInformation("Saving organization ({OrganizationId}-{OrganizationName}) event usage for time bucket: {BucketUtc}...", organizationId, organization.Name, pendingBucketUtc);
 
                 var processed = await _cache.GetAsync<bool>(GetV3BucketProcessedKey(pendingBucketUtc, organizationId));
                 if (processed is { HasValue: true, Value: true })
@@ -115,7 +123,9 @@ public class UsageService
 
                 bool hasIngestion = bucketTotal > 0 || (bucketBlocked?.Value ?? 0) > 0 || (bucketDiscarded?.Value ?? 0) > 0 || (bucketTooBig?.Value ?? 0) > 0;
                 if (hasIngestion)
+                {
                     organization.LastEventDateUtc = _timeProvider.GetUtcNow().UtcDateTime;
+                }
 
                 var usage = organization.GetUsage(pendingBucketUtc, _timeProvider);
                 usage.Limit = organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
@@ -156,7 +166,9 @@ public class UsageService
         // last usage save is the last time we processed usage
         var lastUsageSaveCache = await _cache.GetAsync<DateTime>("usage:last-project-save");
         if (lastUsageSaveCache.HasValue)
+        {
             lastUsageSave = lastUsageSaveCache.Value.Add(_bucketSize);
+        }
 
         _logger.LogInformation("Saving project usage starting from: {LastUsageSave}...", lastUsageSave);
 
@@ -165,7 +177,9 @@ public class UsageService
         var processingCutoffUtc = currentBucketUtc.Subtract(_bucketSize);
 
         if (bucketUtc >= processingCutoffUtc)
+        {
             return;
+        }
 
         // do not process current bucket, should only be processing buckets whose window of time are complete
         while (bucketUtc < processingCutoffUtc)
@@ -175,19 +189,25 @@ public class UsageService
             {
                 var project = await _projectRepository.GetByIdAsync(projectId);
                 if (project is null)
+                {
                     return;
+                }
 
                 await using var usageLock = await _lockProvider.TryAcquireAsync(
                     GetUsageBucketLockKey(pendingBucketUtc, project.OrganizationId, projectId),
                     TimeSpan.FromMinutes(1),
                     TimeSpan.FromSeconds(30));
                 if (usageLock is null)
+                {
                     throw new InvalidOperationException($"Unable to acquire usage bucket lock for project '{projectId}'.");
+                }
 
                 // The project may have been saved while this worker waited for the lock.
                 project = await _projectRepository.GetByIdAsync(projectId);
                 if (project is null)
+                {
                     return;
+                }
 
                 _logger.LogInformation("Saving project ({ProjectId}-{ProjectName}) event usage for time bucket: {BucketUtc}...", projectId, project.Name, pendingBucketUtc);
 
@@ -213,7 +233,9 @@ public class UsageService
 
                 bool hasIngestion = bucketTotal > 0 || (bucketBlocked?.Value ?? 0) > 0 || (bucketDiscarded?.Value ?? 0) > 0 || (bucketTooBig?.Value ?? 0) > 0;
                 if (hasIngestion)
+                {
                     project.LastEventDateUtc = _timeProvider.GetUtcNow().UtcDateTime;
+                }
 
                 (string OrganizationId, Organization? Organization) context = (OrganizationId: project.OrganizationId, Organization: null);
                 int maxEventsPerMonth = await GetMaxEventsPerMonthAsync(context);
@@ -253,12 +275,16 @@ public class UsageService
         {
             var pendingIds = await _cache.GetListAsync<string>(discoveryKey);
             if (!pendingIds.HasValue || pendingIds.Value.Count == 0)
+            {
                 return;
+            }
 
             foreach (string pendingId in pendingIds.Value.Distinct(StringComparer.Ordinal))
             {
                 if (!String.IsNullOrEmpty(pendingId))
+                {
                     await saveAsync(pendingId);
+                }
 
                 // A discovery id is acknowledged only after its durable save, processed marker,
                 // and cache cleanup all succeed. Failed and not-yet-visited ids remain for retry.
@@ -305,14 +331,18 @@ public class UsageService
         int modifiedMaxEvents = modified.GetMaxEventsPerMonthWithBonus(_timeProvider);
         int originalMaxEvents = original.GetMaxEventsPerMonthWithBonus(_timeProvider);
         if (modifiedMaxEvents == originalMaxEvents)
+        {
             return;
+        }
 
         bool isMonthlyLimitIncrease = modifiedMaxEvents < 0 || (originalMaxEvents >= 0 && modifiedMaxEvents > originalMaxEvents);
         if (isMonthlyLimitIncrease)
         {
             // A higher monthly limit only resets monthly notification state when it actually ends the current overage.
             if (!modified.IsOverMonthlyLimit(_timeProvider))
+            {
                 await _notificationService.RemoveOrganizationNotificationSentAsync(modified.Id, isOverMonthlyLimit: true);
+            }
 
             await _cache.RemoveAsync(GetThrottledKey(utcNow, modified.Id));
             return;
@@ -328,13 +358,17 @@ public class UsageService
 
         int bucketTotal = await GetBucketTotalAsync(utcNow, modified.Id);
         if (bucketTotal == 0)
+        {
             return;
+        }
 
         int bucketLimit = GetBucketEventLimit(modifiedMaxEvents);
 
         // unlimited
         if (bucketLimit < 0)
+        {
             return;
+        }
 
         if (bucketTotal >= bucketLimit)
         {
@@ -360,7 +394,9 @@ public class UsageService
         else
         {
             if (context.Organization is null)
+            {
                 context.Organization = await _organizationRepository.GetByIdAsync(context.OrganizationId, o => o.Cache());
+            }
 
             if (context.Organization is not null)
             {
@@ -382,7 +418,9 @@ public class UsageService
         // last usage save is the last time we processed usage
         var lastUsageSaveCache = await _cache.GetAsync<DateTime>(projectId is null ? "usage:last-organization-save" : "usage:last-project-save");
         if (lastUsageSaveCache.HasValue)
+        {
             lastUsageSave = lastUsageSaveCache.Value.Add(_bucketSize);
+        }
 
         var bucketUtc = lastUsageSave;
         var currentBucketUtc = utcNow.Floor(_bucketSize);
@@ -393,7 +431,9 @@ public class UsageService
         {
             var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
             if (organization is null)
+            {
                 throw new UsageServiceException($"Organization '{organizationId}' not found.");
+            }
 
             organization.TrimUsage(_timeProvider);
 
@@ -408,7 +448,9 @@ public class UsageService
         {
             var project = await _projectRepository.GetByIdAsync(projectId, o => o.Cache());
             if (project is null)
+            {
                 throw new UsageServiceException($"Project '{projectId}' not found.");
+            }
 
             project.TrimUsage(_timeProvider);
 
@@ -463,7 +505,9 @@ public class UsageService
 
         // check for unlimited (-1) events
         if (maxEventsPerMonth < 0)
+        {
             return Int32.MaxValue;
+        }
 
         // These values are independent Redis reads. Issue them together because this method runs
         // under the short quota-decision lock for V3 ingestion.
@@ -481,10 +525,14 @@ public class UsageService
         else
         {
             if (context.Organization is null)
+            {
                 context.Organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
+            }
 
             if (context.Organization is null)
+            {
                 throw new UsageServiceException($"Organization '{organizationId}' not found.");
+            }
 
             currentTotal = context.Organization.GetCurrentUsage(_timeProvider).Total;
             await _cache.SetAsync(GetTotalCacheKey(utcNow, organizationId), currentTotal, TimeSpan.FromHours(8));
@@ -492,7 +540,9 @@ public class UsageService
 
         // if already over limit, return
         if (currentTotal >= maxEventsPerMonth)
+        {
             return 0;
+        }
 
         // get current bucket counter and add it to total
         int bucketTotal = await bucketTotalTask;
@@ -504,7 +554,9 @@ public class UsageService
 
         // check to see if adding this bucket puts the org over the limit
         if (currentTotal >= maxEventsPerMonth)
+        {
             return 0;
+        }
 
         // get a bucket level limit to help spread the events out more evenly (allows bursting)
         int bucketLimit = GetBucketEventLimit(maxEventsPerMonth);
@@ -518,7 +570,9 @@ public class UsageService
     {
         string reservationId = Guid.NewGuid().ToString("N");
         if (eventCount <= 0)
+        {
             return new EventIngestionReservation(reservationId, organizationId, 0);
+        }
 
         // Availability and the Redis lease must be one serialized decision. Otherwise a delayed
         // caller can retain an old availability snapshot until a prior request has committed and
@@ -529,11 +583,16 @@ public class UsageService
             TimeSpan.FromMinutes(1),
             TimeSpan.FromSeconds(30));
         if (quotaLock is null)
+        {
             throw new InvalidOperationException($"Unable to acquire the ingestion quota lock for organization '{organizationId}'.");
+        }
 
         int maxEventsPerMonth = await GetMaxEventsPerMonthAsync(organizationId);
         if (maxEventsPerMonth < 0)
+        {
             return EventIngestionReservation.Unlimited(organizationId, eventCount);
+        }
+
         int eventsLeft = await GetEventsLeftAsync(organizationId, maxEventsPerMonth);
         int admittedCount = await _ingestionQuotaStore.ReserveAsync(
             organizationId,
@@ -547,7 +606,9 @@ public class UsageService
     public async Task ReleaseEventReservationAsync(EventIngestionReservation reservation)
     {
         if (reservation.Count <= 0 || reservation.IsUnlimited)
+        {
             return;
+        }
 
         await _ingestionQuotaStore.ReleaseAsync(reservation.OrganizationId, reservation.Id);
     }
@@ -555,7 +616,9 @@ public class UsageService
     public async Task IncrementTotalAsync(string organizationId, string projectId, int eventCount = 1)
     {
         if (eventCount <= 0)
+        {
             return;
+        }
 
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
 
@@ -573,7 +636,9 @@ public class UsageService
         {
             long monthTotal = currentTotalCache.Value + bucketTotal;
             if (monthTotal >= maxEventsPerMonth && monthTotal - maxEventsPerMonth < eventCount)
+            {
                 await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId });
+            }
         }
 
         if (bucketTotal >= bucketLimit && bucketTotal - bucketLimit < eventCount)
@@ -587,7 +652,9 @@ public class UsageService
     public async Task IncrementTotalAsync(string organizationId, string projectId, IReadOnlyCollection<EventUsageSettlement> settlements)
     {
         if (settlements.Count == 0)
+        {
             return;
+        }
 
         // Only the writer that successfully creates a durable event may submit a settlement.
         // Keep a final age guard so delayed recovery cannot reconstruct a closed bucket. This
@@ -630,7 +697,9 @@ public class UsageService
                 TimeSpan.FromMinutes(1),
                 TimeSpan.FromSeconds(30));
             if (usageLock is null)
+            {
                 throw new InvalidOperationException($"Unable to acquire usage bucket locks for project '{projectId}'.");
+            }
 
             var organizationProcessedTask = _cache.GetAsync<bool>(GetV3BucketProcessedKey(bucket.Key, organizationId));
             var projectProcessedTask = _cache.GetAsync<bool>(GetV3BucketProcessedKey(bucket.Key, organizationId, projectId));
@@ -657,7 +726,9 @@ public class UsageService
     {
         int maxEventsPerMonth = await GetMaxEventsPerMonthAsync(organizationId);
         if (maxEventsPerMonth < 0)
+        {
             return;
+        }
 
         int bucketLimit = GetBucketEventLimit(maxEventsPerMonth);
         var currentTotalCache = await _cache.GetAsync<int>(GetTotalCacheKey(bucketUtc, organizationId));
@@ -665,7 +736,9 @@ public class UsageService
         {
             long monthTotal = currentTotalCache.Value + bucketTotal;
             if (monthTotal >= maxEventsPerMonth && monthTotal - maxEventsPerMonth < eventCount)
+            {
                 await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId });
+            }
         }
 
         if (bucketTotal >= bucketLimit && bucketTotal - bucketLimit < eventCount)
@@ -678,7 +751,9 @@ public class UsageService
     public async Task IncrementBlockedAsync(string organizationId, string? projectId, int eventCount = 1)
     {
         if (eventCount <= 0)
+        {
             return;
+        }
 
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
 
@@ -687,7 +762,9 @@ public class UsageService
 
         await _cache.ListAddAsync(GetOrganizationSetKey(utcNow), organizationId, TimeSpan.FromHours(8));
         if (projectId is not null)
+        {
             await _cache.ListAddAsync(GetProjectSetKey(utcNow), projectId, TimeSpan.FromHours(8));
+        }
 
         AppDiagnostics.EventsBlocked.Add(eventCount);
     }
@@ -697,7 +774,9 @@ public class UsageService
     public async Task IncrementDiscardedAsync(string organizationId, string projectId, int eventCount = 1)
     {
         if (eventCount <= 0)
+        {
             return;
+        }
 
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
 
@@ -719,7 +798,9 @@ public class UsageService
 
         await _cache.ListAddAsync(GetOrganizationSetKey(utcNow), organizationId, TimeSpan.FromHours(8));
         if (projectId is not null)
+        {
             await _cache.ListAddAsync(GetProjectSetKey(utcNow), projectId, TimeSpan.FromHours(8));
+        }
 
         AppDiagnostics.PostTooBig.Add(1);
     }
@@ -727,7 +808,9 @@ public class UsageService
     public async Task IncrementDeletedAsync(string organizationId, string? projectId, int eventCount = 1)
     {
         if (eventCount <= 0)
+        {
             return;
+        }
 
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
 
@@ -750,12 +833,16 @@ public class UsageService
     private int GetBucketEventLimit(int maxEventsPerMonth)
     {
         if (maxEventsPerMonth < 5000)
+        {
             return maxEventsPerMonth;
+        }
 
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         var timeLeftInMonth = utcNow.EndOfMonth() - utcNow;
         if (timeLeftInMonth < TimeSpan.FromDays(1))
+        {
             return maxEventsPerMonth;
+        }
 
         double bucketsLeftInMonth = timeLeftInMonth / _bucketSize;
 
@@ -768,7 +855,9 @@ public class UsageService
         int bucket = GetTotalBucket(utcTime);
 
         if (String.IsNullOrEmpty(projectId))
+        {
             return $"usage:total:{bucket}:{organizationId}:total";
+        }
 
         return $"usage:total:{bucket}:{organizationId}:{projectId}:total";
     }
@@ -778,7 +867,9 @@ public class UsageService
         int bucket = GetCurrentBucket(utcTime);
 
         if (String.IsNullOrEmpty(projectId))
+        {
             return $"usage:{bucket}:{organizationId}:total";
+        }
 
         return $"usage:{bucket}:{organizationId}:{projectId}:total";
     }
@@ -810,7 +901,9 @@ public class UsageService
         int bucket = GetCurrentBucket(utcTime);
 
         if (String.IsNullOrEmpty(projectId))
+        {
             return $"usage:{bucket}:{organizationId}:blocked";
+        }
 
         return $"usage:{bucket}:{organizationId}:{projectId}:blocked";
     }
@@ -820,7 +913,9 @@ public class UsageService
         int bucket = GetCurrentBucket(utcTime);
 
         if (String.IsNullOrEmpty(projectId))
+        {
             return $"usage:{bucket}:{organizationId}:discarded";
+        }
 
         return $"usage:{bucket}:{organizationId}:{projectId}:discarded";
     }
@@ -830,7 +925,9 @@ public class UsageService
         int bucket = GetCurrentBucket(utcTime);
 
         if (String.IsNullOrEmpty(projectId))
+        {
             return $"usage:{bucket}:{organizationId}:toobig";
+        }
 
         return $"usage:{bucket}:{organizationId}:{projectId}:toobig";
     }
@@ -840,7 +937,9 @@ public class UsageService
         int bucket = GetCurrentBucket(utcTime);
 
         if (String.IsNullOrEmpty(projectId))
+        {
             return $"usage:{bucket}:{organizationId}:deleted";
+        }
 
         return $"usage:{bucket}:{organizationId}:{projectId}:deleted";
     }

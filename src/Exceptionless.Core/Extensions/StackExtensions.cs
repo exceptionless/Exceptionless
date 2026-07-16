@@ -26,13 +26,19 @@ public static class StackExtensions
     public static Stack ApplyOffset(this Stack stack, TimeSpan offset)
     {
         if (stack.DateFixed.HasValue)
+        {
             stack.DateFixed = stack.DateFixed.Value.Add(offset);
+        }
 
         if (stack.FirstOccurrence != DateTime.MinValue)
+        {
             stack.FirstOccurrence = stack.FirstOccurrence.Add(offset);
+        }
 
         if (stack.LastOccurrence != DateTime.MinValue)
+        {
             stack.LastOccurrence = stack.LastOccurrence.Add(offset);
+        }
 
         return stack;
     }
@@ -40,7 +46,9 @@ public static class StackExtensions
     public static string? GetTypeName(this Stack stack)
     {
         if (stack.SignatureInfo.TryGetValue("ExceptionType", out string? type) && !String.IsNullOrEmpty(type))
+        {
             return type.TypeName();
+        }
 
         return type;
     }

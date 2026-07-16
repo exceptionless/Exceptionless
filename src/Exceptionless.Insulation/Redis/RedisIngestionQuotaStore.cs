@@ -99,9 +99,14 @@ public sealed class RedisIngestionQuotaStore(
         ArgumentOutOfRangeException.ThrowIfNegative(requestedCount);
         ArgumentOutOfRangeException.ThrowIfNegative(availableCount);
         if (expiresIn <= TimeSpan.Zero)
+        {
             throw new ArgumentOutOfRangeException(nameof(expiresIn));
+        }
+
         if (requestedCount == 0)
+        {
             return 0;
+        }
 
         RedisKey[] keys = GetKeys(organizationId);
         long nowMilliseconds = timeProvider.GetUtcNow().ToUnixTimeMilliseconds();

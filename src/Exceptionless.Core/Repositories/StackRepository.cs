@@ -2,14 +2,14 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Ingestion;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Services;
 using Exceptionless.Core.Validation;
+using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
 using Microsoft.Extensions.Logging;
-using Foundatio.Caching;
-using Exceptionless.Core.Services;
 
 namespace Exceptionless.Core.Repositories;
 
@@ -99,7 +99,9 @@ ctx._source.total_occurrences += params.count;";
         {
             bool modified = await PatchAsync(stackId, operation, o => o.Notifications(false));
             if (!modified)
+            {
                 return false;
+            }
         }
         catch (DocumentNotFoundException)
         {
@@ -107,7 +109,9 @@ ctx._source.total_occurrences += params.count;";
         }
 
         if (sendNotifications)
+        {
             await PublishMessageAsync(CreateEntityChanged(ChangeType.Saved, organizationId, projectId, null, stackId));
+        }
 
         return true;
     }
@@ -180,7 +184,9 @@ if (appliedSequence >= params.settlementSequence) {
         }
 
         if (modified && sendNotifications)
+        {
             await PublishMessageAsync(CreateEntityChanged(ChangeType.Saved, organizationId, projectId, null, stackId));
+        }
     }
 
     public async Task<bool> SetEventCounterAsync(string stackId, DateTime firstOccurrenceUtc, DateTime lastOccurrenceUtc, long totalOccurrences, bool sendNotifications = true)
@@ -243,7 +249,9 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
     public async Task<IReadOnlyDictionary<string, StackRoute>> GetStackRoutesBySignatureHashAsync(string projectId, IReadOnlyCollection<string> signatureHashes)
     {
         if (signatureHashes.Count == 0)
+        {
             return new Dictionary<string, StackRoute>();
+        }
 
         var results = await FindAsync(
             q => q.Project(projectId).SignatureHash(signatureHashes).Include(
@@ -262,7 +270,9 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
         foreach (var stack in results.Documents)
         {
             if (!String.IsNullOrEmpty(stack.SignatureHash))
+            {
                 routes[stack.SignatureHash] = StackRouteResolver.CreateRoute(stack);
+            }
         }
 
         return routes;
@@ -324,7 +334,9 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
         }
 
         if (cacheEntries.Count > 0)
+        {
             await AddDocumentsToCacheWithKeyAsync(cacheEntries, options.GetExpiresIn());
+        }
 
         // Route resolver misses carry the generation observed before their repository lookup
         // and populate the route cache themselves. Generic repository read-through cannot
@@ -375,13 +387,17 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
                 .Distinct(StringComparer.Ordinal)
                 .ToArray();
             if (obsoleteRouteKeys.Length > 0)
+            {
                 await _stackRouteCache.RemoveAllAsync(obsoleteRouteKeys, _appOptions.EventIngestionV3.StackRouteCacheDuration);
+            }
 
             var routeEntries = new Dictionary<string, StackRouteCacheEntry>();
             foreach (var stack in documents.Select(d => d.Value))
             {
                 if (stack.IsDeleted || String.IsNullOrEmpty(stack.ProjectId) || String.IsNullOrEmpty(stack.SignatureHash))
+                {
                     continue;
+                }
 
                 routeEntries[GetStackRouteCacheKey(
                     stack.ProjectId,
@@ -389,7 +405,9 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
                     projectGenerations[stack.ProjectId])] = StackRouteCacheEntry.FromRoute(StackRouteResolver.CreateRoute(stack));
             }
             if (routeEntries.Count > 0)
+            {
                 await _stackRouteCache.SetAllAuthoritativeAsync(routeEntries, _appOptions.EventIngestionV3.StackRouteCacheDuration);
+            }
         }
         else if (changeType is ChangeType.Removed)
         {
