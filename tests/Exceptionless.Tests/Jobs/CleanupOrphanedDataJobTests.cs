@@ -391,9 +391,10 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task RunAsync_OrphanedEventsAtAndBeforeLookbackBoundary_DeletesOnlyEventsWithinLookback()
+    public async Task RunAsync_OrphanedEventsAcrossOccurrenceDates_DeletesOnlyEventsWithinCreatedUtcLookback()
     {
-        TimeProvider.SetUtcNow(DateTimeOffset.UtcNow);
+        var now = DateTimeOffset.UtcNow;
+        TimeProvider.SetUtcNow(now);
 
         var organization = await _organizationRepository.AddAsync(
             _organizationData.GenerateSampleOrganization(_billingManager, _plans),
@@ -407,30 +408,33 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
 
         var cutoffUtc = TimeProvider.GetUtcNow().UtcDateTime.Subtract(CleanupOrphanedDataJob.OrphanedEventLookback);
         var beforeCutoffUtc = cutoffUtc.AddMilliseconds(-1);
-        var validEvent = _eventData.GenerateEvent(organization.Id, project.Id, stack.Id);
+        var validEvent = _eventData.GenerateEvent(organization.Id, project.Id, stack.Id, occurrenceDate: now);
 
         string missingStackId = ObjectId.GenerateNewId().ToString();
-        var stackOrphanAtCutoff = _eventData.GenerateEvent(organization.Id, project.Id, missingStackId);
+        var stackOrphanAtCutoff = _eventData.GenerateEvent(organization.Id, project.Id, missingStackId, occurrenceDate: now);
         stackOrphanAtCutoff.CreatedUtc = cutoffUtc;
-        var stackOrphanBeforeCutoff = _eventData.GenerateEvent(organization.Id, project.Id, missingStackId);
+        var stackOrphanBeforeCutoff = _eventData.GenerateEvent(organization.Id, project.Id, missingStackId, occurrenceDate: now);
         stackOrphanBeforeCutoff.CreatedUtc = beforeCutoffUtc;
+        var stackOrphanWithOldOccurrence = _eventData.GenerateEvent(organization.Id, project.Id, missingStackId, occurrenceDate: now.Subtract(TimeSpan.FromDays(30)));
+        stackOrphanWithOldOccurrence.CreatedUtc = now.UtcDateTime;
 
         string missingProjectId = ObjectId.GenerateNewId().ToString();
-        var projectOrphanAtCutoff = _eventData.GenerateEvent(organization.Id, missingProjectId, stack.Id);
+        var projectOrphanAtCutoff = _eventData.GenerateEvent(organization.Id, missingProjectId, stack.Id, occurrenceDate: now);
         projectOrphanAtCutoff.CreatedUtc = cutoffUtc;
-        var projectOrphanBeforeCutoff = _eventData.GenerateEvent(organization.Id, missingProjectId, stack.Id);
+        var projectOrphanBeforeCutoff = _eventData.GenerateEvent(organization.Id, missingProjectId, stack.Id, occurrenceDate: now);
         projectOrphanBeforeCutoff.CreatedUtc = beforeCutoffUtc;
 
         string missingOrganizationId = ObjectId.GenerateNewId().ToString();
-        var organizationOrphanAtCutoff = _eventData.GenerateEvent(missingOrganizationId, project.Id, stack.Id);
+        var organizationOrphanAtCutoff = _eventData.GenerateEvent(missingOrganizationId, project.Id, stack.Id, occurrenceDate: now);
         organizationOrphanAtCutoff.CreatedUtc = cutoffUtc;
-        var organizationOrphanBeforeCutoff = _eventData.GenerateEvent(missingOrganizationId, project.Id, stack.Id);
+        var organizationOrphanBeforeCutoff = _eventData.GenerateEvent(missingOrganizationId, project.Id, stack.Id, occurrenceDate: now);
         organizationOrphanBeforeCutoff.CreatedUtc = beforeCutoffUtc;
 
         await _eventRepository.AddAsync([
             validEvent,
             stackOrphanAtCutoff,
             stackOrphanBeforeCutoff,
+            stackOrphanWithOldOccurrence,
             projectOrphanAtCutoff,
             projectOrphanBeforeCutoff,
             organizationOrphanAtCutoff,
@@ -446,6 +450,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         Assert.Contains(remainingEvents.Documents, e => e.Id == projectOrphanBeforeCutoff.Id);
         Assert.Contains(remainingEvents.Documents, e => e.Id == organizationOrphanBeforeCutoff.Id);
         Assert.DoesNotContain(remainingEvents.Documents, e => e.Id == stackOrphanAtCutoff.Id);
+        Assert.DoesNotContain(remainingEvents.Documents, e => e.Id == stackOrphanWithOldOccurrence.Id);
         Assert.DoesNotContain(remainingEvents.Documents, e => e.Id == projectOrphanAtCutoff.Id);
         Assert.DoesNotContain(remainingEvents.Documents, e => e.Id == organizationOrphanAtCutoff.Id);
     }
