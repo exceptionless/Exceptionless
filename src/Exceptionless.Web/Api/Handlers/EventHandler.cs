@@ -618,7 +618,9 @@ public class EventHandler(
             }
 
             if (trackProcessing && result.QueueEntryId is { Length: > 0 } queueEntryId)
+            {
                 httpContext.Response.Headers[Headers.EventPostId] = queueEntryId;
+            }
         }
         catch (Exception ex)
         {
