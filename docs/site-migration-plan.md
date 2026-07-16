@@ -66,8 +66,9 @@ docs/
     index.vto               # news index route
   public/                   # static assets copied to output
   scripts/
-    site-collections.ts     # normalizes Lume search page data into docs/news collections
-    postbuild.ts            # copies assets, rewrites refs, writes feeds/sitemap/LLMS
+    site-collections.ts     # normalizes Lume page data into docs/news collections
+    postbuild.ts            # copies assets, rewrites refs, writes feeds/sitemap/LLMS/search
+    site-search.test.js     # focused ranking and generated-code excerpt coverage
     serve.ts                # serves final _site output with clean URLs
     verify-links.ts         # verifies generated local links, anchors, CSS URLs, srcset, and assets
   site-data.json.vto        # temporary Lume-rendered metadata page consumed by postbuild
@@ -85,18 +86,20 @@ Run commands from `docs/`.
 {
   "tasks": {
     "lume": "deno run -P=lume lume/cli.ts",
-    "build": "deno task lume && deno task postbuild",
-    "serve": "deno task build && deno run --allow-read=_site --allow-net=localhost,127.0.0.1 scripts/serve.ts",
+    "build": "deno task lume && deno task postbuild && deno bundle --platform=browser --minify --config=deno.json scripts/browser/exceptionless-client.ts -o _site/assets/js/exceptionless-client.js",
+    "serve": "deno task build && deno run --allow-read=_site --allow-net=localhost,127.0.0.1 --allow-env=PORT scripts/serve.ts",
     "postbuild": "deno run --allow-read --allow-write scripts/postbuild.ts",
-    "check": "deno check _config.ts scripts/site-collections.ts scripts/postbuild.ts scripts/serve.ts scripts/verify-links.ts",
-    "verify": "deno task build && deno run --allow-read scripts/verify-links.ts"
+    "check": "deno check _config.ts scripts/browser/exceptionless-client.ts scripts/site-collections.ts scripts/postbuild.ts scripts/serve.ts scripts/verify-links.ts scripts/find-unused.ts",
+    "verify": "deno task build && deno run --allow-read scripts/verify-links.ts",
+    "unused": "deno task build && deno run --allow-read scripts/find-unused.ts"
   }
 }
 ```
 
 `serve` intentionally builds first and then serves `_site`, so local QA uses the same postbuild output that would be
-deployed. Do not use a long-running serve command for normal static checks; use `deno task build`, `deno task check`,
-and `deno task verify` first.
+deployed. It accepts `--port` and the `PORT` environment variable for Codex/Aspire integration. Do not use a
+long-running serve command for normal static checks; use `deno task build`, `deno task check`, and `deno task verify`
+first.
 
 ## Lume Configuration
 
@@ -228,6 +231,58 @@ because each composition is used once. Shared site chrome stays in `layouts/base
 Create a reusable component only when it is genuinely reused by multiple pages or removes meaningful duplication. Do not
 create a fragment just to move a single route's HTML elsewhere.
 
+## Site Search
+
+Search is backed by a generated `/search-index.json` file and a base-layout modal. There is no dedicated search page.
+The normal docs build renders the Lume site, then `postbuild.ts` indexes final rendered HTML before redirect alias pages
+are generated.
+
+Commands:
+
+- `deno task build` builds the site and generates `/search-index.json`.
+- `deno task build` also bundles the static-site Exceptionless browser bootstrap from the Deno npm dependency.
+- The Codex environment exposes a `Run Lume Docs` action on port 7141.
+- The Aspire AppHost exposes a `Docs` resource at `http://localhost:7141` unless a scoped worktree assigns an ephemeral
+  free port.
+
+Search implementation notes:
+
+- `postbuild.ts` indexes rendered HTML routes and skips `/404.html`, `/news/`, paged news indexes, category pages, and
+  the removed `/search/` route.
+- The docs layout's generic `Documentation` page heading, responsive table-of-contents control, and sidebar navigation
+  use `data-search-ignore` so results use the actual content page title and article text.
+- `public/assets/js/site-search.js` lazy-loads `/search-index.json`, opens the search modal from the header, keyboard
+  shortcut, or docs sidebar trigger, and supports debounced input, excerpts, highlight marks, clear, and keyboard
+  selection.
+- The docs sidebar search trigger opens the same modal. It does not navigate to `/search/?q=...`.
+- The docs site uses the migrated Bootstrap-era theme CSS, not Tailwind. Keep search-specific CSS limited to modal and
+  result presentation that the legacy theme does not already provide.
+
+## Static Site Error Reporting
+
+The migrated static site can load a small Exceptionless browser-client bootstrap at `/assets/js/exceptionless-client.js`.
+`deno task build` bundles this file from `scripts/browser/exceptionless-client.ts` and the Deno npm dependency
+`@exceptionless/browser@3.2.1`; it does not import the browser client from a runtime CDN. The layout emits this script
+only when configured with a public browser API key at build time.
+
+Build-time configuration:
+
+- `EXCEPTIONLESS_SITE_API_KEY`
+- `EXCEPTIONLESS_SITE_SERVER_URL`
+- `EXCEPTIONLESS_SITE_VERSION`
+
+Google Tag Manager is part of the public site layout and loads by default. Local Codex and Aspire docs runs do not force
+any Exceptionless configuration; the browser client script is not emitted unless an API key is supplied. Website
+deployments require the repository variable, while pull-request CI exercises both configured and unconfigured builds.
+Website CI pins Deno 2.5.7 so the experimental bundle output cannot drift with the moving `lts` channel.
+
+The bootstrap disables private-information capture, omits query strings and fragments from page context, and does not
+enable session heartbeats. This keeps the public site integration focused on errors without collecting cookies or
+creating telemetry failures when the collector is unavailable.
+
+Use a client-safe public API key and do not use a privileged server key. The Svelte app has its own
+`@exceptionless/browser` startup path in `src/Exceptionless.Web/ClientApp/src/hooks.client.ts`.
+
 ## Build Pipeline
 
 `deno task build` does this automatically:
@@ -242,7 +297,8 @@ create a fragment just to move a single route's HTML elsewhere.
 8. `postbuild.ts` generates `feed.xml` from news Markdown.
 9. `postbuild.ts` generates `sitemap.xml` from rendered routes.
 10. `postbuild.ts` generates docs-only `llms.txt` and `llms-full.txt`.
-11. `postbuild.ts` generates redirect aliases for legacy links.
+11. `postbuild.ts` writes `/search-index.json` from rendered HTML routes.
+12. `postbuild.ts` generates redirect aliases for legacy links.
 
 ## Verification Gates
 
@@ -284,11 +340,21 @@ Implementation notes from the verification pass:
 
 - Markdown headings receive deterministic legacy-style IDs during Lume Markdown rendering so existing same-page anchors continue to work.
 - `docs/docs/demo-formatting.md` is `url: false` and is intentionally not published.
-- `/search/` exists as a migrated route so sitemap parity remains exact.
+- Site search uses `/search-index.json` and the base-layout modal instead of publishing a placeholder `/search/` page.
 - `postbuild.ts` contains the small migration normalizers required for parity: migrated image-reference rewrites, duplicate news H1 removal, standalone YouTube URL embed rendering, Prism `<pre>` class normalization, news index/RSS/sitemap/LLMS generation, internal non-doc link stripping for `llms-full.txt`, and redirect alias generation.
 - The legacy Fancybox stylesheet references `/assets/images/fancybox.png` and `/assets/images/fancybox-x.png`; both are committed static assets.
 - Fancybox uses the original 1.3.4 plugin plus a tiny jQuery 1.9 browser-compat shim because the WordPress-patched Easy FancyBox script requires `DOMPurify`.
 - A mobile footer override removes the legacy 20px horizontal overflow caused by the old negative-margin footer rule.
+
+## Verified Search Upgrade - 2026-07-08
+
+- Search is generated by `postbuild.ts` as `/search-index.json`; no Pagefind task, package, worker, or `/search/` page
+  is required.
+- The header search button, Ctrl/Command+K, `/`, and the docs sidebar search form all open the same modal.
+- The modal lazy-loads the JSON index, returns ranked results with excerpts and highlights, supports clear, Enter,
+  Escape, and Up/Down keyboard behavior, and leaves the current page URL unchanged.
+- The index skips redirect aliases and repeated docs navigation chrome.
+
 ## Core Principle
 
 The maintained source should be Markdown, metadata, shared Vento layouts, route-level Vento pages where needed, and

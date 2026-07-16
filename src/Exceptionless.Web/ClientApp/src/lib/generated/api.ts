@@ -264,6 +264,10 @@ export interface OAuthAuthorizeForm {
   organization_ids?: string[] | null;
 }
 
+export interface OAuthAuthorizeResponse {
+  redirect_uri: string;
+}
+
 export interface OAuthClientRegistrationRequest {
   redirect_uris?: string[] | null;
   client_name?: null | string;
@@ -285,12 +289,32 @@ export interface OAuthClientRegistrationResponse {
   client_id_issued_at: number;
 }
 
+export interface OAuthErrorResponse {
+  error: string;
+  error_description?: null | string;
+}
+
 export interface OAuthProtectedResourceMetadata {
   resource: string;
   authorization_servers: string[];
   scopes_supported: string[];
   bearer_methods_supported: string[];
   resource_documentation: string;
+}
+
+export interface OAuthRevokeForm {
+  token?: null | string;
+  client_id?: null | string;
+}
+
+export interface OAuthTokenForm {
+  grant_type: string;
+  code?: null | string;
+  redirect_uri?: null | string;
+  client_id?: null | string;
+  code_verifier?: null | string;
+  refresh_token?: null | string;
+  resource?: null | string;
 }
 
 export interface OAuthTokenResponse {
@@ -488,11 +512,6 @@ export interface Stack {
   updated_utc: string;
   is_deleted: boolean;
   allow_notifications: boolean;
-}
-
-export interface StringStringValuesKeyValuePair {
-  key?: null | string;
-  value: string[];
 }
 
 export interface StringValueFromBody {
