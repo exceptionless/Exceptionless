@@ -169,7 +169,7 @@ public sealed class SourceMapService : IDisposable
 
     private async Task<bool> SymbolicateFrameAsync(SourceMapRequest request, StackFrame frame, CancellationToken cancellationToken)
     {
-        if (frame.Data?.ContainsKey(SourceMapDataKey) == true || frame.LineNumber is null || frame.LineNumber < 1 || String.IsNullOrWhiteSpace(frame.FileName))
+        if (frame.Data?.ContainsKey(SourceMapDataKey) == true || frame.LineNumber is null || frame.LineNumber < 1 || frame.Column is null || String.IsNullOrWhiteSpace(frame.FileName))
             return false;
 
         if (!TryNormalizeGeneratedFileUrl(frame.FileName, requireHttps: false, out var generatedFileUri))
@@ -179,7 +179,7 @@ public sealed class SourceMapService : IDisposable
         if (resolved is null)
             return false;
 
-        int generatedColumn = frame.Column.GetValueOrDefault(1);
+        int generatedColumn = frame.Column.Value;
         if (generatedColumn > 0)
             generatedColumn--;
 

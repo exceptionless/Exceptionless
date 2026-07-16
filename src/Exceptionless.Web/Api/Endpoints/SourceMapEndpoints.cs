@@ -96,10 +96,26 @@ public static class SourceMapEndpoints
         if (!await CanAccessProjectAsync(projectId, httpContext, projectRepository))
             return HttpResults.NotFound();
 
-        var form = await httpContext.Request.ReadFormAsync(cancellationToken);
+        var errors = new Dictionary<string, string[]>();
+        if (!httpContext.Request.HasFormContentType)
+        {
+            errors["file"] = ["The request must use multipart/form-data."];
+            return HttpResults.ValidationProblem(errors, statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
+        IFormCollection form;
+        try
+        {
+            form = await httpContext.Request.ReadFormAsync(cancellationToken);
+        }
+        catch (Exception ex) when (ex is InvalidDataException or BadHttpRequestException)
+        {
+            errors["file"] = ["The multipart form data is invalid."];
+            return HttpResults.ValidationProblem(errors, statusCode: StatusCodes.Status422UnprocessableEntity);
+        }
+
         string? generatedFileUrl = form["generated_file_url"].FirstOrDefault();
         var file = form.Files.GetFile("file");
-        var errors = new Dictionary<string, string[]>();
 
         if (String.IsNullOrWhiteSpace(generatedFileUrl))
             errors["generated_file_url"] = ["The generated file URL is required."];

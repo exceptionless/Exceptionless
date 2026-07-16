@@ -100,6 +100,33 @@ public sealed class SourceMapEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PostAsync_WithoutMultipartContent_ReturnsUnprocessableEntity()
+    {
+        using var content = new StringContent("not multipart");
+
+        await SendRequestAsync(request => request
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "source-maps")
+            .Content(content)
+            .StatusCodeShouldBeUnprocessableEntity());
+    }
+
+    [Fact]
+    public async Task PostAsync_WithMalformedMultipartContent_ReturnsUnprocessableEntity()
+    {
+        using var content = new StringContent("not multipart");
+        content.Headers.ContentType = new("multipart/form-data");
+
+        await SendRequestAsync(request => request
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "source-maps")
+            .Content(content)
+            .StatusCodeShouldBeUnprocessableEntity());
+    }
+
+    [Fact]
     public async Task PostAsync_WithProjectSourceMapsWriteToken_CreatesArtifact()
     {
         var token = await CreateSourceMapUploadTokenAsync(SampleDataService.TEST_PROJECT_ID);

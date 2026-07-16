@@ -52,6 +52,24 @@ public sealed class SourceMapServiceTests : TestWithServices
     }
 
     [Fact]
+    public async Task SymbolicateAsync_WithoutGeneratedColumn_LeavesFrameUnchanged()
+    {
+        var service = GetService<SourceMapService>();
+        await using var sourceMapStream = new MemoryStream(SourceMap);
+        await service.SaveUploadedAsync(ProjectId, GeneratedFileUrl, "app.min.js.map", sourceMapStream, TestContext.Current.CancellationToken);
+        var error = CreateError();
+        var frame = Assert.Single(error.StackTrace!);
+        frame.Column = null;
+        var serializer = GetService<ITextSerializer>();
+        string originalFrame = serializer.SerializeToString(frame);
+
+        bool changed = await service.SymbolicateAsync(ProjectId, error, TestContext.Current.CancellationToken);
+
+        Assert.False(changed);
+        Assert.Equal(originalFrame, serializer.SerializeToString(frame));
+    }
+
+    [Fact]
     public async Task GetArtifactsAsync_AfterUploadAndDelete_ReflectsStoredArtifact()
     {
         var service = GetService<SourceMapService>();
