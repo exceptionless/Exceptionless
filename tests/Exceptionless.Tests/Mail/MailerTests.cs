@@ -364,7 +364,7 @@ public sealed class MailerTests : TestWithServices
     }
 
     [Fact]
-    public async Task SendProjectDailySummaryWithRegressedStackAsync()
+    public async Task SendProjectDailySummaryAsync_WithRegressedStack_RendersRegressedLabel()
     {
         var user = _userData.GenerateSampleUser();
         var project = _projectData.GenerateSampleProject();
