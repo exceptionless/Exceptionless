@@ -101,6 +101,7 @@ jobs:
         run: |
           branch=${PREVIEW_HEAD_REF:-${GITHUB_HEAD_REF:-${GITHUB_REF##*/}}}
           branch=${branch//\//.}.
+          branch=${branch//_/-}
           if [[ "$branch" = "main." || "$branch" = "master." || "${GITHUB_REF}" = refs/tags* ]]; then
             branch=""
           fi
