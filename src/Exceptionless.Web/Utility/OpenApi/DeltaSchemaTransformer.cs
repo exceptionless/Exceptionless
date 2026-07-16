@@ -32,6 +32,13 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
 
         // Add properties from the inner type
         schema.Properties ??= new Dictionary<string, IOpenApiSchema>();
+        var unknownPropertiesProperty = type.GetProperty(nameof(Delta<object>.UnknownProperties));
+        if (unknownPropertiesProperty is not null)
+        {
+            string? unknownPropertiesName = JsonPropertyNameResolver.GetJsonPropertyName(context.JsonTypeInfo, unknownPropertiesProperty);
+            if (unknownPropertiesName is not null)
+                schema.Properties.Remove(unknownPropertiesName);
+        }
 
         foreach (var property in innerType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .Where(p => p.CanRead && p.CanWrite))

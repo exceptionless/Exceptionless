@@ -81,6 +81,7 @@ k8s/ex-*-snapshots.yaml
 tmpclaude*
 dogfood-output/
 debug-storybook.log
+.aspire/
 docs/_cache/
 
 .devcontainer/devcontainer-lock.json
