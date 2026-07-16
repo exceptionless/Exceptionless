@@ -201,8 +201,14 @@ public sealed class SseConnectionManager : IDisposable, IAsyncDisposable
         {
             await disposeTask.ConfigureAwait(false);
         }
-        catch (OperationCanceledException) { }
-        catch (ObjectDisposedException) { }
+        catch (OperationCanceledException ex)
+        {
+            _logger.LogDebug(ex, "SSE connection cleanup canceled for {ConnectionId}", connectionId);
+        }
+        catch (ObjectDisposedException ex)
+        {
+            _logger.LogDebug(ex, "SSE connection was already disposed during cleanup for {ConnectionId}", connectionId);
+        }
         catch (InvalidOperationException ex)
         {
             _logger.LogDebug(ex, "SSE connection cleanup failed for {ConnectionId}", connectionId);

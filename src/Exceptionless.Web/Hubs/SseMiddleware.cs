@@ -104,7 +104,10 @@ public class SseMiddleware
                 // Hold the response open until the client disconnects or the connection is aborted
                 await Task.Delay(Timeout.Infinite, connection.ConnectionAborted).ConfigureAwait(false);
             }
-            catch (OperationCanceledException) { }
+            catch (OperationCanceledException ex)
+            {
+                _logger.LogDebug(ex, "SSE request canceled for {ConnectionId}", connectionId);
+            }
             finally
             {
                 _logger.LogTrace("SSE disconnected {ConnectionId}", connectionId);

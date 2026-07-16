@@ -211,6 +211,13 @@ public sealed class MessageBusBroker : IStartupAction
         _webSocketConnectionManager.SendMessage(connectionId, message);
     }
 
+    [Obsolete("Use TypedSend instead. This compatibility wrapper will be removed after the push transport rollout.")]
+    public Task TypedSendAsync(string connectionId, object value)
+    {
+        TypedSend(connectionId, value);
+        return Task.CompletedTask;
+    }
+
     public void TypedSend(IEnumerable<string> connectionIds, object value)
     {
         var message = new TypedMessage { Type = GetMessageType(value), Message = value };
@@ -219,12 +226,26 @@ public sealed class MessageBusBroker : IStartupAction
         _webSocketConnectionManager.SendMessage(connectionIds, message);
     }
 
+    [Obsolete("Use TypedSend instead. This compatibility wrapper will be removed after the push transport rollout.")]
+    public Task TypedSendAsync(IList<string> connectionIds, object value)
+    {
+        TypedSend(connectionIds, value);
+        return Task.CompletedTask;
+    }
+
     public void TypedBroadcast(object value)
     {
         var message = new TypedMessage { Type = GetMessageType(value), Message = value };
         bool canDrop = CanDrop(value);
         _sseConnectionManager.SendMessageToAll(message, canDrop);
         _webSocketConnectionManager.SendMessageToAll(message);
+    }
+
+    [Obsolete("Use TypedBroadcast instead. This compatibility wrapper will be removed after the push transport rollout.")]
+    public Task TypedBroadcastAsync(object value)
+    {
+        TypedBroadcast(value);
+        return Task.CompletedTask;
     }
 
     private static string GetMessageType(object value)

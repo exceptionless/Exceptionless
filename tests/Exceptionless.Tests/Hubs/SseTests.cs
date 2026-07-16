@@ -604,7 +604,7 @@ public sealed class SseDeduplicationTests : TestWithServices
     }
 
     [Fact]
-    public async Task TryEnqueue_CapacityExceeded_DropsOldestWithoutPhantomSignal()
+    public async Task TryEnqueue_CapacityExceeded_RejectsOverflowWithoutPhantomSignal()
     {
         // Arrange
         using var queue = new SseConnection.DedupQueue(3);
@@ -630,10 +630,10 @@ public sealed class SseDeduplicationTests : TestWithServices
     }
 
     [Fact]
-    public async Task CriticalMessage_WhenQueueFull_ReturnsFullWithoutEvictingQueuedMessages()
+    public async Task CriticalMessage_WhenQueueContainsDroppableMessage_ReplacesDroppableMessage()
     {
         var queue = new SseConnection.DedupQueue(2);
-        queue.TryEnqueue(new SseConnection.SseEvent { Data = "lossy-1", DedupeKey = "lossy-1" });
+        queue.TryEnqueue(new SseConnection.SseEvent { Data = "lossy-1", DedupeKey = "lossy-1", CanDrop = true });
         queue.TryEnqueue(new SseConnection.SseEvent { Data = "critical-1" });
 
         var result = queue.TryEnqueue(new SseConnection.SseEvent { Data = "critical-2" });
@@ -642,9 +642,9 @@ public sealed class SseDeduplicationTests : TestWithServices
         var item1 = await queue.DequeueAsync(cts.Token);
         var item2 = await queue.DequeueAsync(cts.Token);
 
-        Assert.Equal(SseConnection.EnqueueResult.Full, result);
-        Assert.Equal("lossy-1", item1!.Value.Data);
-        Assert.Equal("critical-1", item2!.Value.Data);
+        Assert.Equal(SseConnection.EnqueueResult.ReplacedDroppable, result);
+        Assert.Equal("critical-1", item1!.Value.Data);
+        Assert.Equal("critical-2", item2!.Value.Data);
     }
 
     [Fact]
@@ -655,13 +655,26 @@ public sealed class SseDeduplicationTests : TestWithServices
         queue.TryEnqueue(new SseConnection.SseEvent { Data = "critical-1" });
 
         // Act
-        var result = queue.TryEnqueue(new SseConnection.SseEvent { Data = "lossy-1", DedupeKey = "lossy-1" });
+        var result = queue.TryEnqueue(new SseConnection.SseEvent { Data = "lossy-1", DedupeKey = "lossy-1", CanDrop = true });
         var item = await queue.DequeueAsync(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(SseConnection.EnqueueResult.Full, result);
         Assert.True(item.HasValue);
         Assert.Equal("critical-1", item.GetValueOrDefault().Data);
+    }
+
+    [Fact]
+    public async Task CriticalMessage_WhenQueueFullOfCriticalMessages_ReturnsFullWithoutEviction()
+    {
+        using var queue = new SseConnection.DedupQueue(1);
+        queue.TryEnqueue(new SseConnection.SseEvent { Data = "critical-1" });
+
+        var result = queue.TryEnqueue(new SseConnection.SseEvent { Data = "critical-2" });
+        var item = await queue.DequeueAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(SseConnection.EnqueueResult.Full, result);
+        Assert.Equal("critical-1", item!.Value.Data);
     }
 
     [Fact]

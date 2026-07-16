@@ -109,8 +109,14 @@ public sealed class WebSocketConnectionManager : IDisposable
         {
             await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed by manager", CancellationToken.None).ConfigureAwait(false);
         }
-        catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely) { }
-        catch (ObjectDisposedException) { }
+        catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely)
+        {
+            _logger.LogDebug(ex, "WebSocket closed prematurely for {ConnectionId}", connectionId);
+        }
+        catch (ObjectDisposedException ex)
+        {
+            _logger.LogDebug(ex, "WebSocket was already disposed for {ConnectionId}", connectionId);
+        }
         catch (Exception ex)
         {
             _logger.LogDebug(ex, "Error closing websocket {ConnectionId}", connectionId);

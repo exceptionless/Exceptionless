@@ -7,8 +7,9 @@ namespace Exceptionless.Web.Hubs;
 /// all sends through a bounded dedup queue, preventing concurrent writes to the
 /// underlying HttpResponse stream.
 ///
-/// Design: delivery is best-effort. If a slow client fills the bounded queue, the
-/// connection is aborted so reconnect handling performs a full cache resynchronization.
+/// Design: delivery is best-effort. Critical notifications can replace queued cache
+/// invalidations. Otherwise, a full queue aborts the connection so reconnect handling
+/// performs a full cache resynchronization.
 ///
 /// Deduplication: messages with the same serialized payload are coalesced — if an
 /// identical message is already queued, the newer duplicate is skipped. This reduces
@@ -61,11 +62,17 @@ public sealed class SseConnection : IAsyncDisposable
             return false;
 
         string data = _serializer.SerializeToString(message);
-        var result = _queue.TryEnqueue(new SseEvent { Data = data, DedupeKey = canDrop ? data : null });
+        var result = _queue.TryEnqueue(new SseEvent { Data = data, DedupeKey = canDrop ? data : null, CanDrop = canDrop });
 
         if (result == EnqueueResult.Deduped)
         {
             Interlocked.Increment(ref _dedupedMessages);
+            return true;
+        }
+
+        if (result is EnqueueResult.ReplacedDroppable)
+        {
+            Interlocked.Increment(ref _droppedMessages);
             return true;
         }
 
@@ -120,7 +127,10 @@ public sealed class SseConnection : IAsyncDisposable
             {
                 await _writeLoop.ConfigureAwait(false);
             }
-            catch (OperationCanceledException) { }
+            catch (OperationCanceledException ex)
+            {
+                _logger.LogDebug(ex, "SSE disposal canceled for {ConnectionId}", ConnectionId);
+            }
         }
     }
 
@@ -142,9 +152,18 @@ public sealed class SseConnection : IAsyncDisposable
                 await _response.Body.FlushAsync(ct);
             }
         }
-        catch (OperationCanceledException) { }
-        catch (ObjectDisposedException) { }
-        catch (IOException) { }
+        catch (OperationCanceledException ex)
+        {
+            _logger.LogDebug(ex, "SSE write loop canceled for {ConnectionId}", ConnectionId);
+        }
+        catch (ObjectDisposedException ex)
+        {
+            _logger.LogDebug(ex, "SSE response was disposed for {ConnectionId}", ConnectionId);
+        }
+        catch (IOException ex)
+        {
+            _logger.LogDebug(ex, "SSE response write failed for {ConnectionId}", ConnectionId);
+        }
         finally
         {
             // Always signal ConnectionAborted so the middleware's Task.Delay unblocks
@@ -174,21 +193,24 @@ public sealed class SseConnection : IAsyncDisposable
         /// the same client-side cache invalidation, so coalescing is safe.
         /// </summary>
         public string? DedupeKey { get; init; }
+        public bool CanDrop { get; init; }
         public bool IsKeepAlive { get; init; }
-        public static SseEvent KeepAlive => new() { IsKeepAlive = true };
+        public static SseEvent KeepAlive => new() { IsKeepAlive = true, CanDrop = true };
     }
 
     internal enum EnqueueResult
     {
         Enqueued,
         Deduped,
+        ReplacedDroppable,
         Full,
         Closed
     }
 
     /// <summary>
     /// Bounded FIFO queue with deduplication. Thread-safe for multiple writers and a single reader.
-    /// When full, rejects new items so the owner can abort and force a reconnect resynchronization.
+    /// When full, critical events can replace queued droppable events. Other events are rejected
+    /// so the owner can abort and force a reconnect resynchronization.
     /// If an item with the same DedupeKey is already queued, the new item is skipped.
     /// </summary>
     internal sealed class DedupQueue : IDisposable
@@ -216,15 +238,30 @@ public sealed class SseConnection : IAsyncDisposable
                 if (evt.DedupeKey is not null && _index.ContainsKey(evt.DedupeKey))
                     return EnqueueResult.Deduped;
 
+                var result = EnqueueResult.Enqueued;
+                bool queueCountIncreased = true;
+
                 if (_list.Count >= _capacity)
-                    return EnqueueResult.Full;
+                {
+                    if (evt.CanDrop)
+                        return EnqueueResult.Full;
+
+                    var queuedToDrop = FindFirstDroppableNode();
+                    if (queuedToDrop is null)
+                        return EnqueueResult.Full;
+
+                    RemoveNode(queuedToDrop);
+                    result = EnqueueResult.ReplacedDroppable;
+                    queueCountIncreased = false;
+                }
 
                 var node = _list.AddLast(evt);
                 if (evt.DedupeKey is not null)
                     _index[evt.DedupeKey] = node;
 
-                _signal.Release();
-                return EnqueueResult.Enqueued;
+                if (queueCountIncreased)
+                    _signal.Release();
+                return result;
             }
         }
 
@@ -257,6 +294,20 @@ public sealed class SseConnection : IAsyncDisposable
         public void Dispose()
         {
             _signal.Dispose();
+        }
+
+        private LinkedListNode<SseEvent>? FindFirstDroppableNode()
+        {
+            var current = _list.First;
+            while (current is not null)
+            {
+                if (current.Value.CanDrop)
+                    return current;
+
+                current = current.Next;
+            }
+
+            return null;
         }
 
         private void RemoveNode(LinkedListNode<SseEvent> node)
