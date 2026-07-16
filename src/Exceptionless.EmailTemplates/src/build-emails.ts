@@ -1,7 +1,7 @@
 import { Renderer } from '@better-svelte-email/server';
 import Handlebars from 'handlebars';
 import type { Component } from 'svelte';
-import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { tailwindTheme } from './theme.js';
@@ -28,6 +28,21 @@ const templates: Record<string, Component> = {
     'organization-notice': OrganizationNotice as unknown as Component,
     'organization-payment-failed': OrganizationPaymentFailed as unknown as Component
 };
+
+function validateTemplateRegistry(names: string[]): void {
+    const sourceDirectory = resolve(__dirname, '..', 'src', 'templates');
+    const sourceNames = readdirSync(sourceDirectory, { withFileTypes: true })
+        .filter((entry) => entry.isFile() && entry.name.endsWith('.svelte'))
+        .map((entry) => entry.name.slice(0, -'.svelte'.length))
+        .sort();
+
+    const registeredNames = names.slice().sort();
+    if (JSON.stringify(sourceNames) !== JSON.stringify(registeredNames)) {
+        throw new Error(
+            `Template registry does not match src/templates. Sources: ${sourceNames.join(', ')}. Registered: ${registeredNames.join(', ')}.`
+        );
+    }
+}
 
 function cleanHtml(html: string): string {
     html = html.replace(/<!--\[!?-->/g, '');
@@ -84,6 +99,7 @@ async function main(): Promise<void> {
 
     const entries = Object.entries(templates);
     const names = entries.map(([name]) => name);
+    validateTemplateRegistry(names);
     console.log(`Building ${names.length} email templates...`);
 
     const renderedTemplates = await Promise.all(

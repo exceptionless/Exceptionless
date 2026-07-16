@@ -58,7 +58,8 @@ At runtime, `HandlebarsDotNet` in `Mailer.cs` compiles and renders these with re
 ## Adding a New Template
 
 1. Create `src/templates/my-template.svelte`
-2. Import and use `EmailLayout` component
-3. Run `npm run build`
-4. Add the output HTML as an EmbeddedResource in `Exceptionless.Core.csproj`
-5. Add rendering logic in `Mailer.cs`
+2. Import and use the `EmailLayout` component
+3. Register the component in `src/build-emails.ts`
+4. Run `npm run build`
+5. Add the output HTML as an EmbeddedResource in `Exceptionless.Core.csproj`
+6. Add rendering logic in `Mailer.cs`
