@@ -42,6 +42,31 @@ public class SavedViewRepository : RepositoryOwnedByOrganization<SavedView>, ISa
                 .FieldEquals(e => e.UserId!, userId)), options);
     }
 
+    public Task<FindResults<SavedView>> GetPredefinedForForceUpdateAsync(
+        string systemOrganizationId,
+        IReadOnlyCollection<string> predefinedKeys,
+        CommandOptionsDescriptor<SavedView>? options = null)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(systemOrganizationId);
+        ArgumentNullException.ThrowIfNull(predefinedKeys);
+
+        if (predefinedKeys.Count == 0)
+            return FindAsync(q => q.FieldEquals(e => e.Id, String.Empty), options);
+
+        return FindAsync(q =>
+        {
+            q.FieldEmpty(e => e.UserId!)
+                .FieldNotEquals(e => e.OrganizationId, systemOrganizationId)
+                .FieldOr(g =>
+                {
+                    foreach (string predefinedKey in predefinedKeys)
+                        g.FieldContains(e => e.PredefinedKey!, predefinedKey);
+                });
+
+            return q.SortAscending(e => e.OrganizationId).SortAscending(e => e.Id);
+        }, options);
+    }
+
     public async Task<long> RemovePrivateByUserIdAsync(string organizationId, string userId)
     {
         var results = await FindAsync(q => q

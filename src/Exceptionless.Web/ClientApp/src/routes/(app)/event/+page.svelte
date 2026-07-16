@@ -66,8 +66,11 @@
 
     import {
         ALL_TIME_QUERY_VALUE,
+        clearListFilterQueryParams,
         deserializeTimeQueryParam,
         getEventsNavigationOptionsForFilter,
+        getListFilterQueryParams,
+        type ListFilterQueryParams,
         redirectToEventsWithFilter,
         serializeTimeQueryParam
     } from '../redirect-to-events.svelte';
@@ -117,13 +120,13 @@
         return buildFilterCacheKey(organization.current, page.url.pathname, filter);
     }
 
-    function getQueryTime(): null | string {
-        if (queryParams.time != null) {
-            if (queryParams.time === ALL_TIME_QUERY_VALUE) {
+    function getQueryTime(params: ListFilterQueryParams = queryParams): null | string {
+        if (params.time != null) {
+            if (params.time === ALL_TIME_QUERY_VALUE) {
                 return null;
             }
 
-            return queryParams.time ? deserializeTimeQueryParam(queryParams.time) : null;
+            return params.time ? deserializeTimeQueryParam(params.time) : null;
         }
 
         return savedViewsState.activeSavedView?.time ?? DEFAULT_TIME_RANGE;
@@ -134,53 +137,53 @@
         return filter || null;
     }
 
-    function getQueryFilters(): FacetedFilter.IFilter[] | null {
+    function getQueryFilters(params: ListFilterQueryParams = queryParams): FacetedFilter.IFilter[] | null {
         const filters: FacetedFilter.IFilter[] = [];
 
-        if (queryParams.project) {
-            filters.push(new ProjectFilter(splitQueryParam(queryParams.project)));
+        if (params.project) {
+            filters.push(new ProjectFilter(splitQueryParam(params.project)));
         }
 
-        if (queryParams.stack) {
-            filters.push(new StringFilter('stack', queryParams.stack));
+        if (params.stack) {
+            filters.push(new StringFilter('stack', params.stack));
         }
 
-        const bot = parseBooleanQueryParam(queryParams.bot);
+        const bot = parseBooleanQueryParam(params.bot);
         if (bot !== undefined) {
             filters.push(new BooleanFilter('bot', bot));
         }
 
-        const first = parseBooleanQueryParam(queryParams.first);
+        const first = parseBooleanQueryParam(params.first);
         if (first !== undefined) {
             filters.push(new BooleanFilter('first', first));
         }
 
-        if (queryParams.level) {
-            filters.push(new LevelFilter(splitQueryParam(queryParams.level) as never[]));
+        if (params.level) {
+            filters.push(new LevelFilter(splitQueryParam(params.level) as never[]));
         }
 
-        if (queryParams.reference) {
-            filters.push(new ReferenceFilter(queryParams.reference));
+        if (params.reference) {
+            filters.push(new ReferenceFilter(params.reference));
         }
 
-        if (queryParams.session) {
-            filters.push(new SessionFilter(queryParams.session));
+        if (params.session) {
+            filters.push(new SessionFilter(params.session));
         }
 
-        if (queryParams.status) {
-            filters.push(new StatusFilter(splitQueryParam(queryParams.status) as never[]));
+        if (params.status) {
+            filters.push(new StatusFilter(splitQueryParam(params.status) as never[]));
         }
 
-        if (queryParams.tag) {
-            filters.push(new TagFilter(splitQueryParam(queryParams.tag) as never[]));
+        if (params.tag) {
+            filters.push(new TagFilter(splitQueryParam(params.tag) as never[]));
         }
 
-        if (queryParams.type) {
-            filters.push(new TypeFilter(splitQueryParam(queryParams.type) as never[]));
+        if (params.type) {
+            filters.push(new TypeFilter(splitQueryParam(params.type) as never[]));
         }
 
-        if (queryParams.version) {
-            filters.push(new VersionFilter('version', queryParams.version));
+        if (params.version) {
+            filters.push(new VersionFilter('version', params.version));
         }
 
         return filters.length > 0 ? filters : null;
@@ -294,23 +297,21 @@
         { lazy: true }
     );
 
-    function getCurrentFilters(): FacetedFilter.IFilter[] {
-        return applyTimeFilter(getCurrentFiltersWithoutTime(), getQueryTime());
+    function getCurrentFilters(params: ListFilterQueryParams = queryParams): FacetedFilter.IFilter[] {
+        return applyTimeFilter(getCurrentFiltersWithoutTime(params), getQueryTime(params));
     }
 
-    function getCurrentFiltersWithoutTime(): FacetedFilter.IFilter[] {
+    function getCurrentFiltersWithoutTime(params: ListFilterQueryParams = queryParams): FacetedFilter.IFilter[] {
         const savedViewFilters = getSavedViewFilters();
-        const queryFilters = getQueryFilters() ?? [];
+        const queryFilters = getQueryFilters(params) ?? [];
         const expressionFilters =
-            queryParams.filter != null
-                ? getFiltersFromCache(filterCacheKey(queryParams.filter), queryParams.filter).filter((filter) => filter.type !== 'date')
-                : [];
+            params.filter != null ? getFiltersFromCache(filterCacheKey(params.filter), params.filter).filter((filter) => filter.type !== 'date') : [];
 
         if (savedViewFilters) {
             return mergeFilterOverrides(
                 savedViewFilters.filter((filter) => filter.type !== 'date'),
                 [...expressionFilters, ...queryFilters],
-                getQueryFilterRemovalKeys(savedViewFilters)
+                getQueryFilterRemovalKeys(savedViewFilters, params)
             );
         }
 
@@ -331,54 +332,54 @@
         return deserializeFilters(savedView.filter_definitions);
     }
 
-    function getQueryFilterRemovalKeys(savedViewFilters: FacetedFilter.IFilter[]): string[] {
+    function getQueryFilterRemovalKeys(savedViewFilters: FacetedFilter.IFilter[], params: ListFilterQueryParams = queryParams): string[] {
         const removedKeys: string[] = [];
 
-        if (queryParams.bot === '') {
+        if (params.bot === '') {
             removedKeys.push('boolean-bot');
         }
 
-        if (queryParams.first === '') {
+        if (params.first === '') {
             removedKeys.push('boolean-first');
         }
 
-        if (queryParams.filter === '') {
+        if (params.filter === '') {
             removedKeys.push(...savedViewFilters.filter((filter) => filter.type !== 'date' && !isQueryParamFilter(filter)).map((filter) => filter.key));
         }
 
-        if (queryParams.level === '') {
+        if (params.level === '') {
             removedKeys.push('level');
         }
 
-        if (queryParams.project === '') {
+        if (params.project === '') {
             removedKeys.push('project');
         }
 
-        if (queryParams.reference === '') {
+        if (params.reference === '') {
             removedKeys.push('reference');
         }
 
-        if (queryParams.session === '') {
+        if (params.session === '') {
             removedKeys.push('session');
         }
 
-        if (queryParams.stack === '') {
+        if (params.stack === '') {
             removedKeys.push('string-stack');
         }
 
-        if (queryParams.status === '') {
+        if (params.status === '') {
             removedKeys.push('status');
         }
 
-        if (queryParams.tag === '') {
+        if (params.tag === '') {
             removedKeys.push('tag');
         }
 
-        if (queryParams.type === '') {
+        if (params.type === '') {
             removedKeys.push('type');
         }
 
-        if (queryParams.version === '') {
+        if (params.version === '') {
             removedKeys.push('version-version');
         }
 
@@ -402,16 +403,25 @@
     let isInternalFilterUpdate = false;
     watch(
         [() => page.url.pathname, () => page.url.search, () => savedViewsState.activeSavedView],
-        () => {
-            if (isInternalFilterUpdate) {
+        ([pathname, , activeSavedView], [previousPathname, , previousSavedView]) => {
+            const savedViewChanged = pathname !== previousPathname || activeSavedView?.id !== previousSavedView?.id;
+            if (isInternalFilterUpdate && !savedViewChanged) {
                 isInternalFilterUpdate = false;
                 return;
             }
 
-            filters = getCurrentFilters();
+            isInternalFilterUpdate = false;
+            filters = getCurrentFilters(getListFilterQueryParams(page.url.searchParams));
         },
         { lazy: true }
     );
+
+    function handleResetToSaved(): void {
+        isInternalFilterUpdate = false;
+        clearListFilterQueryParams(queryParams);
+        savedViewsState.handleResetToSaved();
+        filters = getCurrentFilters();
+    }
 
     async function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter): Promise<void> {
         const navigationOptions = getEventsNavigationOptionsForFilter(addedOrUpdated);
@@ -509,7 +519,7 @@
         }
 
         untrack(() => {
-            updateFilters(getCurrentFilters(), { clearPagination: false });
+            updateFilters(getCurrentFilters(getListFilterQueryParams(page.url.searchParams)), { clearPagination: false });
         });
     });
 
@@ -845,7 +855,7 @@
                     isModified={savedViewsState.isModified}
                     onLoadView={savedViewsState.handleLoadView}
                     onClearSavedView={savedViewsState.handleClearSavedView}
-                    onResetToSaved={savedViewsState.handleResetToSaved}
+                    onResetToSaved={handleResetToSaved}
                     savedViews={savedViewsState.savedViews}
                     {showChart}
                     {showStats}
