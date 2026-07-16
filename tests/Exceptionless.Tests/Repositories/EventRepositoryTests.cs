@@ -277,7 +277,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetDistinctStackIds_WithMultipleStacks_ReturnsAllUniqueIds()
+    public async Task GetDistinctStackIdsAsync_WithMultipleStacks_ReturnsAllUniqueIds()
     {
         // Arrange
         var stack1 = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
@@ -297,7 +297,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetDistinctStackIds_WithPagination_ReturnsAllIds()
+    public async Task GetDistinctStackIdsAsync_WithPagination_ReturnsAllIds()
     {
         // Arrange
         var stacks = new List<Stack>();
@@ -324,7 +324,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task ReassignStack_WithSourceEvents_MovesAllEventsToTarget()
+    public async Task ReassignStackAsync_WithSourceEvents_MovesAllEventsToTarget()
     {
         // Arrange
         var stack1 = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
@@ -346,7 +346,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task RemoveAllByProjectIds_WithMixedEvents_RemovesOnlyMatchingEvents()
+    public async Task RemoveAllByProjectIdsAsync_WithMixedEvents_RemovesOnlyMatchingEvents()
     {
         // Arrange
         var stack = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
@@ -366,7 +366,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task RemoveAllByOrganizationIds_WithMixedEvents_RemovesOnlyMatchingEvents()
+    public async Task RemoveAllByOrganizationIdsAsync_WithMixedEvents_RemovesOnlyMatchingEvents()
     {
         // Arrange
         var stack = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
@@ -386,7 +386,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task RemoveAllByStackIds_WithMixedEvents_RemovesOnlyMatchingEvents()
+    public async Task RemoveAllByStackIdsAsync_WithMixedEvents_RemovesOnlyMatchingEvents()
     {
         // Arrange
         var stack = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
@@ -406,7 +406,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task ReassignStack_WithEmptySourceIds_ReturnsZeroWithoutModification()
+    public async Task ReassignStackAsync_WithEmptySourceIds_ReturnsZeroWithoutModification()
     {
         // Arrange
         var stack1 = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
@@ -425,7 +425,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetDistinctProjectIds_WithMultipleProjects_ReturnsAllUniqueIds()
+    public async Task GetDistinctProjectIdsAsync_WithMultipleProjects_ReturnsAllUniqueIds()
     {
         // Arrange
         var stack = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
@@ -448,7 +448,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetDistinctOrganizationIds_WithMultipleOrganizations_ReturnsAllUniqueIds()
+    public async Task GetDistinctOrganizationIdsAsync_WithMultipleOrganizations_ReturnsAllUniqueIds()
     {
         // Arrange
         var stack = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
