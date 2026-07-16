@@ -6,6 +6,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Xunit;
 
 namespace Exceptionless.Tests.Jobs;
@@ -601,7 +602,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task RunAsync_EmptyDatabase_CompletesWithoutError()
+    public async Task RunAsync_EmptyDatabase_UpdatesHealth()
     {
         // Arrange - nothing
 
@@ -610,5 +611,36 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
 
         var totalAfter = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency());
         Assert.Equal(0, totalAfter);
+
+        var health = await _job.CheckHealthAsync(new HealthCheckContext(), TestCancellationToken);
+        Assert.Equal(HealthStatus.Healthy, health.Status);
+        Assert.Equal("Job has run in the last 65 minutes.", health.Description);
+    }
+
+    [Fact]
+    public async Task RunAsync_NoRecentEventsOrDuplicateStacks_UpdatesHealth()
+    {
+        var now = DateTimeOffset.UtcNow;
+        TimeProvider.SetUtcNow(now);
+
+        var organization = await _organizationRepository.AddAsync(
+            _organizationData.GenerateSampleOrganization(_billingManager, _plans),
+            o => o.ImmediateConsistency());
+        var project = await _projectRepository.AddAsync(
+            _projectData.GenerateProject(organizationId: organization.Id),
+            o => o.ImmediateConsistency());
+        var stack = await _stackRepository.AddAsync(
+            _stackData.GenerateStack(projectId: project.Id, organizationId: organization.Id),
+            o => o.ImmediateConsistency());
+        var historicalEvent = _eventData.GenerateEvent(organization.Id, project.Id, stack.Id, occurrenceDate: now.Subtract(TimeSpan.FromDays(30)));
+        historicalEvent.CreatedUtc = now.UtcDateTime.Subtract(CleanupOrphanedDataJob.OrphanedEventLookback).AddMilliseconds(-1);
+        await _eventRepository.AddAsync(historicalEvent, o => o.ImmediateConsistency());
+
+        await _job.RunAsync(TestCancellationToken);
+
+        Assert.Equal(1, await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency()));
+        var health = await _job.CheckHealthAsync(new HealthCheckContext(), TestCancellationToken);
+        Assert.Equal(HealthStatus.Healthy, health.Status);
+        Assert.Equal("Job has run in the last 65 minutes.", health.Description);
     }
 }

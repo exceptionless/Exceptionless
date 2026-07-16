@@ -59,6 +59,8 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
 
     protected override async Task<JobResult> RunInternalAsync(JobContext context)
     {
+        _lastRun = _timeProvider.GetUtcNow().UtcDateTime;
+
         var orphanedEventCutoffUtc = GetOrphanedEventCutoffUtc();
         await DeleteOrphanedEventsByStackAsync(context, orphanedEventCutoffUtc);
         await DeleteOrphanedEventsByProjectAsync(context, orphanedEventCutoffUtc);
