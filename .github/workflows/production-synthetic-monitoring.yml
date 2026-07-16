@@ -77,7 +77,7 @@ jobs:
               "Production Synthetic Monitoring failed.",
               "",
               `- Run: ${runUrl}`,
-              `- Run ID: production-${context.runId}-${context.runAttempt}`,
+              `- Run ID: production-${context.runId}-${process.env.GITHUB_RUN_ATTEMPT}`,
               "- E2E URL: https://app.exceptionless.io",
               "",
               "Review the Playwright report and test-results artifacts attached to the workflow run."

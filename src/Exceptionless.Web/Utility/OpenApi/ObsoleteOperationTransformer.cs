@@ -33,7 +33,8 @@ public class ObsoleteOperationTransformer : IOpenApiOperationTransformer
             methodInfo = controllerDescriptor.MethodInfo;
         }
 
-        if (methodInfo?.GetCustomAttribute<ObsoleteAttribute>() is not null)
+        if (context.Description.ActionDescriptor.EndpointMetadata.OfType<ObsoleteAttribute>().Any()
+            || methodInfo?.GetCustomAttribute<ObsoleteAttribute>() is not null)
         {
             operation.Deprecated = true;
         }

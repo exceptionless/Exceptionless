@@ -1,14 +1,17 @@
 {
   "tasks": {
     "lume": "deno run -P=lume lume/cli.ts",
-    "build": "deno task lume && deno task postbuild",
-    "serve": "deno task build && deno run --allow-read=_site --allow-net=localhost,127.0.0.1 scripts/serve.ts",
+    "build": "deno task lume && deno task postbuild && deno bundle --platform=browser --minify --config=deno.json scripts/browser/exceptionless-client.ts -o _site/assets/js/exceptionless-client.js",
+    "serve": "deno task build && deno run --allow-read=_site --allow-net=localhost,127.0.0.1 --allow-env=PORT scripts/serve.ts",
     "postbuild": "deno run --allow-read --allow-write scripts/postbuild.ts",
-    "check": "deno check _config.ts scripts/site-collections.ts scripts/postbuild.ts scripts/serve.ts scripts/verify-links.ts scripts/find-unused.ts",
-    "verify": "deno task build && deno run --allow-read scripts/verify-links.ts",
+    "check": "deno check _config.ts public/assets/js/site.js public/assets/js/site-search.js scripts/browser/exceptionless-client.ts scripts/site-collections.ts scripts/postbuild.ts scripts/serve.ts scripts/site-search.test.js scripts/verify-links.ts scripts/verify-telemetry.ts scripts/find-unused.ts",
+    "test": "deno test scripts/site-search.test.js",
+    "verify": "deno task build && deno task test && deno task verify:telemetry && deno run --allow-read scripts/verify-links.ts",
+    "verify:telemetry": "deno run --allow-read --allow-env=EXCEPTIONLESS_SITE_API_KEY scripts/verify-telemetry.ts",
     "unused": "deno task build && deno run --allow-read scripts/find-unused.ts"
   },
   "imports": {
+    "@exceptionless/browser": "npm:@exceptionless/browser@3.2.1",
     "lume/": "https://cdn.jsdelivr.net/gh/lumeland/lume@3.2.6/"
   },
   "nodeModulesDir": "auto",
