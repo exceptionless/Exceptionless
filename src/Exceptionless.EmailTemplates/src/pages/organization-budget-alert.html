@@ -1,0 +1,20 @@
+<container>
+  <spacer size="5"></spacer>
+  <row>
+    <columns small="12">
+      <p class="lead">
+        \{{OrganizationName}} has reached \{{Threshold}}% of its monthly event allowance.
+      </p>
+      <p>
+        The organization has accepted \{{CurrentEventCount}} events. The \{{Threshold}}% alert is
+        \{{ThresholdEventCount}} events, the current allowance is \{{EventLimit}}, and \{{RemainingEventCount}}
+        events remain.
+      </p>
+      <center>
+        <button class="button radius" href="\{{BaseUrl}}/next/organization/\{{OrganizationId}}/usage">
+          View Usage
+        </button>
+      </center>
+    </columns>
+  </row>
+</container>

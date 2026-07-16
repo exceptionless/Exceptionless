@@ -46,6 +46,7 @@ public record ViewOrganization : IIdentity, IData, IHaveDates
     public bool IsThrottled { get; set; }
     public bool IsOverMonthlyLimit { get; set; }
     public bool IsOverRequestLimit { get; set; }
+    public OrganizationBudgetAlertSettings? BudgetAlertSettings { get; set; }
 }
 
 public static class ViewOrganizationExtensions

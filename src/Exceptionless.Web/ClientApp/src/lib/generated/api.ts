@@ -7,6 +7,11 @@ export enum StackStatus {
   Discarded = "discarded",
 }
 
+export enum ProjectIngestLimitType {
+  Fixed = 0,
+  PercentOfOrganizationLimit = 1,
+}
+
 export enum BillingStatus {
   Trialing = 0,
   Active = 1,
@@ -130,6 +135,7 @@ export interface NewProject {
   organization_id: string;
   name: string;
   delete_bot_data_enabled: boolean;
+  ingest_limit?: null | ProjectIngestLimit;
   promoted_tabs?: string[] | null;
 }
 
@@ -295,6 +301,15 @@ export interface OAuthTokenResponse {
   resource?: null | string;
 }
 
+export interface OrganizationBudgetAlertSettings {
+  enabled: boolean;
+  /**
+   * Percentage thresholds of the organization's effective monthly event allowance.
+   * Example: [50, 80, 90].
+   */
+  thresholds: number[];
+}
+
 export interface PersistentEvent {
   /**
    * Unique id that identifies an event.
@@ -381,6 +396,14 @@ export interface ProblemDetails {
   status?: null | number;
   detail?: null | string;
   instance?: null | string;
+}
+
+export interface ProjectIngestLimit {
+  type: ProjectIngestLimitType;
+  /** @format int32 */
+  fixed_limit?: null | number;
+  /** @format double */
+  percent_of_organization_limit?: null | number;
 }
 
 export interface ResetPasswordModel {
@@ -487,10 +510,17 @@ export interface UpdateEvent {
 }
 
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
+export interface UpdateOrganization {
+  name: string;
+  budget_alert_settings?: null | OrganizationBudgetAlertSettings;
+}
+
+/** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
 export interface UpdateProject {
   name: string;
   delete_bot_data_enabled: boolean;
-  promoted_tabs?: string[] | null;
+  ingest_limit?: null | ProjectIngestLimit;
+  promoted_tabs?: null | string[];
 }
 
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
@@ -502,7 +532,7 @@ export interface UpdateSavedView {
   slug?: null | string;
   filter_definitions?: null | string;
   columns?: null | Record<string, boolean>;
-  column_order?: string[] | null;
+  column_order?: null | string[];
   show_stats?: null | boolean;
   show_chart?: null | boolean;
 }
@@ -688,6 +718,7 @@ export interface ViewOrganization {
   is_throttled: boolean;
   is_over_monthly_limit: boolean;
   is_over_request_limit: boolean;
+  budget_alert_settings?: null | OrganizationBudgetAlertSettings;
 }
 
 export interface ViewProject {
@@ -709,6 +740,12 @@ export interface ViewProject {
   event_count: number;
   has_premium_features: boolean;
   has_slack_integration: boolean;
+  ingest_limit?: null | ProjectIngestLimit;
+  /** @format int32 */
+  effective_ingest_limit?: null | number;
+  is_smart_throttled: boolean;
+  /** @format double */
+  smart_throttle_sample_rate?: null | number;
   usage_hours: UsageHourInfo[];
   usage: UsageInfo[];
 }

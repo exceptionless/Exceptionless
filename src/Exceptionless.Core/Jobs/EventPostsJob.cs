@@ -162,35 +162,55 @@ public class EventPostsJob : QueueJobBase<EventPost>
             return JobResult.Success;
         }
 
-        // Don't process all the events if it will put the account over its limits.
-        int eventsToProcess = await _usageService.GetEventsLeftAsync(organization.Id);
-        if (eventsToProcess < 1)
+        int submittedEventCount = events.Count;
+        bool isSingleEvent = submittedEventCount == 1;
+        var candidates = events
+            .Select((persistentEvent, index) => new EventCandidate(persistentEvent, index, GetStableEventHash(entry.Id, persistentEvent, index)))
+            .ToList();
+        var reservation = await _usageService.ReserveEventIngestAsync(
+            organization,
+            project,
+            entry.Id,
+            candidates.Select(candidate => new EventIngestCandidate(candidate.Index, candidate.Hash)).ToArray(),
+            context.CancellationToken);
+        if (reservation.IsCompleted)
         {
-            if (!isInternalProject)
-                _logger.LogDebug("Unable to process EventPost {FilePath}: Over plan limits", payloadPath);
-
-            await _usageService.IncrementBlockedAsync(organization.Id, project.Id, events.Count);
-
-            await CompleteEntryAsync(entry, ep, _timeProvider.GetUtcNow().UtcDateTime);
+            await _usageService.CompleteEventIngestReservationAsync(reservation, organization, reservation.ProcessedCount);
+            await CompleteEntryAsync(entry, ep, createdUtc);
             return JobResult.Success;
         }
 
-        // Keep track of the original event payload size, we can save some processing for retries in the case it was a massive batch.
-        bool isSingleEvent = events.Count == 1;
-
-        // Discard any events over the plan limit.
-        if (eventsToProcess < events.Count)
-        {
-            int discarded = events.Count - eventsToProcess;
-            events = events.Take(eventsToProcess).ToList();
-
-            await _usageService.IncrementBlockedAsync(organization.Id, project.Id, discarded);
-        }
-
         int errorCount = 0;
+        bool reservationCompleted = false;
+        bool reservationCompletionStarted = false;
         var eventsToRetry = new List<PersistentEvent>();
         try
         {
+            var acceptedIndexes = reservation.AcceptedIndexes.ToHashSet();
+            candidates = candidates.Where(candidate => acceptedIndexes.Contains(candidate.Index)).ToList();
+            _usageService.RecordSmartThrottle(reservation.SmartThrottleBlockedCount);
+
+            events = candidates
+                .OrderBy(candidate => candidate.Index)
+                .Select(candidate => candidate.Event)
+                .ToList();
+
+            int blockedEventCount = submittedEventCount - events.Count;
+            if (blockedEventCount > 0)
+                await _usageService.IncrementBlockedAsync(organization.Id, project.Id, blockedEventCount);
+
+            if (events.Count == 0)
+            {
+                if (!isInternalProject)
+                    _logger.LogDebug("Unable to process EventPost {FilePath}: accepted 0/{SubmittedEventCount} events after usage budget evaluation", payloadPath, submittedEventCount);
+
+                reservationCompletionStarted = true;
+                await _usageService.CompleteEventIngestReservationAsync(reservation, organization, 0);
+                reservationCompleted = true;
+                await CompleteEntryAsync(entry, ep, _timeProvider.GetUtcNow().UtcDateTime);
+                return JobResult.Success;
+            }
+
             var contexts = await _eventPipeline.RunAsync(events, organization, project, ep);
             if (!isInternalProject && isDebugLogLevelEnabled)
             {
@@ -200,7 +220,9 @@ public class EventPostsJob : QueueJobBase<EventPost>
 
             // increment the plan usage counters (note: OverageHandler already incremented usage by 1)
             int processedEvents = contexts.Count(c => c.IsProcessed);
-            await _usageService.IncrementTotalAsync(organization.Id, project.Id, processedEvents);
+            reservationCompletionStarted = true;
+            await _usageService.CompleteEventIngestReservationAsync(reservation, organization, processedEvents);
+            reservationCompleted = true;
 
             int discardedEvents = contexts.Count(c => c.IsDiscarded);
             await _usageService.IncrementDiscardedAsync(organization.Id, project.Id, discardedEvents);
@@ -228,6 +250,14 @@ public class EventPostsJob : QueueJobBase<EventPost>
         catch (Exception ex)
         {
             if (!isInternalProject) _logger.LogError(ex, "Error processing EventPost {QueueEntryId} {FilePath}: {Message}", entry.Id, payloadPath, ex.Message);
+            if (reservationCompletionStarted)
+            {
+                // Completion is an idempotent transition keyed by this queue entry. Never fork new
+                // queue IDs after it starts: retry the original so it can observe Active vs Completed.
+                await AbandonEntryAsync(entry);
+                return JobResult.FailedWithMessage($"Unable to finalize usage for EventPost '{entry.Id}': {ex.Message}");
+            }
+
             if (ex is ArgumentException || ex is DocumentNotFoundException)
             {
                 await CompleteEntryAsync(entry, ep, createdUtc);
@@ -237,6 +267,11 @@ public class EventPostsJob : QueueJobBase<EventPost>
             errorCount++;
             if (!isSingleEvent)
                 eventsToRetry.AddRange(events);
+        }
+        finally
+        {
+            if (!reservationCompleted && !reservationCompletionStarted)
+                await _usageService.ReleaseEventIngestReservationAsync(reservation);
         }
 
         if (eventsToRetry.Count > 0)
@@ -249,6 +284,34 @@ public class EventPostsJob : QueueJobBase<EventPost>
 
         return JobResult.Success;
     }
+
+    private static ulong GetStableEventHash(string queueEntryId, PersistentEvent persistentEvent, int index)
+    {
+        string value = $"{queueEntryId}:{index}:{persistentEvent.ReferenceId}";
+        const ulong offsetBasis = 14695981039346656037;
+        const ulong prime = 1099511628211;
+        ulong hash = offsetBasis;
+        foreach (char character in value)
+        {
+            hash ^= character;
+            hash *= prime;
+        }
+
+        return hash;
+    }
+
+    internal static bool IsSelectedForSmartThrottle(string queueEntryId, PersistentEvent persistentEvent, int index, double sampleRate = SmartThrottleResult.DefaultSampleRate)
+    {
+        int sampleThreshold = (int)(sampleRate * 10_000);
+        return IsHashSelected(GetStableEventHash(queueEntryId, persistentEvent, index), sampleThreshold);
+    }
+
+    private static bool IsHashSelected(ulong hash, int sampleThreshold)
+    {
+        return hash % 10_000 < (ulong)sampleThreshold;
+    }
+
+    private sealed record EventCandidate(PersistentEvent Event, int Index, ulong Hash);
 
     private List<PersistentEvent>? ParseEventPost(EventPostInfo ep, DateTime createdUtc, byte[] uncompressedData, string queueEntryId, bool isInternalProject)
     {

@@ -70,6 +70,7 @@ public class Bootstrapper
             ResiliencePolicyProvider = s.GetRequiredService<IResiliencePolicyProvider>(),
             LoggerFactory = s.GetRequiredService<ILoggerFactory>()
         }));
+        services.AddSingleton<IAtomicCacheBatch, InMemoryAtomicCacheBatch>();
 
         services.AddSingleton<ExceptionlessElasticConfiguration>();
         services.AddSingleton<ElasticsearchClient>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>().Client);
@@ -90,6 +91,8 @@ public class Bootstrapper
             handlers.Register<ForcePredefinedSavedViewsWorkItem>(s.GetRequiredService<ForcePredefinedSavedViewsWorkItemHandler>);
             handlers.Register<OrganizationMaintenanceWorkItem>(s.GetRequiredService<OrganizationMaintenanceWorkItemHandler>);
             handlers.Register<OrganizationNotificationWorkItem>(s.GetRequiredService<OrganizationNotificationWorkItemHandler>);
+            handlers.Register<OrganizationBudgetAlertWorkItem>(s.GetRequiredService<OrganizationBudgetAlertWorkItemHandler>);
+            handlers.Register<ProjectSmartThrottleWorkItem>(s.GetRequiredService<ProjectSmartThrottleWorkItemHandler>);
             handlers.Register<ProjectMaintenanceWorkItem>(s.GetRequiredService<ProjectMaintenanceWorkItemHandler>);
             handlers.Register<ReindexWorkItem>(s.GetRequiredService<ReindexWorkItemHandler>);
             handlers.Register<RemoveBotEventsWorkItem>(s.GetRequiredService<RemoveBotEventsWorkItemHandler>);

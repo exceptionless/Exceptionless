@@ -71,6 +71,20 @@ Content-Type: application/json
 
 { "name": "My updated organization" }
 
+### Enable Budget Alerts
+PATCH {{apiUrl}}/organizations/{{organizationId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "budget_alert_settings": { "enabled": true, "thresholds": [50, 80, 90] } }
+
+### Clear Budget Alert Settings
+PATCH {{apiUrl}}/organizations/{{organizationId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "budget_alert_settings": null }
+
 ### Upload Icon
 # Replace {{iconFile}} with a local PNG, JPEG, GIF, or WebP image.
 POST {{apiUrl}}/organizations/{{organizationId}}/icon

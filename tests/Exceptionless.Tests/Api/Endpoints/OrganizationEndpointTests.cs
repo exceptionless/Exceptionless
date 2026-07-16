@@ -2,6 +2,7 @@ using System.Net;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
@@ -12,6 +13,8 @@ using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
+using Foundatio.AsyncEx;
+using Foundatio.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using Stripe;
 using Xunit;
@@ -1943,6 +1946,115 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         Assert.NotNull(updated);
         Assert.Equal(originalOrganization.Name, updated.Name);
         Assert.Equal(originalOrganization.UpdatedUtc, updated.UpdatedUtc);
+    }
+
+    [Fact]
+    public async Task PatchAsync_SameNameWithBudgetAlertSettings_DoesNotRejectAsDuplicate()
+    {
+        // Regression: If PATCH sends the org's current name alongside budget_alert_settings,
+        // IsOrganizationNameAvailableInternalAsync previously found the org itself and returned
+        // false ("already exists"), rejecting an idempotent name update.
+        var originalOrg = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(originalOrg);
+        originalOrg.MaxEventsPerMonth = 1000;
+        await _organizationRepository.SaveAsync(originalOrg, o => o.ImmediateConsistency().Cache());
+
+        var updated = await SendRequestAsAsync<ViewOrganization>(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
+            .Content(new { name = originalOrg.Name, budget_alert_settings = new { enabled = true, thresholds = new[] { 75 } } })
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(updated);
+        Assert.Equal(originalOrg.Name, updated.Name);
+        Assert.NotNull(updated.BudgetAlertSettings);
+        Assert.True(updated.BudgetAlertSettings.Enabled);
+    }
+
+    [Fact]
+    public async Task PatchAsync_BudgetAlertSettingsNull_ClearsSettings()
+    {
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        organization.BudgetAlertSettings = new OrganizationBudgetAlertSettings { Enabled = true, Thresholds = [50] };
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache());
+
+        var updated = await SendRequestAsAsync<ViewOrganization>(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", organization.Id)
+            .Content("""{"budget_alert_settings":null}""", "application/json")
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(updated);
+        Assert.Null(updated.BudgetAlertSettings);
+    }
+
+    [Theory]
+    [InlineData("{\"budget_alert_settings\":{\"enabled\":false,\"thresholds\":[100]}}")]
+    [InlineData("{\"budget_alert_settings\":{\"enabled\":true,\"thresholds\":[]}}")]
+    public async Task PatchAsync_InvalidBudgetAlertSettings_ReturnsValidationError(string content)
+    {
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        organization.MaxEventsPerMonth = 1000;
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache());
+
+        await SendRequestAsync(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
+            .Content(content, "application/json")
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+    }
+
+    [Fact]
+    public Task PatchAsync_NullBudgetAlertThresholds_ReturnsBadRequest()
+    {
+        return SendRequestAsync(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
+            .Content("""{"budget_alert_settings":{"enabled":true,"thresholds":null}}""", "application/json")
+            .StatusCodeShouldBeBadRequest()
+        );
+    }
+
+    [Fact]
+    public async Task PatchAsync_EnablingAlertAboveCurrentUsage_PublishesOnceImmediately()
+    {
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        organization.MaxEventsPerMonth = 1000;
+        organization.BudgetAlertSettings = null;
+        organization.GetCurrentUsage(TimeProvider).Total = 600;
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache());
+
+        var messageBus = GetService<IMessageBus>();
+        var countdown = new AsyncCountdownEvent(1);
+        OrganizationBudgetAlert? alert = null;
+        await messageBus.SubscribeAsync<OrganizationBudgetAlert>(message =>
+        {
+            alert = message;
+            countdown.Signal();
+        }, TestCancellationToken);
+
+        await SendRequestAsync(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", organization.Id)
+            .Content("""{"budget_alert_settings":{"enabled":true,"thresholds":[50]}}""", "application/json")
+            .StatusCodeShouldBeOk()
+        );
+        await countdown.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.NotNull(alert);
+        Assert.Equal(50, alert.Threshold);
+        Assert.Equal(600, alert.CurrentEventCount);
     }
 
     private static MultipartFormDataContent CreateProfileImageContent()

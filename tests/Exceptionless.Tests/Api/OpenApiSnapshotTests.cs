@@ -125,8 +125,8 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         AssertArrayResponseSchema(paths, "/api/v2/projects/{projectId}/webhooks", "WebHook");
 
         AssertRequiredJsonRequestBody(paths, "/api/v1/error/{id}", "patch", "UpdateEvent");
-        AssertRequiredJsonRequestBody(paths, "/api/v2/organizations/{id}", "patch", "NewOrganization");
-        AssertRequiredJsonRequestBody(paths, "/api/v2/organizations/{id}", "put", "NewOrganization");
+        AssertRequiredJsonRequestBody(paths, "/api/v2/organizations/{id}", "patch", "UpdateOrganization");
+        AssertRequiredJsonRequestBody(paths, "/api/v2/organizations/{id}", "put", "UpdateOrganization");
         AssertRequiredJsonRequestBody(paths, "/api/v2/projects/{id}", "patch", "UpdateProject");
         AssertRequiredJsonRequestBody(paths, "/api/v2/projects/{id}", "put", "UpdateProject");
         AssertRequiredJsonRequestBody(paths, "/api/v2/tokens/{id}", "patch", "UpdateToken");
@@ -193,6 +193,26 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
             Assert.True(eventPost.GetProperty("requestBody").GetProperty("required").GetBoolean());
             AssertResponseCodes(eventPost, "202", "400", "404", "413");
         }
+    }
+
+    [Fact]
+    public async Task GetOpenApiJson_DeltaNullableComplexProperties_PreserveSchemasAndAnnotations()
+    {
+        using var document = await GetOpenApiDocumentAsync();
+        var schemas = document.RootElement.GetProperty("components").GetProperty("schemas");
+
+        AssertNullableReference(schemas, "UpdateOrganization", "budget_alert_settings", "OrganizationBudgetAlertSettings");
+        AssertNullableReference(schemas, "UpdateProject", "ingest_limit", "ProjectIngestLimit");
+
+        var columnOrderAlternatives = schemas
+            .GetProperty("UpdateSavedView")
+            .GetProperty("properties")
+            .GetProperty("column_order")
+            .GetProperty("oneOf")
+            .EnumerateArray();
+        var columnOrderArray = Assert.Single(columnOrderAlternatives, alternative =>
+            alternative.TryGetProperty("type", out var type) && type.GetString() == "array");
+        Assert.Equal(50, columnOrderArray.GetProperty("maxItems").GetInt32());
     }
 
     private async Task<JsonDocument> GetOpenApiDocumentAsync()
@@ -270,5 +290,21 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
 
         foreach (var mediaType in content.EnumerateObject())
             Assert.Equal($"#/components/schemas/{expectedSchema}", mediaType.Value.GetProperty("schema").GetProperty("$ref").GetString());
+    }
+
+    private static void AssertNullableReference(JsonElement schemas, string schemaName, string propertyName, string referenceName)
+    {
+        Assert.True(schemas.TryGetProperty(referenceName, out _), $"Expected referenced schema '{referenceName}'.");
+
+        var propertySchema = schemas
+            .GetProperty(schemaName)
+            .GetProperty("properties")
+            .GetProperty(propertyName);
+        var alternatives = propertySchema.GetProperty("oneOf").EnumerateArray().ToArray();
+
+        Assert.Contains(alternatives, alternative => alternative.TryGetProperty("type", out var type) && type.GetString() == "null");
+        Assert.Contains(alternatives, alternative =>
+            alternative.TryGetProperty("$ref", out var reference) &&
+            reference.GetString() == $"#/components/schemas/{referenceName}");
     }
 }

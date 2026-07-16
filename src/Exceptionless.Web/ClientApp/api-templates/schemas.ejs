@@ -61,7 +61,7 @@ const typeToZod = (rawType, isRequired, nullable, field) => {
     // but outputs "X | null" for nullable arrays fixed via generate-api.mjs workaround.
     if (type.startsWith('null | ')) {
         let innerType = type.replace('null | ', '');
-        if (innerType.startsWith('(') && innerType.endsWith(')') && !innerType.endsWith('[]')) {
+        if (innerType.startsWith('(') && innerType.endsWith(')')) {
             innerType = innerType.slice(1, -1);
         }
         return `${typeToZod(innerType, true, false, field)}.nullable()`;
@@ -69,13 +69,13 @@ const typeToZod = (rawType, isRequired, nullable, field) => {
 
     if (type.endsWith(' | null')) {
         let innerType = type.replace(' | null', '');
-        if (innerType.startsWith('(') && innerType.endsWith(')') && !innerType.endsWith('[]')) {
+        if (innerType.startsWith('(') && innerType.endsWith(')')) {
             innerType = innerType.slice(1, -1);
         }
         return `${typeToZod(innerType, true, false, field)}.nullable()`;
     }
 
-    if (type.startsWith('(') && type.endsWith(')') && !type.includes('[]')) {
+    if (type.startsWith('(') && type.endsWith(')')) {
         type = type.slice(1, -1);
     }
 
@@ -191,7 +191,9 @@ const typeToZod = (rawType, isRequired, nullable, field) => {
 };
 
 const buildZodField = (field) => {
-    const rawType = field.value || 'unknown';
+    const hasNullableOneOf = Array.isArray(field.oneOf) && field.oneOf.some((alternative) => alternative.type === 'null');
+    const nonNullAlternative = hasNullableOneOf ? field.oneOf.find((alternative) => alternative.type !== 'null') : undefined;
+    const rawType = nonNullAlternative?.$parsed?.content || field.value || 'unknown';
     const type = rawType.replace(/\bany\b/g, 'unknown');
     const cleanedType = cleanType(type);
     const readableName = toReadableName(field.name);
@@ -210,13 +212,15 @@ const buildZodField = (field) => {
     const isUuidField = field.format === 'uuid' || fieldNameLower.endsWith('_uuid');
 
     // Check if this is a nullable union type (e.g., "null | string" or "string | null")
-    const isNullableUnion = cleanedType.startsWith('null | ') || cleanedType.endsWith(' | null');
+    const unwrappedType = cleanedType.startsWith('(') && cleanedType.endsWith(')') ? cleanedType.slice(1, -1) : cleanedType;
+    const isNullableUnion = unwrappedType.startsWith('null | ') || unwrappedType.endsWith(' | null');
+    const isFieldNullable = field.nullable || field.isNullable || hasNullableOneOf || isNullableUnion;
 
     // Get the base type (without null union)
-    let baseType = cleanedType;
+    let baseType = unwrappedType;
     if (isNullableUnion) {
         baseType = cleanedType.replace('null | ', '').replace(' | null', '');
-        if (baseType.startsWith('(') && baseType.endsWith(')') && !baseType.endsWith('[]')) {
+        if (baseType.startsWith('(') && baseType.endsWith(')')) {
             baseType = baseType.slice(1, -1);
         }
     }
@@ -344,12 +348,12 @@ const buildZodField = (field) => {
     }
 
     // Handle nullable (adds .nullable())
-    if (isNullableUnion && !zodType.includes('.nullable()')) {
+    if (isFieldNullable && !zodType.includes('.nullable()')) {
         zodType = zodType + '.nullable()';
     }
 
     // Handle optional (non-required fields and nullable fields are optional)
-    if (field.nullable || !field.isRequired) {
+    if (isFieldNullable || !field.isRequired) {
         zodType = zodType + '.optional()';
     }
 

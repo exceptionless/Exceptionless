@@ -25,6 +25,7 @@
             has_slack_integration: false,
             id: '1',
             is_configured: false,
+            is_smart_throttled: false,
             name: 'Frontend App',
             organization_id: 'org1',
             organization_name: 'Test Org',

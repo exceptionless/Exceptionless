@@ -1,36 +1,45 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
+using Foundatio.Lock;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Services;
 
-public class UsageService
+public partial class UsageService
 {
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly ICacheClient _cache;
+    private readonly ILockProvider _lockProvider;
+    private readonly IAtomicCacheBatch _atomicCacheBatch;
     private readonly IMessagePublisher _messagePublisher;
     private readonly NotificationService _notificationService;
+    private readonly AppOptions _appOptions;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger _logger;
     private readonly TimeSpan _bucketSize = TimeSpan.FromMinutes(5);
 
-    public UsageService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ICacheClient cache, IMessagePublisher messagePublisher,
+    public UsageService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ICacheClient cache, ILockProvider lockProvider, IAtomicCacheBatch atomicCacheBatch, IMessagePublisher messagePublisher,
         NotificationService notificationService,
+        AppOptions appOptions,
         TimeProvider timeProvider,
         ILoggerFactory loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
         _cache = cache;
+        _lockProvider = lockProvider;
+        _atomicCacheBatch = atomicCacheBatch;
         _messagePublisher = messagePublisher;
         _notificationService = notificationService;
+        _appOptions = appOptions;
         _timeProvider = timeProvider;
         _logger = loggerFactory.CreateLogger<UsageService>();
     }
@@ -305,6 +314,9 @@ public class UsageService
 
         var bucketUtc = lastUsageSave;
         var currentBucketUtc = utcNow.Floor(_bucketSize);
+        var currentMonthUtc = utcNow.StartOfMonth();
+        if (bucketUtc < currentMonthUtc)
+            bucketUtc = currentMonthUtc;
         var isThrottled = await _cache.GetAsync<bool>(GetThrottledKey(currentBucketUtc, organizationId));
 
         UsageInfoResponse usage;
@@ -407,8 +419,11 @@ public class UsageService
             currentTotal += bucketTotal.Value;
 
         // get previous bucket counter and add it to total since it might not be saved yet
-        var previousBucketTotal = await _cache.GetAsync<int>(GetBucketTotalCacheKey(utcNow.Subtract(_bucketSize), organizationId));
-        if (previousBucketTotal.HasValue)
+        var previousBucketUtc = utcNow.Subtract(_bucketSize);
+        var previousBucketTotal = GetTotalBucket(previousBucketUtc) == GetTotalBucket(utcNow)
+            ? await _cache.GetAsync<int>(GetBucketTotalCacheKey(previousBucketUtc, organizationId))
+            : default;
+        if (previousBucketTotal is { HasValue: true })
             currentTotal += previousBucketTotal.Value;
 
         // check to see if adding this bucket puts the org over the limit
@@ -422,37 +437,71 @@ public class UsageService
         return Math.Max(eventsLeftInBucket, 0);
     }
 
-    public async Task IncrementTotalAsync(string organizationId, string projectId, int eventCount = 1)
+    public Task IncrementTotalAsync(string organizationId, string projectId, int eventCount = 1)
+    {
+        return IncrementTotalAsync(null, organizationId, projectId, eventCount);
+    }
+
+    public Task IncrementTotalAsync(Organization organization, string projectId, int eventCount = 1)
+    {
+        ArgumentNullException.ThrowIfNull(organization);
+        return IncrementTotalAsync(organization, organization.Id, projectId, eventCount);
+    }
+
+    private async Task IncrementTotalAsync(Organization? organization, string organizationId, string projectId, int eventCount)
     {
         if (eventCount <= 0)
             return;
 
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
-
         long bucketTotal = await _cache.IncrementAsync(GetBucketTotalCacheKey(utcNow, organizationId), eventCount, TimeSpan.FromHours(8));
-        await _cache.IncrementAsync(GetBucketTotalCacheKey(utcNow, organizationId, projectId), eventCount, TimeSpan.FromHours(8));
 
-        await _cache.ListAddAsync(GetOrganizationSetKey(utcNow), organizationId, TimeSpan.FromHours(8));
-        await _cache.ListAddAsync(GetProjectSetKey(utcNow), projectId, TimeSpan.FromHours(8));
+        await Task.WhenAll(
+            _cache.IncrementAsync(GetBucketTotalCacheKey(utcNow, organizationId, projectId), eventCount, TimeSpan.FromHours(8)),
+            _cache.ListAddAsync(GetOrganizationSetKey(utcNow), organizationId, TimeSpan.FromHours(8)),
+            _cache.ListAddAsync(GetProjectSetKey(utcNow), projectId, TimeSpan.FromHours(8))
+        );
 
-        int maxEventsPerMonth = await GetMaxEventsPerMonthAsync(organizationId);
+        await PublishUsageIncrementNotificationsAsync(organization, projectId, eventCount, utcNow, bucketTotal, organizationId);
+    }
+
+    private async Task PublishUsageIncrementNotificationsAsync(Organization? organization, string projectId, int eventCount, DateTime utcNow, long bucketTotal, string? organizationId = null)
+    {
+        organizationId ??= organization?.Id ?? throw new ArgumentNullException(nameof(organization));
+
+        int maxEventsPerMonth = organization?.GetMaxEventsPerMonthWithBonus(_timeProvider) ?? await GetMaxEventsPerMonthAsync(organizationId);
         int bucketLimit = GetBucketEventLimit(maxEventsPerMonth);
 
-        var currentTotalCache = await _cache.GetAsync<int>(GetTotalCacheKey(utcNow, organizationId));
-        if (currentTotalCache.HasValue)
+        if (maxEventsPerMonth > 0)
         {
-            long monthTotal = currentTotalCache.Value + bucketTotal;
-            if (monthTotal >= maxEventsPerMonth && monthTotal - maxEventsPerMonth < eventCount)
+            organization ??= await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
+            int persistedTotal = organization?.GetCurrentUsage(_timeProvider).Total ?? 0;
+            var totals = await _cache.GetAllAsync<int>([
+                GetTotalCacheKey(utcNow, organizationId),
+                GetBucketTotalCacheKey(utcNow.Subtract(_bucketSize), organizationId)
+            ]);
+
+            int baseTotal = GetCachedValue(totals, GetTotalCacheKey(utcNow, organizationId), persistedTotal);
+            int previousBucketTotal = GetTotalBucket(utcNow.Subtract(_bucketSize)) == GetTotalBucket(utcNow)
+                ? GetCachedValue(totals, GetBucketTotalCacheKey(utcNow.Subtract(_bucketSize), organizationId))
+                : 0;
+            int currentTotal = checked(baseTotal + previousBucketTotal + (int)bucketTotal);
+            int previousTotal = Math.Max(0, currentTotal - eventCount);
+
+            if (previousTotal < maxEventsPerMonth && currentTotal >= maxEventsPerMonth)
                 await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId });
+
+            if (organization is not null)
+                await PublishCrossedBudgetAlertsAsync(organization, previousTotal, currentTotal, maxEventsPerMonth);
         }
 
-        if (bucketTotal >= bucketLimit && bucketTotal - bucketLimit < eventCount)
+        if (bucketLimit >= 0 && bucketTotal >= bucketLimit && bucketTotal - bucketLimit < eventCount)
         {
-            // org will be throttled during the current bucket of time
             await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId, IsHourly = true });
-            await _cache.SetAsync(GetThrottledKey(utcNow, organizationId), true, TimeSpan.FromMinutes(5));
+            await _cache.SetAsync(GetThrottledKey(utcNow, organizationId), true, _bucketSize);
         }
     }
+
 
     public async Task IncrementBlockedAsync(string organizationId, string? projectId, int eventCount = 1)
     {
@@ -620,6 +669,49 @@ public class UsageService
         return $"usage:{bucket}:projects";
     }
 
+    private string GetBudgetAlertSentKey(DateTime utcTime, string organizationId, int threshold)
+    {
+        int monthBucket = GetTotalBucket(utcTime);
+        return $"usage:budget-alert:{monthBucket}:{organizationId}:{threshold}";
+    }
+
+    private string GetProjectSmartThrottleKey(DateTime utcTime, string organizationId, string projectId)
+    {
+        int bucket = GetCurrentBucket(utcTime);
+        return $"usage:{bucket}:{organizationId}:{projectId}:smart-throttle";
+    }
+
+    private string GetSmartThrottleNotificationKey(DateTime utcTime, string organizationId, string projectId)
+    {
+        int monthBucket = GetTotalBucket(utcTime);
+        return $"usage:smart-throttle-notified:{monthBucket}:{organizationId}:{projectId}";
+    }
+
     private int GetCurrentBucket(DateTime utcTime) => utcTime.Floor(_bucketSize).ToEpoch();
     private int GetTotalBucket(DateTime utcTime) => utcTime.StartOfMonth().ToEpoch();
+}
+
+public class EventIngestAllowance
+{
+    public static readonly EventIngestAllowance Unlimited = new() { EventsLeft = Int32.MaxValue };
+
+    public int EventsLeft { get; init; }
+    public bool IsOverOrgLimit { get; init; }
+    public bool IsOverProjectLimit { get; init; }
+    public int EffectiveProjectLimit { get; init; } = -1;
+    public SmartThrottleResult SmartThrottle { get; init; } = SmartThrottleResult.NoThrottle;
+    public double SampleRate => SmartThrottle.SampleRate;
+}
+
+public class SmartThrottleResult
+{
+    public const double DefaultSampleRate = 0.05;
+    public static readonly SmartThrottleResult NoThrottle = new() { SampleRate = 1.0 };
+
+    public double SampleRate { get; init; } = 1.0;
+    public bool IsThrottled { get; init; }
+    public double ProjectShare { get; init; }
+    public double FairShareRatio { get; init; }
+    public int CurrentProjectUsage { get; init; }
+    public int FairShareLimit { get; init; }
 }

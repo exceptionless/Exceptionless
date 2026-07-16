@@ -87,14 +87,14 @@ public static class OrganizationEndpoints
             }
         });
 
-        group.MapPatch("organizations/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] Delta<NewOrganization>? changes) =>
+        group.MapPatch("organizations/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] Delta<UpdateOrganization>? changes) =>
         {
             if (changes is null)
                 return ApiValidation.MissingRequestBody();
 
             return (await mediator.InvokeAsync<Result<ViewOrganization>>(new OrganizationMessages.UpdateOrganizationMessage(id, changes, httpContext))).ToHttpResult(resultMapper);
         })
-        .Accepts<Delta<NewOrganization>>("application/json", "application/*+json")
+        .Accepts<Delta<UpdateOrganization>>("application/json", "application/*+json")
         .Produces<ViewOrganization>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
@@ -112,14 +112,14 @@ public static class OrganizationEndpoints
             }
         });
 
-        group.MapPut("organizations/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] Delta<NewOrganization>? changes) =>
+        group.MapPut("organizations/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] Delta<UpdateOrganization>? changes) =>
         {
             if (changes is null)
                 return ApiValidation.MissingRequestBody();
 
             return (await mediator.InvokeAsync<Result<ViewOrganization>>(new OrganizationMessages.UpdateOrganizationMessage(id, changes, httpContext))).ToHttpResult(resultMapper);
         })
-        .Accepts<Delta<NewOrganization>>("application/json", "application/*+json")
+        .Accepts<Delta<UpdateOrganization>>("application/json", "application/*+json")
         .Produces<ViewOrganization>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)

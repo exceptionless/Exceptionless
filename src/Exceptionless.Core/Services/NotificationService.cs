@@ -78,6 +78,43 @@ public class NotificationService(ICacheClient cacheClient, IMessagePublisher mes
         return lockProvider.IsLockedAsync(GetOrganizationNotificationLockKey(organizationId, isOverMonthlyLimit));
     }
 
+    public Task<ILock?> TryAcquireUsageNotificationLockAsync(string notificationIdentifier)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(notificationIdentifier);
+        return lockProvider.TryAcquireAsync($"{notificationIdentifier}-lock", OrganizationNotificationLockTimeout, TimeSpan.Zero);
+    }
+
+    public Task<ILock?> TryAcquireUsageNotificationRecipientLockAsync(string notificationIdentifier, string userId)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(notificationIdentifier);
+        ArgumentException.ThrowIfNullOrEmpty(userId);
+
+        return lockProvider.TryAcquireAsync($"{GetUsageNotificationRecipientKey(notificationIdentifier, userId)}-lock", OrganizationNotificationLockTimeout, TimeSpan.Zero);
+    }
+
+    public Task<bool> IsUsageNotificationRecipientSentAsync(string notificationIdentifier, string userId)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(notificationIdentifier);
+        ArgumentException.ThrowIfNullOrEmpty(userId);
+        return cacheClient.ExistsAsync(GetUsageNotificationRecipientKey(notificationIdentifier, userId));
+    }
+
+    public Task MarkUsageNotificationRecipientSentAsync(string notificationIdentifier, string userId, int usagePeriod)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(notificationIdentifier);
+        ArgumentException.ThrowIfNullOrEmpty(userId);
+
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
+        if (usagePeriod <= 0)
+            usagePeriod = utcNow.StartOfMonth().ToEpoch();
+        var periodStartUtc = DateTimeOffset.FromUnixTimeSeconds(usagePeriod).UtcDateTime;
+        var expiresIn = periodStartUtc.AddMonths(1).AddDays(1) - utcNow;
+        if (expiresIn < CacheClientExtensions.MinimumExpiration)
+            expiresIn = CacheClientExtensions.MinimumExpiration;
+
+        return cacheClient.SetAsync(GetUsageNotificationRecipientKey(notificationIdentifier, userId), true, expiresIn);
+    }
+
     private static string GetOrganizationNotificationLockKey(string organizationId, bool isOverMonthlyLimit)
     {
         return $"{OrganizationNotificationWorkItem.GetNotificationKey(organizationId, isOverMonthlyLimit)}-lock";
@@ -86,6 +123,11 @@ public class NotificationService(ICacheClient cacheClient, IMessagePublisher mes
     private static string GetOrganizationNotificationSentKey(string organizationId, bool isOverMonthlyLimit)
     {
         return $"{OrganizationNotificationWorkItem.GetNotificationKey(organizationId, isOverMonthlyLimit)}-sent";
+    }
+
+    private static string GetUsageNotificationRecipientKey(string notificationIdentifier, string userId)
+    {
+        return $"{notificationIdentifier}:{userId}-sent";
     }
 
     private DateTime GetOrganizationNotificationSentExpiresAtUtc()

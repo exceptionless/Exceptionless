@@ -268,4 +268,73 @@ public class EventPostJobTests : IntegrationTestsBase
         occurrenceDate ??= DateTimeOffset.Now;
         return _eventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: occurrenceDate, userIdentity: userIdentity, type: type, source: source, sessionId: sessionId);
     }
+
+    [Fact]
+    public async Task CanRunJob_WhenProjectOverLimit_BlocksEvents()
+    {
+        var project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
+        Assert.NotNull(project);
+        project.IngestLimit = new ProjectIngestLimit { Type = ProjectIngestLimitType.Fixed, FixedLimit = 1 };
+        project.GetCurrentUsage(TimeProvider).Total = 1;
+        await _projectRepository.SaveAsync(project, o => o.ImmediateConsistency().Cache());
+
+        Assert.NotNull(await EnqueueEventPostAsync(GenerateEvent()));
+        Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
+
+        var result = await _job.RunAsync(TestCancellationToken);
+        Assert.True(result.IsSuccess);
+
+        await RefreshDataAsync();
+        Assert.Equal(0, await _eventRepository.CountAsync());
+
+        var usage = await _usageService.GetUsageAsync(TestConstants.OrganizationId, TestConstants.ProjectId);
+        Assert.Equal(1, usage.CurrentUsage.Blocked);
+    }
+
+    [Fact]
+    public async Task CanRunJob_WhenSmartThrottleApplied_BlocksEventsOnce()
+    {
+        var organization = await _organizationRepository.GetByIdAsync(TestConstants.OrganizationId);
+        Assert.NotNull(organization);
+        organization.MaxEventsPerMonth = 1_000_000;
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache());
+
+        var project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
+        Assert.NotNull(project);
+        await _projectRepository.AddAsync(_projectData.GenerateProject(generateId: true, organizationId: organization.Id), o => o.ImmediateConsistency().Cache());
+        await _projectRepository.AddAsync(_projectData.GenerateProject(generateId: true, organizationId: organization.Id), o => o.ImmediateConsistency().Cache());
+        var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
+        var endOfMonth = new DateTime(utcNow.Year, utcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(1);
+        double windowsLeft = Math.Max(1, Math.Ceiling((endOfMonth - utcNow).TotalMinutes / 5));
+        int currentWindowSpike = (int)Math.Floor(organization.MaxEventsPerMonth / windowsLeft * 10 * 0.9);
+        await _usageService.IncrementTotalAsync(organization, project.Id, currentWindowSpike);
+
+        var throttleResult = await _usageService.GetSmartThrottleRateAsync(TestConstants.OrganizationId, TestConstants.ProjectId);
+        Assert.True(throttleResult.IsThrottled);
+        Assert.Equal(0.05, throttleResult.SampleRate);
+
+        var events = Enumerable.Range(0, 100).Select(index => GenerateEvent(source: $"source-{index}")).ToList();
+        Assert.NotNull(await EnqueueEventPostAsync(events));
+
+        var result = await _job.RunAsync(TestCancellationToken);
+        Assert.True(result.IsSuccess);
+
+        var usage = await _usageService.GetUsageAsync(TestConstants.OrganizationId, TestConstants.ProjectId);
+        Assert.True(usage.CurrentUsage.Blocked > 0);
+        Assert.Equal(0, usage.CurrentUsage.Discarded);
+
+        await RefreshDataAsync();
+        Assert.InRange(await _eventRepository.CountAsync(), 1, 20);
+    }
+
+    [Fact]
+    public void SmartThrottleSelection_SingleEventPosts_UsesStableFivePercentSample()
+    {
+        var persistentEvent = GenerateEvent();
+
+        int accepted = Enumerable.Range(0, 1_000)
+            .Count(index => EventPostsJob.IsSelectedForSmartThrottle($"post-{index}", persistentEvent, 0));
+
+        Assert.InRange(accepted, 30, 70);
+    }
 }

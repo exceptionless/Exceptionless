@@ -27,6 +27,7 @@ export const StackStatusSchema = zodEnum([
   "ignored",
   "discarded",
 ]);
+export const ProjectIngestLimitTypeSchema = union([literal(0), literal(1)]);
 export const BillingStatusSchema = union([
   literal(0),
   literal(1),
@@ -91,8 +92,10 @@ export const CountResultSchema = object({
   aggregations: record(
     string(),
     lazy(() => IAggregateSchema),
-  ),
-  data: record(string(), unknown()).nullable(),
+  )
+    .nullable()
+    .optional(),
+  data: record(string(), unknown()).nullable().optional(),
 });
 export type CountResultFormData = Infer<typeof CountResultSchema>;
 
@@ -169,6 +172,9 @@ export const NewProjectSchema = object({
     .regex(/^[a-fA-F0-9]{24}$/, "Organization id has invalid format"),
   name: string().min(1, "Name is required"),
   delete_bot_data_enabled: boolean(),
+  ingest_limit: lazy(() => ProjectIngestLimitSchema)
+    .nullable()
+    .optional(),
   promoted_tabs: array(string()).nullable().optional(),
 });
 export type NewProjectFormData = Infer<typeof NewProjectSchema>;
@@ -422,6 +428,14 @@ export const OAuthTokenResponseSchema = object({
 });
 export type OAuthTokenResponseFormData = Infer<typeof OAuthTokenResponseSchema>;
 
+export const OrganizationBudgetAlertSettingsSchema = object({
+  enabled: boolean(),
+  thresholds: array(number()),
+});
+export type OrganizationBudgetAlertSettingsFormData = Infer<
+  typeof OrganizationBudgetAlertSettingsSchema
+>;
+
 export const PersistentEventSchema = object({
   id: string()
     .length(24, "Id must be exactly 24 characters")
@@ -441,7 +455,8 @@ export const PersistentEventSchema = object({
   type: string()
     .min(1, "Type is required")
     .max(100, "Type must be at most 100 characters")
-    .nullable(),
+    .nullable()
+    .optional(),
   source: string()
     .min(1, "Source is required")
     .max(2000, "Source must be at most 2000 characters")
@@ -473,7 +488,7 @@ export const PredefinedSavedViewDefinitionSchema = object({
   filter: string().min(1, "Filter is required").nullable().optional(),
   time: string().min(1, "Time is required").nullable().optional(),
   sort: string().min(1, "Sort is required").nullable().optional(),
-  filterDefinitions: unknown().optional(),
+  filterDefinitions: unknown().nullable().optional(),
   columns: record(string(), boolean()).nullable().optional(),
   columnOrder: array(string()).nullable().optional(),
   showStats: boolean().nullable().optional(),
@@ -491,6 +506,13 @@ export const ProblemDetailsSchema = object({
   instance: string().min(1, "Instance is required").nullable().optional(),
 });
 export type ProblemDetailsFormData = Infer<typeof ProblemDetailsSchema>;
+
+export const ProjectIngestLimitSchema = object({
+  type: ProjectIngestLimitTypeSchema,
+  fixed_limit: int32().nullable().optional(),
+  percent_of_organization_limit: number().nullable().optional(),
+});
+export type ProjectIngestLimitFormData = Infer<typeof ProjectIngestLimitSchema>;
 
 export const ResetPasswordModelSchema = object({
   password_reset_token: string().length(
@@ -554,7 +576,7 @@ export const StackSchema = object({
 export type StackFormData = Infer<typeof StackSchema>;
 
 export const StringValueFromBodySchema = object({
-  value: string().min(1, "Value is required").nullable(),
+  value: string().min(1, "Value is required").nullable().optional(),
 });
 export type StringValueFromBodyFormData = Infer<
   typeof StringValueFromBodySchema
@@ -578,9 +600,20 @@ export const UpdateEventSchema = object({
 });
 export type UpdateEventFormData = Infer<typeof UpdateEventSchema>;
 
+export const UpdateOrganizationSchema = object({
+  name: string().min(1, "Name is required").optional(),
+  budget_alert_settings: lazy(() => OrganizationBudgetAlertSettingsSchema)
+    .nullable()
+    .optional(),
+});
+export type UpdateOrganizationFormData = Infer<typeof UpdateOrganizationSchema>;
+
 export const UpdateProjectSchema = object({
   name: string().min(1, "Name is required").optional(),
   delete_bot_data_enabled: boolean().optional(),
+  ingest_limit: lazy(() => ProjectIngestLimitSchema)
+    .nullable()
+    .optional(),
   promoted_tabs: array(string()).nullable().optional(),
 });
 export type UpdateProjectFormData = Infer<typeof UpdateProjectSchema>;
@@ -768,6 +801,9 @@ export const ViewOrganizationSchema = object({
   is_throttled: boolean(),
   is_over_monthly_limit: boolean(),
   is_over_request_limit: boolean(),
+  budget_alert_settings: lazy(() => OrganizationBudgetAlertSettingsSchema)
+    .nullable()
+    .optional(),
 });
 export type ViewOrganizationFormData = Infer<typeof ViewOrganizationSchema>;
 
@@ -789,6 +825,12 @@ export const ViewProjectSchema = object({
   event_count: int(),
   has_premium_features: boolean(),
   has_slack_integration: boolean(),
+  ingest_limit: lazy(() => ProjectIngestLimitSchema)
+    .nullable()
+    .optional(),
+  effective_ingest_limit: int32().nullable().optional(),
+  is_smart_throttled: boolean(),
+  smart_throttle_sample_rate: number().nullable().optional(),
   usage_hours: array(lazy(() => UsageHourInfoSchema)),
   usage: array(lazy(() => UsageInfoSchema)),
 });
