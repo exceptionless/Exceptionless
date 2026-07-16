@@ -38,7 +38,11 @@ tests/Exceptionless.Tests/
 ├── AppWebHostFactory.cs         # WebApplicationFactory for integration tests
 ├── IntegrationTestsBase.cs      # Base class for integration tests
 ├── TestWithServices.cs          # Base class for unit tests with DI
-├── Controllers/                 # API controller tests
+├── Api/                         # Minimal API tests, organized by production layer
+│   ├── Endpoints/               # HTTP integration tests by endpoint family
+│   ├── Filters/                 # Endpoint filter unit tests
+│   ├── Handlers/                # Mediator handler unit tests
+│   └── Results/                 # API result mapping tests
 ├── Jobs/                        # Job tests
 ├── Repositories/                # Repository tests
 ├── Services/                    # Service tests
