@@ -118,7 +118,7 @@ export class ExceptionlessE2EJourney {
             this.projectId = getIdFromUrl(this.page, /\/project\/([^/]+)\/configure/);
         }
 
-        await expect(this.page.getByText('Choose your project type.')).toBeVisible();
+        await expect(this.page.getByRole('button', { name: 'Please select a project type' })).toBeVisible();
 
         await selectProjectType(this.page, 'Bash Shell');
         await expect(this.page.getByText('Execute the following in your shell.')).toBeVisible();
@@ -224,7 +224,7 @@ export class ExceptionlessE2EJourney {
         await this.page.waitForURL(/\/next\/project\/[^/]+\/configure/, { timeout: 30_000 });
         this.projectId = getIdFromUrl(this.page, /\/project\/([^/]+)\/configure/);
         this.organizationId = await this.getOrganizationIdByName();
-        await expect(this.page.getByText('Choose your project type.')).toBeVisible();
+        await expect(this.page.getByRole('button', { name: 'Please select a project type' })).toBeVisible();
     }
 
     async submitRepresentativeEvent(): Promise<void> {
