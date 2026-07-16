@@ -24,6 +24,7 @@ public class SavedViewSerializerTests : TestWithServices
             UserId = "660000000000000000000001",
             CreatedByUserId = "660000000000000000000001",
             UpdatedByUserId = "660000000000000000000002",
+            PredefinedContentHash = "95d71d134b0f8f62c6a70de8ec9819f7a0a0e450577764e9c1c13c863ccbe6ba",
             Filter = "(status:open OR status:regressed)",
             FilterDefinitions = """[{"field":"status","operator":"in","values":["open","regressed"]}]""",
             Columns = new Dictionary<string, bool>
@@ -51,6 +52,7 @@ public class SavedViewSerializerTests : TestWithServices
         Assert.Equal("660000000000000000000001", result.UserId);
         Assert.Equal("660000000000000000000001", result.CreatedByUserId);
         Assert.Equal("660000000000000000000002", result.UpdatedByUserId);
+        Assert.Equal("95d71d134b0f8f62c6a70de8ec9819f7a0a0e450577764e9c1c13c863ccbe6ba", result.PredefinedContentHash);
         Assert.Equal("(status:open OR status:regressed)", result.Filter);
         Assert.Equal("Open Issues", result.Name);
         Assert.Equal("[now-7d TO now]", result.Time);

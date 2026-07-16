@@ -33,6 +33,7 @@
     "jsr:@std/toml@^1.0.3": "1.0.11",
     "jsr:@std/yaml@1.1.0": "1.1.0",
     "jsr:@std/yaml@^1.0.5": "1.1.0",
+    "npm:@exceptionless/browser@3.2.1": "3.2.1",
     "npm:@resvg/resvg-wasm@2.6.2": "2.6.2",
     "npm:esbuild@0.28.0": "0.28.0",
     "npm:highlight.js@11.11.1": "11.11.1",
@@ -295,6 +296,16 @@
       "os": ["win32"],
       "cpu": ["x64"]
     },
+    "@exceptionless/browser@3.2.1": {
+      "integrity": "sha512-oPzCIrjEehS6wlPNu1VAUElbTd4nGv+DI1V72k3WDdCk6dsEFqVuWMbROdhBjk/RqoAJo84N5NDMdtPIFGqJ7w==",
+      "dependencies": [
+        "@exceptionless/core",
+        "stacktrace-js"
+      ]
+    },
+    "@exceptionless/core@3.2.1": {
+      "integrity": "sha512-JA4Wwkh9E6K4pJb9/cKR/SmJap5sqUvoi+eFQAKup2ZoliIPO5eSzx6Afb4R7R+N0imxjxQMj5kjcKRfA3X+1w=="
+    },
     "@img/colour@1.1.0": {
       "integrity": "sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ=="
     },
@@ -462,6 +473,12 @@
     "entities@4.5.0": {
       "integrity": "sha512-V0hjH4dGPh9Ao5p0MoRY6BVqtwCjhz6vI5LT8AJ55H+4g9/4vbHx1I54fS0XuclLhDHArPQCiMjDxjaL8fPxhw=="
     },
+    "error-stack-parser@2.1.4": {
+      "integrity": "sha512-Sk5V6wVazPhq5MhpO+AUxJn5x7XSXGl1R93Vn7i+zS15KDVxQijejNCrz8340/2bgLBjR9GtEG8ZVKONDjcqGQ==",
+      "dependencies": [
+        "stackframe"
+      ]
+    },
     "esbuild@0.28.0": {
       "integrity": "sha512-sNR9MHpXSUV/XB4zmsFKN+QgVG82Cc7+/aaxJ8Adi8hyOac+EXptIp45QBPaVyX3N70664wRbTcLTOemCAnyqw==",
       "optionalDependencies": [
@@ -575,6 +592,33 @@
         "@img/sharp-win32-x64"
       ],
       "scripts": true
+    },
+    "source-map@0.5.6": {
+      "integrity": "sha512-MjZkVp0NHr5+TPihLcadqnlVoGIoWo4IBHptutGh9wI3ttUYvCG26HkSuDi+K6lsZ25syXJXcctwgyVCt//xqA=="
+    },
+    "stack-generator@2.0.10": {
+      "integrity": "sha512-mwnua/hkqM6pF4k8SnmZ2zfETsRUpWXREfA/goT8SLCV4iOFa4bzOX2nDipWAZFPTjLvQB82f5yaodMVhK0yJQ==",
+      "dependencies": [
+        "stackframe"
+      ]
+    },
+    "stackframe@1.3.4": {
+      "integrity": "sha512-oeVtt7eWQS+Na6F//S4kJ2K2VbRlS9D43mAlMyVpVWovy9o+jfgH8O9agzANzaiLjclA0oYzUXEM4PurhSUChw=="
+    },
+    "stacktrace-gps@3.1.2": {
+      "integrity": "sha512-GcUgbO4Jsqqg6RxfyTHFiPxdPqF+3LFmQhm7MgCuYQOYuWyqxo5pwRPz5d/u6/WYJdEnWfK4r+jGbyD8TSggXQ==",
+      "dependencies": [
+        "source-map",
+        "stackframe"
+      ]
+    },
+    "stacktrace-js@2.0.2": {
+      "integrity": "sha512-Je5vBeY4S1r/RnLydLl0TBTi3F2qdfWmYsGvtfZgEI+SCprPppaIhQf5nGcal4gI4cGpCV/duLcAzT1np6sQqg==",
+      "dependencies": [
+        "error-stack-parser",
+        "stack-generator",
+        "stacktrace-gps"
+      ]
     },
     "tslib@2.8.1": {
       "integrity": "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w=="
@@ -731,5 +775,10 @@
     "https://cdn.jsdelivr.net/gh/ventojs/vento@2.3.1/plugins/set.ts": "cbe42b771a04203b6fc1c178e655fa2536ab90ae67e52c083cf7c71f37c62711",
     "https://cdn.jsdelivr.net/gh/ventojs/vento@2.3.1/plugins/trim.ts": "8d33271327b09ffd8f569ebde85125b1324fa9538a54d6072ac97a9fb5d24264",
     "https://cdn.jsdelivr.net/gh/ventojs/vento@2.3.1/plugins/unescape.ts": "1c56f0310c7757880df7684fc6b7bf9efd27fdb6b929b89626802f5a99cb93ee"
+  },
+  "workspace": {
+    "dependencies": [
+      "npm:@exceptionless/browser@3.2.1"
+    ]
   }
 }

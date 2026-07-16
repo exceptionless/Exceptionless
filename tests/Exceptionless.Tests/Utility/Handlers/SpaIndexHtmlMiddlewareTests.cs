@@ -341,7 +341,7 @@ public sealed class SpaIndexHtmlMiddlewareTests
                     {
                         endpoints.MapScalarApiReference("/docs", (options, context) =>
                             options.WithNonce(context.RequestServices.GetRequiredService<ICspNonceService>().GetNonce()));
-                        endpoints.MapFallback("{**slug:nonfile}", Startup.CreateSpaFallbackRequestDelegate(endpoints));
+                        endpoints.MapFallback("{**slug:nonfile}", Exceptionless.Web.Program.CreateSpaFallbackRequestDelegate(endpoints));
                     });
                 }))
             .Build();
