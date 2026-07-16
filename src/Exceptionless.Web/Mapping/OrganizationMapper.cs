@@ -27,11 +27,13 @@ public partial class OrganizationMapper
     [MapperIgnoreTarget(nameof(ViewOrganization.ProjectCount))]
     [MapperIgnoreTarget(nameof(ViewOrganization.StackCount))]
     [MapperIgnoreTarget(nameof(ViewOrganization.EventCount))]
+    [MapperIgnoreTarget(nameof(ViewOrganization.IconUrl))]
     private partial ViewOrganization MapToViewOrganizationCore(Organization source);
 
     public ViewOrganization MapToViewOrganization(Organization source)
     {
         var result = MapToViewOrganizationCore(source);
+        result.IconUrl = source.IconFileName;
         result.IsOverMonthlyLimit = source.IsOverMonthlyLimit(_timeProvider);
         return result;
     }

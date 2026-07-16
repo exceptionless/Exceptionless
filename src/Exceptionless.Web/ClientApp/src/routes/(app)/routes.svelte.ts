@@ -12,7 +12,7 @@ import Sessions from '@lucide/svelte/icons/timer';
 import type { NavigationItem } from '../routes.svelte';
 
 import { routes as accountRoutes } from './account/routes.svelte';
-import { routes as eventRoutes } from './events/routes.svelte';
+import { routes as eventRoutes } from './event/routes.svelte';
 import { routes as organizationRoutes } from './organization/routes.svelte';
 import { routes as projectRoutes } from './project/routes.svelte';
 import { routes as systemRoutes } from './system/routes.svelte';
@@ -21,14 +21,14 @@ export function routes(): NavigationItem[] {
     const items = [
         {
             group: 'Dashboards',
-            href: resolve('/(app)/stacks'),
+            href: resolve('/(app)/stack'),
             icon: Stacks,
             shortcut: appKeyboardShortcuts.stacks.keys,
             title: 'Stacks'
         },
         {
             group: 'Dashboards',
-            href: resolve('/(app)/events'),
+            href: resolve('/(app)/event'),
             icon: Events,
             shortcut: appKeyboardShortcuts.allEvents.keys,
             title: 'Events'

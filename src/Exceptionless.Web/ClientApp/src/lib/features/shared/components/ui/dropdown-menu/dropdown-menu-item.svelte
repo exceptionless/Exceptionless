@@ -14,6 +14,7 @@
 	} = $props();
 </script>
 
+<!-- CUSTOM: PREVENT MULTI-WORD SHORTCUT LABEL WRAP FOR CLEANER MENU SPACING. -->
 <DropdownMenuPrimitive.Item
 	bind:ref
 	data-slot="dropdown-menu-item"

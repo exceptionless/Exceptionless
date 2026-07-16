@@ -18,6 +18,7 @@ public static class ConfigurationExtensions
         services.AddSingleton(appOptions.SlackOptions);
         services.AddSingleton(appOptions.StripeOptions);
         services.AddSingleton(appOptions.AuthOptions);
+        services.AddSingleton(appOptions.OAuthServerOptions);
 
         return services;
     }

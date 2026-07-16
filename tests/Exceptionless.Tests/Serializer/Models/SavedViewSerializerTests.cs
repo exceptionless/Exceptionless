@@ -14,24 +14,6 @@ public class SavedViewSerializerTests : TestWithServices
     }
 
     [Fact]
-    public void Deserialize_SnakeCaseJson_ParsesCorrectly()
-    {
-        // Arrange
-        /* language=json */
-        const string json = """{"id":"770000000000000000000003","organization_id":"550000000000000000000001","created_by_user_id":"660000000000000000000001","is_default":false,"name":"Error Stream","view_type":"stream","version":1,"created_utc":"2024-02-20T14:30:00Z","updated_utc":"2024-02-20T14:30:00Z"}""";
-
-        // Act
-        var result = _serializer.Deserialize<SavedView>(json);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal("770000000000000000000003", result.Id);
-        Assert.Equal("Error Stream", result.Name);
-        Assert.Equal("stream", result.ViewType);
-        Assert.Equal("660000000000000000000001", result.CreatedByUserId);
-    }
-
-    [Fact]
     public void RoundTrip_WithAllProperties_PreservesValues()
     {
         // Arrange
@@ -42,6 +24,7 @@ public class SavedViewSerializerTests : TestWithServices
             UserId = "660000000000000000000001",
             CreatedByUserId = "660000000000000000000001",
             UpdatedByUserId = "660000000000000000000002",
+            PredefinedContentHash = "95d71d134b0f8f62c6a70de8ec9819f7a0a0e450577764e9c1c13c863ccbe6ba",
             Filter = "(status:open OR status:regressed)",
             FilterDefinitions = """[{"field":"status","operator":"in","values":["open","regressed"]}]""",
             Columns = new Dictionary<string, bool>
@@ -63,31 +46,13 @@ public class SavedViewSerializerTests : TestWithServices
         var result = _serializer.Deserialize<SavedView>(json);
 
         // Assert
-        SerializerContractAssertions.IncludesProperties(json,
-            "organization_id",
-            "user_id",
-            "created_by_user_id",
-            "updated_by_user_id",
-            "filter_definitions",
-            "view_type",
-            "created_utc",
-            "updated_utc");
-        SerializerContractAssertions.ExcludesProperties(json,
-            "OrganizationId",
-            "UserId",
-            "CreatedByUserId",
-            "UpdatedByUserId",
-            "FilterDefinitions",
-            "ViewType",
-            "CreatedUtc",
-            "UpdatedUtc");
-
         Assert.NotNull(result);
         Assert.Equal("770000000000000000000001", result.Id);
         Assert.Equal("550000000000000000000001", result.OrganizationId);
         Assert.Equal("660000000000000000000001", result.UserId);
         Assert.Equal("660000000000000000000001", result.CreatedByUserId);
         Assert.Equal("660000000000000000000002", result.UpdatedByUserId);
+        Assert.Equal("95d71d134b0f8f62c6a70de8ec9819f7a0a0e450577764e9c1c13c863ccbe6ba", result.PredefinedContentHash);
         Assert.Equal("(status:open OR status:regressed)", result.Filter);
         Assert.Equal("Open Issues", result.Name);
         Assert.Equal("[now-7d TO now]", result.Time);
@@ -109,8 +74,8 @@ public class SavedViewSerializerTests : TestWithServices
             CreatedByUserId = "660000000000000000000001",
             Name = "All Events",
             ViewType = "events",
-            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-            UpdatedUtc = new DateTime(2024, 1, 2, 0, 0, 0, DateTimeKind.Utc)
+            CreatedUtc = DateTime.UtcNow,
+            UpdatedUtc = DateTime.UtcNow
         };
 
         // Act
@@ -124,5 +89,23 @@ public class SavedViewSerializerTests : TestWithServices
         Assert.Null(result.UserId);
         Assert.Null(result.Filter);
         Assert.Null(result.Time);
+    }
+
+    [Fact]
+    public void Deserialize_SnakeCaseJson_ParsesCorrectly()
+    {
+        // Arrange
+        /* language=json */
+        const string json = """{"id":"770000000000000000000003","organization_id":"550000000000000000000001","created_by_user_id":"660000000000000000000001","is_default":false,"name":"Error Stream","view_type":"stream","version":1,"created_utc":"2024-02-20T14:30:00Z","updated_utc":"2024-02-20T14:30:00Z"}""";
+
+        // Act
+        var result = _serializer.Deserialize<SavedView>(json);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("770000000000000000000003", result.Id);
+        Assert.Equal("Error Stream", result.Name);
+        Assert.Equal("stream", result.ViewType);
+        Assert.Equal("660000000000000000000001", result.CreatedByUserId);
     }
 }

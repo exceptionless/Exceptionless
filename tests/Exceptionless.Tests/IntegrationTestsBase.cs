@@ -1,4 +1,6 @@
 using System.Text.Json;
+using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.QueryDsl;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
@@ -11,6 +13,7 @@ using Exceptionless.Tests.Authentication;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Mail;
 using Exceptionless.Tests.Utility;
+using Exceptionless.Web.Security;
 using FluentRest;
 using Foundatio.Caching;
 using Foundatio.Jobs;
@@ -23,7 +26,6 @@ using Foundatio.Storage;
 using Foundatio.Utility;
 using Foundatio.Xunit;
 using Microsoft.AspNetCore.TestHost;
-using Nest;
 using Xunit;
 using HttpMethod = System.Net.Http.HttpMethod;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
@@ -105,6 +107,7 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
 
         services.AddSingleton<IMailer, NullMailer>();
         services.AddSingleton<IDomainLoginProvider, TestDomainLoginProvider>();
+        services.ReplaceSingleton<IOAuthProviderClient, TestOAuthProviderClient>();
 
         services.AddSingleton<EventData>();
         services.AddTransient<EventDataBuilder>();
@@ -165,7 +168,8 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
                 {
                     Query = new MatchAllQuery(),
                     IgnoreUnavailable = true,
-                    Refresh = true
+                    Refresh = true,
+                    Conflicts = Conflicts.Proceed
                 });
             }
 
@@ -212,6 +216,16 @@ public abstract class IntegrationTestsBase : TestWithLoggingBase, Xunit.IAsyncLi
     {
         var settings = GetService<JsonSerializerOptions>();
         return new FluentClient(CreateHttpClient(), new JsonContentSerializer(settings));
+    }
+
+    protected AppSendBuilder AppendApiV1Path(AppSendBuilder builder, params string[] segments)
+    {
+        builder.BaseUri(_server.BaseAddress).AppendPaths("api", "v1");
+
+        foreach (string segment in segments)
+            builder.AppendPath(segment);
+
+        return builder;
     }
 
     protected async Task<HttpResponseMessage> SendRequestAsync(Action<AppSendBuilder> configure)

@@ -10,6 +10,7 @@
 	}: WithElementRef<HTMLAttributes<HTMLDivElement>> = $props();
 </script>
 
+<!-- CUSTOM: MATCH EXCEPTIONLESS CHART CONTAINER APPEARANCE WITH SUBTLE THEMED BORDER + SHADOW. -->
 <div
 	bind:this={ref}
 	data-slot="chart-shell"

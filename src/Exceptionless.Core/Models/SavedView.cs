@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
 using Exceptionless.Core.Attributes;
 using Foundatio.Repositories.Models;
 
@@ -8,9 +9,10 @@ namespace Exceptionless.Core.Models;
 /// A saved view captures filter, time range, and display settings for a dashboard page.
 /// Org-scoped; optionally user-private when UserId is set.
 /// </summary>
-public record SavedView : IOwnedByOrganizationWithIdentity, IHaveDates
+public partial record SavedView : IOwnedByOrganizationWithIdentity, IHaveDates
 {
     public const int MaxFilterDefinitionsLength = 100_000;
+    public const string SlugPattern = "^(?![a-f0-9]{24}$)[a-z0-9]+(?:-[a-z0-9]+)*$";
 
     // Identity
     [ObjectId]
@@ -59,6 +61,10 @@ public record SavedView : IOwnedByOrganizationWithIdentity, IHaveDates
     [MaxLength(150)]
     public string? PredefinedKey { get; set; }
 
+    /// <summary>Content hash of the predefined configuration last applied to this view.</summary>
+    [MaxLength(64)]
+    public string? PredefinedContentHash { get; set; }
+
     /// <summary>Display name shown in the sidebar and picker.</summary>
     [Required]
     [MaxLength(100)]
@@ -67,7 +73,7 @@ public record SavedView : IOwnedByOrganizationWithIdentity, IHaveDates
     /// <summary>URL slug used to load this saved view.</summary>
     [Required]
     [MaxLength(100)]
-    [RegularExpression("^(?![a-f0-9]{24}$)[a-z0-9]+(?:-[a-z0-9]+)*$")]
+    [RegularExpression(SlugPattern)]
     public string Slug { get; set; } = null!;
 
     /// <summary>Date-math time range, e.g. "[now-7d TO now]". Null if no time constraint.</summary>
@@ -89,4 +95,7 @@ public record SavedView : IOwnedByOrganizationWithIdentity, IHaveDates
     // Timestamps
     public DateTime CreatedUtc { get; set; }
     public DateTime UpdatedUtc { get; set; }
+
+    [GeneratedRegex(SlugPattern)]
+    public static partial Regex SlugRegex();
 }

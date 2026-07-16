@@ -13,7 +13,7 @@
 
     let { table }: Props = $props();
 
-    const currentPage = $derived(table.store.state.pagination.pageIndex + 1);
+    const currentPage = $derived((table.options.state?.pagination?.pageIndex ?? table.store.state.pagination.pageIndex) + 1);
     const totalPages = $derived(Math.max(1, table.getPageCount()));
 </script>
 

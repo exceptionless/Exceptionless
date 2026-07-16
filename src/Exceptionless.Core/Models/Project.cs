@@ -12,7 +12,7 @@ public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISup
     {
         Configuration = new ClientConfiguration();
         NotificationSettings = new Dictionary<string, NotificationSettings>();
-        PromotedTabs = new HashSet<string>();
+        PromotedTabs = [];
         DeleteBotDataEnabled = false;
         Usage = new SortedSet<UsageInfo>(Comparer<UsageInfo>.Create((a, b) => a.Date.CompareTo(b.Date)));
         UsageHours = new SortedSet<UsageHourInfo>(Comparer<UsageHourInfo>.Create((a, b) => a.Date.CompareTo(b.Date)));
@@ -57,7 +57,7 @@ public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISup
     /// </summary>
     public DataDictionary? Data { get; set; }
 
-    public HashSet<string>? PromotedTabs { get; set; }
+    public List<string>? PromotedTabs { get; set; }
 
     public string CustomContent { get; set; } = null!;
 

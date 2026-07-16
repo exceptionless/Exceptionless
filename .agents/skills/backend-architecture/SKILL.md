@@ -1,10 +1,11 @@
 ---
 name: backend-architecture
 description: >
-  Use this skill when working on the ASP.NET Core backend — adding controllers, repositories,
-  validators, authorization, WebSocket endpoints, or Aspire orchestration. Apply when modifying
-  project layering (Core, Insulation, Web, Job), configuring services, returning ProblemDetails
-  errors, or understanding how the backend is structured.
+  Use this skill when working on the ASP.NET Core backend — adding controllers, services,
+  repositories, validators, authorization, WebSocket endpoints, jobs, Foundatio infrastructure,
+  configuration, or Aspire orchestration. Prefer this as the backend entrypoint for project
+  layering, C# conventions, logging, ProblemDetails, security-sensitive config, and OpenAPI
+  baseline updates.
 ---
 
 # Backend Architecture
@@ -14,7 +15,7 @@ description: >
 Run `Exceptionless.AppHost` from your IDE, or start everything from the repo root:
 
 ```bash
-aspire run --project src/Exceptionless.AppHost
+aspire run
 ```
 
 ## Project Layering
@@ -36,26 +37,11 @@ Exceptionless.Job         → Background job workers
 
 ### Repositories
 
-Repositories extend `ElasticRepositoryBase<T>` with optional `IValidator<T>` and `AppOptions` injection. They use Foundatio Parsers for query parsing. See `foundatio-repositories` skill for query/pagination/patch patterns.
+Repositories derive from the local repository base classes over `ElasticRepositoryBase<T>` and use `MiniValidationValidator` plus `AppOptions`. They use Foundatio Parsers for query parsing. See `foundatio-repositories` for query, pagination, patch, and aggregation patterns.
 
 ### Validation
 
-**Two patterns** (transitioning to MiniValidator for new code):
-
-**FluentValidation** — domain models in repositories (`src/Exceptionless.Core/Validation/`):
-
-```csharp
-public class OrganizationValidator : AbstractValidator<Organization>
-{
-    public OrganizationValidator(BillingPlans plans)
-    {
-        RuleFor(o => o.Name).NotEmpty().WithMessage("Please specify a valid name.");
-        RuleFor(o => o.PlanId).NotEmpty().WithMessage("Please specify a valid plan id.");
-    }
-}
-```
-
-**MiniValidator** — API request models with DataAnnotations (preferred for new code):
+Use MiniValidator with DataAnnotations on API and domain models:
 
 ```csharp
 public record Login
@@ -73,6 +59,51 @@ public record Login
 ## Exceptionless.Insulation
 
 Infrastructure only — `Configuration/` (YAML), `Geo/` (MaxMind), `HealthChecks/`, `Mail/` (MailKit), `Redis/`.
+
+## C# Project Conventions
+
+- Follow `.editorconfig`, use file-scoped namespaces, and keep diffs minimal.
+- Always use braces for control flow and never add `#region` / `#endregion`.
+- Async methods use the `Async` suffix and pass `CancellationToken` through call chains when available.
+- Prefer constructor injection with `readonly` fields.
+- Use `ValueTask<T>` only for hot paths that often complete synchronously.
+- `ConfigureAwait(false)` is not required in ASP.NET Core code.
+
+## Logging
+
+Use structured message templates with named placeholders. Do not use string interpolation in log messages.
+
+```csharp
+_logger.LogInformation("Saving org ({OrganizationId}-{OrganizationName}) event usage",
+    organizationId, organization.Name);
+```
+
+For cross-cutting context, use `ExceptionlessState` scopes:
+
+```csharp
+using var _ = _logger.BeginScope(new ExceptionlessState()
+    .Organization(organizationId)
+    .Project(projectId));
+```
+
+Never log passwords, API keys, full tokens, or sensitive user data. Log identifiers and safe prefixes only.
+
+## Foundatio Infrastructure
+
+Use Foundatio abstractions rather than provider-specific clients:
+
+| Need | Use |
+| ---- | --- |
+| Distributed cache | `ICacheClient` |
+| Queues | `IQueue<T>` |
+| Pub/sub | `IMessageBus` |
+| File storage | `IFileStorage` |
+| Distributed locks | `ILockProvider` |
+| Retry/circuit breaker | `IResiliencePolicyProvider` |
+
+Queue jobs usually derive from `QueueJobBase<T>`. Scheduled jobs generally derive Foundatio job base classes such as `JobWithLockBase` and use `[Job]` attributes for `InitialDelay`, `Interval`, and related scheduling options. Queue entries should be completed only after durable processing succeeds; abandon transient failures and do not retry validation failures.
+
+Use `foundatio-repositories` for Elasticsearch repository querying, patching, aggregations, and pagination rules.
 
 ## Authorization
 
@@ -125,13 +156,13 @@ Exceptions auto-convert via `ExceptionToProblemDetailsHandler`: `MiniValidatorEx
 
 After any API change (new endpoint, changed status codes, modified request/response models), **always regenerate the OpenAPI baseline**:
 
-```bash
-# Requires the API to be running (aspire run --project src/Exceptionless.AppHost)
-Invoke-WebRequest -Uri "http://localhost:7110/docs/v2/openapi.json" \
-  -OutFile "tests/Exceptionless.Tests/Controllers/Data/openapi.json"
+```powershell
+# Requires the API to be running (`aspire run` or the AppHost)
+Invoke-WebRequest -Uri "https://api-ex.dev.localhost:7111/docs/v2/openapi.json" -OutFile "tests/Exceptionless.Tests/Api/Data/openapi.json"
 ```
 
 Then include the updated `openapi.json` in the same commit as the API change (or amend). The `OpenApiControllerTests.GetOpenApiJson_Default_ReturnsExpectedBaseline` test will fail if the baseline is stale.
+If local TLS tooling fails, use the Aspire-described HTTP endpoint: `http://api-ex.dev.localhost:7110/docs/v2/openapi.json`.
 
 ## WebSocket Hubs (NOT SignalR)
 
@@ -140,3 +171,5 @@ Custom WebSocket implementation using Foundatio `IMessageBus`. `MessageBusBroker
 ## Configuration
 
 Uses YAML files (`appsettings.yml`) + `AddCustomEnvironmentVariables()`. All config binds to `AppOptions` with nested options (`EmailOptions`, `AuthOptions`, `IntercomOptions`, `SlackOptions`, `StripeOptions`). Inject `AppOptions` directly — not `IOptions<T>`.
+
+Secrets come from environment variables or deployment secrets, never committed config. Non-secret configuration belongs in `appsettings.yml`; environment overrides use the `EX_` prefix.

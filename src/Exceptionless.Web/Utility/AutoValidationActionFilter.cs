@@ -46,8 +46,8 @@ public class AutoValidationActionFilter : IAsyncActionFilter
                     // NOTE: Prefer snake_case key (used by model binding) to avoid duplicate key collisions in
                     // CreateValidationProblemDetails when both model binding and IValidatableObject.Validate() produce
                     // errors for the same property. Fall back to the raw MiniValidation key, then default to snake_case.
-                    var normalizedKey = error.Key.ToLowerUnderscoredWords();
-                    var addKey = context.ModelState[normalizedKey] is not null ? normalizedKey
+                    string normalizedKey = error.Key.ToLowerUnderscoredWords();
+                    string addKey = context.ModelState[normalizedKey] is not null ? normalizedKey
                         : context.ModelState[error.Key] is not null ? error.Key
                         : normalizedKey;
                     var modelStateEntry = context.ModelState[addKey];

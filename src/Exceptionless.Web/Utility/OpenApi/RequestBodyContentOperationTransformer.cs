@@ -24,15 +24,51 @@ public class RequestBodyContentOperationTransformer : IOpenApiOperationTransform
             methodInfo = controllerDescriptor.MethodInfo;
         }
 
-        if (methodInfo is null)
+        var endpointMetadata = context.Description.ActionDescriptor.EndpointMetadata;
+        var multipartFileUploadAttribute = endpointMetadata.OfType<MultipartFileUploadAttribute>().FirstOrDefault()
+            ?? methodInfo?.GetCustomAttributes(typeof(MultipartFileUploadAttribute), true).OfType<MultipartFileUploadAttribute>().FirstOrDefault();
+        if (multipartFileUploadAttribute is not null)
+        {
+            operation.RequestBody = new OpenApiRequestBody
+            {
+                Required = true,
+                Content = new Dictionary<string, OpenApiMediaType>
+                {
+                    ["multipart/form-data"] = new()
+                    {
+                        Schema = new OpenApiSchema
+                        {
+                            Type = JsonSchemaType.Object,
+                            Required = new HashSet<string> { multipartFileUploadAttribute.FileParameterName },
+                            Properties = new Dictionary<string, IOpenApiSchema>
+                            {
+                                [multipartFileUploadAttribute.FileParameterName] = new OpenApiSchema
+                                {
+                                    Type = JsonSchemaType.String,
+                                    Format = "binary",
+                                    Description = "The image file to upload."
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            return Task.CompletedTask;
+        }
+
+        var requestBodyContentAttribute = endpointMetadata.OfType<RequestBodyContentAttribute>().FirstOrDefault()
+            ?? methodInfo?.GetCustomAttributes(typeof(RequestBodyContentAttribute), true).OfType<RequestBodyContentAttribute>().FirstOrDefault();
+        if (requestBodyContentAttribute is null)
             return Task.CompletedTask;
 
-        bool hasRequestBodyContent = methodInfo.GetCustomAttributes(typeof(RequestBodyContentAttribute), true).Any();
-        if (!hasRequestBodyContent)
-            return Task.CompletedTask;
-
-        var consumesAttribute = methodInfo.GetCustomAttributes(typeof(ConsumesAttribute), true).FirstOrDefault() as ConsumesAttribute;
-        if (consumesAttribute is null)
+        IEnumerable<string>? contentTypes = requestBodyContentAttribute.ContentTypes.Count > 0
+            ? requestBodyContentAttribute.ContentTypes
+            : (endpointMetadata.OfType<ConsumesAttribute>().FirstOrDefault()
+                ?? methodInfo?.GetCustomAttributes(typeof(ConsumesAttribute), true).FirstOrDefault() as ConsumesAttribute)
+            ?.ContentTypes.AsEnumerable()
+            ?? operation.RequestBody?.Content?.Keys;
+        if (contentTypes is null)
             return Task.CompletedTask;
 
         operation.RequestBody = new OpenApiRequestBody
@@ -41,7 +77,7 @@ public class RequestBodyContentOperationTransformer : IOpenApiOperationTransform
             Content = new Dictionary<string, OpenApiMediaType>()
         };
 
-        foreach (string contentType in consumesAttribute.ContentTypes)
+        foreach (string contentType in contentTypes)
         {
             operation.RequestBody.Content!.Add(contentType, new OpenApiMediaType
             {
@@ -59,4 +95,24 @@ public class RequestBodyContentOperationTransformer : IOpenApiOperationTransform
 [AttributeUsage(AttributeTargets.Method)]
 public class RequestBodyContentAttribute : Attribute
 {
+    public RequestBodyContentAttribute(params string[] contentTypes)
+    {
+        ContentTypes = contentTypes;
+    }
+
+    public IReadOnlyList<string> ContentTypes { get; }
+}
+
+/// <summary>
+/// Attribute to mark endpoints that accept a multipart file upload.
+/// </summary>
+[AttributeUsage(AttributeTargets.Method)]
+public class MultipartFileUploadAttribute : Attribute
+{
+    public string FileParameterName { get; }
+
+    public MultipartFileUploadAttribute(string fileParameterName = "file")
+    {
+        FileParameterName = fileParameterName;
+    }
 }

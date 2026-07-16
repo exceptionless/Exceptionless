@@ -2,7 +2,7 @@
 
 Configuration is read from `components.json`. See [components.json](https://shadcn-svelte.com/docs/components-json) on the docs site for the full schema.
 
-> **IMPORTANT:** Always run commands using the project's package runner: `npx shadcn-svelte@latest`, `pnpm dlx shadcn-svelte@latest`, or `bunx --bun shadcn-svelte@latest`. Check `packageManager` from the project (or lockfile) to choose the right one. Examples below use `npx shadcn-svelte@latest` but substitute the correct runner for the project.
+> **IMPORTANT:** This repo uses npm. Run commands from `src/Exceptionless.Web/ClientApp` with `npx shadcn-svelte@latest ...`.
 
 > **IMPORTANT:** Only use the flags documented below. Do not invent or guess flags — if a flag isn't listed here, it doesn't exist. The CLI auto-detects the package manager; there is no `--package-manager` flag.
 
@@ -131,8 +131,8 @@ Changing presets on an existing project: re-run **`init`** with the new preset (
 | `tailwind.baseColor` | Base palette (cannot change after init)                          |
 | `aliases.*`          | Import aliases; must match `svelte.config.js` / `tsconfig` paths |
 | `registry`           | Base registry URL (default `https://shadcn-svelte.com/registry`) |
-| `style`              | Registered style name (e.g. `nova`, `vega`, …)                   |
-| `iconLibrary`        | Icon set key (`lucide`, `tabler`, …) — drives generated imports  |
+| `style`              | Registered style name when present (e.g. `nova`, `vega`, …)      |
+| `iconLibrary`        | Icon set key when present. This repo currently omits it and uses `@lucide/svelte` in app code. |
 | `typescript`         | Whether TS and optional custom config path                       |
 
 Resolved paths (including `tailwindCss`, `ui`, `components`) are computed by the CLI from `components.json` and the filesystem. Read `components.json` and list the UI directory when you need a snapshot of what is installed.

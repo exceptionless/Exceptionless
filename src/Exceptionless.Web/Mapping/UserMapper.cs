@@ -17,6 +17,7 @@ public partial class UserMapper
     [MapperIgnoreTarget(nameof(ViewUser.IsInvite))]
     [MapperIgnoreTarget(nameof(ViewUser.Roles))]
     [MapperIgnoreTarget(nameof(ViewUser.OrganizationIds))]
+    [MapperIgnoreTarget(nameof(ViewUser.AvatarUrl))]
     private partial ViewUser MapToViewUserCore(User source);
 
     public ViewUser MapToViewUser(User source)
@@ -24,6 +25,7 @@ public partial class UserMapper
         var result = MapToViewUserCore(source);
         result = result with
         {
+            AvatarUrl = source.AvatarFileName,
             Roles = new HashSet<string>(source.Roles),
             OrganizationIds = new HashSet<string>(source.OrganizationIds)
         };

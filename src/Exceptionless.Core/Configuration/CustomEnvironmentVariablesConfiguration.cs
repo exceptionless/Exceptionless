@@ -36,7 +36,7 @@ public class CustomEnvironmentVariablesConfigurationProvider : ConfigurationProv
                 string key = (string)e.Entry.Key;
                 string? value = (string?)e.Entry.Value;
 
-                var normalizedKey = Normalize(key);
+                string normalizedKey = Normalize(key);
                 // remove EX_ prefix
                 if (normalizedKey.StartsWith("EX_"))
                     data[normalizedKey.Substring(3)] = value;

@@ -141,6 +141,8 @@
                             platform: "JavaScript",
                         },
                         { key: "Exceptionless.Node", name: "Node.js", platform: "JavaScript" },
+                        { key: "Exceptionless.ReactNative", name: "React Native", platform: "JavaScript" },
+                        { key: "Exceptionless.Expo", name: "Expo", platform: "JavaScript" },
                     ];
                 }
 
@@ -158,6 +160,14 @@
 
                 function isNode() {
                     return vm.currentProjectType.key === "Exceptionless.Node";
+                }
+
+                function isReactNative() {
+                    return vm.currentProjectType.key === "Exceptionless.ReactNative";
+                }
+
+                function isExpo() {
+                    return vm.currentProjectType.key === "Exceptionless.Expo";
                 }
 
                 function isBashShell() {
@@ -207,9 +217,11 @@
                     vm.isBashShell = isBashShell;
                     vm.isCommandLine = isCommandLine;
                     vm.isDotNet = isDotNet;
+                    vm.isExpo = isExpo;
                     vm.isGeneratingSampleData = false;
                     vm.isJavaScript = isJavaScript;
                     vm.isNode = isNode;
+                    vm.isReactNative = isReactNative;
                     vm.navigateToDashboard = navigateToDashboard;
                     vm.onCopyError = onCopyError;
                     vm.project = {};

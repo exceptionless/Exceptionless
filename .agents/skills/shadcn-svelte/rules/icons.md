@@ -1,6 +1,6 @@
 # Icons
 
-**Always use the project's configured `iconLibrary` for imports.** Check the `iconLibrary` field in `components.json`: `lucide` → `@lucide/svelte`, `tabler` → `@tabler/icons-svelte`, etc. Never assume `@lucide/svelte`.
+**Always use the project's configured icon package for imports.** If `components.json` has an `iconLibrary` field, follow it. This repo currently omits that field and existing app code imports icons from `@lucide/svelte`.
 
 ---
 
@@ -12,7 +12,7 @@ Add `data-icon="inline-start"` (prefix) or `data-icon="inline-end"` (suffix) to 
 
 ```svelte
 <script lang="ts">
-  import { Button } from "$lib/components/ui/button";
+  import { Button } from "$comp/ui/button";
   import SearchIcon from "@lucide/svelte/icons/search";
 </script>
 
@@ -26,7 +26,7 @@ Add `data-icon="inline-start"` (prefix) or `data-icon="inline-end"` (suffix) to 
 
 ```svelte
 <script lang="ts">
-  import { Button } from "$lib/components/ui/button";
+  import { Button } from "$comp/ui/button";
   import SearchIcon from "@lucide/svelte/icons/search";
   import ArrowRightIcon from "@lucide/svelte/icons/arrow-right";
 </script>
@@ -52,7 +52,7 @@ Components handle icon sizing via CSS. Don't add `size-4`, `w-4 h-4`, or other s
 
 ```svelte
 <script lang="ts">
-  import { Button } from "$lib/components/ui/button";
+  import { Button } from "$comp/ui/button";
   import SearchIcon from "@lucide/svelte/icons/search";
 </script>
 
@@ -66,7 +66,7 @@ Components handle icon sizing via CSS. Don't add `size-4`, `w-4 h-4`, or other s
 
 ```svelte
 <script lang="ts">
-  import { Button } from "$lib/components/ui/button";
+  import { Button } from "$comp/ui/button";
   import SearchIcon from "@lucide/svelte/icons/search";
 </script>
 

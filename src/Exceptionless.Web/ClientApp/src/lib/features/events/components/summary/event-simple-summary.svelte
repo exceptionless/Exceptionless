@@ -15,7 +15,7 @@
 
 <div class="line-clamp-2">
     <strong><abbr title={source.data.TypeFullName}>{source.data.Type}</abbr>: </strong>
-    <A class="inline" href={resolve('/(app)/events/[eventId=objectid]', { eventId: source.id })}>{source.data.Message}</A>
+    <A class="inline" href={resolve('/(app)/event/[eventId=objectid]', { eventId: source.id })}>{source.data.Message}</A>
 </div>
 
 {#if source.data.Path}

@@ -1,0 +1,10 @@
+{
+  "url": "https://exceptionless.com",
+  "title": "Exceptionless",
+  "description": "Real-time exception reporting for ASP.NET, Web API, WebForms, WPF, Console, and MVC applications. Includes event organization, notifications, and more.",
+  "author": "Exceptionless Team",
+  "twitter": "@Exceptionless",
+  "signupUrl": "https://be.exceptionless.io/signup?domain=exceptionless.com&type=organic",
+  "appUrl": "https://be.exceptionless.io",
+  "githubUrl": "https://github.com/exceptionless/Exceptionless"
+}
