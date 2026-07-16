@@ -721,6 +721,9 @@
             get filter() {
                 return eventsQueryParameters.filter;
             },
+            get mode() {
+                return eventsQueryParameters.mode;
+            },
             get time() {
                 return eventsQueryParameters.time;
             }

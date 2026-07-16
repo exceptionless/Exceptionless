@@ -877,6 +877,27 @@ public partial class EventEndpointTests : IntegrationTestsBase
         );
     }
 
+    [Theory]
+    [InlineData("critical:false")]
+    [InlineData("first_occurrence:[now-1d TO now]")]
+    public async Task Handle_GetEventCountByOrganizationInStackModeWithFreeStackFilter_ReturnsOk(string filter)
+    {
+        // Arrange
+        await CreateDataAsync(d => d.Event().FreeProject());
+
+        // Act
+        var result = await SendRequestAsAsync<CountResult>(r => r
+            .AsFreeOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "events", "count")
+            .QueryString("filter", filter)
+            .QueryString("mode", "stack_frequent")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(result);
+    }
+
     [Fact]
     public async Task Handle_GetEventsByProjectWithPremiumFilterOnFreeOrganization_ReturnsUpgradeRequired()
     {
