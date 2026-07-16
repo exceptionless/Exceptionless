@@ -9,6 +9,7 @@ internal static class ProfileImageStorage
     public const long MaxFileSize = 5 * 1024 * 1024;
     public const long MaxRequestBodySize = MaxFileSize + 64 * 1024;
     public const string MaxFileSizeDisplayName = "5 MB";
+    public const string PublicCacheControl = "public,max-age=31536000";
     private const string RootPath = "profile-images";
 
     public static async Task<StoredProfileImage?> SaveAsync(
