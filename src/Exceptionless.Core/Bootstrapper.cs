@@ -87,6 +87,7 @@ public class Bootstrapper
         {
             var handlers = new WorkItemHandlers();
             handlers.Register<FixStackStatsWorkItem>(s.GetRequiredService<FixStackStatsWorkItemHandler>);
+            handlers.Register<ForcePredefinedSavedViewsWorkItem>(s.GetRequiredService<ForcePredefinedSavedViewsWorkItemHandler>);
             handlers.Register<OrganizationMaintenanceWorkItem>(s.GetRequiredService<OrganizationMaintenanceWorkItemHandler>);
             handlers.Register<OrganizationNotificationWorkItem>(s.GetRequiredService<OrganizationNotificationWorkItemHandler>);
             handlers.Register<ProjectMaintenanceWorkItem>(s.GetRequiredService<ProjectMaintenanceWorkItemHandler>);
