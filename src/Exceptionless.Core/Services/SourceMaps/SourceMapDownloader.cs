@@ -23,6 +23,7 @@ internal sealed class SourceMapDownloader
         using var generatedResponse = await SendAsync(
             generatedFileUri,
             _options.MaximumGeneratedFileSize,
+            validateContentLength: false,
             request =>
             {
                 request.Headers.Range = new RangeHeaderValue(null, 64 * 1024);
@@ -61,7 +62,7 @@ internal sealed class SourceMapDownloader
 
     private async Task<DownloadedSourceMap?> DownloadContentAsync(Uri sourceMapUri, bool isRefresh, CancellationToken cancellationToken)
     {
-        using var result = await SendAsync(sourceMapUri, _options.MaximumSourceMapSize, null, isRefresh, cancellationToken);
+        using var result = await SendAsync(sourceMapUri, _options.MaximumSourceMapSize, validateContentLength: true, null, isRefresh, cancellationToken);
         if (!result.Response.IsSuccessStatusCode)
             return null;
 
@@ -75,6 +76,7 @@ internal sealed class SourceMapDownloader
     private async Task<HttpDownloadResult> SendAsync(
         Uri uri,
         int maximumBytes,
+        bool validateContentLength,
         Action<HttpRequestMessage>? configureRequest,
         bool isRefresh,
         CancellationToken cancellationToken)
@@ -93,7 +95,7 @@ internal sealed class SourceMapDownloader
 
             var client = _httpClientFactory.CreateClient(SourceMapService.HttpClientName);
             var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            if (response.Content.Headers.ContentLength > maximumBytes)
+            if (validateContentLength && response.Content.Headers.ContentLength > maximumBytes)
             {
                 response.Dispose();
                 throw new InvalidOperationException("The downloaded file exceeded the configured maximum size.");

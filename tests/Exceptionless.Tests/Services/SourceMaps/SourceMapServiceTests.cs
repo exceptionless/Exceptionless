@@ -71,6 +71,7 @@ public sealed class SourceMapServiceTests : TestWithServices
     [Fact]
     public async Task SymbolicateAsync_WithPublicSourceMapHeader_DownloadsAndStoresSourceMap()
     {
+        var options = GetService<AppOptions>();
         var requestedUris = new List<Uri>();
         var handler = new DelegateHandler(request =>
         {
@@ -80,6 +81,7 @@ public sealed class SourceMapServiceTests : TestWithServices
                 Assert.Equal("bytes=-65536", request.Headers.Range?.ToString());
                 Assert.Equal("identity", Assert.Single(request.Headers.AcceptEncoding).Value);
                 var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("minified") };
+                response.Content.Headers.ContentLength = options.SourceMapOptions.MaximumGeneratedFileSize + 1;
                 response.Headers.TryAddWithoutValidation("SourceMap", "app.min.js.map");
                 return response;
             }
@@ -94,7 +96,7 @@ public sealed class SourceMapServiceTests : TestWithServices
             GetService<ILockProvider>(),
             GetService<SourceMapRequestThrottle>(),
             GetService<JsonSerializerOptions>(),
-            GetService<AppOptions>(),
+            options,
             GetService<TimeProvider>(),
             GetService<ILogger<SourceMapService>>());
         var error = CreateError();
