@@ -24,10 +24,9 @@ public class RequestBodyContentOperationTransformer : IOpenApiOperationTransform
             methodInfo = controllerDescriptor.MethodInfo;
         }
 
-        if (methodInfo is null)
-            return Task.CompletedTask;
-
-        var multipartFileUploadAttribute = methodInfo.GetCustomAttributes(typeof(MultipartFileUploadAttribute), true).OfType<MultipartFileUploadAttribute>().FirstOrDefault();
+        var endpointMetadata = context.Description.ActionDescriptor.EndpointMetadata;
+        var multipartFileUploadAttribute = endpointMetadata.OfType<MultipartFileUploadAttribute>().FirstOrDefault()
+            ?? methodInfo?.GetCustomAttributes(typeof(MultipartFileUploadAttribute), true).OfType<MultipartFileUploadAttribute>().FirstOrDefault();
         if (multipartFileUploadAttribute is not null)
         {
             operation.RequestBody = new OpenApiRequestBody
@@ -58,12 +57,18 @@ public class RequestBodyContentOperationTransformer : IOpenApiOperationTransform
             return Task.CompletedTask;
         }
 
-        bool hasRequestBodyContent = methodInfo.GetCustomAttributes(typeof(RequestBodyContentAttribute), true).Any();
-        if (!hasRequestBodyContent)
+        var requestBodyContentAttribute = endpointMetadata.OfType<RequestBodyContentAttribute>().FirstOrDefault()
+            ?? methodInfo?.GetCustomAttributes(typeof(RequestBodyContentAttribute), true).OfType<RequestBodyContentAttribute>().FirstOrDefault();
+        if (requestBodyContentAttribute is null)
             return Task.CompletedTask;
 
-        var consumesAttribute = methodInfo.GetCustomAttributes(typeof(ConsumesAttribute), true).FirstOrDefault() as ConsumesAttribute;
-        if (consumesAttribute is null)
+        IEnumerable<string>? contentTypes = requestBodyContentAttribute.ContentTypes.Count > 0
+            ? requestBodyContentAttribute.ContentTypes
+            : (endpointMetadata.OfType<ConsumesAttribute>().FirstOrDefault()
+                ?? methodInfo?.GetCustomAttributes(typeof(ConsumesAttribute), true).FirstOrDefault() as ConsumesAttribute)
+            ?.ContentTypes.AsEnumerable()
+            ?? operation.RequestBody?.Content?.Keys;
+        if (contentTypes is null)
             return Task.CompletedTask;
 
         operation.RequestBody = new OpenApiRequestBody
@@ -72,7 +77,7 @@ public class RequestBodyContentOperationTransformer : IOpenApiOperationTransform
             Content = new Dictionary<string, OpenApiMediaType>()
         };
 
-        foreach (string contentType in consumesAttribute.ContentTypes)
+        foreach (string contentType in contentTypes)
         {
             operation.RequestBody.Content!.Add(contentType, new OpenApiMediaType
             {
@@ -90,6 +95,12 @@ public class RequestBodyContentOperationTransformer : IOpenApiOperationTransform
 [AttributeUsage(AttributeTargets.Method)]
 public class RequestBodyContentAttribute : Attribute
 {
+    public RequestBodyContentAttribute(params string[] contentTypes)
+    {
+        ContentTypes = contentTypes;
+    }
+
+    public IReadOnlyList<string> ContentTypes { get; }
 }
 
 /// <summary>
