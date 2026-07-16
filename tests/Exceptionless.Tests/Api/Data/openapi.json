@@ -9552,6 +9552,16 @@
                 }
               }
             }
+          },
+          "426": {
+            "description": "Premium session search requires an upgraded plan.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }

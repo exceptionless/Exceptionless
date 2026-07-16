@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { filterUsesPremiumFeatures } from './premium-filter';
+import { filterUsesPremiumFeatures, getSearchResourceForPathname } from './premium-filter';
 
 describe('filterUsesPremiumFeatures', () => {
     it.each([undefined, null, '', 'status:open', '(status:open OR status:regressed)', 'reference:ABC123'])('allows free event filters: %s', (filter) => {
@@ -27,5 +27,15 @@ describe('filterUsesPremiumFeatures', () => {
 
     it('detects a premium field after a free field', () => {
         expect(filterUsesPremiumFeatures('status:open AND tags:important', 'event')).toBe(true);
+    });
+});
+
+describe('getSearchResourceForPathname', () => {
+    it.each(['/stack', '/next/stack/saved-view', '/project/537650f3b77efe23a47914f4/stacks'])('identifies stack search routes: %s', (pathname) => {
+        expect(getSearchResourceForPathname(pathname)).toBe('stack');
+    });
+
+    it.each(['/event', '/stream', '/sessions'])('identifies event search routes: %s', (pathname) => {
+        expect(getSearchResourceForPathname(pathname)).toBe('event');
     });
 });

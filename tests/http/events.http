@@ -144,3 +144,7 @@ Authorization: Bearer {{token}}
 ### Sessions - Get sessions list (summary mode)
 GET {{apiUrl}}/organizations/{{organizationId}}/events/sessions?mode=summary&limit=10&sort=-date
 Authorization: Bearer {{token}}
+
+### Sessions - Get all sessions (returns 426 for a free-only organization selection)
+GET {{apiUrl}}/events/sessions?mode=summary&limit=10&sort=-date
+Authorization: Bearer {{token}}

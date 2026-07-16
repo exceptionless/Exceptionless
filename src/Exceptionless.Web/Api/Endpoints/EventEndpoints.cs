@@ -350,6 +350,7 @@ public static class EventEndpoints
         .RequireAuthorization(AuthorizationRoles.EventsReadPolicy)
         .Produces<IReadOnlyCollection<PersistentEvent>>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
         .WithSummary("Get a list of all sessions")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -366,6 +367,7 @@ public static class EventEndpoints
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
+                ["426"] = "Premium session search requires an upgraded plan.",
             }
         });
 

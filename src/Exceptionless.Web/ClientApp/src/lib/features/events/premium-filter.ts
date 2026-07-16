@@ -33,6 +33,10 @@ export function filterUsesPremiumFeatures(filter: null | string | undefined, res
     return fields.some((field) => !FREE_QUERY_FIELDS[resource].has(field.toLowerCase()));
 }
 
+export function getSearchResourceForPathname(pathname: string): SearchResource {
+    return /(?:^|\/)stack(?:\/|$)/.test(pathname) || /\/project\/[^/]+\/stacks(?:\/|$)/.test(pathname) ? 'stack' : 'event';
+}
+
 /**
  * Extracts field names from a Lucene-style filter string.
  * Matches patterns like `field:value` or `field:(value1 OR value2)`.

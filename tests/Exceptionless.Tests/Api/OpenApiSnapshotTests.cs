@@ -196,6 +196,8 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         foreach (string path in new[] { "/api/v2/stacks", "/api/v2/organizations/{organizationId}/stacks", "/api/v2/projects/{projectId}/stacks" })
             AssertPathResponseCodes(paths, path, "get", "200", "400", "426");
 
+        AssertPathResponseCodes(paths, "/api/v2/events/sessions", "get", "200", "400", "426");
+
         foreach (string path in new[] { "/api/v1/events", "/api/v1/projects/{projectId}/events", "/api/v2/events", "/api/v2/projects/{projectId}/events" })
         {
             var eventPost = paths.GetProperty(path).GetProperty("post");
