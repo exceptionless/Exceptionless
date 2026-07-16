@@ -125,11 +125,26 @@ public sealed class SourceMapDocument
             throw new ArgumentOutOfRangeException(nameof(maximumLines));
 
         int lineCount = 1;
+        int encodedSegmentCount = 0;
+        bool hasEncodedSegment = false;
         foreach (char character in mappings)
         {
+            if (character is ',' or ';')
+            {
+                if (hasEncodedSegment && ++encodedSegmentCount > maximumSegments)
+                    throw new JsonException("The source map contains too many mapping segments.");
+                hasEncodedSegment = false;
+            }
+            else
+            {
+                hasEncodedSegment = true;
+            }
+
             if (character == ';' && ++lineCount > maximumLines)
                 throw new JsonException("The source map contains too many generated lines.");
         }
+        if (hasEncodedSegment && ++encodedSegmentCount > maximumSegments)
+            throw new JsonException("The source map contains too many mapping segments.");
 
         var lines = new List<IReadOnlyList<MappingSegment>>(lineCount);
         int sourceIndex = 0;

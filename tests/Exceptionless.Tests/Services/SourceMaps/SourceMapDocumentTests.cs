@@ -86,9 +86,10 @@ public sealed class SourceMapDocumentTests
     }
 
     [Fact]
-    public void Parse_TooManyMappingSegments_ThrowsJsonException()
+    public void Parse_TooManyOneLineMappingSegments_ThrowsJsonException()
     {
-        byte[] sourceMap = Encoding.UTF8.GetBytes("""{"version":3,"sources":["app.ts"],"names":[],"mappings":"AAAA,CAAC"}""");
+        string mappings = String.Join(',', Enumerable.Repeat("A", 10_000));
+        byte[] sourceMap = Encoding.UTF8.GetBytes($$"""{"version":3,"sources":[],"names":[],"mappings":"{{mappings}}"}""");
 
         var exception = Assert.Throws<JsonException>(() => SourceMapDocument.Parse(sourceMap, maximumSegments: 1));
 
