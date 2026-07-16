@@ -16,6 +16,9 @@ public class AggregateDocumentTransformer : IOpenApiDocumentTransformer
         // Remove any generic aggregate types that leaked through (they have backticks in names)
         RemoveGenericAggregateTypes(document);
 
+        // Upload operations replace the framework form-file schema with the public binary-file contract.
+        document.Components?.Schemas?.Remove("IFormFile");
+
         // Then fix CountResult.aggregations to reference IAggregate
         FixCountResultSchema(document);
 

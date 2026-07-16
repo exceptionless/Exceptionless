@@ -324,6 +324,13 @@ export const OAuthAuthorizeFormSchema = object({
 });
 export type OAuthAuthorizeFormFormData = Infer<typeof OAuthAuthorizeFormSchema>;
 
+export const OAuthAuthorizeResponseSchema = object({
+  redirect_uri: string().min(1, "Redirect uri is required"),
+});
+export type OAuthAuthorizeResponseFormData = Infer<
+  typeof OAuthAuthorizeResponseSchema
+>;
+
 export const OAuthClientRegistrationRequestSchema = object({
   redirect_uris: array(string()).nullable().optional(),
   client_name: string().min(1, "Client name is required").nullable().optional(),
@@ -356,6 +363,15 @@ export type OAuthClientRegistrationResponseFormData = Infer<
   typeof OAuthClientRegistrationResponseSchema
 >;
 
+export const OAuthErrorResponseSchema = object({
+  error: string().min(1, "Error is required"),
+  error_description: string()
+    .min(1, "Error description is required")
+    .nullable()
+    .optional(),
+});
+export type OAuthErrorResponseFormData = Infer<typeof OAuthErrorResponseSchema>;
+
 export const OAuthProtectedResourceMetadataSchema = object({
   resource: string().min(1, "Resource is required"),
   authorization_servers: array(string()),
@@ -366,6 +382,32 @@ export const OAuthProtectedResourceMetadataSchema = object({
 export type OAuthProtectedResourceMetadataFormData = Infer<
   typeof OAuthProtectedResourceMetadataSchema
 >;
+
+export const OAuthRevokeFormSchema = object({
+  token: string().min(1, "Token is required").nullable().optional(),
+  client_id: string().min(1, "Client id is required").nullable().optional(),
+});
+export type OAuthRevokeFormFormData = Infer<typeof OAuthRevokeFormSchema>;
+
+export const OAuthTokenFormSchema = object({
+  grant_type: string().min(1, "Grant type is required"),
+  code: string().min(1, "Code is required").nullable().optional(),
+  redirect_uri: string()
+    .min(1, "Redirect uri is required")
+    .nullable()
+    .optional(),
+  client_id: string().min(1, "Client id is required").nullable().optional(),
+  code_verifier: string()
+    .min(1, "Code verifier is required")
+    .nullable()
+    .optional(),
+  refresh_token: string()
+    .min(1, "Refresh token is required")
+    .nullable()
+    .optional(),
+  resource: string().min(1, "Resource is required").nullable().optional(),
+});
+export type OAuthTokenFormFormData = Infer<typeof OAuthTokenFormSchema>;
 
 export const OAuthTokenResponseSchema = object({
   access_token: string().min(1, "Access token is required"),
@@ -441,6 +483,15 @@ export type PredefinedSavedViewDefinitionFormData = Infer<
   typeof PredefinedSavedViewDefinitionSchema
 >;
 
+export const ProblemDetailsSchema = object({
+  type: string().min(1, "Type is required").nullable().optional(),
+  title: string().min(1, "Title is required").nullable().optional(),
+  status: int32().nullable().optional(),
+  detail: string().min(1, "Detail is required").nullable().optional(),
+  instance: string().min(1, "Instance is required").nullable().optional(),
+});
+export type ProblemDetailsFormData = Infer<typeof ProblemDetailsSchema>;
+
 export const ResetPasswordModelSchema = object({
   password_reset_token: string().length(
     40,
@@ -501,14 +552,6 @@ export const StackSchema = object({
   allow_notifications: boolean(),
 });
 export type StackFormData = Infer<typeof StackSchema>;
-
-export const StringStringValuesKeyValuePairSchema = object({
-  key: string().min(1, "Key is required").nullable(),
-  value: array(string()),
-});
-export type StringStringValuesKeyValuePairFormData = Infer<
-  typeof StringStringValuesKeyValuePairSchema
->;
 
 export const StringValueFromBodySchema = object({
   value: string().min(1, "Value is required").nullable(),
