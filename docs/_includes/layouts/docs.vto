@@ -1,0 +1,29 @@
+---
+layout: layouts/base.vto
+---
+<div class="page-header margin-top" data-search-ignore>
+  <h1 id="documentation">Documentation</h1>
+</div>
+
+<div id="wrap" class="container" role="document">
+  <div id="responsive-menu" data-search-ignore><button class="btn btn-primary" type="button" data-docs-toc-toggle>Table of Contents</button></div>
+  <div id="content" class="row-fluid">
+    <div class="toc well span3 visible-toc" data-search-ignore>
+      <button
+        class="docs-search-trigger"
+        type="button"
+        data-site-search-open
+        aria-label="Search documentation"
+        aria-keyshortcuts="Meta+K Control+K /"
+      >
+        <i class="icon-search" aria-hidden="true"></i>
+        <span>Search docs...</span>
+        <kbd aria-hidden="true">/</kbd>
+      </button>
+      {{ docsNavHtml(search, url) }}
+    </div>
+    <div class="well span9 docs">
+      {{ content }}
+    </div>
+  </div>
+</div>

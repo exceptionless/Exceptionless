@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Models.Data;
@@ -66,11 +67,13 @@ public class EnvironmentInfo : IData
     /// <summary>
     /// The OS name that the error occurred on.
     /// </summary>
+    [JsonPropertyName("o_s_name")]
     public string? OSName { get; set; }
 
     /// <summary>
     /// The OS version that the error occurred on.
     /// </summary>
+    [JsonPropertyName("o_s_version")]
     public string? OSVersion { get; set; }
 
     /// <summary>

@@ -2,8 +2,8 @@ import type { ElasticsearchSnapshot } from '$features/admin/models';
 
 import DateTime from '$comp/formatters/date-time.svelte';
 import Number from '$comp/formatters/number.svelte';
-import { getSharedTableOptions, type TableMemoryPagingParameters } from '$features/shared/table.svelte';
-import { type ColumnDef, createSortedRowModel, renderComponent, sortFns, type StockFeatures } from '@tanstack/svelte-table';
+import { getSharedTableOptions, type TableMemoryPagingParameters, withClientSortedRowModel } from '$features/shared/table.svelte';
+import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
 
 import ShardsCell from './shards-cell.svelte';
 import SnapshotStatusCell from './snapshot-status-cell.svelte';
@@ -79,11 +79,12 @@ export function getTableOptions(queryParameters: TableMemoryPagingParameters, ge
             return getColumns();
         },
         configureOptions: (options) => {
-            options.getRowId = (row) => row.repository + '/' + row.name;
-            options._rowModels = { ...options._rowModels, sortedRowModel: createSortedRowModel(sortFns) };
-            options.initialState = { sorting: [{ desc: true, id: 'start_time' }] };
-            options.manualSorting = false;
-            return options;
+            return {
+                ...withClientSortedRowModel(options),
+                getRowId: (row) => row.repository + '/' + row.name,
+                initialState: { sorting: [{ desc: true, id: 'start_time' }] },
+                manualSorting: false
+            };
         },
         paginationStrategy: 'memory',
         get queryData() {

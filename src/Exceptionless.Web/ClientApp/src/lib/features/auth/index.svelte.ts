@@ -117,7 +117,7 @@ export async function googleLogin(redirectUrl?: string) {
 
 export async function gotoLogin() {
     const url = page.url;
-    const isAuthPath = url.pathname.startsWith('/next/login') || url.pathname.startsWith('/next/logout');
+    const isAuthPath = url.pathname.startsWith('/next/login');
     const redirect = url.pathname === resolve('/') || isAuthPath ? resolve('/(auth)/login') : `${resolve('/(auth)/login')}?redirect=${url.pathname}`;
     await goto(redirect, { replaceState: true });
 }

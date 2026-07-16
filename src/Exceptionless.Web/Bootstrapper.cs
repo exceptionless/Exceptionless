@@ -1,9 +1,8 @@
 using Exceptionless.Core;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs.WorkItemHandlers;
-using Exceptionless.Core.Queues.Models;
 using Exceptionless.Web.Hubs;
 using Exceptionless.Web.Mapping;
+using Exceptionless.Web.Security;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
@@ -18,6 +17,7 @@ public class Bootstrapper
         services.AddSingleton<MessageBusBroker>();
 
         services.AddSingleton<ApiMapper>();
+        services.AddSingleton<IOAuthProviderClient, OAuthProviderClient>();
 
         Core.Bootstrapper.RegisterServices(services, appOptions);
         Insulation.Bootstrapper.RegisterServices(services, appOptions, appOptions.RunJobsInProcess);
@@ -25,7 +25,7 @@ public class Bootstrapper
         if (appOptions.RunJobsInProcess)
             Core.Bootstrapper.AddHostedJobs(services, loggerFactory);
 
-        var logger = loggerFactory.CreateLogger<Startup>();
+        var logger = loggerFactory.CreateLogger<Program>();
         services.AddStartupAction<MessageBusBroker>();
         services.AddStartupAction("Subscribe to Log Work Item Progress", (sp, ct) =>
         {

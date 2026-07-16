@@ -169,6 +169,7 @@ export const NewProjectSchema = object({
     .regex(/^[a-fA-F0-9]{24}$/, "Organization id has invalid format"),
   name: string().min(1, "Name is required"),
   delete_bot_data_enabled: boolean(),
+  promoted_tabs: array(string()).nullable().optional(),
 });
 export type NewProjectFormData = Infer<typeof NewProjectSchema>;
 
@@ -197,7 +198,10 @@ export const NewSavedViewSchema = object({
   slug: string()
     .min(1, "Slug is required")
     .max(100, "Slug must be at most 100 characters")
-    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug has invalid format")
+    .regex(
+      /^(?![a-f0-9]{24}$)[a-z0-9]+(?:-[a-z0-9]+)*$/,
+      "Slug has invalid format",
+    )
     .nullable()
     .optional(),
   view_type: string().min(1, "View type is required"),
@@ -277,6 +281,147 @@ export const OAuthAccountSchema = object({
 });
 export type OAuthAccountFormData = Infer<typeof OAuthAccountSchema>;
 
+export const OAuthAuthorizationServerMetadataSchema = object({
+  issuer: string().min(1, "Issuer is required"),
+  authorization_endpoint: string().min(1, "Authorization endpoint is required"),
+  token_endpoint: string().min(1, "Token endpoint is required"),
+  registration_endpoint: string().min(1, "Registration endpoint is required"),
+  revocation_endpoint: string().min(1, "Revocation endpoint is required"),
+  grant_types_supported: array(string()),
+  response_types_supported: array(string()),
+  code_challenge_methods_supported: array(string()),
+  token_endpoint_auth_methods_supported: array(string()),
+  scopes_supported: array(string()),
+  resource_documentation: string().min(1, "Resource documentation is required"),
+  client_id_metadata_document_supported: boolean(),
+});
+export type OAuthAuthorizationServerMetadataFormData = Infer<
+  typeof OAuthAuthorizationServerMetadataSchema
+>;
+
+export const OAuthAuthorizeConsentResponseSchema = object({
+  client_id: string().min(1, "Client id is required"),
+  client_name: string().min(1, "Client name is required"),
+  redirect_uri: string().min(1, "Redirect uri is required"),
+  resource: string().min(1, "Resource is required"),
+  scopes: array(string()),
+  required_scopes: array(string()),
+});
+export type OAuthAuthorizeConsentResponseFormData = Infer<
+  typeof OAuthAuthorizeConsentResponseSchema
+>;
+
+export const OAuthAuthorizeFormSchema = object({
+  client_id: string().min(1, "Client id is required"),
+  response_type: string().min(1, "Response type is required"),
+  redirect_uri: string().min(1, "Redirect uri is required"),
+  scope: string().min(1, "Scope is required").nullable().optional(),
+  state: string().min(1, "State is required").nullable().optional(),
+  code_challenge: string().min(1, "Code challenge is required"),
+  code_challenge_method: string().min(1, "Code challenge method is required"),
+  resource: string().min(1, "Resource is required").nullable().optional(),
+  organization_ids: array(string()).nullable().optional(),
+});
+export type OAuthAuthorizeFormFormData = Infer<typeof OAuthAuthorizeFormSchema>;
+
+export const OAuthAuthorizeResponseSchema = object({
+  redirect_uri: string().min(1, "Redirect uri is required"),
+});
+export type OAuthAuthorizeResponseFormData = Infer<
+  typeof OAuthAuthorizeResponseSchema
+>;
+
+export const OAuthClientRegistrationRequestSchema = object({
+  redirect_uris: array(string()).nullable().optional(),
+  client_name: string().min(1, "Client name is required").nullable().optional(),
+  scope: string().min(1, "Scope is required").nullable().optional(),
+  grant_types: array(string()).nullable().optional(),
+  response_types: array(string()).nullable().optional(),
+  token_endpoint_auth_method: string()
+    .min(1, "Token endpoint auth method is required")
+    .nullable()
+    .optional(),
+});
+export type OAuthClientRegistrationRequestFormData = Infer<
+  typeof OAuthClientRegistrationRequestSchema
+>;
+
+export const OAuthClientRegistrationResponseSchema = object({
+  client_id: string().min(1, "Client id is required"),
+  client_name: string().min(1, "Client name is required"),
+  redirect_uris: array(string()),
+  grant_types: array(string()),
+  response_types: array(string()),
+  scope: string().min(1, "Scope is required"),
+  token_endpoint_auth_method: string().min(
+    1,
+    "Token endpoint auth method is required",
+  ),
+  client_id_issued_at: int(),
+});
+export type OAuthClientRegistrationResponseFormData = Infer<
+  typeof OAuthClientRegistrationResponseSchema
+>;
+
+export const OAuthErrorResponseSchema = object({
+  error: string().min(1, "Error is required"),
+  error_description: string()
+    .min(1, "Error description is required")
+    .nullable()
+    .optional(),
+});
+export type OAuthErrorResponseFormData = Infer<typeof OAuthErrorResponseSchema>;
+
+export const OAuthProtectedResourceMetadataSchema = object({
+  resource: string().min(1, "Resource is required"),
+  authorization_servers: array(string()),
+  scopes_supported: array(string()),
+  bearer_methods_supported: array(string()),
+  resource_documentation: string().min(1, "Resource documentation is required"),
+});
+export type OAuthProtectedResourceMetadataFormData = Infer<
+  typeof OAuthProtectedResourceMetadataSchema
+>;
+
+export const OAuthRevokeFormSchema = object({
+  token: string().min(1, "Token is required").nullable().optional(),
+  client_id: string().min(1, "Client id is required").nullable().optional(),
+});
+export type OAuthRevokeFormFormData = Infer<typeof OAuthRevokeFormSchema>;
+
+export const OAuthTokenFormSchema = object({
+  grant_type: string().min(1, "Grant type is required"),
+  code: string().min(1, "Code is required").nullable().optional(),
+  redirect_uri: string()
+    .min(1, "Redirect uri is required")
+    .nullable()
+    .optional(),
+  client_id: string().min(1, "Client id is required").nullable().optional(),
+  code_verifier: string()
+    .min(1, "Code verifier is required")
+    .nullable()
+    .optional(),
+  refresh_token: string()
+    .min(1, "Refresh token is required")
+    .nullable()
+    .optional(),
+  resource: string().min(1, "Resource is required").nullable().optional(),
+});
+export type OAuthTokenFormFormData = Infer<typeof OAuthTokenFormSchema>;
+
+export const OAuthTokenResponseSchema = object({
+  access_token: string().min(1, "Access token is required"),
+  token_type: string().min(1, "Token type is required"),
+  expires_in: int32(),
+  refresh_token: string()
+    .min(1, "Refresh token is required")
+    .nullable()
+    .optional(),
+  scope: string().min(1, "Scope is required").nullable().optional(),
+  resource: string().min(1, "Resource is required").nullable().optional(),
+});
+export type OAuthTokenResponseFormData = Infer<typeof OAuthTokenResponseSchema>;
+
 export const PersistentEventSchema = object({
   id: string()
     .length(24, "Id must be exactly 24 characters")
@@ -319,6 +464,33 @@ export const PersistentEventSchema = object({
     .optional(),
 });
 export type PersistentEventFormData = Infer<typeof PersistentEventSchema>;
+
+export const PredefinedSavedViewDefinitionSchema = object({
+  key: string().min(1, "Key is required"),
+  name: string().min(1, "Name is required"),
+  slug: string().min(1, "Slug is required"),
+  viewType: string().min(1, "View type is required"),
+  filter: string().min(1, "Filter is required").nullable().optional(),
+  time: string().min(1, "Time is required").nullable().optional(),
+  sort: string().min(1, "Sort is required").nullable().optional(),
+  filterDefinitions: unknown().optional(),
+  columns: record(string(), boolean()).nullable().optional(),
+  columnOrder: array(string()).nullable().optional(),
+  showStats: boolean().nullable().optional(),
+  showChart: boolean().nullable().optional(),
+});
+export type PredefinedSavedViewDefinitionFormData = Infer<
+  typeof PredefinedSavedViewDefinitionSchema
+>;
+
+export const ProblemDetailsSchema = object({
+  type: string().min(1, "Type is required").nullable().optional(),
+  title: string().min(1, "Title is required").nullable().optional(),
+  status: int32().nullable().optional(),
+  detail: string().min(1, "Detail is required").nullable().optional(),
+  instance: string().min(1, "Instance is required").nullable().optional(),
+});
+export type ProblemDetailsFormData = Infer<typeof ProblemDetailsSchema>;
 
 export const ResetPasswordModelSchema = object({
   password_reset_token: string().length(
@@ -381,14 +553,6 @@ export const StackSchema = object({
 });
 export type StackFormData = Infer<typeof StackSchema>;
 
-export const StringStringValuesKeyValuePairSchema = object({
-  key: string().min(1, "Key is required").nullable(),
-  value: array(string()),
-});
-export type StringStringValuesKeyValuePairFormData = Infer<
-  typeof StringStringValuesKeyValuePairSchema
->;
-
 export const StringValueFromBodySchema = object({
   value: string().min(1, "Value is required").nullable(),
 });
@@ -417,6 +581,7 @@ export type UpdateEventFormData = Infer<typeof UpdateEventSchema>;
 export const UpdateProjectSchema = object({
   name: string().min(1, "Name is required").optional(),
   delete_bot_data_enabled: boolean().optional(),
+  promoted_tabs: array(string()).nullable().optional(),
 });
 export type UpdateProjectFormData = Infer<typeof UpdateProjectSchema>;
 
@@ -425,12 +590,7 @@ export const UpdateSavedViewSchema = object({
   filter: string().min(1, "Filter is required").nullable().optional(),
   time: string().min(1, "Time is required").nullable().optional(),
   sort: string().min(1, "Sort is required").nullable().optional(),
-  slug: string()
-    .min(1, "Slug is required")
-    .max(100, "Slug must be at most 100 characters")
-    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug has invalid format")
-    .nullable()
-    .optional(),
+  slug: string().min(1, "Slug is required").nullable().optional(),
   filter_definitions: string()
     .min(1, "Filter definitions is required")
     .nullable()
@@ -490,6 +650,11 @@ export const UserSchema = object({
   o_auth_accounts: array(lazy(() => OAuthAccountSchema)),
   full_name: string().min(1, "Full name is required"),
   email_address: email(),
+  avatar_file_name: string()
+    .min(1, "Avatar file name is required")
+    .max(2000, "Avatar file name must be at most 2000 characters")
+    .nullable()
+    .optional(),
   email_notifications_enabled: boolean(),
   is_email_address_verified: boolean(),
   verify_email_address_token: string()
@@ -521,6 +686,7 @@ export const ViewCurrentUserSchema = object({
   organization_ids: array(string()),
   full_name: string().min(1, "Full name is required"),
   email_address: email(),
+  avatar_url: url().nullable().optional(),
   email_notifications_enabled: boolean(),
   is_email_address_verified: boolean(),
   is_active: boolean(),
@@ -529,6 +695,30 @@ export const ViewCurrentUserSchema = object({
 });
 export type ViewCurrentUserFormData = Infer<typeof ViewCurrentUserSchema>;
 
+export const ViewOAuthGrantSchema = object({
+  id: string().min(1, "Id is required"),
+  client_id: string().min(1, "Client id is required"),
+  application_name: string().min(1, "Application name is required"),
+  is_application_disabled: boolean(),
+  scopes: array(string()),
+  organization_ids: array(string()),
+  resources: array(lazy(() => ViewOAuthGrantResourceSchema)),
+  created_utc: iso.datetime(),
+  updated_utc: iso.datetime(),
+  expires_utc: iso.datetime().nullable().optional(),
+  refresh_expires_utc: iso.datetime().nullable().optional(),
+});
+export type ViewOAuthGrantFormData = Infer<typeof ViewOAuthGrantSchema>;
+
+export const ViewOAuthGrantResourceSchema = object({
+  resource: string().min(1, "Resource is required"),
+  scopes: array(string()),
+  organization_ids: array(string()),
+});
+export type ViewOAuthGrantResourceFormData = Infer<
+  typeof ViewOAuthGrantResourceSchema
+>;
+
 export const ViewOrganizationSchema = object({
   id: string()
     .length(24, "Id must be exactly 24 characters")
@@ -536,6 +726,7 @@ export const ViewOrganizationSchema = object({
   created_utc: iso.datetime(),
   updated_utc: iso.datetime(),
   name: string().min(1, "Name is required"),
+  icon_url: url().nullable().optional(),
   plan_id: string().min(1, "Plan id is required"),
   plan_name: string().min(1, "Plan name is required"),
   plan_description: string().min(1, "Plan description is required"),
@@ -633,10 +824,7 @@ export const ViewSavedViewSchema = object({
   show_stats: boolean().nullable().optional(),
   show_chart: boolean().nullable().optional(),
   name: string().min(1, "Name is required"),
-  slug: string()
-    .min(1, "Slug is required")
-    .max(100, "Slug must be at most 100 characters")
-    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug has invalid format"),
+  slug: string().min(1, "Slug is required"),
   time: string().min(1, "Time is required").nullable().optional(),
   sort: string().min(1, "Sort is required").nullable().optional(),
   version: int32(),
@@ -683,6 +871,7 @@ export const ViewUserSchema = object({
   organization_ids: array(string()),
   full_name: string().min(1, "Full name is required"),
   email_address: email(),
+  avatar_url: url().nullable().optional(),
   email_notifications_enabled: boolean(),
   is_email_address_verified: boolean(),
   is_active: boolean(),

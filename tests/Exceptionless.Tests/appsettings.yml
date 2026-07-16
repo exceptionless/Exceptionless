@@ -20,6 +20,7 @@ MaximumRetentionDays: 3650
 
 # Controls whether daily summary emails are sent
 EnableDailySummary: false
+ContactEmailAddress: "contact@exceptionless.test"
 
 # Runs the jobs in the current website process
 RunJobsInProcess: false

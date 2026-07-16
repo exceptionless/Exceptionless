@@ -2,10 +2,12 @@
     import type { IFilter } from '$comp/faceted-filter';
     import type { ProblemDetails } from '@exceptionless/fetchclient';
 
-    import { resolve } from '$app/paths';
     import DetailSheet from '$comp/detail-sheet.svelte';
 
+    import type { PersistentEvent } from '../models';
+
     import EventsOverview from './events-overview.svelte';
+    import { buildEventDetailsHref } from './summary';
 
     interface Props {
         detailsHref?: string;
@@ -17,7 +19,15 @@
 
     let { detailsHref, eventId = $bindable(), filterChanged, onClose, onError }: Props = $props();
 
-    const resolvedHref = $derived(detailsHref ?? (eventId ? resolve('/(app)/events/[eventId=objectid]', { eventId }) : '#'));
+    let currentEventDetails = $state<{ eventId: string; stackId: string }>();
+
+    const resolvedHref = $derived(
+        detailsHref ?? (eventId ? buildEventDetailsHref(eventId, currentEventDetails?.eventId === eventId ? currentEventDetails.stackId : undefined) : '#')
+    );
+
+    function handleEventLoaded(event: PersistentEvent): void {
+        currentEventDetails = { eventId: event.id, stackId: event.stack_id };
+    }
 
     function handleError(problem: ProblemDetails) {
         if (onError) {
@@ -30,6 +40,6 @@
 
 <DetailSheet detailsHref={resolvedHref} {onClose} open={!!eventId} title="Event">
     {#if eventId}
-        <EventsOverview {filterChanged} id={eventId} {handleError} onNavigate={(newId) => (eventId = newId)} />
+        <EventsOverview {filterChanged} id={eventId} {handleError} onEventLoaded={handleEventLoaded} onNavigate={(newId) => (eventId = newId)} />
     {/if}
 </DetailSheet>

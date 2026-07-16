@@ -159,4 +159,32 @@ public class EnvironmentInfoSerializerTests : TestWithServices
         Assert.Equal(274877906944, deserialized.TotalPhysicalMemory);
         Assert.Equal(137438953472, deserialized.AvailablePhysicalMemory);
     }
+
+    [Fact]
+    public void SerializeToString_OSProperties_UseJsonPropertyNameOverride()
+    {
+        // Arrange — [JsonPropertyName] on OSName/OSVersion must produce o_s_name/o_s_version
+        // (not os_name/os_version from SnakeCaseLower) to match the legacy ES field names.
+        var env = new EnvironmentInfo
+        {
+            OSName = "Linux",
+            OSVersion = "6.1.0"
+        };
+
+        // Act
+        string? json = _serializer.SerializeToString(env);
+
+        // Assert — verify raw JSON keys
+        Assert.NotNull(json);
+        Assert.Contains("\"o_s_name\"", json);
+        Assert.Contains("\"o_s_version\"", json);
+        Assert.DoesNotContain("\"os_name\"", json);
+        Assert.DoesNotContain("\"os_version\"", json);
+
+        // Verify round-trip
+        var deserialized = _serializer.Deserialize<EnvironmentInfo>(json);
+        Assert.NotNull(deserialized);
+        Assert.Equal("Linux", deserialized.OSName);
+        Assert.Equal("6.1.0", deserialized.OSVersion);
+    }
 }

@@ -1,10 +1,9 @@
 [
     {
-        "key": "events:errors",
-        "name": "Errors",
-        "slug": "errors",
+        "key": "events:all",
+        "name": "All",
+        "slug": "all",
         "viewType": "events",
-        "filter": "type:error",
         "time": "[now-7d TO now]",
         "sort": "-date",
         "filterDefinitions": [
@@ -14,12 +13,50 @@
                 "value": "[now-7d TO now]"
             },
             {
-                "type": "type",
-                "value": ["error"],
-                "hidden": true
+                "type": "project"
             }
         ],
         "columns": {
+            "level": false,
+            "message": false,
+            "name": false,
+            "source": false,
+            "type": false
+        },
+        "showStats": true,
+        "showChart": true
+    },
+    {
+        "key": "events:errors",
+        "name": "Errors",
+        "slug": "errors",
+        "viewType": "events",
+        "filter": "type:error (status:open OR status:regressed)",
+        "time": "[now-7d TO now]",
+        "sort": "-date",
+        "filterDefinitions": [
+            {
+                "type": "project",
+                "value": []
+            },
+            {
+                "type": "type",
+                "value": ["error"],
+                "hidden": true
+            },
+            {
+                "type": "status",
+                "value": ["open", "regressed"],
+                "hidden": true
+            },
+            {
+                "type": "date",
+                "term": "date",
+                "value": "[now-7d TO now]"
+            }
+        ],
+        "columns": {
+            "exception_type": false,
             "level": false,
             "message": false,
             "name": false,
@@ -34,28 +71,60 @@
         "name": "Logs",
         "slug": "logs",
         "viewType": "events",
-        "filter": "type:log",
+        "filter": "type:log (status:open OR status:regressed)",
         "time": "[now-7d TO now]",
         "sort": "-date",
         "filterDefinitions": [
+            {
+                "type": "project",
+                "value": []
+            },
+            {
+                "type": "type",
+                "value": ["log"],
+                "hidden": true
+            },
             {
                 "type": "date",
                 "term": "date",
                 "value": "[now-7d TO now]"
             },
             {
-                "type": "type",
-                "value": ["log"],
+                "type": "status",
+                "value": ["open", "regressed"],
                 "hidden": true
             }
         ],
         "columns": {
+            "exception_type": false,
             "level": false,
             "message": false,
             "name": false,
             "source": false,
             "type": false
         },
+        "showStats": true,
+        "showChart": true
+    },
+    {
+        "key": "stacks:all",
+        "name": "All",
+        "slug": "all",
+        "viewType": "stacks",
+        "filter": "(status:open OR status:regressed)",
+        "time": "[now-7d TO now]",
+        "filterDefinitions": [
+            {
+                "type": "status",
+                "value": ["open", "regressed"],
+                "hidden": true
+            },
+            {
+                "type": "date",
+                "term": "date",
+                "value": "[now-7d TO now]"
+            }
+        ],
         "showStats": true,
         "showChart": true
     },
@@ -72,6 +141,9 @@
                 "type": "date",
                 "term": "date",
                 "value": "[now-7d TO now]"
+            },
+            {
+                "type": "project"
             },
             {
                 "type": "status",
@@ -102,6 +174,9 @@
                 "value": "[now-7d TO now]"
             },
             {
+                "type": "project"
+            },
+            {
                 "type": "type",
                 "value": ["error"],
                 "hidden": true
@@ -120,18 +195,27 @@
         "name": "Most Used Features",
         "slug": "most-used-features",
         "viewType": "stacks",
-        "filter": "type:usage",
+        "filter": "type:usage (status:open OR status:regressed)",
         "time": "[now-7d TO now]",
         "sort": "-events",
         "filterDefinitions": [
+            {
+                "type": "project",
+                "value": []
+            },
+            {
+                "type": "type",
+                "value": ["usage"],
+                "hidden": true
+            },
             {
                 "type": "date",
                 "term": "date",
                 "value": "[now-7d TO now]"
             },
             {
-                "type": "type",
-                "value": ["usage"],
+                "type": "status",
+                "value": ["open", "regressed"],
                 "hidden": true
             }
         ],

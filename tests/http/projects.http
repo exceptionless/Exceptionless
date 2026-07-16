@@ -128,6 +128,13 @@ DELETE {{apiUrl}}/projects/{{projectId}}/promotedtabs?name=my-tab-name
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
+### Reorder Promoted Tabs
+PATCH {{apiUrl}}/projects/{{projectId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "promoted_tabs": ["second-tab", "first-tab"] }
+
 ### Post Data
 POST {{apiUrl}}/projects/{{projectId}}/data?key=my-test-key
 Authorization: Bearer {{token}}

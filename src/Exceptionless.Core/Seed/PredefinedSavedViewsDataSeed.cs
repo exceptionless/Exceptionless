@@ -52,7 +52,7 @@ public class PredefinedSavedViewsDataSeed : IDataSeed
                 return;
             }
 
-            // Update existing views whose fields have drifted (e.g., viewType rename).
+            // Update existing views whose fields have drifted from the definitions.
             // Never re-create views that were manually deleted at runtime.
             var existingByKey = existingResults.Documents
                 .Where(v => !String.IsNullOrEmpty(v.PredefinedKey))
@@ -62,13 +62,7 @@ public class PredefinedSavedViewsDataSeed : IDataSeed
             foreach (var definition in definitions)
             {
                 if (!existingByKey.TryGetValue(definition.Key, out var existing))
-                {
-                    // Fallback: try legacy key format (e.g., "issues:*" → "stacks:*" rename).
-                    var legacyKey = definition.Key.Replace("stacks:", "issues:", StringComparison.Ordinal);
-                    if (String.Equals(legacyKey, definition.Key, StringComparison.Ordinal)
-                        || !existingByKey.TryGetValue(legacyKey, out existing))
-                        continue;
-                }
+                    continue;
 
                 if (ApplyDefinition(existing, definition))
                     toSave.Add(existing);
@@ -116,9 +110,53 @@ public class PredefinedSavedViewsDataSeed : IDataSeed
             changed = true;
         }
 
+        if (!String.Equals(existing.Time, definition.Time, StringComparison.Ordinal))
+        {
+            existing.Time = definition.Time;
+            changed = true;
+        }
+
         if (!String.Equals(existing.Sort, definition.Sort, StringComparison.Ordinal))
         {
             existing.Sort = definition.Sort;
+            changed = true;
+        }
+
+        string? filterDefinitions = GetRawJson(definition.FilterDefinitions);
+        if (!String.Equals(existing.FilterDefinitions, filterDefinitions, StringComparison.Ordinal))
+        {
+            existing.FilterDefinitions = filterDefinitions;
+            changed = true;
+        }
+
+        if (!DictionaryEquals(existing.Columns, definition.Columns))
+        {
+            existing.Columns = definition.Columns?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            changed = true;
+        }
+
+        if (!CollectionEquals(existing.ColumnOrder, definition.ColumnOrder))
+        {
+            existing.ColumnOrder = definition.ColumnOrder is null ? null : [.. definition.ColumnOrder];
+            changed = true;
+        }
+
+        if (existing.ShowStats != definition.ShowStats)
+        {
+            existing.ShowStats = definition.ShowStats;
+            changed = true;
+        }
+
+        if (existing.ShowChart != definition.ShowChart)
+        {
+            existing.ShowChart = definition.ShowChart;
+            changed = true;
+        }
+
+        string contentHash = PredefinedSavedViewContentHasher.GetContentHash(existing);
+        if (!String.Equals(existing.PredefinedContentHash, contentHash, StringComparison.Ordinal))
+        {
+            existing.PredefinedContentHash = contentHash;
             changed = true;
         }
 
@@ -134,13 +172,13 @@ public class PredefinedSavedViewsDataSeed : IDataSeed
 
     private static string GetSeedFilePath()
     {
-        var seedFileName = Path.GetFileName(SeedFileName);
+        string seedFileName = Path.GetFileName(SeedFileName);
         return Path.Combine(AppContext.BaseDirectory, "Seed", seedFileName);
     }
 
     private static SavedView CreateSavedView(PredefinedSavedViewDefinition definition)
     {
-        return new SavedView
+        var savedView = new SavedView
         {
             OrganizationId = SystemOrganizationId,
             CreatedByUserId = SystemUserId,
@@ -158,6 +196,31 @@ public class PredefinedSavedViewsDataSeed : IDataSeed
             ShowChart = definition.ShowChart,
             Version = 1
         };
+
+        savedView.PredefinedContentHash = PredefinedSavedViewContentHasher.GetContentHash(savedView);
+        return savedView;
+    }
+
+    private static bool CollectionEquals(IReadOnlyCollection<string>? left, IReadOnlyCollection<string>? right)
+    {
+        if (ReferenceEquals(left, right))
+            return true;
+
+        if (left is null || right is null || left.Count != right.Count)
+            return false;
+
+        return left.SequenceEqual(right, StringComparer.Ordinal);
+    }
+
+    private static bool DictionaryEquals(IReadOnlyDictionary<string, bool>? left, IReadOnlyDictionary<string, bool>? right)
+    {
+        if (ReferenceEquals(left, right))
+            return true;
+
+        if (left is null || right is null || left.Count != right.Count)
+            return false;
+
+        return left.All(kvp => right.TryGetValue(kvp.Key, out bool value) && value == kvp.Value);
     }
 
     public static string? GetRawJson(JsonElement? value)

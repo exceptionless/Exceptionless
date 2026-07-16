@@ -10,6 +10,7 @@
 	}: WithElementRef<HTMLAttributes<HTMLElement>> = $props();
 </script>
 
+<!-- CUSTOM: REDUCE VERTICAL HEADER PADDING TO ALLOW A MORE COMPACT SIDEBAR STACKING. -->
 <div
 	bind:this={ref}
 	data-slot="sidebar-header"

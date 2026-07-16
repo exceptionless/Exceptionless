@@ -26,11 +26,11 @@
 
     $effect(() => {
         if (!accessToken.current || !organization.current || invoiceQuery.isError) {
-            goto(resolve('/(app)/stacks'));
+            goto(resolve('/(app)/stack'));
         }
 
         if (invoiceQuery.isSuccess && invoiceQuery.data?.organization_id !== organization.current) {
-            goto(resolve('/(app)/stacks'));
+            goto(resolve('/(app)/stack'));
         }
     });
 </script>

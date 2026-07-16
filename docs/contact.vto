@@ -1,0 +1,105 @@
+---
+title: Contact Us
+layout: layouts/page.vto
+description: Contact the Exceptionless team.
+---
+<div class="contact-page">
+  <p>Questions about hosted plans, self-hosting, support, or partnerships? Send the Exceptionless team a message.</p>
+
+  <form class="contact-form" method="post" action="{{ site.appUrl }}/api/v2/contact" data-contact-form data-endpoint="{{ site.appUrl }}/api/v2/contact">
+    <div class="row-fluid">
+      <div class="span6 control-group">
+        <label for="contact-name">Name</label>
+        <input id="contact-name" class="span12" name="Name" type="text" autocomplete="name" maxlength="100" required>
+      </div>
+      <div class="span6 control-group">
+        <label for="contact-email">Email</label>
+        <input id="contact-email" class="span12" name="EmailAddress" type="email" autocomplete="email" maxlength="254" required>
+      </div>
+    </div>
+
+    <div class="row-fluid">
+      <div class="span6 control-group">
+        <label for="contact-company">Company</label>
+        <input id="contact-company" class="span12" name="Company" type="text" autocomplete="organization" maxlength="120">
+      </div>
+      <div class="span6 control-group">
+        <label for="contact-subject">Subject</label>
+        <input id="contact-subject" class="span12" name="Subject" type="text" maxlength="120">
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label for="contact-message">Message</label>
+      <textarea id="contact-message" class="span12" name="Message" rows="8" maxlength="4000" required></textarea>
+    </div>
+
+    <div class="contact-honeypot" aria-hidden="true">
+      <label for="contact-website">Website</label>
+      <input id="contact-website" name="Website" type="text" tabindex="-1" autocomplete="off">
+    </div>
+
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Send Message</button>
+      <span class="contact-status" role="status" aria-live="polite" data-contact-status></span>
+    </div>
+  </form>
+</div>
+
+<script>
+(function () {
+  var form = document.querySelector('[data-contact-form]');
+  if (!form || !window.fetch) {
+    return;
+  }
+
+  var status = form.querySelector('[data-contact-status]');
+  var submit = form.querySelector('button[type="submit"]');
+
+  function setStatus(message, isError) {
+    status.textContent = message;
+    status.className = isError ? 'contact-status is-error' : 'contact-status';
+  }
+
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+
+    var formData = new FormData(form);
+    var payload = {
+      name: String(formData.get('Name') || ''),
+      email_address: String(formData.get('EmailAddress') || ''),
+      company: String(formData.get('Company') || ''),
+      subject: String(formData.get('Subject') || ''),
+      message: String(formData.get('Message') || ''),
+      website: String(formData.get('Website') || '')
+    };
+
+    submit.disabled = true;
+    setStatus('Sending...', false);
+
+    fetch(form.getAttribute('data-endpoint'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      credentials: 'omit'
+    }).then(function (response) {
+      if (response.ok) {
+        form.reset();
+        setStatus('Message sent. Thanks for reaching out.', false);
+        return;
+      }
+
+      if (response.status === 429) {
+        setStatus('Too many messages. Please try later.', true);
+        return;
+      }
+
+      setStatus('We could not send your message. Please try later.', true);
+    }).catch(function () {
+      setStatus('We could not send your message. Please try later.', true);
+    }).finally(function () {
+      submit.disabled = false;
+    });
+  });
+}());
+</script>
