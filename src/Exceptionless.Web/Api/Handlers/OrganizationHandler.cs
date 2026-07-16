@@ -620,6 +620,7 @@ public class OrganizationHandler(
 
             await organizationService.CleanupProjectNotificationSettingsAsync(organization, [user.Id]);
             await organizationService.RemoveUserSavedViewsAsync(organization.Id, user.Id);
+            await organizationService.RemoveUserRateNotificationRulesAsync(organization.Id, user.Id);
 
             user.OrganizationIds.Remove(organization.Id);
             await userRepository.SaveAsync(user, o => o.Cache());

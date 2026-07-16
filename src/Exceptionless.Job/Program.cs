@@ -169,6 +169,13 @@ public class Program
         if (options.MailMessage)
             services.AddJob<MailMessageJob>(o => o.WaitForStartupActions());
 
+        if (options is { RateNotificationEvaluator: true, AllJobs: true })
+            services.AddCronJob<RateNotificationEvaluatorJob>(Cron.Minutely());
+        if (options is { RateNotificationEvaluator: true, AllJobs: false })
+            services.AddJob<RateNotificationEvaluatorJob>(o => o.WaitForStartupActions());
+        if (options.RateNotifications)
+            services.AddJob<RateNotificationsJob>(o => o.WaitForStartupActions());
+
         if (options is { MaintainIndexes: true, AllJobs: true })
             services.AddCronJob<MaintainIndexesJob>("10 */2 * * *");
         if (options is { MaintainIndexes: true, AllJobs: false })

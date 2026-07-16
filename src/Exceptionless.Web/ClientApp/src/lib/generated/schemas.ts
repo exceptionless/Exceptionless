@@ -27,6 +27,14 @@ export const StackStatusSchema = zodEnum([
   "ignored",
   "discarded",
 ]);
+export const RateNotificationSubjectSchema = zodEnum(["Project", "Stack"]);
+export const RateNotificationSignalSchema = zodEnum([
+  "AllEvents",
+  "Errors",
+  "CriticalErrors",
+  "NewErrors",
+  "Regressions",
+]);
 export const BillingStatusSchema = union([
   literal(0),
   literal(1),
@@ -172,6 +180,38 @@ export const NewProjectSchema = object({
   promoted_tabs: array(string()).nullable().optional(),
 });
 export type NewProjectFormData = Infer<typeof NewProjectSchema>;
+
+export const NewRateNotificationRuleSchema = object({
+  name: string()
+    .min(1, "Name is required")
+    .max(100, "Name must be at most 100 characters"),
+  signal: RateNotificationSignalSchema,
+  subject: RateNotificationSubjectSchema,
+  stack_id: string()
+    .length(24, "Stack id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "Stack id has invalid format")
+    .nullable()
+    .optional(),
+  threshold: int32()
+    .min(1, "Threshold must be at least 1")
+    .max(2147483647, "Threshold must be at most 2147483647"),
+  window: string()
+    .min(1, "Window is required")
+    .regex(
+      /^-?(\d+\.)?\d{2}:\d{2}:\d{2}(\.\d{1,7})?$/,
+      "Window has invalid format",
+    ),
+  cooldown: string()
+    .min(1, "Cooldown is required")
+    .regex(
+      /^-?(\d+\.)?\d{2}:\d{2}:\d{2}(\.\d{1,7})?$/,
+      "Cooldown has invalid format",
+    ),
+  is_enabled: boolean(),
+});
+export type NewRateNotificationRuleFormData = Infer<
+  typeof NewRateNotificationRuleSchema
+>;
 
 export const NewSavedViewSchema = object({
   organization_id: string()
@@ -516,6 +556,18 @@ export const SignupSchema = object({
 });
 export type SignupFormData = Infer<typeof SignupSchema>;
 
+export const SnoozeRateNotificationRuleRequestSchema = object({
+  duration_seconds: int32()
+    .min(1, "Duration seconds must be at least 1")
+    .max(2147483647, "Duration seconds must be at most 2147483647")
+    .nullable()
+    .optional(),
+  until_utc: iso.datetime().nullable().optional(),
+});
+export type SnoozeRateNotificationRuleRequestFormData = Infer<
+  typeof SnoozeRateNotificationRuleRequestSchema
+>;
+
 export const StackSchema = object({
   id: string()
     .length(24, "Id must be exactly 24 characters")
@@ -584,6 +636,46 @@ export const UpdateProjectSchema = object({
   promoted_tabs: array(string()).nullable().optional(),
 });
 export type UpdateProjectFormData = Infer<typeof UpdateProjectSchema>;
+
+export const UpdateRateNotificationRuleSchema = object({
+  name: string()
+    .min(1, "Name is required")
+    .max(100, "Name must be at most 100 characters")
+    .nullable()
+    .optional(),
+  signal: RateNotificationSignalSchema.optional(),
+  subject: RateNotificationSubjectSchema.optional(),
+  stack_id: string()
+    .length(24, "Stack id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "Stack id has invalid format")
+    .nullable()
+    .optional(),
+  threshold: int32()
+    .min(1, "Threshold must be at least 1")
+    .max(2147483647, "Threshold must be at most 2147483647")
+    .nullable()
+    .optional(),
+  window: string()
+    .min(1, "Window is required")
+    .regex(
+      /^-?(\d+\.)?\d{2}:\d{2}:\d{2}(\.\d{1,7})?$/,
+      "Window has invalid format",
+    )
+    .nullable()
+    .optional(),
+  cooldown: string()
+    .min(1, "Cooldown is required")
+    .regex(
+      /^-?(\d+\.)?\d{2}:\d{2}:\d{2}(\.\d{1,7})?$/,
+      "Cooldown has invalid format",
+    )
+    .nullable()
+    .optional(),
+  is_enabled: boolean().nullable().optional(),
+});
+export type UpdateRateNotificationRuleFormData = Infer<
+  typeof UpdateRateNotificationRuleSchema
+>;
 
 export const UpdateSavedViewSchema = object({
   name: string().min(1, "Name is required").nullable().optional(),
@@ -788,11 +880,46 @@ export const ViewProjectSchema = object({
   stack_count: int(),
   event_count: int(),
   has_premium_features: boolean(),
+  has_rate_notifications: boolean(),
   has_slack_integration: boolean(),
   usage_hours: array(lazy(() => UsageHourInfoSchema)),
   usage: array(lazy(() => UsageInfoSchema)),
 });
 export type ViewProjectFormData = Infer<typeof ViewProjectSchema>;
+
+export const ViewRateNotificationRuleSchema = object({
+  id: string().min(1, "Id is required"),
+  organization_id: string().min(1, "Organization id is required"),
+  project_id: string().min(1, "Project id is required"),
+  user_id: string().min(1, "User id is required"),
+  version: int32(),
+  name: string().min(1, "Name is required"),
+  is_enabled: boolean(),
+  signal: RateNotificationSignalSchema,
+  subject: RateNotificationSubjectSchema,
+  stack_id: string().min(1, "Stack id is required").nullable().optional(),
+  threshold: int32(),
+  window: string()
+    .min(1, "Window is required")
+    .regex(
+      /^-?(\d+\.)?\d{2}:\d{2}:\d{2}(\.\d{1,7})?$/,
+      "Window has invalid format",
+    ),
+  cooldown: string()
+    .min(1, "Cooldown is required")
+    .regex(
+      /^-?(\d+\.)?\d{2}:\d{2}:\d{2}(\.\d{1,7})?$/,
+      "Cooldown has invalid format",
+    ),
+  snoozed_until_utc: iso.datetime().nullable().optional(),
+  is_snoozed: boolean(),
+  last_fired_utc: iso.datetime().nullable().optional(),
+  created_utc: iso.datetime(),
+  updated_utc: iso.datetime(),
+});
+export type ViewRateNotificationRuleFormData = Infer<
+  typeof ViewRateNotificationRuleSchema
+>;
 
 export const ViewSavedViewSchema = object({
   id: string()

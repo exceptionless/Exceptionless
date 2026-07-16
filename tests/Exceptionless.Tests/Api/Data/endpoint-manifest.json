@@ -2781,6 +2781,104 @@
     "authenticationSchemes": []
   },
   {
+    "method": "GET",
+    "route": "/api/v2/users/{userId:objectid}/projects/{projectId:objectid}/rate-notifications/",
+    "displayName": "HTTP: GET api/v2/users/{userId:objectid}/projects/{projectId:objectid}/rate-notifications/",
+    "tags": [
+      "RateNotification"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "POST",
+    "route": "/api/v2/users/{userId:objectid}/projects/{projectId:objectid}/rate-notifications/",
+    "displayName": "HTTP: POST api/v2/users/{userId:objectid}/projects/{projectId:objectid}/rate-notifications/",
+    "tags": [
+      "RateNotification"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "DELETE",
+    "route": "/api/v2/users/{userId:objectid}/projects/{projectId:objectid}/rate-notifications/{ruleId:objectid}",
+    "displayName": "HTTP: DELETE api/v2/users/{userId:objectid}/projects/{projectId:objectid}/rate-notifications/{ruleId:objectid}",
+    "tags": [
+      "RateNotification"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
+    "route": "/api/v2/users/{userId:objectid}/projects/{projectId:objectid}/rate-notifications/{ruleId:objectid}",
+    "displayName": "HTTP: GET api/v2/users/{userId:objectid}/projects/{projectId:objectid}/rate-notifications/{ruleId:objectid}",
+    "tags": [
+      "RateNotification"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "PUT",
+    "route": "/api/v2/users/{userId:objectid}/projects/{projectId:objectid}/rate-notifications/{ruleId:objectid}",
+    "displayName": "HTTP: PUT api/v2/users/{userId:objectid}/projects/{projectId:objectid}/rate-notifications/{ruleId:objectid}",
+    "tags": [
+      "RateNotification"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "POST",
+    "route": "/api/v2/users/{userId:objectid}/projects/{projectId:objectid}/rate-notifications/{ruleId:objectid}/snooze",
+    "displayName": "HTTP: POST api/v2/users/{userId:objectid}/projects/{projectId:objectid}/rate-notifications/{ruleId:objectid}/snooze",
+    "tags": [
+      "RateNotification"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "POST",
+    "route": "/api/v2/users/{userId:objectid}/projects/{projectId:objectid}/rate-notifications/{ruleId:objectid}/unsnooze",
+    "displayName": "HTTP: POST api/v2/users/{userId:objectid}/projects/{projectId:objectid}/rate-notifications/{ruleId:objectid}/unsnooze",
+    "tags": [
+      "RateNotification"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
     "method": "POST",
     "route": "/api/v2/webhooks",
     "displayName": "HTTP: POST api/v2/webhooks",

@@ -18,6 +18,7 @@ jobs:
   image:
     repository: exceptionless/job
     pullPolicy: IfNotPresent
+  rateNotifications: {}
 
 config: {}
 #  key: value

@@ -317,6 +317,47 @@ public class Mailer : IMailer
         }, template);
     }
 
+    public Task SendRateNotificationAsync(User user, Project project, RateNotificationRule rule, long observedCount, DateTime windowStart, DateTime windowEnd, Stack? stack = null)
+    {
+        const string template = "rate-notification";
+        string windowDescription = FormatWindow(rule.Window);
+
+        var data = new Dictionary<string, object?> {
+            { "Subject", "Error rate exceeded" },
+            { "BaseUrl", _appOptions.BaseURL },
+            { "ProjectName", project.Name },
+            { "ProjectId", project.Id },
+            { "RuleName", rule.Name },
+            { "ObservedCount", observedCount },
+            { "Threshold", rule.Threshold },
+            { "Window", windowDescription },
+            { "Signal", rule.Signal.ToString() },
+            { "Subject_Type", rule.Subject.ToString() },
+            { "StackId", rule.StackId },
+            { "StackTitle", stack?.Title },
+            { "HasStack", stack is not null },
+            { "WindowStartUtc", windowStart.ToString("u") },
+            { "WindowEndUtc", windowEnd.ToString("u") },
+            { "Cooldown", FormatWindow(rule.Cooldown) }
+        };
+
+        return QueueMessageAsync(new MailMessage
+        {
+            To = user.EmailAddress,
+            Subject = $"[{project.Name}] Error rate exceeded",
+            Body = RenderTemplate(template, data)
+        }, template);
+    }
+
+    private static string FormatWindow(TimeSpan window)
+    {
+        if (window.TotalHours >= 1 && window.Minutes == 0)
+            return $"{(int)window.TotalHours}h";
+        if (window.TotalMinutes >= 1 && window.Seconds == 0)
+            return $"{(int)window.TotalMinutes}min";
+        return window.ToString();
+    }
+
     private string RenderTemplate(string name, IDictionary<string, object?> data)
     {
         var template = GetCompiledTemplate(name);

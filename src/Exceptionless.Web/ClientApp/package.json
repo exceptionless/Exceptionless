@@ -109,6 +109,7 @@
     },
     "type": "module",
     "overrides": {
+        "cookie": "0.7.0",
         "storybook": "$storybook"
     }
 }
