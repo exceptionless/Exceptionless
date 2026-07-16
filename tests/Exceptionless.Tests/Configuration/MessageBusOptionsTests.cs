@@ -44,8 +44,11 @@ public class MessageBusOptionsTests
         Assert.Equal(rabbitMqConnectionString, options.MessageBusOptions.ConnectionString);
     }
 
-    [Fact]
-    public void ReadFromConfiguration_WithRabbitMqProviderConnectionString_PreservesRawConnectionString()
+    [Theory]
+    [InlineData("amqp://localhost/%2F")]
+    [InlineData("\"amqp://localhost/%2F\"")]
+    [InlineData("'amqp://localhost/%2F'")]
+    public void ReadFromConfiguration_WithRabbitMqProviderConnectionString_PreservesRawConnectionString(string configuredConnectionString)
     {
         // Arrange
         const string rabbitMqConnectionString = "amqp://localhost/%2F";
@@ -53,7 +56,7 @@ public class MessageBusOptionsTests
         {
             ["BaseURL"] = "http://localhost:7110/#!",
             ["ConnectionStrings:MessageBus"] = "provider=rabbitmq",
-            ["ConnectionStrings:rabbitmq"] = $"\"{rabbitMqConnectionString}\""
+            ["ConnectionStrings:rabbitmq"] = configuredConnectionString
         });
 
         // Act
