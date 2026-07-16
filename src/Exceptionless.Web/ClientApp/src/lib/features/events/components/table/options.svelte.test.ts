@@ -14,7 +14,7 @@ describe('event table columns', () => {
         expect(columnsById.first?.enableSorting).toBe(false);
         expect(columnsById.last?.enableSorting).toBe(false);
         expect(columnsById.events?.header).toBeTypeOf('function');
-        expect(columnsById.first?.header).toBeTypeOf('function');
+        expect(columnsById.first?.header).toBe('First');
         expect(columnsById.last?.header).toBeTypeOf('function');
     });
 

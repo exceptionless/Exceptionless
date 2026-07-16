@@ -17,8 +17,8 @@ describe('StackSortHeader', () => {
     });
 
     it('does not mark inactive sort modes as selected', () => {
-        render(StackSortHeader, { active: false, label: 'First', onclick: vi.fn() });
+        render(StackSortHeader, { active: false, label: 'Last', onclick: vi.fn() });
 
-        expect(screen.getByRole('button', { name: 'Sort by First descending' }).getAttribute('aria-pressed')).toBe('false');
+        expect(screen.getByRole('button', { name: 'Sort by Last descending' }).getAttribute('aria-pressed')).toBe('false');
     });
 });

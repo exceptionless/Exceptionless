@@ -34,7 +34,7 @@ export const defaultStackColumnVisibility: ColumnVisibilityState = {
     tags: false
 };
 
-export type StackSortMode = Extract<GetEventsMode, 'stack_frequent' | 'stack_new' | 'stack_recent'>;
+export type StackSortMode = Extract<GetEventsMode, 'stack_frequent' | 'stack_recent'>;
 
 export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(
     mode: GetEventsMode = 'summary',
@@ -330,12 +330,7 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                         value: prop.getValue<string>()
                     }),
                 enableSorting: false,
-                header: () =>
-                    renderComponent(StackSortHeader, {
-                        active: mode === 'stack_new',
-                        label: 'First',
-                        onclick: () => options?.onStackSort?.('stack_new')
-                    }),
+                header: 'First',
                 id: 'first',
                 maxSize: 480,
                 meta: {
