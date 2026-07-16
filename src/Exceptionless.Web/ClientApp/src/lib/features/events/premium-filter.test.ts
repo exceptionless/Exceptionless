@@ -7,9 +7,12 @@ describe('filterUsesPremiumFeatures', () => {
         expect(filterUsesPremiumFeatures(filter, 'event')).toBe(false);
     });
 
-    it.each(['tags:important', 'data.user.identity:blake', 'message:"out of memory"'])('detects premium event filters: %s', (filter) => {
-        expect(filterUsesPremiumFeatures(filter, 'event')).toBe(true);
-    });
+    it.each(['tags:important', 'data.@user.identity:blake', 'message:"out of memory"', '-tags:important', '+tags:important'])(
+        'detects premium event filters: %s',
+        (filter) => {
+            expect(filterUsesPremiumFeatures(filter, 'event')).toBe(true);
+        }
+    );
 
     it.each(['first_occurrence:[now-1d TO now]', 'last:now', 'occurrences_are_critical:true', 'critical:false', 'project:ABC123'])(
         'allows free stack filters: %s',

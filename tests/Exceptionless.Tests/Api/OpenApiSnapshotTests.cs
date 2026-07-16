@@ -187,6 +187,15 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
             String.Equals(parameter.GetProperty("name").GetString(), "expected_stack_id", StringComparison.Ordinal));
         AssertResponseCodes(eventById, "200", "400", "404", "426");
 
+        foreach (string path in new[] { "/api/v2/events/count", "/api/v2/organizations/{organizationId}/events/count", "/api/v2/projects/{projectId}/events/count" })
+            AssertPathResponseCodes(paths, path, "get", "200", "400", "426");
+
+        foreach (string path in new[] { "/api/v2/events", "/api/v2/organizations/{organizationId}/events", "/api/v2/projects/{projectId}/events", "/api/v2/stacks/{stackId}/events" })
+            AssertPathResponseCodes(paths, path, "get", "200", "400", "426");
+
+        foreach (string path in new[] { "/api/v2/stacks", "/api/v2/organizations/{organizationId}/stacks", "/api/v2/projects/{projectId}/stacks" })
+            AssertPathResponseCodes(paths, path, "get", "200", "400", "426");
+
         foreach (string path in new[] { "/api/v1/events", "/api/v1/projects/{projectId}/events", "/api/v2/events", "/api/v2/projects/{projectId}/events" })
         {
             var eventPost = paths.GetProperty(path).GetProperty("post");
@@ -217,6 +226,15 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         var responses = operation.GetProperty("responses");
         foreach (string statusCode in expectedStatusCodes)
             Assert.True(responses.TryGetProperty(statusCode, out _), $"Expected response status code '{statusCode}'.");
+    }
+
+    private static void AssertPathResponseCodes(JsonElement paths, string path, string method, params string[] expectedStatusCodes)
+    {
+        var operation = paths.GetProperty(path).GetProperty(method);
+        var responses = operation.GetProperty("responses");
+        string actualStatusCodes = String.Join(", ", responses.EnumerateObject().Select(response => response.Name));
+        foreach (string statusCode in expectedStatusCodes)
+            Assert.True(responses.TryGetProperty(statusCode, out _), $"Expected response status code '{statusCode}' for {method.ToUpperInvariant()} {path}. Actual: {actualStatusCodes}.");
     }
 
     private static void AssertArrayResponseSchema(JsonElement paths, string path, string expectedItemSchema)

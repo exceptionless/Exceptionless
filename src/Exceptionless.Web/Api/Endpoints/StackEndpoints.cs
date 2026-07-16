@@ -237,6 +237,7 @@ public static class StackEndpoints
         .RequireAuthorization(AuthorizationRoles.StacksReadPolicy)
         .Produces<IReadOnlyCollection<Stack>>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
         .WithSummary("Get all")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -250,6 +251,7 @@ public static class StackEndpoints
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
+                ["426"] = "Premium search features require an upgraded plan.",
             }
         });
 
@@ -276,7 +278,7 @@ public static class StackEndpoints
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
                 ["404"] = "The organization could not be found.",
-                ["426"] = "Unable to view stack occurrences for the suspended organization.",
+                ["426"] = "The organization is suspended or premium search features require an upgraded plan.",
             }
         });
 
@@ -303,7 +305,7 @@ public static class StackEndpoints
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
                 ["404"] = "The organization could not be found.",
-                ["426"] = "Unable to view stack occurrences for the suspended organization.",
+                ["426"] = "The organization is suspended or premium search features require an upgraded plan.",
             }
         });
 

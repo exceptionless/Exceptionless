@@ -31,6 +31,7 @@ public static class EventEndpoints
         .RequireAuthorization(AuthorizationRoles.EventsReadPolicy)
         .Produces<CountResult>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
         .WithSummary("Count")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -42,6 +43,7 @@ public static class EventEndpoints
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
+                ["426"] = "Premium search features require an upgraded plan.",
             }
         });
 
@@ -50,6 +52,7 @@ public static class EventEndpoints
         .RequireAuthorization(AuthorizationRoles.EventsReadPolicy)
         .Produces<CountResult>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
         .WithSummary("Count by organization")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -62,6 +65,7 @@ public static class EventEndpoints
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
+                ["426"] = "The organization is suspended or premium search features require an upgraded plan.",
             }
         });
 
@@ -70,6 +74,7 @@ public static class EventEndpoints
         .RequireAuthorization(AuthorizationRoles.EventsReadPolicy)
         .Produces<CountResult>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
         .WithSummary("Count by project")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -82,6 +87,7 @@ public static class EventEndpoints
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
+                ["426"] = "The organization is suspended or premium search features require an upgraded plan.",
             }
         });
 
@@ -132,7 +138,7 @@ public static class EventEndpoints
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
-                ["426"] = "Unable to view event occurrences for the suspended organization.",
+                ["426"] = "Premium search features require an upgraded plan.",
             }
         });
 
@@ -162,7 +168,7 @@ public static class EventEndpoints
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
                 ["404"] = "The organization could not be found.",
-                ["426"] = "Unable to view event occurrences for the suspended organization.",
+                ["426"] = "The organization is suspended or premium search features require an upgraded plan.",
             }
         });
 
@@ -192,7 +198,7 @@ public static class EventEndpoints
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
                 ["404"] = "The project could not be found.",
-                ["426"] = "Unable to view event occurrences for the suspended organization.",
+                ["426"] = "The organization is suspended or premium search features require an upgraded plan.",
             }
         });
 
@@ -222,7 +228,7 @@ public static class EventEndpoints
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
                 ["404"] = "The stack could not be found.",
-                ["426"] = "Unable to view event occurrences for the suspended organization.",
+                ["426"] = "The organization is suspended or premium search features require an upgraded plan.",
             }
         });
 
