@@ -102,12 +102,13 @@ public sealed class SourceMapEndpointTests : IntegrationTestsBase
     [Fact]
     public async Task PostAsync_WithoutMultipartContent_ReturnsUnprocessableEntity()
     {
+        var project = await CreateProjectAsync("Non-multipart upload project");
         using var content = new StringContent("not multipart");
 
         await SendRequestAsync(request => request
             .Post()
             .AsTestOrganizationUser()
-            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "source-maps")
+            .AppendPaths("projects", project.Id, "source-maps")
             .Content(content)
             .StatusCodeShouldBeUnprocessableEntity());
     }
@@ -115,13 +116,14 @@ public sealed class SourceMapEndpointTests : IntegrationTestsBase
     [Fact]
     public async Task PostAsync_WithMalformedMultipartContent_ReturnsUnprocessableEntity()
     {
+        var project = await CreateProjectAsync("Malformed multipart upload project");
         using var content = new StringContent("not multipart");
         content.Headers.ContentType = new("multipart/form-data");
 
         await SendRequestAsync(request => request
             .Post()
             .AsTestOrganizationUser()
-            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "source-maps")
+            .AppendPaths("projects", project.Id, "source-maps")
             .Content(content)
             .StatusCodeShouldBeUnprocessableEntity());
     }
@@ -229,6 +231,16 @@ public sealed class SourceMapEndpointTests : IntegrationTestsBase
         content.Add(new StringContent(GeneratedFileUrl), "generated_file_url");
         content.Add(fileContent, "file", "app.min.js.map");
         return content;
+    }
+
+    private Task<Project> CreateProjectAsync(string name)
+    {
+        return GetService<IProjectRepository>().AddAsync(new Project
+        {
+            Name = name,
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks
+        }, options => options.ImmediateConsistency());
     }
 
     private async Task<ViewToken> CreateSourceMapUploadTokenAsync(string projectId)
