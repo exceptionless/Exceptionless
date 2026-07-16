@@ -100,7 +100,13 @@ jobs:
           PREVIEW_HEAD_REF: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.head_ref) || '' }}
         run: |
           branch=${PREVIEW_HEAD_REF:-${GITHUB_HEAD_REF:-${GITHUB_REF##*/}}}
-          branch=${branch//\//.}.
+          branch=${branch//\//.}
+          branch=${branch//[^a-zA-Z0-9.-]/-}
+          if (( ${#branch} > 40 )); then
+            branch_hash=$(printf %s "$branch" | sha256sum | cut -c1-8)
+            branch="${branch:0:31}-${branch_hash}"
+          fi
+          branch=${branch}.
           if [[ "$branch" = "main." || "$branch" = "master." || "${GITHUB_REF}" = refs/tags* ]]; then
             branch=""
           fi
