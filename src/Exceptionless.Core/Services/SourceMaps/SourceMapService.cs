@@ -403,6 +403,7 @@ public sealed class SourceMapService : IDisposable
                 IsAutoDownloaded = true,
                 CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime
             };
+            var document = SourceMapDocument.Parse(downloaded.Content, _options.MaximumMappingSegments);
             await using var projectLock = await TryAcquireProjectStorageLockAsync(projectId, timeoutCancellationTokenSource.Token);
             if (projectLock is null)
                 return await CacheFailureAsync(failureCacheKey);
@@ -410,7 +411,7 @@ public sealed class SourceMapService : IDisposable
             await ValidateStorageLimitAsync(projectId, artifact, timeoutCancellationTokenSource.Token);
             await _storage.SaveAsync(projectId, artifact, downloaded.Content, CancellationToken.None);
             long updatedCacheVersion = await ClearCachesAsync(projectId, generatedFileUrl);
-            return Resolve(artifact, downloaded.Content, updatedCacheVersion);
+            return new ResolvedSourceMap(artifact, document, updatedCacheVersion);
         }
         catch (OperationCanceledException ex)
         {

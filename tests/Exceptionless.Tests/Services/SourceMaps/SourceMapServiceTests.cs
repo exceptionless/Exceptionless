@@ -317,6 +317,70 @@ public sealed class SourceMapServiceTests : TestWithServices
     }
 
     [Fact]
+    public async Task SymbolicateAsync_WhenDownloadedSourceMapIsInvalid_DoesNotPersistArtifact()
+    {
+        int requestCount = 0;
+        var handler = new DelegateHandler(request =>
+        {
+            requestCount++;
+            if (request.RequestUri == new Uri(GeneratedFileUrl))
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("minified") };
+                response.Headers.TryAddWithoutValidation("SourceMap", "app.min.js.map");
+                return response;
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("not a source map") };
+        });
+        using var httpClient = new HttpClient(handler);
+        using var service = CreateService(httpClient);
+
+        Assert.False(await service.SymbolicateAsync(ProjectId, CreateError(), TestContext.Current.CancellationToken));
+        Assert.Empty(await service.GetArtifactsAsync(ProjectId, TestContext.Current.CancellationToken));
+        Assert.False(await service.SymbolicateAsync(ProjectId, CreateError(), TestContext.Current.CancellationToken));
+        Assert.Equal(2, requestCount);
+    }
+
+    [Fact]
+    public async Task SymbolicateAsync_WhenDownloadedRefreshIsInvalid_PreservesStoredMap()
+    {
+        int sourceMapDownloadCount = 0;
+        var handler = new DelegateHandler(request =>
+        {
+            if (request.RequestUri == new Uri(GeneratedFileUrl))
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("minified") };
+                response.Headers.TryAddWithoutValidation("SourceMap", "app.min.js.map");
+                return response;
+            }
+
+            sourceMapDownloadCount++;
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = sourceMapDownloadCount == 1 ? new ByteArrayContent(SourceMap) : new StringContent("not a source map")
+            };
+        });
+        using var httpClient = new HttpClient(handler);
+        using (var initialService = CreateService(httpClient))
+            Assert.True(await initialService.SymbolicateAsync(ProjectId, CreateError(), TestContext.Current.CancellationToken));
+        var initialArtifact = Assert.Single(await GetService<SourceMapService>().GetArtifactsAsync(ProjectId, TestContext.Current.CancellationToken));
+
+        TimeProvider.Advance(TimeSpan.FromMinutes(61));
+
+        using (var refreshingService = CreateService(httpClient))
+            Assert.False(await refreshingService.SymbolicateAsync(ProjectId, CreateError(), TestContext.Current.CancellationToken));
+        var preservedArtifact = Assert.Single(await GetService<SourceMapService>().GetArtifactsAsync(ProjectId, TestContext.Current.CancellationToken));
+        Assert.Equal(initialArtifact, preservedArtifact);
+
+        GetService<AppOptions>().SourceMapOptions.EnableAutoDownload = false;
+        using var storedMapService = CreateService(httpClient);
+        var error = CreateError();
+        Assert.True(await storedMapService.SymbolicateAsync(ProjectId, error, TestContext.Current.CancellationToken));
+        Assert.Equal("meaningfulFunction", Assert.Single(error.StackTrace!).Name);
+        Assert.Equal(2, sourceMapDownloadCount);
+    }
+
+    [Fact]
     public async Task SaveUploadedAsync_WhenReplacingMap_UsesNewMapAndRemovesOldContent()
     {
         var service = GetService<SourceMapService>();
