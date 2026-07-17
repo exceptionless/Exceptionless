@@ -143,14 +143,19 @@ internal sealed class SourceMapStorage
     {
         string metadataPath = GetMetadataPath(projectId, artifactId);
         var metadata = await ReadMetadataAsync(metadataPath, cancellationToken);
-        bool mapDeleted = false;
+        if (!await DeleteAndVerifyAsync(metadataPath, cancellationToken))
+            return null;
+
         if (metadata is not null && IsValidMapFileName(artifactId, metadata.MapFileName))
-            mapDeleted = await _storage.DeleteFileAsync(GetMapPath(projectId, metadata.MapFileName), cancellationToken);
+        {
+            string mapPath = GetMapPath(projectId, metadata.MapFileName);
+            if (!await DeleteAndVerifyAsync(mapPath, cancellationToken))
+                _logger.LogWarning("Unable to remove deleted source map content {SourceMapPath}.", mapPath);
+        }
         else
             await _storage.DeleteFilesAsync($"{RootPath}/{projectId}/{artifactId}-*.map", cancellationToken);
 
-        bool metadataDeleted = await _storage.DeleteFileAsync(metadataPath, cancellationToken);
-        return mapDeleted || metadataDeleted ? metadata?.Artifact : null;
+        return metadata?.Artifact;
     }
 
     public Task DeleteAllAsync(string projectId, CancellationToken cancellationToken)

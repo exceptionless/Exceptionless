@@ -35,6 +35,18 @@ public sealed class SourceMapDocumentTests
     }
 
     [Fact]
+    public void FindOriginalLocation_WithSourceRootWithoutTrailingSlash_PreservesRootPath()
+    {
+        byte[] sourceMap = Encoding.UTF8.GetBytes("""{"version":3,"sourceRoot":"https://cdn.example.com/source","sources":["app.ts"],"names":[],"mappings":"AAAA"}""");
+        var document = SourceMapDocument.Parse(sourceMap);
+
+        var location = document.FindOriginalLocation(0, 0);
+
+        Assert.NotNull(location);
+        Assert.Equal("https://cdn.example.com/source/app.ts", location.Source);
+    }
+
+    [Fact]
     public void FindOriginalLocation_AfterUnmappedSegment_ReturnsNull()
     {
         byte[] sourceMap = Encoding.UTF8.GetBytes("""{"version":3,"sources":["src/app.ts"],"names":[],"mappings":"AAAA,U"}""");

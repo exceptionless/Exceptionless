@@ -234,8 +234,12 @@ public sealed class SourceMapDocument
         if (String.IsNullOrWhiteSpace(sourceRoot) || Uri.TryCreate(source, UriKind.Absolute, out _))
             return source;
 
-        if (Uri.TryCreate(sourceRoot, UriKind.Absolute, out var sourceRootUri) && Uri.TryCreate(sourceRootUri, source, out var combinedUri))
-            return combinedUri.ToString();
+        if (Uri.TryCreate(sourceRoot, UriKind.Absolute, out var sourceRootUri))
+        {
+            var sourceRootBuilder = new UriBuilder(sourceRootUri) { Path = sourceRootUri.AbsolutePath.TrimEnd('/') + '/' };
+            if (Uri.TryCreate(sourceRootBuilder.Uri, source.TrimStart('/'), out var combinedUri))
+                return combinedUri.ToString();
+        }
 
         return $"{sourceRoot.TrimEnd('/')}/{source.TrimStart('/')}";
     }

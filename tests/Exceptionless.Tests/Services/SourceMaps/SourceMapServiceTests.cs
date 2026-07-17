@@ -404,6 +404,26 @@ public sealed class SourceMapServiceTests : TestWithServices
     }
 
     [Fact]
+    public async Task DeleteArtifactAsync_WhenMetadataCannotBeDeleted_ReportsFailureAndPreservesArtifact()
+    {
+        var storage = GetService<IFileStorage>();
+        var initialService = GetService<SourceMapService>();
+        string projectId = $"project-{Guid.NewGuid():N}";
+        SourceMapArtifact artifact;
+        await using (var sourceMapStream = new MemoryStream(SourceMap))
+            artifact = await initialService.SaveUploadedAsync(projectId, GeneratedFileUrl, "app.min.js.map", sourceMapStream, TestContext.Current.CancellationToken);
+
+        string metadataPath = $"source-maps/{projectId}/{artifact.Id}.json";
+        using var httpClient = new HttpClient(new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound)));
+        using var deletingService = CreateService(httpClient, new FailingDeleteFileStorage(storage, metadataPath));
+
+        Assert.False(await deletingService.DeleteArtifactAsync(projectId, artifact.Id, TestContext.Current.CancellationToken));
+        Assert.True(await storage.ExistsAsync(metadataPath));
+        Assert.Single(await initialService.GetArtifactsAsync(projectId, TestContext.Current.CancellationToken));
+        Assert.Single(await storage.GetFileListAsync($"source-maps/{projectId}/*.map", cancellationToken: TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task SaveUploadedAsync_WhenArtifactLimitIsReached_RejectsNewUrlButAllowsReplacement()
     {
         var options = GetService<AppOptions>();
