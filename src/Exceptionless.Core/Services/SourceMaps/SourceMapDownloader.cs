@@ -20,18 +20,7 @@ internal sealed class SourceMapDownloader
 
     public async Task<DownloadedSourceMap?> DownloadAsync(Uri generatedFileUri, bool isRefresh, CancellationToken cancellationToken)
     {
-        using var generatedResponse = await SendAsync(
-            generatedFileUri,
-            _options.MaximumGeneratedFileSize,
-            validateContentLength: false,
-            request =>
-            {
-                request.Headers.Range = new RangeHeaderValue(null, 64 * 1024);
-                request.Headers.AcceptEncoding.Clear();
-                request.Headers.AcceptEncoding.Add(new StringWithQualityHeaderValue("identity"));
-            },
-            isRefresh,
-            cancellationToken);
+        using var generatedResponse = await DownloadGeneratedFileAsync(generatedFileUri, isRefresh, cancellationToken);
         if (!generatedResponse.Response.IsSuccessStatusCode)
             return null;
 
@@ -67,6 +56,37 @@ internal sealed class SourceMapDownloader
             return null;
 
         return await DownloadContentAsync(sourceMapUri, isRefresh, cancellationToken);
+    }
+
+    private async Task<HttpDownloadResult> DownloadGeneratedFileAsync(Uri generatedFileUri, bool isRefresh, CancellationToken cancellationToken)
+    {
+        var result = await SendAsync(
+            generatedFileUri,
+            _options.MaximumGeneratedFileSize,
+            validateContentLength: false,
+            request => ConfigureGeneratedFileRequest(request, useRange: true),
+            isRefresh,
+            cancellationToken);
+        if (result.Response.StatusCode != HttpStatusCode.RequestedRangeNotSatisfiable)
+            return result;
+
+        Uri retryUri = result.Uri;
+        result.Dispose();
+        return await SendAsync(
+            retryUri,
+            _options.MaximumGeneratedFileSize,
+            validateContentLength: false,
+            request => ConfigureGeneratedFileRequest(request, useRange: false),
+            isRefresh,
+            cancellationToken);
+    }
+
+    private static void ConfigureGeneratedFileRequest(HttpRequestMessage request, bool useRange)
+    {
+        if (useRange)
+            request.Headers.Range = new RangeHeaderValue(null, 64 * 1024);
+        request.Headers.AcceptEncoding.Clear();
+        request.Headers.AcceptEncoding.Add(new StringWithQualityHeaderValue("identity"));
     }
 
     private async Task<DownloadedSourceMap?> DownloadContentAsync(Uri sourceMapUri, bool isRefresh, CancellationToken cancellationToken)

@@ -580,8 +580,28 @@ jobs:
           kubectl patch cronjob/ex-dev-jobs-maintain-indexes -p '{"spec":{"suspend": false}}' --namespace $DEV_NAMESPACE
           kubectl patch cronjob/ex-dev-jobs-migration -p '{"spec":{"suspend": false}}' --namespace $DEV_NAMESPACE
 
-          kubectl wait --for=condition=available --timeout=300s deployment/ex-dev-app --namespace $DEV_NAMESPACE
-          kubectl wait --for=condition=available --timeout=300s deployment/ex-dev-api --namespace $DEV_NAMESPACE
+          kubectl rollout status deployment/ex-dev-app --timeout=300s --namespace $DEV_NAMESPACE
+          kubectl rollout status deployment/ex-dev-api --timeout=300s --namespace $DEV_NAMESPACE
+          kubectl rollout status deployment/ex-dev-jobs-event-posts --timeout=300s --namespace $DEV_NAMESPACE
+
+          for endpoint in dev-app.exceptionless.io dev-api.exceptionless.io dev-collector.exceptionless.io; do
+            deployed_version=""
+            for attempt in {1..12}; do
+              if deployed_version=$(curl --fail --silent --show-error --retry 2 --retry-all-errors --retry-delay 2 \
+                  --header "Cache-Control: no-cache" \
+                  "https://${endpoint}/api/v2/about?deployment=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${attempt}" \
+                  | jq --raw-output '.informational_version'); then
+                if [[ "$deployed_version" == "${VERSION}+"* ]]; then
+                  break
+                fi
+              fi
+              sleep 5
+            done
+            if [[ "$deployed_version" != "${VERSION}+"* ]]; then
+              echo "::error::${endpoint} is serving ${deployed_version}; expected ${VERSION}."
+              exit 1
+            fi
+          done
 
           kubectl annotate namespace $DEV_NAMESPACE exceptionless.io/dev-started-at="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --overwrite
           kubectl annotate namespace $DEV_NAMESPACE exceptionless.io/dev-auto-stop-days="1" --overwrite

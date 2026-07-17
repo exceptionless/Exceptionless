@@ -161,6 +161,45 @@ public sealed class SourceMapServiceTests : TestWithServices
     }
 
     [Fact]
+    public async Task SymbolicateAsync_WhenSuffixRangeIsNotSatisfiable_RetriesWithoutRange()
+    {
+        int generatedFileRequestCount = 0;
+        var handler = new DelegateHandler(request =>
+        {
+            if (request.RequestUri == new Uri(GeneratedFileUrl))
+            {
+                generatedFileRequestCount++;
+                Assert.Equal("identity", Assert.Single(request.Headers.AcceptEncoding).Value);
+                if (generatedFileRequestCount == 1)
+                {
+                    Assert.Equal("bytes=-65536", request.Headers.Range?.ToString());
+                    return new HttpResponseMessage(HttpStatusCode.RequestedRangeNotSatisfiable);
+                }
+
+                Assert.Null(request.Headers.Range);
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("minified\n//# sourceMappingURL=app.min.js.map")
+                };
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(SourceMap) };
+        });
+        using var httpClient = new HttpClient(handler);
+        using var service = CreateService(httpClient);
+        var error = CreateError();
+
+        bool changed = await service.SymbolicateAsync(ProjectId, error, TestContext.Current.CancellationToken);
+
+        Assert.True(changed);
+        Assert.Equal(2, generatedFileRequestCount);
+        Assert.Equal("meaningfulFunction", Assert.Single(error.StackTrace!).Name);
+        var artifact = Assert.Single(await service.GetArtifactsAsync(ProjectId, TestContext.Current.CancellationToken));
+        Assert.True(artifact.IsAutoDownloaded);
+        Assert.Equal("https://cdn.example.com/assets/app.min.js.map", artifact.SourceMapUrl);
+    }
+
+    [Fact]
     public async Task SymbolicateAsync_WithExpiredAutoDownloadedSourceMap_RefreshesStoredMap()
     {
         int sourceMapDownloadCount = 0;
