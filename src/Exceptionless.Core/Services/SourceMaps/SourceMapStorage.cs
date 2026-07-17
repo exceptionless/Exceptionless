@@ -35,20 +35,69 @@ internal sealed class SourceMapStorage
         try
         {
             var metadata = new StoredSourceMapMetadata(artifact, mapFileName);
-            byte[] metadataBytes = JsonSerializer.SerializeToUtf8Bytes(metadata, _serializerOptions);
-            await using var metadataStream = new MemoryStream(metadataBytes, writable: false);
-            if (!await _storage.SaveFileAsync(metadataPath, metadataStream, cancellationToken))
+            if (!await SaveMetadataAsync(metadataPath, metadata, cancellationToken))
                 throw new IOException("Unable to save the source map metadata.");
+
+            if (previousMetadata is not null
+                && previousMetadata.MapFileName != mapFileName
+                && !await DeleteAndVerifyAsync(GetMapPath(projectId, previousMetadata.MapFileName), cancellationToken))
+            {
+                bool metadataRestored = await SaveMetadataAsync(metadataPath, previousMetadata, CancellationToken.None);
+                bool newMapDeleted = await DeleteAndVerifyAsync(mapPath, CancellationToken.None);
+                if (!metadataRestored || !newMapDeleted)
+                    _logger.LogError("Unable to roll back a failed source map replacement for project {ProjectId} and artifact {SourceMapArtifactId}.", projectId, artifact.Id);
+                throw new IOException("Unable to remove the superseded source map.");
+            }
         }
         catch
         {
             if (previousMetadata?.MapFileName != mapFileName)
-                await _storage.DeleteFileAsync(mapPath, CancellationToken.None);
+                await DeleteAndVerifyAsync(mapPath, CancellationToken.None);
             throw;
         }
+    }
 
-        if (previousMetadata is not null && previousMetadata.MapFileName != mapFileName)
-            await _storage.DeleteFileAsync(GetMapPath(projectId, previousMetadata.MapFileName), CancellationToken.None);
+    public async Task<ProjectStorageUsage> GetProjectStorageUsageAsync(string projectId, string replacementArtifactId, CancellationToken cancellationToken)
+    {
+        var metadataFiles = await _storage.GetFileListAsync($"{RootPath}/{projectId}/*.json", cancellationToken: cancellationToken);
+        var artifacts = new List<SourceMapArtifact>(metadataFiles.Count);
+        var referencedMapPaths = new HashSet<string>(StringComparer.Ordinal);
+        string? replacementMapPath = null;
+        foreach (var metadataFile in metadataFiles)
+        {
+            try
+            {
+                var metadata = await ReadMetadataAsync(metadataFile.Path, cancellationToken);
+                if (metadata is null || !IsValidMapFileName(metadata.Artifact.Id, metadata.MapFileName))
+                    continue;
+
+                string mapPath = GetMapPath(projectId, metadata.MapFileName);
+                referencedMapPaths.Add(mapPath);
+                artifacts.Add(metadata.Artifact);
+                if (String.Equals(metadata.Artifact.Id, replacementArtifactId, StringComparison.Ordinal))
+                    replacementMapPath = mapPath;
+            }
+            catch (Exception ex) when (ex is JsonException or IOException)
+            {
+                _logger.LogWarning(ex, "Unable to read source map metadata {SourceMapMetadataPath} while calculating storage usage.", metadataFile.Path);
+            }
+        }
+
+        var mapFiles = await _storage.GetFileListAsync($"{RootPath}/{projectId}/*.map", cancellationToken: cancellationToken);
+        long retainedBytes = 0;
+        foreach (var mapFile in mapFiles)
+        {
+            if (!referencedMapPaths.Contains(mapFile.Path) && await DeleteAndVerifyAsync(mapFile.Path, cancellationToken))
+                continue;
+
+            if (!String.Equals(mapFile.Path, replacementMapPath, StringComparison.Ordinal))
+            {
+                long fileSize = Math.Max(0, mapFile.Size);
+                retainedBytes = fileSize > Int64.MaxValue - retainedBytes ? Int64.MaxValue : retainedBytes + fileSize;
+            }
+        }
+
+        return new ProjectStorageUsage(artifacts, retainedBytes);
     }
 
     public async Task<StoredSourceMap?> GetAsync(string projectId, string artifactId, int maximumBytes, CancellationToken cancellationToken)
@@ -118,6 +167,25 @@ internal sealed class SourceMapStorage
             : await JsonSerializer.DeserializeAsync<StoredSourceMapMetadata>(stream, _serializerOptions, cancellationToken);
     }
 
+    private async Task<bool> SaveMetadataAsync(string path, StoredSourceMapMetadata metadata, CancellationToken cancellationToken)
+    {
+        byte[] metadataBytes = JsonSerializer.SerializeToUtf8Bytes(metadata, _serializerOptions);
+        await using var metadataStream = new MemoryStream(metadataBytes, writable: false);
+        return await _storage.SaveFileAsync(path, metadataStream, cancellationToken);
+    }
+
+    private async Task<bool> DeleteAndVerifyAsync(string path, CancellationToken cancellationToken)
+    {
+        for (int attempt = 0; attempt < 2; attempt++)
+        {
+            await _storage.DeleteFileAsync(path, cancellationToken);
+            if (!await _storage.ExistsAsync(path))
+                return true;
+        }
+
+        return false;
+    }
+
     private static bool IsValidMapFileName(string artifactId, string mapFileName)
         => mapFileName.Length == artifactId.Length + 1 + 64 + 4
             && mapFileName.StartsWith(artifactId + '-', StringComparison.Ordinal)
@@ -128,5 +196,6 @@ internal sealed class SourceMapStorage
     private static string GetMapPath(string projectId, string mapFileName) => $"{RootPath}/{projectId}/{mapFileName}";
 
     internal sealed record StoredSourceMap(SourceMapArtifact Artifact, byte[] Content);
+    internal sealed record ProjectStorageUsage(IReadOnlyCollection<SourceMapArtifact> Artifacts, long RetainedBytes);
     private sealed record StoredSourceMapMetadata(SourceMapArtifact Artifact, string MapFileName);
 }

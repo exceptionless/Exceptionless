@@ -205,8 +205,40 @@ internal sealed class SourceMapDownloader
             index++;
         }
 
-        return reference;
+        return FindTrailingSourceMapReference(generatedContent) ?? reference;
     }
+
+    private static string? FindTrailingSourceMapReference(string generatedContent)
+    {
+        ReadOnlySpan<char> content = generatedContent.AsSpan().TrimEnd();
+        if (content.IsEmpty)
+            return null;
+
+        if (content.EndsWith("*/", StringComparison.Ordinal))
+        {
+            int commentStart = content.LastIndexOf("/*", StringComparison.Ordinal);
+            if (commentStart >= 0)
+            {
+                string? blockReference = ParseSourceMapComment(content[(commentStart + 2)..^2]);
+                if (IsSafeTrailingReference(blockReference))
+                    return blockReference;
+            }
+        }
+
+        int lineStart = content.LastIndexOfAny('\r', '\n') + 1;
+        ReadOnlySpan<char> lastLine = content[lineStart..];
+        int commentIndex = Math.Max(
+            lastLine.LastIndexOf("//#", StringComparison.Ordinal),
+            lastLine.LastIndexOf("//@", StringComparison.Ordinal));
+        if (commentIndex < 0)
+            return null;
+
+        string? lineReference = ParseSourceMapComment(lastLine[(commentIndex + 2)..]);
+        return IsSafeTrailingReference(lineReference) ? lineReference : null;
+    }
+
+    private static bool IsSafeTrailingReference(string? reference)
+        => !String.IsNullOrWhiteSpace(reference) && reference.AsSpan().IndexOfAny(['\'', '"', '`', '\r', '\n']) < 0;
 
     private static int SkipQuotedValue(string content, int start, char quote)
     {

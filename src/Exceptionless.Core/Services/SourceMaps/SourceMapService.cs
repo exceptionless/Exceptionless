@@ -456,21 +456,13 @@ public sealed class SourceMapService : IDisposable
 
     private async Task ValidateStorageLimitAsync(string projectId, SourceMapArtifact artifact, CancellationToken cancellationToken)
     {
-        var artifacts = await _storage.GetArtifactsAsync(projectId, cancellationToken);
-        var otherArtifacts = artifacts.Where(existing => !String.Equals(existing.Id, artifact.Id, StringComparison.Ordinal)).ToArray();
+        var usage = await _storage.GetProjectStorageUsageAsync(projectId, artifact.Id, cancellationToken);
+        var otherArtifacts = usage.Artifacts.Where(existing => !String.Equals(existing.Id, artifact.Id, StringComparison.Ordinal)).ToArray();
         if (otherArtifacts.Length >= _options.MaximumArtifactsPerProject)
             throw new SourceMapStorageLimitException($"The project source map artifact limit of {_options.MaximumArtifactsPerProject:N0} has been reached.");
 
-        long totalSize = 0;
-        foreach (var existing in otherArtifacts)
-        {
-            long size = Math.Max(0, existing.Size);
-            if (size > _options.MaximumStorageSizePerProject - totalSize)
-                throw new SourceMapStorageLimitException("The project source map storage limit has been reached.");
-            totalSize += size;
-        }
-
-        if (artifact.Size > _options.MaximumStorageSizePerProject - totalSize)
+        if (usage.RetainedBytes > _options.MaximumStorageSizePerProject
+            || artifact.Size > _options.MaximumStorageSizePerProject - usage.RetainedBytes)
             throw new SourceMapStorageLimitException("The project source map storage limit has been reached.");
     }
 

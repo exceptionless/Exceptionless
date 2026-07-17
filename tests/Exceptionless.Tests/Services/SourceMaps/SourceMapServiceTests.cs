@@ -224,6 +224,30 @@ public sealed class SourceMapServiceTests : TestWithServices
     }
 
     [Fact]
+    public async Task SymbolicateAsync_WhenRangedContentStartsInsideString_FindsTrailingSourceMapComment()
+    {
+        var requestedUris = new List<Uri>();
+        var handler = new DelegateHandler(request =>
+        {
+            requestedUris.Add(request.RequestUri!);
+            if (request.RequestUri == new Uri(GeneratedFileUrl))
+            {
+                return new HttpResponseMessage(HttpStatusCode.PartialContent)
+                {
+                    Content = new StringContent("truncated string value\";//# sourceMappingURL=custom.map")
+                };
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(SourceMap) };
+        });
+        using var httpClient = new HttpClient(handler);
+        using var service = CreateService(httpClient);
+
+        Assert.True(await service.SymbolicateAsync(ProjectId, CreateError(), TestContext.Current.CancellationToken));
+        Assert.Equal([new Uri(GeneratedFileUrl), new Uri("https://cdn.example.com/assets/custom.map")], requestedUris);
+    }
+
+    [Fact]
     public async Task SymbolicateAsync_WithExpiredAutoDownloadedSourceMap_RefreshesStoredMap()
     {
         int sourceMapDownloadCount = 0;
@@ -307,6 +331,33 @@ public sealed class SourceMapServiceTests : TestWithServices
 
         var mapFiles = await GetService<IFileStorage>().GetFileListAsync($"source-maps/{ProjectId}/*.map", cancellationToken: TestContext.Current.CancellationToken);
         Assert.Single(mapFiles);
+    }
+
+    [Fact]
+    public async Task SaveUploadedAsync_WhenSupersededMapCannotBeDeleted_RollsBackReplacement()
+    {
+        var storage = GetService<IFileStorage>();
+        var initialService = GetService<SourceMapService>();
+        string projectId = $"project-{Guid.NewGuid():N}";
+        await using (var sourceMapStream = new MemoryStream(SourceMap))
+            await initialService.SaveUploadedAsync(projectId, GeneratedFileUrl, "app.min.js.map", sourceMapStream, TestContext.Current.CancellationToken);
+        var initialMap = Assert.Single(await storage.GetFileListAsync($"source-maps/{projectId}/*.map", cancellationToken: TestContext.Current.CancellationToken));
+
+        using var httpClient = new HttpClient(new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound)));
+        using var replacementService = CreateService(httpClient, new FailingDeleteFileStorage(storage, initialMap.Path));
+        await using var updatedSourceMapStream = new MemoryStream(UpdatedSourceMap);
+
+        await Assert.ThrowsAsync<IOException>(() => replacementService.SaveUploadedAsync(
+            projectId,
+            GeneratedFileUrl,
+            "app.min.js.map",
+            updatedSourceMapStream,
+            TestContext.Current.CancellationToken));
+
+        var error = CreateError();
+        Assert.True(await initialService.SymbolicateAsync(projectId, error, TestContext.Current.CancellationToken));
+        Assert.Equal("meaningfulFunction", Assert.Single(error.StackTrace!).Name);
+        Assert.Equal(initialMap.Path, Assert.Single(await storage.GetFileListAsync($"source-maps/{projectId}/*.map", cancellationToken: TestContext.Current.CancellationToken)).Path);
     }
 
     [Fact]
@@ -397,6 +448,51 @@ public sealed class SourceMapServiceTests : TestWithServices
             "second.min.js.map",
             secondSourceMapStream,
             TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task SaveUploadedAsync_WhenOrphanedMapExists_RemovesItBeforeCheckingStorageLimit()
+    {
+        var options = GetService<AppOptions>();
+        options.SourceMapOptions.MaximumArtifactsPerProject = 10;
+        options.SourceMapOptions.MaximumStorageSizePerProject = SourceMap.LongLength;
+        var storage = GetService<IFileStorage>();
+        string projectId = $"project-{Guid.NewGuid():N}";
+        await using (var orphanedMapStream = new MemoryStream(SourceMap, writable: false))
+            Assert.True(await storage.SaveFileAsync($"source-maps/{projectId}/orphaned.map", orphanedMapStream, TestContext.Current.CancellationToken));
+
+        var service = GetService<SourceMapService>();
+        await using var sourceMapStream = new MemoryStream(SourceMap);
+        await service.SaveUploadedAsync(projectId, GeneratedFileUrl, "app.min.js.map", sourceMapStream, TestContext.Current.CancellationToken);
+
+        var mapFiles = await storage.GetFileListAsync($"source-maps/{projectId}/*.map", cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Single(mapFiles);
+        Assert.DoesNotContain(mapFiles, file => file.Path.EndsWith("orphaned.map", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task SaveUploadedAsync_WhenOrphanedMapCannotBeDeleted_CountsItTowardStorageLimit()
+    {
+        var options = GetService<AppOptions>();
+        options.SourceMapOptions.MaximumArtifactsPerProject = 10;
+        options.SourceMapOptions.MaximumStorageSizePerProject = SourceMap.LongLength;
+        var storage = GetService<IFileStorage>();
+        string projectId = $"project-{Guid.NewGuid():N}";
+        string orphanedMapPath = $"source-maps/{projectId}/orphaned.map";
+        await using (var orphanedMapStream = new MemoryStream(SourceMap, writable: false))
+            Assert.True(await storage.SaveFileAsync(orphanedMapPath, orphanedMapStream, TestContext.Current.CancellationToken));
+
+        using var httpClient = new HttpClient(new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound)));
+        using var service = CreateService(httpClient, new FailingDeleteFileStorage(storage, orphanedMapPath));
+        await using var sourceMapStream = new MemoryStream(SourceMap);
+
+        await Assert.ThrowsAsync<SourceMapStorageLimitException>(() => service.SaveUploadedAsync(
+            projectId,
+            GeneratedFileUrl,
+            "app.min.js.map",
+            sourceMapStream,
+            TestContext.Current.CancellationToken));
+        Assert.True(await storage.ExistsAsync(orphanedMapPath));
     }
 
     [Fact]
@@ -724,11 +820,11 @@ public sealed class SourceMapServiceTests : TestWithServices
         };
     }
 
-    private SourceMapService CreateService(HttpClient httpClient)
+    private SourceMapService CreateService(HttpClient httpClient, IFileStorage? storage = null)
     {
         return new SourceMapService(
             new TestHttpClientFactory(httpClient),
-            GetService<IFileStorage>(),
+            storage ?? GetService<IFileStorage>(),
             GetService<ICacheClient>(),
             GetService<ILockProvider>(),
             GetService<SourceMapRequestThrottle>(),
@@ -736,6 +832,40 @@ public sealed class SourceMapServiceTests : TestWithServices
             GetService<AppOptions>(),
             GetService<TimeProvider>(),
             GetService<ILogger<SourceMapService>>());
+    }
+
+    private sealed class FailingDeleteFileStorage(IFileStorage inner, string failingPath) : IFileStorage
+    {
+        public ISerializer Serializer => inner.Serializer;
+
+        public Task<Stream?> GetFileStreamAsync(string path, StreamMode streamMode, CancellationToken cancellationToken = default)
+            => inner.GetFileStreamAsync(path, streamMode, cancellationToken);
+
+        public Task<FileSpec?> GetFileInfoAsync(string path) => inner.GetFileInfoAsync(path);
+
+        public Task<bool> ExistsAsync(string path) => inner.ExistsAsync(path);
+
+        public Task<bool> SaveFileAsync(string path, Stream stream, CancellationToken cancellationToken = default)
+            => inner.SaveFileAsync(path, stream, cancellationToken);
+
+        public Task<bool> RenameFileAsync(string path, string newPath, CancellationToken cancellationToken = default)
+            => inner.RenameFileAsync(path, newPath, cancellationToken);
+
+        public Task<bool> CopyFileAsync(string path, string targetPath, CancellationToken cancellationToken = default)
+            => inner.CopyFileAsync(path, targetPath, cancellationToken);
+
+        public Task<bool> DeleteFileAsync(string path, CancellationToken cancellationToken = default)
+            => String.Equals(path, failingPath, StringComparison.Ordinal) ? Task.FromResult(false) : inner.DeleteFileAsync(path, cancellationToken);
+
+        public Task<int> DeleteFilesAsync(string? searchPattern = null, CancellationToken cancellation = default)
+            => inner.DeleteFilesAsync(searchPattern, cancellation);
+
+        public Task<PagedFileListResult> GetPagedFileListAsync(int pageSize = 100, string? searchPattern = null, CancellationToken cancellationToken = default)
+            => inner.GetPagedFileListAsync(pageSize, searchPattern, cancellationToken);
+
+        public void Dispose()
+        {
+        }
     }
 
     private sealed class TestHttpClientFactory(HttpClient httpClient) : IHttpClientFactory
