@@ -448,8 +448,14 @@ public sealed class SourceMapService : IDisposable
     private Task<long> GetProjectCacheVersionAsync(string projectId)
         => _cache.GetAsync<long>(GetProjectCacheVersionKey(projectId), 0);
 
-    private Task<long> AdvanceProjectCacheVersionAsync(string projectId)
-        => _cache.IncrementAsync(GetProjectCacheVersionKey(projectId), 1);
+    private async Task<long> AdvanceProjectCacheVersionAsync(string projectId)
+    {
+        string cacheKey = GetProjectCacheVersionKey(projectId);
+        long cacheVersion = await _cache.IncrementAsync(cacheKey, 1);
+        if (!await _cache.SetAsync(cacheKey, cacheVersion))
+            throw new IOException("Unable to persist the source map cache generation.");
+        return cacheVersion;
+    }
 
     private Task<ILock?> TryAcquireProjectStorageLockAsync(string projectId, CancellationToken cancellationToken)
         => _lockProvider.TryAcquireAsync(GetProjectStorageLockKey(projectId), TimeSpan.FromSeconds(30), cancellationToken);

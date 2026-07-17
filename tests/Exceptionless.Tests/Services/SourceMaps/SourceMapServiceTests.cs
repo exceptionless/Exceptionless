@@ -484,6 +484,22 @@ public sealed class SourceMapServiceTests : TestWithServices
     }
 
     [Fact]
+    public async Task SaveUploadedAsync_WithLegacyExpiringCacheGeneration_PersistsAdvancedGeneration()
+    {
+        string projectId = $"project-{Guid.NewGuid():N}";
+        string cacheKey = $"source-maps:cache-version:{projectId}";
+        var cache = GetService<ICacheClient>();
+        Assert.True(await cache.SetAsync(cacheKey, 7L, TimeSpan.FromDays(1)));
+        var service = GetService<SourceMapService>();
+
+        await using (var sourceMapStream = new MemoryStream(SourceMap))
+            await service.SaveUploadedAsync(projectId, GeneratedFileUrl, "app.min.js.map", sourceMapStream, TestContext.Current.CancellationToken);
+
+        TimeProvider.Advance(TimeSpan.FromDays(2));
+        Assert.Equal(8, (await cache.GetAsync<long>(cacheKey)).Value);
+    }
+
+    [Fact]
     public async Task DeleteArtifactAsync_WhenAnotherServiceHasCachedMap_InvalidatesCachedMap()
     {
         using var httpClient = new HttpClient(new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound)));
