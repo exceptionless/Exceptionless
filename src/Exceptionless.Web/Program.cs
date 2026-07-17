@@ -89,7 +89,7 @@ public partial class Program
 
             var apmConfig = new ApmConfig(configuration, "web", options.InformationalVersion, options.CacheOptions.Provider == "redis");
 
-            Log.Information("Bootstrapping Exceptionless Web in {AppMode} mode ({InformationalVersion}) on {MachineName} with options {@Options}", environment, options.InformationalVersion, Environment.MachineName, options);
+            Log.Information("Bootstrapping Exceptionless Web in {AppMode} mode ({InformationalVersion}) on {MachineName} with scope {AppScope}", environment, options.InformationalVersion, Environment.MachineName, options.AppScope);
 
             SetClientEnvironmentVariablesInDevelopmentMode(options);
 
