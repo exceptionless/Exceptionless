@@ -1,5 +1,7 @@
 using System.Text.Json;
+using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services.SourceMaps;
 using Exceptionless.Web.Extensions;
@@ -15,6 +17,7 @@ public static class SourceMapEndpoints
 {
     public static IEndpointRouteBuilder MapSourceMapEndpoints(this IEndpointRouteBuilder endpoints)
     {
+        long maximumUploadRequestSize = GetMaximumUploadRequestSize(endpoints.ServiceProvider.GetRequiredService<AppOptions>().SourceMapOptions);
         var group = endpoints.MapGroup("api/v2")
             .WithTags("Source Map");
 
@@ -40,8 +43,8 @@ public static class SourceMapEndpoints
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
             .WithMetadata(
                 new MultipartFileUploadAttribute("file", "generated_file_url") { FileDescription = "The source map file to upload." },
-                new RequestSizeLimitAttribute(SourceMapService.MaximumUploadRequestSize),
-                new RequestFormLimitsAttribute { MultipartBodyLengthLimit = SourceMapService.MaximumUploadRequestSize })
+                new RequestSizeLimitAttribute(maximumUploadRequestSize),
+                new RequestFormLimitsAttribute { MultipartBodyLengthLimit = maximumUploadRequestSize })
             .WithSummary("Upload a source map for a generated JavaScript file")
             .WithMetadata(new EndpointDocumentation {
                 ParameterDescriptions = new() {
@@ -72,6 +75,9 @@ public static class SourceMapEndpoints
 
         return endpoints;
     }
+
+    internal static long GetMaximumUploadRequestSize(SourceMapOptions options)
+        => (long)options.MaximumSourceMapSize + 1024 * 1024;
 
     private static async Task<HttpIResult> GetAsync(
         string projectId,

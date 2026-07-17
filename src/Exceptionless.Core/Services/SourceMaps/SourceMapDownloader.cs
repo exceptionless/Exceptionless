@@ -165,17 +165,83 @@ internal sealed class SourceMapDownloader
 
     private static string? FindSourceMapReference(string generatedContent)
     {
-        const string marker = "sourceMappingURL=";
-        int markerIndex = generatedContent.LastIndexOf(marker, StringComparison.Ordinal);
-        if (markerIndex < 0)
+        string? reference = null;
+        for (int index = 0; index < generatedContent.Length;)
+        {
+            char current = generatedContent[index];
+            if (current is '\'' or '"' or '`')
+            {
+                index = SkipQuotedValue(generatedContent, index, current);
+                continue;
+            }
+
+            if (current != '/' || index + 1 >= generatedContent.Length)
+            {
+                index++;
+                continue;
+            }
+
+            char next = generatedContent[index + 1];
+            if (next == '/')
+            {
+                int end = generatedContent.IndexOfAny(['\r', '\n'], index + 2);
+                if (end < 0)
+                    end = generatedContent.Length;
+                reference = ParseSourceMapComment(generatedContent.AsSpan(index + 2, end - index - 2)) ?? reference;
+                index = end;
+                continue;
+            }
+
+            if (next == '*')
+            {
+                int end = generatedContent.IndexOf("*/", index + 2, StringComparison.Ordinal);
+                if (end < 0)
+                    return reference;
+                reference = ParseSourceMapComment(generatedContent.AsSpan(index + 2, end - index - 2)) ?? reference;
+                index = end + 2;
+                continue;
+            }
+
+            index++;
+        }
+
+        return reference;
+    }
+
+    private static int SkipQuotedValue(string content, int start, char quote)
+    {
+        for (int index = start + 1; index < content.Length; index++)
+        {
+            if (content[index] == '\\')
+            {
+                index++;
+                continue;
+            }
+
+            if (content[index] == quote)
+                return index + 1;
+        }
+
+        return content.Length;
+    }
+
+    private static string? ParseSourceMapComment(ReadOnlySpan<char> comment)
+    {
+        comment = comment.Trim();
+        if (comment.IsEmpty || comment[0] is not ('#' or '@'))
             return null;
 
-        int start = markerIndex + marker.Length;
-        int end = generatedContent.IndexOfAny(['\r', '\n'], start);
-        string value = generatedContent[start..(end < 0 ? generatedContent.Length : end)].Trim();
-        if (value.EndsWith("*/", StringComparison.Ordinal))
-            value = value[..^2].Trim();
-        return value;
+        comment = comment[1..].TrimStart();
+        const string marker = "sourceMappingURL";
+        if (!comment.StartsWith(marker, StringComparison.Ordinal))
+            return null;
+
+        comment = comment[marker.Length..].TrimStart();
+        if (comment.IsEmpty || comment[0] != '=')
+            return null;
+
+        string value = comment[1..].Trim().ToString();
+        return String.IsNullOrWhiteSpace(value) ? null : value;
     }
 
     private static byte[] DecodeDataUri(string value, int maximumBytes)

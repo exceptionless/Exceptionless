@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -228,6 +229,16 @@ public sealed class SourceMapEndpointTests : IntegrationTestsBase
 
 public sealed class SourceMapEndpointValidationTests
 {
+    [Fact]
+    public void GetMaximumUploadRequestSize_UsesConfiguredSourceMapLimitWithMultipartOverhead()
+    {
+        var options = new SourceMapOptions { MaximumSourceMapSize = 30 * 1024 * 1024 };
+
+        long maximumRequestSize = SourceMapEndpoints.GetMaximumUploadRequestSize(options);
+
+        Assert.Equal(31L * 1024 * 1024, maximumRequestSize);
+    }
+
     [Fact]
     public async Task ReadFormAsync_WithoutMultipartContent_ReturnsUnprocessableEntity()
     {

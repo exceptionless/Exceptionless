@@ -200,6 +200,30 @@ public sealed class SourceMapServiceTests : TestWithServices
     }
 
     [Fact]
+    public async Task SymbolicateAsync_WhenSourceMapMarkerIsInsideString_UsesConventionalSourceMapUrl()
+    {
+        var requestedUris = new List<Uri>();
+        var handler = new DelegateHandler(request =>
+        {
+            requestedUris.Add(request.RequestUri!);
+            if (request.RequestUri == new Uri(GeneratedFileUrl))
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("const marker = \"//# sourceMappingURL=bogus.map\";")
+                };
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(SourceMap) };
+        });
+        using var httpClient = new HttpClient(handler);
+        using var service = CreateService(httpClient);
+
+        Assert.True(await service.SymbolicateAsync(ProjectId, CreateError(), TestContext.Current.CancellationToken));
+        Assert.Equal([new Uri(GeneratedFileUrl), new Uri(GeneratedFileUrl + ".map")], requestedUris);
+    }
+
+    [Fact]
     public async Task SymbolicateAsync_WithExpiredAutoDownloadedSourceMap_RefreshesStoredMap()
     {
         int sourceMapDownloadCount = 0;
@@ -283,6 +307,96 @@ public sealed class SourceMapServiceTests : TestWithServices
 
         var mapFiles = await GetService<IFileStorage>().GetFileListAsync($"source-maps/{ProjectId}/*.map", cancellationToken: TestContext.Current.CancellationToken);
         Assert.Single(mapFiles);
+    }
+
+    [Fact]
+    public async Task SaveUploadedAsync_WhenAnotherServiceHasCachedMap_InvalidatesCachedMap()
+    {
+        using var httpClient = new HttpClient(new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound)));
+        using var uploadingService = CreateService(httpClient);
+        using var processingService = CreateService(httpClient);
+        string projectId = $"project-{Guid.NewGuid():N}";
+
+        await using (var sourceMapStream = new MemoryStream(SourceMap))
+            await uploadingService.SaveUploadedAsync(projectId, GeneratedFileUrl, "app.min.js.map", sourceMapStream, TestContext.Current.CancellationToken);
+
+        var initialError = CreateError();
+        Assert.True(await processingService.SymbolicateAsync(projectId, initialError, TestContext.Current.CancellationToken));
+        Assert.Equal("meaningfulFunction", Assert.Single(initialError.StackTrace!).Name);
+
+        await using (var sourceMapStream = new MemoryStream(UpdatedSourceMap))
+            await uploadingService.SaveUploadedAsync(projectId, GeneratedFileUrl, "app.min.js.map", sourceMapStream, TestContext.Current.CancellationToken);
+
+        var updatedError = CreateError();
+        Assert.True(await processingService.SymbolicateAsync(projectId, updatedError, TestContext.Current.CancellationToken));
+        Assert.Equal("updatedFunction", Assert.Single(updatedError.StackTrace!).Name);
+    }
+
+    [Fact]
+    public async Task DeleteArtifactAsync_WhenAnotherServiceHasCachedMap_InvalidatesCachedMap()
+    {
+        using var httpClient = new HttpClient(new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound)));
+        using var deletingService = CreateService(httpClient);
+        using var processingService = CreateService(httpClient);
+        string projectId = $"project-{Guid.NewGuid():N}";
+
+        SourceMapArtifact artifact;
+        await using (var sourceMapStream = new MemoryStream(SourceMap))
+            artifact = await deletingService.SaveUploadedAsync(projectId, GeneratedFileUrl, "app.min.js.map", sourceMapStream, TestContext.Current.CancellationToken);
+
+        Assert.True(await processingService.SymbolicateAsync(projectId, CreateError(), TestContext.Current.CancellationToken));
+        Assert.True(await deletingService.DeleteArtifactAsync(projectId, artifact.Id, TestContext.Current.CancellationToken));
+
+        var error = CreateError();
+        Assert.False(await processingService.SymbolicateAsync(projectId, error, TestContext.Current.CancellationToken));
+        Assert.Equal("a", Assert.Single(error.StackTrace!).Name);
+    }
+
+    [Fact]
+    public async Task SaveUploadedAsync_WhenArtifactLimitIsReached_RejectsNewUrlButAllowsReplacement()
+    {
+        var options = GetService<AppOptions>();
+        options.SourceMapOptions.MaximumArtifactsPerProject = 1;
+        options.SourceMapOptions.MaximumStorageSizePerProject = 1024 * 1024;
+        var service = GetService<SourceMapService>();
+        string projectId = $"project-{Guid.NewGuid():N}";
+
+        await using (var sourceMapStream = new MemoryStream(SourceMap))
+            await service.SaveUploadedAsync(projectId, GeneratedFileUrl, "app.min.js.map", sourceMapStream, TestContext.Current.CancellationToken);
+        await using (var sourceMapStream = new MemoryStream(UpdatedSourceMap))
+            await service.SaveUploadedAsync(projectId, GeneratedFileUrl, "app.min.js.map", sourceMapStream, TestContext.Current.CancellationToken);
+        await using var secondSourceMapStream = new MemoryStream(SourceMap);
+
+        var exception = await Assert.ThrowsAsync<SourceMapStorageLimitException>(() => service.SaveUploadedAsync(
+            projectId,
+            "https://cdn.example.com/assets/second.min.js",
+            "second.min.js.map",
+            secondSourceMapStream,
+            TestContext.Current.CancellationToken));
+
+        Assert.Contains("artifact limit of 1", exception.Message);
+        Assert.Single(await service.GetArtifactsAsync(projectId, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task SaveUploadedAsync_WhenStorageSizeLimitIsReached_RejectsNewMap()
+    {
+        var options = GetService<AppOptions>();
+        options.SourceMapOptions.MaximumArtifactsPerProject = 10;
+        options.SourceMapOptions.MaximumStorageSizePerProject = SourceMap.LongLength;
+        var service = GetService<SourceMapService>();
+        string projectId = $"project-{Guid.NewGuid():N}";
+
+        await using (var sourceMapStream = new MemoryStream(SourceMap))
+            await service.SaveUploadedAsync(projectId, GeneratedFileUrl, "app.min.js.map", sourceMapStream, TestContext.Current.CancellationToken);
+        await using var secondSourceMapStream = new MemoryStream(SourceMap);
+
+        await Assert.ThrowsAsync<SourceMapStorageLimitException>(() => service.SaveUploadedAsync(
+            projectId,
+            "https://cdn.example.com/assets/second.min.js",
+            "second.min.js.map",
+            secondSourceMapStream,
+            TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -510,6 +624,8 @@ public sealed class SourceMapServiceTests : TestWithServices
             ["SourceMaps:RequestTimeoutMilliseconds"] = "0",
             ["SourceMaps:MaximumGeneratedFileSize"] = "0",
             ["SourceMaps:MaximumSourceMapSize"] = "-1",
+            ["SourceMaps:MaximumArtifactsPerProject"] = "0",
+            ["SourceMaps:MaximumStorageSizePerProject"] = "0",
             ["SourceMaps:MaximumMappingSegments"] = "0",
             ["SourceMaps:MaximumRedirects"] = "-1",
             ["SourceMaps:MaximumConcurrentDownloads"] = "0",
@@ -539,6 +655,8 @@ public sealed class SourceMapServiceTests : TestWithServices
         Assert.Equal(1, options.RequestTimeoutMilliseconds);
         Assert.Equal(1, options.MaximumGeneratedFileSize);
         Assert.Equal(1, options.MaximumSourceMapSize);
+        Assert.Equal(1, options.MaximumArtifactsPerProject);
+        Assert.Equal(1, options.MaximumStorageSizePerProject);
         Assert.Equal(1, options.MaximumMappingSegments);
         Assert.Equal(0, options.MaximumRedirects);
         Assert.Equal(1, options.MaximumConcurrentDownloads);

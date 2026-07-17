@@ -8,6 +8,8 @@ public sealed class SourceMapOptions
     public int RequestTimeoutMilliseconds { get; internal set; }
     public int MaximumGeneratedFileSize { get; internal set; }
     public int MaximumSourceMapSize { get; internal set; }
+    public int MaximumArtifactsPerProject { get; internal set; }
+    public long MaximumStorageSizePerProject { get; internal set; }
     public int MaximumMappingSegments { get; internal set; }
     public int MaximumRedirects { get; internal set; }
     public int MaximumConcurrentDownloads { get; internal set; }
@@ -45,6 +47,8 @@ public sealed class SourceMapOptions
             RequestTimeoutMilliseconds = ReadPositive(section, nameof(RequestTimeoutMilliseconds), 3000),
             MaximumGeneratedFileSize = ReadPositive(section, nameof(MaximumGeneratedFileSize), 5 * 1024 * 1024),
             MaximumSourceMapSize = ReadPositive(section, nameof(MaximumSourceMapSize), 20 * 1024 * 1024),
+            MaximumArtifactsPerProject = ReadPositive(section, nameof(MaximumArtifactsPerProject), 1000),
+            MaximumStorageSizePerProject = ReadPositive(section, nameof(MaximumStorageSizePerProject), 1024L * 1024 * 1024),
             MaximumMappingSegments = ReadPositive(section, nameof(MaximumMappingSegments), 1_000_000),
             MaximumRedirects = Math.Max(0, section.GetValue(nameof(MaximumRedirects), 3)),
             MaximumConcurrentDownloads = ReadPositive(section, nameof(MaximumConcurrentDownloads), 4),
@@ -70,5 +74,8 @@ public sealed class SourceMapOptions
     }
 
     private static int ReadPositive(IConfiguration section, string name, int defaultValue)
+        => Math.Max(1, section.GetValue(name, defaultValue));
+
+    private static long ReadPositive(IConfiguration section, string name, long defaultValue)
         => Math.Max(1, section.GetValue(name, defaultValue));
 }
