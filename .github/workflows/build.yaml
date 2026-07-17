@@ -580,9 +580,39 @@ jobs:
           kubectl patch cronjob/ex-dev-jobs-maintain-indexes -p '{"spec":{"suspend": false}}' --namespace $DEV_NAMESPACE
           kubectl patch cronjob/ex-dev-jobs-migration -p '{"spec":{"suspend": false}}' --namespace $DEV_NAMESPACE
 
-          kubectl rollout status deployment/ex-dev-app --timeout=300s --namespace $DEV_NAMESPACE
-          kubectl rollout status deployment/ex-dev-api --timeout=300s --namespace $DEV_NAMESPACE
-          kubectl rollout status deployment/ex-dev-jobs-event-posts --timeout=300s --namespace $DEV_NAMESPACE
+          wait_for_versioned_pod() {
+            component="$1"
+            replica_set=""
+            for attempt in {1..12}; do
+              replica_set=$(kubectl get replicasets --namespace "$DEV_NAMESPACE" --selector "component=${component}" --output json \
+                | jq --raw-output --arg image_tag ":${VERSION}" '
+                    [.items[]
+                      | select(any(.spec.template.spec.containers[]; .image | endswith($image_tag)))
+                      | { name: .metadata.name, created: .metadata.creationTimestamp }]
+                    | sort_by(.created)
+                    | last
+                    | .name // empty')
+              [[ -n "$replica_set" ]] && break
+              sleep 5
+            done
+            if [[ -z "$replica_set" ]]; then
+              echo "::error::No ReplicaSet for ${component} uses version ${VERSION}."
+              return 1
+            fi
+
+            pod_template_hash=$(kubectl get replicaset "$replica_set" --namespace "$DEV_NAMESPACE" \
+              --output jsonpath='{.metadata.labels.pod-template-hash}')
+            kubectl wait --for=create --timeout=60s pod \
+              --namespace "$DEV_NAMESPACE" \
+              --selector "component=${component},pod-template-hash=${pod_template_hash}"
+            kubectl wait --for=condition=Ready --timeout=300s pod \
+              --namespace "$DEV_NAMESPACE" \
+              --selector "component=${component},pod-template-hash=${pod_template_hash}"
+          }
+
+          wait_for_versioned_pod ex-dev-app
+          wait_for_versioned_pod ex-dev-api
+          wait_for_versioned_pod ex-dev-jobs-event-posts
 
           for endpoint in dev-app.exceptionless.io dev-api.exceptionless.io dev-collector.exceptionless.io; do
             deployed_version=""
