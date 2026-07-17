@@ -605,9 +605,22 @@ jobs:
             kubectl wait --for=create --timeout=60s pod \
               --namespace "$DEV_NAMESPACE" \
               --selector "component=${component},pod-template-hash=${pod_template_hash}"
-            kubectl wait --for=condition=Ready --timeout=300s pod \
-              --namespace "$DEV_NAMESPACE" \
-              --selector "component=${component},pod-template-hash=${pod_template_hash}"
+            if ! kubectl wait --for=condition=Ready --timeout=300s pod \
+                --namespace "$DEV_NAMESPACE" \
+                --selector "component=${component},pod-template-hash=${pod_template_hash}"; then
+              echo "::group::${component} rollout diagnostics"
+              kubectl get pods --namespace "$DEV_NAMESPACE" \
+                --selector "component=${component},pod-template-hash=${pod_template_hash}" \
+                --output wide
+              for pod in $(kubectl get pods --namespace "$DEV_NAMESPACE" \
+                  --selector "component=${component},pod-template-hash=${pod_template_hash}" \
+                  --output name); do
+                kubectl describe "$pod" --namespace "$DEV_NAMESPACE"
+                kubectl logs "$pod" --namespace "$DEV_NAMESPACE" --all-containers --tail=300 || true
+              done
+              echo "::endgroup::"
+              return 1
+            fi
           }
 
           wait_for_versioned_pod ex-dev-app
