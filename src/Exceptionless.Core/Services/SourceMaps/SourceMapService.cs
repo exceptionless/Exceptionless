@@ -223,7 +223,7 @@ public sealed class SourceMapService : IDisposable
         if (_parsedSourceMaps.TryGetValue(cacheKey, out ResolvedSourceMap? cached) && cached is not null)
         {
             long cacheVersion = await GetProjectCacheVersionAsync(request.ProjectId);
-            if (cached.CacheVersion == cacheVersion)
+            if (cached.CacheVersion == cacheVersion && !ShouldRefresh(cached.Artifact, generatedFileUri))
                 return cached;
             _parsedSourceMaps.Remove(cacheKey);
         }
@@ -347,7 +347,7 @@ public sealed class SourceMapService : IDisposable
         string generatedFileUrl = generatedFileUri.AbsoluteUri;
         string artifactId = GetArtifactId(generatedFileUrl);
         var stored = await _storage.GetAsync(projectId, artifactId, _options.MaximumSourceMapSize, CancellationToken.None);
-        bool refreshStoredMap = ShouldRefresh(stored, generatedFileUri);
+        bool refreshStoredMap = stored is not null && ShouldRefresh(stored.Artifact, generatedFileUri);
         if (stored is not null && !refreshStoredMap)
             return Resolve(stored.Artifact, stored.Content, cacheVersion);
 
@@ -369,7 +369,7 @@ public sealed class SourceMapService : IDisposable
                 return await CacheFailureAsync(failureCacheKey);
 
             stored = await _storage.GetAsync(projectId, artifactId, _options.MaximumSourceMapSize, CancellationToken.None);
-            if (stored is not null && !ShouldRefresh(stored, generatedFileUri))
+            if (stored is not null && !ShouldRefresh(stored.Artifact, generatedFileUri))
                 return Resolve(stored.Artifact, stored.Content, await GetProjectCacheVersionAsync(projectId));
 
             if (stored is null && !await _throttle.TryReserveDiscoveryAsync(request))
@@ -432,12 +432,11 @@ public sealed class SourceMapService : IDisposable
     private ResolvedSourceMap Resolve(SourceMapArtifact artifact, byte[] content, long cacheVersion)
         => new(artifact, SourceMapDocument.Parse(content, _options.MaximumMappingSegments), cacheVersion);
 
-    private bool ShouldRefresh(SourceMapStorage.StoredSourceMap? stored, Uri generatedFileUri)
-        => stored is not null
-            && stored.Artifact.IsAutoDownloaded
+    private bool ShouldRefresh(SourceMapArtifact artifact, Uri generatedFileUri)
+        => artifact.IsAutoDownloaded
             && _options.EnableAutoDownload
             && String.Equals(generatedFileUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)
-            && _timeProvider.GetUtcNow().UtcDateTime - stored.Artifact.CreatedUtc >= _options.AutoDownloadRefreshInterval;
+            && _timeProvider.GetUtcNow().UtcDateTime - artifact.CreatedUtc >= _options.AutoDownloadRefreshInterval;
 
     private async Task<long> ClearCachesAsync(string projectId, string generatedFileUrl)
     {
@@ -450,7 +449,7 @@ public sealed class SourceMapService : IDisposable
         => _cache.GetAsync<long>(GetProjectCacheVersionKey(projectId), 0);
 
     private Task<long> AdvanceProjectCacheVersionAsync(string projectId)
-        => _cache.IncrementAsync(GetProjectCacheVersionKey(projectId), 1, TimeSpan.FromDays(1));
+        => _cache.IncrementAsync(GetProjectCacheVersionKey(projectId), 1);
 
     private Task<ILock?> TryAcquireProjectStorageLockAsync(string projectId, CancellationToken cancellationToken)
         => _lockProvider.TryAcquireAsync(GetProjectStorageLockKey(projectId), TimeSpan.FromSeconds(30), cancellationToken);

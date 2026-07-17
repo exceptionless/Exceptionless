@@ -284,6 +284,42 @@ public sealed class SourceMapServiceTests : TestWithServices
     }
 
     [Fact]
+    public async Task SymbolicateAsync_WhenParsedCacheOutlivesRefreshInterval_RefreshesCachedMap()
+    {
+        var options = GetService<AppOptions>();
+        options.SourceMapOptions.AutoDownloadRefreshIntervalMinutes = 1;
+        options.SourceMapOptions.ParsedSourceMapCacheLifetimeMinutes = 120;
+        int sourceMapDownloadCount = 0;
+        var handler = new DelegateHandler(request =>
+        {
+            if (request.RequestUri == new Uri(GeneratedFileUrl))
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("minified") };
+                response.Headers.TryAddWithoutValidation("SourceMap", "app.min.js.map");
+                return response;
+            }
+
+            sourceMapDownloadCount++;
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent(sourceMapDownloadCount == 1 ? SourceMap : UpdatedSourceMap)
+            };
+        });
+        using var httpClient = new HttpClient(handler);
+        using var service = CreateService(httpClient);
+        var initialError = CreateError();
+        Assert.True(await service.SymbolicateAsync(ProjectId, initialError, TestContext.Current.CancellationToken));
+        Assert.Equal("meaningfulFunction", Assert.Single(initialError.StackTrace!).Name);
+
+        TimeProvider.Advance(TimeSpan.FromMinutes(2));
+
+        var refreshedError = CreateError();
+        Assert.True(await service.SymbolicateAsync(ProjectId, refreshedError, TestContext.Current.CancellationToken));
+        Assert.Equal("updatedFunction", Assert.Single(refreshedError.StackTrace!).Name);
+        Assert.Equal(2, sourceMapDownloadCount);
+    }
+
+    [Fact]
     public async Task SymbolicateAsync_WhenExpiredSourceMapCannotRefresh_DoesNotUseStaleMap()
     {
         int sourceMapDownloadCount = 0;
