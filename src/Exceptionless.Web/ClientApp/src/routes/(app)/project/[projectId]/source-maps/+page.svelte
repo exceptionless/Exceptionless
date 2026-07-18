@@ -95,6 +95,8 @@
 </script>
 
 <div class="space-y-6">
+    <A href={`${resolve('/(app)/project/[projectId]/settings', { projectId })}#error-stacking`}>Back to Error Stacking</A>
+
     <section class="space-y-2">
         <H4>Source Map Discovery</H4>
         <Muted>
