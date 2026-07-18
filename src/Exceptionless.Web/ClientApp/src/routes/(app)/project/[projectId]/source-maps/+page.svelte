@@ -232,8 +232,8 @@
     </section>
 
     <div class="border-border flex border-t pt-4 sm:justify-end">
-        <Button variant="secondary" href={`${resolve('/(app)/project/[projectId]/settings', { projectId })}#error-stacking`}>
-            <ArrowLeft class="mr-2 size-4" aria-hidden="true" /> Back to Error Stacking
+        <Button variant="secondary" href={resolve('/(app)/project/[projectId]/settings', { projectId })}>
+            <ArrowLeft class="mr-2 size-4" aria-hidden="true" /> Back to Settings
         </Button>
     </div>
 </div>
