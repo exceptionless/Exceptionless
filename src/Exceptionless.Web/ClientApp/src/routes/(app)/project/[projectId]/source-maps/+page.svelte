@@ -18,6 +18,7 @@
     import { type SourceMapUploadFormData, SourceMapUploadSchema } from '$features/projects/schemas';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@exceptionless/fetchclient';
+    import ArrowLeft from '@lucide/svelte/icons/arrow-left';
     import Trash from '@lucide/svelte/icons/trash-2';
     import Upload from '@lucide/svelte/icons/upload';
     import { createForm } from '@tanstack/svelte-form';
@@ -95,8 +96,6 @@
 </script>
 
 <div class="space-y-6">
-    <A href={`${resolve('/(app)/project/[projectId]/settings', { projectId })}#error-stacking`}>Back to Error Stacking</A>
-
     <section class="space-y-2">
         <H4>Source Map Discovery</H4>
         <Muted>
@@ -231,6 +230,12 @@
             </Table.Root>
         </div>
     </section>
+
+    <div class="border-border flex border-t pt-4 sm:justify-end">
+        <Button variant="secondary" href={`${resolve('/(app)/project/[projectId]/settings', { projectId })}#error-stacking`}>
+            <ArrowLeft class="mr-2 size-4" aria-hidden="true" /> Back to Error Stacking
+        </Button>
+    </div>
 </div>
 
 <AlertDialog.Root bind:open={showDeleteDialog}>
