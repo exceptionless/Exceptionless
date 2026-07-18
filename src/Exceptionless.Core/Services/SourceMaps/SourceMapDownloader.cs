@@ -86,6 +86,7 @@ internal sealed class SourceMapDownloader
             _options.MaximumGeneratedFileSize,
             validateContentLength: false,
             request => ConfigureGeneratedFileRequest(request, useRange: true),
+            SourceMapService.GeneratedFileHttpClientName,
             isRefresh,
             cancellationToken);
         if (result.Response.StatusCode != HttpStatusCode.RequestedRangeNotSatisfiable)
@@ -98,6 +99,7 @@ internal sealed class SourceMapDownloader
             _options.MaximumGeneratedFileSize,
             validateContentLength: false,
             request => ConfigureGeneratedFileRequest(request, useRange: false),
+            SourceMapService.GeneratedFileHttpClientName,
             isRefresh,
             cancellationToken);
     }
@@ -112,7 +114,14 @@ internal sealed class SourceMapDownloader
 
     private async Task<DownloadedSourceMap?> DownloadContentAsync(Uri sourceMapUri, bool isRefresh, CancellationToken cancellationToken)
     {
-        using var result = await SendAsync(sourceMapUri, _options.MaximumSourceMapSize, validateContentLength: true, null, isRefresh, cancellationToken);
+        using var result = await SendAsync(
+            sourceMapUri,
+            _options.MaximumSourceMapSize,
+            validateContentLength: true,
+            null,
+            SourceMapService.HttpClientName,
+            isRefresh,
+            cancellationToken);
         if (!result.Response.IsSuccessStatusCode)
             return null;
 
@@ -128,6 +137,7 @@ internal sealed class SourceMapDownloader
         int maximumBytes,
         bool validateContentLength,
         Action<HttpRequestMessage>? configureRequest,
+        string httpClientName,
         bool isRefresh,
         CancellationToken cancellationToken)
     {
@@ -143,7 +153,7 @@ internal sealed class SourceMapDownloader
             request.Headers.AcceptEncoding.ParseAdd("gzip, deflate, br");
             configureRequest?.Invoke(request);
 
-            var client = _httpClientFactory.CreateClient(SourceMapService.HttpClientName);
+            var client = _httpClientFactory.CreateClient(httpClientName);
             var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             if (validateContentLength && response.Content.Headers.ContentLength > maximumBytes)
             {

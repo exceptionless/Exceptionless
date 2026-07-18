@@ -15,6 +15,7 @@ namespace Exceptionless.Core.Services.SourceMaps;
 public sealed class SourceMapService : IDisposable
 {
     public const string HttpClientName = "SourceMaps";
+    internal const string GeneratedFileHttpClientName = "SourceMapGeneratedFiles";
     private static readonly TimeSpan FailureCacheLifetime = TimeSpan.FromMinutes(15);
     private readonly SemaphoreSlim _downloadSemaphore;
     private readonly ConcurrentDictionary<string, Lazy<Task<ResolvedSourceMap?>>> _inflightSourceMaps = new(StringComparer.Ordinal);

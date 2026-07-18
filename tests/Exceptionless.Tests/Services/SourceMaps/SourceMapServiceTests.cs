@@ -32,6 +32,14 @@ public sealed class SourceMapServiceTests : TestWithServices
     }
 
     [Fact]
+    public void CreateSourceMapHttpMessageHandler_ForGeneratedFileProbe_DisablesAutomaticDecompression()
+    {
+        using var handler = Bootstrapper.CreateSourceMapHttpMessageHandler(GetService<SourceMapRequestThrottle>(), DecompressionMethods.None);
+
+        Assert.Equal(DecompressionMethods.None, handler.AutomaticDecompression);
+    }
+
+    [Fact]
     public async Task SymbolicateAsync_WithUploadedSourceMap_RewritesFrameAndPreservesGeneratedLocation()
     {
         var service = GetService<SourceMapService>();
@@ -110,6 +118,7 @@ public sealed class SourceMapServiceTests : TestWithServices
     {
         var options = GetService<AppOptions>();
         var requestedUris = new List<Uri>();
+        var requestedClientNames = new List<string>();
         var handler = new DelegateHandler(request =>
         {
             requestedUris.Add(request.RequestUri!);
@@ -127,7 +136,7 @@ public sealed class SourceMapServiceTests : TestWithServices
         });
         using var httpClient = new HttpClient(handler);
         var service = new SourceMapService(
-            new TestHttpClientFactory(httpClient),
+            new TestHttpClientFactory(httpClient, requestedClientNames),
             GetService<IFileStorage>(),
             GetService<ICacheClient>(),
             GetService<ILockProvider>(),
@@ -142,6 +151,7 @@ public sealed class SourceMapServiceTests : TestWithServices
 
         Assert.True(changed);
         Assert.Equal([new Uri(GeneratedFileUrl), new Uri("https://cdn.example.com/assets/app.min.js.map")], requestedUris);
+        Assert.Equal([SourceMapService.GeneratedFileHttpClientName, SourceMapService.HttpClientName], requestedClientNames);
         var artifact = Assert.Single(await service.GetArtifactsAsync(ProjectId, TestContext.Current.CancellationToken));
         Assert.True(artifact.IsAutoDownloaded);
         Assert.Equal("https://cdn.example.com/assets/app.min.js.map", artifact.SourceMapUrl);
@@ -1174,9 +1184,13 @@ public sealed class SourceMapServiceTests : TestWithServices
         }
     }
 
-    private sealed class TestHttpClientFactory(HttpClient httpClient) : IHttpClientFactory
+    private sealed class TestHttpClientFactory(HttpClient httpClient, ICollection<string>? requestedClientNames = null) : IHttpClientFactory
     {
-        public HttpClient CreateClient(string name) => httpClient;
+        public HttpClient CreateClient(string name)
+        {
+            requestedClientNames?.Add(name);
+            return httpClient;
+        }
     }
 
     private sealed class DelegateHandler(Func<HttpRequestMessage, HttpResponseMessage> handler) : HttpMessageHandler

@@ -196,16 +196,13 @@ public class Bootstrapper
             });
         services.AddSingleton<SourceMapRequestThrottle>();
         services.AddHttpClient(SourceMapService.HttpClientName)
-            .ConfigurePrimaryHttpMessageHandler(serviceProvider => new SocketsHttpHandler
-            {
-                ActivityHeadersPropagator = null,
-                AllowAutoRedirect = false,
-                AutomaticDecompression = DecompressionMethods.All,
-                ConnectCallback = serviceProvider.GetRequiredService<SourceMapRequestThrottle>().ConnectToPublicAddressAsync,
-                PreAuthenticate = false,
-                UseCookies = false,
-                UseProxy = false
-            });
+            .ConfigurePrimaryHttpMessageHandler(serviceProvider => CreateSourceMapHttpMessageHandler(
+                serviceProvider.GetRequiredService<SourceMapRequestThrottle>(),
+                DecompressionMethods.All));
+        services.AddHttpClient(SourceMapService.GeneratedFileHttpClientName)
+            .ConfigurePrimaryHttpMessageHandler(serviceProvider => CreateSourceMapHttpMessageHandler(
+                serviceProvider.GetRequiredService<SourceMapRequestThrottle>(),
+                DecompressionMethods.None));
         services.AddSingleton<SourceMapService>();
         services.AddSingleton<OAuthService>();
         services.AddSingleton<UsageService>();
@@ -239,6 +236,18 @@ public class Bootstrapper
 
         throw new HttpRequestException($"Host '{context.DnsEndPoint.Host}' did not resolve to a reachable public address.", lastException);
     }
+
+    internal static SocketsHttpHandler CreateSourceMapHttpMessageHandler(SourceMapRequestThrottle throttle, DecompressionMethods automaticDecompression)
+        => new()
+        {
+            ActivityHeadersPropagator = null,
+            AllowAutoRedirect = false,
+            AutomaticDecompression = automaticDecompression,
+            ConnectCallback = throttle.ConnectToPublicAddressAsync,
+            PreAuthenticate = false,
+            UseCookies = false,
+            UseProxy = false
+        };
 
     public static void LogConfiguration(IServiceProvider serviceProvider, AppOptions appOptions, ILogger logger)
     {
