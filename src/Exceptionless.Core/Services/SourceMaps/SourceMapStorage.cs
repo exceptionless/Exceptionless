@@ -42,17 +42,12 @@ internal sealed class SourceMapStorage
                 && previousMetadata.MapFileName != mapFileName
                 && !await DeleteAndVerifyAsync(GetMapPath(projectId, previousMetadata.MapFileName), cancellationToken))
             {
-                bool metadataRestored = await SaveMetadataAsync(metadataPath, previousMetadata, CancellationToken.None);
-                bool newMapDeleted = await DeleteAndVerifyAsync(mapPath, CancellationToken.None);
-                if (!metadataRestored || !newMapDeleted)
-                    _logger.LogError("Unable to roll back a failed source map replacement for project {ProjectId} and artifact {SourceMapArtifactId}.", projectId, artifact.Id);
                 throw new IOException("Unable to remove the superseded source map.");
             }
         }
         catch
         {
-            if (previousMetadata?.MapFileName != mapFileName)
-                await DeleteAndVerifyAsync(mapPath, CancellationToken.None);
+            await RollbackSaveAsync(projectId, artifact.Id, metadataPath, mapFileName, mapPath, previousMetadata);
             throw;
         }
     }
@@ -189,6 +184,57 @@ internal sealed class SourceMapStorage
         }
 
         return false;
+    }
+
+    private async Task RollbackSaveAsync(
+        string projectId,
+        string artifactId,
+        string metadataPath,
+        string mapFileName,
+        string mapPath,
+        StoredSourceMapMetadata? previousMetadata)
+    {
+        bool metadataRestored;
+        try
+        {
+            if (previousMetadata is null)
+            {
+                metadataRestored = await DeleteAndVerifyAsync(metadataPath, CancellationToken.None);
+            }
+            else if (previousMetadata.MapFileName == mapFileName
+                || await _storage.ExistsAsync(GetMapPath(projectId, previousMetadata.MapFileName)))
+            {
+                metadataRestored = await SaveMetadataAsync(metadataPath, previousMetadata, CancellationToken.None);
+            }
+            else
+            {
+                // The old content is already gone, so retain the new metadata and map rather than leaving either version unreadable.
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unable to restore source map metadata while rolling back project {ProjectId} artifact {SourceMapArtifactId}.", projectId, artifactId);
+            return;
+        }
+
+        bool newMapDeleted = previousMetadata?.MapFileName == mapFileName;
+        if (metadataRestored && !newMapDeleted)
+        {
+            try
+            {
+                newMapDeleted = await DeleteAndVerifyAsync(mapPath, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unable to remove new source map content while rolling back project {ProjectId} artifact {SourceMapArtifactId}.", projectId, artifactId);
+            }
+        }
+
+        if (!metadataRestored || !newMapDeleted)
+        {
+            _logger.LogError("Unable to roll back a failed source map replacement for project {ProjectId} and artifact {SourceMapArtifactId}.", projectId, artifactId);
+        }
     }
 
     private static bool IsValidMapFileName(string artifactId, string mapFileName)

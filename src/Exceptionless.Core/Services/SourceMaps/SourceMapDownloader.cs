@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json;
 using Exceptionless.Core.Configuration;
 
 namespace Exceptionless.Core.Services.SourceMaps;
@@ -46,10 +47,23 @@ internal sealed class SourceMapDownloader
         if (String.IsNullOrWhiteSpace(sourceMapReference))
         {
             var fallbackUriBuilder = new UriBuilder(generatedResponse.Uri) { Path = generatedResponse.Uri.AbsolutePath + ".map" };
-            var downloaded = await DownloadContentAsync(fallbackUriBuilder.Uri, isRefresh, cancellationToken);
-            if (downloaded is not null || String.IsNullOrEmpty(fallbackUriBuilder.Query))
+            if (String.IsNullOrEmpty(fallbackUriBuilder.Query))
             {
-                return downloaded;
+                return await DownloadContentAsync(fallbackUriBuilder.Uri, isRefresh, cancellationToken);
+            }
+
+            try
+            {
+                var downloaded = await DownloadContentAsync(fallbackUriBuilder.Uri, isRefresh, cancellationToken);
+                if (downloaded is not null)
+                {
+                    var document = SourceMapDocument.Parse(downloaded.Content, _options.MaximumMappingSegments);
+                    return downloaded with { Document = document };
+                }
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or JsonException)
+            {
+                // The query-specific URL may resolve to an invalid CDN or SPA fallback. Try the conventional URL without its query.
             }
 
             fallbackUriBuilder.Query = String.Empty;
@@ -299,7 +313,7 @@ internal sealed class SourceMapDownloader
         return decoded;
     }
 
-    internal sealed record DownloadedSourceMap(byte[] Content, string? SourceMapUrl);
+    internal sealed record DownloadedSourceMap(byte[] Content, string? SourceMapUrl, SourceMapDocument? Document = null);
 
     private sealed record HttpDownloadResult(Uri Uri, HttpResponseMessage Response) : IDisposable
     {

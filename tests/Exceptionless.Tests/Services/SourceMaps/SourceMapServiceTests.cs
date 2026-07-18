@@ -71,6 +71,24 @@ public sealed class SourceMapServiceTests : TestWithServices
     }
 
     [Fact]
+    public async Task SymbolicateAsync_WithZeroGeneratedColumn_LeavesFrameUnchanged()
+    {
+        var service = GetService<SourceMapService>();
+        await using var sourceMapStream = new MemoryStream(SourceMap);
+        await service.SaveUploadedAsync(ProjectId, GeneratedFileUrl, "app.min.js.map", sourceMapStream, TestContext.Current.CancellationToken);
+        var error = CreateError();
+        var frame = Assert.Single(error.StackTrace!);
+        frame.Column = 0;
+        var serializer = GetService<ITextSerializer>();
+        string originalFrame = serializer.SerializeToString(frame);
+
+        bool changed = await service.SymbolicateAsync(ProjectId, error, TestContext.Current.CancellationToken);
+
+        Assert.False(changed);
+        Assert.Equal(originalFrame, serializer.SerializeToString(frame));
+    }
+
+    [Fact]
     public async Task GetArtifactsAsync_AfterUploadAndDelete_ReflectsStoredArtifact()
     {
         var service = GetService<SourceMapService>();
@@ -190,6 +208,32 @@ public sealed class SourceMapServiceTests : TestWithServices
             requestedUris);
         var artifact = Assert.Single(await service.GetArtifactsAsync(ProjectId, TestContext.Current.CancellationToken));
         Assert.Equal(GeneratedFileUrl + ".map", artifact.SourceMapUrl);
+    }
+
+    [Fact]
+    public async Task SymbolicateAsync_WhenVersionedConventionalSourceMapIsInvalid_RetriesWithoutQuery()
+    {
+        string generatedFileUrl = GeneratedFileUrl + "?v=123";
+        var requestedUris = new List<Uri>();
+        var handler = new DelegateHandler(request =>
+        {
+            requestedUris.Add(request.RequestUri!);
+            if (request.RequestUri == new Uri(generatedFileUrl))
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("minified") };
+            }
+
+            return request.RequestUri == new Uri(GeneratedFileUrl + ".map?v=123")
+                ? new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("not a source map") }
+                : new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(SourceMap) };
+        });
+        using var httpClient = new HttpClient(handler);
+        using var service = CreateService(httpClient);
+
+        Assert.True(await service.SymbolicateAsync(ProjectId, CreateError(generatedFileUrl), TestContext.Current.CancellationToken));
+        Assert.Equal(
+            [new Uri(generatedFileUrl), new Uri(GeneratedFileUrl + ".map?v=123"), new Uri(GeneratedFileUrl + ".map")],
+            requestedUris);
     }
 
     [Fact]
@@ -500,7 +544,36 @@ public sealed class SourceMapServiceTests : TestWithServices
         var initialMap = Assert.Single(await storage.GetFileListAsync($"source-maps/{projectId}/*.map", cancellationToken: TestContext.Current.CancellationToken));
 
         using var httpClient = new HttpClient(new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound)));
-        using var replacementService = CreateService(httpClient, new FailingDeleteFileStorage(storage, initialMap.Path));
+        using var replacementService = CreateService(httpClient, new DeleteInterceptingFileStorage(storage, initialMap.Path));
+        await using var updatedSourceMapStream = new MemoryStream(UpdatedSourceMap);
+
+        await Assert.ThrowsAsync<IOException>(() => replacementService.SaveUploadedAsync(
+            projectId,
+            GeneratedFileUrl,
+            "app.min.js.map",
+            updatedSourceMapStream,
+            TestContext.Current.CancellationToken));
+
+        var error = CreateError();
+        Assert.True(await initialService.SymbolicateAsync(projectId, error, TestContext.Current.CancellationToken));
+        Assert.Equal("meaningfulFunction", Assert.Single(error.StackTrace!).Name);
+        Assert.Equal(initialMap.Path, Assert.Single(await storage.GetFileListAsync($"source-maps/{projectId}/*.map", cancellationToken: TestContext.Current.CancellationToken)).Path);
+    }
+
+    [Fact]
+    public async Task SaveUploadedAsync_WhenSupersededMapCleanupThrows_RollsBackReplacement()
+    {
+        var storage = GetService<IFileStorage>();
+        var initialService = GetService<SourceMapService>();
+        string projectId = $"project-{Guid.NewGuid():N}";
+        await using (var sourceMapStream = new MemoryStream(SourceMap))
+        {
+            await initialService.SaveUploadedAsync(projectId, GeneratedFileUrl, "app.min.js.map", sourceMapStream, TestContext.Current.CancellationToken);
+        }
+        var initialMap = Assert.Single(await storage.GetFileListAsync($"source-maps/{projectId}/*.map", cancellationToken: TestContext.Current.CancellationToken));
+
+        using var httpClient = new HttpClient(new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound)));
+        using var replacementService = CreateService(httpClient, new DeleteInterceptingFileStorage(storage, initialMap.Path, throwOnDelete: true));
         await using var updatedSourceMapStream = new MemoryStream(UpdatedSourceMap);
 
         await Assert.ThrowsAsync<IOException>(() => replacementService.SaveUploadedAsync(
@@ -587,7 +660,7 @@ public sealed class SourceMapServiceTests : TestWithServices
 
         string metadataPath = $"source-maps/{projectId}/{artifact.Id}.json";
         using var httpClient = new HttpClient(new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound)));
-        using var deletingService = CreateService(httpClient, new FailingDeleteFileStorage(storage, metadataPath));
+        using var deletingService = CreateService(httpClient, new DeleteInterceptingFileStorage(storage, metadataPath));
 
         Assert.False(await deletingService.DeleteArtifactAsync(projectId, artifact.Id, TestContext.Current.CancellationToken));
         Assert.True(await storage.ExistsAsync(metadataPath));
@@ -675,7 +748,7 @@ public sealed class SourceMapServiceTests : TestWithServices
             Assert.True(await storage.SaveFileAsync(orphanedMapPath, orphanedMapStream, TestContext.Current.CancellationToken));
 
         using var httpClient = new HttpClient(new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound)));
-        using var service = CreateService(httpClient, new FailingDeleteFileStorage(storage, orphanedMapPath));
+        using var service = CreateService(httpClient, new DeleteInterceptingFileStorage(storage, orphanedMapPath));
         await using var sourceMapStream = new MemoryStream(SourceMap);
 
         await Assert.ThrowsAsync<SourceMapStorageLimitException>(() => service.SaveUploadedAsync(
@@ -1055,7 +1128,7 @@ public sealed class SourceMapServiceTests : TestWithServices
             GetService<ILogger<SourceMapService>>());
     }
 
-    private sealed class FailingDeleteFileStorage(IFileStorage inner, string failingPath) : IFileStorage
+    private sealed class DeleteInterceptingFileStorage(IFileStorage inner, string failingPath, bool throwOnDelete = false) : IFileStorage
     {
         public ISerializer Serializer => inner.Serializer;
 
@@ -1076,7 +1149,19 @@ public sealed class SourceMapServiceTests : TestWithServices
             => inner.CopyFileAsync(path, targetPath, cancellationToken);
 
         public Task<bool> DeleteFileAsync(string path, CancellationToken cancellationToken = default)
-            => String.Equals(path, failingPath, StringComparison.Ordinal) ? Task.FromResult(false) : inner.DeleteFileAsync(path, cancellationToken);
+        {
+            if (!String.Equals(path, failingPath, StringComparison.Ordinal))
+            {
+                return inner.DeleteFileAsync(path, cancellationToken);
+            }
+
+            if (throwOnDelete)
+            {
+                throw new IOException("Unable to delete the intercepted file.");
+            }
+
+            return Task.FromResult(false);
+        }
 
         public Task<int> DeleteFilesAsync(string? searchPattern = null, CancellationToken cancellation = default)
             => inner.DeleteFilesAsync(searchPattern, cancellation);

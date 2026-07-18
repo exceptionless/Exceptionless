@@ -181,7 +181,7 @@ public sealed class SourceMapService : IDisposable
 
     private async Task<bool> SymbolicateFrameAsync(SourceMapRequest request, StackFrame frame, CancellationToken cancellationToken)
     {
-        if (frame.Data?.ContainsKey(StackFrame.KnownDataKeys.SourceMap) == true || frame.LineNumber is null || frame.LineNumber < 1 || frame.Column is null || String.IsNullOrWhiteSpace(frame.FileName))
+        if (frame.Data?.ContainsKey(StackFrame.KnownDataKeys.SourceMap) == true || frame.LineNumber is null || frame.LineNumber < 1 || frame.Column is null || frame.Column < 1 || String.IsNullOrWhiteSpace(frame.FileName))
             return false;
 
         if (!TryNormalizeGeneratedFileUrl(frame.FileName, requireHttps: false, out var generatedFileUri))
@@ -191,9 +191,7 @@ public sealed class SourceMapService : IDisposable
         if (resolved is null)
             return false;
 
-        int generatedColumn = frame.Column.Value;
-        if (generatedColumn > 0)
-            generatedColumn--;
+        int generatedColumn = frame.Column.Value - 1;
 
         var original = resolved.Document.FindOriginalLocation(frame.LineNumber.Value - 1, generatedColumn);
         if (original is null)
@@ -402,7 +400,7 @@ public sealed class SourceMapService : IDisposable
                 IsAutoDownloaded = true,
                 CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime
             };
-            var document = SourceMapDocument.Parse(downloaded.Content, _options.MaximumMappingSegments);
+            var document = downloaded.Document ?? SourceMapDocument.Parse(downloaded.Content, _options.MaximumMappingSegments);
             await using var projectLock = await TryAcquireProjectStorageLockAsync(projectId, timeoutCancellationTokenSource.Token);
             if (projectLock is null)
                 return await CacheFailureAsync(failureCacheKey);
