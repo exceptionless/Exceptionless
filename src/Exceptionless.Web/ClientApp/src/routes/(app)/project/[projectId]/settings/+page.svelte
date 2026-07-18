@@ -217,8 +217,8 @@
                 <Input type="text" placeholder="Example: Assert, Writeline" bind:value={commonMethods} onchange={debouncedSaveCommonMethods} />
             </div>
 
-            <div class="flex flex-col gap-3 rounded-md border p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div class="space-y-1">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div class="space-y-2">
                     <Large>JavaScript Source Maps</Large>
                     <Muted>
                         Exceptionless automatically discovers public source maps. Upload and manage maps when they are private or are not published with your
