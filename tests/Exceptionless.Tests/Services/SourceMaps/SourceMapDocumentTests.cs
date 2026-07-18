@@ -57,6 +57,33 @@ public sealed class SourceMapDocumentTests
         Assert.Null(location);
     }
 
+    [Theory]
+    [InlineData(5, 5)]
+    [InlineData(7, 5)]
+    [InlineData(10, 10)]
+    public void FindOriginalLocation_OrderedSegments_ReturnsLastSegmentAtOrBeforeColumn(int generatedColumn, int expectedOriginalColumn)
+    {
+        byte[] sourceMap = Encoding.UTF8.GetBytes("""{"version":3,"sources":["src/app.ts"],"names":[],"mappings":"AAAA,KAAK,KAAK"}""");
+        var document = SourceMapDocument.Parse(sourceMap);
+
+        var location = document.FindOriginalLocation(0, generatedColumn);
+
+        Assert.NotNull(location);
+        Assert.Equal(expectedOriginalColumn, location.Column);
+    }
+
+    [Fact]
+    public void FindOriginalLocation_DuplicateGeneratedColumns_ReturnsLastSegment()
+    {
+        byte[] sourceMap = Encoding.UTF8.GetBytes("""{"version":3,"sources":["src/app.ts"],"names":[],"mappings":"AAAA,AAAK"}""");
+        var document = SourceMapDocument.Parse(sourceMap);
+
+        var location = document.FindOriginalLocation(0, 0);
+
+        Assert.NotNull(location);
+        Assert.Equal(5, location.Column);
+    }
+
     [Fact]
     public void Parse_IndexedSourceMap_ThrowsJsonException()
     {

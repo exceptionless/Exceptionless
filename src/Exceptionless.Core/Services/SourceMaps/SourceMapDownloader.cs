@@ -46,6 +46,13 @@ internal sealed class SourceMapDownloader
         if (String.IsNullOrWhiteSpace(sourceMapReference))
         {
             var fallbackUriBuilder = new UriBuilder(generatedResponse.Uri) { Path = generatedResponse.Uri.AbsolutePath + ".map" };
+            var downloaded = await DownloadContentAsync(fallbackUriBuilder.Uri, isRefresh, cancellationToken);
+            if (downloaded is not null || String.IsNullOrEmpty(fallbackUriBuilder.Query))
+            {
+                return downloaded;
+            }
+
+            fallbackUriBuilder.Query = String.Empty;
             return await DownloadContentAsync(fallbackUriBuilder.Uri, isRefresh, cancellationToken);
         }
 

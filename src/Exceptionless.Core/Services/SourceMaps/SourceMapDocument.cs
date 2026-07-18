@@ -71,14 +71,22 @@ public sealed class SourceMapDocument
             return null;
 
         var segments = _lines[generatedLine];
-        MappingSegment? match = null;
-        foreach (var segment in segments)
+        int lowerBound = 0;
+        int upperBound = segments.Count;
+        while (lowerBound < upperBound)
         {
-            if (segment.GeneratedColumn > generatedColumn)
-                break;
-
-            match = segment;
+            int middle = lowerBound + ((upperBound - lowerBound) / 2);
+            if (segments[middle].GeneratedColumn <= generatedColumn)
+            {
+                lowerBound = middle + 1;
+            }
+            else
+            {
+                upperBound = middle;
+            }
         }
+
+        MappingSegment? match = lowerBound > 0 ? segments[lowerBound - 1] : null;
 
         if (match?.SourceIndex is not int sourceIndex || match.OriginalLine is not int originalLine || match.OriginalColumn is not int originalColumn)
             return null;

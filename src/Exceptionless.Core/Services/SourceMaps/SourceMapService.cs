@@ -15,7 +15,6 @@ namespace Exceptionless.Core.Services.SourceMaps;
 public sealed class SourceMapService : IDisposable
 {
     public const string HttpClientName = "SourceMaps";
-    private const string SourceMapDataKey = "@source_map";
     private static readonly TimeSpan FailureCacheLifetime = TimeSpan.FromMinutes(15);
     private readonly SemaphoreSlim _downloadSemaphore;
     private readonly ConcurrentDictionary<string, Lazy<Task<ResolvedSourceMap?>>> _inflightSourceMaps = new(StringComparer.Ordinal);
@@ -182,7 +181,7 @@ public sealed class SourceMapService : IDisposable
 
     private async Task<bool> SymbolicateFrameAsync(SourceMapRequest request, StackFrame frame, CancellationToken cancellationToken)
     {
-        if (frame.Data?.ContainsKey(SourceMapDataKey) == true || frame.LineNumber is null || frame.LineNumber < 1 || frame.Column is null || String.IsNullOrWhiteSpace(frame.FileName))
+        if (frame.Data?.ContainsKey(StackFrame.KnownDataKeys.SourceMap) == true || frame.LineNumber is null || frame.LineNumber < 1 || frame.Column is null || String.IsNullOrWhiteSpace(frame.FileName))
             return false;
 
         if (!TryNormalizeGeneratedFileUrl(frame.FileName, requireHttps: false, out var generatedFileUri))
@@ -201,18 +200,18 @@ public sealed class SourceMapService : IDisposable
             return false;
 
         frame.Data ??= new DataDictionary();
-        frame.Data[SourceMapDataKey] = new DataDictionary
+        frame.Data[StackFrame.KnownDataKeys.SourceMap] = new DataDictionary
         {
             ["generated_file_name"] = frame.FileName,
             ["generated_line_number"] = frame.LineNumber,
             ["generated_column"] = frame.Column,
+            ["generated_name"] = frame.Name,
             ["source_map_id"] = resolved.Artifact.Id
         };
         frame.FileName = original.Source;
         frame.LineNumber = original.Line + 1;
         frame.Column = original.Column + 1;
-        if (!String.IsNullOrWhiteSpace(original.Name))
-            frame.Name = original.Name;
+        frame.Name = String.IsNullOrWhiteSpace(original.Name) ? null : original.Name;
 
         return true;
     }

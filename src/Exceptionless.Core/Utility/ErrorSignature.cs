@@ -1,4 +1,3 @@
-using System.Text;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
@@ -132,21 +131,23 @@ public class ErrorSignature
 
     private static string GetStackFrameSignature(Method method)
     {
-        var builder = new StringBuilder(255);
-        if (method is null)
-            return builder.ToString();
+        if (method is StackFrame frame && TryGetSourceMappedLocationSignature(frame, out string signature))
+        {
+            return signature;
+        }
 
-        builder.Append(method.GetSignature());
-
-        return builder.ToString();
+        return method.GetSignature();
     }
 
     private bool IsUserFrame(StackFrame frame)
     {
         ArgumentNullException.ThrowIfNull(frame);
 
-        if (frame.Name is null)
+        bool hasSourceMappedLocation = TryGetSourceMappedLocationSignature(frame, out string sourceMappedLocationSignature);
+        if (frame.Name is null && !hasSourceMappedLocation)
+        {
             return false;
+        }
 
         // Assume user method if no namespace
         bool isEmptyNamespaceMethod = EmptyNamespaceIsUserMethod && frame.DeclaringNamespace.IsNullOrEmpty();
@@ -157,7 +158,25 @@ public class ErrorSignature
                 return false;
         }
 
-        return !UserCommonMethods.Any(frame.GetSignature().Contains);
+        string frameSignature = hasSourceMappedLocation ? sourceMappedLocationSignature : frame.GetSignature();
+        return !UserCommonMethods.Any(frameSignature.Contains);
+    }
+
+    private static bool TryGetSourceMappedLocationSignature(StackFrame frame, out string signature)
+    {
+        signature = String.Empty;
+        if (frame.Name is not null
+            || String.IsNullOrWhiteSpace(frame.FileName)
+            || frame.LineNumber is null
+            || frame.Data?.ContainsKey(StackFrame.KnownDataKeys.SourceMap) != true)
+        {
+            return false;
+        }
+
+        signature = frame.Column is null
+            ? $"{frame.FileName}:{frame.LineNumber}"
+            : $"{frame.FileName}:{frame.LineNumber}:{frame.Column}";
+        return true;
     }
 
     private bool IsUserNamespace(string? ns)

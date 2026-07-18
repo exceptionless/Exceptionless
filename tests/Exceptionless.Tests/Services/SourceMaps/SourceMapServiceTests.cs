@@ -24,6 +24,7 @@ public sealed class SourceMapServiceTests : TestWithServices
     private const string ProjectId = "507f1f77bcf86cd799439011";
     private const string GeneratedFileUrl = "https://cdn.example.com/assets/app.min.js";
     private static readonly byte[] SourceMap = Encoding.UTF8.GetBytes("""{"version":3,"sources":["src/app.ts"],"names":["meaningfulFunction"],"mappings":"AAAAA"}""");
+    private static readonly byte[] SourceMapWithoutNames = Encoding.UTF8.GetBytes("""{"version":3,"sources":["src/app.ts"],"names":[],"mappings":"AAAA"}""");
     private static readonly byte[] UpdatedSourceMap = Encoding.UTF8.GetBytes("""{"version":3,"sources":["src/updated.ts"],"names":["updatedFunction"],"mappings":"AAAAA"}""");
 
     public SourceMapServiceTests(ITestOutputHelper output) : base(output)
@@ -158,6 +159,61 @@ public sealed class SourceMapServiceTests : TestWithServices
         var artifact = Assert.Single(await service.GetArtifactsAsync(ProjectId, TestContext.Current.CancellationToken));
         Assert.True(artifact.IsAutoDownloaded);
         Assert.Equal("https://cdn.example.com/assets/app.min.js.map", artifact.SourceMapUrl);
+    }
+
+    [Fact]
+    public async Task SymbolicateAsync_WhenVersionedConventionalSourceMapUrlIsMissing_RetriesWithoutQuery()
+    {
+        string generatedFileUrl = GeneratedFileUrl + "?v=123";
+        var requestedUris = new List<Uri>();
+        var handler = new DelegateHandler(request =>
+        {
+            requestedUris.Add(request.RequestUri!);
+            if (request.RequestUri == new Uri(generatedFileUrl))
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("minified") };
+            }
+
+            if (request.RequestUri == new Uri(GeneratedFileUrl + ".map?v=123"))
+            {
+                return new HttpResponseMessage(HttpStatusCode.NotFound);
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(SourceMap) };
+        });
+        using var httpClient = new HttpClient(handler);
+        using var service = CreateService(httpClient);
+
+        Assert.True(await service.SymbolicateAsync(ProjectId, CreateError(generatedFileUrl), TestContext.Current.CancellationToken));
+        Assert.Equal(
+            [new Uri(generatedFileUrl), new Uri(GeneratedFileUrl + ".map?v=123"), new Uri(GeneratedFileUrl + ".map")],
+            requestedUris);
+        var artifact = Assert.Single(await service.GetArtifactsAsync(ProjectId, TestContext.Current.CancellationToken));
+        Assert.Equal(GeneratedFileUrl + ".map", artifact.SourceMapUrl);
+    }
+
+    [Fact]
+    public async Task SymbolicateAsync_WithVersionedConventionalSourceMapUrl_PreservesQuery()
+    {
+        string generatedFileUrl = GeneratedFileUrl + "?v=123";
+        var requestedUris = new List<Uri>();
+        var handler = new DelegateHandler(request =>
+        {
+            requestedUris.Add(request.RequestUri!);
+            if (request.RequestUri == new Uri(generatedFileUrl))
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("minified") };
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(SourceMap) };
+        });
+        using var httpClient = new HttpClient(handler);
+        using var service = CreateService(httpClient);
+
+        Assert.True(await service.SymbolicateAsync(ProjectId, CreateError(generatedFileUrl), TestContext.Current.CancellationToken));
+        Assert.Equal([new Uri(generatedFileUrl), new Uri(GeneratedFileUrl + ".map?v=123")], requestedUris);
+        var artifact = Assert.Single(await service.GetArtifactsAsync(ProjectId, TestContext.Current.CancellationToken));
+        Assert.Equal(GeneratedFileUrl + ".map?v=123", artifact.SourceMapUrl);
     }
 
     [Fact]
@@ -935,6 +991,35 @@ public sealed class SourceMapServiceTests : TestWithServices
 
         Assert.Equal("meaningfulFunction()", context.StackSignatureData["Method"]);
         Assert.True(sourceMapPlugin.HandleError(new IOException("Unavailable"), context));
+    }
+
+    [Fact]
+    public async Task EventProcessingAsync_WithNamelessSourceMap_UsesOriginalLocationForStackSignature()
+    {
+        var service = GetService<SourceMapService>();
+        await using var sourceMapStream = new MemoryStream(SourceMapWithoutNames);
+        await service.SaveUploadedAsync(ProjectId, GeneratedFileUrl, "app.min.js.map", sourceMapStream, TestContext.Current.CancellationToken);
+        var serializer = GetService<ITextSerializer>();
+        var options = GetService<AppOptions>();
+        var loggerFactory = GetService<ILoggerFactory>();
+        var sourceMapPlugin = new SourceMapPlugin(service, serializer, GetService<BillingPlans>(), options, loggerFactory);
+        var errorPlugin = new ErrorPlugin(serializer, options, loggerFactory);
+        var persistentEvent = new PersistentEvent { Type = Event.KnownTypes.Error };
+        persistentEvent.SetError(CreateError());
+        var context = new EventContext(
+            persistentEvent,
+            new Organization { Id = "507f1f77bcf86cd799439012" },
+            new Project { Id = ProjectId, OrganizationId = "507f1f77bcf86cd799439012" });
+
+        await sourceMapPlugin.EventProcessingAsync(context);
+        await errorPlugin.EventProcessingAsync(context);
+
+        Assert.Equal("src/app.ts:1:1", context.StackSignatureData["Method"]);
+        var processedError = Assert.IsType<Error>(context.Event.Data![Event.KnownDataKeys.Error]);
+        var frame = Assert.Single(processedError.StackTrace!);
+        Assert.Null(frame.Name);
+        var sourceMapData = Assert.IsType<DataDictionary>(frame.Data![StackFrame.KnownDataKeys.SourceMap]);
+        Assert.Equal("a", sourceMapData["generated_name"]);
     }
 
     private static Error CreateError(string generatedFileUrl = GeneratedFileUrl)
