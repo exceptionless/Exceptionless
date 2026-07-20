@@ -99,7 +99,7 @@ public sealed class TokenRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetByTypeAndProjectIdAndScopeAsync_SourceMapTokenPrecedesClientToken_ReturnsClientToken()
+    public async Task GetDefaultClientTokenAsync_SourceMapTokenPrecedesClientToken_ReturnsClientToken()
     {
         var utcNow = DateTime.UtcNow;
         await _repository.AddAsync([
@@ -125,13 +125,41 @@ public sealed class TokenRepositoryTests : IntegrationTestsBase
             }
         ], options => options.ImmediateConsistency());
 
-        var results = await _repository.GetByTypeAndProjectIdAndScopeAsync(
-            TokenType.Access,
-            TestConstants.ProjectId,
-            AuthorizationRoles.Client,
-            options => options.PageLimit(1));
+        var results = await _repository.GetDefaultClientTokenAsync(TestConstants.ProjectId, options => options.PageLimit(1));
 
         var token = Assert.Single(results.Documents);
         Assert.Contains(AuthorizationRoles.Client, token.Scopes);
+    }
+
+    [Fact]
+    public async Task GetDefaultClientTokenAsync_LegacyTokenWithoutScopes_ReturnsLegacyToken()
+    {
+        var utcNow = DateTime.UtcNow;
+        await _repository.AddAsync([
+            new Token
+            {
+                OrganizationId = TestConstants.OrganizationId,
+                ProjectId = TestConstants.ProjectId,
+                Type = TokenType.Access,
+                Scopes = [AuthorizationRoles.SourceMapsWrite],
+                CreatedUtc = utcNow,
+                UpdatedUtc = utcNow,
+                Id = StringExtensions.GetNewToken()
+            },
+            new Token
+            {
+                OrganizationId = TestConstants.OrganizationId,
+                ProjectId = TestConstants.ProjectId,
+                Type = TokenType.Access,
+                CreatedUtc = utcNow.AddMinutes(1),
+                UpdatedUtc = utcNow.AddMinutes(1),
+                Id = StringExtensions.GetNewToken()
+            }
+        ], options => options.ImmediateConsistency());
+
+        var results = await _repository.GetDefaultClientTokenAsync(TestConstants.ProjectId, options => options.PageLimit(1));
+
+        var token = Assert.Single(results.Documents);
+        Assert.Empty(token.Scopes);
     }
 }
