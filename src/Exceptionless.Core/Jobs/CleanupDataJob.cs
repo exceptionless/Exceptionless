@@ -336,7 +336,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         while (projects.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
         {
             foreach (var project in projects.Documents)
-                await _fileStorage.DeleteFilesAsync($"source-maps/{project.Id}/*", context.CancellationToken);
+                await _sourceMapService.DeleteProjectArtifactsAsync(project.Id, context.CancellationToken);
 
             await RenewLockAsync(context);
             if (!await projects.NextPageAsync())
@@ -369,7 +369,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         await RenewLockAsync(context);
         long removedStacks = await _stackRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id);
 
-        await _fileStorage.DeleteFilesAsync($"source-maps/{project.Id}/*", context.CancellationToken);
+        await _sourceMapService.DeleteProjectArtifactsAsync(project.Id, context.CancellationToken);
         await _projectRepository.RemoveAsync(project);
         _logger.RemoveProjectComplete(project.Name, project.Id, removedStacks, removedEvents);
     }

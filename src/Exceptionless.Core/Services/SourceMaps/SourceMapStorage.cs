@@ -113,6 +113,14 @@ internal sealed class SourceMapStorage
         return new StoredSourceMap(metadata.Artifact, content);
     }
 
+    public async Task<bool> ExistsAsync(string projectId, string artifactId, CancellationToken cancellationToken)
+    {
+        var metadata = await ReadMetadataAsync(GetMetadataPath(projectId, artifactId), cancellationToken);
+        return metadata is not null
+            && IsValidMapFileName(artifactId, metadata.MapFileName)
+            && await _storage.ExistsAsync(GetMapPath(projectId, metadata.MapFileName));
+    }
+
     public async Task<IReadOnlyCollection<SourceMapArtifact>> GetArtifactsAsync(string projectId, CancellationToken cancellationToken)
     {
         var files = await _storage.GetFileListAsync($"{RootPath}/{projectId}/*.json", cancellationToken: cancellationToken);

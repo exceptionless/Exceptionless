@@ -801,6 +801,70 @@ public sealed class SourceMapServiceTests : TestWithServices
     }
 
     [Fact]
+    public async Task CleanupStaleArtifactsAsync_WhenSymbolicationRacesDeletion_DoesNotDeleteSuccessfullyUsedMap()
+    {
+        var options = GetService<AppOptions>();
+        options.SourceMapOptions.FreeArtifactRetentionDays = 14;
+        var storage = new BlockingDeleteFileStorage(GetService<IFileStorage>());
+        using var httpClient = new HttpClient(new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound)));
+        using var service = CreateService(httpClient, storage);
+        string projectId = $"project-{Guid.NewGuid():N}";
+        await using (var sourceMapStream = new MemoryStream(SourceMap))
+            await service.SaveUploadedAsync(projectId, GeneratedFileUrl, "app.min.js.map", sourceMapStream, true, TestContext.Current.CancellationToken);
+
+        TimeProvider.Advance(TimeSpan.FromDays(15));
+        Task<int> cleanup = service.CleanupStaleArtifactsAsync(projectId, true, TestContext.Current.CancellationToken);
+        await storage.DeleteStarted.Task.WaitAsync(TestContext.Current.CancellationToken);
+
+        Task<bool> symbolication = service.SymbolicateAsync(projectId, CreateError(), TestContext.Current.CancellationToken);
+        Task completedTask = await Task.WhenAny(symbolication, Task.Delay(TimeSpan.FromSeconds(1), TestContext.Current.CancellationToken));
+        storage.ReleaseDelete.TrySetResult();
+
+        Assert.NotSame(symbolication, completedTask);
+        Assert.Equal(1, await cleanup);
+        Assert.False(await symbolication);
+        Assert.Empty(await service.GetArtifactsAsync(projectId, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task DeleteProjectArtifactsAsync_AutomaticDownloadInFlight_DoesNotWriteAfterDeletion()
+    {
+        var mapRequestStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseMapRequest = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var handler = new AsyncDelegateHandler(async request =>
+        {
+            if (request.RequestUri == new Uri(GeneratedFileUrl))
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("minified") };
+                response.Headers.TryAddWithoutValidation("SourceMap", "app.min.js.map");
+                return response;
+            }
+
+            mapRequestStarted.TrySetResult();
+            await releaseMapRequest.Task;
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(SourceMap) };
+        });
+        using var httpClient = new HttpClient(handler);
+        using var service = CreateService(httpClient);
+        string projectId = $"project-{Guid.NewGuid():N}";
+
+        Task<bool> automaticDownload = service.SymbolicateAsync(projectId, CreateError(), TestContext.Current.CancellationToken);
+        await mapRequestStarted.Task.WaitAsync(TestContext.Current.CancellationToken);
+        await service.DeleteProjectArtifactsAsync(projectId, TestContext.Current.CancellationToken);
+        releaseMapRequest.TrySetResult();
+
+        Assert.False(await automaticDownload);
+        Assert.Empty(await service.GetArtifactsAsync(projectId, TestContext.Current.CancellationToken));
+        await using var sourceMapStream = new MemoryStream(SourceMap);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.SaveUploadedAsync(
+            projectId,
+            GeneratedFileUrl,
+            "app.min.js.map",
+            sourceMapStream,
+            TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task SaveUploadedAsync_WhenOrphanedMapExists_RemovesItBeforeCheckingStorageLimit()
     {
         var options = GetService<AppOptions>();
@@ -1256,6 +1320,50 @@ public sealed class SourceMapServiceTests : TestWithServices
             }
 
             return Task.FromResult(false);
+        }
+
+        public Task<int> DeleteFilesAsync(string? searchPattern = null, CancellationToken cancellation = default)
+            => inner.DeleteFilesAsync(searchPattern, cancellation);
+
+        public Task<PagedFileListResult> GetPagedFileListAsync(int pageSize = 100, string? searchPattern = null, CancellationToken cancellationToken = default)
+            => inner.GetPagedFileListAsync(pageSize, searchPattern, cancellationToken);
+
+        public void Dispose()
+        {
+        }
+    }
+
+    private sealed class BlockingDeleteFileStorage(IFileStorage inner) : IFileStorage
+    {
+        public TaskCompletionSource DeleteStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource ReleaseDelete { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public ISerializer Serializer => inner.Serializer;
+
+        public Task<Stream?> GetFileStreamAsync(string path, StreamMode streamMode, CancellationToken cancellationToken = default)
+            => inner.GetFileStreamAsync(path, streamMode, cancellationToken);
+
+        public Task<FileSpec?> GetFileInfoAsync(string path) => inner.GetFileInfoAsync(path);
+
+        public Task<bool> ExistsAsync(string path) => inner.ExistsAsync(path);
+
+        public Task<bool> SaveFileAsync(string path, Stream stream, CancellationToken cancellationToken = default)
+            => inner.SaveFileAsync(path, stream, cancellationToken);
+
+        public Task<bool> RenameFileAsync(string path, string newPath, CancellationToken cancellationToken = default)
+            => inner.RenameFileAsync(path, newPath, cancellationToken);
+
+        public Task<bool> CopyFileAsync(string path, string targetPath, CancellationToken cancellationToken = default)
+            => inner.CopyFileAsync(path, targetPath, cancellationToken);
+
+        public async Task<bool> DeleteFileAsync(string path, CancellationToken cancellationToken = default)
+        {
+            if (path.EndsWith(".json", StringComparison.Ordinal))
+            {
+                DeleteStarted.TrySetResult();
+                await ReleaseDelete.Task.WaitAsync(cancellationToken);
+            }
+
+            return await inner.DeleteFileAsync(path, cancellationToken);
         }
 
         public Task<int> DeleteFilesAsync(string? searchPattern = null, CancellationToken cancellation = default)
