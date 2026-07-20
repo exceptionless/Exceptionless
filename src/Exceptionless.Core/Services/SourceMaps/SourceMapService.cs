@@ -572,39 +572,30 @@ public sealed class SourceMapService : IDisposable
     {
         DateTime nowUtc = _timeProvider.GetUtcNow().UtcDateTime;
         DateTime cutoffUtc = nowUtc - (isFreePlan ? _options.FreeArtifactRetention : _options.ArtifactRetention);
-        var usages = await _storage.GetArtifactUsagesAsync(projectId, cancellationToken);
+        var artifacts = await _storage.GetArtifactsAsync(projectId, cancellationToken);
         int removed = 0;
 
-        foreach (var usage in usages)
+        foreach (var artifact in artifacts)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            DateTime pendingLastUsedUtc = await GetPendingLastUsedUtcAsync(projectId, usage.Artifact.Id);
-            DateTime? lastUsedUtc = usage.LastUsedUtc;
-
-            if (!lastUsedUtc.HasValue)
+            DateTime pendingLastUsedUtc = await GetPendingLastUsedUtcAsync(projectId, artifact.Id);
+            DateTime effectiveLastUsedUtc = artifact.LastUsedUtc ?? artifact.CreatedUtc;
+            if (pendingLastUsedUtc > effectiveLastUsedUtc)
             {
-                // Existing metadata predates usage tracking. Adopt it with a full retention grace period.
-                if (await _storage.SetLastUsedUtcAsync(projectId, usage.Artifact.Id, nowUtc, cancellationToken) != SourceMapStorage.SetLastUsedResult.Updated)
-                    throw new IOException("Unable to initialize source map usage metadata.");
-                continue;
-            }
-
-            DateTime effectiveLastUsedUtc = pendingLastUsedUtc > lastUsedUtc.Value ? pendingLastUsedUtc : lastUsedUtc.Value;
-            if (effectiveLastUsedUtc > lastUsedUtc.Value)
-            {
-                if (await _storage.SetLastUsedUtcAsync(projectId, usage.Artifact.Id, effectiveLastUsedUtc, cancellationToken) != SourceMapStorage.SetLastUsedResult.Updated)
+                effectiveLastUsedUtc = pendingLastUsedUtc;
+                if (await _storage.SetLastUsedUtcAsync(projectId, artifact.Id, effectiveLastUsedUtc, cancellationToken) != SourceMapStorage.SetLastUsedResult.Updated)
                     throw new IOException("Unable to update source map usage metadata.");
             }
 
-            if (effectiveLastUsedUtc > cutoffUtc || usage.Artifact.CreatedUtc > cutoffUtc)
+            if (effectiveLastUsedUtc > cutoffUtc)
                 continue;
 
-            var deleted = await _storage.DeleteAsync(projectId, usage.Artifact.Id, cancellationToken);
+            var deleted = await _storage.DeleteAsync(projectId, artifact.Id, cancellationToken);
             if (deleted is null)
                 continue;
 
-            await RemoveUsageTrackingAsync(projectId, usage.Artifact.Id);
-            await ClearCachesAsync(projectId, usage.Artifact.GeneratedFileUrl);
+            await RemoveUsageTrackingAsync(projectId, artifact.Id);
+            await ClearCachesAsync(projectId, artifact.GeneratedFileUrl);
             removed++;
         }
 

@@ -12325,6 +12325,13 @@
           "created_utc": {
             "type": "string",
             "format": "date-time"
+          },
+          "last_used_utc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },

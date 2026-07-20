@@ -34,7 +34,7 @@ internal sealed class SourceMapStorage
 
         try
         {
-            var metadata = new StoredSourceMapMetadata(artifact, mapFileName, artifact.CreatedUtc);
+            var metadata = new StoredSourceMapMetadata(artifact, mapFileName);
             if (!await SaveMetadataAsync(metadataPath, metadata, cancellationToken))
                 throw new IOException("Unable to save the source map metadata.");
 
@@ -134,27 +134,6 @@ internal sealed class SourceMapStorage
         return artifacts.OrderByDescending(artifact => artifact.CreatedUtc).ToArray();
     }
 
-    public async Task<IReadOnlyCollection<StoredSourceMapUsage>> GetArtifactUsagesAsync(string projectId, CancellationToken cancellationToken)
-    {
-        var files = await _storage.GetFileListAsync($"{RootPath}/{projectId}/*.json", cancellationToken: cancellationToken);
-        var artifacts = new List<StoredSourceMapUsage>(files.Count);
-        foreach (var file in files)
-        {
-            try
-            {
-                var metadata = await ReadMetadataAsync(file.Path, cancellationToken);
-                if (metadata is not null)
-                    artifacts.Add(new StoredSourceMapUsage(metadata.Artifact, metadata.LastUsedUtc));
-            }
-            catch (Exception ex) when (ex is JsonException or IOException)
-            {
-                _logger.LogWarning(ex, "Unable to read source map metadata {SourceMapMetadataPath}.", file.Path);
-            }
-        }
-
-        return artifacts;
-    }
-
     public async Task<SetLastUsedResult> SetLastUsedUtcAsync(string projectId, string artifactId, DateTime lastUsedUtc, CancellationToken cancellationToken)
     {
         string metadataPath = GetMetadataPath(projectId, artifactId);
@@ -162,10 +141,10 @@ internal sealed class SourceMapStorage
         if (metadata is null)
             return SetLastUsedResult.NotFound;
 
-        if (metadata.LastUsedUtc.HasValue && metadata.LastUsedUtc.Value >= lastUsedUtc)
+        if (metadata.Artifact.LastUsedUtc.HasValue && metadata.Artifact.LastUsedUtc.Value >= lastUsedUtc)
             return SetLastUsedResult.Updated;
 
-        return await SaveMetadataAsync(metadataPath, metadata with { LastUsedUtc = lastUsedUtc }, cancellationToken)
+        return await SaveMetadataAsync(metadataPath, metadata with { Artifact = metadata.Artifact with { LastUsedUtc = lastUsedUtc } }, cancellationToken)
             ? SetLastUsedResult.Updated
             : SetLastUsedResult.Failed;
     }
@@ -283,8 +262,7 @@ internal sealed class SourceMapStorage
     private static string GetMapPath(string projectId, string mapFileName) => $"{RootPath}/{projectId}/{mapFileName}";
 
     internal sealed record StoredSourceMap(SourceMapArtifact Artifact, byte[] Content);
-    internal sealed record StoredSourceMapUsage(SourceMapArtifact Artifact, DateTime? LastUsedUtc);
     internal sealed record ProjectStorageUsage(IReadOnlyCollection<SourceMapArtifact> Artifacts, long RetainedBytes);
     internal enum SetLastUsedResult { Updated, NotFound, Failed }
-    private sealed record StoredSourceMapMetadata(SourceMapArtifact Artifact, string MapFileName, DateTime? LastUsedUtc = null);
+    private sealed record StoredSourceMapMetadata(SourceMapArtifact Artifact, string MapFileName);
 }

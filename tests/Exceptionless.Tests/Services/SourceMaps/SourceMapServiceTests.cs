@@ -1,7 +1,6 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Configuration;
@@ -775,7 +774,8 @@ public sealed class SourceMapServiceTests : TestWithServices
         Assert.True(await service.SymbolicateAsync(projectId, CreateError(), TestContext.Current.CancellationToken));
 
         Assert.Equal(0, await service.CleanupStaleArtifactsAsync(projectId, true, TestContext.Current.CancellationToken));
-        Assert.Single(await service.GetArtifactsAsync(projectId, TestContext.Current.CancellationToken));
+        var retained = Assert.Single(await service.GetArtifactsAsync(projectId, TestContext.Current.CancellationToken));
+        Assert.Equal(TimeProvider.GetUtcNow().UtcDateTime, retained.LastUsedUtc!.Value, TimeSpan.FromMilliseconds(1));
 
         await service.SaveUsagesAsync(TestContext.Current.CancellationToken);
         TimeProvider.Advance(TimeSpan.FromDays(15));
@@ -798,38 +798,6 @@ public sealed class SourceMapServiceTests : TestWithServices
 
         Assert.Equal(1, await service.CleanupStaleArtifactsAsync(projectId, true, TestContext.Current.CancellationToken));
         Assert.Empty(await service.GetArtifactsAsync(projectId, TestContext.Current.CancellationToken));
-    }
-
-    [Fact]
-    public async Task CleanupStaleArtifactsAsync_WithLegacyMetadata_GrantsFullRetentionGracePeriod()
-    {
-        var options = GetService<AppOptions>();
-        options.SourceMapOptions.FreeArtifactRetentionDays = 14;
-        var service = GetService<SourceMapService>();
-        var storage = GetService<IFileStorage>();
-        string projectId = $"project-{Guid.NewGuid():N}";
-        SourceMapArtifact artifact;
-        await using (var sourceMapStream = new MemoryStream(SourceMap))
-            artifact = await service.SaveUploadedAsync(projectId, GeneratedFileUrl, "app.min.js.map", sourceMapStream, true, TestContext.Current.CancellationToken);
-
-        string metadataPath = $"source-maps/{projectId}/{artifact.Id}.json";
-        await using (var metadataStream = await storage.GetFileStreamAsync(metadataPath, StreamMode.Read, TestContext.Current.CancellationToken))
-        {
-            var metadata = Assert.IsType<JsonObject>(await JsonNode.ParseAsync(metadataStream!, cancellationToken: TestContext.Current.CancellationToken));
-            string lastUsedProperty = Assert.Single(metadata.Select(property => property.Key), key => key.Contains("last", StringComparison.OrdinalIgnoreCase));
-            Assert.True(metadata.Remove(lastUsedProperty));
-            await using var legacyMetadataStream = new MemoryStream(JsonSerializer.SerializeToUtf8Bytes(metadata, GetService<JsonSerializerOptions>()));
-            Assert.True(await storage.SaveFileAsync(metadataPath, legacyMetadataStream, TestContext.Current.CancellationToken));
-        }
-
-        TimeProvider.Advance(TimeSpan.FromDays(15));
-
-        Assert.Equal(0, await service.CleanupStaleArtifactsAsync(projectId, true, TestContext.Current.CancellationToken));
-        Assert.Single(await service.GetArtifactsAsync(projectId, TestContext.Current.CancellationToken));
-
-        TimeProvider.Advance(TimeSpan.FromDays(15));
-
-        Assert.Equal(1, await service.CleanupStaleArtifactsAsync(projectId, true, TestContext.Current.CancellationToken));
     }
 
     [Fact]

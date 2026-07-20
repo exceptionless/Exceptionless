@@ -11,6 +11,7 @@ export interface SourceMapArtifact {
     generated_file_url: string;
     id: string;
     is_auto_downloaded: boolean;
+    last_used_utc?: string;
     size: number;
     source_map_url?: string;
 }

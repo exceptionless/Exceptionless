@@ -183,20 +183,21 @@
                         <Table.Head>Generated file</Table.Head>
                         <Table.Head>Source</Table.Head>
                         <Table.Head>Size</Table.Head>
+                        <Table.Head>Last used</Table.Head>
                         <Table.Head>Added</Table.Head>
                         <Table.Head class="w-12"><span class="sr-only">Actions</span></Table.Head>
                     </Table.Row>
                 </Table.Header>
                 <Table.Body>
                     {#if sourceMapsQuery.isLoading}
-                        <Table.Row><Table.Cell colspan={5} class="h-24 text-center"><Spinner /></Table.Cell></Table.Row>
+                        <Table.Row><Table.Cell colspan={6} class="h-24 text-center"><Spinner /></Table.Cell></Table.Row>
                     {:else if sourceMapsQuery.isError}
                         <Table.Row
-                            ><Table.Cell colspan={5} class="h-24 text-center"><ErrorMessage message="Unable to load source maps." /></Table.Cell></Table.Row
+                            ><Table.Cell colspan={6} class="h-24 text-center"><ErrorMessage message="Unable to load source maps." /></Table.Cell></Table.Row
                         >
                     {:else if !sourceMapsQuery.data?.length}
                         <Table.Row
-                            ><Table.Cell colspan={5} class="text-muted-foreground h-24 text-center"
+                            ><Table.Cell colspan={6} class="text-muted-foreground h-24 text-center"
                                 >No source maps have been discovered or uploaded yet.</Table.Cell
                             ></Table.Row
                         >
@@ -211,6 +212,13 @@
                                     {#if sourceMap.file_name}<div class="text-muted-foreground mt-1 text-xs">{sourceMap.file_name}</div>{/if}
                                 </Table.Cell>
                                 <Table.Cell><Bytes value={sourceMap.size} /></Table.Cell>
+                                <Table.Cell>
+                                    {#if sourceMap.last_used_utc}
+                                        <DateTime value={sourceMap.last_used_utc} />
+                                    {:else}
+                                        <span class="text-muted-foreground">Never</span>
+                                    {/if}
+                                </Table.Cell>
                                 <Table.Cell><DateTime value={sourceMap.created_utc} /></Table.Cell>
                                 <Table.Cell>
                                     <Button

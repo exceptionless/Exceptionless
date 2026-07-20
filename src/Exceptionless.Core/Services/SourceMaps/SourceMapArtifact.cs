@@ -9,4 +9,5 @@ public sealed record SourceMapArtifact
     public required long Size { get; init; }
     public required bool IsAutoDownloaded { get; init; }
     public required DateTime CreatedUtc { get; init; }
+    public DateTime? LastUsedUtc { get; init; }
 }
