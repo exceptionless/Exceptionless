@@ -69,7 +69,11 @@ public class TokenHandler(
         if (project is null)
             return Result.NotFound("Project not found.");
 
-        var defaultTokenResults = await repository.GetByTypeAndProjectIdAsync(TokenType.Access, message.ProjectId, o => o.PageLimit(1));
+        var defaultTokenResults = await repository.GetByTypeAndProjectIdAndScopeAsync(
+            TokenType.Access,
+            message.ProjectId,
+            AuthorizationRoles.Client,
+            o => o.PageLimit(1));
         var token = defaultTokenResults.Documents.FirstOrDefault();
         if (token is not null)
             return MapToView(token);

@@ -125,6 +125,16 @@ public sealed class SourceMapDocumentTests
     }
 
     [Fact]
+    public void Parse_DecreasingGeneratedColumns_ThrowsJsonException()
+    {
+        byte[] sourceMap = Encoding.UTF8.GetBytes("""{"version":3,"sources":[],"names":[],"mappings":"K,F"}""");
+
+        var exception = Assert.Throws<JsonException>(() => SourceMapDocument.Parse(sourceMap));
+
+        Assert.Contains("ascending order", exception.Message);
+    }
+
+    [Fact]
     public void Parse_TooManyOneLineMappingSegments_ThrowsJsonException()
     {
         string mappings = String.Join(',', Enumerable.Repeat("A", 10_000));

@@ -164,6 +164,7 @@ public sealed class SourceMapDocument
         foreach (string encodedLine in mappings.Split(';'))
         {
             int generatedColumn = 0;
+            int previousGeneratedColumn = -1;
             var line = new List<MappingSegment>();
             foreach (string encodedSegment in encodedLine.Split(',', StringSplitOptions.RemoveEmptyEntries))
             {
@@ -174,6 +175,9 @@ public sealed class SourceMapDocument
                 generatedColumn += DecodeValue(encodedSegment, ref index);
                 if (generatedColumn < 0)
                     throw new JsonException("A source map generated column cannot be negative.");
+                if (generatedColumn < previousGeneratedColumn)
+                    throw new JsonException("Source map generated columns must be in ascending order.");
+                previousGeneratedColumn = generatedColumn;
 
                 if (index == encodedSegment.Length)
                 {

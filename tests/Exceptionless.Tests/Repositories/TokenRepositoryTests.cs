@@ -97,4 +97,41 @@ public sealed class TokenRepositoryTests : IntegrationTestsBase
         Assert.Equal(2, accessResults.Total);
         Assert.Single(authenticationResults.Documents);
     }
+
+    [Fact]
+    public async Task GetByTypeAndProjectIdAndScopeAsync_SourceMapTokenPrecedesClientToken_ReturnsClientToken()
+    {
+        var utcNow = DateTime.UtcNow;
+        await _repository.AddAsync([
+            new Token
+            {
+                OrganizationId = TestConstants.OrganizationId,
+                ProjectId = TestConstants.ProjectId,
+                Type = TokenType.Access,
+                Scopes = [AuthorizationRoles.SourceMapsWrite],
+                CreatedUtc = utcNow,
+                UpdatedUtc = utcNow,
+                Id = StringExtensions.GetNewToken()
+            },
+            new Token
+            {
+                OrganizationId = TestConstants.OrganizationId,
+                ProjectId = TestConstants.ProjectId,
+                Type = TokenType.Access,
+                Scopes = [AuthorizationRoles.Client],
+                CreatedUtc = utcNow.AddMinutes(1),
+                UpdatedUtc = utcNow.AddMinutes(1),
+                Id = StringExtensions.GetNewToken()
+            }
+        ], options => options.ImmediateConsistency());
+
+        var results = await _repository.GetByTypeAndProjectIdAndScopeAsync(
+            TokenType.Access,
+            TestConstants.ProjectId,
+            AuthorizationRoles.Client,
+            options => options.PageLimit(1));
+
+        var token = Assert.Single(results.Documents);
+        Assert.Contains(AuthorizationRoles.Client, token.Scopes);
+    }
 }
