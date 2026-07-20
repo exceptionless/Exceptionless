@@ -10,6 +10,8 @@ public sealed class SourceMapOptions
     public int MaximumSourceMapSize { get; internal set; }
     public int MaximumArtifactsPerProject { get; internal set; }
     public long MaximumStorageSizePerProject { get; internal set; }
+    public int MaximumArtifactsPerFreeProject { get; internal set; }
+    public long MaximumStorageSizePerFreeProject { get; internal set; }
     public int MaximumMappingSegments { get; internal set; }
     public int MaximumRedirects { get; internal set; }
     public int MaximumConcurrentDownloads { get; internal set; }
@@ -31,12 +33,18 @@ public sealed class SourceMapOptions
     public int AutoDownloadRefreshIntervalMinutes { get; internal set; }
     public int ParsedSourceMapCacheLifetimeMinutes { get; internal set; }
     public long MaximumParsedSourceMapCacheSize { get; internal set; }
+    public int UsageTrackingDebounceMinutes { get; internal set; }
+    public int FreeArtifactRetentionDays { get; internal set; }
+    public int ArtifactRetentionDays { get; internal set; }
 
     public TimeSpan RequestTimeout => TimeSpan.FromMilliseconds(RequestTimeoutMilliseconds);
     public TimeSpan MaximumProcessingTime => TimeSpan.FromMilliseconds(MaximumProcessingTimeMilliseconds);
     public TimeSpan AutoDownloadRefreshInterval => TimeSpan.FromMinutes(AutoDownloadRefreshIntervalMinutes);
     public TimeSpan ParsedSourceMapCacheLifetime => TimeSpan.FromMinutes(ParsedSourceMapCacheLifetimeMinutes);
     public TimeSpan AutoDownloadRateLimitPeriod => TimeSpan.FromMinutes(AutoDownloadRateLimitPeriodMinutes);
+    public TimeSpan UsageTrackingDebounce => TimeSpan.FromMinutes(UsageTrackingDebounceMinutes);
+    public TimeSpan FreeArtifactRetention => TimeSpan.FromDays(FreeArtifactRetentionDays);
+    public TimeSpan ArtifactRetention => TimeSpan.FromDays(ArtifactRetentionDays);
 
     public static SourceMapOptions ReadFromConfiguration(IConfiguration configuration)
     {
@@ -49,6 +57,8 @@ public sealed class SourceMapOptions
             MaximumSourceMapSize = ReadPositive(section, nameof(MaximumSourceMapSize), 20 * 1024 * 1024),
             MaximumArtifactsPerProject = ReadPositive(section, nameof(MaximumArtifactsPerProject), 1000),
             MaximumStorageSizePerProject = ReadPositive(section, nameof(MaximumStorageSizePerProject), 1024L * 1024 * 1024),
+            MaximumArtifactsPerFreeProject = ReadPositive(section, nameof(MaximumArtifactsPerFreeProject), 100),
+            MaximumStorageSizePerFreeProject = ReadPositive(section, nameof(MaximumStorageSizePerFreeProject), 100L * 1024 * 1024),
             MaximumMappingSegments = ReadPositive(section, nameof(MaximumMappingSegments), 1_000_000),
             MaximumRedirects = Math.Max(0, section.GetValue(nameof(MaximumRedirects), 3)),
             MaximumConcurrentDownloads = ReadPositive(section, nameof(MaximumConcurrentDownloads), 4),
@@ -69,7 +79,10 @@ public sealed class SourceMapOptions
             MaximumProcessingTimeMilliseconds = ReadPositive(section, nameof(MaximumProcessingTimeMilliseconds), 5000),
             AutoDownloadRefreshIntervalMinutes = ReadPositive(section, nameof(AutoDownloadRefreshIntervalMinutes), 60),
             ParsedSourceMapCacheLifetimeMinutes = ReadPositive(section, nameof(ParsedSourceMapCacheLifetimeMinutes), 5),
-            MaximumParsedSourceMapCacheSize = Math.Max(1, section.GetValue(nameof(MaximumParsedSourceMapCacheSize), 100L * 1024 * 1024))
+            MaximumParsedSourceMapCacheSize = Math.Max(1, section.GetValue(nameof(MaximumParsedSourceMapCacheSize), 100L * 1024 * 1024)),
+            UsageTrackingDebounceMinutes = ReadPositive(section, nameof(UsageTrackingDebounceMinutes), 60),
+            FreeArtifactRetentionDays = ReadPositive(section, nameof(FreeArtifactRetentionDays), 14),
+            ArtifactRetentionDays = ReadPositive(section, nameof(ArtifactRetentionDays), 90)
         };
     }
 

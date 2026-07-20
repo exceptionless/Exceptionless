@@ -17,16 +17,19 @@ public sealed class SourceMapService : IDisposable
     public const string HttpClientName = "SourceMaps";
     internal const string GeneratedFileHttpClientName = "SourceMapGeneratedFiles";
     private static readonly TimeSpan FailureCacheLifetime = TimeSpan.FromMinutes(15);
+    private const int MaximumLocalUsageEntries = 100_000;
     private readonly SemaphoreSlim _downloadSemaphore;
     private readonly ConcurrentDictionary<string, Lazy<Task<ResolvedSourceMap?>>> _inflightSourceMaps = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, ResolvedSourceMap> _parsedSourceMapEntries = new(StringComparer.Ordinal);
     private readonly MemoryCache _parsedSourceMaps;
+    private readonly MemoryCache _recentlyTrackedUsages;
     private readonly SourceMapDownloader _downloader;
     private readonly SourceMapStorage _storage;
     private readonly SourceMapRequestThrottle _throttle;
     private readonly ICacheClient _cache;
     private readonly ILockProvider _lockProvider;
     private readonly SourceMapOptions _options;
+    private readonly TimeSpan _usageCacheLifetime;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<SourceMapService> _logger;
 
@@ -47,17 +50,28 @@ public sealed class SourceMapService : IDisposable
         _cache = cache;
         _lockProvider = lockProvider;
         _options = options.SourceMapOptions;
+        _usageCacheLifetime = TimeSpan.FromDays(Math.Max(_options.FreeArtifactRetentionDays, _options.ArtifactRetentionDays) + 1L);
         _downloadSemaphore = new SemaphoreSlim(_options.MaximumConcurrentDownloads);
         _parsedSourceMaps = new MemoryCache(new MemoryCacheOptions { SizeLimit = _options.MaximumParsedSourceMapCacheSize });
+        _recentlyTrackedUsages = new MemoryCache(new MemoryCacheOptions { SizeLimit = MaximumLocalUsageEntries });
         _timeProvider = timeProvider;
         _logger = logger;
     }
+
+    public Task<SourceMapArtifact> SaveUploadedAsync(
+        string projectId,
+        string generatedFileUrl,
+        string? fileName,
+        Stream stream,
+        CancellationToken cancellationToken = default)
+        => SaveUploadedAsync(projectId, generatedFileUrl, fileName, stream, false, cancellationToken);
 
     public async Task<SourceMapArtifact> SaveUploadedAsync(
         string projectId,
         string generatedFileUrl,
         string? fileName,
         Stream stream,
+        bool isFreePlan,
         CancellationToken cancellationToken = default)
     {
         if (!TryNormalizeGeneratedFileUrl(generatedFileUrl, requireHttps: false, out var generatedFileUri))
@@ -90,7 +104,7 @@ public sealed class SourceMapService : IDisposable
         if (projectLock is null)
             throw new IOException("Unable to acquire the project source map storage lock.");
 
-        await ValidateStorageLimitAsync(projectId, artifact, cancellationToken);
+        await ValidateStorageLimitAsync(projectId, artifact, isFreePlan, cancellationToken);
         await _storage.SaveAsync(projectId, artifact, sourceMap, cancellationToken);
         await ClearCachesAsync(projectId, normalizedUrl);
         return artifact;
@@ -120,6 +134,7 @@ public sealed class SourceMapService : IDisposable
         if (artifact is null)
             return false;
 
+        await RemoveUsageTrackingAsync(projectId, artifactId);
         await ClearCachesAsync(projectId, artifact.GeneratedFileUrl);
         return true;
     }
@@ -130,7 +145,10 @@ public sealed class SourceMapService : IDisposable
         if (projectLock is null)
             throw new IOException("Unable to acquire the project source map storage lock.");
 
+        var artifacts = await _storage.GetArtifactsAsync(projectId, cancellationToken);
         await _storage.DeleteAllAsync(projectId, cancellationToken);
+        foreach (var artifact in artifacts)
+            await RemoveUsageTrackingAsync(projectId, artifact.Id);
         await AdvanceProjectCacheVersionAsync(projectId);
         foreach (string key in _parsedSourceMapEntries.Keys.Where(key => key.StartsWith(projectId + ':', StringComparison.Ordinal)))
             _parsedSourceMaps.Remove(key);
@@ -177,6 +195,7 @@ public sealed class SourceMapService : IDisposable
     public void Dispose()
     {
         _parsedSourceMaps.Dispose();
+        _recentlyTrackedUsages.Dispose();
         _downloadSemaphore.Dispose();
     }
 
@@ -211,6 +230,8 @@ public sealed class SourceMapService : IDisposable
         frame.LineNumber = original.Line + 1;
         frame.Column = original.Column + 1;
         frame.Name = String.IsNullOrWhiteSpace(original.Name) ? null : original.Name;
+
+        await TrackUsageAsync(request.ProjectId, resolved.Artifact.Id);
 
         return true;
     }
@@ -406,7 +427,7 @@ public sealed class SourceMapService : IDisposable
             if (projectLock is null)
                 return await CacheFailureAsync(failureCacheKey);
 
-            await ValidateStorageLimitAsync(projectId, artifact, timeoutCancellationTokenSource.Token);
+            await ValidateStorageLimitAsync(projectId, artifact, request.IsFreePlan, timeoutCancellationTokenSource.Token);
             await _storage.SaveAsync(projectId, artifact, downloaded.Content, CancellationToken.None);
             long updatedCacheVersion = await ClearCachesAsync(projectId, generatedFileUrl);
             return new ResolvedSourceMap(artifact, document, updatedCacheVersion);
@@ -458,16 +479,147 @@ public sealed class SourceMapService : IDisposable
     private Task<ILock?> TryAcquireProjectStorageLockAsync(string projectId, CancellationToken cancellationToken)
         => _lockProvider.TryAcquireAsync(GetProjectStorageLockKey(projectId), TimeSpan.FromSeconds(30), cancellationToken);
 
-    private async Task ValidateStorageLimitAsync(string projectId, SourceMapArtifact artifact, CancellationToken cancellationToken)
+    public async Task SaveUsagesAsync(CancellationToken cancellationToken = default)
     {
+        string pendingCacheKey = GetUsagePendingCacheKey();
+        var pending = await _cache.GetListAsync<SourceMapUsageKey>(pendingCacheKey);
+        if (!pending.HasValue)
+            return;
+
+        foreach (var usage in pending.Value)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await _cache.ListRemoveAsync(pendingCacheKey, usage);
+
+            try
+            {
+                DateTime lastUsedUtc = await GetPendingLastUsedUtcAsync(usage.ProjectId, usage.ArtifactId);
+                if (lastUsedUtc == DateTime.MinValue)
+                    continue;
+
+                await using var projectLock = await TryAcquireProjectStorageLockAsync(usage.ProjectId, cancellationToken);
+                if (projectLock is null)
+                {
+                    await _cache.ListAddAsync(pendingCacheKey, usage);
+                    continue;
+                }
+
+                var result = await _storage.SetLastUsedUtcAsync(usage.ProjectId, usage.ArtifactId, lastUsedUtc, cancellationToken);
+                if (result == SourceMapStorage.SetLastUsedResult.Failed)
+                    await _cache.ListAddAsync(pendingCacheKey, usage);
+                else if (result == SourceMapStorage.SetLastUsedResult.NotFound)
+                    await _cache.RemoveAsync(GetLastUsedCacheKey(usage.ProjectId, usage.ArtifactId));
+            }
+            catch
+            {
+                await _cache.ListAddAsync(pendingCacheKey, usage);
+                throw;
+            }
+        }
+    }
+
+    public async Task<int> CleanupStaleArtifactsAsync(string projectId, bool isFreePlan, CancellationToken cancellationToken = default)
+    {
+        await using var projectLock = await TryAcquireProjectStorageLockAsync(projectId, cancellationToken);
+        if (projectLock is null)
+            throw new IOException("Unable to acquire the project source map storage lock.");
+
+        return await CleanupStaleArtifactsUnderLockAsync(projectId, isFreePlan, cancellationToken);
+    }
+
+    private async Task ValidateStorageLimitAsync(string projectId, SourceMapArtifact artifact, bool isFreePlan, CancellationToken cancellationToken)
+    {
+        await CleanupStaleArtifactsUnderLockAsync(projectId, isFreePlan, cancellationToken);
         var usage = await _storage.GetProjectStorageUsageAsync(projectId, artifact.Id, cancellationToken);
         var otherArtifacts = usage.Artifacts.Where(existing => !String.Equals(existing.Id, artifact.Id, StringComparison.Ordinal)).ToArray();
-        if (otherArtifacts.Length >= _options.MaximumArtifactsPerProject)
-            throw new SourceMapStorageLimitException($"The project source map artifact limit of {_options.MaximumArtifactsPerProject:N0} has been reached.");
+        int maximumArtifacts = isFreePlan ? _options.MaximumArtifactsPerFreeProject : _options.MaximumArtifactsPerProject;
+        long maximumStorageSize = isFreePlan ? _options.MaximumStorageSizePerFreeProject : _options.MaximumStorageSizePerProject;
+        if (otherArtifacts.Length >= maximumArtifacts)
+            throw new SourceMapStorageLimitException($"The project source map artifact limit of {maximumArtifacts:N0} has been reached.");
 
-        if (usage.RetainedBytes > _options.MaximumStorageSizePerProject
-            || artifact.Size > _options.MaximumStorageSizePerProject - usage.RetainedBytes)
+        if (usage.RetainedBytes > maximumStorageSize
+            || artifact.Size > maximumStorageSize - usage.RetainedBytes)
             throw new SourceMapStorageLimitException("The project source map storage limit has been reached.");
+    }
+
+    private async Task TrackUsageAsync(string projectId, string artifactId)
+    {
+        string localCacheKey = $"{projectId}:{artifactId}";
+        if (_recentlyTrackedUsages.TryGetValue(localCacheKey, out _))
+            return;
+
+        _recentlyTrackedUsages.Set(localCacheKey, true, new MemoryCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = _options.UsageTrackingDebounce,
+            Size = 1
+        });
+
+        var usage = new SourceMapUsageKey(projectId, artifactId);
+        try
+        {
+            await Task.WhenAll(
+                _cache.ListAddAsync(GetUsagePendingCacheKey(), usage),
+                _cache.SetIfHigherAsync(GetLastUsedCacheKey(projectId, artifactId), _timeProvider.GetUtcNow().UtcDateTime, _usageCacheLifetime));
+        }
+        catch (Exception ex)
+        {
+            _recentlyTrackedUsages.Remove(localCacheKey);
+            _logger.LogWarning(ex, "Unable to queue source map usage for project {ProjectId} artifact {SourceMapArtifactId}.", projectId, artifactId);
+        }
+    }
+
+    private async Task<int> CleanupStaleArtifactsUnderLockAsync(string projectId, bool isFreePlan, CancellationToken cancellationToken)
+    {
+        DateTime nowUtc = _timeProvider.GetUtcNow().UtcDateTime;
+        DateTime cutoffUtc = nowUtc - (isFreePlan ? _options.FreeArtifactRetention : _options.ArtifactRetention);
+        var usages = await _storage.GetArtifactUsagesAsync(projectId, cancellationToken);
+        int removed = 0;
+
+        foreach (var usage in usages)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            DateTime pendingLastUsedUtc = await GetPendingLastUsedUtcAsync(projectId, usage.Artifact.Id);
+            DateTime? lastUsedUtc = usage.LastUsedUtc;
+
+            if (!lastUsedUtc.HasValue)
+            {
+                // Existing metadata predates usage tracking. Adopt it with a full retention grace period.
+                if (await _storage.SetLastUsedUtcAsync(projectId, usage.Artifact.Id, nowUtc, cancellationToken) != SourceMapStorage.SetLastUsedResult.Updated)
+                    throw new IOException("Unable to initialize source map usage metadata.");
+                continue;
+            }
+
+            DateTime effectiveLastUsedUtc = pendingLastUsedUtc > lastUsedUtc.Value ? pendingLastUsedUtc : lastUsedUtc.Value;
+            if (effectiveLastUsedUtc > lastUsedUtc.Value)
+            {
+                if (await _storage.SetLastUsedUtcAsync(projectId, usage.Artifact.Id, effectiveLastUsedUtc, cancellationToken) != SourceMapStorage.SetLastUsedResult.Updated)
+                    throw new IOException("Unable to update source map usage metadata.");
+            }
+
+            if (effectiveLastUsedUtc > cutoffUtc || usage.Artifact.CreatedUtc > cutoffUtc)
+                continue;
+
+            var deleted = await _storage.DeleteAsync(projectId, usage.Artifact.Id, cancellationToken);
+            if (deleted is null)
+                continue;
+
+            await RemoveUsageTrackingAsync(projectId, usage.Artifact.Id);
+            await ClearCachesAsync(projectId, usage.Artifact.GeneratedFileUrl);
+            removed++;
+        }
+
+        return removed;
+    }
+
+    private Task<DateTime> GetPendingLastUsedUtcAsync(string projectId, string artifactId)
+        => _cache.GetUnixTimeMillisecondsAsync(GetLastUsedCacheKey(projectId, artifactId), DateTime.MinValue);
+
+    private Task RemoveUsageTrackingAsync(string projectId, string artifactId)
+    {
+        _recentlyTrackedUsages.Remove($"{projectId}:{artifactId}");
+        return Task.WhenAll(
+            _cache.ListRemoveAsync(GetUsagePendingCacheKey(), new SourceMapUsageKey(projectId, artifactId)),
+            _cache.RemoveAsync(GetLastUsedCacheKey(projectId, artifactId)));
     }
 
     private async Task<ResolvedSourceMap?> CacheFailureAsync(string failureCacheKey)
@@ -516,6 +668,8 @@ public sealed class SourceMapService : IDisposable
     private static string GetProjectCacheVersionKey(string projectId) => $"source-maps:cache-version:{projectId}";
     private static string GetMemoryCacheKey(string projectId, string generatedFileUrl) => $"{projectId}:{generatedFileUrl}";
     private static string GetFailureCacheKey(string projectId, string generatedFileUrl) => $"source-maps:failure:{projectId}:{generatedFileUrl.ToSHA256()}";
+    private static string GetUsagePendingCacheKey() => "source-maps:usage:pending";
+    private static string GetLastUsedCacheKey(string projectId, string artifactId) => $"source-maps:usage:last:{projectId}:{artifactId}";
 
     private static string? GetDownloadedFileName(string? sourceMapUrl)
     {
@@ -527,5 +681,7 @@ public sealed class SourceMapService : IDisposable
     private sealed record ResolvedSourceMap(SourceMapArtifact Artifact, SourceMapDocument Document, long CacheVersion);
     private sealed record ParsedSourceMapCacheRegistration(SourceMapService Service, ResolvedSourceMap SourceMap);
 }
+
+internal sealed record SourceMapUsageKey(string ProjectId, string ArtifactId);
 
 public sealed class SourceMapStorageLimitException(string message) : InvalidOperationException(message);

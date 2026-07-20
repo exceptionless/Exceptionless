@@ -1,7 +1,9 @@
 using System.Text.Json;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Configuration;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services.SourceMaps;
 using Exceptionless.Web.Extensions;
@@ -86,7 +88,7 @@ public static class SourceMapEndpoints
         SourceMapService sourceMapService,
         CancellationToken cancellationToken)
     {
-        if (!await CanAccessProjectAsync(projectId, httpContext, projectRepository))
+        if (await GetAccessibleProjectAsync(projectId, httpContext, projectRepository) is null)
             return HttpResults.NotFound();
 
         return HttpResults.Ok(await sourceMapService.GetArtifactsAsync(projectId, cancellationToken));
@@ -96,10 +98,17 @@ public static class SourceMapEndpoints
         string projectId,
         HttpContext httpContext,
         IProjectRepository projectRepository,
+        IOrganizationRepository organizationRepository,
+        BillingPlans billingPlans,
         SourceMapService sourceMapService,
         CancellationToken cancellationToken)
     {
-        if (!await CanAccessProjectAsync(projectId, httpContext, projectRepository))
+        var project = await GetAccessibleProjectAsync(projectId, httpContext, projectRepository);
+        if (project is null)
+            return HttpResults.NotFound();
+
+        var organization = await organizationRepository.GetByIdAsync(project.OrganizationId, options => options.Cache());
+        if (organization is null)
             return HttpResults.NotFound();
 
         var (form, formError) = await ReadFormAsync(httpContext.Request, cancellationToken);
@@ -120,7 +129,8 @@ public static class SourceMapEndpoints
         try
         {
             await using var stream = file!.OpenReadStream();
-            var artifact = await sourceMapService.SaveUploadedAsync(projectId, generatedFileUrl!, file.FileName, stream, cancellationToken);
+            bool isFreePlan = String.Equals(organization.PlanId, billingPlans.FreePlan.Id, StringComparison.OrdinalIgnoreCase);
+            var artifact = await sourceMapService.SaveUploadedAsync(projectId, generatedFileUrl!, file.FileName, stream, isFreePlan, cancellationToken);
             return HttpResults.Json(artifact, statusCode: StatusCodes.Status201Created);
         }
         catch (ArgumentException ex)
@@ -166,7 +176,7 @@ public static class SourceMapEndpoints
         SourceMapService sourceMapService,
         CancellationToken cancellationToken)
     {
-        if (!await CanAccessProjectAsync(projectId, httpContext, projectRepository))
+        if (await GetAccessibleProjectAsync(projectId, httpContext, projectRepository) is null)
             return HttpResults.NotFound();
 
         return await sourceMapService.DeleteArtifactAsync(projectId, sourceMapId, cancellationToken)
@@ -174,16 +184,16 @@ public static class SourceMapEndpoints
             : HttpResults.NotFound();
     }
 
-    private static async Task<bool> CanAccessProjectAsync(string projectId, HttpContext httpContext, IProjectRepository projectRepository)
+    private static async Task<Project?> GetAccessibleProjectAsync(string projectId, HttpContext httpContext, IProjectRepository projectRepository)
     {
         var project = await projectRepository.GetByIdAsync(projectId, options => options.Cache());
         if (project is null || !httpContext.Request.CanAccessOrganization(project.OrganizationId))
-            return false;
+            return null;
 
         string? tokenProjectId = httpContext.Request.GetProjectId();
         if (httpContext.User.IsInRole(AuthorizationRoles.SourceMapsWrite) && !httpContext.User.IsInRole(AuthorizationRoles.User))
-            return String.Equals(tokenProjectId, projectId, StringComparison.Ordinal);
+            return String.Equals(tokenProjectId, projectId, StringComparison.Ordinal) ? project : null;
 
-        return String.IsNullOrEmpty(tokenProjectId) || String.Equals(tokenProjectId, projectId, StringComparison.Ordinal);
+        return String.IsNullOrEmpty(tokenProjectId) || String.Equals(tokenProjectId, projectId, StringComparison.Ordinal) ? project : null;
     }
 }

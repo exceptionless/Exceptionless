@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Configuration;
@@ -726,6 +727,112 @@ public sealed class SourceMapServiceTests : TestWithServices
     }
 
     [Fact]
+    public async Task SaveUploadedAsync_ForFreePlan_UsesSmallerArtifactLimit()
+    {
+        var options = GetService<AppOptions>();
+        options.SourceMapOptions.MaximumArtifactsPerFreeProject = 1;
+        options.SourceMapOptions.MaximumArtifactsPerProject = 2;
+        options.SourceMapOptions.MaximumStorageSizePerFreeProject = 1024 * 1024;
+        options.SourceMapOptions.MaximumStorageSizePerProject = 1024 * 1024;
+        var service = GetService<SourceMapService>();
+        string freeProjectId = $"free-{Guid.NewGuid():N}";
+        string paidProjectId = $"paid-{Guid.NewGuid():N}";
+
+        await using (var sourceMapStream = new MemoryStream(SourceMap))
+            await service.SaveUploadedAsync(freeProjectId, GeneratedFileUrl, "app.min.js.map", sourceMapStream, true, TestContext.Current.CancellationToken);
+        await using (var sourceMapStream = new MemoryStream(SourceMap))
+        {
+            var exception = await Assert.ThrowsAsync<SourceMapStorageLimitException>(() => service.SaveUploadedAsync(
+                freeProjectId,
+                "https://cdn.example.com/assets/second.min.js",
+                "second.min.js.map",
+                sourceMapStream,
+                true,
+                TestContext.Current.CancellationToken));
+            Assert.Contains("artifact limit of 1", exception.Message);
+        }
+
+        await using (var sourceMapStream = new MemoryStream(SourceMap))
+            await service.SaveUploadedAsync(paidProjectId, GeneratedFileUrl, "app.min.js.map", sourceMapStream, false, TestContext.Current.CancellationToken);
+        await using (var sourceMapStream = new MemoryStream(SourceMap))
+            await service.SaveUploadedAsync(paidProjectId, "https://cdn.example.com/assets/second.min.js", "second.min.js.map", sourceMapStream, false, TestContext.Current.CancellationToken);
+
+        Assert.Single(await service.GetArtifactsAsync(freeProjectId, TestContext.Current.CancellationToken));
+        Assert.Equal(2, (await service.GetArtifactsAsync(paidProjectId, TestContext.Current.CancellationToken)).Count);
+    }
+
+    [Fact]
+    public async Task CleanupStaleArtifactsAsync_WhenArtifactWasUsed_RetainsUntilUsageBecomesStale()
+    {
+        var options = GetService<AppOptions>();
+        options.SourceMapOptions.FreeArtifactRetentionDays = 14;
+        var service = GetService<SourceMapService>();
+        string projectId = $"project-{Guid.NewGuid():N}";
+        await using (var sourceMapStream = new MemoryStream(SourceMap))
+            await service.SaveUploadedAsync(projectId, GeneratedFileUrl, "app.min.js.map", sourceMapStream, true, TestContext.Current.CancellationToken);
+
+        TimeProvider.Advance(TimeSpan.FromDays(15));
+        Assert.True(await service.SymbolicateAsync(projectId, CreateError(), TestContext.Current.CancellationToken));
+
+        Assert.Equal(0, await service.CleanupStaleArtifactsAsync(projectId, true, TestContext.Current.CancellationToken));
+        Assert.Single(await service.GetArtifactsAsync(projectId, TestContext.Current.CancellationToken));
+
+        await service.SaveUsagesAsync(TestContext.Current.CancellationToken);
+        TimeProvider.Advance(TimeSpan.FromDays(15));
+
+        Assert.Equal(1, await service.CleanupStaleArtifactsAsync(projectId, true, TestContext.Current.CancellationToken));
+        Assert.Empty(await service.GetArtifactsAsync(projectId, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task CleanupStaleArtifactsAsync_WhenArtifactWasNeverUsed_RemovesItAfterRetention()
+    {
+        var options = GetService<AppOptions>();
+        options.SourceMapOptions.FreeArtifactRetentionDays = 14;
+        var service = GetService<SourceMapService>();
+        string projectId = $"project-{Guid.NewGuid():N}";
+        await using (var sourceMapStream = new MemoryStream(SourceMap))
+            await service.SaveUploadedAsync(projectId, GeneratedFileUrl, "app.min.js.map", sourceMapStream, true, TestContext.Current.CancellationToken);
+
+        TimeProvider.Advance(TimeSpan.FromDays(15));
+
+        Assert.Equal(1, await service.CleanupStaleArtifactsAsync(projectId, true, TestContext.Current.CancellationToken));
+        Assert.Empty(await service.GetArtifactsAsync(projectId, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task CleanupStaleArtifactsAsync_WithLegacyMetadata_GrantsFullRetentionGracePeriod()
+    {
+        var options = GetService<AppOptions>();
+        options.SourceMapOptions.FreeArtifactRetentionDays = 14;
+        var service = GetService<SourceMapService>();
+        var storage = GetService<IFileStorage>();
+        string projectId = $"project-{Guid.NewGuid():N}";
+        SourceMapArtifact artifact;
+        await using (var sourceMapStream = new MemoryStream(SourceMap))
+            artifact = await service.SaveUploadedAsync(projectId, GeneratedFileUrl, "app.min.js.map", sourceMapStream, true, TestContext.Current.CancellationToken);
+
+        string metadataPath = $"source-maps/{projectId}/{artifact.Id}.json";
+        await using (var metadataStream = await storage.GetFileStreamAsync(metadataPath, StreamMode.Read, TestContext.Current.CancellationToken))
+        {
+            var metadata = Assert.IsType<JsonObject>(await JsonNode.ParseAsync(metadataStream!, cancellationToken: TestContext.Current.CancellationToken));
+            string lastUsedProperty = Assert.Single(metadata.Select(property => property.Key), key => key.Contains("last", StringComparison.OrdinalIgnoreCase));
+            Assert.True(metadata.Remove(lastUsedProperty));
+            await using var legacyMetadataStream = new MemoryStream(JsonSerializer.SerializeToUtf8Bytes(metadata, GetService<JsonSerializerOptions>()));
+            Assert.True(await storage.SaveFileAsync(metadataPath, legacyMetadataStream, TestContext.Current.CancellationToken));
+        }
+
+        TimeProvider.Advance(TimeSpan.FromDays(15));
+
+        Assert.Equal(0, await service.CleanupStaleArtifactsAsync(projectId, true, TestContext.Current.CancellationToken));
+        Assert.Single(await service.GetArtifactsAsync(projectId, TestContext.Current.CancellationToken));
+
+        TimeProvider.Advance(TimeSpan.FromDays(15));
+
+        Assert.Equal(1, await service.CleanupStaleArtifactsAsync(projectId, true, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task SaveUploadedAsync_WhenOrphanedMapExists_RemovesItBeforeCheckingStorageLimit()
     {
         var options = GetService<AppOptions>();
@@ -997,6 +1104,8 @@ public sealed class SourceMapServiceTests : TestWithServices
             ["SourceMaps:MaximumSourceMapSize"] = "-1",
             ["SourceMaps:MaximumArtifactsPerProject"] = "0",
             ["SourceMaps:MaximumStorageSizePerProject"] = "0",
+            ["SourceMaps:MaximumArtifactsPerFreeProject"] = "0",
+            ["SourceMaps:MaximumStorageSizePerFreeProject"] = "0",
             ["SourceMaps:MaximumMappingSegments"] = "0",
             ["SourceMaps:MaximumRedirects"] = "-1",
             ["SourceMaps:MaximumConcurrentDownloads"] = "0",
@@ -1017,7 +1126,10 @@ public sealed class SourceMapServiceTests : TestWithServices
             ["SourceMaps:MaximumProcessingTimeMilliseconds"] = "0",
             ["SourceMaps:AutoDownloadRefreshIntervalMinutes"] = "0",
             ["SourceMaps:ParsedSourceMapCacheLifetimeMinutes"] = "0",
-            ["SourceMaps:MaximumParsedSourceMapCacheSize"] = "0"
+            ["SourceMaps:MaximumParsedSourceMapCacheSize"] = "0",
+            ["SourceMaps:UsageTrackingDebounceMinutes"] = "0",
+            ["SourceMaps:FreeArtifactRetentionDays"] = "0",
+            ["SourceMaps:ArtifactRetentionDays"] = "0"
         };
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(values).Build();
 
@@ -1028,6 +1140,8 @@ public sealed class SourceMapServiceTests : TestWithServices
         Assert.Equal(1, options.MaximumSourceMapSize);
         Assert.Equal(1, options.MaximumArtifactsPerProject);
         Assert.Equal(1, options.MaximumStorageSizePerProject);
+        Assert.Equal(1, options.MaximumArtifactsPerFreeProject);
+        Assert.Equal(1, options.MaximumStorageSizePerFreeProject);
         Assert.Equal(1, options.MaximumMappingSegments);
         Assert.Equal(0, options.MaximumRedirects);
         Assert.Equal(1, options.MaximumConcurrentDownloads);
@@ -1049,6 +1163,9 @@ public sealed class SourceMapServiceTests : TestWithServices
         Assert.Equal(1, options.AutoDownloadRefreshIntervalMinutes);
         Assert.Equal(1, options.ParsedSourceMapCacheLifetimeMinutes);
         Assert.Equal(1, options.MaximumParsedSourceMapCacheSize);
+        Assert.Equal(1, options.UsageTrackingDebounceMinutes);
+        Assert.Equal(1, options.FreeArtifactRetentionDays);
+        Assert.Equal(1, options.ArtifactRetentionDays);
     }
 
     [Fact]

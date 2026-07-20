@@ -4,6 +4,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Services.SourceMaps;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
@@ -40,6 +41,8 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
     private readonly IWebHookRepository _webHookRepository;
     private readonly BillingManager _billingManager;
     private readonly UsageService _usageService;
+    private readonly SourceMapService _sourceMapService;
+    private readonly BillingPlans _billingPlans;
     private readonly AppOptions _appOptions;
     private readonly ILockProvider _lockProvider;
     private readonly ICacheClient _cacheClient;
@@ -60,7 +63,9 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         ICacheClient cacheClient,
         IFileStorage fileStorage,
         BillingManager billingManager,
+        BillingPlans billingPlans,
         UsageService usageService,
+        SourceMapService sourceMapService,
         AppOptions appOptions,
         TimeProvider timeProvider,
         IResiliencePolicyProvider resiliencePolicyProvider,
@@ -77,7 +82,9 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         _oauthTokenRepository = oauthTokenRepository;
         _webHookRepository = webHookRepository;
         _billingManager = billingManager;
+        _billingPlans = billingPlans;
         _usageService = usageService;
+        _sourceMapService = sourceMapService;
         _appOptions = appOptions;
         _lockProvider = lockProvider;
         _cacheClient = cacheClient;
@@ -93,6 +100,8 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
     {
         _lastRun = _timeProvider.GetUtcNow().UtcDateTime;
 
+        bool canCleanupSourceMaps = await FlushSourceMapUsagesAsync(context.CancellationToken);
+
         await MarkTokensSuspended(context);
         await CleanupOAuthTokensAsync(context);
         await CleanupSyntheticOrganizationsAsync(context);
@@ -101,7 +110,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         await CleanupSoftDeletedProjectsAsync(context);
         await CleanupSoftDeletedStacksAsync(context);
 
-        await EnforceRetentionAsync(context);
+        await EnforceRetentionAsync(context, canCleanupSourceMaps);
 
         _logger.CleanupFinished();
 
@@ -398,9 +407,23 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         _logger.RemoveStacksComplete(stacks.Count, totalRemovedEvents);
     }
 
-    private async Task EnforceRetentionAsync(JobContext context)
+    private async Task<bool> FlushSourceMapUsagesAsync(CancellationToken cancellationToken)
     {
-        var results = await _organizationRepository.FindAsync(q => q.Include(o => o.Id, o => o.Name, o => o.RetentionDays), o => o.SearchAfterPaging().PageLimit(100));
+        try
+        {
+            await _sourceMapService.SaveUsagesAsync(cancellationToken);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unable to persist pending source map usage. Stale source map cleanup will be skipped.");
+            return false;
+        }
+    }
+
+    private async Task EnforceRetentionAsync(JobContext context, bool canCleanupSourceMaps)
+    {
+        var results = await _organizationRepository.FindAsync(q => q.Include(o => o.Id, o => o.Name, o => o.PlanId, o => o.RetentionDays), o => o.SearchAfterPaging().PageLimit(100));
         while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
         {
             foreach (var organization in results.Documents)
@@ -417,6 +440,8 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
                     // adding 60 days to retention in order to keep track of whether a stack is new or not
                     await EnforceStackRetentionDaysAsync(organization, retentionDays + 60, context);
                     await EnforceEventRetentionDaysAsync(organization, retentionDays, context);
+                    if (canCleanupSourceMaps)
+                        await CleanupSourceMapsAsync(organization, context);
                 }
                 catch (Exception ex)
                 {
@@ -428,6 +453,28 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
             }
 
             if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync())
+                break;
+        }
+    }
+
+    private async Task CleanupSourceMapsAsync(Organization organization, JobContext context)
+    {
+        bool isFreePlan = String.Equals(organization.PlanId, _billingPlans.FreePlan.Id, StringComparison.OrdinalIgnoreCase);
+        var projects = await _projectRepository.GetByOrganizationIdAsync(
+            organization.Id,
+            options => options.Include(project => project.Id).SearchAfterPaging().PageLimit(100));
+
+        while (projects.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
+        {
+            foreach (var project in projects.Documents)
+            {
+                int removed = await _sourceMapService.CleanupStaleArtifactsAsync(project.Id, isFreePlan, context.CancellationToken);
+                if (removed > 0)
+                    _logger.LogInformation("Removed {SourceMapCount} stale source map(s) from project {ProjectId}.", removed, project.Id);
+            }
+
+            await RenewLockAsync(context);
+            if (!await projects.NextPageAsync())
                 break;
         }
     }
