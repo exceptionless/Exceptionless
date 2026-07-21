@@ -99,6 +99,9 @@ public static class PersistentEventExtensions
     {
         ArgumentException.ThrowIfNullOrEmpty(name);
 
+        if (!name.IsValidFieldName())
+            throw new ArgumentException("Name must contain between 1 and 25 alphanumeric or '-' characters.", nameof(name));
+
         if (!IsValidIdentifier(id) || String.IsNullOrEmpty(id))
             throw new ArgumentException("Id must contain between 8 and 100 alphanumeric or '-' characters.", nameof(id));
 
@@ -108,7 +111,7 @@ public static class PersistentEventExtensions
 
     public static string? GetSessionId(this PersistentEvent ev)
     {
-        return ev.IsSessionStart() ? ev.ReferenceId : ev.GetEventReference("session");
+        return ev.IsSessionStart() ? ev.ReferenceId : ev.GetEventReference(Event.KnownReferenceNames.Session);
     }
 
     public static void SetSessionId(this PersistentEvent ev, string sessionId)
@@ -119,7 +122,7 @@ public static class PersistentEventExtensions
         if (ev.IsSessionStart())
             ev.ReferenceId = sessionId;
         else
-            ev.SetEventReference("session", sessionId);
+            ev.SetEventReference(Event.KnownReferenceNames.Session, sessionId);
     }
 
     public static bool HasSessionEndTime(this PersistentEvent ev)

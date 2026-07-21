@@ -50,6 +50,7 @@ public sealed class PersistentEventQueryValidatorTests : TestWithServices
     [InlineData("stack:404", "stack:404", true, false)]
     [InlineData("ref.parent:12345678", "idx.parent-r:12345678", true, false)]
     [InlineData("ref.session:12345678", "idx.session-r:12345678", true, true)]
+    [InlineData("ref.invalid_name:12345678", "ref.invalid_name:12345678", false, true)]
     [InlineData("status:open", "status:open", true, false)]
     public async Task CanProcessQueryAsync(string query, string expected, bool isValid, bool usesPremiumFeatures)
     {
