@@ -11,6 +11,7 @@ public sealed class PersistentEventQueryValidator : AppQueryValidator
             "date",
             "type",
             EventIndex.Alias.ReferenceId,
+            "idx.parent-r",
             "reference_id",
             EventIndex.Alias.OrganizationId,
             "organization_id",
