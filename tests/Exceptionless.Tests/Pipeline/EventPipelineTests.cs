@@ -580,6 +580,19 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.Equal(11, ev.Idx.Count);
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("invalid_name")]
+    [InlineData("abcdefghijklmnopqrstuvwxyz")]
+    public void SetEventReference_InvalidName_Throws(string name)
+    {
+        var ev = new PersistentEvent();
+
+        var exception = Assert.Throws<ArgumentException>(() => ev.SetEventReference(name, "reference-id"));
+
+        Assert.Equal("name", exception.ParamName);
+    }
+
     [Fact]
     public async Task ProcessAsync_FreePlanParentReference_IndexesOnlyParentReference()
     {
