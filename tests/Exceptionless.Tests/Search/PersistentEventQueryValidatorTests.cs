@@ -48,6 +48,7 @@ public sealed class PersistentEventQueryValidatorTests : TestWithServices
     [InlineData("organization:404", "organization:404", true, false)]
     [InlineData("project:404", "project:404", true, false)]
     [InlineData("stack:404", "stack:404", true, false)]
+    [InlineData("ref.parent:12345678", "idx.parent-r:12345678", true, false)]
     [InlineData("ref.session:12345678", "idx.session-r:12345678", true, true)]
     [InlineData("status:open", "status:open", true, false)]
     public async Task CanProcessQueryAsync(string query, string expected, bool isValid, bool usesPremiumFeatures)

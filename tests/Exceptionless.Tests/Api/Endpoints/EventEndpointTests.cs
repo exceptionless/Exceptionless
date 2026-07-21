@@ -204,16 +204,16 @@ public partial class EventEndpointTests : IntegrationTestsBase
     {
         // Arrange
         string referenceId = Guid.NewGuid().ToString("N");
-        await CreateDataAsync(d => d.Event().TestProject().Reference("parent", referenceId).Message("parent reference route"));
+        await CreateDataAsync(d => d.Event().FreeProject().Reference("parent", referenceId).Message("parent reference route"));
         await RefreshDataAsync();
 
         string[] paths = projectScoped
-            ? ["projects", SampleDataService.TEST_PROJECT_ID, "events", "by-ref", referenceId]
+            ? ["projects", SampleDataService.FREE_PROJECT_ID, "events", "by-ref", referenceId]
             : ["events", "by-ref", referenceId];
 
         // Act
         var events = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
-            .AsTestOrganizationUser()
+            .AsFreeOrganizationUser()
             .AppendPaths(paths)
             .StatusCodeShouldBeOk()
         );
