@@ -487,6 +487,46 @@ public sealed class TokenEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PostByProjectAsync_WithSourceMapsWriteScope_CreatesProjectScopedToken()
+    {
+        var viewToken = await SendRequestAsAsync<ViewToken>(request => request
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "tokens")
+            .Content(new NewToken
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                ProjectId = SampleDataService.TEST_PROJECT_ID,
+                Scopes = [AuthorizationRoles.SourceMapsWrite],
+                Notes = "Source map deployment"
+            })
+            .StatusCodeShouldBeCreated());
+
+        Assert.NotNull(viewToken);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, viewToken.OrganizationId);
+        Assert.Equal(SampleDataService.TEST_PROJECT_ID, viewToken.ProjectId);
+        Assert.Equal([AuthorizationRoles.SourceMapsWrite], viewToken.Scopes);
+    }
+
+    [Fact]
+    public async Task PostByOrganizationAsync_WithSourceMapsWriteScope_ReturnsValidationError()
+    {
+        var problemDetails = await SendRequestAsAsync<ValidationProblemDetails>(request => request
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "tokens")
+            .Content(new NewToken
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                Scopes = [AuthorizationRoles.SourceMapsWrite]
+            })
+            .StatusCodeShouldBeUnprocessableEntity());
+
+        Assert.NotNull(problemDetails);
+        Assert.Contains(problemDetails.Errors, error => error.Key.Equals("project_id", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public async Task PostAsync_WithProjectFromUnauthorizedOrganization_ReturnsValidationError()
     {
         // Arrange

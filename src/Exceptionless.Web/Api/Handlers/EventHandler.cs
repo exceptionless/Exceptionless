@@ -535,6 +535,7 @@ public class EventHandler(
                 MediaType = mediaType,
                 OrganizationId = project.OrganizationId,
                 ProjectId = project.Id,
+                ClientKeyHash = httpContext.Request.GetClientKeyHash(),
                 UserAgent = message.UserAgent
             }, stream);
         }
@@ -601,6 +602,7 @@ public class EventHandler(
                 MediaType = mediaType,
                 OrganizationId = project.OrganizationId,
                 ProjectId = project.Id,
+                ClientKeyHash = httpContext.Request.GetClientKeyHash(),
                 UserAgent = message.UserAgent,
             }, requestBody, httpContext.RequestAborted);
 

@@ -25,6 +25,7 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Seed;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Services.SourceMaps;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Validation;
 using Foundatio.Caching;
@@ -193,6 +194,16 @@ public class Bootstrapper
                 AllowAutoRedirect = false,
                 ConnectCallback = ConnectToPublicAddressAsync
             });
+        services.AddSingleton<SourceMapRequestThrottle>();
+        services.AddHttpClient(SourceMapService.HttpClientName)
+            .ConfigurePrimaryHttpMessageHandler(serviceProvider => CreateSourceMapHttpMessageHandler(
+                serviceProvider.GetRequiredService<SourceMapRequestThrottle>(),
+                DecompressionMethods.All));
+        services.AddHttpClient(SourceMapService.GeneratedFileHttpClientName)
+            .ConfigurePrimaryHttpMessageHandler(serviceProvider => CreateSourceMapHttpMessageHandler(
+                serviceProvider.GetRequiredService<SourceMapRequestThrottle>(),
+                DecompressionMethods.None));
+        services.AddSingleton<SourceMapService>();
         services.AddSingleton<OAuthService>();
         services.AddSingleton<UsageService>();
         services.AddSingleton<SlackService>();
@@ -223,8 +234,20 @@ public class Bootstrapper
             }
         }
 
-        throw new HttpRequestException($"OAuth client metadata host '{context.DnsEndPoint.Host}' did not resolve to a reachable public address.", lastException);
+        throw new HttpRequestException($"Host '{context.DnsEndPoint.Host}' did not resolve to a reachable public address.", lastException);
     }
+
+    internal static SocketsHttpHandler CreateSourceMapHttpMessageHandler(SourceMapRequestThrottle throttle, DecompressionMethods automaticDecompression)
+        => new()
+        {
+            ActivityHeadersPropagator = null,
+            AllowAutoRedirect = false,
+            AutomaticDecompression = automaticDecompression,
+            ConnectCallback = throttle.ConnectToPublicAddressAsync,
+            PreAuthenticate = false,
+            UseCookies = false,
+            UseProxy = false
+        };
 
     public static void LogConfiguration(IServiceProvider serviceProvider, AppOptions appOptions, ILogger logger)
     {

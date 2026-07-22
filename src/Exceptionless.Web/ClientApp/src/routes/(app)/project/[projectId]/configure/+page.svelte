@@ -702,6 +702,19 @@ public partial class App : Application {
             {/if}
         </P>
 
+        {#if isJavaScript}
+            <Notification>
+                <NotificationTitle>Improve production stack traces</NotificationTitle>
+                <NotificationDescription>
+                    <P>
+                        Exceptionless automatically discovers public source maps. If your source maps are private or are not published with your generated
+                        JavaScript, <A href={resolve('/(app)/project/[projectId]/source-maps', { projectId })}>upload and manage them</A> to restore the original
+                        function names and source locations.
+                    </P>
+                </NotificationDescription>
+            </Notification>
+        {/if}
+
         <Notification>
             <NotificationTitle>Next, use AI to ask about this project</NotificationTitle>
             <NotificationDescription>

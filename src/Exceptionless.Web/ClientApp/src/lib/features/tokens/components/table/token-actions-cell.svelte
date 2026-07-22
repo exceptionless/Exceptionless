@@ -31,7 +31,7 @@
     const clipboard = new UseClipboard();
 
     async function copyToClipboard() {
-        await clipboard.copy(token.id); // Assuming token.apiKey holds the API key to copy
+        await clipboard.copy(token.id);
         if (clipboard.copied) {
             toast.success('Copy to clipboard succeeded');
         } else {
@@ -49,7 +49,7 @@
 
     async function updateDisabled(is_disabled: boolean) {
         await updateToken.mutateAsync({ is_disabled, notes: token.notes });
-        toast.success(`Successfully ${is_disabled ? 'disabled' : 'enabled'} API key`);
+        toast.success(`Successfully ${is_disabled ? 'disabled' : 'enabled'} token`);
     }
 
     function onEnableDisableClick() {
@@ -75,7 +75,7 @@
 
     async function remove() {
         await removeToken.mutateAsync();
-        toast.success('Successfully deleted API key');
+        toast.success('Successfully deleted token');
     }
 </script>
 
@@ -91,7 +91,7 @@
     <DropdownMenu.Content align="end">
         <DropdownMenu.Item onclick={copyToClipboard}>
             <Copy class="size-4" />
-            Copy Api Key
+            Copy Token
         </DropdownMenu.Item>
         <DropdownMenu.Item onclick={() => (showUpdateNotesDialog = true)}>
             <Edit />
@@ -100,10 +100,10 @@
         <DropdownMenu.Item onclick={onEnableDisableClick} disabled={updateToken.isPending}>
             {#if token.is_disabled}
                 <Enable class="size-4" />
-                Enable API Key
+                Enable Token
             {:else}
                 <Disable class="size-4" />
-                Disable API Key
+                Disable Token
             {/if}
         </DropdownMenu.Item>
         <DropdownMenu.Item onclick={() => (showRemoveTokenDialog = true)} disabled={removeToken.isPending}>

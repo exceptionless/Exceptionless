@@ -57,7 +57,7 @@
             }}
         >
             <AlertDialog.Header>
-                <AlertDialog.Title>API Key Notes</AlertDialog.Title>
+                <AlertDialog.Title>Token Notes</AlertDialog.Title>
             </AlertDialog.Header>
 
             <form.Subscribe selector={(state) => state.errors}>

@@ -1,8 +1,10 @@
 <script lang="ts">
     import type { UpdateProject } from '$features/projects/models';
 
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import { A, H4, Large, Muted } from '$comp/typography';
+    import { Button } from '$comp/ui/button';
     import { Input } from '$comp/ui/input';
     import { Label } from '$comp/ui/label';
     import { Switch } from '$comp/ui/switch';
@@ -194,7 +196,7 @@
         </div>
     </section>
 
-    <section class="space-y-2">
+    <section class="space-y-2" id="error-stacking">
         <H4>Error Stacking</H4>
         <div class="space-y-4">
             <div class="space-y-2">
@@ -213,6 +215,15 @@
                     utility methods that throw a lot of errors.</Muted
                 >
                 <Input type="text" placeholder="Example: Assert, Writeline" bind:value={commonMethods} onchange={debouncedSaveCommonMethods} />
+            </div>
+
+            <div class="space-y-2">
+                <Large>JavaScript Source Maps</Large>
+                <Muted>
+                    Exceptionless automatically discovers public source maps. Upload and manage maps when they are private or are not published with your
+                    generated JavaScript.
+                </Muted>
+                <Button href={resolve('/(app)/project/[projectId]/source-maps', { projectId })} variant="outline">Manage source maps</Button>
             </div>
         </div>
     </section>
