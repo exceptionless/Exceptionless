@@ -90,7 +90,7 @@
         "bits-ui": "^2.18.1",
         "clsx": "^2.1.1",
         "d3-scale": "^4.0.2",
-        "dompurify": "^3.4.11",
+        "dompurify": "^3.4.12",
         "kit-query-params": "^0.0.26",
         "layerchart": "^2.0.1",
         "mode-watcher": "^1.1.0",
