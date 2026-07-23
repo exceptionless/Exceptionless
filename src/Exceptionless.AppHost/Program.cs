@@ -39,7 +39,8 @@ var storage = builder.AddAzureStorage("Storage")
 var storageBlobs = storage.AddBlobs("StorageBlobs");
 var storageQueues = storage.AddQueues("StorageQueues");
 
-var cache = builder.AddRedis("Redis", port: 6379)
+// Aspire reserves 6380 for Redis's secondary non-TLS endpoint when proxying is disabled.
+var cache = builder.AddRedis("Redis", port: 6381)
     .WithImageTag("8.6")
     .WithDataVolume("exceptionless.redis.data.v1")
     .WithEndpointProxySupport(false)
