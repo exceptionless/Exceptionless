@@ -6,6 +6,7 @@ node_modules
 .vercel
 /.svelte-kit
 /build
+/storybook-static
 
 # OS
 .DS_Store

@@ -2,6 +2,7 @@ import { includeIgnoreFile } from '@eslint/compat';
 import js from '@eslint/js';
 import pluginQuery from '@tanstack/eslint-plugin-query';
 import prettier from 'eslint-config-prettier';
+import oxlint from 'eslint-plugin-oxlint';
 import perfectionist from 'eslint-plugin-perfectionist';
 import storybook from 'eslint-plugin-storybook';
 import svelte from 'eslint-plugin-svelte';
@@ -59,5 +60,7 @@ export default ts.config(
             'perfectionist/sort-svelte-attributes': 'off'
         }
     },
-    storybook.configs['flat/recommended']
+    storybook.configs['flat/recommended'],
+    // Keep ESLint for framework and plugin coverage while Oxlint owns overlapping rules.
+    ...oxlint.buildFromOxlintConfigFile('./.oxlintrc.json')
 );

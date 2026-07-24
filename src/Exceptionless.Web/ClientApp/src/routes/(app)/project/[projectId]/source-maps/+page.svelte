@@ -204,7 +204,7 @@
                     {:else}
                         {#each sourceMapsQuery.data as sourceMap (sourceMap.id)}
                             <Table.Row>
-                                <Table.Cell class="max-w-xl break-all font-mono text-xs">{sourceMap.generated_file_url}</Table.Cell>
+                                <Table.Cell class="max-w-xl font-mono text-xs break-all">{sourceMap.generated_file_url}</Table.Cell>
                                 <Table.Cell>
                                     <Badge variant={sourceMap.is_auto_downloaded ? 'secondary' : 'outline'}>
                                         {sourceMap.is_auto_downloaded ? 'Automatic' : 'Uploaded'}
@@ -251,7 +251,7 @@
         <AlertDialog.Header>
             <AlertDialog.Title>Delete Source Map</AlertDialog.Title>
             <AlertDialog.Description>
-                Delete the source map for <span class="break-all font-mono text-xs">{sourceMapToDelete?.generated_file_url}</span>? Future events will use
+                Delete the source map for <span class="font-mono text-xs break-all">{sourceMapToDelete?.generated_file_url}</span>? Future events will use
                 automatic discovery or retain their generated stack frames.
             </AlertDialog.Description>
         </AlertDialog.Header>
