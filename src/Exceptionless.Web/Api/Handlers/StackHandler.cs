@@ -409,6 +409,9 @@ public class StackHandler(
 
         sf.UsesPremiumFeatures = pr.UsesPremiumFeatures;
 
+        if (sf.UsesPremiumFeatures && sf.Organizations.Count > 0 && sf.Organizations.All(organization => !organization.HasPremiumFeatures))
+            return PlanLimitResult<PagedResult<object>>("Searching with custom fields requires a paid plan. Please upgrade to use this filter.");
+
         try
         {
             var results = await stackRepository.FindAsync(q => q.AppFilter(ShouldApplySystemFilter(sf, filter, httpContext.Request) ? sf : null).FilterExpression(filter).SortExpression(sort).DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field), o => o.PageNumber(page).PageLimit(limit));

@@ -87,6 +87,9 @@ public partial record SavedView : IOwnedByOrganizationWithIdentity, IHaveDates
     /// <summary>Schema version for future filter definition migrations.</summary>
     public int Version { get; set; } = 1;
 
+    /// <summary>True when the filter references at least one custom field or other premium feature.</summary>
+    public bool UsesPremiumFeatures { get; set; }
+
     /// <summary>Dashboard page identifier: "events", "stacks", or "stream".</summary>
     [Required]
     [RegularExpression("^(events|stacks|stream)$")]

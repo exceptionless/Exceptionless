@@ -34,7 +34,8 @@ public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program
             instanceId = Interlocked.Increment(ref s_counter);
 
         InstanceId = instanceId;
-        AppScope = instanceId == 0 ? "test" : $"test-{instanceId}";
+        string baseScope = Environment.GetEnvironmentVariable("EXCEPTIONLESS_TEST_SCOPE") ?? "test";
+        AppScope = instanceId == 0 ? baseScope : $"{baseScope}-{instanceId}";
     }
 
     public string AppScope { get; }

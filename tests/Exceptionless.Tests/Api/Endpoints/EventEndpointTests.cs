@@ -2420,6 +2420,19 @@ public partial class EventEndpointTests : IntegrationTestsBase
         Assert.Equal("ref-1234567890", ev.ReferenceId);
     }
 
+    [Fact]
+    public Task GetEvents_WithCustomFieldFilter_Returns426_ForFreeOrganization()
+    {
+        // A free org searching on an idx.* custom field should get 426 Upgrade Required.
+        string orgId = SampleDataService.FREE_ORG_ID;
+        return SendRequestAsync(r => r
+            .AsFreeOrganizationUser()
+            .AppendPaths("organizations", orgId, "events")
+            .QueryString("filter", "idx.my_field:some_value")
+            .StatusCodeShouldBeUpgradeRequired()
+        );
+    }
+
     private string ToPrettyJson(string json)
     {
         using var document = JsonDocument.Parse(json);

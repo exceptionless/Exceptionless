@@ -1135,6 +1135,62 @@
     "authenticationSchemes": []
   },
   {
+    "method": "GET",
+    "route": "/api/v2/organizations/{id:objectid}/event-custom-fields",
+    "displayName": "HTTP: GET api/v2/organizations/{id:objectid}/event-custom-fields",
+    "tags": [
+      "Organization"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "POST",
+    "route": "/api/v2/organizations/{id:objectid}/event-custom-fields",
+    "displayName": "HTTP: POST api/v2/organizations/{id:objectid}/event-custom-fields",
+    "tags": [
+      "Organization"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "DELETE",
+    "route": "/api/v2/organizations/{id:objectid}/event-custom-fields/{fieldId:objectid}",
+    "displayName": "HTTP: DELETE api/v2/organizations/{id:objectid}/event-custom-fields/{fieldId:objectid}",
+    "tags": [
+      "Organization"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "PATCH",
+    "route": "/api/v2/organizations/{id:objectid}/event-custom-fields/{fieldId:objectid}",
+    "displayName": "HTTP: PATCH api/v2/organizations/{id:objectid}/event-custom-fields/{fieldId:objectid}",
+    "tags": [
+      "Organization"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
     "method": "DELETE",
     "route": "/api/v2/organizations/{id:objectid}/features/{feature:minlength(1)}",
     "displayName": "HTTP: DELETE api/v2/organizations/{id:objectid}/features/{feature:minlength(1)}",

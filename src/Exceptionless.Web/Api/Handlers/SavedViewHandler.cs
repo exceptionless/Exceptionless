@@ -6,6 +6,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Seed;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
@@ -28,6 +29,7 @@ public partial class SavedViewHandler(
     IOrganizationRepository organizationRepository,
     ILockProvider lockProvider,
     IQueue<WorkItemData> workItemQueue,
+    PersistentEventQueryValidator eventQueryValidator,
     ApiMapper mapper,
     LinkGenerator linkGenerator,
     IHttpContextAccessor httpContextAccessor)
@@ -225,6 +227,12 @@ public partial class SavedViewHandler(
 
         original.UpdatedByUserId = GetCurrentUserId();
 
+        if (changedNames.Contains(nameof(UpdateSavedView.Filter)))
+        {
+            var validationResult = await eventQueryValidator.ValidateQueryAsync(original.Filter);
+            original.UsesPremiumFeatures = validationResult.UsesPremiumFeatures;
+        }
+
         await repository.SaveAsync(original, o => o.Cache());
         return MapToViewModel(original);
     }
@@ -278,6 +286,9 @@ public partial class SavedViewHandler(
 
         mapped.CreatedByUserId = GetCurrentUserId();
         mapped.Version = 1;
+
+        var validationResult = await eventQueryValidator.ValidateQueryAsync(mapped.Filter);
+        mapped.UsesPremiumFeatures = validationResult.UsesPremiumFeatures;
 
         var model = await repository.AddAsync(mapped, o => o.Cache());
         var viewModel = MapToViewModel(model);

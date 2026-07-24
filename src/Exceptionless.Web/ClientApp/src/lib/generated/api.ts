@@ -63,6 +63,21 @@ export interface CountResult {
   data?: null | object;
 }
 
+/**
+ * API response model for custom field definitions. Hides internal IndexSlot * to prevent users from directly querying raw slot names. */
+export interface CustomFieldDefinitionResponse {
+  id: string;
+  name: string;
+  description?: null | string;
+  index_type: string;
+  /** @format int32 */
+  display_order: number;
+  /** @format date-time */
+  created_utc: string;
+  /** @format date-time */
+  updated_utc: string;
+}
+
 export interface ExternalAuthInfo {
   clientId: string;
   code: string;
@@ -119,6 +134,14 @@ export interface Login {
   email: string;
   password: string;
   invite_token?: null | string;
+}
+
+export interface NewCustomFieldDefinition {
+  name: string;
+  index_type: string;
+  description?: null | string;
+  /** @format int32 */
+  display_order?: null | number;
 }
 
 export interface NewOrganization {
@@ -475,6 +498,12 @@ export interface TokenResult {
   token: string;
 }
 
+export interface UpdateCustomFieldDefinition {
+  description?: null | string;
+  /** @format int32 */
+  display_order?: null | number;
+}
+
 export interface UpdateEmailAddressResult {
   is_verified: boolean;
 }
@@ -736,6 +765,7 @@ export interface ViewSavedView {
   sort?: null | string;
   /** @format int32 */
   version: number;
+  uses_premium_features: boolean;
   view_type: string;
   /** @format date-time */
   created_utc: string;

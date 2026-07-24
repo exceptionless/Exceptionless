@@ -215,8 +215,6 @@ public class EventData
                     ev.Date = _timeProvider.GetLocalNow();
                     ev.CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime;
                 }
-
-                ev.CopyDataToIndex([]);
             }
 
             await _eventRepository.AddAsync(events, o => o.ImmediateConsistency());

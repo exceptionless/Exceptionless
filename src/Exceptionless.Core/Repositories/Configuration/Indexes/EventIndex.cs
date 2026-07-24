@@ -28,6 +28,8 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
 
     public EventIndex(ExceptionlessElasticConfiguration configuration, IServiceProvider serviceProvider, AppOptions appOptions) : base(configuration, configuration.Options.ScopePrefix + "events", 1, doc => ((PersistentEvent)doc).Date.UtcDateTime)
     {
+        AddStandardCustomFieldTypes();
+
         _configuration = configuration;
         _serviceProvider = serviceProvider;
 
@@ -53,12 +55,6 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
     {
         map
             .Dynamic(DynamicMapping.False)
-            .DynamicTemplates(dt => dt
-                .Add("idx_bool", t => t.Match("*-b").Mapping(m => m.Boolean(s => { })))
-                .Add("idx_date", t => t.Match("*-d").Mapping(m => m.Date(s => { })))
-                .Add("idx_number", t => t.Match("*-n").Mapping(m => m.DoubleNumber(s => { })))
-                .Add("idx_reference", t => t.Match("*-r").Mapping(m => m.Keyword(s => s.IgnoreAbove(256))))
-                .Add("idx_string", t => t.Match("*-s").Mapping(m => m.Keyword(s => s.IgnoreAbove(1024)))))
             .Properties(p => p
                 .SetupDefaults()
                 .Keyword(e => e.OrganizationId)
@@ -80,7 +76,6 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
                 .IntegerNumber(e => e.Count)
                 .Boolean(e => e.IsFirstOccurrence)
                     .FieldAlias(Alias.IsFirstOccurrence, a => a.Path(f => f.IsFirstOccurrence))
-                .Object(e => e.Idx, o => o.Dynamic(DynamicMapping.True))
                 .Object(e => e.Data, o => o.Properties(p2 => p2
                     .AddVersionMapping<PersistentEvent>()
                     .AddLevelMapping<PersistentEvent>()
@@ -153,7 +148,6 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
                 EventIndexExtensions.DataPath<UserInfo>(Event.KnownDataKeys.UserInfo, u => u.Identity),
                 EventIndexExtensions.DataPath<UserInfo>(Event.KnownDataKeys.UserInfo, u => u.Name)
             ])
-            .AddQueryVisitor(new EventFieldsQueryVisitor())
             .UseFieldMap(new Dictionary<string, string> {
                     { Alias.BrowserVersion, EventIndexExtensions.DataDictionaryPath<RequestInfo>(Event.KnownDataKeys.RequestInfo, r => r.Data, RequestInfo.KnownDataKeys.BrowserVersion) },
                     { Alias.BrowserMajorVersion, EventIndexExtensions.DataDictionaryPath<RequestInfo>(Event.KnownDataKeys.RequestInfo, r => r.Data, RequestInfo.KnownDataKeys.BrowserMajorVersion) },

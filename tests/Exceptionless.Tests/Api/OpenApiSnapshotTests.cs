@@ -59,6 +59,19 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.True(projectsPost.TryGetProperty("requestBody", out _));
         AssertResponseCodes(projectsPost, "201");
 
+        Assert.True(paths.TryGetProperty("/api/v2/organizations/{id}/event-custom-fields", out var customFieldsPath));
+        Assert.True(customFieldsPath.TryGetProperty("get", out var customFieldsGet));
+        AssertResponseCodes(customFieldsGet, "200", "404");
+        Assert.True(customFieldsPath.TryGetProperty("post", out var customFieldsPost));
+        Assert.True(customFieldsPost.TryGetProperty("requestBody", out _));
+        AssertResponseCodes(customFieldsPost, "201", "400", "404", "409", "422", "426");
+
+        Assert.True(paths.TryGetProperty("/api/v2/organizations/{id}/event-custom-fields/{fieldId}", out var customFieldPath));
+        Assert.True(customFieldPath.TryGetProperty("patch", out var customFieldPatch));
+        AssertResponseCodes(customFieldPatch, "200", "400", "404", "422", "426");
+        Assert.True(customFieldPath.TryGetProperty("delete", out var customFieldDelete));
+        AssertResponseCodes(customFieldDelete, "202", "400", "404", "409", "426");
+
         Assert.True(paths.TryGetProperty("/api/v2/events/by-ref/{referenceId}/user-description", out var userDescriptionPath));
         Assert.True(userDescriptionPath.TryGetProperty("post", out var userDescriptionPost));
         Assert.True(userDescriptionPost.TryGetProperty("requestBody", out _));
@@ -82,6 +95,9 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.True(schemas.TryGetProperty("NewProject", out _));
         Assert.True(schemas.TryGetProperty("TokenResult", out _));
         Assert.True(schemas.TryGetProperty("ViewOrganization", out _));
+        Assert.True(schemas.TryGetProperty("CustomFieldDefinitionResponse", out _));
+        Assert.True(schemas.TryGetProperty("NewCustomFieldDefinition", out _));
+        Assert.True(schemas.TryGetProperty("UpdateCustomFieldDefinition", out _));
 
         Assert.True(securitySchemes.TryGetProperty("Basic", out var basic));
         Assert.Equal("http", basic.GetProperty("type").GetString());

@@ -699,6 +699,9 @@ public class EventHandler(
 
         sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || far.UsesPremiumFeatures;
 
+        if (sf.UsesPremiumFeatures && sf.Organizations.Count > 0 && sf.Organizations.All(organization => !organization.HasPremiumFeatures))
+            return PlanLimitResult<CountResult>("Searching with custom fields requires a paid plan. Please upgrade to use this filter.");
+
         if (mode == "stack_new")
             filter = AddFirstOccurrenceFilter(ti.Range, filter);
 
@@ -756,6 +759,9 @@ public class EventHandler(
             return Result.BadRequest(pr.Message ?? "Invalid filter.");
 
         sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || usesPremiumFeatures;
+
+        if (sf.UsesPremiumFeatures && sf.Organizations.Count > 0 && sf.Organizations.All(organization => !organization.HasPremiumFeatures))
+            return PlanLimitResult<PagedResult<object>>("Searching with custom fields requires a paid plan. Please upgrade to use this filter.");
 
         try
         {

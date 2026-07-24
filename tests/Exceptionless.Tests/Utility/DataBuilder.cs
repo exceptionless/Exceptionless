@@ -472,8 +472,6 @@ public class EventDataBuilder
         if (_event.CreatedUtc == DateTime.MinValue)
             _event.CreatedUtc = _event.Date.UtcDateTime;
 
-        _event.CopyDataToIndex();
-
         if (_stackEventBuilder is not null)
         {
             _stack = _stackEventBuilder.GetStack() ?? throw new InvalidOperationException();

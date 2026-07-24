@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
@@ -6,6 +8,7 @@ using Exceptionless.Core.Mail;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
+using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
@@ -17,7 +20,11 @@ using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
 using Foundatio.Caching;
 using Foundatio.Messaging;
+using Foundatio.Jobs;
+using Foundatio.Queues;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch.CustomFields;
+using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Models;
 using Exceptionless.Web.Utility;
 using Stripe;
@@ -30,6 +37,7 @@ namespace Exceptionless.Web.Api.Handlers;
 
 public class OrganizationHandler(
     OrganizationService organizationService,
+    EventCustomFieldService eventCustomFieldService,
     IOrganizationRepository repository,
     ICacheClient cacheClient,
     IEventRepository eventRepository,
@@ -41,6 +49,9 @@ public class OrganizationHandler(
     IStripeBillingClient stripeBillingClient,
     IMailer mailer,
     IMessagePublisher messagePublisher,
+    ICustomFieldDefinitionRepository customFieldDefinitionRepository,
+    ISavedViewRepository savedViewRepository,
+    IQueue<WorkItemData> workItemQueue,
     ApiMapper mapper,
     AppOptions options,
     TimeProvider timeProvider,
@@ -543,6 +554,144 @@ public class OrganizationHandler(
         return new ChangePlanResult { Success = true };
     }
 
+    public async Task<Result<IReadOnlyCollection<CustomFieldDefinitionResponse>>> Handle(GetEventCustomFields message)
+    {
+        var organization = await GetModelAsync(message.Id, useCache: false);
+        if (organization is null)
+            return Result.NotFound("Organization not found.");
+
+        var results = await customFieldDefinitionRepository.FindByTenantAsync(nameof(PersistentEvent), message.Id);
+        var fields = new List<CustomFieldDefinitionResponse>();
+        do
+        {
+            fields.AddRange(results.Documents
+                .Where(field => !EventCustomFieldService.IsSystemField(field.Name))
+                .Select(CustomFieldDefinitionResponse.FromDefinition));
+        } while (await results.NextPageAsync());
+
+        return fields;
+    }
+
+    public async Task<Result<CustomFieldDefinitionResponse>> Handle(CreateEventCustomField message)
+    {
+        var organization = await GetModelAsync(message.Id, useCache: false);
+        if (organization is null)
+            return Result.NotFound("Organization not found.");
+
+        if (!organization.HasPremiumFeatures)
+            return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, "Custom fields require a paid plan. Please upgrade to add custom fields."));
+
+        if (EventCustomFieldService.IsSystemField(message.Field.Name))
+            return Result.BadRequest($"'{message.Field.Name}' is a reserved system field and cannot be created manually.");
+
+        CustomFieldDefinition? definition;
+        try
+        {
+            definition = await eventCustomFieldService.CreateFieldAsync(
+                message.Id,
+                message.Field.Name,
+                message.Field.IndexType.ToLowerInvariant(),
+                options.CustomFieldOptions.MaxFieldsPerOrganization,
+                message.Field.Description,
+                message.Field.DisplayOrder,
+                message.Context.RequestAborted);
+        }
+        catch (Exception ex) when (ex is ArgumentException or ValidationException or InvalidOperationException or DocumentValidationException)
+        {
+            return Result.Invalid(ValidationError.Create("general", ex.Message));
+        }
+
+        if (definition is null)
+        {
+            var existingPage = await customFieldDefinitionRepository.FindByTenantAsync(nameof(PersistentEvent), message.Id);
+            var allActive = new List<CustomFieldDefinition>();
+            do
+            {
+                allActive.AddRange(existingPage.Documents);
+            } while (await existingPage.NextPageAsync());
+
+            if (allActive.Any(field => String.Equals(field.Name, message.Field.Name, StringComparison.OrdinalIgnoreCase)))
+                return Result.BadRequest($"A custom field named '{message.Field.Name}' already exists for this organization.");
+
+            return Result.BadRequest($"Maximum of {options.CustomFieldOptions.MaxFieldsPerOrganization} custom fields per organization has been reached.");
+        }
+
+        var response = CustomFieldDefinitionResponse.FromDefinition(definition);
+        return Result<CustomFieldDefinitionResponse>.Created(response, $"/api/v2/organizations/{message.Id}/event-custom-fields");
+    }
+
+    public async Task<Result<CustomFieldDefinitionResponse>> Handle(UpdateEventCustomField message)
+    {
+        var organization = await GetModelAsync(message.Id, useCache: false);
+        if (organization is null)
+            return Result.NotFound("Organization not found.");
+
+        if (!organization.HasPremiumFeatures)
+            return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, "Custom fields require a paid plan. Please upgrade to manage custom fields."));
+
+        var definition = await customFieldDefinitionRepository.GetByIdAsync(message.FieldId);
+        if (definition is null || definition.IsDeleted || definition.TenantKey != message.Id || definition.EntityType != nameof(PersistentEvent))
+            return Result.NotFound("Custom field not found.");
+
+        if (EventCustomFieldService.IsSystemField(definition.Name))
+            return Result.BadRequest($"'{definition.Name}' is a reserved system field and cannot be modified.");
+
+        bool changed = false;
+        if (message.Field.Description is not null)
+        {
+            definition.Description = message.Field.Description.Length == 0 ? null : message.Field.Description;
+            changed = true;
+        }
+
+        if (message.Field.DisplayOrder.HasValue)
+        {
+            definition.DisplayOrder = message.Field.DisplayOrder.Value;
+            changed = true;
+        }
+
+        if (changed)
+            await customFieldDefinitionRepository.SaveAsync(definition);
+
+        return CustomFieldDefinitionResponse.FromDefinition(definition);
+    }
+
+    public async Task<Result> Handle(DeleteEventCustomField message)
+    {
+        var organization = await GetModelAsync(message.Id, useCache: false);
+        if (organization is null)
+            return Result.NotFound("Organization not found.");
+
+        if (!organization.HasPremiumFeatures)
+            return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, "Custom fields require a paid plan. Please upgrade to manage custom fields."));
+
+        var definition = await customFieldDefinitionRepository.GetByIdAsync(message.FieldId);
+        if (definition is null || definition.IsDeleted || definition.TenantKey != message.Id || definition.EntityType != nameof(PersistentEvent))
+            return Result.NotFound("Custom field not found.");
+
+        if (EventCustomFieldService.IsSystemField(definition.Name))
+            return Result.BadRequest($"'{definition.Name}' is a reserved system field and cannot be deleted.");
+
+        var fieldNamePattern = BuildFieldNameRegex(definition.Name);
+        var savedViews = await savedViewRepository.GetByOrganizationIdAsync(message.Id, o => o.SearchAfterPaging().PageLimit(1000));
+        do
+        {
+            if (savedViews.Documents.Any(view => IsCustomFieldUsedInFilter(view.Filter, fieldNamePattern)))
+                return Result.Conflict($"Custom field '{definition.Name}' is used in one or more saved filters and cannot be deleted. Remove it from all filters first.");
+        } while (await savedViews.NextPageAsync());
+
+        definition.IsDeleted = true;
+        await customFieldDefinitionRepository.SaveAsync(definition);
+
+        await workItemQueue.EnqueueAsync(new RemoveCustomFieldWorkItem
+        {
+            OrganizationId = message.Id,
+            CustomFieldDefinitionId = definition.Id,
+            FieldName = definition.Name
+        });
+
+        return Result.Accepted();
+    }
+
     public async Task<Result<User>> Handle(AddOrganizationUser message)
     {
         if (String.IsNullOrEmpty(message.Id) || !message.Context.Request.CanAccessOrganization(message.Id) || String.IsNullOrEmpty(message.Email))
@@ -764,6 +913,17 @@ public class OrganizationHandler(
 
         var organization = await repository.AddAsync(value, o => o.Cache());
 
+        try
+        {
+            await eventCustomFieldService.EnsureSystemFieldsAsync(organization.Id);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // Custom fields are also provisioned lazily during event processing and before user-field creation.
+            // Do not leave a newly persisted organization inaccessible to its creator if this best-effort step fails.
+            _logger.LogError(ex, "Error provisioning system custom fields for new organization {OrganizationId}", organization.Id);
+        }
+
         user.OrganizationIds.Add(organization.Id);
         await userRepository.SaveAsync(user, o => o.Cache());
         await messagePublisher.PublishAsync(new UserMembershipChanged
@@ -942,4 +1102,13 @@ public class OrganizationHandler(
     private static User GetCurrentUser(HttpContext httpContext) => httpContext.Request.GetUser();
     private static bool IsStatsMode(string? mode) => !String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.OrdinalIgnoreCase);
     private static bool messageIsGlobalAdmin(HttpContext httpContext) => httpContext.Request.IsGlobalAdmin();
+
+    private static Regex BuildFieldNameRegex(string fieldName)
+    {
+        var escapedName = Regex.Escape(fieldName);
+        return new Regex($@"(?<![a-zA-Z0-9_.-])(?:idx|data)\.{escapedName}(?![a-zA-Z0-9_.-])", RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
+    }
+
+    private static bool IsCustomFieldUsedInFilter(string? filter, Regex fieldNamePattern)
+        => !String.IsNullOrWhiteSpace(filter) && fieldNamePattern.IsMatch(filter);
 }

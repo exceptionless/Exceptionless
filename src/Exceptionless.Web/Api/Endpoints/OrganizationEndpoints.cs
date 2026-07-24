@@ -87,6 +87,42 @@ public static class OrganizationEndpoints
             }
         });
 
+        group.MapGet("organizations/{id:objectid}/event-custom-fields", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
+            => (await mediator.InvokeAsync<Result<IReadOnlyCollection<CustomFieldDefinitionResponse>>>(new OrganizationMessages.GetEventCustomFields(id, httpContext))).ToHttpResult(resultMapper))
+        .Produces<IReadOnlyCollection<CustomFieldDefinitionResponse>>()
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .WithSummary("Get event custom fields");
+
+        group.MapPost("organizations/{id:objectid}/event-custom-fields", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] NewCustomFieldDefinition field)
+            => (await mediator.InvokeAsync<Result<CustomFieldDefinitionResponse>>(new OrganizationMessages.CreateEventCustomField(id, field, httpContext))).ToHttpResult(resultMapper))
+        .Accepts<NewCustomFieldDefinition>("application/json", "application/*+json")
+        .Produces<CustomFieldDefinitionResponse>(StatusCodes.Status201Created)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status409Conflict)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
+        .WithSummary("Create event custom field");
+
+        group.MapPatch("organizations/{id:objectid}/event-custom-fields/{fieldId:objectid}", async (string id, string fieldId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] UpdateCustomFieldDefinition field)
+            => (await mediator.InvokeAsync<Result<CustomFieldDefinitionResponse>>(new OrganizationMessages.UpdateEventCustomField(id, fieldId, field, httpContext))).ToHttpResult(resultMapper))
+        .Accepts<UpdateCustomFieldDefinition>("application/json", "application/*+json")
+        .Produces<CustomFieldDefinitionResponse>()
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
+        .WithSummary("Update event custom field");
+
+        group.MapDelete("organizations/{id:objectid}/event-custom-fields/{fieldId:objectid}", async (string id, string fieldId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
+            => (await mediator.InvokeAsync<Result>(new OrganizationMessages.DeleteEventCustomField(id, fieldId, httpContext))).ToHttpResult(resultMapper))
+        .Produces(StatusCodes.Status202Accepted)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status409Conflict)
+        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
+        .WithSummary("Delete event custom field");
+
         group.MapPatch("organizations/{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] Delta<NewOrganization>? changes) =>
         {
             if (changes is null)

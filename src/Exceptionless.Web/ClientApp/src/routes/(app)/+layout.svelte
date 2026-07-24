@@ -414,7 +414,8 @@
             const children = [
                 ...sortedViews.map((savedView) => ({
                     href: buildSavedViewHref(savedView),
-                    title: savedView.name
+                    title: savedView.name,
+                    usesPremiumFeatures: savedView.uses_premium_features
                 })),
                 ...(route.children ?? [])
             ];

@@ -31,6 +31,7 @@ public record ViewSavedView : IIdentity, IHaveDates
     public string? Time { get; set; }
     public string? Sort { get; set; }
     public int Version { get; set; }
+    public bool UsesPremiumFeatures { get; set; }
     public string ViewType { get; set; } = null!;
 
     public DateTime CreatedUtc { get; set; }

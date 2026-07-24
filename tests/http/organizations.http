@@ -34,6 +34,35 @@ Authorization: Bearer {{token}}
 GET {{apiUrl}}/organizations/{{organizationId}}/invoices
 Authorization: Bearer {{token}}
 
+### Event Custom Fields
+GET {{apiUrl}}/organizations/{{organizationId}}/event-custom-fields
+Authorization: Bearer {{token}}
+
+### Create Event Custom Field
+# @name newEventCustomField
+POST {{apiUrl}}/organizations/{{organizationId}}/event-custom-fields
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "name": "customer_id",
+    "index_type": "keyword",
+    "description": "Customer identifier"
+}
+
+### Update Event Custom Field
+PATCH {{apiUrl}}/organizations/{{organizationId}}/event-custom-fields/{{newEventCustomField.response.body.$.id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "description": "External customer identifier"
+}
+
+### Delete Event Custom Field
+DELETE {{apiUrl}}/organizations/{{organizationId}}/event-custom-fields/{{newEventCustomField.response.body.$.id}}
+Authorization: Bearer {{token}}
+
 ### Check Name
 GET {{apiUrl}}/organizations/check-name/My New Organization
 Authorization: Bearer {{token}}
