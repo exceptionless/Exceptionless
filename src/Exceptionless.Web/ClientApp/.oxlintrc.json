@@ -1,0 +1,39 @@
+{
+    "$schema": "./node_modules/oxlint/configuration_schema.json",
+    "categories": {
+        "correctness": "error"
+    },
+    "ignorePatterns": [
+        ".agents/**",
+        ".svelte-kit/**",
+        "build/**",
+        "dist/**",
+        "src/lib/features/shared/components/ui/**",
+        "src/lib/generated/**",
+        "storybook-static/**"
+    ],
+    "options": {
+        "typeAware": true
+    },
+    "overrides": [
+        {
+            "files": ["**/*.svelte"],
+            "rules": {
+                "eslint/no-unassigned-vars": "off"
+            }
+        }
+    ],
+    "plugins": ["eslint", "typescript", "unicorn", "oxc", "import"],
+    "rules": {
+        "no-unused-vars": "off",
+        "typescript/no-duplicate-type-constituents": "off",
+        "typescript/no-floating-promises": "off",
+        "typescript/no-misused-spread": "off",
+        "typescript/no-redundant-type-constituents": "off",
+        "typescript/restrict-template-expressions": "off",
+        "typescript/unbound-method": "off",
+        "unicorn/no-empty-file": "off",
+        "unicorn/no-useless-fallback-in-spread": "off",
+        "unicorn/prefer-string-starts-ends-with": "off"
+    }
+}
