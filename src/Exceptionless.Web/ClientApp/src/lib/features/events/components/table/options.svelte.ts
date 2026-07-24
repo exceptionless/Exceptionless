@@ -34,7 +34,7 @@ export const defaultStackColumnVisibility: ColumnVisibilityState = {
 
 export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(
     mode: GetEventsMode = 'summary',
-    options?: { showType?: boolean }
+    options?: { onTagClick?: (tag: string) => Promise<void> | void; showType?: boolean }
 ): ColumnDef<StockFeatures, TSummaryModel, unknown>[] {
     const showType = options?.showType ?? true;
     const columns: ColumnDef<StockFeatures, TSummaryModel, unknown>[] = [
@@ -103,7 +103,7 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
             },
             {
                 accessorKey: nameof<EventSummaryModel<SummaryTemplateKeys>>('tags'),
-                cell: (prop) => renderComponent(EventTagsSummaryCell, { tags: prop.getValue<string[]>() }),
+                cell: (prop) => renderComponent(EventTagsSummaryCell, { onTagClick: options?.onTagClick, tags: prop.getValue<string[]>() }),
                 enableSorting: false,
                 header: 'Tags',
                 id: 'tags',

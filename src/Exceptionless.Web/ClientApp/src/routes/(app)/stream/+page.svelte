@@ -12,7 +12,7 @@
     import { H3 } from '$comp/typography';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
     import EventDetailSheet from '$features/events/components/event-detail-sheet.svelte';
-    import { ProjectFilter, StatusFilter } from '$features/events/components/filters';
+    import { ProjectFilter, StatusFilter, TagFilter } from '$features/events/components/filters';
     import {
         buildFilterCacheKey,
         filterChanged,
@@ -178,6 +178,7 @@
             columnPersistenceKey: 'stream-column-visibility',
             get columns() {
                 return getColumns<EventSummaryModel<SummaryTemplateKeys>>(eventsQueryParameters.mode, {
+                    onTagClick: (tag) => onFilterChanged(new TagFilter([tag])),
                     showType: !hasSingleTypeFilter(eventsQueryParameters.filter)
                 })
                     .filter((c) => c.id !== 'select')
