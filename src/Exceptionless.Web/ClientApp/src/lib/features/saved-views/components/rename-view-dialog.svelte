@@ -138,7 +138,7 @@
                     autofocus
                 />
                 {#if visibleNameError}
-                    <p id="rename-view-error" class="text-destructive text-sm">{visibleNameError}</p>
+                    <p id="rename-view-error" class="text-sm text-destructive">{visibleNameError}</p>
                 {/if}
             </div>
             <div class="flex flex-col gap-2">
@@ -156,7 +156,7 @@
                     }}
                 />
                 {#if visibleSlugError}
-                    <p id="rename-view-slug-error" class="text-destructive text-sm">{visibleSlugError}</p>
+                    <p id="rename-view-slug-error" class="text-sm text-destructive">{visibleSlugError}</p>
                 {/if}
             </div>
             <Dialog.Footer>

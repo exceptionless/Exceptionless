@@ -67,7 +67,7 @@
     {#if migrationsQuery.isError}
         <Card.Root>
             <Card.Content class="pt-6">
-                <p class="text-destructive text-sm">Failed to load migration history. Please try again.</p>
+                <p class="text-sm text-destructive">Failed to load migration history. Please try again.</p>
             </Card.Content>
         </Card.Root>
     {:else}
@@ -87,7 +87,7 @@
                 <Card.Root>
                     <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
                         <Card.Title class="text-sm font-medium">Current Version</Card.Title>
-                        <CheckCircle2 class="text-muted-foreground size-4" />
+                        <CheckCircle2 class="size-4 text-muted-foreground" />
                     </Card.Header>
                     <Card.Content>
                         <div class="text-2xl font-bold">{data.current_version >= 0 ? data.current_version : '—'}</div>
@@ -97,7 +97,7 @@
                 <Card.Root>
                     <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
                         <Card.Title class="text-sm font-medium">Failed</Card.Title>
-                        <XCircle class="text-muted-foreground size-4" />
+                        <XCircle class="size-4 text-muted-foreground" />
                     </Card.Header>
                     <Card.Content>
                         <div class="text-2xl font-bold" class:text-destructive={failedCount > 0}>{failedCount}</div>
@@ -107,7 +107,7 @@
                 <Card.Root>
                     <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
                         <Card.Title class="text-sm font-medium">Running</Card.Title>
-                        <Loader class="text-muted-foreground size-4" />
+                        <Loader class="size-4 text-muted-foreground" />
                     </Card.Header>
                     <Card.Content>
                         <div class="text-2xl font-bold" class:text-blue-500={runningCount > 0}>{runningCount}</div>
@@ -117,7 +117,7 @@
                 <Card.Root>
                     <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
                         <Card.Title class="text-sm font-medium">Total</Card.Title>
-                        <Layers class="text-muted-foreground size-4" />
+                        <Layers class="size-4 text-muted-foreground" />
                     </Card.Header>
                     <Card.Content>
                         <div class="text-2xl font-bold">{allStates.length}</div>
@@ -130,7 +130,7 @@
         <MigrationsDataTable bind:limit={queryParameters.limit!} isLoading={migrationsQuery.isPending} {table}>
             {#snippet toolbarChildren()}
                 <Input bind:value={searchQuery} class="flex-1" placeholder="Search migrations..." type="search" />
-                <label class="text-muted-foreground flex cursor-pointer items-center gap-2 text-sm" for="show-completed">
+                <label class="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground" for="show-completed">
                     <Switch id="show-completed" bind:checked={showCompleted} />
                     Show completed
                 </label>

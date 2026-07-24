@@ -480,7 +480,7 @@
         {/snippet}
     </Sidebar>
     <div class="flex h-screen min-w-0 flex-1 flex-col overflow-hidden pt-16">
-        <div class="text-secondary-foreground flex min-h-0 min-w-0 flex-1 scrollbar-gutter-stable flex-col overflow-x-hidden overflow-y-auto">
+        <div class="flex min-h-0 min-w-0 flex-1 scrollbar-gutter-stable flex-col overflow-x-hidden overflow-y-auto text-secondary-foreground">
             <main class="flex-1 px-4 pt-4">
                 <NavigationCommand
                     bind:open={isCommandOpen}

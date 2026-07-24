@@ -101,7 +101,7 @@
                 <Muted class="text-xs">Update predefined saved views without removing custom saved views.</Muted>
             </div>
 
-            <div class="bg-card rounded-lg border">
+            <div class="rounded-lg border bg-card">
                 <div class="p-4">
                     <Button
                         class="w-full sm:w-auto"

@@ -35,22 +35,22 @@
 {:else if snapshotsQuery.isError}
     <Card.Root>
         <Card.Content class="pt-6">
-            <p class="text-destructive text-sm">Failed to load snapshot information. Please try again.</p>
+            <p class="text-sm text-destructive">Failed to load snapshot information. Please try again.</p>
         </Card.Content>
     </Card.Root>
 {:else if !snapshotsData || snapshotsData.repositories.length === 0}
     <Card.Root>
         <Card.Content class="flex flex-col items-center gap-3 py-12">
-            <Archive class="text-muted-foreground size-8" />
-            <p class="text-muted-foreground text-sm">No snapshot repositories configured.</p>
-            <p class="text-muted-foreground text-xs">
+            <Archive class="size-8 text-muted-foreground" />
+            <p class="text-sm text-muted-foreground">No snapshot repositories configured.</p>
+            <p class="text-xs text-muted-foreground">
                 Snapshot repositories are typically named <code class="font-mono">&lt;scope&gt;-hourly</code> (e.g.
                 <code class="font-mono">prod-hourly</code>).
             </p>
         </Card.Content>
     </Card.Root>
 {:else}
-    <p class="text-muted-foreground text-sm">
+    <p class="text-sm text-muted-foreground">
         {snapshotsData.snapshots.length} snapshots across {snapshotsData.repositories.length}
         {snapshotsData.repositories.length === 1 ? 'repository' : 'repositories'}: {snapshotsData.repositories.join(', ')}
     </p>

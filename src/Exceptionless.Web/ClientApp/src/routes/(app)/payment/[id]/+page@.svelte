@@ -60,7 +60,7 @@
             <div class="space-y-4">
                 <div class="flex flex-col items-start space-y-4">
                     <Logo class="mx-0 h-16" />
-                    <address class="text-muted-foreground text-sm not-italic">
+                    <address class="text-sm text-muted-foreground not-italic">
                         <strong class="text-foreground">CodeSmith Tools, LLC</strong><br />
                         5473 Blair Rd Ste 100<br />
                         PMB 66994<br />
@@ -69,7 +69,7 @@
                 </div>
             </div>
 
-            <div class="bg-card rounded-lg border">
+            <div class="rounded-lg border bg-card">
                 <Table.Root>
                     <Table.Body>
                         <Table.Row>
@@ -87,7 +87,7 @@
                         <Table.Row>
                             <Table.Head class="font-semibold">Status</Table.Head>
                             <Table.Cell>
-                                <span class={invoiceQuery.data.paid ? 'font-semibold' : 'text-destructive font-semibold'}>
+                                <span class={invoiceQuery.data.paid ? 'font-semibold' : 'font-semibold text-destructive'}>
                                     {invoiceQuery.data.paid ? 'Paid' : 'Unpaid'}
                                 </span>
                             </Table.Cell>
@@ -97,8 +97,8 @@
             </div>
         </div>
 
-        <div class="bg-card rounded-lg border">
-            <div class="bg-muted/50 border-b p-4">
+        <div class="rounded-lg border bg-card">
+            <div class="border-b bg-muted/50 p-4">
                 <div class="flex items-center gap-2">
                     <Receipt class="size-4" />
                     <H4 class="mb-0">{invoiceQuery.data.paid ? 'Receipt' : 'Invoice'}</H4>
@@ -134,7 +134,7 @@
             </Table.Root>
         </div>
 
-        <div class="text-muted-foreground grid grid-cols-1 gap-6 text-sm md:grid-cols-2">
+        <div class="grid grid-cols-1 gap-6 text-sm text-muted-foreground md:grid-cols-2">
             <div>
                 <strong class="text-foreground">Email:</strong>
                 <A href="mailto:sales@exceptionless.com">sales@exceptionless.com</A>

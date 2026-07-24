@@ -65,7 +65,7 @@
         {/if}
     </div>
     <div class="mt-6 space-y-6">
-        <nav class="bg-muted flex w-full flex-row flex-nowrap gap-1 overflow-x-auto rounded-lg p-1">
+        <nav class="flex w-full flex-row flex-nowrap gap-1 overflow-x-auto rounded-lg bg-muted p-1">
             {#each filteredRoutes as route (route.href)}
                 {@const isActive = currentPath === route.href || currentPath.startsWith(route.href + '/')}
                 <A

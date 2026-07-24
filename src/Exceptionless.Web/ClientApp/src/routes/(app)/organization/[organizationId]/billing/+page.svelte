@@ -109,13 +109,13 @@
                             {#if invoicesQuery.data?.data && invoicesQuery.data.data.length > 0}
                                 {#each invoicesQuery.data.data as invoice (invoice.id)}
                                     <Table.Row>
-                                        <Table.Cell class="hover:bg-muted/50 cursor-pointer" onclick={() => handleOpenInvoice(invoice.id)}>
+                                        <Table.Cell class="cursor-pointer hover:bg-muted/50" onclick={() => handleOpenInvoice(invoice.id)}>
                                             {invoice.id}
                                         </Table.Cell>
-                                        <Table.Cell class="hover:bg-muted/50 cursor-pointer" onclick={() => handleOpenInvoice(invoice.id)}>
+                                        <Table.Cell class="cursor-pointer hover:bg-muted/50" onclick={() => handleOpenInvoice(invoice.id)}>
                                             <DateTime value={invoice.date} />
                                         </Table.Cell>
-                                        <Table.Cell class="hover:bg-muted/50 cursor-pointer" onclick={() => handleOpenInvoice(invoice.id)}>
+                                        <Table.Cell class="cursor-pointer hover:bg-muted/50" onclick={() => handleOpenInvoice(invoice.id)}>
                                             {invoice.paid ? 'Paid' : 'Unpaid'}
                                         </Table.Cell>
                                         <Table.Cell>

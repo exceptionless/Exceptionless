@@ -8,6 +8,6 @@
     let { isCritical }: Props = $props();
 </script>
 
-<span class={isCritical ? 'text-destructive font-medium' : undefined}>
+<span class={isCritical ? 'font-medium text-destructive' : undefined}>
     <BooleanFormatter value={isCritical} />
 </span>

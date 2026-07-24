@@ -159,7 +159,7 @@
                     <P class="px-3">OR</P>
                     <hr class="w-full" />
                 </div>
-                <div class="auto-cols-2 grid grid-flow-col grid-rows-2 gap-4">
+                <div class="grid auto-cols-2 grid-flow-col grid-rows-2 gap-4">
                     {#if microsoftClientId}
                         <Button aria-label="Login with Microsoft" tabindex={4} onclick={() => liveLogin(redirectUrl)}>
                             <MicrosoftIcon class="size-4" /> Microsoft
@@ -193,7 +193,7 @@
     </Card.Root>
 
     {#if enableAccountCreation}
-        <P class="text-muted-foreground mt-3! px-4 text-center text-sm">
+        <P class="mt-3! px-4 text-center text-sm text-muted-foreground">
             By signing up, you agree to our <A href="https://exceptionless.com/privacy" target="_blank">Privacy Policy</A>
             and
             <A href="https://exceptionless.com/terms" target="_blank">Terms of Service</A>.

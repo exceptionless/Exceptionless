@@ -15,11 +15,11 @@
 
 <div class="flex items-center gap-2">
     {#if metricId === 'active_primary'}
-        <FileText class="text-muted-foreground size-4" />
+        <FileText class="size-4 text-muted-foreground" />
     {:else if metricId === 'active_total'}
         <CircleCheck class="size-4 text-green-600" />
     {:else if metricId === 'relocating'}
-        <Server class="text-muted-foreground size-4" />
+        <Server class="size-4 text-muted-foreground" />
     {:else if metricId === 'unassigned'}
         {#if value > 0}
             <TriangleAlert class="size-4 text-amber-500" />

@@ -274,11 +274,11 @@
                             {#each organizations as organization (organization.id)}
                                 {@const isSelected = selectedOrganization?.id === organization.id}
                                 {@const isMember = isUserMember(organization.id)}
-                                <div class="rounded-md {isSelected ? 'ring-primary bg-accent ring-1' : ''}">
+                                <div class="rounded-md {isSelected ? 'bg-accent ring-1 ring-primary' : ''}">
                                     <button
                                         type="button"
                                         onclick={() => handleSelect(organization)}
-                                        class="hover:bg-accent hover:text-accent-foreground flex w-full items-center gap-2.5 rounded-md p-2 text-left transition-colors"
+                                        class="flex w-full items-center gap-2.5 rounded-md p-2 text-left transition-colors hover:bg-accent hover:text-accent-foreground"
                                     >
                                         <Avatar.Root class="size-9 shrink-0 rounded-lg border">
                                             <Avatar.Fallback class="rounded-lg text-xs">
@@ -335,7 +335,7 @@
                                                 </Notification>
                                             {/if}
 
-                                            <div class="bg-muted/50 space-y-2.5 rounded-md px-2 py-2.5">
+                                            <div class="space-y-2.5 rounded-md bg-muted/50 px-2 py-2.5">
                                                 <div class="flex items-center justify-between">
                                                     <div class="flex items-center gap-1.5">
                                                         <Muted class="flex items-center gap-1.5"><CreditCard class="size-3.5" />Plan:</Muted>
@@ -385,17 +385,17 @@
                                                 <div class="flex gap-3">
                                                     <Muted class="flex items-center gap-1.5">
                                                         <Folder class="size-3.5" />
-                                                        <span class="text-foreground font-medium"><Number value={organization.project_count ?? 0} /></span>
+                                                        <span class="font-medium text-foreground"><Number value={organization.project_count ?? 0} /></span>
                                                         projects
                                                     </Muted>
                                                     <Muted class="flex items-center gap-1.5">
                                                         <Bug class="size-3.5" />
-                                                        <span class="text-foreground font-medium"><Number value={organization.stack_count ?? 0} /></span>
+                                                        <span class="font-medium text-foreground"><Number value={organization.stack_count ?? 0} /></span>
                                                         stacks
                                                     </Muted>
                                                     <Muted class="flex items-center gap-1.5">
                                                         <CalendarDays class="size-3.5" />
-                                                        <span class="text-foreground font-medium"><Number value={organization.event_count ?? 0} /></span>
+                                                        <span class="font-medium text-foreground"><Number value={organization.event_count ?? 0} /></span>
                                                         events
                                                     </Muted>
                                                 </div>
@@ -403,21 +403,21 @@
                                                     <Muted class="flex items-center gap-1.5">
                                                         <Calendar class="size-3.5" />
                                                         Created
-                                                        <span class="text-foreground font-medium"><TimeAgo value={organization.created_utc} /></span>
+                                                        <span class="font-medium text-foreground"><TimeAgo value={organization.created_utc} /></span>
                                                     </Muted>
                                                 {/if}
                                                 {#if organization.updated_utc && organization.created_utc !== organization.updated_utc}
                                                     <Muted class="flex items-center gap-1.5">
                                                         <RefreshCw class="size-3.5" />
                                                         Updated
-                                                        <span class="text-foreground font-medium"><TimeAgo value={organization.updated_utc} /></span>
+                                                        <span class="font-medium text-foreground"><TimeAgo value={organization.updated_utc} /></span>
                                                     </Muted>
                                                 {/if}
                                                 {#if getLastEventDate(organization)}
                                                     <Muted class="flex items-center gap-1.5">
                                                         <Activity class="size-3.5" />
                                                         Last Event
-                                                        <span class="text-foreground font-medium"><TimeAgo value={getLastEventDate(organization)!} /></span>
+                                                        <span class="font-medium text-foreground"><TimeAgo value={getLastEventDate(organization)!} /></span>
                                                     </Muted>
                                                 {/if}
                                             </div>
@@ -428,8 +428,8 @@
                         </div>
                     {:else}
                         <div class="flex flex-col items-center justify-center py-8 text-center">
-                            <UserRoundSearch class="text-muted-foreground mb-2 size-8" />
-                            <P class="text-muted-foreground text-sm font-medium">No organizations found</P>
+                            <UserRoundSearch class="mb-2 size-8 text-muted-foreground" />
+                            <P class="text-sm font-medium text-muted-foreground">No organizations found</P>
                             <Muted class="text-xs">
                                 {#if hasFilters}
                                     Try adjusting your search or <button type="button" class="text-primary hover:underline" onclick={resetFilters}

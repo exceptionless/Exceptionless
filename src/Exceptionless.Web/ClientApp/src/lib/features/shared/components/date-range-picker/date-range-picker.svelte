@@ -86,12 +86,12 @@
         {#each commonRanges as range (range.value)}
             <button
                 type="button"
-                class="hover:bg-muted hover:text-foreground flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden transition-colors select-none"
+                class="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden transition-colors select-none hover:bg-muted hover:text-foreground"
                 onclick={() => selectRange(range.value)}
             >
                 <span class="size-4 shrink-0">
                     {#if range.value === value}
-                        <Check class="text-primary size-4" />
+                        <Check class="size-4 text-primary" />
                     {/if}
                 </span>
                 <span class={range.value === value ? 'font-medium' : ''}>{range.label}</span>
@@ -100,10 +100,10 @@
 
         <button
             type="button"
-            class="hover:bg-muted hover:text-foreground flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden transition-colors select-none"
+            class="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden transition-colors select-none hover:bg-muted hover:text-foreground"
             onclick={() => (showCustom = !showCustom)}
         >
-            <ChevronRight class={['text-muted-foreground size-4 shrink-0 transition-transform', showCustom && 'rotate-90']} />
+            <ChevronRight class={['size-4 shrink-0 text-muted-foreground transition-transform', showCustom && 'rotate-90']} />
             <span class={showCustom ? 'font-medium' : ''}>Custom range</span>
         </button>
 
@@ -118,9 +118,9 @@
                         onkeydown={handleKeyDown}
                     />
                     {#if startValue && startValidation.valid && startResolved}
-                        <p class="text-muted-foreground mt-0.5 text-[11px]"><DateTime value={startResolved} /></p>
+                        <p class="mt-0.5 text-[11px] text-muted-foreground"><DateTime value={startResolved} /></p>
                     {:else if startValue && !startValidation.valid}
-                        <p class="text-destructive mt-0.5 text-[11px]">{startValidation.error}</p>
+                        <p class="mt-0.5 text-[11px] text-destructive">{startValidation.error}</p>
                     {/if}
                 </div>
                 <div>
@@ -132,9 +132,9 @@
                         onkeydown={handleKeyDown}
                     />
                     {#if endValue && endValidation.valid && endResolved}
-                        <p class="text-muted-foreground mt-0.5 text-[11px]"><DateTime value={endResolved} /></p>
+                        <p class="mt-0.5 text-[11px] text-muted-foreground"><DateTime value={endResolved} /></p>
                     {:else if endValue && !endValidation.valid}
-                        <p class="text-destructive mt-0.5 text-[11px]">{endValidation.error}</p>
+                        <p class="mt-0.5 text-[11px] text-destructive">{endValidation.error}</p>
                     {/if}
                 </div>
                 <Button size="sm" class="w-full" disabled={!isCustomValid} onclick={applyCustom}>Apply</Button>

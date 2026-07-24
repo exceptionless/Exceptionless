@@ -50,7 +50,7 @@
 {:else if esQuery.isError}
     <Card.Root>
         <Card.Content class="pt-6">
-            <p class="text-destructive text-sm">Failed to load Elasticsearch info. Please try again.</p>
+            <p class="text-sm text-destructive">Failed to load Elasticsearch info. Please try again.</p>
         </Card.Content>
     </Card.Root>
 {:else if data}
@@ -59,7 +59,7 @@
             <Input bind:value={searchQuery} class="flex-1" placeholder="Filter indices..." type="search" />
             <div class="flex items-center gap-2">
                 <Switch id="system-indices" bind:checked={hideSystemIndices} />
-                <Label class="text-muted-foreground cursor-pointer text-xs" for="system-indices">Hide system</Label>
+                <Label class="cursor-pointer text-xs text-muted-foreground" for="system-indices">Hide system</Label>
             </div>
             <DataTableViewOptions size="icon-lg" {table} />
         {/snippet}

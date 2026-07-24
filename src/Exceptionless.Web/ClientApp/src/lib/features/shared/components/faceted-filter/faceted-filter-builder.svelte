@@ -278,9 +278,9 @@
                                 aria-label={hiddenFilterToggleLabel}
                             >
                                 {#if showHiddenFilters}
-                                    <EyeOff class="text-muted-foreground size-4" />
+                                    <EyeOff class="size-4 text-muted-foreground" />
                                 {:else}
-                                    <Eye class="text-muted-foreground size-4" />
+                                    <Eye class="size-4 text-muted-foreground" />
                                 {/if}
                                 <Badge
                                     variant="secondary"
@@ -300,7 +300,7 @@
                     <Tooltip.Trigger>
                         {#snippet child({ props })}
                             <Button {...props} variant="ghost" size="icon-sm" onclick={onRemoveAll} aria-label="Clear all filters">
-                                <Eraser class="text-muted-foreground size-4" />
+                                <Eraser class="size-4 text-muted-foreground" />
                             </Button>
                         {/snippet}
                     </Tooltip.Trigger>

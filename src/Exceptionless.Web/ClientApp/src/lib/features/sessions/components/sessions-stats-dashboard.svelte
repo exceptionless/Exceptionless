@@ -41,7 +41,7 @@
             </div>
             <Tooltip.Root>
                 <Tooltip.Trigger
-                    class="text-muted-foreground hover:text-foreground focus-visible:ring-ring rounded-sm outline-none focus-visible:ring-2"
+                    class="rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                     aria-label="About sessions"
                 >
                     <Info aria-hidden="true" class="size-3.5" />
@@ -68,7 +68,7 @@
             </div>
             <Tooltip.Root>
                 <Tooltip.Trigger
-                    class="text-muted-foreground hover:text-foreground focus-visible:ring-ring rounded-sm outline-none focus-visible:ring-2"
+                    class="rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                     aria-label="About average sessions per hour"
                 >
                     <Info aria-hidden="true" class="size-3.5" />
@@ -95,7 +95,7 @@
             </div>
             <Tooltip.Root>
                 <Tooltip.Trigger
-                    class="text-muted-foreground hover:text-foreground focus-visible:ring-ring rounded-sm outline-none focus-visible:ring-2"
+                    class="rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                     aria-label="About users"
                 >
                     <Info aria-hidden="true" class="size-3.5" />
@@ -125,7 +125,7 @@
             </div>
             <Tooltip.Root>
                 <Tooltip.Trigger
-                    class="text-muted-foreground hover:text-foreground focus-visible:ring-ring rounded-sm outline-none focus-visible:ring-2"
+                    class="rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                     aria-label="About average duration"
                 >
                     <Info aria-hidden="true" class="size-3.5" />

@@ -77,7 +77,7 @@
                 <section aria-labelledby={`shortcut-section-${section.title.toLowerCase().replaceAll(' ', '-')}`} class="overflow-hidden rounded-md border">
                     <h2
                         id={`shortcut-section-${section.title.toLowerCase().replaceAll(' ', '-')}`}
-                        class="bg-muted/60 border-b px-3 py-2 text-sm font-semibold"
+                        class="border-b bg-muted/60 px-3 py-2 text-sm font-semibold"
                     >
                         {section.title}
                     </h2>
@@ -88,7 +88,7 @@
                                 <div class="flex items-center gap-1.5">
                                     {#each row.shortcuts as shortcut, index (shortcut.join('+'))}
                                         {#if index > 0}
-                                            <span class="text-muted-foreground text-xs">or</span>
+                                            <span class="text-xs text-muted-foreground">or</span>
                                         {/if}
                                         <Kbd.Group>
                                             <Kbd.Root>{shortcutLabel(shortcut)}</Kbd.Root>

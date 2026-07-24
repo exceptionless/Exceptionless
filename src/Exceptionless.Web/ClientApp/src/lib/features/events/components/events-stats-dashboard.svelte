@@ -36,7 +36,7 @@
             </div>
             <Tooltip.Root>
                 <Tooltip.Trigger
-                    class="text-muted-foreground hover:text-foreground focus-visible:ring-ring rounded-sm outline-none focus-visible:ring-2"
+                    class="rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                     aria-label="About events"
                 >
                     <Info aria-hidden="true" class="size-3.5" />
@@ -63,7 +63,7 @@
             </div>
             <Tooltip.Root>
                 <Tooltip.Trigger
-                    class="text-muted-foreground hover:text-foreground focus-visible:ring-ring rounded-sm outline-none focus-visible:ring-2"
+                    class="rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                     aria-label="About stacks"
                 >
                     <Info aria-hidden="true" class="size-3.5" />
@@ -90,7 +90,7 @@
             </div>
             <Tooltip.Root>
                 <Tooltip.Trigger
-                    class="text-muted-foreground hover:text-foreground focus-visible:ring-ring rounded-sm outline-none focus-visible:ring-2"
+                    class="rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                     aria-label="About new stacks"
                 >
                     <Info aria-hidden="true" class="size-3.5" />
@@ -117,7 +117,7 @@
             </div>
             <Tooltip.Root>
                 <Tooltip.Trigger
-                    class="text-muted-foreground hover:text-foreground focus-visible:ring-ring rounded-sm outline-none focus-visible:ring-2"
+                    class="rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                     aria-label="About events per hour"
                 >
                     <Info aria-hidden="true" class="size-3.5" />

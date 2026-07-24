@@ -118,14 +118,14 @@
                             <KeyRound class="mt-0.5 size-4" aria-hidden="true" />
                             <span>
                                 <span class="block font-medium">Client API key</span>
-                                <span class="text-muted-foreground block text-xs">Send events from an application or service.</span>
+                                <span class="block text-xs text-muted-foreground">Send events from an application or service.</span>
                             </span>
                         </DropdownMenu.Item>
                         <DropdownMenu.Item class="items-start" onclick={addSourceMapToken} disabled={newToken.isPending}>
                             <FileCode class="mt-0.5 size-4" aria-hidden="true" />
                             <span>
                                 <span class="block font-medium">Source map upload token</span>
-                                <span class="text-muted-foreground block text-xs">Upload source maps from CI/CD for this project only.</span>
+                                <span class="block text-xs text-muted-foreground">Upload source maps from CI/CD for this project only.</span>
                             </span>
                         </DropdownMenu.Item>
                     </DropdownMenu.Group>

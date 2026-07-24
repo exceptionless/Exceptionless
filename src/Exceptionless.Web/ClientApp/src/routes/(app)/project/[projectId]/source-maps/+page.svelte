@@ -197,19 +197,19 @@
                         >
                     {:else if !sourceMapsQuery.data?.length}
                         <Table.Row
-                            ><Table.Cell colspan={6} class="text-muted-foreground h-24 text-center"
+                            ><Table.Cell colspan={6} class="h-24 text-center text-muted-foreground"
                                 >No source maps have been discovered or uploaded yet.</Table.Cell
                             ></Table.Row
                         >
                     {:else}
                         {#each sourceMapsQuery.data as sourceMap (sourceMap.id)}
                             <Table.Row>
-                                <Table.Cell class="max-w-xl break-all font-mono text-xs">{sourceMap.generated_file_url}</Table.Cell>
+                                <Table.Cell class="max-w-xl font-mono text-xs break-all">{sourceMap.generated_file_url}</Table.Cell>
                                 <Table.Cell>
                                     <Badge variant={sourceMap.is_auto_downloaded ? 'secondary' : 'outline'}>
                                         {sourceMap.is_auto_downloaded ? 'Automatic' : 'Uploaded'}
                                     </Badge>
-                                    {#if sourceMap.file_name}<div class="text-muted-foreground mt-1 text-xs">{sourceMap.file_name}</div>{/if}
+                                    {#if sourceMap.file_name}<div class="mt-1 text-xs text-muted-foreground">{sourceMap.file_name}</div>{/if}
                                 </Table.Cell>
                                 <Table.Cell><Bytes value={sourceMap.size} /></Table.Cell>
                                 <Table.Cell>
@@ -239,7 +239,7 @@
         </div>
     </section>
 
-    <div class="border-border flex border-t pt-4 sm:justify-end">
+    <div class="flex border-t border-border pt-4 sm:justify-end">
         <Button variant="secondary" href={resolve('/(app)/project/[projectId]/settings', { projectId })}>
             <ArrowLeft class="mr-2 size-4" aria-hidden="true" /> Back to Settings
         </Button>
@@ -251,7 +251,7 @@
         <AlertDialog.Header>
             <AlertDialog.Title>Delete Source Map</AlertDialog.Title>
             <AlertDialog.Description>
-                Delete the source map for <span class="break-all font-mono text-xs">{sourceMapToDelete?.generated_file_url}</span>? Future events will use
+                Delete the source map for <span class="font-mono text-xs break-all">{sourceMapToDelete?.generated_file_url}</span>? Future events will use
                 automatic discovery or retain their generated stack frames.
             </AlertDialog.Description>
         </AlertDialog.Header>

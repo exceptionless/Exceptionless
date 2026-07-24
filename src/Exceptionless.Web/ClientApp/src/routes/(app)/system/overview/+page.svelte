@@ -162,7 +162,7 @@
     {#if statsQuery.isError}
         <Card.Root>
             <Card.Content class="pt-6">
-                <p class="text-destructive text-sm">Failed to load system statistics. Please try again.</p>
+                <p class="text-sm text-destructive">Failed to load system statistics. Please try again.</p>
             </Card.Content>
         </Card.Root>
     {:else}
@@ -172,21 +172,21 @@
                 <Card.Root class="flex flex-col justify-between">
                     <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
                         <Card.Title class="text-sm font-medium">{card.label}</Card.Title>
-                        <Icon class="text-muted-foreground size-4" />
+                        <Icon class="size-4 text-muted-foreground" />
                     </Card.Header>
                     <Card.Content>
                         {#if statsQuery.isPending}
-                            <div class="bg-muted h-8 w-24 animate-pulse rounded"></div>
+                            <div class="h-8 w-24 animate-pulse rounded bg-muted"></div>
                         {:else}
                             <div class="text-2xl font-bold"><Number value={card.value ?? null} /></div>
                             {#if card.label === 'Total Stacks' && stackStatusBreakdown.length > 0}
-                                <p class="text-muted-foreground mt-0.5 text-xs leading-snug">
+                                <p class="mt-0.5 text-xs leading-snug text-muted-foreground">
                                     {#each stackStatusBreakdown as bucket, index (bucket.status)}
                                         <Number value={bucket.total} /> {bucket.status}{index < stackStatusBreakdown.length - 1 ? ', ' : ''}
                                     {/each}
                                 </p>
                             {:else if card.sub}
-                                <p class="text-muted-foreground mt-0.5 text-xs leading-snug" title={card.sub}>{card.sub}</p>
+                                <p class="mt-0.5 text-xs leading-snug text-muted-foreground" title={card.sub}>{card.sub}</p>
                             {/if}
                         {/if}
                     </Card.Content>
@@ -204,9 +204,9 @@
                     {#if statsQuery.isPending}
                         <Skeleton class="h-48 w-full rounded" />
                     {:else if eventsAllTimeChartData.length === 0}
-                        <p class="text-muted-foreground py-8 text-center text-sm">No event history available.</p>
+                        <p class="py-8 text-center text-sm text-muted-foreground">No event history available.</p>
                     {:else}
-                        <Chart.Container config={eventsAllTimeChartConfig} class="h-48 w-full overflow-visible pl-16 pr-3">
+                        <Chart.Container config={eventsAllTimeChartConfig} class="h-48 w-full overflow-visible pr-3 pl-16">
                             <AreaChart
                                 data={eventsAllTimeChartData}
                                 x="date"
@@ -233,9 +233,9 @@
                     {#if statsQuery.isPending}
                         <Skeleton class="h-48 w-full rounded" />
                     {:else if organizationGrowthChartData.length === 0}
-                        <p class="text-muted-foreground py-8 text-center text-sm">No growth data available.</p>
+                        <p class="py-8 text-center text-sm text-muted-foreground">No growth data available.</p>
                     {:else}
-                        <Chart.Container config={organizationGrowthChartConfig} class="h-48 w-full overflow-visible pl-16 pr-3">
+                        <Chart.Container config={organizationGrowthChartConfig} class="h-48 w-full overflow-visible pr-3 pl-16">
                             <AreaChart
                                 data={organizationGrowthChartData}
                                 x="month"

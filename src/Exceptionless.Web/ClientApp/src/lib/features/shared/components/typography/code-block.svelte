@@ -55,4 +55,4 @@
     );
 </script>
 
-<pre class={['bg-muted relative rounded px-[0.6rem] py-2 font-mono text-sm', className]} {...props}>{@html content}</pre>
+<pre class={['relative rounded bg-muted px-[0.6rem] py-2 font-mono text-sm', className]} {...props}>{@html content}</pre>

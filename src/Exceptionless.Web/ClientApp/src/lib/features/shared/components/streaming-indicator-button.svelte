@@ -18,7 +18,7 @@
 
 <Button variant="outline" {size} onclick={onToggle} {title}>
     {#if paused}
-        <Play class="text-primary fill-primary size-4" />
+        <Play class="size-4 fill-primary text-primary" />
     {:else}
         <Pause class="size-4" />
     {/if}

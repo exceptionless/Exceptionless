@@ -26,7 +26,7 @@
             <Tooltip.Trigger>
                 {#snippet child({ props })}
                     <Button {...props} href={helpHref} target="_blank" rel="noopener noreferrer" variant="ghost" size="icon-sm" aria-label={helpLabel}>
-                        <HelpCircle class="text-muted-foreground size-4" />
+                        <HelpCircle class="size-4 text-muted-foreground" />
                     </Button>
                 {/snippet}
             </Tooltip.Trigger>
@@ -39,7 +39,7 @@
                 <Tooltip.Trigger>
                     {#snippet child({ props })}
                         <Button {...props} variant="ghost" size="icon-sm" onclick={clear} aria-label="Clear filter value">
-                            <Eraser class="text-muted-foreground size-4" />
+                            <Eraser class="size-4 text-muted-foreground" />
                         </Button>
                     {/snippet}
                 </Tooltip.Trigger>
@@ -52,9 +52,9 @@
                     {#snippet child({ props })}
                         <Button {...props} variant="ghost" size="icon-sm" onclick={toggleHidden} aria-label={hidden ? 'Show filter' : 'Hide filter'}>
                             {#if hidden}
-                                <Eye class="text-muted-foreground size-4" />
+                                <Eye class="size-4 text-muted-foreground" />
                             {:else}
-                                <EyeOff class="text-muted-foreground size-4" />
+                                <EyeOff class="size-4 text-muted-foreground" />
                             {/if}
                         </Button>
                     {/snippet}
@@ -66,7 +66,7 @@
             <Tooltip.Trigger>
                 {#snippet child({ props })}
                     <Button {...props} variant="ghost" size="icon-sm" onclick={remove} aria-label="Remove filter">
-                        <Trash2 class="text-muted-foreground size-4" />
+                        <Trash2 class="size-4 text-muted-foreground" />
                     </Button>
                 {/snippet}
             </Tooltip.Trigger>

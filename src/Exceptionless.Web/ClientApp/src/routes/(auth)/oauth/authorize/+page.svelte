@@ -412,10 +412,10 @@
                         {/each}
                     </div>
                     {#if !hasSelectedResourceScope}
-                        <p class="text-destructive text-xs">Select at least one access scope.</p>
+                        <p class="text-xs text-destructive">Select at least one access scope.</p>
                     {/if}
                     {#if missingRequiredScopes.length > 0}
-                        <p class="text-destructive text-xs">Missing required scope: {missingRequiredScopes.map(formatScope).join(', ')}.</p>
+                        <p class="text-xs text-destructive">Missing required scope: {missingRequiredScopes.map(formatScope).join(', ')}.</p>
                     {/if}
                 {:else}
                     <p class="text-muted-foreground">No scopes requested.</p>

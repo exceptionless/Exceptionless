@@ -126,7 +126,7 @@
                             <Command.Item id={option.value} onSelect={() => onValueSelected(option.value)} value={option.value}>
                                 <div
                                     class={cn(
-                                        'border-primary mr-2 flex size-4 items-center justify-center rounded-sm border',
+                                        'mr-2 flex size-4 items-center justify-center rounded-sm border border-primary',
                                         updatedValue === option.value ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible'
                                     )}
                                 >

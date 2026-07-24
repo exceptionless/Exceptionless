@@ -425,7 +425,7 @@ public partial class App : Application {
             {#if isCommandLine}
                 <li>
                     <P>Execute the following in your shell.</P>
-                    <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                    <div class="relative min-h-13 overflow-hidden rounded-md bg-muted">
                         {#if isBashShell}
                             <CodeBlock code={codeSamples.bashShell} language="shellscript" />
                         {:else}
@@ -443,7 +443,7 @@ public partial class App : Application {
                             ><strong>{selectedProjectType.package}</strong> NuGet package</A
                         > in your .NET project by executing this command from the project directory.</P
                     >
-                    <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                    <div class="relative min-h-13 overflow-hidden rounded-md bg-muted">
                         <CodeBlock code="dotnet add package {selectedProjectType.package}" language="shellscript" />
                         <div class="absolute top-2 right-2">
                             <CopyToClipboardButton value={`dotnet add package ${selectedProjectType.package}`} />
@@ -456,7 +456,7 @@ public partial class App : Application {
                             >On app startup, import the Exceptionless namespace and call the client.Startup() extension method to wire up to any runtime
                             specific error handlers and read any available configuration.</P
                         >
-                        <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                        <div class="relative min-h-13 overflow-hidden rounded-md bg-muted">
                             <CodeBlock code={codeSamples.exceptionless} language="csharp" />
                             <div class="absolute top-2 right-2">
                                 <CopyToClipboardButton value={codeSamples.exceptionless} />
@@ -475,7 +475,7 @@ public partial class App : Application {
                 {:else if selectedProjectType.package === 'Exceptionless.AspNetCore'}
                     <li>
                         <P>You must import the Exceptionless namespace and add the following code to register and configure the Exceptionless client.</P>
-                        <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                        <div class="relative min-h-13 overflow-hidden rounded-md bg-muted">
                             <CodeBlock code={codeSamples.aspNetCore} language="csharp" />
                             <div class="absolute top-2 right-2">
                                 <CopyToClipboardButton value={codeSamples.aspNetCore} />
@@ -489,7 +489,7 @@ public partial class App : Application {
                 {:else if selectedProjectType.package === 'Exceptionless.Windows' || selectedProjectType.package === 'Exceptionless.Wpf'}
                     <li>
                         <P>Configure your Exceptionless assembly attribute to your projects AssemblyInfo.cs file.</P>
-                        <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                        <div class="relative min-h-13 overflow-hidden rounded-md bg-muted">
                             <CodeBlock code={codeSamples.windowsAttributeConfiguration} language="csharp" />
                             <div class="absolute top-2 right-2">
                                 <CopyToClipboardButton value={codeSamples.windowsAttributeConfiguration} />
@@ -502,7 +502,7 @@ public partial class App : Application {
                                 >Finally, import the Exceptionless namespace and include the following line of code in your App.xaml.cs file to enable reporting
                                 of unhandled exceptions.</P
                             >
-                            <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                            <div class="relative min-h-13 overflow-hidden rounded-md bg-muted">
                                 <CodeBlock code={codeSamples.wpfRegister} language="csharp" />
                                 <div class="absolute top-2 right-2">
                                     <CopyToClipboardButton value={codeSamples.wpfRegister} />
@@ -515,7 +515,7 @@ public partial class App : Application {
                                 >Finally, import the Exceptionless namespace and include the following line of code in your Program.cs file to enable reporting
                                 of unhandled exceptions.</P
                             >
-                            <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                            <div class="relative min-h-13 overflow-hidden rounded-md bg-muted">
                                 <CodeBlock code={codeSamples.windowsRegister} language="csharp" />
                                 <div class="absolute top-2 right-2">
                                     <CopyToClipboardButton value={codeSamples.windowsRegister} />
@@ -534,7 +534,7 @@ public partial class App : Application {
                             target="_blank">Package Manager Console.</A
                         ></P
                     >
-                    <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                    <div class="relative min-h-13 overflow-hidden rounded-md bg-muted">
                         <CodeBlock code="Install-Package {selectedProjectType.package}" language="shellscript" />
                         <div class="absolute top-2 right-2">
                             <CopyToClipboardButton value={`Install-Package ${selectedProjectType.package}`} />
@@ -547,7 +547,7 @@ public partial class App : Application {
                             >On app startup, import the Exceptionless namespace and call the client.Startup() extension method to wire up to any runtime
                             specific error handlers and read any available configuration.</P
                         >
-                        <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                        <div class="relative min-h-13 overflow-hidden rounded-md bg-muted">
                             <CodeBlock code={codeSamples.exceptionless} language="csharp" />
                             <div class="absolute top-2 right-2">
                                 <CopyToClipboardButton value={codeSamples.exceptionless} />
@@ -565,7 +565,7 @@ public partial class App : Application {
                         <P
                             >Configure your Exceptionless API key in your project's app.config file, and add it under the Exceptionless section within the file.</P
                         >
-                        <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                        <div class="relative min-h-13 overflow-hidden rounded-md bg-muted">
                             <CodeBlock code={codeSamples.legacyAppConfigSectionXml} language="xml" />
                             <div class="absolute top-2 right-2">
                                 <CopyToClipboardButton value={codeSamples.legacyAppConfigSectionXml} />
@@ -578,7 +578,7 @@ public partial class App : Application {
                                 >Finally, import the Exceptionless namespace and include the following line of code in your App.xaml.cs file to enable reporting
                                 of unhandled exceptions.</P
                             >
-                            <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                            <div class="relative min-h-13 overflow-hidden rounded-md bg-muted">
                                 <CodeBlock code={codeSamples.wpfRegister} language="csharp" />
                                 <div class="absolute top-2 right-2">
                                     <CopyToClipboardButton value={codeSamples.wpfRegister} />
@@ -591,7 +591,7 @@ public partial class App : Application {
                                 >Finally, import the Exceptionless namespace and include the following line of code in your Program.cs file to enable reporting
                                 of unhandled exceptions.</P
                             >
-                            <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                            <div class="relative min-h-13 overflow-hidden rounded-md bg-muted">
                                 <CodeBlock code={codeSamples.windowsRegister} language="csharp" />
                                 <div class="absolute top-2 right-2">
                                     <CopyToClipboardButton value={codeSamples.windowsRegister} />
@@ -606,7 +606,7 @@ public partial class App : Application {
                         <P
                             >Configure your Exceptionless API key in your project's web.config file, and add it under the Exceptionless section within the file.</P
                         >
-                        <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                        <div class="relative min-h-13 overflow-hidden rounded-md bg-muted">
                             <CodeBlock code={codeSamples.legacyAppConfigSectionXml} language="xml" />
                             <div class="absolute top-2 right-2">
                                 <CopyToClipboardButton value={codeSamples.legacyAppConfigSectionXml} />
@@ -624,14 +624,14 @@ public partial class App : Application {
                                 class="inline-block"
                             /> method with an instance of HttpConfiguration during the startup of your app.</P
                         >
-                        <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                        <div class="relative min-h-13 overflow-hidden rounded-md bg-muted">
                             <CodeBlock code={codeSamples.webApiRegister} language="csharp" />
                             <div class="absolute top-2 right-2">
                                 <CopyToClipboardButton value={codeSamples.webApiRegister} />
                             </div>
                         </div>
                         <P>If you are hosting Web API inside of ASP.NET, you would register Exceptionless using GlobalConfiguration.</P>
-                        <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                        <div class="relative min-h-13 overflow-hidden rounded-md bg-muted">
                             <CodeBlock code={codeSamples.webApiRegisterAspNet} language="csharp" />
                             <div class="absolute top-2 right-2">
                                 <CopyToClipboardButton value={codeSamples.webApiRegisterAspNet} />
@@ -647,7 +647,7 @@ public partial class App : Application {
                         >Install the <strong>{javascriptClientConfiguration.packageName}</strong> npm package in your JavaScript project by running this command
                         in the project directory. {javascriptClientConfiguration.installNote ?? ''}</P
                     >
-                    <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                    <div class="relative min-h-13 overflow-hidden rounded-md bg-muted">
                         <CodeBlock code={javascriptClientConfiguration.installCommand} language="shellscript" />
                         <div class="absolute top-2 right-2">
                             <CopyToClipboardButton value={javascriptClientConfiguration.installCommand} />
@@ -657,7 +657,7 @@ public partial class App : Application {
                 {#each javascriptClientConfiguration.extraSteps ?? [] as step (step.description)}
                     <li>
                         <P>{step.description}</P>
-                        <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                        <div class="relative min-h-13 overflow-hidden rounded-md bg-muted">
                             <CodeBlock code={step.code} language={step.language} />
                             <div class="absolute top-2 right-2">
                                 <CopyToClipboardButton value={step.code} />
@@ -670,7 +670,7 @@ public partial class App : Application {
                 {/each}
                 <li>
                     <P>Configure the ExceptionlessClient with your Exceptionless API key.</P>
-                    <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                    <div class="relative min-h-13 overflow-hidden rounded-md bg-muted">
                         <CodeBlock code={javascriptClientConfiguration.startupCode} language="javascript" />
                         <div class="absolute top-2 right-2">
                             <CopyToClipboardButton value={javascriptClientConfiguration.startupCode} />
@@ -740,7 +740,7 @@ public partial class App : Application {
         </Notification>
     {/if}
 
-    <div class="border-border flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end">
+    <div class="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">
         <Button variant="secondary" href={resolve('/(app)/project/[projectId]/manage', { projectId })}>
             <ArrowLeft class="mr-2 size-4" aria-hidden="true" /> Back to Project Settings
         </Button>

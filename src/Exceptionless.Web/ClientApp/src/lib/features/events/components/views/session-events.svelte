@@ -176,7 +176,7 @@
                 {#each sessionEventsQuery.data ?? [] as sessionEvent (sessionEvent.id)}
                     <Table.Row
                         aria-label={`Open event ${sessionEvent.id}`}
-                        class="hover:bg-muted/50 focus-visible:ring-ring/50 focus-visible:outline-ring cursor-pointer focus-visible:ring-[3px] focus-visible:outline-1"
+                        class="cursor-pointer hover:bg-muted/50 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1 focus-visible:outline-ring"
                         onclick={() => openSessionEvent(sessionEvent.id)}
                         onkeydown={(keyboardEvent) => handleSessionEventKeydown(keyboardEvent, sessionEvent.id)}
                         role="link"

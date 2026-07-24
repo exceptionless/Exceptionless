@@ -58,7 +58,7 @@
 {:else if esQuery.isError}
     <Card.Root>
         <Card.Content class="pt-6">
-            <p class="text-destructive text-sm">Failed to load Elasticsearch info. Please try again.</p>
+            <p class="text-sm text-destructive">Failed to load Elasticsearch info. Please try again.</p>
         </Card.Content>
     </Card.Root>
 {:else if data}
@@ -68,7 +68,7 @@
                 <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
                     <Card.Title class="text-sm font-medium">Cluster Status</Card.Title>
                     {#if data.health.status === 0}
-                        <CircleCheck class="text-muted-foreground size-4" />
+                        <CircleCheck class="size-4 text-muted-foreground" />
                     {:else}
                         <TriangleAlert class="size-4 {healthColor(data.health.status)}" />
                     {/if}
@@ -79,18 +79,18 @@
                             {healthLabel(data.health.status)}
                         </Badge>
                     </div>
-                    <p class="text-muted-foreground mt-1 text-xs">{data.health.cluster_name}</p>
+                    <p class="mt-1 text-xs text-muted-foreground">{data.health.cluster_name}</p>
                 </Card.Content>
             </Card.Root>
 
             <Card.Root>
                 <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
                     <Card.Title class="text-sm font-medium">Nodes</Card.Title>
-                    <Server class="text-muted-foreground size-4" />
+                    <Server class="size-4 text-muted-foreground" />
                 </Card.Header>
                 <Card.Content>
                     <div class="text-2xl font-bold">{data.health.number_of_nodes}</div>
-                    <p class="text-muted-foreground text-xs">
+                    <p class="text-xs text-muted-foreground">
                         {data.health.number_of_data_nodes} data node{data.health.number_of_data_nodes !== 1 ? 's' : ''}
                     </p>
                 </Card.Content>
@@ -99,22 +99,22 @@
             <Card.Root>
                 <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
                     <Card.Title class="text-sm font-medium">Indices</Card.Title>
-                    <Database class="text-muted-foreground size-4" />
+                    <Database class="size-4 text-muted-foreground" />
                 </Card.Header>
                 <Card.Content>
                     <div class="text-2xl font-bold"><Number value={data.indices.count} /></div>
-                    <p class="text-muted-foreground text-xs"><Number value={data.indices.docs_count} /> documents</p>
+                    <p class="text-xs text-muted-foreground"><Number value={data.indices.docs_count} /> documents</p>
                 </Card.Content>
             </Card.Root>
 
             <Card.Root>
                 <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
                     <Card.Title class="text-sm font-medium">Storage</Card.Title>
-                    <HardDrive class="text-muted-foreground size-4" />
+                    <HardDrive class="size-4 text-muted-foreground" />
                 </Card.Header>
                 <Card.Content>
                     <div class="text-2xl font-bold"><Bytes value={data.indices.store_size_in_bytes} /></div>
-                    <p class="text-muted-foreground text-xs">Total index size</p>
+                    <p class="text-xs text-muted-foreground">Total index size</p>
                 </Card.Content>
             </Card.Root>
         </div>
@@ -122,7 +122,7 @@
         <div class="flex flex-col gap-2">
             <div>
                 <p class="text-sm leading-none font-semibold tracking-tight">Shard Details</p>
-                <p class="text-muted-foreground mt-1.5 text-sm">Allocation and status of Elasticsearch shards across the cluster</p>
+                <p class="mt-1.5 text-sm text-muted-foreground">Allocation and status of Elasticsearch shards across the cluster</p>
             </div>
             <ShardsOverviewDataTable isLoading={esQuery.isPending} rowClick={shardRowClick} table={shardTable} />
         </div>
