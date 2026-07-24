@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { Muted } from '$comp/typography';
     import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
     import { Kbd } from '$comp/ui/kbd';
@@ -66,7 +65,7 @@
                     </Button>
                 {/snippet}
             </Tooltip.Trigger>
-            <Tooltip.Content>
+            <Tooltip.Content arrowClasses="hidden" class="border-border bg-popover text-popover-foreground border shadow-md" sideOffset={4}>
                 Click to filter. <Kbd>{copyTagShortcut}</Kbd> click to copy.
             </Tooltip.Content>
         </Tooltip.Root>
@@ -94,15 +93,16 @@
                             </Badge>
                         {/snippet}
                     </Tooltip.Trigger>
-                    <Tooltip.Content class="max-w-xs">
+                    <Tooltip.Content
+                        arrowClasses="hidden"
+                        class="border-border bg-popover text-popover-foreground max-w-xs flex-col items-start gap-2 border px-3 py-2 shadow-md"
+                        sideOffset={4}
+                    >
                         <div class="flex flex-wrap gap-1">
                             {#each hiddenTags as value (value)}
                                 {@render tag(value)}
                             {/each}
                         </div>
-                        {#if onTagClick}
-                            <Muted class="mt-1 text-xs">Click to filter. <Kbd>{copyTagShortcut}</Kbd> click to copy.</Muted>
-                        {/if}
                     </Tooltip.Content>
                 </Tooltip.Root>
             {/if}
