@@ -191,25 +191,26 @@ describe('WebSocketClient', () => {
             expect(client.readyState).toBe(WebSocket.CLOSED);
         });
 
-        it('should NOT reconnect on abnormal closure (code 1006, wasClean=false) - connection lost unexpectedly', async () => {
+        it('should reconnect on abnormal closure (code 1006, wasClean=false) - connection lost unexpectedly', async () => {
             const client = createClient();
-            const onClose = vi.fn();
-            client.onClose = onClose;
+            const onConnecting = vi.fn();
+            const onOpen = vi.fn();
+            client.onConnecting = onConnecting;
+            client.onOpen = onOpen;
 
             client.connect();
             await server.connected;
+            onConnecting.mockClear();
+            onOpen.mockClear();
 
             server.close({ code: 1006, reason: 'Abnormal Closure', wasClean: false });
-            await new Promise((resolve) => setTimeout(resolve, 50));
+            server = new WS('ws://localhost:1234/api/v2/push');
+            await server.connected;
 
-            expect(onClose).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    code: 1006,
-                    reason: 'Abnormal Closure',
-                    wasClean: false
-                })
-            );
-            expect(client.readyState).toBe(WebSocket.CLOSED);
+            expect(onConnecting).toHaveBeenCalledWith(true);
+            expect(onOpen).toHaveBeenCalledWith(expect.anything(), true);
+            expect(client.readyState).toBe(WebSocket.OPEN);
+            client.close();
         });
 
         it('should NOT reconnect on unauthorized (code 4401) - 401 HTTP equivalent', async () => {
@@ -286,6 +287,18 @@ describe('WebSocketClient', () => {
 
             expect(onConnecting).toHaveBeenCalledWith(true);
             client.close();
+        });
+
+        it('should become closed when a pending reconnect is canceled', async () => {
+            const client = createClient(undefined, { reconnectDelay: () => 1000 });
+
+            client.connect();
+            await server.connected;
+            server.close({ code: 1001, reason: 'Going Away', wasClean: true });
+            await new Promise((resolve) => setTimeout(resolve, 10));
+
+            expect(client.close()).toBe(false);
+            expect(client.readyState).toBe(WebSocket.CLOSED);
         });
 
         it('should call onConnecting with isReconnect=true on reconnection', async () => {

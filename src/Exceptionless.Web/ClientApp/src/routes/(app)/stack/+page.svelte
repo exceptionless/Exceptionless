@@ -8,7 +8,7 @@
     import RefreshButton from '$comp/refresh-button.svelte';
     import { H3 } from '$comp/typography';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
-    import { type GetEventsParams, getOrganizationCountQuery } from '$features/events/api.svelte';
+    import { type GetEventsParams, getOrganizationCountQuery, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT } from '$features/events/api.svelte';
     import EventsDashboardChart from '$features/events/components/events-dashboard-chart.svelte';
     import EventsStatsDashboard from '$features/events/components/events-stats-dashboard.svelte';
     import {
@@ -43,7 +43,7 @@
     import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
     import { useSavedViews } from '$features/saved-views/use-saved-views.svelte';
     import * as agg from '$features/shared/api/aggregations';
-    import { createPageSizePreference, getSharedTableOptions, isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
+    import { createPageSizePreference, getSharedTableOptions, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
     import { fillDateSeries } from '$features/shared/utils/charts';
     import { parseDateMathRange, toDateMathRange } from '$features/shared/utils/datemath';
     import StackDetailSheet from '$features/stacks/components/stack-detail-sheet.svelte';
@@ -56,8 +56,8 @@
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
     import { useEventListener, watch } from 'runed';
-    import { untrack } from 'svelte';
-    import { throttle } from 'throttle-debounce';
+    import { onDestroy, untrack } from 'svelte';
+    import { debounce } from 'throttle-debounce';
 
     import {
         ALL_TIME_QUERY_VALUE,
@@ -665,42 +665,59 @@
         await loadData();
     }
 
+    let loadDataRequestId = 0;
     async function loadData() {
+        const requestId = ++loadDataRequestId;
         if (!organization.current || isSavedViewRoutePending) {
             return;
         }
 
-        clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, {
+        const response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, {
             params: {
                 ...eventsQueryParameters,
-                include: !eventsQueryParameters.page || eventsQueryParameters.page <= 1 ? 'total' : undefined
+                include: 'total'
             } as Record<string, unknown>
         });
+        if (requestId !== loadDataRequestId) {
+            return;
+        }
+
+        clientResponse = response;
 
         showBillingDialogOnUpgradeProblem(clientResponse.problem, organization.current, () => loadData());
+
+        if (clientResponse.ok && clientResponse.data?.length === 0 && table.state.pagination.pageIndex > 0) {
+            table.previousPage();
+        }
     }
 
-    const throttledLoadData = throttle(5000, loadData);
+    const debouncedLoadData = debounce(1500, loadData);
+    onDestroy(() => {
+        loadDataRequestId++;
+        debouncedLoadData.cancel();
+    });
 
-    async function onStackChanged(message: WebSocketMessageValue<'StackChanged'>) {
-        if (message.id && message.change_type === ChangeType.Removed) {
+    function onStackChanged(message: WebSocketMessageValue<'StackChanged'>) {
+        if (message.change_type !== ChangeType.Removed || (message.organization_id && message.organization_id !== organization.current)) {
+            return;
+        }
+
+        if (message.id) {
             if (message.id === selectedStackId) {
                 selectedStackId = undefined;
             }
 
             removeTableSelection(table, message.id);
 
-            if (removeTableData(table, (doc: EventSummaryModel<SummaryTemplateKeys>) => doc.id === message.id)) {
-                // If the grid data is empty from all events being removed, we should refresh the data.
-                if (isTableEmpty(table)) {
-                    await throttledLoadData();
-                    return;
-                }
-            }
+            removeTableData(table, (doc: EventSummaryModel<SummaryTemplateKeys>) => doc.id === message.id);
         }
+
+        debouncedLoadData();
     }
 
-    useEventListener(document, 'StackChanged', async (event) => await onStackChanged((event as CustomEvent).detail));
+    useEventListener(document, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT, () => debouncedLoadData());
+    useEventListener(document, 'refresh', () => loadData());
+    useEventListener(document, 'StackChanged', (event) => onStackChanged((event as CustomEvent).detail));
 
     $effect(() => {
         loadData();

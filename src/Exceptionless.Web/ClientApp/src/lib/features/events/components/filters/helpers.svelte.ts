@@ -205,6 +205,18 @@ export function shouldRefreshPersistentEventChanged(
     return true;
 }
 
+export function shouldRefreshPersistentEventRemoval(
+    removedFromTable: boolean,
+    filters: IFilter[],
+    filter: null | string,
+    organization_id?: string,
+    project_id?: string,
+    stack_id?: string,
+    id?: string
+) {
+    return removedFromTable || shouldRefreshPersistentEventChanged(filters, filter, organization_id, project_id, stack_id, id);
+}
+
 const TYPE_FILTER_REGEX = /\btype:(\w+)\b/g;
 
 export function hasSingleTypeFilter(filter: null | string | undefined): boolean {
