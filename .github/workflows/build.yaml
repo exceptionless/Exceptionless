@@ -222,6 +222,55 @@ jobs:
       - name: Run Integration Tests
         run: echo "npm run test:integration"
 
+  test-email-templates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: src/Exceptionless.EmailTemplates
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.head_sha) || github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Cache npm packages
+        uses: actions/cache@v6
+        id: cache-email-template-npm
+        with:
+          path: ~/.npm
+          key: npm-email-${{ runner.os }}-${{ hashFiles('src/Exceptionless.EmailTemplates/package-lock.json') }}
+
+      - name: Install Npm Packages
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type Check
+        run: npm run check
+
+      - name: Build Templates
+        run: npm run build
+
+      - name: Build Storybook
+        run: npm run build-storybook
+
+      - name: Verify Generated HTML is Up-To-Date
+        run: |
+          changes="$(git status --short --untracked-files=all -- ../Exceptionless.Core/Mail/Templates/ generated-templates.json)"
+          if [ -n "$changes" ]; then
+            echo "$changes"
+            echo "::error::Generated email artifacts are stale. Run 'npm run build' in src/Exceptionless.EmailTemplates and commit the updated files."
+            exit 1
+          fi
+
   test-e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -437,7 +486,7 @@ jobs:
   docker-publish:
     if: ${{ needs.version.outputs.should_publish == 'true' }}
     runs-on: ubuntu-latest
-    needs: [version, docker-build, test-api, test-client, test-e2e]
+    needs: [version, docker-build, test-api, test-client, test-email-templates, test-e2e]
     timeout-minutes: 30
     env:
       VERSION: ${{ needs.version.outputs.version }}
