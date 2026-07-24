@@ -12,6 +12,7 @@ import type { EventSummaryModel, StackSummaryModel, SummaryModel, SummaryTemplat
 import LogLevel from '../log-level.svelte';
 import Summary from '../summary/summary.svelte';
 import EventsUserIdentitySummaryCell from './events-user-identity-summary-cell.svelte';
+import StackSortHeader from './stack-sort-header.svelte';
 import StackStatusCell from './stack-status-cell.svelte';
 import StackUsersSummaryCell from './stack-users-summary-cell.svelte';
 
@@ -25,9 +26,11 @@ export const defaultEventColumnVisibility: ColumnVisibilityState = {
     version: false
 };
 
+export type StackSortMode = Extract<GetEventsMode, 'stack_frequent' | 'stack_recent'>;
+
 export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(
     mode: GetEventsMode = 'summary',
-    options?: { showType?: boolean }
+    options?: { onStackSort?: (mode: StackSortMode) => void; showType?: boolean }
 ): ColumnDef<StockFeatures, TSummaryModel, unknown>[] {
     const showType = options?.showType ?? true;
     const columns: ColumnDef<StockFeatures, TSummaryModel, unknown>[] = [
@@ -176,7 +179,12 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                 accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('total'),
                 cell: (prop) => renderComponent(NumberFormatter, { value: prop.getValue<number>() }),
                 enableSorting: false,
-                header: 'Events',
+                header: () =>
+                    renderComponent(StackSortHeader, {
+                        active: mode === 'stack_frequent',
+                        label: 'Events',
+                        onclick: () => options?.onStackSort?.('stack_frequent')
+                    }),
                 id: 'events',
                 meta: {
                     class: 'w-24'
@@ -196,7 +204,12 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                 accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('last_occurrence'),
                 cell: (prop) => renderComponent(TimeAgo, { value: prop.getValue<string>() }),
                 enableSorting: false,
-                header: 'Last',
+                header: () =>
+                    renderComponent(StackSortHeader, {
+                        active: mode === 'stack_recent',
+                        label: 'Last',
+                        onclick: () => options?.onStackSort?.('stack_recent')
+                    }),
                 id: 'last',
                 meta: {
                     class: 'w-36'
