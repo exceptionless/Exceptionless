@@ -108,12 +108,12 @@
     <!-- Action list -->
     <div class="rounded-md border">
         <div class="flex items-center justify-between border-b px-4 py-2">
-            <span class="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Action</span>
-            <span class="text-xs text-muted-foreground">
+            <span class="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Action</span>
+            <span class="text-muted-foreground text-xs">
                 {filteredActions.length}
                 {filteredActions.length === 1 ? 'action' : 'actions'}
                 {#if destructiveCount > 0}
-                    · <span class="font-medium text-destructive">{destructiveCount} destructive</span>
+                    · <span class="text-destructive font-medium">{destructiveCount} destructive</span>
                 {/if}
             </span>
         </div>
@@ -127,20 +127,20 @@
                     <div class="flex flex-wrap items-center gap-2">
                         <span class="font-medium">{action.label}</span>
                         {#if activeCategory === 'All'}
-                            <span class="inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
+                            <span class="bg-muted text-muted-foreground inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium">
                                 {action.category.toUpperCase()}
                             </span>
                         {/if}
                         {#if action.dangerous}
                             <span
-                                class="inline-flex items-center gap-1 rounded border border-destructive/50 px-1.5 py-0.5 text-xs font-medium text-destructive"
+                                class="border-destructive/50 text-destructive inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-xs font-medium"
                             >
                                 <TriangleAlert class="size-3" />
                                 DESTRUCTIVE
                             </span>
                         {/if}
                     </div>
-                    <p class="text-sm leading-relaxed text-muted-foreground">{action.description}</p>
+                    <p class="text-muted-foreground text-sm leading-relaxed">{action.description}</p>
                 </div>
                 <Button
                     class="shrink-0"
@@ -156,7 +156,7 @@
             </div>
         {/each}
         {#if filteredActions.length === 0}
-            <div class="px-4 py-10 text-center text-sm text-muted-foreground">No actions found.</div>
+            <div class="text-muted-foreground px-4 py-10 text-center text-sm">No actions found.</div>
         {/if}
     </div>
 </div>

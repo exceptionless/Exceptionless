@@ -74,7 +74,7 @@
     <EventsOverview expectedStackId={stackId} {filterChanged} id={selectedEventId} {handleError} {onEventLoaded} onNavigate={handleNavigate} />
 {:else if stackEventsQuery.isSuccess}
     <section>
-        <h4 class="mb-3 text-sm font-semibold tracking-wide text-muted-foreground uppercase">Stack</h4>
+        <h4 class="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">Stack</h4>
         <StackCard {filterChanged} id={stackId} {onDeleted} onError={handleError} />
     </section>
     <Muted class="mt-4">No events available for this stack.</Muted>

@@ -19,7 +19,7 @@
     const isMediumScreenQuery = new MediaQuery('(min-width: 768px)');
 </script>
 
-<nav class="fixed z-30 w-full border-b bg-background text-foreground">
+<nav class="bg-background text-foreground fixed z-30 w-full border-b">
     <div class="px-4 py-3">
         <div class="flex items-center justify-between">
             <div class="flex items-center justify-start">
@@ -36,7 +36,7 @@
             <div class="flex items-center gap-2">
                 <Button class="w-44 justify-start sm:w-56 md:w-72" onclick={openCommand} size="default" variant="outline">
                     <Search />
-                    <span class="flex items-center gap-1.5 text-muted-foreground">Type <Kbd.Root>/</Kbd.Root> to search</span>
+                    <span class="text-muted-foreground flex items-center gap-1.5">Type <Kbd.Root>/</Kbd.Root> to search</span>
                 </Button>
 
                 <DarkModeButton></DarkModeButton>

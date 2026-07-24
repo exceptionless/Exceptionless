@@ -110,7 +110,7 @@
                     </Table.Body>
                 </Table.Root>
             {:else}
-                <P class="mt-2 text-muted-foreground">No external logins were found.</P>
+                <P class="text-muted-foreground mt-2">No external logins were found.</P>
             {/if}
         </div>
     {:else}

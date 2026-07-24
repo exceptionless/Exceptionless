@@ -165,14 +165,14 @@
             </Card.Header>
             <Card.Content>
                 {#if applicationsQuery.isPending}
-                    <div class="flex items-center gap-2 py-8 text-sm text-muted-foreground">
+                    <div class="text-muted-foreground flex items-center gap-2 py-8 text-sm">
                         <Spinner />
                         Loading OAuth applications...
                     </div>
                 {:else if applicationsQuery.isError}
-                    <p class="py-8 text-sm text-destructive">Failed to load OAuth applications.</p>
+                    <p class="text-destructive py-8 text-sm">Failed to load OAuth applications.</p>
                 {:else if applications.length === 0}
-                    <p class="py-8 text-sm text-muted-foreground">No OAuth applications have been created.</p>
+                    <p class="text-muted-foreground py-8 text-sm">No OAuth applications have been created.</p>
                 {:else}
                     <div class="overflow-x-auto">
                         <Table.Root>
@@ -192,13 +192,13 @@
                                             <button type="button" class="text-left font-medium hover:underline" onclick={() => selectApplication(application)}>
                                                 {application.name}
                                             </button>
-                                            <div class="mt-1 text-xs text-muted-foreground">
+                                            <div class="text-muted-foreground mt-1 text-xs">
                                                 Updated <DateTime value={application.updated_utc} />
                                             </div>
                                         </Table.Cell>
                                         <Table.Cell>
                                             <div class="flex items-center gap-2">
-                                                <code class="rounded bg-muted px-1.5 py-0.5 text-xs break-all">{application.client_id}</code>
+                                                <code class="bg-muted rounded px-1.5 py-0.5 text-xs break-all">{application.client_id}</code>
                                                 <CopyToClipboardButton value={application.client_id} variant="ghost" size="icon" />
                                             </div>
                                         </Table.Cell>
@@ -330,7 +330,7 @@
                                             />
                                             <div class="space-y-0.5">
                                                 <Label class="text-sm">{scope.label}</Label>
-                                                <p class="text-xs text-muted-foreground">{scope.description}</p>
+                                                <p class="text-muted-foreground text-xs">{scope.description}</p>
                                             </div>
                                         </div>
                                     {/each}
@@ -362,7 +362,7 @@
                                 <Checkbox checked={field.state.value} onCheckedChange={(value) => field.handleChange(!!value)} />
                                 <div class="space-y-1">
                                     <Label>Disabled</Label>
-                                    <p class="text-xs text-muted-foreground">
+                                    <p class="text-muted-foreground text-xs">
                                         Disabled clients cannot authorize, refresh, or use existing OAuth access tokens.
                                     </p>
                                 </div>

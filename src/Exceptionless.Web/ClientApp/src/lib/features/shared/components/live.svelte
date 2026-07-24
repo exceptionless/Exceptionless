@@ -15,5 +15,5 @@
 {#if live}
     <span class={cn('inline-flex size-2 items-center rounded-full bg-green-500 motion-safe:animate-pulse', className)} title={liveTitle}></span>
 {:else}
-    <span class={cn('inline-flex size-2 items-center rounded-full bg-destructive', className)} title={notLiveTitle}></span>
+    <span class={cn('bg-destructive inline-flex size-2 items-center rounded-full', className)} title={notLiveTitle}></span>
 {/if}

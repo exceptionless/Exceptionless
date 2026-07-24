@@ -24,7 +24,7 @@
     <H3>System Administration</H3>
     <Muted>Manage Exceptionless system maintenance and operations</Muted>
     <div class="mt-6 space-y-6">
-        <nav class="flex w-full flex-row flex-nowrap gap-1 overflow-x-auto rounded-lg bg-muted p-1">
+        <nav class="bg-muted flex w-full flex-row flex-nowrap gap-1 overflow-x-auto rounded-lg p-1">
             {#each filteredRoutes as route (route.href)}
                 {@const isActive = currentPath === route.href || currentPath.startsWith(route.href + '/')}
                 <A
@@ -42,7 +42,7 @@
         {@render children()}
     </div>
     {#snippet disabled()}
-        <div class="flex flex-col items-center justify-center gap-2 py-12 text-center text-muted-foreground">
+        <div class="text-muted-foreground flex flex-col items-center justify-center gap-2 py-12 text-center">
             <span class="text-lg font-medium">Access Denied</span>
             <span class="text-sm">You must be a global administrator to access this page.</span>
         </div>

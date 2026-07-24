@@ -11,7 +11,7 @@
     const version = $derived(aboutQuery.data?.informational_version?.split('+')[0]);
 </script>
 
-<div class="mt-3 border-t pt-3 pb-3 text-sm text-muted-foreground">
+<div class="text-muted-foreground mt-3 border-t pt-3 pb-3 text-sm">
     <div class="mx-4 md:flex md:items-center md:justify-between">
         <ul class="mb-6 flex flex-wrap items-center md:mb-0">
             <li>

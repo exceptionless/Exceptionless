@@ -300,13 +300,13 @@
 </script>
 
 <section>
-    <h4 class="mb-3 text-sm font-semibold tracking-wide text-muted-foreground uppercase">Stack</h4>
+    <h4 class="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">Stack</h4>
     <StackCard {filterChanged} id={event?.stack_id}></StackCard>
 </section>
 
 <section class="mt-2">
     <div class="mb-2 flex items-center justify-between">
-        <h4 class="text-sm font-semibold tracking-wide text-muted-foreground uppercase">Event</h4>
+        <h4 class="text-muted-foreground text-sm font-semibold tracking-wide uppercase">Event</h4>
         <div class="flex items-center gap-1">
             {#if event}
                 <Button aria-label="View Event JSON" onclick={() => (showJsonDialog = true)} size="icon-sm" title="View Event JSON" variant="outline">
@@ -378,7 +378,7 @@
                 {#if canScrollTabsLeft}
                     <Button
                         aria-label="Scroll tabs left"
-                        class="absolute top-1/2 left-0 z-10 -translate-y-1/2 bg-background/95 shadow-sm"
+                        class="bg-background/95 absolute top-1/2 left-0 z-10 -translate-y-1/2 shadow-sm"
                         onclick={() => scrollTabs('left')}
                         size="icon-sm"
                         variant="outline"
@@ -395,7 +395,7 @@
                         <Tabs.Trigger
                             aria-label={isPromotedTab(tab) ? `${tab}. Drag to reorder custom tab.` : undefined}
                             class={[
-                                'flex-none shrink-0 px-3 py-1.5 data-[state=active]:shadow-xs dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-background',
+                                'dark:data-[state=active]:bg-background flex-none shrink-0 px-3 py-1.5 data-[state=active]:shadow-xs dark:data-[state=active]:border-transparent',
                                 isPromotedTab(tab) && 'cursor-grab active:cursor-grabbing',
                                 draggedPromotedTab === tab && 'bg-accent/70'
                             ]}
@@ -412,7 +412,7 @@
                 {#if canScrollTabsRight}
                     <Button
                         aria-label="Scroll tabs right"
-                        class="absolute top-1/2 right-0 z-10 -translate-y-1/2 bg-background/95 shadow-sm"
+                        class="bg-background/95 absolute top-1/2 right-0 z-10 -translate-y-1/2 shadow-sm"
                         onclick={() => scrollTabs('right')}
                         size="icon-sm"
                         variant="outline"

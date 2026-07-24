@@ -213,9 +213,9 @@
 }
 
 .lc-brush-range {
-    @apply border-2 border-primary bg-primary/10;
+    @apply bg-primary/10 border-primary border-2;
 }
 
 .lc-brush-handle {
-    @apply border-2 border-primary bg-primary;
+    @apply bg-primary border-primary border-2;
 }

@@ -197,7 +197,7 @@
                         >
                     {:else if !sourceMapsQuery.data?.length}
                         <Table.Row
-                            ><Table.Cell colspan={6} class="h-24 text-center text-muted-foreground"
+                            ><Table.Cell colspan={6} class="text-muted-foreground h-24 text-center"
                                 >No source maps have been discovered or uploaded yet.</Table.Cell
                             ></Table.Row
                         >
@@ -209,7 +209,7 @@
                                     <Badge variant={sourceMap.is_auto_downloaded ? 'secondary' : 'outline'}>
                                         {sourceMap.is_auto_downloaded ? 'Automatic' : 'Uploaded'}
                                     </Badge>
-                                    {#if sourceMap.file_name}<div class="mt-1 text-xs text-muted-foreground">{sourceMap.file_name}</div>{/if}
+                                    {#if sourceMap.file_name}<div class="text-muted-foreground mt-1 text-xs">{sourceMap.file_name}</div>{/if}
                                 </Table.Cell>
                                 <Table.Cell><Bytes value={sourceMap.size} /></Table.Cell>
                                 <Table.Cell>
@@ -239,7 +239,7 @@
         </div>
     </section>
 
-    <div class="flex border-t border-border pt-4 sm:justify-end">
+    <div class="border-border flex border-t pt-4 sm:justify-end">
         <Button variant="secondary" href={resolve('/(app)/project/[projectId]/settings', { projectId })}>
             <ArrowLeft class="mr-2 size-4" aria-hidden="true" /> Back to Settings
         </Button>

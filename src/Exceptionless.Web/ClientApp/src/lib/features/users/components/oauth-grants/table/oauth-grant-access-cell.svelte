@@ -58,10 +58,10 @@
             <button
                 {...props}
                 type="button"
-                class="inline-flex max-w-full items-center gap-1 truncate rounded-sm text-left text-sm font-medium underline decoration-dotted underline-offset-4 hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+                class="hover:text-primary focus-visible:ring-ring inline-flex max-w-full items-center gap-1 truncate rounded-sm text-left text-sm font-medium underline decoration-dotted underline-offset-4 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
             >
                 <span class="truncate">{formatResourceSummary()}</span>
-                <span class="shrink-0 text-muted-foreground">· {scopeCount} {scopeCount === 1 ? 'scope' : 'scopes'}</span>
+                <span class="text-muted-foreground shrink-0">· {scopeCount} {scopeCount === 1 ? 'scope' : 'scopes'}</span>
             </button>
         {/snippet}
     </Tooltip.Trigger>

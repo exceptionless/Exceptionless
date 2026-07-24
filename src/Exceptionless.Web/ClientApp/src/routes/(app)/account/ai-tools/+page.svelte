@@ -154,7 +154,7 @@
                 {#each selectedTool.steps as step (step.title)}
                     <li class="pl-1">
                         <P>{step.description}</P>
-                        <div class="relative mt-2 min-h-13 overflow-hidden rounded-md bg-muted">
+                        <div class="bg-muted relative mt-2 min-h-13 overflow-hidden rounded-md">
                             <CodeBlock code={step.code} language={step.language} class="max-h-80 overflow-auto pr-12" />
                             <div class="absolute top-2 right-2">
                                 <CopyToClipboardButton value={step.code} />
@@ -164,11 +164,11 @@
                 {/each}
             </ol>
 
-            <section class="border-t border-border pt-5">
+            <section class="border-border border-t pt-5">
                 <h5 class="text-sm font-semibold">Try asking</h5>
                 <ul class="mt-3 grid gap-2 sm:grid-cols-2">
                     {#each examplePrompts as prompt (prompt)}
-                        <li class="rounded-md bg-muted/40 px-3 py-2 text-sm">{prompt}</li>
+                        <li class="bg-muted/40 rounded-md px-3 py-2 text-sm">{prompt}</li>
                     {/each}
                 </ul>
             </section>

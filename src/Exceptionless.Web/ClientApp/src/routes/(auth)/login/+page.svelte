@@ -193,7 +193,7 @@
     </Card.Root>
 
     {#if enableAccountCreation}
-        <P class="mt-3! px-4 text-center text-sm text-muted-foreground">
+        <P class="text-muted-foreground mt-3! px-4 text-center text-sm">
             By signing up, you agree to our <A href="https://exceptionless.com/privacy" target="_blank">Privacy Policy</A>
             and
             <A href="https://exceptionless.com/terms" target="_blank">Terms of Service</A>.

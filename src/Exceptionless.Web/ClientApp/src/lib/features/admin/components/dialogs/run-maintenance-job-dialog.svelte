@@ -109,7 +109,7 @@
 
             <div class="space-y-4 py-4">
                 {#if action.dangerous}
-                    <div class="flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+                    <div class="border-destructive/50 bg-destructive/10 text-destructive flex items-start gap-2 rounded-md border p-3 text-sm">
                         <TriangleAlert class="mt-0.5 size-4 shrink-0" />
                         <span>This is a destructive operation. Please ensure you understand the impact before proceeding.</span>
                     </div>

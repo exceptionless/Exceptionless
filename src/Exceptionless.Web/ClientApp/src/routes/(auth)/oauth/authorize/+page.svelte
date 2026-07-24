@@ -337,7 +337,7 @@
                         <p class="text-destructive">Unable to load account details.</p>
                     {:else}
                         <p class="truncate font-medium" title={accountDisplayName}>{accountDisplayName}</p>
-                        <p class="truncate font-mono text-xs text-muted-foreground" title={meQuery.data?.email_address}>{meQuery.data?.email_address}</p>
+                        <p class="text-muted-foreground truncate font-mono text-xs" title={meQuery.data?.email_address}>{meQuery.data?.email_address}</p>
                     {/if}
                 </div>
                 <div class="space-y-2">
@@ -349,7 +349,7 @@
                     {:else if organizations.length > 0}
                         <div class="max-h-32 space-y-1 overflow-y-auto rounded-md border p-1">
                             {#each organizations as organization (organization.id)}
-                                <label class="flex min-h-8 items-center gap-2 rounded-sm px-2 text-sm hover:bg-muted/50">
+                                <label class="hover:bg-muted/50 flex min-h-8 items-center gap-2 rounded-sm px-2 text-sm">
                                     <Checkbox
                                         checked={selectedOrganizationIds.has(organization.id)}
                                         onCheckedChange={(checked) => toggleOrganization(organization.id, checked)}
@@ -372,7 +372,7 @@
                     {:else}
                         <p class="truncate font-medium" title={applicationDisplayName}>{applicationDisplayName}</p>
                         {#if consentDetails?.client_name && applicationClientId !== applicationDisplayName}
-                            <p class="truncate font-mono text-xs text-muted-foreground" title={applicationClientId}>{applicationClientId}</p>
+                            <p class="text-muted-foreground truncate font-mono text-xs" title={applicationClientId}>{applicationClientId}</p>
                         {/if}
                     {/if}
                 </div>
@@ -391,31 +391,31 @@
                 {#if requestedScopes.length > 0}
                     <div class="grid gap-2 sm:grid-cols-2">
                         {#each requestedRequiredScopes as scope (scope)}
-                            <div class="flex min-h-12 items-center gap-2 rounded-sm border bg-muted/30 px-2 py-1.5 text-sm">
+                            <div class="bg-muted/30 flex min-h-12 items-center gap-2 rounded-sm border px-2 py-1.5 text-sm">
                                 <span class="min-w-0 flex-1">
                                     <span class="flex min-w-0 flex-wrap items-center gap-1.5">
                                         <span class="truncate font-medium">{formatScope(scope)}</span>
                                         <Badge variant="outline">Required</Badge>
                                     </span>
-                                    <span class="block truncate font-mono text-xs text-muted-foreground">{scope}</span>
+                                    <span class="text-muted-foreground block truncate font-mono text-xs">{scope}</span>
                                 </span>
                             </div>
                         {/each}
                         {#each requestedOptionalScopes as scope (scope)}
-                            <label class="flex min-h-12 items-center gap-2 rounded-sm border px-2 py-1.5 text-sm hover:bg-muted/50">
+                            <label class="hover:bg-muted/50 flex min-h-12 items-center gap-2 rounded-sm border px-2 py-1.5 text-sm">
                                 <Checkbox checked={selectedScopes.has(scope)} onCheckedChange={(checked) => toggleScope(scope, checked)} />
                                 <span class="min-w-0 flex-1">
                                     <span class="block truncate font-medium">{formatScope(scope)}</span>
-                                    <span class="block truncate font-mono text-xs text-muted-foreground">{scope}</span>
+                                    <span class="text-muted-foreground block truncate font-mono text-xs">{scope}</span>
                                 </span>
                             </label>
                         {/each}
                     </div>
                     {#if !hasSelectedResourceScope}
-                        <p class="text-xs text-destructive">Select at least one access scope.</p>
+                        <p class="text-destructive text-xs">Select at least one access scope.</p>
                     {/if}
                     {#if missingRequiredScopes.length > 0}
-                        <p class="text-xs text-destructive">Missing required scope: {missingRequiredScopes.map(formatScope).join(', ')}.</p>
+                        <p class="text-destructive text-xs">Missing required scope: {missingRequiredScopes.map(formatScope).join(', ')}.</p>
                     {/if}
                 {:else}
                     <p class="text-muted-foreground">No scopes requested.</p>

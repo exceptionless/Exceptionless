@@ -156,7 +156,7 @@
                         side={sidebar.isMobile ? 'bottom' : 'right'}
                         sideOffset={4}
                     >
-                        <DropdownMenu.Label class="text-xs text-muted-foreground">Organizations</DropdownMenu.Label>
+                        <DropdownMenu.Label class="text-muted-foreground text-xs">Organizations</DropdownMenu.Label>
                         {#if organizations.length > 0}
                             {#each organizations as organization (organization.name)}
                                 <DropdownMenu.Item
@@ -174,8 +174,8 @@
                                 </DropdownMenu.Item>
                             {/each}
                         {:else}
-                            <DropdownMenu.Item class="gap-2 p-2 text-muted-foreground" disabled>
-                                <div class="flex size-6 items-center justify-center rounded-md border bg-background">
+                            <DropdownMenu.Item class="text-muted-foreground gap-2 p-2" disabled>
+                                <div class="bg-background flex size-6 items-center justify-center rounded-md border">
                                     <UserRoundSearch class="size-4" aria-hidden="true" />
                                 </div>
                                 No Organizations Available
@@ -187,27 +187,27 @@
                                 onSelect={() =>
                                     void navigateTo(resolve('/(app)/organization/[organizationId]/manage', { organizationId: activeOrganization.id }))}
                             >
-                                <div class="flex size-6 items-center justify-center rounded-md border bg-background">
+                                <div class="bg-background flex size-6 items-center justify-center rounded-md border">
                                     <Settings class="size-4" aria-hidden="true" />
                                 </div>
-                                <span class="font-medium text-muted-foreground">Manage Organization</span>
+                                <span class="text-muted-foreground font-medium">Manage Organization</span>
                             </DropdownMenu.Item>
                         {/if}
                         <DropdownMenu.Item onSelect={() => void navigateTo(resolve('/(app)/project/list'))}>
-                            <div class="flex size-6 items-center justify-center rounded-md border bg-background">
+                            <div class="bg-background flex size-6 items-center justify-center rounded-md border">
                                 <Folder class="size-4" aria-hidden="true" />
                             </div>
-                            <span class="font-medium text-muted-foreground">Projects</span>
+                            <span class="text-muted-foreground font-medium">Projects</span>
                         </DropdownMenu.Item>
                         <DropdownMenu.Item onSelect={() => void navigateTo(resolve('/(app)/organization/add'))}>
-                            <div class="flex size-6 items-center justify-center rounded-md border bg-background">
+                            <div class="bg-background flex size-6 items-center justify-center rounded-md border">
                                 <Plus class="size-4" aria-hidden="true" />
                             </div>
-                            <span class="font-medium text-muted-foreground">Add Organization</span>
+                            <span class="text-muted-foreground font-medium">Add Organization</span>
                         </DropdownMenu.Item>
                         <GlobalUser>
                             <DropdownMenu.Separator />
-                            <DropdownMenu.Label class="text-xs text-muted-foreground">Admin</DropdownMenu.Label>
+                            <DropdownMenu.Label class="text-muted-foreground text-xs">Admin</DropdownMenu.Label>
                             {#if isImpersonating}
                                 <DropdownMenu.Item onSelect={stopImpersonating} class="gap-2 p-2 text-violet-600 dark:text-violet-400">
                                     <div
@@ -219,10 +219,10 @@
                                 </DropdownMenu.Item>
                             {:else}
                                 <DropdownMenu.Item onSelect={() => (openImpersonateDialog = true)} class="gap-2 p-2">
-                                    <div class="flex size-6 items-center justify-center rounded-md border bg-background">
+                                    <div class="bg-background flex size-6 items-center justify-center rounded-md border">
                                         <Eye class="size-4" aria-hidden="true" />
                                     </div>
-                                    <span class="font-medium text-muted-foreground">Impersonate Organization</span>
+                                    <span class="text-muted-foreground font-medium">Impersonate Organization</span>
                                 </DropdownMenu.Item>
                             {/if}
                         </GlobalUser>

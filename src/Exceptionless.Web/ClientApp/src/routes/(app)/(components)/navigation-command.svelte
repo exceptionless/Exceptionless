@@ -313,7 +313,7 @@
                                         <div class="flex min-w-0 flex-col">
                                             <span class="truncate">{getResultTitle(event)}</span>
                                             {#if getResultDescription(event)}
-                                                <span class="truncate text-xs text-muted-foreground">{getResultDescription(event)}</span>
+                                                <span class="text-muted-foreground truncate text-xs">{getResultDescription(event)}</span>
                                             {/if}
                                         </div>
                                     </Command.LinkItem>
@@ -344,7 +344,7 @@
                                         <div class="flex min-w-0 flex-col">
                                             <span class="truncate">{getResultTitle(stack)}</span>
                                             {#if getResultDescription(stack)}
-                                                <span class="truncate text-xs text-muted-foreground">{getResultDescription(stack)}</span>
+                                                <span class="text-muted-foreground truncate text-xs">{getResultDescription(stack)}</span>
                                             {/if}
                                         </div>
                                     </Command.LinkItem>
@@ -378,7 +378,7 @@
                             <div class="flex min-w-0 flex-col">
                                 <span class="truncate">{route.title}</span>
                                 {#if route.parentTitle}
-                                    <span class="text-xs text-muted-foreground">{route.parentTitle}</span>
+                                    <span class="text-muted-foreground text-xs">{route.parentTitle}</span>
                                 {/if}
                             </div>
                             {#if route.shortcut}

@@ -159,20 +159,20 @@
                             <h3 id="available-columns-heading" class="text-sm font-semibold">Available Columns</h3>
                             <Badge variant="secondary">{availableColumns.length}</Badge>
                         </div>
-                        <p class="text-sm text-muted-foreground">Add optional columns to the table.</p>
+                        <p class="text-muted-foreground text-sm">Add optional columns to the table.</p>
                     </div>
                 </div>
 
-                <div class="rounded-lg border border-input bg-muted/20 p-2">
+                <div class="border-input bg-muted/20 rounded-lg border p-2">
                     <div class="flex max-h-[19rem] flex-col gap-1.5 overflow-y-auto pr-1" role="list" aria-label="Available columns">
                         {#if availableColumns.length === 0}
-                            <p class="py-12 text-center text-sm text-muted-foreground">All columns are visible</p>
+                            <p class="text-muted-foreground py-12 text-center text-sm">All columns are visible</p>
                         {:else if filteredAvailableColumns.length === 0}
-                            <p class="py-12 text-center text-sm text-muted-foreground">No columns match your search</p>
+                            <p class="text-muted-foreground py-12 text-center text-sm">No columns match your search</p>
                         {:else}
                             {#each filteredAvailableColumns as column (column.id)}
                                 <div
-                                    class="flex min-h-11 items-center gap-3 rounded-lg border bg-background px-3 text-sm shadow-xs transition-colors hover:bg-muted/70"
+                                    class="bg-background hover:bg-muted/70 flex min-h-11 items-center gap-3 rounded-lg border px-3 text-sm shadow-xs transition-colors"
                                     role="listitem"
                                 >
                                     <Checkbox aria-label={`Add ${getColumnLabel(column)} column`} checked={false} onclick={() => addColumn(column)} />
@@ -188,12 +188,12 @@
                 </div>
             </section>
 
-            <div class="hidden items-center justify-center border-x bg-muted/30 lg:flex" aria-hidden="true">
+            <div class="bg-muted/30 hidden items-center justify-center border-x lg:flex" aria-hidden="true">
                 <div class="flex flex-col gap-3">
-                    <div class="flex size-9 items-center justify-center rounded-lg border border-input bg-background text-muted-foreground">
+                    <div class="border-input bg-background text-muted-foreground flex size-9 items-center justify-center rounded-lg border">
                         <Plus class="size-4" />
                     </div>
-                    <div class="flex size-9 items-center justify-center rounded-lg border border-input bg-background text-muted-foreground">
+                    <div class="border-input bg-background text-muted-foreground flex size-9 items-center justify-center rounded-lg border">
                         <X class="size-4" />
                     </div>
                 </div>
@@ -208,17 +208,17 @@
                             <h3 id="selected-columns-heading" class="text-sm font-semibold">Selected Columns</h3>
                             <Badge variant="secondary">{visibleColumns.length}</Badge>
                         </div>
-                        <p class="text-sm text-muted-foreground">Drag to reorder. The first item appears on the far left.</p>
+                        <p class="text-muted-foreground text-sm">Drag to reorder. The first item appears on the far left.</p>
                     </div>
                 </div>
 
-                <div class="rounded-lg border border-input bg-muted/20 p-2">
+                <div class="border-input bg-muted/20 rounded-lg border p-2">
                     <div class="flex max-h-[22.75rem] flex-col gap-1.5 overflow-y-auto pr-1" role="list" aria-label="Selected columns">
                         {#each visibleColumns as column, index (column.id)}
                             <div
                                 class={[
-                                    'flex min-h-11 cursor-grab items-center gap-3 rounded-lg border bg-background px-3 text-sm shadow-xs transition-colors active:cursor-grabbing',
-                                    draggedColumnId === column.id && 'bg-muted ring-2 ring-ring/40'
+                                    'bg-background flex min-h-11 cursor-grab items-center gap-3 rounded-lg border px-3 text-sm shadow-xs transition-colors active:cursor-grabbing',
+                                    draggedColumnId === column.id && 'bg-muted ring-ring/40 ring-2'
                                 ]}
                                 draggable="true"
                                 ondragstart={(event) => handleDragStart(event, column.id)}

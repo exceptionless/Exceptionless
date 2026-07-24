@@ -510,7 +510,7 @@
                 Manage subscription
             </Dialog.Title>
             <Muted class="text-xs">
-                <Small class="text-xs text-foreground">{organization.name}</Small>
+                <Small class="text-foreground text-xs">{organization.name}</Small>
                 <span> · </span>
                 {#if currentPlanInfo.isFree}
                     {currentPlanInfo.label}
@@ -543,7 +543,7 @@
                 <div class="max-h-[70vh] space-y-6 overflow-y-auto px-1 py-1">
                     <section class="space-y-2.5">
                         <div class="flex items-center justify-between px-0.5">
-                            <div class="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">Plan</div>
+                            <div class="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">Plan</div>
                             <Muted class="text-xs font-normal normal-case">All changes prorated</Muted>
                         </div>
 
@@ -553,13 +553,13 @@
                                 <Tabs.Trigger value="year" class="gap-2">
                                     Yearly
                                     {#if yearlySavingsLabel}
-                                        <Badge variant="default" class="px-1.5 py-0 text-[10px] text-foreground">{yearlySavingsLabel}</Badge>
+                                        <Badge variant="default" class="text-foreground px-1.5 py-0 text-[10px]">{yearlySavingsLabel}</Badge>
                                     {/if}
                                 </Tabs.Trigger>
                             </Tabs.List>
                         </Tabs.Root>
 
-                        <div class="divide-y divide-border overflow-hidden rounded-lg border bg-card">
+                        <div class="divide-border bg-card divide-y overflow-hidden rounded-lg border">
                             {#each tiers as tier, tierIdx (tier.id)}
                                 {@const planForInterval = interval === 'year' && tier.yearly ? tier.yearly : tier.monthly}
                                 {@const price = tierPrice(tier, interval)}
@@ -574,7 +574,7 @@
                                         : 'hover:bg-muted/50'}"
                                 >
                                     {#if isSelected}
-                                        <span class="absolute top-0 bottom-0 left-0 w-0.5 bg-primary"></span>
+                                        <span class="bg-primary absolute top-0 bottom-0 left-0 w-0.5"></span>
                                     {/if}
                                     <div class="min-w-0 flex-1">
                                         <div class="flex items-center gap-2">
@@ -582,7 +582,7 @@
                                             {#if isCurrent}
                                                 <Badge variant="secondary" class="px-1.5 py-0 text-[10px] uppercase">Current</Badge>
                                             {:else if tier.popular && tierIdx > currentTierIndex}
-                                                <Badge variant="default" class="px-1.5 py-0 text-[10px] text-foreground uppercase">Most popular</Badge>
+                                                <Badge variant="default" class="text-foreground px-1.5 py-0 text-[10px] uppercase">Most popular</Badge>
                                             {/if}
                                         </div>
                                         {#if planForInterval}
@@ -590,9 +590,9 @@
                                                 {#if planForInterval.max_events_per_month < 0}Unlimited events{:else}<NumberCompact
                                                         value={planForInterval.max_events_per_month}
                                                     /> events/mo{/if}
-                                                <span class="mx-1 text-muted-foreground/60">·</span>
+                                                <span class="text-muted-foreground/60 mx-1">·</span>
                                                 {formatRetention(planForInterval.retention_days)}
-                                                <span class="mx-1 text-muted-foreground/60">·</span>
+                                                <span class="text-muted-foreground/60 mx-1">·</span>
                                                 {formatUsers(planForInterval.max_users)}
                                             </Muted>
                                         {/if}
@@ -619,11 +619,11 @@
                                     : 'hover:bg-muted/50'}"
                             >
                                 {#if isFreeSelected}
-                                    <span class="absolute top-0 bottom-0 left-0 w-0.5 bg-primary"></span>
+                                    <span class="bg-primary absolute top-0 bottom-0 left-0 w-0.5"></span>
                                 {/if}
                                 <div class="min-w-0 flex-1">
                                     <div class="flex items-center gap-2">
-                                        <span class="text-sm font-medium text-muted-foreground">Free</span>
+                                        <span class="text-muted-foreground text-sm font-medium">Free</span>
                                         {#if isFreeCurrent}
                                             <Badge variant="secondary" class="px-1.5 py-0 text-[10px] uppercase">Current</Badge>
                                         {:else}
@@ -635,9 +635,9 @@
                                             {#if freePlan.max_events_per_month < 0}Unlimited events{:else}<NumberCompact
                                                     value={freePlan.max_events_per_month}
                                                 /> events/mo{/if}
-                                            <span class="mx-1 text-muted-foreground/60">·</span>
+                                            <span class="text-muted-foreground/60 mx-1">·</span>
                                             {formatRetention(freePlan.retention_days)}
-                                            <span class="mx-1 text-muted-foreground/60">·</span>
+                                            <span class="text-muted-foreground/60 mx-1">·</span>
                                             {formatUsers(freePlan.max_users)}
                                         </Muted>
                                     {/if}
@@ -652,12 +652,12 @@
                     {#if isPaidPlan}
                         <section class="space-y-2.5" bind:this={paymentSectionEl}>
                             <div class="flex items-center justify-between px-0.5">
-                                <div class="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">Payment method</div>
+                                <div class="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">Payment method</div>
                                 {#if hasExistingCard && paymentExpanded}
                                     <Button
                                         type="button"
                                         variant="link"
-                                        class="h-auto p-0 text-xs font-medium text-muted-foreground normal-case"
+                                        class="text-muted-foreground h-auto p-0 text-xs font-medium normal-case"
                                         onclick={onKeepCurrentCard}
                                     >
                                         Keep current card
@@ -667,19 +667,19 @@
 
                             {#if hasExistingCard && !paymentExpanded}
                                 <div class="flex items-center justify-between gap-3 px-0.5 py-1">
-                                    <div class="flex items-center gap-2.5 text-sm text-foreground">
-                                        <CreditCard class="size-4 text-muted-foreground" />
+                                    <div class="text-foreground flex items-center gap-2.5 text-sm">
+                                        <CreditCard class="text-muted-foreground size-4" />
                                         <span>
                                             Paying with
                                             <Muted class="inline font-mono text-xs">···· {organization.card_last4}</Muted>
                                         </span>
                                     </div>
-                                    <Button type="button" variant="link" class="h-auto p-0 text-sm font-medium text-primary" onclick={onUseDifferentCard}>
+                                    <Button type="button" variant="link" class="text-primary h-auto p-0 text-sm font-medium" onclick={onUseDifferentCard}>
                                         Use a different payment method
                                     </Button>
                                 </div>
                             {:else}
-                                <div class="rounded-lg border border-border bg-muted/30 p-3">
+                                <div class="border-border bg-muted/30 rounded-lg border p-3">
                                     <StripeProvider
                                         appearance={{
                                             theme: 'stripe',
@@ -702,12 +702,12 @@
                     {#if !isFreeSelected}
                         <section class="space-y-2.5" bind:this={couponSectionEl}>
                             <div class="flex items-center justify-between px-0.5">
-                                <div class="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">Coupon</div>
+                                <div class="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">Coupon</div>
                                 {#if couponOpen && !couponApplied}
                                     <Button
                                         type="button"
                                         variant="link"
-                                        class="h-auto p-0 text-xs font-medium text-muted-foreground normal-case"
+                                        class="text-muted-foreground h-auto p-0 text-xs font-medium normal-case"
                                         onclick={onCouponCancel}
                                     >
                                         Cancel
@@ -720,9 +720,9 @@
                                     <Check class="size-4" />
                                     <Alert.Description class="flex flex-1 items-center gap-2">
                                         <span class="font-mono text-xs font-semibold">{couponApplied}</span>
-                                        <span class="truncate text-muted-foreground">— will be applied</span>
+                                        <span class="text-muted-foreground truncate">— will be applied</span>
                                         <span class="flex-1"></span>
-                                        <Button type="button" variant="link" class="h-auto p-0 text-xs text-muted-foreground" onclick={onCouponRemove}>
+                                        <Button type="button" variant="link" class="text-muted-foreground h-auto p-0 text-xs" onclick={onCouponRemove}>
                                             Remove
                                         </Button>
                                     </Alert.Description>
@@ -755,7 +755,7 @@
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    class="w-full justify-start gap-2 border-dashed border-border/80 text-muted-foreground hover:text-foreground"
+                                    class="border-border/80 text-muted-foreground hover:text-foreground w-full justify-start gap-2 border-dashed"
                                     onclick={onCouponOpen}
                                 >
                                     <Plus class="size-3.5" />
@@ -766,7 +766,7 @@
                     {/if}
                 </div>
 
-                <Dialog.Footer class="mt-4 flex-col items-stretch gap-3 border-t border-border pt-4 sm:flex-col sm:items-stretch sm:space-x-0">
+                <Dialog.Footer class="border-border mt-4 flex-col items-stretch gap-3 border-t pt-4 sm:flex-col sm:items-stretch sm:space-x-0">
                     <form.Subscribe selector={(state) => state.errors}>
                         {#snippet children(errors)}
                             <ErrorMessage message={getFormErrorMessages(errors)} />
@@ -788,17 +788,17 @@
                                 <Muted class="min-w-16 text-[10px] font-semibold tracking-wider uppercase">Plan</Muted>
                                 <Muted class="text-xs">
                                     {#if isFreeSelected}
-                                        <Small class="text-xs text-foreground">{planLabel(organization.plan_id, { includeInterval: true })}</Small>
-                                        <span class="mx-1 text-muted-foreground/60">→</span>
-                                        <Small class="text-xs text-foreground">Free</Small>
+                                        <Small class="text-foreground text-xs">{planLabel(organization.plan_id, { includeInterval: true })}</Small>
+                                        <span class="text-muted-foreground/60 mx-1">→</span>
+                                        <Small class="text-foreground text-xs">Free</Small>
                                         · immediate, prorated credit
                                     {:else if organization.plan_id === FREE_PLAN_ID}
-                                        Start <Small class="text-xs text-foreground">{planLabel(selectedPlanId, { includeInterval: true })}</Small>
+                                        Start <Small class="text-foreground text-xs">{planLabel(selectedPlanId, { includeInterval: true })}</Small>
                                         {#if selectedPlan}· <Currency value={selectedPlan.price} />{interval === 'year' ? '/yr' : '/mo'}{/if}
                                     {:else}
-                                        <Small class="text-xs text-foreground">{planLabel(organization.plan_id, { includeInterval: includeInt })}</Small>
-                                        <span class="mx-1 text-muted-foreground/60">→</span>
-                                        <Small class="text-xs text-foreground">{planLabel(selectedPlanId, { includeInterval: includeInt })}</Small>
+                                        <Small class="text-foreground text-xs">{planLabel(organization.plan_id, { includeInterval: includeInt })}</Small>
+                                        <span class="text-muted-foreground/60 mx-1">→</span>
+                                        <Small class="text-foreground text-xs">{planLabel(selectedPlanId, { includeInterval: includeInt })}</Small>
                                         {#if selectedPlan}· <Currency value={selectedPlan.price} />{interval === 'year' ? '/yr' : '/mo'} · prorated today{/if}
                                     {/if}
                                 </Muted>
@@ -809,8 +809,8 @@
                                 <Muted class="min-w-16 text-[10px] font-semibold tracking-wider uppercase">Payment</Muted>
                                 <Muted class="text-xs">
                                     ···· {organization.card_last4}
-                                    <span class="mx-1 text-muted-foreground/60">→</span>
-                                    <Small class="text-xs text-foreground">new payment method</Small>
+                                    <span class="text-muted-foreground/60 mx-1">→</span>
+                                    <Small class="text-foreground text-xs">new payment method</Small>
                                 </Muted>
                             </div>
                         {/if}
@@ -818,7 +818,7 @@
                             <div class="flex items-baseline gap-2 text-xs leading-snug">
                                 <Muted class="min-w-16 text-[10px] font-semibold tracking-wider uppercase">Coupon</Muted>
                                 <Muted class="text-xs">
-                                    <Small class="font-mono text-xs text-foreground">{couponApplied}</Small> applied
+                                    <Small class="text-foreground font-mono text-xs">{couponApplied}</Small> applied
                                 </Muted>
                             </div>
                         {/if}

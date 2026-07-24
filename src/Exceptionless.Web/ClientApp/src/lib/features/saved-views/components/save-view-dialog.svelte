@@ -122,7 +122,7 @@
             <Dialog.Description>Save the current view configuration for quick access.</Dialog.Description>
         </Dialog.Header>
         {#if duplicateView}
-            <div class="rounded-md bg-muted p-3">
+            <div class="bg-muted rounded-md p-3">
                 <Muted>
                     Current filters match <strong>"{duplicateView.name}"</strong>. You can
                     <Button
@@ -156,7 +156,7 @@
                     autofocus
                 />
                 {#if visibleNameError}
-                    <p id="view-name-error" class="text-sm text-destructive">{visibleNameError}</p>
+                    <p id="view-name-error" class="text-destructive text-sm">{visibleNameError}</p>
                 {/if}
             </div>
             <div class="flex flex-col gap-2">
@@ -174,7 +174,7 @@
                     }}
                 />
                 {#if visibleSlugError}
-                    <p id="view-slug-error" class="text-sm text-destructive">{visibleSlugError}</p>
+                    <p id="view-slug-error" class="text-destructive text-sm">{visibleSlugError}</p>
                 {/if}
             </div>
             <div class="flex items-center justify-between">

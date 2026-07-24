@@ -74,11 +74,11 @@
     <title>{isNotFound ? 'Page Not Found' : 'Error'} - Exceptionless</title>
 </svelte:head>
 
-<main class="relative flex min-h-screen overflow-hidden bg-background text-foreground" aria-labelledby="error-title">
+<main class="bg-background text-foreground relative flex min-h-screen overflow-hidden" aria-labelledby="error-title">
     <div
         class="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-size-[48px_48px] opacity-20"
     ></div>
-    <div class="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-primary/70 to-transparent"></div>
+    <div class="via-primary/70 absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent to-transparent"></div>
 
     <section
         class="relative mx-auto grid w-full max-w-6xl items-center gap-10 px-6 py-12 lg:grid-cols-[minmax(0,1fr)_22rem] lg:px-10"
@@ -87,7 +87,7 @@
         <div class="max-w-3xl">
             <Logo class="mx-0 mb-12 max-h-12" />
 
-            <div class="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+            <div class="border-primary/30 bg-primary/10 text-primary mb-8 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-medium">
                 {#if isNotFound}
                     <SearchXIcon class="size-4" aria-hidden="true" />
                 {:else}
@@ -97,7 +97,7 @@
             </div>
 
             <h1 id="error-title" class="max-w-2xl text-4xl leading-tight font-semibold tracking-normal text-balance sm:text-5xl lg:text-6xl">{title}</h1>
-            <p id="error-description" class="mt-5 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">{message}</p>
+            <p id="error-description" class="text-muted-foreground mt-5 max-w-2xl text-base leading-7 sm:text-lg">{message}</p>
 
             <div class="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Button href={primaryHref} size="xl" class="w-full sm:w-auto">
@@ -122,54 +122,54 @@
             </div>
         </div>
 
-        <aside class="rounded-xl border border-border bg-card/80 p-5 shadow-2xl shadow-black/30 backdrop-blur" aria-label="Recovery options">
+        <aside class="border-border bg-card/80 rounded-xl border p-5 shadow-2xl shadow-black/30 backdrop-blur" aria-label="Recovery options">
             <div class="mb-5 flex items-center justify-between gap-4">
                 <div>
-                    <p class="text-sm font-medium text-muted-foreground">Recovery</p>
+                    <p class="text-muted-foreground text-sm font-medium">Recovery</p>
                     <h2 class="text-xl font-semibold">Next best places</h2>
                 </div>
-                <div class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <div class="bg-primary/10 text-primary flex size-10 items-center justify-center rounded-lg">
                     <ArrowRightIcon class="size-5" aria-hidden="true" />
                 </div>
             </div>
 
             <nav aria-label="Error page shortcuts" class="space-y-2">
                 <a
-                    class="group flex items-center justify-between rounded-lg border border-border bg-background/60 px-3 py-3 text-sm transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                    class="group border-border bg-background/60 hover:bg-muted focus-visible:ring-ring/50 flex items-center justify-between rounded-lg border px-3 py-3 text-sm transition-colors focus-visible:ring-3 focus-visible:outline-none"
                     href={primaryHref}
                 >
                     <span>{primaryLabel}</span>
-                    <ArrowRightIcon class="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                    <ArrowRightIcon class="text-muted-foreground size-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
                 </a>
                 {#if isAuthenticated}
                     <a
-                        class="group flex items-center justify-between rounded-lg border border-border bg-background/60 px-3 py-3 text-sm transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                        class="group border-border bg-background/60 hover:bg-muted focus-visible:ring-ring/50 flex items-center justify-between rounded-lg border px-3 py-3 text-sm transition-colors focus-visible:ring-3 focus-visible:outline-none"
                         href={resolve('/(app)/stack')}
                     >
                         <span>Open Stacks</span>
-                        <ArrowRightIcon class="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                        <ArrowRightIcon class="text-muted-foreground size-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
                     </a>
                     <a
-                        class="group flex items-center justify-between rounded-lg border border-border bg-background/60 px-3 py-3 text-sm transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                        class="group border-border bg-background/60 hover:bg-muted focus-visible:ring-ring/50 flex items-center justify-between rounded-lg border px-3 py-3 text-sm transition-colors focus-visible:ring-3 focus-visible:outline-none"
                         href={resolve('/(app)/project/list')}
                     >
                         <span>View Projects</span>
-                        <ArrowRightIcon class="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                        <ArrowRightIcon class="text-muted-foreground size-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
                     </a>
                 {/if}
                 <a
-                    class="group flex items-center justify-between rounded-lg border border-border bg-background/60 px-3 py-3 text-sm transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                    class="group border-border bg-background/60 hover:bg-muted focus-visible:ring-ring/50 flex items-center justify-between rounded-lg border px-3 py-3 text-sm transition-colors focus-visible:ring-3 focus-visible:outline-none"
                     href={documentationHref}
                 >
                     <span>Documentation</span>
-                    <ArrowRightIcon class="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                    <ArrowRightIcon class="text-muted-foreground size-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
                 </a>
                 <a
-                    class="group flex items-center justify-between rounded-lg border border-border bg-background/60 px-3 py-3 text-sm transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                    class="group border-border bg-background/60 hover:bg-muted focus-visible:ring-ring/50 flex items-center justify-between rounded-lg border px-3 py-3 text-sm transition-colors focus-visible:ring-3 focus-visible:outline-none"
                     href={supportIssuesHref}
                 >
                     <span>Support</span>
-                    <ArrowRightIcon class="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                    <ArrowRightIcon class="text-muted-foreground size-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
                 </a>
             </nav>
         </aside>

@@ -9,7 +9,7 @@
 </script>
 
 {#if value}
-    <span class="truncate font-mono text-xs text-destructive" title={value}>{value}</span>
+    <span class="text-destructive truncate font-mono text-xs" title={value}>{value}</span>
 {:else}
     <Muted>—</Muted>
 {/if}

@@ -11,5 +11,5 @@
 </script>
 
 {#if text}
-    <P class="text-[0.8rem] font-medium text-destructive">{text}</P>
+    <P class="text-destructive text-[0.8rem] font-medium">{text}</P>
 {/if}

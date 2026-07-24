@@ -47,6 +47,6 @@
     </Label>
     <Input {autocomplete} bind:value class="w-full" id={name} {maxlength} {minlength} onchange={clearError} {placeholder} {required} type="password" />
     {#if error}
-        <Label class="text-[0.8rem] font-medium text-destructive" for={name}>{error.join(' ')}</Label>
+        <Label class="text-destructive text-[0.8rem] font-medium" for={name}>{error.join(' ')}</Label>
     {/if}
 </div>

@@ -282,7 +282,7 @@
                 <SlidersHorizontal class="size-4" aria-hidden="true" />
                 <span>View</span>
                 {#if isModified}
-                    <span class="absolute top-1 right-1 size-2 rounded-full bg-primary" aria-label="Unsaved view changes"></span>
+                    <span class="bg-primary absolute top-1 right-1 size-2 rounded-full" aria-label="Unsaved view changes"></span>
                 {/if}
             </Button>
         {/snippet}

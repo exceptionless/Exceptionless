@@ -87,7 +87,7 @@
         <Muted>Monthly usage is not available for this organization. Please contact support for more information</Muted>
     {:else}
         <div class="space-y-6">
-            <div class="rounded-md border bg-muted/20 p-4">
+            <div class="bg-muted/20 rounded-md border p-4">
                 <p>
                     You are currently on the
                     {#if canChangePlan}
@@ -98,7 +98,7 @@
                         <span class="font-bold">{organizationQuery.data?.plan_name}</span> plan
                     {/if}
                     with
-                    <span class={remainingEventLimit === 0 ? 'font-bold text-destructive' : 'font-bold'}>
+                    <span class={remainingEventLimit === 0 ? 'text-destructive font-bold' : 'font-bold'}>
                         <Number value={remainingEventLimit} />
                     </span>
                     events remaining until this billing period's limit is reset on

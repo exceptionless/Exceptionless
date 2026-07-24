@@ -14,7 +14,7 @@
     </div>
     <Separator />
 
-    <ul class="divide-y divide-border">
+    <ul class="divide-border divide-y">
         <li class="pb-4">
             <div class="flex items-center space-x-4">
                 <Laptop />

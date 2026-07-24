@@ -59,7 +59,7 @@
     <Muted>Manage applications connected to your account</Muted>
 
     {#if grantsQuery.isError}
-        <P class="py-8 text-sm text-destructive">Failed to load applications.</P>
+        <P class="text-destructive py-8 text-sm">Failed to load applications.</P>
     {:else}
         <OAuthGrantsDataTable bind:limit={grantQueryParameters.limit!} isLoading={grantsQuery.isPending} {table} />
     {/if}

@@ -14,7 +14,7 @@
     let { table }: Props = $props();
 </script>
 
-<div class="flex min-w-0 text-sm text-pretty text-muted-foreground">
+<div class="text-muted-foreground flex min-w-0 text-sm text-pretty">
     {#if table.getSelectedRowModel().rows.length > 0}
         <span class="truncate"><Number value={Object.keys(table.getSelectedRowModel().rows).length} /> selected</span>
     {/if}
