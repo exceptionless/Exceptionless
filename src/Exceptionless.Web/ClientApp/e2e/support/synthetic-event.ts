@@ -7,6 +7,12 @@ interface RepresentativeEventOptions {
     runId: string;
 }
 
+interface SessionEventOptions {
+    identity: string;
+    name: string;
+    sessionId: string;
+}
+
 export function createRepresentativeEvent({ appUrl, message, referenceId, runId }: RepresentativeEventOptions): Record<string, unknown> {
     return {
         data: {
@@ -27,6 +33,22 @@ export function createRepresentativeEvent({ appUrl, message, referenceId, runId 
         reference_id: referenceId,
         source: 'playwright-e2e',
         type: 'error'
+    };
+}
+
+export function createSessionEvent({ identity, name, sessionId }: SessionEventOptions): Record<string, unknown> {
+    return {
+        data: {
+            '@user': {
+                identity,
+                name
+            }
+        },
+        message: `Session for ${name}`,
+        reference_id: sessionId,
+        source: 'playwright-e2e',
+        type: 'session',
+        value: 0
     };
 }
 

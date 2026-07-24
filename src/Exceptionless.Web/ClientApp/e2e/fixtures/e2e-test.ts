@@ -4,7 +4,7 @@ import { runCleanupStep, throwIfCleanupFailed } from '../support/cleanup';
 import { E2EApiClient } from './api-client';
 import { getE2EEnvironment } from './environment';
 
-const PASSWORD = 'tester';
+export const E2E_TEST_PASSWORD = 'tester';
 
 export const E2E_ORGANIZATION_NAME_PREFIX = 'E2E Playwright Org';
 
@@ -22,9 +22,26 @@ export interface E2EScenario {
     userToken: string;
 }
 
+export interface E2ESecondaryOrganization extends E2ESecondaryProject {
+    organizationId: string;
+    organizationName: string;
+}
+
+export interface E2ESecondaryProject {
+    message: string;
+    projectId: string;
+    projectName: string;
+    projectToken: string;
+    referenceId: string;
+}
+
 interface E2EFixtures {
     e2eApi: E2EApiClient;
+    e2eCleanupPassword: string;
     e2eScenario: E2EScenario;
+    e2eSecondaryOrganization: E2ESecondaryOrganization;
+    e2eSecondaryProject: E2ESecondaryProject;
+    e2eUseGeneratedUser: boolean;
 }
 
 export const test = base.extend<E2EFixtures>({
@@ -32,7 +49,9 @@ export const test = base.extend<E2EFixtures>({
         await use(new E2EApiClient(request, getE2EEnvironment()));
     },
 
-    e2eScenario: async ({ e2eApi, page }, use, testInfo) => {
+    e2eCleanupPassword: [E2E_TEST_PASSWORD, { option: true }],
+
+    e2eScenario: async ({ e2eApi, e2eCleanupPassword, e2eUseGeneratedUser, page }, use, testInfo) => {
         const run = createRunName(e2eApi.environment.runId, testInfo);
         const userName = `Playwright User ${run}`;
         const email = `playwright-${run}@exceptionless.test`.toLowerCase();
@@ -46,10 +65,10 @@ export const test = base.extend<E2EFixtures>({
         let createdUser = false;
 
         try {
-            if (!e2eApi.environment.isProduction && e2eApi.environment.email && e2eApi.environment.password) {
+            if (!e2eUseGeneratedUser && !e2eApi.environment.isProduction && e2eApi.environment.email && e2eApi.environment.password) {
                 userToken = await e2eApi.login();
             } else {
-                userToken = await e2eApi.signup(userName, email, PASSWORD);
+                userToken = await e2eApi.signup(userName, email, E2E_TEST_PASSWORD);
                 createdUser = true;
             }
 
@@ -62,7 +81,9 @@ export const test = base.extend<E2EFixtures>({
             await page.addInitScript(
                 ({ organizationId, token }) => {
                     window.localStorage.setItem('satellizer_token', token);
-                    window.localStorage.setItem('organization', JSON.stringify(organizationId));
+                    if (!window.localStorage.getItem('organization')) {
+                        window.localStorage.setItem('organization', JSON.stringify(organizationId));
+                    }
                 },
                 { organizationId: organization.id, token: userToken }
             );
@@ -82,6 +103,12 @@ export const test = base.extend<E2EFixtures>({
             });
         } finally {
             const cleanupErrors: Error[] = [];
+
+            if (createdUser && userToken) {
+                await runCleanupStep(cleanupErrors, 'restore generated user session for cleanup', async () => {
+                    userToken = await e2eApi.login(email, e2eCleanupPassword);
+                });
+            }
 
             if (userToken && projectId) {
                 await runCleanupStep(cleanupErrors, `delete project ${projectId}`, async () => {
@@ -106,7 +133,87 @@ export const test = base.extend<E2EFixtures>({
 
             throwIfCleanupFailed(cleanupErrors);
         }
-    }
+    },
+
+    e2eSecondaryOrganization: async ({ e2eApi, e2eScenario }, use) => {
+        const organizationName = `${E2E_ORGANIZATION_NAME_PREFIX} Secondary ${e2eScenario.run}`;
+        const projectName = `Playwright Secondary Organization Project ${e2eScenario.run}`;
+        const referenceId = `${e2eScenario.referenceId}-organization`;
+        const message = `Playwright secondary organization event ${e2eScenario.run}`;
+        let organizationId: string | undefined;
+        let projectId: string | undefined;
+
+        try {
+            const organization = await e2eApi.createOrganization(e2eScenario.userToken, organizationName);
+            organizationId = organization.id;
+            await e2eApi.waitForOrganizationListed(e2eScenario.userToken, organization.id);
+            const project = await e2eApi.createProject(e2eScenario.userToken, organization.id, projectName);
+            projectId = project.id;
+            const projectToken = await e2eApi.getProjectDefaultToken(e2eScenario.userToken, project.id);
+
+            await use({
+                message,
+                organizationId: organization.id,
+                organizationName,
+                projectId: project.id,
+                projectName,
+                projectToken: projectToken.id,
+                referenceId
+            });
+        } finally {
+            const cleanupErrors: Error[] = [];
+
+            if (projectId) {
+                await runCleanupStep(cleanupErrors, `delete secondary organization project ${projectId}`, async () => {
+                    await e2eApi.deleteProject(e2eScenario.userToken, projectId!);
+                    await e2eApi.waitForProjectDeleted(e2eScenario.userToken, projectId!);
+                });
+            }
+
+            if (organizationId) {
+                await runCleanupStep(cleanupErrors, `delete secondary organization ${organizationId}`, async () => {
+                    await e2eApi.deleteOrganization(e2eScenario.userToken, organizationId!);
+                    await e2eApi.waitForOrganizationDeleted(e2eScenario.userToken, organizationId!);
+                });
+            }
+
+            throwIfCleanupFailed(cleanupErrors);
+        }
+    },
+
+    e2eSecondaryProject: async ({ e2eApi, e2eScenario }, use) => {
+        const projectName = `Playwright Secondary Project ${e2eScenario.run}`;
+        const referenceId = `${e2eScenario.referenceId}-secondary`;
+        const message = `Playwright secondary project event ${e2eScenario.run}`;
+        let projectId: string | undefined;
+
+        try {
+            const project = await e2eApi.createProject(e2eScenario.userToken, e2eScenario.organizationId, projectName);
+            projectId = project.id;
+            const projectToken = await e2eApi.getProjectDefaultToken(e2eScenario.userToken, project.id);
+
+            await use({
+                message,
+                projectId: project.id,
+                projectName,
+                projectToken: projectToken.id,
+                referenceId
+            });
+        } finally {
+            const cleanupErrors: Error[] = [];
+
+            if (projectId) {
+                await runCleanupStep(cleanupErrors, `delete secondary project ${projectId}`, async () => {
+                    await e2eApi.deleteProject(e2eScenario.userToken, projectId!);
+                    await e2eApi.waitForProjectDeleted(e2eScenario.userToken, projectId!);
+                });
+            }
+
+            throwIfCleanupFailed(cleanupErrors);
+        }
+    },
+
+    e2eUseGeneratedUser: [false, { option: true }]
 });
 
 export { expect };

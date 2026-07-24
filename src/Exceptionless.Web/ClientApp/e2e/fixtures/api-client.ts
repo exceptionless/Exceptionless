@@ -89,6 +89,15 @@ export class E2EApiClient {
         return response.status();
     }
 
+    async deleteOrganizationUser(token: string, organizationId: string, email: string): Promise<number> {
+        const response = await this.request.delete(this.url(`organizations/${organizationId}/users/${encodeURIComponent(email)}`), {
+            headers: this.authHeaders(token)
+        });
+
+        await expectStatus(response, [200, 202, 204, 404], 'delete organization user');
+        return response.status();
+    }
+
     async deleteProject(token: string, projectId: string): Promise<number> {
         const response = await this.request.delete(this.url(`projects/${projectId}`), {
             headers: this.authHeaders(token)
@@ -197,15 +206,15 @@ export class E2EApiClient {
         return toStack(await readJson(response));
     }
 
-    async login(): Promise<string> {
-        if (!this.environment.email || !this.environment.password) {
-            throw new Error('E2E_EMAIL and E2E_PASSWORD are required when using API login.');
+    async login(email = this.environment.email, password = this.environment.password): Promise<string> {
+        if (!email || !password) {
+            throw new Error('Email and password are required when using API login.');
         }
 
         const response = await this.request.post(this.url('auth/login'), {
             data: {
-                email: this.environment.email,
-                password: this.environment.password
+                email,
+                password
             }
         });
 
@@ -230,6 +239,41 @@ export class E2EApiClient {
         }
 
         throw new Error(`Timed out waiting for E2E event with reference id ${referenceId}`);
+    }
+
+    async pollForMailToken(email: string, path: 'reset-password' | 'signup', timeoutMs = 30_000): Promise<string> {
+        const deadline = Date.now() + timeoutMs;
+
+        while (Date.now() < deadline) {
+            const messagesResponse = await this.request.get(`${this.environment.mailUrl}/api/v1/messages`);
+            await expectStatus(messagesResponse, [200], 'list local mail');
+            const messagesResult = toRecord(await readJson(messagesResponse), 'mail messages response');
+            const messages = messagesResult.Messages ?? messagesResult.messages;
+
+            if (Array.isArray(messages)) {
+                for (const message of messages) {
+                    if (!isRecord(message) || !JSON.stringify(message).toLowerCase().includes(email.toLowerCase())) {
+                        continue;
+                    }
+
+                    const id = getOptionalString(message, 'ID') ?? getOptionalString(message, 'id');
+                    if (!id) {
+                        continue;
+                    }
+
+                    const messageResponse = await this.request.get(`${this.environment.mailUrl}/api/v1/message/${encodeURIComponent(id)}`);
+                    await expectStatus(messageResponse, [200], 'read local mail');
+                    const token = extractMailToken(JSON.stringify(await readJson(messageResponse)), path);
+                    if (token) {
+                        return token;
+                    }
+                }
+            }
+
+            await delay(1_000);
+        }
+
+        throw new Error(`Timed out waiting for ${path} email sent to ${email}`);
     }
 
     async signup(name: string, email: string, password: string): Promise<string> {
@@ -298,6 +342,50 @@ export class E2EApiClient {
         );
     }
 
+    async waitForOrganizationListed(token: string, organizationId: string, timeoutMs = 30_000): Promise<void> {
+        const deadline = Date.now() + timeoutMs;
+        let lastError: Error | undefined;
+
+        while (Date.now() < deadline) {
+            try {
+                const organizations = await this.getOrganizations(token);
+                if (organizations.some((organization) => organization.id === organizationId)) {
+                    return;
+                }
+            } catch (error) {
+                lastError = error instanceof Error ? error : new Error(String(error));
+            }
+
+            await delay(1_000);
+        }
+
+        throw new Error(
+            `Timed out waiting for E2E organization ${organizationId} to appear in the organizations list${lastError ? `: ${lastError.message}` : ''}`
+        );
+    }
+
+    async waitForOrganizationNotListed(token: string, organizationId: string, timeoutMs = 30_000): Promise<void> {
+        const deadline = Date.now() + timeoutMs;
+        let lastError: Error | undefined;
+
+        while (Date.now() < deadline) {
+            try {
+                const organizations = await this.getOrganizations(token);
+                if (!organizations.some((organization) => organization.id === organizationId)) {
+                    return;
+                }
+            } catch (error) {
+                lastError = error instanceof Error ? error : new Error(String(error));
+            }
+
+            await delay(1_000);
+        }
+
+        throw new Error(
+            `Timed out waiting for E2E organization ${organizationId} to disappear from the organizations list${lastError ? `: ${lastError.message}` : ''}`
+        );
+    }
+
     async waitForProjectDeleted(token: string, projectId: string, timeoutMs = 30_000): Promise<void> {
         const deadline = Date.now() + timeoutMs;
         let lastError: Error | undefined;
@@ -341,6 +429,12 @@ async function expectStatus(response: APIResponse, expectedStatuses: number[], o
 
     const body = await response.text();
     throw new Error(`${operation} failed with status ${response.status()} ${response.statusText()}${body ? `: ${body}` : ''}`);
+}
+
+function extractMailToken(content: string, path: 'reset-password' | 'signup'): string | undefined {
+    const pattern = path === 'reset-password' ? /\/reset-password\/([^?"'<\\\s]+)/ : /\/signup\?token=([^&"'<\\\s]+)/;
+    const match = pattern.exec(content.replaceAll('&amp;', '&'));
+    return match?.[1] ? decodeURIComponent(match[1]) : undefined;
 }
 
 function getOptionalString(value: Record<string, unknown>, key: string): string | undefined {
