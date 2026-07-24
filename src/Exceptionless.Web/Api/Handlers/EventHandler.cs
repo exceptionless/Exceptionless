@@ -764,6 +764,8 @@ public class EventHandler(
             {
                 case "summary":
                     events = await GetEventsInternalAsync(sf, ti, filter, sort, page, limit, before, after, includeTotal, httpContext.Request);
+                    var projects = await projectRepository.GetByIdsAsync(events.Documents.Select(e => e.ProjectId).Distinct().ToArray(), o => o.Cache());
+                    var projectNames = projects.ToDictionary(p => p.Id, p => p.Name);
                     var summaries = events.Documents.Select(e =>
                     {
                         var summaryData = formattingPluginManager.GetEventSummaryData(e);
@@ -772,6 +774,9 @@ public class EventHandler(
                             Id = summaryData.Id,
                             TemplateKey = summaryData.TemplateKey,
                             Date = e.Date,
+                            ProjectId = e.ProjectId,
+                            ProjectName = projectNames.GetValueOrDefault(e.ProjectId),
+                            Tags = e.Tags?.OfType<string>().Order(StringComparer.OrdinalIgnoreCase).ToArray() ?? [],
                             Type = e.Type,
                             Version = e.GetVersion(),
                             Data = summaryData.Data
