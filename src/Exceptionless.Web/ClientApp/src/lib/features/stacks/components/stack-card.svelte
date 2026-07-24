@@ -11,11 +11,13 @@
     import * as ButtonGroup from '$comp/ui/button-group';
     import * as Card from '$comp/ui/card';
     import { Skeleton } from '$comp/ui/skeleton';
+    import * as Table from '$comp/ui/table';
     import * as Tooltip from '$comp/ui/tooltip';
     import { getProjectCountQuery, getStackCountQuery } from '$features/events/api.svelte';
     import EventsStackChart, { type EventsStackChartPoint } from '$features/events/components/events-stack-chart.svelte';
     import * as EventsFacetedFilter from '$features/events/components/filters';
     import { StringFilter } from '$features/events/components/filters';
+    import { getProjectQuery } from '$features/projects/api.svelte';
     import * as agg from '$features/shared/api/aggregations';
     import { fillDateSeries } from '$features/shared/utils/charts';
     import { getStackQuery } from '$features/stacks/api.svelte';
@@ -24,8 +26,6 @@
     import LastOccurrence from '@lucide/svelte/icons/arrow-right-circle';
     import Calendar from '@lucide/svelte/icons/calendar';
     import EventsIcon from '@lucide/svelte/icons/calendar-days';
-    import Clock from '@lucide/svelte/icons/clock';
-    import Filter from '@lucide/svelte/icons/filter';
     import Info from '@lucide/svelte/icons/info';
     import Users from '@lucide/svelte/icons/users';
 
@@ -65,6 +65,14 @@
 
     // TODO: Log Level
     const stack = $derived(stackQuery.data!);
+
+    const projectQuery = getProjectQuery({
+        route: {
+            get id() {
+                return stack?.project_id;
+            }
+        }
+    });
 
     // TODO: Add stack charts for Occurrences, Average Value, Value Sum
     const stackCountQuery = getStackCountQuery({
@@ -273,34 +281,67 @@
 
             <EventsStackChart class="h-12 w-full" data={chartData()} isLoading={stackCountQuery.isLoading} />
 
-            <div class="grid grid-cols-1 gap-x-4 lg:grid-cols-2">
-                {#if (stack.status === 'fixed' || stack.status === 'regressed') && stack.date_fixed}
-                    <div class="flex items-center gap-2 text-sm">
-                        <Calendar class="size-4 text-green-500" />
-                        <span>
-                            Fixed {stack.fixed_in_version && `in ${stack.fixed_in_version}`} on <DateTime value={stack.date_fixed} />
-                        </span>
-                    </div>
-                {/if}
-
-                {#if stack.status === 'snoozed' && stack.snooze_until_utc}
-                    <div class="flex items-center gap-2 text-sm">
-                        <Clock class="size-4 text-blue-500" />
-                        <span>Snoozed until <DateTime value={stack.snooze_until_utc} /></span>
-                    </div>
-                {/if}
-            </div>
-
-            {#if stack.tags && stack.tags.length > 0}
-                <div class="flex flex-wrap gap-2">
-                    {#each stack.tags as tag (tag)}
-                        <EventsFacetedFilter.TagTrigger changed={filterChanged} value={[tag]}>
-                            <Filter class="size-3" />
-                            {tag}
-                        </EventsFacetedFilter.TagTrigger>
-                    {/each}
-                </div>
-            {/if}
+            <Table.Root>
+                <Table.Body>
+                    {#if projectQuery.isSuccess || stack.project_id}
+                        <Table.Row class="group">
+                            {#if projectQuery.isSuccess}
+                                <Table.Head class="w-36 font-semibold whitespace-nowrap">Project</Table.Head>
+                                <Table.Cell class="relative w-4 pr-0">
+                                    <EventsFacetedFilter.ProjectTrigger
+                                        changed={filterChanged}
+                                        class="absolute top-1/2 left-0 -translate-y-1/2"
+                                        value={[projectQuery.data.id!]}
+                                    />
+                                </Table.Cell>
+                                <Table.Cell>{projectQuery.data.name}</Table.Cell>
+                            {:else}
+                                <Table.Head class="w-36 font-semibold whitespace-nowrap"><Skeleton class="h-6 w-full rounded-full" /></Table.Head>
+                                <Table.Cell class="w-4 pr-0"></Table.Cell>
+                                <Table.Cell class="flex items-center"><Skeleton class="h-6 w-full rounded-full" /></Table.Cell>
+                            {/if}
+                        </Table.Row>
+                    {/if}
+                    {#if stack.tags && stack.tags.length > 0}
+                        <Table.Row class="group">
+                            <Table.Head class="w-36 font-semibold whitespace-nowrap">Tags</Table.Head>
+                            <Table.Cell class="relative w-4 pr-0">
+                                <EventsFacetedFilter.TagTrigger
+                                    changed={filterChanged}
+                                    class="absolute top-1/2 left-0 -translate-y-1/2"
+                                    value={[stack.tags[0]!]}
+                                />
+                            </Table.Cell>
+                            <Table.Cell class="flex flex-wrap items-center justify-start gap-2 overflow-auto">
+                                <span>{stack.tags[0]}</span>
+                                {#each stack.tags.slice(1) as tag (tag)}
+                                    <span class="inline-flex items-center">
+                                        <EventsFacetedFilter.TagTrigger changed={filterChanged} value={[tag]} />
+                                        <span>{tag}</span>
+                                    </span>
+                                {/each}
+                            </Table.Cell>
+                        </Table.Row>
+                    {/if}
+                    {#if (stack.status === 'fixed' || stack.status === 'regressed') && stack.date_fixed}
+                        <Table.Row>
+                            <Table.Head class="w-36 font-semibold whitespace-nowrap">Fixed</Table.Head>
+                            <Table.Cell class="w-4 pr-0"></Table.Cell>
+                            <Table.Cell>
+                                {stack.fixed_in_version && `In ${stack.fixed_in_version} on `}
+                                <DateTime value={stack.date_fixed} />
+                            </Table.Cell>
+                        </Table.Row>
+                    {/if}
+                    {#if stack.status === 'snoozed' && stack.snooze_until_utc}
+                        <Table.Row>
+                            <Table.Head class="w-36 font-semibold whitespace-nowrap">Snoozed Until</Table.Head>
+                            <Table.Cell class="w-4 pr-0"></Table.Cell>
+                            <Table.Cell><DateTime value={stack.snooze_until_utc} /></Table.Cell>
+                        </Table.Row>
+                    {/if}
+                </Table.Body>
+            </Table.Root>
 
             <StackReferences {stack} />
         </Card.Content>
