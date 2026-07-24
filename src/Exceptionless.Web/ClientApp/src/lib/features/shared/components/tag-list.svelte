@@ -21,31 +21,6 @@
     const hiddenTags = $derived(tags?.slice(maxVisible) ?? []);
     const tagList = $derived(tags?.join(', ') ?? '');
 
-    const tagColorClasses = [
-        'border-red-300 bg-red-100 text-red-900 dark:border-red-700 dark:bg-red-950/40 dark:text-red-200',
-        'border-orange-300 bg-orange-100 text-orange-900 dark:border-orange-700 dark:bg-orange-950/40 dark:text-orange-200',
-        'border-amber-300 bg-amber-100 text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200',
-        'border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-200',
-        'border-sky-300 bg-sky-100 text-sky-900 dark:border-sky-700 dark:bg-sky-950/40 dark:text-sky-200',
-        'border-indigo-300 bg-indigo-100 text-indigo-900 dark:border-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-200',
-        'border-violet-300 bg-violet-100 text-violet-900 dark:border-violet-700 dark:bg-violet-950/40 dark:text-violet-200',
-        'border-fuchsia-300 bg-fuchsia-100 text-fuchsia-900 dark:border-fuchsia-700 dark:bg-fuchsia-950/40 dark:text-fuchsia-200'
-    ];
-
-    function hashTag(tag: string): number {
-        let hash = 0;
-        for (let index = 0; index < tag.length; index++) {
-            hash = (hash << 5) - hash + tag.charCodeAt(index);
-            hash |= 0;
-        }
-
-        return Math.abs(hash);
-    }
-
-    function getTagColorClass(tag: string): string {
-        return tagColorClasses[hashTag(tag) % tagColorClasses.length]!;
-    }
-
     async function handleTagClick(event: MouseEvent, tag: string): Promise<void> {
         event.preventDefault();
         event.stopPropagation();
@@ -66,7 +41,12 @@
 </script>
 
 {#snippet tagBadge(tag: string)}
-    <Badge variant="outline" class={`max-w-28 truncate text-xs ${getTagColorClass(tag)}`}>{tag}</Badge>
+    <Badge
+        variant="outline"
+        class="border-border bg-muted text-muted-foreground group-hover/button:bg-accent group-hover/button:text-accent-foreground max-w-28 truncate text-xs"
+    >
+        {tag}
+    </Badge>
 {/snippet}
 
 {#snippet tag(tag: string)}
@@ -105,7 +85,9 @@
                 <Tooltip.Root>
                     <Tooltip.Trigger>
                         {#snippet child({ props })}
-                            <Badge {...props} variant="outline" class="cursor-default text-xs">+{hiddenTags.length}</Badge>
+                            <Badge {...props} variant="outline" class="border-border bg-muted text-muted-foreground cursor-default text-xs">
+                                +{hiddenTags.length}
+                            </Badge>
                         {/snippet}
                     </Tooltip.Trigger>
                     <Tooltip.Content class="max-w-xs">

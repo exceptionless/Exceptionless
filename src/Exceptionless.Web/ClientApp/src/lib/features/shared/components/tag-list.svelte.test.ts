@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import TagList from './tag-list.svelte';
 
 describe('TagList', () => {
-    it('renders colored tag badges without filter icons and summarizes overflow', () => {
+    it('renders neutral tag badges without filter icons and summarizes overflow', () => {
         const { container } = render(TagList, {
             maxVisible: 2,
             tags: ['api', 'production', 'critical', 'customer']
@@ -16,6 +16,12 @@ describe('TagList', () => {
         expect(screen.queryByText('critical')).toBeNull();
         expect(screen.getByLabelText('Tags: api, production, critical, customer').getAttribute('title')).toBe('api, production, critical, customer');
         expect(container.querySelector('svg')).toBeNull();
+
+        for (const badge of container.querySelectorAll('[data-slot="badge"]')) {
+            expect(badge.classList).toContain('border-border');
+            expect(badge.classList).toContain('bg-muted');
+            expect(badge.classList).toContain('text-muted-foreground');
+        }
     });
 
     it('filters when a tag is clicked', async () => {
