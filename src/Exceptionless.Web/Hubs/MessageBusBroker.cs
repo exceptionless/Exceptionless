@@ -1,7 +1,6 @@
 ﻿using Exceptionless.Core;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Utility;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Messaging;
 using Foundatio.Repositories.Models;
@@ -13,16 +12,18 @@ public sealed class MessageBusBroker : IStartupAction
 {
     private static readonly string TokenTypeName = nameof(Token);
     private static readonly string UserTypeName = nameof(User);
-    private readonly WebSocketConnectionManager _connectionManager;
-    private readonly IConnectionMapping _connectionMapping;
+    private readonly SseConnectionManager _sseConnectionManager;
+    private readonly WebSocketConnectionManager _webSocketConnectionManager;
+    private readonly PushConnectionRegistry _connectionRegistry;
     private readonly IMessageSubscriber _subscriber;
     private readonly AppOptions _options;
     private readonly ILogger _logger;
 
-    public MessageBusBroker(WebSocketConnectionManager connectionManager, IConnectionMapping connectionMapping, IMessageSubscriber subscriber, AppOptions options, ILogger<MessageBusBroker> logger)
+    public MessageBusBroker(SseConnectionManager sseConnectionManager, WebSocketConnectionManager webSocketConnectionManager, PushConnectionRegistry connectionRegistry, IMessageSubscriber subscriber, AppOptions options, ILogger<MessageBusBroker> logger)
     {
-        _connectionManager = connectionManager;
-        _connectionMapping = connectionMapping;
+        _sseConnectionManager = sseConnectionManager;
+        _webSocketConnectionManager = webSocketConnectionManager;
+        _connectionRegistry = connectionRegistry;
         _subscriber = subscriber;
         _options = options;
         _logger = logger;
@@ -30,7 +31,7 @@ public sealed class MessageBusBroker : IStartupAction
 
     public async Task RunAsync(CancellationToken shutdownToken = default)
     {
-        if (!_options.EnableWebSockets)
+        if (!_options.EnablePush)
             return;
 
         _logger.LogDebug("Subscribing to message bus notifications");
@@ -45,7 +46,7 @@ public sealed class MessageBusBroker : IStartupAction
         _logger.LogDebug("Subscribed to message bus notifications");
     }
 
-    private async Task OnUserMembershipChangedAsync(UserMembershipChanged userMembershipChanged, CancellationToken cancellationToken = default)
+    internal async Task OnUserMembershipChangedAsync(UserMembershipChanged userMembershipChanged, CancellationToken cancellationToken = default)
     {
         if (String.IsNullOrEmpty(userMembershipChanged?.OrganizationId))
         {
@@ -54,14 +55,21 @@ public sealed class MessageBusBroker : IStartupAction
         }
 
         // manage user organization group membership
-        var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(userMembershipChanged.UserId);
+        var userConnectionIds = _connectionRegistry.GetUserConnections(userMembershipChanged.UserId);
         _logger.LogTrace("Attempting to update user {User} active groups for {UserConnectionCount} connections", userMembershipChanged.UserId, userConnectionIds.Count);
+        if (userMembershipChanged.ChangeType is ChangeType.Removed && userConnectionIds.Count > 0)
+            TypedSend(userConnectionIds, userMembershipChanged);
+
         foreach (string connectionId in userConnectionIds)
         {
             if (userMembershipChanged.ChangeType is ChangeType.Added)
-                await _connectionMapping.GroupAddAsync(userMembershipChanged.OrganizationId, connectionId);
+            {
+                _connectionRegistry.AddGroup(connectionId, userMembershipChanged.OrganizationId);
+            }
             else if (userMembershipChanged.ChangeType is ChangeType.Removed)
-                await _connectionMapping.GroupRemoveAsync(userMembershipChanged.OrganizationId, connectionId);
+            {
+                _connectionRegistry.RemoveGroup(connectionId, userMembershipChanged.OrganizationId);
+            }
         }
 
         await GroupSendAsync(userMembershipChanged.OrganizationId, userMembershipChanged);
@@ -88,10 +96,10 @@ public sealed class MessageBusBroker : IStartupAction
                 return;
             }
 
-            var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(entityChanged.Id);
+            var userConnectionIds = _connectionRegistry.GetUserConnections(entityChanged.Id);
             _logger.LogTrace("Sending {UserTypeName} message to user: {UserId} (to {UserConnectionCount} connections)", UserTypeName, entityChanged.Id, userConnectionIds.Count);
             foreach (string connectionId in userConnectionIds)
-                await TypedSendAsync(connectionId, entityChanged);
+                TypedSend(connectionId, entityChanged);
 
             return;
         }
@@ -104,21 +112,20 @@ public sealed class MessageBusBroker : IStartupAction
 
             if (userId is not null)
             {
-                var userConnectionIds = await _connectionMapping.GetUserIdConnectionsAsync(userId);
+                var userConnectionIds = _connectionRegistry.GetUserConnections(userId);
 
-                // Auth token removed = logout. Close sockets immediately without sending;
+                // Auth token removed = logout. Close connections immediately without sending;
                 // there is no point delivering a message to a connection we are about to tear down.
                 if (isAuthToken && entityChanged.ChangeType is ChangeType.Removed)
                 {
-                    _logger.LogTrace("Auth token removed for user {UserId}; closing {ConnectionCount} WebSocket connection(s)", userId, userConnectionIds.Count);
-                    string? organizationId = entityChanged.OrganizationId;
-                    foreach (string connectionId in userConnectionIds)
+                    string? tokenId = entityChanged.Id;
+                    var localConnectionIds = tokenId is null ? userConnectionIds : _connectionRegistry.RevokeToken(tokenId);
+                    _logger.LogTrace("Auth token removed for user {UserId}; closing {ConnectionCount} local push connection(s)", userId, localConnectionIds.Count);
+                    foreach (string connectionId in localConnectionIds)
                     {
-                        if (organizationId is { Length: > 0 })
-                            await _connectionMapping.GroupRemoveAsync(organizationId, connectionId);
-
-                        await _connectionMapping.UserIdRemoveAsync(userId, connectionId);
-                        await _connectionManager.RemoveWebSocketAsync(connectionId);
+                        await _sseConnectionManager.RemoveConnectionAsync(connectionId);
+                        await _webSocketConnectionManager.RemoveConnectionAsync(connectionId);
+                        _connectionRegistry.Unregister(connectionId);
                     }
 
                     return;
@@ -126,7 +133,7 @@ public sealed class MessageBusBroker : IStartupAction
 
                 _logger.LogTrace("Sending {TokenTypeName} message for user: {UserId} (to {UserConnectionCount} connections)", TokenTypeName, userId, userConnectionIds.Count);
                 foreach (string connectionId in userConnectionIds)
-                    await TypedSendAsync(connectionId, entityChanged);
+                    TypedSend(connectionId, entityChanged);
 
                 return;
             }
@@ -172,40 +179,73 @@ public sealed class MessageBusBroker : IStartupAction
     private Task OnReleaseNotificationAsync(ReleaseNotification notification, CancellationToken cancellationToken = default)
     {
         _logger.LogTrace("Sending release notification message: {Message}", notification.Message);
-        return TypedBroadcastAsync(notification);
+        TypedBroadcast(notification);
+        return Task.CompletedTask;
     }
 
     private Task OnSystemNotificationAsync(SystemNotification notification, CancellationToken cancellationToken = default)
     {
         _logger.LogTrace("Sending system notification message: {Message}", notification.Message);
-        return TypedBroadcastAsync(notification);
+        TypedBroadcast(notification);
+        return Task.CompletedTask;
     }
 
-    private async Task GroupSendAsync(string group, object value)
+    private Task GroupSendAsync(string group, object value)
     {
-        var connectionIds = await _connectionMapping.GetGroupConnectionsAsync(group);
+        var connectionIds = _connectionRegistry.GetGroupConnections(group);
         if (connectionIds.Count is 0)
         {
             _logger.LogTrace("Ignoring group message to {Group}: No Connections", group);
-            return;
+            return Task.CompletedTask;
         }
 
-        await TypedSendAsync(connectionIds.ToList(), value);
+        TypedSend(connectionIds, value);
+        return Task.CompletedTask;
     }
 
+    public void TypedSend(string connectionId, object value)
+    {
+        var message = new TypedMessage { Type = GetMessageType(value), Message = value };
+        bool canDrop = CanDrop(value);
+        _sseConnectionManager.SendMessage(connectionId, message, canDrop);
+        _webSocketConnectionManager.SendMessage(connectionId, message);
+    }
+
+    [Obsolete("Use TypedSend instead. This compatibility wrapper will be removed after the push transport rollout.")]
     public Task TypedSendAsync(string connectionId, object value)
     {
-        return _connectionManager.SendMessageAsync(connectionId, new TypedMessage { Type = GetMessageType(value), Message = value });
+        TypedSend(connectionId, value);
+        return Task.CompletedTask;
     }
 
+    public void TypedSend(IEnumerable<string> connectionIds, object value)
+    {
+        var message = new TypedMessage { Type = GetMessageType(value), Message = value };
+        bool canDrop = CanDrop(value);
+        _sseConnectionManager.SendMessage(connectionIds, message, canDrop);
+        _webSocketConnectionManager.SendMessage(connectionIds, message);
+    }
+
+    [Obsolete("Use TypedSend instead. This compatibility wrapper will be removed after the push transport rollout.")]
     public Task TypedSendAsync(IList<string> connectionIds, object value)
     {
-        return _connectionManager.SendMessageAsync(connectionIds, new TypedMessage { Type = GetMessageType(value), Message = value });
+        TypedSend(connectionIds, value);
+        return Task.CompletedTask;
     }
 
+    public void TypedBroadcast(object value)
+    {
+        var message = new TypedMessage { Type = GetMessageType(value), Message = value };
+        bool canDrop = CanDrop(value);
+        _sseConnectionManager.SendMessageToAll(message, canDrop);
+        _webSocketConnectionManager.SendMessageToAll(message);
+    }
+
+    [Obsolete("Use TypedBroadcast instead. This compatibility wrapper will be removed after the push transport rollout.")]
     public Task TypedBroadcastAsync(object value)
     {
-        return _connectionManager.SendMessageToAllAsync(new TypedMessage { Type = GetMessageType(value), Message = value });
+        TypedBroadcast(value);
+        return Task.CompletedTask;
     }
 
     private static string GetMessageType(object value)
@@ -214,6 +254,11 @@ public sealed class MessageBusBroker : IStartupAction
             return String.Concat(((EntityChanged)value).Type, "Changed");
 
         return value.GetType().Name;
+    }
+
+    internal static bool CanDrop(object value)
+    {
+        return value is not (PlanOverage or ReleaseNotification or SystemNotification or UserMembershipChanged);
     }
 }
 

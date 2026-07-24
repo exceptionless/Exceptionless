@@ -21,7 +21,7 @@ ContactEmailAddress: "contact@exceptionless.test"
 
 # Runs the jobs in the current website process
 RunJobsInProcess: false
-EnableWebSockets: false
+EnablePush: true
 
 Serilog:
   MinimumLevel: Warning

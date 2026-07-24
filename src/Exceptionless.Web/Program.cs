@@ -96,6 +96,12 @@ public partial class Program
             builder.Logging.ClearProviders();
 
             builder.Host
+                .ConfigureHostOptions(options =>
+                {
+                    // Align with k8s terminationGracePeriodSeconds (60s) minus preStop sleep (15s).
+                    // Keep a five-second safety margin for kubelet/runtime termination overhead.
+                    options.ShutdownTimeout = TimeSpan.FromSeconds(40);
+                })
                 .UseSerilog((ctx, sp, c) =>
                 {
                     c.ReadFrom.Configuration(ctx.Configuration);
@@ -334,10 +340,11 @@ public partial class Program
 
             app.UseMiddleware<OverageMiddleware>();
 
-            if (options.EnableWebSockets)
+            if (options.EnablePush)
             {
                 app.UseWebSockets();
-                app.UseMiddleware<MessageBusBrokerMiddleware>();
+                app.UseMiddleware<WebSocketPushMiddleware>();
+                app.UseMiddleware<SseMiddleware>();
             }
 
             app.MapOpenApi("/docs/v2/openapi.json");

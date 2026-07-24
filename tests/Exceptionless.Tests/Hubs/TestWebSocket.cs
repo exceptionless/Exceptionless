@@ -6,6 +6,7 @@ namespace Exceptionless.Tests.Hubs;
 internal sealed class TestWebSocket : WebSocket
 {
     private WebSocketState _state;
+    private int _closeCount;
 
     public TestWebSocket(WebSocketState state = WebSocketState.Open)
     {
@@ -13,7 +14,6 @@ internal sealed class TestWebSocket : WebSocket
     }
 
     public int CloseCount => _closeCount;
-    private int _closeCount;
     public List<string> SentMessages { get; } = [];
     public override WebSocketCloseStatus? CloseStatus { get; } = WebSocketCloseStatus.NormalClosure;
     public override string? CloseStatusDescription { get; } = "Closed";
@@ -47,7 +47,7 @@ internal sealed class TestWebSocket : WebSocket
 
     public override Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
     {
-        SentMessages.Add(Encoding.ASCII.GetString(buffer.Array!, buffer.Offset, buffer.Count));
+        SentMessages.Add(Encoding.UTF8.GetString(buffer.Array!, buffer.Offset, buffer.Count));
         return Task.CompletedTask;
     }
 }
