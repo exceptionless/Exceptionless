@@ -164,6 +164,11 @@
                 {/each}
             </ol>
 
+            <Muted class="block text-sm">
+                Remote SSH and headless sessions can use device code authorization when your AI tool supports it. Open the verification URL in your local
+                browser, enter the code shown in the terminal, and return to the terminal after approval.
+            </Muted>
+
             <section class="border-border border-t pt-5">
                 <h5 class="text-sm font-semibold">Try asking</h5>
                 <ul class="mt-3 grid gap-2 sm:grid-cols-2">

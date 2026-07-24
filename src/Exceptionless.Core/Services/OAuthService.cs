@@ -70,14 +70,22 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
     ];
 
     private const string AuthorizationCodeCachePrefix = "oauth:code:";
+    private const string DeviceCodeCachePrefix = "oauth:device:";
+    private const string DeviceUserCodeCachePrefix = "oauth:user-code:";
+    private const string DeviceCodeLockPrefix = "oauth:device-lock:";
     private const string RefreshTokenLockPrefix = "oauth:refresh:";
     private const string AccessTokenClientValidityCachePrefix = "oauth:client-valid:";
     private const int OAuthGrantFamilyPageLimit = 1000;
+    private const int DeviceUserCodeLength = 8;
+    private const int DeviceUserCodeGroupLength = 4;
     private static readonly TimeSpan AccessTokenClientValidityCacheLifetime = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan RefreshTokenReplayGracePeriod = TimeSpan.FromMinutes(2);
     private const string ClientMetadataNotes = "Discovered from OAuth client metadata document.";
     private const string DynamicClientRegistrationNotes = "Registered through OAuth dynamic client registration.";
+    private const string DeviceUserCodeCharacters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private static readonly Regex CodeChallengeRegex = new("^[A-Za-z0-9_-]{43}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex CodeVerifierRegex = new("^[A-Za-z0-9._~-]{43,128}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    private static readonly Regex DeviceUserCodeRegex = new("^[A-Z2-9]{8}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     public bool ClientIdMetadataDocumentSupported => options.EnableClientIdMetadataDocuments;
 
@@ -87,33 +95,39 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (!String.Equals(tokenEndpointAuthMethod, "none", StringComparison.Ordinal))
             return OAuthClientRegistrationResult.Invalid("invalid_client_metadata", "Only public OAuth clients using token_endpoint_auth_method 'none' are supported.");
 
-        if (request.GrantTypes is { Length: > 0 } && !request.GrantTypes.All(g => g is OAuthGrantTypes.AuthorizationCode or OAuthGrantTypes.RefreshToken))
-            return OAuthClientRegistrationResult.Invalid("invalid_client_metadata", "Only authorization_code and refresh_token grant types are supported.");
+        var grantTypes = NormalizeGrantTypes(request.GrantTypes);
+        if (!ValidateGrantTypeShape(grantTypes, out string? grantTypesError))
+            return OAuthClientRegistrationResult.Invalid("invalid_client_metadata", grantTypesError);
 
-        if (request.GrantTypes is { Length: > 0 } && !request.GrantTypes.Contains(OAuthGrantTypes.AuthorizationCode, StringComparer.Ordinal))
-            return OAuthClientRegistrationResult.Invalid("invalid_client_metadata", "The authorization_code grant type is required.");
+        bool supportsAuthorizationCode = grantTypes.Contains(OAuthGrantTypes.AuthorizationCode, StringComparer.Ordinal);
 
         if (request.ResponseTypes is { Length: > 0 } && !request.ResponseTypes.SequenceEqual(["code"]))
             return OAuthClientRegistrationResult.Invalid("invalid_client_metadata", "Only the code response type is supported.");
 
-        if (request.RedirectUris is null || request.RedirectUris.Length == 0)
-            return OAuthClientRegistrationResult.Invalid("invalid_redirect_uri", "At least one redirect_uri is required.");
+        if (!supportsAuthorizationCode && request.ResponseTypes is { Length: > 0 })
+            return OAuthClientRegistrationResult.Invalid("invalid_client_metadata", "The code response type requires the authorization_code grant type.");
 
-        string[] redirectUris = request.RedirectUris
+        string[] redirectUris = (request.RedirectUris ?? [])
             .Where(uri => !String.IsNullOrWhiteSpace(uri))
             .Select(uri => uri.Trim())
             .Distinct(StringComparer.Ordinal)
             .ToArray();
 
-        if (redirectUris.Length == 0 || redirectUris.Length > 20 || redirectUris.Any(uri => !OAuthApplication.IsValidRedirectUri(uri)))
+        if (supportsAuthorizationCode && redirectUris.Length == 0)
+            return OAuthClientRegistrationResult.Invalid("invalid_redirect_uri", "At least one redirect_uri is required for authorization_code clients.");
+
+        if (redirectUris.Length > 20 || redirectUris.Any(uri => !OAuthApplication.IsValidRedirectUri(uri)))
             return OAuthClientRegistrationResult.Invalid("invalid_redirect_uri", "Redirect URIs must be absolute HTTPS URIs or loopback HTTP URIs without fragments.");
 
         var scopes = NormalizeScopes(request.Scope);
         if (scopes.Count == 0)
-            scopes = DefaultScopes;
+            scopes = GetDefaultScopes(grantTypes);
 
         if (scopes.Any(s => !SupportedScopes.Contains(s, StringComparer.Ordinal)))
             return OAuthClientRegistrationResult.Invalid("invalid_client_metadata", "One or more scopes are not supported.");
+
+        if (scopes.Contains(AuthorizationRoles.OfflineAccess, StringComparer.Ordinal) && !grantTypes.Contains(OAuthGrantTypes.RefreshToken, StringComparer.Ordinal))
+            return OAuthClientRegistrationResult.Invalid("invalid_client_metadata", "The offline_access scope requires the refresh_token grant type.");
 
         var utcNow = timeProvider.GetUtcNow().UtcDateTime;
         string clientId = await CreateUniqueClientIdAsync();
@@ -124,6 +138,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             Name = NormalizeClientName(request.ClientName, clientId),
             RedirectUris = redirectUris,
             Scopes = scopes.ToArray(),
+            GrantTypes = grantTypes.ToArray(),
             Notes = DynamicClientRegistrationNotes,
             CreatedByUserId = OAuthApplication.SystemUserId,
             UpdatedByUserId = OAuthApplication.SystemUserId,
@@ -138,8 +153,8 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             ClientId = application.ClientId,
             ClientName = application.Name,
             RedirectUris = application.RedirectUris,
-            GrantTypes = [OAuthGrantTypes.AuthorizationCode, OAuthGrantTypes.RefreshToken],
-            ResponseTypes = ["code"],
+            GrantTypes = application.GrantTypes,
+            ResponseTypes = supportsAuthorizationCode ? ["code"] : [],
             Scope = String.Join(' ', application.Scopes),
             TokenEndpointAuthMethod = "none",
             ClientIdIssuedAt = new DateTimeOffset(application.CreatedUtc).ToUnixTimeSeconds()
@@ -219,7 +234,8 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
         bool changed = !String.Equals(application.Name, observedApplication.Name, StringComparison.Ordinal)
             || !HasSameValues(application.RedirectUris, observedApplication.RedirectUris)
-            || !HasSameValues(application.Scopes, observedApplication.Scopes);
+            || !HasSameValues(application.Scopes, observedApplication.Scopes)
+            || !HasSameValues(application.GrantTypes, observedApplication.GrantTypes);
 
         if (!changed)
             return application;
@@ -227,6 +243,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         application.Name = observedApplication.Name;
         application.RedirectUris = observedApplication.RedirectUris;
         application.Scopes = observedApplication.Scopes;
+        application.GrantTypes = observedApplication.GrantTypes;
         application.UpdatedByUserId = OAuthApplication.SystemUserId;
         application.UpdatedUtc = timeProvider.GetUtcNow().UtcDateTime;
 
@@ -242,10 +259,15 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (!String.Equals(metadata.ClientId, clientId, StringComparison.Ordinal))
             return false;
 
-        if (metadata.GrantTypes is { Length: > 0 } && !metadata.GrantTypes.Contains(OAuthGrantTypes.AuthorizationCode, StringComparer.Ordinal))
+        var grantTypes = NormalizeGrantTypes(metadata.GrantTypes);
+        if (!ValidateGrantTypeShape(grantTypes, out _))
             return false;
 
+        bool supportsAuthorizationCode = grantTypes.Contains(OAuthGrantTypes.AuthorizationCode, StringComparer.Ordinal);
         if (metadata.ResponseTypes is { Length: > 0 } && !metadata.ResponseTypes.Contains("code", StringComparer.Ordinal))
+            return false;
+
+        if (!supportsAuthorizationCode && metadata.ResponseTypes is { Length: > 0 })
             return false;
 
         if (!String.IsNullOrWhiteSpace(metadata.TokenEndpointAuthMethod) && !String.Equals(metadata.TokenEndpointAuthMethod, "none", StringComparison.Ordinal))
@@ -257,15 +279,18 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             .Take(20)
             .ToArray() ?? [];
 
-        if (redirectUris.Length == 0)
+        if (supportsAuthorizationCode && redirectUris.Length == 0)
             return false;
 
         var metadataScopes = NormalizeScopes(metadata.Scope);
         string[] scopes = metadataScopes.Count > 0
             ? metadataScopes.Where(s => SupportedScopes.Contains(s, StringComparer.Ordinal)).Distinct(StringComparer.Ordinal).ToArray()
-            : DefaultScopes.ToArray();
+            : GetDefaultScopes(grantTypes).ToArray();
 
         if (scopes.Length == 0)
+            return false;
+
+        if (scopes.Contains(AuthorizationRoles.OfflineAccess, StringComparer.Ordinal) && !grantTypes.Contains(OAuthGrantTypes.RefreshToken, StringComparer.Ordinal))
             return false;
 
         var utcNow = timeProvider.GetUtcNow().UtcDateTime;
@@ -276,6 +301,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             Name = NormalizeClientName(metadata.ClientName, clientId),
             RedirectUris = redirectUris,
             Scopes = scopes,
+            GrantTypes = grantTypes.ToArray(),
             Notes = ClientMetadataNotes,
             CreatedByUserId = OAuthApplication.SystemUserId,
             UpdatedByUserId = OAuthApplication.SystemUserId,
@@ -294,6 +320,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             Name = application.Name,
             RedirectUris = application.RedirectUris,
             Scopes = application.Scopes,
+            GrantTypes = application.GrantTypes,
             IsDisabled = application.IsDisabled
         }.Normalize();
     }
@@ -324,6 +351,34 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         return client.Scopes;
     }
 
+    private static IReadOnlyCollection<string> GetDefaultScopes(IReadOnlyCollection<string> grantTypes)
+    {
+        return grantTypes.Contains(OAuthGrantTypes.RefreshToken, StringComparer.Ordinal)
+            ? DefaultScopes
+            : DefaultScopes.Where(s => !String.Equals(s, AuthorizationRoles.OfflineAccess, StringComparison.Ordinal)).ToArray();
+    }
+
+    private IReadOnlyCollection<string> GetDefaultScopes(OAuthClientOptions client, OAuthResourceDefinition resourceDefinition)
+    {
+        var allowedScopes = GetAllowedScopes(client);
+        return GetDefaultScopes(client.GrantTypes)
+            .Where(s => allowedScopes.Contains(s, StringComparer.Ordinal))
+            .Where(s => resourceDefinition.Scopes.Contains(s, StringComparer.Ordinal))
+            .ToArray();
+    }
+
+    public static IReadOnlyCollection<string> NormalizeGrantTypes(IReadOnlyCollection<string>? grantTypes)
+    {
+        if (grantTypes is null || grantTypes.Count == 0)
+            return [OAuthGrantTypes.AuthorizationCode, OAuthGrantTypes.RefreshToken];
+
+        return grantTypes
+            .Where(g => !String.IsNullOrWhiteSpace(g))
+            .Select(g => g.Trim())
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+    }
+
     public IReadOnlyCollection<string> NormalizeScopes(string? scopes)
     {
         if (String.IsNullOrWhiteSpace(scopes))
@@ -344,6 +399,9 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (client is null)
             return OAuthValidationResult.Invalid("invalid_client", "Unknown OAuth client.");
 
+        if (!client.GrantTypes.Contains(OAuthGrantTypes.AuthorizationCode, StringComparer.Ordinal))
+            return OAuthValidationResult.Invalid("unauthorized_client", "The client is not allowed to use the authorization_code grant type.");
+
         if (!String.Equals(request.ResponseType, "code", StringComparison.Ordinal))
             return OAuthValidationResult.Invalid("unsupported_response_type", "Only the code response type is supported.");
 
@@ -356,13 +414,21 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (!IsExpectedResource(request.Resource, expectedResource))
             return OAuthValidationResult.Invalid("invalid_target", "The requested resource is not supported.");
 
-        var requestedScopes = NormalizeScopes(request.Scope);
+        return ValidateRequestedScopes(client, request.Scope, resourceDefinition);
+    }
+
+    private OAuthValidationResult ValidateRequestedScopes(OAuthClientOptions client, string? scope, OAuthResourceDefinition resourceDefinition)
+    {
+        var requestedScopes = NormalizeScopes(scope);
         if (requestedScopes.Count == 0)
             return OAuthValidationResult.Invalid("invalid_scope", "At least one scope is required.");
 
         var allowedScopes = GetAllowedScopes(client);
         if (requestedScopes.Any(s => !allowedScopes.Contains(s, StringComparer.Ordinal)))
             return OAuthValidationResult.Invalid("invalid_scope", "One or more scopes are not allowed for this client.");
+
+        if (requestedScopes.Contains(AuthorizationRoles.OfflineAccess, StringComparer.Ordinal) && !client.GrantTypes.Contains(OAuthGrantTypes.RefreshToken, StringComparer.Ordinal))
+            return OAuthValidationResult.Invalid("invalid_scope", "The offline_access scope requires the refresh_token grant type.");
 
         if (resourceDefinition.RequiredScopes.Any(s => !requestedScopes.Contains(s, StringComparer.Ordinal)))
             return OAuthValidationResult.Invalid("invalid_scope", "One or more required resource scopes are missing.");
@@ -375,6 +441,151 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             return OAuthValidationResult.Invalid("invalid_scope", "One or more scopes are not supported by the requested resource.");
 
         return OAuthValidationResult.Valid(client, requestedScopes);
+    }
+
+    public async Task<OAuthDeviceAuthorizationIssueResult> CreateDeviceAuthorizationAsync(OAuthDeviceAuthorizationRequest request, string expectedResource, OAuthResourceDefinition resourceDefinition, string verificationUri)
+    {
+        if (String.IsNullOrWhiteSpace(request.ClientId))
+            return OAuthDeviceAuthorizationIssueResult.Invalid("invalid_request", "Missing client_id.");
+
+        var client = await GetClientAsync(request.ClientId, allowClientMetadataDocument: true);
+        if (client is null)
+            return OAuthDeviceAuthorizationIssueResult.Invalid("invalid_client", "Unknown OAuth client.");
+
+        if (!client.GrantTypes.Contains(OAuthGrantTypes.DeviceCode, StringComparer.Ordinal))
+            return OAuthDeviceAuthorizationIssueResult.Invalid("unauthorized_client", "The client is not allowed to use the device_code grant type.");
+
+        if (!IsExpectedResource(request.Resource, expectedResource))
+            return OAuthDeviceAuthorizationIssueResult.Invalid("invalid_target", "The requested resource is not supported.");
+
+        string? requestedScope = String.IsNullOrWhiteSpace(request.Scope)
+            ? String.Join(' ', GetDefaultScopes(client, resourceDefinition))
+            : request.Scope;
+
+        var validation = ValidateRequestedScopes(client, requestedScope, resourceDefinition);
+        if (!validation.IsValid)
+            return OAuthDeviceAuthorizationIssueResult.Invalid(validation.Error!, validation.ErrorDescription!);
+
+        string deviceCode = CreateOAuthToken();
+        string deviceCodeHash = CreateTokenHash(deviceCode);
+        string userCode = await CreateUniqueDeviceUserCodeAsync();
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
+        var authorization = new OAuthDeviceAuthorization
+        {
+            ClientId = client.ClientId,
+            Resource = expectedResource,
+            Scopes = validation.Scopes,
+            UserCode = FormatDeviceUserCode(userCode),
+            UserCodeNormalized = userCode,
+            Status = OAuthDeviceAuthorizationStatus.Pending,
+            PollingIntervalSeconds = (int)options.DeviceCodePollingInterval.TotalSeconds,
+            CreatedUtc = utcNow,
+            UpdatedUtc = utcNow,
+            ExpiresUtc = utcNow.Add(options.DeviceCodeLifetime)
+        };
+
+        await SetDeviceAuthorizationAsync(deviceCodeHash, authorization);
+        return OAuthDeviceAuthorizationIssueResult.Success(new OAuthDeviceAuthorizationResponse
+        {
+            DeviceCode = deviceCode,
+            UserCode = authorization.UserCode,
+            VerificationUri = verificationUri,
+            VerificationUriComplete = $"{verificationUri}?user_code={Uri.EscapeDataString(authorization.UserCode)}",
+            ExpiresIn = (int)options.DeviceCodeLifetime.TotalSeconds,
+            Interval = (int)options.DeviceCodePollingInterval.TotalSeconds
+        });
+    }
+
+    public async Task<OAuthDeviceConsentResult> GetDeviceConsentAsync(string? userCode)
+    {
+        var lookup = await GetDeviceAuthorizationByUserCodeAsync(userCode);
+        if (!lookup.IsSuccess)
+            return OAuthDeviceConsentResult.Invalid(lookup.Error!, lookup.ErrorDescription!);
+
+        var authorization = lookup.Authorization!;
+        if (authorization.Status != OAuthDeviceAuthorizationStatus.Pending)
+            return OAuthDeviceConsentResult.Invalid("expired_token", "Device authorization is no longer pending.");
+
+        var client = await GetClientAsync(authorization.ClientId);
+        if (client is null)
+            return OAuthDeviceConsentResult.Invalid("invalid_client", "Unknown OAuth client.");
+
+        if (!TryGetProtectedResourceByResourceUri(authorization.Resource, out var resourceDefinition))
+            return OAuthDeviceConsentResult.Invalid("invalid_target", "The requested resource is not supported.");
+
+        return OAuthDeviceConsentResult.Valid(client, authorization, resourceDefinition);
+    }
+
+    public async Task<OAuthDeviceAuthorizationResult> ApproveDeviceAuthorizationAsync(OAuthDeviceApprovalRequest request, string userId)
+    {
+        var lookup = await GetDeviceAuthorizationByUserCodeAsync(request.UserCode);
+        if (!lookup.IsSuccess)
+            return OAuthDeviceAuthorizationResult.Invalid(lookup.Error!, lookup.ErrorDescription!);
+
+        await using var deviceCodeLock = await lockProvider.TryAcquireAsync(GetDeviceCodeLockKey(lookup.DeviceCodeHash!), TimeSpan.FromSeconds(30), CancellationToken.None);
+        if (deviceCodeLock is null)
+            return OAuthDeviceAuthorizationResult.Invalid("temporarily_unavailable", "Device authorization is being processed.");
+
+        lookup = await GetDeviceAuthorizationByDeviceCodeHashAsync(lookup.DeviceCodeHash!);
+        if (!lookup.IsSuccess)
+            return OAuthDeviceAuthorizationResult.Invalid(lookup.Error!, lookup.ErrorDescription!);
+
+        var authorization = lookup.Authorization!;
+        if (authorization.Status != OAuthDeviceAuthorizationStatus.Pending)
+            return OAuthDeviceAuthorizationResult.Invalid("expired_token", "Device authorization is no longer pending.");
+
+        var client = await GetClientAsync(authorization.ClientId);
+        if (client is null)
+            return OAuthDeviceAuthorizationResult.Invalid("invalid_client", "Unknown OAuth client.");
+
+        if (!client.GrantTypes.Contains(OAuthGrantTypes.DeviceCode, StringComparer.Ordinal))
+            return OAuthDeviceAuthorizationResult.Invalid("unauthorized_client", "The client is not allowed to use the device_code grant type.");
+
+        if (!TryGetProtectedResourceByResourceUri(authorization.Resource, out var resourceDefinition))
+            return OAuthDeviceAuthorizationResult.Invalid("invalid_target", "The requested resource is not supported.");
+
+        var requestedScopes = NormalizeScopes(request.Scope);
+        if (requestedScopes.Count == 0)
+            return OAuthDeviceAuthorizationResult.Invalid("invalid_scope", "At least one scope is required.");
+
+        if (requestedScopes.Any(scope => !authorization.Scopes.Contains(scope, StringComparer.Ordinal)))
+            return OAuthDeviceAuthorizationResult.Invalid("invalid_scope", "One or more scopes were not requested by the device.");
+
+        var scopeValidation = ValidateRequestedScopes(client, String.Join(' ', requestedScopes), resourceDefinition);
+        if (!scopeValidation.IsValid)
+            return OAuthDeviceAuthorizationResult.Invalid(scopeValidation.Error!, scopeValidation.ErrorDescription!);
+
+        authorization.Status = OAuthDeviceAuthorizationStatus.Approved;
+        authorization.UserId = userId;
+        authorization.Scopes = scopeValidation.Scopes;
+        authorization.OrganizationIds = request.OrganizationIds.ToArray();
+        authorization.UpdatedUtc = timeProvider.GetUtcNow().UtcDateTime;
+        await SetDeviceAuthorizationAsync(lookup.DeviceCodeHash!, authorization);
+        return OAuthDeviceAuthorizationResult.Success();
+    }
+
+    public async Task<OAuthDeviceAuthorizationResult> DenyDeviceAuthorizationAsync(string? userCode)
+    {
+        var lookup = await GetDeviceAuthorizationByUserCodeAsync(userCode);
+        if (!lookup.IsSuccess)
+            return OAuthDeviceAuthorizationResult.Invalid(lookup.Error!, lookup.ErrorDescription!);
+
+        await using var deviceCodeLock = await lockProvider.TryAcquireAsync(GetDeviceCodeLockKey(lookup.DeviceCodeHash!), TimeSpan.FromSeconds(30), CancellationToken.None);
+        if (deviceCodeLock is null)
+            return OAuthDeviceAuthorizationResult.Invalid("temporarily_unavailable", "Device authorization is being processed.");
+
+        lookup = await GetDeviceAuthorizationByDeviceCodeHashAsync(lookup.DeviceCodeHash!);
+        if (!lookup.IsSuccess)
+            return OAuthDeviceAuthorizationResult.Invalid(lookup.Error!, lookup.ErrorDescription!);
+
+        var authorization = lookup.Authorization!;
+        if (authorization.Status != OAuthDeviceAuthorizationStatus.Pending)
+            return OAuthDeviceAuthorizationResult.Invalid("expired_token", "Device authorization is no longer pending.");
+
+        authorization.Status = OAuthDeviceAuthorizationStatus.Denied;
+        authorization.UpdatedUtc = timeProvider.GetUtcNow().UtcDateTime;
+        await SetDeviceAuthorizationAsync(lookup.DeviceCodeHash!, authorization);
+        return OAuthDeviceAuthorizationResult.Success();
     }
 
     public async Task<string> CreateAuthorizationCodeAsync(OAuthAuthorizeRequest request, string userId, IReadOnlyCollection<string> organizationIds)
@@ -403,8 +614,12 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (String.IsNullOrWhiteSpace(request.Code) || String.IsNullOrWhiteSpace(request.CodeVerifier) || String.IsNullOrWhiteSpace(request.RedirectUri) || String.IsNullOrWhiteSpace(request.ClientId) || String.IsNullOrWhiteSpace(request.Resource))
             return OAuthTokenIssueResult.Invalid("invalid_request", "Missing required token request fields.");
 
-        if (await GetClientAsync(request.ClientId) is null)
+        var client = await GetClientAsync(request.ClientId);
+        if (client is null)
             return OAuthTokenIssueResult.Invalid("invalid_client", "Unknown OAuth client.");
+
+        if (!client.GrantTypes.Contains(OAuthGrantTypes.AuthorizationCode, StringComparer.Ordinal))
+            return OAuthTokenIssueResult.Invalid("unauthorized_client", "The client is not allowed to use the authorization_code grant type.");
 
         if (!IsValidCodeVerifier(request.CodeVerifier))
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Invalid PKCE verifier.");
@@ -425,6 +640,71 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         return OAuthTokenIssueResult.Success(await CreateTokenAsync(code.UserId, code.ClientId, code.Resource, code.Scopes, code.OrganizationIds));
     }
 
+    public async Task<OAuthTokenIssueResult> ExchangeDeviceCodeAsync(OAuthTokenRequest request)
+    {
+        if (!String.Equals(request.GrantType, OAuthGrantTypes.DeviceCode, StringComparison.Ordinal))
+            return OAuthTokenIssueResult.Invalid("unsupported_grant_type", "Unsupported grant_type.");
+
+        if (String.IsNullOrWhiteSpace(request.ClientId) || String.IsNullOrWhiteSpace(request.DeviceCode))
+            return OAuthTokenIssueResult.Invalid("invalid_request", "Missing client_id or device_code.");
+
+        var client = await GetClientAsync(request.ClientId);
+        if (client is null)
+            return OAuthTokenIssueResult.Invalid("invalid_client", "Unknown OAuth client.");
+
+        if (!client.GrantTypes.Contains(OAuthGrantTypes.DeviceCode, StringComparer.Ordinal))
+            return OAuthTokenIssueResult.Invalid("unauthorized_client", "The client is not allowed to use the device_code grant type.");
+
+        string deviceCodeHash = CreateTokenHash(request.DeviceCode);
+        await using var deviceCodeLock = await lockProvider.TryAcquireAsync(GetDeviceCodeLockKey(deviceCodeHash), TimeSpan.FromSeconds(30), CancellationToken.None);
+        if (deviceCodeLock is null)
+            return OAuthTokenIssueResult.Invalid("authorization_pending", "Device authorization is being processed.");
+
+        var lookup = await GetDeviceAuthorizationByDeviceCodeHashAsync(deviceCodeHash);
+        if (!lookup.IsSuccess)
+            return OAuthTokenIssueResult.Invalid(lookup.Error!, lookup.ErrorDescription!);
+
+        var authorization = lookup.Authorization!;
+        if (!String.Equals(authorization.ClientId, request.ClientId, StringComparison.Ordinal))
+            return OAuthTokenIssueResult.Invalid("invalid_grant", "Device code does not match the token request.");
+
+        if (authorization.Status == OAuthDeviceAuthorizationStatus.Denied)
+        {
+            await RemoveDeviceAuthorizationAsync(lookup.DeviceCodeHash!, authorization);
+            return OAuthTokenIssueResult.Invalid("access_denied", "The device authorization request was denied.");
+        }
+
+        if (authorization.Status == OAuthDeviceAuthorizationStatus.Approved)
+        {
+            if (String.IsNullOrWhiteSpace(authorization.UserId) || authorization.OrganizationIds.Count == 0)
+            {
+                await RemoveDeviceAuthorizationAsync(lookup.DeviceCodeHash!, authorization);
+                return OAuthTokenIssueResult.Invalid("invalid_grant", "Device authorization is invalid.");
+            }
+
+            await RemoveDeviceAuthorizationAsync(lookup.DeviceCodeHash!, authorization);
+            return OAuthTokenIssueResult.Success(await CreateTokenAsync(authorization.UserId, authorization.ClientId, authorization.Resource, authorization.Scopes, authorization.OrganizationIds));
+        }
+
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
+        int pollingIntervalSeconds = authorization.PollingIntervalSeconds > 0
+            ? authorization.PollingIntervalSeconds
+            : (int)options.DeviceCodePollingInterval.TotalSeconds;
+        if (authorization.LastPolledUtc.HasValue && utcNow - authorization.LastPolledUtc.Value < TimeSpan.FromSeconds(pollingIntervalSeconds))
+        {
+            authorization.PollingIntervalSeconds = pollingIntervalSeconds + 5;
+            authorization.LastPolledUtc = utcNow;
+            authorization.UpdatedUtc = utcNow;
+            await SetDeviceAuthorizationAsync(lookup.DeviceCodeHash!, authorization);
+            return OAuthTokenIssueResult.Invalid("slow_down", "Poll interval exceeded.");
+        }
+
+        authorization.LastPolledUtc = utcNow;
+        authorization.UpdatedUtc = utcNow;
+        await SetDeviceAuthorizationAsync(lookup.DeviceCodeHash!, authorization);
+        return OAuthTokenIssueResult.Invalid("authorization_pending", "Device authorization is pending.");
+    }
+
     public async Task<OAuthTokenIssueResult> RefreshAsync(OAuthTokenRequest request)
     {
         if (String.IsNullOrWhiteSpace(request.RefreshToken) || String.IsNullOrWhiteSpace(request.ClientId))
@@ -433,6 +713,9 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         var client = await GetClientAsync(request.ClientId);
         if (client is null)
             return OAuthTokenIssueResult.Invalid("invalid_client", "Unknown OAuth client.");
+
+        if (!client.GrantTypes.Contains(OAuthGrantTypes.RefreshToken, StringComparer.Ordinal))
+            return OAuthTokenIssueResult.Invalid("unauthorized_client", "The client is not allowed to use the refresh_token grant type.");
 
         await using var refreshTokenLock = await lockProvider.TryAcquireAsync(GetRefreshTokenLockKey(request.RefreshToken), TimeSpan.FromSeconds(30), CancellationToken.None);
         if (refreshTokenLock is null)
@@ -443,8 +726,17 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (token is null || !String.Equals(token.ClientId, request.ClientId, StringComparison.Ordinal))
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
 
-        if (token.IsDisabled || token.IsSuspended)
+        if (token.IsSuspended)
         {
+            await RevokeOAuthGrantFamilyAsync(token);
+            return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
+        }
+
+        if (token.IsDisabled)
+        {
+            if (IsRecentRefreshTokenReplay(token))
+                return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
+
             await RevokeOAuthGrantFamilyAsync(token);
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
         }
@@ -552,6 +844,14 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         return RefreshScopeValidationResult.Valid(refreshedScopes);
     }
 
+    private bool IsRecentRefreshTokenReplay(OAuthToken token)
+    {
+        if (String.IsNullOrEmpty(token.RefreshTokenHash))
+            return false;
+
+        return token.UpdatedUtc >= timeProvider.GetUtcNow().UtcDateTime.Subtract(RefreshTokenReplayGracePeriod);
+    }
+
     private Task DisableTokenAsync(OAuthToken token, bool clearRefresh = true)
     {
         token.IsDisabled = true;
@@ -595,6 +895,118 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             Resource = resource
         };
     }
+
+    private async Task SetDeviceAuthorizationAsync(string deviceCodeHash, OAuthDeviceAuthorization authorization)
+    {
+        var lifetime = authorization.ExpiresUtc - timeProvider.GetUtcNow().UtcDateTime;
+        if (lifetime <= TimeSpan.Zero)
+        {
+            await RemoveDeviceAuthorizationAsync(deviceCodeHash, authorization);
+            return;
+        }
+
+        await cacheClient.SetAsync(GetDeviceCodeCacheKey(deviceCodeHash), authorization, lifetime);
+        await cacheClient.SetAsync(GetDeviceUserCodeCacheKey(authorization.UserCodeNormalized), deviceCodeHash, lifetime);
+    }
+
+    private async Task RemoveDeviceAuthorizationAsync(string deviceCodeHash, OAuthDeviceAuthorization authorization)
+    {
+        await cacheClient.RemoveAsync(GetDeviceCodeCacheKey(deviceCodeHash));
+        await cacheClient.RemoveAsync(GetDeviceUserCodeCacheKey(authorization.UserCodeNormalized));
+    }
+
+    private async Task<OAuthDeviceAuthorizationLookupResult> GetDeviceAuthorizationByUserCodeAsync(string? userCode)
+    {
+        string? normalizedUserCode = NormalizeDeviceUserCode(userCode);
+        if (normalizedUserCode is null)
+            return OAuthDeviceAuthorizationLookupResult.Invalid("expired_token", "Device authorization is invalid or expired.");
+
+        string userCodeCacheKey = GetDeviceUserCodeCacheKey(normalizedUserCode);
+        var deviceCodeResult = await cacheClient.GetAsync<string>(userCodeCacheKey);
+        if (!deviceCodeResult.HasValue)
+            return OAuthDeviceAuthorizationLookupResult.Invalid("expired_token", "Device authorization is invalid or expired.");
+
+        var lookup = await GetDeviceAuthorizationByDeviceCodeHashAsync(deviceCodeResult.Value);
+        if (!lookup.IsSuccess)
+            await cacheClient.RemoveAsync(userCodeCacheKey);
+
+        return lookup;
+    }
+
+    private async Task<OAuthDeviceAuthorizationLookupResult> GetDeviceAuthorizationByDeviceCodeHashAsync(string deviceCodeHash)
+    {
+        var authorizationResult = await cacheClient.GetAsync<OAuthDeviceAuthorization>(GetDeviceCodeCacheKey(deviceCodeHash));
+        if (!authorizationResult.HasValue)
+            return OAuthDeviceAuthorizationLookupResult.Invalid("expired_token", "Device authorization is invalid or expired.");
+
+        var authorization = authorizationResult.Value;
+        if (authorization.ExpiresUtc <= timeProvider.GetUtcNow().UtcDateTime)
+        {
+            await RemoveDeviceAuthorizationAsync(deviceCodeHash, authorization);
+            return OAuthDeviceAuthorizationLookupResult.Invalid("expired_token", "Device authorization is invalid or expired.");
+        }
+
+        return OAuthDeviceAuthorizationLookupResult.Success(deviceCodeHash, authorization);
+    }
+
+    private async Task<string> CreateUniqueDeviceUserCodeAsync()
+    {
+        for (int attempt = 0; attempt < 10; attempt++)
+        {
+            string userCode = CreateDeviceUserCode();
+            var existing = await cacheClient.GetAsync<string>(GetDeviceUserCodeCacheKey(userCode));
+            if (!existing.HasValue)
+                return userCode;
+        }
+
+        throw new InvalidOperationException("Unable to create a unique OAuth device user code.");
+    }
+
+    private static string CreateDeviceUserCode()
+    {
+        Span<char> code = stackalloc char[DeviceUserCodeLength];
+        for (int i = 0; i < code.Length; i++)
+            code[i] = DeviceUserCodeCharacters[RandomNumberGenerator.GetInt32(DeviceUserCodeCharacters.Length)];
+
+        return new string(code);
+    }
+
+    private static string FormatDeviceUserCode(string userCode)
+    {
+        return userCode.Insert(DeviceUserCodeGroupLength, "-");
+    }
+
+    private static string? NormalizeDeviceUserCode(string? userCode)
+    {
+        if (String.IsNullOrWhiteSpace(userCode))
+            return null;
+
+        var normalized = new string(userCode
+            .Where(c => c != '-' && !Char.IsWhiteSpace(c))
+            .Select(Char.ToUpperInvariant)
+            .ToArray());
+
+        return DeviceUserCodeRegex.IsMatch(normalized) ? normalized : null;
+    }
+
+    private static bool ValidateGrantTypeShape(IReadOnlyCollection<string> grantTypes, out string error)
+    {
+        error = String.Empty;
+        if (grantTypes.Any(g => !OAuthGrantTypes.SupportedGrantTypes.Contains(g, StringComparer.Ordinal)))
+        {
+            error = "Only authorization_code, refresh_token, and device_code grant types are supported.";
+            return false;
+        }
+
+        if (!grantTypes.Contains(OAuthGrantTypes.AuthorizationCode, StringComparer.Ordinal) && !grantTypes.Contains(OAuthGrantTypes.DeviceCode, StringComparer.Ordinal))
+        {
+            error = "The authorization_code or device_code grant type is required.";
+            return false;
+        }
+
+        return true;
+    }
+
     private static bool ValidateCodeVerifier(string challenge, string verifier)
     {
         return String.Equals(challenge, CreateCodeChallenge(verifier), StringComparison.Ordinal);
@@ -745,6 +1157,9 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
     }
 
     private static string GetAuthorizationCodeCacheKey(string code) => AuthorizationCodeCachePrefix + code;
+    private static string GetDeviceCodeCacheKey(string deviceCodeHash) => DeviceCodeCachePrefix + deviceCodeHash;
+    private static string GetDeviceUserCodeCacheKey(string userCode) => DeviceUserCodeCachePrefix + CreateTokenHash(userCode);
+    private static string GetDeviceCodeLockKey(string deviceCodeHash) => DeviceCodeLockPrefix + deviceCodeHash;
     private static string GetRefreshTokenLockKey(string refreshToken) => RefreshTokenLockPrefix + CreateTokenHash(refreshToken);
     private static string GetAccessTokenClientValidityCacheKey(string clientId) => AccessTokenClientValidityCachePrefix + Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(clientId))).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 }
@@ -752,7 +1167,15 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 public static class OAuthGrantTypes
 {
     public const string AuthorizationCode = "authorization_code";
+    public const string DeviceCode = "urn:ietf:params:oauth:grant-type:device_code";
     public const string RefreshToken = "refresh_token";
+
+    public static readonly IReadOnlyCollection<string> SupportedGrantTypes =
+    [
+        AuthorizationCode,
+        DeviceCode,
+        RefreshToken
+    ];
 }
 
 public record OAuthAuthorizeRequest
@@ -776,7 +1199,22 @@ public record OAuthTokenRequest
     public string? ClientId { get; init; }
     public string? CodeVerifier { get; init; }
     public string? RefreshToken { get; init; }
+    public string? DeviceCode { get; init; }
     public string? Resource { get; init; }
+}
+
+public record OAuthDeviceAuthorizationRequest
+{
+    public required string ClientId { get; init; }
+    public string? Scope { get; init; }
+    public string? Resource { get; init; }
+}
+
+public record OAuthDeviceApprovalRequest
+{
+    public required string UserCode { get; init; }
+    public required string Scope { get; init; }
+    public IReadOnlyCollection<string> OrganizationIds { get; init; } = [];
 }
 
 public record OAuthClientRegistrationRequest
@@ -833,6 +1271,27 @@ public record OAuthClientRegistrationResponse
     public required long ClientIdIssuedAt { get; init; }
 }
 
+public record OAuthDeviceAuthorizationResponse
+{
+    [JsonPropertyName("device_code")]
+    public required string DeviceCode { get; init; }
+
+    [JsonPropertyName("user_code")]
+    public required string UserCode { get; init; }
+
+    [JsonPropertyName("verification_uri")]
+    public required string VerificationUri { get; init; }
+
+    [JsonPropertyName("verification_uri_complete")]
+    public required string VerificationUriComplete { get; init; }
+
+    [JsonPropertyName("expires_in")]
+    public required int ExpiresIn { get; init; }
+
+    [JsonPropertyName("interval")]
+    public required int Interval { get; init; }
+}
+
 public record OAuthAuthorizationCode
 {
     public required string ClientId { get; init; }
@@ -845,8 +1304,55 @@ public record OAuthAuthorizationCode
     public IReadOnlyCollection<string> OrganizationIds { get; init; } = [];
 }
 
+public class OAuthDeviceAuthorization
+{
+    public required string ClientId { get; init; }
+    public required string Resource { get; init; }
+    public required string UserCode { get; init; }
+    public required string UserCodeNormalized { get; init; }
+    public OAuthDeviceAuthorizationStatus Status { get; set; }
+    public IReadOnlyCollection<string> Scopes { get; set; } = [];
+    public string? UserId { get; set; }
+    public IReadOnlyCollection<string> OrganizationIds { get; set; } = [];
+    public int PollingIntervalSeconds { get; set; }
+    public DateTime? LastPolledUtc { get; set; }
+    public DateTime CreatedUtc { get; init; }
+    public DateTime UpdatedUtc { get; set; }
+    public DateTime ExpiresUtc { get; init; }
+}
+
+public enum OAuthDeviceAuthorizationStatus
+{
+    Pending = 0,
+    Approved = 1,
+    Denied = 2
+}
 
 public sealed record OAuthResourceDefinition(string Path, IReadOnlyCollection<string> Scopes, IReadOnlyCollection<string> RequiredScopes);
+
+internal sealed record OAuthDeviceAuthorizationLookupResult(bool IsSuccess, string? DeviceCodeHash, OAuthDeviceAuthorization? Authorization, string? Error, string? ErrorDescription)
+{
+    public static OAuthDeviceAuthorizationLookupResult Success(string deviceCodeHash, OAuthDeviceAuthorization authorization) => new(true, deviceCodeHash, authorization, null, null);
+    public static OAuthDeviceAuthorizationLookupResult Invalid(string error, string description) => new(false, null, null, error, description);
+}
+
+public sealed record OAuthDeviceAuthorizationIssueResult(bool IsSuccess, OAuthDeviceAuthorizationResponse? Response, string? Error, string? ErrorDescription)
+{
+    public static OAuthDeviceAuthorizationIssueResult Success(OAuthDeviceAuthorizationResponse response) => new(true, response, null, null);
+    public static OAuthDeviceAuthorizationIssueResult Invalid(string error, string description) => new(false, null, error, description);
+}
+
+public sealed record OAuthDeviceConsentResult(bool IsSuccess, OAuthClientOptions? Client, OAuthDeviceAuthorization? Authorization, OAuthResourceDefinition? ResourceDefinition, string? Error, string? ErrorDescription)
+{
+    public static OAuthDeviceConsentResult Valid(OAuthClientOptions client, OAuthDeviceAuthorization authorization, OAuthResourceDefinition resourceDefinition) => new(true, client, authorization, resourceDefinition, null, null);
+    public static OAuthDeviceConsentResult Invalid(string error, string description) => new(false, null, null, null, error, description);
+}
+
+public sealed record OAuthDeviceAuthorizationResult(bool IsSuccess, string? Error, string? ErrorDescription)
+{
+    public static OAuthDeviceAuthorizationResult Success() => new(true, null, null);
+    public static OAuthDeviceAuthorizationResult Invalid(string error, string description) => new(false, error, description);
+}
 
 internal sealed record RefreshScopeValidationResult(bool IsValid, IReadOnlyCollection<string> Scopes)
 {

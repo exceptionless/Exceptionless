@@ -41,6 +41,16 @@
         { description: 'Allows refresh token issuance.', label: 'Offline Access', value: 'offline_access' }
     ] as const;
 
+    const supportedGrantTypes = [
+        { description: 'Uses a browser redirect and PKCE challenge.', label: 'Authorization Code', value: 'authorization_code' },
+        {
+            description: 'Uses a user code for SSH, terminal, and headless clients.',
+            label: 'Device Code',
+            value: 'urn:ietf:params:oauth:grant-type:device_code'
+        },
+        { description: 'Allows refresh token rotation when offline access is approved.', label: 'Refresh Token', value: 'refresh_token' }
+    ] as const;
+
     const applicationsQuery = getOAuthApplicationsQuery();
     const createApplication = postOAuthApplicationMutation();
     const updateApplication = putOAuthApplicationMutation();
@@ -83,6 +93,7 @@
     function getFormValues(application: null | OAuthApplication): OAuthApplicationFormData {
         return {
             client_id: application?.client_id ?? '',
+            grant_types: application?.grant_types ?? ['authorization_code', 'refresh_token'],
             is_disabled: application?.is_disabled ?? false,
             name: application?.name ?? '',
             notes: application?.notes ?? '',
@@ -94,6 +105,7 @@
     function setFormValues(application: null | OAuthApplication) {
         const values = getFormValues(application);
         form.setFieldValue('client_id', values.client_id);
+        form.setFieldValue('grant_types', values.grant_types);
         form.setFieldValue('is_disabled', values.is_disabled);
         form.setFieldValue('name', values.name);
         form.setFieldValue('notes', values.notes);
@@ -104,6 +116,7 @@
     function toRequest(value: OAuthApplicationFormData): OAuthApplicationRequest {
         return {
             client_id: value.client_id.trim(),
+            grant_types: value.grant_types,
             is_disabled: value.is_disabled,
             name: value.name.trim(),
             notes: value.notes?.trim() || null,
@@ -146,6 +159,10 @@
     function isScopeChecked(scopes: string[], scope: string) {
         return scopes.includes(scope);
     }
+
+    function isGrantTypeChecked(grantTypes: string[], grantType: string) {
+        return grantTypes.includes(grantType);
+    }
 </script>
 
 <div class="space-y-6">
@@ -180,6 +197,7 @@
                                 <Table.Row>
                                     <Table.Head>Name</Table.Head>
                                     <Table.Head>Client ID</Table.Head>
+                                    <Table.Head>Grant Types</Table.Head>
                                     <Table.Head>Scopes</Table.Head>
                                     <Table.Head>Status</Table.Head>
                                     <Table.Head class="w-16 text-right">Actions</Table.Head>
@@ -200,6 +218,13 @@
                                             <div class="flex items-center gap-2">
                                                 <code class="bg-muted rounded px-1.5 py-0.5 text-xs break-all">{application.client_id}</code>
                                                 <CopyToClipboardButton value={application.client_id} variant="ghost" size="icon" />
+                                            </div>
+                                        </Table.Cell>
+                                        <Table.Cell>
+                                            <div class="flex max-w-64 flex-wrap gap-1">
+                                                {#each application.grant_types as grantType (grantType)}
+                                                    <Badge variant="outline">{grantType}</Badge>
+                                                {/each}
                                             </div>
                                         </Table.Cell>
                                         <Table.Cell>
@@ -307,7 +332,34 @@
                                     oninput={(e) => field.handleChange(e.currentTarget.value)}
                                     aria-invalid={ariaInvalid(field)}
                                 />
-                                <Field.Description>One redirect URI per line.</Field.Description>
+                                <Field.Description>One redirect URI per line. Required only for authorization-code clients.</Field.Description>
+                                <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                            </Field.Field>
+                        {/snippet}
+                    </form.Field>
+
+                    <form.Field name="grant_types">
+                        {#snippet children(field)}
+                            <Field.Field data-invalid={ariaInvalid(field)}>
+                                <Field.Label>Grant Types</Field.Label>
+                                <div class="space-y-3">
+                                    {#each supportedGrantTypes as grantType (grantType.value)}
+                                        {@const checked = isGrantTypeChecked(field.state.value, grantType.value)}
+                                        <div class="flex items-start gap-3">
+                                            <Checkbox
+                                                {checked}
+                                                onCheckedChange={(value) => {
+                                                    const current = field.state.value;
+                                                    field.handleChange(value ? [...current, grantType.value] : current.filter((g) => g !== grantType.value));
+                                                }}
+                                            />
+                                            <div class="space-y-0.5">
+                                                <Label class="text-sm">{grantType.label}</Label>
+                                                <p class="text-muted-foreground text-xs">{grantType.description}</p>
+                                            </div>
+                                        </div>
+                                    {/each}
+                                </div>
                                 <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
                             </Field.Field>
                         {/snippet}

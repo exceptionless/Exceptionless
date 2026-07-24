@@ -1,5 +1,6 @@
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models.Admin;
@@ -41,6 +42,7 @@ public sealed class OAuthApplicationEndpointTests : IntegrationTestsBase
         Assert.NotNull(created.Id);
         Assert.Equal("chatgpt-dev", created.ClientId);
         Assert.Equal("ChatGPT Dev", created.Name);
+        Assert.Equal([OAuthGrantTypes.AuthorizationCode, OAuthGrantTypes.RefreshToken], created.GrantTypes);
         Assert.Equal(["mcp:read", "events:read"], created.Scopes);
         Assert.Equal("Dev OAuth app", created.Notes);
         Assert.False(created.IsDisabled);
@@ -84,6 +86,7 @@ public sealed class OAuthApplicationEndpointTests : IntegrationTestsBase
             {
                 ClientId = "chatgpt-production",
                 Name = "ChatGPT Production",
+                GrantTypes = [OAuthGrantTypes.AuthorizationCode],
                 RedirectUris = ["https://chat.openai.com/aip/g-production/oauth/callback"],
                 Scopes = [AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead],
                 Notes = "Production client",
@@ -95,6 +98,7 @@ public sealed class OAuthApplicationEndpointTests : IntegrationTestsBase
         Assert.Equal(created.Id, updated.Id);
         Assert.Equal("chatgpt-production", updated.ClientId);
         Assert.Equal("ChatGPT Production", updated.Name);
+        Assert.Equal([OAuthGrantTypes.AuthorizationCode], updated.GrantTypes);
         Assert.Equal(["mcp:read", "projects:read"], updated.Scopes);
         Assert.True(updated.IsDisabled);
 
@@ -160,6 +164,48 @@ public sealed class OAuthApplicationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task CreateAsync_DeviceOnlyClientWithoutRedirectUri_CreatesOAuthApplication()
+    {
+        var created = await CreateApplicationAsync(new NewOAuthApplication
+        {
+            ClientId = "device-client",
+            Name = "Device Client",
+            GrantTypes = [OAuthGrantTypes.DeviceCode, OAuthGrantTypes.RefreshToken],
+            RedirectUris = [],
+            Scopes = [AuthorizationRoles.McpRead, AuthorizationRoles.OfflineAccess],
+            Notes = null,
+            IsDisabled = false
+        });
+
+        Assert.NotNull(created);
+        Assert.Empty(created.RedirectUris);
+        Assert.Equal([OAuthGrantTypes.DeviceCode, OAuthGrantTypes.RefreshToken], created.GrantTypes);
+    }
+
+    [Fact]
+    public async Task CreateAsync_AuthorizationCodeClientWithoutRedirectUri_ReturnsUnprocessableEntity()
+    {
+        var problem = await SendRequestAsAsync<ValidationProblemDetails>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "oauth-applications")
+            .Content(new NewOAuthApplication
+            {
+                ClientId = "bad-redirect-client",
+                Name = "Bad Redirect Client",
+                GrantTypes = [OAuthGrantTypes.AuthorizationCode],
+                RedirectUris = [],
+                Scopes = [AuthorizationRoles.McpRead],
+                Notes = null,
+                IsDisabled = false
+            })
+            .StatusCodeShouldBeUnprocessableEntity());
+
+        Assert.NotNull(problem);
+        Assert.Contains("redirect_uris", problem.Errors.Keys);
+    }
+
+    [Fact]
     public Task GetAllAsync_AsOrganizationUser_ReturnsForbidden()
     {
         return SendRequestAsync(r => r
@@ -184,6 +230,7 @@ public sealed class OAuthApplicationEndpointTests : IntegrationTestsBase
         {
             ClientId = clientId,
             Name = name,
+            GrantTypes = [OAuthGrantTypes.AuthorizationCode, OAuthGrantTypes.RefreshToken],
             RedirectUris = ["https://chat.openai.com/aip/g-test/oauth/callback"],
             Scopes = [AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead],
             Notes = null,

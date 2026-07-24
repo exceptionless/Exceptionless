@@ -27,6 +27,7 @@ public sealed class OAuthApplicationIndex : VersionedIndex<OAuthApplication>
                 .Keyword(e => e.ClientId)
                 .Keyword(e => e.RedirectUris)
                 .Keyword(e => e.Scopes)
+                .Keyword(e => e.GrantTypes)
                 .Keyword(e => e.CreatedByUserId)
                 .Keyword(e => e.UpdatedByUserId)
                 .Boolean(e => e.IsDisabled));

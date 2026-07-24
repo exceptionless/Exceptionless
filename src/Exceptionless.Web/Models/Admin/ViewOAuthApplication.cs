@@ -9,6 +9,7 @@ public record ViewOAuthApplication
     public required string Name { get; init; }
     public required string[] RedirectUris { get; init; }
     public required string[] Scopes { get; init; }
+    public required string[] GrantTypes { get; init; }
     public string? Notes { get; init; }
     public bool IsDisabled { get; init; }
     public required string CreatedByUserId { get; init; }
@@ -25,6 +26,7 @@ public record ViewOAuthApplication
             Name = application.Name,
             RedirectUris = application.RedirectUris,
             Scopes = application.Scopes,
+            GrantTypes = application.GrantTypes,
             Notes = application.Notes,
             IsDisabled = application.IsDisabled,
             CreatedByUserId = application.CreatedByUserId,

@@ -7764,6 +7764,239 @@
         }
       }
     },
+    "/api/v2/oauth/device_authorization": {
+      "post": {
+        "tags": [
+          "OAuth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthDeviceAuthorizationForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthDeviceAuthorizationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/oauth/device": {
+      "get": {
+        "tags": [
+          "OAuth"
+        ],
+        "parameters": [
+          {
+            "name": "user_code",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Found"
+          }
+        }
+      }
+    },
+    "/api/v2/oauth/device/consent": {
+      "post": {
+        "tags": [
+          "OAuth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthDeviceConsentForm"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthDeviceConsentForm"
+              }
+            },
+            "application/octet-stream": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthDeviceConsentForm"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthDeviceConsentForm"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthDeviceConsentForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthDeviceConsentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/oauth/device/authorize": {
+      "post": {
+        "tags": [
+          "OAuth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthDeviceAuthorizeForm"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthDeviceAuthorizeForm"
+              }
+            },
+            "application/octet-stream": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthDeviceAuthorizeForm"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthDeviceAuthorizeForm"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthDeviceAuthorizeForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/oauth/device/deny": {
+      "post": {
+        "tags": [
+          "OAuth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthDeviceConsentForm"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthDeviceConsentForm"
+              }
+            },
+            "application/octet-stream": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthDeviceConsentForm"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthDeviceConsentForm"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthDeviceConsentForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/oauth/token": {
       "post": {
         "tags": [
@@ -11559,6 +11792,7 @@
           "issuer",
           "authorization_endpoint",
           "token_endpoint",
+          "device_authorization_endpoint",
           "registration_endpoint",
           "revocation_endpoint",
           "grant_types_supported",
@@ -11578,6 +11812,9 @@
             "type": "string"
           },
           "token_endpoint": {
+            "type": "string"
+          },
+          "device_authorization_endpoint": {
             "type": "string"
           },
           "registration_endpoint": {
@@ -11825,6 +12062,136 @@
           }
         }
       },
+      "OAuthDeviceAuthorizationForm": {
+        "type": "object",
+        "properties": {
+          "client_id": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "scope": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "resource": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "OAuthDeviceAuthorizationResponse": {
+        "required": [
+          "device_code",
+          "user_code",
+          "verification_uri",
+          "verification_uri_complete",
+          "expires_in",
+          "interval"
+        ],
+        "type": "object",
+        "properties": {
+          "device_code": {
+            "type": "string"
+          },
+          "user_code": {
+            "type": "string"
+          },
+          "verification_uri": {
+            "type": "string"
+          },
+          "verification_uri_complete": {
+            "type": "string"
+          },
+          "expires_in": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "interval": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "OAuthDeviceAuthorizeForm": {
+        "type": "object",
+        "properties": {
+          "user_code": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "scope": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "organization_ids": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "OAuthDeviceConsentForm": {
+        "type": "object",
+        "properties": {
+          "user_code": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "OAuthDeviceConsentResponse": {
+        "required": [
+          "client_id",
+          "client_name",
+          "user_code",
+          "resource",
+          "scopes",
+          "required_scopes"
+        ],
+        "type": "object",
+        "properties": {
+          "client_id": {
+            "type": "string"
+          },
+          "client_name": {
+            "type": "string"
+          },
+          "user_code": {
+            "type": "string"
+          },
+          "resource": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "required_scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "OAuthErrorResponse": {
         "required": [
           "error"
@@ -11929,6 +12296,12 @@
             ]
           },
           "refresh_token": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "device_code": {
             "type": [
               "null",
               "string"
