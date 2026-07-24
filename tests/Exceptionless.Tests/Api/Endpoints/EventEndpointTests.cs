@@ -1244,6 +1244,7 @@ public partial class EventEndpointTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(results);
         Assert.NotEmpty(results);
+        Assert.Contains(results, summary => summary.Tags.Contains("test"));
         Assert.All(results, summary =>
         {
             Assert.False(String.IsNullOrWhiteSpace(summary.ProjectId));

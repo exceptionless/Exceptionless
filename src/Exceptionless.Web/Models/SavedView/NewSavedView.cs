@@ -16,7 +16,7 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
         new Dictionary<string, IReadOnlySet<string>>
         {
             ["events"] = new HashSet<string> { "summary", "user", "date", "project", "tags", "message", "type", "version", "exception_type", "source", "name", "level" },
-            ["stacks"] = new HashSet<string> { "summary", "project", "status", "users", "events", "first", "last" },
+            ["stacks"] = new HashSet<string> { "summary", "project", "tags", "status", "users", "events", "first", "last" },
             ["stream"] = new HashSet<string> { "summary", "user", "date", "project", "tags", "message", "type", "version", "exception_type", "source", "name", "level" }
         };
 

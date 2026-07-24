@@ -29,7 +29,8 @@ export const defaultEventColumnVisibility: ColumnVisibilityState = {
 };
 
 export const defaultStackColumnVisibility: ColumnVisibilityState = {
-    project: false
+    project: false,
+    tags: false
 };
 
 export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(
@@ -180,6 +181,16 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
         );
     } else {
         columns.push(
+            {
+                accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('tags'),
+                cell: (prop) => renderComponent(EventTagsSummaryCell, { onTagClick: options?.onTagClick, tags: prop.getValue<string[]>() }),
+                enableSorting: false,
+                header: 'Tags',
+                id: 'tags',
+                meta: {
+                    class: 'w-52 min-w-52 max-w-52'
+                }
+            },
             {
                 accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('status'),
                 cell: (prop) => renderComponent(StackStatusCell, { value: prop.getValue<StackStatus>() }),

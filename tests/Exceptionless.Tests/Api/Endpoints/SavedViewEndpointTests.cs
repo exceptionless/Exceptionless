@@ -2129,6 +2129,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     [InlineData("events", "project")]
     [InlineData("events", "tags")]
     [InlineData("stacks", "project")]
+    [InlineData("stacks", "tags")]
     [InlineData("stream", "project")]
     [InlineData("stream", "tags")]
     public Task PostAsync_ProjectAndTagColumnsForSupportedViews_Succeeds(string viewType, string column)

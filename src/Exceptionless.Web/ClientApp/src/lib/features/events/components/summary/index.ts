@@ -101,6 +101,7 @@ export interface StackSummaryModel<T extends SummaryTemplateKeys> extends Summar
     project_id: string;
     project_name?: string;
     status: StackStatus;
+    tags: string[];
     title: string;
     /** @format int64 */
     total: number;
