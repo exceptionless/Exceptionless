@@ -314,7 +314,7 @@ describe('WebSocketClient', () => {
             await server.connected;
 
             client.send('test message');
-            await expect(server).toReceiveMessage('test message');
+            await expect(server.nextMessage).resolves.toBe('test message');
 
             client.close();
         });
