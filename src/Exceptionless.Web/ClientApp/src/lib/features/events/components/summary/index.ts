@@ -61,6 +61,9 @@ export interface EventSummaryData {
 export interface EventSummaryModel<T extends SummaryTemplateKeys> extends SummaryModel<T> {
     /** @format date-time */
     date: string;
+    project_id: string;
+    project_name?: string;
+    tags: string[];
     type?: string;
     version?: string;
 }
