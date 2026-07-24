@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 vi.mock('$features/events/components/filters', () => ({ StringTrigger: null }));
 
 import type { PersistentEvent } from '../../models';
+
 import Environment from './environment.svelte';
 
 describe('Environment', () => {

@@ -39,12 +39,12 @@
     </div>
 
     {#if eventsQuery.isPending}
-        <div class="flex items-center gap-2 text-muted-foreground">
+        <div class="text-muted-foreground flex items-center gap-2">
             <Spinner class="size-4" />
             <span>Loading events...</span>
         </div>
     {:else if eventsQuery.error}
-        <div class="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">Unable to load events for this reference.</div>
+        <div class="border-destructive/40 bg-destructive/5 text-destructive rounded-md border p-4 text-sm">Unable to load events for this reference.</div>
     {:else if (eventsQuery.data?.length ?? 0) === 0}
         <div class="space-y-3">
             <Muted>No events were found for this reference.</Muted>
