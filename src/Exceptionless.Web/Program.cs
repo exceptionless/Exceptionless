@@ -119,6 +119,7 @@ public partial class Program
             builder.Services.AddSingleton(apmConfig);
             builder.Services.AddAppOptions(options);
             builder.Services.AddHttpContextAccessor();
+            builder.Services.AddCsp(nonceByteAmount: 32);
 
             builder.Services.AddCors(b => b.AddPolicy("AllowAny", p => p
                 .AllowAnyHeader()
@@ -250,47 +251,7 @@ public partial class Program
             if (ssl)
                 app.UseHttpsRedirection();
 
-            app.UseCsp(csp =>
-            {
-                csp.AllowFonts.FromSelf()
-                    .From("https://fonts.gstatic.com")
-                    .From("https://www.gravatar.com")
-                    .From("https://fonts.intercomcdn.com")
-                    .From("https://cdn.jsdelivr.net");
-                csp.AllowImages.FromSelf()
-                    .From("data:")
-                    .From("https://q.stripe.com")
-                    .From("https://js.intercomcdn.com")
-                    .From("https://downloads.intercomcdn.com")
-                    .From("https://uploads.intercomcdn.com")
-                    .From("https://static.intercomassets.com")
-                    .From("https://user-images.githubusercontent.com")
-                    .From("https://www.gravatar.com")
-                    .From("http://www.gravatar.com");
-                csp.AllowScripts.FromSelf()
-                    .AllowUnsafeInline()
-                    .AllowUnsafeEval()
-                    .From("https://js.stripe.com")
-                    .From("https://widget.intercom.io")
-                    .From("https://js.intercomcdn.com")
-                    .From("https://cdn.jsdelivr.net");
-                csp.AllowStyles.FromSelf()
-                    .AllowUnsafeInline()
-                    .From("https://fonts.googleapis.com")
-                    .From("https://cdn.jsdelivr.net");
-                csp.AllowConnections.ToSelf()
-                    .To("https://collector.exceptionless.io")
-                    .To("https://config.exceptionless.io")
-                    .To("https://heartbeat.exceptionless.io")
-                    .To("https://api-iam.intercom.io/")
-                    .To("wss://nexus-websocket-a.intercom.io");
-
-                csp.OnSendingHeader = new Func<CspSendingHeaderContext, Task>(context =>
-                {
-                    context.ShouldNotSend = context.HttpContext.Request.Path.StartsWithSegments("/api");
-                    return Task.CompletedTask;
-                });
-            });
+            app.UseCsp(FrontendContentSecurityPolicy.Configure);
 
             app.UseSerilogRequestLogging(o =>
             {
@@ -315,9 +276,9 @@ public partial class Program
                 };
             });
 
-            app.UseStaticFiles();
             app.UseDefaultFiles();
-            app.UseFileServer();
+            app.UseMiddleware<SpaIndexHtmlMiddleware>();
+            app.UseStaticFiles();
             app.UseRouting();
             app.UseCors("AllowAny");
             app.UseHttpMethodOverride();
@@ -341,15 +302,16 @@ public partial class Program
             }
 
             app.MapOpenApi("/docs/v2/openapi.json");
-            app.MapScalarApiReference("/docs", o =>
+            app.MapScalarApiReference("/docs", (o, context) =>
             {
                 o.WithOpenApiRoutePattern("/docs/{documentName}/openapi.json")
                     .AddDocument("v2", "Exceptionless API", "/docs/{documentName}/openapi.json", true)
-                    .AddPreferredSecuritySchemes("Bearer");
+                    .AddPreferredSecuritySchemes("Bearer")
+                    .WithNonce(context.RequestServices.GetRequiredService<ICspNonceService>().GetNonce());
             });
             app.MapApiEndpoints();
             app.MapMcp("/mcp").RequireAuthorization(AuthorizationRoles.McpPolicy);
-            app.MapFallback("{**slug:nonfile}", CreateRequestDelegate(app, "/index.html"));
+            app.MapFallback("{**slug:nonfile}", CreateSpaFallbackRequestDelegate(app));
 
             await app.RunAsync();
             return 0;
@@ -395,7 +357,7 @@ public partial class Program
             .ExecuteAsync(statusCodeContext.HttpContext);
     }
 
-    private static RequestDelegate CreateRequestDelegate(IEndpointRouteBuilder endpoints, string filePath)
+    internal static RequestDelegate CreateSpaFallbackRequestDelegate(IEndpointRouteBuilder endpoints)
     {
         var app = endpoints.CreateApplicationBuilder();
         var apiPathSegment = new PathString("/api");
@@ -407,16 +369,15 @@ public partial class Program
             bool isDocsRequest = context.Request.Path.StartsWithSegments(docsPathSegment);
             bool isNextRequest = context.Request.Path.StartsWithSegments(nextPathSegment);
 
-            if (!isApiRequest && !isDocsRequest && !isNextRequest)
-                context.Request.Path = "/" + filePath;
-            else if (!isApiRequest && !isDocsRequest)
-                context.Request.Path = "/next/" + filePath;
+            if (!isApiRequest && !isDocsRequest)
+                context.Request.Path = isNextRequest ? "/next/index.html" : "/index.html";
 
+            // Set endpoint to null so the SPA index middleware will handle the request.
             context.SetEndpoint(null);
             return next(context);
         });
 
-        app.UseStaticFiles();
+        app.UseMiddleware<SpaIndexHtmlMiddleware>();
         return app.Build();
     }
 
