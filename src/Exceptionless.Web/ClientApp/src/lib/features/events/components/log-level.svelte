@@ -32,18 +32,18 @@
 
     function getDarkThemeClasses(level: LogLevel | null): string {
         if (level === 'error' || level === 'fatal') {
-            return 'dark:border-red-400/30 dark:bg-red-500/10 dark:text-red-300';
+            return 'dark:border-red-400/25 dark:bg-background dark:text-red-300';
         }
 
         if (level === 'info') {
-            return 'dark:border-green-400/30 dark:bg-green-500/10 dark:text-green-200';
+            return 'dark:border-green-400/25 dark:bg-background dark:text-green-200';
         }
 
         if (level === 'warn') {
-            return 'dark:border-yellow-400/30 dark:bg-yellow-500/10 dark:text-yellow-200';
+            return 'dark:border-yellow-400/25 dark:bg-background dark:text-yellow-200';
         }
 
-        return 'dark:border-white/20 dark:bg-white/5 dark:text-zinc-200';
+        return 'dark:border-white/20 dark:bg-background dark:text-zinc-300';
     }
 
     const normalizedLogLevel = $derived(getLogLevel(level));
