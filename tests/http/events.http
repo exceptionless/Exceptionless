@@ -49,8 +49,16 @@ Authorization: Bearer {{token}}
 GET {{apiUrl}}/projects/{{projectId}}/events
 Authorization: Bearer {{token}}
 
+### By Project With Premium Filter (returns 426 for a free organization)
+GET {{apiUrl}}/projects/{{projectId}}/events?filter=tags:important
+Authorization: Bearer {{token}}
+
 ### Count
 GET {{apiUrl}}/events/count?aggregations=date:(date~month+cardinality:stack+sum:count~1)+cardinality:stack+terms:(first+@include:true)+sum:count~1&filter=(status:open+OR+status:regressed)
+Authorization: Bearer {{token}}
+
+### Count By Project With Premium Filter (returns 426 for a free organization)
+GET {{apiUrl}}/projects/{{projectId}}/events/count?filter=tags:important
 Authorization: Bearer {{token}}
 
 ### Simple Strings
@@ -135,4 +143,8 @@ Authorization: Bearer {{token}}
 
 ### Sessions - Get sessions list (summary mode)
 GET {{apiUrl}}/organizations/{{organizationId}}/events/sessions?mode=summary&limit=10&sort=-date
+Authorization: Bearer {{token}}
+
+### Sessions - Get all sessions (returns 426 for a free-only organization selection)
+GET {{apiUrl}}/events/sessions?mode=summary&limit=10&sort=-date
 Authorization: Bearer {{token}}

@@ -863,6 +863,77 @@ public partial class EventEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task Handle_GetEventCountByProjectWithPremiumFilterOnFreeOrganization_ReturnsUpgradeRequired()
+    {
+        // Arrange
+        await CreateDataAsync(d => d.Event().FreeProject().Tag("premium-tag"));
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .AsFreeOrganizationUser()
+            .AppendPaths("projects", SampleDataService.FREE_PROJECT_ID, "events", "count")
+            .QueryString("filter", "tags:premium-tag")
+            .StatusCodeShouldBeUpgradeRequired()
+        );
+    }
+
+    [Theory]
+    [InlineData("critical:false")]
+    [InlineData("first_occurrence:[now-1d TO now]")]
+    public async Task Handle_GetEventCountByOrganizationInStackModeWithFreeStackFilter_ReturnsOk(string filter)
+    {
+        // Arrange
+        await CreateDataAsync(d => d.Event().FreeProject());
+
+        // Act
+        var result = await SendRequestAsAsync<CountResult>(r => r
+            .AsFreeOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "events", "count")
+            .QueryString("filter", filter)
+            .QueryString("mode", "stack_frequent")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public async Task Handle_GetEventsByProjectWithPremiumFilterOnFreeOrganization_ReturnsUpgradeRequired()
+    {
+        // Arrange
+        await CreateDataAsync(d => d.Event().FreeProject().Tag("premium-tag"));
+
+        // Act & Assert
+        await SendRequestAsync(r => r
+            .AsFreeOrganizationUser()
+            .AppendPaths("projects", SampleDataService.FREE_PROJECT_ID, "events")
+            .QueryString("filter", "tags:premium-tag")
+            .StatusCodeShouldBeUpgradeRequired()
+        );
+    }
+
+    [Fact]
+    public async Task Handle_GetEventsByProjectInStackModeWithFreeStackFilter_ReturnsOk()
+    {
+        // Arrange
+        await CreateDataAsync(d => d.Event().FreeProject());
+
+        // Act
+        var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
+            .AsFreeOrganizationUser()
+            .AppendPaths("projects", SampleDataService.FREE_PROJECT_ID, "events")
+            .QueryString("filter", "critical:false")
+            .QueryString("mode", "stack_frequent")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(results);
+        Assert.Single(results);
+    }
+
+    [Fact]
     public async Task CanGetNewStackMode()
     {
         await CreateStacksAndEventsAsync();

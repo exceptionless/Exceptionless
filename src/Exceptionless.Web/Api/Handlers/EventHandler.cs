@@ -45,6 +45,7 @@ public class EventHandler(
     ICacheClient cacheClient,
     ITextSerializer serializer,
     PersistentEventQueryValidator validator,
+    StackQueryValidator stackValidator,
     AppOptions appOptions,
     UsageService usageService,
     TimeProvider timeProvider,
@@ -689,7 +690,9 @@ public class EventHandler(
 
     private async Task<Result<CountResult>> CountInternalAsync(AppFilter sf, TimeInfo ti, HttpContext httpContext, string? filter = null, string? aggregations = null, string? mode = null)
     {
-        var pr = await validator.ValidateQueryAsync(filter);
+        var pr = IsStackMode(mode)
+            ? await stackValidator.ValidateQueryAsync(filter)
+            : await validator.ValidateQueryAsync(filter);
         if (!pr.IsValid)
             return Result.BadRequest(pr.Message ?? "Invalid filter.");
 
@@ -698,6 +701,8 @@ public class EventHandler(
             return Result.BadRequest(far.Message ?? "Invalid aggregations.");
 
         sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || far.UsesPremiumFeatures;
+        if (ApiValidation.IsPremiumFeatureQueryBlocked(sf))
+            return PlanLimitResult<CountResult>("Please upgrade your plan to use premium search features.");
 
         if (mode == "stack_new")
             filter = AddFirstOccurrenceFilter(ti.Range, filter);
@@ -751,11 +756,15 @@ public class EventHandler(
         if (skip > Pagination.MaximumSkip)
             return new PagedResult<object>(Array.Empty<PersistentEvent>(), false);
 
-        var pr = await validator.ValidateQueryAsync(filter);
+        var pr = IsStackMode(mode)
+            ? await stackValidator.ValidateQueryAsync(filter)
+            : await validator.ValidateQueryAsync(filter);
         if (!pr.IsValid)
             return Result.BadRequest(pr.Message ?? "Invalid filter.");
 
         sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || usesPremiumFeatures;
+        if (ApiValidation.IsPremiumFeatureQueryBlocked(sf))
+            return PlanLimitResult<PagedResult<object>>("Please upgrade your plan to use premium search features.");
 
         try
         {
@@ -874,6 +883,11 @@ public class EventHandler(
             sb.Append('(').Append(filter).Append(')');
 
         return sb.ToString();
+    }
+
+    private static bool IsStackMode(string? mode)
+    {
+        return mode is "stack_recent" or "stack_frequent" or "stack_new" or "stack_users";
     }
 
     private Task<FindResults<PersistentEvent>> GetEventsInternalAsync(AppFilter sf, TimeInfo ti, string? filter, string? sort, int? page, int limit, string? before, string? after, bool includeTotal, HttpRequest? request = null)

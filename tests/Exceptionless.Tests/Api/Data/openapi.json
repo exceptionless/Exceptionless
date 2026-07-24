@@ -7255,6 +7255,16 @@
                 }
               }
             }
+          },
+          "426": {
+            "description": "Premium search features require an upgraded plan.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -7372,7 +7382,7 @@
             }
           },
           "426": {
-            "description": "Unable to view stack occurrences for the suspended organization.",
+            "description": "The organization is suspended or premium search features require an upgraded plan.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -7497,7 +7507,7 @@
             }
           },
           "426": {
-            "description": "Unable to view stack occurrences for the suspended organization.",
+            "description": "The organization is suspended or premium search features require an upgraded plan.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -7893,6 +7903,16 @@
                 }
               }
             }
+          },
+          "426": {
+            "description": "Premium search features require an upgraded plan.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -7975,6 +7995,16 @@
                 }
               }
             }
+          },
+          "426": {
+            "description": "The organization is suspended or premium search features require an upgraded plan.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -8050,6 +8080,16 @@
           },
           "400": {
             "description": "Invalid filter.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "The organization is suspended or premium search features require an upgraded plan.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8264,7 +8304,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "Premium search features require an upgraded plan.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8474,7 +8514,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "The organization is suspended or premium search features require an upgraded plan.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8622,7 +8662,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "The organization is suspended or premium search features require an upgraded plan.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8842,7 +8882,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "The organization is suspended or premium search features require an upgraded plan.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9505,6 +9545,16 @@
           },
           "400": {
             "description": "Invalid filter.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "Premium session search requires an upgraded plan.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {

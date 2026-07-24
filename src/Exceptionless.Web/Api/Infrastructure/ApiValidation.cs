@@ -1,9 +1,17 @@
+using Exceptionless.Core.Repositories.Queries;
 using Microsoft.AspNetCore.Http.Features;
 
 namespace Exceptionless.Web.Api.Infrastructure;
 
 public static class ApiValidation
 {
+    public static bool IsPremiumFeatureQueryBlocked(AppFilter filter)
+    {
+        return filter.UsesPremiumFeatures
+            && filter.Organizations.Count > 0
+            && filter.Organizations.All(organization => !organization.HasPremiumFeatures);
+    }
+
     public static IResult MissingRequestBody()
     {
         return global::Microsoft.AspNetCore.Http.Results.ValidationProblem(

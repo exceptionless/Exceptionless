@@ -39,7 +39,9 @@
     import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
     import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
     import { getColumns } from '$features/events/components/table/options.svelte';
+    import { filterUsesPremiumFeatures } from '$features/events/premium-filter';
     import { organization } from '$features/organizations/context.svelte';
+    import { premiumPage } from '$features/organizations/premium-page.svelte';
     import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
     import { useSavedViews } from '$features/saved-views/use-saved-views.svelte';
     import * as agg from '$features/shared/api/aggregations';
@@ -620,6 +622,10 @@
         }
     });
 
+    $effect(() => {
+        premiumPage.current = filterUsesPremiumFeatures(eventsQueryParameters.filter, 'stack') ? 'search' : undefined;
+    });
+
     const client = useFetchClient();
     const clientStatus = useFetchClientStatus(client);
     let clientResponse = $state<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>>();
@@ -714,6 +720,9 @@
             },
             get filter() {
                 return eventsQueryParameters.filter;
+            },
+            get mode() {
+                return eventsQueryParameters.mode;
             },
             get time() {
                 return eventsQueryParameters.time;
