@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import type { EventSummaryModel, SummaryTemplateKeys } from '../summary';
+import type { EventSummaryModel, StackSummaryModel, SummaryTemplateKeys } from '../summary';
 
-import { defaultEventColumnVisibility, getColumns } from './options.svelte';
+import { defaultEventColumnVisibility, defaultStackColumnVisibility, getColumns } from './options.svelte';
 
 describe('event table columns', () => {
     it('offers project and tags as hidden optional columns', () => {
@@ -13,5 +13,13 @@ describe('event table columns', () => {
         expect(columnIds).toContain('tags');
         expect(defaultEventColumnVisibility.project).toBe(false);
         expect(defaultEventColumnVisibility.tags).toBe(false);
+    });
+
+    it('offers project as a hidden optional stack column', () => {
+        const columns = getColumns<StackSummaryModel<SummaryTemplateKeys>>('stack_frequent');
+        const columnIds = columns.map((column) => column.id);
+
+        expect(columnIds).toContain('project');
+        expect(defaultStackColumnVisibility.project).toBe(false);
     });
 });

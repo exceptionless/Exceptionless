@@ -28,6 +28,10 @@ export const defaultEventColumnVisibility: ColumnVisibilityState = {
     version: false
 };
 
+export const defaultStackColumnVisibility: ColumnVisibilityState = {
+    project: false
+};
+
 export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(
     mode: GetEventsMode = 'summary',
     options?: { showType?: boolean }
@@ -64,6 +68,16 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
             meta: {
                 class: 'w-full'
             }
+        },
+        {
+            accessorFn: (row) => getProject(row),
+            cell: (prop) => formatTextColumn(prop.getValue()),
+            enableSorting: false,
+            header: 'Project',
+            id: 'project',
+            meta: {
+                class: 'w-40 min-w-40 max-w-40'
+            }
         }
     ];
 
@@ -85,16 +99,6 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                 id: 'date',
                 meta: {
                     class: 'w-36'
-                }
-            },
-            {
-                accessorFn: (row) => getProject(row),
-                cell: (prop) => formatTextColumn(prop.getValue()),
-                enableSorting: false,
-                header: 'Project',
-                id: 'project',
-                meta: {
-                    class: 'w-40 min-w-40 max-w-40'
                 }
             },
             {

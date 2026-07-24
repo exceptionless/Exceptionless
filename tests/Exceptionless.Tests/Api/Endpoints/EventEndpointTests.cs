@@ -1246,6 +1246,8 @@ public partial class EventEndpointTests : IntegrationTestsBase
         Assert.NotEmpty(results);
         Assert.All(results, summary =>
         {
+            Assert.False(String.IsNullOrWhiteSpace(summary.ProjectId));
+            Assert.False(String.IsNullOrWhiteSpace(summary.ProjectName));
             Assert.False(String.IsNullOrWhiteSpace(summary.Title));
             Assert.NotEqual(default, summary.FirstOccurrence);
             Assert.NotEqual(default, summary.LastOccurrence);

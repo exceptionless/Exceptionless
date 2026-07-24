@@ -464,6 +464,8 @@ public class StackHandler(
         if (stacks.Count == 0)
             return new List<StackSummaryModel>(0);
 
+        var projects = await projectRepository.GetByIdsAsync(stacks.Select(s => s.ProjectId).Distinct().ToArray(), o => o.Cache());
+        var projectNames = projects.ToDictionary(p => p.Id, p => p.Name);
         var totalUsers = await GetUserCountByProjectIdsAsync(stacks, sf, ti.Range.UtcStart, ti.Range.UtcEnd);
         return stacks.Join(stackTerms, s => s.Id, tk => tk.Key, (stack, term) =>
         {
@@ -473,6 +475,8 @@ public class StackHandler(
                 Id = data.Id,
                 TemplateKey = data.TemplateKey,
                 Data = data.Data,
+                ProjectId = stack.ProjectId,
+                ProjectName = projectNames.GetValueOrDefault(stack.ProjectId),
                 Title = stack.Title,
                 Status = stack.Status,
                 FirstOccurrence = term.Aggregations.Min<DateTime>("min_date")?.Value ?? stack.FirstOccurrence,

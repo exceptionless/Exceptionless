@@ -98,6 +98,8 @@ export interface StackSummaryModel<T extends SummaryTemplateKeys> extends Summar
     first_occurrence: string;
     /** @format date-time */
     last_occurrence: string;
+    project_id: string;
+    project_name?: string;
     status: StackStatus;
     title: string;
     /** @format int64 */
