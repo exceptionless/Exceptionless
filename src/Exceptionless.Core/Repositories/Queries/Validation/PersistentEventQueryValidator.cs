@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Repositories.Configuration;
+﻿using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Parsers.LuceneQueries;
 using Foundatio.Parsers.LuceneQueries.Visitors;
 using Microsoft.Extensions.Logging;
@@ -11,6 +12,7 @@ public sealed class PersistentEventQueryValidator : AppQueryValidator
             "date",
             "type",
             EventIndex.Alias.ReferenceId,
+            $"idx.{Event.KnownReferenceNames.Parent}-r",
             "reference_id",
             EventIndex.Alias.OrganizationId,
             "organization_id",
@@ -93,9 +95,11 @@ public sealed class PersistentEventQueryValidator : AppQueryValidator
 
     protected override QueryProcessResult ApplyQueryRules(QueryValidationResult result)
     {
+        bool hasInvalidReferenceField = result.ReferencedFields.Any(field => field.StartsWith("ref.", StringComparison.OrdinalIgnoreCase));
         return new QueryProcessResult
         {
-            IsValid = result.IsValid,
+            IsValid = result.IsValid && !hasInvalidReferenceField,
+            Message = hasInvalidReferenceField ? "Invalid reference field name" : null,
             UsesPremiumFeatures = !result.ReferencedFields.All(_freeQueryFields.Contains)
         };
     }

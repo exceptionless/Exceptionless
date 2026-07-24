@@ -16,19 +16,19 @@ using Exceptionless.Core.Services;
 using Exceptionless.Core.Validation;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Api.Infrastructure;
-using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Api.Messages;
+using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Caching;
 using Foundatio.Mediator;
 using Foundatio.Queues;
-using Foundatio.Serializer;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
+using Foundatio.Serializer;
 using Microsoft.Net.Http.Headers;
 
 namespace Exceptionless.Web.Api.Handlers;
@@ -230,7 +230,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(null, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organizations.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
-        return await GetInternalAsync(sf, ti, httpContext, String.Concat("reference:", message.ReferenceId), null, message.Mode, message.Page, message.Limit, message.Before, message.After, includeTotal: ShouldIncludeTotal(message.Include));
+        return await GetInternalAsync(sf, ti, httpContext, $"(reference:{message.ReferenceId} OR ref.{Event.KnownReferenceNames.Parent}:{message.ReferenceId})", null, message.Mode, message.Page, message.Limit, message.Before, message.After, includeTotal: ShouldIncludeTotal(message.Include));
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetEventsByReferenceIdAndProject message)
@@ -249,7 +249,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(null, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(project, appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(project, organization);
-        return await GetInternalAsync(sf, ti, httpContext, String.Concat("reference:", message.ReferenceId), null, message.Mode, message.Page, message.Limit, message.Before, message.After, includeTotal: ShouldIncludeTotal(message.Include));
+        return await GetInternalAsync(sf, ti, httpContext, $"(reference:{message.ReferenceId} OR ref.{Event.KnownReferenceNames.Parent}:{message.ReferenceId})", null, message.Mode, message.Page, message.Limit, message.Before, message.After, includeTotal: ShouldIncludeTotal(message.Include));
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetEventsBySessionId message)

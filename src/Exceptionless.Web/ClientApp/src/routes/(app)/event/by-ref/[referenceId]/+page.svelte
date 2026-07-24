@@ -6,6 +6,7 @@
     import { Button } from '$comp/ui/button';
     import { Spinner } from '$comp/ui/spinner';
     import { getEventsByReferenceQuery } from '$features/events/api.svelte';
+    import { ReferenceFilter } from '$features/events/components/filters';
     import Summary from '$features/events/components/summary/summary.svelte';
 
     const referenceId = $derived(page.params.referenceId || '');
@@ -16,7 +17,7 @@
             }
         }
     });
-    const eventListHref = $derived(`${resolve('/(app)/event')}?filter=${encodeURIComponent(`reference:${referenceId}`)}&limit=20`);
+    const eventListHref = $derived(`${resolve('/(app)/event')}?filter=${encodeURIComponent(new ReferenceFilter(referenceId).toFilter())}&limit=20`);
     let redirectedEventId = $state<string>();
 
     $effect(() => {

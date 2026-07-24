@@ -580,6 +580,45 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.Equal(11, ev.Idx.Count);
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("invalid_name")]
+    [InlineData("abcdefghijklmnopqrstuvwxyz")]
+    public void SetEventReference_InvalidName_Throws(string name)
+    {
+        var ev = new PersistentEvent();
+
+        var exception = Assert.Throws<ArgumentException>(() => ev.SetEventReference(name, "reference-id"));
+
+        Assert.Equal("name", exception.ParamName);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_FreePlanParentReference_IndexesOnlyParentReference()
+    {
+        var organization = await _organizationRepository.GetByIdAsync(TestConstants.OrganizationId3, o => o.Cache());
+        Assert.NotNull(organization);
+        Assert.False(organization.HasPremiumFeatures);
+
+        var project = await _projectRepository.AddAsync(_projectData.GenerateProject(organizationId: organization.Id), o => o.ImmediateConsistency().Cache());
+        var ev = _eventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, generateData: false, occurrenceDate: TimeProvider.GetUtcNow());
+        ev.SetEventReference("parent", "parent-reference");
+        ev.Data!["custom"] = "not indexed";
+
+        var context = await _pipeline.RunAsync(ev, organization, project);
+        Assert.False(context.HasError, context.ErrorMessage);
+        Assert.NotNull(context.Event.Idx);
+        Assert.Equal("parent-reference", context.Event.Idx["parent-r"]);
+        Assert.False(context.Event.Idx.ContainsKey("custom-s"));
+
+        await RefreshDataAsync();
+        var parentMatches = await _eventRepository.FindAsync(q => q.FieldEquals("idx.parent-r", "parent-reference"));
+        Assert.Equal(ev.Id, Assert.Single(parentMatches.Documents).Id);
+
+        var customMatches = await _eventRepository.FindAsync(q => q.FieldEquals("idx.custom-s", "not indexed"));
+        Assert.Empty(customMatches.Documents);
+    }
+
     [Fact]
     public async Task SyncStackTagsAsync()
     {

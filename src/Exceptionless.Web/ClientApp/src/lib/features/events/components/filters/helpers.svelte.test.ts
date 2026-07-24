@@ -85,6 +85,16 @@ describe('TagFilter', () => {
     });
 });
 
+describe('ReferenceFilter', () => {
+    it('matches direct and parent references', () => {
+        expect(new ReferenceFilter('ref-123').toFilter()).toBe('(reference:"ref-123" OR ref.parent:"ref-123")');
+    });
+
+    it('quotes the reference in both clauses', () => {
+        expect(new ReferenceFilter('ref 123').toFilter()).toBe('(reference:"ref 123" OR ref.parent:"ref 123")');
+    });
+});
+
 describe('applyTimeFilter', () => {
     it('removes an existing date filter when time is explicitly empty', () => {
         // Arrange
