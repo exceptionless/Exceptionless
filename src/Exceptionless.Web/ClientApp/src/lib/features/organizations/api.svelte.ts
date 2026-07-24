@@ -1,5 +1,5 @@
 import type { WebSocketMessageValue } from '$features/websockets/models';
-import type { BillingPlan, ChangePlanRequest, ChangePlanResult } from '$lib/generated/api';
+import type { BillingPlan, ChangePlanRequest, ChangePlanResult, StringValueFromBody } from '$lib/generated/api';
 import type { QueryClient } from '@tanstack/svelte-query';
 
 import { accessToken } from '$features/auth/index.svelte';
@@ -26,6 +26,7 @@ export async function invalidateOrganizationQueries(queryClient: QueryClient, me
 export const queryKeys = {
     adminSearch: (params: GetAdminSearchOrganizationsParams) => [...queryKeys.list(params.mode), 'admin', { ...params }] as const,
     changePlan: (id: string | undefined) => [...queryKeys.type, id, 'change-plan'] as const,
+    data: (id: string | undefined) => [...queryKeys.type, id, 'data'] as const,
     deleteOrganization: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'delete'] as const,
     icon: (id: string | undefined) => [...queryKeys.id(id, undefined), 'icon'] as const,
     id: (id: string | undefined, mode: 'stats' | undefined) => (mode ? ([...queryKeys.type, id, { mode }] as const) : ([...queryKeys.type, id] as const)),
@@ -52,6 +53,11 @@ export interface ChangePlanMutationRequest {
     route: {
         organizationId: string;
     };
+}
+
+export interface DeleteOrganizationDataParams {
+    key: string;
+    organizationId: string;
 }
 
 export interface DeleteOrganizationRequest {
@@ -142,6 +148,12 @@ export interface PatchOrganizationRequest {
     };
 }
 
+export interface PostOrganizationDataParams {
+    key: string;
+    organizationId: string;
+    value: string;
+}
+
 export interface PostSetBonusOrganizationParams {
     bonusEvents: number;
     expires?: Date;
@@ -221,6 +233,35 @@ export function deleteOrganization(request: DeleteOrganizationRequest) {
         },
         onSuccess: () => {
             request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id, undefined) }));
+        }
+    }));
+}
+
+export function deleteOrganizationData() {
+    const queryClient = useQueryClient();
+
+    return createMutation<boolean, ProblemDetails, DeleteOrganizationDataParams>(() => ({
+        enabled: () => !!accessToken.current,
+        mutationFn: async ({ key, organizationId }: DeleteOrganizationDataParams) => {
+            const client = useFetchClient();
+            const response = await client.delete(`organizations/${organizationId}/data/${encodeURIComponent(key)}`);
+            return response.ok;
+        },
+        mutationKey: queryKeys.data(undefined),
+        onError: (_, { organizationId }) => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(organizationId, undefined) });
+        },
+        onSuccess: (_, { key, organizationId }) => {
+            updateOrganizationQueryData(queryClient, organizationId, (organization) => {
+                if (!organization.data) {
+                    return organization;
+                }
+
+                const data = { ...organization.data };
+                delete data[key];
+
+                return { ...organization, data };
+            });
         }
     }));
 }
@@ -462,6 +503,32 @@ export function postOrganization() {
     }));
 }
 
+export function postOrganizationData() {
+    const queryClient = useQueryClient();
+
+    return createMutation<boolean, ProblemDetails, PostOrganizationDataParams>(() => ({
+        enabled: () => !!accessToken.current,
+        mutationFn: async ({ key, organizationId, value }: PostOrganizationDataParams) => {
+            const client = useFetchClient();
+            const response = await client.post(`organizations/${organizationId}/data/${encodeURIComponent(key)}`, <StringValueFromBody>{ value });
+            return response.ok;
+        },
+        mutationKey: queryKeys.data(undefined),
+        onError: (_, { organizationId }) => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(organizationId, undefined) });
+        },
+        onSuccess: (_, { key, organizationId, value }) => {
+            updateOrganizationQueryData(queryClient, organizationId, (organization) => ({
+                ...organization,
+                data: {
+                    ...(organization.data ?? {}),
+                    [key]: value
+                }
+            }));
+        }
+    }));
+}
+
 export function postSetBonusOrganization() {
     const queryClient = useQueryClient();
 
@@ -579,17 +646,23 @@ export function uploadOrganizationIcon(request: OrganizationIconRequest) {
 }
 
 function updateOrganizationCache(queryClient: QueryClient, id: string | undefined, organization: ViewOrganization) {
-    queryClient.setQueryData(queryKeys.id(id, 'stats'), organization);
-    queryClient.setQueryData(queryKeys.id(id, undefined), organization);
+    updateOrganizationQueryData(queryClient, id, () => organization);
+}
+
+function updateOrganizationQueryData(queryClient: QueryClient, id: string | undefined, updater: (organization: ViewOrganization) => ViewOrganization) {
+    for (const mode of [undefined, 'stats'] as const) {
+        queryClient.setQueryData<undefined | ViewOrganization>(queryKeys.id(id, mode), (organization) => (organization ? updater(organization) : organization));
+    }
+
     queryClient.setQueriesData<FetchClientResponse<ViewOrganization[]> | undefined>({ queryKey: queryKeys.type }, (response) => {
-        if (!Array.isArray(response?.data) || !response.data.some((existingOrganization) => existingOrganization.id === organization.id)) {
+        if (!Array.isArray(response?.data) || !response.data.some((organization) => organization.id === id)) {
             return response;
         }
 
         return {
             ...response,
-            data: response.data.map((existingOrganization) => {
-                return existingOrganization.id === organization.id ? organization : existingOrganization;
+            data: response.data.map((organization) => {
+                return organization.id === id ? updater(organization) : organization;
             })
         };
     });
