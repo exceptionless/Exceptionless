@@ -6,6 +6,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Xunit;
 
 namespace Exceptionless.Tests.Jobs;
@@ -391,6 +392,71 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task RunAsync_OrphanedEventsAcrossOccurrenceDates_DeletesOnlyEventsWithinCreatedUtcLookback()
+    {
+        var now = DateTimeOffset.UtcNow;
+        TimeProvider.SetUtcNow(now);
+
+        var organization = await _organizationRepository.AddAsync(
+            _organizationData.GenerateSampleOrganization(_billingManager, _plans),
+            o => o.ImmediateConsistency());
+        var project = await _projectRepository.AddAsync(
+            _projectData.GenerateSampleProject(),
+            o => o.ImmediateConsistency());
+        var stack = await _stackRepository.AddAsync(
+            _stackData.GenerateSampleStack(),
+            o => o.ImmediateConsistency());
+
+        var cutoffUtc = TimeProvider.GetUtcNow().UtcDateTime.Subtract(CleanupOrphanedDataJob.OrphanedEventLookback);
+        var beforeCutoffUtc = cutoffUtc.AddMilliseconds(-1);
+        var validEvent = _eventData.GenerateEvent(organization.Id, project.Id, stack.Id, occurrenceDate: now);
+
+        string missingStackId = ObjectId.GenerateNewId().ToString();
+        var stackOrphanAtCutoff = _eventData.GenerateEvent(organization.Id, project.Id, missingStackId, occurrenceDate: now);
+        stackOrphanAtCutoff.CreatedUtc = cutoffUtc;
+        var stackOrphanBeforeCutoff = _eventData.GenerateEvent(organization.Id, project.Id, missingStackId, occurrenceDate: now);
+        stackOrphanBeforeCutoff.CreatedUtc = beforeCutoffUtc;
+        var stackOrphanWithOldOccurrence = _eventData.GenerateEvent(organization.Id, project.Id, missingStackId, occurrenceDate: now.Subtract(TimeSpan.FromDays(30)));
+        stackOrphanWithOldOccurrence.CreatedUtc = now.UtcDateTime;
+
+        string missingProjectId = ObjectId.GenerateNewId().ToString();
+        var projectOrphanAtCutoff = _eventData.GenerateEvent(organization.Id, missingProjectId, stack.Id, occurrenceDate: now);
+        projectOrphanAtCutoff.CreatedUtc = cutoffUtc;
+        var projectOrphanBeforeCutoff = _eventData.GenerateEvent(organization.Id, missingProjectId, stack.Id, occurrenceDate: now);
+        projectOrphanBeforeCutoff.CreatedUtc = beforeCutoffUtc;
+
+        string missingOrganizationId = ObjectId.GenerateNewId().ToString();
+        var organizationOrphanAtCutoff = _eventData.GenerateEvent(missingOrganizationId, project.Id, stack.Id, occurrenceDate: now);
+        organizationOrphanAtCutoff.CreatedUtc = cutoffUtc;
+        var organizationOrphanBeforeCutoff = _eventData.GenerateEvent(missingOrganizationId, project.Id, stack.Id, occurrenceDate: now);
+        organizationOrphanBeforeCutoff.CreatedUtc = beforeCutoffUtc;
+
+        await _eventRepository.AddAsync([
+            validEvent,
+            stackOrphanAtCutoff,
+            stackOrphanBeforeCutoff,
+            stackOrphanWithOldOccurrence,
+            projectOrphanAtCutoff,
+            projectOrphanBeforeCutoff,
+            organizationOrphanAtCutoff,
+            organizationOrphanBeforeCutoff
+        ], o => o.ImmediateConsistency());
+
+        await _job.RunAsync(TestCancellationToken);
+
+        var remainingEvents = await _eventRepository.GetAllAsync(o => o.PageLimit(10).ImmediateConsistency());
+        Assert.Equal(4, remainingEvents.Total);
+        Assert.Contains(remainingEvents.Documents, e => e.Id == validEvent.Id);
+        Assert.Contains(remainingEvents.Documents, e => e.Id == stackOrphanBeforeCutoff.Id);
+        Assert.Contains(remainingEvents.Documents, e => e.Id == projectOrphanBeforeCutoff.Id);
+        Assert.Contains(remainingEvents.Documents, e => e.Id == organizationOrphanBeforeCutoff.Id);
+        Assert.DoesNotContain(remainingEvents.Documents, e => e.Id == stackOrphanAtCutoff.Id);
+        Assert.DoesNotContain(remainingEvents.Documents, e => e.Id == stackOrphanWithOldOccurrence.Id);
+        Assert.DoesNotContain(remainingEvents.Documents, e => e.Id == projectOrphanAtCutoff.Id);
+        Assert.DoesNotContain(remainingEvents.Documents, e => e.Id == organizationOrphanAtCutoff.Id);
+    }
+
+    [Fact]
     public async Task FixDuplicateStacks_WithDuplicatesAcrossTenants_MergesCorrectly()
     {
         // Arrange - Two stacks in the same project with the same signature (duplicate)
@@ -536,7 +602,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task RunAsync_EmptyDatabase_CompletesWithoutError()
+    public async Task RunAsync_EmptyDatabase_UpdatesHealth()
     {
         // Arrange - nothing
 
@@ -545,5 +611,36 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
 
         var totalAfter = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency());
         Assert.Equal(0, totalAfter);
+
+        var health = await _job.CheckHealthAsync(new HealthCheckContext(), TestCancellationToken);
+        Assert.Equal(HealthStatus.Healthy, health.Status);
+        Assert.Equal("Job has run in the last 65 minutes.", health.Description);
+    }
+
+    [Fact]
+    public async Task RunAsync_NoRecentEventsOrDuplicateStacks_UpdatesHealth()
+    {
+        var now = DateTimeOffset.UtcNow;
+        TimeProvider.SetUtcNow(now);
+
+        var organization = await _organizationRepository.AddAsync(
+            _organizationData.GenerateSampleOrganization(_billingManager, _plans),
+            o => o.ImmediateConsistency());
+        var project = await _projectRepository.AddAsync(
+            _projectData.GenerateProject(organizationId: organization.Id),
+            o => o.ImmediateConsistency());
+        var stack = await _stackRepository.AddAsync(
+            _stackData.GenerateStack(projectId: project.Id, organizationId: organization.Id),
+            o => o.ImmediateConsistency());
+        var historicalEvent = _eventData.GenerateEvent(organization.Id, project.Id, stack.Id, occurrenceDate: now.Subtract(TimeSpan.FromDays(30)));
+        historicalEvent.CreatedUtc = now.UtcDateTime.Subtract(CleanupOrphanedDataJob.OrphanedEventLookback).AddMilliseconds(-1);
+        await _eventRepository.AddAsync(historicalEvent, o => o.ImmediateConsistency());
+
+        await _job.RunAsync(TestCancellationToken);
+
+        Assert.Equal(1, await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency()));
+        var health = await _job.CheckHealthAsync(new HealthCheckContext(), TestCancellationToken);
+        Assert.Equal(HealthStatus.Healthy, health.Status);
+        Assert.Equal("Job has run in the last 65 minutes.", health.Description);
     }
 }
