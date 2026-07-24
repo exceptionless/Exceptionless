@@ -43,7 +43,7 @@
 {#snippet tagBadge(tag: string)}
     <Badge
         variant="outline"
-        class="border-border bg-muted text-muted-foreground group-hover/button:bg-accent group-hover/button:text-accent-foreground max-w-28 truncate text-xs"
+        class="border-border bg-muted text-muted-foreground group-hover/button:bg-accent group-hover/button:text-accent-foreground dark:border-muted-foreground/50 max-w-28 truncate rounded-md text-xs"
     >
         {tag}
     </Badge>
@@ -85,7 +85,11 @@
                 <Tooltip.Root>
                     <Tooltip.Trigger>
                         {#snippet child({ props })}
-                            <Badge {...props} variant="outline" class="border-border bg-muted text-muted-foreground cursor-default text-xs">
+                            <Badge
+                                {...props}
+                                variant="outline"
+                                class="border-border bg-muted text-muted-foreground dark:border-muted-foreground/50 cursor-default rounded-md text-xs"
+                            >
                                 +{hiddenTags.length}
                             </Badge>
                         {/snippet}

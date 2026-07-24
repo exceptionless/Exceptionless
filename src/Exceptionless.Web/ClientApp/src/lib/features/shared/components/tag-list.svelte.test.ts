@@ -19,8 +19,10 @@ describe('TagList', () => {
 
         for (const badge of container.querySelectorAll('[data-slot="badge"]')) {
             expect(badge.classList).toContain('border-border');
+            expect(badge.classList).toContain('dark:border-muted-foreground/50');
             expect(badge.classList).toContain('bg-muted');
             expect(badge.classList).toContain('text-muted-foreground');
+            expect(badge.classList).toContain('rounded-md');
         }
     });
 
