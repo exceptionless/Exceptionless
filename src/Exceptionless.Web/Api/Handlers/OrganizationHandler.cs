@@ -438,7 +438,9 @@ public class OrganizationHandler(
                 var subscriptionOptions = new SubscriptionCreateOptions
                 {
                     Customer = customer.Id,
-                    Items = [new SubscriptionItemOptions { Price = model.PlanId }]
+                    Items = [new SubscriptionItemOptions { Price = model.PlanId }],
+                    BillingCycleAnchorConfig = CreateMonthlyBillingCycleAnchorConfig(),
+                    ProrationBehavior = "create_prorations"
                 };
 
                 if (isPaymentMethod)
@@ -454,8 +456,18 @@ public class OrganizationHandler(
             }
             else
             {
-                var update = new SubscriptionUpdateOptions { Items = [] };
-                var create = new SubscriptionCreateOptions { Customer = organization.StripeCustomerId, Items = [] };
+                var update = new SubscriptionUpdateOptions
+                {
+                    Items = [],
+                    ProrationBehavior = "create_prorations"
+                };
+                var create = new SubscriptionCreateOptions
+                {
+                    Customer = organization.StripeCustomerId,
+                    Items = [],
+                    BillingCycleAnchorConfig = CreateMonthlyBillingCycleAnchorConfig(),
+                    ProrationBehavior = "create_prorations"
+                };
                 bool cardUpdated = false;
 
                 var customerUpdateOptions = new CustomerUpdateOptions { Description = organization.Name };
@@ -541,6 +553,17 @@ public class OrganizationHandler(
         }
 
         return new ChangePlanResult { Success = true };
+    }
+
+    private static SubscriptionBillingCycleAnchorConfigOptions CreateMonthlyBillingCycleAnchorConfig()
+    {
+        return new SubscriptionBillingCycleAnchorConfigOptions
+        {
+            DayOfMonth = 1,
+            Hour = 0,
+            Minute = 0,
+            Second = 0
+        };
     }
 
     public async Task<Result<User>> Handle(AddOrganizationUser message)
