@@ -19,6 +19,7 @@
     import { StringFilter } from '$features/events/components/filters';
     import { getProjectQuery } from '$features/projects/api.svelte';
     import * as agg from '$features/shared/api/aggregations';
+    import TagList from '$features/shared/components/tag-list.svelte';
     import { fillDateSeries } from '$features/shared/utils/charts';
     import { getStackQuery } from '$features/stacks/api.svelte';
     import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
@@ -305,21 +306,9 @@
                     {#if stack.tags && stack.tags.length > 0}
                         <Table.Row class="group">
                             <Table.Head class="w-36 font-semibold whitespace-nowrap">Tags</Table.Head>
-                            <Table.Cell class="relative w-4 pr-0">
-                                <EventsFacetedFilter.TagTrigger
-                                    changed={filterChanged}
-                                    class="absolute top-1/2 left-0 -translate-y-1/2"
-                                    value={[stack.tags[0]!]}
-                                />
-                            </Table.Cell>
+                            <Table.Cell class="w-4 pr-0"></Table.Cell>
                             <Table.Cell class="flex flex-wrap items-center justify-start gap-2 overflow-auto">
-                                <span>{stack.tags[0]}</span>
-                                {#each stack.tags.slice(1) as tag (tag)}
-                                    <span class="inline-flex items-center">
-                                        <EventsFacetedFilter.TagTrigger changed={filterChanged} value={[tag]} />
-                                        <span>{tag}</span>
-                                    </span>
-                                {/each}
+                                <TagList onTagClick={(tag) => filterChanged(new EventsFacetedFilter.TagFilter([tag]))} tags={stack.tags} />
                             </Table.Cell>
                         </Table.Row>
                     {/if}
