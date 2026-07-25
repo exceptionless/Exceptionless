@@ -11,6 +11,7 @@
     import StreamingIndicatorButton from '$comp/streaming-indicator-button.svelte';
     import { H3 } from '$comp/typography';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
+    import { PERSISTENT_EVENT_DELETE_RECONCILE_EVENT } from '$features/events/api.svelte';
     import EventDetailSheet from '$features/events/components/event-detail-sheet.svelte';
     import { ProjectFilter, StatusFilter, TagFilter } from '$features/events/components/filters';
     import {
@@ -37,6 +38,7 @@
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
     import { useEventListener, watch } from 'runed';
+    import { onDestroy } from 'svelte';
     import { debounce } from 'throttle-debounce';
 
     import { getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../redirect-to-events.svelte';
@@ -208,12 +210,21 @@
         })
     );
 
+    let loadDataRequestId = 0;
     let paused = $state(false);
     function handleToggle() {
         paused = !paused;
+        if (paused) {
+            loadDataRequestId++;
+        }
     }
 
     async function loadData(filterChanged: boolean = false) {
+        if (client.isLoading && filterChanged && !before) {
+            return;
+        }
+
+        const requestId = ++loadDataRequestId;
         if (paused) {
             return;
         }
@@ -222,20 +233,21 @@
             return;
         }
 
-        if (client.isLoading && filterChanged && !before) {
-            return;
-        }
-
         if (filterChanged) {
             before = undefined;
         }
 
-        clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, {
+        const response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, {
             params: {
                 ...eventsQueryParameters,
                 before
             }
         });
+        if (requestId !== loadDataRequestId) {
+            return;
+        }
+
+        clientResponse = response;
 
         if (clientResponse.problem && showBillingDialogOnUpgradeProblem(clientResponse.problem, organization.current, () => loadData(true))) {
             return;
@@ -256,12 +268,16 @@
     }
 
     const debouncedLoadData = debounce(5000, loadData);
-    async function onPersistentEventChanged(message: WebSocketMessageValue<'PersistentEventChanged'>) {
+    onDestroy(() => {
+        loadDataRequestId++;
+        debouncedLoadData.cancel();
+    });
+    function onPersistentEventChanged(message: WebSocketMessageValue<'PersistentEventChanged'>) {
         if (message.id && message.change_type === ChangeType.Removed) {
             if (removeTableData(table, (doc) => doc.id === message.id)) {
                 // If the grid data is empty from all events being removed, we should refresh the data.
                 if (isTableEmpty(table) && !paused) {
-                    await debouncedLoadData();
+                    debouncedLoadData();
                     return;
                 }
             }
@@ -276,10 +292,11 @@
             return;
         }
 
-        await debouncedLoadData();
+        debouncedLoadData();
     }
 
-    useEventListener(document, 'refresh', async () => await loadData());
+    useEventListener(document, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT, () => debouncedLoadData(true));
+    useEventListener(document, 'refresh', () => loadData(true));
     useEventListener(document, 'PersistentEventChanged', (event) => onPersistentEventChanged((event as CustomEvent).detail));
 
     $effect(() => {
@@ -288,6 +305,10 @@
     });
 
     $effect(() => {
+        if (paused) {
+            return;
+        }
+
         loadData();
     });
 </script>
