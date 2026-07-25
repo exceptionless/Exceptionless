@@ -295,8 +295,8 @@
         debouncedLoadData();
     }
 
-    useEventListener(document, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT, () => debouncedLoadData());
-    useEventListener(document, 'refresh', () => loadData());
+    useEventListener(document, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT, () => debouncedLoadData(true));
+    useEventListener(document, 'refresh', () => loadData(true));
     useEventListener(document, 'PersistentEventChanged', (event) => onPersistentEventChanged((event as CustomEvent).detail));
 
     $effect(() => {

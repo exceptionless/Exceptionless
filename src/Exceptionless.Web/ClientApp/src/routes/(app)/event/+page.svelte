@@ -813,7 +813,7 @@
     }
 
     useEventListener(document, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT, () => scheduleLoadData(true));
-    useEventListener(document, 'refresh', () => loadData());
+    useEventListener(document, 'refresh', () => scheduleLoadData(true));
     useEventListener(document, 'PersistentEventChanged', (event) => onPersistentEventChanged((event as CustomEvent).detail));
 
     $effect(() => {
