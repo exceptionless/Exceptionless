@@ -220,16 +220,16 @@
     }
 
     async function loadData(filterChanged: boolean = false) {
+        if (client.isLoading && filterChanged && !before) {
+            return;
+        }
+
         const requestId = ++loadDataRequestId;
         if (paused) {
             return;
         }
 
         if (!organization.current) {
-            return;
-        }
-
-        if (client.isLoading && filterChanged && !before) {
             return;
         }
 
