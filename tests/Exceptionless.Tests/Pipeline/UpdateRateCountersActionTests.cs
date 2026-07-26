@@ -127,6 +127,21 @@ public class UpdateRateCountersActionTests
         Assert.False(plan.HasCounters);
     }
 
+    [Theory]
+    [InlineData(RateNotificationSubject.Project, null, "project:project-1")]
+    [InlineData(RateNotificationSubject.Stack, "stack-1", "stack:stack-1")]
+    public void BuildSubjectKey_ValidRule_ReturnsCanonicalScopeKey(
+        RateNotificationSubject subject,
+        string? stackId,
+        string expected)
+    {
+        var rule = CreateRule("rule-1", subject, stackId);
+
+        string subjectKey = RateNotificationCounterPlan.BuildSubjectKey(rule);
+
+        Assert.Equal(expected, subjectKey);
+    }
+
     [Fact]
     public void ShouldIncrement_EnabledPremiumContext_ReturnsTrue()
     {

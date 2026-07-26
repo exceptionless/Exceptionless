@@ -102,4 +102,14 @@ public sealed class RateNotificationCounterPlan
             _ => throw new ArgumentOutOfRangeException(nameof(rule), rule.Subject, "Unsupported rate notification subject.")
         };
     }
+
+    public static string BuildSubjectKey(RateNotificationRule rule)
+    {
+        return rule.Subject switch
+        {
+            RateNotificationSubject.Project => $"project:{rule.ProjectId}",
+            RateNotificationSubject.Stack => $"stack:{rule.StackId}",
+            _ => throw new ArgumentOutOfRangeException(nameof(rule), rule.Subject, "Unsupported rate notification subject.")
+        };
+    }
 }

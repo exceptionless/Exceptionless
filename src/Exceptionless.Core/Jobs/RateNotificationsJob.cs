@@ -83,9 +83,7 @@ public class RateNotificationsJob : QueueJobBase<RateNotification>
             return Skip($"Rate notification rule {wi.RuleId} has an invalid definition; skipping.");
         }
 
-        string expectedSubjectKey = rule.Subject == RateNotificationSubject.Stack
-            ? $"stack:{rule.StackId}"
-            : $"project:{rule.ProjectId}";
+        string expectedSubjectKey = RateNotificationCounterPlan.BuildSubjectKey(rule);
         if (!String.Equals(rule.OrganizationId, wi.OrganizationId, StringComparison.Ordinal) ||
             !String.Equals(rule.ProjectId, wi.ProjectId, StringComparison.Ordinal) ||
             !String.Equals(rule.UserId, wi.UserId, StringComparison.Ordinal) ||

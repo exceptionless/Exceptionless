@@ -196,8 +196,7 @@ public class RateNotificationEvaluatorJob : JobWithLockBase
             return;
         }
 
-        // Build subject key (for cooldown scoping)
-        string subjectKey = BuildSubjectKey(rule);
+        string subjectKey = RateNotificationCounterPlan.BuildSubjectKey(rule);
 
         if (await _counterService.IsOnCooldownAsync(rule.Id, subjectKey, ct))
         {
@@ -259,12 +258,5 @@ public class RateNotificationEvaluatorJob : JobWithLockBase
 
         string projectId = counterKey[start..end];
         return ObjectId.IsValid(projectId) ? projectId : null;
-    }
-
-    private static string BuildSubjectKey(RateNotificationRule rule)
-    {
-        return rule.Subject == RateNotificationSubject.Stack && !String.IsNullOrEmpty(rule.StackId)
-            ? $"stack:{rule.StackId}"
-            : $"project:{rule.ProjectId}";
     }
 }
