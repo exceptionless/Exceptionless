@@ -11,6 +11,7 @@ import type { EventSummaryModel, StackSummaryModel, SummaryModel, SummaryTemplat
 
 import LogLevel from '../log-level.svelte';
 import Summary from '../summary/summary.svelte';
+import EventTagsSummaryCell from './event-tags-summary-cell.svelte';
 import EventsUserIdentitySummaryCell from './events-user-identity-summary-cell.svelte';
 import StackStatusCell from './stack-status-cell.svelte';
 import StackUsersSummaryCell from './stack-users-summary-cell.svelte';
@@ -20,14 +21,21 @@ export const defaultEventColumnVisibility: ColumnVisibilityState = {
     level: false,
     message: false,
     name: false,
+    project: false,
     source: false,
+    tags: false,
     type: false,
     version: false
 };
 
+export const defaultStackColumnVisibility: ColumnVisibilityState = {
+    project: false,
+    tags: false
+};
+
 export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(
     mode: GetEventsMode = 'summary',
-    options?: { showType?: boolean }
+    options?: { onTagClick?: (tag: string) => Promise<void> | void; showType?: boolean }
 ): ColumnDef<StockFeatures, TSummaryModel, unknown>[] {
     const showType = options?.showType ?? true;
     const columns: ColumnDef<StockFeatures, TSummaryModel, unknown>[] = [
@@ -61,6 +69,16 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
             meta: {
                 class: 'w-full'
             }
+        },
+        {
+            accessorFn: (row) => getProject(row),
+            cell: (prop) => formatTextColumn(prop.getValue()),
+            enableSorting: false,
+            header: 'Project',
+            id: 'project',
+            meta: {
+                class: 'w-40 min-w-40 max-w-40'
+            }
         }
     ];
 
@@ -82,6 +100,16 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                 id: 'date',
                 meta: {
                     class: 'w-36'
+                }
+            },
+            {
+                accessorKey: nameof<EventSummaryModel<SummaryTemplateKeys>>('tags'),
+                cell: (prop) => renderComponent(EventTagsSummaryCell, { onTagClick: options?.onTagClick, tags: prop.getValue<string[]>() }),
+                enableSorting: false,
+                header: 'Tags',
+                id: 'tags',
+                meta: {
+                    class: 'w-52 min-w-52 max-w-52'
                 }
             },
             {
@@ -154,6 +182,16 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
     } else {
         columns.push(
             {
+                accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('tags'),
+                cell: (prop) => renderComponent(EventTagsSummaryCell, { onTagClick: options?.onTagClick, tags: prop.getValue<string[]>() }),
+                enableSorting: false,
+                header: 'Tags',
+                id: 'tags',
+                meta: {
+                    class: 'w-52 min-w-52 max-w-52'
+                }
+            },
+            {
                 accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('status'),
                 cell: (prop) => renderComponent(StackStatusCell, { value: prop.getValue<StackStatus>() }),
                 enableSorting: false,
@@ -210,6 +248,11 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
 
 function formatTextColumn(value: unknown): string {
     return typeof value === 'string' && value.length > 0 ? value : '—';
+}
+
+function getProject<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(summary: TSummaryModel): string | undefined {
+    const eventSummary = summary as Partial<Pick<EventSummaryModel<SummaryTemplateKeys>, 'project_id' | 'project_name'>> & TSummaryModel;
+    return eventSummary.project_name ?? eventSummary.project_id;
 }
 
 function getSource<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(summary: TSummaryModel): string | undefined {

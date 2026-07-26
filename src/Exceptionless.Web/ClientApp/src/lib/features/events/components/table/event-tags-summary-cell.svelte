@@ -3,10 +3,10 @@
 
     interface Props {
         onTagClick?: (tag: string) => Promise<void> | void;
-        tags: string[] | undefined;
+        tags?: null | string[];
     }
 
     let { onTagClick, tags }: Props = $props();
 </script>
 
-<TagList maxVisible={3} {onTagClick} {tags} />
+<TagList class="max-w-48 flex-nowrap" maxVisible={2} {onTagClick} {tags} />
