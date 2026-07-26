@@ -1848,7 +1848,7 @@
           "Token"
         ],
         "summary": "Create for project",
-        "description": "This is a helper action that makes it easier to create a token for a specific project. You may also specify a scope when creating a token. There are three valid scopes: client, user and admin.",
+        "description": "This is a helper action that makes it easier to create a token for a specific project. Valid scopes are client, user, admin, and source-maps:write.",
         "parameters": [
           {
             "name": "projectId",
@@ -2157,7 +2157,7 @@
           "Token"
         ],
         "summary": "Create",
-        "description": "To create a new token, you must specify an organization_id. There are three valid scopes: client, user and admin.",
+        "description": "To create a new token, you must specify an organization_id and project_id. Valid scopes are client, user, admin, and source-maps:write. The source-maps:write scope requires a project-scoped token.",
         "requestBody": {
           "description": "The token.",
           "content": {
@@ -10741,6 +10741,169 @@
           }
         }
       }
+    },
+    "/api/v2/projects/{projectId}/source-maps": {
+      "get": {
+        "tags": [
+          "Source Map"
+        ],
+        "summary": "Get source maps for a project",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "description": "The identifier of the project.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SourceMapArtifact"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The project could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Source Map"
+        ],
+        "summary": "Upload a source map for a generated JavaScript file",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "description": "The identifier of the project.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file",
+                  "generated_file_url"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "description": "The source map file to upload.",
+                    "format": "binary"
+                  },
+                  "generated_file_url": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceMapArtifact"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The project could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The source map file or generated file URL is invalid.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/projects/{projectId}/source-maps/{sourceMapId}": {
+      "delete": {
+        "tags": [
+          "Source Map"
+        ],
+        "summary": "Delete a source map from a project",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "description": "The identifier of the project.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "sourceMapId",
+            "in": "path",
+            "description": "The identifier of the source map.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "The project or source map could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -12121,6 +12284,54 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "SourceMapArtifact": {
+        "required": [
+          "id",
+          "generated_file_url",
+          "size",
+          "is_auto_downloaded",
+          "created_utc"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "generated_file_url": {
+            "type": "string"
+          },
+          "source_map_url": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "file_name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "is_auto_downloaded": {
+            "type": "boolean"
+          },
+          "created_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_used_utc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },
@@ -13554,6 +13765,9 @@
     },
     {
       "name": "Stack"
+    },
+    {
+      "name": "Source Map"
     }
   ]
 }
