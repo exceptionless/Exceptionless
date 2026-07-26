@@ -329,6 +329,7 @@ public class Mailer : IMailer
             { "ProjectId", project.Id },
             { "RuleName", rule.Name },
             { "ObservedCount", observedCount },
+            { "ObservedEventNoun", observedCount == 1 ? "event" : "events" },
             { "Threshold", rule.Threshold },
             { "Window", windowDescription },
             { "Signal", rule.Signal.ToString() },

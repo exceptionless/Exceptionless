@@ -23,7 +23,6 @@
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { getProjectStacksQuery, getStackQuery } from '$features/stacks/api.svelte';
     import { ProblemDetails } from '@exceptionless/fetchclient';
-    import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
     import InfoIcon from '@lucide/svelte/icons/info';
     import { createForm } from '@tanstack/svelte-form';
     import { untrack } from 'svelte';
@@ -124,207 +123,214 @@
 </script>
 
 <form
-    class="flex flex-col gap-5"
+    class="flex min-h-0 flex-col overflow-hidden"
     onsubmit={(event) => {
         event.preventDefault();
         form.handleSubmit();
     }}
 >
-    <form.Subscribe selector={(state) => state.errors}>
-        {#snippet children(errors)}
-            <ErrorMessage message={getFormErrorMessages(errors)} />
-        {/snippet}
-    </form.Subscribe>
-
-    {#if !hasPremiumFeatures}
-        <Alert.Root variant="information">
-            <InfoIcon aria-hidden="true" />
-            <Alert.Title><A onclick={upgrade}>Upgrade now</A> to enable and create rate notification rules.</Alert.Title>
-        </Alert.Root>
-    {/if}
-
-    <Alert.Root variant="information">
-        <AlertTriangleIcon aria-hidden="true" />
-        <Alert.Title>This rule may be noisy. Use a cooldown to avoid repeated emails.</Alert.Title>
-    </Alert.Root>
-
-    <Field.FieldGroup>
-        <form.Field name="name">
-            {#snippet children(field)}
-                <Field.Field data-invalid={ariaInvalid(field)}>
-                    <Field.Label for={field.name}>Name</Field.Label>
-                    <Input
-                        id={field.name}
-                        value={field.state.value}
-                        maxlength={100}
-                        placeholder="e.g. Production error storm"
-                        onblur={field.handleBlur}
-                        oninput={(event) => field.handleChange(event.currentTarget.value)}
-                        aria-invalid={ariaInvalid(field)}
-                    />
-                    <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
-                </Field.Field>
-            {/snippet}
-        </form.Field>
-
-        <form.Field name="signal">
-            {#snippet children(field)}
-                <Field.Field data-invalid={ariaInvalid(field)}>
-                    <Field.Label for={field.name}>Signal</Field.Label>
-                    <Select.Root
-                        type="single"
-                        value={field.state.value}
-                        onValueChange={(value) => value && field.handleChange(value as RateNotificationSignal)}
-                    >
-                        <Select.Trigger id={field.name} class="w-full">{SIGNAL_LABELS[field.state.value]}</Select.Trigger>
-                        <Select.Content>
-                            <Select.Group>
-                                {#each Object.entries(SIGNAL_LABELS) as [value, label] (value)}
-                                    <Select.Item {value}>{label}</Select.Item>
-                                {/each}
-                            </Select.Group>
-                        </Select.Content>
-                    </Select.Root>
-                    <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
-                </Field.Field>
-            {/snippet}
-        </form.Field>
-
-        <form.Field name="subject">
-            {#snippet children(field)}
-                <Field.Field data-invalid={ariaInvalid(field)}>
-                    <Field.Label for={field.name}>Subject</Field.Label>
-                    <Select.Root
-                        type="single"
-                        value={field.state.value}
-                        onValueChange={(value) => {
-                            if (value) {
-                                field.handleChange(value as RateNotificationSubject);
-                                if (value === RateNotificationSubject.Project) {
-                                    form.setFieldValue('stack_id', '');
-                                }
-                            }
-                        }}
-                    >
-                        <Select.Trigger id={field.name} class="w-full">{SUBJECT_LABELS[field.state.value]}</Select.Trigger>
-                        <Select.Content>
-                            <Select.Group>
-                                {#each Object.entries(SUBJECT_LABELS) as [value, label] (value)}
-                                    <Select.Item {value}>{label}</Select.Item>
-                                {/each}
-                            </Select.Group>
-                        </Select.Content>
-                    </Select.Root>
-                    <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
-                </Field.Field>
-            {/snippet}
-        </form.Field>
-
-        <form.Subscribe selector={(state) => state.values.subject}>
-            {#snippet children(subject)}
-                {#if subject === RateNotificationSubject.Stack}
-                    <form.Field name="stack_id">
-                        {#snippet children(field)}
-                            <Field.Field data-invalid={ariaInvalid(field)}>
-                                <Field.Label for={field.name}>Stack</Field.Label>
-                                <Select.Root type="single" value={field.state.value} onValueChange={(value) => field.handleChange(value ?? '')}>
-                                    <Select.Trigger id={field.name} class="w-full" disabled={stacksQuery.isLoading}>
-                                        {stacks.find((stack) => stack.id === field.state.value)?.title ??
-                                            (stacksQuery.isLoading ? 'Loading stacks...' : 'Select a stack')}
-                                    </Select.Trigger>
-                                    <Select.Content>
-                                        <Select.Group>
-                                            {#each stacks as stack (stack.id)}
-                                                <Select.Item value={stack.id}>{stack.title}</Select.Item>
-                                            {/each}
-                                        </Select.Group>
-                                    </Select.Content>
-                                </Select.Root>
-                                <Field.Description>Choose from the 100 most recently active stacks in this project.</Field.Description>
-                                <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
-                            </Field.Field>
-                        {/snippet}
-                    </form.Field>
-                {/if}
+    <div class="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-4">
+        <form.Subscribe selector={(state) => state.errors}>
+            {#snippet children(errors)}
+                <ErrorMessage message={getFormErrorMessages(errors)} />
             {/snippet}
         </form.Subscribe>
 
-        <form.Field name="threshold">
-            {#snippet children(field)}
-                <Field.Field data-invalid={ariaInvalid(field)}>
-                    <Field.Label for={field.name}>Threshold (events)</Field.Label>
-                    <Input
-                        id={field.name}
-                        type="number"
-                        value={field.state.value}
-                        min={1}
-                        step={1}
-                        onblur={field.handleBlur}
-                        oninput={(event) => field.handleChange(event.currentTarget.valueAsNumber)}
-                        aria-invalid={ariaInvalid(field)}
-                    />
-                    <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
-                </Field.Field>
-            {/snippet}
-        </form.Field>
+        {#if !hasPremiumFeatures}
+            <Alert.Root variant="information">
+                <InfoIcon aria-hidden="true" />
+                <Alert.Title><A onclick={upgrade}>Upgrade now</A> to enable and create rate notification rules.</Alert.Title>
+            </Alert.Root>
+        {/if}
 
-        <form.Field name="window">
-            {#snippet children(field)}
-                <Field.Field data-invalid={ariaInvalid(field)}>
-                    <Field.Label for={field.name}>Window</Field.Label>
-                    <Select.Root type="single" value={field.state.value} onValueChange={(value) => value && field.handleChange(value)}>
-                        <Select.Trigger id={field.name} class="w-full">
-                            {WINDOW_OPTIONS.find((option) => option.value === field.state.value)?.label}
-                        </Select.Trigger>
-                        <Select.Content>
-                            <Select.Group>
-                                {#each WINDOW_OPTIONS as option (option.value)}
-                                    <Select.Item value={option.value}>{option.label}</Select.Item>
-                                {/each}
-                            </Select.Group>
-                        </Select.Content>
-                    </Select.Root>
-                    <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
-                </Field.Field>
-            {/snippet}
-        </form.Field>
+        <Alert.Root variant="information">
+            <InfoIcon aria-hidden="true" />
+            <Alert.Title>Start with 10 errors in 5 minutes and a 30-minute cooldown, then tune the rule for this project.</Alert.Title>
+        </Alert.Root>
 
-        <form.Field name="cooldown">
-            {#snippet children(field)}
-                <Field.Field data-invalid={ariaInvalid(field)}>
-                    <Field.Label for={field.name}>Cooldown</Field.Label>
-                    <Select.Root type="single" value={field.state.value} onValueChange={(value) => value && field.handleChange(value)}>
-                        <Select.Trigger id={field.name} class="w-full">
-                            {COOLDOWN_OPTIONS.find((option) => option.value === field.state.value)?.label}
-                        </Select.Trigger>
-                        <Select.Content>
-                            <Select.Group>
-                                {#each COOLDOWN_OPTIONS as option (option.value)}
-                                    <Select.Item value={option.value}>{option.label}</Select.Item>
-                                {/each}
-                            </Select.Group>
-                        </Select.Content>
-                    </Select.Root>
-                    <Field.Description>Further notifications are suppressed during this period.</Field.Description>
-                    <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
-                </Field.Field>
-            {/snippet}
-        </form.Field>
+        <Field.FieldGroup>
+            <form.Field name="name">
+                {#snippet children(field)}
+                    <Field.Field data-invalid={ariaInvalid(field)}>
+                        <Field.Label for={field.name}>Name</Field.Label>
+                        <Input
+                            id={field.name}
+                            value={field.state.value}
+                            maxlength={100}
+                            placeholder="e.g. Production error storm"
+                            onblur={field.handleBlur}
+                            oninput={(event) => field.handleChange(event.currentTarget.value)}
+                            aria-invalid={ariaInvalid(field)}
+                        />
+                        <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                    </Field.Field>
+                {/snippet}
+            </form.Field>
 
-        <form.Field name="is_enabled">
-            {#snippet children(field)}
-                <Field.Field orientation="horizontal" data-disabled={!hasPremiumFeatures}>
-                    <div>
-                        <Field.Label for={field.name}>Enabled</Field.Label>
-                        <Muted class="text-xs">Start evaluating this rule immediately.</Muted>
-                    </div>
-                    <Switch id={field.name} checked={field.state.value} disabled={!hasPremiumFeatures} onCheckedChange={(value) => field.handleChange(value)} />
-                </Field.Field>
-            {/snippet}
-        </form.Field>
-    </Field.FieldGroup>
+            <form.Field name="signal">
+                {#snippet children(field)}
+                    <Field.Field data-invalid={ariaInvalid(field)}>
+                        <Field.Label for={field.name}>Signal</Field.Label>
+                        <Select.Root
+                            type="single"
+                            value={field.state.value}
+                            onValueChange={(value) => value && field.handleChange(value as RateNotificationSignal)}
+                        >
+                            <Select.Trigger id={field.name} class="w-full">{SIGNAL_LABELS[field.state.value]}</Select.Trigger>
+                            <Select.Content>
+                                <Select.Group>
+                                    {#each Object.entries(SIGNAL_LABELS) as [value, label] (value)}
+                                        <Select.Item {value}>{label}</Select.Item>
+                                    {/each}
+                                </Select.Group>
+                            </Select.Content>
+                        </Select.Root>
+                        <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                    </Field.Field>
+                {/snippet}
+            </form.Field>
 
-    <div class="flex justify-end gap-2">
+            <form.Field name="subject">
+                {#snippet children(field)}
+                    <Field.Field data-invalid={ariaInvalid(field)}>
+                        <Field.Label for={field.name}>Subject</Field.Label>
+                        <Select.Root
+                            type="single"
+                            value={field.state.value}
+                            onValueChange={(value) => {
+                                if (value) {
+                                    field.handleChange(value as RateNotificationSubject);
+                                    if (value === RateNotificationSubject.Project) {
+                                        form.setFieldValue('stack_id', '');
+                                    }
+                                }
+                            }}
+                        >
+                            <Select.Trigger id={field.name} class="w-full">{SUBJECT_LABELS[field.state.value]}</Select.Trigger>
+                            <Select.Content>
+                                <Select.Group>
+                                    {#each Object.entries(SUBJECT_LABELS) as [value, label] (value)}
+                                        <Select.Item {value}>{label}</Select.Item>
+                                    {/each}
+                                </Select.Group>
+                            </Select.Content>
+                        </Select.Root>
+                        <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                    </Field.Field>
+                {/snippet}
+            </form.Field>
+
+            <form.Subscribe selector={(state) => state.values.subject}>
+                {#snippet children(subject)}
+                    {#if subject === RateNotificationSubject.Stack}
+                        <form.Field name="stack_id">
+                            {#snippet children(field)}
+                                <Field.Field data-invalid={ariaInvalid(field)}>
+                                    <Field.Label for={field.name}>Stack</Field.Label>
+                                    <Select.Root type="single" value={field.state.value} onValueChange={(value) => field.handleChange(value ?? '')}>
+                                        <Select.Trigger id={field.name} class="w-full" disabled={stacksQuery.isLoading}>
+                                            {stacks.find((stack) => stack.id === field.state.value)?.title ??
+                                                (stacksQuery.isLoading ? 'Loading stacks...' : 'Select a stack')}
+                                        </Select.Trigger>
+                                        <Select.Content>
+                                            <Select.Group>
+                                                {#each stacks as stack (stack.id)}
+                                                    <Select.Item value={stack.id}>{stack.title}</Select.Item>
+                                                {/each}
+                                            </Select.Group>
+                                        </Select.Content>
+                                    </Select.Root>
+                                    <Field.Description>Choose from the 100 most recently active stacks in this project.</Field.Description>
+                                    <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                                </Field.Field>
+                            {/snippet}
+                        </form.Field>
+                    {/if}
+                {/snippet}
+            </form.Subscribe>
+
+            <form.Field name="threshold">
+                {#snippet children(field)}
+                    <Field.Field data-invalid={ariaInvalid(field)}>
+                        <Field.Label for={field.name}>Threshold (events)</Field.Label>
+                        <Input
+                            id={field.name}
+                            type="number"
+                            value={field.state.value}
+                            min={1}
+                            step={1}
+                            onblur={field.handleBlur}
+                            oninput={(event) => field.handleChange(event.currentTarget.valueAsNumber)}
+                            aria-invalid={ariaInvalid(field)}
+                        />
+                        <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                    </Field.Field>
+                {/snippet}
+            </form.Field>
+
+            <form.Field name="window">
+                {#snippet children(field)}
+                    <Field.Field data-invalid={ariaInvalid(field)}>
+                        <Field.Label for={field.name}>Window</Field.Label>
+                        <Select.Root type="single" value={field.state.value} onValueChange={(value) => value && field.handleChange(value)}>
+                            <Select.Trigger id={field.name} class="w-full">
+                                {WINDOW_OPTIONS.find((option) => option.value === field.state.value)?.label}
+                            </Select.Trigger>
+                            <Select.Content>
+                                <Select.Group>
+                                    {#each WINDOW_OPTIONS as option (option.value)}
+                                        <Select.Item value={option.value}>{option.label}</Select.Item>
+                                    {/each}
+                                </Select.Group>
+                            </Select.Content>
+                        </Select.Root>
+                        <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                    </Field.Field>
+                {/snippet}
+            </form.Field>
+
+            <form.Field name="cooldown">
+                {#snippet children(field)}
+                    <Field.Field data-invalid={ariaInvalid(field)}>
+                        <Field.Label for={field.name}>Cooldown</Field.Label>
+                        <Select.Root type="single" value={field.state.value} onValueChange={(value) => value && field.handleChange(value)}>
+                            <Select.Trigger id={field.name} class="w-full">
+                                {COOLDOWN_OPTIONS.find((option) => option.value === field.state.value)?.label}
+                            </Select.Trigger>
+                            <Select.Content>
+                                <Select.Group>
+                                    {#each COOLDOWN_OPTIONS as option (option.value)}
+                                        <Select.Item value={option.value}>{option.label}</Select.Item>
+                                    {/each}
+                                </Select.Group>
+                            </Select.Content>
+                        </Select.Root>
+                        <Field.Description>Further notifications are suppressed during this period.</Field.Description>
+                        <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                    </Field.Field>
+                {/snippet}
+            </form.Field>
+
+            <form.Field name="is_enabled">
+                {#snippet children(field)}
+                    <Field.Field orientation="horizontal" data-disabled={!hasPremiumFeatures}>
+                        <div>
+                            <Field.Label for={field.name}>Enabled</Field.Label>
+                            <Muted class="text-xs">Start evaluating this rule immediately.</Muted>
+                        </div>
+                        <Switch
+                            id={field.name}
+                            checked={field.state.value}
+                            disabled={!hasPremiumFeatures}
+                            onCheckedChange={(value) => field.handleChange(value)}
+                        />
+                    </Field.Field>
+                {/snippet}
+            </form.Field>
+        </Field.FieldGroup>
+    </div>
+
+    <div class="bg-popover flex shrink-0 justify-end gap-2 border-t px-4 py-3">
         {#if onCancel}
             <Button variant="outline" onclick={onCancel} type="button">Cancel</Button>
         {/if}

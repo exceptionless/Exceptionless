@@ -241,7 +241,7 @@
         {#if rateNotificationsEnabled}
             <div class="space-y-2">
                 <H3>Rate Notifications</H3>
-                <Muted>Get notified when event rates for this project exceed your custom thresholds.</Muted>
+                <Muted>Catch error storms early so you can fix noisy failures before they consume your event quota.</Muted>
             </div>
 
             <RateNotificationRuleList
@@ -258,8 +258,8 @@
 
 {#if rateNotificationsEnabled}
     <Dialog.Root bind:open={rateRuleDialogOpen} onOpenChange={(open) => !open && closeRateRuleDialog()}>
-        <Dialog.Content class="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-            <Dialog.Header>
+        <Dialog.Content class="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
+            <Dialog.Header class="px-4 pt-4">
                 <Dialog.Title>{editingRateRule ? 'Edit Rate Notification Rule' : 'Create Rate Notification Rule'}</Dialog.Title>
                 <Dialog.Description>
                     {editingRateRule ? 'Update the rule settings below.' : 'Configure when you want to receive an email notification based on event rates.'}

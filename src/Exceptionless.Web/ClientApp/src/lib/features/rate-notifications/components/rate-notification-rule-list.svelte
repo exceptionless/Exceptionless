@@ -2,6 +2,7 @@
     import type { ViewRateNotificationRule } from '$features/rate-notifications/types';
 
     import ErrorMessage from '$comp/error-message.svelte';
+    import TimeAgo from '$comp/formatters/time-ago.svelte';
     import { A, Muted } from '$comp/typography';
     import * as Alert from '$comp/ui/alert';
     import * as AlertDialog from '$comp/ui/alert-dialog';
@@ -16,7 +17,7 @@
         postUnsnoozeRateNotificationRule,
         putRateNotificationRule
     } from '$features/rate-notifications/api.svelte';
-    import { MAX_RULES_PER_PROJECT, RateNotificationSubject, SIGNAL_LABELS, WINDOW_OPTIONS } from '$features/rate-notifications/types';
+    import { COOLDOWN_OPTIONS, MAX_RULES_PER_PROJECT, RateNotificationSubject, SIGNAL_LABELS, WINDOW_OPTIONS } from '$features/rate-notifications/types';
     import BellOffIcon from '@lucide/svelte/icons/bell-off';
     import InfoIcon from '@lucide/svelte/icons/info';
     import PlusIcon from '@lucide/svelte/icons/plus';
@@ -111,6 +112,10 @@
     function windowLabel(value: string): string {
         return WINDOW_OPTIONS.find((option) => option.value === value)?.label ?? value;
     }
+
+    function cooldownLabel(value: string): string {
+        return COOLDOWN_OPTIONS.find((option) => option.value === value)?.label ?? value;
+    }
 </script>
 
 <div class="flex flex-col gap-4">
@@ -152,11 +157,15 @@
                             <div class="mt-1 flex flex-wrap items-center gap-2">
                                 <Badge variant="secondary">{SIGNAL_LABELS[rule.signal]}</Badge>
                                 <Muted class="text-xs">≥{rule.threshold} in {windowLabel(rule.window)}</Muted>
+                                <Muted class="text-xs">Cooldown {cooldownLabel(rule.cooldown)}</Muted>
                                 {#if rule.is_snoozed}
                                     <Badge variant="outline"><BellOffIcon aria-hidden="true" />Snoozed</Badge>
                                 {/if}
                                 {#if rule.subject === RateNotificationSubject.Stack && rule.stack_id}
                                     <Muted class="text-xs">Stack-scoped</Muted>
+                                {/if}
+                                {#if rule.last_fired_utc}
+                                    <Muted class="text-xs">Last sent <TimeAgo value={rule.last_fired_utc} /></Muted>
                                 {/if}
                             </div>
                         </div>
