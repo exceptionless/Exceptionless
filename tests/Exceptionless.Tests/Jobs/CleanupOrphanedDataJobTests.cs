@@ -13,6 +13,7 @@ namespace Exceptionless.Tests.Jobs;
 
 public class CleanupOrphanedDataJobTests : IntegrationTestsBase
 {
+    private static readonly TimeSpan RecentIngestWindow = TimeSpan.FromDays(3);
     private readonly CleanupOrphanedDataJob _job;
     private readonly OrganizationData _organizationData;
     private readonly IOrganizationRepository _organizationRepository;
@@ -407,7 +408,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
             _stackData.GenerateSampleStack(),
             o => o.ImmediateConsistency());
 
-        var cutoffUtc = TimeProvider.GetUtcNow().UtcDateTime.Subtract(CleanupOrphanedDataJob.OrphanedEventLookback);
+        var cutoffUtc = TimeProvider.GetUtcNow().UtcDateTime.Subtract(RecentIngestWindow);
         var beforeCutoffUtc = cutoffUtc.AddMilliseconds(-1);
         var validEvent = _eventData.GenerateEvent(organization.Id, project.Id, stack.Id, occurrenceDate: now);
 
@@ -633,7 +634,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
             _stackData.GenerateStack(projectId: project.Id, organizationId: organization.Id),
             o => o.ImmediateConsistency());
         var historicalEvent = _eventData.GenerateEvent(organization.Id, project.Id, stack.Id, occurrenceDate: now.Subtract(TimeSpan.FromDays(30)));
-        historicalEvent.CreatedUtc = now.UtcDateTime.Subtract(CleanupOrphanedDataJob.OrphanedEventLookback).AddMilliseconds(-1);
+        historicalEvent.CreatedUtc = now.UtcDateTime.Subtract(RecentIngestWindow).AddMilliseconds(-1);
         await _eventRepository.AddAsync(historicalEvent, o => o.ImmediateConsistency());
 
         await _job.RunAsync(TestCancellationToken);

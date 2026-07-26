@@ -23,7 +23,7 @@ namespace Exceptionless.Core.Jobs;
 [Job(Description = "Deletes orphaned data.", IsContinuous = false)]
 public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
 {
-    internal static readonly TimeSpan OrphanedEventLookback = TimeSpan.FromDays(3);
+    private static readonly TimeSpan OrphanedEventLookback = TimeSpan.FromDays(3);
     private readonly ExceptionlessElasticConfiguration _config;
     private readonly ElasticsearchClient _elasticClient;
     private readonly IStackRepository _stackRepository;
