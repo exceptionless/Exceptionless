@@ -576,6 +576,8 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
         target.CreatedUtc = new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Utc);
         target.LastOccurrence = new DateTime(2026, 1, 2, 1, 0, 0, DateTimeKind.Utc);
         target.TotalOccurrences = 100;
+        target.SnoozeUntilUtc = null;
+        target.DateFixed = null;
         target.Tags.Add("target");
         target.References.Add("target-reference");
 
@@ -584,6 +586,8 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
         source.LastOccurrence = new DateTime(2026, 1, 3, 1, 0, 0, DateTimeKind.Utc);
         source.TotalOccurrences = 10;
         source.Status = StackStatus.Fixed;
+        source.SnoozeUntilUtc = null;
+        source.DateFixed = null;
         source.Tags.Add("source");
         source.References.Add("source-reference");
         source.OccurrencesAreCritical = true;
@@ -616,6 +620,8 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
         Assert.Equal(source.CreatedUtc, merged.CreatedUtc);
         Assert.Equal(source.LastOccurrence, merged.LastOccurrence);
         Assert.Equal(StackStatus.Fixed, merged.Status);
+        Assert.Null(merged.SnoozeUntilUtc);
+        Assert.Null(merged.DateFixed);
         Assert.Contains("target", merged.Tags);
         Assert.Contains("source", merged.Tags);
         Assert.Contains("target-reference", merged.References);
