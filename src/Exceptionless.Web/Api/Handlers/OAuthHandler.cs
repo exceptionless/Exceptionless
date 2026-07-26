@@ -15,6 +15,7 @@ using IResult = Microsoft.AspNetCore.Http.IResult;
 namespace Exceptionless.Web.Api.Handlers;
 
 public sealed class OAuthHandler(
+    OAuthDeviceService oauthDeviceService,
     OAuthService oauthService,
     AppOptions appOptions,
     ICacheClient cacheClient,
@@ -122,7 +123,7 @@ public sealed class OAuthHandler(
             Resource = form.Resource
         };
 
-        var result = await oauthService.CreateDeviceAuthorizationAsync(request, GetResource(resourceDefinition), resourceDefinition, GetDeviceVerificationUri());
+        var result = await oauthDeviceService.CreateAuthorizationAsync(request, GetResource(resourceDefinition), resourceDefinition, GetDeviceVerificationUri());
         if (!result.IsSuccess)
             return OAuthError(result.Error, result.ErrorDescription);
 
@@ -137,7 +138,7 @@ public sealed class OAuthHandler(
 
     public async Task<IResult> Handle(GetDeviceConsent message)
     {
-        var result = await oauthService.GetDeviceConsentAsync(message.Form.UserCode);
+        var result = await oauthDeviceService.GetConsentAsync(message.Form.UserCode);
         if (!result.IsSuccess)
             return OAuthError(result.Error, result.ErrorDescription);
 
@@ -158,7 +159,7 @@ public sealed class OAuthHandler(
         if (!organizationValidation.IsValid)
             return OAuthError("invalid_request", organizationValidation.ErrorDescription);
 
-        var result = await oauthService.ApproveDeviceAuthorizationAsync(new OAuthDeviceApprovalRequest
+        var result = await oauthDeviceService.ApproveAuthorizationAsync(new OAuthDeviceApprovalRequest
         {
             UserCode = message.Form.UserCode ?? String.Empty,
             Scope = message.Form.Scope ?? String.Empty,
@@ -173,7 +174,7 @@ public sealed class OAuthHandler(
 
     public async Task<IResult> Handle(DenyDeviceAuthorization message)
     {
-        var result = await oauthService.DenyDeviceAuthorizationAsync(message.Form.UserCode);
+        var result = await oauthDeviceService.DenyAuthorizationAsync(message.Form.UserCode);
         if (!result.IsSuccess)
             return OAuthError(result.Error, result.ErrorDescription);
 
@@ -198,7 +199,7 @@ public sealed class OAuthHandler(
         OAuthTokenIssueResult result = form.GrantType switch
         {
             OAuthGrantTypes.RefreshToken => await oauthService.RefreshAsync(request),
-            OAuthGrantTypes.DeviceCode => await oauthService.ExchangeDeviceCodeAsync(request),
+            OAuthGrantTypes.DeviceCode => await oauthDeviceService.ExchangeCodeAsync(request),
             _ => await oauthService.ExchangeAuthorizationCodeAsync(request)
         };
 

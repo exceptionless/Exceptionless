@@ -204,6 +204,7 @@ public class Bootstrapper
                 serviceProvider.GetRequiredService<SourceMapRequestThrottle>(),
                 DecompressionMethods.None));
         services.AddSingleton<SourceMapService>();
+        services.AddSingleton<OAuthDeviceService>();
         services.AddSingleton<OAuthService>();
         services.AddSingleton<UsageService>();
         services.AddSingleton<SlackService>();

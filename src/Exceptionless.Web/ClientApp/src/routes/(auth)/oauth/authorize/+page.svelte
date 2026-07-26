@@ -12,6 +12,7 @@
     import { Checkbox } from '$comp/ui/checkbox';
     import { Spinner } from '$comp/ui/spinner';
     import { accessToken } from '$features/auth/index.svelte';
+    import { formatOAuthScope, mcpReadScope, offlineAccessScope } from '$features/auth/oauth';
     import { getOrganizationsQuery } from '$features/organizations/api.svelte';
     import { getMeQuery } from '$features/users/api.svelte';
     import { useFetchClient } from '@exceptionless/fetchclient';
@@ -45,9 +46,6 @@
         scope: null | string;
         state: null | string;
     }
-
-    const offlineAccessScope = 'offline_access';
-    const mcpReadScope = 'mcp:read';
 
     let errorMessage = $state<null | string>(null);
     let consentDetails = $state<null | OAuthAuthorizeConsentResponse>(null);
@@ -186,7 +184,7 @@
         }
 
         if (!hasRequiredScopes) {
-            errorMessage = `Missing required scope: ${missingRequiredScopes.map(formatScope).join(', ')}.`;
+            errorMessage = `Missing required scope: ${missingRequiredScopes.map(formatOAuthScope).join(', ')}.`;
             return;
         }
 
@@ -296,25 +294,6 @@
         }
     }
 
-    function formatScope(scope: string): string {
-        switch (scope) {
-            case 'events:read':
-                return 'Events Read';
-            case mcpReadScope:
-                return 'MCP';
-            case offlineAccessScope:
-                return 'Offline Access';
-            case 'projects:read':
-                return 'Projects Read';
-            case 'stacks:read':
-                return 'Stacks Read';
-            case 'stacks:write':
-                return 'Stacks Write';
-            default:
-                return scope;
-        }
-    }
-
     function cancelAuthorization() {
         errorMessage = 'Authorization canceled. You can close this tab.';
     }
@@ -394,7 +373,7 @@
                             <div class="bg-muted/30 flex min-h-12 items-center gap-2 rounded-sm border px-2 py-1.5 text-sm">
                                 <span class="min-w-0 flex-1">
                                     <span class="flex min-w-0 flex-wrap items-center gap-1.5">
-                                        <span class="truncate font-medium">{formatScope(scope)}</span>
+                                        <span class="truncate font-medium">{formatOAuthScope(scope)}</span>
                                         <Badge variant="outline">Required</Badge>
                                     </span>
                                     <span class="text-muted-foreground block truncate font-mono text-xs">{scope}</span>
@@ -405,7 +384,7 @@
                             <label class="hover:bg-muted/50 flex min-h-12 items-center gap-2 rounded-sm border px-2 py-1.5 text-sm">
                                 <Checkbox checked={selectedScopes.has(scope)} onCheckedChange={(checked) => toggleScope(scope, checked)} />
                                 <span class="min-w-0 flex-1">
-                                    <span class="block truncate font-medium">{formatScope(scope)}</span>
+                                    <span class="block truncate font-medium">{formatOAuthScope(scope)}</span>
                                     <span class="text-muted-foreground block truncate font-mono text-xs">{scope}</span>
                                 </span>
                             </label>
@@ -415,7 +394,7 @@
                         <p class="text-destructive text-xs">Select at least one access scope.</p>
                     {/if}
                     {#if missingRequiredScopes.length > 0}
-                        <p class="text-destructive text-xs">Missing required scope: {missingRequiredScopes.map(formatScope).join(', ')}.</p>
+                        <p class="text-destructive text-xs">Missing required scope: {missingRequiredScopes.map(formatOAuthScope).join(', ')}.</p>
                     {/if}
                 {:else}
                     <p class="text-muted-foreground">No scopes requested.</p>

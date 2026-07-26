@@ -14,6 +14,7 @@ using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Models.Admin;
 using Exceptionless.Web.Models.OAuth;
 using FluentRest;
+using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
 using Microsoft.AspNetCore.WebUtilities;
@@ -849,16 +850,16 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
     public async Task DeviceAuthorizationAsync_ConcurrentApproveAndDeny_OnlyOneSucceeds()
     {
         var authorization = await StartDeviceAuthorizationAsync();
-        var oauthService = GetService<OAuthService>();
+        var oauthDeviceService = GetService<OAuthDeviceService>();
 
         var results = await Task.WhenAll(
-            oauthService.ApproveDeviceAuthorizationAsync(new OAuthDeviceApprovalRequest
+            oauthDeviceService.ApproveAuthorizationAsync(new OAuthDeviceApprovalRequest
             {
                 UserCode = authorization.UserCode,
                 Scope = DefaultDeviceAuthorizationScope,
                 OrganizationIds = [TestConstants.OrganizationId]
             }, TestConstants.UserId),
-            oauthService.DenyDeviceAuthorizationAsync(authorization.UserCode));
+            oauthDeviceService.DenyAuthorizationAsync(authorization.UserCode));
 
         Assert.Single(results, result => result.IsSuccess);
     }
@@ -933,6 +934,31 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task TokenAsync_DeniedDeviceCode_DoesNotRemoveReassignedUserCode()
+    {
+        var authorization = await StartDeviceAuthorizationAsync();
+        await DenyDeviceAuthorizationAsync(authorization.UserCode);
+
+        var cacheClient = GetService<ICacheClient>();
+        string normalizedUserCode = authorization.UserCode.Replace("-", String.Empty, StringComparison.Ordinal);
+        string userCodeCacheKey = "oauth:user-code:" + OAuthService.CreateTokenHash(normalizedUserCode);
+        const string replacementDeviceCodeHash = "replacement-device-code-hash";
+        await cacheClient.SetAsync(userCodeCacheKey, replacementDeviceCodeHash, TimeSpan.FromMinutes(1));
+
+        using var client = CreateHttpClient();
+        var response = await client.PostAsync("oauth/token", CreateDeviceTokenContent(authorization.DeviceCode), TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
+        Assert.NotNull(error);
+        Assert.Equal("access_denied", error.Error);
+
+        var reassignedUserCode = await cacheClient.GetAsync<string>(userCodeCacheKey);
+        Assert.True(reassignedUserCode.HasValue);
+        Assert.Equal(replacementDeviceCodeHash, reassignedUserCode.Value);
+    }
+
+    [Fact]
     public async Task TokenAsync_ExpiredDeviceCode_ReturnsExpiredToken()
     {
         var authorization = await StartDeviceAuthorizationAsync();
@@ -952,6 +978,78 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         {
             TimeProvider.Restore();
         }
+    }
+
+    [Fact]
+    public async Task TokenAsync_ApprovedDeviceCode_UsesCurrentOrganizationMembership()
+    {
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(user);
+        var originalOrganizationIds = user.OrganizationIds.ToArray();
+        string removedOrganizationId = Assert.Single(originalOrganizationIds, id => !String.Equals(id, TestConstants.OrganizationId, StringComparison.Ordinal));
+        var authorization = await StartDeviceAuthorizationAsync();
+        await ApproveDeviceAuthorizationAsync(
+            authorization.UserCode,
+            scope: $"{AuthorizationRoles.McpRead} {AuthorizationRoles.OfflineAccess}",
+            organizationIds: originalOrganizationIds);
+        await RemoveTestUserFromOrganizationAsync(removedOrganizationId);
+        using var client = CreateHttpClient();
+
+        var response = await client.PostAsync("oauth/token", CreateDeviceTokenContent(authorization.DeviceCode), TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var token = await DeserializeResponseAsync<OAuthTokenResponse>(response);
+        Assert.NotNull(token);
+        var storedToken = await GetStoredOAuthTokenAsync(token.AccessToken);
+        Assert.NotNull(storedToken);
+        Assert.Equal([TestConstants.OrganizationId], storedToken.OrganizationIds);
+    }
+
+    [Fact]
+    public async Task TokenAsync_ApprovedDeviceCode_UsesCurrentOptionalClientScopes()
+    {
+        var authorization = await StartDeviceAuthorizationAsync();
+        await ApproveDeviceAuthorizationAsync(
+            authorization.UserCode,
+            scope: $"{AuthorizationRoles.McpRead} {AuthorizationRoles.ProjectsRead} {AuthorizationRoles.EventsRead} {AuthorizationRoles.OfflineAccess}");
+        await SetStoredOAuthApplicationScopesAsync(
+            DeviceClientId,
+            AuthorizationRoles.McpRead,
+            AuthorizationRoles.ProjectsRead,
+            AuthorizationRoles.OfflineAccess);
+        using var client = CreateHttpClient();
+
+        var response = await client.PostAsync("oauth/token", CreateDeviceTokenContent(authorization.DeviceCode), TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var token = await DeserializeResponseAsync<OAuthTokenResponse>(response);
+        Assert.NotNull(token);
+        Assert.Equal($"{AuthorizationRoles.McpRead} {AuthorizationRoles.ProjectsRead} {AuthorizationRoles.OfflineAccess}", token.Scope);
+        var storedToken = await GetStoredOAuthTokenAsync(token.AccessToken);
+        Assert.NotNull(storedToken);
+        Assert.DoesNotContain(AuthorizationRoles.EventsRead, storedToken.Scopes);
+    }
+
+    [Fact]
+    public async Task TokenAsync_ApprovedDeviceCodeWithRemovedRequiredClientScope_ConsumesInvalidGrant()
+    {
+        var authorization = await StartDeviceAuthorizationAsync();
+        await ApproveDeviceAuthorizationAsync(authorization.UserCode, scope: $"{AuthorizationRoles.McpRead} {AuthorizationRoles.OfflineAccess}");
+        await SetStoredOAuthApplicationScopesAsync(DeviceClientId, AuthorizationRoles.ProjectsRead, AuthorizationRoles.OfflineAccess);
+        using var client = CreateHttpClient();
+
+        var response = await client.PostAsync("oauth/token", CreateDeviceTokenContent(authorization.DeviceCode), TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
+        Assert.NotNull(error);
+        Assert.Equal("invalid_grant", error.Error);
+
+        response = await client.PostAsync("oauth/token", CreateDeviceTokenContent(authorization.DeviceCode), TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        error = await response.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
+        Assert.NotNull(error);
+        Assert.Equal("expired_token", error.Error);
     }
 
     [Fact]
