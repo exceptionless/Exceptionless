@@ -2,6 +2,7 @@ using Exceptionless.Core;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Web.Hubs;
+using Foundatio.Messaging;
 using Foundatio.Repositories.Models;
 using Foundatio.Serializer;
 using System.Security.Claims;
@@ -495,6 +496,78 @@ public sealed class SseBrokerTests : TestWithServices
 
         await ownerBroker.OnEntityChangedAsync(message, TestContext.Current.CancellationToken);
         Assert.Null(ownerSse.GetConnectionById(connectionId));
+    }
+
+    [Fact]
+    public async Task RunAsync_TwoReplicasShareBusFanoutAndRevokeOnlyOwnedTokenConnection()
+    {
+        const string organizationId = "replicated-organization";
+        const string ownerConnectionId = "owner-connection";
+        const string ownerTokenId = "owner-token";
+        const string ownerUserId = "owner-user";
+        const string nonOwnerConnectionId = "non-owner-connection";
+
+        using var ownerResponse = new FakeHttpResponse();
+        using var ownerCancellation = new CancellationTokenSource();
+        using var ownerSse = new SseConnectionManager(new AppOptions { EnablePush = true }, GetService<ITextSerializer>(), Log);
+        using var ownerWebSocket = new WebSocketConnectionManager(new AppOptions { EnablePush = true }, GetService<ITextSerializer>(), Log);
+        using var nonOwnerResponse = new FakeHttpResponse();
+        using var nonOwnerCancellation = new CancellationTokenSource();
+        using var nonOwnerSse = new SseConnectionManager(new AppOptions { EnablePush = true }, GetService<ITextSerializer>(), Log);
+        using var nonOwnerWebSocket = new WebSocketConnectionManager(new AppOptions { EnablePush = true }, GetService<ITextSerializer>(), Log);
+        var ownerRegistry = new PushConnectionRegistry(TimeProvider);
+        var nonOwnerRegistry = new PushConnectionRegistry(TimeProvider);
+        var options = new AppOptions { EnablePush = true };
+        var messageBus = GetService<IMessageBus>();
+        var ownerBroker = new MessageBusBroker(ownerSse, ownerWebSocket, ownerRegistry, messageBus, options, Log.CreateLogger<MessageBusBroker>());
+        var nonOwnerBroker = new MessageBusBroker(nonOwnerSse, nonOwnerWebSocket, nonOwnerRegistry, messageBus, options, Log.CreateLogger<MessageBusBroker>());
+
+        await ownerBroker.RunAsync(TestContext.Current.CancellationToken);
+        await nonOwnerBroker.RunAsync(TestContext.Current.CancellationToken);
+
+        ownerSse.AddConnection(ownerConnectionId, ownerResponse, ownerCancellation.Token);
+        Assert.True(ownerRegistry.TryRegister(ownerConnectionId, ownerUserId, ownerTokenId, [organizationId]));
+        nonOwnerSse.AddConnection(nonOwnerConnectionId, nonOwnerResponse, nonOwnerCancellation.Token);
+        Assert.True(nonOwnerRegistry.TryRegister(nonOwnerConnectionId, "non-owner-user", "non-owner-token", [organizationId]));
+
+        try
+        {
+            var entityChanged = new EntityChanged
+            {
+                Id = "stack-1",
+                Type = "Stack",
+                ChangeType = ChangeType.Saved
+            };
+            entityChanged.Data[ExtendedEntityChanged.KnownKeys.OrganizationId] = organizationId;
+
+            await messageBus.PublishAsync(entityChanged, cancellationToken: TestContext.Current.CancellationToken);
+            await Task.Delay(200, TestContext.Current.CancellationToken);
+
+            Assert.Contains("StackChanged", ownerResponse.WrittenData);
+            Assert.Contains("StackChanged", nonOwnerResponse.WrittenData);
+
+            var tokenRemoved = new EntityChanged
+            {
+                Id = ownerTokenId,
+                Type = nameof(Token),
+                ChangeType = ChangeType.Removed
+            };
+            tokenRemoved.Data[ExtendedEntityChanged.KnownKeys.UserId] = ownerUserId;
+            tokenRemoved.Data[ExtendedEntityChanged.KnownKeys.IsAuthenticationToken] = true;
+
+            await messageBus.PublishAsync(tokenRemoved, cancellationToken: TestContext.Current.CancellationToken);
+
+            Assert.Null(ownerSse.GetConnectionById(ownerConnectionId));
+            Assert.NotNull(nonOwnerSse.GetConnectionById(nonOwnerConnectionId));
+            Assert.Empty(ownerRegistry.GetUserConnections(ownerUserId));
+        }
+        finally
+        {
+            await ownerSse.RemoveConnectionAsync(ownerConnectionId);
+            await nonOwnerSse.RemoveConnectionAsync(nonOwnerConnectionId);
+            ownerRegistry.Unregister(ownerConnectionId);
+            nonOwnerRegistry.Unregister(nonOwnerConnectionId);
+        }
     }
 
 }
