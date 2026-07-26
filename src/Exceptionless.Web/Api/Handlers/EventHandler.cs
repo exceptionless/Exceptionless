@@ -690,9 +690,7 @@ public class EventHandler(
 
     private async Task<Result<CountResult>> CountInternalAsync(AppFilter sf, TimeInfo ti, HttpContext httpContext, string? filter = null, string? aggregations = null, string? mode = null)
     {
-        var pr = IsStackMode(mode)
-            ? await stackValidator.ValidateQueryAsync(filter)
-            : await validator.ValidateQueryAsync(filter);
+        var pr = await GetQueryValidator(mode).ValidateQueryAsync(filter);
         if (!pr.IsValid)
             return Result.BadRequest(pr.Message ?? "Invalid filter.");
 
@@ -701,14 +699,15 @@ public class EventHandler(
             return Result.BadRequest(far.Message ?? "Invalid aggregations.");
 
         sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || far.UsesPremiumFeatures;
-        if (ShouldApplySystemFilter(sf, filter, httpContext.Request) && ApiValidation.IsPremiumFeatureQueryBlocked(sf))
+        AppFilter? systemFilter = ApiFilterPolicy.ShouldApplySystemFilter(sf, filter, httpContext.Request) ? sf : null;
+        if (systemFilter is not null && ApiFilterPolicy.IsPremiumFeatureQueryBlocked(systemFilter))
             return PlanLimitResult<CountResult>("Please upgrade your plan to use premium search features.");
 
         if (mode == "stack_new")
             filter = AddFirstOccurrenceFilter(ti.Range, filter);
 
         var query = new RepositoryQuery<PersistentEvent>()
-            .AppFilter(ShouldApplySystemFilter(sf, filter, httpContext.Request) ? sf : null)
+            .AppFilter(systemFilter)
             .DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field)
             .Index(ti.Range.UtcStart, ti.Range.UtcEnd);
 
@@ -756,14 +755,13 @@ public class EventHandler(
         if (skip > Pagination.MaximumSkip)
             return new PagedResult<object>(Array.Empty<PersistentEvent>(), false);
 
-        var pr = IsStackMode(mode)
-            ? await stackValidator.ValidateQueryAsync(filter)
-            : await validator.ValidateQueryAsync(filter);
+        var pr = await GetQueryValidator(mode).ValidateQueryAsync(filter);
         if (!pr.IsValid)
             return Result.BadRequest(pr.Message ?? "Invalid filter.");
 
         sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || usesPremiumFeatures;
-        if (ShouldApplySystemFilter(sf, filter, httpContext.Request) && ApiValidation.IsPremiumFeatureQueryBlocked(sf))
+        AppFilter? appliedAppFilter = ApiFilterPolicy.ShouldApplySystemFilter(sf, filter, httpContext.Request) ? sf : null;
+        if (appliedAppFilter is not null && ApiFilterPolicy.IsPremiumFeatureQueryBlocked(appliedAppFilter))
             return PlanLimitResult<PagedResult<object>>("Please upgrade your plan to use premium search features.");
 
         try
@@ -772,7 +770,7 @@ public class EventHandler(
             switch (mode)
             {
                 case "summary":
-                    events = await GetEventsInternalAsync(sf, ti, filter, sort, page, limit, before, after, includeTotal, httpContext.Request);
+                    events = await GetEventsInternalAsync(appliedAppFilter, ti, filter, sort, page, limit, before, after, includeTotal);
                     var projects = await projectRepository.GetByIdsAsync(events.Documents.Select(e => e.ProjectId).Distinct().ToArray(), o => o.Cache());
                     var projectNames = projects.ToDictionary(p => p.Id, p => p.Name);
                     var summaries = events.Documents.Select(e =>
@@ -800,7 +798,7 @@ public class EventHandler(
                         return Result.BadRequest("Sort is not supported in stack mode.");
 
                     var systemFilter = new RepositoryQuery<PersistentEvent>()
-                        .AppFilter(ShouldApplySystemFilter(sf, filter, httpContext.Request) ? sf : null)
+                        .AppFilter(appliedAppFilter)
                         .EnforceEventStackFilter()
                         .DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, (PersistentEvent e) => e.Date)
                         .Index(ti.Range.UtcStart, ti.Range.UtcEnd);
@@ -841,7 +839,7 @@ public class EventHandler(
                     long? total = includeTotal && totalStackCount.HasValue ? Convert.ToInt64(totalStackCount.Value) : null;
                     return new PagedResult<object>(stackSummaries.Take(limit).Cast<object>().ToList(), stackSummaries.Count > limit && !Pagination.NextPageExceedsSkipLimit(resolvedPage, limit), resolvedPage, total);
                 default:
-                    events = await GetEventsInternalAsync(sf, ti, filter, sort, page, limit, before, after, includeTotal, httpContext.Request);
+                    events = await GetEventsInternalAsync(appliedAppFilter, ti, filter, sort, page, limit, before, after, includeTotal);
                     return new PagedResult<object>(events.Documents.Cast<object>().ToList(), events.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, includeTotal ? events.Total : null, events.Hits.FirstOrDefault()?.GetSortToken(serializer), events.Hits.LastOrDefault()?.GetSortToken(serializer));
             }
         }
@@ -895,13 +893,18 @@ public class EventHandler(
         return mode is "stack_recent" or "stack_frequent" or "stack_new" or "stack_users";
     }
 
-    private Task<FindResults<PersistentEvent>> GetEventsInternalAsync(AppFilter sf, TimeInfo ti, string? filter, string? sort, int? page, int limit, string? before, string? after, bool includeTotal, HttpRequest? request = null)
+    private IAppQueryValidator GetQueryValidator(string? mode)
+    {
+        return IsStackMode(mode) ? stackValidator : validator;
+    }
+
+    private Task<FindResults<PersistentEvent>> GetEventsInternalAsync(AppFilter? systemFilter, TimeInfo ti, string? filter, string? sort, int? page, int limit, string? before, string? after, bool includeTotal)
     {
         if (String.IsNullOrEmpty(sort))
             sort = $"-{EventIndex.Alias.Date}";
 
         return eventRepository.FindAsync(
-            q => q.AppFilter(ShouldApplySystemFilter(sf, filter, request) ? sf : null)
+            q => q.AppFilter(systemFilter)
                 .FilterExpression(filter)
                 .EnforceEventStackFilter()
                 .SortExpression(sort)
@@ -910,25 +913,6 @@ public class EventHandler(
             o => page.HasValue
                 ? o.PageNumber(page).PageLimit(limit).TrackTotalHits(includeTotal)
                 : o.SearchBeforeToken(before, serializer).SearchAfterToken(after, serializer).PageLimit(limit).TrackTotalHits(includeTotal));
-    }
-
-    private static bool ShouldApplySystemFilter(AppFilter sf, string? filter, HttpRequest? request = null)
-    {
-        // Apply filter to non admin users.
-        if (request is null || !request.IsGlobalAdmin())
-            return true;
-
-        // Apply filter as it's scoped via a controller action.
-        if (!sf.IsUserOrganizationsFilter)
-            return true;
-
-        // Empty user filter
-        if (String.IsNullOrEmpty(filter))
-            return true;
-
-        // Used for impersonating a user. Only skip the filter if it contains an org, project or stack.
-        var scope = GetFilterScopeVisitor.Run(filter);
-        return !scope.HasScope;
     }
 
     private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(List<Stack> stacks, IReadOnlyCollection<KeyedBucket<string>> stackTerms, AppFilter sf, TimeInfo ti)

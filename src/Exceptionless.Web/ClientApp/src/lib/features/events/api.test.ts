@@ -1,9 +1,15 @@
+import type { CountResult } from '$shared/models';
+
 import { ChangeType } from '$features/websockets/models';
 import { QueryClient } from '@tanstack/svelte-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const fetchClientMocks = vi.hoisted(() => ({
     getJSON: vi.fn()
+}));
+
+const queryMocks = vi.hoisted(() => ({
+    queryFn: undefined as ((context: { signal: AbortSignal }) => Promise<CountResult>) | undefined
 }));
 
 vi.mock('$features/auth/index.svelte', () => ({
@@ -18,7 +24,11 @@ vi.mock('@tanstack/svelte-query', async (importOriginal) => {
     const actual = await importOriginal<typeof import('@tanstack/svelte-query')>();
     return {
         ...actual,
-        createQuery: vi.fn((factory) => factory()),
+        createQuery: vi.fn((factory: () => { queryFn: (context: { signal: AbortSignal }) => Promise<CountResult> }) => {
+            const options = factory();
+            queryMocks.queryFn = options.queryFn;
+            return options;
+        }),
         useQueryClient: vi.fn(() => new actual.QueryClient())
     };
 });
@@ -38,16 +48,21 @@ describe('getOrganizationCountQuery', () => {
     it('forwards stack mode with a stack-only filter to the count request', async () => {
         // Arrange
         fetchClientMocks.getJSON.mockResolvedValue({ data: { aggregations: {}, total: 0 } });
-        const query = getOrganizationCountQuery({
+        getOrganizationCountQuery({
             params: {
                 filter: 'critical:false',
                 mode: 'stack_frequent'
             },
             route: { organizationId: 'organization-id' }
-        }) as unknown as { queryFn: (context: { signal: AbortSignal }) => Promise<unknown> };
+        });
 
         // Act
-        await query.queryFn({ signal: new AbortController().signal });
+        const queryFn = queryMocks.queryFn;
+        if (!queryFn) {
+            throw new Error('Expected createQuery to register a query function.');
+        }
+
+        await queryFn({ signal: new AbortController().signal });
 
         // Assert
         expect(fetchClientMocks.getJSON).toHaveBeenCalledWith('/organizations/organization-id/events/count', {
@@ -61,6 +76,8 @@ describe('getOrganizationCountQuery', () => {
 });
 
 afterEach(() => {
+    fetchClientMocks.getJSON.mockReset();
+    queryMocks.queryFn = undefined;
     vi.useRealTimers();
 });
 
