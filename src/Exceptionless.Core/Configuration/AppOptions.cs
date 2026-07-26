@@ -85,6 +85,7 @@ public class AppOptions
     public StripeOptions StripeOptions { get; internal set; } = null!;
     public AuthOptions AuthOptions { get; internal set; } = null!;
     public OAuthServerOptions OAuthServerOptions { get; internal set; } = null!;
+    public SourceMapOptions SourceMapOptions { get; internal set; } = null!;
 
     public static AppOptions ReadFromConfiguration(IConfiguration config)
     {
@@ -139,6 +140,7 @@ public class AppOptions
         options.StripeOptions = StripeOptions.ReadFromConfiguration(config);
         options.AuthOptions = AuthOptions.ReadFromConfiguration(config);
         options.OAuthServerOptions = OAuthServerOptions.ReadFromConfiguration(config);
+        options.SourceMapOptions = SourceMapOptions.ReadFromConfiguration(config);
 
         return options;
     }
