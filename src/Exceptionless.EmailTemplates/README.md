@@ -23,13 +23,15 @@ npm run validate:parity
 
 The command validates all gallery scenarios in two ways:
 
-- normalized visible text and every labeled action must match the frozen legacy HTML;
+- normalized visible text, every labeled link, and parsed JSON-LD actions must match the frozen legacy HTML;
 - legacy and Svelte output must render to identical full-document pixels at desktop and mobile widths in one Chromium
   process.
 
-Chromium is discovered automatically on macOS and GitHub-hosted Ubuntu runners. Set `CHROME_PATH` when using another
-installation. Failed pixel comparisons write legacy, modern, and red-on-white diff images to the ignored
-`parity-artifacts/` directory, which CI uploads for diagnosis.
+Chromium is discovered automatically on macOS and common Linux installations. CI runs exact pixel comparison on macOS
+because the production templates specify Helvetica and Linux substitutes a metrically different fallback font. Set
+`CHROME_PATH` when using another installation, or run `npm run validate:parity -- --semantic-only` when the host does not
+have compatible font metrics. Failed pixel comparisons write legacy, modern, and red-on-white diff images to the
+ignored `parity-artifacts/` directory, which CI uploads for diagnosis.
 
 ## Architecture
 

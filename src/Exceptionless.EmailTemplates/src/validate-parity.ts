@@ -8,9 +8,11 @@ import { parityScenarios } from './stories/parity-scenarios.js';
 type Node = DefaultTreeAdapterMap['node'];
 type Element = DefaultTreeAdapterMap['element'];
 type TextNode = DefaultTreeAdapterMap['textNode'];
+type JsonValue = null | string | number | boolean | JsonValue[] | { [key: string]: JsonValue };
 type CdpResponse = { id?: number; method?: string; result?: unknown; error?: { message: string } };
 type PixelResult = { mismatchedPixels: number; maxChannelDelta: number; bounds: string; diff: string };
 type ScreenshotResult = { data: string; contentHeight: number };
+type SemanticContract = { text: string; actions: string[]; jsonLd: JsonValue[] };
 
 const ignoredElements = new Set(['head', 'script', 'style', 'title']);
 const semanticOnly = process.argv.includes('--semantic-only');
@@ -88,11 +90,29 @@ function collectActions(node: Node, actions: string[] = []): string[] {
     return actions;
 }
 
-function getSemanticContract(html: string): { text: string; actions: string[] } {
+function collectJsonLd(node: Node, documents: JsonValue[] = []): JsonValue[] {
+    if (
+        isElement(node) &&
+        node.tagName === 'script' &&
+        getAttribute(node, 'type').toLowerCase() === 'application/ld+json'
+    ) {
+        const content = node.childNodes.map((child) => (isTextNode(child) ? child.value : '')).join('');
+        documents.push(JSON.parse(content) as JsonValue);
+    }
+
+    if ('childNodes' in node) {
+        node.childNodes.forEach((child) => collectJsonLd(child, documents));
+    }
+
+    return documents;
+}
+
+function getSemanticContract(html: string): SemanticContract {
     const document = parse(html);
     return {
         text: normalizeText(textContent(document)),
-        actions: collectActions(document)
+        actions: collectActions(document),
+        jsonLd: collectJsonLd(document)
     };
 }
 
@@ -370,9 +390,10 @@ for (const scenario of scenarios) {
     const modern = getSemanticContract(scenario.modernHtml);
     const textMatches = legacy.text === modern.text;
     const actionsMatch = JSON.stringify(legacy.actions) === JSON.stringify(modern.actions);
+    const jsonLdMatches = JSON.stringify(legacy.jsonLd) === JSON.stringify(modern.jsonLd);
 
-    if (textMatches && actionsMatch) {
-        console.log(`PASS ${scenario.id}: text and ${modern.actions.length} actions match`);
+    if (textMatches && actionsMatch && jsonLdMatches) {
+        console.log(`PASS ${scenario.id}: text, ${modern.actions.length} actions, and JSON-LD match`);
         continue;
     }
 
@@ -387,13 +408,18 @@ for (const scenario of scenarios) {
         console.error('legacy actions:', JSON.stringify(legacy.actions, null, 2));
         console.error('modern actions:', JSON.stringify(modern.actions, null, 2));
     }
+
+    if (!jsonLdMatches) {
+        console.error('legacy JSON-LD:', JSON.stringify(legacy.jsonLd, null, 2));
+        console.error('modern JSON-LD:', JSON.stringify(modern.jsonLd, null, 2));
+    }
 }
 
 if (failures > 0) {
     console.error(`\n${failures} of ${scenarios.length} parity scenarios failed.`);
     process.exitCode = 1;
 } else {
-    console.log(`\nAll ${scenarios.length} parity scenarios preserve exact text and actions.`);
+    console.log(`\nAll ${scenarios.length} parity scenarios preserve exact text, actions, and JSON-LD.`);
 }
 
 if (!semanticOnly) {

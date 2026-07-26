@@ -259,9 +259,6 @@ jobs:
       - name: Type Check
         run: npm run check
 
-      - name: Build Templates
-        run: npm run build
-
       - name: Validate Legacy Text, Actions, and Pixels
         run: npm run validate:parity
 
