@@ -65,7 +65,7 @@ public class Program
 
         var apmConfig = new ApmConfig(config, $"job-{jobOptions.JobName.ToLowerUnderscoredWords('-')}", options.InformationalVersion, options.CacheOptions.Provider == "redis");
 
-        Log.Information("Bootstrapping Exceptionless {JobName} job(s) in {AppMode} mode ({InformationalVersion}) on {MachineName} with options {@Options}", jobOptions.JobName ?? "All", environment, options.InformationalVersion, Environment.MachineName, options);
+        Log.Information("Bootstrapping Exceptionless {JobName} job(s) in {AppMode} mode ({InformationalVersion}) on {MachineName} with scope {AppScope}", jobOptions.JobName ?? "All", environment, options.InformationalVersion, Environment.MachineName, options.AppScope);
 
         var builder = Host.CreateDefaultBuilder()
             .UseEnvironment(environment)

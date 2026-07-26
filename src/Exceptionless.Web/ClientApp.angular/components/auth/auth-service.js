@@ -26,6 +26,7 @@
             function changePassword(changePasswordModel) {
                 function onSuccess(response) {
                     $auth.setToken(response.data.token);
+                    $rootScope.$emit("auth:tokenChanged");
                     return response;
                 }
 
@@ -100,6 +101,7 @@
             function unlink(providerName, providerUserId) {
                 function onSuccess(response) {
                     $auth.setToken(response.data.token);
+                    $rootScope.$emit("auth:tokenChanged");
                     return response;
                 }
 

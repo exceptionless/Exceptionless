@@ -1,8 +1,10 @@
+using System.Net.WebSockets;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Web.Hubs;
 using Foundatio.Repositories.Models;
+using Microsoft.AspNetCore.Http.Features;
 using Xunit;
 
 namespace Exceptionless.Tests.Hubs;
@@ -23,6 +25,35 @@ public sealed class WebSocketTests : TestWithServices
         _broker = GetService<MessageBusBroker>();
         _connectionMapping = GetService<IConnectionMapping>();
         _connectionManager = GetService<WebSocketConnectionManager>();
+    }
+
+    [Fact]
+    public async Task Invoke_UnauthenticatedPushRequest_ClosesWithExplicitUnauthorizedStatus()
+    {
+        var socket = new TestWebSocket();
+        var feature = new TestWebSocketFeature(socket);
+        var context = new DefaultHttpContext();
+        context.Request.Path = "/api/v2/push";
+        context.Features.Set<IHttpWebSocketFeature>(feature);
+        bool calledNext = false;
+        var middleware = new MessageBusBrokerMiddleware(
+            _ =>
+            {
+                calledNext = true;
+                return Task.CompletedTask;
+            },
+            _connectionManager,
+            _connectionMapping,
+            GetService<ILogger<MessageBusBrokerMiddleware>>());
+
+        await middleware.Invoke(context);
+
+        Assert.False(calledNext);
+        Assert.True(feature.WasAccepted);
+        Assert.Equal(0, socket.CloseCount);
+        Assert.Equal(1, socket.CloseOutputCount);
+        Assert.Equal((WebSocketCloseStatus)4401, socket.RequestedCloseStatus);
+        Assert.Equal("Unauthorized", socket.RequestedCloseStatusDescription);
     }
 
     [Fact]
@@ -116,6 +147,18 @@ public sealed class WebSocketTests : TestWithServices
         {
             await _connectionMapping.UserIdRemoveAsync(userId, connectionId);
             await _connectionManager.RemoveWebSocketAsync(connectionId);
+        }
+    }
+
+    private sealed class TestWebSocketFeature(WebSocket socket) : IHttpWebSocketFeature
+    {
+        public bool IsWebSocketRequest => true;
+        public bool WasAccepted { get; private set; }
+
+        public Task<WebSocket> AcceptAsync(WebSocketAcceptContext context)
+        {
+            WasAccepted = true;
+            return Task.FromResult(socket);
         }
     }
 }
