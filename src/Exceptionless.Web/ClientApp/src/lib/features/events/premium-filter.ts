@@ -1,7 +1,7 @@
 export type SearchResource = 'event' | 'stack';
 
-// These mirror the backend query validators so the upgrade notification is shown
-// before a restricted request fails. The API remains the enforcement boundary.
+// These mirror the backend event rules and the combined event/stack rules used by
+// stack-mode event searches. The API remains the enforcement boundary.
 const FREE_QUERY_FIELDS: Record<SearchResource, ReadonlySet<string>> = {
     event: new Set(['date', 'organization', 'organization_id', 'project', 'project_id', 'reference', 'reference_id', 'stack', 'stack_id', 'status', 'type']),
     stack: new Set([
@@ -15,6 +15,10 @@ const FREE_QUERY_FIELDS: Record<SearchResource, ReadonlySet<string>> = {
         'organization_id',
         'project',
         'project_id',
+        'reference',
+        'reference_id',
+        'stack',
+        'stack_id',
         'status',
         'type'
     ])

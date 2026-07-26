@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Web.Api.Infrastructure;
 using Microsoft.AspNetCore.Http;
@@ -10,6 +11,41 @@ namespace Exceptionless.Tests.Api.Infrastructure;
 
 public sealed class ApiFilterPolicyTests
 {
+    [Theory]
+    [InlineData(false, true, false)]
+    [InlineData(true, false, false)]
+    [InlineData(true, true, true)]
+    public void CombineStackModeQueryValidation_UsesUnionOfFreeFields(
+        bool eventUsesPremiumFeatures,
+        bool stackUsesPremiumFeatures,
+        bool expectedUsesPremiumFeatures)
+    {
+        var eventValidation = new AppQueryValidator.QueryProcessResult { IsValid = true, UsesPremiumFeatures = eventUsesPremiumFeatures };
+        var stackValidation = new AppQueryValidator.QueryProcessResult { IsValid = true, UsesPremiumFeatures = stackUsesPremiumFeatures };
+
+        var result = ApiFilterPolicy.CombineStackModeQueryValidation(eventValidation, stackValidation);
+
+        Assert.True(result.IsValid);
+        Assert.Equal(expectedUsesPremiumFeatures, result.UsesPremiumFeatures);
+    }
+
+    [Theory]
+    [InlineData(false, true, "Invalid event filter")]
+    [InlineData(true, false, "Invalid stack filter")]
+    public void CombineStackModeQueryValidation_InvalidFilter_ReturnsFailure(
+        bool eventIsValid,
+        bool stackIsValid,
+        string expectedMessage)
+    {
+        var eventValidation = new AppQueryValidator.QueryProcessResult { IsValid = eventIsValid, Message = "Invalid event filter" };
+        var stackValidation = new AppQueryValidator.QueryProcessResult { IsValid = stackIsValid, Message = "Invalid stack filter" };
+
+        var result = ApiFilterPolicy.CombineStackModeQueryValidation(eventValidation, stackValidation);
+
+        Assert.False(result.IsValid);
+        Assert.Equal(expectedMessage, result.Message);
+    }
+
     [Theory]
     [InlineData("organization:537650f3b77efe23a47914f3 tags:important")]
     [InlineData("project:537650f3b77efe23a47914f4 tags:important")]

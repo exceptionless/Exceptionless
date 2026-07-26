@@ -78,6 +78,32 @@ public partial class EventEndpointTests
     }
 
     [Fact]
+    public async Task Handle_StackModeWithFreeEventFilters_ReturnsOk()
+    {
+        var (stacks, _) = await CreateDataAsync(d => d.Event().FreeProject().ReferenceId("free-reference"));
+        var stack = Assert.Single(stacks);
+
+        var count = await SendRequestAsAsync<CountResult>(r => r
+            .AsFreeOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "events", "count")
+            .QueryString("filter", "reference:free-reference")
+            .QueryString("mode", "stack_frequent")
+            .StatusCodeShouldBeOk());
+
+        var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
+            .AsFreeOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "events")
+            .QueryString("filter", $"stack:{stack.Id}")
+            .QueryString("mode", "stack_frequent")
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(count);
+        Assert.Equal(1, count.Total);
+        Assert.NotNull(results);
+        Assert.Single(results);
+    }
+
+    [Fact]
     public async Task Handle_GetEventsByProjectWithPremiumFilterOnFreeOrganization_ReturnsUpgradeRequired()
     {
         await CreateDataAsync(d => d.Event().FreeProject().Tag("premium-tag"));

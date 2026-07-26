@@ -14,14 +14,21 @@ describe('filterUsesPremiumFeatures', () => {
         }
     );
 
-    it.each(['first_occurrence:[now-1d TO now]', 'last:now', 'occurrences_are_critical:true', 'critical:false', 'project:ABC123'])(
-        'allows free stack filters: %s',
-        (filter) => {
-            expect(filterUsesPremiumFeatures(filter, 'stack')).toBe(false);
-        }
-    );
+    it.each([
+        'first_occurrence:[now-1d TO now]',
+        'last:now',
+        'occurrences_are_critical:true',
+        'critical:false',
+        'project:ABC123',
+        'reference:ABC123',
+        'reference_id:ABC123',
+        'stack:ABC123',
+        'stack_id:ABC123'
+    ])('allows free stack filters: %s', (filter) => {
+        expect(filterUsesPremiumFeatures(filter, 'stack')).toBe(false);
+    });
 
-    it.each(['title:"out of memory"', 'reference:ABC123', 'stack:ABC123', 'tags:important'])('detects premium stack filters: %s', (filter) => {
+    it.each(['title:"out of memory"', 'tags:important'])('detects premium stack filters: %s', (filter) => {
         expect(filterUsesPremiumFeatures(filter, 'stack')).toBe(true);
     });
 

@@ -1,3 +1,4 @@
+using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Utility;
@@ -6,6 +7,21 @@ namespace Exceptionless.Web.Api.Infrastructure;
 
 public static class ApiFilterPolicy
 {
+    public static AppQueryValidator.QueryProcessResult CombineStackModeQueryValidation(
+        AppQueryValidator.QueryProcessResult eventValidation,
+        AppQueryValidator.QueryProcessResult stackValidation)
+    {
+        if (!eventValidation.IsValid)
+            return eventValidation;
+        if (!stackValidation.IsValid)
+            return stackValidation;
+
+        return stackValidation with
+        {
+            UsesPremiumFeatures = eventValidation.UsesPremiumFeatures && stackValidation.UsesPremiumFeatures
+        };
+    }
+
     public static bool IsPremiumFeatureQueryBlocked(AppFilter filter)
     {
         return filter.UsesPremiumFeatures
