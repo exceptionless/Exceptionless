@@ -440,8 +440,8 @@ for (def contribution : params.sourceContributions.entrySet()) {
 if (occurrenceDelta <= 0
     && !parseDate(ctx._source.created_utc).isAfter(parseDate(params.createdUtc))
     && !parseDate(ctx._source.last_occurrence).isBefore(parseDate(params.lastOccurrence))
-    && !parseDate(ctx._source.snooze_until_utc).isBefore(parseDate(params.snoozeUntilUtc))
-    && !parseDate(ctx._source.date_fixed).isBefore(parseDate(params.dateFixed))
+    && (params.hasSnoozeUntilUtc == false || !parseDate(ctx._source.snooze_until_utc).isBefore(parseDate(params.snoozeUntilUtc)))
+    && (params.hasDateFixed == false || !parseDate(ctx._source.date_fixed).isBefore(parseDate(params.dateFixed)))
     && !(ctx._source.status == 'open' && params.status != 'open')
     && (params.tags == null || ctx._source.tags != null && ctx._source.tags.containsAll(params.tags))
     && (params.references == null || ctx._source.references != null && ctx._source.references.containsAll(params.references))
@@ -466,10 +466,10 @@ if (occurrenceDelta <= 0
     if (parseDate(ctx._source.last_occurrence).isBefore(parseDate(params.lastOccurrence))) {
         ctx._source.last_occurrence = params.lastOccurrence;
     }
-    if (parseDate(ctx._source.snooze_until_utc).isBefore(parseDate(params.snoozeUntilUtc))) {
+    if (params.hasSnoozeUntilUtc && parseDate(ctx._source.snooze_until_utc).isBefore(parseDate(params.snoozeUntilUtc))) {
         ctx._source.snooze_until_utc = params.snoozeUntilUtc;
     }
-    if (parseDate(ctx._source.date_fixed).isBefore(parseDate(params.dateFixed))) {
+    if (params.hasDateFixed && parseDate(ctx._source.date_fixed).isBefore(parseDate(params.dateFixed))) {
         ctx._source.date_fixed = params.dateFixed;
     }
     if (ctx._source.status == 'open' && params.status != 'open') {
@@ -505,7 +505,9 @@ if (occurrenceDelta <= 0
                 ["createdUtc"] = sourceStack.CreatedUtc,
                 ["lastOccurrence"] = sourceStack.LastOccurrence,
                 ["snoozeUntilUtc"] = sourceStack.SnoozeUntilUtc ?? DateTime.MinValue,
+                ["hasSnoozeUntilUtc"] = sourceStack.SnoozeUntilUtc.HasValue,
                 ["dateFixed"] = sourceStack.DateFixed ?? DateTime.MinValue,
+                ["hasDateFixed"] = sourceStack.DateFixed.HasValue,
                 ["status"] = sourceStack.Status.ToString().ToLowerInvariant(),
                 ["tags"] = sourceStack.Tags.ToArray(),
                 ["references"] = sourceStack.References.ToArray(),

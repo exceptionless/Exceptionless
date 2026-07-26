@@ -256,9 +256,6 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                     var eventCounts = await _eventRepository.CountAsync(q => q.Stack(stacks.Documents.Select(s => s.Id)).AggregationsExpression("terms:stack_id"));
                     var eventCountBuckets = eventCounts.Aggregations.Terms("terms_stack_id")?.Buckets ?? new List<KeyedBucket<string>>();
 
-                    // We only need to update events if more than one stack has events associated to it.
-                    bool shouldUpdateEvents = eventCountBuckets.Count > 1;
-
                     // Default to using the oldest stack.
                     var targetStack = targetCandidates.OrderBy(s => s.CreatedUtc).First();
                     var duplicateStacks = stacks.Documents.Where(s => s.Id != targetStack.Id).OrderBy(s => s.CreatedUtc).ToList();
@@ -302,7 +299,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                     batchProcessed++;
 
                     long eventsToMove = eventCountBuckets.Where(b => b.Key != targetStack.Id).Sum(b => b.Total) ?? 0;
-                    _logger.LogInformation("De-duped stack: Target={TargetId} Events={EventCount} Dupes={DuplicateIds} HasEvents={HasEvents}", targetStack.Id, eventsToMove, duplicateStacks.Select(s => s.Id), shouldUpdateEvents);
+                    _logger.LogInformation("De-duped stack: Target={TargetId} Events={EventCount} Dupes={DuplicateIds}", targetStack.Id, eventsToMove, duplicateStacks.Select(s => s.Id));
 
                     if (_timeProvider.GetUtcNow().UtcDateTime.Subtract(lastStatus) > TimeSpan.FromSeconds(5))
                     {
