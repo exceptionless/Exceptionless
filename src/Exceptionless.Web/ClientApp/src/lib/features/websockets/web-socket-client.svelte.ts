@@ -51,6 +51,7 @@ export class WebSocketClient {
     private hasConnectedBefore: boolean = false;
     private reconnectAttempts: number = 0;
     private reconnectTimeoutId: null | ReturnType<typeof setTimeout> = null;
+    private terminalAuthFailure: boolean = false;
 
     private ws: null | WebSocket = null;
 
@@ -68,6 +69,7 @@ export class WebSocketClient {
             if (this.accessToken !== accessToken.current) {
                 this.accessToken = accessToken.current;
                 this.reconnectAttempts = 0; // Reset backoff on token change
+                this.terminalAuthFailure = false;
                 this.close();
             } else if (!visibility.visible) {
                 this.close();
@@ -75,7 +77,13 @@ export class WebSocketClient {
 
             // Only auto-connect if we're fully closed and don't have a pending reconnect attempt
             // Don't try to connect if we're CONNECTING, OPEN, or CLOSING
-            if (this.accessToken && visibility.visible && this.readyState === WebSocket.CLOSED && this.reconnectTimeoutId === null) {
+            if (
+                this.accessToken &&
+                !this.terminalAuthFailure &&
+                visibility.visible &&
+                this.readyState === WebSocket.CLOSED &&
+                this.reconnectTimeoutId === null
+            ) {
                 this.connect();
             }
         });
@@ -93,6 +101,7 @@ export class WebSocketClient {
             return true;
         }
 
+        this.readyState = WebSocket.CLOSED;
         return false;
     }
 
@@ -143,12 +152,11 @@ export class WebSocketClient {
                 return;
             }
 
-            // Don't retry on authentication/authorization failures
-            // Code 1008 (Policy Violation) is explicit auth failure
-            // Code 1006 (Abnormal Closure) during handshake could be 401/403
-            // Codes 4xxx are custom application codes (e.g., 4401=401, 4403=403)
-            const isAuthFailure = event.code === 1008 || (event.code === 1006 && event.wasClean === false) || (event.code >= 4400 && event.code < 4500);
+            // The push endpoint accepts rejected WebSocket handshakes and closes them with 4401, so browser code
+            // 1006 remains safe to treat as a transient network or service-startup failure.
+            const isAuthFailure = event.code === 1008 || (event.code >= 4400 && event.code < 4500);
             if (isAuthFailure) {
+                this.terminalAuthFailure = true;
                 console.warn('[WebSocketClient] Auth failure detected, not reconnecting', {
                     code: event.code,
                     reason: event.reason

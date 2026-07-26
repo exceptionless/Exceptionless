@@ -106,6 +106,25 @@ export function hasSavedColumnVisibility(columns: null | Record<string, boolean>
     return columns != null;
 }
 
+export function savedViewColumnsEqual(
+    a: ColumnVisibilityState | undefined,
+    b: null | Record<string, boolean> | undefined,
+    defaultColumnVisibility: ColumnVisibilityState = {}
+): boolean {
+    const normalize = (value: ColumnVisibilityState | null | undefined) => ({ ...defaultColumnVisibility, ...(value ?? {}) });
+    const aEntries = Object.entries(normalize(a)).sort(([k1], [k2]) => k1.localeCompare(k2));
+    const bEntries = Object.entries(normalize(b)).sort(([k1], [k2]) => k1.localeCompare(k2));
+
+    if (aEntries.length !== bEntries.length) {
+        return false;
+    }
+
+    return aEntries.every(([k, v], i) => {
+        const bEntry = bEntries[i];
+        return bEntry !== undefined && bEntry[0] === k && bEntry[1] === v;
+    });
+}
+
 export function setSortQueryParam(queryParams: SavedViewQueryParams, value: null | string): void {
     if (supportsSortQueryParam(queryParams)) {
         queryParams.sort = value;
@@ -256,7 +275,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         if (
             options.getColumnVisibility &&
             hasSavedColumnVisibility(view.columns) &&
-            !columnsEqual(options.getColumnVisibility(), view.columns, options.defaultColumnVisibility)
+            !savedViewColumnsEqual(options.getColumnVisibility(), view.columns, options.defaultColumnVisibility)
         ) {
             return true;
         }
@@ -362,25 +381,6 @@ function columnOrderEqual(a: ColumnOrderState | undefined, b: null | string[] | 
     }
 
     return aOrder.every((columnId, index) => columnId === bOrder[index]);
-}
-
-function columnsEqual(
-    a: ColumnVisibilityState | undefined,
-    b: null | Record<string, boolean> | undefined,
-    defaultColumnVisibility: ColumnVisibilityState = {}
-): boolean {
-    const normalize = (value: ColumnVisibilityState | null | undefined) => ({ ...defaultColumnVisibility, ...(value ?? {}) });
-    const aEntries = Object.entries(normalize(a)).sort(([k1], [k2]) => k1.localeCompare(k2));
-    const bEntries = Object.entries(normalize(b)).sort(([k1], [k2]) => k1.localeCompare(k2));
-
-    if (aEntries.length !== bEntries.length) {
-        return false;
-    }
-
-    return aEntries.every(([k, v], i) => {
-        const bEntry = bEntries[i];
-        return bEntry !== undefined && bEntry[0] === k && bEntry[1] === v;
-    });
 }
 
 function normalizeFilterDefinitions(value: null | string | undefined): string {

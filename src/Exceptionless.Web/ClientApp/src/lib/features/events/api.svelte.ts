@@ -2,6 +2,7 @@ import type { WebSocketMessageValue } from '$features/websockets/models';
 import type { CountResult, WorkInProgressResult } from '$shared/models';
 
 import { accessToken } from '$features/auth/index.svelte';
+import { queryKeys as stackQueryKeys } from '$features/stacks/api.svelte';
 import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
 import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, keepPreviousData, QueryClient, useQueryClient } from '@tanstack/svelte-query';
@@ -50,6 +51,10 @@ export const queryKeys = {
     stacksCount: (id: string | undefined, params?: GetStackCountRequest['params']) => [...queryKeys.stacks(id), 'count', params] as const,
     type: ['PersistentEvent'] as const
 };
+
+export const PERSISTENT_EVENT_DELETE_RECONCILE_EVENT = 'PersistentEventDeleteReconcile';
+export const PERSISTENT_EVENT_DELETE_RECONCILE_DELAY = 1500;
+export const PERSISTENT_EVENT_DELETE_RECONCILE_RETRY_DELAY = 5000;
 
 export interface DeleteEventsRequest {
     route: {
@@ -210,6 +215,7 @@ export function deleteEvent(request: DeleteEventsRequest) {
         },
         onSuccess: () => {
             request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+            schedulePersistentEventDeleteReconciliation(queryClient);
         }
     }));
 }
@@ -438,4 +444,18 @@ export function getStackEventsQuery(request: GetStackEventsRequest) {
         },
         queryKey: queryKeys.stackEvents(request.route.stackId, request.params)
     }));
+}
+
+export function schedulePersistentEventDeleteReconciliation(queryClient: QueryClient, eventTarget: EventTarget = document) {
+    eventTarget.dispatchEvent(new Event(PERSISTENT_EVENT_DELETE_RECONCILE_EVENT));
+    void queryClient.invalidateQueries({ queryKey: stackQueryKeys.type });
+    setTimeout(() => {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.type });
+        void queryClient.invalidateQueries({ queryKey: stackQueryKeys.type });
+    }, PERSISTENT_EVENT_DELETE_RECONCILE_DELAY);
+    setTimeout(() => {
+        eventTarget.dispatchEvent(new Event(PERSISTENT_EVENT_DELETE_RECONCILE_EVENT));
+        void queryClient.invalidateQueries({ queryKey: queryKeys.type });
+        void queryClient.invalidateQueries({ queryKey: stackQueryKeys.type });
+    }, PERSISTENT_EVENT_DELETE_RECONCILE_RETRY_DELAY);
 }

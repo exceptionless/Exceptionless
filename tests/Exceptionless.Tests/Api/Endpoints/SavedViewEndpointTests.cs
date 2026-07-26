@@ -2126,6 +2126,32 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Theory]
+    [InlineData("events", "project")]
+    [InlineData("events", "tags")]
+    [InlineData("stacks", "project")]
+    [InlineData("stacks", "tags")]
+    [InlineData("stream", "project")]
+    [InlineData("stream", "tags")]
+    public Task PostAsync_ProjectAndTagColumnsForSupportedViews_Succeeds(string viewType, string column)
+    {
+        // Arrange & Act & Assert
+        return SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .Content(new NewSavedView
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                Name = $"Valid {viewType} {column} Column",
+                ViewType = viewType,
+                Columns = new Dictionary<string, bool> { [column] = false },
+                ColumnOrder = [column]
+            })
+            .StatusCodeShouldBeCreated()
+        );
+    }
+
+    [Theory]
     [InlineData("events")]
     [InlineData("stream")]
     public Task PostAsync_VersionColumnForEventViews_Succeeds(string viewType)
