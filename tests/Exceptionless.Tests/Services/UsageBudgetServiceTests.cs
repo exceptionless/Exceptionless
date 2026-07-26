@@ -1,14 +1,17 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Extensions;
 using Foundatio.AsyncEx;
 using Foundatio.Caching;
+using Foundatio.Lock;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Xunit;
@@ -677,5 +680,248 @@ public sealed partial class UsageServiceTests
         await GetService<ICacheClient>().RemoveAsync($"usage:ingest-reservation:{{{organization.Id}}}:missing-state");
 
         await Assert.ThrowsAsync<UsageServiceException>(() => _usageService.CompleteEventIngestReservationAsync(reservation, organization, 1));
+    }
+
+    [Fact]
+    public async Task ReserveEventIngestAsync_ActiveReplay_ReturnsSameGenerationWithoutDoubleAccounting()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Replay", MaxEventsPerMonth = 1000, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project
+        {
+            Name = "Replay",
+            OrganizationId = organization.Id,
+            NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks,
+            IngestLimit = new ProjectIngestLimit { Type = ProjectIngestLimitType.Fixed, FixedLimit = 5 }
+        }, o => o.ImmediateConsistency().Cache());
+        var candidates = Enumerable.Range(0, 10).Select(index => new EventIngestCandidate(index, (ulong)index)).ToArray();
+
+        var first = await _usageService.ReserveEventIngestAsync(organization, project, "active-replay", candidates, TestCancellationToken);
+        var replay = await _usageService.ReserveEventIngestAsync(organization, project, "active-replay", candidates, TestCancellationToken);
+
+        Assert.Equal(first.GenerationId, replay.GenerationId);
+        Assert.Equal(first.AcceptedIndexes, replay.AcceptedIndexes);
+        Assert.Equal(5, (await _usageService.GetUsageAsync(organization.Id, project.Id)).CurrentUsage.Blocked);
+        var competing = await _usageService.ReserveEventIngestAsync(organization, project, "active-replay-competing", candidates, TestCancellationToken);
+        Assert.Equal(0, competing.ReservedCount);
+        await _usageService.CompleteEventIngestReservationAsync(competing, organization, 0);
+        await _usageService.ReleaseEventIngestReservationAsync(replay);
+    }
+
+    [Fact]
+    public async Task ReserveEventIngestAsync_ReleasedReservation_RecreatesWithNewGenerationAndRejectsStaleHandle()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Generation", MaxEventsPerMonth = 100, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Generation", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+        var candidates = Enumerable.Range(0, 2).Select(index => new EventIngestCandidate(index, (ulong)index)).ToArray();
+        var first = await _usageService.ReserveEventIngestAsync(organization, project, "generation", candidates, TestCancellationToken);
+        await _usageService.ReleaseEventIngestReservationAsync(first);
+
+        var retried = await _usageService.ReserveEventIngestAsync(organization, project, "generation", candidates, TestCancellationToken);
+
+        Assert.NotEqual(first.GenerationId, retried.GenerationId);
+        await Assert.ThrowsAsync<UsageServiceException>(() => _usageService.CompleteEventIngestReservationAsync(first, organization, 2));
+        await Assert.ThrowsAsync<UsageServiceException>(() => _usageService.ReleaseEventIngestReservationAsync(first));
+        await _usageService.ReleaseEventIngestReservationAsync(retried);
+    }
+
+    [Fact]
+    public async Task ReserveEventIngestAsync_ReleasedRetry_NarrowsPreviousSelectionAndCountsNewBlocksOnce()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Narrow", MaxEventsPerMonth = 100, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project
+        {
+            Name = "Narrow",
+            OrganizationId = organization.Id,
+            NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks,
+            IngestLimit = new ProjectIngestLimit { Type = ProjectIngestLimitType.Fixed, FixedLimit = 5 }
+        }, o => o.ImmediateConsistency().Cache());
+        var candidates = Enumerable.Range(0, 10).Select(index => new EventIngestCandidate(index, (ulong)index)).ToArray();
+        var first = await _usageService.ReserveEventIngestAsync(organization, project, "narrow", candidates, TestCancellationToken);
+        await _usageService.ReleaseEventIngestReservationAsync(first);
+        await _usageService.IncrementTotalAsync(organization, project.Id, 3);
+
+        var retried = await _usageService.ReserveEventIngestAsync(organization, project, "narrow", candidates, TestCancellationToken);
+        var replay = await _usageService.ReserveEventIngestAsync(organization, project, "narrow", candidates, TestCancellationToken);
+
+        Assert.Equal(2, retried.ReservedCount);
+        Assert.All(retried.AcceptedIndexes, index => Assert.Contains(index, first.AcceptedIndexes));
+        Assert.Equal(8, (await _usageService.GetUsageAsync(organization.Id, project.Id)).CurrentUsage.Blocked);
+        Assert.Equal(retried.GenerationId, replay.GenerationId);
+        Assert.Equal(8, (await _usageService.GetUsageAsync(organization.Id, project.Id)).CurrentUsage.Blocked);
+        await _usageService.ReleaseEventIngestReservationAsync(retried);
+    }
+
+    [Fact]
+    public async Task CompleteEventIngestReservationAsync_DuplicateCompletion_CommitsUsageOnce()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Duplicate", MaxEventsPerMonth = 100, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Duplicate", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+        var reservation = await _usageService.ReserveEventIngestAsync(
+            organization,
+            project,
+            "duplicate-complete",
+            [new EventIngestCandidate(0, 0), new EventIngestCandidate(1, 1)],
+            TestCancellationToken);
+
+        await _usageService.CompleteEventIngestReservationAsync(reservation, organization, 2);
+        await _usageService.CompleteEventIngestReservationAsync(reservation, organization, 2);
+
+        Assert.Equal(2, (await _usageService.GetUsageAsync(organization.Id, project.Id)).CurrentUsage.Total);
+    }
+
+    [Fact]
+    public async Task CompleteEventIngestReservationAsync_TamperedIdentity_FailsClosed()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Identity", MaxEventsPerMonth = 100, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Identity", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+        var reservation = await _usageService.ReserveEventIngestAsync(organization, project, "identity", [new EventIngestCandidate(0, 0)], TestCancellationToken);
+        var tampered = reservation with { ProjectId = "000000000000000000000099" };
+
+        await Assert.ThrowsAsync<UsageServiceException>(() => _usageService.CompleteEventIngestReservationAsync(tampered, organization, 1));
+        await _usageService.ReleaseEventIngestReservationAsync(reservation);
+    }
+
+    [Fact]
+    public async Task CompleteEventIngestReservationAsync_MalformedReservedCounter_FailsClosed()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Corrupt", MaxEventsPerMonth = 100, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Corrupt", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+        var reservation = await _usageService.ReserveEventIngestAsync(organization, project, "corrupt", [new EventIngestCandidate(0, 0)], TestCancellationToken);
+        await GetService<ICacheClient>().SetAsync($"usage:reserved:{{{organization.Id}}}:{reservation.UsagePeriod}:total", "invalid", TimeSpan.FromDays(1));
+
+        await Assert.ThrowsAsync<UsageServiceException>(() => _usageService.CompleteEventIngestReservationAsync(reservation, organization, 1));
+    }
+
+    [Fact]
+    public async Task ReserveEventIngestAsync_ConcurrentProjects_DoNotExceedOrganizationCap()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Shared", MaxEventsPerMonth = 10, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var firstProject = await _projectRepository.AddAsync(new Project { Name = "First", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+        var secondProject = await _projectRepository.AddAsync(new Project { Name = "Second", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+        var candidates = Enumerable.Range(0, 10).Select(index => new EventIngestCandidate(index, (ulong)index)).ToArray();
+
+        var reservations = await Task.WhenAll(
+            _usageService.ReserveEventIngestAsync(organization, firstProject, "shared-first", candidates, TestCancellationToken),
+            _usageService.ReserveEventIngestAsync(organization, secondProject, "shared-second", candidates, TestCancellationToken));
+
+        Assert.Equal(10, reservations.Sum(reservation => reservation.ReservedCount));
+        await Task.WhenAll(reservations.Select(_usageService.ReleaseEventIngestReservationAsync));
+    }
+
+    [Fact]
+    public async Task ReserveEventIngestAsync_ActiveSmartThrottleReplay_RestoresState()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Throttle Replay", MaxEventsPerMonth = 1_000_000, PlanId = _plans.ExtraLargePlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Noisy", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+        await _projectRepository.AddAsync(new Project { Name = "Quiet", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+        await _projectRepository.AddAsync(new Project { Name = "Other", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+        var candidates = Enumerable.Range(0, 2000).Select(index => new EventIngestCandidate(index, (ulong)index * 7919UL)).ToArray();
+        var reservation = await _usageService.ReserveEventIngestAsync(organization, project, "throttle-replay", candidates, TestCancellationToken);
+        int bucket = TimeProvider.GetUtcNow().UtcDateTime.Floor(TimeSpan.FromMinutes(5)).ToEpoch();
+        await GetService<ICacheClient>().RemoveAsync($"usage:{bucket}:{organization.Id}:{project.Id}:smart-throttle");
+
+        await _usageService.ReserveEventIngestAsync(organization, project, "throttle-replay", candidates, TestCancellationToken);
+
+        Assert.True(await _usageService.IsProjectSmartThrottledAsync(organization.Id, project.Id));
+        await _usageService.ReleaseEventIngestReservationAsync(reservation);
+    }
+
+    [Fact]
+    public async Task ReserveEventIngestAsync_AtomicCommitFails_LeavesNoPartialReservation()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Reserve CAS", MaxEventsPerMonth = 100, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Reserve CAS", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+        var cache = GetService<ICacheClient>();
+        var atomicBatch = new ControllableAtomicCacheBatch(cache) { FailNext = true };
+        var usageService = CreateUsageService(atomicBatch);
+
+        await Assert.ThrowsAsync<UsageServiceException>(() => usageService.ReserveEventIngestAsync(
+            organization,
+            project,
+            "reserve-cas",
+            [new EventIngestCandidate(0, 0)],
+            TestCancellationToken));
+
+        Assert.False((await cache.GetAsync<string>($"usage:ingest-reservation:{{{organization.Id}}}:reserve-cas")).HasValue);
+        Assert.False((await cache.GetAsync<string>($"usage:reserved:{{{organization.Id}}}:{TimeProvider.GetUtcNow().UtcDateTime.StartOfMonth().ToEpoch()}:total")).HasValue);
+    }
+
+    [Fact]
+    public async Task CompleteEventIngestReservationAsync_AtomicCommitFails_PreservesActiveCapacity()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Complete CAS", MaxEventsPerMonth = 100, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project
+        {
+            Name = "Complete CAS",
+            OrganizationId = organization.Id,
+            NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks,
+            IngestLimit = new ProjectIngestLimit { Type = ProjectIngestLimitType.Fixed, FixedLimit = 1 }
+        }, o => o.ImmediateConsistency().Cache());
+        var atomicBatch = new ControllableAtomicCacheBatch(GetService<ICacheClient>());
+        var usageService = CreateUsageService(atomicBatch);
+        var reservation = await usageService.ReserveEventIngestAsync(organization, project, "complete-cas", [new EventIngestCandidate(0, 0)], TestCancellationToken);
+        atomicBatch.FailNext = true;
+
+        await Assert.ThrowsAsync<UsageServiceException>(() => usageService.CompleteEventIngestReservationAsync(reservation, organization, 1));
+
+        var competing = await usageService.ReserveEventIngestAsync(organization, project, "complete-cas-competing", [new EventIngestCandidate(0, 0)], TestCancellationToken);
+        Assert.Equal(0, competing.ReservedCount);
+        await usageService.CompleteEventIngestReservationAsync(competing, organization, 0);
+        await usageService.ReleaseEventIngestReservationAsync(reservation);
+    }
+
+    [Fact]
+    public async Task ReleaseEventIngestReservationAsync_AtomicCommitFails_PreservesActiveCapacity()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Release CAS", MaxEventsPerMonth = 100, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project
+        {
+            Name = "Release CAS",
+            OrganizationId = organization.Id,
+            NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks,
+            IngestLimit = new ProjectIngestLimit { Type = ProjectIngestLimitType.Fixed, FixedLimit = 1 }
+        }, o => o.ImmediateConsistency().Cache());
+        var atomicBatch = new ControllableAtomicCacheBatch(GetService<ICacheClient>());
+        var usageService = CreateUsageService(atomicBatch);
+        var reservation = await usageService.ReserveEventIngestAsync(organization, project, "release-cas", [new EventIngestCandidate(0, 0)], TestCancellationToken);
+        atomicBatch.FailNext = true;
+
+        await Assert.ThrowsAsync<UsageServiceException>(() => usageService.ReleaseEventIngestReservationAsync(reservation));
+
+        var competing = await usageService.ReserveEventIngestAsync(organization, project, "release-cas-competing", [new EventIngestCandidate(0, 0)], TestCancellationToken);
+        Assert.Equal(0, competing.ReservedCount);
+        await usageService.CompleteEventIngestReservationAsync(competing, organization, 0);
+        await usageService.ReleaseEventIngestReservationAsync(reservation);
+    }
+
+    private UsageService CreateUsageService(IAtomicCacheBatch atomicCacheBatch) => new(
+        _organizationRepository,
+        _projectRepository,
+        GetService<ICacheClient>(),
+        GetService<ILockProvider>(),
+        atomicCacheBatch,
+        GetService<IMessagePublisher>(),
+        _notificationService,
+        GetService<AppOptions>(),
+        TimeProvider,
+        Log);
+
+    private sealed class ControllableAtomicCacheBatch(ICacheClient cacheClient) : IAtomicCacheBatch
+    {
+        private readonly InMemoryAtomicCacheBatch _inner = new(cacheClient);
+
+        public bool FailNext { get; set; }
+
+        public Task<bool> TrySetAllAsync(IReadOnlyDictionary<string, string?> expectedValues, IReadOnlyDictionary<string, AtomicCacheValue> values,
+            IReadOnlyDictionary<string, string>? listValues = null, TimeSpan? listExpiresIn = null)
+        {
+            if (FailNext)
+            {
+                FailNext = false;
+                return Task.FromResult(false);
+            }
+
+            return _inner.TrySetAllAsync(expectedValues, values, listValues, listExpiresIn);
+        }
     }
 }

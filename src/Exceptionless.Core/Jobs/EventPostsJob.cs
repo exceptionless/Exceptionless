@@ -165,13 +165,13 @@ public class EventPostsJob : QueueJobBase<EventPost>
         int submittedEventCount = events.Count;
         bool isSingleEvent = submittedEventCount == 1;
         var candidates = events
-            .Select((persistentEvent, index) => new EventCandidate(persistentEvent, index, GetStableEventHash(entry.Id, persistentEvent, index)))
-            .ToList();
+            .Select((persistentEvent, index) => new EventIngestCandidate(index, GetStableEventHash(entry.Id, persistentEvent, index)))
+            .ToArray();
         var reservation = await _usageService.ReserveEventIngestAsync(
             organization,
             project,
             entry.Id,
-            candidates.Select(candidate => new EventIngestCandidate(candidate.Index, candidate.Hash)).ToArray(),
+            candidates,
             context.CancellationToken);
         if (reservation.IsCompleted)
         {
@@ -186,18 +186,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
         var eventsToRetry = new List<PersistentEvent>();
         try
         {
-            var acceptedIndexes = reservation.AcceptedIndexes.ToHashSet();
-            candidates = candidates.Where(candidate => acceptedIndexes.Contains(candidate.Index)).ToList();
-            _usageService.RecordSmartThrottle(reservation.SmartThrottleBlockedCount);
-
-            events = candidates
-                .OrderBy(candidate => candidate.Index)
-                .Select(candidate => candidate.Event)
-                .ToList();
-
-            int blockedEventCount = submittedEventCount - events.Count;
-            if (blockedEventCount > 0)
-                await _usageService.IncrementBlockedAsync(organization.Id, project.Id, blockedEventCount);
+            events = reservation.AcceptedIndexes.Select(index => events[index]).ToList();
 
             if (events.Count == 0)
             {
@@ -310,8 +299,6 @@ public class EventPostsJob : QueueJobBase<EventPost>
     {
         return hash % 10_000 < (ulong)sampleThreshold;
     }
-
-    private sealed record EventCandidate(PersistentEvent Event, int Index, ulong Hash);
 
     private List<PersistentEvent>? ParseEventPost(EventPostInfo ep, DateTime createdUtc, byte[] uncompressedData, string queueEntryId, bool isInternalProject)
     {

@@ -247,11 +247,11 @@ public partial class UsageService
             return;
         }
 
-        if (!isNewTransition)
-            return;
-
-        _logger.LogInformation("Smart project throttling activated for {OrganizationId}/{ProjectId} at {SampleRate:P0}; project usage {ProjectUsage}, fair-share limit {FairShareLimit}",
-            organization.Id, project.Id, result.SampleRate, result.CurrentProjectUsage, result.FairShareLimit);
+        if (isNewTransition)
+        {
+            _logger.LogInformation("Smart project throttling activated for {OrganizationId}/{ProjectId} at {SampleRate:P0}; project usage {ProjectUsage}, fair-share limit {FairShareLimit}",
+                organization.Id, project.Id, result.SampleRate, result.CurrentProjectUsage, result.FairShareLimit);
+        }
 
         string notificationKey = GetSmartThrottleNotificationKey(utcNow, organization.Id, project.Id);
         bool notificationClaimed = false;
@@ -313,12 +313,6 @@ public partial class UsageService
 
         var state = await _cache.GetAsync<SmartThrottleResult>(GetProjectSmartThrottleKey(_timeProvider.GetUtcNow().UtcDateTime, organizationId, projectId));
         return state is { HasValue: true, Value.IsThrottled: true };
-    }
-
-    public void RecordSmartThrottle(int blockedCount)
-    {
-        if (blockedCount > 0)
-            AppDiagnostics.EventsSmartThrottled.Add(blockedCount);
     }
 
     public async Task EvaluateBudgetAlertsAfterSettingsChangeAsync(Organization organization, IReadOnlyCollection<int> thresholds)
