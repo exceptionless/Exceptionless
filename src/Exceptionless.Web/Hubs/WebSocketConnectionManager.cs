@@ -10,7 +10,7 @@ namespace Exceptionless.Web.Hubs;
 /// Temporary WebSocket compatibility layer for the Angular rollout. Remove once the
 /// SSE rollout is complete and the websocket active-connection gauge remains at zero.
 /// </summary>
-public sealed class WebSocketConnectionManager : IDisposable
+public class WebSocketConnectionManager : IDisposable
 {
     private static readonly ArraySegment<byte> KeepAliveMessage = new(Encoding.ASCII.GetBytes("{}"), 0, 2);
     private readonly ConcurrentDictionary<string, ManagedWebSocket> _connections = new();
@@ -183,7 +183,17 @@ public sealed class WebSocketConnectionManager : IDisposable
 
     public Task SendMessageToAllAsync(object message, bool throwOnError = true)
     {
-        SendMessageToAll(message);
+        foreach (string connectionId in _connections.Keys)
+        {
+            try
+            {
+                SendMessage(connectionId, message);
+            }
+            catch when (!throwOnError)
+            {
+            }
+        }
+
         return Task.CompletedTask;
     }
 

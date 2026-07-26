@@ -148,4 +148,42 @@ public sealed class PushCompatibilityBrokerTests : TestWithServices
             _connectionRegistry.Unregister(connectionId);
         }
     }
+
+    [Fact]
+    public async Task OnEntityChangedAsync_ProjectTokenRemoved_ClosesOrganizationOnlyConnection()
+    {
+        const string organizationId = "project-token-organization";
+        const string removedTokenId = "removed-project-token";
+        var removedSocket = new TestWebSocket();
+        var activeSocket = new TestWebSocket();
+        string removedConnectionId = _webSocketConnectionManager.AddConnection(removedSocket);
+        string activeConnectionId = _webSocketConnectionManager.AddConnection(activeSocket);
+        Assert.True(_connectionRegistry.TryRegister(removedConnectionId, null, removedTokenId, [organizationId]));
+        Assert.True(_connectionRegistry.TryRegister(activeConnectionId, null, "active-project-token", [organizationId]));
+
+        try
+        {
+            var entityChanged = new EntityChanged
+            {
+                Id = removedTokenId,
+                Type = nameof(Token),
+                ChangeType = ChangeType.Removed
+            };
+            entityChanged.Data[ExtendedEntityChanged.KnownKeys.OrganizationId] = organizationId;
+
+            await _broker.OnEntityChangedAsync(entityChanged, CancellationToken.None);
+
+            Assert.Null(_webSocketConnectionManager.GetConnectionById(removedConnectionId));
+            Assert.Same(activeSocket, _webSocketConnectionManager.GetConnectionById(activeConnectionId));
+            Assert.Equal(1, removedSocket.CloseCount);
+            Assert.Equal(0, activeSocket.CloseCount);
+            Assert.Equal([activeConnectionId], _connectionRegistry.GetGroupConnections(organizationId));
+        }
+        finally
+        {
+            await _webSocketConnectionManager.RemoveConnectionAsync(activeConnectionId);
+            _connectionRegistry.Unregister(removedConnectionId);
+            _connectionRegistry.Unregister(activeConnectionId);
+        }
+    }
 }

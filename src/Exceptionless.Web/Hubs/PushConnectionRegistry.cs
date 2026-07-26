@@ -14,7 +14,7 @@ public sealed class PushConnectionRegistry(TimeProvider timeProvider)
     private readonly Dictionary<string, HashSet<string>> _userConnections = [];
     private readonly object _lock = new();
 
-    public bool TryRegister(string connectionId, string userId, string? tokenId, IEnumerable<string> organizationIds)
+    public bool TryRegister(string connectionId, string? userId, string? tokenId, IEnumerable<string> organizationIds)
     {
         lock (_lock)
         {
@@ -24,7 +24,8 @@ public sealed class PushConnectionRegistry(TimeProvider timeProvider)
 
             var registration = new Registration(userId, tokenId, organizationIds);
             _connections.Add(connectionId, registration);
-            AddToIndex(_userConnections, userId, connectionId);
+            if (userId is not null)
+                AddToIndex(_userConnections, userId, connectionId);
             if (tokenId is not null)
                 AddToIndex(_tokenConnections, tokenId, connectionId);
             foreach (string organizationId in registration.OrganizationIds)
@@ -87,7 +88,8 @@ public sealed class PushConnectionRegistry(TimeProvider timeProvider)
             if (!_connections.Remove(connectionId, out var registration))
                 return;
 
-            RemoveFromIndex(_userConnections, registration.UserId, connectionId);
+            if (registration.UserId is not null)
+                RemoveFromIndex(_userConnections, registration.UserId, connectionId);
             if (registration.TokenId is not null)
                 RemoveFromIndex(_tokenConnections, registration.TokenId, connectionId);
             foreach (string organizationId in registration.OrganizationIds)
@@ -128,7 +130,7 @@ public sealed class PushConnectionRegistry(TimeProvider timeProvider)
             _revokedTokens.Remove(tokenId);
     }
 
-    private sealed record Registration(string UserId, string? TokenId, IEnumerable<string> InitialOrganizationIds)
+    private sealed record Registration(string? UserId, string? TokenId, IEnumerable<string> InitialOrganizationIds)
     {
         public HashSet<string> OrganizationIds { get; } = [.. InitialOrganizationIds];
     }

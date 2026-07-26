@@ -5,13 +5,16 @@ namespace Exceptionless.Tests.Hubs;
 
 internal sealed class TestWebSocket : WebSocket
 {
+    private readonly bool _blockReceive;
+    private readonly TaskCompletionSource _receiving = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private WebSocketState _state;
     private int _closeCount;
     private int _closeOutputCount;
 
-    public TestWebSocket(WebSocketState state = WebSocketState.Open)
+    public TestWebSocket(WebSocketState state = WebSocketState.Open, bool blockReceive = false)
     {
         _state = state;
+        _blockReceive = blockReceive;
     }
 
     public int CloseCount => _closeCount;
@@ -49,9 +52,13 @@ internal sealed class TestWebSocket : WebSocket
 
     public override void Dispose() { }
 
-    public override Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken)
+    public override async Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken)
     {
-        return Task.FromResult(new WebSocketReceiveResult(0, WebSocketMessageType.Text, true));
+        _receiving.TrySetResult();
+        if (_blockReceive)
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+
+        return new WebSocketReceiveResult(0, WebSocketMessageType.Text, true);
     }
 
     public override Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
@@ -59,4 +66,6 @@ internal sealed class TestWebSocket : WebSocket
         SentMessages.Add(Encoding.UTF8.GetString(buffer.Array!, buffer.Offset, buffer.Count));
         return Task.CompletedTask;
     }
+
+    public Task WaitUntilReceivingAsync() => _receiving.Task;
 }

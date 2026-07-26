@@ -109,6 +109,13 @@ public sealed class MessageBusBroker : IStartupAction
         {
             string? userId = entityChanged.Data.GetValueOrDefault<string>(ExtendedEntityChanged.KnownKeys.UserId);
             bool isAuthToken = entityChanged.Data.GetValueOrDefault<bool>(ExtendedEntityChanged.KnownKeys.IsAuthenticationToken);
+            IReadOnlyCollection<string> revokedConnectionIds = [];
+
+            if (entityChanged.ChangeType is ChangeType.Removed && entityChanged.Id is not null)
+            {
+                revokedConnectionIds = _connectionRegistry.RevokeToken(entityChanged.Id);
+                await CloseConnectionsAsync(revokedConnectionIds).ConfigureAwait(false);
+            }
 
             if (userId is not null)
             {
@@ -118,15 +125,9 @@ public sealed class MessageBusBroker : IStartupAction
                 // there is no point delivering a message to a connection we are about to tear down.
                 if (isAuthToken && entityChanged.ChangeType is ChangeType.Removed)
                 {
-                    string? tokenId = entityChanged.Id;
-                    var localConnectionIds = tokenId is null ? userConnectionIds : _connectionRegistry.RevokeToken(tokenId);
-                    _logger.LogTrace("Auth token removed for user {UserId}; closing {ConnectionCount} local push connection(s)", userId, localConnectionIds.Count);
-                    foreach (string connectionId in localConnectionIds)
-                    {
-                        await _sseConnectionManager.RemoveConnectionAsync(connectionId);
-                        await _webSocketConnectionManager.RemoveConnectionAsync(connectionId);
-                        _connectionRegistry.Unregister(connectionId);
-                    }
+                    var localConnectionIds = entityChanged.Id is null ? userConnectionIds : [];
+                    _logger.LogTrace("Auth token removed for user {UserId}; closed {ConnectionCount} local push connection(s)", userId, revokedConnectionIds.Count + localConnectionIds.Count);
+                    await CloseConnectionsAsync(localConnectionIds).ConfigureAwait(false);
 
                     return;
                 }
@@ -151,6 +152,24 @@ public sealed class MessageBusBroker : IStartupAction
         {
             _logger.LogTrace("Sending {MessageType} message to organization: {Organization}", entityChanged.Type, entityChanged.OrganizationId);
             await GroupSendAsync(entityChanged.OrganizationId, entityChanged);
+        }
+    }
+
+    private async Task CloseConnectionsAsync(IEnumerable<string> connectionIds)
+    {
+        foreach (string connectionId in connectionIds)
+        {
+            try
+            {
+                await Task.WhenAll(
+                    _sseConnectionManager.RemoveConnectionAsync(connectionId),
+                    _webSocketConnectionManager.RemoveConnectionAsync(connectionId)
+                ).ConfigureAwait(false);
+            }
+            finally
+            {
+                _connectionRegistry.Unregister(connectionId);
+            }
         }
     }
 

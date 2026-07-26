@@ -52,6 +52,22 @@ public sealed class SseIntegrationTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task ConnectWithProjectToken_PreservesOrganizationOnlyCompatibility()
+    {
+        using var client = _server.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v2/push");
+        request.Headers.Add("Accept", "text/event-stream");
+        request.Headers.Add("Authorization", $"Bearer {SampleDataService.TEST_API_KEY}");
+
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cts.CancelAfter(TimeSpan.FromSeconds(5));
+        using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("text/event-stream", response.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Fact]
     public async Task ConnectWithoutAuth_Returns401()
     {
         using var client = _server.CreateClient();

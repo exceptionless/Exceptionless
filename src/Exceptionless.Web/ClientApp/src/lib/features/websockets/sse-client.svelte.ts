@@ -120,6 +120,7 @@ export class SseClient {
     }
 
     public connect() {
+        this.abortController?.abort();
         const isReconnect: boolean = this.hasConnectedBefore;
         const generation = ++this.streamGeneration;
 
@@ -163,6 +164,10 @@ export class SseClient {
         return Math.min(1000 * Math.pow(2, attempt - 1), 30000);
     }
 
+    private isCurrentStream(generation: number, token: null | string): boolean {
+        return generation === this.streamGeneration && token === accessToken.current;
+    }
+
     private scheduleReconnect(delayOverride?: number) {
         if (this.reconnectTimeoutId !== null || this.authFailed || this.forcedClose || this.pausedForVisibility || !(this.accessToken ?? accessToken.current)) {
             this.readyState = SSE_CLOSED;
@@ -184,8 +189,9 @@ export class SseClient {
     }
 
     private async startStream(signal: AbortSignal, isReconnect: boolean, generation: number) {
+        const token = this.accessToken ?? accessToken.current;
+
         try {
-            const token = this.accessToken ?? accessToken.current;
             const response = await fetch(this.url, {
                 headers: {
                     Accept: 'text/event-stream',
@@ -193,6 +199,11 @@ export class SseClient {
                 },
                 signal
             });
+
+            if (!this.isCurrentStream(generation, token)) {
+                await response.body?.cancel();
+                return;
+            }
 
             clearTimeout(this.connectionTimeoutId!);
             this.connectionTimeoutId = null;
@@ -236,8 +247,7 @@ export class SseClient {
                 throw new Error(`SSE response has invalid content type: ${contentType ?? 'missing'}`);
             }
 
-            if (generation !== this.streamGeneration) {
-                this.readyState = SSE_CLOSED;
+            if (!this.isCurrentStream(generation, token)) {
                 return;
             }
 
@@ -258,8 +268,8 @@ export class SseClient {
                     break;
                 }
 
-                if (generation !== this.streamGeneration) {
-                    this.readyState = SSE_CLOSED;
+                if (!this.isCurrentStream(generation, token)) {
+                    await reader.cancel();
                     return;
                 }
 
@@ -298,13 +308,12 @@ export class SseClient {
                 }
             }
         } catch (error: unknown) {
-            clearTimeout(this.connectionTimeoutId!);
-            this.connectionTimeoutId = null;
-
-            if (generation !== this.streamGeneration) {
-                this.readyState = SSE_CLOSED;
+            if (!this.isCurrentStream(generation, token)) {
                 return;
             }
+
+            clearTimeout(this.connectionTimeoutId!);
+            this.connectionTimeoutId = null;
 
             if (signal.aborted && (this.forcedClose || this.pausedForVisibility)) {
                 // Intentional close - don't reconnect
@@ -324,7 +333,7 @@ export class SseClient {
         }
 
         // Stream ended (server closed connection) - reconnect
-        if (generation === this.streamGeneration && !this.forcedClose && !this.pausedForVisibility) {
+        if (this.isCurrentStream(generation, token) && !this.forcedClose && !this.pausedForVisibility) {
             this.scheduleReconnect();
         }
     }

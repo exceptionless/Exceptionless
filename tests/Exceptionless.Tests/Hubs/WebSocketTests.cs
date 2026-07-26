@@ -1,4 +1,6 @@
 using System.Net.WebSockets;
+using System.Security.Claims;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Utility;
@@ -36,18 +38,12 @@ public sealed class WebSocketTests : TestWithServices
         context.Request.Path = "/api/v2/push";
         context.Features.Set<IHttpWebSocketFeature>(feature);
         bool calledNext = false;
-        var middleware = new WebSocketPushMiddleware(
+        var middleware = CreateMiddleware(
             _ =>
             {
                 calledNext = true;
                 return Task.CompletedTask;
-            },
-            _connectionManager,
-            new ConnectionLeaseStore(TimeProvider),
-            _connectionRegistry,
-            TimeProvider,
-            new TestHostApplicationLifetime(),
-            GetService<ILogger<WebSocketPushMiddleware>>());
+            });
 
         await middleware.Invoke(context);
 
@@ -57,6 +53,96 @@ public sealed class WebSocketTests : TestWithServices
         Assert.Equal(1, socket.CloseOutputCount);
         Assert.Equal((WebSocketCloseStatus)4401, socket.RequestedCloseStatus);
         Assert.Equal("Unauthorized", socket.RequestedCloseStatusDescription);
+    }
+
+    [Fact]
+    public async Task Invoke_TokenRevokedWhileAccepting_DoesNotLeaveUntrackedConnection()
+    {
+        const string userId = "accept-race-user";
+        const string tokenId = "accept-race-token";
+        const string organizationId = "accept-race-organization";
+        using var requestAborted = new CancellationTokenSource();
+        var socket = new TestWebSocket(blockReceive: true);
+        var feature = new BlockingTestWebSocketFeature(socket);
+        var context = new DefaultHttpContext
+        {
+            RequestAborted = requestAborted.Token,
+            User = new ClaimsPrincipal(new ClaimsIdentity(
+            [
+                new Claim(ClaimTypes.NameIdentifier, userId),
+                new Claim(IdentityUtils.LoggedInUsersTokenId, tokenId),
+                new Claim(IdentityUtils.OrganizationIdsClaim, organizationId)
+            ], IdentityUtils.UserAuthenticationType))
+        };
+        context.Request.Path = "/api/v2/push";
+        context.Features.Set<IHttpWebSocketFeature>(feature);
+        var middleware = CreateMiddleware(_ => Task.CompletedTask);
+
+        Task invokeTask = middleware.Invoke(context);
+        await feature.WaitUntilAcceptingAsync();
+
+        var entityChanged = new EntityChanged
+        {
+            Id = tokenId,
+            Type = nameof(Token),
+            ChangeType = ChangeType.Removed
+        };
+        entityChanged.Data[ExtendedEntityChanged.KnownKeys.UserId] = userId;
+        entityChanged.Data[ExtendedEntityChanged.KnownKeys.IsAuthenticationToken] = true;
+        await _broker.OnEntityChangedAsync(entityChanged, CancellationToken.None);
+
+        feature.CompleteAccept();
+
+        try
+        {
+            await invokeTask.WaitAsync(TimeSpan.FromSeconds(1), TestContext.Current.CancellationToken);
+            Assert.Empty(_connectionManager.GetAll());
+            Assert.Empty(_connectionRegistry.GetUserConnections(userId));
+            Assert.Equal((WebSocketCloseStatus)4401, socket.RequestedCloseStatus);
+        }
+        finally
+        {
+            await requestAborted.CancelAsync();
+            await invokeTask;
+        }
+    }
+
+    [Fact]
+    public async Task Invoke_TokenPrincipal_PreservesOrganizationOnlyCompatibilityConnection()
+    {
+        const string tokenId = "project-access-token";
+        const string organizationId = "token-organization";
+        using var requestAborted = new CancellationTokenSource();
+        var socket = new TestWebSocket(blockReceive: true);
+        var feature = new TestWebSocketFeature(socket);
+        var context = new DefaultHttpContext
+        {
+            RequestAborted = requestAborted.Token,
+            User = new ClaimsPrincipal(new ClaimsIdentity(
+            [
+                new Claim(ClaimTypes.NameIdentifier, tokenId),
+                new Claim(IdentityUtils.OrganizationIdsClaim, organizationId)
+            ], IdentityUtils.TokenAuthenticationType))
+        };
+        context.Request.Path = "/api/v2/push";
+        context.Features.Set<IHttpWebSocketFeature>(feature);
+        var middleware = CreateMiddleware(_ => Task.CompletedTask);
+
+        Task invokeTask = middleware.Invoke(context);
+        await socket.WaitUntilReceivingAsync();
+
+        try
+        {
+            Assert.False(invokeTask.IsCompleted);
+            Assert.Same(socket, Assert.Single(_connectionManager.GetAll()));
+            Assert.Single(_connectionRegistry.GetGroupConnections(organizationId));
+            Assert.Empty(_connectionRegistry.GetUserConnections(tokenId));
+        }
+        finally
+        {
+            await requestAborted.CancelAsync();
+            await invokeTask;
+        }
     }
 
     [Fact]
@@ -154,6 +240,24 @@ public sealed class WebSocketTests : TestWithServices
         }
     }
 
+    private sealed class BlockingTestWebSocketFeature(WebSocket socket) : IHttpWebSocketFeature
+    {
+        private readonly TaskCompletionSource _accepting = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _completeAccept = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public bool IsWebSocketRequest => true;
+
+        public async Task<WebSocket> AcceptAsync(WebSocketAcceptContext context)
+        {
+            _accepting.TrySetResult();
+            await _completeAccept.Task;
+            return socket;
+        }
+
+        public void CompleteAccept() => _completeAccept.TrySetResult();
+        public Task WaitUntilAcceptingAsync() => _accepting.Task;
+    }
+
     private sealed class TestHostApplicationLifetime : IHostApplicationLifetime
     {
         private readonly CancellationTokenSource _stopping = new();
@@ -163,5 +267,17 @@ public sealed class WebSocketTests : TestWithServices
         public CancellationToken ApplicationStopped => CancellationToken.None;
 
         public void StopApplication() => _stopping.Cancel();
+    }
+
+    private WebSocketPushMiddleware CreateMiddleware(RequestDelegate next)
+    {
+        return new WebSocketPushMiddleware(
+            next,
+            _connectionManager,
+            new ConnectionLeaseStore(TimeProvider),
+            _connectionRegistry,
+            TimeProvider,
+            new TestHostApplicationLifetime(),
+            GetService<ILogger<WebSocketPushMiddleware>>());
     }
 }

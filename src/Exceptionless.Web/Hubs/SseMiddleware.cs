@@ -40,14 +40,7 @@ public class SseMiddleware
             return;
         }
 
-        if (!context.User.IsAuthenticated())
-        {
-            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            return;
-        }
-
-        string? userId = context.User.GetUserId();
-        if (String.IsNullOrEmpty(userId))
+        if (!PushPrincipal.TryCreate(context.User, out var principal))
         {
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             return;
@@ -57,7 +50,7 @@ public class SseMiddleware
         PushConnectionLease? lease;
         try
         {
-            lease = await PushConnectionLease.TryAcquireAsync(_leaseStore, _timeProvider, _logger, userId, connectionId, _connectionManager.MaxConnectionsPerUser).ConfigureAwait(false);
+            lease = await PushConnectionLease.TryAcquireAsync(_leaseStore, _timeProvider, _logger, principal.ConnectionOwnerId, connectionId, _connectionManager.MaxConnectionsPerUser).ConfigureAwait(false);
         }
         catch (ConnectionLeaseStoreException ex)
         {
@@ -68,7 +61,7 @@ public class SseMiddleware
 
         if (lease is null)
         {
-            _logger.LogWarning("User {UserId} exceeded max SSE connections ({Max})", userId, _connectionManager.MaxConnectionsPerUser);
+            _logger.LogWarning("Push identity {ConnectionOwnerId} exceeded max SSE connections ({Max})", principal.ConnectionOwnerId, _connectionManager.MaxConnectionsPerUser);
             context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
             return;
         }
@@ -76,16 +69,17 @@ public class SseMiddleware
         await using (lease)
         using (var connectionLifetime = CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted, lease.LeaseLost, _applicationLifetime.ApplicationStopping))
         {
-            if (!_connectionRegistry.TryRegister(connectionId, userId, context.User.GetLoggedInUsersTokenId(), context.User.GetOrganizationIds()))
-            {
-                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                return;
-            }
-
             SseConnection? connection = null;
 
             try
             {
+                connection = _connectionManager.AddConnection(connectionId, context.Response, connectionLifetime.Token);
+                if (!_connectionRegistry.TryRegister(connectionId, principal.UserId, principal.TokenId, principal.OrganizationIds))
+                {
+                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    return;
+                }
+
                 // Set SSE response headers
                 context.Response.Headers.ContentType = "text/event-stream";
                 context.Response.Headers.CacheControl = "no-cache, no-store";
@@ -95,7 +89,6 @@ public class SseMiddleware
                 var bufferingFeature = context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpResponseBodyFeature>();
                 bufferingFeature?.DisableBuffering();
 
-                connection = _connectionManager.AddConnection(connectionId, context.Response, connectionLifetime.Token);
                 _logger.LogTrace("SSE connected {ConnectionId}", connectionId);
 
                 // Send initial connected event

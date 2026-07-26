@@ -75,9 +75,26 @@ public sealed class WebSocketConnectionManagerTests : TestWithServices
         Assert.Empty(socket.SentMessages);
     }
 
+    [Fact]
+    public async Task SendMessageToAllAsync_SerializationFailure_HonorsThrowOnError()
+    {
+        using var manager = CreateManager();
+        manager.AddWebSocket(new TestWebSocket());
+        var message = new CyclicMessage();
+        message.Self = message;
+
+        await manager.SendMessageToAllAsync(message, throwOnError: false);
+        await Assert.ThrowsAnyAsync<Exception>(() => manager.SendMessageToAllAsync(message, throwOnError: true));
+    }
+
     private WebSocketConnectionManager CreateManager()
     {
         var options = new AppOptions { EnablePush = false };
         return new WebSocketConnectionManager(options, GetService<ITextSerializer>(), Log);
+    }
+
+    private sealed class CyclicMessage
+    {
+        public CyclicMessage? Self { get; set; }
     }
 }

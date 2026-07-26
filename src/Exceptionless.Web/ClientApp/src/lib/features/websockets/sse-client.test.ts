@@ -221,6 +221,28 @@ describe('SseClient', () => {
     });
 
     describe('Auth Failure Handling', () => {
+        it('should ignore a stale 401 after a newer stream is connected', async () => {
+            let resolveStaleResponse: (response: Response) => void;
+            const staleResponse = new Promise<Response>((resolve) => {
+                resolveStaleResponse = resolve;
+            });
+            fetchMock.mockReturnValueOnce(staleResponse).mockResolvedValueOnce(createOpenSseResponse());
+
+            const client = trackedClient();
+            client.connect();
+            client.close(false);
+            client.connect();
+
+            await new Promise((resolve) => setTimeout(resolve, 25));
+            expect(client.readyState).toBe(SSE_OPEN);
+
+            resolveStaleResponse!(new Response(null, { status: 401 }));
+            await new Promise((resolve) => setTimeout(resolve, 25));
+
+            expect(accessToken.current).toBe('test-token-123');
+            expect(client.readyState).toBe(SSE_OPEN);
+        });
+
         it('should NOT reconnect on 401', async () => {
             fetchMock.mockImplementation(() => Promise.resolve(new Response(null, { status: 401 })));
 

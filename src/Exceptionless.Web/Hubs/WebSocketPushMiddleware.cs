@@ -40,8 +40,7 @@ public sealed class WebSocketPushMiddleware
             return;
         }
 
-        string? userId = context.User.IsAuthenticated() ? context.User.GetUserId() : null;
-        if (String.IsNullOrEmpty(userId))
+        if (!PushPrincipal.TryCreate(context.User, out var principal))
         {
             using var unauthorizedSocket = await context.WebSockets.AcceptWebSocketAsync();
             await unauthorizedSocket.CloseOutputAsync((WebSocketCloseStatus)UnauthorizedCloseStatus, "Unauthorized", context.RequestAborted).ConfigureAwait(false);
@@ -52,7 +51,7 @@ public sealed class WebSocketPushMiddleware
         PushConnectionLease? lease;
         try
         {
-            lease = await PushConnectionLease.TryAcquireAsync(_leaseStore, _timeProvider, _logger, userId, connectionId, _connectionManager.MaxConnectionsPerUser).ConfigureAwait(false);
+            lease = await PushConnectionLease.TryAcquireAsync(_leaseStore, _timeProvider, _logger, principal.ConnectionOwnerId, connectionId, _connectionManager.MaxConnectionsPerUser).ConfigureAwait(false);
         }
         catch (ConnectionLeaseStoreException ex)
         {
@@ -63,7 +62,7 @@ public sealed class WebSocketPushMiddleware
 
         if (lease is null)
         {
-            _logger.LogWarning("User {UserId} exceeded max websocket push connections ({Max})", userId, _connectionManager.MaxConnectionsPerUser);
+            _logger.LogWarning("Push identity {ConnectionOwnerId} exceeded max websocket push connections ({Max})", principal.ConnectionOwnerId, _connectionManager.MaxConnectionsPerUser);
             context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
             return;
         }
@@ -71,18 +70,18 @@ public sealed class WebSocketPushMiddleware
         await using (lease)
         using (var connectionLifetime = CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted, lease.LeaseLost, _applicationLifetime.ApplicationStopping))
         {
-            if (!_connectionRegistry.TryRegister(connectionId, userId, context.User.GetLoggedInUsersTokenId(), context.User.GetOrganizationIds()))
-            {
-                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                return;
-            }
-
             WebSocket? socket = null;
 
             try
             {
                 socket = await context.WebSockets.AcceptWebSocketAsync();
                 _connectionManager.AddConnection(connectionId, socket);
+                if (!_connectionRegistry.TryRegister(connectionId, principal.UserId, principal.TokenId, principal.OrganizationIds))
+                {
+                    await socket.CloseOutputAsync((WebSocketCloseStatus)UnauthorizedCloseStatus, "Unauthorized", context.RequestAborted).ConfigureAwait(false);
+                    return;
+                }
+
                 _logger.LogTrace("WebSocket push connected {ConnectionId}", connectionId);
                 await ReceiveUntilCloseAsync(socket, connectionLifetime.Token).ConfigureAwait(false);
             }

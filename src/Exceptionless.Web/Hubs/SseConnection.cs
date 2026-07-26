@@ -48,7 +48,7 @@ public sealed class SseConnection : IAsyncDisposable
 
         _cts = CancellationTokenSource.CreateLinkedTokenSource(requestAborted);
         _connectionAborted = _cts.Token;
-        _writeLoop = Task.Run(() => WriteLoopAsync(_cts.Token));
+        _writeLoop = WriteLoopAsync(_cts.Token);
     }
 
     /// <summary>
