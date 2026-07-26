@@ -86,14 +86,14 @@ public partial class EventEndpointTests
         var count = await SendRequestAsAsync<CountResult>(r => r
             .AsFreeOrganizationUser()
             .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "events", "count")
-            .QueryString("filter", "reference:free-reference")
+            .QueryString("filter", "reference:free-reference first:true")
             .QueryString("mode", "stack_frequent")
             .StatusCodeShouldBeOk());
 
         var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
             .AsFreeOrganizationUser()
             .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "events")
-            .QueryString("filter", $"stack:{stack.Id}")
+            .QueryString("filter", $"stack:{stack.Id} first:true")
             .QueryString("mode", "stack_frequent")
             .StatusCodeShouldBeOk());
 

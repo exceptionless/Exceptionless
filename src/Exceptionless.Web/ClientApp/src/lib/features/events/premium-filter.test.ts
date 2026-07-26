@@ -23,7 +23,8 @@ describe('filterUsesPremiumFeatures', () => {
         'reference:ABC123',
         'reference_id:ABC123',
         'stack:ABC123',
-        'stack_id:ABC123'
+        'stack_id:ABC123',
+        'reference:ABC123 first:true'
     ])('allows free stack filters: %s', (filter) => {
         expect(filterUsesPremiumFeatures(filter, 'stack')).toBe(false);
     });

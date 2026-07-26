@@ -45,7 +45,7 @@ public class EventHandler(
     ICacheClient cacheClient,
     ITextSerializer serializer,
     PersistentEventQueryValidator validator,
-    StackQueryValidator stackValidator,
+    EventStackQueryValidator stackModeValidator,
     AppOptions appOptions,
     UsageService usageService,
     TimeProvider timeProvider,
@@ -690,7 +690,7 @@ public class EventHandler(
 
     private async Task<Result<CountResult>> CountInternalAsync(AppFilter sf, TimeInfo ti, HttpContext httpContext, string? filter = null, string? aggregations = null, string? mode = null)
     {
-        var pr = await ValidateQueryAsync(filter, mode);
+        var pr = await GetQueryValidator(mode).ValidateQueryAsync(filter);
         if (!pr.IsValid)
             return Result.BadRequest(pr.Message ?? "Invalid filter.");
 
@@ -755,7 +755,7 @@ public class EventHandler(
         if (skip > Pagination.MaximumSkip)
             return new PagedResult<object>(Array.Empty<PersistentEvent>(), false);
 
-        var pr = await ValidateQueryAsync(filter, mode);
+        var pr = await GetQueryValidator(mode).ValidateQueryAsync(filter);
         if (!pr.IsValid)
             return Result.BadRequest(pr.Message ?? "Invalid filter.");
 
@@ -893,15 +893,9 @@ public class EventHandler(
         return mode is "stack_recent" or "stack_frequent" or "stack_new" or "stack_users";
     }
 
-    private async Task<AppQueryValidator.QueryProcessResult> ValidateQueryAsync(string? filter, string? mode)
+    private IAppQueryValidator GetQueryValidator(string? mode)
     {
-        if (!IsStackMode(mode))
-            return await validator.ValidateQueryAsync(filter);
-
-        var validationResults = await Task.WhenAll(
-            validator.ValidateQueryAsync(filter),
-            stackValidator.ValidateQueryAsync(filter));
-        return ApiFilterPolicy.CombineStackModeQueryValidation(validationResults[0], validationResults[1]);
+        return IsStackMode(mode) ? stackModeValidator : validator;
     }
 
     private Task<FindResults<PersistentEvent>> GetEventsInternalAsync(AppFilter? systemFilter, TimeInfo ti, string? filter, string? sort, int? page, int limit, string? before, string? after, bool includeTotal)
