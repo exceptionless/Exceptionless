@@ -99,9 +99,6 @@ public static class PersistentEventExtensions
     {
         ArgumentException.ThrowIfNullOrEmpty(name);
 
-        if (!name.IsValidFieldName())
-            throw new ArgumentException("Name must contain between 1 and 25 alphanumeric or '-' characters.", nameof(name));
-
         if (!IsValidIdentifier(id) || String.IsNullOrEmpty(id))
             throw new ArgumentException("Id must contain between 8 and 100 alphanumeric or '-' characters.", nameof(id));
 

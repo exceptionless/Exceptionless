@@ -1,5 +1,7 @@
 using System.Diagnostics;
+using System.Text.Json;
 using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.Tasks;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Repositories.Elasticsearch.Extensions;
@@ -28,7 +30,14 @@ public sealed class BackfillParentReferences : MigrationBase
     {
         string referenceKey = $"@ref:{Event.KnownReferenceNames.Parent}";
         string indexKey = $"{Event.KnownReferenceNames.Parent}-r";
-        string script = $"if (ctx._source.data != null && ctx._source.data.containsKey('{referenceKey}') && ctx._source.data['{referenceKey}'] != null) {{ if (ctx._source.idx == null) ctx._source.idx = [:]; ctx._source.idx['{indexKey}'] = ctx._source.data['{referenceKey}']; }} else {{ ctx.op = 'noop'; }}";
+        string script = $$"""
+            if (ctx._source.data != null && ctx._source.data.containsKey('{{referenceKey}}') && ctx._source.data['{{referenceKey}}'] != null) {
+                if (ctx._source.idx == null) ctx._source.idx = [:];
+                ctx._source.idx['{{indexKey}}'] = ctx._source.data['{{referenceKey}}'].toString();
+            } else {
+                ctx.op = 'noop';
+            }
+            """;
 
         _logger.LogInformation("Backfilling retained event parent references");
         var stopwatch = Stopwatch.StartNew();
@@ -36,7 +45,6 @@ public sealed class BackfillParentReferences : MigrationBase
             .Indices($"{_config.Events.VersionedName}-*")
             .Query(query => query.Bool(filter => filter.MustNot(mustNot => mustNot.Exists(exists => exists.Field($"idx.{indexKey}")))))
             .Script(value => value.Source(script).Lang(ScriptLanguage.Painless))
-            .Conflicts(Conflicts.Proceed)
             .WaitForCompletion(false));
         _logger.LogRequest(response, LogLevel.Information);
 
@@ -52,6 +60,7 @@ public sealed class BackfillParentReferences : MigrationBase
 
             if (taskStatus.Completed)
             {
+                EnsureTaskSucceeded(taskStatus);
                 _logger.LogInformation("Finished parent-reference backfill: Duration={Duration}", stopwatch.Elapsed);
                 return;
             }
@@ -62,5 +71,31 @@ public sealed class BackfillParentReferences : MigrationBase
         }
 
         context.CancellationToken.ThrowIfCancellationRequested();
+    }
+
+    internal static void EnsureTaskSucceeded(GetTasksResponse taskStatus)
+    {
+        if (taskStatus.Error is not null)
+            throw new ApplicationException($"Parent-reference backfill failed: {JsonSerializer.Serialize(taskStatus.Error)}");
+
+        if (taskStatus.Response is null)
+            return;
+
+        JsonElement response = JsonSerializer.SerializeToElement(taskStatus.Response);
+        if (response.ValueKind == JsonValueKind.Object
+            && response.TryGetProperty("version_conflicts", out var versionConflicts)
+            && versionConflicts.TryGetInt64(out long conflictCount)
+            && conflictCount > 0)
+        {
+            throw new ApplicationException($"Parent-reference backfill failed with {conflictCount} version conflicts.");
+        }
+
+        if (response.ValueKind == JsonValueKind.Object
+            && response.TryGetProperty("failures", out var failures)
+            && failures.ValueKind == JsonValueKind.Array
+            && failures.GetArrayLength() > 0)
+        {
+            throw new ApplicationException($"Parent-reference backfill failed: {failures}");
+        }
     }
 }
