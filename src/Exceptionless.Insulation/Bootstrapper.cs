@@ -45,14 +45,10 @@ public class Bootstrapper
             client.Configuration.UseLogger(new SelfLogLogger());
 
             if (!String.IsNullOrEmpty(appOptions.Version))
-            {
                 client.Configuration.SetVersion(appOptions.Version);
-            }
 
             if (String.IsNullOrEmpty(appOptions.InternalProjectId))
-            {
                 client.Configuration.Enabled = false;
-            }
 
             client.Configuration.UseInMemoryStorage();
             client.Configuration.UseReferenceIds();
@@ -62,14 +58,10 @@ public class Bootstrapper
         }
 
         if (!String.IsNullOrEmpty(appOptions.GoogleGeocodingApiKey))
-        {
             services.ReplaceSingleton<IGeocodeService>(s => new GoogleGeocodeService(appOptions.GoogleGeocodingApiKey));
-        }
 
         if (!String.IsNullOrEmpty(appOptions.MaxMindGeoIpKey))
-        {
             services.ReplaceSingleton<IGeoIpService, MaxMindGeoIpService>();
-        }
 
         RegisterCache(services, appOptions.CacheOptions);
         RegisterMessageBus(services, appOptions.MessageBusOptions);
@@ -79,9 +71,7 @@ public class Bootstrapper
         RegisterHealthChecks(services);
 
         if (!String.IsNullOrEmpty(appOptions.EmailOptions.SmtpHost))
-        {
             services.ReplaceSingleton<IMailSender, MailKitMailSender>();
-        }
     }
 
     private static IHealthChecksBuilder RegisterHealthChecks(IServiceCollection services)
@@ -119,13 +109,9 @@ public class Bootstrapper
             container.ReplaceSingleton(s => GetRedisConnection(options.ConnectionString!, s.GetRequiredService<ILoggerFactory>()));
 
             if (!String.IsNullOrEmpty(options.Scope))
-            {
                 container.ReplaceSingleton<ICacheClient>(s => new ScopedCacheClient(CreateRedisCacheClient(s), options.Scope));
-            }
             else
-            {
                 container.ReplaceSingleton<ICacheClient>(CreateRedisCacheClient);
-            }
 
             container.ReplaceSingleton<IIngestionQuotaStore>(s => new RedisIngestionQuotaStore(
                 s.GetRequiredService<IConnectionMultiplexer>(),
@@ -245,9 +231,7 @@ public class Bootstrapper
                 });
 
                 if (!String.IsNullOrWhiteSpace(options.Scope))
-                {
                     storage = new ScopedFileStorage(storage, options.Scope);
-                }
 
                 return storage;
             });
@@ -351,9 +335,7 @@ public class Bootstrapper
         string accessKey = data.GetString("accesskey");
         string secretKey = data.GetString("secretkey");
         if (!String.IsNullOrEmpty(accessKey) && !String.IsNullOrEmpty(secretKey))
-        {
             return new BasicAWSCredentials(accessKey, secretKey);
-        }
 
         return DefaultAWSCredentialsIdentityResolver.GetCredentials();
     }

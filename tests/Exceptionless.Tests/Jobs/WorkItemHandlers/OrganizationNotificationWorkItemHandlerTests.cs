@@ -37,6 +37,7 @@ public class OrganizationNotificationWorkItemHandlerTests : TestWithServices
     private const string RegisteredQueueOrganizationId = "664ec4c1f12e4f2b7a0d1003";
     private const string DequeuedNotificationOrganizationId = "664ec4c1f12e4f2b7a0d1004";
     private const string HourlyOrganizationId = "664ec4c1f12e4f2b7a0d1005";
+    private const string ExpiredDuplicateDetectionOrganizationId = "664ec4c1f12e4f2b7a0d1006";
 
     public OrganizationNotificationWorkItemHandlerTests(ITestOutputHelper output) : base(output) { }
 
@@ -89,6 +90,23 @@ public class OrganizationNotificationWorkItemHandlerTests : TestWithServices
         // Assert
         var queueStats = await workItemQueue.GetQueueStatsAsync();
         Assert.Equal(1, queueStats.Enqueued);
+    }
+
+    [Fact]
+    public async Task EnqueueAsync_WhenRegisteredDuplicateWindowExpires_ShouldAllowFutureEnqueue()
+    {
+        // Arrange
+        var workItemQueue = GetService<IQueue<WorkItemData>>();
+        var workItem = CreateMonthlyNotificationWorkItem(ExpiredDuplicateDetectionOrganizationId);
+        await workItemQueue.EnqueueAsync(workItem);
+        TimeProvider.Advance(TimeSpan.FromHours(24).Add(TimeSpan.FromSeconds(1)));
+
+        // Act
+        await workItemQueue.EnqueueAsync(workItem);
+
+        // Assert
+        var queueStats = await workItemQueue.GetQueueStatsAsync();
+        Assert.Equal(2, queueStats.Enqueued);
     }
 
     [Fact]

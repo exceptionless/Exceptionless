@@ -6,15 +6,6 @@ using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Core.Services;
 
-public interface IEventIngestionProcessor
-{
-    Task<EventIngestionV3Response> ProcessAsync(
-        IReadOnlyCollection<EventIngestionV3Event> sourceEvents,
-        Organization organization,
-        Project project,
-        CancellationToken cancellationToken);
-}
-
 public sealed class EventIngestionV3Processor(
     IStackFingerprintService fingerprintService,
     IStackRouteResolver stackRouteResolver,
@@ -22,7 +13,7 @@ public sealed class EventIngestionV3Processor(
     IEventBatchWriter eventBatchWriter,
     IIngestionQuotaService quotaService,
     SemanticVersionParser semanticVersionParser,
-    TimeProvider timeProvider) : IEventIngestionProcessor
+    TimeProvider timeProvider)
 {
     private static readonly HashSet<string> _legacyPipelineOnlyTypes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -398,14 +389,14 @@ public sealed class EventIngestionV3Processor(
             return $"tags must be non-empty and cannot exceed {EventIngestionV3Limits.MaximumTagLength} characters.";
         }
 
-        if (source.User?.Identity?.Length > EventIngestionV3Limits.MaximumUserIdentityLength)
+        if (source.User?.Identity is { Length: < 1 or > EventIngestionV3Limits.MaximumUserIdentityLength })
         {
-            return $"user.identity cannot exceed {EventIngestionV3Limits.MaximumUserIdentityLength} characters.";
+            return $"user.identity must contain between 1 and {EventIngestionV3Limits.MaximumUserIdentityLength} characters.";
         }
 
-        if (source.User?.Name?.Length > EventIngestionV3Limits.MaximumUserNameLength)
+        if (source.User?.Name is { Length: < 1 or > EventIngestionV3Limits.MaximumUserNameLength })
         {
-            return $"user.name cannot exceed {EventIngestionV3Limits.MaximumUserNameLength} characters.";
+            return $"user.name must contain between 1 and {EventIngestionV3Limits.MaximumUserNameLength} characters.";
         }
 
         if (source.Request is not null)
@@ -462,14 +453,14 @@ public sealed class EventIngestionV3Processor(
             return $"source must contain between 1 and {EventIngestionV3Limits.MaximumSourceLength} characters.";
         }
 
-        if (source.ExceptionType?.Length > EventIngestionV3Limits.MaximumExceptionTypeLength)
+        if (source.ExceptionType is { Length: < 1 or > EventIngestionV3Limits.MaximumExceptionTypeLength })
         {
-            return $"exception_type cannot exceed {EventIngestionV3Limits.MaximumExceptionTypeLength} characters.";
+            return $"exception_type must contain between 1 and {EventIngestionV3Limits.MaximumExceptionTypeLength} characters.";
         }
 
-        if (source.StackTrace?.Length > EventIngestionV3Limits.MaximumStackTraceLength)
+        if (source.StackTrace is { Length: < 1 or > EventIngestionV3Limits.MaximumStackTraceLength })
         {
-            return $"stack_trace cannot exceed {EventIngestionV3Limits.MaximumStackTraceLength} characters.";
+            return $"stack_trace must contain between 1 and {EventIngestionV3Limits.MaximumStackTraceLength} characters.";
         }
 
         if (source.Stacking is null)

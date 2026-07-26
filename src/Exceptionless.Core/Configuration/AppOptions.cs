@@ -189,10 +189,10 @@ public sealed class EventIngestionV3Options
             MaximumEventSize = Math.Max(section.GetValue(nameof(MaximumEventSize), 512L * 1024), 1),
             MaximumCompressedBodySize = Math.Max(section.GetValue(nameof(MaximumCompressedBodySize), 10L * 1024 * 1024), 1),
             MaximumDecompressedBodySize = Math.Max(section.GetValue(nameof(MaximumDecompressedBodySize), 50L * 1024 * 1024), 1),
-            RequestTimeout = section.GetValue(nameof(RequestTimeout), TimeSpan.FromMinutes(2)),
-            IdempotencyWindow = section.GetValue(nameof(IdempotencyWindow), TimeSpan.FromDays(7)),
-            StackRouteCacheDuration = section.GetValue(nameof(StackRouteCacheDuration), TimeSpan.FromHours(1)),
-            NegativeStackRouteCacheDuration = section.GetValue(nameof(NegativeStackRouteCacheDuration), TimeSpan.FromSeconds(30)),
+            RequestTimeout = ReadPositiveTimeSpan(section, nameof(RequestTimeout), TimeSpan.FromMinutes(2)),
+            IdempotencyWindow = ReadPositiveTimeSpan(section, nameof(IdempotencyWindow), TimeSpan.FromDays(7)),
+            StackRouteCacheDuration = ReadPositiveTimeSpan(section, nameof(StackRouteCacheDuration), TimeSpan.FromHours(1)),
+            NegativeStackRouteCacheDuration = ReadPositiveTimeSpan(section, nameof(NegativeStackRouteCacheDuration), TimeSpan.FromSeconds(30)),
             MaximumEventsPerRequest = Math.Clamp(section.GetValue(nameof(MaximumEventsPerRequest), 10000), 1, 100000),
             MaximumActiveStreams = maximumActiveStreams,
             ActiveStreamQueueLimit = activeStreamQueueLimit,
@@ -211,6 +211,12 @@ public sealed class EventIngestionV3Options
             AllowedProjectIds = section.GetSection(nameof(AllowedProjectIds)).Get<string[]>()?.ToHashSet(StringComparer.Ordinal) ?? new HashSet<string>(StringComparer.Ordinal),
             AllowedOrganizationIds = section.GetSection(nameof(AllowedOrganizationIds)).Get<string[]>()?.ToHashSet(StringComparer.Ordinal) ?? new HashSet<string>(StringComparer.Ordinal)
         };
+    }
+
+    private static TimeSpan ReadPositiveTimeSpan(IConfiguration section, string name, TimeSpan defaultValue)
+    {
+        TimeSpan value = section.GetValue(name, defaultValue);
+        return value > TimeSpan.Zero ? value : TimeSpan.FromMilliseconds(1);
     }
 }
 

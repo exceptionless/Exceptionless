@@ -79,6 +79,10 @@ public sealed class EventIngestionV3ProcessorTests
                 }
             },
             CreateEvent("message-too-long") with { Message = new string('m', EventIngestionV3Limits.MaximumMessageLength + 1) },
+            CreateEvent("exception-type-empty") with { ExceptionType = String.Empty },
+            CreateEvent("stack-trace-empty") with { StackTrace = String.Empty },
+            CreateEvent("user-identity-empty") with { User = new EventIngestionV3User { Identity = String.Empty } },
+            CreateEvent("user-name-empty") with { User = new EventIngestionV3User { Name = String.Empty } },
             CreateEvent("tag-too-long") with { Tags = [new string('t', EventIngestionV3Limits.MaximumTagLength + 1)] },
             CreateEvent("title-too-long") with
             {
@@ -93,8 +97,8 @@ public sealed class EventIngestionV3ProcessorTests
             CreateEvent("long-reference") with { ReferenceId = new string('r', EventIngestionV3Limits.MaximumReferenceIdLength + 1) }
         ], _organization, _project, CancellationToken.None);
 
-        Assert.Equal(11, response.Invalid);
-        Assert.Equal(11, response.Errors.Count);
+        Assert.Equal(15, response.Invalid);
+        Assert.Equal(15, response.Errors.Count);
         Assert.Contains(response.Errors, error => error.Message.Contains("reserved top-level key '@request'", StringComparison.Ordinal));
         Assert.Contains(response.Errors, error => error.Message.Contains("reserved top-level key 'haserror'", StringComparison.Ordinal));
         Assert.Contains(response.Errors, error => error.Message.Contains("reference_id must contain between", StringComparison.Ordinal));

@@ -40,15 +40,11 @@ public class ReadOnlyPropertySchemaTransformer : IOpenApiSchemaTransformer
     public Task TransformAsync(OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken cancellationToken)
     {
         if (schema.Properties is null || schema.Properties.Count == 0)
-        {
             return Task.CompletedTask;
-        }
 
         var type = context.JsonTypeInfo.Type;
         if (!type.IsClass)
-        {
             return Task.CompletedTask;
-        }
 
         foreach (var property in type.GetProperties()
             .Where(p => p.CanRead && (!p.CanWrite || p.GetCustomAttribute<ReadOnlyAttribute>()?.IsReadOnly is true)))
@@ -56,9 +52,7 @@ public class ReadOnlyPropertySchemaTransformer : IOpenApiSchemaTransformer
             // Use JsonTypeInfo to get the effective JSON property name (respects [JsonPropertyName] and naming policy)
             if (!JsonPropertyNameResolver.TryGetSchemaProperty(context.JsonTypeInfo, property, schema.Properties, out IOpenApiSchema? propertySchema) ||
                 propertySchema is not OpenApiSchema mutableSchema)
-            {
                 continue;
-            }
 
             // Mark getter-only and explicitly annotated server-managed properties as read-only.
             mutableSchema.ReadOnly = true;
@@ -90,9 +84,7 @@ public class ReadOnlyPropertySchemaTransformer : IOpenApiSchemaTransformer
         // If backing field exists and property type is a reference type that's non-nullable in the declaration,
         // it likely has an initializer. For collection types, this is almost always the case.
         if (backingField is null)
-        {
             return false;
-        }
 
         // For collection types, get-only with backing field almost always means initialized
         // Use interface checks for broader compatibility with different collection implementations

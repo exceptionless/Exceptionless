@@ -51,9 +51,7 @@ public partial class Program
 
             string? environment = Environment.GetEnvironmentVariable("EX_AppMode");
             if (String.IsNullOrWhiteSpace(environment))
-            {
                 environment = Environments.Production;
-            }
 
             var builder = WebApplication.CreateBuilder(new WebApplicationOptions
             {
@@ -106,9 +104,7 @@ public partial class Program
                     c.Enrich.WithMachineName();
 
                     if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
-                    {
                         c.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Information);
-                    }
                 }, writeToProviders: true)
                 .AddApm(apmConfig);
 
@@ -238,24 +234,18 @@ public partial class Program
 
             List<string> readyTags = ["Critical"];
             if (!runtimeOptions.EventSubmissionDisabled)
-            {
                 readyTags.Add("Storage");
-            }
 
             app.UseReadyHealthChecks(readyTags.ToArray());
             app.UseWaitForStartupActionsBeforeServingRequests();
 
             if (!String.IsNullOrEmpty(runtimeOptions.ExceptionlessApiKey) && !String.IsNullOrEmpty(runtimeOptions.ExceptionlessServerUrl))
-            {
                 app.UseExceptionless(ExceptionlessClient.Default);
-            }
 
             app.Use(async (context, next) =>
             {
                 if (runtimeOptions.AppMode != AppMode.Development && !context.Request.IsLocal())
-                {
                     context.Response.Headers.StrictTransportSecurity = "max-age=31536000; includeSubDomains";
-                }
 
                 context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
                 context.Response.Headers.XContentTypeOptions = "nosniff";
@@ -270,9 +260,7 @@ public partial class Program
             bool ssl = runtimeOptions.AppMode != AppMode.Development && serverAddressesFeature is not null && serverAddressesFeature.Addresses.Any(a => a.StartsWith("https://"));
 
             if (ssl)
-            {
                 app.UseHttpsRedirection();
-            }
 
             app.UseCsp(csp =>
             {
@@ -321,27 +309,19 @@ public partial class Program
                 o.EnrichDiagnosticContext = (context, httpContext) =>
                 {
                     if (Activity.Current?.Id is not null)
-                    {
                         context.Set("ActivityId", Activity.Current.Id);
-                    }
                 };
                 o.MessageTemplate = "{ActivityId} HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
                 o.GetLevel = (context, duration, ex) =>
                 {
                     if (ex is not null || context.Response.StatusCode > 499)
-                    {
                         return LogEventLevel.Error;
-                    }
 
                     if (context.Response.StatusCode > 399)
-                    {
                         return LogEventLevel.Information;
-                    }
 
                     if (duration < 1000 || context.Request.Path.StartsWithSegments("/api/v2/push"))
-                    {
                         return LogEventLevel.Debug;
-                    }
 
                     return LogEventLevel.Information;
                 };
@@ -363,9 +343,7 @@ public partial class Program
             app.UseMiddleware<RecordSessionHeartbeatMiddleware>();
 
             if (runtimeOptions.ApiThrottleLimit < Int32.MaxValue)
-            {
                 app.UseMiddleware<ThrottlingMiddleware>();
-            }
 
             app.UseMiddleware<OverageMiddleware>();
 
@@ -422,9 +400,7 @@ public partial class Program
             await ExceptionlessClient.Default.ProcessQueueAsync();
 
             if (Debugger.IsAttached)
-            {
                 Console.ReadKey();
-            }
         }
     }
 
@@ -432,14 +408,10 @@ public partial class Program
     {
         ctx.ProblemDetails.Instance = $"{ctx.HttpContext.Request.Method} {ctx.HttpContext.Request.Path}";
         if (ctx.HttpContext.Items.TryGetValue("reference-id", out object? refId) && refId is string referenceId)
-        {
             ctx.ProblemDetails.Extensions.Add("reference-id", referenceId);
-        }
 
         if (ctx.HttpContext.Items.TryGetValue("errors", out object? value) && value is Dictionary<string, string[]> errors)
-        {
             ctx.ProblemDetails.Extensions.Add("errors", errors);
-        }
 
         if (ctx.ProblemDetails is ValidationProblemDetails validationProblem)
         {
@@ -474,13 +446,9 @@ public partial class Program
             bool isNextRequest = context.Request.Path.StartsWithSegments(nextPathSegment);
 
             if (!isApiRequest && !isDocsRequest && !isNextRequest)
-            {
                 context.Request.Path = "/" + filePath;
-            }
             else if (!isApiRequest && !isDocsRequest)
-            {
                 context.Request.Path = "/next/" + filePath;
-            }
 
             context.SetEndpoint(null);
             return next(context);
@@ -493,9 +461,7 @@ public partial class Program
     private static void SetClientEnvironmentVariablesInDevelopmentMode(AppOptions options)
     {
         if (options.AppMode is not AppMode.Development)
-        {
             return;
-        }
 
         Log.Debug("Updating client environment variables");
         try

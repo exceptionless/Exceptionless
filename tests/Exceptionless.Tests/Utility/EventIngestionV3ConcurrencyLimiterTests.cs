@@ -42,6 +42,28 @@ public sealed class EventIngestionV3ConcurrencyLimiterTests
     }
 
     [Fact]
+    public void ReadFromConfiguration_NonPositiveDurations_ClampsToValidMinimum()
+    {
+        IConfiguration configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["BaseURL"] = "http://localhost",
+                ["EventIngestionV3:RequestTimeout"] = "00:00:00",
+                ["EventIngestionV3:IdempotencyWindow"] = "-00:00:01",
+                ["EventIngestionV3:StackRouteCacheDuration"] = "00:00:00",
+                ["EventIngestionV3:NegativeStackRouteCacheDuration"] = "-00:00:01"
+            })
+            .Build();
+
+        EventIngestionV3Options options = AppOptions.ReadFromConfiguration(configuration).EventIngestionV3;
+
+        Assert.Equal(TimeSpan.FromMilliseconds(1), options.RequestTimeout);
+        Assert.Equal(TimeSpan.FromMilliseconds(1), options.IdempotencyWindow);
+        Assert.Equal(TimeSpan.FromMilliseconds(1), options.StackRouteCacheDuration);
+        Assert.Equal(TimeSpan.FromMilliseconds(1), options.NegativeStackRouteCacheDuration);
+    }
+
+    [Fact]
     public async Task AcquireProcessingAsync_ManyOpenStreams_DoesNotConsumeProcessingPermits()
     {
         await using var limiter = CreateLimiter(
