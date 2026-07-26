@@ -1,6 +1,7 @@
 // TODO: Remove this reference.
 import type { ViewProject } from '$features/projects/models';
 
+import { isJSONString, isObject } from '$shared/typing';
 import { buildUrl } from '$shared/url';
 
 import type { PersistentEvent } from './models';
@@ -27,7 +28,22 @@ export function getErrorData(event: PersistentEvent): ErrorData[] {
                     return;
                 }
 
-                const additionalData = { ...error.data['@ext'] };
+                const extendedData = error.data['@ext'];
+                let additionalData: Record<string, unknown> = {};
+
+                if (isObject(extendedData)) {
+                    additionalData = { ...extendedData };
+                } else if (isJSONString(extendedData)) {
+                    const parsedExtendedData: unknown = JSON.parse(extendedData);
+                    if (isObject(parsedExtendedData)) {
+                        additionalData = { ...parsedExtendedData };
+                    } else {
+                        additionalData['@ext'] = parsedExtendedData;
+                    }
+                } else if (extendedData !== undefined && extendedData !== null) {
+                    additionalData['@ext'] = extendedData;
+                }
+
                 Object.entries(error.data).forEach(([key, value]) => {
                     if (!key.startsWith('@')) {
                         additionalData[key] = value;

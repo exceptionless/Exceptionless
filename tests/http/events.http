@@ -25,6 +25,10 @@ Content-Type: application/json
 GET {{apiUrl}}/events?limit=1
 Authorization: Bearer {{token}}
 
+### Stack summaries (includes project and tags)
+GET {{apiUrl}}/events?mode=stack_frequent&limit=10
+Authorization: Bearer {{token}}
+
 ###
 @eventId = {{allEvents.response.body.$[0].id}}
 @stackId = {{allEvents.response.body.$[0].stack_id}}
