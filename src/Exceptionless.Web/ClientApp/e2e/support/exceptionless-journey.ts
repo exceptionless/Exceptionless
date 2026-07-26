@@ -3,10 +3,11 @@ import { expect, type Page, type TestInfo } from '@playwright/test';
 import type { E2EApiClient } from '../fixtures/api-client';
 import type { E2EScenario } from '../fixtures/e2e-test';
 
-import { createRunName, E2E_ORGANIZATION_NAME_PREFIX } from '../fixtures/e2e-test';
+import { createRunName, E2E_ORGANIZATION_NAME_PREFIX, E2E_TEST_PASSWORD } from '../fixtures/e2e-test';
 import { runCleanupStep, throwIfCleanupFailed } from './cleanup';
 import { seedRepresentativeEvent } from './event-data';
 import {
+    escapeRegExp,
     getIdFromUrl,
     getProjectTokenFromConfigurePage,
     getUserToken,
@@ -17,7 +18,6 @@ import {
 } from './page-helpers';
 
 const FIXED_VERSION = '1.0.0';
-const PASSWORD = 'tester';
 
 export class ExceptionlessE2EJourney {
     email: string;
@@ -205,7 +205,7 @@ export class ExceptionlessE2EJourney {
         await this.page.getByLabel('Name', { exact: true }).fill(this.userName);
         await this.page.getByLabel('Email', { exact: true }).fill(this.email);
         await waitForEmailValidation(this.page);
-        await this.page.getByLabel('Password', { exact: true }).fill(PASSWORD);
+        await this.page.getByLabel('Password', { exact: true }).fill(E2E_TEST_PASSWORD);
         await this.page.getByRole('button', { name: 'Create My Account' }).click();
 
         this.userToken = await getUserToken(this.page);
@@ -261,10 +261,6 @@ export class ExceptionlessE2EJourney {
 
         return organization.id;
     }
-}
-
-function escapeRegExp(value: string): string {
-    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function isE2EScenario(value: E2EScenario | TestInfo): value is E2EScenario {

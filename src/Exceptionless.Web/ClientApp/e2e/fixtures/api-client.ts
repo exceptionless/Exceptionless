@@ -26,12 +26,6 @@ export interface E2EProject {
     organization_id?: string;
 }
 
-export interface E2EStack {
-    id: string;
-    status?: string;
-    title?: string;
-}
-
 export interface E2EToken {
     id: string;
     notes?: string;
@@ -195,15 +189,6 @@ export class E2EApiClient {
 
         await expectStatus(response, [200, 201], 'get default project token');
         return toToken(await readJson(response));
-    }
-
-    async getStack(token: string, stackId: string): Promise<E2EStack> {
-        const response = await this.request.get(this.url(`stacks/${stackId}`), {
-            headers: this.authHeaders(token)
-        });
-
-        await expectStatus(response, [200], 'get stack');
-        return toStack(await readJson(response));
     }
 
     async login(email = this.environment.email, password = this.environment.password): Promise<string> {
@@ -528,16 +513,6 @@ function toRecord(value: unknown, context: string): Record<string, unknown> {
     }
 
     return value;
-}
-
-function toStack(value: unknown): E2EStack {
-    const record = toRecord(value, 'stack response');
-
-    return {
-        id: getRequiredString(record, 'id', 'stack response'),
-        status: getOptionalString(record, 'status'),
-        title: getOptionalString(record, 'title')
-    };
 }
 
 function toToken(value: unknown): E2EToken {

@@ -1,6 +1,6 @@
 import { expect, test } from '../fixtures/e2e-test';
 import { seedRepresentativeEvent } from '../support/event-data';
-import { getVisibleRow, getVisibleText } from '../support/page-helpers';
+import { escapeRegExp, getVisibleRow, getVisibleText } from '../support/page-helpers';
 
 test('operator can scope Events to a project and clear the project filter', async ({ e2eApi, e2eScenario, e2eSecondaryProject, page }) => {
     await test.step('seed events in two projects', async () => {
@@ -52,7 +52,3 @@ test('operator can scope Events to a project and clear the project filter', asyn
         await expect(getVisibleText(page, e2eSecondaryProject.message)).toBeVisible({ timeout: 30_000 });
     });
 });
-
-function escapeRegExp(value: string): string {
-    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}

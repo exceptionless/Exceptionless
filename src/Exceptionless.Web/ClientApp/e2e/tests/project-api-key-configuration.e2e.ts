@@ -7,8 +7,9 @@ test('operator can manage project API keys and follow first-event redirect', asy
 
         await expect(page.getByRole('heading', { name: `${e2eScenario.projectName} Settings` })).toBeVisible();
         await expect(page.getByRole('cell', { name: e2eScenario.projectToken })).toBeVisible();
-        await page.getByTitle('Add API Key').click();
-        await expect(page.getByText('API Key added successfully')).toBeVisible();
+        await page.getByRole('button', { name: 'Add token' }).click();
+        await page.getByRole('menuitem', { name: /Client API key/ }).click();
+        await expect(page.getByText('Client API key added successfully')).toBeVisible();
         await expect(page.getByRole('row')).toHaveCount(3);
     });
 

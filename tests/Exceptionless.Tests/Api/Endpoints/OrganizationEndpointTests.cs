@@ -845,7 +845,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task AddUserAsync_NewEmail_AddsInvite()
+    public async Task AddUserAsync_NewEmail_AddsImmediatelySearchableInvite()
     {
         // Arrange
         const string emailAddress = "New.Member+Invite@localhost";
@@ -868,6 +868,9 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         var invite = Assert.Single(organization.Invites, i => String.Equals(i.EmailAddress, emailAddress.ToLowerInvariant(), StringComparison.Ordinal));
         Assert.False(String.IsNullOrEmpty(invite.Token));
         Assert.True(invite.DateAdded > DateTime.MinValue);
+
+        var organizationByInviteToken = await _organizationRepository.GetByInviteTokenAsync(invite.Token);
+        Assert.Equal(organization.Id, organizationByInviteToken?.Id);
     }
 
     [Fact]

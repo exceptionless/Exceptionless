@@ -1,6 +1,6 @@
 const DEFAULT_APP_URL = 'https://web-ex.dev.localhost:7131';
 const DEFAULT_EMAIL = 'admin@exceptionless.test';
-const DEFAULT_MAIL_URL = 'http://localhost:8025';
+const DEFAULT_MAIL_URL = 'http://localhost:8026';
 const DEFAULT_PASSWORD = 'tester';
 
 export interface E2EEnvironment {

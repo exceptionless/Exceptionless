@@ -1,5 +1,9 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
+export function escapeRegExp(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 export function getIdFromUrl(page: Page, pattern: RegExp): string {
     const match = pattern.exec(new URL(page.url()).pathname);
     if (!match?.[1]) {
