@@ -456,6 +456,26 @@ public class StackEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetAll_WithExplicitFreeOrganizationPremiumFilterAsGlobalAdmin_ReturnsScopedStack()
+    {
+        // Arrange
+        var (stacks, _) = await CreateDataAsync(d => d.Event().FreeProject());
+        var stack = Assert.Single(stacks);
+
+        // Act
+        var result = await SendRequestAsAsync<IReadOnlyCollection<Stack>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("stacks")
+            .QueryString("filter", $"organization:{SampleDataService.FREE_ORG_ID} id:{stack.Id}")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(result);
+        var scopedStack = Assert.Single(result);
+        Assert.Equal(stack.Id, scopedStack.Id);
+    }
+
+    [Fact]
     public async Task GetAsync_ExistingStack_ReturnsStack()
     {
         // Arrange

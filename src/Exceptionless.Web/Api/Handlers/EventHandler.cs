@@ -701,7 +701,7 @@ public class EventHandler(
             return Result.BadRequest(far.Message ?? "Invalid aggregations.");
 
         sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || far.UsesPremiumFeatures;
-        if (ApiValidation.IsPremiumFeatureQueryBlocked(sf))
+        if (ShouldApplySystemFilter(sf, filter, httpContext.Request) && ApiValidation.IsPremiumFeatureQueryBlocked(sf))
             return PlanLimitResult<CountResult>("Please upgrade your plan to use premium search features.");
 
         if (mode == "stack_new")
@@ -763,7 +763,7 @@ public class EventHandler(
             return Result.BadRequest(pr.Message ?? "Invalid filter.");
 
         sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || usesPremiumFeatures;
-        if (ApiValidation.IsPremiumFeatureQueryBlocked(sf))
+        if (ShouldApplySystemFilter(sf, filter, httpContext.Request) && ApiValidation.IsPremiumFeatureQueryBlocked(sf))
             return PlanLimitResult<PagedResult<object>>("Please upgrade your plan to use premium search features.");
 
         try

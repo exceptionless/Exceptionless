@@ -131,6 +131,35 @@ public partial class EventEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetAll_WithExplicitFreeOrganizationPremiumFilterAsGlobalAdmin_ReturnsScopedEventsAndCount()
+    {
+        // Arrange
+        var (_, events) = await CreateDataAsync(d => d.Event().FreeProject());
+        var persistentEvent = Assert.Single(events);
+        string filter = $"organization:{SampleDataService.FREE_ORG_ID} id:{persistentEvent.Id}";
+
+        // Act
+        var result = await SendRequestAsAsync<IReadOnlyCollection<PersistentEvent>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("events")
+            .QueryString("filter", filter)
+            .StatusCodeShouldBeOk());
+
+        var count = await SendRequestAsAsync<CountResult>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("events", "count")
+            .QueryString("filter", filter)
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(result);
+        var scopedEvent = Assert.Single(result);
+        Assert.Equal(persistentEvent.Id, scopedEvent.Id);
+        Assert.NotNull(count);
+        Assert.Equal(1, count.Total);
+    }
+
+    [Fact]
     public async Task GetByOrganizationAsync_SuspendedOrganization_ReturnsUpgradeRequired()
     {
         // Arrange
