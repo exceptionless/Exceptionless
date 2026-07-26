@@ -9,7 +9,7 @@
     import RefreshButton from '$comp/refresh-button.svelte';
     import { H3 } from '$comp/typography';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
-    import { getOrganizationCountQuery } from '$features/events/api.svelte';
+    import { getOrganizationCountQuery, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT } from '$features/events/api.svelte';
     import EventDetailSheet from '$features/events/components/event-detail-sheet.svelte';
     import EventsDashboardChart from '$features/events/components/events-dashboard-chart.svelte';
     import EventsStatsDashboard from '$features/events/components/events-stats-dashboard.svelte';
@@ -36,6 +36,7 @@
         hasSingleTypeFilter,
         serializeFilters,
         shouldRefreshPersistentEventChanged,
+        shouldRefreshPersistentEventRemoval,
         toFilter,
         updateFilterCache
     } from '$features/events/components/filters/helpers.svelte';
@@ -59,8 +60,8 @@
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
     import { useEventListener, watch } from 'runed';
-    import { untrack } from 'svelte';
-    import { debounce, throttle } from 'throttle-debounce';
+    import { onDestroy, untrack } from 'svelte';
+    import { debounce } from 'throttle-debounce';
 
     import {
         ALL_TIME_QUERY_VALUE,
@@ -661,6 +662,7 @@
             columnPersistenceKey: 'events-column-visibility',
             get columns() {
                 return getColumns<EventSummaryModel<SummaryTemplateKeys>>(eventsQueryParameters.mode, {
+                    onTagClick: (tag) => onFilterChanged(new TagFilter([tag])),
                     showType: !hasSingleTypeFilter(eventsQueryParameters.filter)
                 });
             },
@@ -698,40 +700,108 @@
         await loadData();
     }
 
-    async function loadData() {
+    let loadDataRequestId = 0;
+    async function loadData(reconcileTotal: boolean = false) {
+        const requestId = ++loadDataRequestId;
         if (!organization.current || isSavedViewRoutePending) {
             return;
         }
 
+        const organizationId = organization.current;
+        const requestParameters = { ...eventsQueryParameters };
+        const requestIdentity = JSON.stringify([organizationId, requestParameters]);
+        const isCurrentRequest = () =>
+            requestId === loadDataRequestId && requestIdentity === JSON.stringify([organization.current, { ...eventsQueryParameters }]);
         const params = {
-            ...eventsQueryParameters,
-            include: !eventsQueryParameters.after && !eventsQueryParameters.before ? 'total' : undefined
+            ...requestParameters,
+            include: !requestParameters.after && !requestParameters.before ? ('total' as const) : undefined
         };
         delete params.page;
-        clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, { params });
+        const response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organizationId}/events`, { params });
+        if (!isCurrentRequest()) {
+            return;
+        }
+
+        clientResponse = response;
 
         if (clientResponse.problem) {
             showBillingDialogOnUpgradeProblem(clientResponse.problem, organization.current, () => loadData());
         }
-    }
 
-    const throttledLoadData = throttle(10000, loadData);
-    const debouncedLoadData = debounce(1500, loadData);
+        if ((requestParameters.after || requestParameters.before) && reconcileTotal) {
+            const totalParams = {
+                ...requestParameters,
+                include: 'total' as const,
+                limit: 1
+            };
+            delete totalParams.after;
+            delete totalParams.before;
+            delete totalParams.page;
 
-    async function onPersistentEventChanged(message: WebSocketMessageValue<'PersistentEventChanged'>) {
-        if (message.id && message.change_type === ChangeType.Removed) {
-            removeTableSelection(table, message.id);
+            const totalResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organizationId}/events`, {
+                params: totalParams
+            });
+            if (!isCurrentRequest()) {
+                return;
+            }
 
-            if (removeTableData(table, (doc: EventSummaryModel<SummaryTemplateKeys>) => doc.id === message.id)) {
-                // If the grid data is empty from all events being removed, we should refresh the data.
-                if (isTableEmpty(table)) {
-                    await throttledLoadData();
+            if (totalResponse.ok) {
+                const total = totalResponse.meta.total as number | undefined;
+                const totalPages = total == null ? undefined : Math.ceil(total / (requestParameters.limit ?? 20));
+                if (totalPages != null && table.state.pagination.pageIndex >= totalPages) {
+                    table.firstPage();
                     return;
                 }
             }
         }
 
+        if (response.ok && response.data?.length === 0 && table.state.pagination.pageIndex > 0) {
+            table.previousPage();
+        }
+    }
+
+    let reconcileTotalRequested = false;
+    const debouncedLoadData = debounce(1500, () => {
+        const reconcileTotal = reconcileTotalRequested;
+        reconcileTotalRequested = false;
+        return loadData(reconcileTotal);
+    });
+    function scheduleLoadData(reconcileTotal: boolean = false) {
+        reconcileTotalRequested ||= reconcileTotal;
+        debouncedLoadData();
+    }
+
+    onDestroy(() => {
+        loadDataRequestId++;
+        debouncedLoadData.cancel();
+    });
+
+    function onPersistentEventChanged(message: WebSocketMessageValue<'PersistentEventChanged'>) {
+        let removedFromTable = false;
+        if (message.id && message.change_type === ChangeType.Removed) {
+            removeTableSelection(table, message.id);
+
+            removedFromTable = removeTableData(table, (doc: EventSummaryModel<SummaryTemplateKeys>) => doc.id === message.id);
+        }
+
         if (message.change_type === ChangeType.Removed) {
+            // Reconcile rows and cursor metadata after the asynchronous delete completes. The debounce also gives
+            // Elasticsearch time to make the removal visible to the list query, including when a matching removal
+            // is not on the visible page.
+            if (
+                shouldRefreshPersistentEventRemoval(
+                    removedFromTable,
+                    filters,
+                    queryParams.filter,
+                    message.organization_id,
+                    message.project_id,
+                    message.stack_id,
+                    message.id
+                )
+            ) {
+                scheduleLoadData(true);
+            }
+
             return;
         }
 
@@ -739,10 +809,12 @@
             return;
         }
 
-        await debouncedLoadData();
+        scheduleLoadData();
     }
 
-    useEventListener(document, 'PersistentEventChanged', async (event) => await onPersistentEventChanged((event as CustomEvent).detail));
+    useEventListener(document, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT, () => scheduleLoadData(true));
+    useEventListener(document, 'refresh', () => scheduleLoadData(true));
+    useEventListener(document, 'PersistentEventChanged', (event) => onPersistentEventChanged((event as CustomEvent).detail));
 
     $effect(() => {
         loadData();

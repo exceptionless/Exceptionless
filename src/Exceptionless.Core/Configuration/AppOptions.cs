@@ -81,6 +81,7 @@ public class AppOptions
     public AuthOptions AuthOptions { get; internal set; } = null!;
     public OAuthServerOptions OAuthServerOptions { get; internal set; } = null!;
     public EventIngestionV3Options EventIngestionV3 { get; internal set; } = null!;
+    public SourceMapOptions SourceMapOptions { get; internal set; } = null!;
 
     public static AppOptions ReadFromConfiguration(IConfiguration config)
     {
@@ -135,6 +136,7 @@ public class AppOptions
         options.AuthOptions = AuthOptions.ReadFromConfiguration(config);
         options.OAuthServerOptions = OAuthServerOptions.ReadFromConfiguration(config);
         options.EventIngestionV3 = EventIngestionV3Options.ReadFromConfiguration(config);
+        options.SourceMapOptions = SourceMapOptions.ReadFromConfiguration(config);
 
         return options;
     }

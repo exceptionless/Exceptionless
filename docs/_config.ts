@@ -64,8 +64,14 @@ site.data("docsNavHtml", docsNavHtml)
 site.data("siteDataJson", siteDataJson)
 site.data("copyrightYear", new Date().getFullYear())
 site.data("exceptionlessClientScriptSrc", exceptionlessClientScriptSrc())
+site.data("siteAssetVersionQuery", siteAssetVersionQuery())
 
 export default site
+
+function siteAssetVersionQuery(): string {
+  const version = (Deno.env.get("EXCEPTIONLESS_SITE_VERSION") ?? "").trim()
+  return version ? `?v=${encodeURIComponent(version)}` : ""
+}
 
 function exceptionlessClientScriptSrc(): string {
   const apiKey = (Deno.env.get("EXCEPTIONLESS_SITE_API_KEY") ?? "").trim()
