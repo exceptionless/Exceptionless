@@ -400,7 +400,7 @@ export function getEventsByReferenceQuery(request: GetEventsByReferenceRequest) 
                 }
             });
 
-            return response.data!;
+            return response;
         },
         queryKey: queryKeys.eventsByReference(request.route.referenceId, request.route.projectId, request.params)
     }));

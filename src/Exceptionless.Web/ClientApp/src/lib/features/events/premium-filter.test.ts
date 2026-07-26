@@ -106,4 +106,8 @@ describe('getSearchResourceForPathname', () => {
     it.each(['/event', '/stream', '/sessions'])('identifies event search routes: %s', (pathname) => {
         expect(getSearchResourceForPathname(pathname)).toBe('event');
     });
+
+    it.each(['ref.order-id:"reference-id"', 'ref.订单-1:"reference-id"'])('recognizes backend-valid custom reference field %s', (filter) => {
+        expect(filterUsesPremiumFeatures(filter, 'event')).toBe(true);
+    });
 });
