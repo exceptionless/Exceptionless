@@ -5,7 +5,7 @@ import {
     type NotificationSettingsFormData,
     NotificationSettingsSchema
 } from '$generated/schemas';
-import { custom, enum as zodEnum, type infer as Infer, object, string } from 'zod';
+import { custom, type infer as Infer, object, string, enum as zodEnum } from 'zod';
 
 export { type NewProjectFormData, NewProjectSchema, type NotificationSettingsFormData, NotificationSettingsSchema };
 

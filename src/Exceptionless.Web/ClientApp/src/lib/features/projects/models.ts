@@ -7,8 +7,6 @@ export interface ClientConfigurationSetting {
     value: string;
 }
 
-export type UpdateProject = Partial<GeneratedUpdateProject>;
-
 export interface SourceMapArtifact {
     created_utc: string;
     file_name?: string;
@@ -19,3 +17,5 @@ export interface SourceMapArtifact {
     size: number;
     source_map_url?: string;
 }
+
+export type UpdateProject = Partial<GeneratedUpdateProject>;

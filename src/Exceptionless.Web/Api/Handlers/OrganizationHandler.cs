@@ -152,7 +152,7 @@ public class OrganizationHandler(
         }
         catch (MiniValidatorException ex)
         {
-            return ValidationResult<ViewOrganization>(ex);
+            return ex.ToValidationResult<ViewOrganization>();
         }
 
         if (budgetSettingsChanged && saved.BudgetAlertSettings is { Enabled: true, Thresholds: not null })
@@ -980,13 +980,6 @@ public class OrganizationHandler(
 
         return Result.Forbidden(permission.Message ?? "Access denied.");
     }
-
-    private static Result<T> ValidationResult<T>(MiniValidatorException ex)
-    {
-        return Result<T>.FromResult(Result.Invalid(ex.Errors.SelectMany(error =>
-            error.Value.Select(message => ValidationError.Create(error.Key.ToLowerUnderscoredWords(), message)))));
-    }
-
     private static User GetCurrentUser(HttpContext httpContext) => httpContext.Request.GetUser();
     private static bool IsStatsMode(string? mode) => !String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.OrdinalIgnoreCase);
     private static bool messageIsGlobalAdmin(HttpContext httpContext) => httpContext.Request.IsGlobalAdmin();

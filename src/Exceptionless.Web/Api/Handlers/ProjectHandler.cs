@@ -159,7 +159,7 @@ public class ProjectHandler(
         }
         catch (MiniValidatorException ex)
         {
-            return ValidationResult<ViewProject>(ex);
+            return ex.ToValidationResult<ViewProject>();
         }
 
         return await MapToViewAsync(original);
@@ -781,13 +781,6 @@ public class ProjectHandler(
 
         return Result.Forbidden(permission.Message ?? "Access denied.");
     }
-
-    private static Result<T> ValidationResult<T>(MiniValidatorException ex)
-    {
-        return Result<T>.FromResult(Result.Invalid(ex.Errors.SelectMany(error =>
-            error.Value.Select(message => ValidationError.Create(error.Key.ToLowerUnderscoredWords(), message)))));
-    }
-
     private static User GetCurrentUser(HttpContext httpContext) => httpContext.Request.GetUser();
     private static string GetCurrentUserId(HttpContext httpContext) => GetCurrentUser(httpContext).Id;
     private static bool IsStatsMode(string? mode) => !String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.OrdinalIgnoreCase);

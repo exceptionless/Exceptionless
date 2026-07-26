@@ -1,9 +1,9 @@
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Validation;
 using Exceptionless.Web.Api.Messages;
+using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models.Admin;
 using Foundatio.Mediator;
@@ -52,7 +52,7 @@ public class OAuthApplicationHandler(
         }
         catch (MiniValidatorException ex)
         {
-            return ValidationResult<ViewOAuthApplication>(ex);
+            return ex.ToValidationResult<ViewOAuthApplication>();
         }
 
         await oauthService.ClearAccessTokenClientValidityCacheAsync(application.ClientId);
@@ -85,7 +85,7 @@ public class OAuthApplicationHandler(
         }
         catch (MiniValidatorException ex)
         {
-            return ValidationResult<ViewOAuthApplication>(ex);
+            return ex.ToValidationResult<ViewOAuthApplication>();
         }
 
         await oauthService.ClearAccessTokenClientValidityCacheAsync(previousClientId);
@@ -126,11 +126,5 @@ public class OAuthApplicationHandler(
             .Select(s => s.Trim().ToLowerInvariant())
             .Distinct(StringComparer.Ordinal)
             .ToArray();
-    }
-
-    private static Result<T> ValidationResult<T>(MiniValidatorException ex)
-    {
-        return Result<T>.FromResult(Result.Invalid(ex.Errors.SelectMany(error =>
-            error.Value.Select(message => ValidationError.Create(error.Key.ToLowerUnderscoredWords(), message)))));
     }
 }
