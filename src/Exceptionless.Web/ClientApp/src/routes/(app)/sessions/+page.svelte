@@ -229,6 +229,7 @@
         }
 
         const response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events/sessions`, {
+            expectedStatusCodes: [426],
             params: eventsQueryParameters as Record<string, unknown>
         });
         if (requestId !== loadDataRequestId) {

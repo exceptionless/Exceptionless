@@ -723,7 +723,10 @@
             include: !requestParameters.after && !requestParameters.before ? ('total' as const) : undefined
         };
         delete params.page;
-        const response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organizationId}/events`, { params });
+        const response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organizationId}/events`, {
+            expectedStatusCodes: [426],
+            params
+        });
         if (!isCurrentRequest()) {
             return;
         }
@@ -745,6 +748,7 @@
             delete totalParams.page;
 
             const totalResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organizationId}/events`, {
+                expectedStatusCodes: [426],
                 params: totalParams
             });
             if (!isCurrentRequest()) {
