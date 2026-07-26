@@ -1,15 +1,14 @@
 <script lang="ts">
+    import type { InvoiceGridModel } from '$features/organizations/models';
+
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
-    import DateTime from '$comp/formatters/date-time.svelte';
     import { A, Muted } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
     import { Skeleton } from '$comp/ui/skeleton';
-    import * as Table from '$comp/ui/table';
     import { Textarea } from '$comp/ui/textarea';
     import { env } from '$env/dynamic/public';
     import { ChangePlanDialog } from '$features/billing';
@@ -20,12 +19,11 @@
         getOrganizationBillingInformationChanges,
         saveOrganizationBillingInformationChanges
     } from '$features/organizations/billing-information';
+    import BillingInvoices from '$features/organizations/components/billing-invoices.svelte';
     import { type OrganizationBillingInformationFormData, OrganizationBillingInformationSchema } from '$features/organizations/schemas';
     import { ariaInvalid, getFormErrorMessages, getProblemMessage, mapFieldErrors } from '$features/shared/validation';
     import GlobalUser from '$features/users/components/global-user.svelte';
     import CreditCard from '@lucide/svelte/icons/credit-card';
-    import File from '@lucide/svelte/icons/file';
-    import MoreHorizontal from '@lucide/svelte/icons/more-horizontal';
     import { createForm } from '@tanstack/svelte-form';
     import { queryParamsState } from 'kit-query-params';
     import { onDestroy } from 'svelte';
@@ -147,6 +145,15 @@
         window.open(`https://manage.stripe.com/invoices/in_${encodeURIComponent(invoiceId)}`, '_blank');
     }
 </script>
+
+{#snippet stripeInvoiceAction(invoice: InvoiceGridModel)}
+    <GlobalUser>
+        <DropdownMenu.Item onclick={() => handleViewStripeInvoice(invoice.id)}>
+            <CreditCard class="mr-2 size-4" />
+            View Stripe Invoice
+        </DropdownMenu.Item>
+    </GlobalUser>
+{/snippet}
 
 <div class="flex flex-col gap-6">
     <Muted>Billing information and invoices</Muted>
@@ -278,75 +285,13 @@
                 {/if}
             </p>
 
-            {#if invoicesQuery.isLoading}
-                <div class="flex flex-col gap-2">
-                    <Skeleton class="h-8 w-full" />
-                    <Skeleton class="h-8 w-full" />
-                    <Skeleton class="h-8 w-full" />
-                </div>
-            {:else if invoicesQuery.error}
-                <ErrorMessage message="Unable to load invoice data." />
-            {:else}
-                <div class="overflow-hidden rounded-md border">
-                    <Table.Root>
-                        <Table.Header>
-                            <Table.Row>
-                                <Table.Head>Payment Number</Table.Head>
-                                <Table.Head>Date</Table.Head>
-                                <Table.Head>Status</Table.Head>
-                                <Table.Head class="w-25">Actions</Table.Head>
-                            </Table.Row>
-                        </Table.Header>
-                        <Table.Body>
-                            {#if invoicesQuery.data?.data && invoicesQuery.data.data.length > 0}
-                                {#each invoicesQuery.data.data as invoice (invoice.id)}
-                                    <Table.Row>
-                                        <Table.Cell class="hover:bg-muted/50 cursor-pointer" onclick={() => handleOpenInvoice(invoice.id)}>
-                                            {invoice.id}
-                                        </Table.Cell>
-                                        <Table.Cell class="hover:bg-muted/50 cursor-pointer" onclick={() => handleOpenInvoice(invoice.id)}>
-                                            <DateTime value={invoice.date} />
-                                        </Table.Cell>
-                                        <Table.Cell class="hover:bg-muted/50 cursor-pointer" onclick={() => handleOpenInvoice(invoice.id)}>
-                                            {invoice.paid ? 'Paid' : 'Unpaid'}
-                                        </Table.Cell>
-                                        <Table.Cell>
-                                            <DropdownMenu.Root>
-                                                <DropdownMenu.Trigger>
-                                                    {#snippet child({ props })}
-                                                        <Button {...props} variant="outline" size="sm">
-                                                            <MoreHorizontal class="size-4" />
-                                                            <span class="sr-only">Actions</span>
-                                                        </Button>
-                                                    {/snippet}
-                                                </DropdownMenu.Trigger>
-                                                <DropdownMenu.Content align="end">
-                                                    <DropdownMenu.Item onclick={() => handleOpenInvoice(invoice.id)}>
-                                                        <File class="mr-2 size-4" />
-                                                        View Payment
-                                                    </DropdownMenu.Item>
-                                                    <GlobalUser>
-                                                        <DropdownMenu.Item onclick={() => handleViewStripeInvoice(invoice.id)}>
-                                                            <CreditCard class="mr-2 size-4" />
-                                                            View Stripe Invoice
-                                                        </DropdownMenu.Item>
-                                                    </GlobalUser>
-                                                </DropdownMenu.Content>
-                                            </DropdownMenu.Root>
-                                        </Table.Cell>
-                                    </Table.Row>
-                                {/each}
-                            {:else}
-                                <Table.Row>
-                                    <Table.Cell colspan={4} class="text-center">
-                                        <strong>No invoices were found.</strong>
-                                    </Table.Cell>
-                                </Table.Row>
-                            {/if}
-                        </Table.Body>
-                    </Table.Root>
-                </div>
-            {/if}
+            <BillingInvoices
+                hasError={!!invoicesQuery.error}
+                invoices={invoicesQuery.data?.data ?? undefined}
+                isLoading={invoicesQuery.isLoading}
+                onopeninvoice={handleOpenInvoice}
+                {stripeInvoiceAction}
+            />
         </div>
     {/if}
 </div>
