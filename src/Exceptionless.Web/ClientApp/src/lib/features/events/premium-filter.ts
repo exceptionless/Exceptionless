@@ -9,6 +9,7 @@ const FREE_QUERY_FIELDS = new Set([
     'organization_id',
     'project',
     'project_id',
+    'ref.parent',
     'reference',
     'reference_id',
     'stack',
