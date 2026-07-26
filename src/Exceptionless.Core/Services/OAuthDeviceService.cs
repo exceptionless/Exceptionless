@@ -99,7 +99,7 @@ public sealed class OAuthDeviceService(
         }
         catch
         {
-            await cacheClient.RemoveIfEqualAsync(GetDeviceUserCodeCacheKey(userCode), deviceCodeHash);
+            await RemoveUserCodeMappingIfOwnedAsync(cacheClient, GetDeviceUserCodeCacheKey(userCode), deviceCodeHash);
             throw;
         }
 
@@ -383,7 +383,7 @@ public sealed class OAuthDeviceService(
     {
         return Task.WhenAll(
             cacheClient.RemoveAsync(GetDeviceCodeCacheKey(deviceCodeHash)),
-            cacheClient.RemoveIfEqualAsync(GetDeviceUserCodeCacheKey(authorization.UserCodeNormalized), deviceCodeHash));
+            RemoveUserCodeMappingIfOwnedAsync(cacheClient, GetDeviceUserCodeCacheKey(authorization.UserCodeNormalized), deviceCodeHash));
     }
 
     private async Task<OAuthDeviceAuthorizationLookupResult> GetAuthorizationByUserCodeAsync(string? userCode)
@@ -404,10 +404,15 @@ public sealed class OAuthDeviceService(
         var lookup = await GetAuthorizationByDeviceCodeHashAsync(deviceCodeResult.Value);
         if (!lookup.IsSuccess)
         {
-            await cacheClient.RemoveAsync(userCodeCacheKey);
+            await RemoveUserCodeMappingIfOwnedAsync(cacheClient, userCodeCacheKey, deviceCodeResult.Value);
         }
 
         return lookup;
+    }
+
+    internal static Task RemoveUserCodeMappingIfOwnedAsync(ICacheClient cacheClient, string userCodeCacheKey, string deviceCodeHash)
+    {
+        return cacheClient.RemoveIfEqualAsync(userCodeCacheKey, deviceCodeHash);
     }
 
     private async Task<OAuthDeviceAuthorizationLookupResult> GetAuthorizationByDeviceCodeHashAsync(string deviceCodeHash)
