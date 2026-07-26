@@ -98,7 +98,7 @@ public static class TokenEndpoints
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status409Conflict)
         .WithSummary("Create")
-        .WithDescription("To create a new token, you must specify an organization_id. There are three valid scopes: client, user and admin.")
+        .WithDescription("To create a new token, you must specify an organization_id and project_id. Valid scopes are client, user, admin, and source-maps:write. The source-maps:write scope requires a project-scoped token.")
         .WithMetadata(new EndpointDocumentation {
             RequestBodyDescription = "The token.",
             ResponseDescriptions = new() {
@@ -119,7 +119,7 @@ public static class TokenEndpoints
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status409Conflict)
         .WithSummary("Create for project")
-        .WithDescription("This is a helper action that makes it easier to create a token for a specific project. You may also specify a scope when creating a token. There are three valid scopes: client, user and admin.")
+        .WithDescription("This is a helper action that makes it easier to create a token for a specific project. Valid scopes are client, user, admin, and source-maps:write.")
         .WithMetadata(new EndpointDocumentation {
             RequestBodyDescription = "The token.",
             ParameterDescriptions = new() {
