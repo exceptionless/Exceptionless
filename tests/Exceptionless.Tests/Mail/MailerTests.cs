@@ -384,7 +384,8 @@ public sealed class MailerTests : TestWithServices
         await _mailer.SendUserPasswordResetAsync(user);
         var body = await RunMailJobAsync();
         Assert.Contains("Reset Password", body, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("?cancel=true", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("?cancel=true", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("click here to cancel the password reset request", body, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

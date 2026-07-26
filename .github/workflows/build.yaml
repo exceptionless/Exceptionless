@@ -259,6 +259,17 @@ jobs:
       - name: Build Templates
         run: npm run build
 
+      - name: Validate Legacy Text, Actions, and Pixels
+        run: npm run validate:parity
+
+      - name: Upload Email Parity Failures
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: email-parity-failures
+          path: src/Exceptionless.EmailTemplates/parity-artifacts/
+          if-no-files-found: ignore
+
       - name: Build Storybook
         run: npm run build-storybook
 

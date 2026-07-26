@@ -13,6 +13,7 @@
         "format": "npm run format:prettier && npm run format:eslint",
         "format:eslint": "eslint . --fix",
         "format:prettier": "prettier --write .",
+        "validate:parity": "npm run build && vite build --config vite.parity.config.ts && node dist/validate-parity.js",
         "storybook": "npm run build && storybook dev -p 6008 --no-open",
         "build-storybook": "npm run build && storybook build"
     },
@@ -36,6 +37,7 @@
         "eslint-plugin-svelte": "^3.18.0",
         "globals": "^17.6.0",
         "handlebars": "^4.7.8",
+        "parse5": "8.0.1",
         "prettier": "^3.8.3",
         "prettier-plugin-svelte": "^4.0.1",
         "storybook": "10.5.2",
