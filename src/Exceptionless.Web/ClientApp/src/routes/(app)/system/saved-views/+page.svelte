@@ -121,7 +121,7 @@
         <CopyToClipboardButton value={predefinedJson} variant="outline" />
     </div>
 
-    <Textarea bind:value={predefinedJson} class="font-mono text-xs max-h-[60vh] min-h-96 overflow-auto" rows={24} spellcheck={false} />
+    <Textarea bind:value={predefinedJson} class="max-h-[60vh] min-h-96 overflow-auto font-mono text-xs" rows={24} spellcheck={false} />
 
     <div class="flex flex-col justify-end gap-2 sm:flex-row">
         <Button

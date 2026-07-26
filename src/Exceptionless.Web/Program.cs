@@ -89,7 +89,7 @@ public partial class Program
 
             var apmConfig = new ApmConfig(configuration, "web", options.InformationalVersion, options.CacheOptions.Provider == "redis");
 
-            Log.Information("Bootstrapping Exceptionless Web in {AppMode} mode ({InformationalVersion}) on {MachineName} with options {@Options}", environment, options.InformationalVersion, Environment.MachineName, options);
+            Log.Information("Bootstrapping Exceptionless Web in {AppMode} mode ({InformationalVersion}) on {MachineName} with scope {AppScope}", environment, options.InformationalVersion, Environment.MachineName, options.AppScope);
 
             SetClientEnvironmentVariablesInDevelopmentMode(options);
 
@@ -157,6 +157,7 @@ public partial class Program
                 o.AddPolicy(AuthorizationRoles.StacksReadPolicy, policy => policy.RequireAssertion(context => context.User.IsInRole(AuthorizationRoles.User) || context.User.IsInRole(AuthorizationRoles.StacksRead)));
                 o.AddPolicy(AuthorizationRoles.StacksWritePolicy, policy => policy.RequireAssertion(context => context.User.IsInRole(AuthorizationRoles.User) || context.User.IsInRole(AuthorizationRoles.StacksWrite)));
                 o.AddPolicy(AuthorizationRoles.EventsReadPolicy, policy => policy.RequireAssertion(context => context.User.IsInRole(AuthorizationRoles.User) || context.User.IsInRole(AuthorizationRoles.EventsRead)));
+                o.AddPolicy(AuthorizationRoles.SourceMapsWritePolicy, policy => policy.RequireAssertion(context => context.User.IsInRole(AuthorizationRoles.User) || context.User.IsInRole(AuthorizationRoles.SourceMapsWrite)));
             });
 
             builder.Services.AddRouting(r =>

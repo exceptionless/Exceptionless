@@ -1981,6 +1981,48 @@
   },
   {
     "method": "GET",
+    "route": "/api/v2/projects/{projectId:objectid}/source-maps",
+    "displayName": "HTTP: GET api/v2/projects/{projectId:objectid}/source-maps =\u003E GetAsync",
+    "tags": [
+      "Source Map"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "POST",
+    "route": "/api/v2/projects/{projectId:objectid}/source-maps",
+    "displayName": "HTTP: POST api/v2/projects/{projectId:objectid}/source-maps =\u003E PostAsync",
+    "tags": [
+      "Source Map"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "SourceMapsWritePolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "DELETE",
+    "route": "/api/v2/projects/{projectId:objectid}/source-maps/{sourceMapId}",
+    "displayName": "HTTP: DELETE api/v2/projects/{projectId:objectid}/source-maps/{sourceMapId} =\u003E DeleteAsync",
+    "tags": [
+      "Source Map"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
     "route": "/api/v2/projects/{projectId:objectid}/stacks",
     "displayName": "HTTP: GET api/v2/projects/{projectId:objectid}/stacks",
     "tags": [
