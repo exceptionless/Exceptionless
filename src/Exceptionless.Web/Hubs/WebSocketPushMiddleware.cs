@@ -10,6 +10,7 @@ namespace Exceptionless.Web.Hubs;
 /// </summary>
 public sealed class WebSocketPushMiddleware
 {
+    private const int UnauthorizedCloseStatus = 4401;
     private static readonly PathString PushEndpoint = new("/api/v2/push");
     private readonly ILogger _logger;
     private readonly WebSocketConnectionManager _connectionManager;
@@ -39,16 +40,11 @@ public sealed class WebSocketPushMiddleware
             return;
         }
 
-        if (!context.User.IsAuthenticated())
-        {
-            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            return;
-        }
-
-        string? userId = context.User.GetUserId();
+        string? userId = context.User.IsAuthenticated() ? context.User.GetUserId() : null;
         if (String.IsNullOrEmpty(userId))
         {
-            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            using var unauthorizedSocket = await context.WebSockets.AcceptWebSocketAsync();
+            await unauthorizedSocket.CloseOutputAsync((WebSocketCloseStatus)UnauthorizedCloseStatus, "Unauthorized", context.RequestAborted).ConfigureAwait(false);
             return;
         }
 

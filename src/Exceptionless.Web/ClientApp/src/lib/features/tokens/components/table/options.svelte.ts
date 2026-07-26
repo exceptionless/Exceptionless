@@ -5,6 +5,7 @@ import type { CreateQueryResult } from '@tanstack/svelte-query';
 import { getSharedTableOptions } from '$features/shared/table.svelte';
 import TokenActionsCell from '$features/tokens/components/table/token-actions-cell.svelte';
 import TokenIdCell from '$features/tokens/components/table/token-id-cell.svelte';
+import TokenScopesCell from '$features/tokens/components/table/token-scopes-cell.svelte';
 import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
 
 import type { GetProjectTokensParams } from '../../api.svelte';
@@ -16,7 +17,17 @@ export function getColumns<TToken extends ViewToken>(): ColumnDef<StockFeatures,
             cell: (info) => renderComponent(TokenIdCell, { token: info.row.original }),
             enableHiding: false,
             enableSorting: false,
-            header: 'API Key',
+            header: 'Token',
+            meta: {
+                class: 'w-45'
+            }
+        },
+        {
+            accessorKey: 'scopes',
+            cell: (info) => renderComponent(TokenScopesCell, { scopes: info.getValue<string[]>() }),
+            enableHiding: true,
+            enableSorting: false,
+            header: 'Scope',
             meta: {
                 class: 'w-45'
             }
