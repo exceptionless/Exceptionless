@@ -31,9 +31,21 @@ public sealed class BackfillParentReferences : MigrationBase
         string referenceKey = $"@ref:{Event.KnownReferenceNames.Parent}";
         string indexKey = $"{Event.KnownReferenceNames.Parent}-r";
         string script = $$"""
-            if (ctx._source.data != null && ctx._source.data.containsKey('{{referenceKey}}') && ctx._source.data['{{referenceKey}}'] != null) {
+            def parentReference = null;
+            if (ctx._source.data != null) {
+                parentReference = ctx._source.data['{{referenceKey}}'];
+                if (parentReference == null) {
+                    for (def entry : ctx._source.data.entrySet()) {
+                        if (entry.getKey().equalsIgnoreCase('{{referenceKey}}')) {
+                            parentReference = entry.getValue();
+                            break;
+                        }
+                    }
+                }
+            }
+            if (parentReference != null) {
                 if (ctx._source.idx == null) ctx._source.idx = [:];
-                ctx._source.idx['{{indexKey}}'] = ctx._source.data['{{referenceKey}}'].toString();
+                ctx._source.idx['{{indexKey}}'] = parentReference.toString();
             } else {
                 ctx.op = 'noop';
             }
