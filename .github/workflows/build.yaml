@@ -580,8 +580,72 @@ jobs:
           kubectl patch cronjob/ex-dev-jobs-maintain-indexes -p '{"spec":{"suspend": false}}' --namespace $DEV_NAMESPACE
           kubectl patch cronjob/ex-dev-jobs-migration -p '{"spec":{"suspend": false}}' --namespace $DEV_NAMESPACE
 
-          kubectl wait --for=condition=available --timeout=300s deployment/ex-dev-app --namespace $DEV_NAMESPACE
-          kubectl wait --for=condition=available --timeout=300s deployment/ex-dev-api --namespace $DEV_NAMESPACE
+          wait_for_versioned_pod() {
+            component="$1"
+            replica_set=""
+            for attempt in {1..12}; do
+              replica_set=$(kubectl get replicasets --namespace "$DEV_NAMESPACE" --selector "component=${component}" --output json \
+                | jq --raw-output --arg image_tag ":${VERSION}" '
+                    [.items[]
+                      | select(any(.spec.template.spec.containers[]; .image | endswith($image_tag)))
+                      | { name: .metadata.name, created: .metadata.creationTimestamp }]
+                    | sort_by(.created)
+                    | last
+                    | .name // empty')
+              [[ -n "$replica_set" ]] && break
+              sleep 5
+            done
+            if [[ -z "$replica_set" ]]; then
+              echo "::error::No ReplicaSet for ${component} uses version ${VERSION}."
+              return 1
+            fi
+
+            pod_template_hash=$(kubectl get replicaset "$replica_set" --namespace "$DEV_NAMESPACE" \
+              --output jsonpath='{.metadata.labels.pod-template-hash}')
+            kubectl wait --for=create --timeout=60s pod \
+              --namespace "$DEV_NAMESPACE" \
+              --selector "component=${component},pod-template-hash=${pod_template_hash}"
+            if ! kubectl wait --for=condition=Ready --timeout=300s pod \
+                --namespace "$DEV_NAMESPACE" \
+                --selector "component=${component},pod-template-hash=${pod_template_hash}"; then
+              echo "::group::${component} rollout diagnostics"
+              kubectl get pods --namespace "$DEV_NAMESPACE" \
+                --selector "component=${component},pod-template-hash=${pod_template_hash}" \
+                --output wide
+              for pod in $(kubectl get pods --namespace "$DEV_NAMESPACE" \
+                  --selector "component=${component},pod-template-hash=${pod_template_hash}" \
+                  --output name); do
+                kubectl describe "$pod" --namespace "$DEV_NAMESPACE"
+                kubectl logs "$pod" --namespace "$DEV_NAMESPACE" --all-containers --tail=300 \
+                  | grep --extended-regexp 'Now listening on:|Application started|Application is shutting down' || true
+              done
+              echo "::endgroup::"
+              return 1
+            fi
+          }
+
+          wait_for_versioned_pod ex-dev-app
+          wait_for_versioned_pod ex-dev-api
+          wait_for_versioned_pod ex-dev-jobs-event-posts
+
+          for endpoint in dev-app.exceptionless.io dev-api.exceptionless.io dev-collector.exceptionless.io; do
+            deployed_version=""
+            for attempt in {1..12}; do
+              if deployed_version=$(curl --fail --silent --show-error --retry 2 --retry-all-errors --retry-delay 2 \
+                  --header "Cache-Control: no-cache" \
+                  "https://${endpoint}/api/v2/about?deployment=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${attempt}" \
+                  | jq --raw-output '.informational_version'); then
+                if [[ "$deployed_version" == "${VERSION}+"* ]]; then
+                  break
+                fi
+              fi
+              sleep 5
+            done
+            if [[ "$deployed_version" != "${VERSION}+"* ]]; then
+              echo "::error::${endpoint} is serving ${deployed_version}; expected ${VERSION}."
+              exit 1
+            fi
+          done
 
           kubectl annotate namespace $DEV_NAMESPACE exceptionless.io/dev-started-at="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --overwrite
           kubectl annotate namespace $DEV_NAMESPACE exceptionless.io/dev-auto-stop-days="1" --overwrite

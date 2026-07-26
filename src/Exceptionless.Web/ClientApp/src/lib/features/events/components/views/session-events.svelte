@@ -110,7 +110,7 @@
     </Alert.Root>
 {/if}
 
-<div class:opacity-60={!hasPremiumFeatures}>
+<div class="relative pr-10" class:opacity-60={!hasPremiumFeatures}>
     {#if isSessionStart}
         <Table.Root class="mb-4">
             <Table.Body>
@@ -139,7 +139,7 @@
         </Table.Root>
     {/if}
 
-    <div class="mb-2 flex justify-end">
+    <div class="absolute top-0 right-0 z-10">
         <Button
             aria-label="Open events filtered to this session"
             disabled={!sessionEventsHref}

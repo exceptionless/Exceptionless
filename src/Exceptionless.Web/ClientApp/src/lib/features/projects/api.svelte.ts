@@ -1,8 +1,9 @@
-import type { ClientConfiguration, NewProject, NotificationSettings, UpdateProject, ViewProject } from '$features/projects/models';
+import type { ClientConfiguration, NewProject, NotificationSettings, SourceMapArtifact, UpdateProject, ViewProject } from '$features/projects/models';
 import type { StringValueFromBody, WorkInProgressResult } from '$features/shared/models';
 import type { WebSocketMessageValue } from '$features/websockets/models';
 
 import { accessToken } from '$features/auth/index.svelte';
+import { fetchApiJson } from '$features/shared/api/api.svelte';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
@@ -44,6 +45,7 @@ export const queryKeys = {
     putIntegrationNotificationSettings: (id: string | undefined, integration: string) =>
         [...queryKeys.id(id), integration, 'put-notification-settings'] as const,
     resetData: (id: string | undefined) => [...queryKeys.id(id), 'reset-data'] as const,
+    sourceMaps: (id: string | undefined) => [...queryKeys.id(id), 'source-maps'] as const,
     type: ['Project'] as const,
     userNotificationSettings: (id: string | undefined, userId: string | undefined) => [...queryKeys.id(id), userId, 'notification-settings'] as const
 };
@@ -188,6 +190,17 @@ export interface ResetDataRequest {
     };
 }
 
+export interface SourceMapRequest {
+    route: {
+        id: string | undefined;
+    };
+}
+
+export interface SourceMapUpload {
+    file: File;
+    generated_file_url: string;
+}
+
 export interface UpdateProjectRequest {
     route: {
         id: string;
@@ -279,6 +292,23 @@ export function deleteSlack(request: DeleteSlackRequest) {
         mutationKey: queryKeys.deleteSlack(request.route.id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
+        }
+    }));
+}
+
+export function deleteSourceMapMutation(request: SourceMapRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<boolean, ProblemDetails, string>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async (sourceMapId: string) => {
+            const client = useFetchClient();
+            const response = await client.delete(`projects/${request.route.id}/source-maps/${sourceMapId}`);
+            return response.ok;
+        },
+        mutationKey: [...queryKeys.sourceMaps(request.route.id), 'delete'],
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.sourceMaps(request.route.id) });
         }
     }));
 }
@@ -412,6 +442,18 @@ export function getProjectUserNotificationSettings(request: GetProjectUserNotifi
     }));
 }
 
+export function getSourceMapsQuery(request: SourceMapRequest) {
+    return createQuery<SourceMapArtifact[], ProblemDetails>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<SourceMapArtifact[]>(`projects/${request.route.id}/source-maps`, { signal });
+            return response.data!;
+        },
+        queryKey: queryKeys.sourceMaps(request.route.id)
+    }));
+}
+
 export function postProject() {
     const queryClient = useQueryClient();
 
@@ -526,6 +568,27 @@ export function postSlack(request: PostSlackRequest) {
         mutationKey: queryKeys.postSlack(request.route.id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.integrationNotificationSettings(request.route.id, 'slack') });
+        }
+    }));
+}
+
+export function postSourceMapMutation(request: SourceMapRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<SourceMapArtifact, ProblemDetails, SourceMapUpload>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async (sourceMap: SourceMapUpload) => {
+            const data = new FormData();
+            data.append('generated_file_url', sourceMap.generated_file_url);
+            data.append('file', sourceMap.file);
+            return await fetchApiJson<SourceMapArtifact>(`projects/${request.route.id}/source-maps`, {
+                body: data,
+                method: 'POST'
+            });
+        },
+        mutationKey: [...queryKeys.sourceMaps(request.route.id), 'post'],
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.sourceMaps(request.route.id) });
         }
     }));
 }

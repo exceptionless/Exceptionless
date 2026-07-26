@@ -535,6 +535,7 @@ public class EventHandler(
                 MediaType = mediaType,
                 OrganizationId = project.OrganizationId,
                 ProjectId = project.Id,
+                ClientKeyHash = httpContext.Request.GetClientKeyHash(),
                 UserAgent = message.UserAgent
             }, stream);
         }
@@ -601,6 +602,7 @@ public class EventHandler(
                 MediaType = mediaType,
                 OrganizationId = project.OrganizationId,
                 ProjectId = project.Id,
+                ClientKeyHash = httpContext.Request.GetClientKeyHash(),
                 UserAgent = message.UserAgent,
             }, requestBody, httpContext.RequestAborted);
 
@@ -768,6 +770,8 @@ public class EventHandler(
             {
                 case "summary":
                     events = await GetEventsInternalAsync(sf, ti, filter, sort, page, limit, before, after, includeTotal, httpContext.Request);
+                    var projects = await projectRepository.GetByIdsAsync(events.Documents.Select(e => e.ProjectId).Distinct().ToArray(), o => o.Cache());
+                    var projectNames = projects.ToDictionary(p => p.Id, p => p.Name);
                     var summaries = events.Documents.Select(e =>
                     {
                         var summaryData = formattingPluginManager.GetEventSummaryData(e);
@@ -776,6 +780,9 @@ public class EventHandler(
                             Id = summaryData.Id,
                             TemplateKey = summaryData.TemplateKey,
                             Date = e.Date,
+                            ProjectId = e.ProjectId,
+                            ProjectName = projectNames.GetValueOrDefault(e.ProjectId),
+                            Tags = e.Tags?.OfType<string>().Order(StringComparer.OrdinalIgnoreCase).ToArray() ?? [],
                             Type = e.Type,
                             Version = e.GetVersion(),
                             Data = summaryData.Data
@@ -921,6 +928,8 @@ public class EventHandler(
         if (stacks.Count == 0)
             return new List<StackSummaryModel>(0);
 
+        var projects = await projectRepository.GetByIdsAsync(stacks.Select(s => s.ProjectId).Distinct().ToArray(), o => o.Cache());
+        var projectNames = projects.ToDictionary(p => p.Id, p => p.Name);
         var totalUsers = await GetUserCountByProjectIdsAsync(stacks, sf, ti.Range.UtcStart, ti.Range.UtcEnd);
         return stacks.Join(stackTerms, s => s.Id, tk => tk.Key, (stack, term) =>
         {
@@ -930,6 +939,9 @@ public class EventHandler(
                 Id = data.Id,
                 TemplateKey = data.TemplateKey,
                 Data = data.Data,
+                ProjectId = stack.ProjectId,
+                ProjectName = projectNames.GetValueOrDefault(stack.ProjectId),
+                Tags = stack.Tags?.OfType<string>().Order(StringComparer.OrdinalIgnoreCase).ToArray() ?? [],
                 Title = stack.Title,
                 Status = stack.Status,
                 FirstOccurrence = term.Aggregations.Min<DateTime>("min_date")?.Value ?? stack.FirstOccurrence,
