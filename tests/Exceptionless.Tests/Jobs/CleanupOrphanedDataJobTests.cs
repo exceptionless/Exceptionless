@@ -1,3 +1,4 @@
+using System.Reflection;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Jobs;
@@ -13,6 +14,8 @@ using Foundatio.Repositories.Utility;
 using Foundatio.Resilience;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Xunit;
+using ElasticsearchClient = Elastic.Clients.Elasticsearch.ElasticsearchClient;
+using ElasticsearchClientSettings = Elastic.Clients.Elasticsearch.ElasticsearchClientSettings;
 
 namespace Exceptionless.Tests.Jobs;
 
@@ -728,5 +731,41 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         var health = await _job.CheckHealthAsync(new HealthCheckContext(), TestCancellationToken);
         Assert.Equal(HealthStatus.Healthy, health.Status);
         Assert.Equal("Job has run in the last 9 hours.", health.Description);
+    }
+
+    [Fact]
+    public async Task RunAsync_ElasticsearchFailure_DoesNotRefreshHealth()
+    {
+        var now = DateTimeOffset.UtcNow;
+        TimeProvider.SetUtcNow(now);
+
+        var job = new CleanupOrphanedDataJob(
+            GetService<ExceptionlessElasticConfiguration>(),
+            _stackRepository,
+            _projectRepository,
+            _organizationRepository,
+            _eventRepository,
+            GetService<ICacheClient>(),
+            GetService<ILockProvider>(),
+            TimeProvider,
+            GetService<IResiliencePolicyProvider>(),
+            Log);
+
+        Assert.Equal(JobResult.Success, await job.RunAsync(TestCancellationToken));
+        TimeProvider.Advance(TimeSpan.FromHours(9) + TimeSpan.FromMilliseconds(1));
+
+        var failingClient = new ElasticsearchClient(new ElasticsearchClientSettings(new Uri("http://127.0.0.1:1"))
+            .MaximumRetries(0)
+            .RequestTimeout(TimeSpan.FromMilliseconds(100)));
+        typeof(CleanupOrphanedDataJob)
+            .GetField("_elasticClient", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(job, failingClient);
+
+        var exception = await Assert.ThrowsAsync<ApplicationException>(() => job.RunAsync(TestCancellationToken));
+
+        Assert.StartsWith("Error getting stack cardinality:", exception.Message, StringComparison.Ordinal);
+        var health = await job.CheckHealthAsync(new HealthCheckContext(), TestCancellationToken);
+        Assert.Equal(HealthStatus.Unhealthy, health.Status);
+        Assert.Equal("Job has not run in the last 9 hours.", health.Description);
     }
 }
