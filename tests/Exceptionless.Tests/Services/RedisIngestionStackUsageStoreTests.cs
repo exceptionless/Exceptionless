@@ -359,17 +359,27 @@ public sealed class RedisIngestionStackUsageStoreTests : IClassFixture<AppWebHos
     [Fact]
     public async Task AcknowledgeAsync_StaleClaim_CannotRemoveNewerSettlement()
     {
-        var store = CreateStore(TimeSpan.FromMilliseconds(100));
+        var store = CreateStore(TimeSpan.FromMinutes(5));
         DateTime occurrence = new(2026, 7, 13, 12, 0, 0, DateTimeKind.Utc);
-        await store.SettleAsync([CreateUsage("event-a", occurrence)], TestContext.Current.CancellationToken);
+        var firstUsage = CreateUsage("event-a", occurrence);
+        await store.SettleAsync([firstUsage], TestContext.Current.CancellationToken);
         var first = Assert.Single(await store.ClaimPendingAsync(10, TestContext.Current.CancellationToken));
         await store.SettleAsync([CreateUsage("event-b", occurrence.AddSeconds(1))], TestContext.Current.CancellationToken);
         await store.AcknowledgeAsync([first], TestContext.Current.CancellationToken);
         var second = Assert.Single(await store.ClaimPendingAsync(10, TestContext.Current.CancellationToken));
 
         await store.AcknowledgeAsync([first], TestContext.Current.CancellationToken);
-        Assert.Empty(await store.ClaimPendingAsync(10, TestContext.Current.CancellationToken));
-        await Task.Delay(TimeSpan.FromMilliseconds(250), TestContext.Current.CancellationToken);
+        RedisKey[] aggregateKeys = RedisIngestionStackUsageStore.GetAggregateKeys(GetScopePrefix(), firstUsage.ProjectId);
+        RedisKey registryKey = RedisIngestionStackUsageStore.GetRegistryKeys(GetScopePrefix())[GetRegistryShard(firstUsage.ProjectId)];
+        string registryMember = $"{firstUsage.OrganizationId.Length}:{firstUsage.OrganizationId}{firstUsage.ProjectId.Length}:{firstUsage.ProjectId}";
+        IDatabase database = GetConnection().GetDatabase();
+        Assert.Equal(second.SettlementSequence, (long)await database.HashGetAsync(aggregateKeys[5], second.StackId));
+        Assert.NotNull(await database.SortedSetScoreAsync(aggregateKeys[4], second.StackId));
+
+        double expiredAt = DateTimeOffset.UtcNow.AddSeconds(-1).ToUnixTimeMilliseconds();
+        await Task.WhenAll(
+            database.SortedSetAddAsync(aggregateKeys[4], second.StackId, expiredAt),
+            database.SortedSetAddAsync(registryKey, registryMember, expiredAt));
         var recovered = Assert.Single(await store.ClaimPendingAsync(10, TestContext.Current.CancellationToken));
 
         Assert.Equal(second.SettlementSequence, recovered.SettlementSequence);
