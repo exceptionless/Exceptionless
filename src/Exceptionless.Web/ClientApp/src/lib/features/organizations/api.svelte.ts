@@ -1,5 +1,6 @@
+import type { StringValueFromBody } from '$features/shared/models';
 import type { WebSocketMessageValue } from '$features/websockets/models';
-import type { BillingPlan, ChangePlanRequest, ChangePlanResult, StringValueFromBody } from '$lib/generated/api';
+import type { BillingPlan, ChangePlanRequest, ChangePlanResult } from '$lib/generated/api';
 import type { QueryClient } from '@tanstack/svelte-query';
 
 import { accessToken } from '$features/auth/index.svelte';
@@ -53,11 +54,6 @@ export interface ChangePlanMutationRequest {
     route: {
         organizationId: string;
     };
-}
-
-export interface DeleteOrganizationDataParams {
-    key: string;
-    organizationId: string;
 }
 
 export interface DeleteOrganizationRequest {
@@ -136,6 +132,11 @@ export interface GetPlansRequest {
     };
 }
 
+export interface OrganizationDataParams {
+    key: string;
+    organizationId: string;
+}
+
 export interface OrganizationIconRequest {
     route: {
         id: string | undefined;
@@ -148,9 +149,7 @@ export interface PatchOrganizationRequest {
     };
 }
 
-export interface PostOrganizationDataParams {
-    key: string;
-    organizationId: string;
+export interface PostOrganizationDataParams extends OrganizationDataParams {
     value: string;
 }
 
@@ -237,12 +236,12 @@ export function deleteOrganization(request: DeleteOrganizationRequest) {
     }));
 }
 
-export function deleteOrganizationData() {
+export function deleteOrganizationDataMutation() {
     const queryClient = useQueryClient();
 
-    return createMutation<boolean, ProblemDetails, DeleteOrganizationDataParams>(() => ({
+    return createMutation<boolean, ProblemDetails, OrganizationDataParams>(() => ({
         enabled: () => !!accessToken.current,
-        mutationFn: async ({ key, organizationId }: DeleteOrganizationDataParams) => {
+        mutationFn: async ({ key, organizationId }: OrganizationDataParams) => {
             const client = useFetchClient();
             const response = await client.delete(`organizations/${organizationId}/data/${encodeURIComponent(key)}`);
             return response.ok;
@@ -503,14 +502,16 @@ export function postOrganization() {
     }));
 }
 
-export function postOrganizationData() {
+export function postOrganizationDataMutation() {
     const queryClient = useQueryClient();
 
     return createMutation<boolean, ProblemDetails, PostOrganizationDataParams>(() => ({
         enabled: () => !!accessToken.current,
         mutationFn: async ({ key, organizationId, value }: PostOrganizationDataParams) => {
             const client = useFetchClient();
-            const response = await client.post(`organizations/${organizationId}/data/${encodeURIComponent(key)}`, <StringValueFromBody>{ value });
+            const response = await client.post(`organizations/${organizationId}/data/${encodeURIComponent(key)}`, {
+                value
+            } satisfies StringValueFromBody);
             return response.ok;
         },
         mutationKey: queryKeys.data(undefined),

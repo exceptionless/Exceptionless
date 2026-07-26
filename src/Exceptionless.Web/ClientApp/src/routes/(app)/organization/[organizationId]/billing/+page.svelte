@@ -13,8 +13,13 @@
     import { Textarea } from '$comp/ui/textarea';
     import { env } from '$env/dynamic/public';
     import { ChangePlanDialog } from '$features/billing';
-    import { deleteOrganizationData, getInvoicesQuery, getOrganizationQuery, postOrganizationData } from '$features/organizations/api.svelte';
-    import { getOrganizationBillingInformation, getOrganizationBillingInformationChanges } from '$features/organizations/billing-information';
+    import { deleteOrganizationDataMutation, getInvoicesQuery, getOrganizationQuery, postOrganizationDataMutation } from '$features/organizations/api.svelte';
+    import {
+        createSerializedBillingInformationSave,
+        getOrganizationBillingInformation,
+        getOrganizationBillingInformationChanges,
+        saveOrganizationBillingInformationChanges
+    } from '$features/organizations/billing-information';
     import { type OrganizationBillingInformationFormData, OrganizationBillingInformationSchema } from '$features/organizations/schemas';
     import { ariaInvalid, getFormErrorMessages, getProblemMessage, mapFieldErrors } from '$features/shared/validation';
     import GlobalUser from '$features/users/components/global-user.svelte';
@@ -44,8 +49,8 @@
         }
     });
 
-    const updateOrganizationData = postOrganizationData();
-    const removeOrganizationData = deleteOrganizationData();
+    const updateOrganizationData = postOrganizationDataMutation();
+    const removeOrganizationData = deleteOrganizationDataMutation();
 
     const canChangePlan = $derived(organizationQuery.isSuccess && !!env.PUBLIC_STRIPE_PUBLISHABLE_KEY);
     const billingInformation = $derived(getOrganizationBillingInformation(organizationQuery.data));
@@ -78,20 +83,10 @@
                 toast.dismiss(toastId);
 
                 try {
-                    const results = await Promise.allSettled(
-                        changes.map((change) => {
-                            if (change.value) {
-                                return updateOrganizationData.mutateAsync({ key: change.key, organizationId: targetOrganizationId, value: change.value });
-                            }
-
-                            return removeOrganizationData.mutateAsync({ key: change.key, organizationId: targetOrganizationId });
-                        })
-                    );
-
-                    const failedResult = results.find((result) => result.status === 'rejected');
-                    if (failedResult) {
-                        throw failedResult.reason;
-                    }
+                    await saveOrganizationBillingInformationChanges(changes, {
+                        remove: (key) => removeOrganizationData.mutateAsync({ key, organizationId: targetOrganizationId }),
+                        set: (key, value) => updateOrganizationData.mutateAsync({ key, organizationId: targetOrganizationId, value })
+                    });
 
                     if (targetOrganizationId === organizationId) {
                         toastId = toast.success('Successfully updated billing information.');
@@ -104,32 +99,35 @@
                         toastId = toast.error(`Error saving billing information. ${message}`);
                     }
 
-                    return { form: `Error saving billing information. ${message}` };
-                } finally {
-                    const hasNewChanges = getOrganizationBillingInformationChanges(value, form.state.values).length > 0;
-                    if (targetOrganizationId === organizationId && hasNewChanges) {
-                        debouncedFormSubmit(targetOrganizationId);
-                    }
+                    return targetOrganizationId === organizationId ? { form: `Error saving billing information. ${message}` } : null;
                 }
             }
         }
     }));
 
-    const debouncedFormSubmit = debounce(1000, (targetOrganizationId: string) => {
-        if (targetOrganizationId === organizationId) {
-            void form.handleSubmit();
+    let destroyed = false;
+    const submitBillingInformationForm = createSerializedBillingInformationSave(async (targetOrganizationId) => {
+        if (!destroyed && targetOrganizationId === organizationId) {
+            await form.handleSubmit();
         }
+    });
+
+    const debouncedFormSubmit = debounce(1000, (targetOrganizationId: string) => {
+        void submitBillingInformationForm(targetOrganizationId);
     });
 
     $effect(() => {
         if (organizationQuery.isSuccess && initializedOrganizationId !== organizationId) {
-            debouncedFormSubmit.cancel();
+            debouncedFormSubmit.cancel({ upcomingOnly: true });
             form.reset(getOrganizationBillingInformation(organizationQuery.data));
             initializedOrganizationId = organizationId;
         }
     });
 
-    onDestroy(() => debouncedFormSubmit.cancel());
+    onDestroy(() => {
+        destroyed = true;
+        debouncedFormSubmit.cancel();
+    });
 
     function handleChangePlan() {
         changePlanDialogOpen = true;
@@ -166,7 +164,7 @@
                 onsubmit={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    void form.handleSubmit();
+                    void submitBillingInformationForm(organizationId);
                 }}
             >
                 <form.Subscribe selector={(state) => state.errors}>
@@ -323,18 +321,16 @@
                                                     {/snippet}
                                                 </DropdownMenu.Trigger>
                                                 <DropdownMenu.Content align="end">
-                                                    <DropdownMenu.Group>
-                                                        <DropdownMenu.Item onclick={() => handleOpenInvoice(invoice.id)}>
-                                                            <File class="mr-2 size-4" />
-                                                            View Payment
+                                                    <DropdownMenu.Item onclick={() => handleOpenInvoice(invoice.id)}>
+                                                        <File class="mr-2 size-4" />
+                                                        View Payment
+                                                    </DropdownMenu.Item>
+                                                    <GlobalUser>
+                                                        <DropdownMenu.Item onclick={() => handleViewStripeInvoice(invoice.id)}>
+                                                            <CreditCard class="mr-2 size-4" />
+                                                            View Stripe Invoice
                                                         </DropdownMenu.Item>
-                                                        <GlobalUser>
-                                                            <DropdownMenu.Item onclick={() => handleViewStripeInvoice(invoice.id)}>
-                                                                <CreditCard class="mr-2 size-4" />
-                                                                View Stripe Invoice
-                                                            </DropdownMenu.Item>
-                                                        </GlobalUser>
-                                                    </DropdownMenu.Group>
+                                                    </GlobalUser>
                                                 </DropdownMenu.Content>
                                             </DropdownMenu.Root>
                                         </Table.Cell>
