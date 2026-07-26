@@ -223,7 +223,10 @@ jobs:
         run: echo "npm run test:integration"
 
   test-email-templates:
-    runs-on: ubuntu-latest
+    # The legacy templates specify Helvetica. Keep exact pixel comparisons on
+    # macOS, where that production font is available, instead of comparing
+    # different Linux fallback-font table metrics.
+    runs-on: macos-latest
     timeout-minutes: 15
     defaults:
       run:
