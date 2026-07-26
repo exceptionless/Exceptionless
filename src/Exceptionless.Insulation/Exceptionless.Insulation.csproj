@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <PackageReference Include="Geocoding.Google" Version="5.0.0" />
-    <PackageReference Include="MaxMind.GeoIP2" Version="6.0.0" />
+    <PackageReference Include="MaxMind.GeoIP2" Version="6.1.0" />
     <PackageReference Include="Foundatio.Aliyun" Version="13.0.2" />
     <PackageReference Include="Foundatio.AWS" Version="13.0.2" />
     <PackageReference Include="Foundatio.AzureStorage" Version="13.0.2" />

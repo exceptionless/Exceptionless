@@ -354,21 +354,6 @@
                     <Table.Cell class="w-4 pr-0"></Table.Cell>
                     <Table.Cell class="flex items-center"><Skeleton class="h-6 w-full rounded-full" /></Table.Cell>{/if}
             </Table.Row>
-            {#if projectQuery.isSuccess || event?.project_id}
-                <Table.Row class="group">
-                    {#if projectQuery.isSuccess}
-                        <Table.Head class="w-40 font-semibold whitespace-nowrap">Project</Table.Head>
-                        <Table.Cell class="w-4 pr-0"
-                            ><EventsFacetedFilter.ProjectTrigger changed={filterChanged} class="mr-0" value={[projectQuery.data.id!]} /></Table.Cell
-                        >
-                        <Table.Cell>{projectQuery.data.name}</Table.Cell>
-                    {:else}
-                        <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-6 w-full rounded-full" /></Table.Head>
-                        <Table.Cell class="w-4 pr-0"></Table.Cell>
-                        <Table.Cell class="flex items-center"><Skeleton class="h-6 w-full rounded-full" /></Table.Cell>
-                    {/if}
-                </Table.Row>
-            {/if}
         </Table.Body>
     </Table.Root>
 

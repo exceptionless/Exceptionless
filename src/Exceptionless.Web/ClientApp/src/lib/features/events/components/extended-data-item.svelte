@@ -113,8 +113,8 @@
 </script>
 
 {#if hasData}
-    <div class={['flex flex-col space-y-2', className]}>
-        <div class={['flex items-center', showTitle ? 'justify-between' : 'justify-end']}>
+    <div class={['relative flex flex-col', showTitle && 'space-y-2', className]}>
+        <div class={['flex items-center', showTitle ? 'justify-between' : 'absolute top-0 right-0 z-10']}>
             {#if showTitle}
                 <H4>{title}</H4>
             {/if}
@@ -158,7 +158,7 @@
             </DropdownMenu.Root>
         </div>
 
-        <div class="grow overflow-auto text-xs">
+        <div class={['grow overflow-auto text-xs', !showTitle && 'pr-10']}>
             {#if showRaw || !canToggle}
                 {#if showJSONCodeEditor}
                     <CodeBlock {code} language="json" />
