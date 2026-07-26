@@ -3,9 +3,14 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Tests.Utility;
+using Foundatio.Caching;
+using Foundatio.Jobs;
+using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
+using Foundatio.Resilience;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Xunit;
 
@@ -455,6 +460,77 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         Assert.DoesNotContain(remainingEvents.Documents, e => e.Id == stackOrphanWithOldOccurrence.Id);
         Assert.DoesNotContain(remainingEvents.Documents, e => e.Id == projectOrphanAtCutoff.Id);
         Assert.DoesNotContain(remainingEvents.Documents, e => e.Id == organizationOrphanAtCutoff.Id);
+    }
+
+    [Fact]
+    public async Task PublicCleanupMethods_ScopeCardinalityAndTermsDiscoveryToRecentIngest()
+    {
+        var now = DateTimeOffset.UtcNow;
+        TimeProvider.SetUtcNow(now);
+
+        var organization = await _organizationRepository.AddAsync(
+            _organizationData.GenerateSampleOrganization(_billingManager, _plans),
+            o => o.ImmediateConsistency());
+        var project = await _projectRepository.AddAsync(
+            _projectData.GenerateProject(organizationId: organization.Id),
+            o => o.ImmediateConsistency());
+        var stack = await _stackRepository.AddAsync(
+            _stackData.GenerateStack(projectId: project.Id, organizationId: organization.Id),
+            o => o.ImmediateConsistency());
+
+        var validEvent = _eventData.GenerateEvent(organization.Id, project.Id, stack.Id, occurrenceDate: now);
+        validEvent.CreatedUtc = now.UtcDateTime;
+
+        var historicalCreatedUtc = now.UtcDateTime.Subtract(RecentIngestWindow).AddMilliseconds(-1);
+        var historicalOccurrence = now.Subtract(TimeSpan.FromDays(30));
+        var events = new List<PersistentEvent>(1000) { validEvent };
+        for (int index = 0; index < 999; index++)
+        {
+            var historicalOrphan = _eventData.GenerateEvent(
+                ObjectId.GenerateNewId().ToString(),
+                ObjectId.GenerateNewId().ToString(),
+                ObjectId.GenerateNewId().ToString(),
+                occurrenceDate: historicalOccurrence);
+            historicalOrphan.CreatedUtc = historicalCreatedUtc;
+            events.Add(historicalOrphan);
+        }
+
+        await _eventRepository.AddAsync(events, o => o.ImmediateConsistency());
+
+        Log.Reset();
+        var job = new CleanupOrphanedDataJob(
+            GetService<ExceptionlessElasticConfiguration>(),
+            _stackRepository,
+            _projectRepository,
+            _organizationRepository,
+            _eventRepository,
+            GetService<ICacheClient>(),
+            GetService<ILockProvider>(),
+            TimeProvider,
+            GetService<IResiliencePolicyProvider>(),
+            Log);
+        var context = new JobContext(TestCancellationToken);
+
+        await job.DeleteOrphanedEventsByStackAsync(context);
+        await job.DeleteOrphanedEventsByProjectAsync(context);
+        await job.DeleteOrphanedEventsByOrganizationAsync(context);
+
+        var cleanupLogs = Log.LogEntries
+            .Where(entry => entry.CategoryName == typeof(CleanupOrphanedDataJob).FullName)
+            .ToList();
+        Assert.Contains(cleanupLogs, entry =>
+            entry.Message.StartsWith("0/1: Did not find any missing stacks out of 1", StringComparison.Ordinal));
+        Assert.Contains(cleanupLogs, entry =>
+            entry.Message.StartsWith("Found 0 orphaned events from missing stacks out of 1 since", StringComparison.Ordinal));
+        Assert.Contains(cleanupLogs, entry =>
+            entry.Message.StartsWith("0/1: Did not find any missing projects out of 1", StringComparison.Ordinal));
+        Assert.Contains(cleanupLogs, entry =>
+            entry.Message.StartsWith("Found 0 orphaned events from missing projects out of 1 since", StringComparison.Ordinal));
+        Assert.Contains(cleanupLogs, entry =>
+            entry.Message.StartsWith("0/1: Did not find any missing organizations out of 1", StringComparison.Ordinal));
+        Assert.Contains(cleanupLogs, entry =>
+            entry.Message.StartsWith("Found 0 orphaned events from missing organizations out of 1 since", StringComparison.Ordinal));
+        Assert.Equal(1000, await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency()));
     }
 
     [Fact]
