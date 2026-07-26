@@ -42,7 +42,7 @@ export function getSearchResourceForPathname(pathname: string): SearchResource {
  * Matches patterns like `field:value` or `field:(value1 OR value2)`.
  */
 function extractFilterFields(filter: string): string[] {
-    const fieldPattern = /(?:^|\s|[(!])[-+]?(\w[\w.@]*):/g;
+    const fieldPattern = /(?:^|\s|[(!])[-+]?(\w[\w.@-]*):/g;
     const fields: string[] = [];
     let match: null | RegExpExecArray;
 

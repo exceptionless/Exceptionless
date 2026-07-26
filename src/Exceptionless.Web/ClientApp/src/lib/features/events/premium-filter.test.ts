@@ -7,7 +7,7 @@ describe('filterUsesPremiumFeatures', () => {
         expect(filterUsesPremiumFeatures(filter, 'event')).toBe(false);
     });
 
-    it.each(['tags:important', 'data.@user.identity:blake', 'message:"out of memory"', '-tags:important', '+tags:important'])(
+    it.each(['tags:important', 'data.@user.identity:blake', 'data.Windows-identity:ejsmith', 'message:"out of memory"', '-tags:important', '+tags:important'])(
         'detects premium event filters: %s',
         (filter) => {
             expect(filterUsesPremiumFeatures(filter, 'event')).toBe(true);
