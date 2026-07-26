@@ -4,7 +4,7 @@ import type { CountResult, WorkInProgressResult } from '$shared/models';
 import { accessToken } from '$features/auth/index.svelte';
 import { queryKeys as stackQueryKeys } from '$features/stacks/api.svelte';
 import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
-import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, keepPreviousData, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
 import type { EventSummaryModel, SummaryTemplateKeys } from './components/summary/index';
@@ -240,7 +240,7 @@ export function getEventQuery(request: GetEventRequest) {
 }
 
 export function getEventsByReferenceQuery(request: GetEventsByReferenceRequest) {
-    return createQuery<EventSummaryModel<SummaryTemplateKeys>[], ProblemDetails>(() => ({
+    return createQuery<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.referenceId,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
@@ -253,12 +253,13 @@ export function getEventsByReferenceQuery(request: GetEventsByReferenceRequest) 
                     limit: 20,
                     mode: 'summary',
                     page: 1,
-                    ...request.params
+                    ...request.params,
+                    include: 'total'
                 },
                 signal
             });
 
-            return response.data!;
+            return response;
         },
         queryKey: queryKeys.eventsByReference(request.route.referenceId, request.route.projectId, request.params)
     }));
