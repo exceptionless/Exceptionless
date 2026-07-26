@@ -1,6 +1,6 @@
 # Custom Fields Architecture
 
-Custom fields let organizations index arbitrary event data properties for use in filters and search. This document covers the full lifecycle, slot system internals, deletion policy, and operator support.
+Custom fields let organizations explicitly select event data properties to index for use in filters and search. Indexing is forward-only: creating a definition affects new events and never mutates or reindexes historical events. This document covers the full lifecycle, slot system internals, deletion policy, and operator support.
 
 ## Overview
 
@@ -80,7 +80,18 @@ There is no application-level per-type slot ceiling — the framework relies on 
 5. **From this point on, new events with matching data keys are indexed into the slot**
 6. **Existing events are NOT backfilled** — they retain their original `Idx` content unchanged
 
-> **Search semantics on creation**: Custom field indexing applies only to events processed **after** the field definition is created. Historical events are not re-indexed. If you need historical data, you must re-ingest events or use data-level queries (`data.fieldname:value`) instead of slot queries.
+> **Search semantics on creation**: Custom field indexing applies only to events processed **after** the field definition is created. Historical events are not re-indexed. Both `data.fieldname:value` and `idx.fieldname:value` resolve to the new pooled slot, so neither expression searches a retained legacy named index. Re-ingest historical events if they must be searchable through the new definition.
+
+### Upgrade Cutover from Automatic Extended-Data Indexing
+
+Before this custom-field model, paid organizations automatically copied primitive extended-data values into named `Idx` fields and `data.fieldname:value` queries resolved to those legacy fields. This release intentionally replaces that behavior with explicit definitions:
+
+- Unregistered extended-data keys are no longer indexed.
+- Existing named `Idx` values remain physically unchanged but are not queried through a new custom-field definition.
+- Creating a definition indexes only events processed after creation; there is no automatic backfill.
+- The Exceptionless-owned session fields (`@ref:session`, `sessionend`, and `haserror`) are the narrow compatibility exception and continue to read both legacy and pooled storage during the retention window.
+
+Before upgrading a self-hosted installation, inventory saved views and integrations that filter arbitrary `data.*` fields. After upgrading, create definitions for the fields that still matter before resuming ingestion when uninterrupted forward indexing is required. Re-ingest retained historical events only when historical search continuity is worth the one-time cost.
 
 ### Updating a Field
 

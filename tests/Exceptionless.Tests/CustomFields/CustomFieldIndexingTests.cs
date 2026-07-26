@@ -235,14 +235,52 @@ public sealed class CustomFieldIndexingTests : IntegrationTestsBase
         var context = await _pipeline.RunAsync(ev, org, GetProject());
         Assert.False(context.HasError, context.ErrorMessage);
 
-        // The unregistered field may be in idx via legacy CopySimpleDataToIdx (as "unregistered_field-s")
-        // but should NOT have a custom field index entry (format: "{type}-{slot}")
+        // Unregistered fields are not copied to either legacy named fields or managed slots.
         if (context.Event.Idx is not null)
         {
+            Assert.DoesNotContain("unregistered_field-s", context.Event.Idx.Keys);
             Assert.DoesNotContain(context.Event.Idx.Keys, k =>
                 System.Text.RegularExpressions.Regex.IsMatch(k, @"^(bool|date|double|float|int|keyword|long|string)-\d+$")
                 && Equals(context.Event.Idx[k], "value"));
         }
+    }
+
+    [Fact]
+    public async Task CreatingField_IsForwardOnly_AndDoesNotBackfillLegacyEvents()
+    {
+        var legacyEvent = GenerateEvent();
+        legacyEvent.Source = "custom-field-cutover";
+        legacyEvent.StackId = TestConstants.StackId;
+        legacyEvent.Data = new DataDictionary { ["customer_id"] = "acme" };
+        legacyEvent.Idx = new DataDictionary { ["customer_id-s"] = "acme" };
+        await _eventRepository.AddAsync(legacyEvent, o => o.ImmediateConsistency());
+
+        var definition = await _customFieldDefinitionRepository.AddFieldAsync(
+            nameof(PersistentEvent), TestConstants.OrganizationId, "customer_id", "keyword");
+        await RefreshDataAsync();
+
+        var currentEvent = GenerateEvent();
+        currentEvent.Source = "custom-field-cutover";
+        currentEvent.Data = new DataDictionary { ["customer_id"] = "acme" };
+        var context = await _pipeline.RunAsync(currentEvent, GetOrganization(), GetProject());
+        Assert.False(context.HasError, context.ErrorMessage);
+        await RefreshDataAsync();
+
+        var matches = await _eventRepository.FindAsync(q => q
+            .Organization(TestConstants.OrganizationId)
+            .FieldEquals(eventDocument => eventDocument.Source, "custom-field-cutover")
+            .FilterExpression("data.customer_id:acme"));
+
+        Assert.Single(matches.Documents);
+        Assert.Equal(context.Event.Id, matches.Documents.Single().Id);
+
+        var legacyResults = await _eventRepository.FindAsync(q => q
+            .Organization(TestConstants.OrganizationId)
+            .FieldEquals(eventDocument => eventDocument.Id, legacyEvent.Id)
+            .Include(eventDocument => eventDocument.Id, eventDocument => eventDocument.Idx));
+        var reloadedLegacyEvent = Assert.Single(legacyResults.Documents);
+        Assert.Equal("acme", reloadedLegacyEvent.Idx?["customer_id-s"]);
+        Assert.False(reloadedLegacyEvent.Idx?.ContainsKey(definition.GetIdxName()) ?? false);
     }
 
     [Fact]
