@@ -9,7 +9,6 @@
 
     import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
-    import { Checkbox } from '$comp/ui/checkbox';
     import * as Dialog from '$comp/ui/dialog';
     import * as InputGroup from '$comp/ui/input-group';
     import { Separator } from '$comp/ui/separator';
@@ -171,15 +170,15 @@
                             <p class="text-muted-foreground py-12 text-center text-sm">No columns match your search</p>
                         {:else}
                             {#each filteredAvailableColumns as column (column.id)}
-                                <div
-                                    class="bg-background hover:bg-muted/70 flex min-h-11 items-center gap-3 rounded-lg border px-3 text-sm shadow-xs transition-colors"
-                                    role="listitem"
-                                >
-                                    <Checkbox aria-label={`Add ${getColumnLabel(column)} column`} checked={false} onclick={() => addColumn(column)} />
-                                    <span class="min-w-0 flex-1 truncate font-medium">{getColumnLabel(column)}</span>
-                                    <Button variant="ghost" size="icon-sm" onclick={() => addColumn(column)} title={`Add ${getColumnLabel(column)} column`}>
-                                        <Plus />
-                                        <span class="sr-only">Add {getColumnLabel(column)} column</span>
+                                <div role="listitem">
+                                    <Button
+                                        variant="ghost"
+                                        class="bg-background hover:bg-muted/70 h-11 w-full justify-start gap-3 rounded-lg border px-3 text-sm font-normal shadow-xs transition-colors"
+                                        onclick={() => addColumn(column)}
+                                        aria-label={`Add ${getColumnLabel(column)} column`}
+                                    >
+                                        <span class="min-w-0 flex-1 truncate text-left font-medium">{getColumnLabel(column)}</span>
+                                        <Plus class="shrink-0" aria-hidden="true" />
                                     </Button>
                                 </div>
                             {/each}
@@ -217,7 +216,7 @@
                         {#each visibleColumns as column, index (column.id)}
                             <div
                                 class={[
-                                    'bg-background flex min-h-11 cursor-grab items-center gap-3 rounded-lg border px-3 text-sm shadow-xs transition-colors active:cursor-grabbing',
+                                    'bg-background flex min-h-11 cursor-grab items-stretch rounded-lg border text-sm shadow-xs transition-colors active:cursor-grabbing',
                                     draggedColumnId === column.id && 'bg-muted ring-ring/40 ring-2'
                                 ]}
                                 draggable="true"
@@ -226,13 +225,18 @@
                                 ondragend={handleDragEnd}
                                 role="listitem"
                             >
-                                <Checkbox
-                                    aria-label={`Remove ${getColumnLabel(column)} column`}
-                                    checked={true}
+                                <Button
+                                    variant="ghost"
+                                    class="hover:bg-muted/70 h-auto min-w-0 flex-1 justify-start gap-3 rounded-l-lg rounded-r-none px-3 font-normal"
                                     disabled={!canRemoveColumn(column)}
                                     onclick={() => removeColumn(column)}
-                                />
-                                <span class="min-w-0 flex-1 truncate font-medium">{getColumnLabel(column)}</span>
+                                    aria-label={`Remove ${getColumnLabel(column)} column`}
+                                >
+                                    <span class="min-w-0 flex-1 truncate text-left font-medium">{getColumnLabel(column)}</span>
+                                    {#if canRemoveColumn(column)}
+                                        <X class="shrink-0" aria-hidden="true" />
+                                    {/if}
+                                </Button>
                                 <div class="flex shrink-0 items-center gap-1">
                                     <Button variant="ghost" size="icon-sm" onclick={() => moveColumnUp(column.id)} disabled={index === 0} title="Move up">
                                         <ChevronUp />
@@ -248,17 +252,6 @@
                                         <ChevronDown />
                                         <span class="sr-only">Move {getColumnLabel(column)} down</span>
                                     </Button>
-                                    {#if canRemoveColumn(column)}
-                                        <Button
-                                            variant="ghost"
-                                            size="icon-sm"
-                                            onclick={() => removeColumn(column)}
-                                            title={`Remove ${getColumnLabel(column)} column`}
-                                        >
-                                            <X />
-                                            <span class="sr-only">Remove {getColumnLabel(column)} column</span>
-                                        </Button>
-                                    {/if}
                                     <GripVertical class="text-muted-foreground/70" aria-hidden="true" />
                                 </div>
                             </div>

@@ -14,6 +14,7 @@ import {
     hasMissingSavedViewSlug,
     hasSavedColumnOrder,
     hasSavedColumnVisibility,
+    savedViewColumnsEqual,
     type SavedViewQueryParams,
     setSortQueryParam,
     setTimeQueryParam,
@@ -209,6 +210,32 @@ describe('useSavedViews', () => {
             // Act & Assert
             expect(hasSavedColumnVisibility({})).toBe(true);
             expect(hasSavedColumnVisibility({ events: false })).toBe(true);
+        });
+
+        it('treats legacy visibility missing default-hidden columns as unchanged', () => {
+            // Arrange
+            const current = { project: false, summary: true, tags: false };
+            const legacySaved = { summary: true };
+            const defaults = { project: false, tags: false };
+
+            // Act
+            const result = savedViewColumnsEqual(current, legacySaved, defaults);
+
+            // Assert
+            expect(result).toBe(true);
+        });
+
+        it('detects a changed column after applying default visibility', () => {
+            // Arrange
+            const current = { project: true, summary: true, tags: false };
+            const legacySaved = { summary: true };
+            const defaults = { project: false, tags: false };
+
+            // Act
+            const result = savedViewColumnsEqual(current, legacySaved, defaults);
+
+            // Assert
+            expect(result).toBe(false);
         });
 
         it('does not compare column order when a saved view omits or clears column order', () => {

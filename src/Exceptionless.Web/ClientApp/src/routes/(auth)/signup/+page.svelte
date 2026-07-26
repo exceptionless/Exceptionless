@@ -66,7 +66,7 @@
         <div>
             {#if enableOAuthLogin}
                 <P class="text-center">Sign up with</P>
-                <div class="auto-cols-2 grid grid-flow-col grid-rows-2 gap-4">
+                <div class="grid auto-cols-2 grid-flow-col grid-rows-2 gap-4">
                     {#if microsoftClientId}
                         <Button aria-label="Sign up with Microsoft" onclick={() => liveLogin(redirectUrl)}>
                             <MicrosoftIcon class="size-4" /> Microsoft

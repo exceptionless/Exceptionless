@@ -39,7 +39,7 @@
 {{ for style of extraStyles || [] }}
 <link rel="stylesheet" href="{{ style }}">
 {{ /for }}
-<link rel="stylesheet" href="/assets/css/custom.css">
+<link rel="stylesheet" href="/assets/css/custom.css{{ siteAssetVersionQuery }}">
   </head>
   <body class="{{ bodyClass || "home page custom-background top-navbar" }}">
     <header id="banner" class="topnavbar navbar navbar-fixed-top" role="banner">
@@ -79,7 +79,14 @@
       {{ content }}
     </main>
 
-    <dialog id="site-search-modal" class="modal site-search-dialog" aria-label="Search Exceptionless" data-search-ignore>
+    <dialog id="site-search-modal" class="modal site-search-dialog" aria-labelledby="site-search-title" data-search-ignore>
+        <div class="modal-header site-search-header">
+          <div>
+            <p class="site-search-eyebrow">Exceptionless Docs</p>
+            <h2 id="site-search-title">Search documentation</h2>
+          </div>
+          <button class="site-search-close" type="button" data-site-search-close aria-label="Close search">&times;</button>
+        </div>
         <div class="modal-body site-search-body">
           <form id="site-search-form" class="site-search-form" role="search">
           <div class="site-search-input-row">
@@ -88,7 +95,7 @@
               id="site-search-input"
               type="search"
               role="combobox"
-              placeholder="Search docs, clients, self-hosting..."
+              placeholder="Search docs, clients, and self-hosting..."
               autocomplete="off"
               spellcheck="false"
               aria-label="Search Exceptionless"
@@ -103,9 +110,9 @@
           <ol id="site-search-results" class="site-search-results" role="listbox" aria-label="Search results"></ol>
         </div>
         <div class="modal-footer site-search-footer" aria-hidden="true">
-          <span>Up/Down to move</span>
-          <span>Enter to open</span>
-          <span>Esc to close</span>
+          <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> Navigate</span>
+          <span><kbd>Enter</kbd> Open</span>
+          <span><kbd>Esc</kbd> Close</span>
         </div>
     </dialog>
 
