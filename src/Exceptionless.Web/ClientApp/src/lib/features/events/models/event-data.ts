@@ -22,7 +22,7 @@ export interface ErrorInfo extends InnerErrorInfo {
 }
 
 export interface IErrorData extends Record<string, unknown> {
-    '@ext'?: Record<string, unknown>;
+    '@ext'?: Record<string, unknown> | string;
     '@target'?: ITargetErrorData;
 }
 
@@ -48,7 +48,7 @@ export interface IRequestInfoInfoData extends Record<string, unknown> {
 }
 
 export interface ISimpleErrorInfoData extends Record<string, unknown> {
-    '@ext'?: Record<string, unknown>;
+    '@ext'?: Record<string, unknown> | string;
 }
 
 export interface ITargetErrorData extends Record<string, string | undefined> {
