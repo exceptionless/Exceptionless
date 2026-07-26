@@ -3,8 +3,10 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Lock;
+using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.CustomFields;
 using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Options;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Services;
@@ -18,25 +20,26 @@ public class EventCustomFieldService : IStartupAction
 
     private const int MaxKeywordLength = 256;
 
-    /// <summary>
-    /// System fields that are auto-provisioned per organization and cannot be deleted.
-    /// These support the session system and core event metadata.
-    /// Because they are always provisioned first in their respective types, their slot numbers are deterministic.
-    /// </summary>
-    public static readonly IReadOnlyList<(string Name, string IndexType)> SystemFields =
-    [
-        ("@ref:session", "keyword"),
-        (Event.KnownDataKeys.SessionEnd, "date"),
-        (Event.KnownDataKeys.SessionHasError, "bool")
-    ];
-
-    /// <summary>
-    /// Well-known idx field names for system fields. These are deterministic because system fields
-    /// are always provisioned first via EnsureSystemFieldsAsync (slot 1 for each type).
-    /// </summary>
     public const string SessionReferenceIdxField = "keyword-1";
     public const string SessionEndIdxField = "date-1";
     public const string SessionHasErrorIdxField = "bool-1";
+
+    /// <summary>
+    /// Canonical session field definitions shared by provisioning, indexing, and query compatibility.
+    /// </summary>
+    public static readonly SystemFieldDescriptor SessionReferenceField =
+        new("@ref:session", "keyword", SessionReferenceIdxField, "session-r");
+    public static readonly SystemFieldDescriptor SessionEndField =
+        new(Event.KnownDataKeys.SessionEnd, "date", SessionEndIdxField, "sessionend-d");
+    public static readonly SystemFieldDescriptor SessionHasErrorField =
+        new(Event.KnownDataKeys.SessionHasError, "bool", SessionHasErrorIdxField, "haserror-b");
+
+    public static readonly IReadOnlyList<SystemFieldDescriptor> SystemFields =
+    [
+        SessionReferenceField,
+        SessionEndField,
+        SessionHasErrorField
+    ];
 
     /// <summary>
     /// The set of index types registered by <c>AddStandardCustomFieldTypes()</c> in <c>EventIndex</c>.
@@ -67,20 +70,59 @@ public class EventCustomFieldService : IStartupAction
     }
 
     /// <summary>
-    /// Ensures system fields exist for the given organization.
+    /// Ensures system fields exist for the given organization and occupy their reserved slots.
+    /// Invalid persisted state is rejected rather than silently creating definitions that queries cannot read.
     /// </summary>
-    public async Task EnsureSystemFieldsAsync(string organizationId)
+    public Task EnsureSystemFieldsAsync(string organizationId)
+        => EnsureSystemFieldsAsync(organizationId, CancellationToken.None);
+
+    private async Task EnsureSystemFieldsAsync(string organizationId, CancellationToken cancellationToken)
     {
-        var existing = await _customFieldDefinitionRepository.GetFieldMappingAsync(nameof(PersistentEvent), organizationId);
+        await using var provisioningLock = await _lockProvider.AcquireAsync(
+            $"custom-field-system:{organizationId}",
+            TimeSpan.FromSeconds(30),
+            cancellationToken: cancellationToken);
+        if (provisioningLock is null)
+            throw new TimeoutException("System custom field provisioning is already in progress for this organization. Please try again.");
 
-        foreach (var (name, indexType) in SystemFields)
+        var results = await _customFieldDefinitionRepository.FindAsync(
+            q => q
+                .FieldEquals(field => field.EntityType, nameof(PersistentEvent))
+                .FieldEquals(field => field.TenantKey, organizationId),
+            o => o.IncludeSoftDeletes().SearchAfterPaging().PageLimit(1000));
+
+        var definitions = new List<CustomFieldDefinition>();
+        do
         {
-            if (existing.ContainsKey(name))
-                continue;
+            definitions.AddRange(results.Documents);
+        } while (await results.NextPageAsync());
 
-            await _customFieldDefinitionRepository.AddFieldAsync(
-                nameof(PersistentEvent), organizationId, name, indexType,
-                description: $"System field: {name}");
+        foreach (var systemField in SystemFields)
+        {
+            var namedDefinitions = definitions
+                .Where(definition => String.Equals(definition.Name, systemField.Name, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (namedDefinitions.Count > 1)
+                throw CreateSystemFieldConflict(systemField, $"found {namedDefinitions.Count} definitions with the reserved name");
+
+            if (namedDefinitions.Count == 1)
+            {
+                ValidateSystemFieldDefinition(systemField, namedDefinitions[0], organizationId);
+                continue;
+            }
+
+            var slotOccupant = definitions.FirstOrDefault(definition =>
+                String.Equals(definition.IndexType, systemField.IndexType, StringComparison.Ordinal)
+                && String.Equals(definition.GetIdxName(), systemField.IdxField, StringComparison.Ordinal));
+            if (slotOccupant is not null)
+                throw CreateSystemFieldConflict(systemField, $"reserved slot is occupied by '{slotOccupant.Name}'");
+
+            var definition = await _customFieldDefinitionRepository.AddFieldAsync(
+                nameof(PersistentEvent), organizationId, systemField.Name, systemField.IndexType,
+                description: $"System field: {systemField.Name}");
+            ValidateSystemFieldDefinition(systemField, definition, organizationId);
+            definitions.Add(definition);
         }
     }
 
@@ -89,7 +131,13 @@ public class EventCustomFieldService : IStartupAction
     /// </summary>
     public static bool IsSystemField(string fieldName)
     {
-        return SystemFields.Any(f => String.Equals(f.Name, fieldName, StringComparison.OrdinalIgnoreCase));
+        return TryGetSystemField(fieldName, out _);
+    }
+
+    public static bool TryGetSystemField(string fieldName, out SystemFieldDescriptor descriptor)
+    {
+        descriptor = SystemFields.FirstOrDefault(field => String.Equals(field.Name, fieldName, StringComparison.OrdinalIgnoreCase))!;
+        return descriptor is not null;
     }
 
     /// <summary>
@@ -107,13 +155,13 @@ public class EventCustomFieldService : IStartupAction
         CancellationToken cancellationToken = default)
     {
         // Ensure system fields are provisioned before user-defined fields so they occupy slot 1 of their type.
-        await EnsureSystemFieldsAsync(organizationId);
+        await EnsureSystemFieldsAsync(organizationId, cancellationToken);
 
         await using var fieldLock = await _lockProvider.AcquireAsync($"custom-field-create:{organizationId}", TimeSpan.FromSeconds(30), cancellationToken: cancellationToken);
         if (fieldLock is null)
         {
             _logger.LogWarning("Could not acquire custom field creation lock for organization {OrganizationId}", organizationId);
-            return null;
+            throw new TimeoutException("Custom field creation is already in progress for this organization. Please try again.");
         }
 
         // Re-read the field mapping inside the lock for an accurate count.
@@ -151,6 +199,9 @@ public class EventCustomFieldService : IStartupAction
 
         foreach (var organizationGroup in documentsByOrganization)
         {
+            foreach (var document in organizationGroup)
+                ClearCustomFieldSlots(document);
+
             IDictionary<string, CustomFieldDefinition>? fieldMapping = null;
             try
             {
@@ -158,7 +209,7 @@ public class EventCustomFieldService : IStartupAction
 
                 // Lazily ensure all system fields are provisioned for this organization.
                 // Check each system field individually to handle partial-provisioning failures.
-                if (SystemFields.Any(f => !fieldMapping.ContainsKey(f.Name)))
+                if (SystemFields.Any(field => !fieldMapping.ContainsKey(field.Name)))
                 {
                     await EnsureSystemFieldsAsync(organizationGroup.Key);
                     fieldMapping = await _customFieldDefinitionRepository.GetFieldMappingAsync(nameof(PersistentEvent), organizationGroup.Key);
@@ -186,8 +237,6 @@ public class EventCustomFieldService : IStartupAction
 
     private void ProcessEventCustomFields(PersistentEvent ev, IDictionary<string, CustomFieldDefinition> fieldMapping)
     {
-        ClearCustomFieldSlots(ev);
-
         if (fieldMapping.Count == 0 || ev.Data is null || ev.Data.Count == 0)
             return;
 
@@ -428,4 +477,32 @@ public class EventCustomFieldService : IStartupAction
         return name.All(c => Char.IsAsciiLetterOrDigit(c) || c == '_' || c == '.' || c == '-');
     }
 
+    private static void ValidateSystemFieldDefinition(SystemFieldDescriptor systemField, CustomFieldDefinition definition, string organizationId)
+    {
+        if (!String.Equals(definition.Name, systemField.Name, StringComparison.Ordinal))
+            throw CreateSystemFieldConflict(systemField, $"name is '{definition.Name}'");
+
+        if (!String.Equals(definition.EntityType, nameof(PersistentEvent), StringComparison.Ordinal))
+            throw CreateSystemFieldConflict(systemField, $"entity type is '{definition.EntityType}'");
+
+        if (!String.Equals(definition.TenantKey, organizationId, StringComparison.Ordinal))
+            throw CreateSystemFieldConflict(systemField, $"tenant is '{definition.TenantKey}'");
+
+        if (!String.Equals(definition.IndexType, systemField.IndexType, StringComparison.Ordinal))
+            throw CreateSystemFieldConflict(systemField, $"index type is '{definition.IndexType}'");
+
+        if (!String.Equals(definition.GetIdxName(), systemField.IdxField, StringComparison.Ordinal))
+            throw CreateSystemFieldConflict(systemField, $"slot is '{definition.GetIdxName()}'");
+
+        if (definition.IsDeleted)
+            throw CreateSystemFieldConflict(systemField, "definition is soft-deleted");
+    }
+
+    private static InvalidOperationException CreateSystemFieldConflict(SystemFieldDescriptor systemField, string reason)
+    {
+        return new InvalidOperationException(
+            $"System custom field '{systemField.Name}' must be an active {systemField.IndexType} field at idx.{systemField.IdxField}, but {reason}.");
+    }
+
+    public sealed record SystemFieldDescriptor(string Name, string IndexType, string IdxField, string LegacyIdxField);
 }

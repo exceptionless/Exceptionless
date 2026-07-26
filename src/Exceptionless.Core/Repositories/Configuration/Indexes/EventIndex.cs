@@ -9,6 +9,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories.Queries;
+using Exceptionless.Core.Repositories.Queries.Visitors;
 using Exceptionless.Core.Serialization;
 using Foundatio.Caching;
 using Foundatio.Parsers.ElasticQueries;
@@ -148,6 +149,7 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
                 EventIndexExtensions.DataPath<UserInfo>(Event.KnownDataKeys.UserInfo, u => u.Identity),
                 EventIndexExtensions.DataPath<UserInfo>(Event.KnownDataKeys.UserInfo, u => u.Name)
             ])
+            .AddQueryVisitor(new EventSystemFieldCompatibilityQueryVisitor())
             .UseFieldMap(new Dictionary<string, string> {
                     { Alias.BrowserVersion, EventIndexExtensions.DataDictionaryPath<RequestInfo>(Event.KnownDataKeys.RequestInfo, r => r.Data, RequestInfo.KnownDataKeys.BrowserVersion) },
                     { Alias.BrowserMajorVersion, EventIndexExtensions.DataDictionaryPath<RequestInfo>(Event.KnownDataKeys.RequestInfo, r => r.Data, RequestInfo.KnownDataKeys.BrowserMajorVersion) },

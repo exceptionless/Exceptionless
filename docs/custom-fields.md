@@ -55,9 +55,9 @@ Three system fields are provisioned automatically per organization and are **pro
 | `haserror` | `bool` | `bool-1` | Whether the session has an associated error |
 | `@ref:session` | `keyword` | `keyword-1` | Session reference identifier |
 
-Because system fields are provisioned via `EnsureSystemFieldsAsync` **before** any user-defined fields, they always occupy slot 1 of their type. User fields for `date`, `bool`, and `keyword` start at slot 2.
+`EnsureSystemFieldsAsync` provisions these definitions before user-defined fields and verifies that each reserved name has the expected type and slot. It fails with a deterministic conflict if a reserved definition is duplicated, soft-deleted, assigned to the wrong slot or type, or if another definition already occupies a reserved slot. This prevents silently writing data to one slot while query resolution reads another.
 
-If `EnsureSystemFieldsAsync` is not called (for example, for a legacy organization created before custom fields were introduced), the first user to create a `date`, `bool`, or `keyword` field could claim slot 1. The API handler calls `EnsureSystemFieldsAsync` before every field creation to prevent this.
+Legacy event documents can still contain the pre-pooled fields `idx.session-r`, `idx.sessionend-d`, and `idx.haserror-b`. Session filters expand across both the current pooled slot and the corresponding legacy field. Positive, range, and exists expressions use `OR`; missing expressions use `AND`; and negation wraps the combined expression.
 
 ### Slot Exhaustion and Elasticsearch Field Limits
 
@@ -88,23 +88,18 @@ Only `Description` and `DisplayOrder` are mutable. `Name`, `IndexType`, and `Ind
 
 ### Deleting a Field
 
-Deletion is a two-phase process designed to prevent **slot reuse corruption** — where a recycled slot causes historical events for a deleted field to appear in queries for a new field with the same slot.
+Deletion is a synchronous soft-delete designed to prevent **slot reuse corruption** — where a recycled slot causes historical events for a deleted field to appear in queries for a new field with the same slot.
 
-**Phase 1 — Soft Delete (synchronous):**
 1. API checks for usage in saved view filters — returns 409 Conflict if found
 2. API marks `IsDeleted = true` and calls `SaveAsync`
 3. The field name is freed from the slot system (a new field can use the same name)
 4. The slot number is **not** freed — it remains occupied
 5. New events no longer index data into this slot
 6. API returns 202 Accepted; the field disappears from the management UI
-7. A `RemoveCustomFieldWorkItem` is enqueued
-
-**Phase 2 — Slot Cleanup (deferred):**
-The `RemoveCustomFieldWorkItemHandler` currently **acknowledges** the soft-delete without hard-deleting the definition record. This is intentional:
 
 > **Slot Reuse Safety**: If a slot is freed and immediately recycled for a new field, historical events within the retention window that had data for the old field will appear in queries for the new field. For example: delete "customer_id" (keyword-3), create "project_id" (gets keyword-3), then searching `project_id:acme` returns historical events where `customer_id` was `acme`. This is a data integrity violation.
 
-Hard-delete (slot freeing) is deferred until retention-aware cleanup is implemented. Until then, the slot number grows monotonically and is never reused for a different field.
+Hard-delete (slot freeing) is deferred until retention-aware cleanup is implemented. Until then, the slot number grows monotonically and is never reused for a different field. Deleting the owning organization is the exception: organization teardown permanently removes all of its custom-field definitions because no tenant data remains eligible for future queries.
 
 > **Search semantics on deletion**: After Phase 1, no new events write to the deleted slot and the field name no longer resolves in queries. Existing slot values remain in historical event documents until those events age out, but direct raw-slot queries are blocked by the repository query resolver.
 
@@ -132,7 +127,7 @@ Soft-deleted fields awaiting cleanup do **not** count toward the active quota. A
 
 ### Deletion Blocked by Saved Views
 
-If a custom field is referenced in any saved view filter for the organization, deletion is blocked with HTTP 409 Conflict. The filter is checked using a regex that matches `idx.{fieldName}` tokens in the filter string. Users must remove the field from all saved view filters before deletion proceeds.
+If a custom field is referenced in any saved view filter for the organization, deletion is blocked with HTTP 409 Conflict. The filter is checked using a regex that matches either `idx.{fieldName}` or `data.{fieldName}` tokens in the filter string. Users must remove the field from all saved view filters before deletion proceeds.
 
 ## Plan Restrictions
 

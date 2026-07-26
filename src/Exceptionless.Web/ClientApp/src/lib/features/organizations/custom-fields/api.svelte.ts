@@ -1,32 +1,15 @@
+import type {
+    CustomFieldDefinitionResponse as ApiCustomFieldDefinition,
+    NewCustomFieldDefinition as ApiNewCustomFieldDefinition,
+    UpdateCustomFieldDefinition as ApiUpdateCustomFieldDefinition
+} from '$lib/generated/api';
 import type { ProblemDetails } from '@exceptionless/fetchclient';
 
 import { accessToken } from '$features/auth/index.svelte';
 import { useFetchClient } from '@exceptionless/fetchclient';
 import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 
-import type { CustomFieldDefinition, NewCustomFieldDefinition, UpdateCustomFieldDefinition } from './models';
-
-interface ApiCustomFieldDefinition {
-    created_utc: string;
-    description?: string;
-    display_order: number;
-    id: string;
-    index_type: string;
-    name: string;
-    updated_utc: string;
-}
-
-interface ApiNewCustomFieldDefinition {
-    description?: string;
-    display_order?: number;
-    index_type: string;
-    name: string;
-}
-
-interface ApiUpdateCustomFieldDefinition {
-    description?: string;
-    display_order?: number;
-}
+import { type CustomFieldDefinition, type NewCustomFieldDefinition, parseIndexType, type UpdateCustomFieldDefinition } from './models';
 
 export const queryKeys = {
     customFields: (organizationId: string | undefined) => ['Organization', organizationId, 'custom-fields'] as const,
@@ -124,10 +107,10 @@ export function updateCustomFieldMutation(request: UpdateCustomFieldRequest) {
 function mapApiDefinition(definition: ApiCustomFieldDefinition): CustomFieldDefinition {
     return {
         createdUtc: definition.created_utc,
-        description: definition.description,
+        description: definition.description ?? undefined,
         displayOrder: definition.display_order,
         id: definition.id,
-        indexType: definition.index_type,
+        indexType: parseIndexType(definition.index_type),
         name: definition.name,
         updatedUtc: definition.updated_utc
     };

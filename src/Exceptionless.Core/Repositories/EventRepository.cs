@@ -17,7 +17,6 @@ namespace Exceptionless.Core.Repositories;
 
 public class EventRepository : RepositoryOwnedByOrganizationAndProject<PersistentEvent>, IEventRepository
 {
-    private const string LegacySessionEndIdxField = "sessionend-d";
     private readonly TimeProvider _timeProvider;
     private readonly IProjectRepository _projectRepository;
     private readonly IStackRepository _stackRepository;
@@ -51,7 +50,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
                 MustNot =
                 [
                     new ExistsQuery { Field = $"idx.{EventCustomFieldService.SessionEndIdxField}" },
-                    new ExistsQuery { Field = $"idx.{LegacySessionEndIdxField}" }
+                    new ExistsQuery { Field = $"idx.{EventCustomFieldService.SessionEndField.LegacyIdxField}" }
                 ]
             });
 
@@ -236,14 +235,6 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
     /// Blocks raw slot access (e.g., idx.keyword-7) to prevent querying deleted or other tenants' fields.
     /// Returns null for non-idx/data fields so the global resolver (field aliases) still works.
     /// </summary>
-    // Well-known system field slot mappings (deterministic — always slot 1 for each type).
-    private static readonly Dictionary<string, string> _systemFieldSlots = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["@ref:session"] = EventCustomFieldService.SessionReferenceIdxField,
-        [Event.KnownDataKeys.SessionEnd] = EventCustomFieldService.SessionEndIdxField,
-        [Event.KnownDataKeys.SessionHasError] = EventCustomFieldService.SessionHasErrorIdxField,
-    };
-
     protected override async Task OnCustomFieldsBeforeQuery(object sender, BeforeQueryEventArgs<PersistentEvent> args)
     {
         var tenantKey = await ResolveTenantKeyAsync(args.Query);
@@ -269,8 +260,14 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
                 return null;
 
             // System fields have deterministic slots that don't require tenant resolution.
-            if (_systemFieldSlots.TryGetValue(fieldName, out var systemSlot))
-                return $"idx.{systemSlot}";
+            if (EventCustomFieldService.TryGetSystemField(fieldName, out var systemField))
+                return $"idx.{systemField.IdxField}";
+
+            if (EventCustomFieldService.SystemFields.Any(systemField =>
+                String.Equals(systemField.LegacyIdxField, fieldName, StringComparison.OrdinalIgnoreCase)))
+            {
+                return $"idx.{fieldName}";
+            }
 
             // Non-system fields require a tenant key to look up their slot assignment.
             if (String.IsNullOrEmpty(tenantKey) || definitionRepo is null)

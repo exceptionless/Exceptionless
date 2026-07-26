@@ -1,17 +1,20 @@
+export const INDEX_TYPES = ['keyword', 'string', 'int', 'long', 'float', 'double', 'bool', 'date'] as const;
 export interface CustomFieldDefinition {
     createdUtc: string;
     description?: string;
     displayOrder: number;
     id: string;
-    indexType: string;
+    indexType: IndexType;
     name: string;
     updatedUtc: string;
 }
 
+export type IndexType = (typeof INDEX_TYPES)[number];
+
 export interface NewCustomFieldDefinition {
     description?: string;
     displayOrder?: number;
-    indexType: string;
+    indexType: IndexType;
     name: string;
 }
 
@@ -19,9 +22,6 @@ export interface UpdateCustomFieldDefinition {
     description?: string;
     displayOrder?: number;
 }
-
-export const INDEX_TYPES = ['keyword', 'string', 'int', 'long', 'float', 'double', 'bool', 'date'] as const;
-export type IndexType = (typeof INDEX_TYPES)[number];
 
 export const INDEX_TYPE_LABELS: Record<IndexType, string> = {
     bool: 'Boolean',
@@ -44,3 +44,7 @@ export const INDEX_TYPE_DESCRIPTIONS: Record<IndexType, string> = {
     long: '64-bit whole number. For very large integers.',
     string: 'Full-text search. Best for messages and descriptions.'
 };
+
+export function parseIndexType(value: null | string | undefined, fallback: IndexType = 'keyword'): IndexType {
+    return INDEX_TYPES.find((indexType) => indexType === value) ?? fallback;
+}

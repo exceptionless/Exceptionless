@@ -30,6 +30,10 @@ export function filterUsesPremiumFeatures(filter: null | string | undefined): bo
     return fields.some((field) => !FREE_QUERY_FIELDS.has(field.toLowerCase()));
 }
 
+export function savedFilterUsesPremiumFeatures(filter: null | string | undefined, storedValue: boolean | undefined): boolean {
+    return storedValue === true || filterUsesPremiumFeatures(filter);
+}
+
 /**
  * Extracts field names from a Lucene-style filter string.
  * Matches patterns like `field:value` or `field:(value1 OR value2)`.

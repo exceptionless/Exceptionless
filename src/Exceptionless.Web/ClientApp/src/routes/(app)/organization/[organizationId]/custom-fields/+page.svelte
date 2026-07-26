@@ -23,6 +23,7 @@
         INDEX_TYPE_LABELS,
         INDEX_TYPES,
         type IndexType,
+        parseIndexType,
         updateCustomFieldMutation
     } from '$features/organizations/custom-fields';
     import { ProblemDetails } from '@exceptionless/fetchclient';
@@ -238,8 +239,8 @@
                         <Table.Row>
                             <Table.Cell class="font-mono text-sm">{field.name}</Table.Cell>
                             <Table.Cell>
-                                <Badge variant="secondary" title={INDEX_TYPE_DESCRIPTIONS[field.indexType as IndexType]}>
-                                    {INDEX_TYPE_LABELS[field.indexType as IndexType] ?? field.indexType}
+                                <Badge variant="secondary" title={INDEX_TYPE_DESCRIPTIONS[field.indexType]}>
+                                    {INDEX_TYPE_LABELS[field.indexType]}
                                 </Badge>
                             </Table.Cell>
                             <Table.Cell class="text-muted-foreground max-w-xs truncate">{field.description ?? '—'}</Table.Cell>
@@ -308,7 +309,7 @@
 
             <Field.Field>
                 <Field.Label for="field-type">Index Type <span class="text-destructive">*</span></Field.Label>
-                <Select.Root type="single" value={newFieldIndexType} onValueChange={(v) => (newFieldIndexType = (v ?? 'keyword') as IndexType)}>
+                <Select.Root type="single" value={newFieldIndexType} onValueChange={(value) => (newFieldIndexType = parseIndexType(value))}>
                     <Select.Trigger id="field-type" class="w-full">
                         <span class="font-medium">{INDEX_TYPE_LABELS[newFieldIndexType]}</span>
                         <span class="text-muted-foreground ml-2 text-xs">{INDEX_TYPE_DESCRIPTIONS[newFieldIndexType]}</span>

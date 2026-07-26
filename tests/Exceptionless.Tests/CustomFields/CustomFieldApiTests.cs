@@ -30,6 +30,9 @@ public sealed class CustomFieldApiTests : IntegrationTestsBase
         await base.ResetDataAsync();
         var service = GetService<SampleDataService>();
         await service.CreateDataAsync();
+
+        var eventCustomFieldService = GetService<EventCustomFieldService>();
+        await eventCustomFieldService.EnsureSystemFieldsAsync(SampleDataService.TEST_ORG_ID);
     }
 
     [Fact]

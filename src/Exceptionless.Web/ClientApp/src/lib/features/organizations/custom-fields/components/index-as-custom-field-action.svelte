@@ -15,7 +15,8 @@
         INDEX_TYPE_DESCRIPTIONS,
         INDEX_TYPE_LABELS,
         INDEX_TYPES,
-        type IndexType
+        type IndexType,
+        parseIndexType
     } from '$features/organizations/custom-fields';
     import { ProblemDetails } from '@exceptionless/fetchclient';
     import Database from '@lucide/svelte/icons/database';
@@ -106,7 +107,7 @@
 
                 <Field.Field>
                     <Field.Label for="index-type">Index Type</Field.Label>
-                    <Select.Root type="single" value={selectedType} onValueChange={(v) => (selectedType = (v ?? 'keyword') as IndexType)}>
+                    <Select.Root type="single" value={selectedType} onValueChange={(value) => (selectedType = parseIndexType(value))}>
                         <Select.Trigger id="index-type" class="w-full">
                             <span class="font-medium">{INDEX_TYPE_LABELS[selectedType]}</span>
                             <span class="text-muted-foreground ml-2 text-xs">{INDEX_TYPE_DESCRIPTIONS[selectedType]}</span>

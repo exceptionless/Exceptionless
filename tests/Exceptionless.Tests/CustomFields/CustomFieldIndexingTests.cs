@@ -21,6 +21,7 @@ public sealed class CustomFieldIndexingTests : IntegrationTestsBase
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly ICustomFieldDefinitionRepository _customFieldDefinitionRepository;
+    private readonly EventCustomFieldService _eventCustomFieldService;
     private readonly OrganizationData _organizationData;
     private readonly ProjectData _projectData;
     private readonly UserData _userData;
@@ -35,6 +36,7 @@ public sealed class CustomFieldIndexingTests : IntegrationTestsBase
         _organizationRepository = GetService<IOrganizationRepository>();
         _projectRepository = GetService<IProjectRepository>();
         _customFieldDefinitionRepository = GetService<ICustomFieldDefinitionRepository>();
+        _eventCustomFieldService = GetService<EventCustomFieldService>();
         _organizationData = GetService<OrganizationData>();
         _projectData = GetService<ProjectData>();
         _userData = GetService<UserData>();
@@ -46,6 +48,155 @@ public sealed class CustomFieldIndexingTests : IntegrationTestsBase
     {
         await base.ResetDataAsync();
         await CreateProjectDataAsync();
+        await _eventCustomFieldService.EnsureSystemFieldsAsync(TestConstants.OrganizationId);
+    }
+
+    [Fact]
+    public async Task EnsureSystemFields_ReservedSlotOccupied_ThrowsConflict()
+    {
+        await _customFieldDefinitionRepository.AddFieldAsync(
+            nameof(PersistentEvent), "reserved-slot-organization", "claimed_keyword_slot", "keyword");
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _eventCustomFieldService.EnsureSystemFieldsAsync("reserved-slot-organization"));
+
+        Assert.Contains("reserved slot is occupied", exception.Message);
+    }
+
+    [Fact]
+    public async Task EnsureSystemFields_ReservedNameWithWrongType_ThrowsConflict()
+    {
+        await _customFieldDefinitionRepository.AddFieldAsync(
+            nameof(PersistentEvent), "wrong-type-organization", "@ref:session", "date");
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _eventCustomFieldService.EnsureSystemFieldsAsync("wrong-type-organization"));
+
+        Assert.Contains("index type is 'date'", exception.Message);
+    }
+
+    [Fact]
+    public async Task EnsureSystemFields_SoftDeletedReservedDefinition_ThrowsConflict()
+    {
+        var definition = await _customFieldDefinitionRepository.AddFieldAsync(
+            nameof(PersistentEvent), "deleted-system-field-organization", "@ref:session", "keyword");
+        definition.IsDeleted = true;
+        await _customFieldDefinitionRepository.SaveAsync(definition);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _eventCustomFieldService.EnsureSystemFieldsAsync("deleted-system-field-organization"));
+
+        Assert.Contains("definition is soft-deleted", exception.Message);
+    }
+
+    [Fact]
+    public async Task EnsureSystemFields_DuplicateReservedDefinitions_ThrowsConflict()
+    {
+        const string organizationId = "duplicate-system-field-organization";
+        var original = await _customFieldDefinitionRepository.AddFieldAsync(
+            nameof(PersistentEvent), organizationId, "@ref:session", "keyword");
+        original.IsDeleted = true;
+        await _customFieldDefinitionRepository.SaveAsync(original);
+
+        await _customFieldDefinitionRepository.AddFieldAsync(
+            nameof(PersistentEvent), organizationId, "@ref:session", "keyword");
+        original.IsDeleted = false;
+        await _customFieldDefinitionRepository.SaveAsync(original);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _eventCustomFieldService.EnsureSystemFieldsAsync(organizationId));
+
+        Assert.Contains("found 2 definitions", exception.Message);
+    }
+
+    [Fact]
+    public async Task EnsureSystemFields_ConcurrentInitialProvisioning_CreatesOneDefinitionPerReservedField()
+    {
+        const string organizationId = "concurrent-system-field-organization";
+
+        await Task.WhenAll(Enumerable.Range(0, 4)
+            .Select(_ => _eventCustomFieldService.EnsureSystemFieldsAsync(organizationId)));
+
+        var results = await _customFieldDefinitionRepository.FindByTenantAsync(nameof(PersistentEvent), organizationId);
+        var definitions = new List<CustomFieldDefinition>();
+        do
+        {
+            definitions.AddRange(results.Documents);
+        } while (await results.NextPageAsync());
+
+        Assert.Equal(EventCustomFieldService.SystemFields.Count, definitions.Count);
+        foreach (var systemField in EventCustomFieldService.SystemFields)
+        {
+            var definition = Assert.Single(definitions, field => field.Name == systemField.Name);
+            Assert.Equal(systemField.IndexType, definition.IndexType);
+            Assert.Equal(systemField.IdxField, definition.GetIdxName());
+        }
+    }
+
+    [Fact]
+    public async Task SessionSystemFieldFilters_ReadCurrentAndLegacyStorage()
+    {
+        await _eventCustomFieldService.EnsureSystemFieldsAsync(TestConstants.OrganizationId);
+
+        var currentReference = GenerateEvent();
+        currentReference.Source = "system-field-reference";
+        currentReference.Data = new DataDictionary { ["@ref:session"] = "session-42" };
+        var legacyReference = GenerateEvent();
+        legacyReference.Source = "system-field-reference";
+        legacyReference.Idx = new DataDictionary { ["session-r"] = "session-42" };
+
+        var sessionEnd = new DateTime(2025, 1, 2, 3, 4, 5, DateTimeKind.Utc);
+        var currentSessionEnd = GenerateEvent();
+        currentSessionEnd.Source = "system-field-session-end";
+        currentSessionEnd.Data = new DataDictionary { [Event.KnownDataKeys.SessionEnd] = sessionEnd };
+        var legacySessionEnd = GenerateEvent();
+        legacySessionEnd.Source = "system-field-session-end";
+        legacySessionEnd.Idx = new DataDictionary { ["sessionend-d"] = sessionEnd };
+        var missingSessionEnd = GenerateEvent();
+        missingSessionEnd.Source = "system-field-session-end";
+
+        var currentHasError = GenerateEvent();
+        currentHasError.Source = "system-field-has-error";
+        currentHasError.Data = new DataDictionary { [Event.KnownDataKeys.SessionHasError] = true };
+        var legacyHasError = GenerateEvent();
+        legacyHasError.Source = "system-field-has-error";
+        legacyHasError.Idx = new DataDictionary { ["haserror-b"] = true };
+        var currentNoError = GenerateEvent();
+        currentNoError.Source = "system-field-has-error";
+        currentNoError.Data = new DataDictionary { [Event.KnownDataKeys.SessionHasError] = false };
+        var legacyNoError = GenerateEvent();
+        legacyNoError.Source = "system-field-has-error";
+        legacyNoError.Idx = new DataDictionary { ["haserror-b"] = false };
+        var missingHasError = GenerateEvent();
+        missingHasError.Source = "system-field-has-error";
+
+        PersistentEvent[] events =
+        [
+                currentReference,
+                legacyReference,
+                currentSessionEnd,
+                legacySessionEnd,
+                missingSessionEnd,
+                currentHasError,
+                legacyHasError,
+                currentNoError,
+                legacyNoError,
+                missingHasError
+        ];
+        foreach (var eventDocument in events)
+            eventDocument.StackId = TestConstants.StackId;
+
+        await _eventRepository.AddAsync(events, o => o.ImmediateConsistency());
+        await RefreshDataAsync();
+
+        Assert.Equal(2, await CountSystemFieldMatchesAsync("system-field-reference", "ref.session:session-42"));
+        Assert.Equal(2, await CountSystemFieldMatchesAsync("system-field-session-end", "_exists_:data.sessionend"));
+        Assert.Equal(2, await CountSystemFieldMatchesAsync("system-field-session-end", "data.sessionend:>2025-01-01"));
+        Assert.Equal(1, await CountSystemFieldMatchesAsync("system-field-session-end", "_missing_:data.sessionend"));
+        Assert.Equal(2, await CountSystemFieldMatchesAsync("system-field-has-error", "data.haserror:true"));
+        Assert.Equal(4, await CountSystemFieldMatchesAsync("system-field-has-error", "_exists_:data.haserror"));
+        Assert.Equal(1, await CountSystemFieldMatchesAsync("system-field-has-error", "_missing_:data.haserror"));
+        Assert.Equal(3, await CountSystemFieldMatchesAsync("system-field-has-error", "NOT data.haserror:true"));
     }
 
     [Fact]
@@ -454,6 +605,28 @@ public sealed class CustomFieldIndexingTests : IntegrationTestsBase
         Assert.DoesNotContain(context.Event.Idx.Values, v => "injected_via_client".Equals(v?.ToString()));
     }
 
+    [Fact]
+    public async Task Event_WhenSystemFieldProvisioningFails_StillStripsClientManagedSlots()
+    {
+        await _customFieldDefinitionRepository.AddFieldAsync(
+            nameof(PersistentEvent), TestConstants.OrganizationId2, "claimed_keyword_slot", "keyword");
+
+        var eventDocument = GenerateEvent();
+        eventDocument.OrganizationId = TestConstants.OrganizationId2;
+        eventDocument.StackId = TestConstants.StackId;
+        eventDocument.Idx = new DataDictionary
+        {
+            [EventCustomFieldService.SessionReferenceIdxField] = "injected_via_client",
+            ["session-r"] = "legacy_server_field"
+        };
+
+        await _eventRepository.AddAsync(eventDocument, o => o.ImmediateConsistency());
+
+        Assert.NotNull(eventDocument.Idx);
+        Assert.DoesNotContain(EventCustomFieldService.SessionReferenceIdxField, eventDocument.Idx.Keys);
+        Assert.Equal("legacy_server_field", eventDocument.Idx["session-r"]);
+    }
+
     private Organization GetOrganization()
     {
         return _organizationData.GenerateSampleOrganization(_billingManager, _plans);
@@ -473,6 +646,15 @@ public sealed class CustomFieldIndexingTests : IntegrationTestsBase
             generateTags: false,
             generateData: false,
             occurrenceDate: occurrenceDate);
+    }
+
+    private async Task<long> CountSystemFieldMatchesAsync(string source, string filter)
+    {
+        var results = await _eventRepository.FindAsync(q => q
+            .Organization(TestConstants.OrganizationId)
+            .FieldEquals(eventDocument => eventDocument.Source, source)
+            .FilterExpression(filter));
+        return results.Total;
     }
 
     private async Task CreateProjectDataAsync()

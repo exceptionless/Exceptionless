@@ -2,6 +2,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
+using Exceptionless.Core.Services;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.CustomFields;
@@ -32,6 +33,7 @@ public sealed class EventIndexTests : IntegrationTestsBase
         await base.ResetDataAsync();
 
         // Register custom field definitions for the test data fields
+        await GetService<EventCustomFieldService>().EnsureSystemFieldsAsync(TestConstants.OrganizationId);
         await _customFieldDefinitionRepository.AddFieldAsync(nameof(PersistentEvent), TestConstants.OrganizationId, "anumber", "double");
         await _customFieldDefinitionRepository.AddFieldAsync(nameof(PersistentEvent), TestConstants.OrganizationId, "FriendlyErrorIdentifier", "keyword");
         await _customFieldDefinitionRepository.AddFieldAsync(nameof(PersistentEvent), TestConstants.OrganizationId, "some-date", "date");
