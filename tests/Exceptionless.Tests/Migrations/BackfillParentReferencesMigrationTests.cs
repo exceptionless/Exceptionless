@@ -42,12 +42,17 @@ public sealed class BackfillParentReferencesMigrationTests : IntegrationTestsBas
         existingIndexEvent.Data = new() { [$"@ref:{Event.KnownReferenceNames.Parent}"] = "source-parent-reference" };
         existingIndexEvent.Idx = new() { [$"{Event.KnownReferenceNames.Parent}-r"] = "preserved-parent-index" };
 
+        var nonStringParentEvent = _eventData.GenerateEvent(organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId, stackId: TestConstants.StackId, generateData: false, occurrenceDate: TimeProvider.GetUtcNow());
+        nonStringParentEvent.Id = ObjectId.GenerateNewId().ToString();
+        nonStringParentEvent.Data = new() { [$"@ref:{Event.KnownReferenceNames.Parent}"] = 12345678 };
+        nonStringParentEvent.Idx = null;
+
         var unrelatedEvent = _eventData.GenerateEvent(organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId, stackId: TestConstants.StackId, generateData: false, occurrenceDate: TimeProvider.GetUtcNow());
         unrelatedEvent.Id = ObjectId.GenerateNewId().ToString();
         unrelatedEvent.Data = new() { ["custom"] = "value" };
         unrelatedEvent.Idx = null;
 
-        await _eventRepository.AddAsync([missingIndexEvent, existingIndexEvent, unrelatedEvent], options => options.ImmediateConsistency());
+        await _eventRepository.AddAsync([missingIndexEvent, existingIndexEvent, nonStringParentEvent, unrelatedEvent], options => options.ImmediateConsistency());
 
         var before = await _eventRepository.FindAsync(query => query.FieldEquals("idx.parent-r", "missing-parent-index"));
         Assert.Empty(before.Documents);
@@ -66,6 +71,11 @@ public sealed class BackfillParentReferencesMigrationTests : IntegrationTestsBas
         Assert.NotNull(preservedEvent);
         Assert.NotNull(preservedEvent.Idx);
         Assert.Equal("preserved-parent-index", preservedEvent.Idx[$"{Event.KnownReferenceNames.Parent}-r"]);
+
+        var normalizedEvent = await _eventRepository.GetByIdAsync(nonStringParentEvent.Id, options => options.Include(ev => ev.Idx));
+        Assert.NotNull(normalizedEvent);
+        Assert.NotNull(normalizedEvent.Idx);
+        Assert.Equal("12345678", normalizedEvent.Idx[$"{Event.KnownReferenceNames.Parent}-r"]);
 
         var skippedEvent = await _eventRepository.GetByIdAsync(unrelatedEvent.Id, options => options.Include(ev => ev.Idx));
         Assert.NotNull(skippedEvent);
