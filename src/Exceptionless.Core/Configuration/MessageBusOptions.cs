@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.Diagnostics.CodeAnalysis;
+using Exceptionless.Core.Extensions;
 using Foundatio.Utility;
 using Microsoft.Extensions.Configuration;
 
@@ -6,6 +7,9 @@ namespace Exceptionless.Core.Configuration;
 
 public class MessageBusOptions
 {
+    private const string RabbitMqProvider = "rabbitmq";
+    private const string ServerKey = "server";
+
     public string? ConnectionString { get; internal set; }
     public string? Provider { get; internal set; }
     public Dictionary<string, string?> Data { get; internal set; } = null!;
@@ -24,37 +28,27 @@ public class MessageBusOptions
 
         if (cs != null)
         {
-            if (TryGetRawRabbitMqConnectionString(cs, out var connectionString))
+            if (TryGetRabbitMqConnectionString(config, cs, out string? connectionString))
             {
-                options.Provider = "rabbitmq";
+                options.Provider = RabbitMqProvider;
                 options.ConnectionString = connectionString;
                 options.Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
                 {
                     [nameof(options.Provider)] = options.Provider
                 };
-            }
-            else
-            {
-                options.Data = cs.ParseConnectionString();
-                options.Provider = options.Data.GetString(nameof(options.Provider));
+                options.Data[ServerKey] = connectionString;
+
+                return options;
             }
 
-            if (String.IsNullOrEmpty(options.ConnectionString))
-            {
-                string? providerConnectionString = !String.IsNullOrEmpty(options.Provider) ? config.GetConnectionString(options.Provider) : null;
-                if (String.Equals(options.Provider, "rabbitmq", StringComparison.OrdinalIgnoreCase) && !String.IsNullOrWhiteSpace(providerConnectionString))
-                {
-                    options.ConnectionString = TrimMatchingQuotes(providerConnectionString.Trim());
-                }
-                else
-                {
-                    var providerOptions = providerConnectionString.ParseConnectionString(defaultKey: "server");
-                    options.Data ??= new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-                    options.Data.AddRange(providerOptions);
+            options.Data = cs.ParseConnectionString();
+            options.Provider = options.Data.GetString(nameof(options.Provider));
+            string? providerConnectionString = !String.IsNullOrEmpty(options.Provider) ? config.GetConnectionString(options.Provider) : null;
 
-                    options.ConnectionString = options.Data.BuildConnectionString(new HashSet<string> { nameof(options.Provider) });
-                }
-            }
+            var providerOptions = providerConnectionString.ParseConnectionString(defaultKey: ServerKey);
+            options.Data.AddRange(providerOptions);
+
+            options.ConnectionString = options.Data.BuildConnectionString(new HashSet<string> { nameof(options.Provider) });
         }
         else
         {
@@ -70,24 +64,26 @@ public class MessageBusOptions
         return options;
     }
 
-    private static bool TryGetRawRabbitMqConnectionString(string connectionString, out string? rawConnectionString)
+    private static bool TryGetRabbitMqConnectionString(IConfiguration config, string selector, [NotNullWhen(true)] out string? connectionString)
     {
-        rawConnectionString = null;
+        connectionString = null;
 
-        const string providerPrefix = "provider=";
-        if (!connectionString.StartsWith(providerPrefix, StringComparison.OrdinalIgnoreCase))
+        int separatorIndex = selector.IndexOf(';');
+        string providerSelector = separatorIndex >= 0 ? selector[..separatorIndex] : selector;
+        var providerData = providerSelector.ParseConnectionString();
+
+        if (!String.Equals(providerData.GetString(nameof(Provider)), RabbitMqProvider, StringComparison.OrdinalIgnoreCase))
             return false;
 
-        int separatorIndex = connectionString.IndexOf(';');
-        if (separatorIndex <= providerPrefix.Length)
+        string? configuredConnectionString = separatorIndex >= 0 ? selector[(separatorIndex + 1)..] : null;
+        if (String.IsNullOrWhiteSpace(configuredConnectionString))
+            configuredConnectionString = config.GetConnectionString(RabbitMqProvider);
+
+        if (String.IsNullOrWhiteSpace(configuredConnectionString))
             return false;
 
-        string provider = connectionString.Substring(providerPrefix.Length, separatorIndex - providerPrefix.Length).Trim();
-        if (!String.Equals(provider, "rabbitmq", StringComparison.OrdinalIgnoreCase))
-            return false;
-
-        rawConnectionString = TrimMatchingQuotes(connectionString[(separatorIndex + 1)..].Trim());
-        return !String.IsNullOrEmpty(rawConnectionString);
+        connectionString = TrimMatchingQuotes(configuredConnectionString.Trim());
+        return true;
     }
 
     private static string TrimMatchingQuotes(string value)
