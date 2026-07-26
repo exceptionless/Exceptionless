@@ -141,12 +141,20 @@ Event 1
 GET {{apiUrl}}/organizations/{{organizationId}}/events/count?filter=type:session&aggregations=avg:value+cardinality:user+date:(date^-06:00+cardinality:user)&time=last+7+days
 Authorization: Bearer {{token}}
 
-### Sessions - Get session events by session ID
+### Sessions - Get session events by session ID (returns 426 for a free-only organization selection)
 GET {{apiUrl}}/events/sessions/12345?mode=summary
 Authorization: Bearer {{token}}
 
-### Sessions - Get sessions list (summary mode)
+### Sessions - Get project session events by session ID (returns 426 for a free project)
+GET {{apiUrl}}/projects/{{projectId}}/events/sessions/12345?mode=summary
+Authorization: Bearer {{token}}
+
+### Sessions - Get organization sessions list (returns 426 for a free organization)
 GET {{apiUrl}}/organizations/{{organizationId}}/events/sessions?mode=summary&limit=10&sort=-date
+Authorization: Bearer {{token}}
+
+### Sessions - Get project sessions list (returns 426 for a free project)
+GET {{apiUrl}}/projects/{{projectId}}/events/sessions?mode=summary&limit=10&sort=-date
 Authorization: Bearer {{token}}
 
 ### Sessions - Get all sessions (returns 426 for a free-only organization selection)

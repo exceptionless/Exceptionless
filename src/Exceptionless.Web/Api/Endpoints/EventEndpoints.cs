@@ -309,7 +309,7 @@ public static class EventEndpoints
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
-                ["426"] = "Unable to view event occurrences for the suspended organization.",
+                ["426"] = "Premium session access requires an upgraded plan.",
             }
         });
 
@@ -340,7 +340,7 @@ public static class EventEndpoints
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
                 ["404"] = "The project could not be found.",
-                ["426"] = "Unable to view event occurrences for the suspended organization.",
+                ["426"] = "Premium session access requires an upgraded plan, or the organization is suspended.",
             }
         });
 
@@ -396,8 +396,8 @@ public static class EventEndpoints
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
-                ["404"] = "The project could not be found.",
-                ["426"] = "Unable to view event occurrences for the suspended organization.",
+                ["404"] = "The organization could not be found.",
+                ["426"] = "Premium session search requires an upgraded plan, or the organization is suspended.",
             }
         });
 
@@ -427,7 +427,7 @@ public static class EventEndpoints
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
                 ["404"] = "The project could not be found.",
-                ["426"] = "Unable to view event occurrences for the suspended organization.",
+                ["426"] = "Premium session search requires an upgraded plan, or the organization is suspended.",
             }
         });
 

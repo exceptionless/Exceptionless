@@ -9268,7 +9268,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "Premium session access requires an upgraded plan.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9426,7 +9426,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "Premium session access requires an upgraded plan, or the organization is suspended.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9692,7 +9692,7 @@
             }
           },
           "404": {
-            "description": "The project could not be found.",
+            "description": "The organization could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9702,7 +9702,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "Premium session search requires an upgraded plan, or the organization is suspended.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9850,7 +9850,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "Premium session search requires an upgraded plan, or the organization is suspended.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
