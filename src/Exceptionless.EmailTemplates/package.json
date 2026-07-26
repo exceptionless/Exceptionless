@@ -23,9 +23,9 @@
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",
-        "@storybook/addon-docs": "10.4.6",
+        "@storybook/addon-docs": "10.5.2",
         "@storybook/addon-svelte-csf": "^5.1.2",
-        "@storybook/svelte-vite": "10.4.6",
+        "@storybook/svelte-vite": "10.5.2",
         "@sveltejs/vite-plugin-svelte": "^5.0.0",
         "@types/handlebars": "^4.0.40",
         "@types/node": "^25.9.1",
@@ -38,7 +38,7 @@
         "handlebars": "^4.7.8",
         "prettier": "^3.8.3",
         "prettier-plugin-svelte": "^4.0.1",
-        "storybook": "10.4.6",
+        "storybook": "10.5.2",
         "svelte-check": "^4.4.8",
         "typescript": "^5.8.0",
         "vite": "6.4.3"

@@ -237,11 +237,7 @@ if (!servicesOnly)
                 u.DisplayOrder = 100;
             })
             .WithParentRelationship(api);
-    }
-#pragma warning restore ASPIREBROWSERLOGS001
 
-    if (includeDevTools)
-    {
         builder.AddJavaScriptApp("Storybook", "../Exceptionless.Web/ClientApp", "storybook")
             .WithRunScript("storybook", ["--", "--port", storybookPort.ToString(), "--no-open"])
             .WithHttpEndpoint(port: storybookPort, targetPort: storybookPort, name: "http", isProxied: false)
@@ -264,6 +260,7 @@ if (!servicesOnly)
             .WithHttpHealthCheck("/")
             .WithParentRelationship(api);
     }
+#pragma warning restore ASPIREBROWSERLOGS001
 }
 
 await builder.Build().RunAsync();
