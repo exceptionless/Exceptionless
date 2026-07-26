@@ -1,10 +1,10 @@
-export type SearchResource = 'event' | 'stack';
+export type SearchResource = 'event' | 'event-stack' | 'stack';
 
-// These mirror the backend event rules and the combined event/stack rules used by
-// stack-mode event searches. The API remains the enforcement boundary.
+// These mirror the backend event, stack-mode event, and direct stack rules.
+// The API remains the enforcement boundary.
 const FREE_QUERY_FIELDS: Record<SearchResource, ReadonlySet<string>> = {
     event: new Set(['date', 'organization', 'organization_id', 'project', 'project_id', 'reference', 'reference_id', 'stack', 'stack_id', 'status', 'type']),
-    stack: new Set([
+    'event-stack': new Set([
         'critical',
         'first',
         'first_occurrence',
@@ -19,6 +19,20 @@ const FREE_QUERY_FIELDS: Record<SearchResource, ReadonlySet<string>> = {
         'reference_id',
         'stack',
         'stack_id',
+        'status',
+        'type'
+    ]),
+    stack: new Set([
+        'critical',
+        'first',
+        'first_occurrence',
+        'last',
+        'last_occurrence',
+        'occurrences_are_critical',
+        'organization',
+        'organization_id',
+        'project',
+        'project_id',
         'status',
         'type'
     ])
@@ -38,7 +52,11 @@ export function filterUsesPremiumFeatures(filter: null | string | undefined, res
 }
 
 export function getSearchResourceForPathname(pathname: string): SearchResource {
-    return /(?:^|\/)stack(?:\/|$)/.test(pathname) || /\/project\/[^/]+\/stacks(?:\/|$)/.test(pathname) ? 'stack' : 'event';
+    if (/\/project\/[^/]+\/stacks(?:\/|$)/.test(pathname)) {
+        return 'stack';
+    }
+
+    return /(?:^|\/)stack(?:\/|$)/.test(pathname) ? 'event-stack' : 'event';
 }
 
 /**

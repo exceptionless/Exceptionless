@@ -624,7 +624,7 @@
     });
 
     $effect(() => {
-        premiumPage.current = filterUsesPremiumFeatures(eventsQueryParameters.filter, 'stack') ? 'search' : undefined;
+        premiumPage.current = filterUsesPremiumFeatures(eventsQueryParameters.filter, 'event-stack') ? 'search' : undefined;
     });
 
     const client = useFetchClient();
