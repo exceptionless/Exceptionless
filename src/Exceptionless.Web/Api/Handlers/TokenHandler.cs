@@ -69,7 +69,7 @@ public class TokenHandler(
         if (project is null)
             return Result.NotFound("Project not found.");
 
-        var defaultTokenResults = await repository.GetByTypeAndProjectIdAsync(TokenType.Access, message.ProjectId, o => o.PageLimit(1));
+        var defaultTokenResults = await repository.GetDefaultClientTokenAsync(message.ProjectId, o => o.PageLimit(1));
         var token = defaultTokenResults.Documents.FirstOrDefault();
         if (token is not null)
             return MapToView(token);
@@ -234,6 +234,9 @@ public class TokenHandler(
 
         if (value.Scopes.Count == 0)
             value.Scopes.Add(AuthorizationRoles.Client);
+
+        if (value.Scopes.Contains(AuthorizationRoles.SourceMapsWrite) && String.IsNullOrEmpty(value.ProjectId))
+            return Result.Invalid(ValidationError.Create("project_id", "The source-maps:write scope requires a project-scoped token."));
 
         if ((value.Scopes.Contains(AuthorizationRoles.Client) && !hasUserRole)
             || (value.Scopes.Contains(AuthorizationRoles.User) && !hasUserRole)
