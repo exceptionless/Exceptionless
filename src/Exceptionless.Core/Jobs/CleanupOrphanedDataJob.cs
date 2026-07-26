@@ -23,6 +23,7 @@ namespace Exceptionless.Core.Jobs;
 [Job(Description = "Deletes orphaned data.", IsContinuous = false)]
 public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
 {
+    private static readonly TimeSpan HealthCheckWindow = TimeSpan.FromHours(9);
     private static readonly TimeSpan OrphanedEventLookback = TimeSpan.FromDays(3);
     private readonly ExceptionlessElasticConfiguration _config;
     private readonly ElasticsearchClient _elasticClient;
@@ -452,9 +453,9 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
         if (!_lastRun.HasValue)
             return Task.FromResult(HealthCheckResult.Healthy("Job has not been run yet."));
 
-        if (_timeProvider.GetUtcNow().UtcDateTime.Subtract(_lastRun.Value) > TimeSpan.FromMinutes(65))
-            return Task.FromResult(HealthCheckResult.Unhealthy("Job has not run in the last 65 minutes."));
+        if (_timeProvider.GetUtcNow().UtcDateTime.Subtract(_lastRun.Value) > HealthCheckWindow)
+            return Task.FromResult(HealthCheckResult.Unhealthy("Job has not run in the last 9 hours."));
 
-        return Task.FromResult(HealthCheckResult.Healthy("Job has run in the last 65 minutes."));
+        return Task.FromResult(HealthCheckResult.Healthy("Job has run in the last 9 hours."));
     }
 }

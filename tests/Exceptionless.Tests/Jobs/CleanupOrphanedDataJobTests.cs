@@ -679,11 +679,10 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task RunAsync_EmptyDatabase_UpdatesHealth()
+    public async Task RunAsync_EmptyDatabase_HealthMatchesEightHourSchedule()
     {
-        // Arrange - nothing
+        TimeProvider.SetUtcNow(DateTimeOffset.UtcNow);
 
-        // Act & Assert - should not throw
         await _job.RunAsync(TestCancellationToken);
 
         var totalAfter = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency());
@@ -691,7 +690,17 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
 
         var health = await _job.CheckHealthAsync(new HealthCheckContext(), TestCancellationToken);
         Assert.Equal(HealthStatus.Healthy, health.Status);
-        Assert.Equal("Job has run in the last 65 minutes.", health.Description);
+        Assert.Equal("Job has run in the last 9 hours.", health.Description);
+
+        TimeProvider.Advance(TimeSpan.FromHours(9));
+        health = await _job.CheckHealthAsync(new HealthCheckContext(), TestCancellationToken);
+        Assert.Equal(HealthStatus.Healthy, health.Status);
+        Assert.Equal("Job has run in the last 9 hours.", health.Description);
+
+        TimeProvider.Advance(TimeSpan.FromMilliseconds(1));
+        health = await _job.CheckHealthAsync(new HealthCheckContext(), TestCancellationToken);
+        Assert.Equal(HealthStatus.Unhealthy, health.Status);
+        Assert.Equal("Job has not run in the last 9 hours.", health.Description);
     }
 
     [Fact]
@@ -718,6 +727,6 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         Assert.Equal(1, await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency()));
         var health = await _job.CheckHealthAsync(new HealthCheckContext(), TestCancellationToken);
         Assert.Equal(HealthStatus.Healthy, health.Status);
-        Assert.Equal("Job has run in the last 65 minutes.", health.Description);
+        Assert.Equal("Job has run in the last 9 hours.", health.Description);
     }
 }
