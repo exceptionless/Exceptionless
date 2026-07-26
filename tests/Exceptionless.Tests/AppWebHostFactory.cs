@@ -190,6 +190,7 @@ public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program
 
         if (!_sliceReleased)
         {
+            IndexesHaveBeenConfigured = false;
             s_pool.Enqueue(InstanceId);
             _sliceReleased = true;
         }
