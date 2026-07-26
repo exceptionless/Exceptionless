@@ -65,6 +65,44 @@ public sealed class OrganizationRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task SetDataValueAsync_AfterStaleRead_PreservesConcurrentInvite()
+    {
+        // Arrange
+        var organization = new Organization
+        {
+            Name = "Atomic Data Update Organization",
+            PlanId = _plans.FreePlan.Id,
+            Data = new DataDictionary { ["existing"] = "preserved" }
+        };
+        await _repository.AddAsync(organization, o => o.ImmediateConsistency());
+
+        var staleOrganization = await _repository.GetByIdAsync(organization.Id);
+        Assert.NotNull(staleOrganization);
+        Assert.Empty(staleOrganization.Invites);
+
+        var currentOrganization = await _repository.GetByIdAsync(organization.Id);
+        Assert.NotNull(currentOrganization);
+        currentOrganization.Invites.Add(new Invite
+        {
+            Token = "concurrent-invite-token",
+            EmailAddress = "concurrent-invite@localhost",
+            DateAdded = DateTime.UtcNow
+        });
+        await _repository.SaveAsync(currentOrganization, o => o.ImmediateConsistency());
+
+        // Act
+        bool updated = await _repository.SetDataValueAsync(organization.Id, "saved-view-content-hash", "hash");
+
+        // Assert
+        Assert.True(updated);
+        var updatedOrganization = await _repository.GetByIdAsync(organization.Id);
+        Assert.NotNull(updatedOrganization);
+        Assert.Equal("preserved", updatedOrganization.Data?["existing"]);
+        Assert.Equal("hash", updatedOrganization.Data?["saved-view-content-hash"]);
+        Assert.Contains(updatedOrganization.Invites, invite => String.Equals(invite.Token, "concurrent-invite-token", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task GetByCriteria_SearchById_ReturnsMatchingOrganization()
     {
         // Arrange
