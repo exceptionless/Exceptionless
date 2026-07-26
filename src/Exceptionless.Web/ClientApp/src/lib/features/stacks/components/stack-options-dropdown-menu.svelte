@@ -5,6 +5,7 @@
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing';
     import Reference from '@lucide/svelte/icons/link-2';
+    import ListTree from '@lucide/svelte/icons/list-tree';
     import Settings from '@lucide/svelte/icons/settings';
     import Delete from '@lucide/svelte/icons/trash';
     import PromoteToExternal from '@lucide/svelte/icons/trending-up';
@@ -16,6 +17,7 @@
     import AddStackReferenceDialog from './dialogs/add-stack-reference-dialog.svelte';
     import RemoveStackDialog from './dialogs/remove-stack-dialog.svelte';
     import RequiresPromotedWebHookDialog from './dialogs/requires-promoted-web-hook-dialog.svelte';
+    import StackingInformationDialog from './dialogs/stacking-information-dialog.svelte';
 
     interface Props {
         onDeleted?: () => void;
@@ -26,6 +28,7 @@
     let openAddStackReferenceDialog = $state<boolean>(false);
     let openRemoveStackDialog = $state<boolean>(false);
     let openRequiresPromotedWebHookDialog = $state<boolean>(false);
+    let openStackingInformationDialog = $state<boolean>(false);
 
     const addLink = postAddLink({
         route: {
@@ -115,8 +118,8 @@
 <DropdownMenu.Root>
     <DropdownMenu.Trigger>
         {#snippet child({ props })}
-            <Button {...props} variant="outline" size="icon">
-                <Settings class="size-4" />
+            <Button {...props} aria-label="Stack options" title="Stack options" variant="outline" size="icon">
+                <Settings />
             </Button>
         {/snippet}
     </DropdownMenu.Trigger>
@@ -140,6 +143,10 @@
                 <Reference class="mr-2 size-4" />
                 Add Reference Link
             </DropdownMenu.Item>
+            <DropdownMenu.Item onclick={() => (openStackingInformationDialog = true)} title="View the values used to group events into this stack">
+                <ListTree />
+                View Stacking Information
+            </DropdownMenu.Item>
             <DropdownMenu.Separator />
             <DropdownMenu.Item onclick={() => (openRemoveStackDialog = true)} class="text-destructive" title="Delete this stack">
                 <Delete class="mr-2 size-4" />
@@ -149,6 +156,9 @@
     </DropdownMenu.Content>
 </DropdownMenu.Root>
 
+{#if openStackingInformationDialog}
+    <StackingInformationDialog bind:open={openStackingInformationDialog} {stack} />
+{/if}
 {#if openAddStackReferenceDialog}
     <AddStackReferenceDialog bind:open={openAddStackReferenceDialog} save={addReference} />
 {/if}
