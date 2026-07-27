@@ -1,5 +1,6 @@
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using Exceptionless.Core;
 using Exceptionless.Core.Configuration;
 using Foundatio.Utility;
@@ -41,28 +42,83 @@ public static class SensitiveDataLogging
         "x-amz-signature"
     }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
-    private delegate LogEventPropertyValue Transform(
-        object value,
-        ILogEventPropertyValueFactory propertyValueFactory);
+    private delegate object? PropertySanitizer(object options, object? value);
+    private delegate object? PropertySanitizer<in TOptions>(TOptions options, object? value);
 
-    private static readonly FrozenDictionary<Type, Transform> _transformers =
-        new Dictionary<Type, Transform>
+    private sealed record SensitivePropertyRule(
+        Type OptionsType,
+        string PropertyName,
+        PropertySanitizer Sanitize);
+
+    // Properties not listed here are logged normally.
+    private static readonly FrozenDictionary<Type, FrozenDictionary<string, PropertySanitizer>> _sensitiveProperties =
+        new SensitivePropertyRule[]
         {
-            [typeof(AppOptions)] = static (value, factory) => CreateSafeAppOptions((AppOptions)value, factory),
-            [typeof(AuthOptions)] = static (value, factory) => CreateSafeAuthOptions((AuthOptions)value, factory),
-            [typeof(CacheOptions)] = static (value, factory) => CreateSafeCacheOptions((CacheOptions)value, factory),
-            [typeof(ElasticsearchOptions)] = static (value, factory) => CreateSafeElasticsearchOptions((ElasticsearchOptions)value, factory),
-            [typeof(EmailOptions)] = static (value, factory) => CreateSafeEmailOptions((EmailOptions)value, factory),
-            [typeof(IntercomOptions)] = static (value, factory) => CreateSafeIntercomOptions((IntercomOptions)value, factory),
-            [typeof(MessageBusOptions)] = static (value, factory) => CreateSafeMessageBusOptions((MessageBusOptions)value, factory),
-            [typeof(MetricOptions)] = static (value, factory) => CreateSafeMetricOptions((MetricOptions)value, factory),
-            [typeof(QueueOptions)] = static (value, factory) => CreateSafeQueueOptions((QueueOptions)value, factory),
-            [typeof(StorageOptions)] = static (value, factory) => CreateSafeStorageOptions((StorageOptions)value, factory),
-            [typeof(StripeOptions)] = static (value, factory) => CreateSafeStripeOptions((StripeOptions)value, factory),
-            [typeof(SlackOptions)] = static (value, factory) => CreateSafeSlackOptions((SlackOptions)value, factory),
-            [typeof(OAuthServerOptions)] = static (value, factory) => CreateSafeOAuthServerOptions((OAuthServerOptions)value, factory),
-            [typeof(SourceMapOptions)] = static (value, factory) => CreateSafeSourceMapOptions((SourceMapOptions)value, factory)
-        }.ToFrozenDictionary();
+            Redact<AppOptions>(nameof(AppOptions.ExceptionlessApiKey)),
+            Redact<AppOptions>(nameof(AppOptions.GoogleGeocodingApiKey)),
+            Redact<AppOptions>(nameof(AppOptions.MaxMindGeoIpKey)),
+            Redact<AuthOptions>(nameof(AuthOptions.MicrosoftSecret)),
+            Redact<AuthOptions>(nameof(AuthOptions.FacebookSecret)),
+            Redact<AuthOptions>(nameof(AuthOptions.GitHubSecret)),
+            Redact<AuthOptions>(nameof(AuthOptions.GoogleSecret)),
+            Sanitize<AuthOptions>(
+                nameof(AuthOptions.LdapConnectionString),
+                static (_, value) => SanitizeStandaloneConnectionString((string?)value)),
+            Sanitize<CacheOptions>(
+                nameof(CacheOptions.ConnectionString),
+                static (options, value) => SanitizeConnectionString((string?)value, options.Provider)),
+            Sanitize<CacheOptions>(
+                nameof(CacheOptions.Data),
+                static (options, value) => SanitizeConnectionData((IDictionary<string, string?>?)value, options.Provider)),
+            Sanitize<ElasticsearchOptions>(
+                nameof(ElasticsearchOptions.ServerUrl),
+                static (_, value) => SanitizeUri((string?)value)),
+            Redact<ElasticsearchOptions>(nameof(ElasticsearchOptions.Password)),
+            Redact<EmailOptions>(nameof(EmailOptions.SmtpPassword)),
+            Redact<IntercomOptions>(nameof(IntercomOptions.IntercomSecret)),
+            Sanitize<MessageBusOptions>(
+                nameof(MessageBusOptions.ConnectionString),
+                static (options, value) => SanitizeConnectionString((string?)value, options.Provider)),
+            Sanitize<MessageBusOptions>(
+                nameof(MessageBusOptions.Data),
+                static (options, value) => SanitizeConnectionData((IDictionary<string, string?>?)value, options.Provider)),
+            Sanitize<MetricOptions>(
+                nameof(MetricOptions.ConnectionString),
+                static (options, value) => SanitizeConnectionString((string?)value, options.Provider)),
+            Sanitize<MetricOptions>(
+                nameof(MetricOptions.Data),
+                static (options, value) => SanitizeConnectionData((IDictionary<string, string?>?)value, options.Provider)),
+            Sanitize<QueueOptions>(
+                nameof(QueueOptions.ConnectionString),
+                static (options, value) => SanitizeConnectionString((string?)value, options.Provider)),
+            Sanitize<QueueOptions>(
+                nameof(QueueOptions.Data),
+                static (options, value) => SanitizeConnectionData((IDictionary<string, string?>?)value, options.Provider)),
+            Redact<SlackOptions>(nameof(SlackOptions.SlackSecret)),
+            Sanitize<StorageOptions>(
+                nameof(StorageOptions.ConnectionString),
+                static (options, value) => SanitizeConnectionString((string?)value, options.Provider)),
+            Sanitize<StorageOptions>(
+                nameof(StorageOptions.Data),
+                static (options, value) => SanitizeConnectionData((IDictionary<string, string?>?)value, options.Provider)),
+            Redact<StripeOptions>(nameof(StripeOptions.StripeApiKey)),
+            Redact<StripeOptions>(nameof(StripeOptions.StripeWebHookSigningSecret))
+        }
+        .GroupBy(rule => rule.OptionsType)
+        .ToFrozenDictionary(
+            group => group.Key,
+            group => group.ToFrozenDictionary(
+                rule => rule.PropertyName,
+                rule => rule.Sanitize,
+                StringComparer.Ordinal));
+
+    private static readonly FrozenDictionary<Type, PropertyInfo[]> _propertiesByType =
+        _sensitiveProperties.Keys.ToFrozenDictionary(
+            type => type,
+            type => type
+                .GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                .Where(property => property.GetMethod?.IsPrivate is false && property.GetIndexParameters().Length == 0)
+                .ToArray());
 
     private static readonly SensitiveOptionsDestructuringPolicy _policy = new();
 
@@ -71,272 +127,19 @@ public static class SensitiveDataLogging
         return configuration.Destructure.With(_policy);
     }
 
-    private static StructureValue CreateSafeAppOptions(AppOptions options, ILogEventPropertyValueFactory factory)
+    private static SensitivePropertyRule Redact<TOptions>(string propertyName)
     {
-        var result = new SafeStructureBuilder(nameof(AppOptions), factory, 41);
-        result.Add(nameof(options.BaseURL), options.BaseURL);
-        result.Add(nameof(options.InternalProjectId), options.InternalProjectId);
-        result.Add(nameof(options.ExceptionlessApiKey), RedactedValue);
-        result.Add(nameof(options.ExceptionlessServerUrl), options.ExceptionlessServerUrl);
-        result.Add(nameof(options.AppMode), options.AppMode);
-        result.Add(nameof(options.AppScope), options.AppScope);
-        result.Add(nameof(options.RunJobsInProcess), options.RunJobsInProcess);
-        result.Add(nameof(options.JobsIterationLimit), options.JobsIterationLimit);
-        result.Add(nameof(options.BotThrottleLimit), options.BotThrottleLimit);
-        result.Add(nameof(options.ApiThrottleLimit), options.ApiThrottleLimit);
-        result.Add(nameof(options.EnableArchive), options.EnableArchive);
-        result.Add(nameof(options.EnableSampleData), options.EnableSampleData);
-        result.Add(nameof(options.EventSubmissionDisabled), options.EventSubmissionDisabled);
-        result.Add(nameof(options.DisabledPipelineActions), options.DisabledPipelineActions?.ToArray());
-        result.Add(nameof(options.DisabledPlugins), options.DisabledPlugins?.ToArray());
-        result.Add(nameof(options.MaximumEventPostSize), options.MaximumEventPostSize);
-        result.Add(nameof(options.MaximumRetentionDays), options.MaximumRetentionDays);
-        result.Add(nameof(options.EnableRepositoryNotifications), options.EnableRepositoryNotifications);
-        result.Add(nameof(options.EnableWebSockets), options.EnableWebSockets);
-        result.Add(nameof(options.Version), options.Version);
-        result.Add(nameof(options.InformationalVersion), options.InformationalVersion);
-        result.Add(nameof(options.NotificationMessage), options.NotificationMessage);
-        result.Add(nameof(options.GoogleGeocodingApiKey), RedactedValue);
-        result.Add(nameof(options.MaxMindGeoIpKey), RedactedValue);
-        result.Add(nameof(options.BulkBatchSize), options.BulkBatchSize);
-        result.Add(
-            nameof(options.CacheOptions),
-            options.CacheOptions is null ? null : CreateSafeCacheOptions(options.CacheOptions, factory));
-        result.Add(
-            nameof(options.MessageBusOptions),
-            options.MessageBusOptions is null ? null : CreateSafeMessageBusOptions(options.MessageBusOptions, factory));
-        result.Add(
-            nameof(options.QueueOptions),
-            options.QueueOptions is null ? null : CreateSafeQueueOptions(options.QueueOptions, factory));
-        result.Add(
-            nameof(options.StorageOptions),
-            options.StorageOptions is null ? null : CreateSafeStorageOptions(options.StorageOptions, factory));
-        result.Add(
-            nameof(options.EmailOptions),
-            options.EmailOptions is null ? null : CreateSafeEmailOptions(options.EmailOptions, factory));
-        result.Add(
-            nameof(options.ElasticsearchOptions),
-            options.ElasticsearchOptions is null ? null : CreateSafeElasticsearchOptions(options.ElasticsearchOptions, factory));
-        result.Add(
-            nameof(options.IntercomOptions),
-            options.IntercomOptions is null ? null : CreateSafeIntercomOptions(options.IntercomOptions, factory));
-        result.Add(
-            nameof(options.SlackOptions),
-            options.SlackOptions is null ? null : CreateSafeSlackOptions(options.SlackOptions, factory));
-        result.Add(
-            nameof(options.StripeOptions),
-            options.StripeOptions is null ? null : CreateSafeStripeOptions(options.StripeOptions, factory));
-        result.Add(
-            nameof(options.AuthOptions),
-            options.AuthOptions is null ? null : CreateSafeAuthOptions(options.AuthOptions, factory));
-        result.Add(
-            nameof(options.OAuthServerOptions),
-            options.OAuthServerOptions is null ? null : CreateSafeOAuthServerOptions(options.OAuthServerOptions, factory));
-        result.Add(
-            nameof(options.SourceMapOptions),
-            options.SourceMapOptions is null ? null : CreateSafeSourceMapOptions(options.SourceMapOptions, factory));
-        return result.Build();
+        return Sanitize<TOptions>(propertyName, static (_, _) => RedactedValue);
     }
 
-    private static StructureValue CreateSafeAuthOptions(AuthOptions options, ILogEventPropertyValueFactory factory)
+    private static SensitivePropertyRule Sanitize<TOptions>(
+        string propertyName,
+        PropertySanitizer<TOptions> sanitize)
     {
-        var result = new SafeStructureBuilder(nameof(AuthOptions), factory, 11);
-        result.Add(nameof(options.EnableAccountCreation), options.EnableAccountCreation);
-        result.Add(nameof(options.EnableActiveDirectoryAuth), options.EnableActiveDirectoryAuth);
-        result.Add(nameof(options.MicrosoftId), options.MicrosoftId);
-        result.Add(nameof(options.MicrosoftSecret), RedactedValue);
-        result.Add(nameof(options.FacebookId), options.FacebookId);
-        result.Add(nameof(options.FacebookSecret), RedactedValue);
-        result.Add(nameof(options.GitHubId), options.GitHubId);
-        result.Add(nameof(options.GitHubSecret), RedactedValue);
-        result.Add(nameof(options.GoogleId), options.GoogleId);
-        result.Add(nameof(options.GoogleSecret), RedactedValue);
-        result.Add(nameof(options.LdapConnectionString), SanitizeStandaloneConnectionString(options.LdapConnectionString));
-        return result.Build();
-    }
-
-    private static StructureValue CreateSafeCacheOptions(CacheOptions options, ILogEventPropertyValueFactory factory)
-    {
-        var result = new SafeStructureBuilder(nameof(CacheOptions), factory, 5);
-        result.Add(nameof(options.ConnectionString), SanitizeConnectionString(options.ConnectionString, options.Provider));
-        result.Add(nameof(options.Provider), options.Provider);
-        result.Add(nameof(options.Data), SanitizeConnectionData(options.Data, options.Provider));
-        result.Add(nameof(options.Scope), options.Scope);
-        result.Add(nameof(options.ScopePrefix), options.ScopePrefix);
-        return result.Build();
-    }
-
-    private static StructureValue CreateSafeElasticsearchOptions(ElasticsearchOptions options, ILogEventPropertyValueFactory factory)
-    {
-        var result = new SafeStructureBuilder(nameof(ElasticsearchOptions), factory, 15);
-        result.Add(nameof(options.ServerUrl), SanitizeUri(options.ServerUrl));
-        result.Add(nameof(options.NumberOfShards), options.NumberOfShards);
-        result.Add(nameof(options.NumberOfReplicas), options.NumberOfReplicas);
-        result.Add(nameof(options.FieldsLimit), options.FieldsLimit);
-        result.Add(nameof(options.EnableMapperSizePlugin), options.EnableMapperSizePlugin);
-        result.Add(nameof(options.Scope), options.Scope);
-        result.Add(nameof(options.ScopePrefix), options.ScopePrefix);
-        result.Add(nameof(options.EnableSnapshotJobs), options.EnableSnapshotJobs);
-        result.Add(nameof(options.DisableIndexConfiguration), options.DisableIndexConfiguration);
-        result.Add(nameof(options.Password), RedactedValue);
-        result.Add(nameof(options.UserName), options.UserName);
-        result.Add(nameof(options.ReindexCutOffDate), options.ReindexCutOffDate);
-        result.Add(
-            nameof(options.ElasticsearchToMigrate),
-            options.ElasticsearchToMigrate is null
-                ? null
-                : CreateSafeElasticsearchOptions(options.ElasticsearchToMigrate, factory));
-        return result.Build();
-    }
-
-    private static StructureValue CreateSafeEmailOptions(EmailOptions options, ILogEventPropertyValueFactory factory)
-    {
-        var result = new SafeStructureBuilder(nameof(EmailOptions), factory, 11);
-        result.Add(nameof(options.EnableDailySummary), options.EnableDailySummary);
-        result.Add(nameof(options.TestEmailAddress), options.TestEmailAddress);
-        result.Add(nameof(options.ContactEmailAddress), options.ContactEmailAddress);
-        result.Add(nameof(options.AllowedOutboundAddresses), options.AllowedOutboundAddresses?.ToArray());
-        result.Add(nameof(options.SmtpFrom), options.SmtpFrom);
-        result.Add(nameof(options.SmtpHost), options.SmtpHost);
-        result.Add(nameof(options.SmtpPort), options.SmtpPort);
-        result.Add(nameof(options.SmtpEncryption), options.SmtpEncryption);
-        result.Add(nameof(options.SmtpUser), options.SmtpUser);
-        result.Add(nameof(options.SmtpPassword), RedactedValue);
-        return result.Build();
-    }
-
-    private static StructureValue CreateSafeIntercomOptions(IntercomOptions options, ILogEventPropertyValueFactory factory)
-    {
-        var result = new SafeStructureBuilder(nameof(IntercomOptions), factory, 3);
-        result.Add(nameof(options.EnableIntercom), options.EnableIntercom);
-        result.Add(nameof(options.IntercomId), options.IntercomId);
-        result.Add(nameof(options.IntercomSecret), RedactedValue);
-        return result.Build();
-    }
-
-    private static StructureValue CreateSafeMessageBusOptions(MessageBusOptions options, ILogEventPropertyValueFactory factory)
-    {
-        var result = new SafeStructureBuilder(nameof(MessageBusOptions), factory, 6);
-        result.Add(nameof(options.ConnectionString), SanitizeConnectionString(options.ConnectionString, options.Provider));
-        result.Add(nameof(options.Provider), options.Provider);
-        result.Add(nameof(options.Data), SanitizeConnectionData(options.Data, options.Provider));
-        result.Add(nameof(options.Scope), options.Scope);
-        result.Add(nameof(options.ScopePrefix), options.ScopePrefix);
-        result.Add(nameof(options.Topic), options.Topic);
-        return result.Build();
-    }
-
-    private static StructureValue CreateSafeMetricOptions(MetricOptions options, ILogEventPropertyValueFactory factory)
-    {
-        var result = new SafeStructureBuilder(nameof(MetricOptions), factory, 3);
-        result.Add(nameof(options.ConnectionString), SanitizeConnectionString(options.ConnectionString, options.Provider));
-        result.Add(nameof(options.Provider), options.Provider);
-        result.Add(nameof(options.Data), SanitizeConnectionData(options.Data, options.Provider));
-        return result.Build();
-    }
-
-    private static StructureValue CreateSafeOAuthServerOptions(OAuthServerOptions options, ILogEventPropertyValueFactory factory)
-    {
-        var result = new SafeStructureBuilder(nameof(OAuthServerOptions), factory, 9);
-        result.Add(nameof(options.AuthorizationCodeLifetime), options.AuthorizationCodeLifetime);
-        result.Add(nameof(options.AccessTokenLifetime), options.AccessTokenLifetime);
-        result.Add(nameof(options.RefreshTokenLifetime), options.RefreshTokenLifetime);
-        result.Add(nameof(options.RefreshTokenReuseGracePeriod), options.RefreshTokenReuseGracePeriod);
-        result.Add(nameof(options.EnableClientIdMetadataDocuments), options.EnableClientIdMetadataDocuments);
-        result.Add(nameof(options.DynamicClientRegistrationIpLimit), options.DynamicClientRegistrationIpLimit);
-        result.Add(nameof(options.ClientMetadataDocumentCacheLifetime), options.ClientMetadataDocumentCacheLifetime);
-        result.Add(nameof(options.ClientMetadataDocumentRequestTimeout), options.ClientMetadataDocumentRequestTimeout);
-        result.Add(nameof(options.ClientMetadataDocumentMaxBytes), options.ClientMetadataDocumentMaxBytes);
-        return result.Build();
-    }
-
-    private static StructureValue CreateSafeQueueOptions(QueueOptions options, ILogEventPropertyValueFactory factory)
-    {
-        var result = new SafeStructureBuilder(nameof(QueueOptions), factory, 7);
-        result.Add(nameof(options.ConnectionString), SanitizeConnectionString(options.ConnectionString, options.Provider));
-        result.Add(nameof(options.Provider), options.Provider);
-        result.Add(nameof(options.Data), SanitizeConnectionData(options.Data, options.Provider));
-        result.Add(nameof(options.Scope), options.Scope);
-        result.Add(nameof(options.ScopePrefix), options.ScopePrefix);
-        result.Add(nameof(options.MetricsPollingEnabled), options.MetricsPollingEnabled);
-        result.Add(nameof(options.MetricsPollingInterval), options.MetricsPollingInterval);
-        return result.Build();
-    }
-
-    private static StructureValue CreateSafeSlackOptions(SlackOptions options, ILogEventPropertyValueFactory factory)
-    {
-        var result = new SafeStructureBuilder(nameof(SlackOptions), factory, 3);
-        result.Add(nameof(options.SlackId), options.SlackId);
-        result.Add(nameof(options.SlackSecret), RedactedValue);
-        result.Add(nameof(options.EnableSlack), options.EnableSlack);
-        return result.Build();
-    }
-
-    private static StructureValue CreateSafeSourceMapOptions(SourceMapOptions options, ILogEventPropertyValueFactory factory)
-    {
-        var result = new SafeStructureBuilder(nameof(SourceMapOptions), factory, 41);
-        result.Add(nameof(options.EnableAutoDownload), options.EnableAutoDownload);
-        result.Add(nameof(options.RequestTimeoutMilliseconds), options.RequestTimeoutMilliseconds);
-        result.Add(nameof(options.MaximumGeneratedFileSize), options.MaximumGeneratedFileSize);
-        result.Add(nameof(options.MaximumSourceMapSize), options.MaximumSourceMapSize);
-        result.Add(nameof(options.MaximumArtifactsPerProject), options.MaximumArtifactsPerProject);
-        result.Add(nameof(options.MaximumStorageSizePerProject), options.MaximumStorageSizePerProject);
-        result.Add(nameof(options.MaximumArtifactsPerFreeProject), options.MaximumArtifactsPerFreeProject);
-        result.Add(nameof(options.MaximumStorageSizePerFreeProject), options.MaximumStorageSizePerFreeProject);
-        result.Add(nameof(options.MaximumMappingSegments), options.MaximumMappingSegments);
-        result.Add(nameof(options.MaximumRedirects), options.MaximumRedirects);
-        result.Add(nameof(options.MaximumConcurrentDownloads), options.MaximumConcurrentDownloads);
-        result.Add(nameof(options.MaximumConcurrentDownloadsGlobally), options.MaximumConcurrentDownloadsGlobally);
-        result.Add(nameof(options.AutoDownloadRateLimitPeriodMinutes), options.AutoDownloadRateLimitPeriodMinutes);
-        result.Add(nameof(options.MaximumAutoDiscoveriesPerFreeClientKey), options.MaximumAutoDiscoveriesPerFreeClientKey);
-        result.Add(nameof(options.MaximumAutoDiscoveriesPerClientKey), options.MaximumAutoDiscoveriesPerClientKey);
-        result.Add(nameof(options.MaximumAutoDiscoveriesPerFreeProject), options.MaximumAutoDiscoveriesPerFreeProject);
-        result.Add(nameof(options.MaximumAutoDiscoveriesPerProject), options.MaximumAutoDiscoveriesPerProject);
-        result.Add(nameof(options.MaximumAutoDiscoveriesPerFreeOrganization), options.MaximumAutoDiscoveriesPerFreeOrganization);
-        result.Add(nameof(options.MaximumAutoDiscoveriesPerOrganization), options.MaximumAutoDiscoveriesPerOrganization);
-        result.Add(nameof(options.MaximumAutoDownloadRequestsPerDestination), options.MaximumAutoDownloadRequestsPerDestination);
-        result.Add(nameof(options.MaximumAutoDownloadConnectionsPerIpAddress), options.MaximumAutoDownloadConnectionsPerIpAddress);
-        result.Add(nameof(options.MaximumAutoDownloadRequestsGlobally), options.MaximumAutoDownloadRequestsGlobally);
-        result.Add(nameof(options.MaximumAutoRefreshRequestsPerDestination), options.MaximumAutoRefreshRequestsPerDestination);
-        result.Add(nameof(options.MaximumAutoRefreshRequestsGlobally), options.MaximumAutoRefreshRequestsGlobally);
-        result.Add(nameof(options.MaximumFramesPerError), options.MaximumFramesPerError);
-        result.Add(nameof(options.MaximumProcessingTimeMilliseconds), options.MaximumProcessingTimeMilliseconds);
-        result.Add(nameof(options.AutoDownloadRefreshIntervalMinutes), options.AutoDownloadRefreshIntervalMinutes);
-        result.Add(nameof(options.ParsedSourceMapCacheLifetimeMinutes), options.ParsedSourceMapCacheLifetimeMinutes);
-        result.Add(nameof(options.MaximumParsedSourceMapCacheSize), options.MaximumParsedSourceMapCacheSize);
-        result.Add(nameof(options.UsageTrackingDebounceMinutes), options.UsageTrackingDebounceMinutes);
-        result.Add(nameof(options.FreeArtifactRetentionDays), options.FreeArtifactRetentionDays);
-        result.Add(nameof(options.ArtifactRetentionDays), options.ArtifactRetentionDays);
-        result.Add(nameof(options.RequestTimeout), options.RequestTimeout);
-        result.Add(nameof(options.MaximumProcessingTime), options.MaximumProcessingTime);
-        result.Add(nameof(options.AutoDownloadRefreshInterval), options.AutoDownloadRefreshInterval);
-        result.Add(nameof(options.ParsedSourceMapCacheLifetime), options.ParsedSourceMapCacheLifetime);
-        result.Add(nameof(options.AutoDownloadRateLimitPeriod), options.AutoDownloadRateLimitPeriod);
-        result.Add(nameof(options.UsageTrackingDebounce), options.UsageTrackingDebounce);
-        result.Add(nameof(options.FreeArtifactRetention), options.FreeArtifactRetention);
-        result.Add(nameof(options.ArtifactRetention), options.ArtifactRetention);
-        return result.Build();
-    }
-
-    private static StructureValue CreateSafeStorageOptions(StorageOptions options, ILogEventPropertyValueFactory factory)
-    {
-        var result = new SafeStructureBuilder(nameof(StorageOptions), factory, 5);
-        result.Add(nameof(options.ConnectionString), SanitizeConnectionString(options.ConnectionString, options.Provider));
-        result.Add(nameof(options.Provider), options.Provider);
-        result.Add(nameof(options.Data), SanitizeConnectionData(options.Data, options.Provider));
-        result.Add(nameof(options.Scope), options.Scope);
-        result.Add(nameof(options.ScopePrefix), options.ScopePrefix);
-        return result.Build();
-    }
-
-    private static StructureValue CreateSafeStripeOptions(StripeOptions options, ILogEventPropertyValueFactory factory)
-    {
-        var result = new SafeStructureBuilder(nameof(StripeOptions), factory, 4);
-        result.Add(nameof(options.EnableBilling), options.EnableBilling);
-        result.Add(nameof(options.StripeApiKey), RedactedValue);
-        result.Add(nameof(options.StripePublishableApiKey), options.StripePublishableApiKey);
-        result.Add(nameof(options.StripeWebHookSigningSecret), RedactedValue);
-        return result.Build();
+        return new SensitivePropertyRule(
+            typeof(TOptions),
+            propertyName,
+            (options, value) => sanitize((TOptions)options, value));
     }
 
     private static Dictionary<string, string?>? SanitizeConnectionData(
@@ -505,40 +308,28 @@ public static class SensitiveDataLogging
             [NotNullWhen(true)]
             out LogEventPropertyValue? result)
         {
-            if (!_transformers.TryGetValue(value.GetType(), out var transform))
+            Type optionsType = value.GetType();
+            if (!_sensitiveProperties.TryGetValue(optionsType, out var sensitiveProperties))
             {
                 result = null;
                 return false;
             }
 
-            result = transform(value, propertyValueFactory);
+            PropertyInfo[] properties = _propertiesByType[optionsType];
+            var safeProperties = new List<LogEventProperty>(properties.Length);
+            foreach (PropertyInfo property in properties)
+            {
+                object? propertyValue = property.GetValue(value);
+                if (sensitiveProperties.TryGetValue(property.Name, out var sanitize))
+                    propertyValue = sanitize(value, propertyValue);
+
+                safeProperties.Add(new LogEventProperty(
+                    property.Name,
+                    propertyValueFactory.CreatePropertyValue(propertyValue, destructureObjects: true)));
+            }
+
+            result = new StructureValue(safeProperties, optionsType.Name);
             return true;
         }
-    }
-
-    private sealed class SafeStructureBuilder
-    {
-        private readonly ILogEventPropertyValueFactory _factory;
-        private readonly List<LogEventProperty> _properties;
-        private readonly string _typeTag;
-
-        public SafeStructureBuilder(
-            string typeTag,
-            ILogEventPropertyValueFactory factory,
-            int propertyCapacity)
-        {
-            _typeTag = typeTag;
-            _factory = factory;
-            _properties = new List<LogEventProperty>(propertyCapacity);
-        }
-
-        public void Add(string name, object? value)
-        {
-            _properties.Add(new LogEventProperty(
-                name,
-                value as LogEventPropertyValue ?? _factory.CreatePropertyValue(value, destructureObjects: true)));
-        }
-
-        public StructureValue Build() => new(_properties, _typeTag);
     }
 }
