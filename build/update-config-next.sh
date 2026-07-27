@@ -5,11 +5,11 @@ ClientSetupShowServerUrl="${EX_ClientSetupShowServerUrl:-true}"
 EnableAccountCreation="${EX_EnableAccountCreation:-true}"
 
 OAuth="${EX_ConnectionStrings__OAuth:-}"
-IFS=';' read -a oauthParts <<< "$OAuth"
-for part in ${oauthParts[@]}
+IFS=';' read -ra oauthParts <<< "$OAuth"
+for part in "${oauthParts[@]}"
 do
-  key="$( cut -d '=' -f 1 <<< $part )"; echo "key: $key"
-  value="$( cut -d '=' -f 2- <<< $part )"; echo "value: $value"
+  key="${part%%=*}"
+  value="${part#*=}"
 
   if [ "$key" == "FacebookId" ]; then
     FacebookAppId=$value

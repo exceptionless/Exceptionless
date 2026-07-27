@@ -36,8 +36,8 @@ Content-Type: application/json
     "name": "test"
 }
 
-### OAuth Login
-POST {{apiUrl}}/auth/google
+### Microsoft OAuth Login
+POST {{apiUrl}}/auth/microsoft
 Content-Type: application/json
 
 {

@@ -1368,7 +1368,7 @@
         }
       }
     },
-    "/api/v2/auth/live": {
+    "/api/v2/auth/microsoft": {
       "post": {
         "tags": [
           "Auth"

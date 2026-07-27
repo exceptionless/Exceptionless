@@ -76,6 +76,14 @@ Please note the following:
 4. Update the `exceptionless-config` config map `ConnectionStrings__OAuth` value to include `SlackId=YOUR_ID;SlackSecret=YOUR_SECRET;` and restart the associated pods.
 5. If you've already loaded a page in Exceptionless, you will need to do a hard refresh for the config changes to apply.
 
+## Enabling Microsoft Authentication
+
+1. Create a Microsoft Entra app registration that supports organizational and personal Microsoft accounts.
+2. Add the Exceptionless base URL as a Web redirect URI.
+3. Add the delegated Microsoft Graph `User.Read` permission and create a client secret.
+4. Set `config.EX_ConnectionStrings__OAuth` to `MicrosoftId=YOUR_CLIENT_ID;MicrosoftSecret=YOUR_CLIENT_SECRET` and restart the associated pods.
+5. Hard refresh Exceptionless after the rollout so both UI configurations pick up the new client ID.
+
 ## Upgrading
 
 Please see the [Upgrading](/docs/self-hosting/upgrading-self-hosted-instance) for details on how to upgrade to the current version.
