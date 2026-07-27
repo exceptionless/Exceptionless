@@ -31,7 +31,7 @@ spec:
               - ReadWriteOnce
             resources:
               requests:
-                storage: 1Gi
+                storage: 8Gi
     - name: redis-sentinel
       serviceVersion: "8.4.0"
       replicas: 3
