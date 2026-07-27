@@ -44,8 +44,10 @@ using Foundatio.Repositories.Migrations;
 using Foundatio.Resilience;
 using Foundatio.Serializer;
 using Foundatio.Storage;
+using Foundatio.Utility;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MaintainIndexesJob = Foundatio.Repositories.Elasticsearch.Jobs.MaintainIndexesJob;
 
@@ -251,6 +253,9 @@ public class Bootstrapper
 
     public static void LogConfiguration(IServiceProvider serviceProvider, AppOptions appOptions, ILogger logger)
     {
+        if (logger.IsEnabled(LogLevel.Information))
+            LogConfigurationSummary(serviceProvider, appOptions, logger);
+
         if (!logger.IsEnabled(LogLevel.Warning))
             return;
 
@@ -284,6 +289,225 @@ public class Bootstrapper
 
         if (!appOptions.AuthOptions.EnableAccountCreation)
             logger.LogWarning("Account Creation is NOT enabled on {MachineName}", Environment.MachineName);
+    }
+
+    private static void LogConfigurationSummary(IServiceProvider serviceProvider, AppOptions options, ILogger logger)
+    {
+        string environmentName = serviceProvider.GetService<IHostEnvironment>()?.EnvironmentName ?? options.AppMode.ToString();
+        string version = options.InformationalVersion ?? options.Version ?? "unknown";
+
+        logger.LogInformation(
+            "Startup configuration: environment {EnvironmentName}, scope {AppScope}, mode {AppMode}, version {Version}, base URL {BaseUrl}",
+            environmentName,
+            options.AppScope,
+            options.AppMode,
+            version,
+            GetSafeEndpoint(options.BaseURL));
+
+        logger.LogInformation(
+            "Startup infrastructure: Elasticsearch {ElasticsearchEndpoint} (migration {ElasticsearchMigrationEndpoint}, shards {ElasticsearchShards}, replicas {ElasticsearchReplicas}, index configuration {IndexConfiguration}, snapshot jobs {SnapshotJobs}); cache {CacheProvider} at {CacheEndpoint}; message bus {MessageBusProvider} at {MessageBusEndpoint} (topic {MessageBusTopic}); queue {QueueProvider} at {QueueEndpoint} (region {QueueRegion}); storage {StorageProvider} at {StorageEndpoint} (region {StorageRegion})",
+            GetSafeEndpoint(options.ElasticsearchOptions.ServerUrl),
+            GetSafeEndpoint(options.ElasticsearchOptions.ElasticsearchToMigrate?.ServerUrl),
+            options.ElasticsearchOptions.NumberOfShards,
+            options.ElasticsearchOptions.NumberOfReplicas,
+            GetStatus(!options.ElasticsearchOptions.DisableIndexConfiguration),
+            GetStatus(options.ElasticsearchOptions.EnableSnapshotJobs),
+            GetProvider(options.CacheOptions.Provider),
+            GetProviderEndpoint(options.CacheOptions.Data, options.CacheOptions.ConnectionString),
+            GetProvider(options.MessageBusOptions.Provider),
+            GetProviderEndpoint(options.MessageBusOptions.Data, options.MessageBusOptions.ConnectionString),
+            GetValueOrDefault(options.MessageBusOptions.Topic),
+            GetProvider(options.QueueOptions.Provider),
+            GetProviderEndpoint(options.QueueOptions.Data, options.QueueOptions.ConnectionString),
+            GetValueOrDefault(GetConnectionSetting(options.QueueOptions.Data, "region")),
+            GetProvider(options.StorageOptions.Provider),
+            GetProviderEndpoint(options.StorageOptions.Data, options.StorageOptions.ConnectionString),
+            GetValueOrDefault(GetConnectionSetting(options.StorageOptions.Data, "region")));
+
+        logger.LogInformation(
+            "Startup services: event submission {EventSubmission}; web sockets {WebSockets}; jobs in process {JobsInProcess}; repository notifications {RepositoryNotifications}; archive {Archive}; sample data {SampleData}; email {Email} at {SmtpEndpoint} ({SmtpEncryption}, daily summaries {DailySummary}); account creation {AccountCreation}; Active Directory {ActiveDirectory} at {ActiveDirectoryEndpoint}",
+            GetStatus(!options.EventSubmissionDisabled),
+            GetStatus(options.EnableWebSockets),
+            GetStatus(options.RunJobsInProcess),
+            GetStatus(options.EnableRepositoryNotifications),
+            GetStatus(options.EnableArchive),
+            GetStatus(options.EnableSampleData),
+            GetStatus(!String.IsNullOrWhiteSpace(options.EmailOptions.SmtpHost)),
+            GetHostAndPort(options.EmailOptions.SmtpHost, options.EmailOptions.SmtpPort),
+            options.EmailOptions.SmtpEncryption,
+            GetStatus(options.EmailOptions.EnableDailySummary),
+            GetStatus(options.AuthOptions.EnableAccountCreation),
+            GetStatus(options.AuthOptions.EnableActiveDirectoryAuth),
+            GetStandaloneConnectionEndpoint(options.AuthOptions.LdapConnectionString));
+
+        logger.LogInformation(
+            "Startup integrations: OAuth {OAuthProviders}; Intercom {Intercom}; Slack {Slack}; billing {Billing}; geocoding {Geocoding}; GeoIP {GeoIp}; internal Exceptionless logging {InternalLogging} at {ExceptionlessServerEndpoint}",
+            GetOAuthProviders(options.AuthOptions),
+            GetStatus(options.IntercomOptions.EnableIntercom),
+            GetStatus(options.SlackOptions.EnableSlack),
+            GetStatus(options.StripeOptions.EnableBilling),
+            GetStatus(!String.IsNullOrWhiteSpace(options.GoogleGeocodingApiKey)),
+            GetStatus(!String.IsNullOrWhiteSpace(options.MaxMindGeoIpKey)),
+            GetStatus(!String.IsNullOrWhiteSpace(options.ExceptionlessApiKey)),
+            GetSafeEndpoint(options.ExceptionlessServerUrl));
+
+        logger.LogInformation(
+            "Startup operations: retention {MaximumRetentionDays} days; maximum event post {MaximumEventPostSize} bytes; bulk batch {BulkBatchSize}; API throttle {ApiThrottleLimit}; bot throttle {BotThrottleLimit}; queue metrics polling {QueueMetricsPolling} every {QueueMetricsPollingInterval}; disabled pipeline actions {DisabledPipelineActionCount}; disabled plugins {DisabledPluginCount}",
+            options.MaximumRetentionDays,
+            options.MaximumEventPostSize,
+            options.BulkBatchSize,
+            options.ApiThrottleLimit,
+            options.BotThrottleLimit,
+            GetStatus(options.QueueOptions.MetricsPollingEnabled),
+            options.QueueOptions.MetricsPollingInterval,
+            options.DisabledPipelineActions.Count,
+            options.DisabledPlugins.Count);
+
+        logger.LogInformation(
+            "Startup source maps: auto-download {SourceMapAutoDownload}; request timeout {SourceMapRequestTimeout}; processing timeout {SourceMapProcessingTimeout}; per-project artifacts {MaximumArtifactsPerProject} / storage {MaximumStorageSizePerProject} bytes; free retention {FreeArtifactRetentionDays} days; paid retention {ArtifactRetentionDays} days; download concurrency {MaximumConcurrentDownloads} local / {MaximumConcurrentDownloadsGlobally} global",
+            GetStatus(options.SourceMapOptions.EnableAutoDownload),
+            options.SourceMapOptions.RequestTimeout,
+            options.SourceMapOptions.MaximumProcessingTime,
+            options.SourceMapOptions.MaximumArtifactsPerProject,
+            options.SourceMapOptions.MaximumStorageSizePerProject,
+            options.SourceMapOptions.FreeArtifactRetentionDays,
+            options.SourceMapOptions.ArtifactRetentionDays,
+            options.SourceMapOptions.MaximumConcurrentDownloads,
+            options.SourceMapOptions.MaximumConcurrentDownloadsGlobally);
+    }
+
+    private static string GetProvider(string? provider)
+        => String.IsNullOrWhiteSpace(provider) ? "disabled" : provider;
+
+    private static string GetStatus(bool enabled) => enabled ? "enabled" : "disabled";
+
+    private static string GetValueOrDefault(string? value)
+        => String.IsNullOrWhiteSpace(value) ? "not configured" : value;
+
+    private static string GetOAuthProviders(AuthOptions options)
+    {
+        List<string> providers = [];
+        if (!String.IsNullOrWhiteSpace(options.GoogleId))
+            providers.Add("Google");
+        if (!String.IsNullOrWhiteSpace(options.MicrosoftId))
+            providers.Add("Microsoft");
+        if (!String.IsNullOrWhiteSpace(options.FacebookId))
+            providers.Add("Facebook");
+        if (!String.IsNullOrWhiteSpace(options.GitHubId))
+            providers.Add("GitHub");
+
+        return providers.Count > 0 ? String.Join(", ", providers) : "disabled";
+    }
+
+    private static string GetProviderEndpoint(
+        IDictionary<string, string?>? data,
+        string? connectionString)
+    {
+        string? endpoint = GetConnectionSetting(
+            data,
+            "server",
+            "serviceurl",
+            "endpoint",
+            "host",
+            "hostname",
+            "blobendpoint",
+            "queueendpoint");
+        if (endpoint is not null)
+            return GetSafeEndpoint(endpoint);
+
+        if (String.IsNullOrWhiteSpace(connectionString))
+            return "not configured";
+
+        try
+        {
+            var parsed = connectionString.ParseConnectionString(defaultKey: "server");
+            endpoint = GetConnectionSetting(
+                parsed,
+                "server",
+                "serviceurl",
+                "endpoint",
+                "host",
+                "hostname",
+                "blobendpoint",
+                "queueendpoint");
+            if (endpoint is not null)
+                return GetSafeEndpoint(endpoint);
+        }
+        catch (ArgumentException) { }
+
+        return GetSafeEndpoint(connectionString);
+    }
+
+    private static string GetStandaloneConnectionEndpoint(string? connectionString)
+    {
+        if (String.IsNullOrWhiteSpace(connectionString))
+            return "not configured";
+
+        try
+        {
+            var parsed = connectionString.ParseConnectionString(defaultKey: "server");
+            string? endpoint = GetConnectionSetting(parsed, "server", "host", "hostname", "endpoint");
+            if (endpoint is not null)
+            {
+                string? port = GetConnectionSetting(parsed, "port");
+                return port is null ? GetSafeEndpoint(endpoint) : GetHostAndPort(GetSafeEndpoint(endpoint), Int32.TryParse(port, out int parsedPort) ? parsedPort : 0);
+            }
+        }
+        catch (ArgumentException) { }
+
+        return GetSafeEndpoint(connectionString);
+    }
+
+    private static string? GetConnectionSetting(
+        IDictionary<string, string?>? data,
+        params string[] keys)
+    {
+        if (data is null)
+            return null;
+
+        foreach (string key in keys)
+        {
+            if (data.TryGetValue(key, out string? value) && !String.IsNullOrWhiteSpace(value))
+                return value;
+        }
+
+        return null;
+    }
+
+    private static string GetSafeEndpoint(string? value)
+    {
+        if (String.IsNullOrWhiteSpace(value))
+            return "not configured";
+
+        string candidate = value.Trim().Trim('"', '\'');
+        if (!candidate.Contains("://", StringComparison.Ordinal))
+        {
+            int separatorIndex = candidate.IndexOfAny([',', ';']);
+            if (separatorIndex >= 0)
+                candidate = candidate[..separatorIndex].Trim();
+        }
+
+        if (Uri.TryCreate(candidate, UriKind.Absolute, out var uri) && !String.IsNullOrWhiteSpace(uri.Host))
+            return GetUriEndpoint(uri);
+
+        if (!candidate.Contains('=') && Uri.TryCreate($"tcp://{candidate}", UriKind.Absolute, out uri) && !String.IsNullOrWhiteSpace(uri.Host))
+            return GetHostAndPort(uri.Host, uri.IsDefaultPort ? 0 : uri.Port);
+
+        return "configured";
+    }
+
+    private static string GetUriEndpoint(Uri uri)
+    {
+        string host = uri.HostNameType == UriHostNameType.IPv6 ? $"[{uri.Host}]" : uri.IdnHost;
+        return uri.IsDefaultPort ? $"{uri.Scheme}://{host}" : $"{uri.Scheme}://{host}:{uri.Port}";
+    }
+
+    private static string GetHostAndPort(string? host, int port)
+    {
+        if (String.IsNullOrWhiteSpace(host))
+            return "not configured";
+
+        return port > 0 ? $"{host}:{port}" : host;
     }
 
     private static async Task CreateSampleDataAsync(IServiceProvider container)
