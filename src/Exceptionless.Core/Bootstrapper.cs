@@ -305,75 +305,29 @@ public class Bootstrapper
             GetSafeEndpoint(options.BaseURL));
 
         logger.LogInformation(
-            "Startup infrastructure: Elasticsearch {ElasticsearchEndpoint} (migration {ElasticsearchMigrationEndpoint}, shards {ElasticsearchShards}, replicas {ElasticsearchReplicas}, index configuration {IndexConfiguration}, snapshot jobs {SnapshotJobs}); cache {CacheProvider} at {CacheEndpoint}; message bus {MessageBusProvider} at {MessageBusEndpoint} (topic {MessageBusTopic}); queue {QueueProvider} at {QueueEndpoint} (region {QueueRegion}); storage {StorageProvider} at {StorageEndpoint} (region {StorageRegion})",
+            "Startup infrastructure: Elasticsearch at {ElasticsearchEndpoint}; cache {CacheProvider} at {CacheEndpoint}; message bus {MessageBusProvider} at {MessageBusEndpoint}; queue {QueueProvider} at {QueueEndpoint}; storage {StorageProvider} at {StorageEndpoint}",
             GetSafeEndpoint(options.ElasticsearchOptions.ServerUrl),
-            GetSafeEndpoint(options.ElasticsearchOptions.ElasticsearchToMigrate?.ServerUrl),
-            options.ElasticsearchOptions.NumberOfShards,
-            options.ElasticsearchOptions.NumberOfReplicas,
-            GetStatus(!options.ElasticsearchOptions.DisableIndexConfiguration),
-            GetStatus(options.ElasticsearchOptions.EnableSnapshotJobs),
             GetProvider(options.CacheOptions.Provider),
             GetProviderEndpoint(options.CacheOptions.Data, options.CacheOptions.ConnectionString),
             GetProvider(options.MessageBusOptions.Provider),
             GetProviderEndpoint(options.MessageBusOptions.Data, options.MessageBusOptions.ConnectionString),
-            GetValueOrDefault(options.MessageBusOptions.Topic),
             GetProvider(options.QueueOptions.Provider),
             GetProviderEndpoint(options.QueueOptions.Data, options.QueueOptions.ConnectionString),
-            GetValueOrDefault(GetConnectionSetting(options.QueueOptions.Data, "region")),
             GetProvider(options.StorageOptions.Provider),
-            GetProviderEndpoint(options.StorageOptions.Data, options.StorageOptions.ConnectionString),
-            GetValueOrDefault(GetConnectionSetting(options.StorageOptions.Data, "region")));
+            GetProviderEndpoint(options.StorageOptions.Data, options.StorageOptions.ConnectionString));
 
         logger.LogInformation(
-            "Startup services: event submission {EventSubmission}; web sockets {WebSockets}; jobs in process {JobsInProcess}; repository notifications {RepositoryNotifications}; archive {Archive}; sample data {SampleData}; email {Email} at {SmtpEndpoint} ({SmtpEncryption}, daily summaries {DailySummary}); account creation {AccountCreation}; Active Directory {ActiveDirectory} at {ActiveDirectoryEndpoint}",
+            "Startup services: event submission {EventSubmission}; WebSockets {WebSockets}; jobs in process {JobsInProcess}; email {Email}; account creation {AccountCreation}; index configuration {IndexConfiguration}",
             GetStatus(!options.EventSubmissionDisabled),
             GetStatus(options.EnableWebSockets),
             GetStatus(options.RunJobsInProcess),
-            GetStatus(options.EnableRepositoryNotifications),
-            GetStatus(options.EnableArchive),
-            GetStatus(options.EnableSampleData),
             GetStatus(!String.IsNullOrWhiteSpace(options.EmailOptions.SmtpHost)),
-            GetHostAndPort(options.EmailOptions.SmtpHost, options.EmailOptions.SmtpPort),
-            options.EmailOptions.SmtpEncryption,
-            GetStatus(options.EmailOptions.EnableDailySummary),
             GetStatus(options.AuthOptions.EnableAccountCreation),
-            GetStatus(options.AuthOptions.EnableActiveDirectoryAuth),
-            GetStandaloneConnectionEndpoint(options.AuthOptions.LdapConnectionString));
+            GetStatus(!options.ElasticsearchOptions.DisableIndexConfiguration));
 
         logger.LogInformation(
-            "Startup integrations: OAuth {OAuthProviders}; Intercom {Intercom}; Slack {Slack}; billing {Billing}; geocoding {Geocoding}; GeoIP {GeoIp}; internal Exceptionless logging {InternalLogging} at {ExceptionlessServerEndpoint}",
-            GetOAuthProviders(options.AuthOptions),
-            GetStatus(options.IntercomOptions.EnableIntercom),
-            GetStatus(options.SlackOptions.EnableSlack),
-            GetStatus(options.StripeOptions.EnableBilling),
-            GetStatus(!String.IsNullOrWhiteSpace(options.GoogleGeocodingApiKey)),
-            GetStatus(!String.IsNullOrWhiteSpace(options.MaxMindGeoIpKey)),
-            GetStatus(!String.IsNullOrWhiteSpace(options.ExceptionlessApiKey)),
-            GetSafeEndpoint(options.ExceptionlessServerUrl));
-
-        logger.LogInformation(
-            "Startup operations: retention {MaximumRetentionDays} days; maximum event post {MaximumEventPostSize} bytes; bulk batch {BulkBatchSize}; API throttle {ApiThrottleLimit}; bot throttle {BotThrottleLimit}; queue metrics polling {QueueMetricsPolling} every {QueueMetricsPollingInterval}; disabled pipeline actions {DisabledPipelineActionCount}; disabled plugins {DisabledPluginCount}",
-            options.MaximumRetentionDays,
-            options.MaximumEventPostSize,
-            options.BulkBatchSize,
-            options.ApiThrottleLimit,
-            options.BotThrottleLimit,
-            GetStatus(options.QueueOptions.MetricsPollingEnabled),
-            options.QueueOptions.MetricsPollingInterval,
-            options.DisabledPipelineActions.Count,
-            options.DisabledPlugins.Count);
-
-        logger.LogInformation(
-            "Startup source maps: auto-download {SourceMapAutoDownload}; request timeout {SourceMapRequestTimeout}; processing timeout {SourceMapProcessingTimeout}; per-project artifacts {MaximumArtifactsPerProject} / storage {MaximumStorageSizePerProject} bytes; free retention {FreeArtifactRetentionDays} days; paid retention {ArtifactRetentionDays} days; download concurrency {MaximumConcurrentDownloads} local / {MaximumConcurrentDownloadsGlobally} global",
-            GetStatus(options.SourceMapOptions.EnableAutoDownload),
-            options.SourceMapOptions.RequestTimeout,
-            options.SourceMapOptions.MaximumProcessingTime,
-            options.SourceMapOptions.MaximumArtifactsPerProject,
-            options.SourceMapOptions.MaximumStorageSizePerProject,
-            options.SourceMapOptions.FreeArtifactRetentionDays,
-            options.SourceMapOptions.ArtifactRetentionDays,
-            options.SourceMapOptions.MaximumConcurrentDownloads,
-            options.SourceMapOptions.MaximumConcurrentDownloadsGlobally);
+            "Startup optional integrations/auth providers: {EnabledIntegrations}",
+            GetEnabledIntegrations(options));
     }
 
     private static string GetProvider(string? provider)
@@ -381,22 +335,33 @@ public class Bootstrapper
 
     private static string GetStatus(bool enabled) => enabled ? "enabled" : "disabled";
 
-    private static string GetValueOrDefault(string? value)
-        => String.IsNullOrWhiteSpace(value) ? "not configured" : value;
-
-    private static string GetOAuthProviders(AuthOptions options)
+    private static string GetEnabledIntegrations(AppOptions options)
     {
-        List<string> providers = [];
-        if (!String.IsNullOrWhiteSpace(options.GoogleId))
-            providers.Add("Google");
-        if (!String.IsNullOrWhiteSpace(options.MicrosoftId))
-            providers.Add("Microsoft");
-        if (!String.IsNullOrWhiteSpace(options.FacebookId))
-            providers.Add("Facebook");
-        if (!String.IsNullOrWhiteSpace(options.GitHubId))
-            providers.Add("GitHub");
+        List<string> integrations = [];
+        if (!String.IsNullOrWhiteSpace(options.AuthOptions.GoogleId))
+            integrations.Add("Google OAuth");
+        if (!String.IsNullOrWhiteSpace(options.AuthOptions.MicrosoftId))
+            integrations.Add("Microsoft OAuth");
+        if (!String.IsNullOrWhiteSpace(options.AuthOptions.FacebookId))
+            integrations.Add("Facebook OAuth");
+        if (!String.IsNullOrWhiteSpace(options.AuthOptions.GitHubId))
+            integrations.Add("GitHub OAuth");
+        if (options.AuthOptions.EnableActiveDirectoryAuth)
+            integrations.Add("Active Directory");
+        if (options.IntercomOptions.EnableIntercom)
+            integrations.Add("Intercom");
+        if (options.SlackOptions.EnableSlack)
+            integrations.Add("Slack");
+        if (options.StripeOptions.EnableBilling)
+            integrations.Add("billing");
+        if (!String.IsNullOrWhiteSpace(options.GoogleGeocodingApiKey))
+            integrations.Add("geocoding");
+        if (!String.IsNullOrWhiteSpace(options.MaxMindGeoIpKey))
+            integrations.Add("GeoIP");
+        if (!String.IsNullOrWhiteSpace(options.ExceptionlessApiKey))
+            integrations.Add("internal Exceptionless logging");
 
-        return providers.Count > 0 ? String.Join(", ", providers) : "disabled";
+        return integrations.Count > 0 ? String.Join(", ", integrations) : "none";
     }
 
     private static string GetProviderEndpoint(
@@ -432,26 +397,6 @@ public class Bootstrapper
                 "queueendpoint");
             if (endpoint is not null)
                 return GetSafeEndpoint(endpoint);
-        }
-        catch (ArgumentException) { }
-
-        return GetSafeEndpoint(connectionString);
-    }
-
-    private static string GetStandaloneConnectionEndpoint(string? connectionString)
-    {
-        if (String.IsNullOrWhiteSpace(connectionString))
-            return "not configured";
-
-        try
-        {
-            var parsed = connectionString.ParseConnectionString(defaultKey: "server");
-            string? endpoint = GetConnectionSetting(parsed, "server", "host", "hostname", "endpoint");
-            if (endpoint is not null)
-            {
-                string? port = GetConnectionSetting(parsed, "port");
-                return port is null ? GetSafeEndpoint(endpoint) : GetHostAndPort(GetSafeEndpoint(endpoint), Int32.TryParse(port, out int parsedPort) ? parsedPort : 0);
-            }
         }
         catch (ArgumentException) { }
 

@@ -25,21 +25,17 @@ public class BootstrapperTests
         Assert.Equal(
         [
             "Startup configuration: environment Integration, scope tenant-a, mode Staging, version 1.2.3+build.4, base URL https://app.example.test:8443",
-            "Startup infrastructure: Elasticsearch https://elastic.example.test:9200 (migration https://elastic-migrate.example.test:9243, shards 3, replicas 2, index configuration enabled, snapshot jobs enabled); cache redis at cache.example.test:6380; message bus rabbitmq at amqps://rabbit.example.test:5671 (topic tenant-a-messages); queue sqs at https://queue.example.test (region us-east-2); storage azurestorage at https://visibleaccount.blob.core.windows.net (region us-central-1)",
-            "Startup services: event submission enabled; web sockets enabled; jobs in process enabled; repository notifications enabled; archive enabled; sample data disabled; email enabled at smtp.example.test:465 (SSL, daily summaries enabled); account creation enabled; Active Directory enabled at ldap.example.test:389",
-            "Startup integrations: OAuth Google, Microsoft, GitHub; Intercom enabled; Slack enabled; billing enabled; geocoding enabled; GeoIP enabled; internal Exceptionless logging enabled at https://collector.example.test",
-            "Startup operations: retention 365 days; maximum event post 250000 bytes; bulk batch 750; API throttle 5000; bot throttle 30; queue metrics polling enabled every 00:00:07; disabled pipeline actions 1; disabled plugins 2",
-            "Startup source maps: auto-download enabled; request timeout 00:00:04; processing timeout 00:00:06; per-project artifacts 200 / storage 524288000 bytes; free retention 10 days; paid retention 60 days; download concurrency 3 local / 12 global"
+            "Startup infrastructure: Elasticsearch at https://elastic.example.test:9200; cache redis at cache.example.test:6380; message bus rabbitmq at amqps://rabbit.example.test:5671; queue sqs at https://queue.example.test; storage azurestorage at https://visibleaccount.blob.core.windows.net",
+            "Startup services: event submission enabled; WebSockets enabled; jobs in process enabled; email enabled; account creation enabled; index configuration enabled",
+            "Startup optional integrations/auth providers: Google OAuth, Microsoft OAuth, GitHub OAuth, Active Directory, Intercom, Slack, billing, geocoding, GeoIP, internal Exceptionless logging"
         ],
         informationMessages);
 
         string output = String.Join(Environment.NewLine, logger.Entries.Select(entry => entry.Message));
         Assert.Contains("cache.example.test:6380", output, StringComparison.Ordinal);
         Assert.Contains("rabbit.example.test:5671", output, StringComparison.Ordinal);
-        Assert.Contains("us-east-2", output, StringComparison.Ordinal);
-        Assert.Contains("smtp.example.test:465", output, StringComparison.Ordinal);
         Assert.Contains("elastic.example.test:9200", output, StringComparison.Ordinal);
-        Assert.Contains("retention 365 days", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("source map", output, StringComparison.OrdinalIgnoreCase);
 
         foreach (string secret in GetCanarySecrets())
             Assert.DoesNotContain(secret, output, StringComparison.Ordinal);
@@ -69,11 +65,11 @@ public class BootstrapperTests
         Assert.Contains("queue disabled at not configured", output, StringComparison.Ordinal);
         Assert.Contains("storage disabled at not configured", output, StringComparison.Ordinal);
         Assert.Contains("event submission disabled", output, StringComparison.Ordinal);
-        Assert.Contains("web sockets disabled", output, StringComparison.Ordinal);
-        Assert.Contains("email disabled at not configured", output, StringComparison.Ordinal);
+        Assert.Contains("WebSockets disabled", output, StringComparison.Ordinal);
+        Assert.Contains("email disabled", output, StringComparison.Ordinal);
         Assert.Contains("account creation disabled", output, StringComparison.Ordinal);
-        Assert.Contains("OAuth disabled", output, StringComparison.Ordinal);
-        Assert.Contains("auto-download disabled", output, StringComparison.Ordinal);
+        Assert.Contains("Startup optional integrations/auth providers: none", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("source map", output, StringComparison.OrdinalIgnoreCase);
 
         string[] warnings = logger.Entries
             .Where(entry => entry.Level == LogLevel.Warning)
