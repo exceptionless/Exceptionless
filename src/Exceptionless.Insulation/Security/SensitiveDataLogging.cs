@@ -237,10 +237,11 @@ public static class SensitiveDataLogging
 
     private static StructureValue CreateSafeOAuthServerOptions(OAuthServerOptions options, ILogEventPropertyValueFactory factory)
     {
-        var result = new SafeStructureBuilder(nameof(OAuthServerOptions), factory, 8);
+        var result = new SafeStructureBuilder(nameof(OAuthServerOptions), factory, 9);
         result.Add(nameof(options.AuthorizationCodeLifetime), options.AuthorizationCodeLifetime);
         result.Add(nameof(options.AccessTokenLifetime), options.AccessTokenLifetime);
         result.Add(nameof(options.RefreshTokenLifetime), options.RefreshTokenLifetime);
+        result.Add(nameof(options.RefreshTokenReuseGracePeriod), options.RefreshTokenReuseGracePeriod);
         result.Add(nameof(options.EnableClientIdMetadataDocuments), options.EnableClientIdMetadataDocuments);
         result.Add(nameof(options.DynamicClientRegistrationIpLimit), options.DynamicClientRegistrationIpLimit);
         result.Add(nameof(options.ClientMetadataDocumentCacheLifetime), options.ClientMetadataDocumentCacheLifetime);
