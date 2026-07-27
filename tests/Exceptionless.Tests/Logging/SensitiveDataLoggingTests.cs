@@ -11,33 +11,39 @@ namespace Exceptionless.Tests.Logging;
 public class SensitiveDataLoggingTests
 {
     [Fact]
-    public void ApplySensitiveDataLogging_DoesNotDestructureConfigurationObjects()
+    public void ApplySensitiveDataLogging_AppOptions_DoesNotDestructureSensitiveProperties()
     {
+        // Arrange
         var sink = new CollectingSink();
         using var logger = new LoggerConfiguration()
             .ApplySensitiveDataLogging()
             .WriteTo.Sink(sink)
             .CreateLogger();
 
+        // Act
         logger.Information("Loaded configuration {@Options}", new AppOptions());
-
         var rendered = sink.Events.Single().Properties["Options"].ToString();
+
+        // Assert
         Assert.DoesNotContain("InternalProjectId", rendered, StringComparison.Ordinal);
         Assert.DoesNotContain("ExceptionlessApiKey", rendered, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void ApplySensitiveDataLogging_DoesNotDestructureNestedSensitiveOptions()
+    public void ApplySensitiveDataLogging_EmailOptions_DoesNotDestructureSensitiveProperties()
     {
+        // Arrange
         var sink = new CollectingSink();
         using var logger = new LoggerConfiguration()
             .ApplySensitiveDataLogging()
             .WriteTo.Sink(sink)
             .CreateLogger();
 
+        // Act
         logger.Information("Loaded configuration {@Options}", new EmailOptions());
-
         var rendered = sink.Events.Single().Properties["Options"].ToString();
+
+        // Assert
         Assert.DoesNotContain("SmtpPassword", rendered, StringComparison.Ordinal);
     }
 
