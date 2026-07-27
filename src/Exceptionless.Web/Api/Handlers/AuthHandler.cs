@@ -35,6 +35,8 @@ public class AuthHandler(
     TimeProvider timeProvider,
     ILogger<AuthHandler> logger)
 {
+    private const string LegacyMicrosoftOAuthProvider = "WindowsLive";
+    private const string MicrosoftOAuthProvider = "Microsoft";
     private readonly ScopedCacheClient _cache = new(cacheClient, "Auth");
     private static bool _isFirstUserChecked;
     private static readonly TimeSpan IntercomJwtLifetime = TimeSpan.FromMinutes(60);
@@ -285,7 +287,7 @@ public class AuthHandler(
         );
     }
 
-    public Task<Result<TokenResult>> Handle(LiveLogin message)
+    public Task<Result<TokenResult>> Handle(MicrosoftLogin message)
     {
         return ExternalLoginAsync(message.AuthInfo, message.Context,
             authOptions.MicrosoftId,
@@ -577,21 +579,24 @@ public class AuthHandler(
                 }
                 else
                 {
-                    return currentUser;
+                    return await UpdateExternalLoginAsync(currentUser, userInfo);
                 }
             }
 
-            currentUser.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
-            return await userRepository.SaveAsync(currentUser, o => o.Cache());
+            return await UpdateExternalLoginAsync(currentUser, userInfo);
         }
 
         if (existingUser is not null)
         {
+            bool hasChanges = UpdateExternalLogin(existingUser, userInfo);
             if (!existingUser.IsEmailAddressVerified)
             {
                 existingUser.MarkEmailAddressVerified();
-                await userRepository.SaveAsync(existingUser, o => o.Cache());
+                hasChanges = true;
             }
+
+            if (hasChanges)
+                await userRepository.SaveAsync(existingUser, o => o.Cache());
 
             return existingUser;
         }
@@ -609,7 +614,7 @@ public class AuthHandler(
         }
 
         user.MarkEmailAddressVerified();
-        user.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
+        UpdateExternalLogin(user, userInfo);
 
         if (String.IsNullOrEmpty(user.Id))
             await userRepository.AddAsync(user, o => o.Cache());
@@ -617,6 +622,37 @@ public class AuthHandler(
             await userRepository.SaveAsync(user, o => o.Cache());
 
         return user;
+    }
+
+    private async Task<User> UpdateExternalLoginAsync(User user, UserInfo userInfo)
+    {
+        if (UpdateExternalLogin(user, userInfo))
+            return await userRepository.SaveAsync(user, o => o.Cache());
+
+        return user;
+    }
+
+    private static bool UpdateExternalLogin(User user, UserInfo userInfo)
+    {
+        bool hasChanges = false;
+        if (!user.OAuthAccounts.Any(account =>
+                String.Equals(account.Provider, userInfo.ProviderName, StringComparison.OrdinalIgnoreCase)
+                && account.ProviderUserId == userInfo.Id))
+        {
+            user.AddOAuthAccount(userInfo.ProviderName!, userInfo.Id!, userInfo.Email!);
+            hasChanges = true;
+        }
+
+        if (!String.Equals(userInfo.ProviderName, MicrosoftOAuthProvider, StringComparison.OrdinalIgnoreCase))
+            return hasChanges;
+
+        var legacyAccounts = user.OAuthAccounts
+            .Where(account => String.Equals(account.Provider, LegacyMicrosoftOAuthProvider, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        foreach (var account in legacyAccounts)
+            user.OAuthAccounts.Remove(account);
+
+        return hasChanges || legacyAccounts.Length > 0;
     }
 
     private async Task<bool> IsAccountCreationEnabledAsync(string? token)

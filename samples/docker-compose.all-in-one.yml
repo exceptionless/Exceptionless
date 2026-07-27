@@ -8,6 +8,7 @@ services:
       - 9200:9200
     environment:
       EX_AppMode: Production
+      # EX_ConnectionStrings__OAuth: MicrosoftId=YOUR_CLIENT_ID;MicrosoftSecret=YOUR_CLIENT_SECRET
       #ASPNETCORE_URLS: http://+;https://+
       #ASPNETCORE_HTTPS_PORT: 7111
       #ASPNETCORE_Kestrel__Certificates__Default__Password: password
