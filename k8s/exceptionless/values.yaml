@@ -21,6 +21,7 @@ jobs:
 
 config: {}
 #  key: value
+#  EX_ConnectionStrings__OAuth: MicrosoftId=YOUR_CLIENT_ID;MicrosoftSecret=YOUR_CLIENT_SECRET
 
 ingress:
   enabled: false

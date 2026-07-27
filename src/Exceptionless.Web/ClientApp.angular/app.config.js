@@ -10,7 +10,7 @@
         .constant("GITHUB_APPID")
         .constant("GOOGLE_APPID")
         .constant("INTERCOM_APPID")
-        .constant("LIVE_APPID")
+        .constant("MICROSOFT_APPID")
         .constant("SLACK_APPID")
         .constant("STRIPE_PUBLISHABLE_KEY")
         .constant("SYSTEM_NOTIFICATION_MESSAGE")

@@ -110,18 +110,6 @@
                     oauthType: "2.0",
                     popupOptions: { width: 500, height: 560 },
                 },
-                live: {
-                    name: "live",
-                    url: "/auth/live",
-                    authorizationEndpoint: "https://login.live.com/oauth20_authorize.srf",
-                    redirectUri: window.location.origin,
-                    requiredUrlParams: ["display", "scope"],
-                    scope: ["wl.emails"],
-                    scopeDelimiter: " ",
-                    display: "popup",
-                    oauthType: "2.0",
-                    popupOptions: { width: 500, height: 560 },
-                },
                 yahoo: {
                     name: "yahoo",
                     url: "/auth/yahoo",
@@ -323,9 +311,6 @@
         };
         AuthProvider.prototype.twitch = function (options) {
             angular.extend(this.SatellizerConfig.providers.twitch, options);
-        };
-        AuthProvider.prototype.live = function (options) {
-            angular.extend(this.SatellizerConfig.providers.live, options);
         };
         AuthProvider.prototype.yahoo = function (options) {
             angular.extend(this.SatellizerConfig.providers.yahoo, options);
