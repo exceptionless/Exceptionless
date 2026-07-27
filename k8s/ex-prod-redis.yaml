@@ -11,6 +11,10 @@ spec:
     - name: redis
       serviceVersion: "8.4.0"
       disableExporter: false
+      annotations:
+        signoz.io/scrape: "true"
+        signoz.io/port: "9121"
+        signoz.io/path: "/metrics"
       replicas: 2
       systemAccounts:
         - name: default
