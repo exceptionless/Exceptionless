@@ -71,13 +71,17 @@ public static class ViewOrganizationExtensions
         return organization.GetHourlyUsage(timeProvider.GetUtcNow().UtcDateTime);
     }
 
-    public static void EnsureUsage(this ViewOrganization organization, TimeProvider timeProvider)
+    public static void EnsureUsage(this ViewOrganization organization, int freePlanLimit, TimeProvider timeProvider)
     {
         var startDate = timeProvider.GetUtcNow().UtcDateTime.SubtractMonths(11).StartOfMonth();
+        var subscriptionStartDate = organization.SubscribeDate?.ToUniversalTime().StartOfMonth();
 
         while (startDate <= timeProvider.GetUtcNow().UtcDateTime.StartOfMonth())
         {
-            organization.GetUsage(startDate, timeProvider);
+            int limit = subscriptionStartDate.HasValue && startDate < subscriptionStartDate.Value
+                ? freePlanLimit
+                : organization.GetMaxEventsPerMonthWithBonus(timeProvider);
+            organization.GetUsage(startDate, limit);
             startDate = startDate.AddMonths(1).StartOfMonth();
         }
     }
@@ -89,6 +93,11 @@ public static class ViewOrganizationExtensions
 
     public static UsageInfo GetUsage(this ViewOrganization organization, DateTime date, TimeProvider timeProvider)
     {
+        return organization.GetUsage(date, organization.GetMaxEventsPerMonthWithBonus(timeProvider));
+    }
+
+    public static UsageInfo GetUsage(this ViewOrganization organization, DateTime date, int limit)
+    {
         var startOfMonth = date.ToUniversalTime().StartOfMonth();
         var usage = organization.Usage.FirstOrDefault(o => o.Date.Year == startOfMonth.Year && o.Date.Month == startOfMonth.Month);
         if (usage is not null)
@@ -97,7 +106,7 @@ public static class ViewOrganizationExtensions
         usage = new UsageInfo
         {
             Date = startOfMonth,
-            Limit = organization.GetMaxEventsPerMonthWithBonus(timeProvider)
+            Limit = limit
         };
         organization.Usage.Add(usage);
 

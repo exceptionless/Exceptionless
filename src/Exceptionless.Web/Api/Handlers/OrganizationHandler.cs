@@ -837,7 +837,7 @@ public class OrganizationHandler(
             viewOrganization.IconUrl = GetOrganizationIconUrl(viewOrganization.Id, viewOrganization.IconUrl);
 
             var realTimeUsage = await usageService.GetUsageAsync(viewOrganization.Id);
-            viewOrganization.EnsureUsage(timeProvider);
+            viewOrganization.EnsureUsage(plans.FreePlan.MaxEventsPerMonth, timeProvider);
             viewOrganization.TrimUsage(timeProvider);
 
             var currentUsage = viewOrganization.GetCurrentUsage(timeProvider);
