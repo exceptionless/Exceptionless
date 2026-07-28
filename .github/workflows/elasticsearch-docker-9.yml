@@ -1,10 +1,10 @@
-name: Elasticsearch 8.x Docker Image CI
+name: Elasticsearch 9.x Docker Image CI
 
 on:
   push:
     paths:
-      - "build/docker/elasticsearch/8.x/**"
-      - ".github/workflows/elasticsearch-docker-8.yml"
+      - "build/docker/elasticsearch/9.x/**"
+      - ".github/workflows/elasticsearch-docker-9.yml"
 
 jobs:
   build:
@@ -39,8 +39,8 @@ jobs:
         uses: docker/setup-buildx-action@v4
         with:
           platforms: linux/amd64,linux/arm64
-      - name: Build custom Elasticsearch 8.x docker image
-        working-directory: build/docker/elasticsearch/8.x
+      - name: Build custom Elasticsearch 9.x docker image
+        working-directory: build/docker/elasticsearch/9.x
         run: |
           VERSION=$(sed -n 's/.*elasticsearch:\([^ ]*\).*/\1/p' Dockerfile)
-          docker buildx build --platform linux/amd64,linux/arm64 --output "type=image,push=true" --file ./Dockerfile . --tag exceptionless/elasticsearch:$VERSION
+          docker buildx build --platform linux/amd64,linux/arm64 --output "type=image,push=true" --file ./Dockerfile . --tag exceptionless/elasticsearch:$VERSION --tag exceptionless/elasticsearch:latest
