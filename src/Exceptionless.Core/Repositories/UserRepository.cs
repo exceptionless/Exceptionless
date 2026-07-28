@@ -10,6 +10,8 @@ namespace Exceptionless.Core.Repositories;
 
 public class UserRepository : RepositoryBase<User>, IUserRepository
 {
+    internal const string EmailCacheKeyPrefix = "Email:";
+
     public UserRepository(ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, AppOptions options)
         : base(configuration.Users, validator, options)
     {
@@ -85,5 +87,5 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         return Task.WhenAll(Cache.RemoveAllAsync(keysToRemove), base.InvalidateCacheAsync(documents, changeType));
     }
 
-    private static string EmailCacheKey(string emailAddress) => String.Concat("Email:", emailAddress.Trim().ToLowerInvariant());
+    private static string EmailCacheKey(string emailAddress) => String.Concat(EmailCacheKeyPrefix, emailAddress.Trim().ToLowerInvariant());
 }
