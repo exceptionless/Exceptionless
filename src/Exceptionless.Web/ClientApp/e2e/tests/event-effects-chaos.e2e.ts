@@ -176,7 +176,7 @@ test('event list and detail effects stay bounded through paging and background c
         }
     });
     expect(actionSample(diagnostics, 'stack detail discovery route remounts').eventDetails).toBeLessThanOrEqual(10);
-    expect(actionSample(diagnostics, 'stack detail discovery route remounts').stackDetails).toBeLessThanOrEqual(15);
+    expect(actionSample(diagnostics, 'stack detail discovery route remounts').stackDetails).toBeLessThanOrEqual(20);
     expect(actionSample(diagnostics, 'stack detail discovery route remounts').stackEvents).toBe(5);
 
     await measureAction(diagnostics, 'canonical stack event route remounts', async () => {

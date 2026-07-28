@@ -816,8 +816,25 @@
     useEventListener(document, 'refresh', () => scheduleLoadData(true));
     useEventListener(document, 'PersistentEventChanged', (event) => onPersistentEventChanged((event as CustomEvent).detail));
 
+    const automaticLoadDataKey = $derived(
+        JSON.stringify({
+            after: eventsQueryParameters.after,
+            before: eventsQueryParameters.before,
+            filter: eventsQueryParameters.filter,
+            isSavedViewRoutePending,
+            limit: eventsQueryParameters.limit,
+            mode: eventsQueryParameters.mode,
+            offset: eventsQueryParameters.offset,
+            organizationId: organization.current,
+            page: eventsQueryParameters.page,
+            sort: eventsQueryParameters.sort,
+            time: eventsQueryParameters.time
+        })
+    );
+
     $effect(() => {
-        loadData();
+        void automaticLoadDataKey;
+        untrack(() => loadData());
     });
 
     const chartDataQuery = getOrganizationCountQuery({
