@@ -21,7 +21,7 @@ namespace Exceptionless.Tests;
 
 public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program>, IAsyncLifetime
 {
-    private const string SharedElasticsearchUrl = "http://localhost:9200";
+    private static readonly string SharedElasticsearchUrl = GetSharedElasticsearchUrl();
     private static readonly TimeSpan SharedElasticsearchStartupTimeout = TimeSpan.FromMinutes(3);
     private static int s_counter = -1;
     private static readonly Lazy<Task<DistributedApplication>> s_sharedAppHost = new(StartSharedAppHostAsync, LazyThreadSafetyMode.ExecutionAndPublication);
@@ -58,16 +58,30 @@ public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program
         return app;
     }
 
+    private static string GetSharedElasticsearchUrl()
+    {
+        const int defaultPort = 9200;
+        string? configuredPort = Environment.GetEnvironmentVariable("Elasticsearch__Port");
+        if (String.IsNullOrWhiteSpace(configuredPort))
+            return $"http://localhost:{defaultPort}";
+
+        if (!Int32.TryParse(configuredPort, out int port) || port is < 1 or > 65535)
+            throw new InvalidOperationException("Environment variable 'Elasticsearch__Port' must be a valid TCP port.");
+
+        return $"http://localhost:{port}";
+    }
+
     private static async Task WaitForElasticsearchAsync(Uri elasticsearchUri)
     {
-        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(1) };
+        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
         var deadline = TimeProvider.System.GetUtcNow() + SharedElasticsearchStartupTimeout;
+        var healthUri = new Uri(elasticsearchUri, "/_cluster/health?wait_for_status=yellow&timeout=1s");
 
         while (TimeProvider.System.GetUtcNow() < deadline)
         {
             try
             {
-                using var response = await client.GetAsync(elasticsearchUri);
+                using var response = await client.GetAsync(healthUri);
                 if (response.StatusCode == HttpStatusCode.OK)
                     return;
             }

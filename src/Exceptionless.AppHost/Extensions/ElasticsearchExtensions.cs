@@ -60,7 +60,11 @@ public static class ElasticsearchBuilderExtensions
             .PublishAsConnectionString();
     }
 
-    public static IResourceBuilder<ElasticsearchResource> WithKibana(this IResourceBuilder<ElasticsearchResource> builder, Action<IResourceBuilder<KibanaResource>>? configureContainer = null, string? containerName = null)
+    public static IResourceBuilder<ElasticsearchResource> WithKibana(
+        this IResourceBuilder<ElasticsearchResource> builder,
+        Action<IResourceBuilder<KibanaResource>>? configureContainer = null,
+        string? containerName = null,
+        int? port = null)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
@@ -79,7 +83,7 @@ public static class ElasticsearchBuilderExtensions
             var resourceBuilder = builder.ApplicationBuilder.AddResource(resource)
                                       .WithImage(ElasticsearchContainerImageTags.KibanaImage, ElasticsearchContainerImageTags.Tag)
                                       .WithImageRegistry(ElasticsearchContainerImageTags.KibanaRegistry)
-                                      .WithHttpEndpoint(targetPort: KibanaPort, name: containerName)
+                                      .WithHttpEndpoint(targetPort: KibanaPort, port: port, name: containerName)
                                       .WithUrlForEndpoint(containerName, u => u.DisplayText = "Kibana")
                                       .WithEnvironment("xpack.security.enabled", "false")
                                       .WithEnvironment(ctx =>
@@ -134,9 +138,11 @@ internal sealed class ElasticsearchConnectionHealthCheck(Func<string?> connectio
 
         using var settings = new ElasticsearchClientSettings(new Uri(connectionString));
         var client = new ElasticsearchClient(settings);
-        var response = await client.PingAsync(cancellationToken);
+        var response = await client.Cluster.HealthAsync(
+            request => request.WaitForStatus(Elastic.Clients.Elasticsearch.HealthStatus.Yellow),
+            cancellationToken);
         return response.IsValidResponse
             ? HealthCheckResult.Healthy()
-            : new HealthCheckResult(context.Registration.FailureStatus, $"Elasticsearch ping failed: {response.DebugInformation}");
+            : new HealthCheckResult(context.Registration.FailureStatus, $"Elasticsearch cluster health check failed: {response.DebugInformation}");
     }
 }
