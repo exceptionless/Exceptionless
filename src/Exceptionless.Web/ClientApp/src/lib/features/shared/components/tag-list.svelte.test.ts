@@ -1,9 +1,24 @@
 import { fireEvent, render, screen } from '@testing-library/svelte';
-import { describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import TagList from './tag-list.svelte';
 
+class ResizeObserverMock {
+    disconnect = vi.fn();
+    observe = vi.fn();
+    takeRecords = vi.fn(() => []);
+    unobserve = vi.fn();
+}
+
 describe('TagList', () => {
+    beforeAll(() => {
+        vi.stubGlobal('ResizeObserver', ResizeObserverMock);
+    });
+
+    afterAll(() => {
+        vi.unstubAllGlobals();
+    });
+
     it('renders neutral tag badges without filter icons and summarizes overflow', () => {
         const { container } = render(TagList, {
             maxVisible: 2,
@@ -30,10 +45,20 @@ describe('TagList', () => {
         const onTagClick = vi.fn();
         render(TagList, { onTagClick, tags: ['api'] });
 
-        await fireEvent.click(screen.getByRole('button', { name: 'api' }));
+        const tagButton = screen.getByRole('button', { name: 'api' });
+        await fireEvent.click(tagButton);
 
         expect(onTagClick).toHaveBeenCalledOnce();
         expect(onTagClick).toHaveBeenCalledWith('api');
+
+        await fireEvent.pointerEnter(tagButton);
+        await fireEvent.pointerMove(tagButton);
+
+        const shortcut = document.querySelector('[data-slot="tooltip-content"] [data-slot="kbd"]');
+        expect(shortcut).not.toBeNull();
+        expect(shortcut?.classList.contains('in-data-[slot=tooltip-content]:bg-muted')).toBe(true);
+        expect(shortcut?.classList.contains('in-data-[slot=tooltip-content]:text-foreground')).toBe(true);
+        expect(shortcut?.classList.contains('border-border')).toBe(true);
     });
 
     it('shows an empty value when there are no tags', () => {
