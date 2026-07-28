@@ -3,7 +3,7 @@ import { resolve } from '$app/paths';
 import { page } from '$app/state';
 import { env } from '$env/dynamic/public';
 import { CachedPersistedState } from '$features/shared/utils/cached-persisted-state.svelte';
-import { useFetchClient } from '@exceptionless/fetchclient';
+import { useFetchClient } from '@foundatiofx/fetchclient';
 
 import type { TokenResult } from './models';
 

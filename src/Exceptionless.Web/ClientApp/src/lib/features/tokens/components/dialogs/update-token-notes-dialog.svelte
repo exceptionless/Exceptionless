@@ -6,7 +6,7 @@
     import { Textarea } from '$comp/ui/textarea';
     import { type UpdateTokenFormData, UpdateTokenSchema } from '$features/tokens/schemas';
     import { getFormErrorMessages, problemDetailsToFormErrors } from '$shared/validation';
-    import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { ProblemDetails } from '@foundatiofx/fetchclient';
     import { createForm } from '@tanstack/svelte-form';
 
     interface Props {

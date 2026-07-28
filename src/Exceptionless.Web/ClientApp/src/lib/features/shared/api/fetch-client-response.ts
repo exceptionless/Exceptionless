@@ -1,4 +1,4 @@
-import { type FetchClientResponse, ProblemDetails } from '@exceptionless/fetchclient';
+import { type FetchClientResponse, ProblemDetails } from '@foundatiofx/fetchclient';
 
 export function normalizeDeserializationFailure(response: FetchClientResponse<unknown> | null): FetchClientResponse<unknown> | null {
     const title = response?.data instanceof ProblemDetails ? response.data.title : undefined;

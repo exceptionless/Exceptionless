@@ -1,6 +1,6 @@
-import type { FetchClientResponse } from '@exceptionless/fetchclient';
+import type { FetchClientResponse } from '@foundatiofx/fetchclient';
 
-import { ProblemDetails } from '@exceptionless/fetchclient';
+import { ProblemDetails } from '@foundatiofx/fetchclient';
 import { describe, expect, it } from 'vitest';
 
 import { normalizeDeserializationFailure } from './fetch-client-response';

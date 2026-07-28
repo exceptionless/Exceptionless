@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { ProblemDetails } from '@exceptionless/fetchclient';
+    import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
     import { type IFilter } from '$comp/faceted-filter';
     import DateTime from '$comp/formatters/date-time.svelte';

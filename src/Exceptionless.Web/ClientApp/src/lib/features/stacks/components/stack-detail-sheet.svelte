@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { IFilter } from '$comp/faceted-filter';
     import type { PersistentEvent } from '$features/events/models';
-    import type { ProblemDetails } from '@exceptionless/fetchclient';
+    import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
     import { resolve } from '$app/paths';
     import DetailSheet from '$comp/detail-sheet.svelte';
