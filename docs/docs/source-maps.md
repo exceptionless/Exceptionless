@@ -97,11 +97,10 @@ Your pipeline also needs:
 
 - `EXCEPTIONLESS_SERVER_URL`: `https://collector.exceptionless.io` for hosted Exceptionless, or your self-hosted server URL.
 - `EXCEPTIONLESS_PROJECT_ID`: the project ID shown in the project URL or project settings.
-- `PUBLIC_ASSET_BASE_URL`: the public URL corresponding to the root of your build output.
 
-### 2. Upload one map
+### 2. Add the upload to your deployment
 
-The upload endpoint accepts `multipart/form-data` with the generated URL and map file:
+For each source map produced by the build, send a `multipart/form-data` request containing the map and the exact public URL of its generated JavaScript file:
 
 ```shell
 curl --fail-with-body --request POST \
@@ -113,76 +112,9 @@ curl --fail-with-body --request POST \
 
 A successful upload returns HTTP `201 Created`.
 
-### 3. Upload every map from a build
+Add this request after your production build and before the release step. If the build creates multiple JavaScript bundles, repeat it for each `.map` file. How you enumerate those files and construct their public URLs depends on your build tool and deployment layout.
 
-This Bash example recursively uploads every `.js.map` file under `dist`. It assumes paths below `dist` are deployed unchanged below `PUBLIC_ASSET_BASE_URL`.
-
-```shell
-set -euo pipefail
-
-map_count=0
-while IFS= read -r -d '' source_map; do
-  relative_map_path="${source_map#dist/}"
-  relative_generated_path="${relative_map_path%.map}"
-  generated_file_url="${PUBLIC_ASSET_BASE_URL%/}/${relative_generated_path}"
-
-  curl --fail-with-body --request POST \
-    "${EXCEPTIONLESS_SERVER_URL}/api/v2/projects/${EXCEPTIONLESS_PROJECT_ID}/source-maps" \
-    --header "Authorization: Bearer ${EXCEPTIONLESS_SOURCE_MAP_TOKEN}" \
-    --form-string "generated_file_url=${generated_file_url}" \
-    --form "file=@${source_map};type=application/json"
-
-  map_count=$((map_count + 1))
-done < <(find dist -type f -name '*.js.map' -print0)
-
-if [ "${map_count}" -eq 0 ]; then
-  echo "No JavaScript source maps were found under dist." >&2
-  exit 1
-fi
-```
-
-For example, if the build creates `dist/assets/app.a1b2c3.js.map` and `PUBLIC_ASSET_BASE_URL` is `https://cdn.example.com`, the script registers the map for `https://cdn.example.com/assets/app.a1b2c3.js`.
-
-### GitHub Actions example
-
-Store the upload token as an Actions secret. Store the project ID and public asset URL as repository or environment variables:
-
-```yaml
-- name: Build production assets
-  run: |
-    npm ci
-    npm run build
-
-- name: Upload source maps to Exceptionless
-  shell: bash
-  env:
-    EXCEPTIONLESS_SERVER_URL: https://collector.exceptionless.io
-    EXCEPTIONLESS_PROJECT_ID: ${{ vars.EXCEPTIONLESS_PROJECT_ID }}
-    EXCEPTIONLESS_SOURCE_MAP_TOKEN: ${{ secrets.EXCEPTIONLESS_SOURCE_MAP_TOKEN }}
-    PUBLIC_ASSET_BASE_URL: ${{ vars.PUBLIC_ASSET_BASE_URL }}
-  run: |
-    set -euo pipefail
-
-    map_count=0
-    while IFS= read -r -d '' source_map; do
-      relative_map_path="${source_map#dist/}"
-      relative_generated_path="${relative_map_path%.map}"
-
-      curl --fail-with-body --request POST \
-        "${EXCEPTIONLESS_SERVER_URL}/api/v2/projects/${EXCEPTIONLESS_PROJECT_ID}/source-maps" \
-        --header "Authorization: Bearer ${EXCEPTIONLESS_SOURCE_MAP_TOKEN}" \
-        --form-string "generated_file_url=${PUBLIC_ASSET_BASE_URL%/}/${relative_generated_path}" \
-        --form "file=@${source_map};type=application/json"
-
-      map_count=$((map_count + 1))
-    done < <(find dist -type f -name '*.js.map' -print0)
-
-    test "${map_count}" -gt 0
-
-# Deploy this same dist directory after the upload succeeds.
-```
-
-Adjust `dist` and `PUBLIC_ASSET_BASE_URL` to match your build tool and deployment layout. The important part is that every uploaded `generated_file_url` exactly matches the URL that the browser will report.
+Deploy the same build artifacts that you uploaded maps for. Do not rebuild between the source-map upload and deployment.
 
 ## Verify the setup
 
