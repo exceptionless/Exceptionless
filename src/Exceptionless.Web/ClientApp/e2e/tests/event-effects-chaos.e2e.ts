@@ -66,6 +66,8 @@ test('event list and detail effects stay bounded through paging and background c
         await expect(page.getByRole('button', { name: 'Go to next page' })).toBeEnabled();
     });
 
+    await waitForEventListQuiescence(page, diagnostics);
+
     await measureAction(diagnostics, 'event list paging', async () => {
         for (let index = 0; index < 4; index++) {
             await clickAndWaitForList(page, e2eScenario.organizationId, 'Go to next page');
@@ -323,4 +325,27 @@ async function setDocumentHidden(page: Page, hidden: boolean): Promise<void> {
         document.dispatchEvent(new Event('visibilitychange'));
         window.dispatchEvent(new Event('visibilitychange'));
     }, hidden);
+}
+
+async function waitForEventListQuiescence(page: Page, diagnostics: RuntimeDiagnostics): Promise<void> {
+    const quietPeriodMs = 2_500;
+    const timeoutAt = Date.now() + 20_000;
+    let lastRequestCount = diagnostics.requests.eventList;
+    let quietSince = Date.now();
+
+    while (Date.now() < timeoutAt) {
+        await page.waitForTimeout(250);
+
+        if (diagnostics.requests.eventList !== lastRequestCount) {
+            lastRequestCount = diagnostics.requests.eventList;
+            quietSince = Date.now();
+            continue;
+        }
+
+        if (Date.now() - quietSince >= quietPeriodMs) {
+            return;
+        }
+    }
+
+    throw new Error('Event list requests did not become quiet after seeding');
 }
