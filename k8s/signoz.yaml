@@ -33,9 +33,40 @@ otelAgent:
         endpoint: http://apm.elastic-system.svc:8200
         tls:
           insecure: true
+    processors:
+      filter/drop_unused_metrics:
+        error_mode: ignore
+        metrics:
+          metric:
+            - 'name == "http.client.request.duration"'
+            - 'name == "http.client.request.time_in_queue"'
+            - 'name == "http.client.connection.duration"'
+            - 'name == "http.client.open_connections"'
+            - 'name == "http.client.active_requests"'
+            - 'name == "dns.lookup.duration"'
+            - 'name == "kestrel.connection.duration"'
+            - 'name == "aspnetcore.authentication.authenticate.duration"'
+            - 'name == "aspnetcore.routing.match_attempts"'
+            - 'name == "dotnet.exceptions"'
+            - 'name == "dotnet.gc.collections"'
+            - 'name == "dotnet.gc.last_collection.heap.size"'
+            - 'name == "dotnet.gc.last_collection.heap.fragmentation.size"'
+            - 'name == "dotnet.process.cpu.time"'
+            - 'name == "foundatio.lock.wait.time"'
+            - 'name == "ex.posts.size"'
+            - 'name == "ex.events.parse.jsoneventparserplugin"'
+            - 'name == "ex.events.field.count"'
+            - 'name == "ex.eventpipeline.markascriticalaction"'
+      filter/drop_cache_spans:
+        error_mode: ignore
+        traces:
+          span:
+            - 'attributes["db.system"] == "redis" and status.code != STATUS_CODE_ERROR and (resource.attributes["service.name"] == "exceptionless-web" or resource.attributes["service.name"] == "job-event-posts")'
     service:
       pipelines:
         traces:
+          processors: [filter/drop_cache_spans, batch]
           exporters: [otlp, otlp/elastic]
         metrics:
+          processors: [filter/drop_unused_metrics, batch]
           exporters: [otlp, otlp/elastic]

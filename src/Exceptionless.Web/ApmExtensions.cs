@@ -128,6 +128,12 @@ public static partial class ApmExtensions
                 b.AddMeter("System.Runtime");
                 b.AddRuntimeInstrumentation();
                 b.AddProcessInstrumentation();
+                b.AddView(
+                    "http.server.request.duration",
+                    new ExplicitBucketHistogramConfiguration
+                    {
+                        Boundaries = [0.005, 0.025, 0.1, 0.5, 1, 5]
+                    });
 
                 if (config.Console)
                     b.AddConsoleExporter((_, metricReaderOptions) =>
