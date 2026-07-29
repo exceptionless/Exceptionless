@@ -6,11 +6,11 @@ EnableSsl="${EX_EnableSsl:-false}"
 EnableAccountCreation="${EX_EnableAccountCreation:-true}"
 
 OAuth="${EX_ConnectionStrings__OAuth:-}"
-IFS=';' read -ra oauthParts <<< "$OAuth"
-for part in "${oauthParts[@]}"
+IFS=';' read -a oauthParts <<< "$OAuth"
+for part in ${oauthParts[@]}
 do
-  key="${part%%=*}"
-  value="${part#*=}"
+  key="$( cut -d '=' -f 1 <<< $part )"
+  value="$( cut -d '=' -f 2- <<< $part )"
 
   if [ "$key" == "FacebookId" ]; then
     FacebookAppId=$value

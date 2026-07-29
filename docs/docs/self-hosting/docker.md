@@ -18,16 +18,6 @@ Runs Exceptionless without persisting data between runs. Good for checking out E
 docker run --rm -it -p 5200:8080 exceptionless/exceptionless:latest
 ```
 
-## Microsoft Authentication
-
-Create a Microsoft Entra app registration that supports organizational and personal Microsoft accounts. Add your Exceptionless base URL as a Web redirect URI and grant the delegated Microsoft Graph `User.Read` permission.
-
-Pass the client ID and secret through the OAuth connection string:
-
-```bash
--e EX_ConnectionStrings__OAuth="MicrosoftId=YOUR_CLIENT_ID;MicrosoftSecret=YOUR_CLIENT_SECRET"
-```
-
 ## Simple Setup
 
 Runs a very simple non-production setup for Exceptionless with data persisted between runs in a sub-directory of the current directory called `esdata`. It uses an embedded single node Elasticsearch cluster and does not have backups. It is recommended that you create your own Elasticsearch cluster for production deployments of Exceptionless.
