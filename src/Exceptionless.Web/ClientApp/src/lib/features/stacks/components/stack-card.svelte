@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { ProblemDetails } from '@exceptionless/fetchclient';
+    import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
     import { type IFilter } from '$comp/faceted-filter';
     import DateTime from '$comp/formatters/date-time.svelte';
@@ -45,6 +45,8 @@
     let { filterChanged, id, onDeleted, onError }: Props = $props();
     let handledErrorForStackId = $state<string>();
 
+    const METRICS_TIME_RANGE = '[now-7d TO now]';
+
     const stackQuery = getStackQuery({
         route: {
             get id() {
@@ -55,7 +57,8 @@
 
     const projectCountQuery = getProjectCountQuery({
         params: {
-            aggregations: 'cardinality:user'
+            aggregations: 'cardinality:user',
+            time: METRICS_TIME_RANGE
         },
         route: {
             get projectId() {
@@ -79,7 +82,7 @@
     const stackCountQuery = getStackCountQuery({
         params: {
             aggregations: `date:(date${DEFAULT_OFFSET ? '^' + DEFAULT_OFFSET : ''} cardinality:user sum:count~1) min:date max:date cardinality:user sum:count~1`,
-            time: '[now-7d TO now]'
+            time: METRICS_TIME_RANGE
         },
         route: {
             get stackId() {

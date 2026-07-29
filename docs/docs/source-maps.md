@@ -4,58 +4,151 @@ title: "JavaScript Source Maps"
 
 # JavaScript Source Maps
 
-Exceptionless uses source maps to turn minified JavaScript stack frames into the original file names, line and column numbers, and function names. Symbolication happens before an event is assigned to a stack, so readable function names also improve stack grouping.
+Production JavaScript is usually bundled and minified. That makes it fast to download, but it can turn a useful stack frame such as `loadCurrentUser` into a short name such as `a`.
 
-## Automatic discovery
+Exceptionless uses source maps to restore the original function names, file names, line numbers, and column numbers before a new error is assigned to a stack. This gives you readable stack traces and helps Exceptionless group errors by the code that actually failed.
 
-No domain allowlist or project setup is required for public source maps. When an error contains an absolute HTTPS JavaScript URL, Exceptionless checks the generated file's `SourceMap` or `X-SourceMap` response header and its `sourceMappingURL` comment. If neither is present, it also checks the conventional `<generated-file>.map` URL.
+You can make source maps available in either of these ways:
 
-Downloaded maps are validated and cached in project-scoped file storage. Automatically downloaded maps are revalidated after one hour so a stable generated-file URL cannot retain a map from an older deployment indefinitely. If refresh fails, Exceptionless leaves the generated frame unchanged instead of risking a misleading stack trace from the stale map.
+| If your source maps are... | Recommended setup |
+| --- | --- |
+| Publicly available with your application | Deploy them with the generated JavaScript. Exceptionless discovers them automatically. |
+| Private or stored only as build artifacts | Upload them to Exceptionless from your deployment pipeline. |
 
-Exceptionless only makes anonymous HTTPS requests on the standard port to public network addresses. Redirects and every resolved address are revalidated. New automatic discoveries use plan-aware limits per client key, project, and organization; outbound requests are also limited per destination, IP address, and cluster. Free plans allow five new discoveries per client key and ten per project or organization in each 15-minute window by default. Paid plans have higher limits. Failed URLs are cached for 15 minutes, duplicate discoveries share the same in-flight work, and refreshes use a separate smaller outbound budget. If any limit is reached, Exceptionless leaves the generated frame unchanged without rejecting or delaying the event.
+Source maps are applied while new events are processed. Uploading a map does not rewrite events that Exceptionless has already processed.
 
-Downloads also have time, redirect, size, and local and cluster-wide concurrency limits. Parsed maps use a bounded in-memory cache. Manual and deployment uploads do not consume automatic-discovery quotas. Paid projects can store up to 1,000 maps and 1 GiB by default. Free projects have a smaller default limit of 100 maps and 100 MiB; replacing a map for the same generated URL does not consume another slot.
+## Use public source maps
 
-Exceptionless records a map's last successful use through a debounced cache update, then periodically persists that timestamp with the small metadata file instead of rewriting the map. The cleanup job removes unused maps after 14 days on free plans and 90 days on paid plans by default. Pending usage is checked before any map is removed, and stale maps are also cleaned before an upload or automatic download is rejected for exceeding storage limits.
+Public source maps require no Exceptionless project configuration and no upload step. For each JavaScript stack frame, Exceptionless:
 
-Self-hosted installations can tune these safeguards under the `SourceMaps` configuration section, including `MaximumArtifactsPerProject`, `MaximumStorageSizePerProject`, `MaximumArtifactsPerFreeProject`, `MaximumStorageSizePerFreeProject`, `FreeArtifactRetentionDays`, `ArtifactRetentionDays`, `UsageTrackingDebounceMinutes`, `AutoDownloadRateLimitPeriodMinutes`, `MaximumAutoDiscoveriesPerFreeClientKey`, `MaximumAutoDiscoveriesPerProject`, `MaximumAutoDownloadRequestsPerDestination`, `MaximumAutoRefreshRequestsGlobally`, `AutoDownloadRefreshIntervalMinutes`, `ParsedSourceMapCacheLifetimeMinutes`, and `MaximumParsedSourceMapCacheSize`.
+1. Uses the absolute generated JavaScript URL, line number, and column number reported by the browser.
+2. Looks for a source map already stored for that exact generated file URL.
+3. If one is not stored, anonymously downloads the generated JavaScript over HTTPS.
+4. Checks its `SourceMap` or `X-SourceMap` response header, then its `sourceMappingURL` comment.
+5. If neither points to a map, tries the conventional `<generated-file>.map` URL.
+6. Validates and caches the map for the project, then restores the original stack frame.
 
-## Uploading a source map
+For example, a production build can deploy these files:
 
-Upload a map when it is private or is not deployed next to the generated JavaScript:
-
-1. Open the project and select **Source Maps** under **Project Settings**.
-2. Enter the exact absolute URL that appears in the generated stack frame, including any path or query string used to identify the build.
-3. Select the corresponding source map and upload it.
-
-Uploading another map for the same generated file URL replaces the previous map. Uploaded and automatically discovered maps appear together on the Source Maps page and can be deleted there.
-
-### Uploading during deployment
-
-For build automation, create a project-scoped token that has only the `source-maps:write` scope. Set `EXCEPTIONLESS_SERVER_URL` to `https://be.exceptionless.io` for the hosted service or to the root URL of your self-hosted installation. Create the token once with a user-scoped token, then store the returned `id` as a protected CI/CD secret:
-
-```shell
-curl --fail-with-body --request POST \
-  "${EXCEPTIONLESS_SERVER_URL}/api/v2/projects/${EXCEPTIONLESS_PROJECT_ID}/tokens" \
-  --header "Authorization: Bearer ${EXCEPTIONLESS_USER_TOKEN}" \
-  --header "Content-Type: application/json" \
-  --data "{\"organization_id\":\"${EXCEPTIONLESS_ORGANIZATION_ID}\",\"project_id\":\"${EXCEPTIONLESS_PROJECT_ID}\",\"scopes\":[\"source-maps:write\"],\"notes\":\"CI source map uploads\"}"
+```text
+https://cdn.example.com/assets/app.a1b2c3.js
+https://cdn.example.com/assets/app.a1b2c3.js.map
 ```
 
-Upload each map after the generated JavaScript has been deployed. The `generated_file_url` must be the exact absolute URL that will appear in stack frames:
+The generated JavaScript normally ends with a relative reference:
+
+```js
+//# sourceMappingURL=app.a1b2c3.js.map
+```
+
+Exceptionless can also follow an absolute `sourceMappingURL`, a relative URL in a `SourceMap` response header, or an inline data URL.
+
+### Public map requirements
+
+- The generated JavaScript URL in the stack frame must be an absolute HTTPS URL.
+- The generated JavaScript and source map must be available without cookies, authentication headers, or an IP allowlist.
+- The URL must use the standard HTTPS port.
+- The map must be a version 3 flat source map. Indexed maps that contain a `sections` property are not supported.
+- The source map must be generated by the same build as the deployed JavaScript.
+
+Content-hashed file names are strongly recommended. A URL such as `app.a1b2c3.js` permanently identifies one build, while a reused URL such as `app.js` can refer to different code over time.
+
+You can confirm that a deployed map is public before releasing it:
+
+```shell
+curl --fail --silent --show-error \
+  "https://cdn.example.com/assets/app.a1b2c3.js.map" \
+  --output /dev/null
+```
+
+Public source maps can contain your original source code in `sourcesContent`. If that code should not be public, generate the map during the build but exclude it from the deployed assets and use the upload workflow instead.
+
+## Upload private source maps
+
+Uploaded maps do not need to be public. Exceptionless associates an upload with the exact generated JavaScript URL that appears in the stack frame, so it can use the map without downloading it from your site.
+
+To upload one map manually:
+
+1. Open your project in Exceptionless.
+2. Go to **Project Settings** and select **Source Maps**.
+3. Enter the exact absolute **Generated JavaScript URL** shown in the stack trace.
+4. Select the matching `.map` file and choose **Upload**.
+
+The generated URL may use HTTP or HTTPS for a manual upload. It must not contain credentials or a fragment. Keep its path and query string exactly as they appear in the stack frame.
+
+Uploading another map for the same generated file URL replaces the existing map. The **Source Maps** page lists both uploaded and automatically discovered maps, when they were added and last used, and lets you delete them.
+
+## Upload source maps from CI/CD
+
+Generate the source maps and production JavaScript in the same build. Upload the maps from that build, then deploy the same generated JavaScript without rebuilding it.
+
+### 1. Create a deployment token
+
+Create the token once in Exceptionless:
+
+1. Open **Project Settings** and select **API Keys**.
+2. Choose **Add token**.
+3. Select **Source map upload token**.
+4. Copy the token and save it as a protected secret named `EXCEPTIONLESS_SOURCE_MAP_TOKEN` in your CI/CD system.
+
+This token has only the `source-maps:write` scope and is restricted to the selected project. It cannot read events, change project settings, or upload maps to another project. Do not use the client API key embedded in your application.
+
+Your pipeline also needs:
+
+- `EXCEPTIONLESS_SERVER_URL`: `https://collector.exceptionless.io` for hosted Exceptionless, or your self-hosted server URL.
+- `EXCEPTIONLESS_PROJECT_ID`: the project ID shown in the project URL or project settings.
+
+### 2. Add the upload to your deployment
+
+For each source map produced by the build, send a `multipart/form-data` request containing the map and the exact public URL of its generated JavaScript file:
 
 ```shell
 curl --fail-with-body --request POST \
   "${EXCEPTIONLESS_SERVER_URL}/api/v2/projects/${EXCEPTIONLESS_PROJECT_ID}/source-maps" \
   --header "Authorization: Bearer ${EXCEPTIONLESS_SOURCE_MAP_TOKEN}" \
-  --form "generated_file_url=https://cdn.example.com/assets/app.a1b2c3.js" \
+  --form-string "generated_file_url=https://cdn.example.com/assets/app.a1b2c3.js" \
   --form "file=@dist/assets/app.a1b2c3.js.map;type=application/json"
 ```
 
-The upload token is accepted only for its assigned project and cannot read events, manage the project, list source maps, or use ordinary user APIs. Do not use a normal client API key for source map uploads because client keys are commonly embedded in distributed applications.
+A successful upload returns HTTP `201 Created`.
 
-Source maps must use the version 3 flat-map format. Indexed source maps with a `sections` property and authenticated automatic downloads are planned follow-up capabilities; private maps can be uploaded in the meantime.
+Add this request after your production build and before the release step. If the build creates multiple JavaScript bundles, repeat it for each `.map` file. How you enumerate those files and construct their public URLs depends on your build tool and deployment layout.
 
-## Deployment guidance
+Deploy the same build artifacts that you uploaded maps for. Do not rebuild between the source-map upload and deployment.
 
-Generate source maps as part of the same build that produces the minified JavaScript. Content-hashed generated file names are preferred because the generated URL then identifies a specific build. You can publish the `.map` file for zero-configuration discovery or keep it private and upload it to Exceptionless during deployment.
+## Verify the setup
+
+After the deployment:
+
+1. Open **Project Settings > Source Maps**.
+2. Confirm that the generated URL is listed as **Automatic** or **Uploaded**.
+3. Send a new test error from the production build.
+4. Open the event and confirm that its stack trace shows original file and function names.
+5. Return to **Source Maps** later to confirm that **Last used** has been updated. Usage timestamps are persisted asynchronously.
+
+## Troubleshooting
+
+### The map was uploaded, but the stack is still minified
+
+- Compare the uploaded generated URL with the URL in the event stack frame. The path and query string must match.
+- Confirm that the map and JavaScript came from the same build.
+- Confirm that the stack frame includes a valid line and column number.
+- Send a new event. Existing events are not reprocessed after an upload.
+- Confirm that the file is a version 3 flat source map, not an indexed map.
+
+### A public map was not discovered
+
+- Confirm that both the generated JavaScript and map return successful responses without authentication.
+- Use HTTPS on the standard port. Upload maps for HTTP, custom-port, private-network, or authenticated URLs.
+- Check the generated file for `sourceMappingURL`, check its response for `SourceMap` or `X-SourceMap`, or publish the map at `<generated-file>.map`.
+- Check **Project Settings > Source Maps**. Successfully discovered maps appear there automatically.
+
+### A deployment replaced files at the same URL
+
+Exceptionless periodically refreshes automatically discovered maps, but immutable content-hashed URLs are safer and avoid ambiguity between releases. Uploaded maps are replaced when you upload another map for the same generated URL.
+
+## Storage and retention
+
+Exceptionless validates downloads, limits their size and processing time, and applies plan-aware discovery and storage limits. Automatic discovery never rejects an event; if a map is unavailable or a limit is reached, Exceptionless keeps the generated stack frame.
+
+By default, free projects retain up to 100 maps and 100 MiB, and paid projects retain up to 1,000 maps and 1 GiB. Maps that have not been used are removed after 14 days on free plans and 90 days on paid plans. Self-hosted administrators can change these values in the `SourceMaps` configuration section.

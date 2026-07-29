@@ -2,7 +2,7 @@ import type { WebSocketMessageValue } from '$features/websockets/models';
 import type { WorkInProgressResult } from '$shared/models';
 
 import { accessToken } from '$features/auth/index.svelte';
-import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
 import type { Stack, StackStatus } from './models';
