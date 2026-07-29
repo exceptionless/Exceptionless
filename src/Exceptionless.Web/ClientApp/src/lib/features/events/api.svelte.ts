@@ -344,6 +344,7 @@ export function getOrganizationEventsQuery(request: GetOrganizationEventsRequest
                 });
             },
             queryKey: queryKeys.organizationsEvents(organizationId, params),
+            refetchOnWindowFocus: false,
             staleTime: 0
         };
     });
