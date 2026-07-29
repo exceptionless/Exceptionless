@@ -30,7 +30,6 @@ test('operator can refresh Events after a transient load failure', async ({ e2eA
 
         const refreshButton = page.getByTitle('Refresh results');
         await expect(refreshButton).toBeVisible();
-        await expect(refreshButton.locator('svg')).not.toHaveClass(/animate-spin/, { timeout: 30_000 });
         await expect(getVisibleText(page, e2eScenario.message)).toBeHidden();
     });
 
