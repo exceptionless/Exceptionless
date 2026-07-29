@@ -26,6 +26,26 @@ describe('Summary', () => {
         expect(screen.getByRole('link', { name: summary.data.Message }).getAttribute('href')).toBe('/next/event/event-id');
     });
 
+    it('renders an event summary without an internal link when linking is disabled', () => {
+        const summary: EventSummaryModel<'event-error-summary'> = {
+            data: {
+                Message: 'Unexpected end of Stream, the content may have already been read by another component.',
+                Method: 'MoveNext',
+                Type: 'IOException'
+            },
+            date: '2026-07-28T00:00:00Z',
+            id: 'event-id',
+            project_id: 'project-id',
+            tags: [],
+            template_key: 'event-error-summary'
+        };
+
+        const { container } = render(Summary, { linkToDetails: false, showStatus: false, summary });
+
+        expect(screen.queryByRole('link')).toBeNull();
+        expect(container.textContent).toContain(summary.data.Message!);
+    });
+
     it('links a stack summary to stack details', () => {
         const summary: StackSummaryModel<'stack-error-summary'> = {
             data: {

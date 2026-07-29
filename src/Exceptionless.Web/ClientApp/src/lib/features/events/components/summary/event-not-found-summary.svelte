@@ -1,14 +1,15 @@
 <script lang="ts">
-    import { A } from '$comp/typography';
+    import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from './index';
 
-    import { buildEventDetailsHref, type EventSummaryModel, type SummaryModel, type SummaryTemplateKeys } from './index';
+    import EventSummaryLink from './event-summary-link.svelte';
 
     interface EventFeatureSummaryProps {
+        linkToDetails?: boolean;
         showType: boolean;
         summary: SummaryModel<SummaryTemplateKeys>;
     }
 
-    let { showType, summary }: EventFeatureSummaryProps = $props();
+    let { linkToDetails = true, showType, summary }: EventFeatureSummaryProps = $props();
     let source = $derived(summary as EventSummaryModel<'event-notfound-summary'>);
 </script>
 
@@ -16,5 +17,5 @@
     {#if showType}
         <strong>404</strong>:&nbsp;
     {/if}
-    <A class="inline" href={buildEventDetailsHref(source.id)}>{source.data.Source}</A>
+    <EventSummaryLink eventId={source.id} {linkToDetails}>{source.data.Source}</EventSummaryLink>
 </div>

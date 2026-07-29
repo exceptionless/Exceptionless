@@ -1,20 +1,23 @@
 <script lang="ts">
-    import { A, Muted } from '$comp/typography';
+    import { Muted } from '$comp/typography';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
 
-    import { buildEventDetailsHref, type EventSummaryModel, type SummaryModel, type SummaryTemplateKeys } from './index';
+    import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from './index';
+
+    import EventSummaryLink from './event-summary-link.svelte';
 
     interface Props {
+        linkToDetails?: boolean;
         summary: SummaryModel<SummaryTemplateKeys>;
     }
 
-    let { summary }: Props = $props();
+    let { linkToDetails = true, summary }: Props = $props();
     let source = $derived(summary as EventSummaryModel<'event-simple-summary'>);
 </script>
 
 <div class="line-clamp-2">
     <strong><abbr title={source.data.TypeFullName}>{source.data.Type}</abbr>: </strong>
-    <A class="inline" href={buildEventDetailsHref(source.id)}>{source.data.Message}</A>
+    <EventSummaryLink eventId={source.id} {linkToDetails}>{source.data.Message}</EventSummaryLink>
 </div>
 
 {#if source.data.Path}

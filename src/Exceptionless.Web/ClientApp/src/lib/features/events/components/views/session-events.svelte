@@ -165,7 +165,7 @@
                     <Table.Row class="cursor-pointer">
                         <Table.Cell class="p-0">
                             <a class="text-foreground block p-2 no-underline" href={eventHref} title="Open event details">
-                                <Summary summary={sessionEvent} showType={true} showStatus={false} />
+                                <Summary linkToDetails={false} summary={sessionEvent} showType={true} showStatus={false} />
                             </a>
                         </Table.Cell>
                         <Table.Cell class="p-0">

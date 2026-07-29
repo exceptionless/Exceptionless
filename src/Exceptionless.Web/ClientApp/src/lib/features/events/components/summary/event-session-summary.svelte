@@ -1,14 +1,15 @@
 <script lang="ts">
-    import { A } from '$comp/typography';
+    import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from '.';
 
-    import { buildEventDetailsHref, type EventSummaryModel, type SummaryModel, type SummaryTemplateKeys } from '.';
+    import EventSummaryLink from './event-summary-link.svelte';
 
     interface EventFeatureSummaryProps {
+        linkToDetails?: boolean;
         showType: boolean;
         summary: SummaryModel<SummaryTemplateKeys>;
     }
 
-    let { showType, summary }: EventFeatureSummaryProps = $props();
+    let { linkToDetails = true, showType, summary }: EventFeatureSummaryProps = $props();
     let source = $derived(summary as EventSummaryModel<'event-session-summary'>);
 </script>
 
@@ -25,12 +26,12 @@
         </strong>:&nbsp;
     {/if}
 
-    <A class="inline" href={buildEventDetailsHref(source.id)}>
+    <EventSummaryLink eventId={source.id} {linkToDetails}>
         {#if source.data.Name || source.data.Identity || source.data.SessionId}
             {source.data.Name || source.data.Identity || source.data.SessionId}
             {#if source.data.Name && source.data.Identity}
                 <span class="text-muted-foreground"> ({source.data.Identity})</span>
             {/if}
         {/if}
-    </A>
+    </EventSummaryLink>
 </div>
