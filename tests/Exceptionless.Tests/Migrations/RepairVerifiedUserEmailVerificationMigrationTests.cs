@@ -1,12 +1,10 @@
-using Elastic.Clients.Elasticsearch;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Lock;
-using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
+using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Utility;
 using Foundatio.Utility;
 using Xunit;
@@ -15,12 +13,10 @@ namespace Exceptionless.Tests.Migrations;
 
 public class RepairVerifiedUserEmailVerificationMigrationTests : IntegrationTestsBase
 {
-    private readonly ExceptionlessElasticConfiguration _configuration;
     private readonly IUserRepository _userRepository;
 
     public RepairVerifiedUserEmailVerificationMigrationTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
-        _configuration = GetService<ExceptionlessElasticConfiguration>();
         _userRepository = GetService<IUserRepository>();
     }
 
@@ -45,23 +41,25 @@ public class RepairVerifiedUserEmailVerificationMigrationTests : IntegrationTest
             FullName = "Legacy User",
             EmailAddress = "legacy-user@example.com",
             EmailNotificationsEnabled = false,
-            IsEmailAddressVerified = true,
-            VerifyEmailAddressToken = "weZKyNQcmZ3bmH44UKukp1bUILcy3PmQsFkVVRR9",
-            VerifyEmailAddressTokenExpiration = new DateTime(2020, 7, 7, 22, 31, 30, DateTimeKind.Utc),
             IsActive = true,
             Roles = new HashSet<string> { "client", "user" },
             CreatedUtc = new DateTime(2016, 7, 20, 18, 33, 49, DateTimeKind.Utc),
             UpdatedUtc = new DateTime(2023, 10, 23, 17, 13, 33, DateTimeKind.Utc)
         };
+        const string staleToken = "weZKyNQcmZ3bmH44UKukp1bUILcy3PmQsFkVVRR9";
+        var staleExpiration = new DateTime(2020, 7, 7, 22, 31, 30, DateTimeKind.Utc);
+        await AddInvalidVerifiedUserAsync(invalidUser, staleToken, staleExpiration);
 
-        await IndexUserAsync(invalidUser);
+        var cachedUserById = await _userRepository.GetByIdAsync(invalidUser.Id);
+        Assert.NotNull(cachedUserById);
+        Assert.True(cachedUserById.IsEmailAddressVerified);
+        Assert.Equal(staleToken, cachedUserById.VerifyEmailAddressToken);
+        Assert.Equal(staleExpiration, cachedUserById.VerifyEmailAddressTokenExpiration);
 
-        var cachedUser = await _userRepository.GetByEmailAddressAsync(invalidUser.EmailAddress);
-        Assert.NotNull(cachedUser);
-        Assert.True(cachedUser.IsEmailAddressVerified);
-        Assert.Equal(invalidUser.VerifyEmailAddressToken, cachedUser.VerifyEmailAddressToken);
-        Assert.Equal(invalidUser.VerifyEmailAddressTokenExpiration, cachedUser.VerifyEmailAddressTokenExpiration);
-        Assert.NotNull(await _userRepository.GetByIdAsync(invalidUser.Id));
+        var cachedUserByEmail = await _userRepository.GetByEmailAddressAsync(invalidUser.EmailAddress);
+        Assert.NotNull(cachedUserByEmail);
+        Assert.Equal(staleToken, cachedUserByEmail.VerifyEmailAddressToken);
+        DateTime updatedBeforeMigration = cachedUserByEmail.UpdatedUtc;
 
         var migration = GetService<RepairVerifiedUserEmailVerificationMigration>();
         var context = new MigrationContext(GetService<ILock>(), _logger, TestCancellationToken);
@@ -76,60 +74,19 @@ public class RepairVerifiedUserEmailVerificationMigrationTests : IntegrationTest
         Assert.Null(repairedUserById.VerifyEmailAddressToken);
         Assert.Equal(DateTime.MinValue, repairedUserById.VerifyEmailAddressTokenExpiration);
 
-        var repairedUser = await _userRepository.GetByEmailAddressAsync(invalidUser.EmailAddress);
-        Assert.NotNull(repairedUser);
-        Assert.True(repairedUser.IsEmailAddressVerified);
-        Assert.Null(repairedUser.VerifyEmailAddressToken);
-        Assert.Equal(DateTime.MinValue, repairedUser.VerifyEmailAddressTokenExpiration);
-        Assert.Equal(invalidUser.OrganizationIds, repairedUser.OrganizationIds);
-        Assert.Equal(invalidUser.Roles, repairedUser.Roles);
-        Assert.Equal(invalidUser.Password, repairedUser.Password);
-        Assert.Equal(invalidUser.Salt, repairedUser.Salt);
-        Assert.Equal(invalidUser.CreatedUtc, repairedUser.CreatedUtc);
-        Assert.True(repairedUser.UpdatedUtc > invalidUser.UpdatedUtc);
-        Assert.Equal(invalidUser.FullName, repairedUser.FullName);
-        Assert.Equal(invalidUser.EmailNotificationsEnabled, repairedUser.EmailNotificationsEnabled);
-    }
-
-    [Fact]
-    public async Task RunAsync_NoInvalidUsers_InvalidatesStaleUserCache()
-    {
-        // Arrange
-        var user = new User
-        {
-            Id = ObjectId.GenerateNewId().ToString(),
-            FullName = "Stale Cached User",
-            EmailAddress = "stale-cached-user@example.com",
-            IsEmailAddressVerified = true,
-            VerifyEmailAddressToken = "stale-token",
-            VerifyEmailAddressTokenExpiration = new DateTime(2020, 7, 7, 22, 31, 30, DateTimeKind.Utc)
-        };
-        await IndexUserAsync(user);
-
-        Assert.NotNull(await _userRepository.GetByIdAsync(user.Id));
-        var cachedUser = await _userRepository.GetByEmailAddressAsync(user.EmailAddress);
-        Assert.NotNull(cachedUser);
-        Assert.Equal(user.VerifyEmailAddressToken, cachedUser.VerifyEmailAddressToken);
-
-        user.MarkEmailAddressVerified();
-        await IndexUserAsync(user);
-
-        var migration = GetService<RepairVerifiedUserEmailVerificationMigration>();
-        var context = new MigrationContext(GetService<ILock>(), _logger, TestCancellationToken);
-
-        // Act
-        await migration.RunAsync(context);
-
-        // Assert
-        var repairedUserById = await _userRepository.GetByIdAsync(user.Id);
-        Assert.NotNull(repairedUserById);
-        Assert.Null(repairedUserById.VerifyEmailAddressToken);
-        Assert.Equal(DateTime.MinValue, repairedUserById.VerifyEmailAddressTokenExpiration);
-
-        var repairedUserByEmail = await _userRepository.GetByEmailAddressAsync(user.EmailAddress);
+        var repairedUserByEmail = await _userRepository.GetByEmailAddressAsync(invalidUser.EmailAddress);
         Assert.NotNull(repairedUserByEmail);
+        Assert.True(repairedUserByEmail.IsEmailAddressVerified);
         Assert.Null(repairedUserByEmail.VerifyEmailAddressToken);
         Assert.Equal(DateTime.MinValue, repairedUserByEmail.VerifyEmailAddressTokenExpiration);
+        Assert.Equal(invalidUser.OrganizationIds, repairedUserByEmail.OrganizationIds);
+        Assert.Equal(invalidUser.Roles, repairedUserByEmail.Roles);
+        Assert.Equal(invalidUser.Password, repairedUserByEmail.Password);
+        Assert.Equal(invalidUser.Salt, repairedUserByEmail.Salt);
+        Assert.Equal(invalidUser.CreatedUtc, repairedUserByEmail.CreatedUtc);
+        Assert.True(repairedUserByEmail.UpdatedUtc > updatedBeforeMigration);
+        Assert.Equal(invalidUser.FullName, repairedUserByEmail.FullName);
+        Assert.Equal(invalidUser.EmailNotificationsEnabled, repairedUserByEmail.EmailNotificationsEnabled);
     }
 
     [Fact]
@@ -140,22 +97,19 @@ public class RepairVerifiedUserEmailVerificationMigrationTests : IntegrationTest
         {
             Id = ObjectId.GenerateNewId().ToString(),
             FullName = "Token Only User",
-            EmailAddress = "token-only-user@example.com",
-            IsEmailAddressVerified = true,
-            VerifyEmailAddressToken = "stale-token",
-            VerifyEmailAddressTokenExpiration = DateTime.MinValue
+            EmailAddress = "token-only-user@example.com"
         };
         var expirationOnlyUser = new User
         {
             Id = ObjectId.GenerateNewId().ToString(),
             FullName = "Expiration Only User",
-            EmailAddress = "expiration-only-user@example.com",
-            IsEmailAddressVerified = true,
-            VerifyEmailAddressToken = null,
-            VerifyEmailAddressTokenExpiration = new DateTime(2020, 7, 7, 22, 31, 30, DateTimeKind.Utc)
+            EmailAddress = "expiration-only-user@example.com"
         };
+        var staleExpiration = new DateTime(2020, 7, 7, 22, 31, 30, DateTimeKind.Utc);
 
-        await Task.WhenAll(IndexUserAsync(tokenOnlyUser), IndexUserAsync(expirationOnlyUser));
+        await Task.WhenAll(
+            AddInvalidVerifiedUserAsync(tokenOnlyUser, "stale-token", DateTime.MinValue),
+            AddInvalidVerifiedUserAsync(expirationOnlyUser, null, staleExpiration));
 
         var migration = GetService<RepairVerifiedUserEmailVerificationMigration>();
         var context = new MigrationContext(GetService<ILock>(), _logger, TestCancellationToken);
@@ -166,6 +120,48 @@ public class RepairVerifiedUserEmailVerificationMigrationTests : IntegrationTest
         // Assert
         var repairedUsers = await _userRepository.GetByIdsAsync([tokenOnlyUser.Id, expirationOnlyUser.Id]);
         Assert.Equal(2, repairedUsers.Count);
+        Assert.All(repairedUsers, user =>
+        {
+            Assert.True(user.IsEmailAddressVerified);
+            Assert.Null(user.VerifyEmailAddressToken);
+            Assert.Equal(DateTime.MinValue, user.VerifyEmailAddressTokenExpiration);
+        });
+    }
+
+    [Fact]
+    public async Task RunAsync_MoreUsersThanOneBatch_RepairsEveryUser()
+    {
+        // Arrange
+        var users = Enumerable.Range(0, 101)
+            .Select(index => new User
+            {
+                Id = ObjectId.GenerateNewId().ToString(),
+                FullName = $"Paged User {index}",
+                EmailAddress = $"paged-user-{index}@example.com"
+            })
+            .ToList();
+        foreach (var user in users)
+            user.MarkEmailAddressVerified();
+
+        await _userRepository.AddAsync(users);
+        long patchedUsers = await _userRepository.PatchAsync(
+            users.Select(user => user.Id).ToArray(),
+            new PartialPatch(new
+            {
+                verify_email_address_token = "stale-token",
+                verify_email_address_token_expiration = new DateTime(2020, 7, 7, 22, 31, 30, DateTimeKind.Utc)
+            }));
+        Assert.Equal(users.Count, patchedUsers);
+
+        var migration = GetService<RepairVerifiedUserEmailVerificationMigration>();
+        var context = new MigrationContext(GetService<ILock>(), _logger, TestCancellationToken);
+
+        // Act
+        await migration.RunAsync(context);
+
+        // Assert
+        var repairedUsers = await _userRepository.GetByIdsAsync(users.Select(user => user.Id).ToArray());
+        Assert.Equal(users.Count, repairedUsers.Count);
         Assert.All(repairedUsers, user =>
         {
             Assert.True(user.IsEmailAddressVerified);
@@ -193,19 +189,12 @@ public class RepairVerifiedUserEmailVerificationMigrationTests : IntegrationTest
             Roles = new HashSet<string> { "client", "user" }
         };
         unverifiedUser.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
+        await _userRepository.AddAsync([verifiedUser, unverifiedUser]);
 
-        await _userRepository.AddAsync([verifiedUser, unverifiedUser], o => o.ImmediateConsistency());
-
+        DateTime verifiedUpdatedBeforeMigration = verifiedUser.UpdatedUtc;
+        DateTime unverifiedUpdatedBeforeMigration = unverifiedUser.UpdatedUtc;
         string? originalUnverifiedToken = unverifiedUser.VerifyEmailAddressToken;
         DateTime originalUnverifiedExpiration = unverifiedUser.VerifyEmailAddressTokenExpiration;
-        var verifiedBeforeMigration = await _configuration.Client.GetAsync<User>(
-            _configuration.Users.VersionedName,
-            verifiedUser.Id,
-            TestCancellationToken);
-        var unverifiedBeforeMigration = await _configuration.Client.GetAsync<User>(
-            _configuration.Users.VersionedName,
-            unverifiedUser.Id,
-            TestCancellationToken);
 
         var migration = GetService<RepairVerifiedUserEmailVerificationMigration>();
         var context = new MigrationContext(GetService<ILock>(), _logger, TestCancellationToken);
@@ -214,41 +203,33 @@ public class RepairVerifiedUserEmailVerificationMigrationTests : IntegrationTest
         await migration.RunAsync(context);
 
         // Assert
-        var verifiedAfterMigration = await _configuration.Client.GetAsync<User>(
-            _configuration.Users.VersionedName,
-            verifiedUser.Id,
-            TestCancellationToken);
-        var unverifiedAfterMigration = await _configuration.Client.GetAsync<User>(
-            _configuration.Users.VersionedName,
-            unverifiedUser.Id,
-            TestCancellationToken);
+        var unchangedVerifiedUser = await _userRepository.GetByIdAsync(verifiedUser.Id);
+        Assert.NotNull(unchangedVerifiedUser);
+        Assert.True(unchangedVerifiedUser.IsEmailAddressVerified);
+        Assert.Null(unchangedVerifiedUser.VerifyEmailAddressToken);
+        Assert.Equal(DateTime.MinValue, unchangedVerifiedUser.VerifyEmailAddressTokenExpiration);
+        Assert.Equal(verifiedUpdatedBeforeMigration, unchangedVerifiedUser.UpdatedUtc);
 
-        Assert.Equal(verifiedBeforeMigration.Version, verifiedAfterMigration.Version);
-        Assert.Equal(unverifiedBeforeMigration.Version, unverifiedAfterMigration.Version);
-
-        var repairedVerifiedUser = await _userRepository.GetByEmailAddressAsync(verifiedUser.EmailAddress);
-        Assert.NotNull(repairedVerifiedUser);
-        Assert.True(repairedVerifiedUser.IsEmailAddressVerified);
-        Assert.Null(repairedVerifiedUser.VerifyEmailAddressToken);
-        Assert.Equal(DateTime.MinValue, repairedVerifiedUser.VerifyEmailAddressTokenExpiration);
-
-        var unchangedUnverifiedUser = await _userRepository.GetByEmailAddressAsync(unverifiedUser.EmailAddress);
+        var unchangedUnverifiedUser = await _userRepository.GetByIdAsync(unverifiedUser.Id);
         Assert.NotNull(unchangedUnverifiedUser);
         Assert.False(unchangedUnverifiedUser.IsEmailAddressVerified);
         Assert.Equal(originalUnverifiedToken, unchangedUnverifiedUser.VerifyEmailAddressToken);
         Assert.Equal(originalUnverifiedExpiration, unchangedUnverifiedUser.VerifyEmailAddressTokenExpiration);
+        Assert.Equal(unverifiedUpdatedBeforeMigration, unchangedUnverifiedUser.UpdatedUtc);
     }
 
-    private async Task IndexUserAsync(User user)
+    private async Task AddInvalidVerifiedUserAsync(User user, string? staleToken, DateTime staleExpiration)
     {
-        var response = await _configuration.Client.IndexAsync(
-            user,
-            request => request
-                .Index(_configuration.Users.VersionedName)
-                .Id(user.Id)
-                .Refresh(Refresh.WaitFor),
-            TestCancellationToken);
+        user.MarkEmailAddressVerified();
+        await _userRepository.AddAsync(user);
 
-        Assert.True(response.IsValidResponse, response.DebugInformation);
+        bool wasPatched = await _userRepository.PatchAsync(
+            user.Id,
+            new PartialPatch(new
+            {
+                verify_email_address_token = staleToken,
+                verify_email_address_token_expiration = staleExpiration
+            }));
+        Assert.True(wasPatched);
     }
 }
