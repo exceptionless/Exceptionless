@@ -712,7 +712,6 @@
     }
 
     useEventListener(document, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT, () => debouncedRefetch());
-    useEventListener(document, 'refresh', () => eventsQuery.refetch());
     useEventListener(document, 'StackChanged', (event) => onStackChanged((event as CustomEvent).detail));
 
     let lastEmptyResponseAt = 0;

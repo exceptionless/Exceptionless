@@ -809,7 +809,6 @@
     }
 
     useEventListener(document, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT, () => scheduleRefetch(true));
-    useEventListener(document, 'refresh', () => scheduleRefetch(true));
     useEventListener(document, 'PersistentEventChanged', (event) => onPersistentEventChanged((event as CustomEvent).detail));
 
     let lastEmptyResponseAt = 0;
