@@ -146,10 +146,10 @@ public class RepairVerifiedUserEmailVerificationMigrationTests : IntegrationTest
         await _userRepository.AddAsync(users);
         long patchedUsers = await _userRepository.PatchAsync(
             users.Select(user => user.Id).ToArray(),
-            new PartialPatch(new
+            new ActionPatch<User>(user =>
             {
-                verify_email_address_token = "stale-token",
-                verify_email_address_token_expiration = new DateTime(2020, 7, 7, 22, 31, 30, DateTimeKind.Utc)
+                user.VerifyEmailAddressToken = "stale-token";
+                user.VerifyEmailAddressTokenExpiration = new DateTime(2020, 7, 7, 22, 31, 30, DateTimeKind.Utc);
             }));
         Assert.Equal(users.Count, patchedUsers);
 
@@ -225,10 +225,10 @@ public class RepairVerifiedUserEmailVerificationMigrationTests : IntegrationTest
 
         bool wasPatched = await _userRepository.PatchAsync(
             user.Id,
-            new PartialPatch(new
+            new ActionPatch<User>(patchedUser =>
             {
-                verify_email_address_token = staleToken,
-                verify_email_address_token_expiration = staleExpiration
+                patchedUser.VerifyEmailAddressToken = staleToken;
+                patchedUser.VerifyEmailAddressTokenExpiration = staleExpiration;
             }));
         Assert.True(wasPatched);
     }
