@@ -141,8 +141,14 @@ internal sealed class ElasticsearchConnectionHealthCheck(Func<string?> connectio
         var response = await client.Cluster.HealthAsync(
             request => request.WaitForStatus(Elastic.Clients.Elasticsearch.HealthStatus.Yellow),
             cancellationToken);
-        return response.IsValidResponse
-            ? HealthCheckResult.Healthy()
-            : new HealthCheckResult(context.Registration.FailureStatus, $"Elasticsearch cluster health check failed: {response.DebugInformation}");
+        bool isReady = response.IsValidResponse
+            && !response.TimedOut
+            && response.Status is Elastic.Clients.Elasticsearch.HealthStatus.Yellow or Elastic.Clients.Elasticsearch.HealthStatus.Green;
+        if (isReady)
+            return HealthCheckResult.Healthy();
+
+        return new HealthCheckResult(
+            context.Registration.FailureStatus,
+            $"Elasticsearch cluster health check failed. Timed out: {response.TimedOut}; status: {response.Status}. {response.DebugInformation}");
     }
 }

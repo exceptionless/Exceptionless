@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Net;
+using System.Text.Json;
 using Aspire.Hosting;
 using Aspire.Hosting.Testing;
 using Exceptionless.Core;
@@ -82,10 +83,14 @@ public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program
             try
             {
                 using var response = await client.GetAsync(healthUri);
-                if (response.StatusCode == HttpStatusCode.OK)
+                using var document = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+                if (IsElasticsearchReady(response.StatusCode, document.RootElement))
                     return;
             }
             catch (HttpRequestException)
+            {
+            }
+            catch (JsonException)
             {
             }
             catch (TaskCanceledException)
@@ -96,6 +101,20 @@ public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program
         }
 
         throw new TimeoutException("Timed out waiting for the shared Elasticsearch container to be ready.");
+    }
+
+    internal static bool IsElasticsearchReady(HttpStatusCode statusCode, JsonElement health)
+    {
+        if (statusCode != HttpStatusCode.OK)
+            return false;
+
+        bool requestCompleted = health.TryGetProperty("timed_out", out var timedOut)
+            && timedOut.ValueKind == JsonValueKind.False;
+        bool clusterReady = health.TryGetProperty("status", out var status)
+            && status.ValueKind == JsonValueKind.String
+            && status.GetString() is "yellow" or "green";
+
+        return requestCompleted && clusterReady;
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
