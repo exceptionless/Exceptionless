@@ -1,4 +1,6 @@
+using System.Net;
 using System.Text;
+using System.Text.Json;
 using Foundatio.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -7,6 +9,22 @@ namespace Exceptionless.Tests;
 
 public sealed class AppWebHostFactoryTests
 {
+    [Theory]
+    [InlineData(HttpStatusCode.OK, """{"timed_out":false,"status":"yellow"}""", true)]
+    [InlineData(HttpStatusCode.OK, """{"timed_out":false,"status":"green"}""", true)]
+    [InlineData(HttpStatusCode.OK, """{"timed_out":true,"status":"yellow"}""", false)]
+    [InlineData(HttpStatusCode.OK, """{"timed_out":false,"status":"red"}""", false)]
+    [InlineData(HttpStatusCode.OK, """{"timed_out":false,"status":1}""", false)]
+    [InlineData(HttpStatusCode.ServiceUnavailable, """{"timed_out":false,"status":"yellow"}""", false)]
+    public void IsElasticsearchReady_ClusterHealthResponse_ReturnsExpectedResult(HttpStatusCode statusCode, string json, bool expected)
+    {
+        using var document = JsonDocument.Parse(json);
+
+        bool isReady = AppWebHostFactory.IsElasticsearchReady(statusCode, document.RootElement);
+
+        Assert.Equal(expected, isReady);
+    }
+
     [Fact]
     public async Task ConfigureWebHost_MultipleFactories_IsolatesFileStorageByAppScope()
     {
