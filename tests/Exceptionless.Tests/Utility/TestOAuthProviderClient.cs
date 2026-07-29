@@ -24,9 +24,6 @@ public sealed class TestOAuthProviderClient : IOAuthProviderClient
 
     public Task<UserInfo> GetMicrosoftUserInfoAsync(ExternalAuthInfo authInfo, string appId, string appSecret)
     {
-        if (authInfo.Code == "provider-error")
-            throw new InvalidOperationException("Microsoft provider error");
-
         return GetUserInfoAsync("Microsoft", authInfo);
     }
 

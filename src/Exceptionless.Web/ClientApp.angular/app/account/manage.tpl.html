@@ -385,8 +385,8 @@
                                             ng-if="vm.user.o_auth_accounts.length > 0"
                                         >
                                             <td>
-                                                {{::account.provider === 'windowslive' ? 'Microsoft (legacy)' :
-                                                account.provider}} ({{::account.username || account.provider_user_id}})
+                                                {{::account.provider}} ({{::account.username ||
+                                                account.provider_user_id}})
                                             </td>
                                             <td>
                                                 <button

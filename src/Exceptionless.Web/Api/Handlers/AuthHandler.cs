@@ -579,16 +579,21 @@ public class AuthHandler(
                 }
                 else
                 {
-                    return await UpdateExternalLoginAsync(currentUser, userInfo);
+                    if (RemoveLegacyMicrosoftOAuthAccounts(currentUser, userInfo.ProviderName))
+                        return await userRepository.SaveAsync(currentUser, o => o.Cache());
+
+                    return currentUser;
                 }
             }
 
-            return await UpdateExternalLoginAsync(currentUser, userInfo);
+            currentUser.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
+            RemoveLegacyMicrosoftOAuthAccounts(currentUser, userInfo.ProviderName);
+            return await userRepository.SaveAsync(currentUser, o => o.Cache());
         }
 
         if (existingUser is not null)
         {
-            bool hasChanges = UpdateExternalLogin(existingUser, userInfo);
+            bool hasChanges = RemoveLegacyMicrosoftOAuthAccounts(existingUser, userInfo.ProviderName);
             if (!existingUser.IsEmailAddressVerified)
             {
                 existingUser.MarkEmailAddressVerified();
@@ -614,7 +619,8 @@ public class AuthHandler(
         }
 
         user.MarkEmailAddressVerified();
-        UpdateExternalLogin(user, userInfo);
+        user.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
+        RemoveLegacyMicrosoftOAuthAccounts(user, userInfo.ProviderName);
 
         if (String.IsNullOrEmpty(user.Id))
             await userRepository.AddAsync(user, o => o.Cache());
@@ -624,27 +630,10 @@ public class AuthHandler(
         return user;
     }
 
-    private async Task<User> UpdateExternalLoginAsync(User user, UserInfo userInfo)
+    private static bool RemoveLegacyMicrosoftOAuthAccounts(User user, string providerName)
     {
-        if (UpdateExternalLogin(user, userInfo))
-            return await userRepository.SaveAsync(user, o => o.Cache());
-
-        return user;
-    }
-
-    private static bool UpdateExternalLogin(User user, UserInfo userInfo)
-    {
-        bool hasChanges = false;
-        if (!user.OAuthAccounts.Any(account =>
-                String.Equals(account.Provider, userInfo.ProviderName, StringComparison.OrdinalIgnoreCase)
-                && account.ProviderUserId == userInfo.Id))
-        {
-            user.AddOAuthAccount(userInfo.ProviderName!, userInfo.Id!, userInfo.Email!);
-            hasChanges = true;
-        }
-
-        if (!String.Equals(userInfo.ProviderName, MicrosoftOAuthProvider, StringComparison.OrdinalIgnoreCase))
-            return hasChanges;
+        if (!String.Equals(providerName, MicrosoftOAuthProvider, StringComparison.OrdinalIgnoreCase))
+            return false;
 
         var legacyAccounts = user.OAuthAccounts
             .Where(account => String.Equals(account.Provider, LegacyMicrosoftOAuthProvider, StringComparison.OrdinalIgnoreCase))
@@ -652,7 +641,7 @@ public class AuthHandler(
         foreach (var account in legacyAccounts)
             user.OAuthAccounts.Remove(account);
 
-        return hasChanges || legacyAccounts.Length > 0;
+        return legacyAccounts.Length > 0;
     }
 
     private async Task<bool> IsAccountCreationEnabledAsync(string? token)
