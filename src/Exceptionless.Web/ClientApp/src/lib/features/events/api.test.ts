@@ -62,7 +62,10 @@ describe('schedulePersistentEventDeleteReconciliation', () => {
 
         await vi.advanceTimersByTimeAsync(PERSISTENT_EVENT_DELETE_RECONCILE_DELAY);
 
-        expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.type });
+        expect(invalidateSpy).toHaveBeenCalledWith({
+            predicate: expect.any(Function),
+            queryKey: queryKeys.type
+        });
         expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: stackQueryKeys.type });
         expect(reconcileListener).toHaveBeenCalledOnce();
 
@@ -70,5 +73,12 @@ describe('schedulePersistentEventDeleteReconciliation', () => {
 
         expect(reconcileListener).toHaveBeenCalledTimes(2);
         expect(invalidateSpy).toHaveBeenCalledTimes(5);
+
+        const persistentEventInvalidations = invalidateSpy.mock.calls.flatMap(([filters]) => (filters?.queryKey === queryKeys.type ? [filters] : []));
+        expect(persistentEventInvalidations).toHaveLength(2);
+        persistentEventInvalidations.forEach((filters) => {
+            expect(filters.predicate?.({ queryKey: queryKeys.organizationsEvents('organization-id') } as never)).toBe(false);
+            expect(filters.predicate?.({ queryKey: queryKeys.organizationsCount('organization-id') } as never)).toBe(true);
+        });
     });
 });

@@ -661,11 +661,12 @@
     const eventsQuery = getOrganizationEventsQuery({
         enabled: () => !isSavedViewRoutePending,
         get params() {
-            const params = {
+            const { page: ignoredPage, ...params } = {
                 ...eventsQueryParameters,
                 include: !eventsQueryParameters.after && !eventsQueryParameters.before ? ('total' as const) : undefined
             };
-            delete params.page;
+            void ignoredPage;
+
             return params;
         },
         route: {
@@ -711,9 +712,12 @@
     }
 
     async function handleRefresh() {
+        const isFirstPage = table.state.pagination.pageIndex === 0;
         if (!canRefresh) {
             reset();
-            return;
+            if (!isFirstPage) {
+                return;
+            }
         }
 
         await eventsQuery.refetch();

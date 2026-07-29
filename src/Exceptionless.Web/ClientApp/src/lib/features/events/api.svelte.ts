@@ -478,15 +478,25 @@ export function getStackEventsQuery(request: GetStackEventsRequest) {
 }
 
 export function schedulePersistentEventDeleteReconciliation(queryClient: QueryClient, eventTarget: EventTarget = document) {
+    const invalidateQueryBackedDetails = () =>
+        queryClient.invalidateQueries({
+            predicate: (query) => !isOrganizationEventsQueryKey(query.queryKey),
+            queryKey: queryKeys.type
+        });
+
     eventTarget.dispatchEvent(new Event(PERSISTENT_EVENT_DELETE_RECONCILE_EVENT));
     void queryClient.invalidateQueries({ queryKey: stackQueryKeys.type });
     setTimeout(() => {
-        void queryClient.invalidateQueries({ queryKey: queryKeys.type });
+        void invalidateQueryBackedDetails();
         void queryClient.invalidateQueries({ queryKey: stackQueryKeys.type });
     }, PERSISTENT_EVENT_DELETE_RECONCILE_DELAY);
     setTimeout(() => {
         eventTarget.dispatchEvent(new Event(PERSISTENT_EVENT_DELETE_RECONCILE_EVENT));
-        void queryClient.invalidateQueries({ queryKey: queryKeys.type });
+        void invalidateQueryBackedDetails();
         void queryClient.invalidateQueries({ queryKey: stackQueryKeys.type });
     }, PERSISTENT_EVENT_DELETE_RECONCILE_RETRY_DELAY);
+}
+
+function isOrganizationEventsQueryKey(queryKey: readonly unknown[]): boolean {
+    return queryKey[0] === queryKeys.type[0] && queryKey[1] === 'organizations' && queryKey[3] === 'events';
 }

@@ -680,9 +680,12 @@
     }
 
     async function handleRefresh() {
+        const isFirstPage = table.state.pagination.pageIndex === 0;
         if (!canRefresh) {
             reset();
-            return;
+            if (!isFirstPage) {
+                return;
+            }
         }
 
         await eventsQuery.refetch();
