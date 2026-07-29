@@ -1,4 +1,5 @@
 ﻿using Exceptionless.Core.Attributes;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories.Models;
@@ -67,18 +68,7 @@ public static class ViewProjectExtensions
 
     public static UsageInfo GetUsage(this ViewProject project, DateTime date, int limit)
     {
-        var usage = project.Usage.FirstOrDefault(o => o.Date == date.ToUniversalTime().StartOfMonth());
-        if (usage is not null)
-            return usage;
-
-        usage = new UsageInfo
-        {
-            Date = date.ToUniversalTime().StartOfMonth(),
-            Limit = limit
-        };
-        project.Usage.Add(usage);
-
-        return usage;
+        return project.Usage.GetUsage(date, limit);
     }
 
     public static void TrimUsage(this ViewProject project, TimeProvider timeProvider)
