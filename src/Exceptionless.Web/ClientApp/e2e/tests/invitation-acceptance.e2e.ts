@@ -5,6 +5,7 @@ test.skip(process.env.E2E_ENV === 'production', 'Invitation acceptance requires 
 
 test('invited user can accept an organization invitation @signup', async ({ browser, e2eApi, e2eScenario, page }) => {
     const invitedEmail = `invited-${e2eScenario.run}@exceptionless.test`.toLowerCase();
+    let invitedUserCreated = false;
     let invitedUserToken: string | undefined;
 
     try {
@@ -33,10 +34,19 @@ test('invited user can accept an organization invitation @signup', async ({ brow
                 await invitedPage.getByLabel('Email', { exact: true }).fill(invitedEmail);
                 await waitForEmailValidation(invitedPage);
                 await invitedPage.getByLabel('Password', { exact: true }).fill(E2E_TEST_PASSWORD);
+
+                const signupResponse = invitedPage.waitForResponse((response) => {
+                    const url = new URL(response.url());
+                    return response.request().method() === 'POST' && url.pathname.endsWith('/api/v2/auth/signup');
+                });
+
                 await invitedPage.getByRole('button', { name: 'Create My Account' }).click();
+                invitedUserCreated = (await signupResponse).ok();
 
                 invitedUserToken = await getUserToken(invitedPage);
                 await expect(invitedPage).toHaveURL(/\/next\/project\/add(?:[?#]|$)/, { timeout: 30_000 });
+                await e2eApi.waitForOrganizationListed(invitedUserToken, e2eScenario.organizationId, 60_000);
+                await invitedPage.reload();
                 await expect(invitedPage.getByRole('heading', { name: 'Add Project' })).toBeVisible();
                 await expect(invitedPage.getByRole('button').filter({ hasText: e2eScenario.organizationName }).filter({ visible: true }).first()).toBeVisible();
             } finally {
@@ -44,6 +54,10 @@ test('invited user can accept an organization invitation @signup', async ({ brow
             }
         });
     } finally {
+        if (!invitedUserToken && invitedUserCreated) {
+            invitedUserToken = await e2eApi.login(invitedEmail, E2E_TEST_PASSWORD);
+        }
+
         if (invitedUserToken) {
             await e2eApi.deleteOrganizationUser(e2eScenario.userToken, e2eScenario.organizationId, invitedEmail);
             await e2eApi.waitForOrganizationNotListed(invitedUserToken, e2eScenario.organizationId);
