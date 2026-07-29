@@ -44,6 +44,29 @@ describe('invalidatePersistentEventQueries', () => {
         expect(invalidateSpy).toHaveBeenCalledWith({ exact: true, queryKey: queryKeys.organizations('organization-id') });
         expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: queryKeys.stacks('stack-id') });
     });
+
+    it('leaves organization event list refreshes to the document event handler for bulk updates', async () => {
+        // Arrange
+        const queryClient = new QueryClient();
+        const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries').mockImplementation(async () => {});
+
+        // Act
+        await invalidatePersistentEventQueries(queryClient, {
+            change_type: ChangeType.Saved,
+            data: {},
+            organization_id: 'organization-id',
+            project_id: 'project-id',
+            type: 'PersistentEvent'
+        });
+
+        // Assert
+        expect(invalidateSpy).toHaveBeenCalledWith({ exact: true, queryKey: queryKeys.projects('project-id') });
+        expect(invalidateSpy).toHaveBeenCalledWith({ exact: true, queryKey: queryKeys.organizations('organization-id') });
+
+        const broadInvalidation = invalidateSpy.mock.calls.find(([filters]) => filters?.queryKey === queryKeys.type)?.[0];
+        expect(broadInvalidation?.predicate?.({ queryKey: queryKeys.organizationsEvents('organization-id') } as never)).toBe(false);
+        expect(broadInvalidation?.predicate?.({ queryKey: queryKeys.organizationsCount('organization-id') } as never)).toBe(true);
+    });
 });
 
 describe('schedulePersistentEventDeleteReconciliation', () => {

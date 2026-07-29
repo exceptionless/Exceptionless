@@ -29,7 +29,10 @@ export async function invalidatePersistentEventQueries(queryClient: QueryClient,
     }
 
     if (!id && !stack_id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.type });
+        await queryClient.invalidateQueries({
+            predicate: (query) => !isOrganizationEventsQueryKey(query.queryKey),
+            queryKey: queryKeys.type
+        });
     }
 }
 
