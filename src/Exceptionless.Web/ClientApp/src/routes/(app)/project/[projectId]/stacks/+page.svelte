@@ -72,6 +72,7 @@
     watch(
         () => projectId,
         () => {
+            selectedStackId = undefined;
             updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
             Object.assign(queryParams, DEFAULT_PARAMS);
             reset();
