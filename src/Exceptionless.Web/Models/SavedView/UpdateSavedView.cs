@@ -22,6 +22,8 @@ public class UpdateSavedView : IValidatableObject
     public Dictionary<string, bool>? Columns { get; set; }
     [MaxLength(50)]
     public List<string>? ColumnOrder { get; set; }
+    [MaxLength(50)]
+    public Dictionary<string, SavedViewColumnSettings>? ColumnSettings { get; set; }
     public bool? ShowStats { get; set; }
     public bool? ShowChart { get; set; }
 
@@ -41,6 +43,11 @@ public class UpdateSavedView : IValidatableObject
         }
 
         foreach (var error in NewSavedView.ValidateColumnOrder(null, ColumnOrder))
+        {
+            yield return error;
+        }
+
+        foreach (var error in NewSavedView.ValidateColumnSettings(null, ColumnSettings))
         {
             yield return error;
         }

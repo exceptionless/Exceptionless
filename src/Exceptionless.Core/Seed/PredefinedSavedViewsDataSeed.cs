@@ -129,15 +129,27 @@ public class PredefinedSavedViewsDataSeed : IDataSeed
             changed = true;
         }
 
-        if (!DictionaryEquals(existing.Columns, definition.Columns))
+        var columns = definition.ColumnSettings is null
+            ? definition.Columns
+            : SavedViewColumnSettings.ToLegacyColumns(definition.ColumnSettings);
+        if (!DictionaryEquals(existing.Columns, columns))
         {
-            existing.Columns = definition.Columns?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            existing.Columns = columns?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
             changed = true;
         }
 
-        if (!CollectionEquals(existing.ColumnOrder, definition.ColumnOrder))
+        var columnOrder = definition.ColumnSettings is null
+            ? definition.ColumnOrder
+            : SavedViewColumnSettings.ToLegacyColumnOrder(definition.ColumnSettings);
+        if (!CollectionEquals(existing.ColumnOrder, columnOrder))
         {
-            existing.ColumnOrder = definition.ColumnOrder is null ? null : [.. definition.ColumnOrder];
+            existing.ColumnOrder = columnOrder is null ? null : [.. columnOrder];
+            changed = true;
+        }
+
+        if (!ColumnSettingsEqual(existing.ColumnSettings, definition.ColumnSettings))
+        {
+            existing.ColumnSettings = CopyColumnSettings(definition.ColumnSettings);
             changed = true;
         }
 
@@ -192,10 +204,17 @@ public class PredefinedSavedViewsDataSeed : IDataSeed
             FilterDefinitions = GetRawJson(definition.FilterDefinitions),
             Columns = definition.Columns?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
             ColumnOrder = definition.ColumnOrder is null ? null : [.. definition.ColumnOrder],
+            ColumnSettings = CopyColumnSettings(definition.ColumnSettings),
             ShowStats = definition.ShowStats,
             ShowChart = definition.ShowChart,
             Version = 1
         };
+
+        if (savedView.ColumnSettings is not null)
+        {
+            savedView.Columns = SavedViewColumnSettings.ToLegacyColumns(savedView.ColumnSettings);
+            savedView.ColumnOrder = SavedViewColumnSettings.ToLegacyColumnOrder(savedView.ColumnSettings);
+        }
 
         savedView.PredefinedContentHash = PredefinedSavedViewContentHasher.GetContentHash(savedView);
         return savedView;
@@ -222,6 +241,23 @@ public class PredefinedSavedViewsDataSeed : IDataSeed
 
         return left.All(kvp => right.TryGetValue(kvp.Key, out bool value) && value == kvp.Value);
     }
+
+    private static bool ColumnSettingsEqual(
+        IReadOnlyDictionary<string, SavedViewColumnSettings>? left,
+        IReadOnlyDictionary<string, SavedViewColumnSettings>? right)
+    {
+        if (ReferenceEquals(left, right))
+            return true;
+
+        if (left is null || right is null || left.Count != right.Count)
+            return false;
+
+        return left.All(entry => right.TryGetValue(entry.Key, out var value) && entry.Value == value);
+    }
+
+    private static Dictionary<string, SavedViewColumnSettings>? CopyColumnSettings(
+        IReadOnlyDictionary<string, SavedViewColumnSettings>? value)
+        => value?.ToDictionary(entry => entry.Key, entry => entry.Value with { });
 
     public static string? GetRawJson(JsonElement? value)
     {
@@ -263,6 +299,9 @@ public sealed record PredefinedSavedViewDefinition
 
     [JsonPropertyName("columnOrder")]
     public IReadOnlyCollection<string>? ColumnOrder { get; init; }
+
+    [JsonPropertyName("columnSettings")]
+    public IReadOnlyDictionary<string, SavedViewColumnSettings>? ColumnSettings { get; init; }
 
     [JsonPropertyName("showStats")]
     public bool? ShowStats { get; init; }

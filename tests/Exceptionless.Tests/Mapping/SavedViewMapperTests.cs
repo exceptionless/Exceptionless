@@ -28,7 +28,11 @@ public sealed class SavedViewMapperTests
             ViewType = "stacks",
             FilterDefinitions = "[{\"type\":\"status\",\"values\":[\"open\",\"regressed\"]}]",
             Columns = new Dictionary<string, bool> { ["status"] = true, ["users"] = false },
-            ColumnOrder = ["summary", "status", "users"]
+            ColumnOrder = ["summary", "status", "users"],
+            ColumnSettings = new Dictionary<string, SavedViewColumnSettings>
+            {
+                ["status"] = new() { Position = 1, Visible = true, Width = 180 }
+            }
         };
 
         // Act
@@ -46,6 +50,7 @@ public sealed class SavedViewMapperTests
         Assert.True(result.Columns["status"]);
         Assert.False(result.Columns["users"]);
         Assert.Equal(["summary", "status", "users"], result.ColumnOrder);
+        Assert.Equal(180, result.ColumnSettings?["status"].Width);
     }
 
     [Fact]
@@ -90,6 +95,7 @@ public sealed class SavedViewMapperTests
         Assert.Null(result.FilterDefinitions);
         Assert.Null(result.Columns);
         Assert.Null(result.ColumnOrder);
+        Assert.Null(result.ColumnSettings);
     }
 
     [Fact]
@@ -108,6 +114,10 @@ public sealed class SavedViewMapperTests
             FilterDefinitions = "[{\"type\":\"status\",\"values\":[\"open\"]}]",
             Columns = new Dictionary<string, bool> { ["status"] = true },
             ColumnOrder = ["summary", "status"],
+            ColumnSettings = new Dictionary<string, SavedViewColumnSettings>
+            {
+                ["status"] = new() { Position = 1, Visible = true, Width = 180 }
+            },
             Name = "My View",
             Time = "[now-30d TO now]",
             Sort = "-last",
@@ -131,6 +141,7 @@ public sealed class SavedViewMapperTests
         Assert.NotNull(result.Columns);
         Assert.True(result.Columns["status"]);
         Assert.Equal(["summary", "status"], result.ColumnOrder);
+        Assert.Equal(180, result.ColumnSettings?["status"].Width);
         Assert.Equal("My View", result.Name);
         Assert.Equal("[now-30d TO now]", result.Time);
         Assert.Equal("-last", result.Sort);
@@ -166,6 +177,31 @@ public sealed class SavedViewMapperTests
         Assert.Null(result.ColumnOrder);
         Assert.Null(result.Time);
         Assert.Null(result.Sort);
+    }
+
+    [Fact]
+    public void MapToViewSavedView_WithLegacyColumnConfiguration_ProjectsColumnSettings()
+    {
+        // Arrange
+        var source = new SavedView
+        {
+            Id = "88cd0826e447a44e78877ab1",
+            OrganizationId = "537650f3b77efe23a47914f3",
+            CreatedByUserId = "1ecd0826e447ad1e78822555",
+            Name = "Legacy View",
+            ViewType = "events",
+            Columns = new Dictionary<string, bool> { ["project"] = true },
+            ColumnOrder = ["summary", "project"]
+        };
+
+        // Act
+        var result = _mapper.MapToViewSavedView(source);
+
+        // Assert
+        Assert.NotNull(result.ColumnSettings);
+        Assert.True(result.ColumnSettings["project"].Visible);
+        Assert.Equal(1, result.ColumnSettings["project"].Position);
+        Assert.Null(result.ColumnSettings["project"].Width);
     }
 
     [Fact]

@@ -62,4 +62,54 @@ public sealed class PredefinedSavedViewContentHasherTests
         // Assert
         Assert.NotEqual(withSpacesHash, withoutSpacesHash);
     }
+
+    [Fact]
+    public void GetContentHash_WithoutColumnSettings_PreservesLegacyHash()
+    {
+        // Arrange
+        var savedView = new SavedView
+        {
+            Name = "Open Issues",
+            Slug = "open-issues",
+            ViewType = "events"
+        };
+
+        // Act
+        string hash = PredefinedSavedViewContentHasher.GetContentHash(savedView);
+
+        // Assert
+        Assert.Equal("2275a4a7aa2276c78bd20f21b75ce91afbf035bb3795047ba2ed619fdaff12e3", hash);
+    }
+
+    [Fact]
+    public void GetContentHash_ColumnSettingsInsertionOrderDiffers_ReturnsSameHash()
+    {
+        // Arrange
+        var original = new SavedView
+        {
+            Name = "Logs",
+            Slug = "logs",
+            ViewType = "events",
+            ColumnSettings = new Dictionary<string, SavedViewColumnSettings>
+            {
+                ["project"] = new() { Position = 1, Visible = true, Width = 240 },
+                ["summary"] = new() { Position = 0, Visible = true, Width = 420 }
+            }
+        };
+        var reordered = original with
+        {
+            ColumnSettings = new Dictionary<string, SavedViewColumnSettings>
+            {
+                ["summary"] = new() { Position = 0, Visible = true, Width = 420 },
+                ["project"] = new() { Position = 1, Visible = true, Width = 240 }
+            }
+        };
+
+        // Act
+        string originalHash = PredefinedSavedViewContentHasher.GetContentHash(original);
+        string reorderedHash = PredefinedSavedViewContentHasher.GetContentHash(reordered);
+
+        // Assert
+        Assert.Equal(originalHash, reorderedHash);
+    }
 }

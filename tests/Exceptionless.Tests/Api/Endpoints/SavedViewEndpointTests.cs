@@ -349,6 +349,90 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PostAsync_ColumnSettings_SynchronizesLegacyColumnFields()
+    {
+        // Arrange
+        var columnSettings = new Dictionary<string, SavedViewColumnSettings>
+        {
+            ["summary"] = new() { Position = 0, Visible = true, Width = 420 },
+            ["project"] = new() { Position = 1, Visible = true, Width = 240 }
+        };
+
+        // Act
+        var result = await SendRequestAsAsync<ViewSavedView>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .Content(new NewSavedView
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                Name = "Resizable Project View",
+                ViewType = "events",
+                ColumnSettings = columnSettings
+            })
+            .StatusCodeShouldBeCreated()
+        );
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(240, result.ColumnSettings?["project"].Width);
+        Assert.True(result.Columns?["project"]);
+        Assert.Equal(["summary", "project"], result.ColumnOrder);
+
+        var savedView = await _savedViewRepository.GetByIdAsync(result.Id);
+        Assert.NotNull(savedView);
+        Assert.Equal(240, savedView.ColumnSettings?["project"].Width);
+        Assert.True(savedView.Columns?["project"]);
+        Assert.Equal(["summary", "project"], savedView.ColumnOrder);
+    }
+
+    [Fact]
+    public async Task PatchAsync_LegacyColumns_PreservesColumnWidths()
+    {
+        // Arrange
+        var created = await SendRequestAsAsync<ViewSavedView>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .Content(new NewSavedView
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                Name = "Legacy Column Update",
+                ViewType = "events",
+                ColumnSettings = new Dictionary<string, SavedViewColumnSettings>
+                {
+                    ["summary"] = new() { Position = 0, Visible = true, Width = 420 },
+                    ["project"] = new() { Position = 1, Visible = true, Width = 240 }
+                }
+            })
+            .StatusCodeShouldBeCreated()
+        );
+        Assert.NotNull(created);
+
+        // Act
+        var result = await SendRequestAsAsync<ViewSavedView>(r => r
+            .Patch()
+            .AsGlobalAdminUser()
+            .AppendPaths("saved-views", created.Id)
+            .Content(new UpdateSavedView
+            {
+                Columns = new Dictionary<string, bool>
+                {
+                    ["summary"] = true,
+                    ["project"] = false
+                }
+            })
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.False(result.ColumnSettings?["project"].Visible);
+        Assert.Equal(240, result.ColumnSettings?["project"].Width);
+        Assert.Equal(1, result.ColumnSettings?["project"].Position);
+    }
+
+    [Fact]
     public async Task PostAsync_WithIsPrivate_SetsUserIdOnSavedView()
     {
         // Arrange
@@ -2207,6 +2291,75 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
             .Content(new UpdateSavedView
             {
                 ColumnOrder = ["summary", "summary"]
+            })
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+    }
+
+    [Theory]
+    [InlineData(47)]
+    [InlineData(1201)]
+    public Task PostAsync_ColumnSettingsWidthOutsideRange_ReturnsUnprocessableEntity(int width)
+    {
+        // Arrange & Act & Assert
+        return SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .Content(new NewSavedView
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                Name = $"Invalid Column Width {width}",
+                ViewType = "events",
+                ColumnSettings = new Dictionary<string, SavedViewColumnSettings>
+                {
+                    ["project"] = new() { Width = width }
+                }
+            })
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+    }
+
+    [Fact]
+    public Task PostAsync_DuplicateColumnSettingsPosition_ReturnsUnprocessableEntity()
+    {
+        // Arrange & Act & Assert
+        return SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .Content(new NewSavedView
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                Name = "Duplicate Column Position",
+                ViewType = "events",
+                ColumnSettings = new Dictionary<string, SavedViewColumnSettings>
+                {
+                    ["summary"] = new() { Position = 0 },
+                    ["project"] = new() { Position = 0 }
+                }
+            })
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+    }
+
+    [Fact]
+    public Task PostAsync_NullColumnSettingsValue_ReturnsUnprocessableEntity()
+    {
+        // Arrange & Act & Assert
+        return SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .Content(new NewSavedView
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                Name = "Null Column Settings",
+                ViewType = "events",
+                ColumnSettings = new Dictionary<string, SavedViewColumnSettings>
+                {
+                    ["project"] = null!
+                }
             })
             .StatusCodeShouldBeUnprocessableEntity()
         );

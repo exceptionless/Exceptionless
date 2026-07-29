@@ -51,6 +51,9 @@ public partial record SavedView : IOwnedByOrganizationWithIdentity, IHaveDates
     /// <summary>Column display order per dashboard table, excluding utility columns.</summary>
     public List<string>? ColumnOrder { get; set; }
 
+    /// <summary>Extensible display settings keyed by dashboard column id.</summary>
+    public Dictionary<string, SavedViewColumnSettings>? ColumnSettings { get; set; }
+
     /// <summary>Whether dashboard statistic cards are shown for this view. Null means use the default.</summary>
     public bool? ShowStats { get; set; }
 

@@ -11384,6 +11384,16 @@
               "type": "string"
             }
           },
+          "column_settings": {
+            "maxLength": 50,
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "$ref": "#/components/schemas/SavedViewColumnSettings"
+            }
+          },
           "show_stats": {
             "type": [
               "null",
@@ -12188,6 +12198,15 @@
               "type": "string"
             }
           },
+          "columnSettings": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "$ref": "#/components/schemas/SavedViewColumnSettings"
+            }
+          },
           "showStats": {
             "type": [
               "null",
@@ -12256,6 +12275,35 @@
             "type": "string"
           }
         }
+      },
+      "SavedViewColumnSettings": {
+        "type": "object",
+        "properties": {
+          "visible": {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "description": "Whether the column is visible. Null means use the table default."
+          },
+          "position": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Zero-based display position. Null means use the table default order.",
+            "format": "int32"
+          },
+          "width": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Column width in pixels. Null means use the table default width.",
+            "format": "int32"
+          }
+        },
+        "description": "Per-column display settings for a saved view. All properties are optional so new settings can\nbe added without changing the meaning of existing saved views."
       },
       "Signup": {
         "required": [
@@ -12642,6 +12690,15 @@
             ],
             "items": {
               "type": "string"
+            }
+          },
+          "column_settings": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "$ref": "#/components/schemas/SavedViewColumnSettings"
             }
           },
           "show_stats": {
@@ -13450,6 +13507,15 @@
             ],
             "items": {
               "type": "string"
+            }
+          },
+          "column_settings": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "$ref": "#/components/schemas/SavedViewColumnSettings"
             }
           },
           "show_stats": {

@@ -80,6 +80,7 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.True(schemas.TryGetProperty("Login", out _));
         Assert.True(schemas.TryGetProperty("Signup", out _));
         Assert.True(schemas.TryGetProperty("NewProject", out _));
+        Assert.True(schemas.TryGetProperty("SavedViewColumnSettings", out _));
         Assert.True(schemas.TryGetProperty("TokenResult", out _));
         Assert.True(schemas.TryGetProperty("ViewOrganization", out _));
 
@@ -133,6 +134,9 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         AssertRequiredJsonRequestBody(paths, "/api/v2/tokens/{id}", "put", "UpdateToken");
         AssertRequiredJsonRequestBody(paths, "/api/v2/saved-views/{id}", "patch", "UpdateSavedView");
         AssertRequiredJsonRequestBody(paths, "/api/v2/saved-views/{id}", "put", "UpdateSavedView");
+        AssertDictionaryValueSchema(document.RootElement, "NewSavedView", "column_settings", "SavedViewColumnSettings");
+        AssertDictionaryValueSchema(document.RootElement, "UpdateSavedView", "column_settings", "SavedViewColumnSettings");
+        AssertDictionaryValueSchema(document.RootElement, "ViewSavedView", "column_settings", "SavedViewColumnSettings");
         AssertRequiredJsonRequestBody(paths, "/api/v2/users/{id}", "patch", "UpdateUser");
         AssertRequiredJsonRequestBody(paths, "/api/v2/users/{id}", "put", "UpdateUser");
 
@@ -237,6 +241,17 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
     {
         var tags = paths.GetProperty(path).GetProperty("get").GetProperty("tags");
         Assert.Equal(expectedTag, Assert.Single(tags.EnumerateArray()).GetString());
+    }
+
+    private static void AssertDictionaryValueSchema(JsonElement document, string schemaName, string propertyName, string expectedValueSchema)
+    {
+        var property = document.GetProperty("components")
+            .GetProperty("schemas")
+            .GetProperty(schemaName)
+            .GetProperty("properties")
+            .GetProperty(propertyName);
+
+        Assert.Equal($"#/components/schemas/{expectedValueSchema}", property.GetProperty("additionalProperties").GetProperty("$ref").GetString());
     }
 
     private static void AssertOptionalParameter(JsonElement paths, string path, string method, string parameterName)

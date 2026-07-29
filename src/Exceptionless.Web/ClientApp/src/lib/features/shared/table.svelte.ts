@@ -3,6 +3,7 @@ import type { FetchClientResponse } from '@foundatiofx/fetchclient';
 import {
     type ColumnDef,
     type ColumnOrderState,
+    type ColumnSizingState,
     type ColumnSort,
     type ColumnVisibilityState,
     createSortedRowModel,
@@ -31,7 +32,9 @@ export interface TableConfiguration<TData extends RowData, TPaginationStrategy e
     columns: ColumnDef<StockFeatures, TData, unknown>[];
     configureOptions?: (options: TableOptions<StockFeatures, TData>) => TableOptions<StockFeatures, TData> | void;
     defaultColumnOrder?: ColumnOrderState;
+    defaultColumnSizing?: ColumnSizingState;
     defaultColumnVisibility?: ColumnVisibilityState;
+    enableColumnResizing?: boolean;
     paginationStrategy: TPaginationStrategy;
     queryData?: TData[];
     queryMeta?: QueryMeta;
@@ -106,6 +109,9 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
     const setColumnOrder = (updaterOrValue: Updater<ColumnOrderState>) => {
         setPersistedColumnOrder(updaterOrValue instanceof Function ? updaterOrValue(resolveColumnOrder(columnOrder(), columns())) : updaterOrValue);
     };
+
+    const sizingKey = configuration.columnPersistenceKey ? `${configuration.columnPersistenceKey}-column-sizing` : 'events-column-sizing';
+    const [columnSizing, setColumnSizing] = createPersistedTableState(sizingKey, configuration.defaultColumnSizing ?? <ColumnSizingState>{});
 
     // Initialize pagination state from parameters
     const initialPageIndex = getPageIndexFromParameters(configuration.paginationStrategy, configuration.queryParameters, 0);
@@ -255,6 +261,7 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
         set data(value) {
             setDataImpl(value);
         },
+        enableColumnResizing: configuration.enableColumnResizing ?? false,
         enableMultiRowSelection: true,
         enableRowSelection: true,
         enableSortingRemoval: false,
@@ -273,6 +280,7 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
             setMetaImpl(value);
         },
         onColumnOrderChange: setColumnOrder,
+        onColumnSizingChange: setColumnSizing,
         onColumnVisibilityChange: setColumnVisibility,
         onPaginationChange,
         onRowSelectionChange: setRowSelection,
@@ -283,6 +291,9 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
         state: {
             get columnOrder() {
                 return columnOrder();
+            },
+            get columnSizing() {
+                return columnSizing();
             },
             get columnVisibility() {
                 return columnVisibility();

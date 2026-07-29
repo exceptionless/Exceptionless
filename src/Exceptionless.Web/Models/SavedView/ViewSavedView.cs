@@ -1,4 +1,5 @@
 using Exceptionless.Core.Attributes;
+using Exceptionless.Core.Models;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Web.Models;
@@ -24,6 +25,7 @@ public record ViewSavedView : IIdentity, IHaveDates
     public string? FilterDefinitions { get; set; }
     public Dictionary<string, bool>? Columns { get; set; }
     public List<string>? ColumnOrder { get; set; }
+    public Dictionary<string, SavedViewColumnSettings>? ColumnSettings { get; set; }
     public bool? ShowStats { get; set; }
     public bool? ShowChart { get; set; }
     public string Name { get; set; } = null!;

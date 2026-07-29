@@ -212,6 +212,12 @@ export const NewSavedViewSchema = object({
     .optional(),
   columns: record(string(), boolean()).nullable().optional(),
   column_order: array(string()).nullable().optional(),
+  column_settings: record(
+    string(),
+    lazy(() => SavedViewColumnSettingsSchema),
+  )
+    .nullable()
+    .optional(),
   show_stats: boolean().nullable().optional(),
   show_chart: boolean().nullable().optional(),
   is_private: boolean().nullable().optional(),
@@ -476,6 +482,12 @@ export const PredefinedSavedViewDefinitionSchema = object({
   filterDefinitions: unknown().optional(),
   columns: record(string(), boolean()).nullable().optional(),
   columnOrder: array(string()).nullable().optional(),
+  columnSettings: record(
+    string(),
+    lazy(() => SavedViewColumnSettingsSchema),
+  )
+    .nullable()
+    .optional(),
   showStats: boolean().nullable().optional(),
   showChart: boolean().nullable().optional(),
 });
@@ -503,6 +515,15 @@ export const ResetPasswordModelSchema = object({
 });
 export type ResetPasswordModelFormData = Infer<typeof ResetPasswordModelSchema>;
 
+export const SavedViewColumnSettingsSchema = object({
+  visible: boolean().nullable().optional(),
+  position: int32().nullable().optional(),
+  width: int32().nullable().optional(),
+});
+export type SavedViewColumnSettingsFormData = Infer<
+  typeof SavedViewColumnSettingsSchema
+>;
+
 export const SignupSchema = object({
   name: string().min(1, "Name is required"),
   email: email(),
@@ -515,6 +536,18 @@ export const SignupSchema = object({
     .optional(),
 });
 export type SignupFormData = Infer<typeof SignupSchema>;
+
+export const SourceMapArtifactSchema = object({
+  id: string().min(1, "Id is required"),
+  generated_file_url: url(),
+  source_map_url: url().nullable().optional(),
+  file_name: string().min(1, "File name is required").nullable().optional(),
+  size: int(),
+  is_auto_downloaded: boolean(),
+  created_utc: iso.datetime(),
+  last_used_utc: iso.datetime().nullable().optional(),
+});
+export type SourceMapArtifactFormData = Infer<typeof SourceMapArtifactSchema>;
 
 export const StackSchema = object({
   id: string()
@@ -597,6 +630,12 @@ export const UpdateSavedViewSchema = object({
     .optional(),
   columns: record(string(), boolean()).nullable().optional(),
   column_order: array(string()).nullable().optional(),
+  column_settings: record(
+    string(),
+    lazy(() => SavedViewColumnSettingsSchema),
+  )
+    .nullable()
+    .optional(),
   show_stats: boolean().nullable().optional(),
   show_chart: boolean().nullable().optional(),
 });
@@ -821,6 +860,12 @@ export const ViewSavedViewSchema = object({
     .optional(),
   columns: record(string(), boolean()).nullable().optional(),
   column_order: array(string()).nullable().optional(),
+  column_settings: record(
+    string(),
+    lazy(() => SavedViewColumnSettingsSchema),
+  )
+    .nullable()
+    .optional(),
   show_stats: boolean().nullable().optional(),
   show_chart: boolean().nullable().optional(),
   name: string().min(1, "Name is required"),

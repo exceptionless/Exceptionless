@@ -33,6 +33,11 @@ public class SavedViewSerializerTests : TestWithServices
                 ["date"] = true,
                 ["status"] = false
             },
+            ColumnSettings = new Dictionary<string, SavedViewColumnSettings>
+            {
+                ["title"] = new() { Position = 0, Visible = true, Width = 420 },
+                ["status"] = new() { Position = 1, Visible = false, Width = 180 }
+            },
             Name = "Open Issues",
             Time = "[now-7d TO now]",
             Version = 1,
@@ -61,6 +66,8 @@ public class SavedViewSerializerTests : TestWithServices
         Assert.Equal(3, result.Columns.Count);
         Assert.True(result.Columns["title"]);
         Assert.False(result.Columns["status"]);
+        Assert.Equal(420, result.ColumnSettings?["title"].Width);
+        Assert.False(result.ColumnSettings?["status"].Visible);
     }
 
     [Fact]

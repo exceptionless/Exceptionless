@@ -16,8 +16,15 @@ public static class PredefinedSavedViewConfiguration
         changed |= SetIfChanged(destination, source.Time, static (view, value) => view.Time = value, static view => view.Time);
         changed |= SetIfChanged(destination, source.Sort, static (view, value) => view.Sort = value, static view => view.Sort);
         changed |= SetIfChanged(destination, source.FilterDefinitions, static (view, value) => view.FilterDefinitions = value, static view => view.FilterDefinitions);
-        changed |= SetDictionaryIfChanged(destination, source.Columns);
-        changed |= SetListIfChanged(destination, source.ColumnOrder);
+        var columns = source.ColumnSettings is null
+            ? source.Columns
+            : SavedViewColumnSettings.ToLegacyColumns(source.ColumnSettings);
+        var columnOrder = source.ColumnSettings is null
+            ? source.ColumnOrder
+            : SavedViewColumnSettings.ToLegacyColumnOrder(source.ColumnSettings);
+        changed |= SetDictionaryIfChanged(destination, columns);
+        changed |= SetListIfChanged(destination, columnOrder);
+        changed |= SetColumnSettingsIfChanged(destination, source.ColumnSettings);
         changed |= SetIfChanged(destination, source.ShowStats, static (view, value) => view.ShowStats = value, static view => view.ShowStats);
         changed |= SetIfChanged(destination, source.ShowChart, static (view, value) => view.ShowChart = value, static view => view.ShowChart);
         changed |= SetIfChanged(destination, source.Version, static (view, value) => view.Version = value, static view => view.Version);
@@ -41,6 +48,15 @@ public static class PredefinedSavedViewConfiguration
             return false;
 
         setter(savedView, value);
+        return true;
+    }
+
+    private static bool SetColumnSettingsIfChanged(SavedView savedView, IReadOnlyDictionary<string, SavedViewColumnSettings>? value)
+    {
+        if (ColumnSettingsEqual(savedView.ColumnSettings, value))
+            return false;
+
+        savedView.ColumnSettings = CopyColumnSettings(value);
         return true;
     }
 
@@ -74,4 +90,20 @@ public static class PredefinedSavedViewConfiguration
 
         return left.All(kvp => right.TryGetValue(kvp.Key, out bool value) && value == kvp.Value);
     }
+
+    private static bool ColumnSettingsEqual(
+        IReadOnlyDictionary<string, SavedViewColumnSettings>? left,
+        IReadOnlyDictionary<string, SavedViewColumnSettings>? right)
+    {
+        if (ReferenceEquals(left, right))
+            return true;
+
+        if (left is null || right is null || left.Count != right.Count)
+            return false;
+
+        return left.All(entry => right.TryGetValue(entry.Key, out var value) && entry.Value == value);
+    }
+
+    private static Dictionary<string, SavedViewColumnSettings>? CopyColumnSettings(IReadOnlyDictionary<string, SavedViewColumnSettings>? value)
+        => value?.ToDictionary(entry => entry.Key, entry => entry.Value with { });
 }

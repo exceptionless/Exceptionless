@@ -57,6 +57,14 @@
         return classes.filter(Boolean).join(' ');
     }
 
+    function getColumnStyle(column: Cell<StockFeatures, TData, unknown>['column'] | Header<StockFeatures, TData, unknown>['column']): string | undefined {
+        if (!column.getCanResize() || getVisibleDataColumnCount() === 1) {
+            return undefined;
+        }
+
+        return `width: ${column.getSize()}px; min-width: ${column.getSize()}px; max-width: ${column.getSize()}px;`;
+    }
+
     function getMetaClass(meta: unknown): string {
         return (meta as { class?: string })?.class ?? '';
     }
@@ -100,6 +108,23 @@
         rowClick(cell.row.original, event);
     }
 
+    function onResizeKeydown(event: KeyboardEvent, header: Header<StockFeatures, TData, unknown>): void {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        const delta = event.key === 'ArrowLeft' ? -16 : 16;
+        table.setColumnSizing((current) => ({
+            ...current,
+            [header.column.id]: Math.min(
+                header.column.columnDef.maxSize ?? Number.MAX_SAFE_INTEGER,
+                Math.max(header.column.columnDef.minSize ?? 20, header.column.getSize() + delta)
+            )
+        }));
+    }
+
     function removeWidthClasses(className: string): string {
         return className
             .split(' ')
@@ -115,8 +140,24 @@
                 <Table.Row>
                     {#each headerGroup.headers as header (header.id)}
                         {@const headerClass = getHeaderColumnClass(header)}
-                        <Table.Head class={headerClass}>
+                        <Table.Head class={[headerClass, header.column.getCanResize() && 'group relative']} style={getColumnStyle(header.column)}>
                             <DataTableColumnHeader class={headerClass} column={header.column}><FlexRender {header} /></DataTableColumnHeader>
+                            {#if header.column.getCanResize()}
+                                <button
+                                    aria-label={`Resize ${header.column.id} column`}
+                                    class={[
+                                        'hover:bg-primary focus-visible:bg-primary absolute top-0 right-0 z-10 h-full w-1.5 cursor-col-resize touch-none outline-none select-none',
+                                        'after:bg-border after:absolute after:top-1/4 after:right-0 after:h-1/2 after:w-px',
+                                        header.column.getIsResizing() && 'bg-primary'
+                                    ]}
+                                    ondblclick={() => header.column.resetSize()}
+                                    onkeydown={(event) => onResizeKeydown(event, header)}
+                                    onmousedown={header.getResizeHandler()}
+                                    ontouchstart={header.getResizeHandler()}
+                                    title={`Resize ${header.column.id} column`}
+                                    type="button"
+                                ></button>
+                            {/if}
                         </Table.Head>
                     {/each}
                 </Table.Row>
@@ -145,12 +186,12 @@
                         {#if rowHref && cell.row.original}
                             {@const href = rowHref(cell.row.original)}
                             <A {href} class="contents" onclick={(event) => onCellClick(event, cell)} variant="ghost">
-                                <Table.Cell class={getCellClass(cell)}>
+                                <Table.Cell class={getCellClass(cell)} style={getColumnStyle(cell.column)}>
                                     <FlexRender {cell} />
                                 </Table.Cell>
                             </A>
                         {:else}
-                            <Table.Cell class={getCellClass(cell)} onclick={(event) => onCellClick(event, cell)}>
+                            <Table.Cell class={getCellClass(cell)} onclick={(event) => onCellClick(event, cell)} style={getColumnStyle(cell.column)}>
                                 <FlexRender {cell} />
                             </Table.Cell>
                         {/if}
