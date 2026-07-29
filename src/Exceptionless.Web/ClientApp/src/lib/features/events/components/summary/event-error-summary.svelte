@@ -1,9 +1,8 @@
 <script lang="ts">
-    import { resolve } from '$app/paths';
     import { A, Muted } from '$comp/typography';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
 
-    import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from './index';
+    import { buildEventDetailsHref, type EventSummaryModel, type SummaryModel, type SummaryTemplateKeys } from './index';
 
     interface Props {
         summary: SummaryModel<SummaryTemplateKeys>;
@@ -29,7 +28,7 @@
         </strong>
     {/if}
 
-    <A class="inline" href={resolve('/(app)/event/[eventId=objectid]', { eventId: source.id })}>
+    <A class="inline" href={buildEventDetailsHref(source.id)}>
         {source.data.Message}
     </A>
 </div>

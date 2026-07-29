@@ -1,5 +1,7 @@
 <script lang="ts">
+    import type { IFilter } from '$comp/faceted-filter';
     import type { Stack } from '$features/stacks/models';
+    import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
@@ -8,6 +10,7 @@
     import * as FacetedFilter from '$comp/faceted-filter';
     import RefreshButton from '$comp/refresh-button.svelte';
     import { Muted } from '$comp/typography';
+    import { showBillingDialogOnUpgradeProblem } from '$features/billing';
     import { StatusFilter, StringFilter, TagFilter } from '$features/events/components/filters';
     import {
         buildFilterCacheKey,
@@ -17,9 +20,11 @@
         toFilter,
         updateFilterCache
     } from '$features/events/components/filters/helpers.svelte';
+    import { organization } from '$features/organizations/context.svelte';
     import { removeTableSelection } from '$features/shared/table.svelte';
     import { type GetProjectStacksParams, getProjectStacksQuery } from '$features/stacks/api.svelte';
     import StackFacetedFilterBuilder from '$features/stacks/components/filters/stack-faceted-filter-builder.svelte';
+    import StackDetailSheet from '$features/stacks/components/stack-detail-sheet.svelte';
     import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/stacks-bulk-actions-dropdown-menu.svelte';
     import { getTableOptions } from '$features/stacks/components/table/options.svelte';
     import StacksDataTable from '$features/stacks/components/table/stacks-data-table.svelte';
@@ -33,8 +38,11 @@
     import { useEventListener, watch } from 'runed';
     import { toast } from 'svelte-sonner';
 
+    import { getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../../../redirect-to-events.svelte';
+
     const projectId = $derived(page.params.projectId);
     const queryClient = useQueryClient();
+    let selectedStackId = $state<string>();
 
     const DEFAULT_PARAMS = {
         filter: '(status:ignored OR status:discarded)',
@@ -207,6 +215,21 @@
         return resolve('/(app)/project/[projectId]/stacks/[stackId]', { projectId: projectId ?? '', stackId: row.id });
     }
 
+    function rowClick(row: Stack): void {
+        selectedStackId = row.id;
+    }
+
+    async function handleStackFilterChanged(filter: IFilter): Promise<void> {
+        await redirectToEventsWithFilter(organization.current, filter, getEventsNavigationOptionsForFilter(filter));
+    }
+
+    function handleStackError(problem: ProblemDetails): void {
+        selectedStackId = undefined;
+        if (!showBillingDialogOnUpgradeProblem(problem, organization.current)) {
+            toast.error('Unable to load stack event details.');
+        }
+    }
+
     const table = createTable(getTableOptions(stacksQueryParameters, stacksQuery, handleTagClick));
 
     const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.store.state.pagination.pageIndex === 0);
@@ -226,6 +249,10 @@
 
     async function onStackChanged(message: WebSocketMessageValue<'StackChanged'>) {
         if (message.id && message.change_type === ChangeType.Removed) {
+            if (message.id === selectedStackId) {
+                selectedStackId = undefined;
+            }
+
             removeTableSelection(table, message.id);
         }
 
@@ -254,7 +281,7 @@
         </div>
     </div>
 
-    <StacksDataTable bind:limit={queryParams.limit!} isLoading={stacksQuery.isLoading} {rowHref} {table}>
+    <StacksDataTable bind:limit={queryParams.limit!} isLoading={stacksQuery.isLoading} {rowClick} {rowHref} {table}>
         {#snippet footerChildren()}
             <div class="h-9 min-w-35">
                 <TableStacksBulkActionsDropdownMenu {table} />
@@ -269,3 +296,12 @@
         {/snippet}
     </StacksDataTable>
 </div>
+
+<StackDetailSheet
+    stackId={selectedStackId}
+    filterChanged={handleStackFilterChanged}
+    onClose={() => {
+        selectedStackId = undefined;
+    }}
+    onError={handleStackError}
+/>

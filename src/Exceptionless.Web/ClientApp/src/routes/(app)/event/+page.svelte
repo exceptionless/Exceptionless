@@ -1,6 +1,4 @@
 <script lang="ts">
-    import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
-
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import * as DataTable from '$comp/data-table';
@@ -45,6 +43,7 @@
         updateFilterCache
     } from '$features/events/components/filters/helpers.svelte';
     import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
+    import { buildEventDetailsHref, type EventSummaryModel, type SummaryTemplateKeys } from '$features/events/components/summary/index';
     import EventsBulkActionsDropdownMenu from '$features/events/components/table/events-bulk-actions-dropdown-menu.svelte';
     import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
     import { defaultEventColumnVisibility, getColumns } from '$features/events/components/table/options.svelte';
@@ -90,7 +89,7 @@
     }
 
     function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
-        return resolve('/(app)/event/[eventId=objectid]', { eventId: row.id });
+        return buildEventDetailsHref(row.id);
     }
 
     const DEFAULT_TIME_RANGE = '[now-7d TO now]';

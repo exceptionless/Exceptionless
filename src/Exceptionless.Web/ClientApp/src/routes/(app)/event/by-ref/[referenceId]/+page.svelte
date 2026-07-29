@@ -6,6 +6,7 @@
     import { Button } from '$comp/ui/button';
     import { Spinner } from '$comp/ui/spinner';
     import { getEventsByReferenceQuery } from '$features/events/api.svelte';
+    import { buildEventDetailsHref } from '$features/events/components/summary';
     import Summary from '$features/events/components/summary/summary.svelte';
 
     const referenceId = $derived(page.params.referenceId || '');
@@ -23,7 +24,7 @@
         const event = eventsQuery.data?.length === 1 ? eventsQuery.data[0] : undefined;
         if (event?.id && event.id !== redirectedEventId) {
             redirectedEventId = event.id;
-            void goto(resolve('/(app)/event/[eventId=objectid]', { eventId: event.id }), { replaceState: true });
+            void goto(buildEventDetailsHref(event.id), { replaceState: true });
         }
     });
 
@@ -60,7 +61,7 @@
             {#each eventsQuery.data ?? [] as event (event.id)}
                 <div class="rounded-md border p-4">
                     <Summary summary={event} />
-                    <A class="mt-2 inline-block" href={resolve('/(app)/event/[eventId=objectid]', { eventId: event.id })}>Open Event</A>
+                    <A class="mt-2 inline-block" href={buildEventDetailsHref(event.id)}>Open Event</A>
                 </div>
             {/each}
         </div>

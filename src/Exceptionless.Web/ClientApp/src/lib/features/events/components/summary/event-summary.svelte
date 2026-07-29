@@ -1,8 +1,7 @@
 <script lang="ts">
-    import { resolve } from '$app/paths';
     import { A } from '$comp/typography';
 
-    import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from './index';
+    import { buildEventDetailsHref, type EventSummaryModel, type SummaryModel, type SummaryTemplateKeys } from './index';
 
     interface EventFeatureSummaryProps {
         showType: boolean;
@@ -26,5 +25,5 @@
     {#if showType || source.data.Source}
         :&nbsp;
     {/if}
-    <A class="inline" href={resolve('/(app)/event/[eventId=objectid]', { eventId: source.id })}>{source.data.Message}</A>
+    <A class="inline" href={buildEventDetailsHref(source.id)}>{source.data.Message}</A>
 </div>
