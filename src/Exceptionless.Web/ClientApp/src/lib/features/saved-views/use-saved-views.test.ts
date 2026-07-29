@@ -13,7 +13,7 @@ import {
     getComparableSavedViewTime,
     hasMissingSavedViewSlug,
     hasSavedColumnOrder,
-    hasSavedColumnVisibility,
+    hasSavedViewColumnChanges,
     savedViewColumnsEqual,
     type SavedViewQueryParams,
     setSortQueryParam,
@@ -200,18 +200,6 @@ describe('useSavedViews', () => {
     });
 
     describe('column comparison', () => {
-        it('does not compare column visibility when a saved view omits column settings', () => {
-            // Act & Assert
-            expect(hasSavedColumnVisibility(null)).toBe(false);
-            expect(hasSavedColumnVisibility(undefined)).toBe(false);
-        });
-
-        it('compares explicit saved column visibility, including empty settings', () => {
-            // Act & Assert
-            expect(hasSavedColumnVisibility({})).toBe(true);
-            expect(hasSavedColumnVisibility({ events: false })).toBe(true);
-        });
-
         it('treats legacy visibility missing default-hidden columns as unchanged', () => {
             // Arrange
             const current = { project: false, summary: true, tags: false };
@@ -233,6 +221,29 @@ describe('useSavedViews', () => {
 
             // Act
             const result = savedViewColumnsEqual(current, legacySaved, defaults);
+
+            // Assert
+            expect(result).toBe(false);
+        });
+
+        it('marks a saved view as changed when adding a column omitted from its settings', () => {
+            // Arrange
+            const current = { project: true, tags: false };
+            const defaults = { project: false, tags: false };
+
+            // Act
+            const result = hasSavedViewColumnChanges(current, null, defaults);
+
+            // Assert
+            expect(result).toBe(true);
+        });
+
+        it('does not mark an unchanged saved view with omitted column settings as changed', () => {
+            // Arrange
+            const defaults = { project: false, tags: false };
+
+            // Act
+            const result = hasSavedViewColumnChanges(defaults, null, defaults);
 
             // Assert
             expect(result).toBe(false);
