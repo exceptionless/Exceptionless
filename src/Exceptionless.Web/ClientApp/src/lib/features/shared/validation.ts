@@ -1,4 +1,4 @@
-import { ProblemDetails } from '@exceptionless/fetchclient';
+import { ProblemDetails } from '@foundatiofx/fetchclient';
 
 export type FieldWithErrors = {
     state: {

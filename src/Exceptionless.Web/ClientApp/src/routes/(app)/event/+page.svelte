@@ -55,7 +55,7 @@
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
-    import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+    import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
     import { error } from '@sveltejs/kit';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
@@ -816,8 +816,25 @@
     useEventListener(document, 'refresh', () => scheduleLoadData(true));
     useEventListener(document, 'PersistentEventChanged', (event) => onPersistentEventChanged((event as CustomEvent).detail));
 
+    const automaticLoadDataKey = $derived(
+        JSON.stringify({
+            after: eventsQueryParameters.after,
+            before: eventsQueryParameters.before,
+            filter: eventsQueryParameters.filter,
+            isSavedViewRoutePending,
+            limit: eventsQueryParameters.limit,
+            mode: eventsQueryParameters.mode,
+            offset: eventsQueryParameters.offset,
+            organizationId: organization.current,
+            page: eventsQueryParameters.page,
+            sort: eventsQueryParameters.sort,
+            time: eventsQueryParameters.time
+        })
+    );
+
     $effect(() => {
-        loadData();
+        void automaticLoadDataKey;
+        untrack(() => loadData());
     });
 
     const chartDataQuery = getOrganizationCountQuery({

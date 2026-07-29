@@ -16,7 +16,7 @@
     import ResetProjectDataDialog from '$features/projects/components/dialogs/reset-project-data-dialog.svelte';
     import { type UpdateProjectFormData, UpdateProjectSchema } from '$features/projects/schemas';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
-    import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { ProblemDetails } from '@foundatiofx/fetchclient';
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
     import CloudDownload from '@lucide/svelte/icons/cloud-download';
     import Database from '@lucide/svelte/icons/database';
