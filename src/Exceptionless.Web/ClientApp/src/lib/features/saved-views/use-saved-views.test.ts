@@ -249,6 +249,18 @@ describe('useSavedViews', () => {
             expect(result).toBe(false);
         });
 
+        it('does not mark a default-visible column as changed after it is removed and re-added', () => {
+            // Arrange
+            const current = { project: false, summary: true, tags: false };
+            const defaults = { project: false, tags: false };
+
+            // Act
+            const result = hasSavedViewColumnChanges(current, null, defaults);
+
+            // Assert
+            expect(result).toBe(false);
+        });
+
         it('does not compare column order when a saved view omits or clears column order', () => {
             // Act & Assert
             expect(hasSavedColumnOrder(null)).toBe(false);
