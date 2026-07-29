@@ -2,7 +2,7 @@ import type { ColumnOrderState, ColumnSizingState, ColumnVisibilityState } from 
 
 import type { SavedView, SavedViewColumnSettings } from './models';
 
-type SavedColumnState = Pick<SavedView, 'column_order' | 'column_settings' | 'columns'>;
+type SavedColumnState = Pick<SavedView, 'columns'>;
 
 export function buildColumnSettings(
     columnIds: string[],
@@ -30,33 +30,31 @@ export function buildColumnSettings(
 }
 
 export function getSavedColumnOrder(view: SavedColumnState | undefined): ColumnOrderState {
-    const settingsOrder = Object.entries(view?.column_settings ?? {})
+    const settingsOrder = Object.entries(view?.columns ?? {})
         .filter((entry): entry is [string, SavedViewColumnSettings & { position: number }] => entry[1].position != null)
         .sort(([leftId, left], [rightId, right]) => left.position - right.position || leftId.localeCompare(rightId))
         .map(([columnId]) => columnId);
 
-    return settingsOrder.length > 0 ? settingsOrder : (view?.column_order ?? []);
+    return settingsOrder;
 }
 
-export function getSavedColumnSizing(view: Pick<SavedView, 'column_settings'> | undefined): ColumnSizingState {
+export function getSavedColumnSizing(view: SavedColumnState | undefined): ColumnSizingState {
     return Object.fromEntries(
-        Object.entries(view?.column_settings ?? {})
+        Object.entries(view?.columns ?? {})
             .filter((entry): entry is [string, SavedViewColumnSettings & { width: number }] => entry[1].width != null)
             .map(([columnId, settings]) => [columnId, settings.width])
     );
 }
 
 export function getSavedColumnVisibility(view: SavedColumnState | undefined): ColumnVisibilityState {
-    const settingsVisibility = Object.fromEntries(
-        Object.entries(view?.column_settings ?? {})
+    return Object.fromEntries(
+        Object.entries(view?.columns ?? {})
             .filter((entry): entry is [string, SavedViewColumnSettings & { visible: boolean }] => entry[1].visible != null)
             .map(([columnId, settings]) => [columnId, settings.visible])
     );
-
-    return Object.keys(settingsVisibility).length > 0 ? settingsVisibility : (view?.columns ?? {});
 }
 
-export function savedViewColumnSizingEqual(current: ColumnSizingState | undefined, view: Pick<SavedView, 'column_settings'>): boolean {
+export function savedViewColumnSizingEqual(current: ColumnSizingState | undefined, view: SavedColumnState): boolean {
     const saved = getSavedColumnSizing(view);
     const currentEntries = Object.entries(current ?? {}).filter(([columnId]) => columnId !== 'select');
     const savedEntries = Object.entries(saved);

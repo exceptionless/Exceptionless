@@ -101,10 +101,6 @@ export function hasMissingSavedViewSlug(options: {
     return !!options.slug && !options.activeSavedView && !!options.savedViews && !options.isLoading;
 }
 
-export function hasSavedColumnOrder(columnOrder: null | string[] | undefined): columnOrder is string[] {
-    return !!columnOrder?.length;
-}
-
 export function hasSavedViewColumnChanges(
     current: ColumnVisibilityState | undefined,
     saved: null | Record<string, boolean> | undefined,
@@ -188,7 +184,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         return undefined;
     });
 
-    function applyColumnState(view: Pick<SavedView, 'column_order' | 'column_settings' | 'columns'> | undefined): void {
+    function applyColumnState(view: Pick<SavedView, 'columns'> | undefined): void {
         if (options.setColumnVisibility) {
             options.setColumnVisibility(getSavedColumnVisibility(view));
         }
@@ -284,7 +280,6 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
         if (
             options.getColumnVisibility &&
-            (view.columns != null || Object.values(view.column_settings ?? {}).some((settings) => settings.visible != null)) &&
             hasSavedViewColumnChanges(options.getColumnVisibility(), getSavedColumnVisibility(view), options.defaultColumnVisibility)
         ) {
             return true;
@@ -292,7 +287,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
         if (
             options.getColumnOrder &&
-            (hasSavedColumnOrder(view.column_order) || Object.values(view.column_settings ?? {}).some((settings) => settings.position != null)) &&
+            Object.values(view.columns ?? {}).some((settings) => settings.position != null) &&
             !columnOrderEqual(options.getColumnOrder(), getSavedColumnOrder(view))
         ) {
             return true;

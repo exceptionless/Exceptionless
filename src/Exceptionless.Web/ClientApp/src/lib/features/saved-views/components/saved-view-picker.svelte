@@ -157,13 +157,6 @@
         isRenameDialogOpen = true;
     }
 
-    function getSavedColumnOrder(): string[] | undefined {
-        const currentColumnIds = new Set(table.getAllLeafColumns().map((column) => column.id));
-        const savedColumnOrder = (columnOrder ?? []).filter((columnId) => columnId !== 'select' && currentColumnIds.has(columnId));
-
-        return savedColumnOrder.length > 0 ? savedColumnOrder : undefined;
-    }
-
     function getSavedColumnSettings() {
         return buildColumnSettings(
             table.getAllLeafColumns().map((column) => column.id),
@@ -190,11 +183,8 @@
         }
 
         const filterDefinitions = serializeFilters(filters);
-        const savedColumnOrder = getSavedColumnOrder();
         const body: NewSavedView = {
-            column_order: savedColumnOrder,
-            column_settings: getSavedColumnSettings(),
-            columns: columnVisibility,
+            columns: getSavedColumnSettings(),
             filter: currentFilterString || undefined,
             filter_definitions: filterDefinitions,
             is_private: isPrivate || undefined,
@@ -234,9 +224,7 @@
 
     function getUpdateBody(): UpdateSavedView {
         return {
-            column_order: getSavedColumnOrder() ?? null,
-            column_settings: getSavedColumnSettings(),
-            columns: columnVisibility,
+            columns: getSavedColumnSettings(),
             filter: currentFilterString || null,
             filter_definitions: serializeFilters(filters),
             show_chart: showChart,

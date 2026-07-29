@@ -134,9 +134,9 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         AssertRequiredJsonRequestBody(paths, "/api/v2/tokens/{id}", "put", "UpdateToken");
         AssertRequiredJsonRequestBody(paths, "/api/v2/saved-views/{id}", "patch", "UpdateSavedView");
         AssertRequiredJsonRequestBody(paths, "/api/v2/saved-views/{id}", "put", "UpdateSavedView");
-        AssertDictionaryValueSchema(document.RootElement, "NewSavedView", "column_settings", "SavedViewColumnSettings");
-        AssertDictionaryValueSchema(document.RootElement, "UpdateSavedView", "column_settings", "SavedViewColumnSettings");
-        AssertDictionaryValueSchema(document.RootElement, "ViewSavedView", "column_settings", "SavedViewColumnSettings");
+        AssertDictionaryValueSchema(document.RootElement, "NewSavedView", "columns", "SavedViewColumnSettings");
+        AssertDictionaryValueSchema(document.RootElement, "UpdateSavedView", "columns", "SavedViewColumnSettings");
+        AssertDictionaryValueSchema(document.RootElement, "ViewSavedView", "columns", "SavedViewColumnSettings");
         AssertRequiredJsonRequestBody(paths, "/api/v2/users/{id}", "patch", "UpdateUser");
         AssertRequiredJsonRequestBody(paths, "/api/v2/users/{id}", "put", "UpdateUser");
 

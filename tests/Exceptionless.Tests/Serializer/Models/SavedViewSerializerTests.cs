@@ -27,16 +27,11 @@ public class SavedViewSerializerTests : TestWithServices
             PredefinedContentHash = "95d71d134b0f8f62c6a70de8ec9819f7a0a0e450577764e9c1c13c863ccbe6ba",
             Filter = "(status:open OR status:regressed)",
             FilterDefinitions = """[{"field":"status","operator":"in","values":["open","regressed"]}]""",
-            Columns = new Dictionary<string, bool>
-            {
-                ["title"] = true,
-                ["date"] = true,
-                ["status"] = false
-            },
-            ColumnSettings = new Dictionary<string, SavedViewColumnSettings>
+            Columns = new Dictionary<string, SavedViewColumnSettings>
             {
                 ["title"] = new() { Position = 0, Visible = true, Width = 420 },
-                ["status"] = new() { Position = 1, Visible = false, Width = 180 }
+                ["date"] = new() { Position = 1, Visible = true },
+                ["status"] = new() { Position = 2, Visible = false, Width = 180 }
             },
             Name = "Open Issues",
             Time = "[now-7d TO now]",
@@ -64,10 +59,9 @@ public class SavedViewSerializerTests : TestWithServices
         Assert.Equal("stacks", result.ViewType);
         Assert.NotNull(result.Columns);
         Assert.Equal(3, result.Columns.Count);
-        Assert.True(result.Columns["title"]);
-        Assert.False(result.Columns["status"]);
-        Assert.Equal(420, result.ColumnSettings?["title"].Width);
-        Assert.False(result.ColumnSettings?["status"].Visible);
+        Assert.True(result.Columns["title"].Visible);
+        Assert.False(result.Columns["status"].Visible);
+        Assert.Equal(420, result.Columns["title"].Width);
     }
 
     [Fact]

@@ -20,8 +20,6 @@ public static class PredefinedSavedViewContentHasher
             savedView.Sort,
             savedView.FilterDefinitions,
             savedView.Columns,
-            savedView.ColumnOrder,
-            savedView.ColumnSettings,
             savedView.ShowStats,
             savedView.ShowChart);
     }
@@ -44,8 +42,6 @@ public static class PredefinedSavedViewContentHasher
                     definition.Sort,
                     PredefinedSavedViewsDataSeed.GetRawJson(definition.FilterDefinitions),
                     definition.Columns,
-                    definition.ColumnOrder,
-                    definition.ColumnSettings,
                     definition.ShowStats,
                     definition.ShowChart)
             });
@@ -61,32 +57,10 @@ public static class PredefinedSavedViewContentHasher
         string? time,
         string? sort,
         string? filterDefinitions,
-        IReadOnlyDictionary<string, bool>? columns,
-        IReadOnlyCollection<string>? columnOrder,
-        IReadOnlyDictionary<string, SavedViewColumnSettings>? columnSettings,
+        IReadOnlyDictionary<string, SavedViewColumnSettings>? columns,
         bool? showStats,
         bool? showChart)
     {
-        if (columnSettings is null)
-        {
-            var legacyContent = new
-            {
-                name,
-                slug,
-                viewType,
-                filter,
-                time,
-                sort,
-                filterDefinitions = CanonicalizeFilterDefinitions(filterDefinitions),
-                Columns = columns?.OrderBy(column => column.Key, StringComparer.Ordinal),
-                columnOrder,
-                showStats,
-                showChart
-            };
-
-            return SerializeAndHash(legacyContent);
-        }
-
         var content = new
         {
             name,
@@ -97,8 +71,6 @@ public static class PredefinedSavedViewContentHasher
             sort,
             filterDefinitions = CanonicalizeFilterDefinitions(filterDefinitions),
             Columns = columns?.OrderBy(column => column.Key, StringComparer.Ordinal),
-            columnOrder,
-            ColumnSettings = columnSettings.OrderBy(column => column.Key, StringComparer.Ordinal),
             showStats,
             showChart
         };

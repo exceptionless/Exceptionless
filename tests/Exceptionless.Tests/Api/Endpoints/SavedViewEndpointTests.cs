@@ -245,8 +245,10 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
                 Filter = "type:log",
                 Time = "last 24 hours",
                 Sort = "-date",
-                Columns = new Dictionary<string, bool> { ["message"] = true },
-                ColumnOrder = ["message"],
+                Columns = new Dictionary<string, SavedViewColumnSettings>
+                {
+                    ["message"] = new() { Position = 0, Visible = true }
+                },
                 ShowChart = true,
                 ShowStats = true
             }
@@ -283,7 +285,12 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
             Sort = "-date",
             ViewType = "events",
             FilterDefinitions = """[{"type":"keyword","value":"status:open"}]""",
-            ColumnOrder = ["summary", "date", "user"]
+            Columns = new Dictionary<string, SavedViewColumnSettings>
+            {
+                ["summary"] = new() { Position = 0, Visible = true },
+                ["date"] = new() { Position = 1, Visible = true },
+                ["user"] = new() { Position = 2, Visible = true }
+            }
         };
 
         // Act
@@ -305,7 +312,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         Assert.Equal("[now-7D TO now]", result.Time);
         Assert.Equal("-date", result.Sort);
         Assert.Equal("events", result.ViewType);
-        Assert.Equal(["summary", "date", "user"], result.ColumnOrder);
+        Assert.Equal(2, result.Columns?["user"].Position);
         Assert.NotNull(result.FilterDefinitions);
         Assert.Equal(1, result.Version);
         Assert.NotNull(result.CreatedByUserId);
@@ -318,7 +325,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         Assert.NotNull(savedView);
         Assert.Equal("Production Errors", savedView.Name);
         Assert.Equal("-date", savedView.Sort);
-        Assert.Equal(["summary", "date", "user"], savedView.ColumnOrder);
+        Assert.Equal(2, savedView.Columns?["user"].Position);
     }
 
     [Fact]
@@ -349,7 +356,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task PostAsync_ColumnSettings_SynchronizesLegacyColumnFields()
+    public async Task PostAsync_StructuredColumns_PersistsAllSettings()
     {
         // Arrange
         var columnSettings = new Dictionary<string, SavedViewColumnSettings>
@@ -368,68 +375,22 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
                 OrganizationId = SampleDataService.TEST_ORG_ID,
                 Name = "Resizable Project View",
                 ViewType = "events",
-                ColumnSettings = columnSettings
+                Columns = columnSettings
             })
             .StatusCodeShouldBeCreated()
         );
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal(240, result.ColumnSettings?["project"].Width);
-        Assert.True(result.Columns?["project"]);
-        Assert.Equal(["summary", "project"], result.ColumnOrder);
+        Assert.Equal(240, result.Columns?["project"].Width);
+        Assert.True(result.Columns?["project"].Visible);
+        Assert.Equal(1, result.Columns?["project"].Position);
 
         var savedView = await _savedViewRepository.GetByIdAsync(result.Id);
         Assert.NotNull(savedView);
-        Assert.Equal(240, savedView.ColumnSettings?["project"].Width);
-        Assert.True(savedView.Columns?["project"]);
-        Assert.Equal(["summary", "project"], savedView.ColumnOrder);
-    }
-
-    [Fact]
-    public async Task PatchAsync_LegacyColumns_PreservesColumnWidths()
-    {
-        // Arrange
-        var created = await SendRequestAsAsync<ViewSavedView>(r => r
-            .Post()
-            .AsGlobalAdminUser()
-            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
-            .Content(new NewSavedView
-            {
-                OrganizationId = SampleDataService.TEST_ORG_ID,
-                Name = "Legacy Column Update",
-                ViewType = "events",
-                ColumnSettings = new Dictionary<string, SavedViewColumnSettings>
-                {
-                    ["summary"] = new() { Position = 0, Visible = true, Width = 420 },
-                    ["project"] = new() { Position = 1, Visible = true, Width = 240 }
-                }
-            })
-            .StatusCodeShouldBeCreated()
-        );
-        Assert.NotNull(created);
-
-        // Act
-        var result = await SendRequestAsAsync<ViewSavedView>(r => r
-            .Patch()
-            .AsGlobalAdminUser()
-            .AppendPaths("saved-views", created.Id)
-            .Content(new UpdateSavedView
-            {
-                Columns = new Dictionary<string, bool>
-                {
-                    ["summary"] = true,
-                    ["project"] = false
-                }
-            })
-            .StatusCodeShouldBeOk()
-        );
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.False(result.ColumnSettings?["project"].Visible);
-        Assert.Equal(240, result.ColumnSettings?["project"].Width);
-        Assert.Equal(1, result.ColumnSettings?["project"].Position);
+        Assert.Equal(240, savedView.Columns?["project"].Width);
+        Assert.True(savedView.Columns?["project"].Visible);
+        Assert.Equal(1, savedView.Columns?["project"].Position);
     }
 
     [Fact]
@@ -1097,13 +1058,12 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         savedLogs.Slug = "application-logs";
         savedLogs.Filter = "type:log level:error";
         savedLogs.ShowChart = false;
-        savedLogs.Columns = new Dictionary<string, bool>
+        savedLogs.Columns = new Dictionary<string, SavedViewColumnSettings>
         {
-            ["summary"] = true,
-            ["date"] = true,
-            ["type"] = false
+            ["summary"] = new() { Position = 0, Visible = true },
+            ["date"] = new() { Position = 1, Visible = true },
+            ["type"] = new() { Position = 2, Visible = false }
         };
-        savedLogs.ColumnOrder = ["summary", "date", "type"];
         await _savedViewRepository.SaveAsync(savedLogs, o => o.ImmediateConsistency());
         await RefreshDataAsync();
 
@@ -1140,9 +1100,9 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         Assert.Equal("type:log level:error", applicationLogs.Filter);
         Assert.False(applicationLogs.ShowChart);
         Assert.NotNull(applicationLogs.Columns);
-        Assert.True(applicationLogs.Columns["summary"]);
-        Assert.False(applicationLogs.Columns["type"]);
-        Assert.Equal(new[] { "summary", "date", "type" }, applicationLogs.ColumnOrder);
+        Assert.True(applicationLogs.Columns["summary"].Visible);
+        Assert.False(applicationLogs.Columns["type"].Visible);
+        Assert.Equal(2, applicationLogs.Columns["type"].Position);
         Assert.DoesNotContain(updatedPredefinedViews, view => IsPredefinedSavedView(view, "events", "Logs"));
         Assert.Contains(updatedPredefinedViews, view => IsPredefinedSavedView(view, "events", "Errors"));
     }
@@ -2164,7 +2124,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
                 OrganizationId = SampleDataService.TEST_ORG_ID,
                 Name = "Bad Columns",
                 ViewType = "events",
-                Columns = new Dictionary<string, bool> { ["status"] = true }
+                Columns = new Dictionary<string, SavedViewColumnSettings> { ["status"] = new() { Visible = true } }
             })
             .StatusCodeShouldBeUnprocessableEntity()
         );
@@ -2184,7 +2144,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
             .AppendPaths("saved-views", created.Id)
             .Content(new UpdateSavedView
             {
-                Columns = new Dictionary<string, bool> { ["INVALID_COLUMN"] = true }
+                Columns = new Dictionary<string, SavedViewColumnSettings> { ["INVALID_COLUMN"] = new() { Visible = true } }
             })
             .StatusCodeShouldBeUnprocessableEntity()
         );
@@ -2203,7 +2163,14 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
                 OrganizationId = SampleDataService.TEST_ORG_ID,
                 Name = "Valid Columns",
                 ViewType = "events",
-                Columns = new Dictionary<string, bool> { ["summary"] = true, ["type"] = false, ["exception_type"] = false, ["level"] = false, ["message"] = false }
+                Columns = new Dictionary<string, SavedViewColumnSettings>
+                {
+                    ["summary"] = new() { Visible = true },
+                    ["type"] = new() { Visible = false },
+                    ["exception_type"] = new() { Visible = false },
+                    ["level"] = new() { Visible = false },
+                    ["message"] = new() { Visible = false }
+                }
             })
             .StatusCodeShouldBeCreated()
         );
@@ -2228,8 +2195,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
                 OrganizationId = SampleDataService.TEST_ORG_ID,
                 Name = $"Valid {viewType} {column} Column",
                 ViewType = viewType,
-                Columns = new Dictionary<string, bool> { [column] = false },
-                ColumnOrder = [column]
+                Columns = new Dictionary<string, SavedViewColumnSettings> { [column] = new() { Position = 0, Visible = false } }
             })
             .StatusCodeShouldBeCreated()
         );
@@ -2250,49 +2216,13 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
                 OrganizationId = SampleDataService.TEST_ORG_ID,
                 Name = $"Valid {viewType} Version Column",
                 ViewType = viewType,
-                Columns = new Dictionary<string, bool> { ["summary"] = true, ["version"] = false },
-                ColumnOrder = ["summary", "version"]
+                Columns = new Dictionary<string, SavedViewColumnSettings>
+                {
+                    ["summary"] = new() { Position = 0, Visible = true },
+                    ["version"] = new() { Position = 1, Visible = false }
+                }
             })
             .StatusCodeShouldBeCreated()
-        );
-    }
-
-    [Fact]
-    public Task PostAsync_InvalidColumnOrderKey_ReturnsUnprocessableEntity()
-    {
-        // Arrange & Act & Assert
-        return SendRequestAsync(r => r
-            .Post()
-            .AsGlobalAdminUser()
-            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
-            .Content(new NewSavedView
-            {
-                OrganizationId = SampleDataService.TEST_ORG_ID,
-                Name = "Bad Column Order",
-                ViewType = "events",
-                ColumnOrder = ["summary", "status"]
-            })
-            .StatusCodeShouldBeUnprocessableEntity()
-        );
-    }
-
-    [Fact]
-    public async Task PatchAsync_DuplicateColumnOrderKey_ReturnsUnprocessableEntity()
-    {
-        // Arrange
-        var created = await CreateSavedViewAsync("Patch Column Order Test", "status:open", "events");
-        Assert.NotNull(created);
-
-        // Act & Assert
-        await SendRequestAsync(r => r
-            .Patch()
-            .AsGlobalAdminUser()
-            .AppendPaths("saved-views", created.Id)
-            .Content(new UpdateSavedView
-            {
-                ColumnOrder = ["summary", "summary"]
-            })
-            .StatusCodeShouldBeUnprocessableEntity()
         );
     }
 
@@ -2311,7 +2241,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
                 OrganizationId = SampleDataService.TEST_ORG_ID,
                 Name = $"Invalid Column Width {width}",
                 ViewType = "events",
-                ColumnSettings = new Dictionary<string, SavedViewColumnSettings>
+                Columns = new Dictionary<string, SavedViewColumnSettings>
                 {
                     ["project"] = new() { Width = width }
                 }
@@ -2321,7 +2251,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public Task PostAsync_DuplicateColumnSettingsPosition_ReturnsUnprocessableEntity()
+    public Task PostAsync_DuplicateColumnPosition_ReturnsUnprocessableEntity()
     {
         // Arrange & Act & Assert
         return SendRequestAsync(r => r
@@ -2333,7 +2263,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
                 OrganizationId = SampleDataService.TEST_ORG_ID,
                 Name = "Duplicate Column Position",
                 ViewType = "events",
-                ColumnSettings = new Dictionary<string, SavedViewColumnSettings>
+                Columns = new Dictionary<string, SavedViewColumnSettings>
                 {
                     ["summary"] = new() { Position = 0 },
                     ["project"] = new() { Position = 0 }
@@ -2344,7 +2274,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public Task PostAsync_NullColumnSettingsValue_ReturnsUnprocessableEntity()
+    public Task PostAsync_NullColumnValue_ReturnsUnprocessableEntity()
     {
         // Arrange & Act & Assert
         return SendRequestAsync(r => r
@@ -2354,9 +2284,9 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
             .Content(new NewSavedView
             {
                 OrganizationId = SampleDataService.TEST_ORG_ID,
-                Name = "Null Column Settings",
+                Name = "Null Column",
                 ViewType = "events",
-                ColumnSettings = new Dictionary<string, SavedViewColumnSettings>
+                Columns = new Dictionary<string, SavedViewColumnSettings>
                 {
                     ["project"] = null!
                 }
@@ -2488,9 +2418,9 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
 
         // Build a columns dict with 51 entries (exceeds max of 50).
         // Count validation fires before key validation, so arbitrary keys work here.
-        var columns = new Dictionary<string, bool>();
+        var columns = new Dictionary<string, SavedViewColumnSettings>();
         for (int i = 0; i < 51; i++)
-            columns[$"col{i}"] = true;
+            columns[$"col{i}"] = new();
 
         // Act & Assert
         await SendRequestAsync(r => r

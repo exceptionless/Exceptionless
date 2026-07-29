@@ -144,9 +144,7 @@ export interface NewSavedView {
   slug?: null | string;
   view_type: string;
   filter_definitions?: null | string;
-  columns?: null | Record<string, boolean>;
-  column_order?: string[] | null;
-  column_settings?: null | Record<string, SavedViewColumnSettings>;
+  columns?: null | Record<string, SavedViewColumnSettings>;
   show_stats?: null | boolean;
   show_chart?: null | boolean;
   /** If true, the view will only be visible to the current user. Defaults to false. */
@@ -369,9 +367,7 @@ export interface PredefinedSavedViewDefinition {
   time?: null | string;
   sort?: null | string;
   filterDefinitions?: null | JsonElement;
-  columns?: null | Record<string, boolean>;
-  columnOrder?: string[] | null;
-  columnSettings?: null | Record<string, SavedViewColumnSettings>;
+  columns?: null | Record<string, SavedViewColumnSettings>;
   showStats?: null | boolean;
   showChart?: null | boolean;
 }
@@ -534,9 +530,7 @@ export interface UpdateSavedView {
   sort?: null | string;
   slug?: null | string;
   filter_definitions?: null | string;
-  columns?: null | Record<string, boolean>;
-  column_order?: string[] | null;
-  column_settings?: null | Record<string, SavedViewColumnSettings>;
+  columns?: null | Record<string, SavedViewColumnSettings>;
   show_stats?: null | boolean;
   show_chart?: null | boolean;
 }
@@ -760,9 +754,7 @@ export interface ViewSavedView {
   updated_by_user_id?: null | string;
   filter?: null | string;
   filter_definitions?: null | string;
-  columns?: null | Record<string, boolean>;
-  column_order?: string[] | null;
-  column_settings?: null | Record<string, SavedViewColumnSettings>;
+  columns?: null | Record<string, SavedViewColumnSettings>;
   show_stats?: null | boolean;
   show_chart?: null | boolean;
   name: string;

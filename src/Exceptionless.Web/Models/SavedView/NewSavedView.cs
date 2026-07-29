@@ -53,13 +53,7 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
     public string? FilterDefinitions { get; set; }
 
     [MaxLength(50)]
-    public Dictionary<string, bool>? Columns { get; set; }
-
-    [MaxLength(50)]
-    public List<string>? ColumnOrder { get; set; }
-
-    [MaxLength(50)]
-    public Dictionary<string, SavedViewColumnSettings>? ColumnSettings { get; set; }
+    public Dictionary<string, SavedViewColumnSettings>? Columns { get; set; }
 
     public bool? ShowStats { get; set; }
 
@@ -90,109 +84,48 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
             );
         }
 
-        foreach (var error in ValidateColumnKeys(ViewType, Columns))
-        {
-            yield return error;
-        }
-
-        foreach (var error in ValidateColumnOrder(ViewType, ColumnOrder))
-        {
-            yield return error;
-        }
-
-        foreach (var error in ValidateColumnSettings(ViewType, ColumnSettings))
+        foreach (var error in ValidateColumns(ViewType, Columns))
         {
             yield return error;
         }
     }
 
-    internal static IEnumerable<ValidationResult> ValidateColumnKeys(string? view, Dictionary<string, bool>? columns)
+    internal static IEnumerable<ValidationResult> ValidateColumns(
+        string? view,
+        IReadOnlyDictionary<string, SavedViewColumnSettings>? columns)
     {
         if (columns is null || columns.Count == 0)
         {
             yield break;
         }
 
+        if (columns.Count > 50)
+        {
+            yield return new ValidationResult(
+                "Columns cannot exceed 50 items.",
+                [nameof(Columns)]
+            );
+        }
+
         var validKeys = view is not null && ValidColumnIds.TryGetValue(view, out var viewKeys)
             ? viewKeys
             : AllValidColumnIds;
 
-        var invalidKeys = columns.Keys.Where(key => !validKeys.Contains(key));
-        foreach (string key in invalidKeys)
+        foreach (string key in columns.Keys.Where(key => !validKeys.Contains(key)))
         {
             yield return new ValidationResult(
                 $"Column key '{key}' is not a valid column. Valid columns are: {String.Join(", ", validKeys.Order())}.",
                 [nameof(Columns)]
             );
         }
-    }
 
-    internal static IEnumerable<ValidationResult> ValidateColumnOrder(string? view, IReadOnlyCollection<string>? columnOrder)
-    {
-        if (columnOrder is null || columnOrder.Count == 0)
-        {
-            yield break;
-        }
-
-        var validKeys = view is not null && ValidColumnIds.TryGetValue(view, out var viewKeys)
-            ? viewKeys
-            : AllValidColumnIds;
-
-        var invalidKeys = columnOrder.Where(key => !validKeys.Contains(key)).Distinct();
-        foreach (string key in invalidKeys)
-        {
-            yield return new ValidationResult(
-                $"Column order key '{key}' is not a valid column. Valid columns are: {String.Join(", ", validKeys.Order())}.",
-                [nameof(ColumnOrder)]
-            );
-        }
-
-        var duplicateKeys = columnOrder.GroupBy(key => key).Where(group => group.Count() > 1).Select(group => group.Key);
-        foreach (string key in duplicateKeys)
-        {
-            yield return new ValidationResult(
-                $"Column order key '{key}' cannot be repeated.",
-                [nameof(ColumnOrder)]
-            );
-        }
-    }
-
-    internal static IEnumerable<ValidationResult> ValidateColumnSettings(
-        string? view,
-        IReadOnlyDictionary<string, SavedViewColumnSettings>? columnSettings)
-    {
-        if (columnSettings is null || columnSettings.Count == 0)
-        {
-            yield break;
-        }
-
-        if (columnSettings.Count > 50)
-        {
-            yield return new ValidationResult(
-                "Column settings cannot exceed 50 items.",
-                [nameof(ColumnSettings)]
-            );
-        }
-
-        var validKeys = view is not null && ValidColumnIds.TryGetValue(view, out var viewKeys)
-            ? viewKeys
-            : AllValidColumnIds;
-
-        foreach (string key in columnSettings.Keys.Where(key => !validKeys.Contains(key)))
-        {
-            yield return new ValidationResult(
-                $"Column settings key '{key}' is not a valid column. Valid columns are: {String.Join(", ", validKeys.Order())}.",
-                [nameof(ColumnSettings)]
-            );
-        }
-
-        foreach (var (key, settings) in columnSettings)
+        foreach (var (key, settings) in columns)
         {
             if (settings is null)
             {
                 yield return new ValidationResult(
-                    $"Column settings for '{key}' cannot be null.",
-                    [nameof(ColumnSettings)]
+                    $"Column configuration for '{key}' cannot be null.",
+                    [nameof(Columns)]
                 );
                 continue;
             }
@@ -200,28 +133,28 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
             if (settings.Position is < 0 or > SavedViewColumnSettings.MaxPosition)
             {
                 yield return new ValidationResult(
-                    $"Column settings position for '{key}' must be between 0 and {SavedViewColumnSettings.MaxPosition}.",
-                    [nameof(ColumnSettings)]
+                    $"Column position for '{key}' must be between 0 and {SavedViewColumnSettings.MaxPosition}.",
+                    [nameof(Columns)]
                 );
             }
 
             if (settings.Width is < SavedViewColumnSettings.MinWidth or > SavedViewColumnSettings.MaxWidth)
             {
                 yield return new ValidationResult(
-                    $"Column settings width for '{key}' must be between {SavedViewColumnSettings.MinWidth} and {SavedViewColumnSettings.MaxWidth} pixels.",
-                    [nameof(ColumnSettings)]
+                    $"Column width for '{key}' must be between {SavedViewColumnSettings.MinWidth} and {SavedViewColumnSettings.MaxWidth} pixels.",
+                    [nameof(Columns)]
                 );
             }
         }
 
-        foreach (var duplicatePosition in columnSettings
+        foreach (var duplicatePosition in columns
             .Where(entry => entry.Value is { Position: not null })
             .GroupBy(entry => entry.Value.Position!.Value)
             .Where(group => group.Count() > 1))
         {
             yield return new ValidationResult(
-                $"Column settings position '{duplicatePosition.Key}' cannot be repeated.",
-                [nameof(ColumnSettings)]
+                $"Column position '{duplicatePosition.Key}' cannot be repeated.",
+                [nameof(Columns)]
             );
         }
     }

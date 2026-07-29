@@ -11371,26 +11371,6 @@
               "object"
             ],
             "additionalProperties": {
-              "type": "boolean"
-            }
-          },
-          "column_order": {
-            "maxItems": 50,
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "string"
-            }
-          },
-          "column_settings": {
-            "maxLength": 50,
-            "type": [
-              "null",
-              "object"
-            ],
-            "additionalProperties": {
               "$ref": "#/components/schemas/SavedViewColumnSettings"
             }
           },
@@ -12186,24 +12166,6 @@
               "object"
             ],
             "additionalProperties": {
-              "type": "boolean"
-            }
-          },
-          "columnOrder": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "string"
-            }
-          },
-          "columnSettings": {
-            "type": [
-              "null",
-              "object"
-            ],
-            "additionalProperties": {
               "$ref": "#/components/schemas/SavedViewColumnSettings"
             }
           },
@@ -12674,25 +12636,6 @@
             ]
           },
           "columns": {
-            "type": [
-              "null",
-              "object"
-            ],
-            "additionalProperties": {
-              "type": "boolean"
-            }
-          },
-          "column_order": {
-            "maxItems": 50,
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "string"
-            }
-          },
-          "column_settings": {
             "type": [
               "null",
               "object"
@@ -13492,24 +13435,6 @@
             ]
           },
           "columns": {
-            "type": [
-              "null",
-              "object"
-            ],
-            "additionalProperties": {
-              "type": "boolean"
-            }
-          },
-          "column_order": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "string"
-            }
-          },
-          "column_settings": {
             "type": [
               "null",
               "object"

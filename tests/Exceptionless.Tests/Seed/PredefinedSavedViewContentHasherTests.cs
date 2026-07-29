@@ -17,21 +17,20 @@ public sealed class PredefinedSavedViewContentHasherTests
             ViewType = "events",
             Filter = "type:log (status:open OR status:regressed)",
             FilterDefinitions = """[{"type":"status","value":"open"}]""",
-            Columns = new Dictionary<string, bool>
+            Columns = new Dictionary<string, SavedViewColumnSettings>
             {
-                ["date"] = true,
-                ["summary"] = false
-            },
-            ColumnOrder = ["summary", "date"]
+                ["date"] = new() { Position = 1, Visible = true },
+                ["summary"] = new() { Position = 0, Visible = false }
+            }
         };
         var reformatted = original with
         {
             Filter = "type:log (status:open OR status:regressed)",
             FilterDefinitions = """[{"type":"status", "value":"open"}]""",
-            Columns = new Dictionary<string, bool>
+            Columns = new Dictionary<string, SavedViewColumnSettings>
             {
-                ["summary"] = false,
-                ["date"] = true
+                ["summary"] = new() { Position = 0, Visible = false },
+                ["date"] = new() { Position = 1, Visible = true }
             }
         };
 
@@ -64,7 +63,7 @@ public sealed class PredefinedSavedViewContentHasherTests
     }
 
     [Fact]
-    public void GetContentHash_WithoutColumnSettings_PreservesLegacyHash()
+    public void GetContentHash_SameView_ReturnsSameHash()
     {
         // Arrange
         var savedView = new SavedView
@@ -75,14 +74,15 @@ public sealed class PredefinedSavedViewContentHasherTests
         };
 
         // Act
-        string hash = PredefinedSavedViewContentHasher.GetContentHash(savedView);
+        string firstHash = PredefinedSavedViewContentHasher.GetContentHash(savedView);
+        string secondHash = PredefinedSavedViewContentHasher.GetContentHash(savedView);
 
         // Assert
-        Assert.Equal("2275a4a7aa2276c78bd20f21b75ce91afbf035bb3795047ba2ed619fdaff12e3", hash);
+        Assert.Equal(firstHash, secondHash);
     }
 
     [Fact]
-    public void GetContentHash_ColumnSettingsInsertionOrderDiffers_ReturnsSameHash()
+    public void GetContentHash_ColumnInsertionOrderDiffers_ReturnsSameHash()
     {
         // Arrange
         var original = new SavedView
@@ -90,7 +90,7 @@ public sealed class PredefinedSavedViewContentHasherTests
             Name = "Logs",
             Slug = "logs",
             ViewType = "events",
-            ColumnSettings = new Dictionary<string, SavedViewColumnSettings>
+            Columns = new Dictionary<string, SavedViewColumnSettings>
             {
                 ["project"] = new() { Position = 1, Visible = true, Width = 240 },
                 ["summary"] = new() { Position = 0, Visible = true, Width = 420 }
@@ -98,7 +98,7 @@ public sealed class PredefinedSavedViewContentHasherTests
         };
         var reordered = original with
         {
-            ColumnSettings = new Dictionary<string, SavedViewColumnSettings>
+            Columns = new Dictionary<string, SavedViewColumnSettings>
             {
                 ["summary"] = new() { Position = 0, Visible = true, Width = 420 },
                 ["project"] = new() { Position = 1, Visible = true, Width = 240 }

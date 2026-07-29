@@ -12,15 +12,7 @@ public partial class SavedViewMapper
     [MapperIgnoreTarget(nameof(SavedView.UpdatedByUserId))]
     public partial SavedView MapToSavedView(NewSavedView source);
 
-    private partial ViewSavedView MapToViewSavedViewCore(SavedView source);
+    public partial ViewSavedView MapToViewSavedView(SavedView source);
 
-    public ViewSavedView MapToViewSavedView(SavedView source)
-    {
-        var result = MapToViewSavedViewCore(source);
-        result.ColumnSettings ??= SavedViewColumnSettings.FromLegacy(source.Columns, source.ColumnOrder);
-        return result;
-    }
-
-    public List<ViewSavedView> MapToViewSavedViews(IEnumerable<SavedView> source)
-        => source.Select(MapToViewSavedView).ToList();
+    public partial List<ViewSavedView> MapToViewSavedViews(IEnumerable<SavedView> source);
 }

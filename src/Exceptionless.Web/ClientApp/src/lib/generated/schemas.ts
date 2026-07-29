@@ -210,9 +210,7 @@ export const NewSavedViewSchema = object({
     .max(100000, "Filter definitions must be at most 100000 characters")
     .nullable()
     .optional(),
-  columns: record(string(), boolean()).nullable().optional(),
-  column_order: array(string()).nullable().optional(),
-  column_settings: record(
+  columns: record(
     string(),
     lazy(() => SavedViewColumnSettingsSchema),
   )
@@ -480,9 +478,7 @@ export const PredefinedSavedViewDefinitionSchema = object({
   time: string().min(1, "Time is required").nullable().optional(),
   sort: string().min(1, "Sort is required").nullable().optional(),
   filterDefinitions: unknown().optional(),
-  columns: record(string(), boolean()).nullable().optional(),
-  columnOrder: array(string()).nullable().optional(),
-  columnSettings: record(
+  columns: record(
     string(),
     lazy(() => SavedViewColumnSettingsSchema),
   )
@@ -628,9 +624,7 @@ export const UpdateSavedViewSchema = object({
     .min(1, "Filter definitions is required")
     .nullable()
     .optional(),
-  columns: record(string(), boolean()).nullable().optional(),
-  column_order: array(string()).nullable().optional(),
-  column_settings: record(
+  columns: record(
     string(),
     lazy(() => SavedViewColumnSettingsSchema),
   )
@@ -858,9 +852,7 @@ export const ViewSavedViewSchema = object({
     .min(1, "Filter definitions is required")
     .nullable()
     .optional(),
-  columns: record(string(), boolean()).nullable().optional(),
-  column_order: array(string()).nullable().optional(),
-  column_settings: record(
+  columns: record(
     string(),
     lazy(() => SavedViewColumnSettingsSchema),
   )
