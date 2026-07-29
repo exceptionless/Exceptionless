@@ -153,12 +153,12 @@ jobs:
             tag="$version-sha256-$image_sha"
             image="exceptionless/elasticsearch:$tag"
 
-            for attempt in {1..30}; do
+            for attempt in {1..150}; do
               if docker manifest inspect "$image" > /dev/null 2>&1; then
                 break
               fi
 
-              if [[ "$attempt" -eq 30 ]]; then
+              if [[ "$attempt" -eq 150 ]]; then
                 echo "::error::Timed out waiting for $image to be published."
                 exit 1
               fi
