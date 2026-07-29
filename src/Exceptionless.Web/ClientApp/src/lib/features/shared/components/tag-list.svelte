@@ -3,7 +3,6 @@
     import { Button } from '$comp/ui/button';
     import { Kbd } from '$comp/ui/kbd';
     import * as Tooltip from '$comp/ui/tooltip';
-    import { formatKeyboardShortcut } from '$shared/keyboard-shortcuts';
     import { toast } from 'svelte-sonner';
 
     interface Props {
@@ -15,7 +14,6 @@
 
     let { class: className, maxVisible = Number.POSITIVE_INFINITY, onTagClick, tags }: Props = $props();
 
-    const copyTagShortcut = $derived(formatKeyboardShortcut(['Alt']));
     const visibleTags = $derived(tags?.slice(0, maxVisible) ?? []);
     const hiddenTags = $derived(tags?.slice(maxVisible) ?? []);
     const tagList = $derived(tags?.join(', ') ?? '');
@@ -66,13 +64,13 @@
                 {/snippet}
             </Tooltip.Trigger>
             <Tooltip.Content arrowClasses="hidden" class="border-border bg-popover text-popover-foreground border shadow-md" sideOffset={4}>
-                Click to filter.
+                Click to filter. Hold
                 <Kbd
                     class="border-border in-data-[slot=tooltip-content]:bg-muted in-data-[slot=tooltip-content]:text-foreground dark:border-muted-foreground/50 dark:in-data-[slot=tooltip-content]:bg-muted border"
                 >
-                    {copyTagShortcut}
+                    Alt / Option
                 </Kbd>
-                click to copy.
+                while clicking to copy.
             </Tooltip.Content>
         </Tooltip.Root>
     {:else}
@@ -82,7 +80,7 @@
 
 <Tooltip.Provider>
     {#if visibleTags.length > 0}
-        <div class={['flex flex-wrap items-center gap-1', className]} title={tagList} aria-label={`Tags: ${tagList}`}>
+        <div class={['flex flex-wrap items-center gap-1', className]} aria-label={`Tags: ${tagList}`}>
             {#each visibleTags as value (value)}
                 {@render tag(value)}
             {/each}

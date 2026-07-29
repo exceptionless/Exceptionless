@@ -29,7 +29,7 @@ describe('TagList', () => {
         expect(screen.getByText('production')).toBeTruthy();
         expect(screen.getByText('+2')).toBeTruthy();
         expect(screen.queryByText('critical')).toBeNull();
-        expect(screen.getByLabelText('Tags: api, production, critical, customer').getAttribute('title')).toBe('api, production, critical, customer');
+        expect(screen.getByLabelText('Tags: api, production, critical, customer').getAttribute('title')).toBeNull();
         expect(container.querySelector('svg')).toBeNull();
 
         for (const badge of container.querySelectorAll('[data-slot="badge"]')) {
@@ -56,6 +56,7 @@ describe('TagList', () => {
 
         const shortcut = document.querySelector('[data-slot="tooltip-content"] [data-slot="kbd"]');
         expect(shortcut).not.toBeNull();
+        expect(shortcut?.textContent?.trim()).toBe('Alt / Option');
         expect(shortcut?.classList.contains('in-data-[slot=tooltip-content]:bg-muted')).toBe(true);
         expect(shortcut?.classList.contains('in-data-[slot=tooltip-content]:text-foreground')).toBe(true);
         expect(shortcut?.classList.contains('border-border')).toBe(true);
