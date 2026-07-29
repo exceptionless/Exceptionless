@@ -4,7 +4,7 @@ import type { CountResult, WorkInProgressResult } from '$shared/models';
 import { accessToken } from '$features/auth/index.svelte';
 import { queryKeys as stackQueryKeys } from '$features/stacks/api.svelte';
 import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
-import { type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
+import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, keepPreviousData, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
 import type { EventSummaryModel, SummaryTemplateKeys } from './components/summary/index';
@@ -40,6 +40,7 @@ export const queryKeys = {
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
     organizations: (id: string | undefined) => [...queryKeys.type, 'organizations', id] as const,
     organizationsCount: (id: string | undefined, params?: GetOrganizationCountRequest['params']) => [...queryKeys.organizations(id), 'count', params] as const,
+    organizationsEvents: (id: string | undefined, params?: GetEventsParams) => [...queryKeys.organizations(id), 'events', params] as const,
     projects: (id: string | undefined) => [...queryKeys.type, 'projects', id] as const,
     projectsCount: (id: string | undefined, params?: GetProjectCountRequest['params']) => [...queryKeys.projects(id), 'count', params] as const,
     sessionEvents: (id: string | undefined, projectId?: string | undefined, params?: GetSessionEventsRequest['params']) =>
@@ -122,6 +123,14 @@ export interface GetOrganizationCountRequest {
         offset?: string;
         time?: string;
     };
+    route: {
+        organizationId: string | undefined;
+    };
+}
+
+export interface GetOrganizationEventsRequest {
+    enabled?: () => boolean;
+    params?: GetEventsParams;
     route: {
         organizationId: string | undefined;
     };
@@ -317,6 +326,27 @@ export function getOrganizationCountQuery(request: GetOrganizationCountRequest) 
         },
         queryKey: queryKeys.organizationsCount(request.route.organizationId, request.params)
     }));
+}
+
+export function getOrganizationEventsQuery(request: GetOrganizationEventsRequest) {
+    return createQuery<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>, ProblemDetails>(() => {
+        const organizationId = request.route.organizationId;
+        const params = request.params ? { ...request.params } : undefined;
+
+        return {
+            enabled: () => !!accessToken.current && !!organizationId && (request.enabled?.() ?? true),
+            placeholderData: keepPreviousData,
+            queryFn: async ({ signal }: { signal: AbortSignal }) => {
+                const client = useFetchClient();
+                return await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organizationId}/events`, {
+                    params: params as Record<string, unknown>,
+                    signal
+                });
+            },
+            queryKey: queryKeys.organizationsEvents(organizationId, params),
+            staleTime: 0
+        };
+    });
 }
 
 /**

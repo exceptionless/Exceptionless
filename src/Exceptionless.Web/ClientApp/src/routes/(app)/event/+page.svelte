@@ -1,5 +1,4 @@
 <script lang="ts">
-    import type { GetEventsParams } from '$features/events/api.svelte';
     import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
 
     import { resolve } from '$app/paths';
@@ -9,7 +8,12 @@
     import RefreshButton from '$comp/refresh-button.svelte';
     import { H3 } from '$comp/typography';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
-    import { getOrganizationCountQuery, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT } from '$features/events/api.svelte';
+    import {
+        type GetEventsParams,
+        getOrganizationCountQuery,
+        getOrganizationEventsQuery,
+        PERSISTENT_EVENT_DELETE_RECONCILE_EVENT
+    } from '$features/events/api.svelte';
     import EventDetailSheet from '$features/events/components/event-detail-sheet.svelte';
     import EventsDashboardChart from '$features/events/components/events-dashboard-chart.svelte';
     import EventsStatsDashboard from '$features/events/components/events-stats-dashboard.svelte';
@@ -54,8 +58,8 @@
     import { parseDateMathRange } from '$features/shared/utils/datemath.js';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
-    import { DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
-    import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
+    import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
+    import { type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
     import { error } from '@sveltejs/kit';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
@@ -654,8 +658,22 @@
     });
 
     const client = useFetchClient();
-    const clientStatus = useFetchClientStatus(client);
-    let clientResponse = $state<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>>();
+    const eventsQuery = getOrganizationEventsQuery({
+        enabled: () => !isSavedViewRoutePending,
+        get params() {
+            const params = {
+                ...eventsQueryParameters,
+                include: !eventsQueryParameters.after && !eventsQueryParameters.before ? ('total' as const) : undefined
+            };
+            delete params.page;
+            return params;
+        },
+        route: {
+            get organizationId() {
+                return organization.current;
+            }
+        }
+    });
 
     const table = createTable(
         getSharedTableOptions<EventSummaryModel<SummaryTemplateKeys>>({
@@ -669,10 +687,10 @@
             defaultColumnVisibility: defaultEventColumnVisibility,
             paginationStrategy: 'cursor',
             get queryData() {
-                return clientResponse?.data ?? [];
+                return eventsQuery.data?.data ?? [];
             },
             get queryMeta() {
-                return clientResponse?.meta;
+                return eventsQuery.data?.meta;
             },
             get queryParameters() {
                 return eventsQueryParameters;
@@ -695,14 +713,13 @@
     async function handleRefresh() {
         if (!canRefresh) {
             reset();
+            return;
         }
 
-        await loadData();
+        await eventsQuery.refetch();
     }
 
-    let loadDataRequestId = 0;
-    async function loadData(reconcileTotal: boolean = false) {
-        const requestId = ++loadDataRequestId;
+    async function reconcileTotalPages() {
         if (!organization.current || isSavedViewRoutePending) {
             return;
         }
@@ -710,70 +727,49 @@
         const organizationId = organization.current;
         const requestParameters = { ...eventsQueryParameters };
         const requestIdentity = JSON.stringify([organizationId, requestParameters]);
-        const isCurrentRequest = () =>
-            requestId === loadDataRequestId && requestIdentity === JSON.stringify([organization.current, { ...eventsQueryParameters }]);
-        const params = {
-            ...requestParameters,
-            include: !requestParameters.after && !requestParameters.before ? ('total' as const) : undefined
-        };
-        delete params.page;
-        const response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organizationId}/events`, { params });
-        if (!isCurrentRequest()) {
+        if (!requestParameters.after && !requestParameters.before) {
             return;
         }
 
-        clientResponse = response;
+        const totalParams = {
+            ...requestParameters,
+            include: 'total' as const,
+            limit: 1
+        };
+        delete totalParams.after;
+        delete totalParams.before;
+        delete totalParams.page;
 
-        if (clientResponse.problem) {
-            showBillingDialogOnUpgradeProblem(clientResponse.problem, organization.current, () => loadData());
+        const totalResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organizationId}/events`, {
+            params: totalParams
+        });
+        if (requestIdentity !== JSON.stringify([organization.current, { ...eventsQueryParameters }])) {
+            return;
         }
 
-        if ((requestParameters.after || requestParameters.before) && reconcileTotal) {
-            const totalParams = {
-                ...requestParameters,
-                include: 'total' as const,
-                limit: 1
-            };
-            delete totalParams.after;
-            delete totalParams.before;
-            delete totalParams.page;
-
-            const totalResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organizationId}/events`, {
-                params: totalParams
-            });
-            if (!isCurrentRequest()) {
-                return;
-            }
-
-            if (totalResponse.ok) {
-                const total = totalResponse.meta.total as number | undefined;
-                const totalPages = total == null ? undefined : Math.ceil(total / (requestParameters.limit ?? 20));
-                if (totalPages != null && table.state.pagination.pageIndex >= totalPages) {
-                    table.firstPage();
-                    return;
-                }
-            }
-        }
-
-        if (response.ok && response.data?.length === 0 && table.state.pagination.pageIndex > 0) {
-            table.previousPage();
+        const total = totalResponse.meta.total as number | undefined;
+        const totalPages = total == null ? undefined : Math.ceil(total / (requestParameters.limit ?? 20));
+        if (totalPages != null && table.state.pagination.pageIndex >= totalPages) {
+            table.firstPage();
         }
     }
 
     let reconcileTotalRequested = false;
-    const debouncedLoadData = debounce(1500, () => {
-        const reconcileTotal = reconcileTotalRequested;
+    const debouncedRefetch = debounce(1500, async () => {
+        const shouldReconcileTotal = reconcileTotalRequested;
         reconcileTotalRequested = false;
-        return loadData(reconcileTotal);
+        const result = await eventsQuery.refetch();
+        if (shouldReconcileTotal && result.isSuccess) {
+            await reconcileTotalPages();
+        }
     });
-    function scheduleLoadData(reconcileTotal: boolean = false) {
+    function scheduleRefetch(reconcileTotal: boolean = false) {
         reconcileTotalRequested ||= reconcileTotal;
-        debouncedLoadData();
+        debouncedRefetch();
     }
 
     onDestroy(() => {
-        loadDataRequestId++;
-        debouncedLoadData.cancel();
+        debouncedRefetch.cancel();
     });
 
     function onPersistentEventChanged(message: WebSocketMessageValue<'PersistentEventChanged'>) {
@@ -799,7 +795,7 @@
                     message.id
                 )
             ) {
-                scheduleLoadData(true);
+                scheduleRefetch(true);
             }
 
             return;
@@ -809,32 +805,42 @@
             return;
         }
 
-        scheduleLoadData();
+        scheduleRefetch();
     }
 
-    useEventListener(document, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT, () => scheduleLoadData(true));
-    useEventListener(document, 'refresh', () => scheduleLoadData(true));
+    useEventListener(document, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT, () => scheduleRefetch(true));
+    useEventListener(document, 'refresh', () => scheduleRefetch(true));
     useEventListener(document, 'PersistentEventChanged', (event) => onPersistentEventChanged((event as CustomEvent).detail));
 
-    const automaticLoadDataKey = $derived(
-        JSON.stringify({
-            after: eventsQueryParameters.after,
-            before: eventsQueryParameters.before,
-            filter: eventsQueryParameters.filter,
-            isSavedViewRoutePending,
-            limit: eventsQueryParameters.limit,
-            mode: eventsQueryParameters.mode,
-            offset: eventsQueryParameters.offset,
-            organizationId: organization.current,
-            page: eventsQueryParameters.page,
-            sort: eventsQueryParameters.sort,
-            time: eventsQueryParameters.time
-        })
-    );
-
+    let lastEmptyResponseAt = 0;
     $effect(() => {
-        void automaticLoadDataKey;
-        untrack(() => loadData());
+        const dataUpdatedAt = eventsQuery.dataUpdatedAt;
+        if (
+            eventsQuery.isPlaceholderData ||
+            dataUpdatedAt === lastEmptyResponseAt ||
+            eventsQuery.data?.data?.length !== 0 ||
+            table.state.pagination.pageIndex === 0
+        ) {
+            return;
+        }
+
+        lastEmptyResponseAt = dataUpdatedAt;
+        untrack(() => table.previousPage());
+    });
+
+    let lastErrorAt = 0;
+    $effect(() => {
+        const errorUpdatedAt = eventsQuery.errorUpdatedAt;
+        if (!eventsQuery.error || errorUpdatedAt === lastErrorAt) {
+            return;
+        }
+
+        lastErrorAt = errorUpdatedAt;
+        untrack(() =>
+            showBillingDialogOnUpgradeProblem(eventsQuery.error, organization.current, async () => {
+                await eventsQuery.refetch();
+            })
+        );
     });
 
     const chartDataQuery = getOrganizationCountQuery({
@@ -903,12 +909,12 @@
     $effect(() => {
         const refreshKey = `${organization.current}:${page.url.search}:${stats.totalEvents}`;
 
-        if (!clientResponse?.ok || stats.totalEvents <= 0 || !isTableEmpty(table) || lastStatsRefreshKey === refreshKey) {
+        if (!eventsQuery.data?.ok || stats.totalEvents <= 0 || !isTableEmpty(table) || lastStatsRefreshKey === refreshKey) {
             return;
         }
 
         lastStatsRefreshKey = refreshKey;
-        void loadData();
+        void eventsQuery.refetch();
     });
 
     function onRangeSelect(start: Date, end: Date) {
@@ -952,7 +958,7 @@
             {/if}
             <RefreshButton
                 onRefresh={handleRefresh}
-                isRefreshing={clientStatus.isLoading}
+                isRefreshing={eventsQuery.isFetching}
                 size="icon-lg"
                 title={canRefresh ? 'Refresh results' : 'Return to the first page to refresh results'}
             />
@@ -978,7 +984,7 @@
             />
         {/if}
 
-        <EventsDataTable bind:limit={eventsQueryParameters.limit!} isLoading={isSavedViewRoutePending || clientStatus.isLoading} {rowClick} {rowHref} {table}>
+        <EventsDataTable bind:limit={eventsQueryParameters.limit!} isLoading={isSavedViewRoutePending || eventsQuery.isFetching} {rowClick} {rowHref} {table}>
             {#snippet footerChildren()}
                 <div class="h-9 min-w-35">
                     {#if table.getSelectedRowModel().flatRows.length}
