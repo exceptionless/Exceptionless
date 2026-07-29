@@ -83,6 +83,7 @@ jobs:
     timeout-minutes: 30
     outputs:
       version: ${{ steps.version.outputs.version }}
+      elasticsearch_image_tag: ${{ steps.elasticsearch_image.outputs.tag }}
       should_publish: ${{ (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'dev-preview')) && secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != '' }}
       is_prod_deploy: ${{ startsWith(github.ref, 'refs/tags/v') && github.event_name != 'pull_request' }}
       is_dev_deploy: ${{ (github.event_name == 'repository_dispatch' && github.event.action == 'preview') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'dev-preview')) }}
@@ -129,9 +130,43 @@ jobs:
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "### $version" >> $GITHUB_STEP_SUMMARY
 
+      - name: Resolve Elasticsearch image
+        id: elasticsearch_image
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          version=$(sed -n 's/.*elasticsearch:\([^ ]*\).*/\1/p' build/docker/elasticsearch/9.x/Dockerfile)
+          tag=$version
+
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]] &&
+            ! git diff --quiet "$PR_BASE_SHA"...HEAD -- build/docker/elasticsearch/9.x .github/workflows/elasticsearch-docker-9.yml; then
+            image_sha=$(sha256sum build/docker/elasticsearch/9.x/Dockerfile | cut -d " " -f 1)
+            tag="$version-sha256-$image_sha"
+            image="exceptionless/elasticsearch:$tag"
+
+            for attempt in {1..30}; do
+              if docker manifest inspect "$image" > /dev/null 2>&1; then
+                break
+              fi
+
+              if [[ "$attempt" -eq 30 ]]; then
+                echo "::error::Timed out waiting for $image to be published."
+                exit 1
+              fi
+
+              sleep 10
+            done
+          fi
+
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "### Elasticsearch image: exceptionless/elasticsearch:$tag" >> "$GITHUB_STEP_SUMMARY"
+
   test-api:
+    needs: version
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      Elasticsearch__ImageTag: ${{ needs.version.outputs.elasticsearch_image_tag }}
 
     steps:
       - name: Checkout
@@ -223,8 +258,11 @@ jobs:
         run: echo "npm run test:integration"
 
   test-e2e:
+    needs: version
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      Elasticsearch__ImageTag: ${{ needs.version.outputs.elasticsearch_image_tag }}
 
     steps:
       - name: Checkout
