@@ -45,31 +45,6 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
         return hit?.Document;
     }
 
-    public Task<bool> SetDataValueAsync(string organizationId, string key, string value)
-    {
-        ArgumentException.ThrowIfNullOrEmpty(organizationId);
-        ArgumentException.ThrowIfNullOrEmpty(key);
-        ArgumentNullException.ThrowIfNull(value);
-
-        var patch = new ScriptPatch("""
-            if (ctx._source.data == null) {
-              ctx._source.data = [:];
-            }
-            ctx._source.data[params.key] = params.value;
-            ctx._source.updated_utc = params.updatedUtc;
-            """.TrimScript())
-        {
-            Params = new Dictionary<string, object>
-            {
-                ["key"] = key,
-                ["value"] = value,
-                ["updatedUtc"] = _timeProvider.GetUtcNow().UtcDateTime
-            }
-        };
-
-        return PatchAsync(organizationId, patch, o => o.ImmediateConsistency());
-    }
-
     public Task<FindResults<Organization>> GetByFilterAsync(AppFilter systemFilter, string? userFilter, string? sort, CommandOptionsDescriptor<Organization>? options = null)
     {
         IRepositoryQuery<Organization> query = new RepositoryQuery<Organization>()

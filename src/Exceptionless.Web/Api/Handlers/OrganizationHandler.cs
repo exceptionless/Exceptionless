@@ -584,7 +584,7 @@ public class OrganizationHandler(
                     DateAdded = timeProvider.GetUtcNow().UtcDateTime
                 };
                 organization.Invites.Add(invite);
-                await repository.SaveAsync(organization, o => o.ImmediateConsistency().Cache());
+                await repository.SaveAsync(organization, o => o.Cache());
             }
 
             await mailer.SendOrganizationInviteAsync(GetCurrentUser(message.Context), organization, invite);

@@ -19,6 +19,7 @@ using Foundatio.Lock;
 using Foundatio.Mediator;
 using Foundatio.Queues;
 using Foundatio.Repositories;
+using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
 namespace Exceptionless.Web.Api.Handlers;
 
@@ -543,10 +544,9 @@ public partial class SavedViewHandler(
 
             if (!upsertResult.HasSkippedCustomizations)
             {
-                await organizationRepository.SetDataValueAsync(
-                    organization.Id,
-                    PredefinedSavedViewsContentHashDataKey,
-                    definitionsContentHash);
+                organization.Data ??= new DataDictionary();
+                organization.Data[PredefinedSavedViewsContentHashDataKey] = definitionsContentHash;
+                await organizationRepository.SaveAsync(organization, o => o.Cache().ImmediateConsistency());
             }
         }, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(15));
 
