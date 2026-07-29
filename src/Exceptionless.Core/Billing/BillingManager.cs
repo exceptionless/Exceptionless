@@ -96,6 +96,9 @@ public class BillingManager
 
     public void ApplyBillingPlan(Organization organization, BillingPlan plan, User? user = null, bool updateBillingPrice = true)
     {
+        if (!String.IsNullOrEmpty(organization.PlanId))
+            organization.Usage.EnsureUsage(organization.GetMaxEventsPerMonthWithBonus(_timeProvider), _timeProvider);
+
         organization.PlanId = plan.Id;
         organization.PlanName = plan.Name;
         organization.PlanDescription = plan.Description;

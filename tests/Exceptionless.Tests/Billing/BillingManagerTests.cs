@@ -1,4 +1,5 @@
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Models;
 using Xunit;
 
 namespace Exceptionless.Tests.Billing;
@@ -6,6 +7,43 @@ namespace Exceptionless.Tests.Billing;
 public class BillingManagerTests : TestWithServices
 {
     public BillingManagerTests(ITestOutputHelper output) : base(output) { }
+
+    [Fact]
+    public void ApplyBillingPlan_ExistingPlanWithoutUsage_BackfillsPreviousPlanLimit()
+    {
+        var billingManager = GetService<BillingManager>();
+        var plans = GetService<BillingPlans>();
+        var utcNow = new DateTime(2026, 6, 15, 0, 0, 0, DateTimeKind.Utc);
+        TimeProvider.SetUtcNow(utcNow);
+        var organization = new Organization
+        {
+            PlanId = plans.SmallPlan.Id,
+            MaxEventsPerMonth = plans.SmallPlan.MaxEventsPerMonth
+        };
+
+        billingManager.ApplyBillingPlan(organization, plans.MediumPlan);
+
+        Assert.Equal(12, organization.Usage.Count);
+        Assert.All(organization.Usage.Where(u => u.Date < new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc)),
+            usage => Assert.Equal(plans.SmallPlan.MaxEventsPerMonth, usage.Limit));
+        Assert.Equal(plans.MediumPlan.MaxEventsPerMonth, organization.Usage.Single(u => u.Date == new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc)).Limit);
+    }
+
+    [Fact]
+    public void ApplyBillingPlan_NewOrganization_DoesNotInventPreviousPlanHistory()
+    {
+        var billingManager = GetService<BillingManager>();
+        var plans = GetService<BillingPlans>();
+        var utcNow = new DateTime(2026, 6, 15, 0, 0, 0, DateTimeKind.Utc);
+        TimeProvider.SetUtcNow(utcNow);
+        var organization = new Organization();
+
+        billingManager.ApplyBillingPlan(organization, plans.FreePlan);
+
+        var usage = Assert.Single(organization.Usage);
+        Assert.Equal(new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc), usage.Date);
+        Assert.Equal(plans.FreePlan.MaxEventsPerMonth, usage.Limit);
+    }
 
     [Fact]
     public void GetBillingPlan()

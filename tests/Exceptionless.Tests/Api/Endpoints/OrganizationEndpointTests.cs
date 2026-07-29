@@ -390,6 +390,45 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetAsync_WithSparsePlanHistory_BackfillsFromKnownLimits()
+    {
+        // Arrange
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.FREE_USER_EMAIL);
+        Assert.NotNull(user);
+
+        var currentPlanDate = new DateTime(2026, 6, 15, 0, 0, 0, DateTimeKind.Utc);
+        TimeProvider.SetUtcNow(currentPlanDate);
+        _billingManager.ApplyBillingPlan(organization, _plans.LargePlan, user);
+        organization.Usage =
+        [
+            new UsageInfo { Date = new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc), Limit = _plans.MediumPlan.MaxEventsPerMonth },
+            new UsageInfo { Date = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc), Limit = _plans.LargePlan.MaxEventsPerMonth }
+        ];
+        organization.StripeCustomerId = "cus_usage_history";
+        organization.CardLast4 = "4242";
+        organization.SubscribeDate = currentPlanDate;
+        organization.BillingStatus = BillingStatus.Active;
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
+
+        // Act
+        var viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsFreeOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(viewOrganization);
+        Assert.Equal(_plans.MediumPlan.MaxEventsPerMonth, viewOrganization.Usage.Single(u => u.Date == new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc)).Limit);
+        Assert.Equal(_plans.MediumPlan.MaxEventsPerMonth, viewOrganization.Usage.Single(u => u.Date == new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc)).Limit);
+        Assert.Equal(_plans.MediumPlan.MaxEventsPerMonth, viewOrganization.Usage.Single(u => u.Date == new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc)).Limit);
+        Assert.Equal(_plans.LargePlan.MaxEventsPerMonth, viewOrganization.Usage.Single(u => u.Date == new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc)).Limit);
+    }
+
+    [Fact]
     public async Task GetAsync_WithStatsMode_ReturnsPopulatedViewOrganization()
     {
         // Act
@@ -405,44 +444,6 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         Assert.Equal(SampleDataService.TEST_ORG_ID, viewOrg.Id);
         Assert.NotNull(viewOrg.Usage);
         Assert.NotNull(viewOrg.UsageHours);
-    }
-
-    [Fact]
-    public async Task GetAsync_AfterFreePlanUpgrade_BackfillsMissingUsageWithFreePlanLimit()
-    {
-        // Arrange
-        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
-        Assert.NotNull(organization);
-
-        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.FREE_USER_EMAIL);
-        Assert.NotNull(user);
-
-        var freePlanDate = new DateTime(2026, 5, 15, 0, 0, 0, DateTimeKind.Utc);
-        TimeProvider.SetUtcNow(freePlanDate);
-        organization.Usage.Clear();
-        _billingManager.ApplyBillingPlan(organization, _plans.FreePlan, user);
-
-        var paidPlanDate = freePlanDate.AddMonths(1);
-        TimeProvider.SetUtcNow(paidPlanDate);
-        organization.SubscribeDate = paidPlanDate;
-        _billingManager.ApplyBillingPlan(organization, _plans.SmallYearlyPlan, user);
-        organization.StripeCustomerId = "cus_usage_history";
-        organization.CardLast4 = "4242";
-        organization.BillingStatus = BillingStatus.Active;
-        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
-
-        // Act
-        var viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
-            .AsFreeOrganizationUser()
-            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID)
-            .StatusCodeShouldBeOk()
-        );
-
-        // Assert
-        Assert.NotNull(viewOrganization);
-        Assert.Equal(_plans.FreePlan.MaxEventsPerMonth, viewOrganization.Usage.Single(u => u.Date == new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc)).Limit);
-        Assert.Equal(_plans.FreePlan.MaxEventsPerMonth, viewOrganization.Usage.Single(u => u.Date == new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc)).Limit);
-        Assert.Equal(_plans.SmallYearlyPlan.MaxEventsPerMonth, viewOrganization.Usage.Single(u => u.Date == new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc)).Limit);
     }
 
     [Fact]
