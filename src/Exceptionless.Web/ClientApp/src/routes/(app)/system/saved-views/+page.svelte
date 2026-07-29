@@ -155,8 +155,9 @@
         <AlertDialog.Header>
             <AlertDialog.Title>Force Update Matching Organization Saved Views</AlertDialog.Title>
             <AlertDialog.Description>
-                This queues a background job that overwrites every organization-wide saved view whose predefined key matches a saved system definition. It
-                discards customizations to those views. Private, unmatched, and missing views are not changed. Unsaved JSON edits are not included.
+                This queues a background job that overwrites every organization-wide saved view whose predefined key matches a saved system definition. It also
+                creates missing predefined views for organizations with matching views. It discards customizations to matching views. Private and unmatched
+                views are not changed. Unsaved JSON edits are not included.
             </AlertDialog.Description>
         </AlertDialog.Header>
 
