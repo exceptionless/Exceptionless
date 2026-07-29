@@ -50,7 +50,7 @@ services:
       - appdata:/app/storage
 
   elasticsearch:
-    image: exceptionless/elasticsearch:9.4.2
+    image: exceptionless/elasticsearch:9.4.4
     environment:
       discovery.type: single-node
       xpack.security.enabled: "false"
@@ -74,7 +74,7 @@ services:
   kibana:
     depends_on:
       - elasticsearch
-    image: docker.elastic.co/kibana/kibana:9.4.2
+    image: docker.elastic.co/kibana/kibana:9.4.4
     ports:
       - 5601:5601
 
