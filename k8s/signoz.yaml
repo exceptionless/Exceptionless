@@ -39,26 +39,28 @@ otelAgent:
       filter/drop_unused_metrics:
         error_mode: ignore
         metrics:
-          metric:
-            - 'name == "http.client.request.duration"'
-            - 'name == "http.client.request.time_in_queue"'
-            - 'name == "http.client.connection.duration"'
-            - 'name == "http.client.open_connections"'
-            - 'name == "http.client.active_requests"'
-            - 'name == "dns.lookup.duration"'
-            - 'name == "kestrel.connection.duration"'
-            - 'name == "aspnetcore.authentication.authenticate.duration"'
-            - 'name == "aspnetcore.routing.match_attempts"'
-            - 'name == "dotnet.exceptions"'
-            - 'name == "dotnet.gc.collections"'
-            - 'name == "dotnet.gc.last_collection.heap.size"'
-            - 'name == "dotnet.gc.last_collection.heap.fragmentation.size"'
-            - 'name == "dotnet.process.cpu.time"'
-            - 'name == "foundatio.lock.wait.time"'
-            - 'name == "ex.posts.size"'
-            - 'name == "ex.events.parse.jsoneventparserplugin"'
-            - 'name == "ex.events.field.count"'
-            - 'name == "ex.eventpipeline.markascriticalaction"'
+          exclude:
+            match_type: strict
+            metric_names:
+              - http.client.request.duration
+              - http.client.request.time_in_queue
+              - http.client.connection.duration
+              - http.client.open_connections
+              - http.client.active_requests
+              - dns.lookup.duration
+              - kestrel.connection.duration
+              - aspnetcore.authentication.authenticate.duration
+              - aspnetcore.routing.match_attempts
+              - dotnet.exceptions
+              - dotnet.gc.collections
+              - dotnet.gc.last_collection.heap.size
+              - dotnet.gc.last_collection.heap.fragmentation.size
+              - dotnet.process.cpu.time
+              - foundatio.lock.wait.time
+              - ex.posts.size
+              - ex.events.parse.jsoneventparserplugin
+              - ex.events.field.count
+              - ex.eventpipeline.markascriticalaction
       filter/drop_cache_spans:
         error_mode: ignore
         traces:
