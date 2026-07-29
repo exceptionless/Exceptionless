@@ -12,7 +12,7 @@
     import { SuspensionCode } from '$features/organizations/models';
     import { suspensionCodeOptions } from '$features/organizations/options';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
-    import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { ProblemDetails } from '@foundatiofx/fetchclient';
     import { createForm } from '@tanstack/svelte-form';
 
     import { type SuspendOrganizationFormData, SuspendOrganizationSchema } from '../../schemas';

@@ -4,7 +4,7 @@
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { addOrganizationUser, deleteOrganizationUser } from '$features/organizations/api.svelte';
-    import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { ProblemDetails } from '@foundatiofx/fetchclient';
     import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
     import Mail from '@lucide/svelte/icons/mail';
     import X from '@lucide/svelte/icons/x';

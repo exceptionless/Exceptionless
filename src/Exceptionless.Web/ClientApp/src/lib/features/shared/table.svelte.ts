@@ -1,4 +1,4 @@
-import type { FetchClientResponse } from '@exceptionless/fetchclient';
+import type { FetchClientResponse } from '@foundatiofx/fetchclient';
 
 import {
     type ColumnDef,

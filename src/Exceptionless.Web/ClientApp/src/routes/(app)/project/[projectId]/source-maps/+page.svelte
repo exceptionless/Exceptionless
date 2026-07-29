@@ -17,7 +17,7 @@
     import { deleteSourceMapMutation, getSourceMapsQuery, postSourceMapMutation } from '$features/projects/api.svelte';
     import { type SourceMapUploadFormData, SourceMapUploadSchema } from '$features/projects/schemas';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
-    import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { ProblemDetails } from '@foundatiofx/fetchclient';
     import ArrowLeft from '@lucide/svelte/icons/arrow-left';
     import Trash from '@lucide/svelte/icons/trash-2';
     import Upload from '@lucide/svelte/icons/upload';
