@@ -420,9 +420,6 @@ export function patchOrganization(request: PatchOrganizationRequest) {
             const response = await client.patchJSON<ViewOrganization>(`organizations/${request.route.id}`, data);
             return response.data!;
         },
-        onError: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
-        },
         onSuccess: (organization: ViewOrganization) => updateOrganizationCache(queryClient, request.route.id, organization)
     }));
 }
