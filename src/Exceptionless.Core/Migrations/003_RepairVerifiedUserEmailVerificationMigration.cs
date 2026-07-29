@@ -1,14 +1,17 @@
 using System.Diagnostics;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
+using Foundatio.Repositories.Models;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Migrations;
 
 public sealed class RepairVerifiedUserEmailVerificationMigration : MigrationBase
 {
+    private const int BatchSize = 100;
     private readonly IUserRepository _userRepository;
 
     public RepairVerifiedUserEmailVerificationMigration(
@@ -32,8 +35,7 @@ public sealed class RepairVerifiedUserEmailVerificationMigration : MigrationBase
 
         long repairedRecords = 0;
         int batch = 0;
-        var users = await _userRepository.GetVerifiedUsersWithStaleVerificationDataAsync(
-            options => options.SearchAfterPaging().PageLimit(100));
+        var users = await FindUsersToRepairAsync();
 
         if (users.Documents.Count == 0)
         {
@@ -70,5 +72,17 @@ public sealed class RepairVerifiedUserEmailVerificationMigration : MigrationBase
             batch,
             repairedRecords,
             stopwatch.Elapsed);
+    }
+
+    private Task<FindResults<User>> FindUsersToRepairAsync()
+    {
+        return _userRepository.FindAsync(
+            query => query
+                .FieldEquals(user => user.IsEmailAddressVerified, true)
+                .FieldOr(group => group
+                    .FieldNotEquals(user => user.VerifyEmailAddressToken, null!)
+                    .FieldGreaterThan(user => user.VerifyEmailAddressTokenExpiration, DateTime.MinValue))
+                .SortAscending(user => user.Id),
+            options => options.SearchAfterPaging().PageLimit(BatchSize));
     }
 }

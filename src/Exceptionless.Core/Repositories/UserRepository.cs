@@ -67,22 +67,6 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         return FindAsync(q => q.FieldEquals(u => u.OrganizationIds, organizationId).SortAscending(u => u.EmailAddress), o => commandOptions);
     }
 
-    public Task<FindResults<User>> GetVerifiedUsersWithStaleVerificationDataAsync(CommandOptionsDescriptor<User>? options = null)
-    {
-        var commandOptions = options.Configure();
-        if (commandOptions.ShouldUseCache())
-            throw new Exception("Caching of paged queries is not allowed");
-
-        return FindAsync(
-            query => query
-                .FieldEquals(user => user.IsEmailAddressVerified, true)
-                .FieldOr(group => group
-                    .FieldNotEquals(user => user.VerifyEmailAddressToken, null!)
-                    .FieldGreaterThan(user => user.VerifyEmailAddressTokenExpiration, DateTime.MinValue))
-                .SortAscending(user => user.Id),
-            _ => commandOptions);
-    }
-
     protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<User>> findHits, ICommandOptions options, bool isDirtyRead)
     {
         await base.AddDocumentsToCacheAsync(findHits, options, isDirtyRead);
