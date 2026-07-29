@@ -1,9 +1,41 @@
 using Exceptionless.Core.Models;
+using Exceptionless.DateTimeExtensions;
 
 namespace Exceptionless.Core.Extensions;
 
 public static class UsageExtensions
 {
+    public static void EnsureUsage(this ICollection<UsageInfo> usages, int defaultLimit, TimeProvider timeProvider)
+    {
+        var endDate = timeProvider.GetUtcNow().UtcDateTime.StartOfMonth();
+        var startDate = endDate.SubtractMonths(11);
+        int limit = usages
+            .Where(u => u.Date <= startDate)
+            .OrderByDescending(u => u.Date)
+            .FirstOrDefault()?.Limit
+            ?? usages.OrderBy(u => u.Date).FirstOrDefault()?.Limit
+            ?? defaultLimit;
+
+        while (startDate <= endDate)
+        {
+            var usage = usages.FirstOrDefault(u => u.Date.Year == startDate.Year && u.Date.Month == startDate.Month);
+            if (usage is not null)
+            {
+                limit = usage.Limit;
+            }
+            else
+            {
+                usages.Add(new UsageInfo
+                {
+                    Date = startDate,
+                    Limit = limit
+                });
+            }
+
+            startDate = startDate.AddMonths(1).StartOfMonth();
+        }
+    }
+
     public static void SetUsage(this ICollection<UsageInfo> usages, DateTime dateUtc, int total, int blocked, int tooBig, int limit, TimeSpan? maxUsageAge, TimeProvider timeProvider)
     {
         var usageInfo = usages.FirstOrDefault(o => o.Date == dateUtc);
