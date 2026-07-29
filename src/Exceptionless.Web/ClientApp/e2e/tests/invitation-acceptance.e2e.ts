@@ -1,4 +1,5 @@
 import { E2E_TEST_PASSWORD, expect, test } from '../fixtures/e2e-test';
+import { runCleanupStep, throwIfCleanupFailed } from '../support/cleanup';
 import { getUserToken, waitForEmailValidation } from '../support/page-helpers';
 
 test.skip(process.env.E2E_ENV === 'production', 'Invitation acceptance requires local Mailpit.');
@@ -54,15 +55,28 @@ test('invited user can accept an organization invitation @signup', async ({ brow
             }
         });
     } finally {
+        const cleanupErrors: Error[] = [];
+
         if (!invitedUserToken && invitedUserCreated) {
-            invitedUserToken = await e2eApi.login(invitedEmail, E2E_TEST_PASSWORD);
+            await runCleanupStep(cleanupErrors, 'restore invited user session for cleanup', async () => {
+                invitedUserToken = await e2eApi.login(invitedEmail, E2E_TEST_PASSWORD);
+            });
         }
 
         if (invitedUserToken) {
-            await e2eApi.deleteOrganizationUser(e2eScenario.userToken, e2eScenario.organizationId, invitedEmail);
-            await e2eApi.waitForOrganizationNotListed(invitedUserToken, e2eScenario.organizationId);
-            await e2eApi.deleteCurrentUser(invitedUserToken);
-            await e2eApi.waitForCurrentUserDeleted(invitedUserToken);
+            const token = invitedUserToken;
+
+            await runCleanupStep(cleanupErrors, 'remove invited user from organization', async () => {
+                await e2eApi.deleteOrganizationUser(e2eScenario.userToken, e2eScenario.organizationId, invitedEmail);
+                await e2eApi.waitForOrganizationNotListed(token, e2eScenario.organizationId);
+            });
+
+            await runCleanupStep(cleanupErrors, 'delete invited user', async () => {
+                await e2eApi.deleteCurrentUser(token);
+                await e2eApi.waitForCurrentUserDeleted(token);
+            });
         }
+
+        throwIfCleanupFailed(cleanupErrors);
     }
 });
