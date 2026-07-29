@@ -11,6 +11,8 @@ services:
     ports:
       - 9200:9200
     volumes:
+      # Complete the Elasticsearch 8.19 upgrade preflight before reusing this volume with Elasticsearch 9.
+      # See https://exceptionless.com/docs/self-hosting/upgrading-self-hosted-instance
       - esdata:/usr/share/elasticsearch/data
     healthcheck:
       test:
