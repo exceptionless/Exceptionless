@@ -92,10 +92,7 @@
                     <Table.Body>
                         {#each oauthAccounts as account (account.provider_user_id)}
                             <Table.Row>
-                                <Table.Cell class="capitalize"
-                                    >{account.provider === 'windowslive' ? 'Microsoft (legacy)' : account.provider} ({account.username ||
-                                        account.provider_user_id})</Table.Cell
-                                >
+                                <Table.Cell class="capitalize">{account.provider} ({account.username || account.provider_user_id})</Table.Cell>
                                 <Table.Cell class="text-right">
                                     <Button
                                         aria-label="Remove {account.provider} account"

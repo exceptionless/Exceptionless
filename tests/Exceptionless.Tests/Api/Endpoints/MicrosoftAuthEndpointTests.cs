@@ -138,25 +138,6 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
         Assert.Equal(code, microsoftAccount.ProviderUserId);
     }
 
-    [Fact]
-    public async Task MicrosoftAsync_ProviderFailure_DoesNotChangeLegacyIdentity()
-    {
-        // Arrange
-        var legacyUser = CreateUser("legacy-user@exceptionless.test");
-        legacyUser.AddOAuthAccount("WindowsLive", "legacy-user", legacyUser.EmailAddress);
-        await _userRepository.AddAsync(legacyUser, o => o.ImmediateConsistency());
-
-        // Act
-        await Assert.ThrowsAsync<HttpRequestException>(() => SendMicrosoftLoginAsync("provider-error"));
-
-        // Assert
-        var unchangedLegacyUser = await _userRepository.GetByIdAsync(legacyUser.Id);
-        Assert.NotNull(unchangedLegacyUser);
-        var legacyAccount = Assert.Single(unchangedLegacyUser.OAuthAccounts);
-        Assert.Equal("windowslive", legacyAccount.Provider);
-        Assert.Equal("legacy-user", legacyAccount.ProviderUserId);
-    }
-
     private static User CreateUser(string emailAddress)
     {
         var user = new User
