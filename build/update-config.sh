@@ -9,7 +9,7 @@ OAuth="${EX_ConnectionStrings__OAuth:-}"
 IFS=';' read -a oauthParts <<< "$OAuth"
 for part in ${oauthParts[@]}
 do
-  key="$( cut -d '=' -f 1 <<< $part )"
+  key="$( cut -d '=' -f 1 <<< $part )"; echo "key: $key"
   value="$( cut -d '=' -f 2- <<< $part )"
 
   if [ "$key" == "FacebookId" ]; then
