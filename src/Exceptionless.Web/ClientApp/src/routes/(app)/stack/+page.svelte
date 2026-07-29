@@ -51,7 +51,7 @@
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
-    import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+    import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
     import { error } from '@sveltejs/kit';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
@@ -396,7 +396,10 @@
             }
 
             isInternalFilterUpdate = false;
-            filters = getCurrentFilters(getListFilterQueryParams(page.url.searchParams));
+            const updatedFilters = getCurrentFilters(getListFilterQueryParams(page.url.searchParams));
+            if (serializeFilters(filters ?? []) !== serializeFilters(updatedFilters)) {
+                filters = updatedFilters;
+            }
         },
         { lazy: true }
     );
@@ -722,8 +725,22 @@
     useEventListener(document, 'refresh', () => loadData());
     useEventListener(document, 'StackChanged', (event) => onStackChanged((event as CustomEvent).detail));
 
+    const automaticLoadDataKey = $derived(
+        JSON.stringify({
+            filter: eventsQueryParameters.filter,
+            isSavedViewRoutePending,
+            limit: eventsQueryParameters.limit,
+            mode: eventsQueryParameters.mode,
+            offset: eventsQueryParameters.offset,
+            organizationId: organization.current,
+            page: eventsQueryParameters.page,
+            time: eventsQueryParameters.time
+        })
+    );
+
     $effect(() => {
-        loadData();
+        void automaticLoadDataKey;
+        untrack(() => loadData());
     });
 
     const chartDataQuery = getOrganizationCountQuery({

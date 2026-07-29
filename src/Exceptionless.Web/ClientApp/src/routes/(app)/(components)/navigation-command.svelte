@@ -1,6 +1,6 @@
 <script lang="ts">
     import type { EventSummaryModel, StackSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
-    import type { FetchClientResponse, ProblemDetails } from '@exceptionless/fetchclient';
+    import type { FetchClientResponse, ProblemDetails } from '@foundatiofx/fetchclient';
 
     import { resolve } from '$app/paths';
     import * as Command from '$comp/ui/command';
@@ -8,7 +8,7 @@
     import { organization } from '$features/organizations/context.svelte';
     import { appKeyboardShortcuts, formatKeyboardShortcut, type ShortcutKey } from '$features/shared/keyboard-shortcuts';
     import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
-    import { useFetchClient } from '@exceptionless/fetchclient';
+    import { useFetchClient } from '@foundatiofx/fetchclient';
     import Activity from '@lucide/svelte/icons/activity';
     import Building2 from '@lucide/svelte/icons/building-2';
     import CircleUserRound from '@lucide/svelte/icons/circle-user-round';

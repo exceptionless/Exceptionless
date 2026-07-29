@@ -66,7 +66,13 @@
                 {/snippet}
             </Tooltip.Trigger>
             <Tooltip.Content arrowClasses="hidden" class="border-border bg-popover text-popover-foreground border shadow-md" sideOffset={4}>
-                Click to filter. <Kbd>{copyTagShortcut}</Kbd> click to copy.
+                Click to filter.
+                <Kbd
+                    class="border-border in-data-[slot=tooltip-content]:bg-muted in-data-[slot=tooltip-content]:text-foreground dark:border-muted-foreground/50 dark:in-data-[slot=tooltip-content]:bg-muted border"
+                >
+                    {copyTagShortcut}
+                </Kbd>
+                click to copy.
             </Tooltip.Content>
         </Tooltip.Root>
     {:else}
