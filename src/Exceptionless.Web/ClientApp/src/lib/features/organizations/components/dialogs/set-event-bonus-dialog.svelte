@@ -14,7 +14,7 @@
     import Number from '$features/shared/components/formatters/number.svelte';
     import { formatDateLabel } from '$features/shared/dates';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
-    import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { ProblemDetails } from '@foundatiofx/fetchclient';
     import { CalendarDate, type DateValue } from '@internationalized/date';
     import CalendarIcon from '@lucide/svelte/icons/calendar';
     import { createForm } from '@tanstack/svelte-form';

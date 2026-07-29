@@ -14,7 +14,7 @@
         putPredefinedSavedViewsMutation
     } from '$features/admin/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
-    import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { ProblemDetails } from '@foundatiofx/fetchclient';
     import Save from '@lucide/svelte/icons/save';
     import { onMount } from 'svelte';
     import { toast } from 'svelte-sonner';

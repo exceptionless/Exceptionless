@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { ProblemDetails } from '@exceptionless/fetchclient';
+    import type { ProblemDetails } from '@foundatiofx/fetchclient';
     import type { Snippet } from 'svelte';
     import type { FullAutoFill } from 'svelte/elements';
 
