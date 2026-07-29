@@ -128,6 +128,11 @@ public static partial class ApmExtensions
                 b.AddMeter("System.Runtime");
                 b.AddRuntimeInstrumentation();
                 b.AddProcessInstrumentation();
+                foreach (string metricName in _droppedMetricNames)
+                {
+                    b.AddView(metricName, MetricStreamConfiguration.Drop);
+                }
+
                 b.AddView(
                     "http.server.request.duration",
                     new ExplicitBucketHistogramConfiguration
@@ -170,6 +175,29 @@ public static partial class ApmExtensions
 
         return builder;
     }
+
+    private static readonly string[] _droppedMetricNames =
+    [
+        "http.client.request.duration",
+        "http.client.request.time_in_queue",
+        "http.client.connection.duration",
+        "http.client.open_connections",
+        "http.client.active_requests",
+        "dns.lookup.duration",
+        "kestrel.connection.duration",
+        "aspnetcore.authentication.authenticate.duration",
+        "aspnetcore.routing.match_attempts",
+        "dotnet.exceptions",
+        "dotnet.gc.collections",
+        "dotnet.gc.last_collection.heap.size",
+        "dotnet.gc.last_collection.heap.fragmentation.size",
+        "dotnet.process.cpu.time",
+        "foundatio.lock.wait.time",
+        "ex.posts.size",
+        "ex.events.parse.jsoneventparserplugin",
+        "ex.events.field.count",
+        "ex.eventpipeline.markascriticalaction"
+    ];
 
     private static readonly Regex _stackIdListShortener = StackIdListShortenerRegex();
 
