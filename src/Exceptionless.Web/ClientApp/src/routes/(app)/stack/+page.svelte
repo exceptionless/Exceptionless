@@ -1,5 +1,6 @@
 <script lang="ts">
     import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
+    import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
@@ -8,7 +9,12 @@
     import RefreshButton from '$comp/refresh-button.svelte';
     import { H3 } from '$comp/typography';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
-    import { type GetEventsParams, getOrganizationCountQuery, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT } from '$features/events/api.svelte';
+    import {
+        type GetEventsParams,
+        getOrganizationCountQuery,
+        getOrganizationEventsQuery,
+        PERSISTENT_EVENT_DELETE_RECONCILE_EVENT
+    } from '$features/events/api.svelte';
     import EventsDashboardChart from '$features/events/components/events-dashboard-chart.svelte';
     import EventsStatsDashboard from '$features/events/components/events-stats-dashboard.svelte';
     import {
@@ -50,8 +56,7 @@
     import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/stacks-bulk-actions-dropdown-menu.svelte';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
-    import { DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
-    import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
+    import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
     import { error } from '@sveltejs/kit';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
@@ -624,9 +629,20 @@
         }
     });
 
-    const client = useFetchClient();
-    const clientStatus = useFetchClientStatus(client);
-    let clientResponse = $state<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>>();
+    const eventsQuery = getOrganizationEventsQuery({
+        enabled: () => !isSavedViewRoutePending,
+        get params() {
+            return {
+                ...eventsQueryParameters,
+                include: 'total' as const
+            };
+        },
+        route: {
+            get organizationId() {
+                return organization.current;
+            }
+        }
+    });
 
     const table = createTable(
         getSharedTableOptions<EventSummaryModel<SummaryTemplateKeys>>({
@@ -640,10 +656,10 @@
             defaultColumnVisibility: defaultStackColumnVisibility,
             paginationStrategy: 'offset',
             get queryData() {
-                return clientResponse?.data ?? [];
+                return eventsQuery.data?.data ?? [];
             },
             get queryMeta() {
-                return clientResponse?.meta;
+                return eventsQuery.data?.meta;
             },
             get queryParameters() {
                 return eventsQueryParameters;
@@ -664,43 +680,20 @@
     }
 
     async function handleRefresh() {
+        const isFirstPage = table.state.pagination.pageIndex === 0;
         if (!canRefresh) {
             reset();
+            if (!isFirstPage) {
+                return;
+            }
         }
 
-        await loadData();
+        await eventsQuery.refetch();
     }
 
-    let loadDataRequestId = 0;
-    async function loadData() {
-        const requestId = ++loadDataRequestId;
-        if (!organization.current || isSavedViewRoutePending) {
-            return;
-        }
-
-        const response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, {
-            params: {
-                ...eventsQueryParameters,
-                include: 'total'
-            } as Record<string, unknown>
-        });
-        if (requestId !== loadDataRequestId) {
-            return;
-        }
-
-        clientResponse = response;
-
-        showBillingDialogOnUpgradeProblem(clientResponse.problem, organization.current, () => loadData());
-
-        if (clientResponse.ok && clientResponse.data?.length === 0 && table.state.pagination.pageIndex > 0) {
-            table.previousPage();
-        }
-    }
-
-    const debouncedLoadData = debounce(1500, loadData);
+    const debouncedRefetch = debounce(1500, () => eventsQuery.refetch());
     onDestroy(() => {
-        loadDataRequestId++;
-        debouncedLoadData.cancel();
+        debouncedRefetch.cancel();
     });
 
     function onStackChanged(message: WebSocketMessageValue<'StackChanged'>) {
@@ -718,29 +711,41 @@
             removeTableData(table, (doc: EventSummaryModel<SummaryTemplateKeys>) => doc.id === message.id);
         }
 
-        debouncedLoadData();
+        debouncedRefetch();
     }
 
-    useEventListener(document, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT, () => debouncedLoadData());
-    useEventListener(document, 'refresh', () => loadData());
+    useEventListener(document, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT, () => debouncedRefetch());
     useEventListener(document, 'StackChanged', (event) => onStackChanged((event as CustomEvent).detail));
 
-    const automaticLoadDataKey = $derived(
-        JSON.stringify({
-            filter: eventsQueryParameters.filter,
-            isSavedViewRoutePending,
-            limit: eventsQueryParameters.limit,
-            mode: eventsQueryParameters.mode,
-            offset: eventsQueryParameters.offset,
-            organizationId: organization.current,
-            page: eventsQueryParameters.page,
-            time: eventsQueryParameters.time
-        })
-    );
-
+    let lastEmptyResponseAt = 0;
     $effect(() => {
-        void automaticLoadDataKey;
-        untrack(() => loadData());
+        const dataUpdatedAt = eventsQuery.dataUpdatedAt;
+        if (
+            eventsQuery.isPlaceholderData ||
+            dataUpdatedAt === lastEmptyResponseAt ||
+            eventsQuery.data?.data?.length !== 0 ||
+            table.state.pagination.pageIndex === 0
+        ) {
+            return;
+        }
+
+        lastEmptyResponseAt = dataUpdatedAt;
+        untrack(() => table.previousPage());
+    });
+
+    let lastErrorAt = 0;
+    $effect(() => {
+        const errorUpdatedAt = eventsQuery.errorUpdatedAt;
+        if (!eventsQuery.error || errorUpdatedAt === lastErrorAt) {
+            return;
+        }
+
+        lastErrorAt = errorUpdatedAt;
+        untrack(() =>
+            showBillingDialogOnUpgradeProblem(eventsQuery.error, organization.current, async () => {
+                await eventsQuery.refetch();
+            })
+        );
     });
 
     const chartDataQuery = getOrganizationCountQuery({
@@ -847,7 +852,7 @@
             {/if}
             <RefreshButton
                 onRefresh={handleRefresh}
-                isRefreshing={clientStatus.isLoading}
+                isRefreshing={eventsQuery.isFetching}
                 size="icon-lg"
                 title={canRefresh ? 'Refresh results' : 'Return to the first page to refresh results'}
             />
@@ -868,12 +873,12 @@
         {#if showChart}
             <EventsDashboardChart
                 data={chartData()}
-                isLoading={isSavedViewRoutePending || clientStatus.isLoading || chartDataQuery.isLoading}
+                isLoading={isSavedViewRoutePending || eventsQuery.isFetching || chartDataQuery.isLoading}
                 {onRangeSelect}
             />
         {/if}
 
-        <EventsDataTable bind:limit={eventsQueryParameters.limit!} isLoading={isSavedViewRoutePending || clientStatus.isLoading} {rowClick} {rowHref} {table}>
+        <EventsDataTable bind:limit={eventsQueryParameters.limit!} isLoading={isSavedViewRoutePending || eventsQuery.isFetching} {rowClick} {rowHref} {table}>
             {#snippet footerChildren()}
                 <div class="h-9 min-w-35">
                     <TableStacksBulkActionsDropdownMenu {table} />
