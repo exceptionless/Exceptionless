@@ -1,6 +1,13 @@
-import { expect, test } from '../fixtures/e2e-test';
+import { createReferenceId, E2E_REFERENCE_ID_MAX_LENGTH, expect, test } from '../fixtures/e2e-test';
 import { seedRepresentativeEvent } from '../support/event-data';
 import { getVisibleText } from '../support/page-helpers';
+
+test('derived E2E reference IDs stay within the API route limit', () => {
+    const referenceId = createReferenceId('x'.repeat(E2E_REFERENCE_ID_MAX_LENGTH), '-organization');
+
+    expect(referenceId).toHaveLength(E2E_REFERENCE_ID_MAX_LENGTH);
+    expect(referenceId).toMatch(/-organization$/);
+});
 
 test('operator can switch organizations without leaking event data', async ({ e2eApi, e2eScenario, e2eSecondaryOrganization, page }) => {
     await test.step('seed a distinct event in each organization', async () => {

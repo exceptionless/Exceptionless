@@ -7,6 +7,12 @@ import { getE2EEnvironment } from './environment';
 export const E2E_TEST_PASSWORD = 'tester';
 
 export const E2E_ORGANIZATION_NAME_PREFIX = 'E2E Playwright Org';
+export const E2E_REFERENCE_ID_MAX_LENGTH = 100;
+
+const E2E_REFERENCE_ID_PREFIX = 'pw-e2e-';
+const SECONDARY_ORGANIZATION_REFERENCE_SUFFIX = '-organization';
+const SECONDARY_PROJECT_REFERENCE_SUFFIX = '-secondary';
+const MAX_DERIVED_REFERENCE_SUFFIX_LENGTH = SECONDARY_ORGANIZATION_REFERENCE_SUFFIX.length;
 
 export interface E2EScenario {
     email: string;
@@ -57,7 +63,7 @@ export const test = base.extend<E2EFixtures>({
         const email = `playwright-${run}@exceptionless.test`.toLowerCase();
         const organizationName = `${E2E_ORGANIZATION_NAME_PREFIX} ${run}`;
         const projectName = `Playwright Project ${run}`;
-        const referenceId = `pw-e2e-${run}`;
+        const referenceId = createReferenceId(run);
         const message = `Playwright onboarding event ${run}`;
         let organizationId: string | undefined;
         let projectId: string | undefined;
@@ -138,7 +144,7 @@ export const test = base.extend<E2EFixtures>({
     e2eSecondaryOrganization: async ({ e2eApi, e2eScenario }, use) => {
         const organizationName = `${E2E_ORGANIZATION_NAME_PREFIX} Secondary ${e2eScenario.run}`;
         const projectName = `Playwright Secondary Organization Project ${e2eScenario.run}`;
-        const referenceId = `${e2eScenario.referenceId}-organization`;
+        const referenceId = createReferenceId(e2eScenario.run, SECONDARY_ORGANIZATION_REFERENCE_SUFFIX);
         const message = `Playwright secondary organization event ${e2eScenario.run}`;
         let organizationId: string | undefined;
         let projectId: string | undefined;
@@ -183,7 +189,7 @@ export const test = base.extend<E2EFixtures>({
 
     e2eSecondaryProject: async ({ e2eApi, e2eScenario }, use) => {
         const projectName = `Playwright Secondary Project ${e2eScenario.run}`;
-        const referenceId = `${e2eScenario.referenceId}-secondary`;
+        const referenceId = createReferenceId(e2eScenario.run, SECONDARY_PROJECT_REFERENCE_SUFFIX);
         const message = `Playwright secondary project event ${e2eScenario.run}`;
         let projectId: string | undefined;
 
@@ -217,6 +223,12 @@ export const test = base.extend<E2EFixtures>({
 });
 
 export { expect };
+
+export function createReferenceId(run: string, suffix = ''): string {
+    const suffixLength = Math.max(MAX_DERIVED_REFERENCE_SUFFIX_LENGTH, suffix.length);
+    const runLength = E2E_REFERENCE_ID_MAX_LENGTH - E2E_REFERENCE_ID_PREFIX.length - suffixLength;
+    return `${E2E_REFERENCE_ID_PREFIX}${run.slice(0, runLength)}${suffix}`;
+}
 
 export function createRunName(runId: string, testInfo: TestInfo): string {
     const rawName = [runId, `w${testInfo.workerIndex}`, `r${testInfo.retry}`, Date.now().toString(36)].join('-');
