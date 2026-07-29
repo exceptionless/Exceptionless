@@ -134,12 +134,21 @@ jobs:
         id: elasticsearch_image
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
         run: |
           version=$(sed -n 's/.*elasticsearch:\([^ ]*\).*/\1/p' build/docker/elasticsearch/9.x/Dockerfile)
           tag=$version
+          image_changed=false
 
           if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]] &&
             ! git diff --quiet "$PR_BASE_SHA"...HEAD -- build/docker/elasticsearch/9.x .github/workflows/elasticsearch-docker-9.yml; then
+            image_changed=true
+          elif [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/main" ]] &&
+            ! git diff --quiet "$PUSH_BEFORE_SHA"..HEAD -- build/docker/elasticsearch/9.x .github/workflows/elasticsearch-docker-9.yml; then
+            image_changed=true
+          fi
+
+          if [[ "$image_changed" == "true" ]]; then
             image_sha=$(sha256sum build/docker/elasticsearch/9.x/Dockerfile | cut -d " " -f 1)
             tag="$version-sha256-$image_sha"
             image="exceptionless/elasticsearch:$tag"

@@ -8,6 +8,41 @@ title: "Upgrading"
 
 **If you are upgrading from v1 or [v2](https://github.com/exceptionless/Exceptionless/releases/tag/v2.0.0) you will need to upgrade to [v3.0](https://github.com/exceptionless/Exceptionless/releases/tag/v3.0.0) before upgrading to the latest release.**
 
+## Upgrading from v8 to v9
+
+Exceptionless v9 uses Elasticsearch 9. Do not point an Elasticsearch 9 node at an existing data volume until the cluster has been prepared with Elasticsearch 8.19. Elasticsearch 9 can fail to start when incompatible indices created before Elasticsearch 8 remain.
+
+Use this upgrade path for an existing self-hosted installation:
+
+1. Take a current Elasticsearch snapshot or other verified backup and test that it can be restored. Elasticsearch does not support downgrading a data directory after it has been upgraded.
+2. Upgrade Elasticsearch and Kibana to the latest 8.19.x patch release first, using the existing data volume. Do not start Elasticsearch 9 yet.
+3. Stop the Exceptionless app and job services, but leave Elasticsearch and Kibana 8.19 running. This prevents writes while legacy indices are reindexed.
+4. Open Kibana's **Upgrade Assistant** and resolve every critical issue. Reindex every active Exceptionless index created before Elasticsearch 8. Delete only indices you have confirmed are no longer needed; do not mark active Exceptionless indices as read-only.
+5. If this data volume previously ran Elasticsearch 7, temporarily disable the GeoIP downloader while still on Elasticsearch 8.19. Elasticsearch deletes its downloaded `.geoip_databases` system index when this setting is disabled; Exceptionless data is not affected.
+
+   ```bash
+   curl -fsS -X PUT "http://localhost:9200/_cluster/settings" \
+     -H "Content-Type: application/json" \
+     -d '{"persistent":{"ingest.geoip.downloader.enabled":false}}'
+   ```
+
+6. Confirm that the deprecation API reports no critical issues:
+
+   ```bash
+   curl -fsS "http://localhost:9200/_migration/deprecations?pretty"
+   ```
+
+7. Stop Elasticsearch and Kibana 8.19 without deleting their data volume. Update the Elasticsearch and Kibana images to the v9 versions, start them, and verify cluster health before restarting the Exceptionless app and jobs. In Docker Compose, do not run `docker compose down -v` because `-v` deletes the data volume.
+8. After Elasticsearch 9 is healthy, restore the default GeoIP downloader behavior:
+
+   ```bash
+   curl -fsS -X PUT "http://localhost:9200/_cluster/settings" \
+     -H "Content-Type: application/json" \
+     -d '{"persistent":{"ingest.geoip.downloader.enabled":null}}'
+   ```
+
+See Elastic's [prepare-to-upgrade guide](https://www.elastic.co/docs/deploy-manage/upgrade/prepare-to-upgrade) for the supported 8.x to 9.x upgrade requirements and Upgrade Assistant details.
+
 ## Upgrading from v7.1 to v8
 
 We simplified the self hosting process by integrating the UI into the existing app images. As such `exceptionless/ui` docker images are deprecated and we recommend using `exceptionless/app`.
