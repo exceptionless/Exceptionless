@@ -149,7 +149,7 @@ jobs:
           fi
 
           if [[ "$image_changed" == "true" ]]; then
-            image_sha=$(sha256sum build/docker/elasticsearch/9.x/Dockerfile | cut -d " " -f 1)
+            image_sha=$(git ls-files -- build/docker/elasticsearch/9.x .github/workflows/elasticsearch-docker-9.yml | sort | xargs sha256sum | sha256sum | cut -d " " -f 1)
             tag="$version-sha256-$image_sha"
             image="exceptionless/elasticsearch:$tag"
 

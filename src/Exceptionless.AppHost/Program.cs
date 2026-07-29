@@ -11,6 +11,7 @@ bool ciE2E = HasArgument("--ci-e2e");
 bool includeDevTools = !ciE2E;
 int elasticsearchPort = GetPort("Elasticsearch:Port", 9200);
 string elasticsearchImageTag = builder.Configuration["Elasticsearch:ImageTag"] ?? ElasticsearchContainerImageTags.Tag;
+string kibanaImageTag = builder.Configuration["Elasticsearch:KibanaImageTag"] ?? ElasticsearchContainerImageTags.Tag;
 string elasticsearchContainerName = builder.Configuration["Elasticsearch:ContainerName"] ?? "Exceptionless-Elasticsearch";
 string elasticsearchDataVolume = builder.Configuration["Elasticsearch:DataVolume"] ?? "exceptionless.data.v1";
 string kibanaContainerName = builder.Configuration["Elasticsearch:KibanaContainerName"] ?? "Exceptionless-Kibana";
@@ -77,7 +78,7 @@ elastic = ownedElastic
 if (!servicesOnly && includeDevTools)
 {
     elastic = elastic.WithKibana(b => b
-        .WithImageTag(elasticsearchImageTag)
+        .WithImageTag(kibanaImageTag)
         .WithLifetime(ContainerLifetime.Persistent)
         .WithEndpointProxySupport(false)
         .WithContainerName(kibanaContainerName)
