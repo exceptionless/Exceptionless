@@ -7,7 +7,6 @@
     import * as Sidebar from '$comp/ui/sidebar';
     import { Toaster } from '$comp/ui/sonner';
     import { accessToken } from '$features/auth/index.svelte';
-    import { normalizeDeserializationFailure } from '$shared/api/fetch-client-response';
     import { type FetchClientContext, ProblemDetails, setAccessTokenFunc, setBaseUrl, setRequestOptions, useMiddleware } from '@foundatiofx/fetchclient';
     import { error } from '@sveltejs/kit';
     import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
@@ -36,7 +35,6 @@
 
     useMiddleware(async (ctx: FetchClientContext, next: () => Promise<void>) => {
         await next();
-        ctx.response = normalizeDeserializationFailure(ctx.response);
 
         const status = ctx.response?.status;
         if (status === undefined) {

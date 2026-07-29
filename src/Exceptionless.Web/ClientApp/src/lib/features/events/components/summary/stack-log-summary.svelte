@@ -4,7 +4,7 @@
     import { A } from '$comp/typography';
     import StackStatusBadge from '$features/stacks/components/stack-status-badge.svelte';
 
-    import { buildStackEventsHref, type StackSummaryModel, type SummaryModel, type SummaryTemplateKeys } from './index';
+    import { buildStackDetailsHref, type StackSummaryModel, type SummaryModel, type SummaryTemplateKeys } from './index';
 
     interface Props {
         badgeStatus: StackStatus;
@@ -26,7 +26,7 @@
         <strong>Log source:</strong>&nbsp;
     {/if}
 
-    <A class="inline" href={buildStackEventsHref(source.id)}>
+    <A class="inline" href={buildStackDetailsHref(source.id)}>
         {#if source.data?.Source}
             <abbr title={source.data.Source}>{source.data.SourceShortName}</abbr>
         {:else}

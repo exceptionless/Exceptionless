@@ -68,6 +68,18 @@ test('event list and detail effects stay bounded through paging and background c
 
     await waitForEventListQuiescence(page, diagnostics);
 
+    await measureAction(diagnostics, 'event list selected refresh', async () => {
+        const rowSelection = page.getByRole('checkbox', { name: 'Select row' }).first();
+        await rowSelection.click();
+        await expect(rowSelection).toBeChecked();
+
+        const response = page.waitForResponse((candidate) => isEventListResponse(candidate, e2eScenario.organizationId));
+        await page.getByTitle('Return to the first page to refresh results').click();
+        expect((await response).ok()).toBe(true);
+        await expect(rowSelection).not.toBeChecked();
+    });
+    expect(actionSample(diagnostics, 'event list selected refresh').eventList).toBe(1);
+
     await measureAction(diagnostics, 'event list paging', async () => {
         for (let index = 0; index < 4; index++) {
             await clickAndWaitForList(page, e2eScenario.organizationId, 'Go to next page');
