@@ -102,8 +102,12 @@ export function hasSavedColumnOrder(columnOrder: null | string[] | undefined): c
     return !!columnOrder?.length;
 }
 
-export function hasSavedColumnVisibility(columns: null | Record<string, boolean> | undefined): columns is Record<string, boolean> {
-    return columns != null;
+export function hasSavedViewColumnChanges(
+    current: ColumnVisibilityState | undefined,
+    saved: null | Record<string, boolean> | undefined,
+    defaultColumnVisibility: ColumnVisibilityState = {}
+): boolean {
+    return !savedViewColumnsEqual(current, saved, defaultColumnVisibility);
 }
 
 export function savedViewColumnsEqual(
@@ -111,7 +115,8 @@ export function savedViewColumnsEqual(
     b: null | Record<string, boolean> | undefined,
     defaultColumnVisibility: ColumnVisibilityState = {}
 ): boolean {
-    const normalize = (value: ColumnVisibilityState | null | undefined) => ({ ...defaultColumnVisibility, ...(value ?? {}) });
+    const normalize = (value: ColumnVisibilityState | null | undefined) =>
+        Object.fromEntries(Object.entries({ ...defaultColumnVisibility, ...(value ?? {}) }).filter(([, isVisible]) => !isVisible));
     const aEntries = Object.entries(normalize(a)).sort(([k1], [k2]) => k1.localeCompare(k2));
     const bEntries = Object.entries(normalize(b)).sort(([k1], [k2]) => k1.localeCompare(k2));
 
@@ -272,11 +277,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return true;
         }
 
-        if (
-            options.getColumnVisibility &&
-            hasSavedColumnVisibility(view.columns) &&
-            !savedViewColumnsEqual(options.getColumnVisibility(), view.columns, options.defaultColumnVisibility)
-        ) {
+        if (options.getColumnVisibility && hasSavedViewColumnChanges(options.getColumnVisibility(), view.columns, options.defaultColumnVisibility)) {
             return true;
         }
 
