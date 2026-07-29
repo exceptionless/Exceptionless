@@ -1596,7 +1596,7 @@ public partial class EventEndpointTests : IntegrationTestsBase
         organization = await _organizationRepository.GetByIdAsync(organizationId);
         Assert.NotNull(organization);
 
-        organizationUsage = organization.Usage.Single();
+        organizationUsage = organization.GetCurrentUsage(TimeProvider);
         Assert.Equal(total, organizationUsage.Total);
         Assert.Equal(blocked, organizationUsage.Blocked);
         Assert.Equal(0, organizationUsage.TooBig);
@@ -1857,7 +1857,7 @@ public partial class EventEndpointTests : IntegrationTestsBase
         organization = await _organizationRepository.GetByIdAsync(organizationId);
         Assert.NotNull(organization);
 
-        organizationUsage = organization.Usage.Single();
+        organizationUsage = organization.GetCurrentUsage(TimeProvider);
         Assert.Equal(total, organizationUsage.Total);
         Assert.Equal(blocked, organizationUsage.Blocked);
         Assert.Equal(0, organizationUsage.TooBig);
