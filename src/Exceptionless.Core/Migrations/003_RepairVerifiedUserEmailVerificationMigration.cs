@@ -12,6 +12,7 @@ namespace Exceptionless.Core.Migrations;
 public sealed class RepairVerifiedUserEmailVerificationMigration : MigrationBase
 {
     private const int BatchSize = 100;
+    private static readonly ActionPatch<User> RepairEmailVerification = new(user => user.MarkEmailAddressVerified());
     private readonly IUserRepository _userRepository;
 
     public RepairVerifiedUserEmailVerificationMigration(
@@ -51,10 +52,9 @@ public sealed class RepairVerifiedUserEmailVerificationMigration : MigrationBase
             context.CancellationToken.ThrowIfCancellationRequested();
             batch++;
 
-            foreach (var user in users.Documents)
-                user.MarkEmailAddressVerified();
-
-            await _userRepository.SaveAsync(users.Documents);
+            await _userRepository.PatchAsync(
+                users.Documents.Select(user => user.Id).ToArray(),
+                RepairEmailVerification);
             repairedRecords += users.Documents.Count;
 
             _logger.LogInformation(
