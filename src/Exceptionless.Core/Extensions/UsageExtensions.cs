@@ -18,22 +18,26 @@ public static class UsageExtensions
 
         while (startDate <= endDate)
         {
-            var usage = usages.FirstOrDefault(u => u.Date.Year == startDate.Year && u.Date.Month == startDate.Month);
-            if (usage is not null)
-            {
-                limit = usage.Limit;
-            }
-            else
-            {
-                usages.Add(new UsageInfo
-                {
-                    Date = startDate,
-                    Limit = limit
-                });
-            }
-
+            limit = usages.GetUsage(startDate, limit).Limit;
             startDate = startDate.AddMonths(1).StartOfMonth();
         }
+    }
+
+    public static UsageInfo GetUsage(this ICollection<UsageInfo> usages, DateTime dateUtc, int limit)
+    {
+        var startOfMonth = dateUtc.ToUniversalTime().StartOfMonth();
+        var usage = usages.FirstOrDefault(u => u.Date.Year == startOfMonth.Year && u.Date.Month == startOfMonth.Month);
+        if (usage is not null)
+            return usage;
+
+        usage = new UsageInfo
+        {
+            Date = startOfMonth,
+            Limit = limit
+        };
+        usages.Add(usage);
+
+        return usage;
     }
 
     public static void SetUsage(this ICollection<UsageInfo> usages, DateTime dateUtc, int total, int blocked, int tooBig, int limit, TimeSpan? maxUsageAge, TimeProvider timeProvider)
