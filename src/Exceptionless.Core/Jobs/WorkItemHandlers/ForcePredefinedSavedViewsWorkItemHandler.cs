@@ -195,7 +195,7 @@ public class ForcePredefinedSavedViewsWorkItemHandler : WorkItemHandlerBase
         return (savedViewsToAdd.Count, savedViewsToSave.Count);
     }
 
-    private static string GetUniqueSlug(string slug, IReadOnlyCollection<SavedView> existingViews, string? excludingId)
+    internal static string GetUniqueSlug(string slug, IReadOnlyCollection<SavedView> existingViews, string? excludingId)
     {
         string baseSlug = ToSlug(slug);
         if (String.IsNullOrWhiteSpace(baseSlug))
@@ -205,7 +205,9 @@ public class ForcePredefinedSavedViewsWorkItemHandler : WorkItemHandlerBase
         string candidate = baseSlug;
         int suffix = 2;
 
-        while (existingViews.Any(view => view.Id != excludingId && String.Equals(view.Slug, candidate, StringComparison.OrdinalIgnoreCase)))
+        while (existingViews.Any(view =>
+            (excludingId is null || view.Id != excludingId)
+            && String.Equals(view.Slug, candidate, StringComparison.OrdinalIgnoreCase)))
         {
             string suffixText = $"-{suffix}";
             int maxBaseLength = 100 - suffixText.Length;
