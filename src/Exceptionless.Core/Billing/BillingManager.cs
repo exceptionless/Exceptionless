@@ -2,6 +2,7 @@
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
+using Exceptionless.DateTimeExtensions;
 
 namespace Exceptionless.Core.Billing;
 
@@ -97,7 +98,20 @@ public class BillingManager
     public void ApplyBillingPlan(Organization organization, BillingPlan plan, User? user = null, bool updateBillingPrice = true)
     {
         if (!String.IsNullOrEmpty(organization.PlanId))
-            organization.Usage.EnsureUsage(organization.GetMaxEventsPerMonthWithBonus(_timeProvider), organization.CreatedUtc, _timeProvider);
+        {
+            var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+            int previousLimit = organization.MaxEventsPerMonth != 0
+                ? organization.MaxEventsPerMonth
+                : GetBillingPlan(organization.PlanId)?.MaxEventsPerMonth ?? 0;
+            if (previousLimit > 0 && organization.BonusExpiration > utcNow)
+                previousLimit += organization.BonusEventsPerMonth;
+
+            var currentMonthUtc = utcNow.StartOfMonth();
+            var previousMonthUtc = currentMonthUtc.AddMonths(-1);
+            var organizationCreatedMonthUtc = organization.CreatedUtc.ToUniversalTime().StartOfMonth();
+            if (previousLimit != 0 && previousMonthUtc >= organizationCreatedMonthUtc)
+                organization.Usage.GetUsage(previousMonthUtc, previousLimit);
+        }
 
         organization.PlanId = plan.Id;
         organization.PlanName = plan.Name;

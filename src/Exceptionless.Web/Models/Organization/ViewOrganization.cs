@@ -74,7 +74,62 @@ public static class ViewOrganizationExtensions
 
     public static void EnsureUsage(this ViewOrganization organization, TimeProvider timeProvider)
     {
-        organization.Usage.EnsureUsage(organization.GetMaxEventsPerMonthWithBonus(timeProvider), organization.CreatedUtc, timeProvider);
+        var endDateUtc = timeProvider.GetUtcNow().UtcDateTime.StartOfMonth();
+        var startDateUtc = endDateUtc.SubtractMonths(11);
+        var organizationCreatedMonthUtc = organization.CreatedUtc.ToUniversalTime().StartOfMonth();
+        if (organizationCreatedMonthUtc > startDateUtc)
+            startDateUtc = organizationCreatedMonthUtc;
+
+        var knownUsages = organization.Usage
+            .Where(u => u.Limit != 0)
+            .OrderBy(u => u.Date)
+            .ToList();
+        int limit = knownUsages
+            .LastOrDefault(u => u.Date <= startDateUtc)?.Limit
+            ?? knownUsages.FirstOrDefault()?.Limit
+            ?? organization.GetMaxEventsPerMonthWithBonus(timeProvider);
+
+        DateTime? bonusExpirationMonthUtc = organization.BonusExpiration?.ToUniversalTime().StartOfMonth();
+        int limitAfterBonusExpiration = limit;
+        if (bonusExpirationMonthUtc.HasValue)
+        {
+            int baseLimit = organization.MaxEventsPerMonth <= 0 ? -1 : organization.MaxEventsPerMonth;
+            limitAfterBonusExpiration = knownUsages
+                .FirstOrDefault(u => u.Date >= bonusExpirationMonthUtc.Value)?.Limit
+                ?? baseLimit;
+
+            var firstKnownUsage = knownUsages.FirstOrDefault();
+            if (startDateUtc < bonusExpirationMonthUtc.Value && firstKnownUsage is not null && firstKnownUsage.Date < bonusExpirationMonthUtc.Value)
+                limit = baseLimit;
+            else if (startDateUtc >= bonusExpirationMonthUtc.Value)
+                limit = limitAfterBonusExpiration;
+        }
+
+        while (startDateUtc <= endDateUtc)
+        {
+            if (startDateUtc == bonusExpirationMonthUtc)
+                limit = limitAfterBonusExpiration;
+
+            var usage = organization.Usage.FirstOrDefault(u => u.Date.Year == startDateUtc.Year && u.Date.Month == startDateUtc.Month);
+            if (usage is null)
+            {
+                organization.Usage.Add(new UsageInfo
+                {
+                    Date = startDateUtc,
+                    Limit = limit
+                });
+            }
+            else if (usage.Limit == 0)
+            {
+                usage.Limit = limit;
+            }
+            else
+            {
+                limit = usage.Limit;
+            }
+
+            startDateUtc = startDateUtc.AddMonths(1).StartOfMonth();
+        }
     }
 
     public static UsageInfo GetCurrentUsage(this ViewOrganization organization, TimeProvider timeProvider)

@@ -5,30 +5,6 @@ namespace Exceptionless.Core.Extensions;
 
 public static class UsageExtensions
 {
-    public static void EnsureUsage(this ICollection<UsageInfo> usages, int defaultLimit, DateTime earliestUsageDateUtc, TimeProvider timeProvider)
-    {
-        var endDate = timeProvider.GetUtcNow().UtcDateTime.StartOfMonth();
-        var startDate = endDate.SubtractMonths(11);
-        var earliestUsageDate = earliestUsageDateUtc == DateTime.MinValue
-            ? DateTime.MinValue
-            : earliestUsageDateUtc.ToUniversalTime().StartOfMonth();
-        if (earliestUsageDate > startDate)
-            startDate = earliestUsageDate;
-
-        int limit = usages
-            .Where(u => u.Date <= startDate)
-            .OrderByDescending(u => u.Date)
-            .FirstOrDefault()?.Limit
-            ?? usages.OrderBy(u => u.Date).FirstOrDefault()?.Limit
-            ?? defaultLimit;
-
-        while (startDate <= endDate)
-        {
-            limit = usages.GetUsage(startDate, limit).Limit;
-            startDate = startDate.AddMonths(1).StartOfMonth();
-        }
-    }
-
     public static UsageInfo GetUsage(this ICollection<UsageInfo> usages, DateTime dateUtc, int limit)
     {
         var startOfMonth = dateUtc.ToUniversalTime().StartOfMonth();
