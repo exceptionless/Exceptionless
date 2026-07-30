@@ -55,9 +55,13 @@ public static class ViewProjectExtensions
         var startDateUtc = endDateUtc.SubtractYears(1);
         var createdMonthUtc = organizationCreatedUtc.ToUniversalTime().StartOfMonth();
         if (project.CreatedUtc > organizationCreatedUtc)
+        {
             createdMonthUtc = project.CreatedUtc.ToUniversalTime().StartOfMonth();
+        }
         if (createdMonthUtc > startDateUtc)
+        {
             startDateUtc = createdMonthUtc;
+        }
 
         while (startDateUtc < endDateUtc)
         {

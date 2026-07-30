@@ -98,36 +98,22 @@ public class BillingManager
     public void ApplyBillingPlan(Organization organization, BillingPlan plan, User? user = null, bool updateBillingPrice = true)
     {
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
-        int previousLimit = organization.MaxEventsPerMonth != 0
-            ? organization.MaxEventsPerMonth
-            : GetBillingPlan(organization.PlanId)?.MaxEventsPerMonth ?? 0;
-        bool planLimitChanged = !String.Equals(organization.PlanId, plan.Id, StringComparison.OrdinalIgnoreCase)
-            || previousLimit != plan.MaxEventsPerMonth;
-
-        if (!String.IsNullOrEmpty(organization.PlanId))
-        {
-            var currentMonthUtc = utcNow.StartOfMonth();
-            var previousMonthUtc = currentMonthUtc.AddMonths(-1);
-            var organizationCreatedMonthUtc = organization.CreatedUtc.ToUniversalTime().StartOfMonth();
-            if (planLimitChanged && previousLimit != 0 && previousMonthUtc >= organizationCreatedMonthUtc)
-            {
-                var previousUsage = organization.Usage.GetUsage(previousMonthUtc, previousLimit);
-                if (previousUsage.Limit == 0)
-                    previousUsage.Limit = previousLimit;
-            }
-        }
+        CaptureOutgoingUsageLimit(organization, plan, utcNow);
 
         organization.PlanId = plan.Id;
         organization.PlanName = plan.Name;
         organization.PlanDescription = plan.Description;
-        if (planLimitChanged)
-            organization.BillingChangeDate = utcNow;
+        organization.BillingChangeDate = utcNow;
 
         if (updateBillingPrice)
+        {
             organization.BillingPrice = plan.Price;
+        }
 
         if (user is not null)
+        {
             organization.BillingChangedByUserId = user.Id;
+        }
 
         organization.MaxUsers = plan.MaxUsers;
         organization.MaxProjects = plan.MaxProjects;
@@ -136,6 +122,29 @@ public class BillingManager
         organization.HasPremiumFeatures = plan.HasPremiumFeatures;
 
         organization.GetCurrentUsage(_timeProvider).Limit = organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
+    }
+
+    private void CaptureOutgoingUsageLimit(Organization organization, BillingPlan plan, DateTime utcNow)
+    {
+        if (String.IsNullOrEmpty(organization.PlanId)
+            || String.Equals(organization.PlanId, plan.Id, StringComparison.OrdinalIgnoreCase)
+            || organization.MaxEventsPerMonth == 0)
+        {
+            return;
+        }
+
+        var previousMonthUtc = utcNow.StartOfMonth().AddMonths(-1);
+        var organizationCreatedMonthUtc = organization.CreatedUtc.ToUniversalTime().StartOfMonth();
+        if (previousMonthUtc < organizationCreatedMonthUtc)
+        {
+            return;
+        }
+
+        var previousUsage = organization.Usage.GetUsage(previousMonthUtc, organization.MaxEventsPerMonth);
+        if (previousUsage.Limit == 0)
+        {
+            previousUsage.Limit = organization.MaxEventsPerMonth;
+        }
     }
 
     public void ApplyBonus(Organization organization, int bonusEvents, DateTime? expires = null)

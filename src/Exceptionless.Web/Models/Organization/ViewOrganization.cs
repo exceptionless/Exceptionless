@@ -78,7 +78,9 @@ public static class ViewOrganizationExtensions
         var startDateUtc = endDateUtc.SubtractMonths(11);
         var organizationCreatedMonthUtc = organization.CreatedUtc.ToUniversalTime().StartOfMonth();
         if (organizationCreatedMonthUtc > startDateUtc)
+        {
             startDateUtc = organizationCreatedMonthUtc;
+        }
 
         var knownUsages = organization.Usage
             .Where(u => u.Limit != 0)
@@ -89,62 +91,14 @@ public static class ViewOrganizationExtensions
             ?? knownUsages.FirstOrDefault()?.Limit
             ?? organization.GetMaxEventsPerMonthWithBonus(timeProvider);
 
-        DateTime? bonusExpirationMonthUtc = organization.BonusExpiration?.ToUniversalTime().StartOfMonth();
-        int limitAfterBonusExpiration = limit;
-        if (bonusExpirationMonthUtc.HasValue)
-        {
-            int baseLimit = organization.MaxEventsPerMonth <= 0 ? -1 : organization.MaxEventsPerMonth;
-            var usageAtBonusExpiration = knownUsages.FirstOrDefault(u =>
-                u.Date.Year == bonusExpirationMonthUtc.Value.Year && u.Date.Month == bonusExpirationMonthUtc.Value.Month);
-            var usageBeforeBonusExpiration = knownUsages.LastOrDefault(u => u.Date < bonusExpirationMonthUtc.Value);
-            DateTime? billingChangeMonthUtc = organization.BillingChangeDate is { } billingChangeDate
-                && billingChangeDate > DateTime.MinValue
-                    ? billingChangeDate.ToUniversalTime().StartOfMonth()
-                    : null;
-            bool currentPlanStartedAfterBonusExpiration = billingChangeMonthUtc > bonusExpirationMonthUtc;
-            limitAfterBonusExpiration = usageAtBonusExpiration is not null
-                ? GetLimitWithoutBonus(usageAtBonusExpiration,
-                    currentPlanStartedAfterBonusExpiration && usageBeforeBonusExpiration?.Limit == usageAtBonusExpiration.Limit)
-                : usageBeforeBonusExpiration is not null
-                    ? GetLimitWithoutBonus(usageBeforeBonusExpiration, currentPlanStartedAfterBonusExpiration)
-                    : baseLimit;
-
-            var firstKnownUsage = knownUsages.FirstOrDefault();
-            if (startDateUtc < bonusExpirationMonthUtc.Value && firstKnownUsage is not null && firstKnownUsage.Date < bonusExpirationMonthUtc.Value)
-                limit = GetLimitWithoutBonus(firstKnownUsage, currentPlanStartedAfterBonusExpiration);
-            else if (startDateUtc >= bonusExpirationMonthUtc.Value
-                && !knownUsages.Any(u => u.Date >= bonusExpirationMonthUtc.Value && u.Date <= startDateUtc))
-                limit = limitAfterBonusExpiration;
-
-            int GetLimitWithoutBonus(UsageInfo knownUsage, bool inferHistoricalBonus)
-            {
-                bool currentPlanWasActive = billingChangeMonthUtc.HasValue && knownUsage.Date >= billingChangeMonthUtc.Value;
-                return knownUsage.Limit > organization.BonusEventsPerMonth
-                    && (currentPlanWasActive && knownUsage.Limit == baseLimit + organization.BonusEventsPerMonth || inferHistoricalBonus)
-                        ? knownUsage.Limit - organization.BonusEventsPerMonth
-                        : knownUsage.Limit;
-            }
-        }
-
         while (startDateUtc <= endDateUtc)
         {
-            if (startDateUtc == bonusExpirationMonthUtc)
-                limit = limitAfterBonusExpiration;
-
-            var usage = organization.Usage.FirstOrDefault(u => u.Date.Year == startDateUtc.Year && u.Date.Month == startDateUtc.Month);
-            if (usage is null)
-            {
-                organization.Usage.Add(new UsageInfo
-                {
-                    Date = startDateUtc,
-                    Limit = limit
-                });
-            }
-            else if (usage.Limit == 0)
+            var usage = organization.Usage.GetUsage(startDateUtc, limit);
+            if (usage.Limit == 0)
             {
                 usage.Limit = limit;
             }
-            else if (startDateUtc != bonusExpirationMonthUtc)
+            else
             {
                 limit = usage.Limit;
             }
