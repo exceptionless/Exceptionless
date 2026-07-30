@@ -54,6 +54,33 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         _plans = GetService<BillingPlans>();
     }
 
+    private CleanupOrphanedDataJob CreateJob()
+    {
+        return new CleanupOrphanedDataJob(
+            GetService<ExceptionlessElasticConfiguration>(),
+            _stackRepository,
+            _projectRepository,
+            _organizationRepository,
+            _eventRepository,
+            GetService<ICacheClient>(),
+            GetService<ILockProvider>(),
+            TimeProvider,
+            GetService<IResiliencePolicyProvider>(),
+            Log);
+    }
+
+    private async Task AssertOnlyEventsRemainAsync(IReadOnlyCollection<PersistentEvent> retainedEvents, IReadOnlyCollection<PersistentEvent> deletedEvents)
+    {
+        var results = await _eventRepository.GetAllAsync(o => o
+            .IncludeSoftDeletes()
+            .ImmediateConsistency()
+            .PageLimit(retainedEvents.Count + deletedEvents.Count));
+        var remainingIds = results.Documents.Select(e => e.Id).ToHashSet(StringComparer.Ordinal);
+
+        Assert.All(retainedEvents, e => Assert.Contains(e.Id, remainingIds));
+        Assert.All(deletedEvents, e => Assert.DoesNotContain(e.Id, remainingIds));
+    }
+
     [Fact]
     public async Task DeleteOrphanedEventsByStack_WithValidStack_DoesNotDeleteEvents()
     {
@@ -75,7 +102,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         await _eventRepository.AddAsync(events1.Concat(events2), o => o.ImmediateConsistency());
 
         // Act
-        await _job.RunAsync(TestCancellationToken);
+        await _job.DeleteOrphanedEventsByStackAsync(new JobContext(TestCancellationToken));
 
         // Assert - All events should remain (no orphans)
         var totalCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency());
@@ -114,11 +141,17 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         Assert.Equal(150, totalBefore);
 
         // Act
-        await _job.RunAsync(TestCancellationToken);
+        Log.Reset();
+        await CreateJob().DeleteOrphanedEventsByStackAsync(new JobContext(TestCancellationToken));
 
         // Assert - Only valid events remain
         var totalAfter = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency());
         Assert.Equal(100, totalAfter);
+        await AssertOnlyEventsRemainAsync(
+            validEvents1.Concat(validEvents2).ToList(),
+            orphanedEvents1.Concat(orphanedEvents2).ToList());
+        Assert.Contains(Log.LogEntries, entry =>
+            entry.Message.StartsWith("Deleted 50 recent events referencing missing stacks out of 4 distinct stack IDs since", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -146,7 +179,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         Assert.Equal(15000, totalBefore);
 
         // Act
-        await _job.RunAsync(TestCancellationToken);
+        await _job.DeleteOrphanedEventsByStackAsync(new JobContext(TestCancellationToken));
 
         // Assert - Only the 5000 valid events remain
         var totalAfter = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency());
@@ -181,7 +214,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         await _eventRepository.AddAsync(events, o => o.ImmediateConsistency());
 
         // Act
-        await _job.RunAsync(TestCancellationToken);
+        await _job.DeleteOrphanedEventsByStackAsync(new JobContext(TestCancellationToken));
 
         // Assert - All 200 events preserved
         var totalAfter = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency());
@@ -214,7 +247,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         await _eventRepository.AddAsync(orphanedEvents.Concat(validEvents), o => o.ImmediateConsistency());
 
         // Act
-        await _job.RunAsync(TestCancellationToken);
+        await _job.DeleteOrphanedEventsByStackAsync(new JobContext(TestCancellationToken));
 
         // Assert - Only tenant 2's events remain
         var totalAfter = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency());
@@ -241,7 +274,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         await _eventRepository.AddAsync(events, o => o.ImmediateConsistency());
 
         // Act
-        await _job.RunAsync(TestCancellationToken);
+        await _job.DeleteOrphanedEventsByProjectAsync(new JobContext(TestCancellationToken));
 
         // Assert
         var totalAfter = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency());
@@ -273,11 +306,15 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         await _eventRepository.AddAsync(validEvents.Concat(orphanedEvents), o => o.ImmediateConsistency());
 
         // Act
-        await _job.DeleteOrphanedEventsByProjectAsync(new JobContext(TestCancellationToken));
+        Log.Reset();
+        await CreateJob().DeleteOrphanedEventsByProjectAsync(new JobContext(TestCancellationToken));
 
         // Assert - Orphaned events deleted, valid events preserved
         var totalAfter = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency());
         Assert.Equal(75, totalAfter);
+        await AssertOnlyEventsRemainAsync(validEvents, orphanedEvents);
+        Assert.Contains(Log.LogEntries, entry =>
+            entry.Message.StartsWith("Deleted 50 recent events referencing missing projects out of 2 distinct project IDs since", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -334,7 +371,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         await _eventRepository.AddAsync(events, o => o.ImmediateConsistency());
 
         // Act
-        await _job.RunAsync(TestCancellationToken);
+        await _job.DeleteOrphanedEventsByOrganizationAsync(new JobContext(TestCancellationToken));
 
         // Assert - All events preserved (both organizations exist)
         var totalAfter = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency());
@@ -366,11 +403,15 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         await _eventRepository.AddAsync(validEvents.Concat(orphanedEvents), o => o.ImmediateConsistency());
 
         // Act
-        await _job.DeleteOrphanedEventsByOrganizationAsync(new JobContext(TestCancellationToken));
+        Log.Reset();
+        await CreateJob().DeleteOrphanedEventsByOrganizationAsync(new JobContext(TestCancellationToken));
 
         // Assert - Only valid events survive
         var totalAfter = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency());
         Assert.Equal(100, totalAfter);
+        await AssertOnlyEventsRemainAsync(validEvents, orphanedEvents);
+        Assert.Contains(Log.LogEntries, entry =>
+            entry.Message.StartsWith("Deleted 50 recent events referencing missing organizations out of 2 distinct organization IDs since", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -398,7 +439,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         await _eventRepository.AddAsync(validEvents.Concat(ghostEvents), o => o.ImmediateConsistency());
 
         // Act
-        await _job.RunAsync(TestCancellationToken);
+        await _job.DeleteOrphanedEventsByOrganizationAsync(new JobContext(TestCancellationToken));
 
         // Assert
         var totalAfter = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency());
@@ -516,17 +557,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         await _eventRepository.AddAsync(events, o => o.ImmediateConsistency());
 
         Log.Reset();
-        var job = new CleanupOrphanedDataJob(
-            GetService<ExceptionlessElasticConfiguration>(),
-            _stackRepository,
-            _projectRepository,
-            _organizationRepository,
-            _eventRepository,
-            GetService<ICacheClient>(),
-            GetService<ILockProvider>(),
-            TimeProvider,
-            GetService<IResiliencePolicyProvider>(),
-            Log);
+        var job = CreateJob();
         var context = new JobContext(TestCancellationToken);
 
         // Act
@@ -541,15 +572,15 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         Assert.Contains(cleanupLogs, entry =>
             entry.Message.StartsWith("0/1: Did not find any missing stacks out of 1", StringComparison.Ordinal));
         Assert.Contains(cleanupLogs, entry =>
-            entry.Message.StartsWith("Found 0 orphaned events from missing stacks out of 1 since", StringComparison.Ordinal));
+            entry.Message.StartsWith("Deleted 0 recent events referencing missing stacks out of 1 distinct stack IDs since", StringComparison.Ordinal));
         Assert.Contains(cleanupLogs, entry =>
             entry.Message.StartsWith("0/1: Did not find any missing projects out of 1", StringComparison.Ordinal));
         Assert.Contains(cleanupLogs, entry =>
-            entry.Message.StartsWith("Found 0 orphaned events from missing projects out of 1 since", StringComparison.Ordinal));
+            entry.Message.StartsWith("Deleted 0 recent events referencing missing projects out of 1 distinct project IDs since", StringComparison.Ordinal));
         Assert.Contains(cleanupLogs, entry =>
             entry.Message.StartsWith("0/1: Did not find any missing organizations out of 1", StringComparison.Ordinal));
         Assert.Contains(cleanupLogs, entry =>
-            entry.Message.StartsWith("Found 0 orphaned events from missing organizations out of 1 since", StringComparison.Ordinal));
+            entry.Message.StartsWith("Deleted 0 recent events referencing missing organizations out of 1 distinct organization IDs since", StringComparison.Ordinal));
         Assert.Equal(1000, await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency()));
     }
 
@@ -764,17 +795,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         var utcNow = DateTimeOffset.UtcNow;
         TimeProvider.SetUtcNow(utcNow);
 
-        var job = new CleanupOrphanedDataJob(
-            GetService<ExceptionlessElasticConfiguration>(),
-            _stackRepository,
-            _projectRepository,
-            _organizationRepository,
-            _eventRepository,
-            GetService<ICacheClient>(),
-            GetService<ILockProvider>(),
-            TimeProvider,
-            GetService<IResiliencePolicyProvider>(),
-            Log);
+        var job = CreateJob();
 
         Assert.Equal(JobResult.Success, await job.RunAsync(TestCancellationToken));
         TimeProvider.Advance(TimeSpan.FromHours(11) + TimeSpan.FromMilliseconds(1));
@@ -794,6 +815,27 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         var health = await job.CheckHealthAsync(new HealthCheckContext(), TestCancellationToken);
         Assert.Equal(HealthStatus.Unhealthy, health.Status);
         Assert.Equal("Job has not completed successfully in the last 11 hours.", health.Description);
+    }
+
+    [Fact]
+    public async Task RunAsync_FirstElasticsearchFailure_HealthReportsNoSuccessfulCompletion()
+    {
+        // Arrange
+        var job = CreateJob();
+        var failingClient = new ElasticsearchClient(new ElasticsearchClientSettings(new Uri("http://127.0.0.1:1"))
+            .MaximumRetries(0)
+            .RequestTimeout(TimeSpan.FromMilliseconds(100)));
+        typeof(CleanupOrphanedDataJob)
+            .GetField("_elasticClient", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(job, failingClient);
+
+        // Act
+        await Assert.ThrowsAsync<ApplicationException>(() => job.RunAsync(TestCancellationToken));
+
+        // Assert
+        var health = await job.CheckHealthAsync(new HealthCheckContext(), TestCancellationToken);
+        Assert.Equal(HealthStatus.Healthy, health.Status);
+        Assert.Equal("Job has not completed successfully yet.", health.Description);
     }
 
     [Fact]
