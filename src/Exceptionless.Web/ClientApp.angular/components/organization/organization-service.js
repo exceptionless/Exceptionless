@@ -121,10 +121,6 @@
                 return _cachedRestangular.one("organizations", id).all("plans").getList();
             }
 
-            function isNameAvailable(name) {
-                return Restangular.one("organizations", "check-name").get({ name: encodeURIComponent(name) });
-            }
-
             function remove(id) {
                 return Restangular.one("organizations", id).remove();
             }
@@ -149,7 +145,6 @@
                 getInvoice: getInvoice,
                 getInvoices: getInvoices,
                 getPlans: getPlans,
-                isNameAvailable: isNameAvailable,
                 remove: remove,
                 removeUser: removeUser,
                 update: update,
