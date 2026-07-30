@@ -12,7 +12,6 @@ export const E2E_REFERENCE_ID_MAX_LENGTH = 100;
 const E2E_REFERENCE_ID_PREFIX = 'pw-e2e-';
 const SECONDARY_ORGANIZATION_REFERENCE_SUFFIX = '-organization';
 const SECONDARY_PROJECT_REFERENCE_SUFFIX = '-secondary';
-const MAX_DERIVED_REFERENCE_SUFFIX_LENGTH = SECONDARY_ORGANIZATION_REFERENCE_SUFFIX.length;
 
 export interface E2EScenario {
     email: string;
@@ -225,8 +224,7 @@ export const test = base.extend<E2EFixtures>({
 export { expect };
 
 export function createReferenceId(run: string, suffix = ''): string {
-    const suffixLength = Math.max(MAX_DERIVED_REFERENCE_SUFFIX_LENGTH, suffix.length);
-    const runLength = E2E_REFERENCE_ID_MAX_LENGTH - E2E_REFERENCE_ID_PREFIX.length - suffixLength;
+    const runLength = E2E_REFERENCE_ID_MAX_LENGTH - E2E_REFERENCE_ID_PREFIX.length - suffix.length;
     return `${E2E_REFERENCE_ID_PREFIX}${run.slice(0, runLength)}${suffix}`;
 }
 

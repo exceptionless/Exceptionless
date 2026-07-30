@@ -88,7 +88,7 @@ export class E2EApiClient {
             headers: this.authHeaders(token)
         });
 
-        await expectStatus(response, [200, 202, 204, 404], 'delete organization user');
+        await expectStatus(response, [200, 404], 'delete organization user');
         return response.status();
     }
 
@@ -286,109 +286,43 @@ export class E2EApiClient {
     }
 
     async waitForCurrentUserDeleted(token: string, timeoutMs = 30_000): Promise<void> {
-        const deadline = Date.now() + timeoutMs;
-        let lastError: Error | undefined;
-
-        while (Date.now() < deadline) {
-            try {
-                const user = await this.getCurrentUser(token);
-                if (!user) {
-                    return;
-                }
-            } catch (error) {
-                lastError = error instanceof Error ? error : new Error(String(error));
-            }
-
-            await delay(1_000);
-        }
-
-        throw new Error(`Timed out waiting for generated E2E user to be inaccessible after deletion${lastError ? `: ${lastError.message}` : ''}`);
+        await waitForCondition(
+            async () => !(await this.getCurrentUser(token)),
+            timeoutMs,
+            'Timed out waiting for generated E2E user to be inaccessible after deletion'
+        );
     }
 
     async waitForOrganizationDeleted(token: string, organizationId: string, timeoutMs = 30_000): Promise<void> {
-        const deadline = Date.now() + timeoutMs;
-        let lastError: Error | undefined;
-
-        while (Date.now() < deadline) {
-            try {
-                const organization = await this.getOrganization(token, organizationId);
-                if (!organization) {
-                    return;
-                }
-            } catch (error) {
-                lastError = error instanceof Error ? error : new Error(String(error));
-            }
-
-            await delay(1_000);
-        }
-
-        throw new Error(
-            `Timed out waiting for E2E organization ${organizationId} to be inaccessible after deletion${lastError ? `: ${lastError.message}` : ''}`
+        await waitForCondition(
+            async () => !(await this.getOrganization(token, organizationId)),
+            timeoutMs,
+            `Timed out waiting for E2E organization ${organizationId} to be inaccessible after deletion`
         );
     }
 
     async waitForOrganizationListed(token: string, organizationId: string, timeoutMs = 30_000): Promise<void> {
-        const deadline = Date.now() + timeoutMs;
-        let lastError: Error | undefined;
-
-        while (Date.now() < deadline) {
-            try {
-                const organizations = await this.getOrganizations(token);
-                if (organizations.some((organization) => organization.id === organizationId)) {
-                    return;
-                }
-            } catch (error) {
-                lastError = error instanceof Error ? error : new Error(String(error));
-            }
-
-            await delay(1_000);
-        }
-
-        throw new Error(
-            `Timed out waiting for E2E organization ${organizationId} to appear in the organizations list${lastError ? `: ${lastError.message}` : ''}`
+        await waitForCondition(
+            async () => (await this.getOrganizations(token)).some((organization) => organization.id === organizationId),
+            timeoutMs,
+            `Timed out waiting for E2E organization ${organizationId} to appear in the organizations list`
         );
     }
 
     async waitForOrganizationNotListed(token: string, organizationId: string, timeoutMs = 30_000): Promise<void> {
-        const deadline = Date.now() + timeoutMs;
-        let lastError: Error | undefined;
-
-        while (Date.now() < deadline) {
-            try {
-                const organizations = await this.getOrganizations(token);
-                if (!organizations.some((organization) => organization.id === organizationId)) {
-                    return;
-                }
-            } catch (error) {
-                lastError = error instanceof Error ? error : new Error(String(error));
-            }
-
-            await delay(1_000);
-        }
-
-        throw new Error(
-            `Timed out waiting for E2E organization ${organizationId} to disappear from the organizations list${lastError ? `: ${lastError.message}` : ''}`
+        await waitForCondition(
+            async () => !(await this.getOrganizations(token)).some((organization) => organization.id === organizationId),
+            timeoutMs,
+            `Timed out waiting for E2E organization ${organizationId} to disappear from the organizations list`
         );
     }
 
     async waitForProjectDeleted(token: string, projectId: string, timeoutMs = 30_000): Promise<void> {
-        const deadline = Date.now() + timeoutMs;
-        let lastError: Error | undefined;
-
-        while (Date.now() < deadline) {
-            try {
-                const project = await this.getProject(token, projectId);
-                if (!project) {
-                    return;
-                }
-            } catch (error) {
-                lastError = error instanceof Error ? error : new Error(String(error));
-            }
-
-            await delay(1_000);
-        }
-
-        throw new Error(`Timed out waiting for E2E project ${projectId} to be inaccessible after deletion${lastError ? `: ${lastError.message}` : ''}`);
+        await waitForCondition(
+            async () => !(await this.getProject(token, projectId)),
+            timeoutMs,
+            `Timed out waiting for E2E project ${projectId} to be inaccessible after deletion`
+        );
     }
 
     private authHeaders(token: string): Record<string, string> {
@@ -530,4 +464,23 @@ function toTokenResult(value: unknown): TokenResult {
     return {
         token: getRequiredString(record, 'token', 'token result')
     };
+}
+
+async function waitForCondition(condition: () => Promise<boolean>, timeoutMs: number, timeoutMessage: string): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+    let lastError: Error | undefined;
+
+    while (Date.now() < deadline) {
+        try {
+            if (await condition()) {
+                return;
+            }
+        } catch (error) {
+            lastError = error instanceof Error ? error : new Error(String(error));
+        }
+
+        await delay(1_000);
+    }
+
+    throw new Error(`${timeoutMessage}${lastError ? `: ${lastError.message}` : ''}`);
 }

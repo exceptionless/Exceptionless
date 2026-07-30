@@ -1,9 +1,9 @@
-import { expect, test } from '../fixtures/e2e-test';
+import { createReferenceId, expect, test } from '../fixtures/e2e-test';
 import { getVisibleRow, getVisibleText } from '../support/page-helpers';
 import { createSessionEvent } from '../support/synthetic-event';
 
 test('operator can find and inspect a user session', async ({ e2eApi, e2eScenario, page }) => {
-    const sessionId = `${e2eScenario.referenceId}-session`;
+    const sessionId = createReferenceId(e2eScenario.run, '-session');
     const identity = `session-${e2eScenario.run}@exceptionless.test`;
     const name = `Session User ${e2eScenario.run}`;
 

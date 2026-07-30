@@ -3,7 +3,7 @@ import { expect, type Page, type TestInfo } from '@playwright/test';
 import type { E2EApiClient } from '../fixtures/api-client';
 import type { E2EScenario } from '../fixtures/e2e-test';
 
-import { createRunName, E2E_ORGANIZATION_NAME_PREFIX, E2E_TEST_PASSWORD } from '../fixtures/e2e-test';
+import { createReferenceId, createRunName, E2E_ORGANIZATION_NAME_PREFIX, E2E_TEST_PASSWORD } from '../fixtures/e2e-test';
 import { runCleanupStep, throwIfCleanupFailed } from './cleanup';
 import { seedRepresentativeEvent } from './event-data';
 import {
@@ -61,7 +61,7 @@ export class ExceptionlessE2EJourney {
         this.email = `playwright-${this.run}@exceptionless.test`.toLowerCase();
         this.organizationName = `${E2E_ORGANIZATION_NAME_PREFIX} ${this.run}`;
         this.projectName = `Playwright Project ${this.run}`;
-        this.referenceId = `pw-e2e-${this.run}`;
+        this.referenceId = createReferenceId(this.run);
         this.message = `Playwright onboarding event ${this.run}`;
     }
 
