@@ -852,7 +852,13 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
                 ["projectId"] = TestConstants.ProjectId
             },
             cancellationToken: TestContext.Current.CancellationToken);
-        var context = await client.CallToolAsync("get_context", cancellationToken: TestContext.Current.CancellationToken);
+        var context = await client.CallToolAsync(
+            "get_context",
+            new Dictionary<string, object?>
+            {
+                ["projectId"] = TestConstants.ProjectId
+            },
+            cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(nativeProtocolVersion, client.NegotiatedProtocolVersion);
         Assert.Null(client.SessionId);
@@ -861,6 +867,48 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         Assert.NotEqual(true, context.IsError);
         Assert.NotNull(context.StructuredContent);
         Assert.Contains(TestConstants.ProjectId, context.StructuredContent.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task OAuthBearer_McpDownLevelClient_NegotiatesAndCallsTool()
+    {
+        const string downLevelProtocolVersion = "2025-06-18";
+        var token = await IssueTokenAsync();
+        using var httpClient = _server.CreateClient();
+        var transport = new HttpClientTransport(
+            new HttpClientTransportOptions
+            {
+                Endpoint = new Uri(_server.BaseAddress, "/mcp"),
+                AdditionalHeaders = new Dictionary<string, string>
+                {
+                    ["Authorization"] = $"Bearer {token.AccessToken}"
+                }
+            },
+            httpClient,
+            GetService<ILoggerFactory>(),
+            ownsHttpClient: false);
+
+        var options = new McpClientOptions
+        {
+            ProtocolVersion = downLevelProtocolVersion,
+            ClientInfo = new Implementation
+            {
+                Name = "exceptionless-mcp-down-level-tests",
+                Version = "1.0.0"
+            }
+        };
+
+        await using var client = await McpClient.CreateAsync(
+            transport,
+            options,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var tools = await client.ListToolsAsync(cancellationToken: TestContext.Current.CancellationToken);
+        var filterFields = await client.CallToolAsync("get_filter_fields", cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(downLevelProtocolVersion, client.NegotiatedProtocolVersion);
+        Assert.Contains(tools, tool => String.Equals(tool.Name, "get_filter_fields", StringComparison.Ordinal));
+        Assert.NotEqual(true, filterFields.IsError);
+        Assert.NotNull(filterFields.StructuredContent);
     }
 
     [Fact]

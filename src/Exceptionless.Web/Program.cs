@@ -190,6 +190,7 @@ public partial class Program
                     .MapStatus(ResultStatus.Unavailable, ApiResultMapper.MapUnavailable));
             Bootstrapper.RegisterServices(builder.Services, options, Log.Logger.ToLoggerFactory());
             builder.Services.AddScoped<McpContextService>();
+            // Leave the protocol version unset so native v2 and down-level MCP clients can negotiate a supported version.
             builder.Services.AddMcpServer()
                 .WithHttpTransport()
                 .WithTools<ExceptionlessMcpTools>();

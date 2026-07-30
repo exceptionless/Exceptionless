@@ -6,6 +6,7 @@
 POST {{rootUrl}}/mcp
 Authorization: Bearer {{token}}
 MCP-Protocol-Version: 2026-07-28
+Mcp-Method: server/discover
 Content-Type: application/json
 Accept: application/json, text/event-stream
 
@@ -29,6 +30,7 @@ Accept: application/json, text/event-stream
 POST {{rootUrl}}/mcp
 Authorization: Bearer {{token}}
 MCP-Protocol-Version: 2026-07-28
+Mcp-Method: tools/list
 Content-Type: application/json
 Accept: application/json, text/event-stream
 
@@ -53,6 +55,8 @@ Accept: application/json, text/event-stream
 POST {{rootUrl}}/mcp
 Authorization: Bearer {{token}}
 MCP-Protocol-Version: 2026-07-28
+Mcp-Method: tools/call
+Mcp-Name: search_stacks
 Content-Type: application/json
 Accept: application/json, text/event-stream
 

@@ -14,7 +14,6 @@ public static class IdentityUtils
     public const string ProjectIdClaim = "ProjectId";
     public const string DefaultProjectIdClaim = "DefaultProjectId";
     public const string OAuthClientIdClaim = "OAuthClientId";
-    public const string OAuthGrantIdClaim = "OAuthGrantId";
     public const string OAuthResourceClaim = "OAuthResource";
 
     public static ClaimsIdentity ToIdentity(this Token token)
@@ -110,7 +109,6 @@ public static class IdentityUtils
                     new(OrganizationIdsClaim, String.Join(",", organizationIds)),
                     new(LoggedInUsersTokenId, token.Id),
                     new(OAuthClientIdClaim, token.ClientId),
-                    new(OAuthGrantIdClaim, token.GrantId),
                     new(OAuthResourceClaim, token.Resource)
                 };
 

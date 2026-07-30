@@ -91,13 +91,23 @@ public sealed class ExceptionlessMcpTools
     }
 
     [McpServerTool(Name = "get_context", ReadOnly = true, UseStructuredContent = true)]
-    [Description("Gets the active MCP organization and project context for the authenticated OAuth grant.")]
-    public async Task<McpResponse<McpContextResult>> GetContextAsync()
+    [Description("Resolves an Exceptionless organization and project context for this call. Context is not stored; pass the returned ids to subsequent scoped tools.")]
+    public async Task<McpResponse<McpContextResult>> GetContextAsync(
+        [Description("Optional organization id to resolve.")]
+        string? organizationId = null,
+        [Description("Optional project id to resolve. Its organization is resolved automatically.")]
+        string? projectId = null)
     {
         try
         {
             EnsureScope(AuthorizationRoles.McpRead);
-            var context = await _mcpContextService.GetContextAsync(requireProject: false);
+            if (!String.IsNullOrWhiteSpace(organizationId) && !TryValidateId(organizationId, "organizationId", out var organizationIdError))
+                return McpResponse<McpContextResult>.Failed(organizationIdError);
+
+            if (!String.IsNullOrWhiteSpace(projectId) && !TryValidateId(projectId, "projectId", out var projectIdError))
+                return McpResponse<McpContextResult>.Failed(projectIdError);
+
+            var context = await _mcpContextService.GetContextAsync(organizationId, projectId, requireProject: false);
             if (!context.Succeeded)
                 return McpResponse<McpContextResult>.Failed(context.Error!);
 
@@ -105,7 +115,7 @@ public sealed class ExceptionlessMcpTools
         }
         catch (Exception ex) when (IsLookupError(ex))
         {
-            return McpResponse<McpContextResult>.Failed(ToLookupError("MCP context", "current authorization", ex));
+            return McpResponse<McpContextResult>.Failed(ToLookupError("MCP context", projectId ?? organizationId ?? "current authorization", ex));
         }
     }
 
@@ -125,10 +135,10 @@ public sealed class ExceptionlessMcpTools
         }
     }
 
-    [McpServerTool(Name = "switch_organization", ReadOnly = false, UseStructuredContent = true)]
-    [Description("Sets the active MCP organization for the authenticated OAuth grant and clears any active project unless the organization has exactly one project.")]
+    [McpServerTool(Name = "switch_organization", ReadOnly = true, UseStructuredContent = true)]
+    [Description("Resolves an organization context for this call. The selection is not stored; pass organizationId to subsequent organization-scoped tools.")]
     public async Task<McpResponse<McpContextResult>> SwitchOrganizationAsync(
-        [Description("The Exceptionless organization id to make active.")]
+        [Description("The Exceptionless organization id to resolve.")]
         string organizationId)
     {
         try
@@ -149,10 +159,10 @@ public sealed class ExceptionlessMcpTools
         }
     }
 
-    [McpServerTool(Name = "switch_project", ReadOnly = false, UseStructuredContent = true)]
-    [Description("Sets the active MCP project for the authenticated OAuth grant and switches the active organization to the project's organization.")]
+    [McpServerTool(Name = "switch_project", ReadOnly = true, UseStructuredContent = true)]
+    [Description("Resolves a project and its organization for this call. The selection is not stored; pass projectId to subsequent project-scoped tools.")]
     public async Task<McpResponse<McpContextResult>> SwitchProjectAsync(
-        [Description("The Exceptionless project id to make active.")]
+        [Description("The Exceptionless project id to resolve.")]
         string projectId)
     {
         try
@@ -173,12 +183,12 @@ public sealed class ExceptionlessMcpTools
         }
     }
 
-    [McpServerTool(Name = "resolve_project_context", ReadOnly = false, UseStructuredContent = true)]
-    [Description("Resolves and sets the active MCP project context by project id or exact project name.")]
+    [McpServerTool(Name = "resolve_project_context", ReadOnly = true, UseStructuredContent = true)]
+    [Description("Resolves a project context by project id or exact project name. The selection is not stored; pass the returned projectId to subsequent project-scoped tools.")]
     public async Task<McpResponse<McpContextResult>> ResolveProjectContextAsync(
-        [Description("Optional Exceptionless project id to make active.")]
+        [Description("Optional Exceptionless project id to resolve.")]
         string? projectId = null,
-        [Description("Optional exact project name to make active within the active organization.")]
+        [Description("Optional exact project name to resolve within the specified organization.")]
         string? projectName = null,
         [Description("Optional organization id to use when resolving a project name.")]
         string? organizationId = null)
@@ -200,12 +210,15 @@ public sealed class ExceptionlessMcpTools
         }
         catch (Exception ex) when (IsLookupError(ex))
         {
-            return McpResponse<McpContextResult>.Failed(ToLookupError("Project", projectId ?? projectName ?? "current authorization", ex));
+            return McpResponse<McpContextResult>.Failed(ToLookupError("Project", projectId ?? projectName ?? organizationId ?? "current authorization", ex));
         }
     }
+
     [McpServerTool(Name = "list_projects", ReadOnly = true, UseStructuredContent = true)]
-    [Description("Lists projects the authenticated Exceptionless user can access. When pagination.hasMore is true, pass pagination.after to fetch the next page or pagination.before to fetch the previous page.")]
+    [Description("Lists projects the authenticated Exceptionless user can access in an explicitly specified organization. When pagination.hasMore is true, pass pagination.after to fetch the next page or pagination.before to fetch the previous page.")]
     public async Task<McpResponse<McpListData<McpProjectResult>>> ListProjectsAsync(
+        [Description("The Exceptionless organization id to list projects within.")]
+        string organizationId,
         [Description(ProjectFilterDescription)]
         string? filter = null,
         [Description("Optional sort expression. Defaults to project name.")]
@@ -220,6 +233,9 @@ public sealed class ExceptionlessMcpTools
         try
         {
             EnsureScope(AuthorizationRoles.ProjectsRead);
+            if (!TryValidateId(organizationId, "organizationId", out var idError))
+                return McpResponse<McpListData<McpProjectResult>>.Failed(idError);
+
             var validation = ValidateProjectSearch(filter, sort, limit);
             if (validation.Error is not null)
                 return McpResponse<McpListData<McpProjectResult>>.Failed(validation.Error);
@@ -229,11 +245,11 @@ public sealed class ExceptionlessMcpTools
 
             int resolvedLimit = validation.Limit;
 
-            var context = await _mcpContextService.GetContextAsync(requireProject: false);
+            var context = await _mcpContextService.GetContextAsync(organizationId: organizationId, requireProject: false);
             if (!context.Succeeded)
                 return McpResponse<McpListData<McpProjectResult>>.Failed(context.Error!);
 
-            var organization = context.ActiveOrganization ?? throw new UnauthorizedAccessException("No active organization is available.");
+            var organization = context.ActiveOrganization ?? throw new UnauthorizedAccessException("The requested organization is not available.");
             var systemFilter = new AppFilter(organization);
 
             var results = await _projectRepository.GetByFilterAsync(systemFilter, filter, sort, o => o
@@ -260,13 +276,13 @@ public sealed class ExceptionlessMcpTools
     [McpServerTool(Name = "get_project", ReadOnly = true, UseStructuredContent = true)]
     [Description("Gets summary details for a specific Exceptionless project.")]
     public async Task<McpResponse<McpProjectResult>> GetProjectAsync(
-        [Description("Optional Exceptionless project id. Defaults to the active MCP project context.")]
-        string? projectId = null)
+        [Description("The Exceptionless project id.")]
+        string projectId)
     {
         try
         {
             EnsureScope(AuthorizationRoles.ProjectsRead);
-            if (!String.IsNullOrWhiteSpace(projectId) && !TryValidateId(projectId, "projectId", out var idError))
+            if (!TryValidateId(projectId, "projectId", out var idError))
                 return McpResponse<McpProjectResult>.Failed(idError);
 
             var projectContext = await _mcpContextService.ResolveProjectAsync(projectId);
@@ -277,22 +293,22 @@ public sealed class ExceptionlessMcpTools
         }
         catch (Exception ex) when (IsLookupError(ex))
         {
-            return McpResponse<McpProjectResult>.Failed(ToLookupError("Project", projectId ?? "active project", ex));
+            return McpResponse<McpProjectResult>.Failed(ToLookupError("Project", projectId, ex));
         }
     }
 
     [McpServerTool(Name = "get_client_setup_instructions", ReadOnly = true, UseStructuredContent = true)]
     [Description("Gets project-specific Exceptionless client setup instructions for sending events from an app. Use this for setup questions such as Expo or React Native apps.")]
     public async Task<McpResponse<McpClientSetupInstructionsResult>> GetClientSetupInstructionsAsync(
-        [Description("Optional Exceptionless project id to configure. Defaults to the active MCP project context.")]
-        string? projectId = null,
+        [Description("The Exceptionless project id to configure.")]
+        string projectId,
         [Description("Client platform to configure. Supported values: expo, react-native. Use expo for Expo apps.")]
         string platform = "expo")
     {
         try
         {
             EnsureScope(AuthorizationRoles.ProjectsRead);
-            if (!String.IsNullOrWhiteSpace(projectId) && !TryValidateId(projectId, "projectId", out var idError))
+            if (!TryValidateId(projectId, "projectId", out var idError))
                 return McpResponse<McpClientSetupInstructionsResult>.Failed(idError);
 
             string normalizedPlatform = platform.Trim().ToLowerInvariant();
@@ -315,7 +331,7 @@ public sealed class ExceptionlessMcpTools
             };
 
             if (token is null)
-                notes.Add("No active project API key was found. Create or enable a project API key in Exceptionless, then replace YOUR_API_KEY.");
+                notes.Add("No enabled project API key was found. Create or enable a project API key in Exceptionless, then replace YOUR_API_KEY.");
 
             string packageName;
             string documentationUrl;
@@ -354,7 +370,7 @@ public sealed class ExceptionlessMcpTools
         }
         catch (Exception ex) when (IsLookupError(ex))
         {
-            return McpResponse<McpClientSetupInstructionsResult>.Failed(ToLookupError("Project", projectId ?? "active project", ex));
+            return McpResponse<McpClientSetupInstructionsResult>.Failed(ToLookupError("Project", projectId, ex));
         }
         catch (Exception ex) when (IsExpectedToolError(ex))
         {
@@ -365,8 +381,8 @@ public sealed class ExceptionlessMcpTools
     [McpServerTool(Name = "search_stacks", ReadOnly = true, UseStructuredContent = true)]
     [Description("Searches stacks in an Exceptionless project, useful for top issues, top 404s, or recent problem groups. When pagination.hasMore is true, pass pagination.after to fetch the next page or pagination.before to fetch the previous page.")]
     public async Task<McpResponse<McpListData<McpStackResult>>> SearchStacksAsync(
-        [Description("Optional Exceptionless project id to search within. Defaults to the active MCP project context.")]
-        string? projectId = null,
+        [Description("The Exceptionless project id to search within.")]
+        string projectId,
         [Description(StackFilterDescription)]
         string? filter = null,
         [Description("Optional sort expression. Defaults to -last_occurrence.")]
@@ -387,7 +403,7 @@ public sealed class ExceptionlessMcpTools
         try
         {
             EnsureScope(AuthorizationRoles.StacksRead);
-            if (!String.IsNullOrWhiteSpace(projectId) && !TryValidateId(projectId, "projectId", out var idError))
+            if (!TryValidateId(projectId, "projectId", out var idError))
                 return McpResponse<McpListData<McpStackResult>>.Failed(idError);
 
             var validation = await ValidateSearchAsync(filter, sort, limit, StackFilterFields, StackSortFields, _stackQueryValidator);
@@ -419,7 +435,7 @@ public sealed class ExceptionlessMcpTools
         }
         catch (Exception ex) when (IsLookupError(ex))
         {
-            return McpResponse<McpListData<McpStackResult>>.Failed(ToLookupError("Project", projectId ?? "active project", ex));
+            return McpResponse<McpListData<McpStackResult>>.Failed(ToLookupError("Project", projectId, ex));
         }
         catch (Exception ex) when (IsExpectedToolError(ex))
         {
@@ -431,7 +447,9 @@ public sealed class ExceptionlessMcpTools
     [Description("Gets summary details for a specific Exceptionless stack.")]
     public async Task<McpResponse<McpStackResult>> GetStackAsync(
         [Description("The Exceptionless stack id.")]
-        string stackId)
+        string stackId,
+        [Description("The Exceptionless project id that owns the stack.")]
+        string projectId)
     {
         try
         {
@@ -439,7 +457,10 @@ public sealed class ExceptionlessMcpTools
             if (!TryValidateId(stackId, "stackId", out var idError))
                 return McpResponse<McpStackResult>.Failed(idError);
 
-            var stack = await GetAccessibleStackAsync(stackId);
+            if (!TryValidateId(projectId, "projectId", out var projectIdError))
+                return McpResponse<McpStackResult>.Failed(projectIdError);
+
+            var stack = await GetAccessibleStackAsync(stackId, projectId);
             return McpResponse<McpStackResult>.Success(ToStackResult(stack));
         }
         catch (Exception ex) when (IsLookupError(ex))
@@ -453,6 +474,8 @@ public sealed class ExceptionlessMcpTools
     public async Task<McpResponse<McpListData<McpEventResult>>> GetStackEventsAsync(
         [Description("The Exceptionless stack id.")]
         string stackId,
+        [Description("The Exceptionless project id that owns the stack.")]
+        string projectId,
         [Description(EventFilterDescription)]
         string? filter = null,
         [Description("Optional sort expression. Defaults to -date.")]
@@ -476,6 +499,9 @@ public sealed class ExceptionlessMcpTools
             if (!TryValidateId(stackId, "stackId", out var idError))
                 return McpResponse<McpListData<McpEventResult>>.Failed(idError);
 
+            if (!TryValidateId(projectId, "projectId", out var projectIdError))
+                return McpResponse<McpListData<McpEventResult>>.Failed(projectIdError);
+
             var validation = await ValidateSearchAsync(filter, sort, limit, EventFilterFields, EventSortFields, _eventQueryValidator);
             if (validation.Error is not null)
                 return McpResponse<McpListData<McpEventResult>>.Failed(validation.Error);
@@ -486,7 +512,7 @@ public sealed class ExceptionlessMcpTools
             if (!TryResolveTimeRange(last, startUtc, endUtc, out var timeRange, out var timeError))
                 return McpResponse<McpListData<McpEventResult>>.Failed(timeError);
 
-            var (stack, organization) = await GetStackAndOrganizationAsync(stackId);
+            var (stack, organization) = await GetStackAndOrganizationAsync(stackId, projectId);
             var systemFilter = new AppFilter(stack, organization);
 
             var results = await _eventRepository.FindAsync(
@@ -511,8 +537,8 @@ public sealed class ExceptionlessMcpTools
     [McpServerTool(Name = "search_events", ReadOnly = true, UseStructuredContent = true)]
     [Description("Searches event summary rows in an Exceptionless project. Use this for event-first triage across correlation ids, order ids, users, sessions, recent windows, or data.* fields. When pagination.hasMore is true, pass pagination.after or pagination.before to page.")]
     public async Task<McpResponse<McpListData<McpEventResult>>> SearchEventsAsync(
-        [Description("Optional Exceptionless project id to search within. Defaults to the active MCP project context.")]
-        string? projectId = null,
+        [Description("The Exceptionless project id to search within.")]
+        string projectId,
         [Description(EventFilterDescription)]
         string? filter = null,
         [Description("Optional sort expression. Defaults to -date.")]
@@ -533,7 +559,7 @@ public sealed class ExceptionlessMcpTools
         try
         {
             EnsureScope(AuthorizationRoles.EventsRead);
-            if (!String.IsNullOrWhiteSpace(projectId) && !TryValidateId(projectId, "projectId", out var idError))
+            if (!TryValidateId(projectId, "projectId", out var idError))
                 return McpResponse<McpListData<McpEventResult>>.Failed(idError);
 
             var validation = await ValidateSearchAsync(filter, sort, limit, EventFilterFields, EventSortFields, _eventQueryValidator);
@@ -565,7 +591,7 @@ public sealed class ExceptionlessMcpTools
         }
         catch (Exception ex) when (IsLookupError(ex))
         {
-            return McpResponse<McpListData<McpEventResult>>.Failed(ToLookupError("Project", projectId ?? "active project", ex));
+            return McpResponse<McpListData<McpEventResult>>.Failed(ToLookupError("Project", projectId, ex));
         }
         catch (Exception ex) when (IsExpectedToolError(ex))
         {
@@ -578,6 +604,8 @@ public sealed class ExceptionlessMcpTools
     public async Task<McpResponse<McpEventResult>> GetEventAsync(
         [Description("The Exceptionless event id.")]
         string eventId,
+        [Description("The Exceptionless project id that owns the event.")]
+        string projectId,
         [Description("Whether to include error, request, environment, and extended data. Defaults to true.")]
         bool includeDetails = true,
         [Description("Maximum serialized detail payload size in bytes when includeDetails is true. Defaults to 16384, minimum 1024, maximum 65536. Large detail sections are omitted with truncation metadata.")]
@@ -589,6 +617,9 @@ public sealed class ExceptionlessMcpTools
             if (!TryValidateId(eventId, "eventId", out var idError))
                 return McpResponse<McpEventResult>.Failed(idError);
 
+            if (!TryValidateId(projectId, "projectId", out var projectIdError))
+                return McpResponse<McpEventResult>.Failed(projectIdError);
+
             if (includeDetails && !TryValidateDetailSize(maxDetailSize, out var detailSizeError))
                 return McpResponse<McpEventResult>.Failed(detailSizeError);
 
@@ -597,7 +628,7 @@ public sealed class ExceptionlessMcpTools
                 return McpResponse<McpEventResult>.Failed(McpErrors.NotFound($"Event {eventId} was not found or is not accessible.", "eventId", eventId));
 
             EnsureOrganizationAccess(ev.OrganizationId);
-            var contextError = await _mcpContextService.ValidateProjectScopeAsync(ev.OrganizationId, ev.ProjectId);
+            var contextError = await _mcpContextService.ValidateProjectScopeAsync(ev.OrganizationId, ev.ProjectId, projectId);
             if (contextError is not null)
                 return McpResponse<McpEventResult>.Failed(contextError);
 
@@ -612,8 +643,8 @@ public sealed class ExceptionlessMcpTools
     [McpServerTool(Name = "count_events", ReadOnly = true, UseStructuredContent = true)]
     [Description("Counts Exceptionless events and occurrences in a project, with optional time buckets and groupBy dimensions for questions like occurrences by version, tag, user, or error type.")]
     public async Task<McpResponse<McpEventCountResult>> CountEventsAsync(
-        [Description("Optional Exceptionless project id to count within. Defaults to the active MCP project context.")]
-        string? projectId = null,
+        [Description("The Exceptionless project id to count within.")]
+        string projectId,
         [Description(EventFilterDescription)]
         string? filter = null,
         [Description(LastDescription)]
@@ -632,7 +663,7 @@ public sealed class ExceptionlessMcpTools
         try
         {
             EnsureScope(AuthorizationRoles.EventsRead);
-            if (!String.IsNullOrWhiteSpace(projectId) && !TryValidateId(projectId, "projectId", out var idError))
+            if (!TryValidateId(projectId, "projectId", out var idError))
                 return McpResponse<McpEventCountResult>.Failed(idError);
 
             var validation = await ValidateSearchAsync(filter, sort: null, DefaultLimit, EventFilterFields, EventSortFields, _eventQueryValidator);
@@ -719,7 +750,7 @@ public sealed class ExceptionlessMcpTools
         }
         catch (Exception ex) when (IsLookupError(ex))
         {
-            return McpResponse<McpEventCountResult>.Failed(ToLookupError("Project", projectId ?? "active project", ex));
+            return McpResponse<McpEventCountResult>.Failed(ToLookupError("Project", projectId, ex));
         }
         catch (Exception ex) when (IsExpectedToolError(ex))
         {
@@ -732,6 +763,8 @@ public sealed class ExceptionlessMcpTools
     public async Task<McpResponse<McpStackUpdateResult>> UpdateStackStatusAsync(
         [Description("The Exceptionless stack id.")]
         string stackId,
+        [Description("The Exceptionless project id that owns the stack.")]
+        string projectId,
         [Description("Target status: open, fixed, ignored, or discarded. Regressed and snoozed cannot be set directly.")]
         string status,
         [Description("Optional semantic version for fixed status, such as 1.0.2. Only allowed when status is fixed.")]
@@ -743,13 +776,16 @@ public sealed class ExceptionlessMcpTools
             if (!TryValidateId(stackId, "stackId", out var idError))
                 return McpResponse<McpStackUpdateResult>.Failed(idError);
 
+            if (!TryValidateId(projectId, "projectId", out var projectIdError))
+                return McpResponse<McpStackUpdateResult>.Failed(projectIdError);
+
             if (!TryParseWritableStackStatus(status, out var stackStatus, out var statusError))
                 return McpResponse<McpStackUpdateResult>.Failed(statusError);
 
             if (!String.IsNullOrWhiteSpace(fixedInVersion) && stackStatus != StackStatus.Fixed)
                 return McpResponse<McpStackUpdateResult>.Failed(McpErrors.InvalidVersion("fixedInVersion can only be used when status is fixed.", fixedInVersion));
 
-            var stack = await GetAccessibleStackForWriteAsync(stackId);
+            var stack = await GetAccessibleStackForWriteAsync(stackId, projectId);
             bool changed = stack.Status != stackStatus || (stackStatus == StackStatus.Fixed && !String.Equals(stack.FixedInVersion, NormalizeFixedVersion(fixedInVersion), StringComparison.Ordinal));
 
             if (stackStatus == StackStatus.Fixed)
@@ -789,6 +825,8 @@ public sealed class ExceptionlessMcpTools
     public async Task<McpResponse<McpStackUpdateResult>> SnoozeStackAsync(
         [Description("The Exceptionless stack id.")]
         string stackId,
+        [Description("The Exceptionless project id that owns the stack.")]
+        string projectId,
         [Description(SnoozeDurationDescription)]
         string? duration = null,
         [Description("Optional UTC time to snooze until, for example 2026-06-26T12:00:00Z. Do not combine with duration.")]
@@ -800,10 +838,13 @@ public sealed class ExceptionlessMcpTools
             if (!TryValidateId(stackId, "stackId", out var idError))
                 return McpResponse<McpStackUpdateResult>.Failed(idError);
 
+            if (!TryValidateId(projectId, "projectId", out var projectIdError))
+                return McpResponse<McpStackUpdateResult>.Failed(projectIdError);
+
             if (!TryResolveSnoozeUntil(duration, snoozeUntilUtc, out var untilUtc, out var snoozeError))
                 return McpResponse<McpStackUpdateResult>.Failed(snoozeError);
 
-            var stack = await GetAccessibleStackForWriteAsync(stackId);
+            var stack = await GetAccessibleStackForWriteAsync(stackId, projectId);
             bool changed = stack.Status != StackStatus.Snoozed || stack.SnoozeUntilUtc != untilUtc;
             stack.Status = StackStatus.Snoozed;
             stack.SnoozeUntilUtc = untilUtc;
@@ -831,6 +872,8 @@ public sealed class ExceptionlessMcpTools
     public async Task<McpResponse<McpStackUpdateResult>> SetStackCriticalAsync(
         [Description("The Exceptionless stack id.")]
         string stackId,
+        [Description("The Exceptionless project id that owns the stack.")]
+        string projectId,
         [Description("True marks future events for this stack as critical; false clears that behavior.")]
         bool critical)
     {
@@ -840,7 +883,10 @@ public sealed class ExceptionlessMcpTools
             if (!TryValidateId(stackId, "stackId", out var idError))
                 return McpResponse<McpStackUpdateResult>.Failed(idError);
 
-            var stack = await GetAccessibleStackForWriteAsync(stackId);
+            if (!TryValidateId(projectId, "projectId", out var projectIdError))
+                return McpResponse<McpStackUpdateResult>.Failed(projectIdError);
+
+            var stack = await GetAccessibleStackForWriteAsync(stackId, projectId);
             bool changed = stack.OccurrencesAreCritical != critical;
             stack.OccurrencesAreCritical = critical;
 
@@ -867,6 +913,8 @@ public sealed class ExceptionlessMcpTools
     public async Task<McpResponse<McpStackUpdateResult>> AddStackReferenceLinkAsync(
         [Description("The Exceptionless stack id.")]
         string stackId,
+        [Description("The Exceptionless project id that owns the stack.")]
+        string projectId,
         [Description("The reference link to add to the stack, such as an issue, pull request, deployment, or incident URL.")]
         string url)
     {
@@ -876,10 +924,13 @@ public sealed class ExceptionlessMcpTools
             if (!TryValidateId(stackId, "stackId", out var idError))
                 return McpResponse<McpStackUpdateResult>.Failed(idError);
 
+            if (!TryValidateId(projectId, "projectId", out var projectIdError))
+                return McpResponse<McpStackUpdateResult>.Failed(projectIdError);
+
             if (!TryNormalizeReferenceUrl(url, out string referenceLink, out var referenceError))
                 return McpResponse<McpStackUpdateResult>.Failed(referenceError);
 
-            var stack = await GetAccessibleStackForWriteAsync(stackId);
+            var stack = await GetAccessibleStackForWriteAsync(stackId, projectId);
             bool changed = !stack.References.Contains(referenceLink);
             if (changed)
             {
@@ -909,6 +960,8 @@ public sealed class ExceptionlessMcpTools
     public async Task<McpResponse<McpStackUpdateResult>> RemoveStackReferenceLinkAsync(
         [Description("The Exceptionless stack id.")]
         string stackId,
+        [Description("The Exceptionless project id that owns the stack.")]
+        string projectId,
         [Description("The reference link to remove from the stack.")]
         string url)
     {
@@ -918,11 +971,14 @@ public sealed class ExceptionlessMcpTools
             if (!TryValidateId(stackId, "stackId", out var idError))
                 return McpResponse<McpStackUpdateResult>.Failed(idError);
 
+            if (!TryValidateId(projectId, "projectId", out var projectIdError))
+                return McpResponse<McpStackUpdateResult>.Failed(projectIdError);
+
             string? referenceLink = NormalizeReferenceLink(url);
             if (referenceLink is null)
                 return McpResponse<McpStackUpdateResult>.Failed(McpErrors.InvalidReferenceLink("url is required.", url));
 
-            var stack = await GetAccessibleStackForWriteAsync(stackId);
+            var stack = await GetAccessibleStackForWriteAsync(stackId, projectId);
             bool changed = stack.References.Remove(referenceLink);
             if (changed)
                 await _stackRepository.SaveAsync(stack, o => o.ImmediateConsistency());
@@ -1010,7 +1066,7 @@ public sealed class ExceptionlessMcpTools
         return (project, organization);
     }
 
-    private async Task<Stack> GetAccessibleStackAsync(string stackId)
+    private async Task<Stack> GetAccessibleStackAsync(string stackId, string projectId)
     {
         if (String.IsNullOrWhiteSpace(stackId))
             throw new ArgumentException("Stack id is required.", nameof(stackId));
@@ -1020,14 +1076,14 @@ public sealed class ExceptionlessMcpTools
             throw new KeyNotFoundException($"Stack {stackId} was not found.");
 
         EnsureOrganizationAccess(stack.OrganizationId);
-        var contextError = await _mcpContextService.ValidateProjectScopeAsync(stack.OrganizationId, stack.ProjectId);
+        var contextError = await _mcpContextService.ValidateProjectScopeAsync(stack.OrganizationId, stack.ProjectId, projectId);
         if (contextError is not null)
             throw new McpContextException(contextError);
 
         return stack;
     }
 
-    private async Task<Stack> GetAccessibleStackForWriteAsync(string stackId)
+    private async Task<Stack> GetAccessibleStackForWriteAsync(string stackId, string projectId)
     {
         if (String.IsNullOrWhiteSpace(stackId))
             throw new ArgumentException("Stack id is required.", nameof(stackId));
@@ -1037,16 +1093,16 @@ public sealed class ExceptionlessMcpTools
             throw new KeyNotFoundException($"Stack {stackId} was not found.");
 
         EnsureOrganizationAccess(stack.OrganizationId);
-        var contextError = await _mcpContextService.ValidateProjectScopeAsync(stack.OrganizationId, stack.ProjectId);
+        var contextError = await _mcpContextService.ValidateProjectScopeAsync(stack.OrganizationId, stack.ProjectId, projectId);
         if (contextError is not null)
             throw new McpContextException(contextError);
 
         return stack;
     }
 
-    private async Task<(Stack Stack, Organization Organization)> GetStackAndOrganizationAsync(string stackId)
+    private async Task<(Stack Stack, Organization Organization)> GetStackAndOrganizationAsync(string stackId, string projectId)
     {
-        var stack = await GetAccessibleStackAsync(stackId);
+        var stack = await GetAccessibleStackAsync(stackId, projectId);
         var organization = await _organizationRepository.GetByIdAsync(stack.OrganizationId, o => o.Cache());
         if (organization is null)
             throw new KeyNotFoundException($"Organization {stack.OrganizationId} was not found.");
