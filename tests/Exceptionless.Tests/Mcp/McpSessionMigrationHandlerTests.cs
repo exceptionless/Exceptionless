@@ -6,8 +6,6 @@ using Foundatio.Caching;
 using Foundatio.Serializer;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using ModelContextProtocol.AspNetCore;
 using ModelContextProtocol.Protocol;
 using Xunit;
 
@@ -85,7 +83,6 @@ public sealed class McpSessionMigrationHandlerTests : TestWithServices
         return new McpSessionMigrationHandler(
             GetService<ICacheClient>(),
             GetService<ITextSerializer>(),
-            Options.Create(new HttpServerTransportOptions { IdleTimeout = TimeSpan.FromMinutes(30) }),
             TimeProvider,
             GetService<ILogger<McpSessionMigrationHandler>>());
     }

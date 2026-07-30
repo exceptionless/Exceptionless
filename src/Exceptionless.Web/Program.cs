@@ -20,7 +20,6 @@ using Exceptionless.Web.Utility.OpenApi;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Mediator;
 using Foundatio.Repositories.Exceptions;
-using HttpIResult = Microsoft.AspNetCore.Http.IResult;
 using Joonasw.AspNetCore.SecurityHeaders;
 using Joonasw.AspNetCore.SecurityHeaders.Csp;
 using Microsoft.AspNetCore.Authorization;
@@ -38,6 +37,7 @@ using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.Exceptionless;
+using HttpIResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Exceptionless.Web;
 
@@ -192,6 +192,8 @@ public partial class Program
             builder.Services.AddScoped<McpContextService>();
             builder.Services.AddSingleton<ISessionMigrationHandler, McpSessionMigrationHandler>();
             builder.Services.AddMcpServer()
+                // MCP context is session-scoped. SDK v2 clients automatically downgrade from
+                // the stateless 2026-07-28 protocol to the stateful 2025-11-25 protocol here.
                 .WithHttpTransport(o => o.Stateless = false)
                 .WithTools<ExceptionlessMcpTools>();
             builder.Services.AddSingleton(_ => new ThrottlingOptions

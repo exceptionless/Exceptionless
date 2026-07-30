@@ -18,6 +18,8 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.DependencyInjection;
+using ModelContextProtocol.Client;
+using ModelContextProtocol.Protocol;
 using Xunit;
 
 namespace Exceptionless.Tests.Api.Endpoints;
@@ -793,6 +795,47 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task OAuthBearer_McpV2Client_DowngradesAndCallsTool()
+    {
+        var token = await IssueTokenAsync();
+        using var httpClient = _server.CreateClient();
+        var transport = new HttpClientTransport(
+            new HttpClientTransportOptions
+            {
+                Endpoint = new Uri(_server.BaseAddress, "/mcp"),
+                AdditionalHeaders = new Dictionary<string, string>
+                {
+                    ["Authorization"] = $"Bearer {token.AccessToken}"
+                }
+            },
+            httpClient,
+            GetService<ILoggerFactory>(),
+            ownsHttpClient: false);
+
+        var options = new McpClientOptions
+        {
+            ClientInfo = new Implementation
+            {
+                Name = "exceptionless-mcp-v2-tests",
+                Version = "1.0.0"
+            }
+        };
+
+        await using var client = await McpClient.CreateAsync(
+            transport,
+            options,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var tools = await client.ListToolsAsync(cancellationToken: TestContext.Current.CancellationToken);
+        var context = await client.CallToolAsync("get_context", cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal("2025-11-25", client.NegotiatedProtocolVersion);
+        Assert.False(String.IsNullOrWhiteSpace(client.SessionId));
+        Assert.Contains(tools, tool => String.Equals(tool.Name, "get_context", StringComparison.Ordinal));
+        Assert.NotEqual(true, context.IsError);
+        Assert.NotNull(context.StructuredContent);
     }
 
     [Fact]

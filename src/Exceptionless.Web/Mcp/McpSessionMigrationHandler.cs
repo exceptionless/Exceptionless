@@ -3,7 +3,6 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Foundatio.Caching;
 using Foundatio.Serializer;
-using Microsoft.Extensions.Options;
 using ModelContextProtocol.AspNetCore;
 using ModelContextProtocol.Protocol;
 
@@ -12,14 +11,14 @@ namespace Exceptionless.Web.Mcp;
 public sealed class McpSessionMigrationHandler(
     ICacheClient cacheClient,
     ITextSerializer serializer,
-    IOptions<HttpServerTransportOptions> transportOptions,
     TimeProvider timeProvider,
     ILogger<McpSessionMigrationHandler> logger) : ISessionMigrationHandler
 {
     private const string CacheKeyPrefix = "mcp:session:";
     private const string UserClientId = "user";
     private static readonly TimeSpan LifetimeBuffer = TimeSpan.FromMinutes(5);
-    private static readonly TimeSpan DefaultIdleTimeout = TimeSpan.FromHours(2);
+    // Matches the SDK v2 legacy stateful transport's documented idle-session lifetime.
+    private static readonly TimeSpan SessionIdleTimeout = TimeSpan.FromHours(2);
 
     public async ValueTask OnSessionInitializedAsync(HttpContext context, string sessionId, InitializeRequestParams initializeParams, CancellationToken cancellationToken)
     {
@@ -88,11 +87,7 @@ public sealed class McpSessionMigrationHandler(
 
     private TimeSpan GetCacheLifetime()
     {
-        TimeSpan idleTimeout = transportOptions.Value.IdleTimeout;
-        if (idleTimeout <= TimeSpan.Zero)
-            idleTimeout = DefaultIdleTimeout;
-
-        return idleTimeout + LifetimeBuffer;
+        return SessionIdleTimeout + LifetimeBuffer;
     }
 
     private static bool Matches(McpSessionMigrationState state, McpSessionIdentity sessionIdentity)

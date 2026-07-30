@@ -162,7 +162,8 @@ Content-Type: application/x-www-form-urlencoded
 
 client_id={{clientId}}&token=replace-with-access-or-refresh-token
 
-### MCP with OAuth Bearer Token
+### Initialize MCP with OAuth Bearer Token
+# @name oauthMcpInitialize
 POST {{rootUrl}}/mcp
 Authorization: Bearer replace-with-oauth-access-token
 Content-Type: application/json
@@ -171,6 +172,39 @@ Accept: application/json, text/event-stream
 {
   "jsonrpc": "2.0",
   "id": 1,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "2025-11-25",
+    "capabilities": {},
+    "clientInfo": {
+      "name": "exceptionless-oauth-http-sample",
+      "version": "1.0.0"
+    }
+  }
+}
+
+### Complete MCP session initialization
+POST {{rootUrl}}/mcp
+Authorization: Bearer replace-with-oauth-access-token
+MCP-Session-Id: {{oauthMcpInitialize.response.headers.MCP-Session-Id}}
+Content-Type: application/json
+Accept: application/json, text/event-stream
+
+{
+  "jsonrpc": "2.0",
+  "method": "notifications/initialized"
+}
+
+### List MCP tools with OAuth Bearer Token
+POST {{rootUrl}}/mcp
+Authorization: Bearer replace-with-oauth-access-token
+MCP-Session-Id: {{oauthMcpInitialize.response.headers.MCP-Session-Id}}
+Content-Type: application/json
+Accept: application/json, text/event-stream
+
+{
+  "jsonrpc": "2.0",
+  "id": 2,
   "method": "tools/list",
   "params": {}
 }
