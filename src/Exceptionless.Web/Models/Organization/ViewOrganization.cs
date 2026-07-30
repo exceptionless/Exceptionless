@@ -100,24 +100,27 @@ public static class ViewOrganizationExtensions
             var billingChangeMonthUtc = organization.BillingChangeDate?.ToUniversalTime().StartOfMonth();
             bool currentPlanStartedAfterBonusExpiration = billingChangeMonthUtc > bonusExpirationMonthUtc;
             limitAfterBonusExpiration = usageAtBonusExpiration is not null
-                ? GetLimitWithoutBonus(usageAtBonusExpiration.Limit,
+                ? GetLimitWithoutBonus(usageAtBonusExpiration,
                     currentPlanStartedAfterBonusExpiration && usageBeforeBonusExpiration?.Limit == usageAtBonusExpiration.Limit)
                 : usageBeforeBonusExpiration is not null
-                    ? GetLimitWithoutBonus(usageBeforeBonusExpiration.Limit, currentPlanStartedAfterBonusExpiration)
+                    ? GetLimitWithoutBonus(usageBeforeBonusExpiration, currentPlanStartedAfterBonusExpiration)
                     : baseLimit;
 
             var firstKnownUsage = knownUsages.FirstOrDefault();
             if (startDateUtc < bonusExpirationMonthUtc.Value && firstKnownUsage is not null && firstKnownUsage.Date < bonusExpirationMonthUtc.Value)
-                limit = GetLimitWithoutBonus(firstKnownUsage.Limit, currentPlanStartedAfterBonusExpiration);
+                limit = GetLimitWithoutBonus(firstKnownUsage, currentPlanStartedAfterBonusExpiration);
             else if (startDateUtc >= bonusExpirationMonthUtc.Value
                 && !knownUsages.Any(u => u.Date >= bonusExpirationMonthUtc.Value && u.Date <= startDateUtc))
                 limit = limitAfterBonusExpiration;
 
-            int GetLimitWithoutBonus(int knownLimit, bool inferHistoricalBonus) =>
-                knownLimit > organization.BonusEventsPerMonth
-                    && (knownLimit == baseLimit + organization.BonusEventsPerMonth || inferHistoricalBonus)
-                    ? knownLimit - organization.BonusEventsPerMonth
-                    : knownLimit;
+            int GetLimitWithoutBonus(UsageInfo knownUsage, bool inferHistoricalBonus)
+            {
+                bool currentPlanWasActive = !billingChangeMonthUtc.HasValue || knownUsage.Date >= billingChangeMonthUtc.Value;
+                return knownUsage.Limit > organization.BonusEventsPerMonth
+                    && (currentPlanWasActive && knownUsage.Limit == baseLimit + organization.BonusEventsPerMonth || inferHistoricalBonus)
+                        ? knownUsage.Limit - organization.BonusEventsPerMonth
+                        : knownUsage.Limit;
+            }
         }
 
         while (startDateUtc <= endDateUtc)
