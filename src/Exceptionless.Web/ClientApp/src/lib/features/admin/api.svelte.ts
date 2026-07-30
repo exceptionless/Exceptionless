@@ -1,4 +1,4 @@
-import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+import { type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 
 import type {

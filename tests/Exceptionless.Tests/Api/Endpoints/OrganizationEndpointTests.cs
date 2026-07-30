@@ -1477,7 +1477,10 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         Assert.NotNull(result);
         Assert.True(result.Success);
         Assert.Equal("cus_existing", StripeBillingClient.LastSubscriptionListOptions?.Customer);
-        Assert.Equal("sub_active", Assert.Single(StripeBillingClient.CanceledSubscriptions).SubscriptionId);
+        var canceledSubscription = Assert.Single(StripeBillingClient.CanceledSubscriptions);
+        Assert.Equal("sub_active", canceledSubscription.SubscriptionId);
+        Assert.True(canceledSubscription.Options.Prorate);
+        Assert.True(canceledSubscription.Options.InvoiceNow);
 
         var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
         Assert.NotNull(organization);

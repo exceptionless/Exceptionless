@@ -31,7 +31,7 @@
     import { isEntityChangedType, type WebSocketMessageType } from '$features/websockets/models';
     import { WebSocketClient } from '$features/websockets/web-socket-client.svelte';
     import { Telemetry } from '$lib/telemetry';
-    import { useMiddleware } from '@exceptionless/fetchclient';
+    import { useMiddleware } from '@foundatiofx/fetchclient';
     import { useQueryClient } from '@tanstack/svelte-query';
     import { tick } from 'svelte';
     import { fade } from 'svelte/transition';

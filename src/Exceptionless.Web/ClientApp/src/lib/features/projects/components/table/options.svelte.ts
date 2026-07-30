@@ -1,5 +1,5 @@
 import type { ViewProject } from '$features/projects/models';
-import type { FetchClientResponse, ProblemDetails } from '@exceptionless/fetchclient';
+import type { FetchClientResponse, ProblemDetails } from '@foundatiofx/fetchclient';
 import type { CreateQueryResult } from '@tanstack/svelte-query';
 
 import NumberFormatter from '$comp/formatters/number.svelte';

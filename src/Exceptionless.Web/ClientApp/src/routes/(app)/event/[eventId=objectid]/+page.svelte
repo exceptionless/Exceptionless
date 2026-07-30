@@ -1,6 +1,6 @@
 <script lang="ts">
     import type { PersistentEvent } from '$features/events/models';
-    import type { ProblemDetails } from '@exceptionless/fetchclient';
+    import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
@@ -51,5 +51,5 @@
     id={page.params.eventId || ''}
     {handleError}
     onEventLoaded={handleEventLoaded}
-    onNavigate={(newId) => goto(resolve('/(app)/event/[eventId=objectid]', { eventId: newId }))}
+    onNavigate={(newId) => goto(buildEventDetailsHref(newId))}
 />
