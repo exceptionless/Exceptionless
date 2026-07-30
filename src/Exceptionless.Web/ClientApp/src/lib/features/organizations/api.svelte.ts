@@ -247,10 +247,10 @@ export function deleteOrganizationDataMutation() {
             return response.ok;
         },
         mutationKey: queryKeys.data(undefined),
-        onMutate: ({ organizationId }) => cancelOrganizationDataRead(queryClient, organizationId),
         onError: (_, { organizationId }) => {
             queryClient.invalidateQueries({ queryKey: queryKeys.id(organizationId, undefined) });
         },
+        onMutate: ({ organizationId }) => cancelOrganizationDataRead(queryClient, organizationId),
         onSuccess: (_, { key, organizationId }) => {
             updateOrganizationQueryData(queryClient, organizationId, (organization) => {
                 if (!organization.data) {
@@ -516,10 +516,10 @@ export function postOrganizationDataMutation() {
             return response.ok;
         },
         mutationKey: queryKeys.data(undefined),
-        onMutate: ({ organizationId }) => cancelOrganizationDataRead(queryClient, organizationId),
         onError: (_, { organizationId }) => {
             queryClient.invalidateQueries({ queryKey: queryKeys.id(organizationId, undefined) });
         },
+        onMutate: ({ organizationId }) => cancelOrganizationDataRead(queryClient, organizationId),
         onSuccess: (_, { key, organizationId, value }) => {
             updateOrganizationQueryData(queryClient, organizationId, (organization) => ({
                 ...organization,
@@ -648,12 +648,12 @@ export function uploadOrganizationIcon(request: OrganizationIconRequest) {
     }));
 }
 
-function updateOrganizationCache(queryClient: QueryClient, id: string | undefined, organization: ViewOrganization) {
-    updateOrganizationQueryData(queryClient, id, () => organization);
-}
-
 async function cancelOrganizationDataRead(queryClient: QueryClient, organizationId: string) {
     await queryClient.cancelQueries({ queryKey: queryKeys.id(organizationId, undefined) });
+}
+
+function updateOrganizationCache(queryClient: QueryClient, id: string | undefined, organization: ViewOrganization) {
+    updateOrganizationQueryData(queryClient, id, () => organization);
 }
 
 function updateOrganizationQueryData(queryClient: QueryClient, id: string | undefined, updater: (organization: ViewOrganization) => ViewOrganization) {
