@@ -189,53 +189,6 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task IsNameAvailableAsync_WithExistingName_ReturnsCreated()
-    {
-        // Arrange
-        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
-        Assert.NotNull(organization);
-
-        // Act & Assert
-        await SendRequestAsync(r => r
-            .AsTestOrganizationUser()
-            .AppendPaths("organizations", "check-name")
-            .QueryString("name", organization.Name)
-            .StatusCodeShouldBeCreated()
-        );
-    }
-
-    [Fact]
-    public Task IsNameAvailableAsync_WithNewName_ReturnsNoContent()
-    {
-        // Arrange
-        string name = "API Surface Organization " + Guid.NewGuid().ToString("N");
-
-        // Act & Assert
-        return SendRequestAsync(r => r
-            .AsTestOrganizationUser()
-            .AppendPaths("organizations", "check-name")
-            .QueryString("name", name)
-            .StatusCodeShouldBeNoContent()
-        );
-    }
-
-    [Fact]
-    public async Task IsNameAvailableAsync_WithOmittedName_ReturnsCreated()
-    {
-        // Arrange
-
-        // Act
-        using var response = await SendRequestAsync(r => r
-            .AsTestOrganizationUser()
-            .AppendPaths("organizations", "check-name")
-            .StatusCodeShouldBeCreated()
-        );
-
-        // Assert
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-    }
-
-    [Fact]
     public async Task PlanStatsAsync_AsGlobalAdmin_ReturnsPlanStats()
     {
         // Arrange
@@ -346,6 +299,28 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
                 Data = [new SubscriptionItem { Id = itemId }]
             }
         };
+
+    [Fact]
+    public async Task PostAsync_DuplicateOrganizationName_ReturnsCreated()
+    {
+        // Arrange
+        var existingOrganization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(existingOrganization);
+
+        // Act
+        var createdOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPath("organizations")
+            .Content(new NewOrganization { Name = existingOrganization.Name })
+            .StatusCodeShouldBeCreated()
+        );
+
+        // Assert
+        Assert.NotNull(createdOrganization);
+        Assert.NotEqual(existingOrganization.Id, createdOrganization.Id);
+        Assert.Equal(existingOrganization.Name, createdOrganization.Name);
+    }
 
     [Fact]
     public async Task PostAsync_NewOrganization_MapsToOrganizationAndCreates()
@@ -1864,6 +1839,48 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PatchAsync_CurrentOrganizationName_ReturnsUpdatedOrganization()
+    {
+        // Arrange
+        var existingOrganization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(existingOrganization);
+
+        // Act
+        var updatedOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", existingOrganization.Id)
+            .Content(new NewOrganization { Name = existingOrganization.Name })
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updatedOrganization);
+        Assert.Equal(existingOrganization.Name, updatedOrganization.Name);
+    }
+
+    [Fact]
+    public async Task PatchAsync_DuplicateOrganizationName_ReturnsUpdatedOrganization()
+    {
+        // Arrange
+        var otherOrganization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(otherOrganization);
+
+        // Act
+        var updatedOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
+            .Patch()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
+            .Content(new NewOrganization { Name = otherOrganization.Name })
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updatedOrganization);
+        Assert.Equal(otherOrganization.Name, updatedOrganization.Name);
+    }
+
+    [Fact]
     public async Task PatchAsync_EmptyName_ReturnsValidationError()
     {
         // Arrange
@@ -1880,7 +1897,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
             .StatusCodeShouldBeBadRequest()
         );
 
-        // Assert - verify data unchanged
+        // Assert
         var unchangedOrg = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.NotNull(unchangedOrg);
         Assert.Equal(originalName, unchangedOrg.Name);
