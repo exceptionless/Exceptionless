@@ -100,14 +100,14 @@ public class BillingManager
         if (!String.IsNullOrEmpty(organization.PlanId))
         {
             var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+            var currentMonthUtc = utcNow.StartOfMonth();
+            var previousMonthUtc = currentMonthUtc.AddMonths(-1);
             int previousLimit = organization.MaxEventsPerMonth != 0
                 ? organization.MaxEventsPerMonth
                 : GetBillingPlan(organization.PlanId)?.MaxEventsPerMonth ?? 0;
-            if (previousLimit > 0 && organization.BonusExpiration > utcNow)
+            if (previousLimit > 0 && organization.BonusExpiration > previousMonthUtc)
                 previousLimit += organization.BonusEventsPerMonth;
 
-            var currentMonthUtc = utcNow.StartOfMonth();
-            var previousMonthUtc = currentMonthUtc.AddMonths(-1);
             var organizationCreatedMonthUtc = organization.CreatedUtc.ToUniversalTime().StartOfMonth();
             if (previousLimit != 0 && previousMonthUtc >= organizationCreatedMonthUtc)
                 organization.Usage.GetUsage(previousMonthUtc, previousLimit);
