@@ -111,7 +111,11 @@ public class BillingManager
 
             var organizationCreatedMonthUtc = organization.CreatedUtc.ToUniversalTime().StartOfMonth();
             if (previousLimit != 0 && previousMonthUtc >= organizationCreatedMonthUtc)
-                organization.Usage.GetUsage(previousMonthUtc, previousLimit);
+            {
+                var previousUsage = organization.Usage.GetUsage(previousMonthUtc, previousLimit);
+                if (previousUsage.Limit == 0)
+                    previousUsage.Limit = previousLimit;
+            }
         }
 
         organization.PlanId = plan.Id;
