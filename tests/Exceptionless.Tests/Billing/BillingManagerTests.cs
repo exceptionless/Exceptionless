@@ -9,7 +9,7 @@ public class BillingManagerTests : TestWithServices
     public BillingManagerTests(ITestOutputHelper output) : base(output) { }
 
     [Fact]
-    public void ApplyBillingPlan_ExistingPlanWithoutUsage_BackfillsPreviousPlanLimit()
+    public void ApplyBillingPlan_ExistingPlanWithoutUsage_BackfillsSinceOrganizationCreation()
     {
         // Arrange
         var billingManager = GetService<BillingManager>();
@@ -18,6 +18,7 @@ public class BillingManagerTests : TestWithServices
         TimeProvider.SetUtcNow(utcNow);
         var organization = new Organization
         {
+            CreatedUtc = new DateTime(2026, 4, 15, 0, 0, 0, DateTimeKind.Utc),
             PlanId = plans.SmallPlan.Id,
             MaxEventsPerMonth = plans.SmallPlan.MaxEventsPerMonth
         };
@@ -26,7 +27,8 @@ public class BillingManagerTests : TestWithServices
         billingManager.ApplyBillingPlan(organization, plans.MediumPlan);
 
         // Assert
-        Assert.Equal(12, organization.Usage.Count);
+        Assert.Equal(3, organization.Usage.Count);
+        Assert.DoesNotContain(organization.Usage, usage => usage.Date < new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc));
         Assert.All(organization.Usage.Where(u => u.Date < new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc)),
             usage => Assert.Equal(plans.SmallPlan.MaxEventsPerMonth, usage.Limit));
         Assert.Equal(plans.MediumPlan.MaxEventsPerMonth, organization.Usage.Single(u => u.Date == new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc)).Limit);
