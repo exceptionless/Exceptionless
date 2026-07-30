@@ -63,12 +63,14 @@ export function getSearchResourceForPathname(pathname: string): SearchResource {
  * Matches patterns like `field:value` or `field:(value1 OR value2)`.
  */
 function extractFilterFields(filter: string): string[] {
+    // Ignore quoted and range values so value text such as ISO timestamps is not mistaken for a field.
+    const filterWithoutValueLiterals = filter.replace(/"(?:\\.|[^"\\])*"|\[(?:\\.|[^\]\\])*\]|\{(?:\\.|[^}\\])*\}/g, '');
     // Lucene field names may have unary +/- prefixes and contain metadata (@) or custom-name hyphens.
     const fieldPattern = /(?:^|\s|[(!])[-+]?(\w[\w.@-]*):/g;
     const fields: string[] = [];
     let match: null | RegExpExecArray;
 
-    while ((match = fieldPattern.exec(filter)) !== null) {
+    while ((match = fieldPattern.exec(filterWithoutValueLiterals)) !== null) {
         fields.push(match[1]!);
     }
 

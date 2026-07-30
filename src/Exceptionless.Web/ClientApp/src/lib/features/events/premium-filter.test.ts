@@ -3,7 +3,18 @@ import { describe, expect, it } from 'vitest';
 import { filterUsesPremiumFeatures, getSearchResourceForPathname } from './premium-filter';
 
 describe('filterUsesPremiumFeatures', () => {
-    it.each([undefined, null, '', 'status:open', '(status:open OR status:regressed)', 'reference:ABC123'])('allows free event filters: %s', (filter) => {
+    it.each([
+        undefined,
+        null,
+        '',
+        'status:open',
+        '(status:open OR status:regressed)',
+        'reference:ABC123',
+        'date:[2026-07-01T00:00:00Z TO 2026-07-30T23:59:59Z]',
+        'date:{2026-07-01T00:00:00Z TO 2026-07-30T23:59:59Z}',
+        'reference:"ABC tags:important"',
+        'reference:"ABC \\" tags:important"'
+    ])('allows free event filters: %s', (filter) => {
         expect(filterUsesPremiumFeatures(filter, 'event')).toBe(false);
     });
 
@@ -51,6 +62,10 @@ describe('filterUsesPremiumFeatures', () => {
 
     it('detects a premium field after a free field', () => {
         expect(filterUsesPremiumFeatures('status:open AND tags:important', 'event')).toBe(true);
+    });
+
+    it('detects a premium field after an absolute date range', () => {
+        expect(filterUsesPremiumFeatures('date:[2026-07-01T00:00:00Z TO 2026-07-30T23:59:59Z] tags:important', 'event')).toBe(true);
     });
 });
 
