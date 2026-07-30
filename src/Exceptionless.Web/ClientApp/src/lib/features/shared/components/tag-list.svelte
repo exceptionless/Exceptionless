@@ -4,6 +4,7 @@
     import { Kbd } from '$comp/ui/kbd';
     import * as Tooltip from '$comp/ui/tooltip';
     import { toast } from 'svelte-sonner';
+    import { SvelteSet } from 'svelte/reactivity';
 
     interface Props {
         class?: string;
@@ -17,6 +18,44 @@
     const visibleTags = $derived(tags?.slice(0, maxVisible) ?? []);
     const hiddenTags = $derived(tags?.slice(maxVisible) ?? []);
     const tagList = $derived(tags?.join(', ') ?? '');
+    const truncatedTags = new SvelteSet<string>();
+
+    function observeTruncation(node: HTMLElement, tag: string) {
+        const badge = node.querySelector<HTMLElement>('[data-slot="badge"]');
+        if (!badge) {
+            return;
+        }
+
+        const badgeElement = badge;
+
+        function updateTruncation() {
+            const isTruncated = badgeElement.scrollWidth > badgeElement.clientWidth;
+            if (truncatedTags.has(tag) === isTruncated) {
+                return;
+            }
+
+            if (isTruncated) {
+                truncatedTags.add(tag);
+            } else {
+                truncatedTags.delete(tag);
+            }
+        }
+
+        updateTruncation();
+
+        if (typeof ResizeObserver === 'undefined') {
+            return;
+        }
+
+        const observer = new ResizeObserver(updateTruncation);
+        observer.observe(badgeElement);
+
+        return {
+            destroy() {
+                observer.disconnect();
+            }
+        };
+    }
 
     async function handleTagClick(event: MouseEvent, tag: string): Promise<void> {
         event.preventDefault();
@@ -37,8 +76,9 @@
     }
 </script>
 
-{#snippet tagBadge(tag: string)}
+{#snippet tagBadge(tag: string, title?: string)}
     <Badge
+        {title}
         variant="outline"
         class="border-border bg-muted text-muted-foreground group-hover/button:bg-accent group-hover/button:text-accent-foreground dark:border-muted-foreground/50 max-w-28 truncate rounded-md text-xs"
     >
@@ -59,22 +99,35 @@
                         class="h-auto cursor-pointer p-0"
                         onclick={(event) => handleTagClick(event, tag)}
                     >
-                        {@render tagBadge(tag)}
+                        <span class="contents" use:observeTruncation={tag}>
+                            {@render tagBadge(tag)}
+                        </span>
                     </Button>
                 {/snippet}
             </Tooltip.Trigger>
-            <Tooltip.Content arrowClasses="hidden" class="border-border bg-popover text-popover-foreground border shadow-md" sideOffset={4}>
-                Click to filter. Hold
-                <Kbd
-                    class="border-border in-data-[slot=tooltip-content]:bg-muted in-data-[slot=tooltip-content]:text-foreground dark:border-muted-foreground/50 dark:in-data-[slot=tooltip-content]:bg-muted border"
-                >
-                    Alt / Option
-                </Kbd>
-                while clicking to copy.
+            <Tooltip.Content
+                arrowClasses="hidden"
+                class="border-border bg-popover text-popover-foreground max-w-sm flex-col items-start border shadow-md"
+                sideOffset={4}
+            >
+                {#if truncatedTags.has(tag)}
+                    <span class="max-w-xs font-medium break-all">{tag}</span>
+                {/if}
+                <span class="flex items-center gap-1 whitespace-nowrap">
+                    Click to filter. Hold
+                    <Kbd
+                        class="border-border in-data-[slot=tooltip-content]:bg-muted in-data-[slot=tooltip-content]:text-foreground dark:border-muted-foreground/50 dark:in-data-[slot=tooltip-content]:bg-muted border"
+                    >
+                        Alt / Option
+                    </Kbd>
+                    while clicking to copy.
+                </span>
             </Tooltip.Content>
         </Tooltip.Root>
     {:else}
-        {@render tagBadge(tag)}
+        <span class="contents" use:observeTruncation={tag}>
+            {@render tagBadge(tag, truncatedTags.has(tag) ? tag : undefined)}
+        </span>
     {/if}
 {/snippet}
 
