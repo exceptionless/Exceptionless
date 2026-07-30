@@ -145,7 +145,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task PostForceUpdatePredefinedAsync_GlobalAdmin_OverwritesMatchingOrganizationSavedViews()
+    public async Task PostForceUpdatePredefinedAsync_GlobalAdmin_OverwritesMatchingAndCreatesMissingOrganizationSavedViews()
     {
         // Arrange
         var predefinedViews = await SendRequestAsAsync<List<ViewSavedView>>(r => r
@@ -157,12 +157,14 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
 
         Assert.NotNull(predefinedViews);
         var logs = predefinedViews.First(view => IsPredefinedSavedView(view, "events", "Logs"));
+        var allStacks = predefinedViews.First(view => IsPredefinedSavedView(view, "stacks", "All"));
         var savedLogs = await _savedViewRepository.GetByIdAsync(logs.Id);
         Assert.NotNull(savedLogs);
         savedLogs.PredefinedKey = "EVENTS:LOGS";
         savedLogs.Filter = "type:error";
         savedLogs.Slug = "custom-logs";
         await _savedViewRepository.SaveAsync(savedLogs, o => o.ImmediateConsistency());
+        await _savedViewRepository.RemoveAsync(allStacks.Id, o => o.ImmediateConsistency());
 
         var testUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
         Assert.NotNull(testUser);
@@ -209,6 +211,16 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         Assert.Equal("type:log (status:open OR status:regressed)", updatedLogs.Filter);
         Assert.Equal("logs", updatedLogs.Slug);
         Assert.Equal(PredefinedSavedViewContentHasher.GetContentHash(updatedLogs), updatedLogs.PredefinedContentHash);
+
+        var recreatedAllStacks = await _savedViewRepository.GetByViewAsync(
+            SampleDataService.TEST_ORG_ID,
+            "stacks",
+            o => o.ImmediateConsistency());
+        var recreatedAllStacksView = Assert.Single(
+            recreatedAllStacks.Documents,
+            view => String.Equals(view.PredefinedKey, "stacks:all", StringComparison.OrdinalIgnoreCase));
+        Assert.True(IsPredefinedSavedView(recreatedAllStacksView, "stacks", "All"));
+        Assert.Equal(PredefinedSavedViewContentHasher.GetContentHash(recreatedAllStacksView), recreatedAllStacksView.PredefinedContentHash);
 
         var unchangedPrivateLogs = await _savedViewRepository.GetByIdAsync(privateLogs.Id);
         Assert.NotNull(unchangedPrivateLogs);

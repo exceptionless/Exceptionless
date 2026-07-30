@@ -1,5 +1,5 @@
 import type { ClientConfiguration, ClientConfigurationSetting } from '$features/projects/models';
-import type { ProblemDetails } from '@exceptionless/fetchclient';
+import type { ProblemDetails } from '@foundatiofx/fetchclient';
 import type { CreateQueryResult } from '@tanstack/svelte-query';
 
 import ProjectConfigActionsCell from '$features/projects/components/table/project-config-actions-cell.svelte';

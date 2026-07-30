@@ -6,7 +6,7 @@
     import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
     import { getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
-    import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { ProblemDetails } from '@foundatiofx/fetchclient';
     import Documentation from '@lucide/svelte/icons/help-circle';
     import { createForm } from '@tanstack/svelte-form';
     import { debounce } from 'throttle-debounce';

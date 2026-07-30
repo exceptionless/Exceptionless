@@ -955,31 +955,113 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         Assert.NotNull(spentToken);
         Assert.True(spentToken.IsDisabled);
         Assert.Equal(OAuthService.CreateTokenHash(token.RefreshToken), spentToken.RefreshTokenHash);
+        Assert.NotNull(spentToken.RefreshTokenUsedUtc);
 
         var refreshedStoredToken = await GetStoredOAuthTokenAsync(refreshedToken.AccessToken);
         Assert.NotNull(refreshedStoredToken);
         Assert.False(refreshedStoredToken.IsDisabled);
         Assert.Equal(OAuthService.CreateTokenHash(refreshedToken.RefreshToken), refreshedStoredToken.RefreshTokenHash);
         Assert.Equal(spentToken.GrantId, refreshedStoredToken.GrantId);
+    }
 
-        using var reusedRefreshRequestContent = new FormUrlEncodedContent(new Dictionary<string, string?>
-        {
-            ["grant_type"] = OAuthGrantTypes.RefreshToken,
-            ["client_id"] = ClientId,
-            ["refresh_token"] = token.RefreshToken
-        });
-        var reusedRefreshResponse = await client.PostAsync("oauth/token", reusedRefreshRequestContent, TestContext.Current.CancellationToken);
+    [Fact]
+    public async Task TokenAsync_RecentlyUsedRefreshToken_IssuesNewToken()
+    {
+        var token = await IssueTokenAsync();
+        Assert.NotNull(token.RefreshToken);
+        using var client = CreateHttpClient();
+
+        using var firstRefreshContent = CreateRefreshTokenContent(token.RefreshToken);
+        var firstRefreshResponse = await client.PostAsync("oauth/token", firstRefreshContent, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, firstRefreshResponse.StatusCode);
+        var firstRefreshedToken = await DeserializeResponseAsync<OAuthTokenResponse>(firstRefreshResponse);
+        Assert.NotNull(firstRefreshedToken);
+
+        using var reusedRefreshContent = CreateRefreshTokenContent(token.RefreshToken);
+        var reusedRefreshResponse = await client.PostAsync("oauth/token", reusedRefreshContent, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, reusedRefreshResponse.StatusCode);
+        var secondRefreshedToken = await DeserializeResponseAsync<OAuthTokenResponse>(reusedRefreshResponse);
+        Assert.NotNull(secondRefreshedToken);
+        Assert.NotEqual(firstRefreshedToken.AccessToken, secondRefreshedToken.AccessToken);
+        Assert.NotEqual(firstRefreshedToken.RefreshToken, secondRefreshedToken.RefreshToken);
+
+        var spentToken = await GetStoredOAuthTokenAsync(token.AccessToken);
+        var firstRefreshedStoredToken = await GetStoredOAuthTokenAsync(firstRefreshedToken.AccessToken);
+        var secondRefreshedStoredToken = await GetStoredOAuthTokenAsync(secondRefreshedToken.AccessToken);
+        Assert.NotNull(spentToken);
+        Assert.NotNull(firstRefreshedStoredToken);
+        Assert.NotNull(secondRefreshedStoredToken);
+        Assert.True(spentToken.IsDisabled);
+        Assert.False(firstRefreshedStoredToken.IsDisabled);
+        Assert.False(secondRefreshedStoredToken.IsDisabled);
+        Assert.Equal(spentToken.GrantId, firstRefreshedStoredToken.GrantId);
+        Assert.Equal(spentToken.GrantId, secondRefreshedStoredToken.GrantId);
+    }
+
+    [Fact]
+    public async Task TokenAsync_MultipleGenerationOldRefreshTokenWithinGracePeriod_IssuesNewToken()
+    {
+        var token = await IssueTokenAsync();
+        Assert.NotNull(token.RefreshToken);
+        using var client = CreateHttpClient();
+
+        using var firstRefreshContent = CreateRefreshTokenContent(token.RefreshToken);
+        var firstRefreshResponse = await client.PostAsync("oauth/token", firstRefreshContent, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, firstRefreshResponse.StatusCode);
+        var firstRefreshedToken = await DeserializeResponseAsync<OAuthTokenResponse>(firstRefreshResponse);
+        Assert.NotNull(firstRefreshedToken);
+        Assert.NotNull(firstRefreshedToken.RefreshToken);
+
+        using var secondRefreshContent = CreateRefreshTokenContent(firstRefreshedToken.RefreshToken);
+        var secondRefreshResponse = await client.PostAsync("oauth/token", secondRefreshContent, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, secondRefreshResponse.StatusCode);
+
+        using var staleRefreshContent = CreateRefreshTokenContent(token.RefreshToken);
+        var staleRefreshResponse = await client.PostAsync("oauth/token", staleRefreshContent, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, staleRefreshResponse.StatusCode);
+        var staleRefreshedToken = await DeserializeResponseAsync<OAuthTokenResponse>(staleRefreshResponse);
+        Assert.NotNull(staleRefreshedToken);
+        Assert.NotNull(staleRefreshedToken.RefreshToken);
+    }
+
+    [Fact]
+    public async Task TokenAsync_RefreshTokenReusedOutsideGracePeriod_RevokesGrantFamily()
+    {
+        var token = await IssueTokenAsync();
+        Assert.NotNull(token.RefreshToken);
+        using var client = CreateHttpClient();
+
+        using var firstRefreshContent = CreateRefreshTokenContent(token.RefreshToken);
+        var firstRefreshResponse = await client.PostAsync("oauth/token", firstRefreshContent, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, firstRefreshResponse.StatusCode);
+
+        TimeProvider.Advance(TimeSpan.FromHours(1).Add(TimeSpan.FromMinutes(1)));
+
+        using var reusedRefreshContent = CreateRefreshTokenContent(token.RefreshToken);
+        var reusedRefreshResponse = await client.PostAsync("oauth/token", reusedRefreshContent, TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, reusedRefreshResponse.StatusCode);
+        await AssertGrantFamilyRevokedAsync(token.AccessToken);
+    }
 
-        spentToken = await GetStoredOAuthTokenAsync(token.AccessToken);
-        refreshedStoredToken = await GetStoredOAuthTokenAsync(refreshedToken.AccessToken);
-        Assert.NotNull(spentToken);
-        Assert.NotNull(refreshedStoredToken);
-        Assert.True(spentToken.IsDisabled);
-        Assert.True(refreshedStoredToken.IsDisabled);
-        Assert.Null(spentToken.RefreshTokenHash);
-        Assert.Null(refreshedStoredToken.RefreshTokenHash);
+    [Fact]
+    public async Task TokenAsync_LegacySpentRefreshTokenWithoutUsedTimestamp_RevokesGrantFamily()
+    {
+        var token = await IssueTokenAsync();
+        Assert.NotNull(token.RefreshToken);
+        var storedToken = await GetStoredOAuthTokenAsync(token.AccessToken);
+        Assert.NotNull(storedToken);
+        storedToken.IsDisabled = true;
+        storedToken.RefreshTokenUsedUtc = null;
+        await _oauthTokenRepository.SaveAsync(storedToken, o => o.ImmediateConsistency());
+        using var client = CreateHttpClient();
+
+        using var refreshContent = CreateRefreshTokenContent(token.RefreshToken);
+        var refreshResponse = await client.PostAsync("oauth/token", refreshContent, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, refreshResponse.StatusCode);
+        await AssertGrantFamilyRevokedAsync(token.AccessToken);
     }
 
     [Fact]
@@ -1123,7 +1205,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task TokenAsync_ConcurrentRefreshTokenUse_AllowsOnlyOneRefresh()
+    public async Task TokenAsync_ConcurrentRefreshTokenUse_AllowsBothRefreshesWithinGracePeriod()
     {
         var token = await IssueTokenAsync();
         Assert.NotNull(token.RefreshToken);
@@ -1145,8 +1227,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
             client.PostAsync("oauth/token", firstRefreshContent, TestContext.Current.CancellationToken),
             client.PostAsync("oauth/token", secondRefreshContent, TestContext.Current.CancellationToken));
 
-        Assert.Contains(responses, r => r.StatusCode == HttpStatusCode.OK);
-        Assert.Contains(responses, r => r.StatusCode == HttpStatusCode.BadRequest);
+        Assert.All(responses, r => Assert.Equal(HttpStatusCode.OK, r.StatusCode));
     }
 
     [Fact]

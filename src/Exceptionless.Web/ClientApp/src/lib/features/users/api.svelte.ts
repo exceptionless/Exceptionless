@@ -4,7 +4,7 @@ import type { WorkInProgressResult } from '$shared/models';
 import { setUserIdentity } from '$features/auth/exceptionless-session';
 import { accessToken } from '$features/auth/index.svelte';
 import { fetchApiJson } from '$features/shared/api/api.svelte';
-import { type FetchClientResponse, ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+import { type FetchClientResponse, ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
 import type { OAuthGrant, UpdateEmailAddressResult, UpdateUser, UpdateUserEmailAddress, ViewCurrentUser, ViewUser } from './models';
