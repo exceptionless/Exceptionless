@@ -201,6 +201,29 @@ public class BillingManagerTests : TestWithServices
     }
 
     [Fact]
+    public void ApplyBillingPlan_UnchangedPlan_PreservesBillingChangeDate()
+    {
+        // Arrange
+        var billingManager = GetService<BillingManager>();
+        var plans = GetService<BillingPlans>();
+        TimeProvider.SetUtcNow(new DateTime(2026, 6, 15, 0, 0, 0, DateTimeKind.Utc));
+        var billingChangeDate = new DateTime(2026, 4, 15, 0, 0, 0, DateTimeKind.Utc);
+        var organization = new Organization
+        {
+            CreatedUtc = new DateTime(2026, 3, 15, 0, 0, 0, DateTimeKind.Utc),
+            PlanId = plans.SmallPlan.Id,
+            MaxEventsPerMonth = plans.SmallPlan.MaxEventsPerMonth,
+            BillingChangeDate = billingChangeDate
+        };
+
+        // Act
+        billingManager.ApplyBillingPlan(organization, plans.SmallPlan);
+
+        // Assert
+        Assert.Equal(billingChangeDate, organization.BillingChangeDate);
+    }
+
+    [Fact]
     public void ApplyBillingPlan_UnknownPreviousPlan_DoesNotInventPreviousPlanHistory()
     {
         // Arrange

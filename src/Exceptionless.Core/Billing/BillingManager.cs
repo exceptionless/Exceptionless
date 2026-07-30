@@ -97,17 +97,18 @@ public class BillingManager
 
     public void ApplyBillingPlan(Organization organization, BillingPlan plan, User? user = null, bool updateBillingPrice = true)
     {
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        int previousLimit = organization.MaxEventsPerMonth != 0
+            ? organization.MaxEventsPerMonth
+            : GetBillingPlan(organization.PlanId)?.MaxEventsPerMonth ?? 0;
+        bool planLimitChanged = !String.Equals(organization.PlanId, plan.Id, StringComparison.OrdinalIgnoreCase)
+            || previousLimit != plan.MaxEventsPerMonth;
+
         if (!String.IsNullOrEmpty(organization.PlanId))
         {
-            var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
             var currentMonthUtc = utcNow.StartOfMonth();
             var previousMonthUtc = currentMonthUtc.AddMonths(-1);
-            int previousLimit = organization.MaxEventsPerMonth != 0
-                ? organization.MaxEventsPerMonth
-                : GetBillingPlan(organization.PlanId)?.MaxEventsPerMonth ?? 0;
             var organizationCreatedMonthUtc = organization.CreatedUtc.ToUniversalTime().StartOfMonth();
-            bool planLimitChanged = !String.Equals(organization.PlanId, plan.Id, StringComparison.OrdinalIgnoreCase)
-                || previousLimit != plan.MaxEventsPerMonth;
             if (planLimitChanged && previousLimit != 0 && previousMonthUtc >= organizationCreatedMonthUtc)
             {
                 var previousUsage = organization.Usage.GetUsage(previousMonthUtc, previousLimit);
@@ -119,7 +120,8 @@ public class BillingManager
         organization.PlanId = plan.Id;
         organization.PlanName = plan.Name;
         organization.PlanDescription = plan.Description;
-        organization.BillingChangeDate = _timeProvider.GetUtcNow().UtcDateTime;
+        if (planLimitChanged)
+            organization.BillingChangeDate = utcNow;
 
         if (updateBillingPrice)
             organization.BillingPrice = plan.Price;
