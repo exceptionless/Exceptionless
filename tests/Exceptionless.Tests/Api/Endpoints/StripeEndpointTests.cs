@@ -103,37 +103,22 @@ public class StripeEndpointTests : IntegrationTestsBase
     [InlineData(BillingStatus.Active)]
     public async Task PostAsync_WithStaleSubscriptionDeletedEvent_DoesNotOverwriteNewerBillingState(BillingStatus billingStatus)
     {
+        // Arrange
         var eventCreatedUtc = new DateTime(2026, 6, 22, 19, 3, 23, DateTimeKind.Utc);
-        await SetBillingStateAsync(eventCreatedUtc.AddSeconds(20), billingStatus);
-
-        await PostSubscriptionDeletedWebhookAsync(eventCreatedUtc);
-
-        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
-        Assert.NotNull(organization);
-        Assert.Equal(billingStatus, organization.BillingStatus);
-        Assert.False(organization.IsSuspended);
-    }
-
-    private async Task SetBillingStateAsync(DateTime billingChangeDate, BillingStatus billingStatus)
-    {
         var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
         Assert.NotNull(organization);
-
         organization.StripeCustomerId = "cus_existing";
-        organization.BillingChangeDate = billingChangeDate;
+        organization.BillingChangeDate = eventCreatedUtc.AddSeconds(20);
         organization.BillingStatus = billingStatus;
         organization.RemoveSuspension();
         await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
-    }
 
-    private async Task PostSubscriptionDeletedWebhookAsync(DateTime eventCreatedUtc)
-    {
-        long eventTimestamp = new DateTimeOffset(eventCreatedUtc).ToUnixTimeSeconds();
-        string json = $$"""
+        /* language=json */
+        const string json = $$"""
             {
               "id": "evt_subscription_deleted",
               "object": "event",
-              "created": {{eventTimestamp}},
+              "created": 1782155003,
               "data": {
                 "object": {
                   "id": "sub_old",
@@ -159,6 +144,7 @@ public class StripeEndpointTests : IntegrationTestsBase
         options.StripeOptions.StripeWebHookSigningSecret = WebhookSigningSecret;
         try
         {
+            // Act
             using var content = new StringContent(json, Encoding.UTF8, "application/json");
             await SendRequestAsync(r => r
                 .Post()
@@ -172,5 +158,11 @@ public class StripeEndpointTests : IntegrationTestsBase
         {
             options.StripeOptions.StripeWebHookSigningSecret = originalSigningSecret;
         }
+
+        // Assert
+        organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
+        Assert.NotNull(organization);
+        Assert.Equal(billingStatus, organization.BillingStatus);
+        Assert.False(organization.IsSuspended);
     }
 }
