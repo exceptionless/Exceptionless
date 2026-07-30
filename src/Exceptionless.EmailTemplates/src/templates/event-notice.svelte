@@ -64,24 +64,25 @@
             {#snippet actions()}
                 <li class="mt-[5px] ml-[5px]">
                     <Link
-                        href="{'{{BaseUrl}}'}/stack/{'{{StackId}}'}/mark-fixed"
+                        href="{'{{BaseUrl}}'}/project/{'{{ProjectId}}'}/stacks/{'{{StackId}}'}"
                         class="text-primary-action no-underline">Mark event as fixed</Link
                     >
                 </li>
                 <li class="mt-[5px] ml-[5px]">
-                    <Link href="{'{{BaseUrl}}'}/stack/{'{{StackId}}'}/ignored" class="text-primary-action no-underline"
-                        >Stop sending notifications for this event</Link
+                    <Link
+                        href="{'{{BaseUrl}}'}/project/{'{{ProjectId}}'}/stacks/{'{{StackId}}'}"
+                        class="text-primary-action no-underline">Stop sending notifications for this event</Link
                     >
                 </li>
                 <li class="mt-[5px] ml-[5px]">
                     <Link
-                        href="{'{{BaseUrl}}'}/stack/{'{{StackId}}'}/discarded"
+                        href="{'{{BaseUrl}}'}/project/{'{{ProjectId}}'}/stacks/{'{{StackId}}'}"
                         class="text-primary-action no-underline">Discard future event occurrences</Link
                     >
                 </li>
                 <li class="mt-[5px] ml-[5px]">
                     <Link
-                        href="{'{{BaseUrl}}'}/account/manage?projectId={'{{ProjectId}}'}&tab=notifications"
+                        href="{'{{BaseUrl}}'}/account/notifications?project={'{{ProjectId}}'}"
                         class="text-primary-action no-underline"
                         >Change your notification settings for this project</Link
                     >

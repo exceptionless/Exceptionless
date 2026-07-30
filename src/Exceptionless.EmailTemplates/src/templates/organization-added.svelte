@@ -7,8 +7,8 @@
     const jsonLd = buildEmailMetadata(`
 {
   "@type": "ViewAction",
-  "target": "{{BaseUrl}}/organization/{{OrganizationId}}/dashboard",
-  "url": "{{BaseUrl}}/organization/{{OrganizationId}}/dashboard",
+  "target": "{{BaseUrl}}/organization/{{OrganizationId}}/manage",
+  "url": "{{BaseUrl}}/organization/{{OrganizationId}}/manage",
   "name": "View Organization"
 }
 `);
@@ -22,7 +22,7 @@
             >
             <Section data-email-button-row class="text-center">
                 <Button
-                    href="{'{{BaseUrl}}'}/organization/{'{{OrganizationId}}'}/dashboard"
+                    href="{'{{BaseUrl}}'}/organization/{'{{OrganizationId}}'}/manage"
                     class="bg-primary text-white font-bold text-base rounded-[3px] px-4 py-2 no-underline inline-block"
                     >View Organization</Button
                 >

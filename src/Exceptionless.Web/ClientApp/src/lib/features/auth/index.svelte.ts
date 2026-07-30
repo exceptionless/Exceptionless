@@ -27,6 +27,7 @@ export { accessToken } from './state.svelte';
 export { validateEmailAvailability } from './validators';
 
 export interface OAuthLoginOptions extends OAuthPopupOptions {
+    inviteToken?: null | string;
     redirectUrl?: string;
 }
 
@@ -56,7 +57,7 @@ export const enableOAuthLogin = facebookClientId || gitHubClientId || googleClie
 
 // OAuth login functions (interactive popup-based, not pure API calls)
 
-export async function facebookLogin(redirectUrl?: string) {
+export async function facebookLogin(redirectUrl?: string, inviteToken?: null | string) {
     if (!facebookClientId) {
         throw new Error('Facebook client id not set');
     }
@@ -64,13 +65,14 @@ export async function facebookLogin(redirectUrl?: string) {
     await oauthLogin({
         authUrl: 'https://www.facebook.com/v2.5/dialog/oauth',
         clientId: facebookClientId,
+        inviteToken,
         provider: 'facebook',
         redirectUrl,
         scope: 'email'
     });
 }
 
-export async function githubLogin(redirectUrl?: string) {
+export async function githubLogin(redirectUrl?: string, inviteToken?: null | string) {
     if (!gitHubClientId) {
         throw new Error('GitHub client id not set');
     }
@@ -78,6 +80,7 @@ export async function githubLogin(redirectUrl?: string) {
     await oauthLogin({
         authUrl: 'https://github.com/login/oauth/authorize',
         clientId: gitHubClientId,
+        inviteToken,
         popupOptions: {
             height: 618,
             width: 1020
@@ -88,7 +91,7 @@ export async function githubLogin(redirectUrl?: string) {
     });
 }
 
-export async function googleLogin(redirectUrl?: string) {
+export async function googleLogin(redirectUrl?: string, inviteToken?: null | string) {
     if (!googleClientId) {
         throw new Error('Google client id not set');
     }
@@ -103,6 +106,7 @@ export async function googleLogin(redirectUrl?: string) {
             service: 'lso',
             state: encodeURIComponent(Math.random().toString(36).substring(2))
         },
+        inviteToken,
         provider: 'google',
         redirectUrl,
         scope: 'openid profile email'
@@ -118,7 +122,7 @@ export async function gotoLogin() {
     });
 }
 
-export async function liveLogin(redirectUrl?: string) {
+export async function liveLogin(redirectUrl?: string, inviteToken?: null | string) {
     if (!microsoftClientId) {
         throw new Error('Live client id not set');
     }
@@ -129,6 +133,7 @@ export async function liveLogin(redirectUrl?: string) {
         extraParams: {
             display: 'popup'
         },
+        inviteToken,
         provider: 'live',
         redirectUrl,
         scope: 'wl.emails'
@@ -166,6 +171,7 @@ async function oauthLogin(options: OAuthLoginOptions) {
     const response = await client.postJSON<TokenResult>(`auth/${options.provider}`, {
         clientId: options.clientId,
         code: data.code,
+        inviteToken: options.inviteToken,
         redirectUri: window.location.origin,
         state: data.state
     });

@@ -7,8 +7,8 @@
     const jsonLd = buildEmailMetadata(`
 {
   "@type": "ViewAction",
-  "target": "{{BaseUrl}}/organization/{{OrganizationId}}/upgrade",
-  "url": "{{BaseUrl}}/organization/{{OrganizationId}}/upgrade",
+  "target": "{{BaseUrl}}/organization/{{OrganizationId}}/billing?changePlan=true",
+  "url": "{{BaseUrl}}/organization/{{OrganizationId}}/billing?changePlan=true",
   "name": "Upgrade Plan"
 }
 `);
@@ -22,7 +22,7 @@
             >
             <Section data-email-button-row class="text-center">
                 <Button
-                    href="{'{{BaseUrl}}'}/organization/{'{{OrganizationId}}'}/upgrade"
+                    href="{'{{BaseUrl}}'}/organization/{'{{OrganizationId}}'}/billing?changePlan=true"
                     class="bg-primary text-white font-bold text-base rounded-[3px] px-4 py-2 no-underline inline-block"
                     >Upgrade Plan</Button
                 >
@@ -36,7 +36,7 @@
                     href="https://github.com/exceptionless/Exceptionless/wiki/Frequently-Asked-Questions#q-why-is-my-organization-throttled"
                     class="text-primary no-underline">Learn more about being throttled.{' '}</Link
                 >{@html '{{/if}}'} You can also view the <Link
-                    href="{'{{BaseUrl}}'}/organization/{'{{OrganizationId}}'}/frequent"
+                    href="{'{{BaseUrl}}'}/stack?status=open,regressed"
                     class="text-primary no-underline">most frequent events</Link
                 > to to see an overall picture of the events that are being counting against your plan limits.</Text
             >
@@ -56,9 +56,8 @@
                     >
                 </li>
                 <li class="mt-[5px] ml-[5px]">
-                    <Link
-                        href="{'{{BaseUrl}}'}/account/manage?tab=notifications"
-                        class="text-primary-action no-underline">Change your notification settings</Link
+                    <Link href="{'{{BaseUrl}}'}/account/notifications" class="text-primary-action no-underline"
+                        >Change your notification settings</Link
                     >
                 </li>
             {/snippet}

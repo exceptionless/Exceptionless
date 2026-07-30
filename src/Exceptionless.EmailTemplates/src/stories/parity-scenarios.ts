@@ -51,6 +51,35 @@ type ScenarioDefinition = {
     tokens: TokenData;
 };
 
+function migrateLegacyRoutesForParity(template: string): string {
+    const migrations: Array<[string, string]> = [
+        ['{{BaseUrl}}/stack/{{StackId}}/mark-fixed', '{{BaseUrl}}/project/{{ProjectId}}/stacks/{{StackId}}'],
+        ['{{BaseUrl}}/stack/{{StackId}}/ignored', '{{BaseUrl}}/project/{{ProjectId}}/stacks/{{StackId}}'],
+        ['{{BaseUrl}}/stack/{{StackId}}/discarded', '{{BaseUrl}}/project/{{ProjectId}}/stacks/{{StackId}}'],
+        [
+            '{{BaseUrl}}/account/manage?projectId={{ProjectId}}&tab=notifications',
+            '{{BaseUrl}}/account/notifications?project={{ProjectId}}'
+        ],
+        ['{{BaseUrl}}/organization/{{OrganizationId}}/dashboard', '{{BaseUrl}}/organization/{{OrganizationId}}/manage'],
+        [
+            '{{BaseUrl}}/organization/{{OrganizationId}}/upgrade',
+            '{{BaseUrl}}/organization/{{OrganizationId}}/billing?changePlan=true'
+        ],
+        ['{{BaseUrl}}/organization/{{OrganizationId}}/frequent', '{{BaseUrl}}/stack?status=open,regressed'],
+        ['{{BaseUrl}}/account/manage?tab=notifications', '{{BaseUrl}}/account/notifications'],
+        [
+            '{{BaseUrl}}/organization/{{OrganizationId}}/manage?tab=billing',
+            '{{BaseUrl}}/organization/{{OrganizationId}}/billing'
+        ],
+        ['{{BaseUrl}}/project/{{ProjectId}}/error/timeline', '{{BaseUrl}}/event?project={{ProjectId}}&type=error'],
+        ['{{../BaseUrl}}/stack/{{StackId}}', '{{../BaseUrl}}/project/{{../ProjectId}}/stacks/{{StackId}}'],
+        ['{{BaseUrl}}/project/{{ProjectId}}/error/frequent', '{{BaseUrl}}/project/{{ProjectId}}/stacks?sort=-total'],
+        ['{{BaseUrl}}/project/{{ProjectId}}/error/new', '{{BaseUrl}}/project/{{ProjectId}}/stacks?sort=-first']
+    ];
+
+    return migrations.reduce((html, [legacyRoute, svelteRoute]) => html.replaceAll(legacyRoute, svelteRoute), template);
+}
+
 const definitions: ScenarioDefinition[] = [
     {
         id: 'event-notice-new-critical',
@@ -178,6 +207,8 @@ export const parityScenarios: ParityScenario[] = definitions.map(
         variant,
         height,
         modernHtml: fillTokens(modernTemplate, tokens),
-        legacyHtml: fillTokens(legacyTemplate, tokens)
+        // Route-only migrations do not affect rendering, but keep semantic parity
+        // explicit while email links move from legacy Angular routes to Svelte.
+        legacyHtml: fillTokens(migrateLegacyRoutesForParity(legacyTemplate), tokens)
     })
 );
