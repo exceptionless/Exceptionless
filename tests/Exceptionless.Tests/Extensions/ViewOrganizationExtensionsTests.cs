@@ -31,6 +31,33 @@ public class ViewOrganizationExtensionsTests
     }
 
     [Fact]
+    public void EnsureUsage_ActiveBonus_DoesNotSubtractBonusFromOutgoingPlanAnchor()
+    {
+        // Arrange
+        _timeProvider.SetUtcNow(new DateTime(2026, 6, 15, 0, 0, 0, DateTimeKind.Utc));
+        var organization = new ViewOrganization
+        {
+            CreatedUtc = new DateTime(2026, 3, 15, 0, 0, 0, DateTimeKind.Utc),
+            MaxEventsPerMonth = 15_000,
+            BonusEventsPerMonth = 5_000,
+            BonusExpiration = new DateTime(2026, 7, 15, 0, 0, 0, DateTimeKind.Utc),
+            BillingChangeDate = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc),
+            Usage =
+            [
+                new UsageInfo { Date = new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc), Limit = 75_000 },
+                new UsageInfo { Date = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc), Limit = 20_000 }
+            ]
+        };
+
+        // Act
+        organization.EnsureUsage(_timeProvider);
+
+        // Assert
+        Assert.Equal(75_000, organization.Usage.Single(u => u.Date == new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc)).Limit);
+        Assert.Equal(75_000, organization.Usage.Single(u => u.Date == new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc)).Limit);
+    }
+
+    [Fact]
     public void EnsureUsage_ExpiredBonus_DistinguishesPriorBonusFromFuturePlan()
     {
         // Arrange

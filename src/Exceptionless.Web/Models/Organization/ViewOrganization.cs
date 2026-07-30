@@ -110,7 +110,8 @@ public static class ViewOrganizationExtensions
                 limit = limitAfterBonusExpiration;
 
             int GetLimitWithoutBonus(int knownLimit) =>
-                knownLimit > organization.BonusEventsPerMonth && (knownLimit != baseLimit || currentPlanStartedAfterBonusExpiration)
+                knownLimit > organization.BonusEventsPerMonth
+                    && (knownLimit == baseLimit + organization.BonusEventsPerMonth || currentPlanStartedAfterBonusExpiration)
                     ? knownLimit - organization.BonusEventsPerMonth
                     : knownLimit;
         }
