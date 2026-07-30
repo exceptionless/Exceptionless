@@ -1,10 +1,10 @@
 <script lang="ts">
-    import type { EventSummaryModel, StackSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
     import type { FetchClientResponse, ProblemDetails } from '@foundatiofx/fetchclient';
 
     import { resolve } from '$app/paths';
     import * as Command from '$comp/ui/command';
     import { accessToken } from '$features/auth/index.svelte';
+    import { buildEventDetailsHref, type EventSummaryModel, type StackSummaryModel, type SummaryTemplateKeys } from '$features/events/components/summary/index';
     import { organization } from '$features/organizations/context.svelte';
     import { appKeyboardShortcuts, formatKeyboardShortcut, type ShortcutKey } from '$features/shared/keyboard-shortcuts';
     import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
@@ -175,7 +175,7 @@
     }
 
     function getEventHref(result: CommandSearchResult): string {
-        return resolve('/(app)/event/[eventId=objectid]', { eventId: result.id });
+        return buildEventDetailsHref(result.id);
     }
 
     function getStackHref(result: CommandSearchResult): string {

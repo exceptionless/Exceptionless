@@ -51,6 +51,18 @@ test('stack effects stay bounded through background, paging, and navigation chao
         await expect(page.getByRole('button', { name: 'Go to next page' })).toBeEnabled();
     });
 
+    await measureAction(diagnostics, 'selected stack refresh', async () => {
+        const rowSelection = page.getByRole('checkbox', { name: 'Select row' }).first();
+        await rowSelection.click();
+        await expect(rowSelection).toBeChecked();
+
+        const response = page.waitForResponse((candidate) => isStackListResponse(candidate, e2eScenario.organizationId));
+        await page.getByTitle('Return to the first page to refresh results').click();
+        expect((await response).ok()).toBe(true);
+        await expect(rowSelection).not.toBeChecked();
+    });
+    expect(actionSample(diagnostics, 'selected stack refresh').listRequests).toBe(1);
+
     await measureAction(diagnostics, 'paging', async () => {
         for (let index = 0; index < 4; index++) {
             await page.getByRole('button', { name: 'Go to next page' }).click();
