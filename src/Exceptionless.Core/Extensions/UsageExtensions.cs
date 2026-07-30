@@ -10,7 +10,9 @@ public static class UsageExtensions
         var startOfMonth = dateUtc.ToUniversalTime().StartOfMonth();
         var usage = usages.FirstOrDefault(u => u.Date.Year == startOfMonth.Year && u.Date.Month == startOfMonth.Month);
         if (usage is not null)
+        {
             return usage;
+        }
 
         usage = new UsageInfo
         {
