@@ -404,8 +404,15 @@ public partial class Program
 
     internal static async Task InjectCspNonceAsync(HttpContext context, RequestDelegate next)
     {
+        string accept = context.Request.Headers.Accept.ToString();
+        bool acceptsHtml = accept.Contains("text/html", StringComparison.OrdinalIgnoreCase);
+        bool acceptsAny = String.IsNullOrWhiteSpace(accept) || accept.Contains("*/*", StringComparison.Ordinal);
+        bool hasNonHtmlExtension = Path.HasExtension(context.Request.Path)
+            && !context.Request.Path.Value!.EndsWith(".html", StringComparison.OrdinalIgnoreCase);
+
         if (!HttpMethods.IsGet(context.Request.Method)
-            || !context.Request.Headers.Accept.ToString().Contains("text/html", StringComparison.OrdinalIgnoreCase))
+            || context.Request.Path.StartsWithSegments("/api")
+            || (!acceptsHtml && (!acceptsAny || hasNonHtmlExtension)))
         {
             await next(context);
             return;
