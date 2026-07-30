@@ -635,6 +635,9 @@ export function updateProject(request: UpdateProjectRequest) {
             const response = await client.patchJSON<ViewProject>(`projects/${request.route.id}`, data);
             return response.data!;
         },
+        onError: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
+        },
         onSuccess: (project: ViewProject) => {
             queryClient.setQueryData(queryKeys.id(request.route.id), project);
         }
