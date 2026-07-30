@@ -701,7 +701,7 @@ public class EventHandler(
         sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || far.UsesPremiumFeatures;
         AppFilter? systemFilter = ApiFilterPolicy.ShouldApplySystemFilter(sf, filter, httpContext.Request) ? sf : null;
         if (systemFilter is not null && ApiFilterPolicy.IsPremiumFeatureQueryBlocked(systemFilter))
-            return PlanLimitResult<CountResult>("Please upgrade your plan to use premium search features.");
+            return PlanLimitResult<CountResult>(ApiFilterPolicy.PremiumSearchUpgradeMessage);
 
         if (mode == "stack_new")
             filter = AddFirstOccurrenceFilter(ti.Range, filter);
@@ -762,7 +762,7 @@ public class EventHandler(
         sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || usesPremiumFeatures;
         AppFilter? appliedAppFilter = ApiFilterPolicy.ShouldApplySystemFilter(sf, filter, httpContext.Request) ? sf : null;
         if (appliedAppFilter is not null && ApiFilterPolicy.IsPremiumFeatureQueryBlocked(appliedAppFilter))
-            return PlanLimitResult<PagedResult<object>>("Please upgrade your plan to use premium search features.");
+            return PlanLimitResult<PagedResult<object>>(ApiFilterPolicy.PremiumSearchUpgradeMessage);
 
         try
         {

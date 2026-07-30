@@ -3,6 +3,7 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Web.Api.Filters;
+using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Models;
@@ -251,7 +252,7 @@ public static class StackEndpoints
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
-                ["426"] = "Premium search features require an upgraded plan.",
+                ["426"] = ApiFilterPolicy.PremiumSearchUpgradeMessage,
             }
         });
 
@@ -278,7 +279,7 @@ public static class StackEndpoints
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
                 ["404"] = "The organization could not be found.",
-                ["426"] = "The organization is suspended or premium search features require an upgraded plan.",
+                ["426"] = ApiFilterPolicy.SuspendedOrPremiumSearchUpgradeDescription,
             }
         });
 
@@ -305,7 +306,7 @@ public static class StackEndpoints
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
                 ["404"] = "The organization could not be found.",
-                ["426"] = "The organization is suspended or premium search features require an upgraded plan.",
+                ["426"] = ApiFilterPolicy.SuspendedOrPremiumSearchUpgradeDescription,
             }
         });
 

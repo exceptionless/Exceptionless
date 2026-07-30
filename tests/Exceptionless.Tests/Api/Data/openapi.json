@@ -7257,7 +7257,7 @@
             }
           },
           "426": {
-            "description": "Premium search features require an upgraded plan.",
+            "description": "Please upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -7382,7 +7382,7 @@
             }
           },
           "426": {
-            "description": "The organization is suspended or premium search features require an upgraded plan.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -7507,7 +7507,7 @@
             }
           },
           "426": {
-            "description": "The organization is suspended or premium search features require an upgraded plan.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -7905,7 +7905,7 @@
             }
           },
           "426": {
-            "description": "Premium search features require an upgraded plan.",
+            "description": "Please upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -7997,7 +7997,7 @@
             }
           },
           "426": {
-            "description": "The organization is suspended or premium search features require an upgraded plan.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8089,7 +8089,7 @@
             }
           },
           "426": {
-            "description": "The organization is suspended or premium search features require an upgraded plan.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8304,7 +8304,7 @@
             }
           },
           "426": {
-            "description": "Premium search features require an upgraded plan.",
+            "description": "Please upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8514,7 +8514,7 @@
             }
           },
           "426": {
-            "description": "The organization is suspended or premium search features require an upgraded plan.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8662,7 +8662,7 @@
             }
           },
           "426": {
-            "description": "The organization is suspended or premium search features require an upgraded plan.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8882,7 +8882,7 @@
             }
           },
           "426": {
-            "description": "The organization is suspended or premium search features require an upgraded plan.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {

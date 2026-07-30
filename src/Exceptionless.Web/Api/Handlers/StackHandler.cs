@@ -410,7 +410,7 @@ public class StackHandler(
         sf.UsesPremiumFeatures = pr.UsesPremiumFeatures;
         AppFilter? systemFilter = ApiFilterPolicy.ShouldApplySystemFilter(sf, filter, httpContext.Request) ? sf : null;
         if (systemFilter is not null && ApiFilterPolicy.IsPremiumFeatureQueryBlocked(systemFilter))
-            return PlanLimitResult<PagedResult<object>>("Please upgrade your plan to use premium search features.");
+            return PlanLimitResult<PagedResult<object>>(ApiFilterPolicy.PremiumSearchUpgradeMessage);
 
         try
         {

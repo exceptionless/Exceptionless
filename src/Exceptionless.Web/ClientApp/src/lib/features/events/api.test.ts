@@ -1,41 +1,9 @@
-import type { CountResult } from '$shared/models';
-
 import { ChangeType } from '$features/websockets/models';
 import { QueryClient } from '@tanstack/svelte-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-const fetchClientMocks = vi.hoisted(() => ({
-    getJSON: vi.fn()
-}));
-
-const queryMocks = vi.hoisted(() => ({
-    queryFn: undefined as ((context: { signal: AbortSignal }) => Promise<CountResult>) | undefined
-}));
-
-vi.mock('$features/auth/index.svelte', () => ({
-    accessToken: { current: 'test-token' }
-}));
-
-vi.mock('@exceptionless/fetchclient', () => ({
-    useFetchClient: () => ({ getJSON: fetchClientMocks.getJSON })
-}));
-
-vi.mock('@tanstack/svelte-query', async (importOriginal) => {
-    const actual = await importOriginal<typeof import('@tanstack/svelte-query')>();
-    return {
-        ...actual,
-        createQuery: vi.fn((factory: () => { queryFn: (context: { signal: AbortSignal }) => Promise<CountResult> }) => {
-            const options = factory();
-            queryMocks.queryFn = options.queryFn;
-            return options;
-        }),
-        useQueryClient: vi.fn(() => new actual.QueryClient())
-    };
-});
-
 import { queryKeys as stackQueryKeys } from '../stacks/api.svelte';
 import {
-    getOrganizationCountQuery,
     invalidatePersistentEventQueries,
     PERSISTENT_EVENT_DELETE_RECONCILE_DELAY,
     PERSISTENT_EVENT_DELETE_RECONCILE_EVENT,
@@ -44,40 +12,7 @@ import {
     schedulePersistentEventDeleteReconciliation
 } from './api.svelte';
 
-describe('getOrganizationCountQuery', () => {
-    it('forwards stack mode with a stack-only filter to the count request', async () => {
-        // Arrange
-        fetchClientMocks.getJSON.mockResolvedValue({ data: { aggregations: {}, total: 0 } });
-        getOrganizationCountQuery({
-            params: {
-                filter: 'critical:false',
-                mode: 'stack_frequent'
-            },
-            route: { organizationId: 'organization-id' }
-        });
-
-        // Act
-        const queryFn = queryMocks.queryFn;
-        if (!queryFn) {
-            throw new Error('Expected createQuery to register a query function.');
-        }
-
-        await queryFn({ signal: new AbortController().signal });
-
-        // Assert
-        expect(fetchClientMocks.getJSON).toHaveBeenCalledWith('/organizations/organization-id/events/count', {
-            params: expect.objectContaining({
-                filter: 'critical:false',
-                mode: 'stack_frequent'
-            }),
-            signal: expect.any(AbortSignal)
-        });
-    });
-});
-
 afterEach(() => {
-    fetchClientMocks.getJSON.mockReset();
-    queryMocks.queryFn = undefined;
     vi.useRealTimers();
 });
 

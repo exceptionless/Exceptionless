@@ -9,12 +9,15 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Models.Data;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
+using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Models;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Xunit;
 
 namespace Exceptionless.Tests.Api.Endpoints;
@@ -64,21 +67,6 @@ public class StackEndpointTests : IntegrationTestsBase
 
         Assert.NotNull(result);
         Assert.Single(result);
-    }
-
-    [Fact]
-    public async Task Handle_GetStacksByProjectWithPremiumFilterOnFreeOrganization_ReturnsUpgradeRequired()
-    {
-        // Arrange
-        await CreateDataAsync(d => d.Event().FreeProject().Message("Premium restricted stack"));
-
-        // Act & Assert
-        await SendRequestAsync(r => r
-            .AsFreeOrganizationUser()
-            .AppendPaths("projects", SampleDataService.FREE_PROJECT_ID, "stacks")
-            .QueryString("filter", "title:\"Premium restricted stack\"")
-            .StatusCodeShouldBeUpgradeRequired()
-        );
     }
 
     [Theory]
@@ -414,6 +402,26 @@ public class StackEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetAll_WithExplicitFreeOrganizationPremiumFilterAsGlobalAdmin_ReturnsScopedStack()
+    {
+        // Arrange
+        var (stacks, _) = await CreateDataAsync(d => d.Event().FreeProject());
+        var stack = Assert.Single(stacks);
+
+        // Act
+        var result = await SendRequestAsAsync<IReadOnlyCollection<Stack>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("stacks")
+            .QueryString("filter", $"organization:{SampleDataService.FREE_ORG_ID} id:{stack.Id}")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(result);
+        var scopedStack = Assert.Single(result);
+        Assert.Equal(stack.Id, scopedStack.Id);
+    }
+
+    [Fact]
     public async Task GetAll_WithNoFilter_ReturnsAllStacks()
     {
         // Arrange
@@ -453,26 +461,6 @@ public class StackEndpointTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(result);
         Assert.Empty(result);
-    }
-
-    [Fact]
-    public async Task GetAll_WithExplicitFreeOrganizationPremiumFilterAsGlobalAdmin_ReturnsScopedStack()
-    {
-        // Arrange
-        var (stacks, _) = await CreateDataAsync(d => d.Event().FreeProject());
-        var stack = Assert.Single(stacks);
-
-        // Act
-        var result = await SendRequestAsAsync<IReadOnlyCollection<Stack>>(r => r
-            .AsGlobalAdminUser()
-            .AppendPath("stacks")
-            .QueryString("filter", $"organization:{SampleDataService.FREE_ORG_ID} id:{stack.Id}")
-            .StatusCodeShouldBeOk());
-
-        // Assert
-        Assert.NotNull(result);
-        var scopedStack = Assert.Single(result);
-        Assert.Equal(stack.Id, scopedStack.Id);
     }
 
     [Fact]
@@ -592,6 +580,26 @@ public class StackEndpointTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath("projects/000000000000000000000000/stacks")
             .StatusCodeShouldBeNotFound());
+    }
+
+    [Fact]
+    public async Task Handle_GetStacksByProjectWithPremiumFilterOnFreeOrganization_ReturnsUpgradeRequired()
+    {
+        // Arrange
+        await CreateDataAsync(d => d.Event().FreeProject().Message("Premium restricted stack"));
+
+        // Act
+        var problemDetails = await SendRequestAsAsync<ProblemDetails>(r => r
+            .AsFreeOrganizationUser()
+            .AppendPaths("projects", SampleDataService.FREE_PROJECT_ID, "stacks")
+            .QueryString("filter", "title:\"Premium restricted stack\"")
+            .StatusCodeShouldBeUpgradeRequired()
+        );
+
+        // Assert
+        Assert.NotNull(problemDetails);
+        Assert.Equal(StatusCodes.Status426UpgradeRequired, problemDetails.Status);
+        Assert.Equal(ApiFilterPolicy.PremiumSearchUpgradeMessage, problemDetails.Title);
     }
 
     [Fact]

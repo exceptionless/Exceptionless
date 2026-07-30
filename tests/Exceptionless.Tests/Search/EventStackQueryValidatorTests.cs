@@ -13,19 +13,23 @@ public sealed class EventStackQueryValidatorTests : TestWithServices
     }
 
     [Theory]
+    [InlineData("critical:false", false)]
+    [InlineData("first:true", false)]
     [InlineData("reference:ABC123", false)]
+    [InlineData("reference:ABC123 first:true", false)]
+    [InlineData("reference:ABC123 first:true tags:important", true)]
     [InlineData("reference_id:ABC123", false)]
     [InlineData("stack:ABC123", false)]
     [InlineData("stack_id:ABC123", false)]
-    [InlineData("first:true", false)]
-    [InlineData("critical:false", false)]
-    [InlineData("reference:ABC123 first:true", false)]
     [InlineData("tags:important", true)]
-    [InlineData("reference:ABC123 first:true tags:important", true)]
-    public async Task ValidateQueryAsync_UsesFreeFieldUnion(string query, bool usesPremiumFeatures)
+    public async Task ValidateQueryAsync_WithEventAndStackFields_ReturnsExpectedPremiumUsage(string query, bool usesPremiumFeatures)
     {
+        // Arrange is provided by the theory data.
+
+        // Act
         var result = await _validator.ValidateQueryAsync(query);
 
+        // Assert
         Assert.True(result.IsValid);
         Assert.Equal(usesPremiumFeatures, result.UsesPremiumFeatures);
     }

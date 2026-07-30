@@ -43,7 +43,7 @@ public static class EventEndpoints
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
-                ["426"] = "Premium search features require an upgraded plan.",
+                ["426"] = ApiFilterPolicy.PremiumSearchUpgradeMessage,
             }
         });
 
@@ -65,7 +65,7 @@ public static class EventEndpoints
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
-                ["426"] = "The organization is suspended or premium search features require an upgraded plan.",
+                ["426"] = ApiFilterPolicy.SuspendedOrPremiumSearchUpgradeDescription,
             }
         });
 
@@ -87,7 +87,7 @@ public static class EventEndpoints
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
-                ["426"] = "The organization is suspended or premium search features require an upgraded plan.",
+                ["426"] = ApiFilterPolicy.SuspendedOrPremiumSearchUpgradeDescription,
             }
         });
 
@@ -138,7 +138,7 @@ public static class EventEndpoints
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
-                ["426"] = "Premium search features require an upgraded plan.",
+                ["426"] = ApiFilterPolicy.PremiumSearchUpgradeMessage,
             }
         });
 
@@ -168,7 +168,7 @@ public static class EventEndpoints
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
                 ["404"] = "The organization could not be found.",
-                ["426"] = "The organization is suspended or premium search features require an upgraded plan.",
+                ["426"] = ApiFilterPolicy.SuspendedOrPremiumSearchUpgradeDescription,
             }
         });
 
@@ -198,7 +198,7 @@ public static class EventEndpoints
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
                 ["404"] = "The project could not be found.",
-                ["426"] = "The organization is suspended or premium search features require an upgraded plan.",
+                ["426"] = ApiFilterPolicy.SuspendedOrPremiumSearchUpgradeDescription,
             }
         });
 
@@ -228,7 +228,7 @@ public static class EventEndpoints
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
                 ["404"] = "The stack could not be found.",
-                ["426"] = "The organization is suspended or premium search features require an upgraded plan.",
+                ["426"] = ApiFilterPolicy.SuspendedOrPremiumSearchUpgradeDescription,
             }
         });
 

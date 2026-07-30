@@ -1,41 +1,40 @@
 export type SearchResource = 'event' | 'event-stack' | 'stack';
 
+// Alias and indexed-field variants intentionally mirror the backend validators.
+const EVENT_FREE_QUERY_FIELDS = new Set([
+    'date',
+    'organization',
+    'organization_id',
+    'project',
+    'project_id',
+    'reference',
+    'reference_id',
+    'stack',
+    'stack_id',
+    'status',
+    'type'
+]);
+const STACK_FREE_QUERY_FIELDS = new Set([
+    'critical',
+    'first',
+    'first_occurrence',
+    'last',
+    'last_occurrence',
+    'occurrences_are_critical',
+    'organization',
+    'organization_id',
+    'project',
+    'project_id',
+    'status',
+    'type'
+]);
+
 // These mirror the backend event, stack-mode event, and direct stack rules.
 // The API remains the enforcement boundary.
 const FREE_QUERY_FIELDS: Record<SearchResource, ReadonlySet<string>> = {
-    event: new Set(['date', 'organization', 'organization_id', 'project', 'project_id', 'reference', 'reference_id', 'stack', 'stack_id', 'status', 'type']),
-    'event-stack': new Set([
-        'critical',
-        'first',
-        'first_occurrence',
-        'last',
-        'last_occurrence',
-        'occurrences_are_critical',
-        'organization',
-        'organization_id',
-        'project',
-        'project_id',
-        'reference',
-        'reference_id',
-        'stack',
-        'stack_id',
-        'status',
-        'type'
-    ]),
-    stack: new Set([
-        'critical',
-        'first',
-        'first_occurrence',
-        'last',
-        'last_occurrence',
-        'occurrences_are_critical',
-        'organization',
-        'organization_id',
-        'project',
-        'project_id',
-        'status',
-        'type'
-    ])
+    event: EVENT_FREE_QUERY_FIELDS,
+    'event-stack': new Set([...EVENT_FREE_QUERY_FIELDS, ...STACK_FREE_QUERY_FIELDS]),
+    stack: STACK_FREE_QUERY_FIELDS
 };
 
 /**
@@ -64,6 +63,7 @@ export function getSearchResourceForPathname(pathname: string): SearchResource {
  * Matches patterns like `field:value` or `field:(value1 OR value2)`.
  */
 function extractFilterFields(filter: string): string[] {
+    // Lucene field names may have unary +/- prefixes and contain metadata (@) or custom-name hyphens.
     const fieldPattern = /(?:^|\s|[(!])[-+]?(\w[\w.@-]*):/g;
     const fields: string[] = [];
     let match: null | RegExpExecArray;

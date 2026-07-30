@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Exceptionless.Web.Api.Infrastructure;
 using Microsoft.AspNetCore.TestHost;
 using Xunit;
 
@@ -190,11 +191,23 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         foreach (string path in new[] { "/api/v2/events/count", "/api/v2/organizations/{organizationId}/events/count", "/api/v2/projects/{projectId}/events/count" })
             AssertPathResponseCodes(paths, path, "get", "200", "400", "426");
 
+        AssertPathResponseDescription(paths, "/api/v2/events/count", "get", "426", ApiFilterPolicy.PremiumSearchUpgradeMessage);
+        foreach (string path in new[] { "/api/v2/organizations/{organizationId}/events/count", "/api/v2/projects/{projectId}/events/count" })
+            AssertPathResponseDescription(paths, path, "get", "426", ApiFilterPolicy.SuspendedOrPremiumSearchUpgradeDescription);
+
         foreach (string path in new[] { "/api/v2/events", "/api/v2/organizations/{organizationId}/events", "/api/v2/projects/{projectId}/events", "/api/v2/stacks/{stackId}/events" })
             AssertPathResponseCodes(paths, path, "get", "200", "400", "426");
 
+        AssertPathResponseDescription(paths, "/api/v2/events", "get", "426", ApiFilterPolicy.PremiumSearchUpgradeMessage);
+        foreach (string path in new[] { "/api/v2/organizations/{organizationId}/events", "/api/v2/projects/{projectId}/events", "/api/v2/stacks/{stackId}/events" })
+            AssertPathResponseDescription(paths, path, "get", "426", ApiFilterPolicy.SuspendedOrPremiumSearchUpgradeDescription);
+
         foreach (string path in new[] { "/api/v2/stacks", "/api/v2/organizations/{organizationId}/stacks", "/api/v2/projects/{projectId}/stacks" })
             AssertPathResponseCodes(paths, path, "get", "200", "400", "426");
+
+        AssertPathResponseDescription(paths, "/api/v2/stacks", "get", "426", ApiFilterPolicy.PremiumSearchUpgradeMessage);
+        foreach (string path in new[] { "/api/v2/organizations/{organizationId}/stacks", "/api/v2/projects/{projectId}/stacks" })
+            AssertPathResponseDescription(paths, path, "get", "426", ApiFilterPolicy.SuspendedOrPremiumSearchUpgradeDescription);
 
         foreach (string path in new[] {
             "/api/v2/events/sessions/{sessionId}",
@@ -244,6 +257,19 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         string actualStatusCodes = String.Join(", ", responses.EnumerateObject().Select(response => response.Name));
         foreach (string statusCode in expectedStatusCodes)
             Assert.True(responses.TryGetProperty(statusCode, out _), $"Expected response status code '{statusCode}' for {method.ToUpperInvariant()} {path}. Actual: {actualStatusCodes}.");
+    }
+
+    private static void AssertPathResponseDescription(JsonElement paths, string path, string method, string statusCode, string expectedDescription)
+    {
+        string? description = paths
+            .GetProperty(path)
+            .GetProperty(method)
+            .GetProperty("responses")
+            .GetProperty(statusCode)
+            .GetProperty("description")
+            .GetString();
+
+        Assert.Equal(expectedDescription, description);
     }
 
     private static void AssertArrayResponseSchema(JsonElement paths, string path, string expectedItemSchema)
