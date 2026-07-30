@@ -6,7 +6,7 @@ test.skip(process.env.E2E_ENV === 'production', 'Invitation acceptance requires 
 
 test('invited user can accept an organization invitation @signup', async ({ browser, e2eApi, e2eScenario, page }) => {
     const invitedEmail = `invited-${e2eScenario.run}@exceptionless.test`.toLowerCase();
-    let invitedUserCreated = false;
+    let invitedUserSignupAttempted = false;
     let invitedUserToken: string | undefined;
 
     try {
@@ -41,8 +41,9 @@ test('invited user can accept an organization invitation @signup', async ({ brow
                     return response.request().method() === 'POST' && url.pathname.endsWith('/api/v2/auth/signup');
                 });
 
+                invitedUserSignupAttempted = true;
                 await invitedPage.getByRole('button', { name: 'Create My Account' }).click();
-                invitedUserCreated = (await signupResponse).ok();
+                expect((await signupResponse).ok()).toBe(true);
 
                 invitedUserToken = await getUserToken(invitedPage);
                 await expect(invitedPage).toHaveURL(/\/next\/project\/add(?:[?#]|$)/, { timeout: 30_000 });
@@ -57,9 +58,9 @@ test('invited user can accept an organization invitation @signup', async ({ brow
     } finally {
         const cleanupErrors: Error[] = [];
 
-        if (!invitedUserToken && invitedUserCreated) {
+        if (!invitedUserToken && invitedUserSignupAttempted) {
             await runCleanupStep(cleanupErrors, 'restore invited user session for cleanup', async () => {
-                invitedUserToken = await e2eApi.login(invitedEmail, E2E_TEST_PASSWORD);
+                invitedUserToken = await e2eApi.loginIfExists(invitedEmail, E2E_TEST_PASSWORD);
             });
         }
 
