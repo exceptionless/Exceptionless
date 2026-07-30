@@ -37,7 +37,7 @@ public class StripeEventHandler
             }
             case "customer.subscription.deleted":
             {
-                await SubscriptionDeletedAsync((Subscription)stripeEvent.Data.Object);
+                await SubscriptionDeletedAsync((Subscription)stripeEvent.Data.Object, stripeEvent.Created);
                 break;
             }
             case "invoice.payment_succeeded":
@@ -121,7 +121,7 @@ public class StripeEventHandler
         await _organizationRepository.SaveAsync(org, o => o.Cache().Originals());
     }
 
-    private async Task SubscriptionDeletedAsync(Subscription sub)
+    private async Task SubscriptionDeletedAsync(Subscription sub, DateTime eventCreatedUtc)
     {
         var org = await _organizationRepository.GetByStripeCustomerIdAsync(sub.CustomerId);
         if (org is null)
@@ -131,6 +131,13 @@ public class StripeEventHandler
         }
 
         _logger.LogInformation("Stripe subscription deleted. Customer: {CustomerId} Org: {Organization} Org Name: {OrganizationName}", sub.CustomerId, org.Id, org.Name);
+
+        if (org.BillingChangeDate > DateTime.MinValue && eventCreatedUtc < org.BillingChangeDate)
+        {
+            _logger.LogInformation("Ignoring stale Stripe subscription deletion. Customer: {CustomerId} Org: {Organization} Event Created: {EventCreatedUtc} Billing Changed: {BillingChangeDate}",
+                sub.CustomerId, org.Id, eventCreatedUtc, org.BillingChangeDate);
+            return;
+        }
 
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         org.BillingChangeDate = utcNow;
