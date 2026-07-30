@@ -97,7 +97,10 @@ public static class ViewOrganizationExtensions
             var usageAtBonusExpiration = knownUsages.FirstOrDefault(u =>
                 u.Date.Year == bonusExpirationMonthUtc.Value.Year && u.Date.Month == bonusExpirationMonthUtc.Value.Month);
             var usageBeforeBonusExpiration = knownUsages.LastOrDefault(u => u.Date < bonusExpirationMonthUtc.Value);
-            var billingChangeMonthUtc = organization.BillingChangeDate?.ToUniversalTime().StartOfMonth();
+            DateTime? billingChangeMonthUtc = organization.BillingChangeDate is { } billingChangeDate
+                && billingChangeDate > DateTime.MinValue
+                    ? billingChangeDate.ToUniversalTime().StartOfMonth()
+                    : null;
             bool currentPlanStartedAfterBonusExpiration = billingChangeMonthUtc > bonusExpirationMonthUtc;
             limitAfterBonusExpiration = usageAtBonusExpiration is not null
                 ? GetLimitWithoutBonus(usageAtBonusExpiration,
@@ -115,7 +118,7 @@ public static class ViewOrganizationExtensions
 
             int GetLimitWithoutBonus(UsageInfo knownUsage, bool inferHistoricalBonus)
             {
-                bool currentPlanWasActive = !billingChangeMonthUtc.HasValue || knownUsage.Date >= billingChangeMonthUtc.Value;
+                bool currentPlanWasActive = billingChangeMonthUtc.HasValue && knownUsage.Date >= billingChangeMonthUtc.Value;
                 return knownUsage.Limit > organization.BonusEventsPerMonth
                     && (currentPlanWasActive && knownUsage.Limit == baseLimit + organization.BonusEventsPerMonth || inferHistoricalBonus)
                         ? knownUsage.Limit - organization.BonusEventsPerMonth
