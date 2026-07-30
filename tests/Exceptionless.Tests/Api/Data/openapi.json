@@ -5400,39 +5400,6 @@
         }
       }
     },
-    "/api/v2/projects/check-name": {
-      "get": {
-        "tags": [
-          "Project"
-        ],
-        "summary": "Check for unique name",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "query",
-            "description": "The project name to check.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "organizationId",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "The project name is available."
-          },
-          "204": {
-            "description": "The project name is not available."
-          }
-        }
-      }
-    },
     "/api/v2/organizations/{organizationId}/projects/check-name": {
       "get": {
         "tags": [
@@ -5443,7 +5410,7 @@
           {
             "name": "organizationId",
             "in": "path",
-            "description": "If set the check name will be scoped to a specific organization.",
+            "description": "The organization identifier that scopes the name check.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -5457,14 +5424,22 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "description": "The current project identifier to exclude from the uniqueness check.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
           "201": {
-            "description": "The project name is available."
+            "description": "The project name is not available."
           },
           "204": {
-            "description": "The project name is not available."
+            "description": "The project name is available."
           }
         }
       }
@@ -5663,16 +5638,6 @@
           },
           "400": {
             "description": "An error occurred while creating the organization.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The organization already exists.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -6650,35 +6615,6 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/api/v2/organizations/check-name": {
-      "get": {
-        "tags": [
-          "Organization"
-        ],
-        "summary": "Check for unique name",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "query",
-            "description": "The organization name to check.",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "201": {
-            "description": "The organization name is available."
-          },
-          "204": {
-            "description": "The organization name is not available."
           }
         }
       }
