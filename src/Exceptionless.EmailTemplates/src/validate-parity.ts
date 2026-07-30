@@ -1,5 +1,5 @@
 import { spawn, type ChildProcess } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { parse, type DefaultTreeAdapterMap } from 'parse5';
@@ -12,7 +12,7 @@ type JsonValue = null | string | number | boolean | JsonValue[] | { [key: string
 type CdpResponse = { id?: number; method?: string; result?: unknown; error?: { message: string } };
 type PixelResult = { mismatchedPixels: number; maxChannelDelta: number; bounds: string; diff: string };
 type ScreenshotResult = { data: string; contentHeight: number };
-type SemanticContract = { text: string; actions: string[]; jsonLd: JsonValue[] };
+type SemanticContract = { text: string; actions: string[]; hrefs: string[]; jsonLd: JsonValue[] };
 
 const ignoredElements = new Set(['head', 'script', 'style', 'title']);
 const semanticOnly = process.argv.includes('--semantic-only');
@@ -20,6 +20,7 @@ const debugScenario = process.env.EMAIL_PARITY_DEBUG;
 const scenarioFilter = process.env.EMAIL_PARITY_SCENARIO ?? debugScenario;
 const artifactsDirectory = resolve('parity-artifacts');
 const comparisonWidths = [800, 375];
+const svelteBasePath = '/next';
 const scenarios = scenarioFilter
     ? parityScenarios.filter((scenario) => scenario.id === scenarioFilter)
     : parityScenarios;
@@ -90,6 +91,18 @@ function collectActions(node: Node, actions: string[] = []): string[] {
     return actions;
 }
 
+function collectHrefs(node: Node, hrefs: string[] = []): string[] {
+    if (isElement(node) && node.tagName === 'a') {
+        hrefs.push(normalizeHref(getAttribute(node, 'href')));
+    }
+
+    if ('childNodes' in node) {
+        node.childNodes.forEach((child) => collectHrefs(child, hrefs));
+    }
+
+    return hrefs;
+}
+
 function collectJsonLd(node: Node, documents: JsonValue[] = []): JsonValue[] {
     if (
         isElement(node) &&
@@ -112,8 +125,94 @@ function getSemanticContract(html: string): SemanticContract {
     return {
         text: normalizeText(textContent(document)),
         actions: collectActions(document),
+        hrefs: collectHrefs(document),
         jsonLd: collectJsonLd(document)
     };
+}
+
+function routeSegmentPattern(segment: string): string {
+    if (/^\[\[\.\.\..+\]\]$/.test(segment)) {
+        return '.*';
+    }
+    if (/^\[\.\.\..+\]$/.test(segment)) {
+        return '.+';
+    }
+    if (/^\[\[.+\]\]$/.test(segment)) {
+        return '[^/]*';
+    }
+    if (/^\[.+\]$/.test(segment)) {
+        return '[^/]+';
+    }
+
+    return segment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function collectSvelteRoutePatterns(
+    directory = resolve('../Exceptionless.Web/ClientApp/src/routes'),
+    segments: string[] = [],
+    patterns: RegExp[] = []
+): RegExp[] {
+    const entries = readdirSync(directory, { withFileTypes: true });
+    if (entries.some((entry) => entry.isFile() && /^\+page(?:@.*)?\.svelte$/.test(entry.name))) {
+        const routeSegments = segments.filter((segment) => !segment.startsWith('('));
+        patterns.push(new RegExp(`^/${routeSegments.map(routeSegmentPattern).join('/')}/?$`));
+    }
+
+    for (const entry of entries) {
+        if (entry.isDirectory()) {
+            collectSvelteRoutePatterns(join(directory, entry.name), [...segments, entry.name], patterns);
+        }
+    }
+
+    return patterns;
+}
+
+function collectJsonUrls(value: JsonValue, urls: string[] = []): string[] {
+    if (typeof value === 'string') {
+        if (value.startsWith('http://localhost:7110')) {
+            urls.push(value);
+        }
+        return urls;
+    }
+
+    if (Array.isArray(value)) {
+        value.forEach((item) => collectJsonUrls(item, urls));
+    } else if (value && typeof value === 'object') {
+        Object.values(value).forEach((item) => collectJsonUrls(item, urls));
+    }
+
+    return urls;
+}
+
+function validateSvelteRoutes(contracts: SemanticContract[]): string[] {
+    const svelteConfig = readFileSync(resolve('../Exceptionless.Web/ClientApp/svelte.config.js'), 'utf8');
+    if (!new RegExp(`\\bbase:\\s*['"]${svelteBasePath}['"]`).test(svelteConfig)) {
+        return [`SvelteKit is not configured with the expected ${svelteBasePath} base path.`];
+    }
+
+    const routePatterns = collectSvelteRoutePatterns();
+    const urls = new Set(
+        contracts.flatMap((contract) => [
+            ...contract.hrefs.filter((href) => href.startsWith('http://localhost:7110')),
+            ...contract.jsonLd.flatMap((document) => collectJsonUrls(document))
+        ])
+    );
+    const invalid: string[] = [];
+
+    for (const value of urls) {
+        const url = new URL(value);
+        const cleanPath = url.pathname;
+        const deployedPath = `${svelteBasePath}${cleanPath}`;
+        const deployedRoute = deployedPath.slice(svelteBasePath.length) || '/';
+        if (
+            !routePatterns.some((pattern) => pattern.test(cleanPath)) ||
+            !routePatterns.some((pattern) => pattern.test(deployedRoute))
+        ) {
+            invalid.push(value);
+        }
+    }
+
+    return invalid;
 }
 
 function firstDifference(left: string, right: string): string {
@@ -384,10 +483,12 @@ async function inspectGeometry(client: ChromeDevTools): Promise<unknown> {
 }
 
 let failures = 0;
+const modernContracts: SemanticContract[] = [];
 
 for (const scenario of scenarios) {
     const legacy = getSemanticContract(scenario.legacyHtml);
     const modern = getSemanticContract(scenario.modernHtml);
+    modernContracts.push(modern);
     const textMatches = legacy.text === modern.text;
     const actionsMatch = JSON.stringify(legacy.actions) === JSON.stringify(modern.actions);
     const jsonLdMatches = JSON.stringify(legacy.jsonLd) === JSON.stringify(modern.jsonLd);
@@ -420,6 +521,18 @@ if (failures > 0) {
     process.exitCode = 1;
 } else {
     console.log(`\nAll ${scenarios.length} parity scenarios preserve exact text, actions, and JSON-LD.`);
+}
+
+const invalidSvelteRoutes = validateSvelteRoutes(modernContracts);
+if (invalidSvelteRoutes.length > 0) {
+    failures++;
+    console.error('\nFAIL internal email links without a matching Svelte route:');
+    invalidSvelteRoutes.forEach((route) => console.error(`- ${route}`));
+    process.exitCode = 1;
+} else {
+    console.log(
+        '\nAll internal email links map to Svelte routes as clean URLs and with the current /next deployment prefix.'
+    );
 }
 
 if (!semanticOnly) {

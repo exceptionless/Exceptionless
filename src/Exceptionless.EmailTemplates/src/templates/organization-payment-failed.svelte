@@ -7,8 +7,8 @@
     const jsonLd = buildEmailMetadata(`
 {
   "@type": "ViewAction",
-  "target": "{{BaseUrl}}/organization/{{OrganizationId}}/manage?tab=billing",
-  "url": "{{BaseUrl}}/organization/{{OrganizationId}}/manage?tab=billing",
+  "target": "{{BaseUrl}}/organization/{{OrganizationId}}/billing",
+  "url": "{{BaseUrl}}/organization/{{OrganizationId}}/billing",
   "name": "Update Billing Information"
 }
 `);
@@ -25,7 +25,7 @@
             >
             <Section data-email-button-row class="text-center">
                 <Button
-                    href="{'{{BaseUrl}}'}/organization/{'{{OrganizationId}}'}/manage?tab=billing"
+                    href="{'{{BaseUrl}}'}/organization/{'{{OrganizationId}}'}/billing"
                     class="bg-primary text-white font-bold text-base rounded-[3px] px-4 py-2 no-underline inline-block"
                     >Update Billing Information</Button
                 >
@@ -40,7 +40,7 @@
             {#snippet actions()}
                 <li class="mt-[5px] ml-[5px]">
                     <Link
-                        href="{'{{BaseUrl}}'}/organization/{'{{OrganizationId}}'}/manage?tab=billing"
+                        href="{'{{BaseUrl}}'}/organization/{'{{OrganizationId}}'}/billing"
                         class="text-primary-action no-underline">View invoices</Link
                     >
                 </li>

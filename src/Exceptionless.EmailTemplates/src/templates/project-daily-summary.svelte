@@ -8,8 +8,8 @@
 {
   "@type": "ViewAction",
   {{#if HasSubmittedEvents}}
-  "target": "{{BaseUrl}}/project/{{ProjectId}}/error/timeline",
-  "url": "{{BaseUrl}}/project/{{ProjectId}}/error/timeline",
+  "target": "{{BaseUrl}}/event?project={{ProjectId}}&type=error",
+  "url": "{{BaseUrl}}/event?project={{ProjectId}}&type=error",
   "name": "View Timeline"
   {{else}}
   "target": "{{BaseUrl}}/project/{{ProjectId}}/configure",
@@ -137,7 +137,7 @@
 
             <Section data-email-button-row data-email-timeline-button class="text-center">
                 <Button
-                    href="{'{{BaseUrl}}'}/project/{'{{ProjectId}}'}/error/timeline"
+                    href="{'{{BaseUrl}}'}/event?project={'{{ProjectId}}'}&type=error"
                     class="bg-primary text-white font-bold text-base rounded-[3px] px-4 py-2 no-underline inline-block"
                     >View Timeline</Button
                 >
@@ -146,11 +146,11 @@
             {@html '{{#if Blocked}}'}
             <Section data-email-summary-alert class="border border-alert bg-alert-bg p-[10px] my-4 rounded-[3px]">
                 <Text class="text-base text-dark leading-[1.3]"
-                    >{@html '<strong>{{Blocked}} events</strong> were discarded due to throttling. <a href="{{BaseUrl}}/organization/{{OrganizationId}}/upgrade" target="_blank" style="color:#5E9A00;text-decoration:none">Upgrade now</a> to increase your limits. <a href="https://github.com/exceptionless/Exceptionless/wiki/Frequently-Asked-Questions#q-why-is-my-organization-throttled" target="_blank" style="color:#5E9A00;text-decoration:none">Click here to learn more about throttling.</a>'}</Text
+                    >{@html '<strong>{{Blocked}} events</strong> were discarded due to throttling. <a href="{{BaseUrl}}/organization/{{OrganizationId}}/billing?changePlan=true" target="_blank" style="color:#5E9A00;text-decoration:none">Upgrade now</a> to increase your limits. <a href="https://github.com/exceptionless/Exceptionless/wiki/Frequently-Asked-Questions#q-why-is-my-organization-throttled" target="_blank" style="color:#5E9A00;text-decoration:none">Click here to learn more about throttling.</a>'}</Text
                 >
                 <Section data-email-button-row class="text-center">
                     <Button
-                        href="{'{{BaseUrl}}'}/organization/{'{{OrganizationId}}'}/upgrade"
+                        href="{'{{BaseUrl}}'}/organization/{'{{OrganizationId}}'}/billing?changePlan=true"
                         class="bg-alert text-white font-bold text-base rounded-[3px] px-4 py-2 no-underline inline-block"
                         >Upgrade Plan</Button
                     >
@@ -163,21 +163,21 @@
                 >Most Frequent</Heading
             >
             {@html '<ul style="margin-top:0">'}
-            {@html '{{#each MostFrequent}}<li style="margin-top:5px;margin-left:5px"><a href="{{../BaseUrl}}/stack/{{StackId}}" style="color:#5E9A00;text-decoration:none">{{#if IsRegressed}}<strong>[REGRESSED]</strong> {{/if}}{{#if TypeName}}<strong>{{TypeName}}:</strong> {{/if}}{{Title}}</a></li>{{/each}}'}
-            {@html '<li style="margin-top:5px;margin-left:5px"><a href="{{BaseUrl}}/project/{{ProjectId}}/error/frequent" style="color:#5E9A00;text-decoration:none">View more...</a></li></ul>'}
+            {@html '{{#each MostFrequent}}<li style="margin-top:5px;margin-left:5px"><a href="{{../BaseUrl}}/project/{{../ProjectId}}/stacks/{{StackId}}" style="color:#5E9A00;text-decoration:none">{{#if IsRegressed}}<strong>[REGRESSED]</strong> {{/if}}{{#if TypeName}}<strong>{{TypeName}}:</strong> {{/if}}{{Title}}</a></li>{{/each}}'}
+            {@html '<li style="margin-top:5px;margin-left:5px"><a href="{{BaseUrl}}/project/{{ProjectId}}/stacks?sort=-total" style="color:#5E9A00;text-decoration:none">View more...</a></li></ul>'}
             {@html '{{/if}}'}
 
             {@html '{{#if Newest}}'}
             <Heading as="h5" class="text-[20px] font-normal text-dark leading-[1.3] mt-0 mb-[5px]">Newest</Heading>
             {@html '<ul style="margin-top:0">'}
-            {@html '{{#each Newest}}<li style="margin-top:5px;margin-left:5px"><a href="{{../BaseUrl}}/stack/{{StackId}}" style="color:#5E9A00;text-decoration:none">{{#if IsRegressed}}<strong>[REGRESSED]</strong> {{/if}}{{#if TypeName}}<strong>{{TypeName}}:</strong> {{/if}}{{Title}}</a></li>{{/each}}'}
-            {@html '<li style="margin-top:5px;margin-left:5px"><a href="{{BaseUrl}}/project/{{ProjectId}}/error/new" style="color:#5E9A00;text-decoration:none">View more...</a></li></ul>'}
+            {@html '{{#each Newest}}<li style="margin-top:5px;margin-left:5px"><a href="{{../BaseUrl}}/project/{{../ProjectId}}/stacks/{{StackId}}" style="color:#5E9A00;text-decoration:none">{{#if IsRegressed}}<strong>[REGRESSED]</strong> {{/if}}{{#if TypeName}}<strong>{{TypeName}}:</strong> {{/if}}{{Title}}</a></li>{{/each}}'}
+            {@html '<li style="margin-top:5px;margin-left:5px"><a href="{{BaseUrl}}/project/{{ProjectId}}/stacks?sort=-first" style="color:#5E9A00;text-decoration:none">View more...</a></li></ul>'}
             {@html '{{/if}}'}
 
             {@html '{{#if IsFreePlan}}'}
             <Text data-email-free-plan class="text-base text-dark leading-[1.3]"
                 >You are currently on a free plan. If you would like to receive notifications for errors as they happen, <Link
-                    href="{'{{BaseUrl}}'}/organization/{'{{OrganizationId}}'}/upgrade"
+                    href="{'{{BaseUrl}}'}/organization/{'{{OrganizationId}}'}/billing?changePlan=true"
                     class="text-primary no-underline">upgrade to a paid plan</Link
                 >.</Text
             >
@@ -207,7 +207,7 @@
             {#snippet actions()}
                 <li class="mt-[5px] ml-[5px]">
                     <Link
-                        href="{'{{BaseUrl}}'}/account/manage?projectId={'{{ProjectId}}'}&tab=notifications"
+                        href="{'{{BaseUrl}}'}/account/notifications?project={'{{ProjectId}}'}"
                         class="text-primary-action no-underline"
                         >Change your notification settings for this project</Link
                     >
