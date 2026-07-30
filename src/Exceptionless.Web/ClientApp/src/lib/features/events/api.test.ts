@@ -2,10 +2,6 @@ import { ChangeType } from '$features/websockets/models';
 import { QueryClient } from '@tanstack/svelte-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('$features/auth/index.svelte', () => ({
-    accessToken: { current: 'test-token' }
-}));
-
 import { queryKeys as stackQueryKeys } from '../stacks/api.svelte';
 import {
     invalidatePersistentEventQueries,
