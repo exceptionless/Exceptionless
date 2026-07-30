@@ -49,14 +49,20 @@ public static class ViewProjectExtensions
         return project.GetHourlyUsage(timeProvider.GetUtcNow().UtcDateTime);
     }
 
-    public static void EnsureUsage(this ViewProject project, int limit, TimeProvider timeProvider)
+    public static void EnsureUsage(this ViewProject project, int limit, DateTime organizationCreatedUtc, TimeProvider timeProvider)
     {
-        var startDate = timeProvider.GetUtcNow().UtcDateTime.SubtractYears(1).StartOfMonth();
+        var endDateUtc = timeProvider.GetUtcNow().UtcDateTime.StartOfMonth();
+        var startDateUtc = endDateUtc.SubtractYears(1);
+        var createdMonthUtc = organizationCreatedUtc.ToUniversalTime().StartOfMonth();
+        if (project.CreatedUtc > organizationCreatedUtc)
+            createdMonthUtc = project.CreatedUtc.ToUniversalTime().StartOfMonth();
+        if (createdMonthUtc > startDateUtc)
+            startDateUtc = createdMonthUtc;
 
-        while (startDate < timeProvider.GetUtcNow().UtcDateTime.StartOfMonth())
+        while (startDateUtc < endDateUtc)
         {
-            project.GetUsage(startDate, limit);
-            startDate = startDate.AddMonths(1).StartOfMonth();
+            project.GetUsage(startDateUtc, limit);
+            startDateUtc = startDateUtc.AddMonths(1).StartOfMonth();
         }
     }
 
