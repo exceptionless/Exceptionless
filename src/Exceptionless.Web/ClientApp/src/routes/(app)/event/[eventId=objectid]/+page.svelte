@@ -51,5 +51,5 @@
     id={page.params.eventId || ''}
     {handleError}
     onEventLoaded={handleEventLoaded}
-    onNavigate={(newId) => goto(resolve('/(app)/event/[eventId=objectid]', { eventId: newId }))}
+    onNavigate={(newId) => goto(buildEventDetailsHref(newId))}
 />
