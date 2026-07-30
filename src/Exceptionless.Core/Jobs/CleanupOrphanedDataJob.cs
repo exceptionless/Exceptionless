@@ -89,7 +89,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             .Size(0)
             .Query(q => RecentEventQuery(q, orphanedEventCutoffUtc))
             .AddAggregation("cardinality_stack_id", a => a.Cardinality(c => c.Field(f => f.StackId).PrecisionThreshold(40000))));
-        EnsureValidResponse(stackCardinality, "getting stack cardinality");
+        EnsureValidSearchResponse(stackCardinality, "getting stack cardinality");
 
         double? uniqueStackIdCount = stackCardinality.Aggregations?.GetCardinality("cardinality_stack_id")?.Value;
         if (!uniqueStackIdCount.HasValue || uniqueStackIdCount.Value <= 0)
@@ -111,7 +111,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                 .Size(0)
                 .Query(q => RecentEventQuery(q, orphanedEventCutoffUtc))
                 .AddAggregation("terms_stack_id", a => a.Terms(c => c.Field(f => f.StackId).Include(new TermsInclude(batchNumber, buckets)).Size(batchSize * 2))));
-            EnsureValidResponse(stackIdTerms, "getting stack ids");
+            EnsureValidSearchResponse(stackIdTerms, "getting stack ids");
 
             string[] stackIds = stackIdTerms.Aggregations?.GetStringTerms("terms_stack_id")?.Buckets.Select(b => b.Key.ToString()!).ToArray() ?? [];
             if (stackIds.Length == 0)
@@ -156,7 +156,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             .Size(0)
             .Query(q => RecentEventQuery(q, orphanedEventCutoffUtc))
             .AddAggregation("cardinality_project_id", a => a.Cardinality(c => c.Field(f => f.ProjectId).PrecisionThreshold(40000))));
-        EnsureValidResponse(projectCardinality, "getting project cardinality");
+        EnsureValidSearchResponse(projectCardinality, "getting project cardinality");
 
         double? uniqueProjectIdCount = projectCardinality.Aggregations?.GetCardinality("cardinality_project_id")?.Value;
         if (!uniqueProjectIdCount.HasValue || uniqueProjectIdCount.Value <= 0)
@@ -178,7 +178,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                 .Size(0)
                 .Query(q => RecentEventQuery(q, orphanedEventCutoffUtc))
                 .AddAggregation("terms_project_id", a => a.Terms(c => c.Field(f => f.ProjectId).Include(new TermsInclude(batchNumber, buckets)).Size(batchSize * 2))));
-            EnsureValidResponse(projectIdTerms, "getting project ids");
+            EnsureValidSearchResponse(projectIdTerms, "getting project ids");
 
             string[] projectIds = projectIdTerms.Aggregations?.GetStringTerms("terms_project_id")?.Buckets.Select(b => b.Key.ToString()!).ToArray() ?? [];
             if (projectIds.Length == 0)
@@ -223,7 +223,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             .Size(0)
             .Query(q => RecentEventQuery(q, orphanedEventCutoffUtc))
             .AddAggregation("cardinality_organization_id", a => a.Cardinality(c => c.Field(f => f.OrganizationId).PrecisionThreshold(40000))));
-        EnsureValidResponse(organizationCardinality, "getting organization cardinality");
+        EnsureValidSearchResponse(organizationCardinality, "getting organization cardinality");
 
         double? uniqueOrganizationIdCount = organizationCardinality.Aggregations?.GetCardinality("cardinality_organization_id")?.Value;
         if (!uniqueOrganizationIdCount.HasValue || uniqueOrganizationIdCount.Value <= 0)
@@ -245,7 +245,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                 .Size(0)
                 .Query(q => RecentEventQuery(q, orphanedEventCutoffUtc))
                 .AddAggregation("terms_organization_id", a => a.Terms(c => c.Field(f => f.OrganizationId).Include(new TermsInclude(batchNumber, buckets)).Size(batchSize * 2))));
-            EnsureValidResponse(organizationIdTerms, "getting organization ids");
+            EnsureValidSearchResponse(organizationIdTerms, "getting organization ids");
 
             string[] organizationIds = organizationIdTerms.Aggregations?.GetStringTerms("terms_organization_id")?.Buckets.Select(b => b.Key.ToString()!).ToArray() ?? [];
             if (organizationIds.Length == 0)
@@ -287,7 +287,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             .Size(0)
             .AddAggregation("stacks", a => a.Terms(t => t.Field(f => f.DuplicateSignature).MinDocCount(2).Size(10000))));
         _logger.LogRequest(duplicateStackAgg, LogLevel.Trace);
-        EnsureValidResponse(duplicateStackAgg, "getting duplicate stacks");
+        EnsureValidSearchResponse(duplicateStackAgg, "getting duplicate stacks");
 
         var buckets = duplicateStackAgg.Aggregations?.GetStringTerms("stacks")?.Buckets.ToList() ?? [];
         int total = buckets.Count;
@@ -435,7 +435,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                 .Size(0)
                 .AddAggregation("stacks", a => a.Terms(t => t.Field(f => f.DuplicateSignature).MinDocCount(2).Size(10000))));
             _logger.LogRequest(duplicateStackAgg, LogLevel.Trace);
-            EnsureValidResponse(duplicateStackAgg, "getting duplicate stacks");
+            EnsureValidSearchResponse(duplicateStackAgg, "getting duplicate stacks");
 
             buckets = duplicateStackAgg.Aggregations?.GetStringTerms("stacks")?.Buckets.ToList() ?? [];
             total += buckets.Count;
@@ -455,6 +455,18 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
     {
         if (!response.IsValidResponse)
             throw new ApplicationException($"Error {operation}: {response.DebugInformation}", response.ApiCallDetails.OriginalException);
+    }
+
+    internal static void EnsureValidSearchResponse<T>(SearchResponse<T> response, string operation)
+    {
+        if (response.TimedOut)
+            throw new ApplicationException($"Error {operation}: Elasticsearch timed out before completing the search.");
+
+        int failedShards = response.Shards?.Failed ?? 0;
+        if (failedShards > 0)
+            throw new ApplicationException($"Error {operation}: Elasticsearch reported {failedShards} failed search shards.");
+
+        EnsureValidResponse(response, operation);
     }
 
     internal static void EnsureValidDeleteResponse(DeleteByQueryResponse response, string operation)
