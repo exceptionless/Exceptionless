@@ -845,15 +845,15 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
             options,
             cancellationToken: TestContext.Current.CancellationToken);
         var tools = await client.ListToolsAsync(cancellationToken: TestContext.Current.CancellationToken);
-        var switchedContext = await client.CallToolAsync(
-            "switch_project",
+        var resolvedProject = await client.CallToolAsync(
+            "resolve_project",
             new Dictionary<string, object?>
             {
                 ["projectId"] = TestConstants.ProjectId
             },
             cancellationToken: TestContext.Current.CancellationToken);
-        var context = await client.CallToolAsync(
-            "get_context",
+        var project = await client.CallToolAsync(
+            "get_project",
             new Dictionary<string, object?>
             {
                 ["projectId"] = TestConstants.ProjectId
@@ -862,17 +862,23 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
 
         Assert.Equal(nativeProtocolVersion, client.NegotiatedProtocolVersion);
         Assert.Null(client.SessionId);
-        Assert.Contains(tools, tool => String.Equals(tool.Name, "get_context", StringComparison.Ordinal));
-        Assert.NotEqual(true, switchedContext.IsError);
-        Assert.NotEqual(true, context.IsError);
-        Assert.NotNull(context.StructuredContent);
-        Assert.Contains(TestConstants.ProjectId, context.StructuredContent.ToString(), StringComparison.Ordinal);
+        Assert.Contains("stateless", client.ServerInstructions, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(tools, tool => String.Equals(tool.Name, "resolve_project", StringComparison.Ordinal));
+        Assert.DoesNotContain(tools, tool => String.Equals(tool.Name, "get_context", StringComparison.Ordinal));
+        Assert.DoesNotContain(tools, tool => String.Equals(tool.Name, "switch_organization", StringComparison.Ordinal));
+        Assert.DoesNotContain(tools, tool => String.Equals(tool.Name, "switch_project", StringComparison.Ordinal));
+        Assert.DoesNotContain(tools, tool => String.Equals(tool.Name, "resolve_project_context", StringComparison.Ordinal));
+        Assert.NotEqual(true, resolvedProject.IsError);
+        Assert.NotEqual(true, project.IsError);
+        Assert.NotNull(project.StructuredContent);
+        Assert.Contains(TestConstants.ProjectId, project.StructuredContent.ToString(), StringComparison.Ordinal);
     }
 
-    [Fact]
-    public async Task OAuthBearer_McpDownLevelClient_NegotiatesAndCallsTool()
+    [Theory]
+    [InlineData("2025-06-18")]
+    [InlineData("2025-11-25")]
+    public async Task OAuthBearer_McpDownLevelClient_NegotiatesAndCallsTool(string downLevelProtocolVersion)
     {
-        const string downLevelProtocolVersion = "2025-06-18";
         var token = await IssueTokenAsync();
         using var httpClient = _server.CreateClient();
         var transport = new HttpClientTransport(
@@ -906,6 +912,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         var filterFields = await client.CallToolAsync("get_filter_fields", cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(downLevelProtocolVersion, client.NegotiatedProtocolVersion);
+        Assert.Contains("stateless", client.ServerInstructions, StringComparison.OrdinalIgnoreCase);
         Assert.Contains(tools, tool => String.Equals(tool.Name, "get_filter_fields", StringComparison.Ordinal));
         Assert.NotEqual(true, filterFields.IsError);
         Assert.NotNull(filterFields.StructuredContent);

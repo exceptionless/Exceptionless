@@ -113,7 +113,7 @@ public sealed class McpContextService(
             null);
     }
 
-    public async Task<McpContextResolution> ResolveProjectContextAsync(
+    public async Task<McpContextResolution> ResolveProjectByIdOrNameAsync(
         string? projectId = null,
         string? projectName = null,
         string? organizationId = null)

@@ -44,7 +44,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetContextAsync_MultipleOrganizations_ReturnsContextRequired()
+    public async Task ResolveProjectAsync_MultipleOrganizationsWithoutOrganizationId_ReturnsContextRequired()
     {
         var tools = await CreateToolsForOrganizationsAsync(
             Guid.NewGuid().ToString("N"),
@@ -52,7 +52,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
             AuthorizationRoles.McpRead,
             AuthorizationRoles.ProjectsRead);
 
-        var result = await tools.GetContextAsync();
+        var result = await tools.ResolveProjectAsync(projectName: "Test");
 
         Assert.False(result.Ok);
         Assert.Equal(McpErrorCodes.ContextRequired, result.Error?.Code);
@@ -63,7 +63,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task SwitchOrganizationAsync_ResolvesRequestedOrganization()
+    public async Task ResolveProjectAsync_ProjectId_ReturnsRequestedProject()
     {
         var tools = await CreateToolsForOrganizationsAsync(
             Guid.NewGuid().ToString("N"),
@@ -71,74 +71,22 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
             AuthorizationRoles.McpRead,
             AuthorizationRoles.ProjectsRead);
 
-        var context = await tools.SwitchOrganizationAsync(SampleDataService.FREE_ORG_ID);
-        var projects = await tools.ListProjectsAsync(SampleDataService.FREE_ORG_ID, limit: 50);
+        var context = await tools.ResolveProjectAsync(projectId: TestConstants.ProjectId);
 
         Assert.True(context.Ok);
-        Assert.Equal(SampleDataService.FREE_ORG_ID, Data(context).ActiveOrganizationId);
-        Assert.Null(Data(context).ActiveProjectId);
-        Assert.True(projects.Ok);
-        Assert.All(Items(projects), project => Assert.Equal(SampleDataService.FREE_ORG_ID, project.OrganizationId));
-        Assert.Contains(Items(projects), project => project.Id == SampleDataService.FREE_PROJECT_ID);
+        Assert.Equal(TestConstants.OrganizationId, Data(context).ActiveOrganizationId);
+        Assert.Equal(TestConstants.ProjectId, Data(context).ActiveProjectId);
     }
 
     [Fact]
-    public async Task SwitchOrganizationAsync_DoesNotPersistSelectionAcrossCalls()
-    {
-        var organizationIds = new[] { TestConstants.OrganizationId, SampleDataService.FREE_ORG_ID };
-        var tools = await CreateToolsForOrganizationsAsync(Guid.NewGuid().ToString("N"), organizationIds, AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead);
-
-        var switchResult = await tools.SwitchOrganizationAsync(SampleDataService.FREE_ORG_ID);
-        var nextContext = await tools.GetContextAsync();
-
-        Assert.True(switchResult.Ok);
-        Assert.False(nextContext.Ok);
-        Assert.Equal(McpErrorCodes.ContextRequired, nextContext.Error?.Code);
-        Assert.Equal("organization", nextContext.Error?.Details?["selection"]);
-    }
-
-    [Fact]
-    public async Task GetContextAsync_NewAccessTokenForSameOAuthGrant_DoesNotShareSelection()
-    {
-        string grantId = Guid.NewGuid().ToString("N");
-        var organizationIds = new[] { TestConstants.OrganizationId, SampleDataService.FREE_ORG_ID };
-        var toolsA = await CreateToolsForOrganizationsAsync(grantId, organizationIds, AuthorizationRoles.McpRead);
-        var toolsB = await CreateToolsForOrganizationsAsync(grantId, organizationIds, AuthorizationRoles.McpRead);
-
-        var switchResult = await toolsA.SwitchOrganizationAsync(SampleDataService.FREE_ORG_ID);
-        var contextB = await toolsB.GetContextAsync();
-
-        Assert.True(switchResult.Ok);
-        Assert.False(contextB.Ok);
-        Assert.Equal(McpErrorCodes.ContextRequired, contextB.Error?.Code);
-        Assert.Equal("organization", contextB.Error?.Details?["selection"]);
-    }
-
-    [Fact]
-    public async Task GetContextAsync_ExplicitOrganization_ResolvesRequestedOrganization()
-    {
-        var tools = await CreateToolsForOrganizationsAsync(
-            Guid.NewGuid().ToString("N"),
-            [TestConstants.OrganizationId, SampleDataService.FREE_ORG_ID],
-            AuthorizationRoles.McpRead,
-            AuthorizationRoles.ProjectsRead);
-
-        var context = await tools.GetContextAsync(organizationId: SampleDataService.FREE_ORG_ID);
-
-        Assert.True(context.Ok);
-        Assert.Equal(SampleDataService.FREE_ORG_ID, Data(context).ActiveOrganizationId);
-        Assert.Null(Data(context).ActiveProjectId);
-    }
-
-    [Fact]
-    public async Task ResolveProjectContextAsync_ProjectOutsideExplicitOrganization_ReturnsContextMismatch()
+    public async Task ResolveProjectAsync_ProjectOutsideExplicitOrganization_ReturnsContextMismatch()
     {
         var tools = await CreateToolsForOrganizationsAsync(
             Guid.NewGuid().ToString("N"),
             [TestConstants.OrganizationId, SampleDataService.FREE_ORG_ID],
             AuthorizationRoles.McpRead);
 
-        var context = await tools.ResolveProjectContextAsync(
+        var context = await tools.ResolveProjectAsync(
             projectId: TestConstants.ProjectId,
             organizationId: SampleDataService.FREE_ORG_ID);
 
@@ -174,7 +122,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     {
         var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP stateless project stack"));
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead, AuthorizationRoles.StacksRead);
-        await tools.SwitchProjectAsync(SampleDataService.TEST_ROCKET_SHIP_PROJECT_ID);
+        await tools.ResolveProjectAsync(projectId: SampleDataService.TEST_ROCKET_SHIP_PROJECT_ID);
 
         var result = await tools.SearchStacksAsync(TestConstants.ProjectId, limit: 50);
 

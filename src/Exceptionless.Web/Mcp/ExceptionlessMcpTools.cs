@@ -90,35 +90,6 @@ public sealed class ExceptionlessMcpTools
         _mcpContextService = mcpContextService;
     }
 
-    [McpServerTool(Name = "get_context", ReadOnly = true, UseStructuredContent = true)]
-    [Description("Resolves an Exceptionless organization and project context for this call. Context is not stored; pass the returned ids to subsequent scoped tools.")]
-    public async Task<McpResponse<McpContextResult>> GetContextAsync(
-        [Description("Optional organization id to resolve.")]
-        string? organizationId = null,
-        [Description("Optional project id to resolve. Its organization is resolved automatically.")]
-        string? projectId = null)
-    {
-        try
-        {
-            EnsureScope(AuthorizationRoles.McpRead);
-            if (!String.IsNullOrWhiteSpace(organizationId) && !TryValidateId(organizationId, "organizationId", out var organizationIdError))
-                return McpResponse<McpContextResult>.Failed(organizationIdError);
-
-            if (!String.IsNullOrWhiteSpace(projectId) && !TryValidateId(projectId, "projectId", out var projectIdError))
-                return McpResponse<McpContextResult>.Failed(projectIdError);
-
-            var context = await _mcpContextService.GetContextAsync(organizationId, projectId, requireProject: false);
-            if (!context.Succeeded)
-                return McpResponse<McpContextResult>.Failed(context.Error!);
-
-            return McpResponse<McpContextResult>.Success(context.Context);
-        }
-        catch (Exception ex) when (IsLookupError(ex))
-        {
-            return McpResponse<McpContextResult>.Failed(ToLookupError("MCP context", projectId ?? organizationId ?? "current authorization", ex));
-        }
-    }
-
     [McpServerTool(Name = "list_organizations", ReadOnly = true, UseStructuredContent = true)]
     [Description("Lists organizations available to the current MCP OAuth grant.")]
     public async Task<McpResponse<McpListData<McpOrganizationResult>>> ListOrganizationsAsync()
@@ -135,57 +106,9 @@ public sealed class ExceptionlessMcpTools
         }
     }
 
-    [McpServerTool(Name = "switch_organization", ReadOnly = true, UseStructuredContent = true)]
-    [Description("Resolves an organization context for this call. The selection is not stored; pass organizationId to subsequent organization-scoped tools.")]
-    public async Task<McpResponse<McpContextResult>> SwitchOrganizationAsync(
-        [Description("The Exceptionless organization id to resolve.")]
-        string organizationId)
-    {
-        try
-        {
-            EnsureScope(AuthorizationRoles.McpRead);
-            if (!TryValidateId(organizationId, "organizationId", out var idError))
-                return McpResponse<McpContextResult>.Failed(idError);
-
-            var context = await _mcpContextService.GetContextAsync(organizationId: organizationId);
-            if (!context.Succeeded)
-                return McpResponse<McpContextResult>.Failed(context.Error!);
-
-            return McpResponse<McpContextResult>.Success(context.Context);
-        }
-        catch (Exception ex) when (IsLookupError(ex))
-        {
-            return McpResponse<McpContextResult>.Failed(ToLookupError("Organization", organizationId, ex));
-        }
-    }
-
-    [McpServerTool(Name = "switch_project", ReadOnly = true, UseStructuredContent = true)]
-    [Description("Resolves a project and its organization for this call. The selection is not stored; pass projectId to subsequent project-scoped tools.")]
-    public async Task<McpResponse<McpContextResult>> SwitchProjectAsync(
-        [Description("The Exceptionless project id to resolve.")]
-        string projectId)
-    {
-        try
-        {
-            EnsureScope(AuthorizationRoles.McpRead);
-            if (!TryValidateId(projectId, "projectId", out var idError))
-                return McpResponse<McpContextResult>.Failed(idError);
-
-            var context = await _mcpContextService.GetContextAsync(projectId: projectId, requireProject: true);
-            if (!context.Succeeded)
-                return McpResponse<McpContextResult>.Failed(context.Error!);
-
-            return McpResponse<McpContextResult>.Success(context.Context);
-        }
-        catch (Exception ex) when (IsLookupError(ex))
-        {
-            return McpResponse<McpContextResult>.Failed(ToLookupError("Project", projectId, ex));
-        }
-    }
-
-    [McpServerTool(Name = "resolve_project_context", ReadOnly = true, UseStructuredContent = true)]
-    [Description("Resolves a project context by project id or exact project name. The selection is not stored; pass the returned projectId to subsequent project-scoped tools.")]
-    public async Task<McpResponse<McpContextResult>> ResolveProjectContextAsync(
+    [McpServerTool(Name = "resolve_project", ReadOnly = true, UseStructuredContent = true)]
+    [Description("Resolves a project by id or exact name. Pass the returned projectId explicitly to subsequent project-scoped tools.")]
+    public async Task<McpResponse<McpContextResult>> ResolveProjectAsync(
         [Description("Optional Exceptionless project id to resolve.")]
         string? projectId = null,
         [Description("Optional exact project name to resolve within the specified organization.")]
@@ -202,7 +125,7 @@ public sealed class ExceptionlessMcpTools
             if (!String.IsNullOrWhiteSpace(organizationId) && !TryValidateId(organizationId, "organizationId", out var organizationIdError))
                 return McpResponse<McpContextResult>.Failed(organizationIdError);
 
-            var context = await _mcpContextService.ResolveProjectContextAsync(projectId, projectName, organizationId);
+            var context = await _mcpContextService.ResolveProjectByIdOrNameAsync(projectId, projectName, organizationId);
             if (!context.Succeeded)
                 return McpResponse<McpContextResult>.Failed(context.Error!);
 
