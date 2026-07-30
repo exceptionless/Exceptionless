@@ -1725,7 +1725,7 @@ public partial class EventEndpointTests : IntegrationTestsBase
         Assert.NotNull(viewOrganization);
         Assert.False(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
-        Assert.Equal(12, viewOrganization.Usage.Count);
+        Assert.Single(viewOrganization.Usage);
         Assert.Single(viewOrganization.UsageHours);
 
         // submit bach of events one over limit
