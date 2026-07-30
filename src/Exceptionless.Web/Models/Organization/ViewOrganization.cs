@@ -74,7 +74,7 @@ public static class ViewOrganizationExtensions
 
     public static void EnsureUsage(this ViewOrganization organization, TimeProvider timeProvider)
     {
-        organization.Usage.EnsureUsage(organization.GetMaxEventsPerMonthWithBonus(timeProvider), timeProvider);
+        organization.Usage.EnsureUsage(organization.GetMaxEventsPerMonthWithBonus(timeProvider), organization.CreatedUtc, timeProvider);
     }
 
     public static UsageInfo GetCurrentUsage(this ViewOrganization organization, TimeProvider timeProvider)

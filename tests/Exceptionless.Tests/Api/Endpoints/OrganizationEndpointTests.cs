@@ -402,6 +402,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         var currentPlanDate = new DateTime(2026, 6, 15, 0, 0, 0, DateTimeKind.Utc);
         TimeProvider.SetUtcNow(currentPlanDate);
         _billingManager.ApplyBillingPlan(organization, _plans.LargePlan, user);
+        organization.CreatedUtc = new DateTime(2026, 3, 15, 0, 0, 0, DateTimeKind.Utc);
         organization.Usage =
         [
             new UsageInfo { Date = new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc), Limit = _plans.MediumPlan.MaxEventsPerMonth },
@@ -422,6 +423,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(viewOrganization);
+        Assert.DoesNotContain(viewOrganization.Usage, usage => usage.Date < new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc));
         Assert.Equal(_plans.MediumPlan.MaxEventsPerMonth, viewOrganization.Usage.Single(u => u.Date == new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc)).Limit);
         Assert.Equal(_plans.MediumPlan.MaxEventsPerMonth, viewOrganization.Usage.Single(u => u.Date == new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc)).Limit);
         Assert.Equal(_plans.MediumPlan.MaxEventsPerMonth, viewOrganization.Usage.Single(u => u.Date == new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc)).Limit);
