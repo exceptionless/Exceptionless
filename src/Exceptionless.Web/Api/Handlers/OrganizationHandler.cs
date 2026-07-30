@@ -398,7 +398,7 @@ public class OrganizationHandler(
                 {
                     var subs = await stripeBillingClient.ListSubscriptionsAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId });
                     foreach (var sub in subs.Where(s => !s.CanceledAt.HasValue))
-                        await stripeBillingClient.CancelSubscriptionAsync(sub.Id, new SubscriptionCancelOptions());
+                        await stripeBillingClient.CancelSubscriptionAsync(sub.Id, new SubscriptionCancelOptions { Prorate = true, InvoiceNow = true });
                 }
 
                 organization.BillingStatus = BillingStatus.Trialing;
