@@ -7,6 +7,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Validation;
 using Exceptionless.Insulation.Configuration;
+using Exceptionless.Insulation.Security;
 using Exceptionless.Web.Api;
 using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Extensions;
@@ -81,6 +82,7 @@ public partial class Program
             var configuration = (IConfigurationRoot)builder.Configuration;
             Log.Logger = new LoggerConfiguration()
                 .ReadFrom.Configuration(configuration)
+                .ApplySensitiveDataLogging()
                 .CreateBootstrapLogger()
                 .ForContext<Program>();
 
@@ -99,6 +101,7 @@ public partial class Program
                 .UseSerilog((ctx, sp, c) =>
                 {
                     c.ReadFrom.Configuration(ctx.Configuration);
+                    c.ApplySensitiveDataLogging();
                     c.ReadFrom.Services(sp);
                     c.Enrich.WithMachineName();
 

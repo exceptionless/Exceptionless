@@ -5,7 +5,7 @@
     import StackStatusBadge from '$features/stacks/components/stack-status-badge.svelte';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
 
-    import { buildStackEventsHref, type StackSummaryModel, type SummaryModel, type SummaryTemplateKeys } from './index';
+    import { buildStackDetailsHref, type StackSummaryModel, type SummaryModel, type SummaryTemplateKeys } from './index';
 
     interface Props {
         badgeStatus: StackStatus;
@@ -26,7 +26,7 @@
         <abbr title={source.data.TypeFullName}>{source.data.Type}</abbr>:
     </strong>
 
-    <A class="inline" href={buildStackEventsHref(source.id)}>{source.title}</A>
+    <A class="inline" href={buildStackDetailsHref(source.id)}>{source.title}</A>
 </div>
 
 {#if source.data.Path}

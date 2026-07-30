@@ -6,7 +6,7 @@ import type { QueryClient } from '@tanstack/svelte-query';
 import { accessToken } from '$features/auth/index.svelte';
 import { fetchApiJson } from '$features/shared/api/api.svelte';
 import { queryKeys as userQueryKeys } from '$features/users/api.svelte';
-import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 
 import type { Invoice, InvoiceGridModel, NewOrganization, SuspensionCode, ViewOrganization } from './models';

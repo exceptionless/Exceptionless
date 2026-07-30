@@ -14,7 +14,7 @@
     import { postProject } from '$features/projects/api.svelte';
     import { type NewProjectFormData, NewProjectSchema } from '$features/projects/schemas';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
-    import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { ProblemDetails } from '@foundatiofx/fetchclient';
     import { createForm } from '@tanstack/svelte-form';
     import { untrack } from 'svelte';
     import { toast } from 'svelte-sonner';

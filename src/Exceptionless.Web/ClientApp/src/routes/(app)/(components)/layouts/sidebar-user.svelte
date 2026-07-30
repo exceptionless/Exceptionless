@@ -15,7 +15,7 @@
     import { logout } from '$features/auth/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { apiReferenceHref, documentationHref, githubRepositoryHref, supportIssuesHref } from '$features/shared/help-links';
-    import { useFetchClient } from '@exceptionless/fetchclient';
+    import { useFetchClient } from '@foundatiofx/fetchclient';
     import BadgeCheck from '@lucide/svelte/icons/badge-check';
     import Bell from '@lucide/svelte/icons/bell';
     import BookOpen from '@lucide/svelte/icons/book-open';

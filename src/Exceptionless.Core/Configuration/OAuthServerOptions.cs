@@ -7,6 +7,7 @@ public class OAuthServerOptions
     public TimeSpan AuthorizationCodeLifetime { get; internal set; } = TimeSpan.FromMinutes(5);
     public TimeSpan AccessTokenLifetime { get; internal set; } = TimeSpan.FromHours(1);
     public TimeSpan RefreshTokenLifetime { get; internal set; } = TimeSpan.FromDays(30);
+    public TimeSpan RefreshTokenReuseGracePeriod { get; internal set; } = TimeSpan.FromHours(1);
     public bool EnableClientIdMetadataDocuments { get; internal set; } = true;
     public int DynamicClientRegistrationIpLimit { get; internal set; } = 20;
     public TimeSpan ClientMetadataDocumentCacheLifetime { get; internal set; } = TimeSpan.FromHours(1);
@@ -19,6 +20,7 @@ public class OAuthServerOptions
         options.AuthorizationCodeLifetime = TimeSpan.FromMinutes(config.GetValue("OAuthServer:AuthorizationCodeLifetimeMinutes", 5));
         options.AccessTokenLifetime = TimeSpan.FromMinutes(config.GetValue("OAuthServer:AccessTokenLifetimeMinutes", 60));
         options.RefreshTokenLifetime = TimeSpan.FromDays(config.GetValue("OAuthServer:RefreshTokenLifetimeDays", 30));
+        options.RefreshTokenReuseGracePeriod = TimeSpan.FromMinutes(Math.Max(0, config.GetValue("OAuthServer:RefreshTokenReuseGracePeriodMinutes", 60)));
         options.EnableClientIdMetadataDocuments = config.GetValue("OAuthServer:EnableClientIdMetadataDocuments", true);
         options.DynamicClientRegistrationIpLimit = config.GetValue("OAuthServer:DynamicClientRegistrationIpLimit", 20);
         options.ClientMetadataDocumentCacheLifetime = TimeSpan.FromMinutes(config.GetValue("OAuthServer:ClientMetadataDocumentCacheLifetimeMinutes", 60));

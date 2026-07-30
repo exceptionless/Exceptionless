@@ -34,10 +34,6 @@ Authorization: Bearer {{token}}
 GET {{apiUrl}}/organizations/{{organizationId}}/invoices
 Authorization: Bearer {{token}}
 
-### Check Name
-GET {{apiUrl}}/organizations/check-name/My New Organization
-Authorization: Bearer {{token}}
-
 ### Create
 # @name newOrganization
 POST {{apiUrl}}/organizations
