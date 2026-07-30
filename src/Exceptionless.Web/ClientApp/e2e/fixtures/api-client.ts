@@ -192,6 +192,15 @@ export class E2EApiClient {
     }
 
     async login(email = this.environment.email, password = this.environment.password): Promise<string> {
+        const token = await this.loginIfExists(email, password);
+        if (!token) {
+            throw new Error('login failed with status 401');
+        }
+
+        return token;
+    }
+
+    async loginIfExists(email: string, password: string): Promise<string | undefined> {
         if (!email || !password) {
             throw new Error('Email and password are required when using API login.');
         }
@@ -203,7 +212,11 @@ export class E2EApiClient {
             }
         });
 
-        await expectStatus(response, [200], 'login');
+        await expectStatus(response, [200, 401], 'login');
+        if (response.status() === 401) {
+            return undefined;
+        }
+
         const result = toTokenResult(await readJson(response));
 
         return result.token;

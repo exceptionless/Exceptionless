@@ -68,11 +68,13 @@ export const test = base.extend<E2EFixtures>({
         let projectId: string | undefined;
         let userToken: string | undefined;
         let createdUser = false;
+        let generatedUserSignupAttempted = false;
 
         try {
             if (!e2eUseGeneratedUser && !e2eApi.environment.isProduction && e2eApi.environment.email && e2eApi.environment.password) {
                 userToken = await e2eApi.login();
             } else {
+                generatedUserSignupAttempted = true;
                 userToken = await e2eApi.signup(userName, email, E2E_TEST_PASSWORD);
                 createdUser = true;
             }
@@ -108,6 +110,13 @@ export const test = base.extend<E2EFixtures>({
             });
         } finally {
             const cleanupErrors: Error[] = [];
+
+            if (generatedUserSignupAttempted && !userToken) {
+                await runCleanupStep(cleanupErrors, 'recover generated user session for cleanup', async () => {
+                    userToken = await e2eApi.loginIfExists(email, E2E_TEST_PASSWORD);
+                    createdUser = Boolean(userToken);
+                });
+            }
 
             if (createdUser && userToken) {
                 await runCleanupStep(cleanupErrors, 'restore generated user session for cleanup', async () => {
