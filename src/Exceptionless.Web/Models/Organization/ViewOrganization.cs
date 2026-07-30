@@ -94,15 +94,23 @@ public static class ViewOrganizationExtensions
         if (bonusExpirationMonthUtc.HasValue)
         {
             int baseLimit = organization.MaxEventsPerMonth <= 0 ? -1 : organization.MaxEventsPerMonth;
-            limitAfterBonusExpiration = knownUsages
-                .FirstOrDefault(u => u.Date >= bonusExpirationMonthUtc.Value)?.Limit
-                ?? baseLimit;
+            var usageAtBonusExpiration = knownUsages.FirstOrDefault(u =>
+                u.Date.Year == bonusExpirationMonthUtc.Value.Year && u.Date.Month == bonusExpirationMonthUtc.Value.Month);
+            var usageBeforeBonusExpiration = knownUsages.LastOrDefault(u => u.Date < bonusExpirationMonthUtc.Value);
+            int limitBeforeBonusExpiration = usageBeforeBonusExpiration?.Limit ?? baseLimit;
+            limitAfterBonusExpiration = usageAtBonusExpiration?.Limit ?? GetLimitWithoutBonus(limitBeforeBonusExpiration);
 
             var firstKnownUsage = knownUsages.FirstOrDefault();
             if (startDateUtc < bonusExpirationMonthUtc.Value && firstKnownUsage is not null && firstKnownUsage.Date < bonusExpirationMonthUtc.Value)
-                limit = baseLimit;
-            else if (startDateUtc >= bonusExpirationMonthUtc.Value)
+                limit = GetLimitWithoutBonus(firstKnownUsage.Limit);
+            else if (startDateUtc >= bonusExpirationMonthUtc.Value
+                && !knownUsages.Any(u => u.Date >= bonusExpirationMonthUtc.Value && u.Date <= startDateUtc))
                 limit = limitAfterBonusExpiration;
+
+            int GetLimitWithoutBonus(int knownLimit) =>
+                knownLimit > organization.BonusEventsPerMonth && knownLimit != baseLimit
+                    ? knownLimit - organization.BonusEventsPerMonth
+                    : knownLimit;
         }
 
         while (startDateUtc <= endDateUtc)

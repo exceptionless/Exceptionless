@@ -105,7 +105,8 @@ public class BillingManager
             int previousLimit = organization.MaxEventsPerMonth != 0
                 ? organization.MaxEventsPerMonth
                 : GetBillingPlan(organization.PlanId)?.MaxEventsPerMonth ?? 0;
-            if (previousLimit > 0 && organization.BonusExpiration > previousMonthUtc)
+            var bonusExpirationMonthUtc = organization.BonusExpiration?.ToUniversalTime().StartOfMonth();
+            if (previousLimit > 0 && bonusExpirationMonthUtc > previousMonthUtc)
                 previousLimit += organization.BonusEventsPerMonth;
 
             var organizationCreatedMonthUtc = organization.CreatedUtc.ToUniversalTime().StartOfMonth();
