@@ -7191,6 +7191,16 @@
                 }
               }
             }
+          },
+          "426": {
+            "description": "Please upgrade your plan to use premium search features.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -7308,7 +7318,7 @@
             }
           },
           "426": {
-            "description": "Unable to view stack occurrences for the suspended organization.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -7433,7 +7443,7 @@
             }
           },
           "426": {
-            "description": "Unable to view stack occurrences for the suspended organization.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -7829,6 +7839,16 @@
                 }
               }
             }
+          },
+          "426": {
+            "description": "Please upgrade your plan to use premium search features.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -7911,6 +7931,16 @@
                 }
               }
             }
+          },
+          "426": {
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -7986,6 +8016,16 @@
           },
           "400": {
             "description": "Invalid filter.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8200,7 +8240,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "Please upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8410,7 +8450,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8558,7 +8598,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8778,7 +8818,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9164,7 +9204,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "Please upgrade your plan to use premium session features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9322,7 +9362,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium session features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9441,6 +9481,16 @@
           },
           "400": {
             "description": "Invalid filter.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "Please upgrade your plan to use premium session features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9578,7 +9628,7 @@
             }
           },
           "404": {
-            "description": "The project could not be found.",
+            "description": "The organization could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9588,7 +9638,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium session features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9736,7 +9786,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium session features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
