@@ -12,7 +12,6 @@ namespace Exceptionless.Core.Migrations;
 public sealed class RepairVerifiedUserEmailVerificationMigration : MigrationBase
 {
     private const int BatchSize = 100;
-    private static readonly ActionPatch<User> RepairEmailVerification = new(user => user.MarkEmailAddressVerified());
     private readonly IUserRepository _userRepository;
 
     public RepairVerifiedUserEmailVerificationMigration(
@@ -36,7 +35,14 @@ public sealed class RepairVerifiedUserEmailVerificationMigration : MigrationBase
 
         long repairedRecords = 0;
         int batch = 0;
-        var users = await FindUsersToRepairAsync();
+        var users = await _userRepository.FindAsync(
+            query => query
+                .FieldEquals(user => user.IsEmailAddressVerified, true)
+                .FieldOr(group => group
+                    .FieldNotEquals(user => user.VerifyEmailAddressToken, null!)
+                    .FieldGreaterThan(user => user.VerifyEmailAddressTokenExpiration, DateTime.MinValue))
+                .SortAscending(user => user.Id),
+            options => options.SearchAfterPaging().PageLimit(BatchSize));
 
         if (users.Documents.Count == 0)
         {
@@ -54,7 +60,7 @@ public sealed class RepairVerifiedUserEmailVerificationMigration : MigrationBase
 
             await _userRepository.PatchAsync(
                 users.Documents.Select(user => user.Id).ToArray(),
-                RepairEmailVerification);
+                new ActionPatch<User>(user => user.MarkEmailAddressVerified()));
             repairedRecords += users.Documents.Count;
 
             _logger.LogInformation(
@@ -72,17 +78,5 @@ public sealed class RepairVerifiedUserEmailVerificationMigration : MigrationBase
             batch,
             repairedRecords,
             stopwatch.Elapsed);
-    }
-
-    private Task<FindResults<User>> FindUsersToRepairAsync()
-    {
-        return _userRepository.FindAsync(
-            query => query
-                .FieldEquals(user => user.IsEmailAddressVerified, true)
-                .FieldOr(group => group
-                    .FieldNotEquals(user => user.VerifyEmailAddressToken, null!)
-                    .FieldGreaterThan(user => user.VerifyEmailAddressTokenExpiration, DateTime.MinValue))
-                .SortAscending(user => user.Id),
-            options => options.SearchAfterPaging().PageLimit(BatchSize));
     }
 }
