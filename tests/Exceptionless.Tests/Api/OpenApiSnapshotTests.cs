@@ -170,9 +170,8 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         AssertOperationTag(paths, "/.well-known/oauth-protected-resource/mcp", "OAuth");
         AssertOperationTag(paths, "/.well-known/oauth-protected-resource/api/v2", "OAuth");
 
-        AssertOptionalParameter(paths, "/api/v2/organizations/check-name", "get", "name");
         AssertOptionalParameter(paths, "/api/v2/organizations/{organizationId}/projects/check-name", "get", "name");
-        AssertOptionalParameter(paths, "/api/v2/projects/check-name", "get", "name");
+        AssertOptionalParameter(paths, "/api/v2/organizations/{organizationId}/projects/check-name", "get", "projectId");
         AssertOptionalParameter(paths, "/api/v2/projects/{id}/config", "delete", "key");
         AssertOptionalParameter(paths, "/api/v2/projects/{id}/config", "post", "key");
         AssertOptionalParameter(paths, "/api/v2/projects/{id}/data", "delete", "key");
