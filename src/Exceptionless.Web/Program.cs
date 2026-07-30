@@ -192,7 +192,7 @@ public partial class Program
             builder.Services.AddScoped<McpContextService>();
             // Leave the protocol version unset so native v2 and down-level MCP clients can negotiate a supported version.
             builder.Services.AddMcpServer(options =>
-                options.ServerInstructions = "Exceptionless MCP tools are stateless. Use list_organizations and list_projects to discover ids, or resolve_project to resolve a project by name, then pass organizationId and projectId explicitly to every scoped tool. Previous tool calls never change the scope of later calls.")
+                options.ServerInstructions = "Exceptionless MCP tools are stateless. Scoped ids may be omitted when the current OAuth grant exposes exactly one matching organization or project; otherwise use list_organizations, list_projects, or resolve_project and pass the required id explicitly. Previous tool calls never change the scope of later calls.")
                 .WithHttpTransport()
                 .WithTools<ExceptionlessMcpTools>();
             builder.Services.AddSingleton(_ => new ThrottlingOptions
