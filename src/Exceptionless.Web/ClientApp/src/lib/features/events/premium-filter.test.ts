@@ -11,19 +11,30 @@ describe('filterUsesPremiumFeatures', () => {
         '(status:open OR status:regressed)',
         'reference:ABC123',
         'date:[2026-07-01T00:00:00Z TO 2026-07-30T23:59:59Z]',
+        'date:[2026-07-01T00:00:00Z TO 2026-07-30T23:59:59Z}',
+        'date:{2026-07-01T00:00:00Z TO 2026-07-30T23:59:59Z]',
         'date:{2026-07-01T00:00:00Z TO 2026-07-30T23:59:59Z}',
+        '_exists_:status',
+        'NOT _exists_:status',
+        '_missing_:status',
         'reference:"ABC tags:important"',
         'reference:"ABC \\" tags:important"'
     ])('allows free event filters: %s', (filter) => {
         expect(filterUsesPremiumFeatures(filter, 'event')).toBe(false);
     });
 
-    it.each(['tags:important', 'data.@user.identity:blake', 'data.Windows-identity:ejsmith', 'message:"out of memory"', '-tags:important', '+tags:important'])(
-        'detects premium event filters: %s',
-        (filter) => {
-            expect(filterUsesPremiumFeatures(filter, 'event')).toBe(true);
-        }
-    );
+    it.each([
+        'tags:important',
+        'data.@user.identity:blake',
+        'data.Windows-identity:ejsmith',
+        'message:"out of memory"',
+        '-tags:important',
+        '+tags:important',
+        '_exists_:tags',
+        'NOT _missing_:data.sessionend'
+    ])('detects premium event filters: %s', (filter) => {
+        expect(filterUsesPremiumFeatures(filter, 'event')).toBe(true);
+    });
 
     it.each([
         'first_occurrence:[now-1d TO now]',
@@ -64,9 +75,12 @@ describe('filterUsesPremiumFeatures', () => {
         expect(filterUsesPremiumFeatures('status:open AND tags:important', 'event')).toBe(true);
     });
 
-    it('detects a premium field after an absolute date range', () => {
-        expect(filterUsesPremiumFeatures('date:[2026-07-01T00:00:00Z TO 2026-07-30T23:59:59Z] tags:important', 'event')).toBe(true);
-    });
+    it.each(['date:[2026-07-01T00:00:00Z TO 2026-07-30T23:59:59Z] tags:important', 'date:[2026-07-01T00:00:00Z TO 2026-07-30T23:59:59Z} tags:important'])(
+        'detects a premium field after an absolute date range: %s',
+        (filter) => {
+            expect(filterUsesPremiumFeatures(filter, 'event')).toBe(true);
+        }
+    );
 });
 
 describe('getSearchResourceForPathname', () => {
