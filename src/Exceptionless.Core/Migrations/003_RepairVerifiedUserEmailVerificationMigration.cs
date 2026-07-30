@@ -60,7 +60,18 @@ public sealed class RepairVerifiedUserEmailVerificationMigration : MigrationBase
 
             await _userRepository.PatchAsync(
                 users.Documents.Select(user => user.Id).ToArray(),
-                new ActionPatch<User>(user => user.MarkEmailAddressVerified()));
+                new ActionPatch<User>(user =>
+                {
+                    if (!user.IsEmailAddressVerified
+                        || (user.VerifyEmailAddressToken is null
+                            && user.VerifyEmailAddressTokenExpiration <= DateTime.MinValue))
+                    {
+                        return false;
+                    }
+
+                    user.MarkEmailAddressVerified();
+                    return true;
+                }));
             repairedRecords += users.Documents.Count;
 
             _logger.LogInformation(
