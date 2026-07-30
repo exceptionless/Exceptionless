@@ -2,7 +2,7 @@ import { E2E_TEST_PASSWORD, expect, test } from '../fixtures/e2e-test';
 
 test.use({ e2eUseGeneratedUser: true });
 
-test('user can recover from a failed login, restore the session, and log out @signup', async ({ browser, e2eApi, e2eScenario }) => {
+test('user can recover from a failed login, restore the session, and log out', async ({ browser, e2eApi, e2eScenario }) => {
     const authenticationContext = await browser.newContext({ baseURL: e2eApi.environment.appUrl, ignoreHTTPSErrors: true });
     const page = await authenticationContext.newPage();
 
