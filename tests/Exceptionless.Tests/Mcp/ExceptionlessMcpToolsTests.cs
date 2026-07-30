@@ -84,7 +84,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetContextAsync_IsIsolatedPerMcpSession()
+    public async Task GetContextAsync_IsIsolatedPerOAuthGrant()
     {
         var organizationIds = new[] { TestConstants.OrganizationId, SampleDataService.FREE_ORG_ID };
         var toolsA = await CreateToolsForOrganizationsAsync(Guid.NewGuid().ToString("N"), organizationIds, AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead);
@@ -100,18 +100,35 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetContextAsync_NewAccessTokenForSameOAuthGrant_PreservesContext()
+    {
+        string grantId = Guid.NewGuid().ToString("N");
+        var organizationIds = new[] { TestConstants.OrganizationId, SampleDataService.FREE_ORG_ID };
+        var toolsA = await CreateToolsForOrganizationsAsync(grantId, organizationIds, AuthorizationRoles.McpRead);
+        var toolsB = await CreateToolsForOrganizationsAsync(grantId, organizationIds, AuthorizationRoles.McpRead);
+
+        var switchResult = await toolsA.SwitchOrganizationAsync(SampleDataService.FREE_ORG_ID);
+        var contextB = await toolsB.GetContextAsync();
+
+        Assert.True(switchResult.Ok);
+        Assert.True(contextB.Ok);
+        Assert.Equal(SampleDataService.FREE_ORG_ID, Data(contextB).ActiveOrganizationId);
+        Assert.Equal(SampleDataService.FREE_PROJECT_ID, Data(contextB).ActiveProjectId);
+    }
+
+    [Fact]
     public async Task GetContextAsync_StaleOrganizationContext_ReResolvesAccessibleOrganization()
     {
-        string sessionId = Guid.NewGuid().ToString("N");
+        string grantId = Guid.NewGuid().ToString("N");
         var toolsWithBothOrganizations = await CreateToolsForOrganizationsAsync(
-            sessionId,
+            grantId,
             [TestConstants.OrganizationId, SampleDataService.FREE_ORG_ID],
             AuthorizationRoles.McpRead,
             AuthorizationRoles.ProjectsRead);
         await toolsWithBothOrganizations.SwitchOrganizationAsync(SampleDataService.FREE_ORG_ID);
 
         var toolsWithSingleOrganization = await CreateToolsForOrganizationsAsync(
-            sessionId,
+            grantId,
             [TestConstants.OrganizationId],
             AuthorizationRoles.McpRead,
             AuthorizationRoles.ProjectsRead);
@@ -1177,20 +1194,20 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
 
     private Task<ExceptionlessMcpTools> CreateToolsAsync(params string[] scopes)
     {
-        return CreateToolsAsync(includeUserRole: false, sessionId: Guid.NewGuid().ToString("N"), organizationIds: null, scopes);
+        return CreateToolsAsync(includeUserRole: false, grantId: Guid.NewGuid().ToString("N"), organizationIds: null, scopes);
     }
 
     private Task<ExceptionlessMcpTools> CreateToolsWithUserRoleAsync(params string[] scopes)
     {
-        return CreateToolsAsync(includeUserRole: true, sessionId: Guid.NewGuid().ToString("N"), organizationIds: null, scopes);
+        return CreateToolsAsync(includeUserRole: true, grantId: Guid.NewGuid().ToString("N"), organizationIds: null, scopes);
     }
 
-    private Task<ExceptionlessMcpTools> CreateToolsForOrganizationsAsync(string sessionId, IReadOnlyCollection<string> organizationIds, params string[] scopes)
+    private Task<ExceptionlessMcpTools> CreateToolsForOrganizationsAsync(string grantId, IReadOnlyCollection<string> organizationIds, params string[] scopes)
     {
-        return CreateToolsAsync(includeUserRole: false, sessionId, organizationIds, scopes);
+        return CreateToolsAsync(includeUserRole: false, grantId, organizationIds, scopes);
     }
 
-    private Task<ExceptionlessMcpTools> CreateToolsAsync(bool includeUserRole, string sessionId, IReadOnlyCollection<string>? organizationIds, params string[] scopes)
+    private Task<ExceptionlessMcpTools> CreateToolsAsync(bool includeUserRole, string grantId, IReadOnlyCollection<string>? organizationIds, params string[] scopes)
     {
         organizationIds ??= [TestConstants.OrganizationId];
 
@@ -1207,10 +1224,10 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
         var token = new OAuthToken
         {
-            Id = "oauth-test-token",
+            Id = Guid.NewGuid().ToString("N"),
             UserId = user.Id,
             ClientId = "test-client",
-            GrantId = "test-grant",
+            GrantId = grantId,
             Resource = "http://localhost/mcp",
             AccessTokenHash = OAuthService.CreateTokenHash("mcp-tools-access-token"),
             Scopes = scopes.ToHashSet(StringComparer.Ordinal),
@@ -1230,15 +1247,12 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         };
         context.Request.Scheme = "http";
         context.Request.Host = new HostString("localhost");
-        context.Request.Headers["MCP-Session-Id"] = sessionId;
-
         var accessor = new TestHttpContextAccessor { HttpContext = context };
         var contextService = new McpContextService(
             accessor,
             GetService<ICacheClient>(),
             _organizationRepository,
             _projectRepository,
-            GetService<IServiceProvider>(),
             TimeProvider);
 
         return Task.FromResult(new ExceptionlessMcpTools(

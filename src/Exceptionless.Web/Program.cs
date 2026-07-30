@@ -190,11 +190,8 @@ public partial class Program
                     .MapStatus(ResultStatus.Unavailable, ApiResultMapper.MapUnavailable));
             Bootstrapper.RegisterServices(builder.Services, options, Log.Logger.ToLoggerFactory());
             builder.Services.AddScoped<McpContextService>();
-            builder.Services.AddSingleton<ISessionMigrationHandler, McpSessionMigrationHandler>();
             builder.Services.AddMcpServer()
-                // MCP context is session-scoped. SDK v2 clients automatically downgrade from
-                // the stateless 2026-07-28 protocol to the stateful 2025-11-25 protocol here.
-                .WithHttpTransport(o => o.Stateless = false)
+                .WithHttpTransport()
                 .WithTools<ExceptionlessMcpTools>();
             builder.Services.AddSingleton(_ => new ThrottlingOptions
             {
@@ -353,6 +350,9 @@ public partial class Program
                     .AddPreferredSecuritySchemes("Bearer");
             });
             app.MapApiEndpoints();
+            app.MapGet("/mcp", () => Results.StatusCode(StatusCodes.Status405MethodNotAllowed))
+                .RequireAuthorization(AuthorizationRoles.McpPolicy)
+                .ExcludeFromDescription();
             app.MapMcp("/mcp").RequireAuthorization(AuthorizationRoles.McpPolicy);
             app.MapFallback("{**slug:nonfile}", CreateRequestDelegate(app, "/index.html"));
 

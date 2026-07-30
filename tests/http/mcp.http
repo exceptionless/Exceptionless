@@ -2,43 +2,33 @@
 # Obtain an OAuth access token with mcp:read from oauth.http.
 @token = replace-with-oauth-access-token
 
-### Initialize MCP session
-# @name initialize
+### Discover native MCP v2 capabilities
 POST {{rootUrl}}/mcp
 Authorization: Bearer {{token}}
+MCP-Protocol-Version: 2026-07-28
 Content-Type: application/json
 Accept: application/json, text/event-stream
 
 {
   "jsonrpc": "2.0",
   "id": 1,
-  "method": "initialize",
+  "method": "server/discover",
   "params": {
-    "protocolVersion": "2025-11-25",
-    "capabilities": {},
-    "clientInfo": {
-      "name": "exceptionless-http-sample",
-      "version": "1.0.0"
+    "_meta": {
+      "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+      "io.modelcontextprotocol/clientCapabilities": {},
+      "io.modelcontextprotocol/clientInfo": {
+        "name": "exceptionless-http-sample",
+        "version": "1.0.0"
+      }
     }
   }
-}
-
-### Complete MCP session initialization
-POST {{rootUrl}}/mcp
-Authorization: Bearer {{token}}
-MCP-Session-Id: {{initialize.response.headers.MCP-Session-Id}}
-Content-Type: application/json
-Accept: application/json, text/event-stream
-
-{
-  "jsonrpc": "2.0",
-  "method": "notifications/initialized"
 }
 
 ### List MCP tools
 POST {{rootUrl}}/mcp
 Authorization: Bearer {{token}}
-MCP-Session-Id: {{initialize.response.headers.MCP-Session-Id}}
+MCP-Protocol-Version: 2026-07-28
 Content-Type: application/json
 Accept: application/json, text/event-stream
 
@@ -46,14 +36,23 @@ Accept: application/json, text/event-stream
   "jsonrpc": "2.0",
   "id": 2,
   "method": "tools/list",
-  "params": {}
+  "params": {
+    "_meta": {
+      "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+      "io.modelcontextprotocol/clientCapabilities": {},
+      "io.modelcontextprotocol/clientInfo": {
+        "name": "exceptionless-http-sample",
+        "version": "1.0.0"
+      }
+    }
+  }
 }
 
 ### Search stacks with cursor paging
 # Use the "after" cursor returned by this response with the same limit to fetch the next page.
 POST {{rootUrl}}/mcp
 Authorization: Bearer {{token}}
-MCP-Session-Id: {{initialize.response.headers.MCP-Session-Id}}
+MCP-Protocol-Version: 2026-07-28
 Content-Type: application/json
 Accept: application/json, text/event-stream
 
@@ -62,6 +61,14 @@ Accept: application/json, text/event-stream
   "id": 3,
   "method": "tools/call",
   "params": {
+    "_meta": {
+      "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+      "io.modelcontextprotocol/clientCapabilities": {},
+      "io.modelcontextprotocol/clientInfo": {
+        "name": "exceptionless-http-sample",
+        "version": "1.0.0"
+      }
+    },
     "name": "search_stacks",
     "arguments": {
       "projectId": "replace-with-project-id",

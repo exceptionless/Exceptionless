@@ -6,8 +6,6 @@ using Exceptionless.Web.Extensions;
 using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Options;
-using Microsoft.Extensions.DependencyInjection;
-using ModelContextProtocol;
 
 namespace Exceptionless.Web.Mcp;
 
@@ -16,12 +14,10 @@ public sealed class McpContextService(
     ICacheClient cacheClient,
     IOrganizationRepository organizationRepository,
     IProjectRepository projectRepository,
-    IServiceProvider serviceProvider,
     TimeProvider timeProvider)
 {
     private const int CandidateLimit = 100;
-    private const string CacheKeyPrefix = "mcp:context:";
-    private const string SessionHeaderName = "MCP-Session-Id";
+    private const string CacheKeyPrefix = "mcp:context:grant:";
     private static readonly TimeSpan ContextLifetime = TimeSpan.FromHours(12);
 
     private HttpRequest Request => httpContextAccessor.HttpContext?.Request
@@ -36,8 +32,8 @@ public sealed class McpContextService(
         if (String.IsNullOrEmpty(cacheKey))
         {
             return McpContextResolution.Failed(McpErrors.ContextRequired(
-                "A stable MCP session is required before project context can be stored.",
-                "session",
+                "An authenticated MCP OAuth grant is required before project context can be stored.",
+                "authorization",
                 [],
                 []));
         }
@@ -135,8 +131,8 @@ public sealed class McpContextService(
         if (String.IsNullOrEmpty(cacheKey))
         {
             return McpContextResolution.Failed(McpErrors.ContextRequired(
-                "A stable MCP session is required before organization context can be stored.",
-                "session",
+                "An authenticated MCP OAuth grant is required before organization context can be stored.",
+                "authorization",
                 [],
                 []));
         }
@@ -159,8 +155,8 @@ public sealed class McpContextService(
         if (String.IsNullOrEmpty(cacheKey))
         {
             return McpContextResolution.Failed(McpErrors.ContextRequired(
-                "A stable MCP session is required before project context can be stored.",
-                "session",
+                "An authenticated MCP OAuth grant is required before project context can be stored.",
+                "authorization",
                 [],
                 []));
         }
@@ -355,22 +351,16 @@ public sealed class McpContextService(
 
     private string? GetCacheKey()
     {
-        string? sessionId = null;
-        if (Request.Headers.TryGetValue(SessionHeaderName, out var sessionHeader))
-            sessionId = sessionHeader.FirstOrDefault();
-
-        if (String.IsNullOrWhiteSpace(sessionId))
-            sessionId = serviceProvider.GetService<McpSession>()?.SessionId;
-
+        string? grantId = User.GetClaimValue(IdentityUtils.OAuthGrantIdClaim);
         string? userId = User.GetClaimValue(ClaimTypes.NameIdentifier);
-        if (String.IsNullOrWhiteSpace(sessionId) || String.IsNullOrWhiteSpace(userId))
+        if (String.IsNullOrWhiteSpace(grantId) || String.IsNullOrWhiteSpace(userId))
             return null;
 
         string clientId = User.GetClaimValue(IdentityUtils.OAuthClientIdClaim) ?? "user";
         string resource = User.GetClaimValue(IdentityUtils.OAuthResourceClaim) ?? Request.Path.ToString();
         return String.Concat(
             CacheKeyPrefix,
-            sessionId.ToSHA1(),
+            grantId.ToSHA1(),
             ":",
             userId.ToSHA1(),
             ":",

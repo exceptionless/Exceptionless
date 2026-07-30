@@ -335,6 +335,20 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task McpAsync_GetWithOAuthBearer_ReturnsMethodNotAllowed()
+    {
+        var token = await IssueTokenAsync();
+        using var client = _server.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/mcp");
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
+
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.MethodNotAllowed, response.StatusCode);
+    }
+
+    [Fact]
     public async Task AuthorizeAsync_AnonymousUser_RedirectsToAuthorizeBridge()
     {
         using var client = CreateHttpClient();
@@ -798,8 +812,9 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task OAuthBearer_McpV2Client_DowngradesAndCallsTool()
+    public async Task OAuthBearer_McpV2Client_UsesNativeStatelessProtocolAndCallsTool()
     {
+        const string nativeProtocolVersion = "2026-07-28";
         var token = await IssueTokenAsync();
         using var httpClient = _server.CreateClient();
         var transport = new HttpClientTransport(
@@ -817,6 +832,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
 
         var options = new McpClientOptions
         {
+            ProtocolVersion = nativeProtocolVersion,
             ClientInfo = new Implementation
             {
                 Name = "exceptionless-mcp-v2-tests",
@@ -829,13 +845,22 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
             options,
             cancellationToken: TestContext.Current.CancellationToken);
         var tools = await client.ListToolsAsync(cancellationToken: TestContext.Current.CancellationToken);
+        var switchedContext = await client.CallToolAsync(
+            "switch_project",
+            new Dictionary<string, object?>
+            {
+                ["projectId"] = TestConstants.ProjectId
+            },
+            cancellationToken: TestContext.Current.CancellationToken);
         var context = await client.CallToolAsync("get_context", cancellationToken: TestContext.Current.CancellationToken);
 
-        Assert.Equal("2025-11-25", client.NegotiatedProtocolVersion);
-        Assert.False(String.IsNullOrWhiteSpace(client.SessionId));
+        Assert.Equal(nativeProtocolVersion, client.NegotiatedProtocolVersion);
+        Assert.Null(client.SessionId);
         Assert.Contains(tools, tool => String.Equals(tool.Name, "get_context", StringComparison.Ordinal));
+        Assert.NotEqual(true, switchedContext.IsError);
         Assert.NotEqual(true, context.IsError);
         Assert.NotNull(context.StructuredContent);
+        Assert.Contains(TestConstants.ProjectId, context.StructuredContent.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]

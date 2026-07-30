@@ -91,7 +91,7 @@ public sealed class ExceptionlessMcpTools
     }
 
     [McpServerTool(Name = "get_context", ReadOnly = true, UseStructuredContent = true)]
-    [Description("Gets the active MCP organization and project context for this session.")]
+    [Description("Gets the active MCP organization and project context for the authenticated OAuth grant.")]
     public async Task<McpResponse<McpContextResult>> GetContextAsync()
     {
         try
@@ -105,7 +105,7 @@ public sealed class ExceptionlessMcpTools
         }
         catch (Exception ex) when (IsLookupError(ex))
         {
-            return McpResponse<McpContextResult>.Failed(ToLookupError("MCP context", "current session", ex));
+            return McpResponse<McpContextResult>.Failed(ToLookupError("MCP context", "current authorization", ex));
         }
     }
 
@@ -126,7 +126,7 @@ public sealed class ExceptionlessMcpTools
     }
 
     [McpServerTool(Name = "switch_organization", ReadOnly = false, UseStructuredContent = true)]
-    [Description("Sets the active MCP organization for this session and clears any active project unless the organization has exactly one project.")]
+    [Description("Sets the active MCP organization for the authenticated OAuth grant and clears any active project unless the organization has exactly one project.")]
     public async Task<McpResponse<McpContextResult>> SwitchOrganizationAsync(
         [Description("The Exceptionless organization id to make active.")]
         string organizationId)
@@ -150,7 +150,7 @@ public sealed class ExceptionlessMcpTools
     }
 
     [McpServerTool(Name = "switch_project", ReadOnly = false, UseStructuredContent = true)]
-    [Description("Sets the active MCP project for this session and switches the active organization to the project's organization.")]
+    [Description("Sets the active MCP project for the authenticated OAuth grant and switches the active organization to the project's organization.")]
     public async Task<McpResponse<McpContextResult>> SwitchProjectAsync(
         [Description("The Exceptionless project id to make active.")]
         string projectId)
@@ -200,7 +200,7 @@ public sealed class ExceptionlessMcpTools
         }
         catch (Exception ex) when (IsLookupError(ex))
         {
-            return McpResponse<McpContextResult>.Failed(ToLookupError("Project", projectId ?? projectName ?? "current session", ex));
+            return McpResponse<McpContextResult>.Failed(ToLookupError("Project", projectId ?? projectName ?? "current authorization", ex));
         }
     }
     [McpServerTool(Name = "list_projects", ReadOnly = true, UseStructuredContent = true)]
