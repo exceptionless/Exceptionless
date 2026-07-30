@@ -228,30 +228,33 @@ export class E2EApiClient {
 
     async pollForMailToken(email: string, path: 'reset-password' | 'signup', timeoutMs = 30_000): Promise<string> {
         const deadline = Date.now() + timeoutMs;
+        const normalizedEmail = email.toLowerCase();
 
         while (Date.now() < deadline) {
             const messagesResponse = await this.request.get(`${this.environment.mailUrl}/api/v1/messages`);
             await expectStatus(messagesResponse, [200], 'list local mail');
             const messagesResult = toRecord(await readJson(messagesResponse), 'mail messages response');
-            const messages = messagesResult.Messages ?? messagesResult.messages;
+            const messages = messagesResult.messages;
 
-            if (Array.isArray(messages)) {
-                for (const message of messages) {
-                    if (!isRecord(message) || !JSON.stringify(message).toLowerCase().includes(email.toLowerCase())) {
-                        continue;
-                    }
+            if (!Array.isArray(messages)) {
+                throw new Error('mail messages response did not contain a messages array');
+            }
 
-                    const id = getOptionalString(message, 'ID') ?? getOptionalString(message, 'id');
-                    if (!id) {
-                        continue;
-                    }
+            for (const value of messages) {
+                const message = toRecord(value, 'mail message summary');
+                const subject = getRequiredString(message, 'Subject', 'mail message summary');
+                if (!subject.toLowerCase().includes(normalizedEmail)) {
+                    continue;
+                }
 
-                    const messageResponse = await this.request.get(`${this.environment.mailUrl}/api/v1/message/${encodeURIComponent(id)}`);
-                    await expectStatus(messageResponse, [200], 'read local mail');
-                    const token = extractMailToken(JSON.stringify(await readJson(messageResponse)), path);
-                    if (token) {
-                        return token;
-                    }
+                const id = getRequiredString(message, 'ID', 'mail message summary');
+                const messageResponse = await this.request.get(`${this.environment.mailUrl}/api/v1/message/${encodeURIComponent(id)}`);
+                await expectStatus(messageResponse, [200], 'read local mail');
+                const messageResult = toRecord(await readJson(messageResponse), 'mail message response');
+                const content = `${getOptionalString(messageResult, 'HTML') ?? ''}\n${getOptionalString(messageResult, 'Text') ?? ''}`;
+                const token = extractMailToken(content, path);
+                if (token) {
+                    return token;
                 }
             }
 

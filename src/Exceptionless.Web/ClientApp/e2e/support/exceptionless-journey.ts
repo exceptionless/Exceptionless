@@ -189,9 +189,11 @@ export class ExceptionlessE2EJourney {
         await this.page.getByRole('button', { name: 'Mark Stack Fixed' }).click();
         await expect(this.page.getByRole('button', { name: 'Fixed' })).toBeVisible({ timeout: 30_000 });
 
-        await this.page.reload();
-        await expect(this.page.getByRole('button', { name: 'Fixed' })).toBeVisible({ timeout: 30_000 });
-        await expect(getVisibleText(this.page, `Fixed in ${version}`)).toBeVisible();
+        await expect(async () => {
+            await this.page.reload();
+            await expect(this.page.getByRole('button', { name: 'Fixed' })).toBeVisible({ timeout: 5_000 });
+            await expect(getVisibleText(this.page, `Fixed in ${version}`)).toBeVisible({ timeout: 5_000 });
+        }).toPass({ intervals: [1_000, 2_000, 5_000], timeout: 30_000 });
     }
 
     async onboardProject(): Promise<void> {
