@@ -49,7 +49,7 @@ public sealed class CspNonceTests
                 };
                 context.Request.Method = HttpMethods.Get;
                 context.Request.Path = "/index.html";
-                context.Request.Headers.Accept = "text/html";
+                context.Request.Headers.Accept = index == 0 ? "text/html" : "*/*";
                 context.Response.Body = new MemoryStream();
 
                 await pipeline(context);
