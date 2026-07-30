@@ -147,7 +147,7 @@ public sealed class ExceptionlessMcpTools
             if (!TryValidateId(organizationId, "organizationId", out var idError))
                 return McpResponse<McpContextResult>.Failed(idError);
 
-            var context = await _mcpContextService.SwitchOrganizationAsync(organizationId);
+            var context = await _mcpContextService.GetContextAsync(organizationId: organizationId);
             if (!context.Succeeded)
                 return McpResponse<McpContextResult>.Failed(context.Error!);
 
@@ -171,7 +171,7 @@ public sealed class ExceptionlessMcpTools
             if (!TryValidateId(projectId, "projectId", out var idError))
                 return McpResponse<McpContextResult>.Failed(idError);
 
-            var context = await _mcpContextService.SwitchProjectAsync(projectId);
+            var context = await _mcpContextService.GetContextAsync(projectId: projectId, requireProject: true);
             if (!context.Succeeded)
                 return McpResponse<McpContextResult>.Failed(context.Error!);
 

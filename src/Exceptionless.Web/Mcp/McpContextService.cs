@@ -113,16 +113,6 @@ public sealed class McpContextService(
             null);
     }
 
-    public Task<McpContextResolution> SwitchOrganizationAsync(string organizationId)
-    {
-        return GetContextAsync(organizationId: organizationId);
-    }
-
-    public Task<McpContextResolution> SwitchProjectAsync(string projectId)
-    {
-        return GetContextAsync(projectId: projectId, requireProject: true);
-    }
-
     public async Task<McpContextResolution> ResolveProjectContextAsync(
         string? projectId = null,
         string? projectName = null,
@@ -156,7 +146,7 @@ public sealed class McpContextService(
                 result.Projects), result, context.ActiveOrganization);
         }
 
-        return await SwitchProjectAsync(matches[0].Id);
+        return await GetContextAsync(projectId: matches[0].Id, requireProject: true);
     }
 
     public async Task<McpProjectContextResolution> ResolveProjectAsync(string projectId)
@@ -164,14 +154,29 @@ public sealed class McpContextService(
         if (String.IsNullOrWhiteSpace(projectId))
             return McpProjectContextResolution.Failed(McpErrors.InvalidId("projectId is required.", "projectId", projectId));
 
-        var context = await GetContextAsync(projectId: projectId.Trim(), requireProject: true);
-        return context.Succeeded && context.ActiveProject is not null && context.ActiveOrganization is not null
-            ? McpProjectContextResolution.Success(context.ActiveProject, context.ActiveOrganization, context.Context)
-            : McpProjectContextResolution.Failed(context.Error!, context.Context);
+        var projectAccess = await GetAccessibleProjectAsync(projectId.Trim());
+        if (!projectAccess.Succeeded)
+            return McpProjectContextResolution.Failed(projectAccess.Error!);
+
+        var project = projectAccess.Project!;
+        var organization = await organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache());
+        if (organization is null)
+        {
+            return McpProjectContextResolution.Failed(McpErrors.NotAccessible(
+                $"Organization {project.OrganizationId} was not found or is not accessible.",
+                "organizationId",
+                project.OrganizationId));
+        }
+
+        var context = ToContextResult(organization, project, [organization], [project]);
+        return McpProjectContextResolution.Success(project, organization, context);
     }
 
     public async Task<McpErrorInfo?> ValidateProjectScopeAsync(string organizationId, string projectId, string requestedProjectId)
     {
+        if (String.Equals(projectId, requestedProjectId, StringComparison.Ordinal))
+            return null;
+
         var projectContext = await ResolveProjectAsync(requestedProjectId);
         if (!projectContext.Succeeded)
             return projectContext.Error;
