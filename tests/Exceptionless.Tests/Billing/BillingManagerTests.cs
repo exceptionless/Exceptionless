@@ -187,7 +187,7 @@ public class BillingManagerTests : TestWithServices
         var organization = new Organization
         {
             CreatedUtc = new DateTime(2026, 4, 15, 0, 0, 0, DateTimeKind.Utc),
-            PlanId = plans.SmallPlan.Id,
+            PlanId = plans.SmallPlan.Id.ToUpperInvariant(),
             MaxEventsPerMonth = plans.SmallPlan.MaxEventsPerMonth
         };
 
