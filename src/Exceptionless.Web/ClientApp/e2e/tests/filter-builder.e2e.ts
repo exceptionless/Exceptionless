@@ -1,12 +1,12 @@
 import type { Page } from '@playwright/test';
 
-import { expect, test } from '../fixtures/e2e-test';
+import { createReferenceId, expect, test } from '../fixtures/e2e-test';
 import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
 import { getVisibleText } from '../support/page-helpers';
 
 test('events filter builder applies, persists, and clears a reference filter', async ({ e2eApi, e2eScenario, page }) => {
     const journey = ExceptionlessE2EJourney.fromScenario(page, e2eApi, e2eScenario);
-    const missingReference = `${journey.referenceId}-missing`;
+    const missingReference = createReferenceId(journey.run, '-missing');
 
     await test.step('submit a representative event', async () => {
         await journey.submitRepresentativeEvent();
