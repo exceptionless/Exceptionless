@@ -109,9 +109,11 @@ export const test = base.extend<E2EFixtures>({
         } finally {
             const cleanupErrors: Error[] = [];
 
-            if (createdUser && userToken && !(await e2eApi.getCurrentUser(userToken))) {
+            if (createdUser && userToken) {
                 await runCleanupStep(cleanupErrors, 'restore generated user session for cleanup', async () => {
-                    userToken = await e2eApi.login(email, e2eCleanupPassword);
+                    if (!(await e2eApi.getCurrentUser(userToken!))) {
+                        userToken = await e2eApi.login(email, e2eCleanupPassword);
+                    }
                 });
             }
 
