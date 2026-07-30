@@ -9204,7 +9204,7 @@
             }
           },
           "426": {
-            "description": "Premium session access requires an upgraded plan.",
+            "description": "Please upgrade your plan to use premium session features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9362,7 +9362,7 @@
             }
           },
           "426": {
-            "description": "Premium session access requires an upgraded plan, or the organization is suspended.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium session features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9490,7 +9490,7 @@
             }
           },
           "426": {
-            "description": "Premium session search requires an upgraded plan.",
+            "description": "Please upgrade your plan to use premium session features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9638,7 +9638,7 @@
             }
           },
           "426": {
-            "description": "Premium session search requires an upgraded plan, or the organization is suspended.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium session features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9786,7 +9786,7 @@
             }
           },
           "426": {
-            "description": "Premium session search requires an upgraded plan, or the organization is suspended.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium session features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {

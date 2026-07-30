@@ -6,7 +6,9 @@ namespace Exceptionless.Web.Api.Infrastructure;
 
 public static class ApiFilterPolicy
 {
+    public const string PremiumSessionUpgradeMessage = "Please upgrade your plan to use premium session features.";
     public const string PremiumSearchUpgradeMessage = "Please upgrade your plan to use premium search features.";
+    public const string SuspendedOrPremiumSessionUpgradeDescription = "The organization is suspended, or you must upgrade your plan to use premium session features.";
     public const string SuspendedOrPremiumSearchUpgradeDescription = "The organization is suspended, or you must upgrade your plan to use premium search features.";
 
     public static bool IsPremiumFeatureQueryBlocked(AppFilter filter)

@@ -76,7 +76,7 @@ public partial class EventEndpointTests
             .StatusCodeShouldBeUpgradeRequired());
 
         // Assert
-        AssertUpgradeRequired(problemDetails);
+        AssertUpgradeRequired(problemDetails, ApiFilterPolicy.PremiumSearchUpgradeMessage);
     }
 
     [Fact]
@@ -93,7 +93,7 @@ public partial class EventEndpointTests
             .StatusCodeShouldBeUpgradeRequired());
 
         // Assert
-        AssertUpgradeRequired(problemDetails);
+        AssertUpgradeRequired(problemDetails, ApiFilterPolicy.PremiumSearchUpgradeMessage);
     }
 
     [Fact]
@@ -129,7 +129,23 @@ public partial class EventEndpointTests
             .StatusCodeShouldBeUpgradeRequired());
 
         // Assert
-        AssertUpgradeRequired(problemDetails);
+        AssertUpgradeRequired(problemDetails, ApiFilterPolicy.PremiumSearchUpgradeMessage);
+    }
+
+    [Fact]
+    public async Task Handle_GetSessionsByOrganizationOnFreeOrganization_ReturnsUpgradeRequired()
+    {
+        // Arrange
+        await CreateDataAsync(d => d.Event().FreeProject().Type(Event.KnownTypes.Session));
+
+        // Act
+        var problemDetails = await SendRequestAsAsync<ProblemDetails>(r => r
+            .AsFreeOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "events", "sessions")
+            .StatusCodeShouldBeUpgradeRequired());
+
+        // Assert
+        AssertUpgradeRequired(problemDetails, ApiFilterPolicy.PremiumSessionUpgradeMessage);
     }
 
     [Fact]
@@ -161,10 +177,10 @@ public partial class EventEndpointTests
         Assert.Single(results);
     }
 
-    private static void AssertUpgradeRequired(ProblemDetails? problemDetails)
+    private static void AssertUpgradeRequired(ProblemDetails? problemDetails, string expectedTitle)
     {
         Assert.NotNull(problemDetails);
         Assert.Equal(StatusCodes.Status426UpgradeRequired, problemDetails.Status);
-        Assert.Equal(ApiFilterPolicy.PremiumSearchUpgradeMessage, problemDetails.Title);
+        Assert.Equal(expectedTitle, problemDetails.Title);
     }
 }

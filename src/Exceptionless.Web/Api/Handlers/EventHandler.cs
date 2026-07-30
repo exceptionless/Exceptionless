@@ -262,7 +262,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organizations.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
-        return await GetInternalAsync(sf, ti, httpContext, $"(reference:{message.SessionId} OR ref.session:{message.SessionId}) {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, usesPremiumFeatures: true, includeTotal: ShouldIncludeTotal(message.Include));
+        return await GetInternalAsync(sf, ti, httpContext, $"(reference:{message.SessionId} OR ref.session:{message.SessionId}) {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, premiumFeatureUpgradeMessage: ApiFilterPolicy.PremiumSessionUpgradeMessage, includeTotal: ShouldIncludeTotal(message.Include));
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetEventsBySessionIdAndProject message)
@@ -281,7 +281,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(project, appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(project, organization);
-        return await GetInternalAsync(sf, ti, httpContext, $"(reference:{message.SessionId} OR ref.session:{message.SessionId}) {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, usesPremiumFeatures: true, includeTotal: ShouldIncludeTotal(message.Include));
+        return await GetInternalAsync(sf, ti, httpContext, $"(reference:{message.SessionId} OR ref.session:{message.SessionId}) {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, premiumFeatureUpgradeMessage: ApiFilterPolicy.PremiumSessionUpgradeMessage, includeTotal: ShouldIncludeTotal(message.Include));
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetSessions message)
@@ -293,7 +293,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organizations.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
-        return await GetInternalAsync(sf, ti, httpContext, $"type:{Event.KnownTypes.Session} {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, usesPremiumFeatures: true, includeTotal: ShouldIncludeTotal(message.Include));
+        return await GetInternalAsync(sf, ti, httpContext, $"type:{Event.KnownTypes.Session} {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, premiumFeatureUpgradeMessage: ApiFilterPolicy.PremiumSessionUpgradeMessage, includeTotal: ShouldIncludeTotal(message.Include));
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetSessionsByOrganization message)
@@ -308,7 +308,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organization);
-        return await GetInternalAsync(sf, ti, httpContext, $"type:{Event.KnownTypes.Session} {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, usesPremiumFeatures: true, includeTotal: ShouldIncludeTotal(message.Include));
+        return await GetInternalAsync(sf, ti, httpContext, $"type:{Event.KnownTypes.Session} {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, premiumFeatureUpgradeMessage: ApiFilterPolicy.PremiumSessionUpgradeMessage, includeTotal: ShouldIncludeTotal(message.Include));
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetSessionsByProject message)
@@ -327,7 +327,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(project, appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(project, organization);
-        return await GetInternalAsync(sf, ti, httpContext, $"type:{Event.KnownTypes.Session} {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, usesPremiumFeatures: true, includeTotal: ShouldIncludeTotal(message.Include));
+        return await GetInternalAsync(sf, ti, httpContext, $"type:{Event.KnownTypes.Session} {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, premiumFeatureUpgradeMessage: ApiFilterPolicy.PremiumSessionUpgradeMessage, includeTotal: ShouldIncludeTotal(message.Include));
     }
 
     public async Task<Result> Handle(SetEventUserDescription message)
@@ -728,7 +728,7 @@ public class EventHandler(
         return result;
     }
 
-    private async Task<Result<PagedResult<object>>> GetInternalAsync(AppFilter sf, TimeInfo ti, HttpContext httpContext, string? filter = null, string? sort = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, bool usesPremiumFeatures = false, bool includeTotal = false)
+    private async Task<Result<PagedResult<object>>> GetInternalAsync(AppFilter sf, TimeInfo ti, HttpContext httpContext, string? filter = null, string? sort = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, string? premiumFeatureUpgradeMessage = null, bool includeTotal = false)
     {
         var currentUser = httpContext.Request.GetUser();
         using var _ = _logger.BeginScope(new ExceptionlessState()
@@ -759,10 +759,10 @@ public class EventHandler(
         if (!pr.IsValid)
             return Result.BadRequest(pr.Message ?? "Invalid filter.");
 
-        sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || usesPremiumFeatures;
+        sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || premiumFeatureUpgradeMessage is not null;
         AppFilter? appliedAppFilter = ApiFilterPolicy.ShouldApplySystemFilter(sf, filter, httpContext.Request) ? sf : null;
         if (appliedAppFilter is not null && ApiFilterPolicy.IsPremiumFeatureQueryBlocked(appliedAppFilter))
-            return PlanLimitResult<PagedResult<object>>(ApiFilterPolicy.PremiumSearchUpgradeMessage);
+            return PlanLimitResult<PagedResult<object>>(premiumFeatureUpgradeMessage ?? ApiFilterPolicy.PremiumSearchUpgradeMessage);
 
         try
         {

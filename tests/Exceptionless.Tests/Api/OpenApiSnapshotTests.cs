@@ -217,6 +217,16 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         })
             AssertPathResponseCodes(paths, path, "get", "200", "400", "426");
 
+        foreach (string path in new[] { "/api/v2/events/sessions/{sessionId}", "/api/v2/events/sessions" })
+            AssertPathResponseDescription(paths, path, "get", "426", ApiFilterPolicy.PremiumSessionUpgradeMessage);
+
+        foreach (string path in new[] {
+            "/api/v2/projects/{projectId}/events/sessions/{sessionId}",
+            "/api/v2/organizations/{organizationId}/events/sessions",
+            "/api/v2/projects/{projectId}/events/sessions"
+        })
+            AssertPathResponseDescription(paths, path, "get", "426", ApiFilterPolicy.SuspendedOrPremiumSessionUpgradeDescription);
+
         foreach (string path in new[] { "/api/v1/events", "/api/v1/projects/{projectId}/events", "/api/v2/events", "/api/v2/projects/{projectId}/events" })
         {
             var eventPost = paths.GetProperty(path).GetProperty("post");

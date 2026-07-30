@@ -309,7 +309,7 @@ public static class EventEndpoints
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
-                ["426"] = "Premium session access requires an upgraded plan.",
+                ["426"] = ApiFilterPolicy.PremiumSessionUpgradeMessage,
             }
         });
 
@@ -340,7 +340,7 @@ public static class EventEndpoints
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
                 ["404"] = "The project could not be found.",
-                ["426"] = "Premium session access requires an upgraded plan, or the organization is suspended.",
+                ["426"] = ApiFilterPolicy.SuspendedOrPremiumSessionUpgradeDescription,
             }
         });
 
@@ -367,7 +367,7 @@ public static class EventEndpoints
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
-                ["426"] = "Premium session search requires an upgraded plan.",
+                ["426"] = ApiFilterPolicy.PremiumSessionUpgradeMessage,
             }
         });
 
@@ -397,7 +397,7 @@ public static class EventEndpoints
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
                 ["404"] = "The organization could not be found.",
-                ["426"] = "Premium session search requires an upgraded plan, or the organization is suspended.",
+                ["426"] = ApiFilterPolicy.SuspendedOrPremiumSessionUpgradeDescription,
             }
         });
 
@@ -427,7 +427,7 @@ public static class EventEndpoints
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
                 ["404"] = "The project could not be found.",
-                ["426"] = "Premium session search requires an upgraded plan, or the organization is suspended.",
+                ["426"] = ApiFilterPolicy.SuspendedOrPremiumSessionUpgradeDescription,
             }
         });
 
