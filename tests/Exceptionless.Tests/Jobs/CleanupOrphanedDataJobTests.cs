@@ -730,7 +730,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task RunAsync_EmptyDatabase_HealthAllowsScheduleRuntimeAndGrace()
+    public async Task RunAsync_EmptyDatabase_HealthAllowsScheduleAndGrace()
     {
         // Arrange
         var utcNow = DateTimeOffset.UtcNow;
@@ -745,17 +745,17 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
 
         var health = await _job.CheckHealthAsync(new HealthCheckContext(), TestCancellationToken);
         Assert.Equal(HealthStatus.Healthy, health.Status);
-        Assert.Equal("Job has completed successfully in the last 11 hours.", health.Description);
+        Assert.Equal("Job has completed successfully in the last 9 hours.", health.Description);
 
-        TimeProvider.Advance(TimeSpan.FromHours(11));
+        TimeProvider.Advance(TimeSpan.FromHours(9));
         health = await _job.CheckHealthAsync(new HealthCheckContext(), TestCancellationToken);
         Assert.Equal(HealthStatus.Healthy, health.Status);
-        Assert.Equal("Job has completed successfully in the last 11 hours.", health.Description);
+        Assert.Equal("Job has completed successfully in the last 9 hours.", health.Description);
 
         TimeProvider.Advance(TimeSpan.FromMilliseconds(1));
         health = await _job.CheckHealthAsync(new HealthCheckContext(), TestCancellationToken);
         Assert.Equal(HealthStatus.Unhealthy, health.Status);
-        Assert.Equal("Job has not completed successfully in the last 11 hours.", health.Description);
+        Assert.Equal("Job has not completed successfully in the last 9 hours.", health.Description);
     }
 
     [Fact]
@@ -785,7 +785,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         Assert.Equal(1, await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency()));
         var health = await _job.CheckHealthAsync(new HealthCheckContext(), TestCancellationToken);
         Assert.Equal(HealthStatus.Healthy, health.Status);
-        Assert.Equal("Job has completed successfully in the last 11 hours.", health.Description);
+        Assert.Equal("Job has completed successfully in the last 9 hours.", health.Description);
     }
 
     [Fact]
@@ -798,7 +798,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         var job = CreateJob();
 
         Assert.Equal(JobResult.Success, await job.RunAsync(TestCancellationToken));
-        TimeProvider.Advance(TimeSpan.FromHours(11) + TimeSpan.FromMilliseconds(1));
+        TimeProvider.Advance(TimeSpan.FromHours(9) + TimeSpan.FromMilliseconds(1));
 
         var failingClient = new ElasticsearchClient(new ElasticsearchClientSettings(new Uri("http://127.0.0.1:1"))
             .MaximumRetries(0)
@@ -814,7 +814,39 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         Assert.StartsWith("Error getting stack cardinality:", exception.Message, StringComparison.Ordinal);
         var health = await job.CheckHealthAsync(new HealthCheckContext(), TestCancellationToken);
         Assert.Equal(HealthStatus.Unhealthy, health.Status);
-        Assert.Equal("Job has not completed successfully in the last 11 hours.", health.Description);
+        Assert.Equal("Job has not completed successfully in the last 9 hours.", health.Description);
+    }
+
+    [Fact]
+    public async Task CheckHealthAsync_LongRunningJob_UsesActiveProgressWithoutMaskingFailure()
+    {
+        // Arrange
+        var utcNow = DateTimeOffset.UtcNow;
+        TimeProvider.SetUtcNow(utcNow);
+        var job = CreateJob();
+        typeof(CleanupOrphanedDataJob).GetField("_lastSuccessfulRunUtc", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(job, utcNow.UtcDateTime.AddHours(-10));
+        typeof(CleanupOrphanedDataJob).GetField("_lastRunProgressUtc", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(job, utcNow.UtcDateTime);
+        typeof(CleanupOrphanedDataJob).GetField("_isRunning", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(job, true);
+
+        // Act / Assert
+        var health = await job.CheckHealthAsync(new HealthCheckContext(), TestCancellationToken);
+        Assert.Equal(HealthStatus.Healthy, health.Status);
+        Assert.Equal("Job is running and has reported progress in the last 3 hours.", health.Description);
+
+        TimeProvider.Advance(TimeSpan.FromHours(3) + TimeSpan.FromMilliseconds(1));
+        health = await job.CheckHealthAsync(new HealthCheckContext(), TestCancellationToken);
+        Assert.Equal(HealthStatus.Unhealthy, health.Status);
+        Assert.Equal("Job is running but has not reported progress in the last 3 hours.", health.Description);
+
+        typeof(CleanupOrphanedDataJob).GetField("_lastRunProgressUtc", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(job, null);
+        health = await job.CheckHealthAsync(new HealthCheckContext(), TestCancellationToken);
+        Assert.Equal(HealthStatus.Unhealthy, health.Status);
+        Assert.Equal("Job is running but has not reported progress in the last 3 hours.", health.Description);
+
+        typeof(CleanupOrphanedDataJob).GetField("_isRunning", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(job, false);
+        health = await job.CheckHealthAsync(new HealthCheckContext(), TestCancellationToken);
+        Assert.Equal(HealthStatus.Unhealthy, health.Status);
+        Assert.Equal("Job has not completed successfully in the last 9 hours.", health.Description);
     }
 
     [Fact]

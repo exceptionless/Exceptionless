@@ -26,10 +26,12 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
 {
     // Keep this aligned with the cron registrations in Bootstrapper and Exceptionless.Job.
     private static readonly TimeSpan ScheduledInterval = TimeSpan.FromHours(8);
-    private static readonly TimeSpan MaximumRunDuration = TimeSpan.FromHours(2);
+    private static readonly TimeSpan LockLeaseDuration = TimeSpan.FromHours(2);
     private static readonly TimeSpan HealthCheckGracePeriod = TimeSpan.FromHours(1);
-    private static readonly TimeSpan HealthCheckWindow = ScheduledInterval + MaximumRunDuration + HealthCheckGracePeriod;
+    private static readonly TimeSpan SuccessfulRunHealthWindow = ScheduledInterval + HealthCheckGracePeriod;
+    private static readonly TimeSpan ActiveRunProgressHealthWindow = LockLeaseDuration + HealthCheckGracePeriod;
     private static readonly TimeSpan OrphanedEventLookback = TimeSpan.FromDays(3);
+    private readonly object _healthStateLock = new();
     private readonly ExceptionlessElasticConfiguration _config;
     private readonly ElasticsearchClient _elasticClient;
     private readonly IStackRepository _stackRepository;
@@ -39,6 +41,8 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
     private readonly ICacheClient _cacheClient;
     private readonly ILockProvider _lockProvider;
     private DateTime? _lastSuccessfulRunUtc;
+    private DateTime? _lastRunProgressUtc;
+    private bool _isRunning;
 
     public CleanupOrphanedDataJob(ExceptionlessElasticConfiguration config, IStackRepository stackRepository,
         IProjectRepository projectRepository, IOrganizationRepository organizationRepository,
@@ -60,20 +64,29 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
 
     protected override Task<ILock?> GetLockAsync(CancellationToken cancellationToken = default)
     {
-        return _lockProvider.TryAcquireAsync(nameof(CleanupOrphanedDataJob), MaximumRunDuration, cancellationToken);
+        return _lockProvider.TryAcquireAsync(nameof(CleanupOrphanedDataJob), LockLeaseDuration, cancellationToken);
     }
 
     protected override async Task<JobResult> RunInternalAsync(JobContext context)
     {
-        var orphanedEventCutoffUtc = GetOrphanedEventCutoffUtc();
-        await DeleteOrphanedEventsByStackAsync(context, orphanedEventCutoffUtc);
-        await DeleteOrphanedEventsByProjectAsync(context, orphanedEventCutoffUtc);
-        await DeleteOrphanedEventsByOrganizationAsync(context, orphanedEventCutoffUtc);
+        MarkRunStarted();
+        bool completedSuccessfully = false;
+        try
+        {
+            var orphanedEventCutoffUtc = GetOrphanedEventCutoffUtc();
+            await DeleteOrphanedEventsByStackAsync(context, orphanedEventCutoffUtc);
+            await DeleteOrphanedEventsByProjectAsync(context, orphanedEventCutoffUtc);
+            await DeleteOrphanedEventsByOrganizationAsync(context, orphanedEventCutoffUtc);
 
-        await FixDuplicateStacks(context);
+            await FixDuplicateStacks(context);
 
-        _lastSuccessfulRunUtc = _timeProvider.GetUtcNow().UtcDateTime;
-        return JobResult.Success;
+            completedSuccessfully = true;
+            return JobResult.Success;
+        }
+        finally
+        {
+            MarkRunFinished(completedSuccessfully);
+        }
     }
 
     public Task DeleteOrphanedEventsByStackAsync(JobContext context)
@@ -446,9 +459,15 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
         }
     }
 
-    private Task RenewLockAsync(JobContext context)
+    private async Task RenewLockAsync(JobContext context)
     {
-        return context.RenewLockAsync();
+        await context.RenewLockAsync();
+
+        lock (_healthStateLock)
+        {
+            if (_isRunning)
+                _lastRunProgressUtc = _timeProvider.GetUtcNow().UtcDateTime;
+        }
     }
 
     private static void EnsureValidResponse(ElasticsearchResponse response, string operation)
@@ -495,14 +514,49 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
         return $"{_config.Events.VersionedName}-*";
     }
 
+    private void MarkRunStarted()
+    {
+        lock (_healthStateLock)
+        {
+            _isRunning = true;
+            _lastRunProgressUtc = _timeProvider.GetUtcNow().UtcDateTime;
+        }
+    }
+
+    private void MarkRunFinished(bool completedSuccessfully)
+    {
+        lock (_healthStateLock)
+        {
+            if (completedSuccessfully)
+                _lastSuccessfulRunUtc = _timeProvider.GetUtcNow().UtcDateTime;
+
+            _isRunning = false;
+        }
+    }
+
     public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
-        if (!_lastSuccessfulRunUtc.HasValue)
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        DateTime? lastSuccessfulRunUtc;
+        lock (_healthStateLock)
+        {
+            if (_isRunning)
+            {
+                if (_lastRunProgressUtc.HasValue && utcNow.Subtract(_lastRunProgressUtc.Value) <= ActiveRunProgressHealthWindow)
+                    return Task.FromResult(HealthCheckResult.Healthy("Job is running and has reported progress in the last 3 hours."));
+
+                return Task.FromResult(HealthCheckResult.Unhealthy("Job is running but has not reported progress in the last 3 hours."));
+            }
+
+            lastSuccessfulRunUtc = _lastSuccessfulRunUtc;
+        }
+
+        if (!lastSuccessfulRunUtc.HasValue)
             return Task.FromResult(HealthCheckResult.Healthy("Job has not completed successfully yet."));
 
-        if (_timeProvider.GetUtcNow().UtcDateTime.Subtract(_lastSuccessfulRunUtc.Value) > HealthCheckWindow)
-            return Task.FromResult(HealthCheckResult.Unhealthy("Job has not completed successfully in the last 11 hours."));
+        if (utcNow.Subtract(lastSuccessfulRunUtc.Value) > SuccessfulRunHealthWindow)
+            return Task.FromResult(HealthCheckResult.Unhealthy("Job has not completed successfully in the last 9 hours."));
 
-        return Task.FromResult(HealthCheckResult.Healthy("Job has completed successfully in the last 11 hours."));
+        return Task.FromResult(HealthCheckResult.Healthy("Job has completed successfully in the last 9 hours."));
     }
 }
