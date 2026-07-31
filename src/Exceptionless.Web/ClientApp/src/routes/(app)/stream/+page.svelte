@@ -241,6 +241,7 @@
         }
 
         const response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, {
+            expectedStatusCodes: [426],
             params: {
                 ...eventsQueryParameters,
                 before

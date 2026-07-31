@@ -157,6 +157,7 @@ public class Bootstrapper
         services.AddSingleton<IQueryParser>(s => new ElasticQueryParser());
         services.AddSingleton<IAppQueryValidator, AppQueryValidator>();
         services.AddSingleton<PersistentEventQueryValidator>();
+        services.AddSingleton<EventStackQueryValidator>();
         services.AddSingleton<StackQueryValidator>();
 
         services.AddSingleton<MiniValidationValidator>();

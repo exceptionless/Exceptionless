@@ -131,7 +131,7 @@ public class OrganizationHandler(
         if (!message.Changes.GetChangedPropertyNames().Any())
             return await MapToViewAsync(original);
 
-        var error = await CanUpdateAsync(original, message.Changes, message.Context);
+        var error = CanUpdate(message.Changes);
         if (error is not null)
             return error;
 
@@ -398,7 +398,7 @@ public class OrganizationHandler(
                 {
                     var subs = await stripeBillingClient.ListSubscriptionsAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId });
                     foreach (var sub in subs.Where(s => !s.CanceledAt.HasValue))
-                        await stripeBillingClient.CancelSubscriptionAsync(sub.Id, new SubscriptionCancelOptions());
+                        await stripeBillingClient.CancelSubscriptionAsync(sub.Id, new SubscriptionCancelOptions { Prorate = true, InvoiceNow = true });
                 }
 
                 organization.BillingStatus = BillingStatus.Trialing;
@@ -725,14 +725,6 @@ public class OrganizationHandler(
         return Result.Success();
     }
 
-    public async Task<Result> Handle(CheckOrganizationName message)
-    {
-        if (await IsOrganizationNameAvailableInternalAsync(message.Name, message.Context))
-            return Result.NoContent();
-
-        return Result.Created();
-    }
-
     private async Task<ViewOrganization> MapToViewAsync(Organization model)
     {
         var viewModel = mapper.MapToViewOrganization(model);
@@ -744,9 +736,6 @@ public class OrganizationHandler(
     {
         if (String.IsNullOrEmpty(value.Name))
             return Result.BadRequest("Organization name is required.");
-
-        if (!await IsOrganizationNameAvailableInternalAsync(value.Name, httpContext))
-            return Result.BadRequest("A organization with this name already exists.");
 
         if (!await billingManager.CanAddOrganizationAsync(GetCurrentUser(httpContext)))
             return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, "Please upgrade your plan to add an additional organization."));
@@ -776,11 +765,10 @@ public class OrganizationHandler(
         return organization;
     }
 
-    private async Task<Result<ViewOrganization>?> CanUpdateAsync(Organization original, Delta<NewOrganization> changes, HttpContext httpContext)
+    private static Result<ViewOrganization>? CanUpdate(Delta<NewOrganization> changes)
     {
-        var changed = changes.GetEntity();
-        if (!await IsOrganizationNameAvailableInternalAsync(changed.Name, httpContext))
-            return Result.BadRequest("A organization with this name already exists.");
+        if (changes.ContainsChangedProperty(p => p.Name) && String.IsNullOrEmpty(changes.GetEntity().Name))
+            return Result.BadRequest("Organization name is required.");
 
         if (changes.GetChangedPropertyNames().Contains("OrganizationId"))
             return Result.BadRequest("OrganizationId cannot be modified.");
@@ -913,16 +901,6 @@ public class OrganizationHandler(
         }
 
         return viewOrganizations;
-    }
-
-    private async Task<bool> IsOrganizationNameAvailableInternalAsync(string? name, HttpContext httpContext)
-    {
-        if (String.IsNullOrWhiteSpace(name))
-            return false;
-
-        string decodedName = Uri.UnescapeDataString(name).Trim().ToLowerInvariant();
-        var results = await repository.GetByIdsAsync(httpContext.Request.GetAssociatedOrganizationIds().ToArray(), o => o.Cache());
-        return !results.Any(o => String.Equals(o.Name.Trim().ToLowerInvariant(), decodedName, StringComparison.OrdinalIgnoreCase));
     }
 
     private static Result PermissionToResult(PermissionResult permission)
