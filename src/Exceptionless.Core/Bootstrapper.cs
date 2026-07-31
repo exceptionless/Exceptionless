@@ -55,7 +55,7 @@ namespace Exceptionless.Core;
 
 public class Bootstrapper
 {
-    public static void RegisterServices(IServiceCollection services, AppOptions appOptions)
+    public static void RegisterServices(IServiceCollection services, AppOptions appOptions, bool runDataSeedStartupAction = true)
     {
         // Register System.Text.Json options with Exceptionless defaults (snake_case, null handling)
         services.AddSingleton(_ => new JsonSerializerOptions().ConfigureExceptionlessDefaults());
@@ -81,7 +81,8 @@ public class Bootstrapper
 
         services.AddSingleton<DataSeedService>();
         services.AddSingleton<IDataSeed, PredefinedSavedViewsDataSeed>();
-        services.AddStartupAction<DataSeedService>();
+        if (runDataSeedStartupAction)
+            services.AddStartupAction<DataSeedService>();
 
         services.AddStartupAction("Create Sample Data", CreateSampleDataAsync);
 

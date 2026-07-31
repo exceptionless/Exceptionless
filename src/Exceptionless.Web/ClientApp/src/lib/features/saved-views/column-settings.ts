@@ -54,6 +54,14 @@ export function getSavedColumnVisibility(view: SavedColumnState | undefined): Co
     );
 }
 
+export function savedViewColumnOrderEqual(current: ColumnOrderState | undefined, view: SavedColumnState): boolean {
+    const savedOrder = getSavedColumnOrder(view);
+    const savedColumnIds = new Set(savedOrder);
+    const currentSavedOrder = (current ?? []).filter((columnId) => columnId !== 'select' && savedColumnIds.has(columnId));
+
+    return currentSavedOrder.length === savedOrder.length && currentSavedOrder.every((columnId, index) => columnId === savedOrder[index]);
+}
+
 export function savedViewColumnSizingEqual(current: ColumnSizingState | undefined, view: SavedColumnState): boolean {
     const saved = getSavedColumnSizing(view);
     const currentEntries = Object.entries(current ?? {}).filter(([columnId]) => columnId !== 'select');

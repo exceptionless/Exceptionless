@@ -8,7 +8,7 @@ import { organization } from '$features/organizations/context.svelte';
 import type { SavedView } from './models';
 
 import { getSavedViewsByViewQuery } from './api.svelte';
-import { getSavedColumnOrder, getSavedColumnSizing, getSavedColumnVisibility, savedViewColumnSizingEqual } from './column-settings';
+import { getSavedColumnOrder, getSavedColumnSizing, getSavedColumnVisibility, savedViewColumnOrderEqual, savedViewColumnSizingEqual } from './column-settings';
 import { savedViewHref, savedViewResolvedSlug } from './slugs';
 
 export interface SavedViewQueryParams {
@@ -285,11 +285,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return true;
         }
 
-        if (
-            options.getColumnOrder &&
-            Object.values(view.columns ?? {}).some((settings) => settings.position != null) &&
-            !columnOrderEqual(options.getColumnOrder(), getSavedColumnOrder(view))
-        ) {
+        if (options.getColumnOrder && !savedViewColumnOrderEqual(options.getColumnOrder(), view)) {
             return true;
         }
 
@@ -382,18 +378,6 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return savedViewsListQuery.data ?? [];
         }
     };
-}
-
-function columnOrderEqual(a: ColumnOrderState | undefined, b: null | string[] | undefined): boolean {
-    const normalize = (value: null | string[] | undefined) => (value ?? []).filter((columnId) => columnId !== 'select');
-    const aOrder = normalize(a);
-    const bOrder = normalize(b);
-
-    if (aOrder.length !== bOrder.length) {
-        return false;
-    }
-
-    return aOrder.every((columnId, index) => columnId === bOrder[index]);
 }
 
 function normalizeFilterDefinitions(value: null | string | undefined): string {

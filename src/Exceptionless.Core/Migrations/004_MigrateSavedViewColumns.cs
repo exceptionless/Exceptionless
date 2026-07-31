@@ -34,7 +34,7 @@ public sealed class MigrateSavedViewColumns : MigrationBase
         _serializer = serializer;
 
         MigrationType = MigrationType.VersionedAndResumable;
-        Version = 3;
+        Version = 4;
     }
 
     public override async Task RunAsync(MigrationContext context)
@@ -60,6 +60,7 @@ public sealed class MigrateSavedViewColumns : MigrationBase
                 {
                     request
                         .Pit(pit => pit.Id(pointInTime.Id).KeepAlive("2m"))
+                        .SeqNoPrimaryTerm()
                         .Size(pageSize)
                         .Sort(sort => sort.Field("_shard_doc"));
 
@@ -80,22 +81,30 @@ public sealed class MigrateSavedViewColumns : MigrationBase
                     if (source is null)
                         continue;
 
+                    if (hit.SeqNo is null || hit.PrimaryTerm is null)
+                        throw new InvalidOperationException($"Unable to read concurrency metadata for saved view '{hit.Id}'.");
+
                     string? legacyContentHash = GetLegacyContentHash(source);
                     if (!TryMigrate(source))
                         continue;
 
                     UpdatePredefinedContentHash(source, legacyContentHash);
 
-                    var indexResponse = await _client.IndexAsync(
+                    var indexResponse = await IndexMigratedDocumentAsync(
                         source,
-                        request => request
-                            .Index(_configuration.SavedViews.VersionedName)
-                            .Id(hit.Id),
+                        hit.Id,
+                        hit.SeqNo.Value,
+                        hit.PrimaryTerm.Value,
                         context.CancellationToken);
                     _logger.LogRequest(indexResponse);
 
                     if (!indexResponse.IsValidResponse)
-                        throw new InvalidOperationException($"Unable to migrate saved view '{hit.Id}'.");
+                    {
+                        string reason = indexResponse.ApiCallDetails.HttpStatusCode == 409
+                            ? " because it changed while the migration was running"
+                            : String.Empty;
+                        throw new InvalidOperationException($"Unable to migrate saved view '{hit.Id}'{reason}. The resumable migration can be run again safely.");
+                    }
 
                     migrated++;
                 }
@@ -116,6 +125,23 @@ public sealed class MigrateSavedViewColumns : MigrationBase
         }
 
         _logger.LogInformation("Migrated {SavedViewCount} saved view column configurations", migrated);
+    }
+
+    internal Task<IndexResponse> IndexMigratedDocumentAsync(
+        JsonObject source,
+        string id,
+        long sequenceNumber,
+        long primaryTerm,
+        CancellationToken cancellationToken)
+    {
+        return _client.IndexAsync(
+            source,
+            request => request
+                .Index(_configuration.SavedViews.VersionedName)
+                .Id(id)
+                .IfSeqNo(sequenceNumber)
+                .IfPrimaryTerm(primaryTerm),
+            cancellationToken);
     }
 
     internal static bool TryMigrate(JsonObject source)

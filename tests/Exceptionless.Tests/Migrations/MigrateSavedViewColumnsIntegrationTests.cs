@@ -112,4 +112,73 @@ public sealed class MigrateSavedViewColumnsIntegrationTests : IntegrationTestsBa
         Assert.False(getResponse.Source.TryGetProperty("column_order", out _));
         Assert.Equal(JsonValueKind.Object, getResponse.Source.GetProperty("columns").GetProperty("project").ValueKind);
     }
+
+    [Fact]
+    public async Task IndexMigratedDocumentAsync_ConcurrentUpdate_DoesNotOverwriteDocument()
+    {
+        // Arrange
+        const string savedViewId = "770000000000000000000097";
+        var source = JsonNode.Parse(
+            $$"""
+            {
+              "id": "{{savedViewId}}",
+              "name": "Legacy Columns",
+              "columns": {
+                "project": true
+              }
+            }
+            """
+        )!.AsObject();
+
+        var indexResponse = await _client.IndexAsync(
+            source,
+            request => request
+                .Index(_configuration.SavedViews.VersionedName)
+                .Id(savedViewId)
+                .Refresh(Refresh.WaitFor),
+            TestCancellationToken);
+        Assert.True(indexResponse.IsValidResponse);
+
+        var staleDocument = await _client.GetAsync<JsonElement>(
+            savedViewId,
+            request => request.Index(_configuration.SavedViews.VersionedName),
+            TestCancellationToken);
+        Assert.True(staleDocument.IsValidResponse);
+        Assert.NotNull(staleDocument.SeqNo);
+        Assert.NotNull(staleDocument.PrimaryTerm);
+
+        var concurrentSource = source.DeepClone().AsObject();
+        concurrentSource["name"] = "Edited During Migration";
+        indexResponse = await _client.IndexAsync(
+            concurrentSource,
+            request => request
+                .Index(_configuration.SavedViews.VersionedName)
+                .Id(savedViewId)
+                .Refresh(Refresh.WaitFor),
+            TestCancellationToken);
+        Assert.True(indexResponse.IsValidResponse);
+
+        Assert.True(MigrateSavedViewColumns.TryMigrate(source));
+        var migration = GetService<MigrateSavedViewColumns>();
+
+        // Act
+        indexResponse = await migration.IndexMigratedDocumentAsync(
+            source,
+            savedViewId,
+            staleDocument.SeqNo.Value,
+            staleDocument.PrimaryTerm.Value,
+            TestCancellationToken);
+
+        // Assert
+        Assert.False(indexResponse.IsValidResponse);
+        Assert.Equal(409, indexResponse.ApiCallDetails.HttpStatusCode);
+
+        var currentDocument = await _client.GetAsync<JsonElement>(
+            savedViewId,
+            request => request.Index(_configuration.SavedViews.VersionedName),
+            TestCancellationToken);
+        Assert.True(currentDocument.IsValidResponse);
+        Assert.Equal("Edited During Migration", currentDocument.Source.GetProperty("name").GetString());
+        Assert.Equal(JsonValueKind.True, currentDocument.Source.GetProperty("columns").GetProperty("project").ValueKind);
+    }
 }
