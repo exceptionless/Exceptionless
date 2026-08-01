@@ -57,6 +57,10 @@
         return classes.filter(Boolean).join(' ');
     }
 
+    function getHeaderContentClass(header: Header<StockFeatures, TData, unknown>, headerClass: string): string {
+        return header.column.getCanResize() ? removeWidthClasses(headerClass) : headerClass;
+    }
+
     function getColumnStyle(column: Cell<StockFeatures, TData, unknown>['column'] | Header<StockFeatures, TData, unknown>['column']): string | undefined {
         if (!column.getCanResize() || getVisibleDataColumnCount() === 1) {
             return undefined;
@@ -141,7 +145,9 @@
                     {#each headerGroup.headers as header (header.id)}
                         {@const headerClass = getHeaderColumnClass(header)}
                         <Table.Head class={[headerClass, header.column.getCanResize() && 'group relative']} style={getColumnStyle(header.column)}>
-                            <DataTableColumnHeader class={headerClass} column={header.column}><FlexRender {header} /></DataTableColumnHeader>
+                            <DataTableColumnHeader class={getHeaderContentClass(header, headerClass)} column={header.column}
+                                ><FlexRender {header} /></DataTableColumnHeader
+                            >
                             {#if header.column.getCanResize()}
                                 <button
                                     aria-label={`Resize ${header.column.id} column`}
