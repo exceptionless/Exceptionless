@@ -425,7 +425,7 @@ public sealed class ExceptionlessMcpTools
             if (projectId is not null && !TryValidateId(projectId, "projectId", out var projectIdError))
                 return McpResponse<McpListData<McpEventResult>>.Failed(projectIdError);
 
-            var validation = await ValidateSearchAsync(filter, sort, limit, EventFilterFields, EventSortFields, _eventQueryValidator);
+            var validation = await ValidateSearchAsync(filter, sort, limit, EventFilterFields, EventSortFields, _eventQueryValidator, allowIndexedDataFields: true);
             if (validation.Error is not null)
                 return McpResponse<McpListData<McpEventResult>>.Failed(validation.Error);
 
@@ -485,7 +485,7 @@ public sealed class ExceptionlessMcpTools
             if (projectId is not null && !TryValidateId(projectId, "projectId", out var idError))
                 return McpResponse<McpListData<McpEventResult>>.Failed(idError);
 
-            var validation = await ValidateSearchAsync(filter, sort, limit, EventFilterFields, EventSortFields, _eventQueryValidator);
+            var validation = await ValidateSearchAsync(filter, sort, limit, EventFilterFields, EventSortFields, _eventQueryValidator, allowIndexedDataFields: true);
             if (validation.Error is not null)
                 return McpResponse<McpListData<McpEventResult>>.Failed(validation.Error);
 
@@ -589,7 +589,7 @@ public sealed class ExceptionlessMcpTools
             if (projectId is not null && !TryValidateId(projectId, "projectId", out var idError))
                 return McpResponse<McpEventCountResult>.Failed(idError);
 
-            var validation = await ValidateSearchAsync(filter, sort: null, DefaultLimit, EventFilterFields, EventSortFields, _eventQueryValidator);
+            var validation = await ValidateSearchAsync(filter, sort: null, DefaultLimit, EventFilterFields, EventSortFields, _eventQueryValidator, allowIndexedDataFields: true);
             if (validation.Error is not null)
                 return McpResponse<McpEventCountResult>.Failed(validation.Error);
 
@@ -681,7 +681,7 @@ public sealed class ExceptionlessMcpTools
         }
     }
 
-    [McpServerTool(Name = "update_stack_status", ReadOnly = false, UseStructuredContent = true)]
+    [McpServerTool(Name = "update_stack_status", ReadOnly = false, Destructive = true, Idempotent = true, UseStructuredContent = true)]
     [Description("Changes a stack status. Use status fixed with fixedInVersion to mark an issue fixed in a release, or use open, ignored, or discarded. Snoozed stacks must use snooze_stack.")]
     public async Task<McpResponse<McpStackUpdateResult>> UpdateStackStatusAsync(
         [Description("The Exceptionless stack id.")]
@@ -709,17 +709,22 @@ public sealed class ExceptionlessMcpTools
                 return McpResponse<McpStackUpdateResult>.Failed(McpErrors.InvalidVersion("fixedInVersion can only be used when status is fixed.", fixedInVersion));
 
             var stack = await GetAccessibleStackForWriteAsync(stackId, projectId);
-            bool changed = stack.Status != stackStatus || (stackStatus == StackStatus.Fixed && !String.Equals(stack.FixedInVersion, NormalizeFixedVersion(fixedInVersion), StringComparison.Ordinal));
+            var semanticVersion = stackStatus == StackStatus.Fixed && !String.IsNullOrWhiteSpace(fixedInVersion)
+                ? _semanticVersionParser.Parse(fixedInVersion)
+                : null;
+            if (stackStatus == StackStatus.Fixed && !String.IsNullOrWhiteSpace(fixedInVersion) && semanticVersion is null)
+                return McpResponse<McpStackUpdateResult>.Failed(McpErrors.InvalidVersion("Invalid semantic version.", fixedInVersion));
 
-            if (stackStatus == StackStatus.Fixed)
+            string? normalizedFixedVersion = semanticVersion?.ToString();
+            bool changed = stackStatus == StackStatus.Fixed
+                ? stack.Status != StackStatus.Fixed || stack.DateFixed is null || !String.Equals(stack.FixedInVersion, normalizedFixedVersion, StringComparison.Ordinal)
+                : stack.Status != stackStatus || stack.DateFixed is not null || stack.FixedInVersion is not null || stack.SnoozeUntilUtc is not null;
+
+            if (changed && stackStatus == StackStatus.Fixed)
             {
-                var semanticVersion = String.IsNullOrWhiteSpace(fixedInVersion) ? null : _semanticVersionParser.Parse(fixedInVersion);
-                if (!String.IsNullOrWhiteSpace(fixedInVersion) && semanticVersion is null)
-                    return McpResponse<McpStackUpdateResult>.Failed(McpErrors.InvalidVersion("Invalid semantic version.", fixedInVersion));
-
                 stack.MarkFixed(semanticVersion, _timeProvider);
             }
-            else
+            else if (changed)
             {
                 stack.Status = stackStatus;
                 stack.DateFixed = null;
@@ -727,7 +732,9 @@ public sealed class ExceptionlessMcpTools
                 stack.SnoozeUntilUtc = null;
             }
 
-            await _stackRepository.SaveAsync(stack, o => o.ImmediateConsistency());
+            if (changed)
+                await _stackRepository.SaveAsync(stack, o => o.ImmediateConsistency());
+
             return McpResponse<McpStackUpdateResult>.Success(new McpStackUpdateResult(
                 ToStackResult(stack),
                 changed,
@@ -743,7 +750,7 @@ public sealed class ExceptionlessMcpTools
         }
     }
 
-    [McpServerTool(Name = "snooze_stack", ReadOnly = false, UseStructuredContent = true)]
+    [McpServerTool(Name = "snooze_stack", ReadOnly = false, Destructive = true, Idempotent = false, UseStructuredContent = true)]
     [Description("Snoozes a stack until a future UTC time or for a relative duration. Snoozing clears fixed metadata and sets the stack status to snoozed.")]
     public async Task<McpResponse<McpStackUpdateResult>> SnoozeStackAsync(
         [Description("The Exceptionless stack id.")]
@@ -790,7 +797,7 @@ public sealed class ExceptionlessMcpTools
         }
     }
 
-    [McpServerTool(Name = "set_stack_critical", ReadOnly = false, UseStructuredContent = true)]
+    [McpServerTool(Name = "set_stack_critical", ReadOnly = false, Destructive = true, Idempotent = true, UseStructuredContent = true)]
     [Description("Controls whether future events for a stack are marked critical.")]
     public async Task<McpResponse<McpStackUpdateResult>> SetStackCriticalAsync(
         [Description("The Exceptionless stack id.")]
@@ -811,9 +818,12 @@ public sealed class ExceptionlessMcpTools
 
             var stack = await GetAccessibleStackForWriteAsync(stackId, projectId);
             bool changed = stack.OccurrencesAreCritical != critical;
-            stack.OccurrencesAreCritical = critical;
+            if (changed)
+            {
+                stack.OccurrencesAreCritical = critical;
+                await _stackRepository.SaveAsync(stack, o => o.ImmediateConsistency());
+            }
 
-            await _stackRepository.SaveAsync(stack, o => o.ImmediateConsistency());
             return McpResponse<McpStackUpdateResult>.Success(new McpStackUpdateResult(
                 ToStackResult(stack),
                 changed,
@@ -831,7 +841,7 @@ public sealed class ExceptionlessMcpTools
         }
     }
 
-    [McpServerTool(Name = "add_stack_reference_link", ReadOnly = false, UseStructuredContent = true)]
+    [McpServerTool(Name = "add_stack_reference_link", ReadOnly = false, Destructive = false, Idempotent = true, UseStructuredContent = true)]
     [Description("Adds a reference link to a stack. Use this to attach an external issue, pull request, deployment, or incident URL to an Exceptionless issue.")]
     public async Task<McpResponse<McpStackUpdateResult>> AddStackReferenceLinkAsync(
         [Description("The Exceptionless stack id.")]
@@ -878,7 +888,7 @@ public sealed class ExceptionlessMcpTools
         }
     }
 
-    [McpServerTool(Name = "remove_stack_reference_link", ReadOnly = false, UseStructuredContent = true)]
+    [McpServerTool(Name = "remove_stack_reference_link", ReadOnly = false, Destructive = true, Idempotent = true, UseStructuredContent = true)]
     [Description("Removes a reference link from a stack.")]
     public async Task<McpResponse<McpStackUpdateResult>> RemoveStackReferenceLinkAsync(
         [Description("The Exceptionless stack id.")]
@@ -1068,9 +1078,9 @@ public sealed class ExceptionlessMcpTools
         if (!TryValidateSort(sort, ProjectSortFields, out string? sortError))
             return SearchValidationResult.Failed(McpErrors.InvalidSort(sortError ?? "Invalid sort.", sort, ProjectSortFields));
 
-        string? unknownField = GetUnknownFilterField(filter, ProjectFilterFields);
-        if (unknownField is not null)
-            return SearchValidationResult.Failed(McpErrors.UnknownFilterField($"Unknown filter field '{unknownField}'.", unknownField, ProjectFilterFields));
+        var filterFieldError = GetFilterFieldError(filter, ProjectFilterFields, allowIndexedDataFields: false);
+        if (filterFieldError is not null)
+            return SearchValidationResult.Failed(filterFieldError);
 
         return new SearchValidationResult(resolvedLimit, warning);
     }
@@ -1081,7 +1091,8 @@ public sealed class ExceptionlessMcpTools
         int limit,
         IReadOnlySet<string> allowedFilterFields,
         IReadOnlySet<string> allowedSortFields,
-        AppQueryValidator queryValidator)
+        AppQueryValidator queryValidator,
+        bool allowIndexedDataFields = false)
     {
         if (!TryValidateLimit(limit, out int resolvedLimit, out string? limitError, out string? warning))
             return SearchValidationResult.Failed(McpErrors.InvalidLimit(limitError ?? "Invalid limit.", limit, MaxSummaryLimit));
@@ -1093,9 +1104,9 @@ public sealed class ExceptionlessMcpTools
         if (!queryValidation.IsValid)
             return SearchValidationResult.Failed(McpErrors.InvalidFilter($"Invalid filter: {queryValidation.Message ?? "Unable to parse filter."}"));
 
-        string? unknownField = GetUnknownFilterField(filter, allowedFilterFields);
-        if (unknownField is not null)
-            return SearchValidationResult.Failed(McpErrors.UnknownFilterField($"Unknown filter field '{unknownField}'.", unknownField, allowedFilterFields));
+        var filterFieldError = GetFilterFieldError(filter, allowedFilterFields, allowIndexedDataFields);
+        if (filterFieldError is not null)
+            return SearchValidationResult.Failed(filterFieldError);
 
         return new SearchValidationResult(resolvedLimit, warning);
     }
@@ -1385,11 +1396,6 @@ public sealed class ExceptionlessMcpTools
         return false;
     }
 
-    private static string? NormalizeFixedVersion(string? fixedInVersion)
-    {
-        return String.IsNullOrWhiteSpace(fixedInVersion) ? null : fixedInVersion.Trim();
-    }
-
     private static bool TryNormalizeReferenceUrl(string? url, out string referenceUrl, out McpErrorInfo error)
     {
         referenceUrl = null!;
@@ -1442,22 +1448,73 @@ public sealed class ExceptionlessMcpTools
         return false;
     }
 
-    private static string? GetUnknownFilterField(string? filter, IReadOnlySet<string> allowedFilterFields)
+    private static McpErrorInfo? GetFilterFieldError(string? filter, IReadOnlySet<string> allowedFilterFields, bool allowIndexedDataFields)
     {
         if (String.IsNullOrWhiteSpace(filter))
             return null;
 
-        foreach (Match match in FilterFieldRegex.Matches(filter))
+        foreach (Match match in FilterFieldRegex.Matches(RemoveQuotedFilterValues(filter)))
         {
             string field = match.Groups["field"].Value;
-            if (field.StartsWith("data.", StringComparison.OrdinalIgnoreCase))
+            if (allowedFilterFields.Contains(field))
                 continue;
 
-            if (!allowedFilterFields.Contains(field))
-                return field;
+            if (allowIndexedDataFields && field.StartsWith("data.", StringComparison.OrdinalIgnoreCase))
+            {
+                string indexedDataField = field["data.".Length..];
+                if (indexedDataField.StartsWith('@') || indexedDataField.IsValidFieldName())
+                    continue;
+
+                return McpErrors.UnknownFilterField(
+                    $"Custom data filter field '{field}' cannot be indexed. Use a top-level scalar custom data field in the form data.<field>, where <field> contains 1 to 25 letters, numbers, or hyphens.",
+                    field,
+                    allowedFilterFields,
+                    "data.<field>");
+            }
+
+            return McpErrors.UnknownFilterField($"Unknown filter field '{field}'.", field, allowedFilterFields);
         }
 
         return null;
+    }
+
+    private static string RemoveQuotedFilterValues(string filter)
+    {
+        char[] characters = filter.ToCharArray();
+        bool isQuoted = false;
+        bool isEscaped = false;
+
+        for (int index = 0; index < characters.Length; index++)
+        {
+            char character = characters[index];
+            if (isEscaped)
+            {
+                isEscaped = false;
+                if (isQuoted)
+                    characters[index] = ' ';
+                continue;
+            }
+
+            if (character == '\\')
+            {
+                isEscaped = true;
+                if (isQuoted)
+                    characters[index] = ' ';
+                continue;
+            }
+
+            if (character == '"')
+            {
+                isQuoted = !isQuoted;
+                characters[index] = ' ';
+                continue;
+            }
+
+            if (isQuoted)
+                characters[index] = ' ';
+        }
+
+        return new string(characters);
     }
 
     private static bool IsLookupError(Exception ex)
@@ -1708,7 +1765,7 @@ public sealed class ExceptionlessMcpTools
 
     private static readonly HashSet<string> ClientSetupPlatforms = new(StringComparer.OrdinalIgnoreCase) { "expo", "react-native" };
 
-    private static readonly Regex FilterFieldRegex = new(@"(?:^|[\s(])(?<field>@?[A-Za-z_][A-Za-z0-9_@.-]*):", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    private static readonly Regex FilterFieldRegex = new(@"(?:^|[-+\s(])(?<field>@?[A-Za-z_][A-Za-z0-9_@.-]*):", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex IdRegex = new(@"^[A-Za-z0-9]{24,36}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex RelativeTimeRegex = new(@"^(?<value>\d+)(?<unit>[mhdw])$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
     private static readonly Regex IntervalRegex = new(@"^\d+[mhdwM]$", RegexOptions.Compiled | RegexOptions.CultureInvariant);

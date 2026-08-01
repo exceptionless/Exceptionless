@@ -422,6 +422,80 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         Assert.Null(result.Data);
     }
 
+    [Theory]
+    [InlineData("data.Customer.plan:Business")]
+    [InlineData("-data.Customer.plan:Business")]
+    [InlineData("+data.Customer.plan:Business")]
+    [InlineData("data.customer_plan:Business")]
+    [InlineData("data.abcdefghijklmnopqrstuvwxyz:Business")]
+    public async Task SearchEventsAsync_UnindexableCustomDataFilter_ReturnsUnknownFilterField(string filter)
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        var result = await tools.SearchEventsAsync(TestConstants.ProjectId, filter: filter);
+
+        Assert.False(result.Ok);
+        Assert.Equal(McpErrorCodes.UnknownFilterField, result.Error?.Code);
+        Assert.Contains("top-level scalar custom data field", result.Error?.Message);
+        Assert.Equal("data.<field>", result.Error?.Details?["allowedDynamicFieldPattern"]);
+        Assert.Null(result.Data);
+    }
+
+    [Fact]
+    public async Task SearchEventsAsync_IndexableCustomDataFilter_ReturnsMatchingEvent()
+    {
+        var (_, events) = await CreateDataAsync(d => d.Event()
+            .TestProject()
+            .Mutate(ev =>
+            {
+                ev.Data ??= [];
+                ev.Data["plan"] = "Business";
+            })
+            .Message("MCP indexed custom data"));
+        await RefreshDataAsync();
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        var result = await tools.SearchEventsAsync(TestConstants.ProjectId, filter: "data.plan:Business");
+
+        Assert.True(result.Ok);
+        Assert.Null(result.Error);
+        Assert.Contains(Items(result), ev => ev.Id == events[0].Id);
+    }
+
+    [Fact]
+    public async Task SearchEventsAsync_BuiltInDataFilter_ReturnsMatchingEvent()
+    {
+        var (_, events) = await CreateDataAsync(d => d.Event()
+            .TestProject()
+            .UserIdentity("mcp-filter@example.com")
+            .Message("MCP built-in data filter"));
+        await RefreshDataAsync();
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        var result = await tools.SearchEventsAsync(TestConstants.ProjectId, filter: "data.@user.identity:mcp-filter@example.com");
+
+        Assert.True(result.Ok);
+        Assert.Null(result.Error);
+        Assert.Contains(Items(result), ev => ev.Id == events[0].Id);
+    }
+
+    [Fact]
+    public async Task SearchEventsAsync_DataFieldTextInsideQuotedValue_ReturnsMatchingEvent()
+    {
+        const string message = "failed evaluating data.customer.plan:Business";
+        var (_, events) = await CreateDataAsync(d => d.Event()
+            .TestProject()
+            .Message(message));
+        await RefreshDataAsync();
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        var result = await tools.SearchEventsAsync(TestConstants.ProjectId, filter: $"message:\"{message}\"");
+
+        Assert.True(result.Ok);
+        Assert.Null(result.Error);
+        Assert.Contains(Items(result), ev => ev.Id == events[0].Id);
+    }
+
     [Fact]
     public async Task SearchStacksAsync_MalformedFilter_ReturnsSpecificError()
     {
@@ -788,6 +862,33 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task UpdateStackStatusAsync_UnchangedFixedStatus_DoesNotSaveAgain()
+    {
+        try
+        {
+            TimeProvider.SetUtcNow(new DateTimeOffset(2026, 6, 25, 12, 0, 0, TimeSpan.Zero));
+            var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP write fixed idempotent"));
+            var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksWrite);
+
+            var firstResult = await tools.UpdateStackStatusAsync(stacks[0].Id, "fixed", TestConstants.ProjectId, "1.0.2");
+            var first = Data(firstResult);
+            TimeProvider.Advance(TimeSpan.FromHours(1));
+
+            var secondResult = await tools.UpdateStackStatusAsync(stacks[0].Id, "fixed", TestConstants.ProjectId, "1.0.2");
+            var second = Data(secondResult);
+
+            Assert.True(secondResult.Ok);
+            Assert.False(second.Changed);
+            Assert.Equal(first.Stack.DateFixed, second.Stack.DateFixed);
+            Assert.Equal(first.Stack.UpdatedUtc, second.Stack.UpdatedUtc);
+        }
+        finally
+        {
+            TimeProvider.Restore();
+        }
+    }
+
+    [Fact]
     public async Task UpdateStackStatusAsync_MissingStacksWriteScope_ReturnsError()
     {
         var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP write missing scope"));
@@ -887,6 +988,32 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         var stack = await _stackRepository.GetByIdAsync(stacks[0].Id, o => o.ImmediateConsistency());
         Assert.NotNull(stack);
         Assert.True(stack.OccurrencesAreCritical);
+    }
+
+    [Fact]
+    public async Task SetStackCriticalAsync_UnchangedValue_DoesNotSaveAgain()
+    {
+        try
+        {
+            TimeProvider.SetUtcNow(new DateTimeOffset(2026, 6, 25, 12, 0, 0, TimeSpan.Zero));
+            var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP write critical idempotent"));
+            var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksWrite);
+
+            var firstResult = await tools.SetStackCriticalAsync(stacks[0].Id, critical: true, projectId: TestConstants.ProjectId);
+            var first = Data(firstResult);
+            TimeProvider.Advance(TimeSpan.FromHours(1));
+
+            var secondResult = await tools.SetStackCriticalAsync(stacks[0].Id, critical: true, projectId: TestConstants.ProjectId);
+            var second = Data(secondResult);
+
+            Assert.True(secondResult.Ok);
+            Assert.False(second.Changed);
+            Assert.Equal(first.Stack.UpdatedUtc, second.Stack.UpdatedUtc);
+        }
+        finally
+        {
+            TimeProvider.Restore();
+        }
     }
 
     [Fact]
