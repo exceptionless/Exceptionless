@@ -461,6 +461,40 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task SearchEventsAsync_BuiltInDataFilter_ReturnsMatchingEvent()
+    {
+        var (_, events) = await CreateDataAsync(d => d.Event()
+            .TestProject()
+            .UserIdentity("mcp-filter@example.com")
+            .Message("MCP built-in data filter"));
+        await RefreshDataAsync();
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        var result = await tools.SearchEventsAsync(TestConstants.ProjectId, filter: "data.@user.identity:mcp-filter@example.com");
+
+        Assert.True(result.Ok);
+        Assert.Null(result.Error);
+        Assert.Contains(Items(result), ev => ev.Id == events[0].Id);
+    }
+
+    [Fact]
+    public async Task SearchEventsAsync_DataFieldTextInsideQuotedValue_ReturnsMatchingEvent()
+    {
+        const string message = "failed evaluating data.customer.plan:Business";
+        var (_, events) = await CreateDataAsync(d => d.Event()
+            .TestProject()
+            .Message(message));
+        await RefreshDataAsync();
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        var result = await tools.SearchEventsAsync(TestConstants.ProjectId, filter: $"message:\"{message}\"");
+
+        Assert.True(result.Ok);
+        Assert.Null(result.Error);
+        Assert.Contains(Items(result), ev => ev.Id == events[0].Id);
+    }
+
+    [Fact]
     public async Task SearchStacksAsync_MalformedFilter_ReturnsSpecificError()
     {
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksRead);

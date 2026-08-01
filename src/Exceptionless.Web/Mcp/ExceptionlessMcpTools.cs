@@ -1453,7 +1453,7 @@ public sealed class ExceptionlessMcpTools
         if (String.IsNullOrWhiteSpace(filter))
             return null;
 
-        foreach (Match match in FilterFieldRegex.Matches(filter))
+        foreach (Match match in FilterFieldRegex.Matches(RemoveQuotedFilterValues(filter)))
         {
             string field = match.Groups["field"].Value;
             if (allowedFilterFields.Contains(field))
@@ -1462,7 +1462,7 @@ public sealed class ExceptionlessMcpTools
             if (allowIndexedDataFields && field.StartsWith("data.", StringComparison.OrdinalIgnoreCase))
             {
                 string indexedDataField = field["data.".Length..];
-                if (indexedDataField.IsValidFieldName())
+                if (indexedDataField.StartsWith('@') || indexedDataField.IsValidFieldName())
                     continue;
 
                 return McpErrors.UnknownFilterField(
@@ -1476,6 +1476,45 @@ public sealed class ExceptionlessMcpTools
         }
 
         return null;
+    }
+
+    private static string RemoveQuotedFilterValues(string filter)
+    {
+        char[] characters = filter.ToCharArray();
+        bool isQuoted = false;
+        bool isEscaped = false;
+
+        for (int index = 0; index < characters.Length; index++)
+        {
+            char character = characters[index];
+            if (isEscaped)
+            {
+                isEscaped = false;
+                if (isQuoted)
+                    characters[index] = ' ';
+                continue;
+            }
+
+            if (character == '\\')
+            {
+                isEscaped = true;
+                if (isQuoted)
+                    characters[index] = ' ';
+                continue;
+            }
+
+            if (character == '"')
+            {
+                isQuoted = !isQuoted;
+                characters[index] = ' ';
+                continue;
+            }
+
+            if (isQuoted)
+                characters[index] = ' ';
+        }
+
+        return new string(characters);
     }
 
     private static bool IsLookupError(Exception ex)
