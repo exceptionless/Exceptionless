@@ -30,6 +30,12 @@ The custom fields system is built on [Foundatio.Repositories.Elasticsearch custo
 
 > **Note on `string` cost**: Each `string` slot creates **two** Elasticsearch field mappers (the `text` field and its `.keyword` sub-field), making it twice as expensive as other types toward Elasticsearch's `index.mapping.total_fields.limit` (default 1,000).
 
+### Choosing a Field Type
+
+The configured type controls only the indexed representation in `Idx`; the original value in the event's `Data` dictionary is not changed. Use `keyword` for identifiers and versions whose exact text matters, even when they look numeric. Use `double` only when numeric range comparisons are intended.
+
+For example, a `DatabaseVersion` value of `"4.90"` is indexed as the exact string `"4.90"` when configured as `keyword`, but as the number `4.9` when configured as `double`. A development value such as `"4.90 build 1234 30-Aug-2024"` is valid as a `keyword` and is skipped as a `double` because it cannot be converted. In every case, the original `Data["DatabaseVersion"]` value remains unchanged.
+
 ## Slot System
 
 ### How Slots Are Assigned

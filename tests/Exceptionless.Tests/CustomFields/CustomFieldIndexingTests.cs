@@ -222,6 +222,24 @@ public sealed class CustomFieldIndexingTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task Event_DecimalLikeVersionConfiguredAsKeyword_PreservesExactString()
+    {
+        var definition = await _customFieldDefinitionRepository.AddFieldAsync(
+            nameof(PersistentEvent), TestConstants.OrganizationId, "DatabaseVersion", "keyword");
+        await RefreshDataAsync();
+
+        var ev = GenerateEvent();
+        ev.Data = new DataDictionary { ["DatabaseVersion"] = "4.90" };
+
+        var context = await _pipeline.RunAsync(ev, GetOrganization(), GetProject());
+
+        Assert.False(context.HasError, context.ErrorMessage);
+        Assert.Equal("4.90", Assert.IsType<string>(context.Event.Data?["DatabaseVersion"]));
+        Assert.NotNull(context.Event.Idx);
+        Assert.Equal("4.90", Assert.IsType<string>(context.Event.Idx[definition.GetIdxName()]));
+    }
+
+    [Fact]
     public async Task Event_WithNoMatchingDefinition_DoesNotGetCustomIndexed()
     {
         // No custom field definition created for this org's "unregistered_field"
