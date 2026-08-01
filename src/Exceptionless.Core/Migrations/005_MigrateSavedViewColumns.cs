@@ -34,7 +34,7 @@ public sealed class MigrateSavedViewColumns : MigrationBase
         _serializer = serializer;
 
         MigrationType = MigrationType.VersionedAndResumable;
-        Version = 4;
+        Version = 5;
     }
 
     public override async Task RunAsync(MigrationContext context)

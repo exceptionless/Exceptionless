@@ -60,8 +60,8 @@ public sealed class MigrateSavedViewColumnsIntegrationTests : IntegrationTestsBa
         var migrationStateRepository = GetService<IMigrationStateRepository>();
         await migrationStateRepository.AddAsync(new MigrationState
         {
-            Id = "3",
-            Version = 3,
+            Id = "4",
+            Version = 4,
             MigrationType = MigrationType.Versioned,
             StartedUtc = DateTime.UtcNow,
             CompletedUtc = DateTime.UtcNow
@@ -95,8 +95,8 @@ public sealed class MigrateSavedViewColumnsIntegrationTests : IntegrationTestsBa
         var migrationStateRepository = GetService<IMigrationStateRepository>();
         await migrationStateRepository.AddAsync(new MigrationState
         {
-            Id = "4",
-            Version = 4,
+            Id = "5",
+            Version = 5,
             MigrationType = MigrationType.VersionedAndResumable,
             StartedUtc = DateTime.UtcNow,
             CompletedUtc = DateTime.UtcNow
