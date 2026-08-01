@@ -1765,7 +1765,7 @@ public sealed class ExceptionlessMcpTools
 
     private static readonly HashSet<string> ClientSetupPlatforms = new(StringComparer.OrdinalIgnoreCase) { "expo", "react-native" };
 
-    private static readonly Regex FilterFieldRegex = new(@"(?:^|[\s(])(?<field>@?[A-Za-z_][A-Za-z0-9_@.-]*):", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    private static readonly Regex FilterFieldRegex = new(@"(?:^|[-+\s(])(?<field>@?[A-Za-z_][A-Za-z0-9_@.-]*):", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex IdRegex = new(@"^[A-Za-z0-9]{24,36}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex RelativeTimeRegex = new(@"^(?<value>\d+)(?<unit>[mhdw])$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
     private static readonly Regex IntervalRegex = new(@"^\d+[mhdwM]$", RegexOptions.Compiled | RegexOptions.CultureInvariant);

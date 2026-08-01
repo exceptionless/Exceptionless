@@ -424,6 +424,8 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
 
     [Theory]
     [InlineData("data.Customer.plan:Business")]
+    [InlineData("-data.Customer.plan:Business")]
+    [InlineData("+data.Customer.plan:Business")]
     [InlineData("data.customer_plan:Business")]
     [InlineData("data.abcdefghijklmnopqrstuvwxyz:Business")]
     public async Task SearchEventsAsync_UnindexableCustomDataFilter_ReturnsUnknownFilterField(string filter)
