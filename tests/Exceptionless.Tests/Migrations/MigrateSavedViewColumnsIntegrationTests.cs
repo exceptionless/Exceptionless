@@ -210,6 +210,15 @@ public sealed class MigrateSavedViewColumnsIntegrationTests : IntegrationTestsBa
         Assert.True(getResponse.IsValidResponse);
         Assert.False(getResponse.Source.TryGetProperty("column_order", out _));
         Assert.Equal(JsonValueKind.Object, getResponse.Source.GetProperty("columns").GetProperty("project").ValueKind);
+
+        var searchResponse = await _client.SearchAsync<JsonElement>(
+            request => request
+                .Indices(_configuration.SavedViews.VersionedName)
+                .Size(100),
+            TestCancellationToken);
+        Assert.True(searchResponse.IsValidResponse);
+        var searchedSavedView = Assert.Single(searchResponse.Hits, hit => hit.Id == savedViewId);
+        Assert.Equal(JsonValueKind.Object, searchedSavedView.Source.GetProperty("columns").GetProperty("project").ValueKind);
     }
 
     [Fact]

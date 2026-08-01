@@ -40,9 +40,10 @@ public sealed class MigrateSavedViewColumns : MigrationBase
     public override async Task RunAsync(MigrationContext context)
     {
         const int pageSize = 500;
+        const string pointInTimeKeepAlive = "30m";
         var pointInTime = await _client.OpenPointInTimeAsync(
             _configuration.SavedViews.VersionedName,
-            request => request.KeepAlive("2m"),
+            request => request.KeepAlive(pointInTimeKeepAlive),
             context.CancellationToken);
         _logger.LogRequest(pointInTime);
 
@@ -57,10 +58,12 @@ public sealed class MigrateSavedViewColumns : MigrationBase
         {
             do
             {
+                context.CancellationToken.ThrowIfCancellationRequested();
+
                 var response = await _client.SearchAsync<JsonElement>(request =>
                 {
                     request
-                        .Pit(pit => pit.Id(pointInTimeId).KeepAlive("2m"))
+                        .Pit(pit => pit.Id(pointInTimeId).KeepAlive(pointInTimeKeepAlive))
                         .SeqNoPrimaryTerm()
                         .Size(pageSize)
                         .Sort(sort => sort.Field("_shard_doc"));
@@ -118,7 +121,18 @@ public sealed class MigrateSavedViewColumns : MigrationBase
                     : null;
 
                 await context.Lock.RenewAsync();
-            } while (searchAfter is not null && !context.CancellationToken.IsCancellationRequested);
+            } while (searchAfter is not null);
+
+            if (migrated > 0)
+            {
+                var refreshResponse = await _client.Indices.RefreshAsync(
+                    _configuration.SavedViews.VersionedName,
+                    context.CancellationToken);
+                _logger.LogRequest(refreshResponse);
+
+                if (!refreshResponse.IsValidResponse)
+                    throw new InvalidOperationException("Unable to refresh saved views after the column migration.");
+            }
         }
         finally
         {
