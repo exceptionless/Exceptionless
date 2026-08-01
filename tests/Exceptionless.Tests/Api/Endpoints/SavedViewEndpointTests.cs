@@ -285,6 +285,40 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PutPredefinedAsync_NullColumnSettings_PreservesExistingDefinitions()
+    {
+        // Arrange
+        var existingViews = await GetSystemPredefinedSavedViewsAsync();
+        Assert.NotEmpty(existingViews);
+        var existingIds = existingViews.Select(view => view.Id).Order().ToArray();
+        const string definitions =
+            """
+            [{
+              "key": "events:invalid-columns",
+              "name": "Invalid Columns",
+              "slug": "invalid-columns",
+              "viewType": "events",
+              "columns": {
+                "project": null
+              }
+            }]
+            """;
+
+        // Act
+        await SendRequestAsync(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("saved-views", "predefined")
+            .Content(definitions, "application/json")
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+
+        // Assert
+        var remainingViews = await GetSystemPredefinedSavedViewsAsync();
+        Assert.Equal(existingIds, remainingViews.Select(view => view.Id).Order());
+    }
+
+    [Fact]
     public async Task PostAsync_NewSavedView_MapsAllPropertiesToSavedView()
     {
         // Arrange

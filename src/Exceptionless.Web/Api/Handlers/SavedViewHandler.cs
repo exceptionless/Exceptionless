@@ -132,11 +132,11 @@ public partial class SavedViewHandler(
 
     public async Task<Result<IReadOnlyCollection<PredefinedSavedViewDefinition>>> Handle(ReplacePredefinedSavedViews message)
     {
-        foreach (var viewType in NewSavedView.ValidViewTypes)
+        foreach (var definition in message.Definitions)
         {
-            var existingViews = await GetSystemPredefinedSavedViewsAsync(viewType);
-            if (existingViews.Count > 0)
-                await repository.RemoveAsync(existingViews.Select(v => v.Id).ToList(), o => o.ImmediateConsistency());
+            var validationError = NewSavedView.ValidateColumns(definition.ViewType, definition.Columns).FirstOrDefault();
+            if (validationError is not null)
+                return Result.Invalid(ValidationError.Create("definitions", validationError.ErrorMessage ?? "Invalid column configuration."));
         }
 
         var savedViews = message.Definitions.Select(definition => new SavedView
@@ -160,6 +160,13 @@ public partial class SavedViewHandler(
 
         foreach (var savedView in savedViews)
             savedView.PredefinedContentHash = PredefinedSavedViewContentHasher.GetContentHash(savedView);
+
+        foreach (var viewType in NewSavedView.ValidViewTypes)
+        {
+            var existingViews = await GetSystemPredefinedSavedViewsAsync(viewType);
+            if (existingViews.Count > 0)
+                await repository.RemoveAsync(existingViews.Select(v => v.Id).ToList(), o => o.ImmediateConsistency());
+        }
 
         if (savedViews.Count > 0)
             await repository.AddAsync(savedViews, o => o.Cache().ImmediateConsistency());
