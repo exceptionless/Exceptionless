@@ -39,6 +39,7 @@ public sealed class MigrateSavedViewColumnsIntegrationTests : IntegrationTestsBa
         // Arrange
         const string savedViewId = "770000000000000000000099";
         const string customizedSavedViewId = "770000000000000000000098";
+        const string predefinedWithoutColumnsId = "770000000000000000000096";
         var source = JsonNode.Parse(
             $$"""
             {
@@ -67,12 +68,26 @@ public sealed class MigrateSavedViewColumnsIntegrationTests : IntegrationTestsBa
         customizedSource["id"] = customizedSavedViewId;
         customizedSource["name"] = "Customized Legacy Columns";
         customizedSource["predefined_content_hash"] = "customized-content-hash";
+        var predefinedWithoutColumnsSource = source.DeepClone().AsObject();
+        predefinedWithoutColumnsSource["id"] = predefinedWithoutColumnsId;
+        predefinedWithoutColumnsSource["name"] = "Predefined Without Columns";
+        predefinedWithoutColumnsSource.Remove("columns");
+        predefinedWithoutColumnsSource.Remove("column_order");
+        predefinedWithoutColumnsSource["predefined_content_hash"] = MigrateSavedViewColumns.GetLegacyContentHash(predefinedWithoutColumnsSource);
 
         var indexResponse = await _client.IndexAsync(
             source,
             request => request
                 .Index(_configuration.SavedViews.VersionedName)
                 .Id(savedViewId),
+            TestCancellationToken);
+        Assert.True(indexResponse.IsValidResponse);
+
+        indexResponse = await _client.IndexAsync(
+            predefinedWithoutColumnsSource,
+            request => request
+                .Index(_configuration.SavedViews.VersionedName)
+                .Id(predefinedWithoutColumnsId),
             TestCancellationToken);
         Assert.True(indexResponse.IsValidResponse);
 
@@ -103,6 +118,11 @@ public sealed class MigrateSavedViewColumnsIntegrationTests : IntegrationTestsBa
         Assert.NotNull(customizedSavedView);
         Assert.Equal("customized-content-hash", customizedSavedView.PredefinedContentHash);
         Assert.Equal(1, customizedSavedView.Columns?["project"].Position);
+
+        var predefinedWithoutColumns = await _repository.GetByIdAsync(predefinedWithoutColumnsId, o => o.ImmediateConsistency());
+        Assert.NotNull(predefinedWithoutColumns);
+        Assert.Null(predefinedWithoutColumns.Columns);
+        Assert.Equal(PredefinedSavedViewContentHasher.GetContentHash(predefinedWithoutColumns), predefinedWithoutColumns.PredefinedContentHash);
 
         var getResponse = await _client.GetAsync<JsonElement>(
             savedViewId,

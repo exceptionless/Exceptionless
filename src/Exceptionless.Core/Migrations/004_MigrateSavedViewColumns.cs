@@ -49,6 +49,7 @@ public sealed class MigrateSavedViewColumns : MigrationBase
         if (!pointInTime.IsValidResponse || String.IsNullOrWhiteSpace(pointInTime.Id))
             throw new InvalidOperationException("Unable to open a point in time for the saved view migration.");
 
+        string pointInTimeId = pointInTime.Id;
         FieldValue[]? searchAfter = null;
         int migrated = 0;
 
@@ -59,7 +60,7 @@ public sealed class MigrateSavedViewColumns : MigrationBase
                 var response = await _client.SearchAsync<JsonElement>(request =>
                 {
                     request
-                        .Pit(pit => pit.Id(pointInTime.Id).KeepAlive("2m"))
+                        .Pit(pit => pit.Id(pointInTimeId).KeepAlive("2m"))
                         .SeqNoPrimaryTerm()
                         .Size(pageSize)
                         .Sort(sort => sort.Field("_shard_doc"));
@@ -71,6 +72,9 @@ public sealed class MigrateSavedViewColumns : MigrationBase
 
                 if (!response.IsValidResponse)
                     throw new InvalidOperationException("Unable to read saved views during the column migration.");
+
+                if (!String.IsNullOrWhiteSpace(response.PitId))
+                    pointInTimeId = response.PitId;
 
                 foreach (var hit in response.Hits)
                 {
@@ -85,10 +89,10 @@ public sealed class MigrateSavedViewColumns : MigrationBase
                         throw new InvalidOperationException($"Unable to read concurrency metadata for saved view '{hit.Id}'.");
 
                     string? legacyContentHash = GetLegacyContentHash(source);
-                    if (!TryMigrate(source))
+                    bool columnsMigrated = TryMigrate(source);
+                    bool contentHashMigrated = UpdatePredefinedContentHash(source, legacyContentHash);
+                    if (!columnsMigrated && !contentHashMigrated)
                         continue;
-
-                    UpdatePredefinedContentHash(source, legacyContentHash);
 
                     var indexResponse = await IndexMigratedDocumentAsync(
                         source,
@@ -119,7 +123,7 @@ public sealed class MigrateSavedViewColumns : MigrationBase
         finally
         {
             var closeResponse = await _client.ClosePointInTimeAsync(
-                request => request.Id(pointInTime.Id),
+                request => request.Id(pointInTimeId),
                 CancellationToken.None);
             _logger.LogRequest(closeResponse);
         }
@@ -195,20 +199,21 @@ public sealed class MigrateSavedViewColumns : MigrationBase
         return true;
     }
 
-    private void UpdatePredefinedContentHash(JsonObject source, string? legacyContentHash)
+    private bool UpdatePredefinedContentHash(JsonObject source, string? legacyContentHash)
     {
         string? predefinedContentHash = source["predefined_content_hash"]?.GetValue<string>();
         if (String.IsNullOrWhiteSpace(predefinedContentHash))
-            return;
+            return false;
 
         if (!String.Equals(predefinedContentHash, legacyContentHash, StringComparison.Ordinal))
-            return;
+            return false;
 
         var savedView = _serializer.Deserialize<SavedView>(source.ToJsonString(JsonOptions));
         if (savedView is null)
             throw new InvalidOperationException("Unable to deserialize a migrated saved view.");
 
         source["predefined_content_hash"] = PredefinedSavedViewContentHasher.GetContentHash(savedView);
+        return true;
     }
 
     internal static string? GetLegacyContentHash(JsonObject source)

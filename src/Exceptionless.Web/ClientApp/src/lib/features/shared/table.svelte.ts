@@ -249,6 +249,7 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
     });
 
     const tableOptions: TableOptions<StockFeatures, TData> = {
+        columnResizeMode: 'onChange',
         get columns() {
             return columns();
         },
