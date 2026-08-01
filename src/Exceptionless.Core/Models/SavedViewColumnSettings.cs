@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Exceptionless.Core.Models;
 
 /// <summary>
@@ -14,9 +16,11 @@ public sealed record SavedViewColumnSettings
     public bool? Visible { get; set; }
 
     /// <summary>Zero-based display position. Null means use the table default order.</summary>
+    [Range(0, MaxPosition)]
     public int? Position { get; set; }
 
     /// <summary>Column width in pixels. Null means use the table default width.</summary>
+    [Range(MinWidth, MaxWidth)]
     public int? Width { get; set; }
 
 }

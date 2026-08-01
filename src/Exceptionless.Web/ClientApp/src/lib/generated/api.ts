@@ -394,11 +394,15 @@ export interface SavedViewColumnSettings {
   /**
    * Zero-based display position. Null means use the table default order.
    * @format int32
+   * @min 0
+   * @max 49
    */
   position?: null | number;
   /**
    * Column width in pixels. Null means use the table default width.
    * @format int32
+   * @min 48
+   * @max 1200
    */
   width?: null | number;
 }

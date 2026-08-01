@@ -513,8 +513,16 @@ export type ResetPasswordModelFormData = Infer<typeof ResetPasswordModelSchema>;
 
 export const SavedViewColumnSettingsSchema = object({
   visible: boolean().nullable().optional(),
-  position: int32().nullable().optional(),
-  width: int32().nullable().optional(),
+  position: int32()
+    .min(0, "Position must be at least 0")
+    .max(49, "Position must be at most 49")
+    .nullable()
+    .optional(),
+  width: int32()
+    .min(48, "Width must be at least 48")
+    .max(1200, "Width must be at most 1200")
+    .nullable()
+    .optional(),
 });
 export type SavedViewColumnSettingsFormData = Infer<
   typeof SavedViewColumnSettingsSchema

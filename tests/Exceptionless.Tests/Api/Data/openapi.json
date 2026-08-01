@@ -12235,6 +12235,8 @@
             "description": "Whether the column is visible. Null means use the table default."
           },
           "position": {
+            "maximum": 49,
+            "minimum": 0,
             "type": [
               "null",
               "integer"
@@ -12243,6 +12245,8 @@
             "format": "int32"
           },
           "width": {
+            "maximum": 1200,
+            "minimum": 48,
             "type": [
               "null",
               "integer"
