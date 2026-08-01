@@ -34,6 +34,85 @@ public sealed class MigrateSavedViewColumnsIntegrationTests : IntegrationTestsBa
     }
 
     [Fact]
+    public async Task DataSeedStartupAction_PendingMigration_DoesNotReadLegacySavedViews()
+    {
+        // Arrange
+        const string savedViewId = "770000000000000000000095";
+        var source = JsonNode.Parse(
+            $$"""
+            {
+              "id": "{{savedViewId}}",
+              "organization_id": "{{PredefinedSavedViewsDataSeed.SystemOrganizationId}}",
+              "created_by_user_id": "{{PredefinedSavedViewsDataSeed.SystemUserId}}",
+              "name": "Legacy Predefined View",
+              "slug": "legacy-predefined-view",
+              "view_type": "events",
+              "columns": {
+                "level": true
+              },
+              "version": 1,
+              "created_utc": "2026-01-01T00:00:00Z",
+              "updated_utc": "2026-01-01T00:00:00Z"
+            }
+            """
+        )!.AsObject();
+
+        var migrationStateRepository = GetService<IMigrationStateRepository>();
+        await migrationStateRepository.AddAsync(new MigrationState
+        {
+            Id = "3",
+            Version = 3,
+            MigrationType = MigrationType.Versioned,
+            StartedUtc = DateTime.UtcNow,
+            CompletedUtc = DateTime.UtcNow
+        });
+
+        var indexResponse = await _client.IndexAsync(
+            source,
+            request => request
+                .Index(_configuration.SavedViews.VersionedName)
+                .Id(savedViewId)
+                .Refresh(Refresh.WaitFor),
+            TestCancellationToken);
+        Assert.True(indexResponse.IsValidResponse);
+
+        // Act
+        await GetService<DataSeedService>().RunAsync(TestCancellationToken);
+
+        // Assert
+        var getResponse = await _client.GetAsync<JsonElement>(
+            savedViewId,
+            request => request.Index(_configuration.SavedViews.VersionedName),
+            TestCancellationToken);
+        Assert.True(getResponse.IsValidResponse);
+        Assert.Equal(JsonValueKind.True, getResponse.Source.GetProperty("columns").GetProperty("level").ValueKind);
+    }
+
+    [Fact]
+    public async Task DataSeedStartupAction_OnlyRepeatableMigrationsPending_SeedsData()
+    {
+        // Arrange
+        var migrationStateRepository = GetService<IMigrationStateRepository>();
+        await migrationStateRepository.AddAsync(new MigrationState
+        {
+            Id = "4",
+            Version = 4,
+            MigrationType = MigrationType.VersionedAndResumable,
+            StartedUtc = DateTime.UtcNow,
+            CompletedUtc = DateTime.UtcNow
+        });
+
+        // Act
+        await GetService<DataSeedService>().RunAsync(TestCancellationToken);
+
+        // Assert
+        var savedViews = await _repository.GetByOrganizationIdAsync(
+            PredefinedSavedViewsDataSeed.SystemOrganizationId,
+            o => o.ImmediateConsistency());
+        Assert.NotEmpty(savedViews.Documents);
+    }
+
+    [Fact]
     public async Task RunAsync_LegacySavedView_ReplacesDocumentWithStructuredColumns()
     {
         // Arrange
