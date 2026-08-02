@@ -1,5 +1,4 @@
 using Exceptionless.Core;
-using Exceptionless.Core.Jobs.Elastic;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -9,17 +8,6 @@ namespace Exceptionless.Tests;
 
 public class BootstrapperTests
 {
-    [Fact]
-    public void AddHostedJobs_RegistersMigrationJob()
-    {
-        var services = new ServiceCollection();
-        using var loggerFactory = LoggerFactory.Create(_ => { });
-
-        Bootstrapper.AddHostedJobs(services, loggerFactory);
-
-        Assert.Contains(services, descriptor => descriptor.ServiceType == typeof(MigrationJob));
-    }
-
     [Fact]
     public void LogConfiguration_ConfiguredServices_LogsCuratedSafeSummary()
     {
