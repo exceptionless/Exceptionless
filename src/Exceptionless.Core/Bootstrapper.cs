@@ -50,6 +50,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MaintainIndexesJob = Foundatio.Repositories.Elasticsearch.Jobs.MaintainIndexesJob;
+using MigrationJob = Exceptionless.Core.Jobs.Elastic.MigrationJob;
 
 namespace Exceptionless.Core;
 
@@ -484,6 +485,7 @@ public class Bootstrapper
         services.AddJob<EventPostsJob>(o => o.WaitForStartupActions());
         services.AddJob<EventUserDescriptionsJob>(o => o.WaitForStartupActions());
         services.AddJob<MailMessageJob>(o => o.WaitForStartupActions());
+        services.AddJob<MigrationJob>(o => o.WaitForStartupActions());
         services.AddJob<StackStatusJob>(o => o.WaitForStartupActions());
         services.AddJob<StackEventCountJob>(o => o.WaitForStartupActions());
         services.AddJob<WebHooksJob>(o => o.WaitForStartupActions());
