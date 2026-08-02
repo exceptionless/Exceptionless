@@ -15,15 +15,15 @@ describe('event table columns', () => {
         expect(defaultEventColumnVisibility.tags).toBe(false);
     });
 
-    it('uses a wider resizable project column and keeps utility columns fixed', () => {
+    it('uses resizable summary and project columns and keeps selection fixed', () => {
         const columns = getColumns<EventSummaryModel<SummaryTemplateKeys>>();
         const project = columns.find((column) => column.id === 'project');
         const select = columns.find((column) => column.id === 'select');
         const summary = columns.find((column) => column.id === 'summary');
 
+        expect(summary).toMatchObject({ enableResizing: true, maxSize: 1200, minSize: 240, size: 480 });
         expect(project).toMatchObject({ maxSize: 800, minSize: 160, size: 240 });
         expect(select?.enableResizing).toBe(false);
-        expect(summary?.enableResizing).toBe(false);
     });
 
     it('offers project and tags as hidden optional stack columns', () => {

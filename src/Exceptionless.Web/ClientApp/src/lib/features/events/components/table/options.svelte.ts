@@ -65,12 +65,15 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
         },
         {
             cell: (prop) => renderComponent(Summary, { showStatus: false, showType, summary: prop.row.original }),
-            enableResizing: false,
+            enableResizing: true,
             header: 'Summary',
             id: 'summary',
+            maxSize: 1200,
             meta: {
                 class: 'w-full'
-            }
+            },
+            minSize: 240,
+            size: 480
         },
         {
             accessorFn: (row) => getProject(row),
