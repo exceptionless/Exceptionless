@@ -11357,17 +11357,7 @@
               "object"
             ],
             "additionalProperties": {
-              "type": "boolean"
-            }
-          },
-          "column_order": {
-            "maxItems": 50,
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/SavedViewColumnSettings"
             }
           },
           "show_stats": {
@@ -12162,16 +12152,7 @@
               "object"
             ],
             "additionalProperties": {
-              "type": "boolean"
-            }
-          },
-          "columnOrder": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/SavedViewColumnSettings"
             }
           },
           "showStats": {
@@ -12242,6 +12223,39 @@
             "type": "string"
           }
         }
+      },
+      "SavedViewColumnSettings": {
+        "type": "object",
+        "properties": {
+          "visible": {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "description": "Whether the column is visible. Null means use the table default."
+          },
+          "position": {
+            "maximum": 49,
+            "minimum": 0,
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Zero-based display position. Null means use the table default order.",
+            "format": "int32"
+          },
+          "width": {
+            "maximum": 1200,
+            "minimum": 48,
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Column width in pixels. Null means use the table default width.",
+            "format": "int32"
+          }
+        },
+        "description": "Per-column display settings for a saved view. All properties are optional so new settings can\nbe added without changing the meaning of existing saved views."
       },
       "Signup": {
         "required": [
@@ -12617,17 +12631,7 @@
               "object"
             ],
             "additionalProperties": {
-              "type": "boolean"
-            }
-          },
-          "column_order": {
-            "maxItems": 50,
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/SavedViewColumnSettings"
             }
           },
           "show_stats": {
@@ -13426,16 +13430,7 @@
               "object"
             ],
             "additionalProperties": {
-              "type": "boolean"
-            }
-          },
-          "column_order": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/SavedViewColumnSettings"
             }
           },
           "show_stats": {

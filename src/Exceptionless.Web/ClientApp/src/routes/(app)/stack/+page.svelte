@@ -246,6 +246,7 @@
         defaultTime: DEFAULT_TIME_RANGE,
         filterCacheKey,
         getColumnOrder: () => table.state.columnOrder,
+        getColumnSizing: () => table.state.columnSizing,
         getColumnVisibility: () => table.state.columnVisibility,
         getFilter: getEffectiveFilter,
         getFilterDefinitions: () => serializeFilters(filters ?? []),
@@ -254,6 +255,7 @@
         getTime: getQueryTime,
         queryParams,
         setColumnOrder: (v) => table.setColumnOrder(v),
+        setColumnSizing: (v) => table.setColumnSizing(v),
         setColumnVisibility: (v) => table.setColumnVisibility(v),
         setShowChart: (v) => (showChart = v),
         setShowStats: (v) => (showStats = v),
@@ -660,6 +662,7 @@
                 });
             },
             defaultColumnVisibility: defaultStackColumnVisibility,
+            enableColumnResizing: true,
             paginationStrategy: 'offset',
             get queryData() {
                 return eventsQuery.data?.data ?? [];
@@ -673,6 +676,7 @@
         }),
         (state) => ({
             columnOrder: state.columnOrder,
+            columnSizing: state.columnSizing,
             columnVisibility: state.columnVisibility,
             pagination: state.pagination
         })
@@ -843,6 +847,7 @@
                 <SavedViewPicker
                     activeSavedView={savedViewsState.activeSavedView}
                     columnOrder={table.state.columnOrder}
+                    columnSizing={table.state.columnSizing}
                     columnVisibility={table.state.columnVisibility}
                     filters={filters ?? []}
                     isModified={savedViewsState.isModified}

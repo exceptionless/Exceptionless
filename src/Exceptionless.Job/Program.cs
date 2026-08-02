@@ -127,7 +127,7 @@ public class Program
                 AddJobs(services, jobOptions);
                 services.AddAppOptions(options);
 
-                Bootstrapper.RegisterServices(services, options);
+                Bootstrapper.RegisterServices(services, options, jobOptions.RunDataSeedStartupAction);
                 Insulation.Bootstrapper.RegisterServices(services, options, true);
             })
             .AddApm(apmConfig);

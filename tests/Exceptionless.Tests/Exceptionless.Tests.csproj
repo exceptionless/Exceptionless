@@ -22,6 +22,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Exceptionless.AppHost\Exceptionless.AppHost.csproj" />
+    <ProjectReference Include="..\..\src\Exceptionless.Job\Exceptionless.Job.csproj" />
     <ProjectReference Include="..\..\src\Exceptionless.Web\Exceptionless.Web.csproj" />
   </ItemGroup>
 

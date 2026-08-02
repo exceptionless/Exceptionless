@@ -94,6 +94,7 @@
     function resetColumns(): void {
         table.resetColumnVisibility();
         table.resetColumnOrder();
+        table.resetColumnSizing();
         search = '';
     }
 
