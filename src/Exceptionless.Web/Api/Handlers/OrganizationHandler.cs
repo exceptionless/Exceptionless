@@ -480,6 +480,13 @@ public class OrganizationHandler(
                     organization.PlanId,
                     model.PlanId);
 
+                if (subscription is not null &&
+                    !String.Equals(organization.StripeSubscriptionId, subscription.Id, StringComparison.Ordinal))
+                {
+                    organization.StripeSubscriptionId = subscription.Id;
+                    await repository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
+                }
+
                 if (subscription is not null && liveSubscriptions.Count > 1)
                 {
                     var duplicateSubscriptions = liveSubscriptions

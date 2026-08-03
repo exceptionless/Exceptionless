@@ -1799,6 +1799,43 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task ChangePlanAsync_ReconciledOwnershipIsPersistedBeforeDuplicateCleanupContinues()
+    {
+        // Arrange
+        await SetPlanAndStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, _plans.MediumPlan.Id, "cus_existing");
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        organization.StripeSubscriptionId = "sub_unhealthy";
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache());
+
+        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription(
+            "sub_unhealthy", "si_unhealthy", status: "past_due", priceId: _plans.MediumPlan.Id, createdUtc: TimeProvider.GetUtcNow().UtcDateTime.AddDays(-1)));
+        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription(
+            "sub_healthy", "si_healthy", status: "active", priceId: _plans.SmallPlan.Id, createdUtc: TimeProvider.GetUtcNow().UtcDateTime));
+        StripeBillingClient.UpdateCustomerException = new StripeException("Stripe unavailable");
+
+        // Act
+        var result = await WithBillingEnabledAsync(() =>
+            SendRequestAsAsync<ChangePlanResult>(r => r
+                .AsFreeOrganizationUser()
+                .Post()
+                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
+                .Content(new ChangePlanRequest { PlanId = _plans.SmallPlan.Id })
+                .StatusCodeShouldBeOk()
+            ));
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.False(result.Success);
+        Assert.Equal("sub_unhealthy", Assert.Single(StripeBillingClient.CanceledSubscriptions).SubscriptionId);
+
+        organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
+        Assert.NotNull(organization);
+        Assert.Equal("sub_healthy", organization.StripeSubscriptionId);
+        Assert.Equal(_plans.MediumPlan.Id, organization.PlanId);
+    }
+
+    [Fact]
     public async Task ChangePlanAsync_MultipleLiveSubscriptions_PrefersTargetPlanAndCancelsDuplicate()
     {
         // Arrange
