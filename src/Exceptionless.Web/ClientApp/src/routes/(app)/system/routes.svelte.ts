@@ -21,17 +21,17 @@ export function routes(): NavigationItem[] {
         },
         {
             group: 'System',
-            href: resolve('/(app)/system/exie'),
-            icon: Bot,
-            show: (context) => context.user?.roles?.includes('global') ?? false,
-            title: 'Exie'
-        },
-        {
-            group: 'System',
             href: resolve('/(app)/system/elasticsearch/overview'),
             icon: Database,
             show: (context) => context.user?.roles?.includes('global') ?? false,
             title: 'Elasticsearch'
+        },
+        {
+            group: 'System',
+            href: resolve('/(app)/system/exie'),
+            icon: Bot,
+            show: (context) => context.user?.roles?.includes('global') ?? false,
+            title: 'Exie'
         },
         {
             group: 'System',
