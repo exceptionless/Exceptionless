@@ -53,28 +53,6 @@ The `provider` value determines what implementations to use for the various abst
 3. `EX_AppMode` should be set to `Production` if you want to send unrestricted emails.
 4. Please take a quick look at all the configuration options and settings that can be found in the various option classes located [here](https://github.com/exceptionless/Exceptionless/tree/master/src/Exceptionless.Core/Configuration).
 
-## Scaling Exie
-
-Exie does not require sticky sessions. The browser sends the retained visible conversation and current page context with every chat turn. Server-recorded tool results are retained briefly in the shared cache under the authenticated user, organization, and browser conversation id. Each new request can therefore be handled by any Exceptionless app replica without accepting tool output from the browser as trusted context. One streamed response remains connected to the replica that accepted it until that response completes. If that replica becomes unavailable, the user can retry the turn and the retry can be handled by another healthy replica.
-
-When running more than one app replica:
-
-1. Configure every replica with the same `EX_Assistant__*` values.
-2. Use shared Elasticsearch storage and the Redis-backed cache and message bus shown above. Redis makes organization usage limits atomic across replicas, and the shared message bus keeps access changes synchronized with browser connections.
-3. Configure the ingress or reverse proxy to stream responses without buffering and without a fixed request deadline. Keep an idle timeout of at least two minutes because an individual provider request can run for that long. The included Azure Application Gateway for Containers ingress configuration disables its request deadline and retains the gateway's idle timeout.
-
-Do not enable session affinity for Exie. The conversation contract uses the shared cache and is designed for replica failover.
-
-Assistant availability and customer usage allowances come from each organization's billing plan. Medium, Large, Extra Large, Enterprise, and hidden Unlimited plans allow 2/10, 3/15, 5/25, 10/50, and 20/100 concurrent turns/turns per minute respectively. Their calendar-month token and provider-cost safeguards are 25 million/$5, 50 million/$10, 100 million/$20, 250 million/$50, and 500 million/$100. Monthly and yearly variants have the same monthly allowance. Provider usage is accumulated for every model round in a turn, including tool-calling rounds, and the monthly token and cost limits are rechecked before each additional round.
-
-Exie usage is counted atomically in the shared cache and flushed into monthly organization records by the existing usage job. The records retain one year of accepted, completed, failed, and cancelled turns; provider requests; tool calls; prompt and completion tokens; provider cost; the plan id; and denials by concurrency, rate, token, or cost limit. Aggregate OpenTelemetry counters expose the same activity without organization-id labels, while the organization records identify which customers are consuming their allowance.
-
-Product-wide safety limits are intentionally not billing-plan options. Exie retains up to 20 visible messages and 48,000 visible-message characters, retains up to 48,000 characters of server-recorded tool context for 30 minutes, caps the complete provider input at 128,000 characters, and allows up to 2,048 output tokens, three tool rounds, and 12 tool calls per response. Tool calls may return at most 10 items, event details are capped at 16,384 characters, and an organization-wide turn may search at most five projects. A turn has a two-minute deadline. Provider routing is limited to models charging no more than $2 per million prompt tokens and $8 per million completion tokens.
-
-Use a dedicated provider API key for Exie and configure a provider-side monthly hard limit no higher than the amount you are willing to spend. The in-app controls depend on usage reported by the provider; the provider-side key limit is the final safeguard if usage reporting, Redis, or application configuration fails. Development mode uses the Unlimited plan's request allowances and bypasses plan access and organization usage limits.
-
-Setting `EX_Assistant__ApiKey` enables Exie by default. Set `EX_Assistant__Enabled=false` explicitly to keep the feature and its UI disabled even when an API key is configured.
-
 ## Active Directory Authentication
 
 To enable Active Directory authentication, update the Update the `exceptionless-config` config map to include the `EX_ConnectionStrings__LDAP` connection string. The value should be your domain's LDAP URI (e.g. `LDAP://ad.domain.com/` or `LDAP://ad.domain.com/DC=domain,DC=com`).
