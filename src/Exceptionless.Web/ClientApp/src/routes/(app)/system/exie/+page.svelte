@@ -1,6 +1,4 @@
 <script lang="ts">
-    import type { AdminAssistantOrganizationUsage } from '$features/admin/models';
-
     import { resolve } from '$app/paths';
     import Currency from '$comp/formatters/currency.svelte';
     import NumberCompact from '$comp/formatters/number-compact.svelte';
@@ -38,18 +36,6 @@
         return utilization === null || utilization === undefined ? 'No limit' : `${Math.round(utilization * 100)}%`;
     }
 
-    function organizationRisk(usage: AdminAssistantOrganizationUsage): UsageRisk {
-        const tokenRisk = getUsageRisk(usage.token_utilization, usage.blocked_by_token_limit);
-        const costRisk = getUsageRisk(usage.cost_utilization, usage.blocked_by_cost_limit);
-        const blockedCount = getBlockedCount(usage);
-
-        if (blockedCount > 0 || tokenRisk === 'critical' || costRisk === 'critical') {
-            return 'critical';
-        }
-
-        return tokenRisk === 'warning' || costRisk === 'warning' ? 'warning' : 'normal';
-    }
-
     const currentMonth = getCurrentMonth();
     let selectedMonth = $state(currentMonth);
     const usageQuery = getAdminAssistantUsageQuery(() => selectedMonth);
@@ -57,7 +43,6 @@
     const totalTokens = $derived((usage?.prompt_tokens ?? 0) + (usage?.completion_tokens ?? 0));
     const averageCost = $derived(usage && usage.active_organizations > 0 ? usage.cost_usd / usage.active_organizations : 0);
     const tokensPerTurn = $derived(usage && usage.turns > 0 ? totalTokens / usage.turns : 0);
-    const attentionCount = $derived(usage?.organizations.filter((organization) => organizationRisk(organization) !== 'normal').length ?? 0);
 
     const statCards = $derived([
         { icon: Building2, label: 'Active Organizations', value: usage?.active_organizations, valueType: 'number' },
@@ -122,9 +107,6 @@
                     <Card.Description>Usage is ordered by provider cost, then token consumption. Durable totals may lag by up to five minutes.</Card.Description
                     >
                 </div>
-                {#if !usageQuery.isPending && attentionCount > 0}
-                    <Badge variant="yellow">{attentionCount} need attention</Badge>
-                {/if}
             </Card.Header>
             <Card.Content class="px-0">
                 {#if usageQuery.isPending}
