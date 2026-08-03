@@ -14,6 +14,7 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     {
         Invites = new Collection<Invite>();
         BillingStatus = BillingStatus.Trialing;
+        AssistantUsage = new SortedSet<AssistantUsageInfo>(Comparer<AssistantUsageInfo>.Create((a, b) => a.Date.CompareTo(b.Date)));
         Usage = new SortedSet<UsageInfo>(Comparer<UsageInfo>.Create((a, b) => a.Date.CompareTo(b.Date)));
         UsageHours = new SortedSet<UsageHourInfo>(Comparer<UsageHourInfo>.Create((a, b) => a.Date.CompareTo(b.Date)));
         Data = new DataDictionary();
@@ -159,6 +160,11 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     public ICollection<Invite> Invites { get; set; }
 
     /// <summary>
+    /// Monthly Exie usage information.
+    /// </summary>
+    public ICollection<AssistantUsageInfo> AssistantUsage { get; set; }
+
+    /// <summary>
     /// Hourly account event usage information.
     /// </summary>
     public ICollection<UsageHourInfo> UsageHours { get; set; }
@@ -279,5 +285,4 @@ public enum BillingStatus
     Canceled = 3,
     Unpaid = 4
 }
-
 

@@ -50,8 +50,8 @@ public sealed class McpContextService(
             {
                 return McpContextResolution.Failed(McpErrors.ContextMismatch(
                     "The requested project is not in the requested organization.",
-                    organizationId.Trim(),
                     activeProject.OrganizationId,
+                    organizationId.Trim(),
                     activeProject.Id,
                     activeProject.Id));
             }
@@ -182,7 +182,13 @@ public sealed class McpContextService(
 
     public async Task<McpErrorInfo?> ValidateProjectScopeAsync(string organizationId, string projectId, string? requestedProjectId)
     {
-        if (requestedProjectId is not null && String.Equals(projectId, requestedProjectId, StringComparison.Ordinal))
+        // Direct resource ids are globally unique. The caller has already loaded the resource and
+        // verified organization access, so project context is only a consistency check when the
+        // client explicitly supplies it.
+        if (requestedProjectId is null)
+            return null;
+
+        if (String.Equals(projectId, requestedProjectId, StringComparison.Ordinal))
             return null;
 
         var projectContext = await ResolveProjectAsync(requestedProjectId);
@@ -196,10 +202,10 @@ public sealed class McpContextService(
         {
             return McpErrors.ContextMismatch(
                 "The requested resource does not match the explicitly selected project.",
-                requestedOrganization.Id,
                 organizationId,
-                requestedProject.Id,
-                projectId);
+                requestedOrganization.Id,
+                projectId,
+                requestedProject.Id);
         }
 
         return null;

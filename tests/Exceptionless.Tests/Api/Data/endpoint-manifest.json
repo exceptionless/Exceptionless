@@ -260,6 +260,18 @@
     "authenticationSchemes": []
   },
   {
+    "method": "GET",
+    "route": "/api/v2/admin/assistant-usage",
+    "displayName": "HTTP: GET api/v2/admin/assistant-usage",
+    "tags": [],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
     "method": "POST",
     "route": "/api/v2/admin/change-plan",
     "displayName": "HTTP: POST api/v2/admin/change-plan",
@@ -479,6 +491,30 @@
     "allowAnonymous": false,
     "authorizationPolicies": [
       "GlobalAdminPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
+    "route": "/api/v2/assistant/access",
+    "displayName": "HTTP: GET api/v2/assistant/access =\u003E GetAccessAsync",
+    "tags": [],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "POST",
+    "route": "/api/v2/assistant/chat",
+    "displayName": "HTTP: POST api/v2/assistant/chat =\u003E StreamChatAsync",
+    "tags": [],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []

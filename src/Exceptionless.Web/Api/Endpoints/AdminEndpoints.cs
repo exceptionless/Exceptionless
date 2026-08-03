@@ -19,6 +19,9 @@ public static class AdminEndpoints
         group.MapGet("echo", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result<object>>(new GetAdminEcho(httpContext))).ToHttpResult(resultMapper));
 
+        group.MapGet("assistant-usage", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, DateTime? month = null, int limit = 100)
+            => (await mediator.InvokeAsync<Result<object>>(new GetAdminAssistantUsage(month, limit, httpContext))).ToHttpResult(resultMapper));
+
         group.MapPost("change-plan", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string organizationId, string planId)
             => (await mediator.InvokeAsync<Result<object>>(new AdminChangePlan(organizationId, planId, httpContext))).ToHttpResult(resultMapper));
 

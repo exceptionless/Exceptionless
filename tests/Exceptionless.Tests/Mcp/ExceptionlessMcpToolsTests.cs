@@ -194,6 +194,33 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetStackAsync_MultipleAccessibleProjectsWithoutProjectId_ReturnsStack()
+    {
+        var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP direct stack lookup"));
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksRead);
+
+        var result = await tools.GetStackAsync(stacks[0].Id);
+
+        Assert.True(result.Ok);
+        Assert.Equal(stacks[0].Id, Data(result).Id);
+        Assert.Equal(TestConstants.ProjectId, Data(result).ProjectId);
+    }
+
+    [Fact]
+    public async Task GetEventAsync_MultipleAccessibleProjectsWithoutProjectId_ReturnsEvent()
+    {
+        var (_, events) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP direct event lookup"));
+        await RefreshDataAsync();
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        var result = await tools.GetEventAsync(events[0].Id);
+
+        Assert.True(result.Ok);
+        Assert.Equal(events[0].Id, Data(result).Id);
+        Assert.Equal(TestConstants.ProjectId, Data(result).ProjectId);
+    }
+
+    [Fact]
     public async Task SearchStacksAsync_PriorProjectResolution_DoesNotConstrainExplicitProject()
     {
         var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP stateless project stack"));
@@ -889,6 +916,19 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task SetStackCriticalAsync_MultipleAccessibleProjectsWithoutProjectId_UpdatesStack()
+    {
+        var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP direct stack write"));
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksWrite);
+
+        var result = await tools.SetStackCriticalAsync(stacks[0].Id, critical: true);
+
+        Assert.True(result.Ok);
+        Assert.True(Data(result).Changed);
+        Assert.True(Data(result).Stack.OccurrencesAreCritical);
+    }
+
+    [Fact]
     public async Task UpdateStackStatusAsync_MissingStacksWriteScope_ReturnsError()
     {
         var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP write missing scope"));
@@ -1365,6 +1405,23 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
                 Assert.True(properties.TryGetProperty("url", out _), "The url input must be advertised in the MCP tool schema.");
                 break;
         }
+    }
+
+    [Theory]
+    [InlineData(nameof(ExceptionlessMcpTools.GetEventAsync))]
+    [InlineData(nameof(ExceptionlessMcpTools.GetStackAsync))]
+    [InlineData(nameof(ExceptionlessMcpTools.SearchStacksAsync))]
+    [InlineData(nameof(ExceptionlessMcpTools.UpdateStackStatusAsync))]
+    [InlineData(nameof(ExceptionlessMcpTools.SetStackCriticalAsync))]
+    public async Task McpTools_AdvertiseClientFriendlyAnnotations(string methodName)
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksRead, AuthorizationRoles.EventsRead, AuthorizationRoles.StacksWrite);
+        var method = typeof(ExceptionlessMcpTools).GetMethod(methodName) ?? throw new InvalidOperationException($"Could not find {methodName}.");
+        var protocolTool = McpServerTool.Create(method, tools, new McpServerToolCreateOptions()).ProtocolTool;
+        var annotations = Assert.IsType<ModelContextProtocol.Protocol.ToolAnnotations>(protocolTool.Annotations);
+
+        Assert.False(String.IsNullOrWhiteSpace(annotations.Title));
+        Assert.False(annotations.OpenWorldHint);
     }
 
 

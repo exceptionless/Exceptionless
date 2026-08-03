@@ -12,7 +12,7 @@ public sealed class OrganizationIndex : VersionedIndex<Organization>
     private const string KEYWORD_LOWERCASE_ANALYZER = "keyword_lowercase";
     private readonly ExceptionlessElasticConfiguration _configuration;
 
-    public OrganizationIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "organizations", 2)
+    public OrganizationIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "organizations", 3)
     {
         _configuration = configuration;
     }
@@ -38,6 +38,23 @@ public sealed class OrganizationIndex : VersionedIndex<Organization>
                     .Keyword("token")
                     .Text("email_address", t => t.Analyzer(KEYWORD_LOWERCASE_ANALYZER))))
                 .Date(e => e.LastEventDateUtc)
+                .Object(e => e.AssistantUsage, usage => usage.Properties(p => p
+                    .Date("date")
+                    .Keyword("plan_id")
+                    .LongNumber("turns")
+                    .LongNumber("completed")
+                    .LongNumber("failed")
+                    .LongNumber("cancelled")
+                    .LongNumber("provider_requests")
+                    .LongNumber("tool_calls")
+                    .LongNumber("prompt_tokens")
+                    .LongNumber("completion_tokens")
+                    .LongNumber("cost_in_microdollars")
+                    .LongNumber("blocked_by_concurrency")
+                    .LongNumber("blocked_by_rate_limit")
+                    .LongNumber("blocked_by_token_limit")
+                    .LongNumber("blocked_by_cost_limit")
+                    .Date("last_used_utc")))
                 .AddUsageMappings());
     }
 

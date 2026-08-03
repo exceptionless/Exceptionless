@@ -1,0 +1,591 @@
+using System.Net;
+using System.Text;
+using System.Text.Json;
+using Exceptionless.Core;
+using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Billing;
+using Exceptionless.Core.Serialization;
+using Exceptionless.Web.Assistant;
+using Exceptionless.Web.Mcp;
+using Foundatio.Caching;
+using Foundatio.Lock;
+using Foundatio.Messaging;
+using Foundatio.Resilience;
+using Foundatio.Serializer;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Abstractions;
+using Xunit;
+
+namespace Exceptionless.Tests.Assistant;
+
+public sealed class AssistantServiceTests
+{
+    [Theory]
+    [InlineData(AuthorizationRoles.EventsRead, true)]
+    [InlineData(AuthorizationRoles.ProjectsRead, true)]
+    [InlineData(AuthorizationRoles.StacksRead, true)]
+    [InlineData(AuthorizationRoles.StacksWrite, true)]
+    [InlineData(AuthorizationRoles.McpRead, false)]
+    [InlineData(AuthorizationRoles.SourceMapsWrite, false)]
+    [InlineData(AuthorizationRoles.User, false)]
+    public void AllowsScope_ToolScope_ReturnsExpected(string scope, bool expected)
+    {
+        var context = new AssistantToolContext();
+        Assert.False(context.AllowsScope(scope));
+
+        using (context.BeginTools())
+        {
+            Assert.Equal(expected, context.AllowsScope(scope));
+        }
+
+        Assert.False(context.AllowsScope(scope));
+    }
+
+    [Fact]
+    public async Task StreamAsync_TextResponse_EmitsDeltasAndCompletion()
+    {
+        var handler = new StubHttpMessageHandler(
+            """
+            data: {"choices":[{"delta":{"content":"Hello"}}]}
+
+            data: {"choices":[{"delta":{"content":" world"}}]}
+
+            data: [DONE]
+
+            """);
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            })
+            .Build());
+        var service = CreateAssistantService(handler, appOptions);
+        var request = new AssistantChatRequest(
+            [new AssistantChatMessage("user", "Say hello")],
+            ProjectId: "project-id",
+            Path: "/next/stack/stack-id/event/event-id?tab=details");
+        var planOptions = CreatePlanOptions();
+        var events = new List<AssistantStreamEvent>();
+
+        await foreach (var item in service.StreamAsync(request, "user-id", planOptions, TestContext.Current.CancellationToken))
+            events.Add(item);
+
+        Assert.Collection(events,
+            item => Assert.Equal("Hello", item.Text),
+            item => Assert.Equal(" world", item.Text),
+            item => Assert.Equal("done", item.Type));
+        Assert.Equal("Bearer", handler.AuthorizationScheme);
+        Assert.Contains("deepseek/deepseek-v4-flash", handler.RequestBody);
+        Assert.Contains($"\"max_tokens\":{AssistantLimits.MaximumOutputTokens}", handler.RequestBody);
+        Assert.Contains("get_event", handler.RequestBody);
+        Assert.Contains("get_stack", handler.RequestBody);
+        Assert.Contains("search_stacks", handler.RequestBody);
+        Assert.Contains("update_stack_status", handler.RequestBody);
+        Assert.Contains("snooze_stack", handler.RequestBody);
+        Assert.Contains("set_stack_critical", handler.RequestBody);
+        Assert.Contains("add_stack_reference_link", handler.RequestBody);
+        Assert.Contains("remove_stack_reference_link", handler.RequestBody);
+        Assert.Contains("Current stack id: stack-id", handler.RequestBody);
+        Assert.Contains("Current event id: event-id", handler.RequestBody);
+        Assert.Contains("Current project id: project-id", handler.RequestBody);
+        Assert.Contains("Your name is Exie", handler.RequestBody);
+        Assert.Contains("Only perform a write action when the user explicitly requests that exact change", handler.RequestBody);
+        Assert.Contains("CURRENT PAGE RULE", handler.RequestBody);
+        Assert.Contains("Never call list_projects or search_stacks to rediscover the current event or stack", handler.RequestBody);
+        Assert.Contains("CURRENT PROJECT RULE", handler.RequestBody);
+        Assert.Contains("do not call list_projects, call each needed project-scoped tool only once", handler.RequestBody);
+        Assert.Contains("Defaults to the current page project id when omitted", handler.RequestBody);
+        Assert.Contains("This tool has no stack id filter", handler.RequestBody);
+        Assert.Contains("\"eventId\"", handler.RequestBody);
+        Assert.Contains("\"startUtc\"", handler.RequestBody);
+        Assert.Contains("\"after\"", handler.RequestBody);
+        Assert.Contains("\"maximum\":10", handler.RequestBody);
+        Assert.Contains("\"maximum\":16384", handler.RequestBody);
+        Assert.DoesNotContain("\"event_id\"", handler.RequestBody);
+        Assert.Contains("Never end by merely saying what you will inspect or do next", handler.RequestBody);
+        Assert.Contains("present useful results directly in the answer", handler.RequestBody);
+        Assert.Contains("webUrl beginning with / must remain relative", handler.RequestBody);
+    }
+
+    [Fact]
+    public async Task StreamAsync_ConversationHistory_AllowsFreshServiceInstance()
+    {
+        var firstHandler = new StubHttpMessageHandler(
+            """
+            data: {"choices":[{"delta":{"content":"First answer"}}]}
+
+            data: [DONE]
+
+            """);
+        var secondHandler = new StubHttpMessageHandler(
+            """
+            data: {"choices":[{"delta":{"content":"Second answer"}}]}
+
+            data: [DONE]
+
+            """);
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            })
+            .Build());
+
+        var firstService = CreateAssistantService(firstHandler, appOptions);
+        await foreach (var _ in firstService.StreamAsync(
+            new AssistantChatRequest([new AssistantChatMessage("user", "First question")]),
+            "user-id",
+            CreatePlanOptions(),
+            TestContext.Current.CancellationToken))
+        {
+        }
+
+        var secondService = CreateAssistantService(secondHandler, appOptions);
+        await foreach (var _ in secondService.StreamAsync(
+            new AssistantChatRequest([
+                new AssistantChatMessage("user", "First question"),
+                new AssistantChatMessage("assistant", "First answer"),
+                new AssistantChatMessage("user", "Follow-up question")
+            ]),
+            "user-id",
+            CreatePlanOptions(),
+            TestContext.Current.CancellationToken))
+        {
+        }
+
+        using var document = JsonDocument.Parse(secondHandler.RequestBody);
+        var conversation = document.RootElement.GetProperty("messages")
+            .EnumerateArray()
+            .Where(message => message.GetProperty("role").GetString() is "user" or "assistant")
+            .Select(message => (
+                Role: message.GetProperty("role").GetString(),
+                Content: message.GetProperty("content").GetString()))
+            .ToArray();
+
+        Assert.Equal([
+            (Role: "user", Content: "First question"),
+            (Role: "assistant", Content: "First answer"),
+            (Role: "user", Content: "Follow-up question")
+        ], conversation);
+    }
+
+    [Fact]
+    public async Task StreamAsync_ServerToolHistory_AllowsFreshServiceInstanceWithoutTrustingBrowser()
+    {
+        var firstHandler = new StubHttpMessageHandler(
+            """
+            data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call-1","function":{"name":"unknown_tool","arguments":"{}"}}]}}]}
+
+            data: [DONE]
+
+            """,
+            """
+            data: {"choices":[{"delta":{"content":"I could not run that tool."}}]}
+
+            data: [DONE]
+
+            """);
+        var secondHandler = new StubHttpMessageHandler(
+            """
+            data: {"choices":[{"delta":{"content":"I remember the prior result."}}]}
+
+            data: [DONE]
+
+            """);
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            })
+            .Build());
+        using var cache = new InMemoryCacheClient(new InMemoryCacheClientOptions
+        {
+            CloneValues = true,
+            LoggerFactory = NullLoggerFactory.Instance,
+            TimeProvider = TimeProvider.System
+        });
+        var lockProvider = CreateLockProvider(cache, TimeProvider.System);
+        const string conversationId = "549e86dd66e04cd081299bba6e3f15d8";
+        var firstService = CreateAssistantService(firstHandler, appOptions, cache, lockProvider);
+
+        await foreach (var _ in firstService.StreamAsync(
+            new AssistantChatRequest(
+                [new AssistantChatMessage("user", "Try the tool")],
+                OrganizationId: "organization-id",
+                ConversationId: conversationId),
+            "user-id",
+            CreatePlanOptions(),
+            TestContext.Current.CancellationToken))
+        {
+        }
+
+        var secondService = CreateAssistantService(secondHandler, appOptions, cache, lockProvider);
+        await foreach (var _ in secondService.StreamAsync(
+            new AssistantChatRequest(
+                [new AssistantChatMessage("user", "What happened last time?")],
+                OrganizationId: "organization-id",
+                ConversationId: conversationId),
+            "user-id",
+            CreatePlanOptions(),
+            TestContext.Current.CancellationToken))
+        {
+        }
+
+        Assert.Contains("server-recorded tool results from earlier turns", secondHandler.RequestBody);
+        Assert.Contains("unknown_tool", secondHandler.RequestBody);
+        Assert.Contains("Unknown tool", secondHandler.RequestBody);
+
+        var isolatedHandler = new StubHttpMessageHandler(
+            """
+            data: {"choices":[{"delta":{"content":"No prior context."}}]}
+
+            data: [DONE]
+
+            """);
+        var isolatedService = CreateAssistantService(isolatedHandler, appOptions, cache, lockProvider);
+        await foreach (var _ in isolatedService.StreamAsync(
+            new AssistantChatRequest(
+                [new AssistantChatMessage("user", "What happened last time?")],
+                OrganizationId: "different-organization-id",
+                ConversationId: conversationId),
+            "user-id",
+            CreatePlanOptions(),
+            TestContext.Current.CancellationToken))
+        {
+        }
+
+        Assert.DoesNotContain("server-recorded tool results from earlier turns", isolatedHandler.RequestBody);
+    }
+
+    [Fact]
+    public async Task StreamAsync_UsageOnlyFinalChunk_RecordsProviderUsage()
+    {
+        var handler = new StubHttpMessageHandler(
+            """
+            data: {"choices":[{"delta":{"content":"Answer"}}]}
+
+            data: {"choices":[],"usage":{"prompt_tokens":12000,"completion_tokens":750,"total_tokens":12750,"cost":0.002345}}
+
+            data: [DONE]
+
+            """);
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["AppMode"] = AppMode.Production.ToString(),
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            })
+            .Build());
+        using var cache = new InMemoryCacheClient(new InMemoryCacheClientOptions
+        {
+            LoggerFactory = NullLoggerFactory.Instance,
+            TimeProvider = TimeProvider.System
+        });
+        var lockProvider = CreateLockProvider(cache, TimeProvider.System);
+        var usageService = new AssistantUsageService(cache, lockProvider, new RecordingAssistantUsageRecorder(), appOptions, TimeProvider.System, NullLogger<AssistantUsageService>.Instance);
+        var service = CreateAssistantService(handler, appOptions, cache, lockProvider, usageService);
+
+        await foreach (var _ in service.StreamAsync(
+            new AssistantChatRequest(
+                [new AssistantChatMessage("user", "Investigate this")],
+                OrganizationId: "organization-id"),
+            "user-id",
+            CreatePlanOptions(),
+            TestContext.Current.CancellationToken))
+        {
+        }
+
+        var usage = await usageService.GetMonthlyUsageAsync("organization-id");
+        Assert.Equal(12_000, usage.PromptTokens);
+        Assert.Equal(750, usage.CompletionTokens);
+        Assert.Equal(0.002345m, usage.CostUsd);
+    }
+
+    [Fact]
+    public void Serialize_StackAndProjectResults_AddsWebNavigationLinks()
+    {
+        var serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web).ConfigureExceptionlessApiDefaults();
+        var project = new McpProjectResult(
+            "project id",
+            "organization-id",
+            "Project",
+            DateTime.UtcNow,
+            DateTime.UtcNow,
+            "/api/v2/projects/project-id");
+        var stack = new McpStackResult(
+            "stack id",
+            "organization-id",
+            "project-id",
+            Event.KnownTypes.Error,
+            "open",
+            "Stack title",
+            10,
+            DateTime.UtcNow,
+            DateTime.UtcNow,
+            [],
+            [],
+            false,
+            DateTime.UtcNow,
+            DateTime.UtcNow,
+            "/api/v2/stacks/stack-id");
+        var ev = new McpEventResult(
+            "event id",
+            "organization-id",
+            "project-id",
+            "stack id",
+            DateTimeOffset.UtcNow,
+            [],
+            false,
+            DateTime.UtcNow,
+            "/api/v2/events/event-id");
+
+        string projects = AssistantToolResultSerializer.Serialize(
+            "list_projects",
+            McpResponse<McpListData<McpProjectResult>>.Success(new McpListData<McpProjectResult>([project])),
+            serializerOptions);
+        string stacks = AssistantToolResultSerializer.Serialize(
+            "search_stacks",
+            McpResponse<McpListData<McpStackResult>>.Success(new McpListData<McpStackResult>([stack])),
+            serializerOptions);
+        string stackDetails = AssistantToolResultSerializer.Serialize(
+            "get_stack",
+            McpResponse<McpStackResult>.Success(stack),
+            serializerOptions);
+        string eventDetails = AssistantToolResultSerializer.Serialize(
+            "get_event",
+            McpResponse<McpEventResult>.Success(ev),
+            serializerOptions);
+
+        Assert.Contains("\"webUrl\":\"/next/project/project%20id/stacks\"", projects);
+        Assert.Contains("\"webUrl\":\"/next/stack/stack%20id\"", stacks);
+        Assert.Contains("\"webUrl\":\"/next/stack/stack%20id\"", stackDetails);
+        Assert.Contains("\"webUrl\":\"/next/stack/stack%20id/event/event%20id\"", eventDetails);
+        Assert.Contains("\"url\":\"/api/v2/projects/project-id\"", projects);
+        Assert.Contains("\"url\":\"/api/v2/stacks/stack-id\"", stacks);
+    }
+
+    [Fact]
+    public async Task StreamAsync_EmptyResponse_EmitsClearErrorAndCompletion()
+    {
+        var handler = new StubHttpMessageHandler("data: [DONE]\n\n");
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            })
+            .Build());
+        var service = CreateAssistantService(handler, appOptions);
+        var events = new List<AssistantStreamEvent>();
+
+        await foreach (var item in service.StreamAsync(
+            new AssistantChatRequest([new AssistantChatMessage("user", "Investigate this")]),
+            "user-id",
+            CreatePlanOptions(),
+            TestContext.Current.CancellationToken))
+        {
+            events.Add(item);
+        }
+
+        Assert.Collection(events,
+            item =>
+            {
+                Assert.Equal("error", item.Type);
+                Assert.Equal("Exie stopped before providing an answer. Please try again.", item.Message);
+            },
+            item => Assert.Equal("done", item.Type));
+    }
+
+    [Fact]
+    public async Task StreamAsync_ToolBudgetExhausted_RequestsFinalSynthesisWithoutTools()
+    {
+        const string toolCallResponse = """
+            data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call-1","function":{"name":"unknown_tool","arguments":"{}"}}]}}]}
+
+            data: [DONE]
+
+            """;
+        var handler = new StubHttpMessageHandler(
+            toolCallResponse,
+            toolCallResponse.Replace("call-1", "call-2"),
+            toolCallResponse.Replace("call-1", "call-3"),
+            """
+            data: {"choices":[{"delta":{"content":"Here is the available result."}}]}
+
+            data: [DONE]
+
+            """);
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            })
+            .Build());
+        var service = CreateAssistantService(handler, appOptions);
+        var events = new List<AssistantStreamEvent>();
+
+        await foreach (var item in service.StreamAsync(
+            new AssistantChatRequest(
+                [new AssistantChatMessage("user", "Investigate the errors")],
+                OrganizationId: "organization-id"),
+            "user-id",
+            CreatePlanOptions(),
+            TestContext.Current.CancellationToken))
+        {
+            events.Add(item);
+        }
+
+        Assert.Equal(4, handler.RequestBodies.Count);
+        Assert.All(handler.RequestBodies.Take(3), body => Assert.Contains("\"tools\":", body));
+        Assert.DoesNotContain("\"tools\":", handler.RequestBodies[3]);
+        Assert.Contains("The tool budget is exhausted", handler.RequestBodies[3]);
+        Assert.Contains(events, item => item.Text == "Here is the available result.");
+        Assert.Equal("done", events[^1].Type);
+        Assert.DoesNotContain(events, item => item.Type == "error");
+    }
+
+    [Fact]
+    public async Task StreamAsync_ParallelToolCalls_EnforcesToolCallLimit()
+    {
+        var toolCalls = Enumerable.Range(0, AssistantLimits.MaximumToolCallsPerTurn + 1)
+            .Select(index => new
+            {
+                index,
+                id = $"call-{index}",
+                function = new { name = $"unknown_tool_{index}", arguments = "{}" }
+            })
+            .ToArray();
+        var handler = new StubHttpMessageHandler(
+            $"data: {JsonSerializer.Serialize(new { choices = new[] { new { delta = new { tool_calls = toolCalls } } } })}\n\ndata: [DONE]\n",
+            """
+            data: {"choices":[{"delta":{"content":"I used the result that was available."}}]}
+
+            data: [DONE]
+
+            """);
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            })
+            .Build());
+        var service = CreateAssistantService(handler, appOptions);
+        var events = new List<AssistantStreamEvent>();
+
+        await foreach (var item in service.StreamAsync(
+            new AssistantChatRequest(
+                [new AssistantChatMessage("user", "Try both tools")],
+                OrganizationId: "organization-id"),
+            "user-id",
+            CreatePlanOptions(),
+            TestContext.Current.CancellationToken))
+        {
+            events.Add(item);
+        }
+
+        var results = events.Where(item => item.Type == "tool_result").ToArray();
+        Assert.Equal(AssistantLimits.MaximumToolCallsPerTurn + 1, results.Length);
+        Assert.Contains("Unknown tool", results[0].Result);
+        Assert.Contains("tool_call_limit_reached", results[^1].Result);
+        Assert.Equal("done", events[^1].Type);
+    }
+
+    private sealed class StubHttpClientFactory(HttpMessageHandler handler) : IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name) => new(handler, disposeHandler: false);
+    }
+
+    private static ExceptionlessMcpTools CreateMcpTools() => new(
+        null!,
+        null!,
+        null!,
+        null!,
+        null!,
+        null!,
+        null!,
+        null!,
+        null!,
+        null!,
+        null!,
+        NullLogger<ExceptionlessMcpTools>.Instance,
+        TimeProvider.System);
+
+    private static AssistantService CreateAssistantService(
+        StubHttpMessageHandler handler,
+        AppOptions appOptions,
+        ICacheClient? cache = null,
+        ILockProvider? lockProvider = null,
+        AssistantUsageService? usageService = null)
+    {
+        cache ??= new InMemoryCacheClient(new InMemoryCacheClientOptions
+        {
+            LoggerFactory = NullLoggerFactory.Instance,
+            TimeProvider = TimeProvider.System
+        });
+        lockProvider ??= CreateLockProvider(cache, TimeProvider.System);
+        usageService ??= new AssistantUsageService(
+            cache,
+            lockProvider,
+            new RecordingAssistantUsageRecorder(),
+            appOptions,
+            TimeProvider.System,
+            NullLogger<AssistantUsageService>.Instance);
+
+        return new AssistantService(
+            new StubHttpClientFactory(handler),
+            appOptions,
+            CreateMcpTools(),
+            new AssistantToolContext(),
+            new AssistantConversationService(cache, lockProvider, NullLogger<AssistantConversationService>.Instance),
+            usageService,
+            TimeProvider.System,
+            NullLogger<AssistantService>.Instance);
+    }
+
+    private static ILockProvider CreateLockProvider(ICacheClient cache, TimeProvider timeProvider)
+    {
+        var resiliencePolicyProvider = new ResiliencePolicyProvider();
+        var serializer = new SystemTextJsonSerializer(new JsonSerializerOptions().ConfigureExceptionlessDefaults());
+        var messageBus = new InMemoryMessageBus(new InMemoryMessageBusOptions
+        {
+            Serializer = serializer,
+            TimeProvider = timeProvider,
+            ResiliencePolicyProvider = resiliencePolicyProvider,
+            LoggerFactory = NullLoggerFactory.Instance
+        });
+        return new CacheLockProvider(cache, messageBus, timeProvider, resiliencePolicyProvider, NullLoggerFactory.Instance);
+    }
+
+    private static AssistantPlanOptions CreatePlanOptions() => new()
+    {
+        MaximumConcurrentTurns = 2,
+        MaximumTurnsPerMinute = 10,
+        MaximumMonthlyTokens = 25_000_000,
+        MaximumMonthlyCostUsd = 5m
+    };
+
+    private sealed class StubHttpMessageHandler(params string[] responseContents) : HttpMessageHandler
+    {
+        private readonly Queue<string> _responseContents = new(responseContents);
+        public string? AuthorizationScheme { get; private set; }
+        public string RequestBody => RequestBodies.LastOrDefault() ?? String.Empty;
+        public List<string> RequestBodies { get; } = [];
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            AuthorizationScheme = request.Headers.Authorization?.Scheme;
+            RequestBodies.Add(await request.Content!.ReadAsStringAsync(cancellationToken));
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(_responseContents.Dequeue(), Encoding.UTF8, "text/event-stream")
+            };
+        }
+    }
+}
