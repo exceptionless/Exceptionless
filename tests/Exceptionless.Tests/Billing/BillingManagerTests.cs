@@ -39,4 +39,19 @@ public class BillingManagerTests : TestWithServices
         plan = billingManager.GetBillingPlanByUpsellingRetentionPeriod(plans.LargePlan.RetentionDays);
         Assert.Null(plan);
     }
+
+    [Fact]
+    public void GetOrganizationLockKey()
+    {
+        Assert.Equal("Organization:organization-id:billing-plan", BillingManager.GetOrganizationLockKey("organization-id"));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void GetOrganizationLockKey_InvalidOrganizationId_Throws(string? organizationId)
+    {
+        Assert.ThrowsAny<ArgumentException>(() => BillingManager.GetOrganizationLockKey(organizationId!));
+    }
 }

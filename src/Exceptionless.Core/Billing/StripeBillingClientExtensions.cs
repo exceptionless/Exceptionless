@@ -42,39 +42,18 @@ public static class StripeBillingClientExtensions
         if (subscriptions.Count <= 1)
             return subscriptions.SingleOrDefault();
 
-        var preferredSubscription = subscriptions.SingleOrDefault(subscription =>
-            String.Equals(subscription.Id, preferredSubscriptionId, StringComparison.Ordinal));
-        if (preferredSubscription is not null && IsHealthySubscription(preferredSubscription))
-            return preferredSubscription;
-
         var healthySubscriptions = subscriptions.Where(IsHealthySubscription).ToList();
-        var targetPlanSubscriptions = healthySubscriptions.Where(subscription => HasPrice(subscription, targetPlanId)).ToList();
-        if (targetPlanSubscriptions.Count == 1)
-            return targetPlanSubscriptions[0];
-
-        var currentPlanSubscriptions = healthySubscriptions.Where(subscription => HasPrice(subscription, currentPlanId)).ToList();
-        if (currentPlanSubscriptions.Count == 1)
-            return currentPlanSubscriptions[0];
-
-        if (healthySubscriptions.Count == 1)
-            return healthySubscriptions[0];
-
-        if (preferredSubscription is not null)
-            return preferredSubscription;
-
-        targetPlanSubscriptions = subscriptions.Where(subscription => HasPrice(subscription, targetPlanId)).ToList();
-        if (targetPlanSubscriptions.Count == 1)
-            return targetPlanSubscriptions[0];
-
-        currentPlanSubscriptions = subscriptions.Where(subscription => HasPrice(subscription, currentPlanId)).ToList();
-        if (currentPlanSubscriptions.Count == 1)
-            return currentPlanSubscriptions[0];
-
-        return subscriptions
+        var candidates = (healthySubscriptions.Count > 0 ? healthySubscriptions : subscriptions)
             .OrderByDescending(subscription => GetStatusPriority(subscription.Status))
             .ThenBy(subscription => subscription.Created)
             .ThenBy(subscription => subscription.Id, StringComparer.Ordinal)
-            .First();
+            .ToList();
+
+        return candidates.FirstOrDefault(subscription =>
+                String.Equals(subscription.Id, preferredSubscriptionId, StringComparison.Ordinal))
+            ?? candidates.FirstOrDefault(subscription => HasPrice(subscription, targetPlanId))
+            ?? candidates.FirstOrDefault(subscription => HasPrice(subscription, currentPlanId))
+            ?? candidates[0];
     }
 
     public static async Task CancelSubscriptionWithProrationAsync(

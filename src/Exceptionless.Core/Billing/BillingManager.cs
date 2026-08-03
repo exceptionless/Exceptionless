@@ -133,5 +133,9 @@ public class BillingManager
         organization.GetCurrentUsage(_timeProvider).Limit = organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
     }
 
-    private static string GetOrganizationLockKey(string organizationId) => $"billing-plan:{organizationId}";
+    internal static string GetOrganizationLockKey(string organizationId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(organizationId);
+        return $"Organization:{organizationId}:billing-plan";
+    }
 }

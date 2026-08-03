@@ -253,13 +253,13 @@ public class StripeEndpointTests : IntegrationTestsBase
     public async Task PostAsync_WithUnsupportedSubscriptionStatus_DoesNotMutateBillingState()
     {
         // Arrange
-        var eventWatermark = DateTimeOffset.FromUnixTimeSeconds(1782155003).UtcDateTime;
+        var eventWatermarkUtc = DateTimeOffset.FromUnixTimeSeconds(1782155003).UtcDateTime;
         var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
         Assert.NotNull(organization);
         organization.StripeCustomerId = "cus_existing";
         organization.PlanId = _plans.SmallPlan.Id;
         organization.StripeSubscriptionId = "sub_current";
-        organization.StripeSubscriptionEventDate = eventWatermark;
+        organization.StripeSubscriptionEventDate = eventWatermarkUtc;
         organization.BillingStatus = BillingStatus.Active;
         organization.RemoveSuspension();
         await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
@@ -274,7 +274,7 @@ public class StripeEndpointTests : IntegrationTestsBase
         Assert.NotNull(organization);
         Assert.Equal(BillingStatus.Active, organization.BillingStatus);
         Assert.False(organization.IsSuspended);
-        Assert.Equal(eventWatermark, organization.StripeSubscriptionEventDate);
+        Assert.Equal(eventWatermarkUtc, organization.StripeSubscriptionEventDate);
         Assert.Equal("sub_current", organization.StripeSubscriptionId);
     }
 

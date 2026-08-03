@@ -90,10 +90,10 @@ public class StripeEventHandler
             return;
         }
 
-        if (IsStaleSubscriptionEvent(organization, eventCreatedUtc, out var eventWatermark))
+        if (IsStaleSubscriptionEvent(organization, eventCreatedUtc, out var eventWatermarkUtc))
         {
             _logger.LogInformation("Ignoring stale Stripe subscription update. Event: {EventId} Customer: {CustomerId} Org: {Organization} Event Created: {EventCreatedUtc} Event Watermark: {EventWatermark}",
-                eventId, sub.CustomerId, organization.Id, eventCreatedUtc, eventWatermark);
+                eventId, sub.CustomerId, organization.Id, eventCreatedUtc, eventWatermarkUtc);
             return;
         }
 
@@ -164,10 +164,10 @@ public class StripeEventHandler
             return;
         }
 
-        if (IsStaleSubscriptionEvent(organization, eventCreatedUtc, out var eventWatermark))
+        if (IsStaleSubscriptionEvent(organization, eventCreatedUtc, out var eventWatermarkUtc))
         {
             _logger.LogInformation("Ignoring stale Stripe subscription deletion. Event: {EventId} Customer: {CustomerId} Org: {Organization} Event Created: {EventCreatedUtc} Event Watermark: {EventWatermark}",
-                eventId, sub.CustomerId, organization.Id, eventCreatedUtc, eventWatermark);
+                eventId, sub.CustomerId, organization.Id, eventCreatedUtc, eventWatermarkUtc);
             return;
         }
 
@@ -185,16 +185,16 @@ public class StripeEventHandler
         await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
     }
 
-    private static bool IsStaleSubscriptionEvent(Organization organization, DateTime eventCreatedUtc, out DateTime eventWatermark)
+    private static bool IsStaleSubscriptionEvent(Organization organization, DateTime eventCreatedUtc, out DateTime eventWatermarkUtc)
     {
-        eventWatermark = organization.StripeSubscriptionEventDate ?? organization.BillingChangeDate;
-        if (eventWatermark <= DateTime.MinValue)
+        eventWatermarkUtc = organization.StripeSubscriptionEventDate ?? organization.BillingChangeDate;
+        if (eventWatermarkUtc <= DateTime.MinValue)
             return false;
 
-        if (eventCreatedUtc < eventWatermark)
+        if (eventCreatedUtc < eventWatermarkUtc)
             return true;
 
-        return eventCreatedUtc == eventWatermark &&
+        return eventCreatedUtc == eventWatermarkUtc &&
             organization.StripeSubscriptionEventDate.HasValue &&
             organization.StripeSubscriptionId is null &&
             organization.BillingStatus == BillingStatus.Canceled;
