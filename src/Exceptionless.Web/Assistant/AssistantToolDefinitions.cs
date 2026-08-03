@@ -71,7 +71,7 @@ internal static class AssistantToolDefinitions
             function = new
             {
                 name = SuggestFollowupsToolName,
-                description = "Optionally supplies useful follow-up prompt buttons after a complete final answer. Do not call this on every answer, before required data tools, or in the same response as another tool.",
+                description = "Supplies useful follow-up prompt buttons with a complete final answer. Call this whenever the answer asks what the user wants to investigate or do next, or offers two or more concrete follow-up choices. Omit it when no next step is genuinely useful. Do not call it before required data tools or in the same response as another tool.",
                 parameters = new
                 {
                     type = "object",
@@ -80,7 +80,7 @@ internal static class AssistantToolDefinitions
                         actions = new
                         {
                             type = "array",
-                            description = "One to three distinct next messages the user may want to send. Omit this tool entirely when no follow-up is genuinely useful.",
+                            description = "One to three distinct next messages the user may want to send. When the answer offers concrete choices, represent up to the three best choices here instead of leaving them only in prose.",
                             minItems = 1,
                             maxItems = AssistantLimits.MaximumSuggestedActions,
                             items = new

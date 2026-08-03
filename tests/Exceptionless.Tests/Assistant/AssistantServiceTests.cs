@@ -109,6 +109,9 @@ public sealed class AssistantServiceTests
         Assert.Contains("webUrl beginning with / must remain relative", handler.RequestBody);
         Assert.Contains("suggest_followups", handler.RequestBody);
         Assert.Contains("Do not call it on every answer", handler.RequestBody);
+        Assert.Contains("MUST call suggest_followups when your answer asks what the user wants to investigate or do next", handler.RequestBody);
+        Assert.Contains("Call this whenever the answer asks what the user wants to investigate or do next", handler.RequestBody);
+        Assert.Contains("If there is no genuinely useful next step, end the answer directly and omit the tool", handler.RequestBody);
     }
 
     [Fact]
