@@ -28,6 +28,24 @@ presets:
         static_configs:
           - targets:
               - es-exporter-prometheus-elasticsearch-exporter.ex-prod:9108
+otelDeployment:
+  config:
+    processors:
+      filter/drop_es_per_index:
+        error_mode: ignore
+        metrics:
+          datapoint:
+            - 'IsMatch(metric.name, "^elasticsearch_") and attributes["index"] != nil'
+      filter/drop_redis_latency:
+        error_mode: ignore
+        metrics:
+          metric:
+            - 'IsMatch(name, "^redis_commands_latencies_usec")'
+            - 'IsMatch(name, "^redis_latency_percentiles_usec")'
+    service:
+      pipelines:
+        metrics/scraper:
+          processors: [resource/deployenv, resourcedetection, filter/drop_es_per_index, filter/drop_redis_latency, batch]
 otelAgent:
   config:
     exporters:
