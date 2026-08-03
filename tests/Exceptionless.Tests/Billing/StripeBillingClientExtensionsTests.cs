@@ -1,0 +1,66 @@
+using Exceptionless.Core.Billing;
+using Stripe;
+using Xunit;
+
+namespace Exceptionless.Tests.Billing;
+
+public sealed class StripeBillingClientExtensionsTests
+{
+    [Fact]
+    public void SelectPrimarySubscription_MultipleSubscriptions_PrefersPersistedSubscription()
+    {
+        var subscriptions = new List<Subscription>
+        {
+            CreateSubscription("sub_old", "small-yearly", "active", DateTime.UtcNow.AddDays(-1)),
+            CreateSubscription("sub_persisted", "small-yearly", "active", DateTime.UtcNow)
+        };
+
+        var subscription = subscriptions.SelectPrimarySubscription("sub_persisted", "free", "small-yearly");
+
+        Assert.NotNull(subscription);
+        Assert.Equal("sub_persisted", subscription.Id);
+    }
+
+    [Fact]
+    public void SelectPrimarySubscription_MultipleSubscriptions_PrefersUniqueTargetPlan()
+    {
+        var subscriptions = new List<Subscription>
+        {
+            CreateSubscription("sub_medium", "medium-yearly", "active", DateTime.UtcNow.AddDays(-1)),
+            CreateSubscription("sub_small", "small-yearly", "active", DateTime.UtcNow)
+        };
+
+        var subscription = subscriptions.SelectPrimarySubscription(null, "free", "small-yearly");
+
+        Assert.NotNull(subscription);
+        Assert.Equal("sub_small", subscription.Id);
+    }
+
+    [Fact]
+    public void SelectPrimarySubscription_EquivalentSubscriptions_PrefersOldestHealthySubscription()
+    {
+        var subscriptions = new List<Subscription>
+        {
+            CreateSubscription("sub_new", "small-yearly", "active", DateTime.UtcNow),
+            CreateSubscription("sub_old", "small-yearly", "active", DateTime.UtcNow.AddDays(-1)),
+            CreateSubscription("sub_past_due", "small-yearly", "past_due", DateTime.UtcNow.AddDays(-2))
+        };
+
+        var subscription = subscriptions.SelectPrimarySubscription(null, "free", "small-yearly");
+
+        Assert.NotNull(subscription);
+        Assert.Equal("sub_old", subscription.Id);
+    }
+
+    private static Subscription CreateSubscription(string id, string priceId, string status, DateTime createdUtc)
+        => new()
+        {
+            Id = id,
+            Status = status,
+            Created = createdUtc,
+            Items = new StripeList<SubscriptionItem>
+            {
+                Data = [new SubscriptionItem { Id = $"si_{id}", Price = new Price { Id = priceId } }]
+            }
+        };
+}

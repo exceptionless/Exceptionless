@@ -15,13 +15,13 @@ using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
+using Exceptionless.Web.Utility;
 using Foundatio.Caching;
+using Foundatio.Mediator;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Exceptionless.Web.Utility;
 using Stripe;
-using Foundatio.Mediator;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 using Invoice = Exceptionless.Web.Models.Invoice;
 using InvoiceLineItem = Exceptionless.Web.Models.InvoiceLineItem;
@@ -238,6 +238,7 @@ public class OrganizationHandler(
             OrganizationName = organization.Name,
             Date = stripeInvoice.Created,
             Paid = String.Equals(stripeInvoice.Status, "paid", StringComparison.OrdinalIgnoreCase),
+            Status = stripeInvoice.Status,
             Total = stripeInvoice.Total / 100.0m
         };
 
@@ -361,6 +362,12 @@ public class OrganizationHandler(
         if (!options.StripeOptions.EnableBilling)
             return Result.NotFound("Organization not found.");
 
+        await using var planChangeLock = await billingManager.TryAcquireOrganizationLockAsync(message.Id);
+        if (planChangeLock is null)
+        {
+            return ChangePlanResult.FailWithMessage("Another billing change is already in progress. Please try again.");
+        }
+
         var organization = await GetModelAsync(message.Id, useCache: false);
         if (organization is null)
             return Result.NotFound("Organization not found.");
@@ -396,11 +403,13 @@ public class OrganizationHandler(
             {
                 if (!String.IsNullOrEmpty(organization.StripeCustomerId))
                 {
-                    var subs = await stripeBillingClient.ListSubscriptionsAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId });
-                    foreach (var sub in subs.Where(s => !s.CanceledAt.HasValue))
-                        await stripeBillingClient.CancelSubscriptionAsync(sub.Id, new SubscriptionCancelOptions { Prorate = true, InvoiceNow = true });
+                    var subscriptions = await stripeBillingClient.GetLiveSubscriptionsAsync(organization.StripeCustomerId);
+                    await stripeBillingClient.FinalizePendingCancellationCreditsAsync(organization.StripeCustomerId);
+                    foreach (var subscription in subscriptions)
+                        await stripeBillingClient.CancelSubscriptionWithProrationAsync(organization.StripeCustomerId, subscription);
                 }
 
+                organization.StripeSubscriptionId = null;
                 organization.BillingStatus = BillingStatus.Trialing;
                 organization.RemoveSuspension();
             }
@@ -433,7 +442,7 @@ public class OrganizationHandler(
                 var customer = await stripeBillingClient.CreateCustomerAsync(createCustomer);
                 organization.StripeCustomerId = customer.Id;
                 organization.CardLast4 = model.Last4;
-                await repository.SaveAsync(organization, o => o.Cache());
+                await repository.SaveAsync(organization, o => o.ImmediateConsistency().Cache());
 
                 var subscriptionOptions = new SubscriptionCreateOptions
                 {
@@ -447,7 +456,8 @@ public class OrganizationHandler(
                 if (!String.IsNullOrWhiteSpace(model.CouponId))
                     subscriptionOptions.Discounts = [new SubscriptionDiscountOptions { Coupon = model.CouponId }];
 
-                await stripeBillingClient.CreateSubscriptionAsync(subscriptionOptions);
+                var subscription = await stripeBillingClient.CreateSubscriptionAsync(subscriptionOptions);
+                organization.StripeSubscriptionId = subscription.Id;
 
                 organization.BillingStatus = BillingStatus.Active;
                 organization.RemoveSuspension();
@@ -462,7 +472,26 @@ public class OrganizationHandler(
                 if (!message.Context.Request.IsGlobalAdmin())
                     customerUpdateOptions.Email = GetCurrentUser(message.Context).EmailAddress;
 
-                var listSubscriptionsTask = stripeBillingClient.ListSubscriptionsAsync(new SubscriptionListOptions { Customer = organization.StripeCustomerId });
+                var liveSubscriptions = await stripeBillingClient.GetLiveSubscriptionsAsync(organization.StripeCustomerId);
+                await stripeBillingClient.FinalizePendingCancellationCreditsAsync(organization.StripeCustomerId);
+
+                var subscription = liveSubscriptions.SelectPrimarySubscription(
+                    organization.StripeSubscriptionId,
+                    organization.PlanId,
+                    model.PlanId);
+
+                if (subscription is not null && liveSubscriptions.Count > 1)
+                {
+                    var duplicateSubscriptions = liveSubscriptions
+                        .Where(candidate => !String.Equals(candidate.Id, subscription.Id, StringComparison.Ordinal))
+                        .ToList();
+
+                    _logger.LogWarning("Reconciling multiple live Stripe subscriptions for organization {OrganizationId}. Keeping {SubscriptionId}; canceling {DuplicateSubscriptionIds}",
+                        message.Id, subscription.Id, String.Join(", ", duplicateSubscriptions.Select(candidate => candidate.Id)));
+
+                    foreach (var duplicateSubscription in duplicateSubscriptions)
+                        await stripeBillingClient.CancelSubscriptionWithProrationAsync(organization.StripeCustomerId, duplicateSubscription);
+                }
 
                 if (!String.IsNullOrEmpty(model.StripeToken))
                 {
@@ -485,19 +514,15 @@ public class OrganizationHandler(
                     cardUpdated = true;
                 }
 
-                await Task.WhenAll(
-                    stripeBillingClient.UpdateCustomerAsync(organization.StripeCustomerId, customerUpdateOptions),
-                    listSubscriptionsTask
-                );
+                await stripeBillingClient.UpdateCustomerAsync(organization.StripeCustomerId, customerUpdateOptions);
 
-                var subscriptionList = await listSubscriptionsTask;
-                var subscription = subscriptionList.FirstOrDefault(s => !s.CanceledAt.HasValue);
                 if (subscription is not null && subscription.Items.Data.Count > 0)
                 {
                     update.Items.Add(new SubscriptionItemOptions { Id = subscription.Items.Data[0].Id, Price = model.PlanId });
                     if (!String.IsNullOrWhiteSpace(model.CouponId))
                         update.Discounts = [new SubscriptionDiscountOptions { Coupon = model.CouponId }];
                     await stripeBillingClient.UpdateSubscriptionAsync(subscription.Id, update);
+                    organization.StripeSubscriptionId = subscription.Id;
                 }
                 else if (subscription is not null)
                 {
@@ -506,13 +531,15 @@ public class OrganizationHandler(
                     if (!String.IsNullOrWhiteSpace(model.CouponId))
                         update.Discounts = [new SubscriptionDiscountOptions { Coupon = model.CouponId }];
                     await stripeBillingClient.UpdateSubscriptionAsync(subscription.Id, update);
+                    organization.StripeSubscriptionId = subscription.Id;
                 }
                 else
                 {
                     create.Items.Add(new SubscriptionItemOptions { Price = model.PlanId });
                     if (!String.IsNullOrWhiteSpace(model.CouponId))
                         create.Discounts = [new SubscriptionDiscountOptions { Coupon = model.CouponId }];
-                    await stripeBillingClient.CreateSubscriptionAsync(create);
+                    var createdSubscription = await stripeBillingClient.CreateSubscriptionAsync(create);
+                    organization.StripeSubscriptionId = createdSubscription.Id;
                 }
 
                 if (cardUpdated)
@@ -526,7 +553,7 @@ public class OrganizationHandler(
             }
 
             billingManager.ApplyBillingPlan(organization, plan, GetCurrentUser(message.Context));
-            await repository.SaveAsync(organization, o => o.Cache().Originals());
+            await repository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
             await messagePublisher.PublishAsync(new PlanChanged { OrganizationId = organization.Id });
         }
         catch (StripeException ex)

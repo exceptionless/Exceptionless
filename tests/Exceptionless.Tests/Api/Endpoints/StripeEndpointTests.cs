@@ -2,6 +2,7 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using Exceptionless.Core;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -17,10 +18,12 @@ public class StripeEndpointTests : IntegrationTestsBase
 {
     private const string WebhookSigningSecret = "whsec_local_test";
     private readonly IOrganizationRepository _organizationRepository;
+    private readonly BillingPlans _plans;
 
     public StripeEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _organizationRepository = GetService<IOrganizationRepository>();
+        _plans = GetService<BillingPlans>();
     }
 
     protected override async Task ResetDataAsync()
@@ -108,31 +111,305 @@ public class StripeEndpointTests : IntegrationTestsBase
         var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
         Assert.NotNull(organization);
         organization.StripeCustomerId = "cus_existing";
-        organization.BillingChangeDate = eventCreatedUtc.AddSeconds(20);
+        organization.PlanId = _plans.SmallPlan.Id;
+        organization.StripeSubscriptionEventDate = eventCreatedUtc.AddSeconds(20);
         organization.BillingStatus = billingStatus;
         organization.RemoveSuspension();
         await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
 
-        /* language=json */
-        const string json = $$"""
-            {
-              "id": "evt_subscription_deleted",
-              "object": "event",
-              "created": 1782155003,
-              "data": {
-                "object": {
-                  "id": "sub_old",
-                  "object": "subscription",
-                  "customer": "cus_existing",
-                  "status": "canceled"
-                }
-              },
-              "livemode": false,
-              "pending_webhooks": 1,
-              "type": "customer.subscription.deleted"
-            }
-            """;
+        string json = CreateSubscriptionEvent("evt_subscription_deleted", 1782155003, "customer.subscription.deleted", "sub_old", "canceled");
 
+        // Act
+        await PostStripeEventAsync(json);
+
+        // Assert
+        organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
+        Assert.NotNull(organization);
+        Assert.Equal(billingStatus, organization.BillingStatus);
+        Assert.False(organization.IsSuspended);
+    }
+
+    [Fact]
+    public async Task PostAsync_WithQueuedUpdateBeforeOlderDeletion_UsesStripeEventWatermark()
+    {
+        // Arrange
+        var eventCreatedUtc = DateTimeOffset.FromUnixTimeSeconds(1782155023).UtcDateTime;
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        organization.StripeCustomerId = "cus_existing";
+        organization.PlanId = _plans.SmallPlan.Id;
+        organization.StripeSubscriptionId = "sub_new";
+        organization.BillingChangeDate = eventCreatedUtc.AddMinutes(-1);
+        organization.BillingStatus = BillingStatus.Active;
+        organization.RemoveSuspension();
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
+
+        string updatedJson = CreateSubscriptionEvent("evt_subscription_updated", 1782155023, "customer.subscription.updated", "sub_new", "active");
+        string deletedJson = CreateSubscriptionEvent("evt_subscription_deleted", 1782155003, "customer.subscription.deleted", "sub_old", "canceled");
+
+        // Act
+        await PostStripeEventAsync(updatedJson);
+        await PostStripeEventAsync(deletedJson);
+
+        // Assert
+        organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
+        Assert.NotNull(organization);
+        Assert.Equal(BillingStatus.Active, organization.BillingStatus);
+        Assert.False(organization.IsSuspended);
+        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1782155023).UtcDateTime, organization.StripeSubscriptionEventDate);
+    }
+
+    [Fact]
+    public async Task PostAsync_WithLegacyOrganizationAndStaleDeletion_UsesBillingChangeDate()
+    {
+        // Arrange
+        var eventCreatedUtc = DateTimeOffset.FromUnixTimeSeconds(1782155003).UtcDateTime;
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        organization.StripeCustomerId = "cus_existing";
+        organization.PlanId = _plans.SmallPlan.Id;
+        organization.StripeSubscriptionId = null;
+        organization.StripeSubscriptionEventDate = null;
+        organization.BillingChangeDate = eventCreatedUtc.AddSeconds(20);
+        organization.BillingStatus = BillingStatus.Active;
+        organization.RemoveSuspension();
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
+
+        string json = CreateSubscriptionEvent("evt_legacy_subscription_deleted", 1782155003, "customer.subscription.deleted", "sub_old", "canceled");
+
+        // Act
+        await PostStripeEventAsync(json);
+
+        // Assert
+        organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
+        Assert.NotNull(organization);
+        Assert.Equal(BillingStatus.Active, organization.BillingStatus);
+        Assert.False(organization.IsSuspended);
+        Assert.Null(organization.StripeSubscriptionEventDate);
+        Assert.Null(organization.StripeSubscriptionId);
+    }
+
+    [Fact]
+    public async Task PostAsync_WithNewerSubscriptionDeletedEvent_SuspendsOrganization()
+    {
+        // Arrange
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        organization.StripeCustomerId = "cus_existing";
+        organization.PlanId = _plans.SmallPlan.Id;
+        organization.StripeSubscriptionId = "sub_current";
+        organization.StripeSubscriptionEventDate = DateTimeOffset.FromUnixTimeSeconds(1782155003).UtcDateTime;
+        organization.BillingStatus = BillingStatus.Active;
+        organization.RemoveSuspension();
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
+
+        string json = CreateSubscriptionEvent("evt_subscription_deleted", 1782155023, "customer.subscription.deleted", "sub_current", "canceled");
+
+        // Act
+        await PostStripeEventAsync(json);
+
+        // Assert
+        organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
+        Assert.NotNull(organization);
+        Assert.Equal(BillingStatus.Canceled, organization.BillingStatus);
+        Assert.True(organization.IsSuspended);
+        Assert.Equal("000000000000000000000000", organization.SuspendedByUserId);
+        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1782155023).UtcDateTime, organization.StripeSubscriptionEventDate);
+        Assert.Null(organization.StripeSubscriptionId);
+    }
+
+    [Fact]
+    public async Task PostAsync_WithSameSecondUpdateAfterDeletion_DoesNotReactivateDeletedSubscription()
+    {
+        // Arrange
+        var eventCreatedUtc = DateTimeOffset.FromUnixTimeSeconds(1782155023).UtcDateTime;
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        organization.StripeCustomerId = "cus_existing";
+        organization.PlanId = _plans.SmallPlan.Id;
+        organization.StripeSubscriptionId = "sub_current";
+        organization.StripeSubscriptionEventDate = eventCreatedUtc.AddSeconds(-1);
+        organization.BillingStatus = BillingStatus.Active;
+        organization.RemoveSuspension();
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
+
+        string deletedJson = CreateSubscriptionEvent("evt_subscription_deleted", 1782155023, "customer.subscription.deleted", "sub_current", "canceled");
+        string updatedJson = CreateSubscriptionEvent("evt_subscription_updated", 1782155023, "customer.subscription.updated", "sub_current", "active");
+
+        // Act
+        await PostStripeEventAsync(deletedJson);
+        await PostStripeEventAsync(updatedJson);
+
+        // Assert
+        organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
+        Assert.NotNull(organization);
+        Assert.Equal(BillingStatus.Canceled, organization.BillingStatus);
+        Assert.True(organization.IsSuspended);
+        Assert.Equal(eventCreatedUtc, organization.StripeSubscriptionEventDate);
+        Assert.Null(organization.StripeSubscriptionId);
+    }
+
+    [Fact]
+    public async Task PostAsync_WithUnsupportedSubscriptionStatus_DoesNotMutateBillingState()
+    {
+        // Arrange
+        var eventWatermark = DateTimeOffset.FromUnixTimeSeconds(1782155003).UtcDateTime;
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        organization.StripeCustomerId = "cus_existing";
+        organization.PlanId = _plans.SmallPlan.Id;
+        organization.StripeSubscriptionId = "sub_current";
+        organization.StripeSubscriptionEventDate = eventWatermark;
+        organization.BillingStatus = BillingStatus.Active;
+        organization.RemoveSuspension();
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
+
+        string json = CreateSubscriptionEvent("evt_subscription_future", 1782155023, "customer.subscription.updated", "sub_current", "future_status");
+
+        // Act
+        await PostStripeEventAsync(json);
+
+        // Assert
+        organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
+        Assert.NotNull(organization);
+        Assert.Equal(BillingStatus.Active, organization.BillingStatus);
+        Assert.False(organization.IsSuspended);
+        Assert.Equal(eventWatermark, organization.StripeSubscriptionEventDate);
+        Assert.Equal("sub_current", organization.StripeSubscriptionId);
+    }
+
+    [Theory]
+    [InlineData("incomplete", BillingStatus.Unpaid, false)]
+    [InlineData("paused", BillingStatus.Unpaid, false)]
+    [InlineData("incomplete_expired", BillingStatus.Canceled, true)]
+    public async Task PostAsync_WithNonpayingSubscriptionStatus_AppliesBillingState(string stripeStatus, BillingStatus billingStatus, bool clearsSubscriptionId)
+    {
+        // Arrange
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        organization.StripeCustomerId = "cus_existing";
+        organization.PlanId = _plans.SmallPlan.Id;
+        organization.StripeSubscriptionId = "sub_current";
+        organization.StripeSubscriptionEventDate = DateTimeOffset.FromUnixTimeSeconds(1782155003).UtcDateTime;
+        organization.BillingStatus = BillingStatus.Active;
+        organization.RemoveSuspension();
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
+
+        string json = CreateSubscriptionEvent("evt_subscription_nonpaying", 1782155023, "customer.subscription.updated", "sub_current", stripeStatus);
+
+        // Act
+        await PostStripeEventAsync(json);
+
+        // Assert
+        organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
+        Assert.NotNull(organization);
+        Assert.Equal(billingStatus, organization.BillingStatus);
+        Assert.True(organization.IsSuspended);
+        Assert.Equal(clearsSubscriptionId ? null : "sub_current", organization.StripeSubscriptionId);
+    }
+
+    [Fact]
+    public async Task PostAsync_WithSameSecondDeletionForObsoleteSubscription_DoesNotSuspendCurrentSubscription()
+    {
+        // Arrange
+        var eventCreatedUtc = DateTimeOffset.FromUnixTimeSeconds(1782155023).UtcDateTime;
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        organization.StripeCustomerId = "cus_existing";
+        organization.StripeSubscriptionId = "sub_current";
+        organization.StripeSubscriptionEventDate = eventCreatedUtc;
+        organization.PlanId = _plans.SmallPlan.Id;
+        organization.BillingStatus = BillingStatus.Active;
+        organization.RemoveSuspension();
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
+
+        string json = CreateSubscriptionEvent("evt_obsolete_subscription_deleted", 1782155023, "customer.subscription.deleted", "sub_obsolete", "canceled");
+
+        // Act
+        await PostStripeEventAsync(json);
+
+        // Assert
+        organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
+        Assert.NotNull(organization);
+        Assert.Equal(BillingStatus.Active, organization.BillingStatus);
+        Assert.False(organization.IsSuspended);
+        Assert.Equal("sub_current", organization.StripeSubscriptionId);
+        Assert.Equal(eventCreatedUtc, organization.StripeSubscriptionEventDate);
+    }
+
+    [Fact]
+    public async Task PostAsync_WithDeletionForFreePlan_DoesNotSuspendOrganization()
+    {
+        // Arrange
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        organization.StripeCustomerId = "cus_existing";
+        organization.StripeSubscriptionId = null;
+        organization.BillingStatus = BillingStatus.Trialing;
+        organization.RemoveSuspension();
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
+
+        string json = CreateSubscriptionEvent("evt_free_subscription_deleted", 1782155023, "customer.subscription.deleted", "sub_old", "canceled");
+
+        // Act
+        await PostStripeEventAsync(json);
+
+        // Assert
+        organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
+        Assert.NotNull(organization);
+        Assert.Equal(BillingStatus.Trialing, organization.BillingStatus);
+        Assert.False(organization.IsSuspended);
+        Assert.Null(organization.StripeSubscriptionId);
+    }
+
+    [Fact]
+    public async Task PostAsync_ConcurrentPlanChange_RefetchesOrganizationAfterBillingLock()
+    {
+        // Arrange
+        var eventCreatedUtc = DateTimeOffset.FromUnixTimeSeconds(1782155023).UtcDateTime;
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        organization.StripeCustomerId = "cus_existing";
+        organization.PlanId = _plans.SmallPlan.Id;
+        organization.StripeSubscriptionId = "sub_current";
+        organization.StripeSubscriptionEventDate = eventCreatedUtc.AddSeconds(-1);
+        organization.BillingStatus = BillingStatus.Active;
+        organization.RemoveSuspension();
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
+
+        string json = CreateSubscriptionEvent("evt_subscription_deleted", 1782155023, "customer.subscription.deleted", "sub_current", "canceled");
+        var billingManager = GetService<BillingManager>();
+        var billingLock = await billingManager.TryAcquireOrganizationLockAsync(organization.Id);
+        Assert.NotNull(billingLock);
+
+        Task webhookTask;
+        await using (billingLock)
+        {
+            webhookTask = PostStripeEventAsync(json);
+            await Task.Delay(100, TestContext.Current.CancellationToken);
+            Assert.False(webhookTask.IsCompleted);
+
+            organization.PlanId = _plans.FreePlan.Id;
+            organization.StripeSubscriptionId = null;
+            organization.BillingStatus = BillingStatus.Trialing;
+            organization.RemoveSuspension();
+            await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
+        }
+
+        // Act
+        await webhookTask;
+
+        // Assert
+        organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
+        Assert.NotNull(organization);
+        Assert.Equal(_plans.FreePlan.Id, organization.PlanId);
+        Assert.Equal(BillingStatus.Trialing, organization.BillingStatus);
+        Assert.False(organization.IsSuspended);
+        Assert.Null(organization.StripeSubscriptionId);
+    }
+
+    private async Task PostStripeEventAsync(string json)
+    {
         long signatureTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         byte[] signatureBytes = HMACSHA256.HashData(
             Encoding.UTF8.GetBytes(WebhookSigningSecret),
@@ -144,7 +421,6 @@ public class StripeEndpointTests : IntegrationTestsBase
         options.StripeOptions.StripeWebHookSigningSecret = WebhookSigningSecret;
         try
         {
-            // Act
             using var content = new StringContent(json, Encoding.UTF8, "application/json");
             await SendRequestAsync(r => r
                 .Post()
@@ -158,11 +434,25 @@ public class StripeEndpointTests : IntegrationTestsBase
         {
             options.StripeOptions.StripeWebHookSigningSecret = originalSigningSecret;
         }
-
-        // Assert
-        organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
-        Assert.NotNull(organization);
-        Assert.Equal(billingStatus, organization.BillingStatus);
-        Assert.False(organization.IsSuspended);
     }
+
+    private static string CreateSubscriptionEvent(string eventId, long created, string eventType, string subscriptionId, string status)
+        => $$"""
+            {
+              "id": "{{eventId}}",
+              "object": "event",
+              "created": {{created}},
+              "data": {
+                "object": {
+                  "id": "{{subscriptionId}}",
+                  "object": "subscription",
+                  "customer": "cus_existing",
+                  "status": "{{status}}"
+                }
+              },
+              "livemode": false,
+              "pending_webhooks": 1,
+              "type": "{{eventType}}"
+            }
+            """;
 }

@@ -25,6 +25,12 @@ public sealed class StripeBillingClient : IStripeBillingClient
         return (await service.ListAsync(options)).ToList();
     }
 
+    public Task<Stripe.Invoice> FinalizeInvoiceAsync(string id, InvoiceFinalizeOptions options, string idempotencyKey)
+    {
+        var service = new InvoiceService(Client);
+        return service.FinalizeInvoiceAsync(id, options, new RequestOptions { IdempotencyKey = idempotencyKey });
+    }
+
     public Task<Customer> CreateCustomerAsync(CustomerCreateOptions options)
     {
         var service = new CustomerService(Client);

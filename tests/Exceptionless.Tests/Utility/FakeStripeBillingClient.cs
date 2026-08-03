@@ -11,9 +11,17 @@ public sealed class FakeStripeBillingClient : IStripeBillingClient
 
     public List<Subscription> Subscriptions { get; } = [];
 
+    public Dictionary<string, Subscription> CanceledSubscriptionResults { get; } = [];
+
+    public List<string> Calls { get; } = [];
+
     public Customer CustomerToReturn { get; set; } = new() { Id = "cus_test" };
 
+    public Stripe.Invoice FinalizedInvoiceToReturn { get; set; } = new() { Id = "in_finalized", Status = "paid", EndingBalance = 0 };
+
     public Exception? GetInvoiceException { get; set; }
+
+    public Exception? FinalizeInvoiceException { get; set; }
 
     public Exception? CreateCustomerException { get; set; }
 
@@ -32,6 +40,8 @@ public sealed class FakeStripeBillingClient : IStripeBillingClient
     public string? LastGetInvoiceId { get; private set; }
 
     public InvoiceListOptions? LastInvoiceListOptions { get; private set; }
+
+    public List<(string InvoiceId, InvoiceFinalizeOptions Options, string IdempotencyKey)> FinalizedInvoices { get; } = [];
 
     public SubscriptionListOptions? LastSubscriptionListOptions { get; private set; }
 
@@ -52,8 +62,12 @@ public sealed class FakeStripeBillingClient : IStripeBillingClient
         Invoice = null;
         Invoices.Clear();
         Subscriptions.Clear();
+        CanceledSubscriptionResults.Clear();
+        Calls.Clear();
         CustomerToReturn = new Customer { Id = "cus_test" };
+        FinalizedInvoiceToReturn = new Stripe.Invoice { Id = "in_finalized", Status = "paid", EndingBalance = 0 };
         GetInvoiceException = null;
+        FinalizeInvoiceException = null;
         CreateCustomerException = null;
         UpdateCustomerException = null;
         CreateSubscriptionException = null;
@@ -63,6 +77,7 @@ public sealed class FakeStripeBillingClient : IStripeBillingClient
         AttachPaymentMethodException = null;
         LastGetInvoiceId = null;
         LastInvoiceListOptions = null;
+        FinalizedInvoices.Clear();
         LastSubscriptionListOptions = null;
         LastCustomerCreateOptions = null;
         CreatedSubscriptionOptions.Clear();
@@ -78,13 +93,26 @@ public sealed class FakeStripeBillingClient : IStripeBillingClient
         if (GetInvoiceException is not null)
             throw GetInvoiceException;
 
-        return Task.FromResult(Invoice);
+        return Task.FromResult(Invoices.FirstOrDefault(invoice => String.Equals(invoice.Id, id, StringComparison.Ordinal)) ?? Invoice);
     }
 
     public Task<IReadOnlyCollection<Stripe.Invoice>> ListInvoicesAsync(InvoiceListOptions options)
     {
         LastInvoiceListOptions = options;
         return Task.FromResult<IReadOnlyCollection<Stripe.Invoice>>(Invoices.ToList());
+    }
+
+    public Task<Stripe.Invoice> FinalizeInvoiceAsync(string id, InvoiceFinalizeOptions options, string idempotencyKey)
+    {
+        FinalizedInvoices.Add((id, options, idempotencyKey));
+        Calls.Add($"finalize:{id}");
+        if (FinalizeInvoiceException is not null)
+        {
+            throw FinalizeInvoiceException;
+        }
+
+        FinalizedInvoiceToReturn.Id = id;
+        return Task.FromResult(FinalizedInvoiceToReturn);
     }
 
     public Task<Customer> CreateCustomerAsync(CustomerCreateOptions options)
@@ -108,6 +136,7 @@ public sealed class FakeStripeBillingClient : IStripeBillingClient
     public Task<Subscription> CreateSubscriptionAsync(SubscriptionCreateOptions options)
     {
         CreatedSubscriptionOptions.Add(options);
+        Calls.Add("create-subscription");
         if (CreateSubscriptionException is not null)
             throw CreateSubscriptionException;
 
@@ -138,7 +167,9 @@ public sealed class FakeStripeBillingClient : IStripeBillingClient
         if (CancelSubscriptionException is not null)
             throw CancelSubscriptionException;
 
-        return Task.FromResult(new Subscription { Id = subscriptionId });
+        return Task.FromResult(CanceledSubscriptionResults.TryGetValue(subscriptionId, out var subscription)
+            ? subscription
+            : new Subscription { Id = subscriptionId });
     }
 
     public Task<PaymentMethod> AttachPaymentMethodAsync(string paymentMethodId, PaymentMethodAttachOptions options)
