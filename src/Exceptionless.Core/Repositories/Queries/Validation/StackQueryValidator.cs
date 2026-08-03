@@ -7,7 +7,7 @@ namespace Exceptionless.Core.Queries.Validation;
 
 public sealed class StackQueryValidator : AppQueryValidator
 {
-    private readonly HashSet<string> _freeQueryFields = new(StringComparer.OrdinalIgnoreCase) {
+    private static readonly HashSet<string> _freeQueryFields = new(StringComparer.OrdinalIgnoreCase) {
             StackIndex.Alias.FirstOccurrence,
             "first_occurrence",
             StackIndex.Alias.LastOccurrence,
@@ -55,12 +55,17 @@ public sealed class StackQueryValidator : AppQueryValidator
 
     public StackQueryValidator(ExceptionlessElasticConfiguration configuration, ILoggerFactory loggerFactory) : base(configuration.Stacks.QueryParser, loggerFactory) { }
 
+    internal static bool IsFreeQueryField(string field)
+    {
+        return _freeQueryFields.Contains(field);
+    }
+
     protected override QueryProcessResult ApplyQueryRules(QueryValidationResult result)
     {
         return new QueryProcessResult
         {
             IsValid = result.IsValid,
-            UsesPremiumFeatures = !result.ReferencedFields.All(_freeQueryFields.Contains)
+            UsesPremiumFeatures = !result.ReferencedFields.All(IsFreeQueryField)
         };
     }
 

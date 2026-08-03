@@ -144,8 +144,7 @@ export interface NewSavedView {
   slug?: null | string;
   view_type: string;
   filter_definitions?: null | string;
-  columns?: null | Record<string, boolean>;
-  column_order?: string[] | null;
+  columns?: null | Record<string, SavedViewColumnSettings>;
   show_stats?: null | boolean;
   show_chart?: null | boolean;
   /** If true, the view will only be visible to the current user. Defaults to false. */
@@ -368,8 +367,7 @@ export interface PredefinedSavedViewDefinition {
   time?: null | string;
   sort?: null | string;
   filterDefinitions?: null | JsonElement;
-  columns?: null | Record<string, boolean>;
-  columnOrder?: string[] | null;
+  columns?: null | Record<string, SavedViewColumnSettings>;
   showStats?: null | boolean;
   showChart?: null | boolean;
 }
@@ -388,12 +386,47 @@ export interface ResetPasswordModel {
   password: string;
 }
 
+/**
+ * Per-column display settings for a saved view. All properties are optional so new settings can * be added without changing the meaning of existing saved views. */
+export interface SavedViewColumnSettings {
+  /** Whether the column is visible. Null means use the table default. */
+  visible?: null | boolean;
+  /**
+   * Zero-based display position. Null means use the table default order.
+   * @format int32
+   * @min 0
+   * @max 49
+   */
+  position?: null | number;
+  /**
+   * Column width in pixels. Null means use the table default width.
+   * @format int32
+   * @min 48
+   * @max 1200
+   */
+  width?: null | number;
+}
+
 export interface Signup {
   name: string;
   /** The email address or domain username */
   email: string;
   password: string;
   invite_token?: null | string;
+}
+
+export interface SourceMapArtifact {
+  id: string;
+  generated_file_url: string;
+  source_map_url?: null | string;
+  file_name?: null | string;
+  /** @format int64 */
+  size: number;
+  is_auto_downloaded: boolean;
+  /** @format date-time */
+  created_utc: string;
+  /** @format date-time */
+  last_used_utc?: null | string;
 }
 
 export interface Stack {
@@ -501,8 +534,7 @@ export interface UpdateSavedView {
   sort?: null | string;
   slug?: null | string;
   filter_definitions?: null | string;
-  columns?: null | Record<string, boolean>;
-  column_order?: string[] | null;
+  columns?: null | Record<string, SavedViewColumnSettings>;
   show_stats?: null | boolean;
   show_chart?: null | boolean;
 }
@@ -726,8 +758,7 @@ export interface ViewSavedView {
   updated_by_user_id?: null | string;
   filter?: null | string;
   filter_definitions?: null | string;
-  columns?: null | Record<string, boolean>;
-  column_order?: string[] | null;
+  columns?: null | Record<string, SavedViewColumnSettings>;
   show_stats?: null | boolean;
   show_chart?: null | boolean;
   name: string;

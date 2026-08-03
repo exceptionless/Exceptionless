@@ -39,7 +39,7 @@ GET {{apiUrl}}/projects/{{projectId}}/tokens/default
 Authorization: Bearer {{token}}
 
 ### Check Name
-GET {{apiUrl}}/projects/check-name/My New Project
+GET {{apiUrl}}/organizations/{{organizationId}}/projects/check-name?name=My%20New%20Project
 Authorization: Bearer {{token}}
 
 ### Post
@@ -152,6 +152,10 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { "Name": "My Updated Project" }
+
+### Check Current Name
+GET {{apiUrl}}/organizations/{{organizationId}}/projects/check-name?name=My%20Updated%20Project&projectId={{projectId}}
+Authorization: Bearer {{token}}
 
 ### Delete
 DELETE {{apiUrl}}/projects/{{projectId}}

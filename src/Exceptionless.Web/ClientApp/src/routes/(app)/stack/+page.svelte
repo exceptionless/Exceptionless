@@ -45,7 +45,9 @@
     import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
     import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
     import { defaultStackColumnVisibility, getColumns } from '$features/events/components/table/options.svelte';
+    import { filterUsesPremiumFeatures } from '$features/events/premium-filter';
     import { organization } from '$features/organizations/context.svelte';
+    import { premiumPage } from '$features/organizations/premium-page.svelte';
     import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
     import { useSavedViews } from '$features/saved-views/use-saved-views.svelte';
     import * as agg from '$features/shared/api/aggregations';
@@ -244,6 +246,7 @@
         defaultTime: DEFAULT_TIME_RANGE,
         filterCacheKey,
         getColumnOrder: () => table.state.columnOrder,
+        getColumnSizing: () => table.state.columnSizing,
         getColumnVisibility: () => table.state.columnVisibility,
         getFilter: getEffectiveFilter,
         getFilterDefinitions: () => serializeFilters(filters ?? []),
@@ -252,6 +255,7 @@
         getTime: getQueryTime,
         queryParams,
         setColumnOrder: (v) => table.setColumnOrder(v),
+        setColumnSizing: (v) => table.setColumnSizing(v),
         setColumnVisibility: (v) => table.setColumnVisibility(v),
         setShowChart: (v) => (showChart = v),
         setShowStats: (v) => (showStats = v),
@@ -629,6 +633,10 @@
         }
     });
 
+    $effect(() => {
+        premiumPage.current = filterUsesPremiumFeatures(eventsQueryParameters.filter, 'event-stack') ? 'search' : undefined;
+    });
+
     const eventsQuery = getOrganizationEventsQuery({
         enabled: () => !isSavedViewRoutePending,
         get params() {
@@ -654,6 +662,7 @@
                 });
             },
             defaultColumnVisibility: defaultStackColumnVisibility,
+            enableColumnResizing: true,
             paginationStrategy: 'offset',
             get queryData() {
                 return eventsQuery.data?.data ?? [];
@@ -667,6 +676,7 @@
         }),
         (state) => ({
             columnOrder: state.columnOrder,
+            columnSizing: state.columnSizing,
             columnVisibility: state.columnVisibility,
             pagination: state.pagination
         })
@@ -757,6 +767,9 @@
             get filter() {
                 return eventsQueryParameters.filter;
             },
+            get mode() {
+                return eventsQueryParameters.mode;
+            },
             get time() {
                 return eventsQueryParameters.time;
             }
@@ -834,6 +847,7 @@
                 <SavedViewPicker
                     activeSavedView={savedViewsState.activeSavedView}
                     columnOrder={table.state.columnOrder}
+                    columnSizing={table.state.columnSizing}
                     columnVisibility={table.state.columnVisibility}
                     filters={filters ?? []}
                     isModified={savedViewsState.isModified}
