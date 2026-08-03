@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen } from '@testing-library/svelte';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('katex/dist/katex.min.css', () => ({}));
@@ -40,5 +40,41 @@ describe('AssistantMessage', () => {
         expect(screen.getByText('The timeout stack is the best issue to investigate next.')).not.toBeNull();
         expect(screen.getByText('Searched error stacks')).not.toBeNull();
         expect(screen.queryByRole('link', { name: /Timeout expired/ })).toBeNull();
+    });
+
+    it('shows completed suggested actions and submits their prompts', async () => {
+        const onSuggestedAction = vi.fn();
+        const message: AssistantChatMessage = {
+            content: 'The timeout stack is the best issue to investigate next.',
+            id: 'assistant-message',
+            role: 'assistant',
+            suggestedActions: [
+                {
+                    label: 'Inspect recent events',
+                    prompt: 'Inspect the most recent events in that timeout stack.'
+                }
+            ],
+            tools: []
+        };
+
+        render(AssistantMessage, { props: { message, onSuggestedAction } });
+
+        expect(screen.getByLabelText('Suggested actions')).not.toBeNull();
+        await fireEvent.click(screen.getByRole('button', { name: 'Inspect recent events' }));
+        expect(onSuggestedAction).toHaveBeenCalledWith('Inspect the most recent events in that timeout stack.');
+    });
+
+    it('does not show suggested actions while the response is streaming', () => {
+        const message: AssistantChatMessage = {
+            content: 'Partial answer',
+            id: 'assistant-message',
+            role: 'assistant',
+            suggestedActions: [{ label: 'Inspect events', prompt: 'Inspect recent events.' }],
+            tools: []
+        };
+
+        render(AssistantMessage, { props: { isStreaming: true, message } });
+
+        expect(screen.queryByLabelText('Suggested actions')).toBeNull();
     });
 });

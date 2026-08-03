@@ -1,11 +1,14 @@
+import type { AssistantSuggestedAction } from './models';
+
 export interface AssistantStreamEvent {
     arguments?: string;
     message?: string;
     result?: string;
+    suggested_actions?: AssistantSuggestedAction[];
     text?: string;
     tool_call_id?: string;
     tool_name?: string;
-    type: 'done' | 'error' | 'text_delta' | 'tool_call' | 'tool_result';
+    type: 'done' | 'error' | 'suggested_actions' | 'text_delta' | 'tool_call' | 'tool_result';
 }
 
 export async function readAssistantStream(stream: ReadableStream<Uint8Array>, onEvent: (event: AssistantStreamEvent) => Promise<void> | void): Promise<void> {

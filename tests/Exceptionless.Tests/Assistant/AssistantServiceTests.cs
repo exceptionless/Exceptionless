@@ -107,6 +107,155 @@ public sealed class AssistantServiceTests
         Assert.Contains("Never end by merely saying what you will inspect or do next", handler.RequestBody);
         Assert.Contains("present useful results directly in the answer", handler.RequestBody);
         Assert.Contains("webUrl beginning with / must remain relative", handler.RequestBody);
+        Assert.Contains("suggest_followups", handler.RequestBody);
+        Assert.Contains("Do not call it on every answer", handler.RequestBody);
+    }
+
+    [Fact]
+    public async Task StreamAsync_SuggestedActionsWithAnswer_EmitsValidatedActionsWithoutToolActivity()
+    {
+        string providerPayload = JsonSerializer.Serialize(new
+        {
+            choices = new[]
+            {
+                new
+                {
+                    delta = new
+                    {
+                        content = "The timeout stack is the best issue to investigate next.",
+                        tool_calls = new[]
+                        {
+                            new
+                            {
+                                index = 0,
+                                id = "suggestions-1",
+                                function = new
+                                {
+                                    name = "suggest_followups",
+                                    arguments = JsonSerializer.Serialize(new
+                                    {
+                                        actions = new[]
+                                        {
+                                            new { label = "Inspect recent events", prompt = "Inspect the most recent events in that timeout stack." },
+                                            new { label = "Compare affected versions", prompt = "Compare which application versions are affected by that timeout." }
+                                        }
+                                    })
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        var handler = new StubHttpMessageHandler($"data: {providerPayload}\n\ndata: [DONE]\n");
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            })
+            .Build());
+        var service = CreateAssistantService(handler, appOptions);
+        var events = new List<AssistantStreamEvent>();
+
+        await foreach (var item in service.StreamAsync(
+            new AssistantChatRequest([new AssistantChatMessage("user", "What should I investigate?")]),
+            "user-id",
+            CreatePlanOptions(),
+            TestContext.Current.CancellationToken))
+        {
+            events.Add(item);
+        }
+
+        Assert.Equal(3, events.Count);
+        Assert.Equal("text_delta", events[0].Type);
+        Assert.Equal("suggested_actions", events[1].Type);
+        Assert.Collection(events[1].SuggestedActions!,
+            action =>
+            {
+                Assert.Equal("Inspect recent events", action.Label);
+                Assert.Equal("Inspect the most recent events in that timeout stack.", action.Prompt);
+            },
+            action => Assert.Equal("Compare affected versions", action.Label));
+        Assert.Equal("done", events[2].Type);
+        Assert.DoesNotContain(events, item => item.Type is "tool_call" or "tool_result");
+        Assert.Single(handler.RequestBodies);
+    }
+
+    [Fact]
+    public async Task StreamAsync_SuggestedActionsWithoutAnswer_RequestsFinalAnswerAndCapsActions()
+    {
+        string suggestionPayload = JsonSerializer.Serialize(new
+        {
+            choices = new[]
+            {
+                new
+                {
+                    delta = new
+                    {
+                        tool_calls = new[]
+                        {
+                            new
+                            {
+                                index = 0,
+                                id = "suggestions-1",
+                                function = new
+                                {
+                                    name = "suggest_followups",
+                                    arguments = JsonSerializer.Serialize(new
+                                    {
+                                        actions = new[]
+                                        {
+                                            new { label = "Inspect recent events", prompt = "Inspect recent events." },
+                                            new { label = "Compare versions", prompt = "Compare affected versions." },
+                                            new { label = "Review frequency", prompt = "Review the occurrence frequency." },
+                                            new { label = "Ignored by cap", prompt = "This fourth action should not be shown." }
+                                        }
+                                    })
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        var handler = new StubHttpMessageHandler(
+            $"data: {suggestionPayload}\n\ndata: [DONE]\n",
+            """
+            data: {"choices":[{"delta":{"content":"Here is the complete investigation."}}]}
+
+            data: [DONE]
+
+            """);
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            })
+            .Build());
+        var service = CreateAssistantService(handler, appOptions);
+        var events = new List<AssistantStreamEvent>();
+
+        await foreach (var item in service.StreamAsync(
+            new AssistantChatRequest(
+                [new AssistantChatMessage("user", "Investigate this")],
+                OrganizationId: "organization-id"),
+            "user-id",
+            CreatePlanOptions(),
+            TestContext.Current.CancellationToken))
+        {
+            events.Add(item);
+        }
+
+        Assert.Equal(2, handler.RequestBodies.Count);
+        Assert.DoesNotContain("\"tools\":", handler.RequestBodies[1]);
+        Assert.Contains("Suggestions captured", handler.RequestBodies[1]);
+        var suggestions = Assert.Single(events, item => item.Type == "suggested_actions").SuggestedActions!;
+        Assert.Equal(AssistantLimits.MaximumSuggestedActions, suggestions.Count);
+        Assert.DoesNotContain(suggestions, action => action.Label == "Ignored by cap");
+        Assert.Equal("done", events[^1].Type);
+        Assert.DoesNotContain(events, item => item.Type is "tool_call" or "tool_result");
     }
 
     [Fact]

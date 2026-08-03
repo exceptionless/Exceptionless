@@ -9,6 +9,9 @@ internal static class AssistantLimits
     public const int MaximumToolCallsPerTurn = 12;
     public const int MaximumProjectsPerTurn = 5;
     public const int MaximumToolItemsPerCall = 10;
+    public const int MaximumSuggestedActions = 3;
+    public const int MaximumSuggestedActionLabelCharacters = 40;
+    public const int MaximumSuggestedActionPromptCharacters = 300;
     public const int MaximumEventDetailCharacters = 16_384;
     public const int MaximumToolContextCharacters = 48_000;
     public const int MaximumProviderInputCharacters = 128_000;

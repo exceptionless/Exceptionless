@@ -25,6 +25,8 @@ public sealed record AssistantAccessResponse(
     bool UpgradeRequired,
     string? Message = null);
 
+public sealed record AssistantSuggestedAction(string Label, string Prompt);
+
 public sealed record AssistantStreamEvent(
     string Type,
     string? Text = null,
@@ -32,11 +34,13 @@ public sealed record AssistantStreamEvent(
     string? ToolName = null,
     string? Arguments = null,
     string? Result = null,
-    string? Message = null)
+    string? Message = null,
+    IReadOnlyCollection<AssistantSuggestedAction>? SuggestedActions = null)
 {
     public static AssistantStreamEvent TextDelta(string text) => new("text_delta", Text: text);
     public static AssistantStreamEvent ToolCall(string id, string name, string arguments) => new("tool_call", ToolCallId: id, ToolName: name, Arguments: arguments);
     public static AssistantStreamEvent ToolResult(string id, string name, string result) => new("tool_result", ToolCallId: id, ToolName: name, Result: result);
+    public static AssistantStreamEvent Suggestions(IReadOnlyCollection<AssistantSuggestedAction> actions) => new("suggested_actions", SuggestedActions: actions);
     public static AssistantStreamEvent Error(string message) => new("error", Message: message);
     public static AssistantStreamEvent Done() => new("done");
 }

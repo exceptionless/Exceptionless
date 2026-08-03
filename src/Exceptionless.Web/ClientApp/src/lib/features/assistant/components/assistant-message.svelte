@@ -1,7 +1,10 @@
 <script lang="ts">
     import { Response } from '$comp/ai-elements/response';
+    import { Button } from '$comp/ui/button';
     import { Spinner } from '$comp/ui/spinner';
     import Bot from '@lucide/svelte/icons/bot';
+    import MessageCircle from '@lucide/svelte/icons/message-circle';
+    import Sparkles from '@lucide/svelte/icons/sparkles';
 
     import type { AssistantChatMessage, AssistantFeedback } from '../models';
 
@@ -15,9 +18,11 @@
         message: AssistantChatMessage;
         onFeedback?: (feedback: AssistantFeedback | undefined) => void;
         onRegenerate?: () => void;
+        onSuggestedAction?: (prompt: string) => void;
+        suggestionsDisabled?: boolean;
     }
 
-    let { isLast = false, isStreaming = false, message, onFeedback, onRegenerate }: Props = $props();
+    let { isLast = false, isStreaming = false, message, onFeedback, onRegenerate, onSuggestedAction, suggestionsDisabled = false }: Props = $props();
 </script>
 
 {#if message.role === 'user'}
@@ -45,6 +50,29 @@
                 />
             {:else if isStreaming}
                 <div class="text-muted-foreground flex items-center gap-2 py-1 text-sm"><Spinner /> Exie is thinking…</div>
+            {/if}
+
+            {#if message.suggestedActions?.length && !isStreaming}
+                <section class="mt-3" aria-label="Suggested actions">
+                    <div class="text-muted-foreground flex items-center gap-1.5 text-[0.6875rem] font-medium tracking-wide uppercase">
+                        <Sparkles aria-hidden="true" class="size-3.5" />
+                        Suggested actions
+                    </div>
+                    <div class="mt-1.5 flex flex-wrap gap-1.5">
+                        {#each message.suggestedActions as action (`${action.label}:${action.prompt}`)}
+                            <Button
+                                class="h-auto min-h-7 gap-1.5 px-2 py-1 text-left text-xs whitespace-normal"
+                                disabled={suggestionsDisabled}
+                                onclick={() => onSuggestedAction?.(action.prompt)}
+                                size="xs"
+                                variant="outline"
+                            >
+                                <MessageCircle aria-hidden="true" class="size-3.5 shrink-0" />
+                                {action.label}
+                            </Button>
+                        {/each}
+                    </div>
+                </section>
             {/if}
 
             {#if message.content && !isStreaming}

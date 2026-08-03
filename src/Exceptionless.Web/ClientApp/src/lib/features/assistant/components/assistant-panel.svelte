@@ -185,6 +185,10 @@
                 };
             }
 
+            if (event.type === 'suggested_actions') {
+                return { ...message, suggestedActions: event.suggested_actions ?? [] };
+            }
+
             return message;
         });
 
@@ -317,6 +321,8 @@
                                     {message}
                                     onFeedback={(feedback) => setMessageFeedback(message.id, feedback)}
                                     onRegenerate={() => void regenerateResponse(message.id)}
+                                    onSuggestedAction={(suggestedPrompt) => void submitPrompt(suggestedPrompt)}
+                                    suggestionsDisabled={isStreaming}
                                 />
                             {/each}
                         </div>

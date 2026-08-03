@@ -10,10 +10,16 @@ export interface AssistantChatMessage {
     feedback?: AssistantFeedback;
     id: string;
     role: 'assistant' | 'user';
+    suggestedActions?: AssistantSuggestedAction[];
     tools: AssistantToolActivity[];
 }
 
 export type AssistantFeedback = 'helpful' | 'not-helpful';
+
+export interface AssistantSuggestedAction {
+    label: string;
+    prompt: string;
+}
 
 export interface AssistantToolActivity {
     arguments: string;

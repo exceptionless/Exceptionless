@@ -7,6 +7,8 @@ namespace Exceptionless.Web.Assistant;
 
 internal static class AssistantToolDefinitions
 {
+    public const string SuggestFollowupsToolName = "suggest_followups";
+
     private static readonly string[] s_methodNames =
     [
         nameof(ExceptionlessMcpTools.GetEventAsync),
@@ -25,7 +27,7 @@ internal static class AssistantToolDefinitions
         string? currentEventId = AssistantService.GetRouteValue(request.Path, "event");
         string? currentStackId = AssistantService.GetRouteValue(request.Path, "stack");
 
-        return s_methodNames.Select(methodName =>
+        var definitions = s_methodNames.Select(methodName =>
         {
             MethodInfo method = typeof(ExceptionlessMcpTools).GetMethod(methodName)
                 ?? throw new InvalidOperationException($"Could not find MCP tool method {methodName}.");
@@ -61,7 +63,56 @@ internal static class AssistantToolDefinitions
                     parameters = schema
                 }
             };
-        }).ToArray<object>();
+        }).ToList<object>();
+
+        definitions.Add(new
+        {
+            type = "function",
+            function = new
+            {
+                name = SuggestFollowupsToolName,
+                description = "Optionally supplies useful follow-up prompt buttons after a complete final answer. Do not call this on every answer, before required data tools, or in the same response as another tool.",
+                parameters = new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        actions = new
+                        {
+                            type = "array",
+                            description = "One to three distinct next messages the user may want to send. Omit this tool entirely when no follow-up is genuinely useful.",
+                            minItems = 1,
+                            maxItems = AssistantLimits.MaximumSuggestedActions,
+                            items = new
+                            {
+                                type = "object",
+                                properties = new
+                                {
+                                    label = new
+                                    {
+                                        type = "string",
+                                        description = "A concise two-to-five-word button label.",
+                                        maxLength = AssistantLimits.MaximumSuggestedActionLabelCharacters
+                                    },
+                                    prompt = new
+                                    {
+                                        type = "string",
+                                        description = "The complete follow-up message to send when the button is selected.",
+                                        maxLength = AssistantLimits.MaximumSuggestedActionPromptCharacters
+                                    }
+                                },
+                                required = new[] { "label", "prompt" },
+                                additionalProperties = false
+                            }
+                        }
+                    },
+                    required = new[] { "actions" },
+                    additionalProperties = false
+                }
+            }
+        });
+
+        return definitions.ToArray();
     }
 
     private static void ApplyMaximum(JsonObject schema, string propertyName, int maximum)
