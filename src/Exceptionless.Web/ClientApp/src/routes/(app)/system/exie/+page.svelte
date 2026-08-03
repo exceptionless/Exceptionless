@@ -63,7 +63,7 @@
         { icon: Building2, label: 'Active Organizations', value: usage?.active_organizations, valueType: 'number' },
         { icon: MessagesSquare, label: 'Turns', value: usage?.turns, valueType: 'number' },
         { icon: Bot, label: 'Tokens', value: totalTokens, valueType: 'compact' },
-        { icon: Coins, label: 'Provider Cost', value: usage?.cost_usd, valueType: 'currency' },
+        { icon: Coins, label: 'Total Provider Cost', sub: 'across all organizations', value: usage?.cost_usd, valueType: 'currency' },
         { icon: Gauge, label: 'Tokens per Turn', value: tokensPerTurn, valueType: 'number' },
         { icon: Wrench, label: 'Average Cost', sub: 'per active organization', value: averageCost, valueType: 'currency' }
     ]);
