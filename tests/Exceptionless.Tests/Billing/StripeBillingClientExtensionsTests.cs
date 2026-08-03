@@ -37,6 +37,21 @@ public sealed class StripeBillingClientExtensionsTests
     }
 
     [Fact]
+    public void SelectPrimarySubscription_UnhealthyPersistedSubscription_PrefersHealthySubscription()
+    {
+        var subscriptions = new List<Subscription>
+        {
+            CreateSubscription("sub_persisted", "small-yearly", "past_due", DateTime.UtcNow.AddDays(-1)),
+            CreateSubscription("sub_active", "medium-yearly", "active", DateTime.UtcNow)
+        };
+
+        var subscription = subscriptions.SelectPrimarySubscription("sub_persisted", "small-yearly", "small-yearly");
+
+        Assert.NotNull(subscription);
+        Assert.Equal("sub_active", subscription.Id);
+    }
+
+    [Fact]
     public void SelectPrimarySubscription_EquivalentSubscriptions_PrefersOldestHealthySubscription()
     {
         var subscriptions = new List<Subscription>

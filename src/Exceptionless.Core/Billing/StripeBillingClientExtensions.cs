@@ -44,14 +44,29 @@ public static class StripeBillingClientExtensions
 
         var preferredSubscription = subscriptions.SingleOrDefault(subscription =>
             String.Equals(subscription.Id, preferredSubscriptionId, StringComparison.Ordinal));
-        if (preferredSubscription is not null)
+        if (preferredSubscription is not null && IsHealthySubscription(preferredSubscription))
             return preferredSubscription;
 
-        var targetPlanSubscriptions = subscriptions.Where(subscription => HasPrice(subscription, targetPlanId)).ToList();
+        var healthySubscriptions = subscriptions.Where(IsHealthySubscription).ToList();
+        var targetPlanSubscriptions = healthySubscriptions.Where(subscription => HasPrice(subscription, targetPlanId)).ToList();
         if (targetPlanSubscriptions.Count == 1)
             return targetPlanSubscriptions[0];
 
-        var currentPlanSubscriptions = subscriptions.Where(subscription => HasPrice(subscription, currentPlanId)).ToList();
+        var currentPlanSubscriptions = healthySubscriptions.Where(subscription => HasPrice(subscription, currentPlanId)).ToList();
+        if (currentPlanSubscriptions.Count == 1)
+            return currentPlanSubscriptions[0];
+
+        if (healthySubscriptions.Count == 1)
+            return healthySubscriptions[0];
+
+        if (preferredSubscription is not null)
+            return preferredSubscription;
+
+        targetPlanSubscriptions = subscriptions.Where(subscription => HasPrice(subscription, targetPlanId)).ToList();
+        if (targetPlanSubscriptions.Count == 1)
+            return targetPlanSubscriptions[0];
+
+        currentPlanSubscriptions = subscriptions.Where(subscription => HasPrice(subscription, currentPlanId)).ToList();
         if (currentPlanSubscriptions.Count == 1)
             return currentPlanSubscriptions[0];
 
@@ -94,6 +109,10 @@ public static class StripeBillingClientExtensions
         => subscription.Items.Data.Any(item =>
             String.Equals(item.Price?.Id, planId, StringComparison.Ordinal) ||
             String.Equals(item.Plan?.Id, planId, StringComparison.Ordinal));
+
+    private static bool IsHealthySubscription(Subscription subscription)
+        => String.Equals(subscription.Status, "active", StringComparison.Ordinal) ||
+            String.Equals(subscription.Status, "trialing", StringComparison.Ordinal);
 
     private static int GetStatusPriority(string? status)
         => status switch
