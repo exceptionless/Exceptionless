@@ -49,6 +49,12 @@ public sealed class StripeBillingClient : IStripeBillingClient
         return service.CreateAsync(options);
     }
 
+    public Task<Subscription> GetSubscriptionAsync(string id)
+    {
+        var service = new SubscriptionService(Client);
+        return service.GetAsync(id);
+    }
+
     public Task<Subscription> UpdateSubscriptionAsync(string subscriptionId, SubscriptionUpdateOptions options)
     {
         var service = new SubscriptionService(Client);

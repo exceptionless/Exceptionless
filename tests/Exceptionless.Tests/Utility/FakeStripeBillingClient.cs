@@ -29,6 +29,8 @@ public sealed class FakeStripeBillingClient : IStripeBillingClient
 
     public Exception? CreateSubscriptionException { get; set; }
 
+    public Exception? GetSubscriptionException { get; set; }
+
     public Exception? UpdateSubscriptionException { get; set; }
 
     public Exception? ListSubscriptionsException { get; set; }
@@ -38,6 +40,8 @@ public sealed class FakeStripeBillingClient : IStripeBillingClient
     public Exception? AttachPaymentMethodException { get; set; }
 
     public string? LastGetInvoiceId { get; private set; }
+
+    public string? LastGetSubscriptionId { get; private set; }
 
     public InvoiceListOptions? LastInvoiceListOptions { get; private set; }
 
@@ -71,11 +75,13 @@ public sealed class FakeStripeBillingClient : IStripeBillingClient
         CreateCustomerException = null;
         UpdateCustomerException = null;
         CreateSubscriptionException = null;
+        GetSubscriptionException = null;
         UpdateSubscriptionException = null;
         ListSubscriptionsException = null;
         CancelSubscriptionException = null;
         AttachPaymentMethodException = null;
         LastGetInvoiceId = null;
+        LastGetSubscriptionId = null;
         LastInvoiceListOptions = null;
         FinalizedInvoices.Clear();
         LastSubscriptionListOptions = null;
@@ -141,6 +147,16 @@ public sealed class FakeStripeBillingClient : IStripeBillingClient
             throw CreateSubscriptionException;
 
         return Task.FromResult(new Subscription { Id = "sub_created" });
+    }
+
+    public Task<Subscription> GetSubscriptionAsync(string id)
+    {
+        LastGetSubscriptionId = id;
+        if (GetSubscriptionException is not null)
+            throw GetSubscriptionException;
+
+        return Task.FromResult(Subscriptions.FirstOrDefault(subscription => String.Equals(subscription.Id, id, StringComparison.Ordinal))
+            ?? throw new InvalidOperationException($"Subscription {id} was not found."));
     }
 
     public Task<Subscription> UpdateSubscriptionAsync(string subscriptionId, SubscriptionUpdateOptions options)

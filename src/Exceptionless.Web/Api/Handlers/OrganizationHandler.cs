@@ -406,7 +406,7 @@ public class OrganizationHandler(
                     var subscriptions = await stripeBillingClient.GetLiveSubscriptionsAsync(organization.StripeCustomerId);
                     await stripeBillingClient.FinalizePendingCancellationCreditsAsync(organization.StripeCustomerId);
                     foreach (var subscription in subscriptions)
-                        await stripeBillingClient.CancelSubscriptionWithProrationAsync(organization.StripeCustomerId, subscription);
+                        await stripeBillingClient.CancelSubscriptionAsync(organization.StripeCustomerId, subscription);
                 }
 
                 organization.StripeSubscriptionId = null;
@@ -490,7 +490,7 @@ public class OrganizationHandler(
                         message.Id, subscription.Id, String.Join(", ", duplicateSubscriptions.Select(candidate => candidate.Id)));
 
                     foreach (var duplicateSubscription in duplicateSubscriptions)
-                        await stripeBillingClient.CancelSubscriptionWithProrationAsync(organization.StripeCustomerId, duplicateSubscription);
+                        await stripeBillingClient.CancelSubscriptionAsync(organization.StripeCustomerId, duplicateSubscription);
                 }
 
                 if (!String.IsNullOrEmpty(model.StripeToken))

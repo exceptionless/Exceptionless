@@ -16,6 +16,8 @@ public interface IStripeBillingClient
 
     Task<Subscription> CreateSubscriptionAsync(SubscriptionCreateOptions options);
 
+    Task<Subscription> GetSubscriptionAsync(string id);
+
     Task<Subscription> UpdateSubscriptionAsync(string subscriptionId, SubscriptionUpdateOptions options);
 
     Task<IReadOnlyCollection<Subscription>> ListSubscriptionsAsync(SubscriptionListOptions options);

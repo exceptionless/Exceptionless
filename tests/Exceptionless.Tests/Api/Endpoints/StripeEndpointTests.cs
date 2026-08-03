@@ -8,8 +8,11 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
+using Exceptionless.Tests.Utility;
 using FluentRest;
 using Foundatio.Repositories;
+using Microsoft.Extensions.DependencyInjection;
+using Stripe;
 using Xunit;
 
 namespace Exceptionless.Tests.Api.Endpoints;
@@ -19,6 +22,7 @@ public class StripeEndpointTests : IntegrationTestsBase
     private const string WebhookSigningSecret = "whsec_local_test";
     private readonly IOrganizationRepository _organizationRepository;
     private readonly BillingPlans _plans;
+    private FakeStripeBillingClient StripeBillingClient => (FakeStripeBillingClient)GetService<IStripeBillingClient>();
 
     public StripeEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
@@ -26,9 +30,16 @@ public class StripeEndpointTests : IntegrationTestsBase
         _plans = GetService<BillingPlans>();
     }
 
+    protected override void RegisterServices(IServiceCollection services)
+    {
+        base.RegisterServices(services);
+        services.ReplaceSingleton<IStripeBillingClient, FakeStripeBillingClient>();
+    }
+
     protected override async Task ResetDataAsync()
     {
         await base.ResetDataAsync();
+        StripeBillingClient.Reset();
         var service = GetService<SampleDataService>();
         await service.CreateDataAsync();
     }
@@ -160,7 +171,7 @@ public class StripeEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task PostAsync_WithLegacyOrganizationAndStaleDeletion_UsesBillingChangeDate()
+    public async Task PostAsync_WithLegacyOrganizationAndDeletion_DoesNotUseLocalBillingChangeDateForOrdering()
     {
         // Arrange
         var eventCreatedUtc = DateTimeOffset.FromUnixTimeSeconds(1782155003).UtcDateTime;
@@ -183,10 +194,67 @@ public class StripeEndpointTests : IntegrationTestsBase
         // Assert
         organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
         Assert.NotNull(organization);
+        Assert.Equal(BillingStatus.Canceled, organization.BillingStatus);
+        Assert.True(organization.IsSuspended);
+        Assert.Equal(eventCreatedUtc, organization.StripeSubscriptionEventDate);
+        Assert.Null(organization.StripeSubscriptionId);
+    }
+
+    [Fact]
+    public async Task PostAsync_WithLegacyOrganizationAndMultipleSubscriptions_ResolvesHealthyCurrentPlan()
+    {
+        // Arrange
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        organization.StripeCustomerId = "cus_existing";
+        organization.PlanId = _plans.SmallPlan.Id;
+        organization.StripeSubscriptionId = null;
+        organization.StripeSubscriptionEventDate = null;
+        organization.BillingStatus = BillingStatus.PastDue;
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
+
+        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_obsolete", "past_due", _plans.MediumPlan.Id));
+        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_current", "active", _plans.SmallPlan.Id));
+        string json = CreateSubscriptionEvent("evt_legacy_subscription_updated", 1782155023, "customer.subscription.updated", "sub_obsolete", "past_due");
+
+        // Act
+        await PostStripeEventAsync(json);
+
+        // Assert
+        organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
+        Assert.NotNull(organization);
+        Assert.Equal("sub_current", organization.StripeSubscriptionId);
         Assert.Equal(BillingStatus.Active, organization.BillingStatus);
         Assert.False(organization.IsSuspended);
-        Assert.Null(organization.StripeSubscriptionEventDate);
-        Assert.Null(organization.StripeSubscriptionId);
+        Assert.Equal("cus_existing", StripeBillingClient.LastSubscriptionListOptions?.Customer);
+    }
+
+    [Fact]
+    public async Task PostAsync_WithLegacyOrganizationAndObsoleteDeletion_PreservesResolvedLiveSubscription()
+    {
+        // Arrange
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        organization.StripeCustomerId = "cus_existing";
+        organization.PlanId = _plans.SmallPlan.Id;
+        organization.StripeSubscriptionId = null;
+        organization.StripeSubscriptionEventDate = null;
+        organization.BillingStatus = BillingStatus.Active;
+        organization.RemoveSuspension();
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
+
+        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_current", "active", _plans.SmallPlan.Id));
+        string json = CreateSubscriptionEvent("evt_obsolete_subscription_deleted", 1782155023, "customer.subscription.deleted", "sub_obsolete", "canceled");
+
+        // Act
+        await PostStripeEventAsync(json);
+
+        // Assert
+        organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
+        Assert.NotNull(organization);
+        Assert.Equal("sub_current", organization.StripeSubscriptionId);
+        Assert.Equal(BillingStatus.Active, organization.BillingStatus);
+        Assert.False(organization.IsSuspended);
     }
 
     [Fact]
@@ -247,6 +315,35 @@ public class StripeEndpointTests : IntegrationTestsBase
         Assert.True(organization.IsSuspended);
         Assert.Equal(eventCreatedUtc, organization.StripeSubscriptionEventDate);
         Assert.Null(organization.StripeSubscriptionId);
+    }
+
+    [Fact]
+    public async Task PostAsync_WithSameSecondUpdates_ReconcilesCurrentProviderState()
+    {
+        // Arrange
+        var eventCreatedUtc = DateTimeOffset.FromUnixTimeSeconds(1782155023).UtcDateTime;
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        organization.StripeCustomerId = "cus_existing";
+        organization.PlanId = _plans.SmallPlan.Id;
+        organization.StripeSubscriptionId = "sub_current";
+        organization.StripeSubscriptionEventDate = eventCreatedUtc;
+        organization.BillingStatus = BillingStatus.Active;
+        organization.RemoveSuspension();
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
+
+        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_current", "active", _plans.SmallPlan.Id));
+        string json = CreateSubscriptionEvent("evt_same_second_older_update", 1782155023, "customer.subscription.updated", "sub_current", "past_due");
+
+        // Act
+        await PostStripeEventAsync(json);
+
+        // Assert
+        organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
+        Assert.NotNull(organization);
+        Assert.Equal(BillingStatus.Active, organization.BillingStatus);
+        Assert.False(organization.IsSuspended);
+        Assert.Equal("sub_current", StripeBillingClient.LastGetSubscriptionId);
     }
 
     [Fact]
@@ -455,4 +552,16 @@ public class StripeEndpointTests : IntegrationTestsBase
               "type": "{{eventType}}"
             }
             """;
+
+    private static Subscription CreateStripeSubscription(string id, string status, string priceId)
+        => new()
+        {
+            Id = id,
+            CustomerId = "cus_existing",
+            Status = status,
+            Items = new StripeList<SubscriptionItem>
+            {
+                Data = [new SubscriptionItem { Id = $"si_{id}", Price = new Price { Id = priceId } }]
+            }
+        };
 }

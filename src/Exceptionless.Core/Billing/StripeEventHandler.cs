@@ -17,10 +17,11 @@ public class StripeEventHandler
     private readonly IMailer _mailer;
     private readonly BillingManager _billingManager;
     private readonly BillingPlans _plans;
+    private readonly IStripeBillingClient _stripeBillingClient;
     private readonly TimeProvider _timeProvider;
 
     public StripeEventHandler(IOrganizationRepository organizationRepository, IUserRepository userRepository, IMailer mailer,
-        BillingManager billingManager, BillingPlans plans, TimeProvider timeProvider, ILogger<StripeEventHandler> logger)
+        BillingManager billingManager, BillingPlans plans, IStripeBillingClient stripeBillingClient, TimeProvider timeProvider, ILogger<StripeEventHandler> logger)
     {
         _logger = logger;
         _organizationRepository = organizationRepository;
@@ -28,6 +29,7 @@ public class StripeEventHandler
         _mailer = mailer;
         _billingManager = billingManager;
         _plans = plans;
+        _stripeBillingClient = stripeBillingClient;
         _timeProvider = timeProvider;
     }
 
@@ -90,11 +92,32 @@ public class StripeEventHandler
             return;
         }
 
+        if (String.IsNullOrEmpty(organization.StripeSubscriptionId))
+        {
+            var primarySubscription = await ResolvePrimarySubscriptionAsync(organization, eventId);
+            if (primarySubscription is null)
+            {
+                _logger.LogWarning("Ignoring Stripe subscription update because the customer has no live subscription. Event: {EventId} Customer: {CustomerId} Org: {Organization} Subscription: {SubscriptionId}",
+                    eventId, sub.CustomerId, organization.Id, sub.Id);
+                return;
+            }
+
+            sub = primarySubscription;
+        }
+
         if (IsStaleSubscriptionEvent(organization, eventCreatedUtc, out var eventWatermarkUtc))
         {
             _logger.LogInformation("Ignoring stale Stripe subscription update. Event: {EventId} Customer: {CustomerId} Org: {Organization} Event Created: {EventCreatedUtc} Event Watermark: {EventWatermark}",
                 eventId, sub.CustomerId, organization.Id, eventCreatedUtc, eventWatermarkUtc);
             return;
+        }
+
+        if (organization.StripeSubscriptionEventDate == eventCreatedUtc)
+        {
+            sub = await _stripeBillingClient.GetSubscriptionAsync(sub.Id);
+
+            if (!String.Equals(sub.CustomerId, organization.StripeCustomerId, StringComparison.Ordinal))
+                throw new InvalidOperationException($"Stripe subscription {sub.Id} does not belong to the expected customer.");
         }
 
         var status = sub.GetBillingStatus();
@@ -164,6 +187,17 @@ public class StripeEventHandler
             return;
         }
 
+        if (String.IsNullOrEmpty(organization.StripeSubscriptionId))
+        {
+            var primarySubscription = await ResolvePrimarySubscriptionAsync(organization, eventId);
+            if (primarySubscription is not null)
+            {
+                _logger.LogInformation("Ignoring Stripe subscription deletion after reconciling a live subscription. Event: {EventId} Customer: {CustomerId} Org: {Organization} Deleted Subscription: {SubscriptionId} Current Subscription: {CurrentSubscriptionId}",
+                    eventId, sub.CustomerId, organization.Id, sub.Id, primarySubscription.Id);
+                return;
+            }
+        }
+
         if (IsStaleSubscriptionEvent(organization, eventCreatedUtc, out var eventWatermarkUtc))
         {
             _logger.LogInformation("Ignoring stale Stripe subscription deletion. Event: {EventId} Customer: {CustomerId} Org: {Organization} Event Created: {EventCreatedUtc} Event Watermark: {EventWatermark}",
@@ -187,7 +221,7 @@ public class StripeEventHandler
 
     private static bool IsStaleSubscriptionEvent(Organization organization, DateTime eventCreatedUtc, out DateTime eventWatermarkUtc)
     {
-        eventWatermarkUtc = organization.StripeSubscriptionEventDate ?? organization.BillingChangeDate;
+        eventWatermarkUtc = organization.StripeSubscriptionEventDate ?? DateTime.MinValue;
         if (eventWatermarkUtc <= DateTime.MinValue)
             return false;
 
@@ -198,6 +232,23 @@ public class StripeEventHandler
             organization.StripeSubscriptionEventDate.HasValue &&
             organization.StripeSubscriptionId is null &&
             organization.BillingStatus == BillingStatus.Canceled;
+    }
+
+    private async Task<Subscription?> ResolvePrimarySubscriptionAsync(Organization organization, string eventId)
+    {
+        var subscriptions = await _stripeBillingClient.GetLiveSubscriptionsAsync(organization.StripeCustomerId!);
+        var primarySubscription = subscriptions.SelectPrimarySubscription(null, organization.PlanId, organization.PlanId);
+
+        if (primarySubscription is null)
+            return null;
+
+        organization.StripeSubscriptionId = primarySubscription.Id;
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
+
+        _logger.LogInformation("Reconciled Stripe subscription ownership for legacy organization. Event: {EventId} Customer: {CustomerId} Org: {Organization} Subscription: {SubscriptionId} Live Subscription Count: {LiveSubscriptionCount}",
+            eventId, organization.StripeCustomerId, organization.Id, primarySubscription.Id, subscriptions.Count);
+
+        return primarySubscription;
     }
 
     private bool ShouldIgnoreSubscriptionEvent(Organization organization, Subscription subscription, string eventId)

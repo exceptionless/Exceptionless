@@ -1,4 +1,5 @@
 using Exceptionless.Core.Billing;
+using Exceptionless.Tests.Utility;
 using Stripe;
 using Xunit;
 
@@ -22,7 +23,7 @@ public sealed class StripeBillingClientExtensionsTests
     }
 
     [Fact]
-    public void SelectPrimarySubscription_MultipleSubscriptions_PrefersUniqueTargetPlan()
+    public void SelectPrimarySubscription_MultipleSubscriptions_PrefersTargetPlan()
     {
         var subscriptions = new List<Subscription>
         {
@@ -65,6 +66,23 @@ public sealed class StripeBillingClientExtensionsTests
 
         Assert.NotNull(subscription);
         Assert.Equal("sub_old", subscription.Id);
+    }
+
+    [Fact]
+    public async Task CancelSubscriptionAsync_UnpaidSubscription_DoesNotIssueCredit()
+    {
+        var stripeBillingClient = new FakeStripeBillingClient();
+        var subscription = CreateSubscription("sub_unpaid", "small-yearly", "past_due", DateTime.UtcNow);
+        subscription.CustomerId = "cus_test";
+        subscription.LatestInvoiceId = "in_unpaid";
+
+        await stripeBillingClient.CancelSubscriptionAsync("cus_test", subscription);
+
+        var cancellation = Assert.Single(stripeBillingClient.CanceledSubscriptions);
+        Assert.False(cancellation.Options.Prorate);
+        Assert.False(cancellation.Options.InvoiceNow);
+        Assert.Null(stripeBillingClient.LastGetInvoiceId);
+        Assert.Empty(stripeBillingClient.FinalizedInvoices);
     }
 
     private static Subscription CreateSubscription(string id, string priceId, string status, DateTime createdUtc)

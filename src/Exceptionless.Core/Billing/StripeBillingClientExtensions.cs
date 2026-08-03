@@ -56,13 +56,17 @@ public static class StripeBillingClientExtensions
             ?? candidates[0];
     }
 
-    public static async Task CancelSubscriptionWithProrationAsync(
+    public static async Task CancelSubscriptionAsync(
         this IStripeBillingClient stripeBillingClient,
         string customerId,
         Subscription subscription)
     {
+        bool shouldProrate = await ShouldProrateCancellationAsync(stripeBillingClient, customerId, subscription);
         var canceledSubscription = await stripeBillingClient.CancelSubscriptionAsync(subscription.Id,
-            new SubscriptionCancelOptions { Prorate = true, InvoiceNow = true });
+            new SubscriptionCancelOptions { Prorate = shouldProrate, InvoiceNow = shouldProrate });
+
+        if (!shouldProrate)
+            return;
 
         if (String.IsNullOrEmpty(canceledSubscription.LatestInvoiceId) ||
             String.Equals(canceledSubscription.LatestInvoiceId, subscription.LatestInvoiceId, StringComparison.Ordinal))
@@ -74,6 +78,23 @@ public static class StripeBillingClientExtensions
             ?? throw new InvalidOperationException($"Stripe invoice {canceledSubscription.LatestInvoiceId} was not found after canceling a subscription.");
 
         await FinalizeInvoiceIfDraftAsync(stripeBillingClient, customerId, invoice);
+    }
+
+    private static async Task<bool> ShouldProrateCancellationAsync(
+        IStripeBillingClient stripeBillingClient,
+        string customerId,
+        Subscription subscription)
+    {
+        if (!String.Equals(subscription.Status, "active", StringComparison.Ordinal) || String.IsNullOrEmpty(subscription.LatestInvoiceId))
+            return false;
+
+        var invoice = await stripeBillingClient.GetInvoiceAsync(subscription.LatestInvoiceId)
+            ?? throw new InvalidOperationException($"Stripe invoice {subscription.LatestInvoiceId} was not found before canceling an active subscription.");
+
+        if (!String.Equals(invoice.CustomerId, customerId, StringComparison.Ordinal))
+            throw new InvalidOperationException($"Stripe invoice {invoice.Id} does not belong to the expected customer.");
+
+        return String.Equals(invoice.Status, "paid", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsLiveSubscription(Subscription subscription)

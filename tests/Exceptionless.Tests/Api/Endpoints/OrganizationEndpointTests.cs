@@ -1469,9 +1469,10 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         // Arrange
         var canceledAtUtc = TimeProvider.GetUtcNow().UtcDateTime;
         await SetPlanAndStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, _plans.SmallPlan.Id, "cus_existing");
-        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_active", "si_active", latestInvoiceId: "in_original"));
+        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_active", "si_active", latestInvoiceId: "in_original", status: "active"));
         StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_canceled", "si_canceled", canceledAtUtc: canceledAtUtc));
         StripeBillingClient.CanceledSubscriptionResults["sub_active"] = CreateStripeSubscription("sub_active", "si_active", canceledAtUtc, "in_credit");
+        StripeBillingClient.Invoices.Add(CreateStripeInvoice("in_original", "cus_existing", TimeProvider.GetUtcNow().UtcDateTime));
         StripeBillingClient.Invoice = CreatePendingSubscriptionCreditInvoice("in_credit", "cus_existing", "sub_active");
 
         // Act
@@ -1539,9 +1540,10 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     {
         // Arrange
         await SetPlanAndStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, _plans.SmallPlan.Id, "cus_existing");
-        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_active", "si_active", latestInvoiceId: "in_original"));
+        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_active", "si_active", latestInvoiceId: "in_original", status: "active"));
         StripeBillingClient.CanceledSubscriptionResults["sub_active"] = CreateStripeSubscription(
             "sub_active", "si_active", TimeProvider.GetUtcNow().UtcDateTime, "in_credit");
+        StripeBillingClient.Invoices.Add(CreateStripeInvoice("in_original", "cus_existing", TimeProvider.GetUtcNow().UtcDateTime));
         StripeBillingClient.Invoice = CreatePendingSubscriptionCreditInvoice("in_credit", "cus_existing", "sub_active");
         StripeBillingClient.FinalizeInvoiceException = new StripeException("Stripe unavailable");
 
@@ -1571,9 +1573,10 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     {
         // Arrange
         await SetPlanAndStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, _plans.SmallPlan.Id, "cus_existing");
-        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_active", "si_active", latestInvoiceId: "in_original"));
+        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_active", "si_active", latestInvoiceId: "in_original", status: "active"));
         StripeBillingClient.CanceledSubscriptionResults["sub_active"] = CreateStripeSubscription(
             "sub_active", "si_active", TimeProvider.GetUtcNow().UtcDateTime, "in_original");
+        StripeBillingClient.Invoices.Add(CreateStripeInvoice("in_original", "cus_existing", TimeProvider.GetUtcNow().UtcDateTime));
 
         // Act
         var result = await WithBillingEnabledAsync(() =>
@@ -1588,7 +1591,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(result);
         Assert.True(result.Success, result.Message);
-        Assert.Null(StripeBillingClient.LastGetInvoiceId);
+        Assert.Equal("in_original", StripeBillingClient.LastGetInvoiceId);
         Assert.Empty(StripeBillingClient.FinalizedInvoices);
     }
 
@@ -1796,7 +1799,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task ChangePlanAsync_MultipleLiveSubscriptions_PrefersUniqueTargetPlanAndCancelsDuplicate()
+    public async Task ChangePlanAsync_MultipleLiveSubscriptions_PrefersTargetPlanAndCancelsDuplicate()
     {
         // Arrange
         await SetStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, "cus_existing");
