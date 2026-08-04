@@ -125,6 +125,18 @@ public class StripeEventHandler
                 throw new InvalidOperationException($"Stripe subscription {sub.Id} does not belong to the expected customer.");
         }
 
+        if (sub.GetBillingStatus() == BillingStatus.Canceled)
+        {
+            var replacementSubscription = await ResolvePrimarySubscriptionAsync(organization, eventId, sub.Id);
+            if (replacementSubscription is not null)
+            {
+                await ApplySubscriptionStateAsync(organization, replacementSubscription, eventId, eventCreatedUtc);
+                _logger.LogInformation("Ignoring terminal Stripe subscription update after reconciling a live subscription. Event: {EventId} Customer: {CustomerId} Org: {Organization} Terminal Subscription: {SubscriptionId} Current Subscription: {CurrentSubscriptionId}",
+                    eventId, sub.CustomerId, organization.Id, sub.Id, replacementSubscription.Id);
+                return;
+            }
+        }
+
         await ApplySubscriptionStateAsync(organization, sub, eventId, eventCreatedUtc);
     }
 
