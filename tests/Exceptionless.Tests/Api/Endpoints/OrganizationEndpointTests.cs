@@ -1814,7 +1814,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         StripeBillingClient.Subscriptions.Add(CreateStripeSubscription(
             "sub_old", "si_old", latestInvoiceId: "in_old_paid", status: "active", priceId: _plans.SmallPlan.Id, createdUtc: TimeProvider.GetUtcNow().UtcDateTime.AddDays(-1)));
         StripeBillingClient.Subscriptions.Add(CreateStripeSubscription(
-            "sub_new", "si_new", status: "active", priceId: _plans.SmallPlan.Id, createdUtc: TimeProvider.GetUtcNow().UtcDateTime));
+            "sub_new", "si_new", status: "active", priceId: _plans.MediumPlan.Id, createdUtc: TimeProvider.GetUtcNow().UtcDateTime));
         StripeBillingClient.Invoices.Add(new Stripe.Invoice { Id = "in_old_paid", CustomerId = "cus_existing", Status = "paid" });
         StripeBillingClient.Invoices.Add(CreatePendingSubscriptionCreditInvoice("in_duplicate_credit", "cus_existing", "sub_old"));
         StripeBillingClient.CanceledSubscriptionResults["sub_old"] = CreateStripeSubscription(
@@ -1845,7 +1845,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task ChangePlanAsync_WithDuplicateSubscriptions_CleansUpBeforePrimaryUpdate()
+    public async Task ChangePlanAsync_CustomerUpdateFails_PreservesDuplicateSubscriptions()
     {
         // Arrange
         await SetPlanAndStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, _plans.MediumPlan.Id, "cus_existing");
@@ -1880,7 +1880,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(result);
         Assert.False(result.Success);
-        Assert.Equal("sub_unhealthy", Assert.Single(StripeBillingClient.CanceledSubscriptions).SubscriptionId);
+        Assert.Empty(StripeBillingClient.CanceledSubscriptions);
 
         organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
         Assert.NotNull(organization);
@@ -1892,7 +1892,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task ChangePlanAsync_DuplicateCancellationFails_DoesNotChangePlan()
+    public async Task ChangePlanAsync_DeferredDuplicateCancellationFails_PersistsPlan()
     {
         // Arrange
         await SetStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, "cus_existing");
@@ -1919,7 +1919,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
 
         var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
         Assert.NotNull(organization);
-        Assert.Equal(_plans.FreePlan.Id, organization.PlanId);
+        Assert.Equal(_plans.SmallPlan.Id, organization.PlanId);
         Assert.Equal("sub_old", organization.StripeSubscriptionId);
     }
 
@@ -1947,10 +1947,11 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         Assert.NotNull(result);
         Assert.True(result.Success, result.Message);
         Assert.Equal("sub_medium", Assert.Single(StripeBillingClient.CanceledSubscriptions).SubscriptionId);
-        Assert.Equal("sub_small", Assert.Single(StripeBillingClient.UpdatedSubscriptions).SubscriptionId);
+        Assert.Empty(StripeBillingClient.UpdatedSubscriptions);
 
         var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
         Assert.NotNull(organization);
+        Assert.Equal(_plans.SmallPlan.Id, organization.PlanId);
         Assert.Equal("sub_small", organization.StripeSubscriptionId);
     }
 
@@ -1978,11 +1979,85 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         Assert.NotNull(result);
         Assert.True(result.Success, result.Message);
         Assert.Equal("sub_new", Assert.Single(StripeBillingClient.CanceledSubscriptions).SubscriptionId);
-        Assert.Equal("sub_old", Assert.Single(StripeBillingClient.UpdatedSubscriptions).SubscriptionId);
+        Assert.Empty(StripeBillingClient.UpdatedSubscriptions);
 
         var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
         Assert.NotNull(organization);
+        Assert.Equal(_plans.SmallPlan.Id, organization.PlanId);
         Assert.Equal("sub_old", organization.StripeSubscriptionId);
+    }
+
+    [Fact]
+    public async Task ChangePlanAsync_CouponUpdateFails_PreservesDuplicateSubscriptions()
+    {
+        // Arrange
+        await SetStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, "cus_existing");
+        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription(
+            "sub_old", "si_old", status: "active", priceId: _plans.SmallPlan.Id, createdUtc: TimeProvider.GetUtcNow().UtcDateTime.AddDays(-1)));
+        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription(
+            "sub_new", "si_new", status: "active", priceId: _plans.SmallPlan.Id, createdUtc: TimeProvider.GetUtcNow().UtcDateTime));
+        StripeBillingClient.UpdateSubscriptionException = new StripeException("Stripe unavailable");
+
+        // Act
+        var result = await WithBillingEnabledAsync(() =>
+            SendRequestAsAsync<ChangePlanResult>(r => r
+                .AsFreeOrganizationUser()
+                .Post()
+                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
+                .Content(new ChangePlanRequest { PlanId = _plans.SmallPlan.Id, CouponId = "coupon" })
+                .StatusCodeShouldBeOk()
+            ));
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.False(result.Success);
+        Assert.Empty(StripeBillingClient.CanceledSubscriptions);
+        Assert.Equal("sub_old", Assert.Single(StripeBillingClient.UpdatedSubscriptions).SubscriptionId);
+
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
+        Assert.NotNull(organization);
+        Assert.Equal(_plans.FreePlan.Id, organization.PlanId);
+        Assert.Equal("sub_old", organization.StripeSubscriptionId);
+    }
+
+    [Fact]
+    public async Task ChangePlanAsync_ItemlessPrimaryUpdateFails_PreservesDuplicateSubscription()
+    {
+        // Arrange
+        await SetStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, "cus_existing");
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        organization.StripeSubscriptionId = "sub_empty";
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache());
+
+        var itemlessSubscription = CreateStripeSubscription(
+            "sub_empty", "si_empty", status: "active", createdUtc: TimeProvider.GetUtcNow().UtcDateTime.AddDays(-1));
+        itemlessSubscription.Items.Data.Clear();
+        StripeBillingClient.Subscriptions.Add(itemlessSubscription);
+        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription(
+            "sub_valid", "si_valid", status: "active", priceId: _plans.SmallPlan.Id, createdUtc: TimeProvider.GetUtcNow().UtcDateTime));
+        StripeBillingClient.UpdateSubscriptionException = new StripeException("Stripe unavailable");
+
+        // Act
+        var result = await WithBillingEnabledAsync(() =>
+            SendRequestAsAsync<ChangePlanResult>(r => r
+                .AsFreeOrganizationUser()
+                .Post()
+                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
+                .Content(new ChangePlanRequest { PlanId = _plans.SmallPlan.Id })
+                .StatusCodeShouldBeOk()
+            ));
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.False(result.Success);
+        Assert.Empty(StripeBillingClient.CanceledSubscriptions);
+        Assert.Equal("sub_empty", Assert.Single(StripeBillingClient.UpdatedSubscriptions).SubscriptionId);
+
+        organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
+        Assert.NotNull(organization);
+        Assert.Equal(_plans.FreePlan.Id, organization.PlanId);
+        Assert.Equal("sub_empty", organization.StripeSubscriptionId);
     }
 
     [Fact]

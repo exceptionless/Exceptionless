@@ -396,6 +396,7 @@ public class OrganizationHandler(
         }
 
         bool isPaymentMethod = model.StripeToken?.StartsWith("pm_", StringComparison.Ordinal) is true;
+        List<(string CustomerId, Subscription Subscription)> duplicateSubscriptionsToCancelAfterPlanSave = [];
         try
         {
             if (!String.Equals(organization.PlanId, plans.FreePlan.Id) && String.Equals(plan.Id, plans.FreePlan.Id))
@@ -508,19 +509,6 @@ public class OrganizationHandler(
                     await repository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
                 }
 
-                if (subscription is not null && liveSubscriptions.Count > 1)
-                {
-                    var duplicateSubscriptions = liveSubscriptions
-                        .Where(candidate => !String.Equals(candidate.Id, subscription.Id, StringComparison.Ordinal))
-                        .ToList();
-
-                    _logger.LogWarning("Reconciling multiple live Stripe subscriptions for organization {OrganizationId}. Keeping {SubscriptionId}; canceling {DuplicateSubscriptionIds}",
-                        message.Id, subscription.Id, String.Join(", ", duplicateSubscriptions.Select(candidate => candidate.Id)));
-
-                    foreach (var duplicateSubscription in duplicateSubscriptions)
-                        await stripeBillingClient.CancelSubscriptionAsync(organization.StripeCustomerId, duplicateSubscription);
-                }
-
                 if (!String.IsNullOrEmpty(model.StripeToken))
                 {
                     if (isPaymentMethod)
@@ -544,12 +532,38 @@ public class OrganizationHandler(
 
                 await stripeBillingClient.UpdateCustomerAsync(organization.StripeCustomerId, customerUpdateOptions);
 
+                bool requiresPriceUpdate = subscription is not null && !HasSubscriptionPrice(subscription, model.PlanId);
+                if (subscription is not null && liveSubscriptions.Count > 1)
+                {
+                    var duplicateSubscriptions = liveSubscriptions
+                        .Where(candidate => !String.Equals(candidate.Id, subscription.Id, StringComparison.Ordinal))
+                        .ToList();
+
+                    _logger.LogWarning("Reconciling multiple live Stripe subscriptions for organization {OrganizationId}. Keeping {SubscriptionId}; canceling {DuplicateSubscriptionIds}",
+                        message.Id, subscription.Id, String.Join(", ", duplicateSubscriptions.Select(candidate => candidate.Id)));
+
+                    if (requiresPriceUpdate && subscription.Items.Data.Count > 0)
+                    {
+                        foreach (var duplicateSubscription in duplicateSubscriptions)
+                            await stripeBillingClient.CancelSubscriptionAsync(organization.StripeCustomerId, duplicateSubscription);
+                    }
+                    else
+                    {
+                        duplicateSubscriptionsToCancelAfterPlanSave.AddRange(duplicateSubscriptions.Select(duplicateSubscription =>
+                            (organization.StripeCustomerId, duplicateSubscription)));
+                    }
+                }
+
                 if (subscription is not null && subscription.Items.Data.Count > 0)
                 {
-                    update.Items.Add(new SubscriptionItemOptions { Id = subscription.Items.Data[0].Id, Price = model.PlanId });
-                    if (!String.IsNullOrWhiteSpace(model.CouponId))
-                        update.Discounts = [new SubscriptionDiscountOptions { Coupon = model.CouponId }];
-                    await stripeBillingClient.UpdateSubscriptionAsync(subscription.Id, update);
+                    if (requiresPriceUpdate || !String.IsNullOrWhiteSpace(model.CouponId))
+                    {
+                        update.Items.Add(new SubscriptionItemOptions { Id = subscription.Items.Data[0].Id, Price = model.PlanId });
+                        if (!String.IsNullOrWhiteSpace(model.CouponId))
+                            update.Discounts = [new SubscriptionDiscountOptions { Coupon = model.CouponId }];
+                        await stripeBillingClient.UpdateSubscriptionAsync(subscription.Id, update);
+                    }
+
                     billingManager.SetStripeSubscriptionId(organization, subscription.Id);
                 }
                 else if (subscription is not null)
@@ -583,6 +597,9 @@ public class OrganizationHandler(
             billingManager.ApplyBillingPlan(organization, plan, GetCurrentUser(message.Context));
             await repository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
             await messagePublisher.PublishAsync(new PlanChanged { OrganizationId = organization.Id });
+
+            foreach (var duplicateSubscription in duplicateSubscriptionsToCancelAfterPlanSave)
+                await stripeBillingClient.CancelSubscriptionAsync(duplicateSubscription.CustomerId, duplicateSubscription.Subscription);
         }
         catch (StripeException ex)
         {
@@ -922,6 +939,11 @@ public class OrganizationHandler(
 
         return $"/api/v2/organizations/{id}/icon/{fileName}";
     }
+
+    private static bool HasSubscriptionPrice(Subscription subscription, string priceId)
+        => subscription.Items.Data.Any(item =>
+            String.Equals(item.Price?.Id, priceId, StringComparison.Ordinal) ||
+            String.Equals(item.Plan?.Id, priceId, StringComparison.Ordinal));
 
     private void ApplyResolvedSubscriptionState(Organization organization, Subscription subscription, string userId)
     {
