@@ -117,7 +117,7 @@ public class StripeEventHandler
             {
                 if (sub.GetBillingStatus() != BillingStatus.Canceled)
                 {
-                    _logger.LogWarning("Ignoring Stripe subscription update because the customer has no live subscription. Event: {EventId} Customer: {CustomerId} Org: {Organization} Subscription: {SubscriptionId}",
+                    _logger.LogInformation("Ignoring outdated Stripe subscription update because current Stripe state has no live subscription. Event: {EventId} Customer: {CustomerId} Org: {Organization} Subscription: {SubscriptionId}",
                         eventId, sub.CustomerId, organization.Id, sub.Id);
                     return;
                 }
@@ -131,13 +131,17 @@ public class StripeEventHandler
             }
         }
 
-        if (!organization.StripeSubscriptionEventDate.HasValue &&
-            !String.IsNullOrEmpty(organization.StripeSubscriptionId))
+        bool isEventOrderingUnknown = !organization.StripeSubscriptionEventDate.HasValue &&
+            !String.IsNullOrEmpty(organization.StripeSubscriptionId);
+        if (isEventOrderingUnknown)
         {
             sub = await _stripeBillingClient.GetSubscriptionAsync(organization.StripeSubscriptionId!);
 
             if (!String.Equals(sub.CustomerId, organization.StripeCustomerId, StringComparison.Ordinal))
                 throw new InvalidOperationException($"Stripe subscription {sub.Id} does not belong to the expected customer.");
+
+            _logger.LogInformation("Refetched current provider state because Stripe subscription event ordering is unknown. Event: {EventId} Customer: {CustomerId} Org: {Organization} Subscription: {SubscriptionId}",
+                eventId, sub.CustomerId, organization.Id, sub.Id);
         }
 
         if (IsStaleSubscriptionEvent(organization, eventCreatedUtc, out var eventWatermarkUtc))
@@ -171,7 +175,7 @@ public class StripeEventHandler
             }
         }
 
-        await ApplySubscriptionStateAsync(organization, sub, eventId, eventCreatedUtc);
+        await ApplySubscriptionStateAsync(organization, sub, eventId, isEventOrderingUnknown ? null : eventCreatedUtc);
     }
 
     private async Task SubscriptionDeletedAsync(Subscription sub, string eventId, DateTime eventCreatedUtc)
