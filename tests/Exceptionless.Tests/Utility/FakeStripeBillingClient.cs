@@ -162,6 +162,7 @@ public sealed class FakeStripeBillingClient : IStripeBillingClient
     public Task<Subscription> UpdateSubscriptionAsync(string subscriptionId, SubscriptionUpdateOptions options)
     {
         UpdatedSubscriptions.Add((subscriptionId, options));
+        Calls.Add($"update-subscription:{subscriptionId}");
         if (UpdateSubscriptionException is not null)
             throw UpdateSubscriptionException;
 
@@ -180,6 +181,7 @@ public sealed class FakeStripeBillingClient : IStripeBillingClient
     public Task<Subscription> CancelSubscriptionAsync(string subscriptionId, SubscriptionCancelOptions options)
     {
         CanceledSubscriptions.Add((subscriptionId, options));
+        Calls.Add($"cancel-subscription:{subscriptionId}");
         if (CancelSubscriptionException is not null)
             throw CancelSubscriptionException;
 
