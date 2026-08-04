@@ -1488,9 +1488,9 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(result);
         Assert.True(result.Success);
-        Assert.Equal("cus_existing", StripeBillingClient.LastSubscriptionListOptions?.Customer);
-        Assert.Null(StripeBillingClient.LastSubscriptionListOptions?.Status);
-        Assert.Equal(100, StripeBillingClient.LastSubscriptionListOptions?.Limit);
+        Assert.Equal("cus_existing", StripeBillingClient.LastAutoPagingSubscriptionListOptions?.Customer);
+        Assert.Null(StripeBillingClient.LastAutoPagingSubscriptionListOptions?.Status);
+        Assert.Equal(100, StripeBillingClient.LastAutoPagingSubscriptionListOptions?.Limit);
         var canceledSubscription = Assert.Single(StripeBillingClient.CanceledSubscriptions);
         Assert.Equal("sub_active", canceledSubscription.SubscriptionId);
         Assert.True(canceledSubscription.Options.Prorate);
@@ -1659,8 +1659,8 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(result);
         Assert.True(result.Success, result.Message);
-        Assert.Null(StripeBillingClient.LastSubscriptionListOptions?.Status);
-        Assert.Equal(100, StripeBillingClient.LastSubscriptionListOptions?.Limit);
+        Assert.Null(StripeBillingClient.LastAutoPagingSubscriptionListOptions?.Status);
+        Assert.Equal(100, StripeBillingClient.LastAutoPagingSubscriptionListOptions?.Limit);
         Assert.Equal("cus_existing", StripeBillingClient.LastAutoPagingInvoiceListOptions?.Customer);
         Assert.Equal("draft", StripeBillingClient.LastAutoPagingInvoiceListOptions?.Status);
         Assert.Equal(100, StripeBillingClient.LastAutoPagingInvoiceListOptions?.Limit);

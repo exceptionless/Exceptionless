@@ -51,6 +51,8 @@ public sealed class FakeStripeBillingClient : IStripeBillingClient
 
     public SubscriptionListOptions? LastSubscriptionListOptions { get; private set; }
 
+    public SubscriptionListOptions? LastAutoPagingSubscriptionListOptions { get; private set; }
+
     public CustomerCreateOptions? LastCustomerCreateOptions { get; private set; }
 
     public List<SubscriptionCreateOptions> CreatedSubscriptionOptions { get; } = [];
@@ -88,6 +90,7 @@ public sealed class FakeStripeBillingClient : IStripeBillingClient
         LastAutoPagingInvoiceListOptions = null;
         FinalizedInvoices.Clear();
         LastSubscriptionListOptions = null;
+        LastAutoPagingSubscriptionListOptions = null;
         LastCustomerCreateOptions = null;
         CreatedSubscriptionOptions.Clear();
         UpdatedCustomers.Clear();
@@ -187,6 +190,16 @@ public sealed class FakeStripeBillingClient : IStripeBillingClient
             throw ListSubscriptionsException;
 
         return Task.FromResult<IReadOnlyCollection<Subscription>>(Subscriptions.ToList());
+    }
+
+    public async IAsyncEnumerable<Subscription> ListSubscriptionsAutoPagingAsync(SubscriptionListOptions options)
+    {
+        LastAutoPagingSubscriptionListOptions = options;
+        if (ListSubscriptionsException is not null)
+            throw ListSubscriptionsException;
+
+        foreach (var subscription in Subscriptions)
+            yield return subscription;
     }
 
     public Task<Subscription> CancelSubscriptionAsync(string subscriptionId, SubscriptionCancelOptions options)

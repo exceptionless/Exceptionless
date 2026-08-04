@@ -178,6 +178,26 @@ public sealed class StripeBillingClientExtensionsTests
         Assert.Equal("sub_scheduled", Assert.Single(subscriptions).Id);
     }
 
+    [Fact]
+    public async Task GetLiveSubscriptionsAsync_MoreThanOnePage_ReturnsLiveSubscription()
+    {
+        // Arrange
+        var stripeBillingClient = new FakeStripeBillingClient();
+        for (int index = 0; index < 100; index++)
+            stripeBillingClient.Subscriptions.Add(CreateSubscription($"sub_canceled_{index}", "small-yearly", "canceled", DateTime.UtcNow));
+
+        stripeBillingClient.Subscriptions.Add(CreateSubscription("sub_active", "small-yearly", "active", DateTime.UtcNow));
+
+        // Act
+        var subscriptions = await stripeBillingClient.GetLiveSubscriptionsAsync("cus_test");
+
+        // Assert
+        Assert.Equal("sub_active", Assert.Single(subscriptions).Id);
+        Assert.NotNull(stripeBillingClient.LastAutoPagingSubscriptionListOptions);
+        Assert.Equal("cus_test", stripeBillingClient.LastAutoPagingSubscriptionListOptions.Customer);
+        Assert.Equal(100, stripeBillingClient.LastAutoPagingSubscriptionListOptions.Limit);
+    }
+
     private static Subscription CreateSubscription(string id, string priceId, string status, DateTime createdUtc)
         => new()
         {

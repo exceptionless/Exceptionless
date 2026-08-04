@@ -73,6 +73,12 @@ public sealed class StripeBillingClient : IStripeBillingClient
         return (await service.ListAsync(options)).ToList();
     }
 
+    public IAsyncEnumerable<Subscription> ListSubscriptionsAutoPagingAsync(SubscriptionListOptions options)
+    {
+        var service = new SubscriptionService(Client);
+        return service.ListAutoPagingAsync(options);
+    }
+
     public Task<Subscription> CancelSubscriptionAsync(string subscriptionId, SubscriptionCancelOptions options)
     {
         var service = new SubscriptionService(Client);

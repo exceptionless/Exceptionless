@@ -227,7 +227,7 @@ public class StripeEndpointTests : IntegrationTestsBase
         Assert.Equal("sub_current", organization.StripeSubscriptionId);
         Assert.Equal(BillingStatus.Active, organization.BillingStatus);
         Assert.False(organization.IsSuspended);
-        Assert.Equal("cus_existing", StripeBillingClient.LastSubscriptionListOptions?.Customer);
+        Assert.Equal("cus_existing", StripeBillingClient.LastAutoPagingSubscriptionListOptions?.Customer);
     }
 
     [Fact]

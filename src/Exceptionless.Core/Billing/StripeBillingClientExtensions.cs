@@ -9,13 +9,20 @@ public static class StripeBillingClientExtensions
         this IStripeBillingClient stripeBillingClient,
         string customerId)
     {
-        var subscriptions = await stripeBillingClient.ListSubscriptionsAsync(new SubscriptionListOptions
+        var subscriptions = stripeBillingClient.ListSubscriptionsAutoPagingAsync(new SubscriptionListOptions
         {
             Customer = customerId,
             Limit = 100
         });
 
-        return subscriptions.Where(IsLiveSubscription).ToList();
+        List<Subscription> liveSubscriptions = [];
+        await foreach (var subscription in subscriptions)
+        {
+            if (IsLiveSubscription(subscription))
+                liveSubscriptions.Add(subscription);
+        }
+
+        return liveSubscriptions;
     }
 
     public static async Task FinalizePendingCancellationCreditsAsync(

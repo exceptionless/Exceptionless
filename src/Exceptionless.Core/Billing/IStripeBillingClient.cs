@@ -24,6 +24,8 @@ public interface IStripeBillingClient
 
     Task<IReadOnlyCollection<Subscription>> ListSubscriptionsAsync(SubscriptionListOptions options);
 
+    IAsyncEnumerable<Subscription> ListSubscriptionsAutoPagingAsync(SubscriptionListOptions options);
+
     Task<Subscription> CancelSubscriptionAsync(string subscriptionId, SubscriptionCancelOptions options);
 
     Task<PaymentMethod> AttachPaymentMethodAsync(string paymentMethodId, PaymentMethodAttachOptions options);
