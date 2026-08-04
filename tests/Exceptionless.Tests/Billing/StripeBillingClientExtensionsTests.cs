@@ -10,14 +10,17 @@ public sealed class StripeBillingClientExtensionsTests
     [Fact]
     public void SelectPrimarySubscription_MultipleSubscriptions_PrefersPersistedSubscription()
     {
+        // Arrange
         var subscriptions = new List<Subscription>
         {
             CreateSubscription("sub_old", "small-yearly", "active", DateTime.UtcNow.AddDays(-1)),
             CreateSubscription("sub_persisted", "small-yearly", "active", DateTime.UtcNow)
         };
 
+        // Act
         var subscription = subscriptions.SelectPrimarySubscription("sub_persisted", "free", "small-yearly");
 
+        // Assert
         Assert.NotNull(subscription);
         Assert.Equal("sub_persisted", subscription.Id);
     }
@@ -25,14 +28,17 @@ public sealed class StripeBillingClientExtensionsTests
     [Fact]
     public void SelectPrimarySubscription_MultipleSubscriptions_PrefersTargetPlan()
     {
+        // Arrange
         var subscriptions = new List<Subscription>
         {
             CreateSubscription("sub_medium", "medium-yearly", "active", DateTime.UtcNow.AddDays(-1)),
             CreateSubscription("sub_small", "small-yearly", "active", DateTime.UtcNow)
         };
 
+        // Act
         var subscription = subscriptions.SelectPrimarySubscription(null, "free", "small-yearly");
 
+        // Assert
         Assert.NotNull(subscription);
         Assert.Equal("sub_small", subscription.Id);
     }
@@ -40,14 +46,17 @@ public sealed class StripeBillingClientExtensionsTests
     [Fact]
     public void SelectPrimarySubscription_UnhealthyPersistedSubscription_PrefersHealthySubscription()
     {
+        // Arrange
         var subscriptions = new List<Subscription>
         {
             CreateSubscription("sub_persisted", "small-yearly", "past_due", DateTime.UtcNow.AddDays(-1)),
             CreateSubscription("sub_active", "medium-yearly", "active", DateTime.UtcNow)
         };
 
+        // Act
         var subscription = subscriptions.SelectPrimarySubscription("sub_persisted", "small-yearly", "small-yearly");
 
+        // Assert
         Assert.NotNull(subscription);
         Assert.Equal("sub_active", subscription.Id);
     }
@@ -55,6 +64,7 @@ public sealed class StripeBillingClientExtensionsTests
     [Fact]
     public void SelectPrimarySubscription_EquivalentSubscriptions_PrefersOldestHealthySubscription()
     {
+        // Arrange
         var subscriptions = new List<Subscription>
         {
             CreateSubscription("sub_new", "small-yearly", "active", DateTime.UtcNow),
@@ -62,8 +72,10 @@ public sealed class StripeBillingClientExtensionsTests
             CreateSubscription("sub_past_due", "small-yearly", "past_due", DateTime.UtcNow.AddDays(-2))
         };
 
+        // Act
         var subscription = subscriptions.SelectPrimarySubscription(null, "free", "small-yearly");
 
+        // Assert
         Assert.NotNull(subscription);
         Assert.Equal("sub_old", subscription.Id);
     }
@@ -71,13 +83,16 @@ public sealed class StripeBillingClientExtensionsTests
     [Fact]
     public async Task CancelSubscriptionAsync_UnpaidSubscription_DoesNotIssueCredit()
     {
+        // Arrange
         var stripeBillingClient = new FakeStripeBillingClient();
         var subscription = CreateSubscription("sub_unpaid", "small-yearly", "past_due", DateTime.UtcNow);
         subscription.CustomerId = "cus_test";
         subscription.LatestInvoiceId = "in_unpaid";
 
+        // Act
         await stripeBillingClient.CancelSubscriptionAsync("cus_test", subscription);
 
+        // Assert
         var cancellation = Assert.Single(stripeBillingClient.CanceledSubscriptions);
         Assert.False(cancellation.Options.Prorate);
         Assert.False(cancellation.Options.InvoiceNow);
@@ -88,6 +103,7 @@ public sealed class StripeBillingClientExtensionsTests
     [Fact]
     public async Task FinalizePendingCancellationCreditsAsync_CanceledSubscription_FinalizesCredit()
     {
+        // Arrange
         var stripeBillingClient = new FakeStripeBillingClient();
         var subscription = CreateSubscription("sub_canceled", "small-yearly", "canceled", DateTime.UtcNow);
         subscription.CustomerId = "cus_test";
@@ -95,36 +111,44 @@ public sealed class StripeBillingClientExtensionsTests
         stripeBillingClient.Subscriptions.Add(subscription);
         stripeBillingClient.Invoices.Add(CreateDraftCreditInvoice("in_credit", subscription.Id));
 
+        // Act
         await stripeBillingClient.FinalizePendingCancellationCreditsAsync("cus_test");
 
+        // Assert
         Assert.Equal("in_credit", Assert.Single(stripeBillingClient.FinalizedInvoices).InvoiceId);
     }
 
     [Fact]
     public async Task FinalizePendingCancellationCreditsAsync_LiveSubscription_DoesNotFinalizeCredit()
     {
+        // Arrange
         var stripeBillingClient = new FakeStripeBillingClient();
         var subscription = CreateSubscription("sub_active", "small-yearly", "active", DateTime.UtcNow);
         subscription.CustomerId = "cus_test";
         stripeBillingClient.Subscriptions.Add(subscription);
         stripeBillingClient.Invoices.Add(CreateDraftCreditInvoice("in_credit", subscription.Id));
 
+        // Act
         await stripeBillingClient.FinalizePendingCancellationCreditsAsync("cus_test");
 
+        // Assert
         Assert.Empty(stripeBillingClient.FinalizedInvoices);
     }
 
     [Fact]
     public async Task GetLiveSubscriptionsAsync_PeriodEndCancellation_RemainsLive()
     {
+        // Arrange
         var stripeBillingClient = new FakeStripeBillingClient();
         var subscription = CreateSubscription("sub_scheduled", "small-yearly", "active", DateTime.UtcNow);
         subscription.CanceledAt = DateTime.UtcNow;
         subscription.CancelAtPeriodEnd = true;
         stripeBillingClient.Subscriptions.Add(subscription);
 
+        // Act
         var subscriptions = await stripeBillingClient.GetLiveSubscriptionsAsync("cus_test");
 
+        // Assert
         Assert.Equal("sub_scheduled", Assert.Single(subscriptions).Id);
     }
 
