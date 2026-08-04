@@ -133,6 +133,16 @@ public class BillingManager
         organization.GetCurrentUsage(_timeProvider).Limit = organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
     }
 
+    internal void SetStripeSubscriptionId(Organization organization, string? subscriptionId)
+    {
+        ArgumentNullException.ThrowIfNull(organization);
+        if (String.Equals(organization.StripeSubscriptionId, subscriptionId, StringComparison.Ordinal))
+            return;
+
+        organization.StripeSubscriptionId = subscriptionId;
+        organization.StripeSubscriptionEventDate = null;
+    }
+
     internal static string GetOrganizationLockKey(string organizationId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(organizationId);

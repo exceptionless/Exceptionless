@@ -125,44 +125,7 @@ public class StripeEventHandler
                 throw new InvalidOperationException($"Stripe subscription {sub.Id} does not belong to the expected customer.");
         }
 
-        var status = sub.GetBillingStatus();
-
-        if (!status.HasValue)
-        {
-            _logger.LogWarning("Ignoring Stripe subscription update with unsupported status. Event: {EventId} Customer: {CustomerId} Org: {Organization} Subscription: {SubscriptionId} Status: {Status}",
-                eventId, sub.CustomerId, organization.Id, sub.Id, sub.Status);
-            return;
-        }
-
-        organization.StripeSubscriptionEventDate = eventCreatedUtc;
-        if (status.Value == BillingStatus.Canceled)
-            organization.StripeSubscriptionId = null;
-        else
-            organization.StripeSubscriptionId ??= sub.Id;
-
-        if (status.Value == organization.BillingStatus)
-        {
-            await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
-            return;
-        }
-
-        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
-        organization.BillingStatus = status.Value;
-        organization.BillingChangeDate = utcNow;
-        if (status.Value == BillingStatus.Unpaid || status.Value == BillingStatus.Canceled)
-        {
-            organization.IsSuspended = true;
-            organization.SuspensionDate = utcNow;
-            organization.SuspensionCode = SuspensionCode.Billing;
-            organization.SuspensionNotes = $"Stripe subscription status changed to \"{status.Value}\".";
-            organization.SuspendedByUserId = STRIPE_USER_ID;
-        }
-        else if (status.Value == BillingStatus.Active || status.Value == BillingStatus.Trialing)
-        {
-            organization.RemoveSuspension();
-        }
-
-        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
+        await ApplySubscriptionStateAsync(organization, sub, eventId, eventCreatedUtc);
     }
 
     private async Task SubscriptionDeletedAsync(Subscription sub, string eventId, DateTime eventCreatedUtc)
@@ -192,15 +155,13 @@ public class StripeEventHandler
             return;
         }
 
-        if (String.IsNullOrEmpty(organization.StripeSubscriptionId))
+        var replacementSubscription = await ResolvePrimarySubscriptionAsync(organization, eventId, sub.Id);
+        if (replacementSubscription is not null)
         {
-            var primarySubscription = await ResolvePrimarySubscriptionAsync(organization, eventId);
-            if (primarySubscription is not null)
-            {
-                _logger.LogInformation("Ignoring Stripe subscription deletion after reconciling a live subscription. Event: {EventId} Customer: {CustomerId} Org: {Organization} Deleted Subscription: {SubscriptionId} Current Subscription: {CurrentSubscriptionId}",
-                    eventId, sub.CustomerId, organization.Id, sub.Id, primarySubscription.Id);
-                return;
-            }
+            await ApplySubscriptionStateAsync(organization, replacementSubscription, eventId, eventCreatedUtc);
+            _logger.LogInformation("Ignoring Stripe subscription deletion after reconciling a live subscription. Event: {EventId} Customer: {CustomerId} Org: {Organization} Deleted Subscription: {SubscriptionId} Current Subscription: {CurrentSubscriptionId}",
+                eventId, sub.CustomerId, organization.Id, sub.Id, replacementSubscription.Id);
+            return;
         }
 
         if (IsStaleSubscriptionEvent(organization, eventCreatedUtc, out var eventWatermarkUtc))
@@ -211,8 +172,8 @@ public class StripeEventHandler
         }
 
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        _billingManager.SetStripeSubscriptionId(organization, null);
         organization.StripeSubscriptionEventDate = eventCreatedUtc;
-        organization.StripeSubscriptionId = null;
         organization.BillingChangeDate = utcNow;
         organization.BillingStatus = BillingStatus.Canceled;
         organization.IsSuspended = true;
@@ -239,19 +200,57 @@ public class StripeEventHandler
             organization.BillingStatus == BillingStatus.Canceled;
     }
 
-    private async Task<Subscription?> ResolvePrimarySubscriptionAsync(Organization organization, string eventId)
+    private async Task ApplySubscriptionStateAsync(Organization organization, Subscription subscription, string eventId, DateTime eventCreatedUtc)
+    {
+        var status = subscription.GetBillingStatus();
+        if (!status.HasValue)
+        {
+            _logger.LogWarning("Ignoring Stripe subscription update with unsupported status. Event: {EventId} Customer: {CustomerId} Org: {Organization} Subscription: {SubscriptionId} Status: {Status}",
+                eventId, subscription.CustomerId, organization.Id, subscription.Id, subscription.Status);
+            return;
+        }
+
+        _billingManager.SetStripeSubscriptionId(organization, status.Value == BillingStatus.Canceled ? null : subscription.Id);
+        organization.StripeSubscriptionEventDate = eventCreatedUtc;
+
+        if (status.Value == organization.BillingStatus)
+        {
+            await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
+            return;
+        }
+
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        organization.BillingStatus = status.Value;
+        organization.BillingChangeDate = utcNow;
+        if (status.Value == BillingStatus.Unpaid || status.Value == BillingStatus.Canceled)
+        {
+            organization.IsSuspended = true;
+            organization.SuspensionDate = utcNow;
+            organization.SuspensionCode = SuspensionCode.Billing;
+            organization.SuspensionNotes = $"Stripe subscription status changed to \"{status.Value}\".";
+            organization.SuspendedByUserId = STRIPE_USER_ID;
+        }
+        else if (status.Value == BillingStatus.Active || status.Value == BillingStatus.Trialing)
+        {
+            organization.RemoveSuspension();
+        }
+
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
+    }
+
+    private async Task<Subscription?> ResolvePrimarySubscriptionAsync(Organization organization, string eventId, string? excludedSubscriptionId = null)
     {
         var subscriptions = await _stripeBillingClient.GetLiveSubscriptionsAsync(organization.StripeCustomerId!);
-        var primarySubscription = subscriptions.SelectPrimarySubscription(null, organization.PlanId, organization.PlanId);
+        var candidates = subscriptions
+            .Where(subscription => !String.Equals(subscription.Id, excludedSubscriptionId, StringComparison.Ordinal))
+            .ToList();
+        var primarySubscription = candidates.SelectPrimarySubscription(null, organization.PlanId, organization.PlanId);
 
         if (primarySubscription is null)
             return null;
 
-        organization.StripeSubscriptionId = primarySubscription.Id;
-        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
-
-        _logger.LogInformation("Reconciled Stripe subscription ownership for legacy organization. Event: {EventId} Customer: {CustomerId} Org: {Organization} Subscription: {SubscriptionId} Live Subscription Count: {LiveSubscriptionCount}",
-            eventId, organization.StripeCustomerId, organization.Id, primarySubscription.Id, subscriptions.Count);
+        _logger.LogInformation("Selected Stripe subscription ownership. Event: {EventId} Customer: {CustomerId} Org: {Organization} Subscription: {SubscriptionId} Live Subscription Count: {LiveSubscriptionCount}",
+            eventId, organization.StripeCustomerId, organization.Id, primarySubscription.Id, candidates.Count);
 
         return primarySubscription;
     }

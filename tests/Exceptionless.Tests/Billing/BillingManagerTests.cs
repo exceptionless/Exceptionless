@@ -1,4 +1,5 @@
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Models;
 using Xunit;
 
 namespace Exceptionless.Tests.Billing;
@@ -53,5 +54,37 @@ public class BillingManagerTests : TestWithServices
     public void GetOrganizationLockKey_InvalidOrganizationId_Throws(string? organizationId)
     {
         Assert.ThrowsAny<ArgumentException>(() => BillingManager.GetOrganizationLockKey(organizationId!));
+    }
+
+    [Fact]
+    public void SetStripeSubscriptionId_ChangedOwner_ResetsEventWatermark()
+    {
+        var billingManager = GetService<BillingManager>();
+        var organization = new Organization
+        {
+            StripeSubscriptionId = "sub_old",
+            StripeSubscriptionEventDate = DateTime.UtcNow
+        };
+
+        billingManager.SetStripeSubscriptionId(organization, "sub_new");
+
+        Assert.Equal("sub_new", organization.StripeSubscriptionId);
+        Assert.Null(organization.StripeSubscriptionEventDate);
+    }
+
+    [Fact]
+    public void SetStripeSubscriptionId_UnchangedOwner_PreservesEventWatermark()
+    {
+        var billingManager = GetService<BillingManager>();
+        var eventWatermarkUtc = DateTime.UtcNow;
+        var organization = new Organization
+        {
+            StripeSubscriptionId = "sub_current",
+            StripeSubscriptionEventDate = eventWatermarkUtc
+        };
+
+        billingManager.SetStripeSubscriptionId(organization, "sub_current");
+
+        Assert.Equal(eventWatermarkUtc, organization.StripeSubscriptionEventDate);
     }
 }

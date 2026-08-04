@@ -416,7 +416,7 @@ public class OrganizationHandler(
                     {
                         if (!String.Equals(organization.StripeSubscriptionId, primarySubscription.Id, StringComparison.Ordinal))
                         {
-                            organization.StripeSubscriptionId = primarySubscription.Id;
+                            billingManager.SetStripeSubscriptionId(organization, primarySubscription.Id);
                             await repository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
                         }
 
@@ -430,7 +430,7 @@ public class OrganizationHandler(
                     }
                 }
 
-                organization.StripeSubscriptionId = null;
+                billingManager.SetStripeSubscriptionId(organization, null);
                 organization.BillingStatus = BillingStatus.Trialing;
                 organization.RemoveSuspension();
             }
@@ -478,7 +478,7 @@ public class OrganizationHandler(
                     subscriptionOptions.Discounts = [new SubscriptionDiscountOptions { Coupon = model.CouponId }];
 
                 var subscription = await stripeBillingClient.CreateSubscriptionAsync(subscriptionOptions);
-                organization.StripeSubscriptionId = subscription.Id;
+                billingManager.SetStripeSubscriptionId(organization, subscription.Id);
 
                 organization.BillingStatus = BillingStatus.Active;
                 organization.RemoveSuspension();
@@ -504,7 +504,7 @@ public class OrganizationHandler(
                 if (subscription is not null &&
                     !String.Equals(organization.StripeSubscriptionId, subscription.Id, StringComparison.Ordinal))
                 {
-                    organization.StripeSubscriptionId = subscription.Id;
+                    billingManager.SetStripeSubscriptionId(organization, subscription.Id);
                     await repository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
                 }
 
@@ -548,7 +548,7 @@ public class OrganizationHandler(
                     if (!String.IsNullOrWhiteSpace(model.CouponId))
                         update.Discounts = [new SubscriptionDiscountOptions { Coupon = model.CouponId }];
                     await stripeBillingClient.UpdateSubscriptionAsync(subscription.Id, update);
-                    organization.StripeSubscriptionId = subscription.Id;
+                    billingManager.SetStripeSubscriptionId(organization, subscription.Id);
                 }
                 else if (subscription is not null)
                 {
@@ -557,7 +557,7 @@ public class OrganizationHandler(
                     if (!String.IsNullOrWhiteSpace(model.CouponId))
                         update.Discounts = [new SubscriptionDiscountOptions { Coupon = model.CouponId }];
                     await stripeBillingClient.UpdateSubscriptionAsync(subscription.Id, update);
-                    organization.StripeSubscriptionId = subscription.Id;
+                    billingManager.SetStripeSubscriptionId(organization, subscription.Id);
                 }
                 else
                 {
@@ -565,7 +565,7 @@ public class OrganizationHandler(
                     if (!String.IsNullOrWhiteSpace(model.CouponId))
                         create.Discounts = [new SubscriptionDiscountOptions { Coupon = model.CouponId }];
                     var createdSubscription = await stripeBillingClient.CreateSubscriptionAsync(create);
-                    organization.StripeSubscriptionId = createdSubscription.Id;
+                    billingManager.SetStripeSubscriptionId(organization, createdSubscription.Id);
                 }
 
                 if (cardUpdated)

@@ -258,6 +258,35 @@ public class StripeEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PostAsync_WithCurrentSubscriptionDeletionAndLiveReplacement_ReconcilesReplacement()
+    {
+        // Arrange
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        organization.StripeCustomerId = "cus_existing";
+        organization.PlanId = _plans.SmallPlan.Id;
+        organization.StripeSubscriptionId = "sub_deleted";
+        organization.StripeSubscriptionEventDate = DateTimeOffset.FromUnixTimeSeconds(1782155003).UtcDateTime;
+        organization.BillingStatus = BillingStatus.PastDue;
+        organization.RemoveSuspension();
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
+
+        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_replacement", "active", _plans.SmallPlan.Id));
+        string json = CreateSubscriptionEvent("evt_current_subscription_deleted", 1782155023, "customer.subscription.deleted", "sub_deleted", "canceled");
+
+        // Act
+        await PostStripeEventAsync(json);
+
+        // Assert
+        organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
+        Assert.NotNull(organization);
+        Assert.Equal("sub_replacement", organization.StripeSubscriptionId);
+        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1782155023).UtcDateTime, organization.StripeSubscriptionEventDate);
+        Assert.Equal(BillingStatus.Active, organization.BillingStatus);
+        Assert.False(organization.IsSuspended);
+    }
+
+    [Fact]
     public async Task PostAsync_WithLegacyOrganizationAndTerminalUpdate_AppliesTerminalState()
     {
         // Arrange

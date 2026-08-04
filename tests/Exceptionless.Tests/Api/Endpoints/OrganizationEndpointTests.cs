@@ -1847,6 +1847,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
         Assert.NotNull(organization);
         organization.StripeSubscriptionId = "sub_unhealthy";
+        organization.StripeSubscriptionEventDate = TimeProvider.GetUtcNow().UtcDateTime;
         await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache());
 
         StripeBillingClient.Subscriptions.Add(CreateStripeSubscription(
@@ -1873,6 +1874,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
         Assert.NotNull(organization);
         Assert.Equal("sub_healthy", organization.StripeSubscriptionId);
+        Assert.Null(organization.StripeSubscriptionEventDate);
         Assert.Equal(_plans.MediumPlan.Id, organization.PlanId);
     }
 
