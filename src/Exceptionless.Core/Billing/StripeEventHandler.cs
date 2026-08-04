@@ -112,7 +112,7 @@ public class StripeEventHandler
 
         if (IsStaleSubscriptionEvent(organization, eventCreatedUtc, out var eventWatermarkUtc))
         {
-            _logger.LogInformation("Ignoring stale Stripe subscription update. Event: {EventId} Customer: {CustomerId} Org: {Organization} Event Created: {EventCreatedUtc} Event Watermark: {EventWatermark}",
+            _logger.LogInformation("Ignoring stale Stripe subscription update. Event: {EventId} Customer: {CustomerId} Org: {Organization} Event Created: {EventCreatedUtc} Event Watermark UTC: {EventWatermarkUtc}",
                 eventId, sub.CustomerId, organization.Id, eventCreatedUtc, eventWatermarkUtc);
             return;
         }
@@ -178,7 +178,7 @@ public class StripeEventHandler
 
         if (IsStaleSubscriptionEvent(organization, eventCreatedUtc, out var eventWatermarkUtc))
         {
-            _logger.LogInformation("Ignoring stale Stripe subscription deletion. Event: {EventId} Customer: {CustomerId} Org: {Organization} Event Created: {EventCreatedUtc} Event Watermark: {EventWatermark}",
+            _logger.LogInformation("Ignoring stale Stripe subscription deletion. Event: {EventId} Customer: {CustomerId} Org: {Organization} Event Created: {EventCreatedUtc} Event Watermark UTC: {EventWatermarkUtc}",
                 eventId, sub.CustomerId, organization.Id, eventCreatedUtc, eventWatermarkUtc);
             return;
         }
