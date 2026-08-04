@@ -83,6 +83,7 @@ jobs:
     timeout-minutes: 30
     outputs:
       version: ${{ steps.version.outputs.version }}
+      elasticsearch_image_tag: ${{ steps.elasticsearch_image.outputs.tag }}
       should_publish: ${{ (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'dev-preview')) && secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != '' }}
       is_prod_deploy: ${{ startsWith(github.ref, 'refs/tags/v') && github.event_name != 'pull_request' }}
       is_dev_deploy: ${{ (github.event_name == 'repository_dispatch' && github.event.action == 'preview') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'dev-preview')) }}
@@ -129,9 +130,52 @@ jobs:
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "### $version" >> $GITHUB_STEP_SUMMARY
 
+      - name: Resolve Elasticsearch image
+        id: elasticsearch_image
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          version=$(sed -n 's/.*elasticsearch:\([^ ]*\).*/\1/p' build/docker/elasticsearch/9.x/Dockerfile)
+          tag=$version
+          image_changed=false
+
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]] &&
+            ! git diff --quiet "$PR_BASE_SHA"...HEAD -- build/docker/elasticsearch/9.x .github/workflows/elasticsearch-docker-9.yml; then
+            image_changed=true
+          elif [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/main" ]] &&
+            ! git diff --quiet "$PUSH_BEFORE_SHA"..HEAD -- build/docker/elasticsearch/9.x .github/workflows/elasticsearch-docker-9.yml; then
+            image_changed=true
+          fi
+
+          if [[ "$image_changed" == "true" ]]; then
+            image_sha=$(git ls-files -- build/docker/elasticsearch/9.x .github/workflows/elasticsearch-docker-9.yml | sort | xargs sha256sum | sha256sum | cut -d " " -f 1)
+            tag="$version-sha256-$image_sha"
+            image="exceptionless/elasticsearch:$tag"
+
+            for attempt in {1..150}; do
+              if docker manifest inspect "$image" > /dev/null 2>&1; then
+                break
+              fi
+
+              if [[ "$attempt" -eq 150 ]]; then
+                echo "::error::Timed out waiting for $image to be published."
+                exit 1
+              fi
+
+              sleep 10
+            done
+          fi
+
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "### Elasticsearch image: exceptionless/elasticsearch:$tag" >> "$GITHUB_STEP_SUMMARY"
+
   test-api:
+    needs: version
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      Elasticsearch__ImageTag: ${{ needs.version.outputs.elasticsearch_image_tag }}
 
     steps:
       - name: Checkout
@@ -223,8 +267,11 @@ jobs:
         run: echo "npm run test:integration"
 
   test-e2e:
+    needs: version
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      Elasticsearch__ImageTag: ${{ needs.version.outputs.elasticsearch_image_tag }}
 
     steps:
       - name: Checkout
@@ -558,27 +605,6 @@ jobs:
           sed -i "s/^appVersion:.*$/appVersion: '${VERSION}'/" ./k8s/exceptionless/Chart.yaml
           helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-dev-values.yaml ex-dev --namespace $DEV_NAMESPACE ./k8s/exceptionless
 
-      - name: Run Development Migrations
-        if: ${{ needs.version.outputs.is_dev_deploy == 'true' }}
-        run: |
-          migration_job="ex-dev-jobs-migration-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          kubectl create job --from=cronjob/ex-dev-jobs-migration "$migration_job" --namespace "$DEV_NAMESPACE"
-
-          migration_image=$(kubectl get job "$migration_job" --namespace "$DEV_NAMESPACE" \
-            --output jsonpath='{.spec.template.spec.containers[0].image}')
-          if [[ "$migration_image" != *":${VERSION}" ]]; then
-            echo "::error::Migration job uses ${migration_image}; expected version ${VERSION}."
-            exit 1
-          fi
-
-          if ! kubectl wait --for=condition=complete --timeout=1200s "job/${migration_job}" --namespace "$DEV_NAMESPACE"; then
-            echo "::group::Migration job diagnostics"
-            kubectl describe job "$migration_job" --namespace "$DEV_NAMESPACE"
-            kubectl get pods --selector "job-name=${migration_job}" --namespace "$DEV_NAMESPACE" --output wide
-            echo "::endgroup::"
-            exit 1
-          fi
-
       - name: Ensure Development Workloads are Running
         if: ${{ needs.version.outputs.is_dev_deploy == 'true' }}
         run: |
@@ -599,6 +625,7 @@ jobs:
           kubectl patch cronjob/ex-dev-jobs-cleanup-orphaned-data -p '{"spec":{"suspend": false}}' --namespace $DEV_NAMESPACE
           kubectl patch cronjob/ex-dev-jobs-download-geoip-database -p '{"spec":{"suspend": false}}' --namespace $DEV_NAMESPACE
           kubectl patch cronjob/ex-dev-jobs-maintain-indexes -p '{"spec":{"suspend": false}}' --namespace $DEV_NAMESPACE
+          kubectl patch cronjob/ex-dev-jobs-migration -p '{"spec":{"suspend": false}}' --namespace $DEV_NAMESPACE
 
           wait_for_versioned_pod() {
             component="$1"
