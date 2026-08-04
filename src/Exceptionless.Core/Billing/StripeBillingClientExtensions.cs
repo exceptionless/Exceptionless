@@ -22,14 +22,14 @@ public static class StripeBillingClientExtensions
         this IStripeBillingClient stripeBillingClient,
         string customerId)
     {
-        var draftInvoices = await stripeBillingClient.ListInvoicesAsync(new InvoiceListOptions
+        var draftInvoices = stripeBillingClient.ListInvoicesAutoPagingAsync(new InvoiceListOptions
         {
             Customer = customerId,
             Status = "draft",
             Limit = 100
         });
 
-        foreach (var invoice in draftInvoices)
+        await foreach (var invoice in draftInvoices)
         {
             if (await IsPendingCancellationCreditAsync(stripeBillingClient, invoice))
                 await FinalizeInvoiceIfDraftAsync(stripeBillingClient, customerId, invoice);

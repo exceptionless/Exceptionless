@@ -45,6 +45,8 @@ public sealed class FakeStripeBillingClient : IStripeBillingClient
 
     public InvoiceListOptions? LastInvoiceListOptions { get; private set; }
 
+    public InvoiceListOptions? LastAutoPagingInvoiceListOptions { get; private set; }
+
     public List<(string InvoiceId, InvoiceFinalizeOptions Options, string IdempotencyKey)> FinalizedInvoices { get; } = [];
 
     public SubscriptionListOptions? LastSubscriptionListOptions { get; private set; }
@@ -83,6 +85,7 @@ public sealed class FakeStripeBillingClient : IStripeBillingClient
         LastGetInvoiceId = null;
         LastGetSubscriptionId = null;
         LastInvoiceListOptions = null;
+        LastAutoPagingInvoiceListOptions = null;
         FinalizedInvoices.Clear();
         LastSubscriptionListOptions = null;
         LastCustomerCreateOptions = null;
@@ -106,6 +109,14 @@ public sealed class FakeStripeBillingClient : IStripeBillingClient
     {
         LastInvoiceListOptions = options;
         return Task.FromResult<IReadOnlyCollection<Stripe.Invoice>>(Invoices.ToList());
+    }
+
+    public async IAsyncEnumerable<Stripe.Invoice> ListInvoicesAutoPagingAsync(InvoiceListOptions options)
+    {
+        LastAutoPagingInvoiceListOptions = options;
+
+        foreach (var invoice in Invoices)
+            yield return invoice;
     }
 
     public Task<Stripe.Invoice> FinalizeInvoiceAsync(string id, InvoiceFinalizeOptions options, string idempotencyKey)

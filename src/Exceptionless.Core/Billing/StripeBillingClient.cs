@@ -25,6 +25,12 @@ public sealed class StripeBillingClient : IStripeBillingClient
         return (await service.ListAsync(options)).ToList();
     }
 
+    public IAsyncEnumerable<Stripe.Invoice> ListInvoicesAutoPagingAsync(InvoiceListOptions options)
+    {
+        var service = new InvoiceService(Client);
+        return service.ListAutoPagingAsync(options);
+    }
+
     public Task<Stripe.Invoice> FinalizeInvoiceAsync(string id, InvoiceFinalizeOptions options, string idempotencyKey)
     {
         var service = new InvoiceService(Client);

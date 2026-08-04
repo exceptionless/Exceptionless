@@ -8,6 +8,8 @@ public interface IStripeBillingClient
 
     Task<IReadOnlyCollection<Stripe.Invoice>> ListInvoicesAsync(InvoiceListOptions options);
 
+    IAsyncEnumerable<Stripe.Invoice> ListInvoicesAutoPagingAsync(InvoiceListOptions options);
+
     Task<Stripe.Invoice> FinalizeInvoiceAsync(string id, InvoiceFinalizeOptions options, string idempotencyKey);
 
     Task<Customer> CreateCustomerAsync(CustomerCreateOptions options);

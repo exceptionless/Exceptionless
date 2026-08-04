@@ -136,6 +136,32 @@ public sealed class StripeBillingClientExtensionsTests
     }
 
     [Fact]
+    public async Task FinalizePendingCancellationCreditsAsync_MoreThanOnePage_FinalizesCredit()
+    {
+        // Arrange
+        var stripeBillingClient = new FakeStripeBillingClient();
+        var subscription = CreateSubscription("sub_canceled", "small-yearly", "canceled", DateTime.UtcNow);
+        subscription.CustomerId = "cus_test";
+        subscription.CanceledAt = DateTime.UtcNow;
+        stripeBillingClient.Subscriptions.Add(subscription);
+
+        for (int index = 0; index < 100; index++)
+            stripeBillingClient.Invoices.Add(new Stripe.Invoice { Id = $"in_draft_{index}", CustomerId = "cus_test", Status = "draft" });
+
+        stripeBillingClient.Invoices.Add(CreateDraftCreditInvoice("in_credit", subscription.Id));
+
+        // Act
+        await stripeBillingClient.FinalizePendingCancellationCreditsAsync("cus_test");
+
+        // Assert
+        Assert.Equal("in_credit", Assert.Single(stripeBillingClient.FinalizedInvoices).InvoiceId);
+        Assert.NotNull(stripeBillingClient.LastAutoPagingInvoiceListOptions);
+        Assert.Equal("cus_test", stripeBillingClient.LastAutoPagingInvoiceListOptions.Customer);
+        Assert.Equal("draft", stripeBillingClient.LastAutoPagingInvoiceListOptions.Status);
+        Assert.Equal(100, stripeBillingClient.LastAutoPagingInvoiceListOptions.Limit);
+    }
+
+    [Fact]
     public async Task GetLiveSubscriptionsAsync_PeriodEndCancellation_RemainsLive()
     {
         // Arrange
