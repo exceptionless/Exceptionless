@@ -406,8 +406,28 @@ public class OrganizationHandler(
                 {
                     var subscriptions = await stripeBillingClient.GetLiveSubscriptionsAsync(organization.StripeCustomerId);
                     await stripeBillingClient.FinalizePendingCancellationCreditsAsync(organization.StripeCustomerId);
-                    foreach (var subscription in subscriptions)
-                        await stripeBillingClient.CancelSubscriptionAsync(organization.StripeCustomerId, subscription);
+
+                    var primarySubscription = subscriptions.SelectPrimarySubscription(
+                        organization.StripeSubscriptionId,
+                        organization.PlanId,
+                        organization.PlanId);
+
+                    if (primarySubscription is not null)
+                    {
+                        if (!String.Equals(organization.StripeSubscriptionId, primarySubscription.Id, StringComparison.Ordinal))
+                        {
+                            organization.StripeSubscriptionId = primarySubscription.Id;
+                            await repository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
+                        }
+
+                        foreach (var duplicateSubscription in subscriptions.Where(subscription =>
+                            !String.Equals(subscription.Id, primarySubscription.Id, StringComparison.Ordinal)))
+                        {
+                            await stripeBillingClient.CancelSubscriptionAsync(organization.StripeCustomerId, duplicateSubscription);
+                        }
+
+                        await stripeBillingClient.CancelSubscriptionAsync(organization.StripeCustomerId, primarySubscription);
+                    }
                 }
 
                 organization.StripeSubscriptionId = null;
