@@ -1365,7 +1365,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task ChangePlanAsync_NewCustomerCreatesStripeCustomerAndSubscription()
+    public async Task ChangePlanAsync_WithNewCustomer_CreatesStripeCustomerAndSubscription()
     {
         // Arrange
         StripeBillingClient.CustomerToReturn = new Customer { Id = "cus_created" };
@@ -1409,7 +1409,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task ChangePlanAsync_ExistingCustomerUpdatesPaymentMethodAndSubscription()
+    public async Task ChangePlanAsync_WithExistingCustomer_UpdatesPaymentMethodAndSubscription()
     {
         // Arrange
         var subscribeDate = new DateTime(2026, 5, 22, 14, 30, 0, DateTimeKind.Utc);
@@ -1464,7 +1464,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task ChangePlanAsync_FreePlanCancelsActiveStripeSubscriptions()
+    public async Task ChangePlanAsync_WithFreePlan_CancelsActiveStripeSubscriptions()
     {
         // Arrange
         var canceledAtUtc = TimeProvider.GetUtcNow().UtcDateTime;
