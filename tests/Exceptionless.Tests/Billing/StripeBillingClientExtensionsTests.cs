@@ -114,6 +114,20 @@ public sealed class StripeBillingClientExtensionsTests
         Assert.Empty(stripeBillingClient.FinalizedInvoices);
     }
 
+    [Fact]
+    public async Task GetLiveSubscriptionsAsync_PeriodEndCancellation_RemainsLive()
+    {
+        var stripeBillingClient = new FakeStripeBillingClient();
+        var subscription = CreateSubscription("sub_scheduled", "small-yearly", "active", DateTime.UtcNow);
+        subscription.CanceledAt = DateTime.UtcNow;
+        subscription.CancelAtPeriodEnd = true;
+        stripeBillingClient.Subscriptions.Add(subscription);
+
+        var subscriptions = await stripeBillingClient.GetLiveSubscriptionsAsync("cus_test");
+
+        Assert.Equal("sub_scheduled", Assert.Single(subscriptions).Id);
+    }
+
     private static Subscription CreateSubscription(string id, string priceId, string status, DateTime createdUtc)
         => new()
         {

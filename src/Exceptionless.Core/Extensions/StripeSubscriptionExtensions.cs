@@ -20,7 +20,7 @@ internal static class StripeSubscriptionExtensions
         };
 
     internal static bool IsEnded(this Subscription subscription)
-        => subscription.EndedAt.HasValue || subscription.CanceledAt.HasValue ||
+        => subscription.EndedAt.HasValue ||
             String.Equals(subscription.Status, "canceled", StringComparison.Ordinal) ||
             String.Equals(subscription.Status, "incomplete_expired", StringComparison.Ordinal);
 }
