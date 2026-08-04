@@ -116,23 +116,23 @@ describe('TagList', () => {
         const tag = 'a-very-long-tag-value-that-does-not-fit';
         render(TagList, { tags: [tag] });
 
-        const label = screen.getByText(tag);
-        const badge = label.closest<HTMLElement>('[data-slot="badge"]');
+        const tagText = screen.getByText(tag);
+        const badge = tagText.closest<HTMLElement>('[data-slot="badge"]');
         expect(badge).not.toBeNull();
         expect(badge?.getAttribute('title')).toBeNull();
-        expect(label.classList).toContain('min-w-0');
-        expect(label.classList).toContain('truncate');
+        expect(tagText.classList).toContain('min-w-0');
+        expect(tagText.classList).toContain('truncate');
 
-        Object.defineProperties(label, {
+        Object.defineProperties(tagText, {
             clientWidth: { configurable: true, value: 112 },
             scrollWidth: { configurable: true, value: 240 }
         });
-        resizeObservers.forEach((observer) => observer.trigger(label));
+        resizeObservers.forEach((observer) => observer.trigger(tagText));
         await tick();
 
         expect(badge?.getAttribute('title')).toBeNull();
 
-        const tooltipTrigger = label.closest<HTMLElement>('[data-slot="tooltip-trigger"]');
+        const tooltipTrigger = tagText.closest<HTMLElement>('[data-slot="tooltip-trigger"]');
         expect(tooltipTrigger).not.toBeNull();
         await fireEvent.pointerEnter(tooltipTrigger!);
         await fireEvent.pointerMove(tooltipTrigger!);
@@ -144,12 +144,12 @@ describe('TagList', () => {
         const tag = 'a-very-long-clickable-tag-value-that-does-not-fit';
         render(TagList, { onTagClick: vi.fn(), tags: [tag] });
 
-        const label = screen.getByText(tag);
-        Object.defineProperties(label, {
+        const tagText = screen.getByText(tag);
+        Object.defineProperties(tagText, {
             clientWidth: { configurable: true, value: 112 },
             scrollWidth: { configurable: true, value: 280 }
         });
-        resizeObservers.forEach((observer) => observer.trigger(label));
+        resizeObservers.forEach((observer) => observer.trigger(tagText));
         await tick();
 
         const tagButton = screen.getByRole('button', { name: tag });

@@ -20,16 +20,9 @@
     const tagList = $derived(tags?.join(', ') ?? '');
     const truncatedTags = new SvelteSet<string>();
 
-    function observeTruncation(node: HTMLElement, tag: string) {
-        const label = node.querySelector<HTMLElement>('[data-slot="tag-label"]');
-        if (!label) {
-            return;
-        }
-
-        const labelElement = label;
-
+    function observeTruncation(tagText: HTMLElement, tag: string) {
         function updateTruncation() {
-            const isTruncated = labelElement.scrollWidth > labelElement.clientWidth;
+            const isTruncated = tagText.scrollWidth > tagText.clientWidth;
             if (truncatedTags.has(tag) === isTruncated) {
                 return;
             }
@@ -48,7 +41,7 @@
         }
 
         const observer = new ResizeObserver(updateTruncation);
-        observer.observe(labelElement);
+        observer.observe(tagText);
 
         return {
             destroy() {
@@ -76,15 +69,17 @@
     }
 </script>
 
-{#snippet tagBadge(tag: string, expanded = false)}
+{#snippet tagBadge(tag: string, showFullValue = false)}
     <Badge
         variant="outline"
         class={[
             'border-border bg-muted text-muted-foreground group-hover/button:bg-accent group-hover/button:text-accent-foreground dark:border-muted-foreground/50 rounded-md text-xs',
-            expanded ? 'h-auto max-w-sm py-0.5 whitespace-normal' : 'max-w-28 truncate'
+            showFullValue ? 'h-auto max-w-sm py-0.5 whitespace-normal' : 'max-w-28'
         ]}
     >
-        <span data-slot="tag-label" class={expanded ? 'max-w-full break-all whitespace-normal' : 'min-w-0 truncate'}>{tag}</span>
+        <span class={showFullValue ? 'max-w-full break-all whitespace-normal' : 'min-w-0 truncate'} use:observeTruncation={tag}>
+            {tag}
+        </span>
     </Badge>
 {/snippet}
 
@@ -113,9 +108,7 @@
                         class="h-auto cursor-pointer p-0"
                         onclick={(event) => handleTagClick(event, tag)}
                     >
-                        <span class="contents" use:observeTruncation={tag}>
-                            {@render tagBadge(tag)}
-                        </span>
+                        {@render tagBadge(tag)}
                     </Button>
                 {/snippet}
             </Tooltip.Trigger>
@@ -134,7 +127,7 @@
         <Tooltip.Root disabled={!truncatedTags.has(tag)}>
             <Tooltip.Trigger>
                 {#snippet child({ props })}
-                    <span {...props} class="inline-flex min-w-0" use:observeTruncation={tag}>
+                    <span {...props} class="inline-flex min-w-0">
                         {@render tagBadge(tag)}
                     </span>
                 {/snippet}
