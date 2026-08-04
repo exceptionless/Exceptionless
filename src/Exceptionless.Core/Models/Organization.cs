@@ -76,7 +76,8 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     public DateTime BillingChangeDate { get; set; }
 
     /// <summary>
-    /// Source timestamp of the newest Stripe subscription event applied to this organization.
+    /// UTC source timestamp of the newest Stripe subscription event applied to this organization.
+    /// Null for a provider-reconciled owner whose next event must be refreshed before establishing a new event watermark.
     /// </summary>
     public DateTime? StripeSubscriptionEventDate { get; set; }
 

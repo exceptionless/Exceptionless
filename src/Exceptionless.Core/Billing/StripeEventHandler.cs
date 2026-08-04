@@ -92,6 +92,24 @@ public class StripeEventHandler
             return;
         }
 
+        if (!String.IsNullOrEmpty(organization.StripeSubscriptionId) &&
+            !String.Equals(organization.StripeSubscriptionId, sub.Id, StringComparison.Ordinal))
+        {
+            var primarySubscription = await ResolvePrimarySubscriptionAsync(organization, eventId);
+            if (primarySubscription is null ||
+                String.Equals(primarySubscription.Id, organization.StripeSubscriptionId, StringComparison.Ordinal))
+            {
+                _logger.LogInformation("Ignoring Stripe subscription update for obsolete subscription. Event: {EventId} Customer: {CustomerId} Org: {Organization} Subscription: {SubscriptionId} Current Subscription: {CurrentSubscriptionId}",
+                    eventId, sub.CustomerId, organization.Id, sub.Id, organization.StripeSubscriptionId);
+                return;
+            }
+
+            await ApplySubscriptionStateAsync(organization, primarySubscription, eventId, null);
+            _logger.LogInformation("Ignoring Stripe subscription update after reconciling current provider ownership. Event: {EventId} Customer: {CustomerId} Org: {Organization} Subscription: {SubscriptionId} Current Subscription: {CurrentSubscriptionId}",
+                eventId, sub.CustomerId, organization.Id, sub.Id, primarySubscription.Id);
+            return;
+        }
+
         if (String.IsNullOrEmpty(organization.StripeSubscriptionId))
         {
             var primarySubscription = await ResolvePrimarySubscriptionAsync(organization, eventId);
@@ -106,8 +124,20 @@ public class StripeEventHandler
             }
             else
             {
-                sub = primarySubscription;
+                await ApplySubscriptionStateAsync(organization, primarySubscription, eventId, null);
+                _logger.LogInformation("Applied current provider state after resolving missing Stripe subscription ownership. Event: {EventId} Customer: {CustomerId} Org: {Organization} Subscription: {SubscriptionId}",
+                    eventId, sub.CustomerId, organization.Id, primarySubscription.Id);
+                return;
             }
+        }
+
+        if (!organization.StripeSubscriptionEventDate.HasValue &&
+            !String.IsNullOrEmpty(organization.StripeSubscriptionId))
+        {
+            sub = await _stripeBillingClient.GetSubscriptionAsync(organization.StripeSubscriptionId!);
+
+            if (!String.Equals(sub.CustomerId, organization.StripeCustomerId, StringComparison.Ordinal))
+                throw new InvalidOperationException($"Stripe subscription {sub.Id} does not belong to the expected customer.");
         }
 
         if (IsStaleSubscriptionEvent(organization, eventCreatedUtc, out var eventWatermarkUtc))
@@ -130,7 +160,7 @@ public class StripeEventHandler
             var replacementSubscription = await ResolvePrimarySubscriptionAsync(organization, eventId, sub.Id);
             if (replacementSubscription is not null)
             {
-                await ApplySubscriptionStateAsync(organization, replacementSubscription, eventId, eventCreatedUtc);
+                await ApplySubscriptionStateAsync(organization, replacementSubscription, eventId, null);
                 _logger.LogInformation("Ignoring terminal Stripe subscription update after reconciling a live subscription. Event: {EventId} Customer: {CustomerId} Org: {Organization} Terminal Subscription: {SubscriptionId} Current Subscription: {CurrentSubscriptionId}",
                     eventId, sub.CustomerId, organization.Id, sub.Id, replacementSubscription.Id);
                 return;
@@ -167,10 +197,18 @@ public class StripeEventHandler
             return;
         }
 
+        if (!String.IsNullOrEmpty(organization.StripeSubscriptionId) &&
+            !String.Equals(organization.StripeSubscriptionId, sub.Id, StringComparison.Ordinal))
+        {
+            _logger.LogInformation("Ignoring Stripe subscription deletion for obsolete subscription. Event: {EventId} Customer: {CustomerId} Org: {Organization} Subscription: {SubscriptionId} Current Subscription: {CurrentSubscriptionId}",
+                eventId, sub.CustomerId, organization.Id, sub.Id, organization.StripeSubscriptionId);
+            return;
+        }
+
         var replacementSubscription = await ResolvePrimarySubscriptionAsync(organization, eventId, sub.Id);
         if (replacementSubscription is not null)
         {
-            await ApplySubscriptionStateAsync(organization, replacementSubscription, eventId, eventCreatedUtc);
+            await ApplySubscriptionStateAsync(organization, replacementSubscription, eventId, null);
             _logger.LogInformation("Ignoring Stripe subscription deletion after reconciling a live subscription. Event: {EventId} Customer: {CustomerId} Org: {Organization} Deleted Subscription: {SubscriptionId} Current Subscription: {CurrentSubscriptionId}",
                 eventId, sub.CustomerId, organization.Id, sub.Id, replacementSubscription.Id);
             return;
@@ -212,7 +250,7 @@ public class StripeEventHandler
             organization.BillingStatus == BillingStatus.Canceled;
     }
 
-    private async Task ApplySubscriptionStateAsync(Organization organization, Subscription subscription, string eventId, DateTime eventCreatedUtc)
+    private async Task ApplySubscriptionStateAsync(Organization organization, Subscription subscription, string eventId, DateTime? eventWatermarkUtc)
     {
         var status = subscription.GetBillingStatus();
         if (!status.HasValue)
@@ -223,7 +261,7 @@ public class StripeEventHandler
         }
 
         _billingManager.SetStripeSubscriptionId(organization, status.Value == BillingStatus.Canceled ? null : subscription.Id);
-        organization.StripeSubscriptionEventDate = eventCreatedUtc;
+        organization.StripeSubscriptionEventDate = eventWatermarkUtc;
 
         if (status.Value == organization.BillingStatus)
         {
@@ -256,7 +294,7 @@ public class StripeEventHandler
         var candidates = subscriptions
             .Where(subscription => !String.Equals(subscription.Id, excludedSubscriptionId, StringComparison.Ordinal))
             .ToList();
-        var primarySubscription = candidates.SelectPrimarySubscription(null, organization.PlanId, organization.PlanId);
+        var primarySubscription = candidates.SelectPrimarySubscription(organization.StripeSubscriptionId, organization.PlanId, organization.PlanId);
 
         if (primarySubscription is null)
             return null;
@@ -273,14 +311,6 @@ public class StripeEventHandler
         {
             _logger.LogInformation("Ignoring Stripe subscription event for free organization. Event: {EventId} Customer: {CustomerId} Org: {Organization} Subscription: {SubscriptionId}",
                 eventId, subscription.CustomerId, organization.Id, subscription.Id);
-            return true;
-        }
-
-        if (!String.IsNullOrEmpty(organization.StripeSubscriptionId) &&
-            !String.Equals(organization.StripeSubscriptionId, subscription.Id, StringComparison.Ordinal))
-        {
-            _logger.LogInformation("Ignoring Stripe subscription event for obsolete subscription. Event: {EventId} Customer: {CustomerId} Org: {Organization} Subscription: {SubscriptionId} Current Subscription: {CurrentSubscriptionId}",
-                eventId, subscription.CustomerId, organization.Id, subscription.Id, organization.StripeSubscriptionId);
             return true;
         }
 
