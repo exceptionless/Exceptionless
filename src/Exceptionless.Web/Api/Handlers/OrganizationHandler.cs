@@ -396,6 +396,7 @@ public class OrganizationHandler(
         }
 
         bool isPaymentMethod = model.StripeToken?.StartsWith("pm_", StringComparison.Ordinal) is true;
+        List<Subscription> duplicateSubscriptions = [];
 
         try
         {
@@ -489,15 +490,13 @@ public class OrganizationHandler(
 
                 if (subscription is not null && liveSubscriptions.Count > 1)
                 {
-                    var duplicateSubscriptions = liveSubscriptions
+                    duplicateSubscriptions = liveSubscriptions
                         .Where(candidate => !String.Equals(candidate.Id, subscription.Id, StringComparison.Ordinal))
                         .ToList();
 
                     _logger.LogWarning("Reconciling multiple live Stripe subscriptions for organization {OrganizationId}. Keeping {SubscriptionId}; canceling {DuplicateSubscriptionIds}",
                         message.Id, subscription.Id, String.Join(", ", duplicateSubscriptions.Select(candidate => candidate.Id)));
 
-                    foreach (var duplicateSubscription in duplicateSubscriptions)
-                        await stripeBillingClient.CancelSubscriptionAsync(organization.StripeCustomerId, duplicateSubscription);
                 }
 
                 if (!String.IsNullOrEmpty(model.StripeToken))
@@ -562,6 +561,19 @@ public class OrganizationHandler(
             billingManager.ApplyBillingPlan(organization, plan, GetCurrentUser(message.Context));
             await repository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
             await messagePublisher.PublishAsync(new PlanChanged { OrganizationId = organization.Id });
+
+            foreach (var duplicateSubscription in duplicateSubscriptions)
+            {
+                try
+                {
+                    await stripeBillingClient.CancelSubscriptionAsync(organization.StripeCustomerId!, duplicateSubscription);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Unable to cancel duplicate Stripe subscription {SubscriptionId} after changing the plan for organization {OrganizationId}",
+                        duplicateSubscription.Id, organization.Id);
+                }
+            }
         }
         catch (StripeException ex)
         {

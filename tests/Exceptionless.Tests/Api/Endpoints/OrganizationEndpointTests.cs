@@ -1803,7 +1803,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task ChangePlanAsync_ReconciledOwnershipIsPersistedBeforeDuplicateCleanupContinues()
+    public async Task ChangePlanAsync_DuplicateCleanupIsDeferredUntilPlanChangeSucceeds()
     {
         // Arrange
         await SetPlanAndStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, _plans.MediumPlan.Id, "cus_existing");
@@ -1831,12 +1831,44 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(result);
         Assert.False(result.Success);
-        Assert.Equal("sub_unhealthy", Assert.Single(StripeBillingClient.CanceledSubscriptions).SubscriptionId);
+        Assert.Empty(StripeBillingClient.CanceledSubscriptions);
 
         organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
         Assert.NotNull(organization);
         Assert.Equal("sub_healthy", organization.StripeSubscriptionId);
         Assert.Equal(_plans.MediumPlan.Id, organization.PlanId);
+    }
+
+    [Fact]
+    public async Task ChangePlanAsync_DuplicateCleanupFailure_DoesNotFailCompletedPlanChange()
+    {
+        // Arrange
+        await SetStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, "cus_existing");
+        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription(
+            "sub_old", "si_old", status: "active", priceId: _plans.SmallPlan.Id, createdUtc: TimeProvider.GetUtcNow().UtcDateTime.AddDays(-1)));
+        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription(
+            "sub_new", "si_new", status: "active", priceId: _plans.SmallPlan.Id, createdUtc: TimeProvider.GetUtcNow().UtcDateTime));
+        StripeBillingClient.CancelSubscriptionException = new StripeException("Stripe unavailable");
+
+        // Act
+        var result = await WithBillingEnabledAsync(() =>
+            SendRequestAsAsync<ChangePlanResult>(r => r
+                .AsFreeOrganizationUser()
+                .Post()
+                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
+                .Content(new ChangePlanRequest { PlanId = _plans.SmallPlan.Id })
+                .StatusCodeShouldBeOk()
+            ));
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Success, result.Message);
+        Assert.Equal("sub_new", Assert.Single(StripeBillingClient.CanceledSubscriptions).SubscriptionId);
+
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
+        Assert.NotNull(organization);
+        Assert.Equal(_plans.SmallPlan.Id, organization.PlanId);
+        Assert.Equal("sub_old", organization.StripeSubscriptionId);
     }
 
     [Fact]
