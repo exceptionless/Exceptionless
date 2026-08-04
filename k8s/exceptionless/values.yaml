@@ -35,7 +35,7 @@ elasticsearch:
   connectionString:
   image:
     repository: exceptionless/elasticsearch
-    tag: 9.4.4
+    tag: 9.5.0
     pullPolicy: IfNotPresent
 
 redis:

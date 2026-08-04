@@ -4,7 +4,7 @@ metadata:
   name: elastic-monitor
   namespace: elastic-system
 spec:
-  version: 9.4.4
+  version: 9.5.0
   podDisruptionBudget: {}
   nodeSets:
     - name: main
@@ -228,7 +228,7 @@ metadata:
   name: kibana-monitor
   namespace: elastic-system
 spec:
-  version: 9.4.4
+  version: 9.5.0
   count: 1
   http:
     tls:
@@ -364,7 +364,7 @@ metadata:
   name: fleet-server
   namespace: elastic-system
 spec:
-  version: 9.4.4
+  version: 9.5.0
   kibanaRef:
     name: kibana-monitor
   elasticsearchRefs:
@@ -388,7 +388,7 @@ metadata:
   name: elastic-agent
   namespace: elastic-system
 spec:
-  version: 9.4.4
+  version: 9.5.0
   kibanaRef:
     name: kibana-monitor
   fleetServerRef:
