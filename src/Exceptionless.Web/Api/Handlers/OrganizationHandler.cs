@@ -599,7 +599,17 @@ public class OrganizationHandler(
             await messagePublisher.PublishAsync(new PlanChanged { OrganizationId = organization.Id });
 
             foreach (var duplicateSubscription in duplicateSubscriptionsToCancelAfterPlanSave)
-                await stripeBillingClient.CancelSubscriptionAsync(duplicateSubscription.CustomerId, duplicateSubscription.Subscription);
+            {
+                try
+                {
+                    await stripeBillingClient.CancelSubscriptionAsync(duplicateSubscription.CustomerId, duplicateSubscription.Subscription);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Unable to cancel duplicate Stripe subscription {SubscriptionId} after changing the plan for organization {OrganizationId}",
+                        duplicateSubscription.Subscription.Id, organization.Id);
+                }
+            }
         }
         catch (StripeException ex)
         {

@@ -1892,7 +1892,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task ChangePlanAsync_DeferredDuplicateCancellationFails_PersistsPlan()
+    public async Task ChangePlanAsync_DeferredDuplicateCancellationFails_CompletesPlanChange()
     {
         // Arrange
         await SetStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, "cus_existing");
@@ -1914,7 +1914,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(result);
-        Assert.False(result.Success);
+        Assert.True(result.Success, result.Message);
         Assert.Equal("sub_new", Assert.Single(StripeBillingClient.CanceledSubscriptions).SubscriptionId);
 
         var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
