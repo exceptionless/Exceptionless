@@ -1,6 +1,7 @@
 <script lang="ts">
     import { resolve } from '$app/paths';
     import ErrorMessage from '$comp/error-message.svelte';
+    import Currency from '$comp/formatters/currency.svelte';
     import DateTime from '$comp/formatters/date-time.svelte';
     import { A } from '$comp/typography';
     import { Button } from '$comp/ui/button';
@@ -9,6 +10,7 @@
     import * as Table from '$comp/ui/table';
     import { env } from '$env/dynamic/public';
     import { ChangePlanDialog } from '$features/billing';
+    import { getInvoiceStatusLabel } from '$features/billing/invoice';
     import { getInvoicesQuery, getOrganizationQuery } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import GlobalUser from '$features/users/components/global-user.svelte';
@@ -101,6 +103,7 @@
                             <Table.Row>
                                 <Table.Head>Payment Number</Table.Head>
                                 <Table.Head>Date</Table.Head>
+                                <Table.Head>Amount</Table.Head>
                                 <Table.Head>Status</Table.Head>
                                 <Table.Head class="w-25">Actions</Table.Head>
                             </Table.Row>
@@ -116,7 +119,10 @@
                                             <DateTime value={invoice.date} />
                                         </Table.Cell>
                                         <Table.Cell class="hover:bg-muted/50 cursor-pointer" onclick={() => handleOpenInvoice(invoice.id)}>
-                                            {invoice.paid ? 'Paid' : 'Unpaid'}
+                                            <Currency value={invoice.total} />
+                                        </Table.Cell>
+                                        <Table.Cell class="hover:bg-muted/50 cursor-pointer" onclick={() => handleOpenInvoice(invoice.id)}>
+                                            {getInvoiceStatusLabel(invoice.status, invoice.total)}
                                         </Table.Cell>
                                         <Table.Cell>
                                             <DropdownMenu.Root>

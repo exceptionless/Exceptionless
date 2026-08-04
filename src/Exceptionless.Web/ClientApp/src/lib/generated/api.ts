@@ -93,6 +93,7 @@ export interface Invoice {
   /** @format date-time */
   date: string;
   paid: boolean;
+  status: string;
   /** @format double */
   total: number;
   items: InvoiceLineItem[];
@@ -103,6 +104,9 @@ export interface InvoiceGridModel {
   /** @format date-time */
   date: string;
   paid: boolean;
+  status: string;
+  /** @format double */
+  total: number;
 }
 
 export interface InvoiceLineItem {
