@@ -97,12 +97,17 @@ public class StripeEventHandler
             var primarySubscription = await ResolvePrimarySubscriptionAsync(organization, eventId);
             if (primarySubscription is null)
             {
-                _logger.LogWarning("Ignoring Stripe subscription update because the customer has no live subscription. Event: {EventId} Customer: {CustomerId} Org: {Organization} Subscription: {SubscriptionId}",
-                    eventId, sub.CustomerId, organization.Id, sub.Id);
-                return;
+                if (sub.GetBillingStatus() != BillingStatus.Canceled)
+                {
+                    _logger.LogWarning("Ignoring Stripe subscription update because the customer has no live subscription. Event: {EventId} Customer: {CustomerId} Org: {Organization} Subscription: {SubscriptionId}",
+                        eventId, sub.CustomerId, organization.Id, sub.Id);
+                    return;
+                }
             }
-
-            sub = primarySubscription;
+            else
+            {
+                sub = primarySubscription;
+            }
         }
 
         if (IsStaleSubscriptionEvent(organization, eventCreatedUtc, out var eventWatermarkUtc))

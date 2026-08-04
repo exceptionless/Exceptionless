@@ -85,6 +85,35 @@ public sealed class StripeBillingClientExtensionsTests
         Assert.Empty(stripeBillingClient.FinalizedInvoices);
     }
 
+    [Fact]
+    public async Task FinalizePendingCancellationCreditsAsync_CanceledSubscription_FinalizesCredit()
+    {
+        var stripeBillingClient = new FakeStripeBillingClient();
+        var subscription = CreateSubscription("sub_canceled", "small-yearly", "canceled", DateTime.UtcNow);
+        subscription.CustomerId = "cus_test";
+        subscription.CanceledAt = DateTime.UtcNow;
+        stripeBillingClient.Subscriptions.Add(subscription);
+        stripeBillingClient.Invoices.Add(CreateDraftCreditInvoice("in_credit", subscription.Id));
+
+        await stripeBillingClient.FinalizePendingCancellationCreditsAsync("cus_test");
+
+        Assert.Equal("in_credit", Assert.Single(stripeBillingClient.FinalizedInvoices).InvoiceId);
+    }
+
+    [Fact]
+    public async Task FinalizePendingCancellationCreditsAsync_LiveSubscription_DoesNotFinalizeCredit()
+    {
+        var stripeBillingClient = new FakeStripeBillingClient();
+        var subscription = CreateSubscription("sub_active", "small-yearly", "active", DateTime.UtcNow);
+        subscription.CustomerId = "cus_test";
+        stripeBillingClient.Subscriptions.Add(subscription);
+        stripeBillingClient.Invoices.Add(CreateDraftCreditInvoice("in_credit", subscription.Id));
+
+        await stripeBillingClient.FinalizePendingCancellationCreditsAsync("cus_test");
+
+        Assert.Empty(stripeBillingClient.FinalizedInvoices);
+    }
+
     private static Subscription CreateSubscription(string id, string priceId, string status, DateTime createdUtc)
         => new()
         {
@@ -94,6 +123,20 @@ public sealed class StripeBillingClientExtensionsTests
             Items = new StripeList<SubscriptionItem>
             {
                 Data = [new SubscriptionItem { Id = $"si_{id}", Price = new Price { Id = priceId } }]
+            }
+        };
+
+    private static Stripe.Invoice CreateDraftCreditInvoice(string id, string subscriptionId)
+        => new()
+        {
+            Id = id,
+            CustomerId = "cus_test",
+            Status = "draft",
+            Total = -1000,
+            Parent = new InvoiceParent
+            {
+                Type = "subscription_details",
+                SubscriptionDetails = new InvoiceParentSubscriptionDetails { SubscriptionId = subscriptionId }
             }
         };
 }

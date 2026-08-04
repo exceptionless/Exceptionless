@@ -258,6 +258,35 @@ public class StripeEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PostAsync_WithLegacyOrganizationAndTerminalUpdate_AppliesTerminalState()
+    {
+        // Arrange
+        var eventCreatedUtc = DateTimeOffset.FromUnixTimeSeconds(1782155023).UtcDateTime;
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        organization.StripeCustomerId = "cus_existing";
+        organization.PlanId = _plans.SmallPlan.Id;
+        organization.StripeSubscriptionId = null;
+        organization.StripeSubscriptionEventDate = null;
+        organization.BillingStatus = BillingStatus.Active;
+        organization.RemoveSuspension();
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
+
+        string json = CreateSubscriptionEvent("evt_legacy_terminal_update", 1782155023, "customer.subscription.updated", "sub_canceled", "canceled");
+
+        // Act
+        await PostStripeEventAsync(json);
+
+        // Assert
+        organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
+        Assert.NotNull(organization);
+        Assert.Equal(BillingStatus.Canceled, organization.BillingStatus);
+        Assert.True(organization.IsSuspended);
+        Assert.Null(organization.StripeSubscriptionId);
+        Assert.Equal(eventCreatedUtc, organization.StripeSubscriptionEventDate);
+    }
+
+    [Fact]
     public async Task PostAsync_WithNewerSubscriptionDeletedEvent_SuspendsOrganization()
     {
         // Arrange

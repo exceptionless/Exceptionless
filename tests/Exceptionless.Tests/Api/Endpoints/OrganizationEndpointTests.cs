@@ -1513,6 +1513,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         // Arrange
         await SetPlanAndStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, _plans.SmallPlan.Id, "cus_existing");
         StripeBillingClient.Invoices.Add(CreatePendingSubscriptionCreditInvoice("in_credit", "cus_existing", "sub_canceled"));
+        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_canceled", "si_canceled", canceledAtUtc: TimeProvider.GetUtcNow().UtcDateTime, status: "canceled"));
 
         // Act
         var result = await WithBillingEnabledAsync(() =>
@@ -1601,6 +1602,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         // Arrange
         await SetStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, "cus_existing");
         StripeBillingClient.Invoices.Add(CreatePendingSubscriptionCreditInvoice("in_credit", "cus_existing", "sub_canceled"));
+        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_canceled", "si_canceled", canceledAtUtc: TimeProvider.GetUtcNow().UtcDateTime, status: "canceled"));
 
         // Act
         var result = await WithBillingEnabledAsync(() =>
@@ -1676,6 +1678,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         var invoice = CreatePendingSubscriptionCreditInvoice("in_credit", "cus_existing", "sub_existing");
         invoice.AutoAdvance = true;
         StripeBillingClient.Invoices.Add(invoice);
+        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_existing", "si_existing", canceledAtUtc: TimeProvider.GetUtcNow().UtcDateTime, status: "canceled"));
 
         // Act
         var result = await WithBillingEnabledAsync(() =>
@@ -1706,6 +1709,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         // Arrange
         await SetStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, "cus_existing");
         StripeBillingClient.Invoices.Add(CreatePendingSubscriptionCreditInvoice("in_credit", "cus_existing", "sub_canceled"));
+        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_canceled", "si_canceled", canceledAtUtc: TimeProvider.GetUtcNow().UtcDateTime, status: "canceled"));
         StripeBillingClient.FinalizedInvoiceToReturn = new Stripe.Invoice
         {
             Id = "in_credit",

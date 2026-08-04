@@ -29,8 +29,11 @@ public static class StripeBillingClientExtensions
             Limit = 100
         });
 
-        foreach (var invoice in draftInvoices.Where(IsPendingSubscriptionCredit))
-            await FinalizeInvoiceIfDraftAsync(stripeBillingClient, customerId, invoice);
+        foreach (var invoice in draftInvoices)
+        {
+            if (await IsPendingCancellationCreditAsync(stripeBillingClient, invoice))
+                await FinalizeInvoiceIfDraftAsync(stripeBillingClient, customerId, invoice);
+        }
     }
 
     public static Subscription? SelectPrimarySubscription(
@@ -100,10 +103,17 @@ public static class StripeBillingClientExtensions
     private static bool IsLiveSubscription(Subscription subscription)
         => !subscription.IsEnded();
 
-    private static bool IsPendingSubscriptionCredit(Stripe.Invoice invoice)
-        => invoice.Total < 0 &&
-            (!String.IsNullOrEmpty(invoice.Parent?.SubscriptionDetails?.SubscriptionId) ||
-                invoice.BillingReason?.StartsWith("subscription", StringComparison.Ordinal) is true);
+    private static async Task<bool> IsPendingCancellationCreditAsync(
+        IStripeBillingClient stripeBillingClient,
+        Stripe.Invoice invoice)
+    {
+        string? subscriptionId = invoice.Parent?.SubscriptionDetails?.SubscriptionId;
+        if (invoice.Total >= 0 || String.IsNullOrEmpty(subscriptionId))
+            return false;
+
+        var subscription = await stripeBillingClient.GetSubscriptionAsync(subscriptionId);
+        return subscription.IsEnded();
+    }
 
     private static bool HasPrice(Subscription subscription, string planId)
         => subscription.Items.Data.Any(item =>
