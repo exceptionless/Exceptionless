@@ -131,9 +131,9 @@ public class StripeEventHandler
             }
         }
 
-        bool isEventOrderingUnknown = !organization.StripeSubscriptionEventDate.HasValue &&
+        bool shouldPreserveUnknownEventOrdering = !organization.StripeSubscriptionEventDate.HasValue &&
             !String.IsNullOrEmpty(organization.StripeSubscriptionId);
-        if (isEventOrderingUnknown)
+        if (shouldPreserveUnknownEventOrdering)
         {
             sub = await _stripeBillingClient.GetSubscriptionAsync(organization.StripeSubscriptionId!);
 
@@ -154,9 +154,13 @@ public class StripeEventHandler
         if (organization.StripeSubscriptionEventDate == eventCreatedUtc)
         {
             sub = await _stripeBillingClient.GetSubscriptionAsync(sub.Id);
+            shouldPreserveUnknownEventOrdering = true;
 
             if (!String.Equals(sub.CustomerId, organization.StripeCustomerId, StringComparison.Ordinal))
                 throw new InvalidOperationException($"Stripe subscription {sub.Id} does not belong to the expected customer.");
+
+            _logger.LogInformation("Refetched current provider state because the Stripe subscription event timestamp matches the event watermark. Event: {EventId} Customer: {CustomerId} Org: {Organization} Subscription: {SubscriptionId}",
+                eventId, sub.CustomerId, organization.Id, sub.Id);
         }
 
         var currentStatus = sub.GetBillingStatus();
@@ -175,7 +179,7 @@ public class StripeEventHandler
             }
         }
 
-        await ApplySubscriptionStateAsync(organization, sub, eventId, isEventOrderingUnknown ? null : eventCreatedUtc);
+        await ApplySubscriptionStateAsync(organization, sub, eventId, shouldPreserveUnknownEventOrdering ? null : eventCreatedUtc);
     }
 
     private async Task SubscriptionDeletedAsync(Subscription sub, string eventId, DateTime eventCreatedUtc)

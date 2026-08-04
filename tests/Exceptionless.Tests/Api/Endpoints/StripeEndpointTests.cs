@@ -567,7 +567,7 @@ public class StripeEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task PostAsync_WithSameSecondUpdates_ReconcilesCurrentProviderState()
+    public async Task PostAsync_WithEqualTimeRefreshAndQueuedUpdate_UsesProviderState()
     {
         // Arrange
         var eventCreatedUtc = DateTimeOffset.FromUnixTimeSeconds(1782155023).UtcDateTime;
@@ -582,16 +582,19 @@ public class StripeEndpointTests : IntegrationTestsBase
         await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
 
         StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_current", "active", _plans.SmallPlan.Id));
-        string json = CreateSubscriptionEvent("evt_same_second_older_update", 1782155023, "customer.subscription.updated", "sub_current", "past_due");
+        string equalTimeJson = CreateSubscriptionEvent("evt_same_second_older_update", 1782155023, "customer.subscription.updated", "sub_current", "past_due");
+        string queuedJson = CreateSubscriptionEvent("evt_queued_older_update", 1782155033, "customer.subscription.updated", "sub_current", "unpaid");
 
         // Act
-        await PostStripeEventAsync(json);
+        await PostStripeEventAsync(equalTimeJson);
+        await PostStripeEventAsync(queuedJson);
 
         // Assert
         organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
         Assert.NotNull(organization);
         Assert.Equal(BillingStatus.Active, organization.BillingStatus);
         Assert.False(organization.IsSuspended);
+        Assert.Null(organization.StripeSubscriptionEventDate);
         Assert.Equal("sub_current", StripeBillingClient.LastGetSubscriptionId);
     }
 
