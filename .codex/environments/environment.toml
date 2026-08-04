@@ -46,7 +46,7 @@ npm ci --prefix src/Exceptionless.Web/ClientApp --prefer-offline --no-audit
 echo "Installing legacy Angular frontend dependencies..."
 npm ci --prefix src/Exceptionless.Web/ClientApp.angular --prefer-offline --no-audit
 
-echo "Setup complete. Use the Run Aspire action to start the app, or Run Lume Docs to test the static site."
+echo "Setup complete. Use Run Site to start and open the local app, Run Aspire for the dashboard, or Run Storybook for component verification."
 '''
 
 [cleanup]
@@ -86,10 +86,196 @@ export ASPIRE_HOME="$CODEX_WORKTREE_PATH/.aspire"
 
 if command -v aspire >/dev/null 2>&1; then
   mkdir -p "$ASPIRE_HOME"
-  aspire run --nologo --non-interactive
+  aspire_log="$ASPIRE_HOME/logs/environment-aspire.log"
+
+  aspire run --apphost src/Exceptionless.AppHost --nologo --non-interactive >"$aspire_log" 2>&1 &
+  aspire_pid=$!
+
+  tail -f "$aspire_log" &
+  log_pid=$!
+
+  cleanup() {
+    kill "$log_pid" 2>/dev/null || true
+    kill "$aspire_pid" 2>/dev/null || true
+    wait "$log_pid" 2>/dev/null || true
+    wait "$aspire_pid" 2>/dev/null || true
+  }
+  trap cleanup EXIT INT TERM
+
+  dashboard_url=""
+  for attempt in $(seq 1 60); do
+    dashboard_url="$(sed -n 's/.*Dashboard: \(https\?:\/\/[^[:space:]]*\).*/\1/p' "$aspire_log" | head -n 1)"
+    if [ -n "$dashboard_url" ]; then
+      break
+    fi
+
+    if ! kill -0 "$aspire_pid" 2>/dev/null; then
+      wait "$aspire_pid"
+      exit 1
+    fi
+
+    sleep 1
+  done
+
+  if [ -z "$dashboard_url" ]; then
+    echo "Aspire started but did not publish a dashboard URL." >&2
+    exit 1
+  fi
+
+  echo "Opening Aspire dashboard: $dashboard_url"
+  if command -v open >/dev/null 2>&1; then
+    open "$dashboard_url"
+  else
+    echo "Open this URL in a browser: $dashboard_url"
+  fi
+
+  wait "$aspire_pid"
 else
-  dotnet run --project src/Exceptionless.AppHost/Exceptionless.AppHost.csproj
+  dotnet run --project src/Exceptionless.AppHost/Exceptionless.AppHost.csproj --launch-profile https
 fi
+'''
+
+[[actions]]
+name = "Run Site"
+icon = "run"
+command = '''
+set -e
+
+cd "${CODEX_WORKTREE_PATH:?CODEX_WORKTREE_PATH is required}"
+
+export AppMode=Development
+export DOTNET_ENVIRONMENT=Development
+export ASPNETCORE_ENVIRONMENT=Development
+export ASPIRE_HOME="$CODEX_WORKTREE_PATH/.aspire"
+
+if ! command -v aspire >/dev/null 2>&1; then
+  echo "The Run Site action requires the Aspire CLI. Use Run Aspire to start the local stack." >&2
+  exit 1
+fi
+
+if ! command -v jq >/dev/null 2>&1; then
+  echo "The Run Site action requires jq to discover Aspire's dynamic frontend URL." >&2
+  exit 1
+fi
+
+mkdir -p "$ASPIRE_HOME"
+
+find_site_url() {
+  aspire describe --apphost src/Exceptionless.AppHost --format Json --nologo --non-interactive 2>/dev/null \
+    | sed -n '/^{/,$p' \
+    | jq -r '.resources[]? | select(.displayName == "App" and .state == "Running") | .urls[]? | select(.displayName == "Open App") | .url' \
+    | head -n 1
+}
+
+site_url="$(find_site_url || true)"
+if [ -n "$site_url" ]; then
+  echo "Opening running Exceptionless site: $site_url"
+  if command -v open >/dev/null 2>&1; then
+    open "$site_url"
+  else
+    echo "Open this URL in a browser: $site_url"
+  fi
+  exit 0
+fi
+
+aspire_log="$ASPIRE_HOME/logs/environment-site.log"
+aspire run --apphost src/Exceptionless.AppHost --nologo --non-interactive >"$aspire_log" 2>&1 &
+aspire_pid=$!
+
+tail -f "$aspire_log" &
+log_pid=$!
+
+cleanup() {
+  kill "$log_pid" 2>/dev/null || true
+  kill "$aspire_pid" 2>/dev/null || true
+  wait "$log_pid" 2>/dev/null || true
+  wait "$aspire_pid" 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+
+site_url=""
+for attempt in $(seq 1 60); do
+  site_url="$(find_site_url || true)"
+  if [ -n "$site_url" ]; then
+    break
+  fi
+
+  if ! kill -0 "$aspire_pid" 2>/dev/null; then
+    wait "$aspire_pid"
+    exit 1
+  fi
+
+  sleep 1
+done
+
+if [ -z "$site_url" ]; then
+  echo "Aspire started but did not publish the Exceptionless site URL." >&2
+  exit 1
+fi
+
+echo "Opening Exceptionless site: $site_url"
+if command -v open >/dev/null 2>&1; then
+  open "$site_url"
+else
+  echo "Open this URL in a browser: $site_url"
+fi
+
+wait "$aspire_pid"
+'''
+
+[[actions]]
+name = "Run Storybook"
+icon = "run"
+command = '''
+set -e
+
+cd "${CODEX_WORKTREE_PATH:?CODEX_WORKTREE_PATH is required}/src/Exceptionless.Web/ClientApp"
+
+storybook_port="${STORYBOOK_PORT:-6006}"
+storybook_path="${STORYBOOK_PATH:-/story/components-shared-taglist--clickable-long-tags}"
+storybook_url="http://127.0.0.1:${storybook_port}/?path=${storybook_path}"
+storybook_bin="./node_modules/.bin/storybook"
+
+if [ ! -x "$storybook_bin" ]; then
+  echo "Storybook dependencies are missing. Run setup first." >&2
+  exit 1
+fi
+
+"$storybook_bin" dev --host 127.0.0.1 --port "$storybook_port" &
+storybook_pid=$!
+
+cleanup() {
+  kill "$storybook_pid" 2>/dev/null || true
+  wait "$storybook_pid" 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+
+for attempt in $(seq 1 60); do
+  if curl -fsS "http://127.0.0.1:${storybook_port}/" >/dev/null 2>&1; then
+    break
+  fi
+
+  if ! kill -0 "$storybook_pid" 2>/dev/null; then
+    wait "$storybook_pid"
+    exit 1
+  fi
+
+  sleep 1
+done
+
+if ! curl -fsS "http://127.0.0.1:${storybook_port}/" >/dev/null 2>&1; then
+  echo "Storybook did not become ready at http://127.0.0.1:${storybook_port}/" >&2
+  exit 1
+fi
+
+echo "Opening Storybook: $storybook_url"
+if command -v open >/dev/null 2>&1; then
+  open "$storybook_url"
+else
+  echo "Open this URL in a browser: $storybook_url"
+fi
+
+wait "$storybook_pid"
 '''
 
 [[actions]]

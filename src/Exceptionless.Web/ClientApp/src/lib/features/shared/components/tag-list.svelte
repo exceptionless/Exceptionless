@@ -21,15 +21,15 @@
     const truncatedTags = new SvelteSet<string>();
 
     function observeTruncation(node: HTMLElement, tag: string) {
-        const badge = node.querySelector<HTMLElement>('[data-slot="badge"]');
-        if (!badge) {
+        const label = node.querySelector<HTMLElement>('[data-slot="tag-label"]');
+        if (!label) {
             return;
         }
 
-        const badgeElement = badge;
+        const labelElement = label;
 
         function updateTruncation() {
-            const isTruncated = badgeElement.scrollWidth > badgeElement.clientWidth;
+            const isTruncated = labelElement.scrollWidth > labelElement.clientWidth;
             if (truncatedTags.has(tag) === isTruncated) {
                 return;
             }
@@ -48,7 +48,7 @@
         }
 
         const observer = new ResizeObserver(updateTruncation);
-        observer.observe(badgeElement);
+        observer.observe(labelElement);
 
         return {
             destroy() {
@@ -76,14 +76,28 @@
     }
 </script>
 
-{#snippet tagBadge(tag: string, title?: string)}
+{#snippet tagBadge(tag: string, expanded = false)}
     <Badge
-        {title}
         variant="outline"
-        class="border-border bg-muted text-muted-foreground group-hover/button:bg-accent group-hover/button:text-accent-foreground dark:border-muted-foreground/50 max-w-28 truncate rounded-md text-xs"
+        class={[
+            'border-border bg-muted text-muted-foreground group-hover/button:bg-accent group-hover/button:text-accent-foreground dark:border-muted-foreground/50 rounded-md text-xs',
+            expanded ? 'h-auto max-w-sm py-0.5 whitespace-normal' : 'max-w-28 truncate'
+        ]}
     >
-        {tag}
+        <span data-slot="tag-label" class={expanded ? 'max-w-full break-all whitespace-normal' : 'min-w-0 truncate'}>{tag}</span>
     </Badge>
+{/snippet}
+
+{#snippet tagActionHint()}
+    <span class="flex items-center gap-1 whitespace-nowrap">
+        Click to filter. Hold
+        <Kbd
+            class="border-border in-data-[slot=tooltip-content]:bg-muted in-data-[slot=tooltip-content]:text-foreground dark:border-muted-foreground/50 dark:in-data-[slot=tooltip-content]:bg-muted border"
+        >
+            Alt / Option
+        </Kbd>
+        while clicking to copy.
+    </span>
 {/snippet}
 
 {#snippet tag(tag: string)}
@@ -113,21 +127,37 @@
                 {#if truncatedTags.has(tag)}
                     <span class="max-w-xs font-medium break-all">{tag}</span>
                 {/if}
-                <span class="flex items-center gap-1 whitespace-nowrap">
-                    Click to filter. Hold
-                    <Kbd
-                        class="border-border in-data-[slot=tooltip-content]:bg-muted in-data-[slot=tooltip-content]:text-foreground dark:border-muted-foreground/50 dark:in-data-[slot=tooltip-content]:bg-muted border"
-                    >
-                        Alt / Option
-                    </Kbd>
-                    while clicking to copy.
-                </span>
+                {@render tagActionHint()}
             </Tooltip.Content>
         </Tooltip.Root>
     {:else}
-        <span class="contents" use:observeTruncation={tag}>
-            {@render tagBadge(tag, truncatedTags.has(tag) ? tag : undefined)}
-        </span>
+        <Tooltip.Root disabled={!truncatedTags.has(tag)}>
+            <Tooltip.Trigger>
+                {#snippet child({ props })}
+                    <span {...props} class="inline-flex min-w-0" use:observeTruncation={tag}>
+                        {@render tagBadge(tag)}
+                    </span>
+                {/snippet}
+            </Tooltip.Trigger>
+            <Tooltip.Content
+                arrowClasses="hidden"
+                class="border-border bg-popover text-popover-foreground max-w-sm border shadow-md"
+                side="bottom"
+                sideOffset={4}
+            >
+                <span class="max-w-xs font-medium break-all">{tag}</span>
+            </Tooltip.Content>
+        </Tooltip.Root>
+    {/if}
+{/snippet}
+
+{#snippet overflowTag(tag: string)}
+    {#if onTagClick}
+        <Button type="button" size="sm" variant="ghost" class="h-auto cursor-pointer p-0" onclick={(event) => handleTagClick(event, tag)}>
+            {@render tagBadge(tag, true)}
+        </Button>
+    {:else}
+        {@render tagBadge(tag, true)}
     {/if}
 {/snippet}
 
@@ -152,14 +182,17 @@
                     </Tooltip.Trigger>
                     <Tooltip.Content
                         arrowClasses="hidden"
-                        class="border-border bg-popover text-popover-foreground max-w-xs flex-col items-start gap-2 border px-3 py-2 shadow-md"
+                        class="border-border bg-popover text-popover-foreground max-w-sm flex-col items-start gap-2 border px-3 py-2 shadow-md"
                         sideOffset={4}
                     >
                         <div class="flex flex-wrap gap-1">
                             {#each hiddenTags as value (value)}
-                                {@render tag(value)}
+                                {@render overflowTag(value)}
                             {/each}
                         </div>
+                        {#if onTagClick}
+                            {@render tagActionHint()}
+                        {/if}
                     </Tooltip.Content>
                 </Tooltip.Root>
             {/if}

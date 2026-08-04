@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen, within } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -68,6 +68,27 @@ describe('TagList', () => {
         }
     });
 
+    it('shows full hidden tags and preserves filter actions in the overflow tooltip', async () => {
+        const hiddenTag = 'customer-facing-api-that-is-unusually-long';
+        const onTagClick = vi.fn();
+        render(TagList, { maxVisible: 1, onTagClick, tags: ['api', hiddenTag] });
+
+        const overflow = screen.getByText('+1');
+        const overflowTrigger = overflow.closest<HTMLElement>('[data-slot="tooltip-trigger"]');
+        expect(overflowTrigger).not.toBeNull();
+        await fireEvent.pointerEnter(overflowTrigger!);
+        await fireEvent.pointerMove(overflowTrigger!);
+
+        const tooltip = document.querySelector('[data-slot="tooltip-content"]');
+        expect(tooltip?.textContent).toContain(hiddenTag);
+        expect(tooltip?.textContent).toContain('Alt / Option');
+
+        const hiddenTagButton = within(tooltip as HTMLElement).getByRole('button', { name: hiddenTag });
+        await fireEvent.click(hiddenTagButton);
+
+        expect(onTagClick).toHaveBeenCalledWith(hiddenTag);
+    });
+
     it('filters when a tag is clicked', async () => {
         const onTagClick = vi.fn();
         render(TagList, { onTagClick, tags: ['api'] });
@@ -91,33 +112,44 @@ describe('TagList', () => {
         expect(tooltip?.textContent).not.toContain('api');
     });
 
-    it('exposes a full tag value only when its badge is truncated', async () => {
+    it('shows a view tooltip for truncated read-only tags', async () => {
         const tag = 'a-very-long-tag-value-that-does-not-fit';
         render(TagList, { tags: [tag] });
 
-        const badge = screen.getByText(tag);
-        expect(badge.getAttribute('title')).toBeNull();
+        const label = screen.getByText(tag);
+        const badge = label.closest<HTMLElement>('[data-slot="badge"]');
+        expect(badge).not.toBeNull();
+        expect(badge?.getAttribute('title')).toBeNull();
+        expect(label.classList).toContain('min-w-0');
+        expect(label.classList).toContain('truncate');
 
-        Object.defineProperties(badge, {
+        Object.defineProperties(label, {
             clientWidth: { configurable: true, value: 112 },
             scrollWidth: { configurable: true, value: 240 }
         });
-        resizeObservers.forEach((observer) => observer.trigger(badge));
+        resizeObservers.forEach((observer) => observer.trigger(label));
         await tick();
 
-        expect(badge.getAttribute('title')).toBe(tag);
+        expect(badge?.getAttribute('title')).toBeNull();
+
+        const tooltipTrigger = label.closest<HTMLElement>('[data-slot="tooltip-trigger"]');
+        expect(tooltipTrigger).not.toBeNull();
+        await fireEvent.pointerEnter(tooltipTrigger!);
+        await fireEvent.pointerMove(tooltipTrigger!);
+
+        expect(document.querySelector('[data-slot="tooltip-content"]')?.textContent).toContain(tag);
     });
 
     it('includes a truncated tag value in the action tooltip', async () => {
         const tag = 'a-very-long-clickable-tag-value-that-does-not-fit';
         render(TagList, { onTagClick: vi.fn(), tags: [tag] });
 
-        const badge = screen.getByText(tag);
-        Object.defineProperties(badge, {
+        const label = screen.getByText(tag);
+        Object.defineProperties(label, {
             clientWidth: { configurable: true, value: 112 },
             scrollWidth: { configurable: true, value: 280 }
         });
-        resizeObservers.forEach((observer) => observer.trigger(badge));
+        resizeObservers.forEach((observer) => observer.trigger(label));
         await tick();
 
         const tagButton = screen.getByRole('button', { name: tag });
