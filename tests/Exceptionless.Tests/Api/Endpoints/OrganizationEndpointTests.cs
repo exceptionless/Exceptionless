@@ -1470,7 +1470,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         var canceledAtUtc = TimeProvider.GetUtcNow().UtcDateTime;
         await SetPlanAndStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, _plans.SmallPlan.Id, "cus_existing");
         StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_active", "si_active", latestInvoiceId: "in_original", status: "active"));
-        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_canceled", "si_canceled", canceledAtUtc: canceledAtUtc));
+        StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_canceled", "si_canceled", canceledAtUtc: canceledAtUtc, status: "canceled"));
         StripeBillingClient.CanceledSubscriptionResults["sub_active"] = CreateStripeSubscription("sub_active", "si_active", canceledAtUtc, "in_credit");
         StripeBillingClient.Invoices.Add(CreateStripeInvoice("in_original", "cus_existing", TimeProvider.GetUtcNow().UtcDateTime));
         StripeBillingClient.Invoice = CreatePendingSubscriptionCreditInvoice("in_credit", "cus_existing", "sub_active");
@@ -1822,7 +1822,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
                 .AsFreeOrganizationUser()
                 .Post()
                 .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
-                .Content(new ChangePlanRequest { PlanId = _plans.SmallPlan.Id })
+                .Content(new ChangePlanRequest { PlanId = _plans.SmallPlan.Id, StripeToken = "pm_card_visa", Last4 = "4242" })
                 .StatusCodeShouldBeOk()
             ));
 
@@ -1895,7 +1895,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
                 .AsFreeOrganizationUser()
                 .Post()
                 .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
-                .Content(new ChangePlanRequest { PlanId = _plans.SmallPlan.Id })
+                .Content(new ChangePlanRequest { PlanId = _plans.SmallPlan.Id, StripeToken = "pm_card_visa", Last4 = "4242" })
                 .StatusCodeShouldBeOk()
             ));
 
@@ -1926,7 +1926,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
                 .AsFreeOrganizationUser()
                 .Post()
                 .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
-                .Content(new ChangePlanRequest { PlanId = _plans.SmallPlan.Id })
+                .Content(new ChangePlanRequest { PlanId = _plans.SmallPlan.Id, StripeToken = "pm_card_visa", Last4 = "4242" })
                 .StatusCodeShouldBeOk()
             ));
 
@@ -1957,7 +1957,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
                 .AsFreeOrganizationUser()
                 .Post()
                 .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
-                .Content(new ChangePlanRequest { PlanId = _plans.SmallPlan.Id })
+                .Content(new ChangePlanRequest { PlanId = _plans.SmallPlan.Id, StripeToken = "pm_card_visa", Last4 = "4242" })
                 .StatusCodeShouldBeOk()
             ));
 
