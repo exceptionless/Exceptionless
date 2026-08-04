@@ -41,24 +41,29 @@ public class BillingManagerTests : TestWithServices
         Assert.Null(plan);
     }
 
-    [Fact]
-    public void GetOrganizationLockKey()
-    {
-        Assert.Equal("Organization:organization-id:billing-plan", BillingManager.GetOrganizationLockKey("organization-id"));
-    }
-
     [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
-    public void GetOrganizationLockKey_InvalidOrganizationId_Throws(string? organizationId)
+    public async Task TryAcquireOrganizationLockAsync_InvalidOrganizationId_Throws(string? organizationId)
     {
-        Assert.ThrowsAny<ArgumentException>(() => BillingManager.GetOrganizationLockKey(organizationId!));
+        // Arrange
+        var billingManager = GetService<BillingManager>();
+
+        // Act
+        var exception = await Record.ExceptionAsync(async () =>
+        {
+            _ = await billingManager.TryAcquireOrganizationLockAsync(organizationId!);
+        });
+
+        // Assert
+        Assert.IsAssignableFrom<ArgumentException>(exception);
     }
 
     [Fact]
     public void SetStripeSubscriptionId_ChangedOwner_ResetsEventWatermark()
     {
+        // Arrange
         var billingManager = GetService<BillingManager>();
         var organization = new Organization
         {
@@ -66,8 +71,10 @@ public class BillingManagerTests : TestWithServices
             StripeSubscriptionEventDate = DateTime.UtcNow
         };
 
+        // Act
         billingManager.SetStripeSubscriptionId(organization, "sub_new");
 
+        // Assert
         Assert.Equal("sub_new", organization.StripeSubscriptionId);
         Assert.Null(organization.StripeSubscriptionEventDate);
     }
@@ -75,6 +82,7 @@ public class BillingManagerTests : TestWithServices
     [Fact]
     public void SetStripeSubscriptionId_UnchangedOwner_PreservesEventWatermark()
     {
+        // Arrange
         var billingManager = GetService<BillingManager>();
         var eventWatermarkUtc = DateTime.UtcNow;
         var organization = new Organization
@@ -83,8 +91,10 @@ public class BillingManagerTests : TestWithServices
             StripeSubscriptionEventDate = eventWatermarkUtc
         };
 
+        // Act
         billingManager.SetStripeSubscriptionId(organization, "sub_current");
 
+        // Assert
         Assert.Equal(eventWatermarkUtc, organization.StripeSubscriptionEventDate);
     }
 }

@@ -143,7 +143,7 @@ public class BillingManager
         organization.StripeSubscriptionEventDate = null;
     }
 
-    internal static string GetOrganizationLockKey(string organizationId)
+    private static string GetOrganizationLockKey(string organizationId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(organizationId);
         return $"Organization:{organizationId}:billing-plan";
