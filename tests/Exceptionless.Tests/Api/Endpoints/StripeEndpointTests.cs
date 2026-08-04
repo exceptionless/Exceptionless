@@ -412,22 +412,24 @@ public class StripeEndpointTests : IntegrationTestsBase
         Assert.Equal("sub_replacement", StripeBillingClient.LastGetSubscriptionId);
     }
 
-    [Fact]
-    public async Task PostAsync_WithCurrentSubscriptionUnpaidAndHealthyReplacement_ReconcilesReplacement()
+    [Theory]
+    [InlineData("past_due")]
+    [InlineData("unpaid")]
+    public async Task PostAsync_WithCurrentSubscriptionNonactiveAndHealthyReplacement_ReconcilesReplacement(string status)
     {
         // Arrange
         var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
         Assert.NotNull(organization);
         organization.StripeCustomerId = "cus_existing";
         organization.PlanId = _plans.SmallPlan.Id;
-        organization.StripeSubscriptionId = "sub_unpaid";
+        organization.StripeSubscriptionId = "sub_nonactive";
         organization.StripeSubscriptionEventDate = DateTimeOffset.FromUnixTimeSeconds(1782155003).UtcDateTime;
         organization.BillingStatus = BillingStatus.Active;
         organization.RemoveSuspension();
         await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
 
         StripeBillingClient.Subscriptions.Add(CreateStripeSubscription("sub_replacement", "active", _plans.SmallPlan.Id));
-        string json = CreateSubscriptionEvent("evt_current_subscription_unpaid", 1782155023, "customer.subscription.updated", "sub_unpaid", "unpaid");
+        string json = CreateSubscriptionEvent("evt_current_subscription_nonactive", 1782155023, "customer.subscription.updated", "sub_nonactive", status);
 
         // Act
         await PostStripeEventAsync(json);

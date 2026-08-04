@@ -156,7 +156,8 @@ public class StripeEventHandler
         }
 
         var currentStatus = sub.GetBillingStatus();
-        if (currentStatus is BillingStatus.Canceled or BillingStatus.Unpaid)
+        if (currentStatus.HasValue &&
+            currentStatus is not BillingStatus.Active and not BillingStatus.Trialing)
         {
             var replacementSubscription = await ResolvePrimarySubscriptionAsync(organization, eventId, sub.Id);
             var replacementStatus = replacementSubscription?.GetBillingStatus();
@@ -164,7 +165,7 @@ public class StripeEventHandler
                 (currentStatus == BillingStatus.Canceled || replacementStatus is BillingStatus.Active or BillingStatus.Trialing))
             {
                 await ApplySubscriptionStateAsync(organization, replacementSubscription, eventId, null);
-                _logger.LogInformation("Ignoring nonpaying Stripe subscription update after reconciling a live subscription. Event: {EventId} Customer: {CustomerId} Org: {Organization} Nonpaying Subscription: {SubscriptionId} Current Subscription: {CurrentSubscriptionId}",
+                _logger.LogInformation("Ignoring nonactive Stripe subscription update after reconciling a live subscription. Event: {EventId} Customer: {CustomerId} Org: {Organization} Nonactive Subscription: {SubscriptionId} Current Subscription: {CurrentSubscriptionId}",
                     eventId, sub.CustomerId, organization.Id, sub.Id, replacementSubscription.Id);
                 return;
             }
