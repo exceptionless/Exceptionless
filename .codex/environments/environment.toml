@@ -6,9 +6,20 @@ name = "Exceptionless Aspire"
 script = '''
 set -e
 
-cd "${CODEX_WORKTREE_PATH:?CODEX_WORKTREE_PATH is required}"
+worktree_path="${CODEX_WORKTREE_PATH:-$PWD}"
+if [ ! -f "$worktree_path/Exceptionless.slnx" ]; then
+  worktree_path="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+fi
 
-echo "Setting up Exceptionless Aspire worktree: $CODEX_WORKTREE_PATH"
+if [ -z "$worktree_path" ] || [ ! -f "$worktree_path/Exceptionless.slnx" ]; then
+  echo "Unable to locate the Exceptionless worktree or solution." >&2
+  exit 1
+fi
+
+cd "$worktree_path"
+worktree_path="$PWD"
+
+echo "Setting up Exceptionless Aspire worktree: $worktree_path"
 
 if ! command -v dotnet >/dev/null 2>&1; then
   echo "dotnet is not installed or not on PATH. Exceptionless requires .NET 10." >&2
@@ -53,9 +64,20 @@ echo "Setup complete. Use Run Aspire to start the app, Run Storybook for compone
 script = '''
 set +e
 
-cd "${CODEX_WORKTREE_PATH:?CODEX_WORKTREE_PATH is required}"
+worktree_path="${CODEX_WORKTREE_PATH:-$PWD}"
+if [ ! -d "$worktree_path/.git" ] && [ ! -f "$worktree_path/Exceptionless.slnx" ]; then
+  worktree_path="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+fi
 
-echo "Cleaning Exceptionless worktree-local output only: $CODEX_WORKTREE_PATH"
+if [ -z "$worktree_path" ] || [ ! -d "$worktree_path" ]; then
+  echo "Unable to locate the Exceptionless worktree." >&2
+  exit 1
+fi
+
+cd "$worktree_path"
+worktree_path="$PWD"
+
+echo "Cleaning Exceptionless worktree-local output only: $worktree_path"
 
 echo "Removing repo-local temp/test output only..."
 
@@ -149,7 +171,17 @@ icon = "run"
 command = '''
 set -e
 
-cd "${CODEX_WORKTREE_PATH:?CODEX_WORKTREE_PATH is required}/docs"
+worktree_path="${CODEX_WORKTREE_PATH:-$PWD}"
+if [ ! -d "$worktree_path/docs" ]; then
+  worktree_path="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+fi
+
+if [ -z "$worktree_path" ] || [ ! -d "$worktree_path/docs" ]; then
+  echo "Unable to locate the Exceptionless docs directory." >&2
+  exit 1
+fi
+
+cd "$worktree_path/docs"
 
 export PORT="${PORT:-7141}"
 
