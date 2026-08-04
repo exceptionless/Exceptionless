@@ -11146,6 +11146,7 @@
           "organization_name",
           "date",
           "paid",
+          "status",
           "total",
           "items"
         ],
@@ -11170,6 +11171,9 @@
           "paid": {
             "type": "boolean"
           },
+          "status": {
+            "type": "string"
+          },
           "total": {
             "type": "number",
             "format": "double"
@@ -11186,7 +11190,9 @@
         "required": [
           "id",
           "date",
-          "paid"
+          "paid",
+          "status",
+          "total"
         ],
         "type": "object",
         "properties": {
@@ -11199,6 +11205,13 @@
           },
           "paid": {
             "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "total": {
+            "type": "number",
+            "format": "double"
           }
         }
       },

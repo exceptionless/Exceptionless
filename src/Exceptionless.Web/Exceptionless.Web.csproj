@@ -25,7 +25,7 @@
     <PackageReference Include="Riok.Mapperly" Version="4.3.1" />
     <PackageReference Include="MiniValidation" Version="0.10.0" />
     <PackageReference Include="OAuth2" Version="1.0.0" />
-    <PackageReference Include="Scalar.AspNetCore" Version="2.16.16" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.16.17" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageReference Include="Serilog.Enrichers.Span" Version="3.1.0" />
     <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
@@ -39,7 +39,7 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.ElasticsearchClient" Version="1.16.0-beta.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.17.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Process" Version="1.16.0-rc.1" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.21.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Exceptionless.Insulation\Exceptionless.Insulation.csproj" />
