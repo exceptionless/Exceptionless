@@ -74,7 +74,7 @@
         variant="outline"
         class={[
             'border-border bg-muted text-muted-foreground group-hover/button:bg-accent group-hover/button:text-accent-foreground dark:border-muted-foreground/50 rounded-md text-xs',
-            showFullValue ? 'h-auto max-w-sm py-0.5 whitespace-normal' : 'max-w-28'
+            showFullValue ? 'h-auto max-w-full py-0.5 whitespace-normal' : 'max-w-28'
         ]}
     >
         <span class={showFullValue ? 'max-w-full break-all whitespace-normal' : 'min-w-0 truncate'} use:observeTruncation={tag}>
@@ -84,7 +84,7 @@
 {/snippet}
 
 {#snippet tagActionHint()}
-    <span class="flex items-center gap-1 whitespace-nowrap">
+    <span class="flex flex-wrap items-center gap-1">
         Click to filter. Hold
         <Kbd
             class="border-border in-data-[slot=tooltip-content]:bg-muted in-data-[slot=tooltip-content]:text-foreground dark:border-muted-foreground/50 dark:in-data-[slot=tooltip-content]:bg-muted border"
@@ -114,7 +114,7 @@
             </Tooltip.Trigger>
             <Tooltip.Content
                 arrowClasses="hidden"
-                class="border-border bg-popover text-popover-foreground max-w-sm flex-col items-start border shadow-md"
+                class="border-border bg-popover text-popover-foreground max-w-[calc(100vw-2rem)] flex-col items-start border shadow-md sm:max-w-sm"
                 sideOffset={4}
             >
                 {#if truncatedTags.has(tag)}
@@ -134,7 +134,7 @@
             </Tooltip.Trigger>
             <Tooltip.Content
                 arrowClasses="hidden"
-                class="border-border bg-popover text-popover-foreground max-w-sm border shadow-md"
+                class="border-border bg-popover text-popover-foreground max-w-[calc(100vw-2rem)] border shadow-md sm:max-w-sm"
                 side="bottom"
                 sideOffset={4}
             >
@@ -146,7 +146,7 @@
 
 {#snippet overflowTag(tag: string)}
     {#if onTagClick}
-        <Button type="button" size="sm" variant="ghost" class="h-auto cursor-pointer p-0" onclick={(event) => handleTagClick(event, tag)}>
+        <Button type="button" size="sm" variant="ghost" class="h-auto max-w-full cursor-pointer p-0" onclick={(event) => handleTagClick(event, tag)}>
             {@render tagBadge(tag, true)}
         </Button>
     {:else}
@@ -175,7 +175,7 @@
                     </Tooltip.Trigger>
                     <Tooltip.Content
                         arrowClasses="hidden"
-                        class="border-border bg-popover text-popover-foreground max-w-sm flex-col items-start gap-2 border px-3 py-2 shadow-md"
+                        class="border-border bg-popover text-popover-foreground max-w-[calc(100vw-2rem)] flex-col items-start gap-2 border px-3 py-2 shadow-md sm:max-w-sm"
                         sideOffset={4}
                     >
                         <div class="flex flex-wrap gap-1">

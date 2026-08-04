@@ -82,8 +82,11 @@ describe('TagList', () => {
         const tooltip = document.querySelector('[data-slot="tooltip-content"]');
         expect(tooltip?.textContent).toContain(hiddenTag);
         expect(tooltip?.textContent).toContain('Alt / Option');
+        expect(tooltip?.classList).toContain('max-w-[calc(100vw-2rem)]');
 
         const hiddenTagButton = within(tooltip as HTMLElement).getByRole('button', { name: hiddenTag });
+        expect(hiddenTagButton.classList).toContain('max-w-full');
+        expect(hiddenTagButton.querySelector('[data-slot="badge"]')?.classList).toContain('max-w-full');
         await fireEvent.click(hiddenTagButton);
 
         expect(onTagClick).toHaveBeenCalledWith(hiddenTag);
@@ -110,6 +113,18 @@ describe('TagList', () => {
         expect(shortcut?.classList.contains('in-data-[slot=tooltip-content]:text-foreground')).toBe(true);
         expect(shortcut?.classList.contains('border-border')).toBe(true);
         expect(tooltip?.textContent).not.toContain('api');
+    });
+
+    it('copies a tag instead of filtering when Alt-clicked', async () => {
+        const onTagClick = vi.fn();
+        const writeText = vi.fn().mockResolvedValue(undefined);
+        vi.stubGlobal('navigator', { clipboard: { writeText } });
+        render(TagList, { onTagClick, tags: ['environment:production'] });
+
+        await fireEvent.click(screen.getByRole('button', { name: 'environment:production' }), { altKey: true });
+
+        expect(writeText).toHaveBeenCalledWith('environment:production');
+        expect(onTagClick).not.toHaveBeenCalled();
     });
 
     it('shows a view tooltip for truncated read-only tags', async () => {
