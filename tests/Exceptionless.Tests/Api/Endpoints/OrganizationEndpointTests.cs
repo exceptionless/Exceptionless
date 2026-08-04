@@ -1661,9 +1661,9 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         Assert.True(result.Success, result.Message);
         Assert.Null(StripeBillingClient.LastSubscriptionListOptions?.Status);
         Assert.Equal(100, StripeBillingClient.LastSubscriptionListOptions?.Limit);
-        Assert.Equal("cus_existing", StripeBillingClient.LastInvoiceListOptions?.Customer);
-        Assert.Equal("draft", StripeBillingClient.LastInvoiceListOptions?.Status);
-        Assert.Equal(100, StripeBillingClient.LastInvoiceListOptions?.Limit);
+        Assert.Equal("cus_existing", StripeBillingClient.LastAutoPagingInvoiceListOptions?.Customer);
+        Assert.Equal("draft", StripeBillingClient.LastAutoPagingInvoiceListOptions?.Status);
+        Assert.Equal(100, StripeBillingClient.LastAutoPagingInvoiceListOptions?.Limit);
         Assert.Equal(["finalize:in_credit", "create-subscription"], StripeBillingClient.Calls);
 
         var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
