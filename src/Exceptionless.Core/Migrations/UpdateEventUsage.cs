@@ -86,7 +86,7 @@ public sealed class UpdateEventUsage : MigrationBase
                         }
                     }
 
-                    await _organizationRepository.SaveAsync(organization);
+                    await _organizationRepository.SaveAsync(organization, o => o.Notifications(false));
                     await UpdateProjectsUsageAsync(context, organization);
                     processed++;
                     await context.Lock.RenewAsync();
@@ -142,7 +142,7 @@ public sealed class UpdateEventUsage : MigrationBase
                             usage.Limit = organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
                     }
 
-                    await _projectRepository.SaveAsync(project);
+                    await _projectRepository.SaveAsync(project, o => o.Notifications(false));
                 }
                 catch (Exception ex)
                 {

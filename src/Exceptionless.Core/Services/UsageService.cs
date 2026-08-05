@@ -117,7 +117,8 @@ public class UsageService
                     });
 
                     await _cache.SetAsync(GetTotalCacheKey(utcNow, organizationId), usage.Total, TimeSpan.FromHours(8));
-                    await _organizationRepository.SaveAsync(organization);
+                    // Usage counters and last-event timestamps are operational updates, not user-facing entity changes.
+                    await _organizationRepository.SaveAsync(organization, o => o.Notifications(false));
                 }
             }
 
@@ -204,7 +205,8 @@ public class UsageService
 
                     await _cache.SetAsync(GetTotalCacheKey(utcNow, project.OrganizationId, projectId), usage.Total, TimeSpan.FromHours(8));
 
-                    await _projectRepository.SaveAsync(project);
+                    // Project configuration changes have their own save path and should remain the source of ProjectChanged messages.
+                    await _projectRepository.SaveAsync(project, o => o.Notifications(false));
                 }
             }
 
