@@ -1848,7 +1848,7 @@
           "Token"
         ],
         "summary": "Create for project",
-        "description": "This is a helper action that makes it easier to create a token for a specific project. You may also specify a scope when creating a token. There are three valid scopes: client, user and admin.",
+        "description": "This is a helper action that makes it easier to create a token for a specific project. Valid scopes are client, user, admin, and source-maps:write.",
         "parameters": [
           {
             "name": "projectId",
@@ -2157,7 +2157,7 @@
           "Token"
         ],
         "summary": "Create",
-        "description": "To create a new token, you must specify an organization_id. There are three valid scopes: client, user and admin.",
+        "description": "To create a new token, you must specify an organization_id and project_id. Valid scopes are client, user, admin, and source-maps:write. The source-maps:write scope requires a project-scoped token.",
         "requestBody": {
           "description": "The token.",
           "content": {
@@ -5400,39 +5400,6 @@
         }
       }
     },
-    "/api/v2/projects/check-name": {
-      "get": {
-        "tags": [
-          "Project"
-        ],
-        "summary": "Check for unique name",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "query",
-            "description": "The project name to check.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "organizationId",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "The project name is available."
-          },
-          "204": {
-            "description": "The project name is not available."
-          }
-        }
-      }
-    },
     "/api/v2/organizations/{organizationId}/projects/check-name": {
       "get": {
         "tags": [
@@ -5443,7 +5410,7 @@
           {
             "name": "organizationId",
             "in": "path",
-            "description": "If set the check name will be scoped to a specific organization.",
+            "description": "The organization identifier that scopes the name check.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -5457,14 +5424,22 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "description": "The current project identifier to exclude from the uniqueness check.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
           "201": {
-            "description": "The project name is available."
+            "description": "The project name is not available."
           },
           "204": {
-            "description": "The project name is not available."
+            "description": "The project name is available."
           }
         }
       }
@@ -5663,16 +5638,6 @@
           },
           "400": {
             "description": "An error occurred while creating the organization.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The organization already exists.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -6654,35 +6619,6 @@
         }
       }
     },
-    "/api/v2/organizations/check-name": {
-      "get": {
-        "tags": [
-          "Organization"
-        ],
-        "summary": "Check for unique name",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "query",
-            "description": "The organization name to check.",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "201": {
-            "description": "The organization name is available."
-          },
-          "204": {
-            "description": "The organization name is not available."
-          }
-        }
-      }
-    },
     "/api/v2/stacks/{id}": {
       "get": {
         "tags": [
@@ -7255,6 +7191,16 @@
                 }
               }
             }
+          },
+          "426": {
+            "description": "Please upgrade your plan to use premium search features.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -7372,7 +7318,7 @@
             }
           },
           "426": {
-            "description": "Unable to view stack occurrences for the suspended organization.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -7497,7 +7443,7 @@
             }
           },
           "426": {
-            "description": "Unable to view stack occurrences for the suspended organization.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -7893,6 +7839,16 @@
                 }
               }
             }
+          },
+          "426": {
+            "description": "Please upgrade your plan to use premium search features.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -7975,6 +7931,16 @@
                 }
               }
             }
+          },
+          "426": {
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -8050,6 +8016,16 @@
           },
           "400": {
             "description": "Invalid filter.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8264,7 +8240,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "Please upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8474,7 +8450,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8622,7 +8598,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8842,7 +8818,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9228,7 +9204,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "Please upgrade your plan to use premium session features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9386,7 +9362,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium session features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9505,6 +9481,16 @@
           },
           "400": {
             "description": "Invalid filter.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "Please upgrade your plan to use premium session features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9642,7 +9628,7 @@
             }
           },
           "404": {
-            "description": "The project could not be found.",
+            "description": "The organization could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9652,7 +9638,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium session features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9800,7 +9786,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium session features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -10741,6 +10727,169 @@
           }
         }
       }
+    },
+    "/api/v2/projects/{projectId}/source-maps": {
+      "get": {
+        "tags": [
+          "Source Map"
+        ],
+        "summary": "Get source maps for a project",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "description": "The identifier of the project.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SourceMapArtifact"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The project could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Source Map"
+        ],
+        "summary": "Upload a source map for a generated JavaScript file",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "description": "The identifier of the project.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file",
+                  "generated_file_url"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "description": "The source map file to upload.",
+                    "format": "binary"
+                  },
+                  "generated_file_url": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceMapArtifact"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The project could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The source map file or generated file URL is invalid.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/projects/{projectId}/source-maps/{sourceMapId}": {
+      "delete": {
+        "tags": [
+          "Source Map"
+        ],
+        "summary": "Delete a source map from a project",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "description": "The identifier of the project.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "sourceMapId",
+            "in": "path",
+            "description": "The identifier of the source map.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "The project or source map could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -10997,6 +11146,7 @@
           "organization_name",
           "date",
           "paid",
+          "status",
           "total",
           "items"
         ],
@@ -11021,6 +11171,9 @@
           "paid": {
             "type": "boolean"
           },
+          "status": {
+            "type": "string"
+          },
           "total": {
             "type": "number",
             "format": "double"
@@ -11037,7 +11190,9 @@
         "required": [
           "id",
           "date",
-          "paid"
+          "paid",
+          "status",
+          "total"
         ],
         "type": "object",
         "properties": {
@@ -11050,6 +11205,13 @@
           },
           "paid": {
             "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "total": {
+            "type": "number",
+            "format": "double"
           }
         }
       },
@@ -11208,17 +11370,7 @@
               "object"
             ],
             "additionalProperties": {
-              "type": "boolean"
-            }
-          },
-          "column_order": {
-            "maxItems": 50,
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/SavedViewColumnSettings"
             }
           },
           "show_stats": {
@@ -12013,16 +12165,7 @@
               "object"
             ],
             "additionalProperties": {
-              "type": "boolean"
-            }
-          },
-          "columnOrder": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/SavedViewColumnSettings"
             }
           },
           "showStats": {
@@ -12094,6 +12237,39 @@
           }
         }
       },
+      "SavedViewColumnSettings": {
+        "type": "object",
+        "properties": {
+          "visible": {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "description": "Whether the column is visible. Null means use the table default."
+          },
+          "position": {
+            "maximum": 49,
+            "minimum": 0,
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Zero-based display position. Null means use the table default order.",
+            "format": "int32"
+          },
+          "width": {
+            "maximum": 1200,
+            "minimum": 48,
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Column width in pixels. Null means use the table default width.",
+            "format": "int32"
+          }
+        },
+        "description": "Per-column display settings for a saved view. All properties are optional so new settings can\nbe added without changing the meaning of existing saved views."
+      },
       "Signup": {
         "required": [
           "name",
@@ -12121,6 +12297,54 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "SourceMapArtifact": {
+        "required": [
+          "id",
+          "generated_file_url",
+          "size",
+          "is_auto_downloaded",
+          "created_utc"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "generated_file_url": {
+            "type": "string"
+          },
+          "source_map_url": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "file_name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "is_auto_downloaded": {
+            "type": "boolean"
+          },
+          "created_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_used_utc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },
@@ -12420,17 +12644,7 @@
               "object"
             ],
             "additionalProperties": {
-              "type": "boolean"
-            }
-          },
-          "column_order": {
-            "maxItems": 50,
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/SavedViewColumnSettings"
             }
           },
           "show_stats": {
@@ -13229,16 +13443,7 @@
               "object"
             ],
             "additionalProperties": {
-              "type": "boolean"
-            }
-          },
-          "column_order": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/SavedViewColumnSettings"
             }
           },
           "show_stats": {
@@ -13554,6 +13759,9 @@
     },
     {
       "name": "Stack"
+    },
+    {
+      "name": "Source Map"
     }
   ]
 }

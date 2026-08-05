@@ -140,6 +140,15 @@ public static class HttpExtensions
         return request.HttpContext.Connection.RemoteIpAddress?.ToString();
     }
 
+    public static string? GetClientKeyHash(this HttpRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        return request.HttpContext.Items.TryGetAndReturn("ApiKey") is string apiKey
+            ? apiKey.ToSHA256()
+            : null;
+    }
+
     public static string? GetQueryString(this HttpRequest request, string key)
     {
         ArgumentNullException.ThrowIfNull(request);

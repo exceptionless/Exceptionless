@@ -6,6 +6,7 @@ import {
     filterChanged,
     quoteIfSpecialCharacters,
     serializeFilters,
+    shouldRefreshPersistentEventRemoval,
     toFilter,
     toFilterFromSerializedFilters
 } from './helpers.svelte';
@@ -141,6 +142,26 @@ describe('filterChanged', () => {
         expect(result[0]).toBeInstanceOf(BooleanFilter);
         expect((result[0] as BooleanFilter).value).toBe(true);
         expect(result[0]?.hidden).toBe(false);
+    });
+});
+
+describe('shouldRefreshPersistentEventRemoval', () => {
+    it('refreshes after removing a visible row even when the message does not match the current filter', () => {
+        const filters = [new ProjectFilter(['project-1'])];
+
+        expect(shouldRefreshPersistentEventRemoval(true, filters, 'project:project-1', undefined, 'project-2')).toBe(true);
+    });
+
+    it('refreshes an off-page result when the removal matches the current filter', () => {
+        const filters = [new ProjectFilter(['project-1'])];
+
+        expect(shouldRefreshPersistentEventRemoval(false, filters, 'project:project-1', undefined, 'project-1')).toBe(true);
+    });
+
+    it('ignores an off-page removal that does not match the current filter', () => {
+        const filters = [new ProjectFilter(['project-1'])];
+
+        expect(shouldRefreshPersistentEventRemoval(false, filters, 'project:project-1', undefined, 'project-2')).toBe(false);
     });
 });
 

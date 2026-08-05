@@ -6,6 +6,7 @@
     import { Button } from '$comp/ui/button';
     import { Spinner } from '$comp/ui/spinner';
     import { getEventsByReferenceQuery } from '$features/events/api.svelte';
+    import { buildEventDetailsHref } from '$features/events/components/summary';
     import Summary from '$features/events/components/summary/summary.svelte';
 
     const referenceId = $derived(page.params.referenceId || '');
@@ -23,7 +24,7 @@
         const event = eventsQuery.data?.length === 1 ? eventsQuery.data[0] : undefined;
         if (event?.id && event.id !== redirectedEventId) {
             redirectedEventId = event.id;
-            void goto(resolve('/(app)/event/[eventId=objectid]', { eventId: event.id }), { replaceState: true });
+            void goto(buildEventDetailsHref(event.id), { replaceState: true });
         }
     });
 
@@ -39,12 +40,12 @@
     </div>
 
     {#if eventsQuery.isPending}
-        <div class="flex items-center gap-2 text-muted-foreground">
+        <div class="text-muted-foreground flex items-center gap-2">
             <Spinner class="size-4" />
             <span>Loading events...</span>
         </div>
     {:else if eventsQuery.error}
-        <div class="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">Unable to load events for this reference.</div>
+        <div class="border-destructive/40 bg-destructive/5 text-destructive rounded-md border p-4 text-sm">Unable to load events for this reference.</div>
     {:else if (eventsQuery.data?.length ?? 0) === 0}
         <div class="space-y-3">
             <Muted>No events were found for this reference.</Muted>
@@ -60,7 +61,7 @@
             {#each eventsQuery.data ?? [] as event (event.id)}
                 <div class="rounded-md border p-4">
                     <Summary summary={event} />
-                    <A class="mt-2 inline-block" href={resolve('/(app)/event/[eventId=objectid]', { eventId: event.id })}>Open Event</A>
+                    <A class="mt-2 inline-block" href={buildEventDetailsHref(event.id)}>Open Event</A>
                 </div>
             {/each}
         </div>

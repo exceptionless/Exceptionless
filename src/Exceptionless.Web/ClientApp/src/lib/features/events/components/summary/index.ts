@@ -61,6 +61,9 @@ export interface EventSummaryData {
 export interface EventSummaryModel<T extends SummaryTemplateKeys> extends SummaryModel<T> {
     /** @format date-time */
     date: string;
+    project_id: string;
+    project_name?: string;
+    tags: string[];
     type?: string;
     version?: string;
 }
@@ -95,7 +98,10 @@ export interface StackSummaryModel<T extends SummaryTemplateKeys> extends Summar
     first_occurrence: string;
     /** @format date-time */
     last_occurrence: string;
+    project_id: string;
+    project_name?: string;
     status: StackStatus;
+    tags: string[];
     title: string;
     /** @format int64 */
     total: number;
@@ -159,11 +165,6 @@ export function buildEventDetailsHref(eventId: string, stackId?: string): string
     return resolve('/(app)/event/[eventId=objectid]', { eventId });
 }
 
-export function buildStackEventsHref(stackId: string): string {
-    const queryParams = new URLSearchParams({
-        stack: stackId,
-        time: 'all'
-    });
-
-    return `${resolve('/(app)/event')}?${queryParams}`;
+export function buildStackDetailsHref(stackId: string): string {
+    return resolve('/(app)/stack/[stackId=objectid]', { stackId });
 }

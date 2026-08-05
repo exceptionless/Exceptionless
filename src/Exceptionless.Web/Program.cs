@@ -7,6 +7,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Validation;
 using Exceptionless.Insulation.Configuration;
+using Exceptionless.Insulation.Security;
 using Exceptionless.Web.Api;
 using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Extensions;
@@ -19,7 +20,6 @@ using Exceptionless.Web.Utility.OpenApi;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Mediator;
 using Foundatio.Repositories.Exceptions;
-using HttpIResult = Microsoft.AspNetCore.Http.IResult;
 using Joonasw.AspNetCore.SecurityHeaders;
 using Joonasw.AspNetCore.SecurityHeaders.Csp;
 using Microsoft.AspNetCore.Authorization;
@@ -37,6 +37,7 @@ using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.Exceptionless;
+using HttpIResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Exceptionless.Web;
 
@@ -81,6 +82,7 @@ public partial class Program
             var configuration = (IConfigurationRoot)builder.Configuration;
             Log.Logger = new LoggerConfiguration()
                 .ReadFrom.Configuration(configuration)
+                .ApplySensitiveDataLogging()
                 .CreateBootstrapLogger()
                 .ForContext<Program>();
 
@@ -89,7 +91,7 @@ public partial class Program
 
             var apmConfig = new ApmConfig(configuration, "web", options.InformationalVersion, options.CacheOptions.Provider == "redis");
 
-            Log.Information("Bootstrapping Exceptionless Web in {AppMode} mode ({InformationalVersion}) on {MachineName} with options {@Options}", environment, options.InformationalVersion, Environment.MachineName, options);
+            Log.Information("Bootstrapping Exceptionless Web in {AppMode} mode ({InformationalVersion}) on {MachineName} with scope {AppScope}", environment, options.InformationalVersion, Environment.MachineName, options.AppScope);
 
             SetClientEnvironmentVariablesInDevelopmentMode(options);
 
@@ -99,6 +101,7 @@ public partial class Program
                 .UseSerilog((ctx, sp, c) =>
                 {
                     c.ReadFrom.Configuration(ctx.Configuration);
+                    c.ApplySensitiveDataLogging();
                     c.ReadFrom.Services(sp);
                     c.Enrich.WithMachineName();
 
@@ -157,6 +160,7 @@ public partial class Program
                 o.AddPolicy(AuthorizationRoles.StacksReadPolicy, policy => policy.RequireAssertion(context => context.User.IsInRole(AuthorizationRoles.User) || context.User.IsInRole(AuthorizationRoles.StacksRead)));
                 o.AddPolicy(AuthorizationRoles.StacksWritePolicy, policy => policy.RequireAssertion(context => context.User.IsInRole(AuthorizationRoles.User) || context.User.IsInRole(AuthorizationRoles.StacksWrite)));
                 o.AddPolicy(AuthorizationRoles.EventsReadPolicy, policy => policy.RequireAssertion(context => context.User.IsInRole(AuthorizationRoles.User) || context.User.IsInRole(AuthorizationRoles.EventsRead)));
+                o.AddPolicy(AuthorizationRoles.SourceMapsWritePolicy, policy => policy.RequireAssertion(context => context.User.IsInRole(AuthorizationRoles.User) || context.User.IsInRole(AuthorizationRoles.SourceMapsWrite)));
             });
 
             builder.Services.AddRouting(r =>
@@ -186,9 +190,10 @@ public partial class Program
                     .MapStatus(ResultStatus.Unavailable, ApiResultMapper.MapUnavailable));
             Bootstrapper.RegisterServices(builder.Services, options, Log.Logger.ToLoggerFactory());
             builder.Services.AddScoped<McpContextService>();
-            builder.Services.AddSingleton<ISessionMigrationHandler, McpSessionMigrationHandler>();
-            builder.Services.AddMcpServer()
-                .WithHttpTransport(o => o.Stateless = false)
+            // Leave the protocol version unset so native v2 and down-level MCP clients can negotiate a supported version.
+            builder.Services.AddMcpServer(options =>
+                options.ServerInstructions = "Exceptionless MCP tools are stateless. Scoped ids may be omitted when the current OAuth grant exposes exactly one matching organization or project; otherwise use list_organizations, list_projects, or resolve_project and pass the required id explicitly. Previous tool calls never change the scope of later calls.")
+                .WithHttpTransport()
                 .WithTools<ExceptionlessMcpTools>();
             builder.Services.AddSingleton(_ => new ThrottlingOptions
             {
@@ -347,6 +352,9 @@ public partial class Program
                     .AddPreferredSecuritySchemes("Bearer");
             });
             app.MapApiEndpoints();
+            app.MapGet("/mcp", () => Results.StatusCode(StatusCodes.Status405MethodNotAllowed))
+                .RequireAuthorization(AuthorizationRoles.McpPolicy)
+                .ExcludeFromDescription();
             app.MapMcp("/mcp").RequireAuthorization(AuthorizationRoles.McpPolicy);
             app.MapFallback("{**slug:nonfile}", CreateRequestDelegate(app, "/index.html"));
 

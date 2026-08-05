@@ -1,5 +1,9 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
+export function escapeRegExp(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 export function getIdFromUrl(page: Page, pattern: RegExp): string {
     const match = pattern.exec(new URL(page.url()).pathname);
     if (!match?.[1]) {
@@ -41,6 +45,21 @@ export function getVisibleRow(page: Page, ...texts: Array<RegExp | string>): Loc
 
 export function getVisibleText(page: Page, text: RegExp | string): Locator {
     return page.getByText(text).filter({ visible: true }).first();
+}
+
+export async function navigateToSidebarView(page: Page, parentName: string, childName: string): Promise<void> {
+    const parentLink = page.getByRole('link', { exact: true, name: parentName }).filter({ visible: true }).first();
+    if (await parentLink.isVisible()) {
+        await parentLink.click();
+        return;
+    }
+
+    const childLink = page.getByRole('link', { exact: true, name: childName }).filter({ visible: true }).first();
+    if (!(await childLink.isVisible())) {
+        await page.getByRole('button', { exact: true, name: parentName }).filter({ visible: true }).first().click();
+    }
+
+    await childLink.click();
 }
 
 export async function selectProjectType(page: Page, optionName: string): Promise<void> {

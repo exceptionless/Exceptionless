@@ -16,7 +16,6 @@
                     placeholder="{{::'Organization Name' | translate}}"
                     ng-model="vm.data.name"
                     ng-model-options="{ debounce: 500 }"
-                    organization-name-available-validator
                     ng-required="true"
                     autofocus
                 />
@@ -32,7 +31,6 @@
                 ng-if="vm.addOrganizationForm.$submitted || vm.addOrganizationForm.name.$touched"
             >
                 <small ng-message="required">{{::'Organization Name is required.' | translate}}</small>
-                <small ng-message="unique">{{::'A organizations with this name already exists.' | translate}}</small>
             </div>
         </div>
     </div>

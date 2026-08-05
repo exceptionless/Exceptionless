@@ -19,14 +19,14 @@
 <AlertDialog.Root bind:open>
     <AlertDialog.Content>
         <AlertDialog.Header>
-            <AlertDialog.Title>Enable API Key</AlertDialog.Title>
+            <AlertDialog.Title>Enable Token</AlertDialog.Title>
             <AlertDialog.Description>
                 Are you sure you want to enable "{id}" {#if notes}({notes}){/if}?
             </AlertDialog.Description>
         </AlertDialog.Header>
         <AlertDialog.Footer>
             <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-            <AlertDialog.Action onclick={onSubmit}>Enable API Key</AlertDialog.Action>
+            <AlertDialog.Action onclick={onSubmit}>Enable Token</AlertDialog.Action>
         </AlertDialog.Footer>
     </AlertDialog.Content>
 </AlertDialog.Root>

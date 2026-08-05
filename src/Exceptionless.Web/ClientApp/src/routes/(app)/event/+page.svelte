@@ -1,7 +1,4 @@
 <script lang="ts">
-    import type { GetEventsParams } from '$features/events/api.svelte';
-    import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
-
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import * as DataTable from '$comp/data-table';
@@ -9,7 +6,12 @@
     import RefreshButton from '$comp/refresh-button.svelte';
     import { H3 } from '$comp/typography';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
-    import { getOrganizationCountQuery } from '$features/events/api.svelte';
+    import {
+        type GetEventsParams,
+        getOrganizationCountQuery,
+        getOrganizationEventsQuery,
+        PERSISTENT_EVENT_DELETE_RECONCILE_EVENT
+    } from '$features/events/api.svelte';
     import EventDetailSheet from '$features/events/components/event-detail-sheet.svelte';
     import EventsDashboardChart from '$features/events/components/events-dashboard-chart.svelte';
     import EventsStatsDashboard from '$features/events/components/events-stats-dashboard.svelte';
@@ -36,14 +38,18 @@
         hasSingleTypeFilter,
         serializeFilters,
         shouldRefreshPersistentEventChanged,
+        shouldRefreshPersistentEventRemoval,
         toFilter,
         updateFilterCache
     } from '$features/events/components/filters/helpers.svelte';
     import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
+    import { buildEventDetailsHref, type EventSummaryModel, type SummaryTemplateKeys } from '$features/events/components/summary/index';
     import EventsBulkActionsDropdownMenu from '$features/events/components/table/events-bulk-actions-dropdown-menu.svelte';
     import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
     import { defaultEventColumnVisibility, getColumns } from '$features/events/components/table/options.svelte';
+    import { filterUsesPremiumFeatures } from '$features/events/premium-filter';
     import { organization } from '$features/organizations/context.svelte';
+    import { premiumPage } from '$features/organizations/premium-page.svelte';
     import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
     import { useSavedViews } from '$features/saved-views/use-saved-views.svelte';
     import * as agg from '$features/shared/api/aggregations';
@@ -53,14 +59,14 @@
     import { parseDateMathRange } from '$features/shared/utils/datemath.js';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
-    import { DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
-    import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+    import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
+    import { type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
     import { error } from '@sveltejs/kit';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
     import { useEventListener, watch } from 'runed';
-    import { untrack } from 'svelte';
-    import { debounce, throttle } from 'throttle-debounce';
+    import { onDestroy, untrack } from 'svelte';
+    import { debounce } from 'throttle-debounce';
 
     import {
         ALL_TIME_QUERY_VALUE,
@@ -85,7 +91,7 @@
     }
 
     function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
-        return resolve('/(app)/event/[eventId=objectid]', { eventId: row.id });
+        return buildEventDetailsHref(row.id);
     }
 
     const DEFAULT_TIME_RANGE = '[now-7d TO now]';
@@ -250,6 +256,7 @@
         defaultTime: DEFAULT_TIME_RANGE,
         filterCacheKey,
         getColumnOrder: () => table.state.columnOrder,
+        getColumnSizing: () => table.state.columnSizing,
         getColumnVisibility: () => table.state.columnVisibility,
         getFilter: getEffectiveFilter,
         getFilterDefinitions: () => serializeFilters(filters ?? []),
@@ -259,6 +266,7 @@
         getTime: getQueryTime,
         queryParams,
         setColumnOrder: (v) => table.setColumnOrder(v),
+        setColumnSizing: (v) => table.setColumnSizing(v),
         setColumnVisibility: (v) => table.setColumnVisibility(v),
         setShowChart: (v) => (showChart = v),
         setShowStats: (v) => (showStats = v),
@@ -652,25 +660,46 @@
         }
     });
 
+    $effect(() => {
+        premiumPage.current = filterUsesPremiumFeatures(eventsQueryParameters.filter, 'event') ? 'search' : undefined;
+    });
+
     const client = useFetchClient();
-    const clientStatus = useFetchClientStatus(client);
-    let clientResponse = $state<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>>();
+    const eventsQuery = getOrganizationEventsQuery({
+        enabled: () => !isSavedViewRoutePending,
+        get params() {
+            const { page: ignoredPage, ...params } = {
+                ...eventsQueryParameters,
+                include: !eventsQueryParameters.after && !eventsQueryParameters.before ? ('total' as const) : undefined
+            };
+            void ignoredPage;
+
+            return params;
+        },
+        route: {
+            get organizationId() {
+                return organization.current;
+            }
+        }
+    });
 
     const table = createTable(
         getSharedTableOptions<EventSummaryModel<SummaryTemplateKeys>>({
             columnPersistenceKey: 'events-column-visibility',
             get columns() {
                 return getColumns<EventSummaryModel<SummaryTemplateKeys>>(eventsQueryParameters.mode, {
+                    onTagClick: (tag) => onFilterChanged(new TagFilter([tag])),
                     showType: !hasSingleTypeFilter(eventsQueryParameters.filter)
                 });
             },
             defaultColumnVisibility: defaultEventColumnVisibility,
+            enableColumnResizing: true,
             paginationStrategy: 'cursor',
             get queryData() {
-                return clientResponse?.data ?? [];
+                return eventsQuery.data?.data ?? [];
             },
             get queryMeta() {
-                return clientResponse?.meta;
+                return eventsQuery.data?.meta;
             },
             get queryParameters() {
                 return eventsQueryParameters;
@@ -678,6 +707,7 @@
         }),
         (state) => ({
             columnOrder: state.columnOrder,
+            columnSizing: state.columnSizing,
             columnVisibility: state.columnVisibility,
             pagination: state.pagination
         })
@@ -691,47 +721,96 @@
     }
 
     async function handleRefresh() {
+        const isFirstPage = table.state.pagination.pageIndex === 0;
         if (!canRefresh) {
             reset();
+            if (!isFirstPage) {
+                return;
+            }
         }
 
-        await loadData();
+        await eventsQuery.refetch();
     }
 
-    async function loadData() {
+    async function reconcileTotalPages() {
         if (!organization.current || isSavedViewRoutePending) {
             return;
         }
 
-        const params = {
-            ...eventsQueryParameters,
-            include: !eventsQueryParameters.after && !eventsQueryParameters.before ? 'total' : undefined
-        };
-        delete params.page;
-        clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, { params });
+        const organizationId = organization.current;
+        const requestParameters = { ...eventsQueryParameters };
+        const requestIdentity = JSON.stringify([organizationId, requestParameters]);
+        if (!requestParameters.after && !requestParameters.before) {
+            return;
+        }
 
-        if (clientResponse.problem) {
-            showBillingDialogOnUpgradeProblem(clientResponse.problem, organization.current, () => loadData());
+        const totalParams = {
+            ...requestParameters,
+            include: 'total' as const,
+            limit: 1
+        };
+        delete totalParams.after;
+        delete totalParams.before;
+        delete totalParams.page;
+
+        const totalResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organizationId}/events`, {
+            params: totalParams
+        });
+        if (requestIdentity !== JSON.stringify([organization.current, { ...eventsQueryParameters }])) {
+            return;
+        }
+
+        const total = totalResponse.meta.total as number | undefined;
+        const totalPages = total == null ? undefined : Math.ceil(total / (requestParameters.limit ?? 20));
+        if (totalPages != null && table.state.pagination.pageIndex >= totalPages) {
+            table.firstPage();
         }
     }
 
-    const throttledLoadData = throttle(10000, loadData);
-    const debouncedLoadData = debounce(1500, loadData);
+    let reconcileTotalRequested = false;
+    const debouncedRefetch = debounce(1500, async () => {
+        const shouldReconcileTotal = reconcileTotalRequested;
+        reconcileTotalRequested = false;
+        const result = await eventsQuery.refetch();
+        if (shouldReconcileTotal && result.isSuccess) {
+            await reconcileTotalPages();
+        }
+    });
+    function scheduleRefetch(reconcileTotal: boolean = false) {
+        reconcileTotalRequested ||= reconcileTotal;
+        debouncedRefetch();
+    }
 
-    async function onPersistentEventChanged(message: WebSocketMessageValue<'PersistentEventChanged'>) {
+    onDestroy(() => {
+        debouncedRefetch.cancel();
+    });
+
+    function onPersistentEventChanged(message: WebSocketMessageValue<'PersistentEventChanged'>) {
+        let removedFromTable = false;
         if (message.id && message.change_type === ChangeType.Removed) {
             removeTableSelection(table, message.id);
 
-            if (removeTableData(table, (doc: EventSummaryModel<SummaryTemplateKeys>) => doc.id === message.id)) {
-                // If the grid data is empty from all events being removed, we should refresh the data.
-                if (isTableEmpty(table)) {
-                    await throttledLoadData();
-                    return;
-                }
-            }
+            removedFromTable = removeTableData(table, (doc: EventSummaryModel<SummaryTemplateKeys>) => doc.id === message.id);
         }
 
         if (message.change_type === ChangeType.Removed) {
+            // Reconcile rows and cursor metadata after the asynchronous delete completes. The debounce also gives
+            // Elasticsearch time to make the removal visible to the list query, including when a matching removal
+            // is not on the visible page.
+            if (
+                shouldRefreshPersistentEventRemoval(
+                    removedFromTable,
+                    filters,
+                    queryParams.filter,
+                    message.organization_id,
+                    message.project_id,
+                    message.stack_id,
+                    message.id
+                )
+            ) {
+                scheduleRefetch(true);
+            }
+
             return;
         }
 
@@ -739,13 +818,41 @@
             return;
         }
 
-        await debouncedLoadData();
+        scheduleRefetch();
     }
 
-    useEventListener(document, 'PersistentEventChanged', async (event) => await onPersistentEventChanged((event as CustomEvent).detail));
+    useEventListener(document, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT, () => scheduleRefetch(true));
+    useEventListener(document, 'PersistentEventChanged', (event) => onPersistentEventChanged((event as CustomEvent).detail));
 
+    let lastEmptyResponseAt = 0;
     $effect(() => {
-        loadData();
+        const dataUpdatedAt = eventsQuery.dataUpdatedAt;
+        if (
+            eventsQuery.isPlaceholderData ||
+            dataUpdatedAt === lastEmptyResponseAt ||
+            eventsQuery.data?.data?.length !== 0 ||
+            table.state.pagination.pageIndex === 0
+        ) {
+            return;
+        }
+
+        lastEmptyResponseAt = dataUpdatedAt;
+        untrack(() => table.previousPage());
+    });
+
+    let lastErrorAt = 0;
+    $effect(() => {
+        const errorUpdatedAt = eventsQuery.errorUpdatedAt;
+        if (!eventsQuery.error || errorUpdatedAt === lastErrorAt) {
+            return;
+        }
+
+        lastErrorAt = errorUpdatedAt;
+        untrack(() =>
+            showBillingDialogOnUpgradeProblem(eventsQuery.error, organization.current, async () => {
+                await eventsQuery.refetch();
+            })
+        );
     });
 
     const chartDataQuery = getOrganizationCountQuery({
@@ -814,12 +921,12 @@
     $effect(() => {
         const refreshKey = `${organization.current}:${page.url.search}:${stats.totalEvents}`;
 
-        if (!clientResponse?.ok || stats.totalEvents <= 0 || !isTableEmpty(table) || lastStatsRefreshKey === refreshKey) {
+        if (!eventsQuery.data?.ok || stats.totalEvents <= 0 || !isTableEmpty(table) || lastStatsRefreshKey === refreshKey) {
             return;
         }
 
         lastStatsRefreshKey = refreshKey;
-        void loadData();
+        void eventsQuery.refetch();
     });
 
     function onRangeSelect(start: Date, end: Date) {
@@ -844,6 +951,7 @@
                 <SavedViewPicker
                     activeSavedView={savedViewsState.activeSavedView}
                     columnOrder={table.state.columnOrder}
+                    columnSizing={table.state.columnSizing}
                     columnVisibility={table.state.columnVisibility}
                     filters={filters ?? []}
                     isModified={savedViewsState.isModified}
@@ -863,7 +971,7 @@
             {/if}
             <RefreshButton
                 onRefresh={handleRefresh}
-                isRefreshing={clientStatus.isLoading}
+                isRefreshing={eventsQuery.isFetching}
                 size="icon-lg"
                 title={canRefresh ? 'Refresh results' : 'Return to the first page to refresh results'}
             />
@@ -889,7 +997,7 @@
             />
         {/if}
 
-        <EventsDataTable bind:limit={eventsQueryParameters.limit!} isLoading={isSavedViewRoutePending || clientStatus.isLoading} {rowClick} {rowHref} {table}>
+        <EventsDataTable bind:limit={eventsQueryParameters.limit!} isLoading={isSavedViewRoutePending || eventsQuery.isFetching} {rowClick} {rowHref} {table}>
             {#snippet footerChildren()}
                 <div class="h-9 min-w-35">
                     {#if table.getSelectedRowModel().flatRows.length}

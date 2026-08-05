@@ -9,6 +9,7 @@
                 require: "ngModel",
                 scope: {
                     organizationId: "=",
+                    projectId: "=",
                 },
                 link: function (scope, element, attrs, ngModel) {
                     ngModel.$asyncValidators.unique = function (name) {
@@ -21,7 +22,7 @@
                         } else if (scope.organizationId === "__newOrganization") {
                             deferred.resolve(true);
                         } else {
-                            projectService.isNameAvailable(scope.organizationId, name).then(
+                            projectService.isNameAvailable(scope.organizationId, name, scope.projectId).then(
                                 function (response) {
                                     if (response.status === 201) {
                                         deferred.reject("");

@@ -312,6 +312,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
                 {
                     ApiVersion = ep.ApiVersion,
                     CharSet = ep.CharSet,
+                    ClientKeyHash = ep.ClientKeyHash,
                     ContentEncoding = null,
                     IpAddress = ep.IpAddress,
                     MediaType = ep.MediaType,

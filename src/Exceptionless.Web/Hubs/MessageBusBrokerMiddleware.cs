@@ -7,6 +7,9 @@ namespace Exceptionless.Web.Hubs;
 
 public class MessageBusBrokerMiddleware
 {
+    private const int UnauthorizedCloseStatus = 4401;
+    private static readonly PathString WebSocketPath = new("/api/v2/push");
+
     private readonly ILogger _logger;
     private readonly WebSocketConnectionManager _connectionManager;
     private readonly IConnectionMapping _connectionMapping;
@@ -22,9 +25,22 @@ public class MessageBusBrokerMiddleware
 
     public async Task Invoke(HttpContext context)
     {
-        if (!context.WebSockets.IsWebSocketRequest || !context.User.IsAuthenticated())
+        if (!context.WebSockets.IsWebSocketRequest)
         {
             await _next(context);
+            return;
+        }
+
+        if (!context.User.IsAuthenticated())
+        {
+            if (!context.Request.Path.StartsWithSegments(WebSocketPath))
+            {
+                await _next(context);
+                return;
+            }
+
+            using var unauthorizedSocket = await context.WebSockets.AcceptWebSocketAsync();
+            await unauthorizedSocket.CloseOutputAsync((WebSocketCloseStatus)UnauthorizedCloseStatus, "Unauthorized", context.RequestAborted);
             return;
         }
 

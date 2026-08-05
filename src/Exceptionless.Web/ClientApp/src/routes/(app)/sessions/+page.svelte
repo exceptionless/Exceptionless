@@ -1,8 +1,6 @@
 <script lang="ts">
     import type { GetEventsParams } from '$features/events/api.svelte';
-    import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
 
-    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import * as DataTable from '$comp/data-table';
     import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
@@ -12,7 +10,7 @@
     import { Label } from '$comp/ui/label';
     import { Switch } from '$comp/ui/switch';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
-    import { getOrganizationSessionsCountQuery } from '$features/events/api.svelte';
+    import { getOrganizationSessionsCountQuery, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT } from '$features/events/api.svelte';
     import EventDetailSheet from '$features/events/components/event-detail-sheet.svelte';
     import { DateFilter, ProjectFilter, TypeFilter } from '$features/events/components/filters';
     import {
@@ -25,6 +23,7 @@
         updateFilterCache
     } from '$features/events/components/filters/helpers.svelte';
     import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
+    import { buildEventDetailsHref, type EventSummaryModel, type SummaryTemplateKeys } from '$features/events/components/summary/index';
     import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
@@ -33,16 +32,17 @@
     import SessionsDashboardChart from '$features/sessions/components/sessions-dashboard-chart.svelte';
     import SessionsStatsDashboard from '$features/sessions/components/sessions-stats-dashboard.svelte';
     import * as agg from '$features/shared/api/aggregations';
-    import { getSharedTableOptions, isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
+    import { getSharedTableOptions, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
     import { fillDateSeries } from '$features/shared/utils/charts.js';
     import { parseDateMathRange, toDateMathRange } from '$features/shared/utils/datemath';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_LIMIT, DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
-    import { type FetchClientResponse, useFetchClient } from '@exceptionless/fetchclient';
+    import { type FetchClientResponse, useFetchClient } from '@foundatiofx/fetchclient';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
     import { useEventListener, watch } from 'runed';
-    import { throttle } from 'throttle-debounce';
+    import { onDestroy } from 'svelte';
+    import { debounce } from 'throttle-debounce';
 
     let selectedEventId: null | string = $state(null);
     function rowclick(row: EventSummaryModel<SummaryTemplateKeys>) {
@@ -50,7 +50,7 @@
     }
 
     function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
-        return resolve('/(app)/event/[eventId=objectid]', { eventId: row.id });
+        return buildEventDetailsHref(row.id);
     }
 
     // Register this page as requiring premium features (layout auto-resets on navigation)
@@ -215,7 +215,9 @@
         await loadData();
     }
 
+    let loadDataRequestId = 0;
     async function loadData() {
+        const requestId = ++loadDataRequestId;
         if (!organization.current) {
             return;
         }
@@ -225,31 +227,45 @@
             return;
         }
 
-        clientResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events/sessions`, {
+        const response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events/sessions`, {
+            expectedStatusCodes: [426],
             params: eventsQueryParameters as Record<string, unknown>
         });
+        if (requestId !== loadDataRequestId) {
+            return;
+        }
+
+        clientResponse = response;
 
         if (clientResponse.problem) {
             showBillingDialogOnUpgradeProblem(clientResponse.problem, organization.current, () => loadData());
         }
-    }
 
-    const throttledLoadData = throttle(10000, loadData);
-
-    async function onPersistentEventChanged(message: WebSocketMessageValue<'PersistentEventChanged'>) {
-        if (message.id && message.change_type === ChangeType.Removed) {
-            removeTableSelection(table, message.id);
-
-            if (removeTableData(table, (doc) => doc.id === message.id)) {
-                if (isTableEmpty(table)) {
-                    await throttledLoadData();
-                    return;
-                }
-            }
+        if (clientResponse.ok && clientResponse.data?.length === 0 && table.store.state.pagination.pageIndex > 0) {
+            table.previousPage();
         }
     }
 
-    useEventListener(document, 'PersistentEventChanged', async (event) => await onPersistentEventChanged((event as CustomEvent).detail));
+    const debouncedLoadData = debounce(1500, loadData);
+    onDestroy(() => {
+        loadDataRequestId++;
+        debouncedLoadData.cancel();
+    });
+
+    function onPersistentEventChanged(message: WebSocketMessageValue<'PersistentEventChanged'>) {
+        if (message.change_type === ChangeType.Removed && (!message.organization_id || message.organization_id === organization.current)) {
+            if (message.id) {
+                removeTableSelection(table, message.id);
+                removeTableData(table, (doc) => doc.id === message.id);
+            }
+
+            debouncedLoadData();
+        }
+    }
+
+    useEventListener(document, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT, () => debouncedLoadData());
+    useEventListener(document, 'refresh', () => loadData());
+    useEventListener(document, 'PersistentEventChanged', (event) => onPersistentEventChanged((event as CustomEvent).detail));
 
     $effect(() => {
         loadData();

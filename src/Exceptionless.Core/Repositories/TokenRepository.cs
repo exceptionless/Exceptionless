@@ -1,3 +1,4 @@
+using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
@@ -36,6 +37,19 @@ public class TokenRepository : RepositoryOwnedByOrganizationAndProject<Token>, I
                 .FieldEquals(t => t.ProjectId, projectId)
                 .FieldEquals(t => t.DefaultProjectId, projectId))
             .FieldEquals(t => t.Type, (int)type)
+            .Sort(f => f.CreatedUtc), options);
+    }
+
+    public Task<FindResults<Token>> GetDefaultClientTokenAsync(string projectId, CommandOptionsDescriptor<Token>? options = null)
+    {
+        return FindAsync(q => q
+            .FieldOr(g => g
+                .FieldEquals(t => t.ProjectId, projectId)
+                .FieldEquals(t => t.DefaultProjectId, projectId))
+            .FieldEquals(t => t.Type, (int)TokenType.Access)
+            .FieldOr(g => g
+                .FieldEquals(t => t.Scopes, AuthorizationRoles.Client)
+                .FieldEquals(t => t.Scopes, null!))
             .Sort(f => f.CreatedUtc), options);
     }
 

@@ -16,8 +16,8 @@
         getStackTrace,
         hasErrorOrSimpleError
     } from '$features/events/persistent-event';
+    import TagList from '$features/shared/components/tag-list.svelte';
     import ExternalLink from '@lucide/svelte/icons/external-link';
-    import Filter from '@lucide/svelte/icons/filter';
     import Email from '@lucide/svelte/icons/mail';
 
     import type { PersistentEvent } from '../../models/index';
@@ -163,12 +163,7 @@
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Tags</Table.Head>
                 <Table.Cell class="w-4 pr-0"></Table.Cell>
                 <Table.Cell class="flex flex-wrap items-center justify-start gap-2 overflow-auto">
-                    {#each event.tags as tag (tag)}
-                        <EventsFacetedFilter.TagTrigger changed={filterChanged} value={[tag]}>
-                            <Filter class="size-3" />
-                            {tag}
-                        </EventsFacetedFilter.TagTrigger>
-                    {/each}
+                    <TagList onTagClick={(tag) => filterChanged(new EventsFacetedFilter.TagFilter([tag]))} tags={event.tags} />
                 </Table.Cell>
             </Table.Row>
         {/if}

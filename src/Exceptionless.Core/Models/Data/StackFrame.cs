@@ -2,6 +2,11 @@
 
 public class StackFrame : Method
 {
+    public static class KnownDataKeys
+    {
+        public const string SourceMap = "@source_map";
+    }
+
     public string? FileName { get; set; }
     public int? LineNumber { get; set; }
     public int? Column { get; set; }

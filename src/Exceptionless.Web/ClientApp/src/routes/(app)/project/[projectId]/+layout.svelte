@@ -32,7 +32,18 @@
     });
     const currentPath = $derived(page.url.pathname);
     const configurePath = $derived(resolve('/(app)/project/[projectId]/configure', { projectId }));
+    const settingsPath = $derived(resolve('/(app)/project/[projectId]/settings', { projectId }));
+    const sourceMapsPath = $derived(resolve('/(app)/project/[projectId]/source-maps', { projectId }));
     const isConfigurePage = $derived(currentPath === configurePath || currentPath.startsWith(configurePath + '/'));
+    const navigationRoutes = $derived(routes().filter((route) => route.href !== sourceMapsPath));
+
+    function isNavigationRouteActive(routeHref: string): boolean {
+        if (currentPath === routeHref || currentPath.startsWith(routeHref + '/')) {
+            return true;
+        }
+
+        return routeHref === settingsPath && (currentPath === sourceMapsPath || currentPath.startsWith(sourceMapsPath + '/'));
+    }
 
     $effect(() => {
         if (projectQuery.isError) {
@@ -74,8 +85,8 @@
     <div class="mt-6 space-y-6">
         {#if !isConfigurePage}
             <nav class="bg-muted flex w-full flex-row flex-nowrap gap-1 overflow-x-auto rounded-lg p-1">
-                {#each routes() as route (route.href)}
-                    {@const isActive = currentPath === route.href || currentPath.startsWith(route.href + '/')}
+                {#each navigationRoutes as route (route.href)}
+                    {@const isActive = isNavigationRouteActive(String(route.href))}
                     <A
                         variant="ghost"
                         href={route.href}

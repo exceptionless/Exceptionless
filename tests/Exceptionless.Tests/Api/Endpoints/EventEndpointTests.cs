@@ -1203,6 +1203,30 @@ public partial class EventEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetEvents_SummaryMode_IncludesProjectAndTags()
+    {
+        // Arrange
+        var (_, events) = await CreateDataAsync(d => d.Event().TestProject().Tag("production", "critical"));
+        var persistentEvent = Assert.Single(events);
+        var project = await _projectRepository.GetByIdAsync(persistentEvent.ProjectId);
+
+        // Act
+        var results = await SendRequestAsAsync<List<EventSummaryModel>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("events")
+            .QueryString("filter", $"id:{persistentEvent.Id}")
+            .QueryString("mode", "summary")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(results);
+        var summary = Assert.Single(results);
+        Assert.Equal(persistentEvent.ProjectId, summary.ProjectId);
+        Assert.Equal(project?.Name, summary.ProjectName);
+        Assert.Equal(["critical", "production"], summary.Tags);
+    }
+
+    [Fact]
     public async Task GetEvents_StackFrequentMode_DeserializesStackSummaryModelWithRequiredFields()
     {
         // Arrange
@@ -1220,8 +1244,11 @@ public partial class EventEndpointTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(results);
         Assert.NotEmpty(results);
+        Assert.Contains(results, summary => summary.Tags.Contains("test"));
         Assert.All(results, summary =>
         {
+            Assert.False(String.IsNullOrWhiteSpace(summary.ProjectId));
+            Assert.False(String.IsNullOrWhiteSpace(summary.ProjectName));
             Assert.False(String.IsNullOrWhiteSpace(summary.Title));
             Assert.NotEqual(default, summary.FirstOccurrence);
             Assert.NotEqual(default, summary.LastOccurrence);

@@ -25,7 +25,7 @@
                 <button
                     {...props}
                     type="button"
-                    class="flex max-w-full items-center gap-1 rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    class="focus-visible:ring-ring flex max-w-full items-center gap-1 rounded-sm text-left focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                 >
                     <Badge class="max-w-40 truncate" variant="outline">{organizations[0]?.name}</Badge>
                     {#if organizations.length > 1}

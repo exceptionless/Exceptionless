@@ -11,6 +11,10 @@ spec:
     - name: redis
       serviceVersion: "8.4.0"
       disableExporter: false
+      annotations:
+        signoz.io/scrape: "true"
+        signoz.io/port: "9121"
+        signoz.io/path: "/metrics"
       replicas: 2
       systemAccounts:
         - name: default
@@ -19,10 +23,10 @@ spec:
       resources:
         requests:
           cpu: "200m"
-          memory: 256Mi
+          memory: 1Gi
         limits:
           cpu: "400m"
-          memory: 512Mi
+          memory: 2Gi
       volumeClaimTemplates:
         - name: data
           spec:
@@ -31,7 +35,7 @@ spec:
               - ReadWriteOnce
             resources:
               requests:
-                storage: 1Gi
+                storage: 8Gi
     - name: redis-sentinel
       serviceVersion: "8.4.0"
       replicas: 3

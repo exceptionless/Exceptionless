@@ -12,8 +12,8 @@ import {
     getComparableSavedViewFilter,
     getComparableSavedViewTime,
     hasMissingSavedViewSlug,
-    hasSavedColumnOrder,
-    hasSavedColumnVisibility,
+    hasSavedViewColumnChanges,
+    savedViewColumnsEqual,
     type SavedViewQueryParams,
     setSortQueryParam,
     setTimeQueryParam,
@@ -41,7 +41,6 @@ function buildSavedView({ id, name, ...overrides }: Partial<SavedView> & Pick<Sa
             .replace(/^-|-$/g, '');
 
     return {
-        column_order: null,
         columns: {},
         created_by_user_id: TEST_USER_ID,
         created_utc: new Date().toISOString(),
@@ -199,28 +198,64 @@ describe('useSavedViews', () => {
     });
 
     describe('column comparison', () => {
-        it('does not compare column visibility when a saved view omits column settings', () => {
-            // Act & Assert
-            expect(hasSavedColumnVisibility(null)).toBe(false);
-            expect(hasSavedColumnVisibility(undefined)).toBe(false);
+        it('treats visibility missing default-hidden columns as unchanged', () => {
+            // Arrange
+            const current = { project: false, summary: true, tags: false };
+            const saved = { summary: true };
+            const defaults = { project: false, tags: false };
+
+            // Act
+            const result = savedViewColumnsEqual(current, saved, defaults);
+
+            // Assert
+            expect(result).toBe(true);
         });
 
-        it('compares explicit saved column visibility, including empty settings', () => {
-            // Act & Assert
-            expect(hasSavedColumnVisibility({})).toBe(true);
-            expect(hasSavedColumnVisibility({ events: false })).toBe(true);
+        it('detects a changed column after applying default visibility', () => {
+            // Arrange
+            const current = { project: true, summary: true, tags: false };
+            const saved = { summary: true };
+            const defaults = { project: false, tags: false };
+
+            // Act
+            const result = savedViewColumnsEqual(current, saved, defaults);
+
+            // Assert
+            expect(result).toBe(false);
+        });
+        it('marks a saved view as changed when adding a column omitted from its settings', () => {
+            // Arrange
+            const current = { project: true, tags: false };
+            const defaults = { project: false, tags: false };
+
+            // Act
+            const result = hasSavedViewColumnChanges(current, null, defaults);
+
+            // Assert
+            expect(result).toBe(true);
         });
 
-        it('does not compare column order when a saved view omits or clears column order', () => {
-            // Act & Assert
-            expect(hasSavedColumnOrder(null)).toBe(false);
-            expect(hasSavedColumnOrder(undefined)).toBe(false);
-            expect(hasSavedColumnOrder([])).toBe(false);
+        it('does not mark an unchanged saved view with omitted column settings as changed', () => {
+            // Arrange
+            const defaults = { project: false, tags: false };
+
+            // Act
+            const result = hasSavedViewColumnChanges(defaults, null, defaults);
+
+            // Assert
+            expect(result).toBe(false);
         });
 
-        it('compares explicit saved column order', () => {
-            // Act & Assert
-            expect(hasSavedColumnOrder(['summary', 'events'])).toBe(true);
+        it('does not mark a default-visible column as changed after it is removed and re-added', () => {
+            // Arrange
+            const current = { project: false, summary: true, tags: false };
+            const defaults = { project: false, tags: false };
+
+            // Act
+            const result = hasSavedViewColumnChanges(current, null, defaults);
+
+            // Assert
+            expect(result).toBe(false);
         });
     });
 

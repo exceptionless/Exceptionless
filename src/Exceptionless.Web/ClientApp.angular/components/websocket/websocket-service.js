@@ -10,6 +10,7 @@
                         protocols = [];
                     }
                     this.reconnectInterval = 1000;
+                    this.reconnectTimeout = null;
                     this.timeoutInterval = 2000;
                     this.forcedClose = false;
                     this.timedOut = false;
@@ -27,7 +28,8 @@
 
                 ResilientWebSocket.prototype.connect = function (reconnectAttempt) {
                     var _this = this;
-                    this.ws = new WebSocket(this.url, this.protocols);
+                    var url = typeof this.url === "function" ? this.url() : this.url;
+                    this.ws = new WebSocket(url, this.protocols);
                     this.onconnecting();
                     var localWs = this.ws;
                     var timeout = setTimeout(function () {
@@ -38,13 +40,16 @@
                     this.ws.onopen = function (event) {
                         clearTimeout(timeout);
                         _this.readyState = WebSocket.OPEN;
+                        _this.onopen(event, reconnectAttempt);
                         reconnectAttempt = false;
-                        _this.onopen(event);
                     };
                     this.ws.onclose = function (event) {
                         clearTimeout(timeout);
                         _this.ws = null;
                         if (_this.forcedClose) {
+                            _this.readyState = WebSocket.CLOSED;
+                            _this.onclose(event);
+                        } else if (event.code === 1008 || (event.code >= 4400 && event.code < 4500)) {
                             _this.readyState = WebSocket.CLOSED;
                             _this.onclose(event);
                         } else {
@@ -53,7 +58,8 @@
                             if (!reconnectAttempt && !_this.timedOut) {
                                 _this.onclose(event);
                             }
-                            setTimeout(function () {
+                            _this.reconnectTimeout = setTimeout(function () {
+                                _this.reconnectTimeout = null;
                                 _this.connect(true);
                             }, _this.reconnectInterval);
                         }
@@ -72,11 +78,15 @@
                     throw new Error("INVALID_STATE_ERR : Pausing to reconnect websocket");
                 };
                 ResilientWebSocket.prototype.close = function () {
+                    this.forcedClose = true;
+                    clearTimeout(this.reconnectTimeout);
+                    this.reconnectTimeout = null;
                     if (this.ws) {
-                        this.forcedClose = true;
                         this.ws.close();
                         return true;
                     }
+
+                    this.readyState = WebSocket.CLOSED;
                     return false;
                 };
                 ResilientWebSocket.prototype.refresh = function () {
@@ -101,7 +111,12 @@
 
             function startDelayed(delay) {
                 function startImpl() {
-                    _connection = new ResilientWebSocket(getPushUrl());
+                    _connection = new ResilientWebSocket(getPushUrl);
+                    _connection.onopen = function (event, isReconnect) {
+                        if (isReconnect) {
+                            $rootScope.$emit("WebSocketReconnected");
+                        }
+                    };
                     _connection.onmessage = function (ev) {
                         var data = ev.data ? JSON.parse(ev.data) : null;
                         if (!data || !data.type) {
@@ -152,6 +167,12 @@
 
                 return pushUrl.replace(protoMatch, "ws://");
             }
+
+            $rootScope.$on("auth:tokenChanged", function () {
+                if (_connection) {
+                    startDelayed(1);
+                }
+            });
 
             var service = {
                 start: start,

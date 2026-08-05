@@ -30,12 +30,13 @@
     });
 
     async function remove() {
+        const deletedCount = ids.length;
         await removeEvents.mutateAsync();
 
-        if (ids.length === 1) {
+        if (deletedCount === 1) {
             toast.success('Successfully deleted event.');
         } else {
-            toast.success(`Successfully deleted ${Intl.NumberFormat().format(ids.length)} events.`);
+            toast.success(`Successfully deleted ${Intl.NumberFormat().format(deletedCount)} events.`);
         }
 
         table.resetRowSelection();

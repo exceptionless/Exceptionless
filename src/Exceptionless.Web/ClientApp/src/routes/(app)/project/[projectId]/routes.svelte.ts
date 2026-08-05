@@ -2,6 +2,7 @@ import { resolve } from '$app/paths';
 import { page } from '$app/state';
 import Usage from '@lucide/svelte/icons/bar-chart';
 import ClientConfig from '@lucide/svelte/icons/braces';
+import SourceMaps from '@lucide/svelte/icons/file-code-2';
 import ApiKey from '@lucide/svelte/icons/key';
 import Stacks from '@lucide/svelte/icons/layers';
 import Integration from '@lucide/svelte/icons/plug-2';
@@ -38,6 +39,12 @@ export function routes(): NavigationItem[] {
             href: resolve('/(app)/project/[projectId]/configuration-values', { projectId: page.params.projectId }),
             icon: ClientConfig,
             title: 'Configuration'
+        },
+        {
+            group: 'Project Settings',
+            href: resolve('/(app)/project/[projectId]/source-maps', { projectId: page.params.projectId }),
+            icon: SourceMaps,
+            title: 'Source Maps'
         },
         {
             group: 'Project Settings',

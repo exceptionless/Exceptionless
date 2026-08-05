@@ -2,6 +2,7 @@
     <table
         class="table table-striped table-bordered table-selectable table-fixed b-t table-hover table-clickable"
         refresh-on="StackChanged PlanChanged"
+        refresh-always="WebSocketReconnected"
         refresh-if="vm.canRefresh(data)"
         refresh-action="vm.get(vm.currentOptions)"
         refresh-throttle="10000"

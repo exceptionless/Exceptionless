@@ -17,7 +17,7 @@ int appPort = worktreePorts?.AppHttps ?? 7131;
 int docsPort = worktreePorts?.DocsHttp ?? 7141;
 const int DefaultApiHttpsPort = 7111;
 string exceptionlessServerUrl = worktreePorts?.ApiHttpsUrl ?? $"https://api-ex.dev.localhost:{DefaultApiHttpsPort}";
-const string SharedEmailConnectionString = "smtp://localhost:1025";
+const string SharedEmailConnectionString = "smtp://localhost:1026";
 
 var elastic = builder.AddElasticsearch("Elasticsearch", port: 9200)
     .WithDataVolume("exceptionless.data.v1")
@@ -39,7 +39,8 @@ var storage = builder.AddAzureStorage("Storage")
 var storageBlobs = storage.AddBlobs("StorageBlobs");
 var storageQueues = storage.AddQueues("StorageQueues");
 
-var cache = builder.AddRedis("Redis", port: 6379)
+// Aspire reserves 6380 for Redis's secondary non-TLS endpoint when proxying is disabled.
+var cache = builder.AddRedis("Redis", port: 6381)
     .WithImageTag("8.6")
     .WithDataVolume("exceptionless.redis.data.v1")
     .WithEndpointProxySupport(false)
@@ -55,10 +56,10 @@ var cache = builder.AddRedis("Redis", port: 6379)
 var mail = builder.AddContainer("Mail", "axllent/mailpit")
     .WithImageTag("v1.27.10")
     .WithEndpointProxySupport(false)
-    .WithHttpEndpoint(8025, 8025, "http")
+    .WithHttpEndpoint(port: 8026, targetPort: 8025, name: "http")
     .WithUrlForEndpoint("http", u => { u.DisplayText = "Mail"; u.DisplayOrder = 100; })
     .WithHttpHealthCheck("/readyz")
-    .WithEndpoint(1025, 1025)
+    .WithEndpoint(targetPort: 1025, port: 1026)
     .WithUrlForEndpoint("tcp", u => u.DisplayLocation = UrlDisplayLocation.DetailsOnly);
 
 var ownedElastic = elastic;
@@ -85,6 +86,7 @@ if (!servicesOnly && includeDevTools)
     cache = cache.WithRedisInsight(b => b
         .WithLifetime(ContainerLifetime.Persistent)
         .WithEndpointProxySupport(false)
+        .WithHostPort(5541)
         .WithContainerName("Exceptionless-RedisInsight")
         .WithUrlForEndpoint("http", u => u.DisplayText = "Redis")
         .WithParentRelationship(ownedCache), containerName: "Redis-insight");
@@ -152,7 +154,6 @@ if (!servicesOnly)
     var oldApp = builder.AddJavaScriptApp("OldApp", "../../src/Exceptionless.Web/ClientApp.angular", "serve")
         .WithBrowserLogs()
         .WithReference(api)
-        .RemoveJavaScriptDebuggingAnnotation()
         .WithEnvironment("ASPNETCORE_URLS", oldAppAspNetCoreUrls)
         .WithEnvironment("USE_HTTPS", "true")
         .WithEnvironment("LIVERELOAD_PORT", oldAppLiveReloadPort.ToString())
@@ -180,7 +181,6 @@ if (!servicesOnly)
         .WithBrowserLogs()
         .WithReference(api)
         .WithReference(oldApp)
-        .RemoveJavaScriptDebuggingAnnotation()
         .WithEnvironment("PUBLIC_EXCEPTIONLESS_SERVER_URL", exceptionlessServerUrl)
         .WithEnvironment("PORT", appPort.ToString())
         .WithEndpoint("http", e =>

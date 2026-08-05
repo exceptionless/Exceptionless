@@ -10,6 +10,7 @@ public record EventPostInfo
     public string? UserAgent { get; init; }
     public string? ContentEncoding { get; init; }
     public string? IpAddress { get; init; }
+    public string? ClientKeyHash { get; init; }
 }
 
 public record EventPost : EventPostInfo

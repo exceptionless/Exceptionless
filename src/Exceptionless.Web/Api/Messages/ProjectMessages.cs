@@ -25,7 +25,7 @@ public record SetProjectIntegrationNotificationSettings(string Id, string Integr
 public record DeleteProjectNotificationSettings(string Id, string UserId, HttpContext Context);
 public record PromoteProjectTab(string Id, string? Name, HttpContext Context);
 public record DemoteProjectTab(string Id, string? Name, HttpContext Context);
-public record CheckProjectName(string? Name, string? OrganizationId, HttpContext Context);
+public record CheckProjectName(string? Name, string OrganizationId, string? ProjectId, HttpContext Context);
 public record SetProjectData(string Id, string? Key, ValueFromBody<string> Value, HttpContext Context);
 public record DeleteProjectData(string Id, string? Key, HttpContext Context);
 public record AddProjectSlack(string Id, string Code, HttpContext Context);

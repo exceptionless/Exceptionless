@@ -9,7 +9,7 @@
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { webhookEventTypes } from '$features/webhooks/options';
     import { type NewWebHookFormData, NewWebHookSchema } from '$features/webhooks/schemas';
-    import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { ProblemDetails } from '@foundatiofx/fetchclient';
     import { createForm } from '@tanstack/svelte-form';
 
     import type { NewWebhook, WebhookKnownEventTypes } from '../../models';

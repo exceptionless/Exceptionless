@@ -44,6 +44,8 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0.9 AS job
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
 
+ENV ASPNETCORE_URLS=http://+:8080
+
 EXPOSE 8080
 
 ENTRYPOINT [ "dotnet", "Exceptionless.Job.dll" ]
@@ -60,6 +62,8 @@ RUN dotnet publish -c Release -o out --no-build /p:SkipSpaPublish=true
 FROM mcr.microsoft.com/dotnet/aspnet:10.0.9 AS api
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
+
+ENV ASPNETCORE_URLS=http://+:8080
 
 EXPOSE 8080
 

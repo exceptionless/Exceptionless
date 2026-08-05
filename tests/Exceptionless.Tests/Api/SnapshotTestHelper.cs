@@ -15,12 +15,12 @@ internal static class SnapshotTestHelper
     public static async Task AssertMatchesJsonSnapshotAsync(string snapshotFileName, string actualJson, CancellationToken cancellationToken = default)
     {
         string snapshotPath = GetApiDataPath(snapshotFileName);
-        string normalizedActualJson = NormalizeLineEndings(NormalizeJson(actualJson));
+        string normalizedActualJson = NormalizeLineEndings(NormalizeJson(actualJson)).TrimEnd('\n');
 
         if (ShouldUpdateSnapshots())
             await File.WriteAllTextAsync(snapshotPath, normalizedActualJson, cancellationToken);
 
-        string expectedJson = NormalizeLineEndings(await File.ReadAllTextAsync(snapshotPath, cancellationToken));
+        string expectedJson = NormalizeLineEndings(await File.ReadAllTextAsync(snapshotPath, cancellationToken)).TrimEnd('\n');
         Assert.Equal(expectedJson, normalizedActualJson);
     }
 

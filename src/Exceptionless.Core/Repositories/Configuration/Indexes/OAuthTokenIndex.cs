@@ -32,6 +32,7 @@ public sealed class OAuthTokenIndex : VersionedIndex<OAuthToken>
                 .Keyword(e => e.CreatedBy)
                 .Date(e => e.ExpiresUtc)
                 .Date(e => e.RefreshExpiresUtc)
+                .Date(e => e.RefreshTokenUsedUtc)
                 .Boolean(e => e.IsDisabled)
                 .Boolean(e => e.IsSuspended));
     }

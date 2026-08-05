@@ -14,6 +14,10 @@ internal sealed class TestWebSocket : WebSocket
 
     public int CloseCount => _closeCount;
     private int _closeCount;
+    public int CloseOutputCount => _closeOutputCount;
+    private int _closeOutputCount;
+    public WebSocketCloseStatus? RequestedCloseStatus { get; private set; }
+    public string? RequestedCloseStatusDescription { get; private set; }
     public List<string> SentMessages { get; } = [];
     public override WebSocketCloseStatus? CloseStatus { get; } = WebSocketCloseStatus.NormalClosure;
     public override string? CloseStatusDescription { get; } = "Closed";
@@ -28,12 +32,17 @@ internal sealed class TestWebSocket : WebSocket
     public override Task CloseAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
     {
         Interlocked.Increment(ref _closeCount);
+        RequestedCloseStatus = closeStatus;
+        RequestedCloseStatusDescription = statusDescription;
         _state = WebSocketState.Closed;
         return Task.CompletedTask;
     }
 
     public override Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
     {
+        Interlocked.Increment(ref _closeOutputCount);
+        RequestedCloseStatus = closeStatus;
+        RequestedCloseStatusDescription = statusDescription;
         _state = WebSocketState.CloseSent;
         return Task.CompletedTask;
     }

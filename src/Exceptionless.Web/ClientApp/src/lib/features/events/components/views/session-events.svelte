@@ -1,7 +1,6 @@
 <script lang="ts">
     import type { PersistentEvent } from '$features/events/models';
 
-    import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
     import * as Alert from '$comp/ui/alert';
@@ -11,6 +10,7 @@
     import { getSessionEventsQuery } from '$features/events/api.svelte';
     import { SessionFilter } from '$features/events/components/filters';
     import { buildFilterCacheKey, toFilter, updateFilterCache } from '$features/events/components/filters/helpers.svelte';
+    import { buildEventDetailsHref } from '$features/events/components/summary';
     import Summary from '$features/events/components/summary/summary.svelte';
     import { getSessionId } from '$features/events/utils/index';
     import { organization } from '$features/organizations/context.svelte';
@@ -66,7 +66,7 @@
     });
 
     function getEventHref(eventId: string): string {
-        return resolve('/(app)/event/[eventId=objectid]', { eventId });
+        return buildEventDetailsHref(eventId);
     }
 
     function getSessionFilter(): SessionFilter | undefined {
@@ -87,19 +87,6 @@
         prepareSessionEventsFilter();
         onSessionFilter?.();
     }
-
-    async function openSessionEvent(eventId: string): Promise<void> {
-        await goto(getEventHref(eventId));
-    }
-
-    function handleSessionEventKeydown(keyboardEvent: KeyboardEvent, eventId: string): void {
-        if (keyboardEvent.key !== 'Enter' && keyboardEvent.key !== ' ') {
-            return;
-        }
-
-        keyboardEvent.preventDefault();
-        void openSessionEvent(eventId);
-    }
 </script>
 
 {#if !hasPremiumFeatures}
@@ -110,7 +97,7 @@
     </Alert.Root>
 {/if}
 
-<div class:opacity-60={!hasPremiumFeatures}>
+<div class="relative pr-10" class:opacity-60={!hasPremiumFeatures}>
     {#if isSessionStart}
         <Table.Root class="mb-4">
             <Table.Body>
@@ -139,7 +126,7 @@
         </Table.Root>
     {/if}
 
-    <div class="mb-2 flex justify-end">
+    <div class="absolute top-0 right-0 z-10">
         <Button
             aria-label="Open events filtered to this session"
             disabled={!sessionEventsHref}
@@ -174,20 +161,22 @@
             </Table.Header>
             <Table.Body>
                 {#each sessionEventsQuery.data ?? [] as sessionEvent (sessionEvent.id)}
-                    <Table.Row
-                        aria-label={`Open event ${sessionEvent.id}`}
-                        class="hover:bg-muted/50 focus-visible:ring-ring/50 focus-visible:outline-ring cursor-pointer focus-visible:ring-[3px] focus-visible:outline-1"
-                        onclick={() => openSessionEvent(sessionEvent.id)}
-                        onkeydown={(keyboardEvent) => handleSessionEventKeydown(keyboardEvent, sessionEvent.id)}
-                        role="link"
-                        tabindex={0}
-                        title="Open event details"
-                    >
-                        <Table.Cell>
-                            <Summary summary={sessionEvent} showType={true} showStatus={false} />
+                    {@const eventHref = getEventHref(sessionEvent.id)}
+                    <Table.Row class="cursor-pointer">
+                        <Table.Cell class="p-0">
+                            <a class="text-foreground block p-2 no-underline" href={eventHref} title="Open event details">
+                                <Summary linkToDetails={false} summary={sessionEvent} showType={true} showStatus={false} />
+                            </a>
                         </Table.Cell>
-                        <Table.Cell>
-                            <TimeAgo value={sessionEvent.date} />
+                        <Table.Cell class="p-0">
+                            <a
+                                aria-label={`Open event ${sessionEvent.id}`}
+                                class="text-foreground block p-2 no-underline"
+                                href={eventHref}
+                                title="Open event details"
+                            >
+                                <TimeAgo value={sessionEvent.date} />
+                            </a>
                         </Table.Cell>
                     </Table.Row>
                 {/each}

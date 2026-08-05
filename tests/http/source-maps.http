@@ -1,0 +1,64 @@
+@apiUrl = http://localhost:7110/api/v2
+@email = admin@exceptionless.test
+@password = tester
+@organizationId = 537650f3b77efe23a47914f3
+@projectId = 537650f3b77efe23a47914f4
+@generatedFileUrl = https://cdn.example.com/assets/app.min.js
+@sourceMapFile = ./app.min.js.map
+
+### Login to test account
+# @name login
+POST {{apiUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+###
+
+@userToken = {{login.response.body.$.token}}
+
+### Create a project-scoped source-map upload token
+# @name sourceMapToken
+POST {{apiUrl}}/projects/{{projectId}}/tokens
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "organization_id": "{{organizationId}}",
+  "project_id": "{{projectId}}",
+  "scopes": ["source-maps:write"],
+  "notes": "HTTP sample source map uploads"
+}
+
+###
+
+@uploadToken = {{sourceMapToken.response.body.$.id}}
+
+### Upload source map
+# Replace {{sourceMapFile}} with a local version 3 source map.
+# @name uploadedSourceMap
+POST {{apiUrl}}/projects/{{projectId}}/source-maps
+Authorization: Bearer {{uploadToken}}
+Content-Type: multipart/form-data; boundary=source-map-boundary
+
+--source-map-boundary
+Content-Disposition: form-data; name="generated_file_url"
+
+{{generatedFileUrl}}
+--source-map-boundary
+Content-Disposition: form-data; name="file"; filename="app.min.js.map"
+Content-Type: application/json
+
+< {{sourceMapFile}}
+--source-map-boundary--
+
+### List source maps
+GET {{apiUrl}}/projects/{{projectId}}/source-maps
+Authorization: Bearer {{userToken}}
+
+### Delete source map
+DELETE {{apiUrl}}/projects/{{projectId}}/source-maps/{{uploadedSourceMap.response.body.$.id}}
+Authorization: Bearer {{userToken}}
