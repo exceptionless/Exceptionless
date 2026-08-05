@@ -11,7 +11,7 @@
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
     import { UpgradeRequiredDialog } from '$features/billing';
     import { invalidatePersistentEventQueries } from '$features/events/api.svelte';
-    import { filterUsesPremiumFeatures, savedFilterUsesPremiumFeatures } from '$features/events/premium-filter';
+    import { filterUsesPremiumFeatures, getSearchResourceForPathname, savedFilterUsesPremiumFeatures } from '$features/events/premium-filter';
     import { buildIntercomBootOptions, IntercomShell } from '$features/intercom';
     import { shouldLoadIntercomOrganization } from '$features/intercom/config';
     import Notifications from '$features/notifications/components/notifications.svelte';
@@ -31,7 +31,7 @@
     import { isEntityChangedType, type WebSocketMessageType } from '$features/websockets/models';
     import { WebSocketClient } from '$features/websockets/web-socket-client.svelte';
     import { Telemetry } from '$lib/telemetry';
-    import { useMiddleware } from '@exceptionless/fetchclient';
+    import { useMiddleware } from '@foundatiofx/fetchclient';
     import { useQueryClient } from '@tanstack/svelte-query';
     import { tick } from 'svelte';
     import { fade } from 'svelte/transition';
@@ -51,7 +51,9 @@
 
     let { children }: Props = $props();
     let isAuthenticated = $derived(!!accessToken.current);
-    let requiresPremium = $derived(premiumPage.requiresPremium || filterUsesPremiumFeatures(page.url.searchParams.get('filter')));
+    let requiresPremium = $derived(
+        premiumPage.requiresPremium || filterUsesPremiumFeatures(page.url.searchParams.get('filter'), getSearchResourceForPathname(page.url.pathname))
+    );
     const sidebar = useSidebar();
     let isCommandOpen = $state(false);
     let commandResetKey = $state(0);
@@ -415,7 +417,11 @@
                 ...sortedViews.map((savedView) => ({
                     href: buildSavedViewHref(savedView),
                     title: savedView.name,
-                    usesPremiumFeatures: savedFilterUsesPremiumFeatures(savedView.filter, savedView.uses_premium_features)
+                    usesPremiumFeatures: savedFilterUsesPremiumFeatures(
+                        savedView.filter,
+                        savedView.uses_premium_features,
+                        getSearchResourceForPathname(page.url.pathname)
+                    )
                 })),
                 ...(route.children ?? [])
             ];

@@ -14,18 +14,18 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
 {
     private static readonly NullabilityInfoContext NullabilityContext = new();
 
-    public Task TransformAsync(OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken cancellationToken)
+    public async Task TransformAsync(OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken cancellationToken)
     {
         var type = context.JsonTypeInfo.Type;
 
         // Check if this is a Delta<T> type
         if (!IsDeltaType(type))
-            return Task.CompletedTask;
+            return;
 
         // Get the inner type T from Delta<T>
         var innerType = type.GetGenericArguments().FirstOrDefault();
         if (innerType is null)
-            return Task.CompletedTask;
+            return;
 
         // Set the type to object
         schema.Type = JsonSchemaType.Object;
@@ -45,6 +45,7 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
         {
             bool isNullable = IsPropertyNullable(property);
             var propertySchema = CreateSchemaForType(property.PropertyType, isNullable);
+            await PopulateNestedSchemaAsync(propertySchema, property.PropertyType, context, cancellationToken);
 
             // Apply data annotations from the inner type's property
             DataAnnotationHelper.ApplyToSchema(propertySchema, property);
@@ -57,7 +58,45 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
         // Ensure no required array - all properties are optional for PATCH
         schema.Required = null;
 
-        return Task.CompletedTask;
+    }
+
+    private static async Task PopulateNestedSchemaAsync(
+        OpenApiSchema schema,
+        Type type,
+        OpenApiSchemaTransformerContext context,
+        CancellationToken cancellationToken)
+    {
+        type = Nullable.GetUnderlyingType(type) ?? type;
+
+        if (type.IsGenericType && type.GetInterfaces().Concat([type]).Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IDictionary<,>)))
+        {
+            var valueType = type.GetGenericArguments().ElementAtOrDefault(1);
+            if (valueType is not null && IsComplexType(valueType))
+                schema.AdditionalProperties = await context.GetOrCreateSchemaAsync(valueType, null, cancellationToken);
+
+            return;
+        }
+
+        if (TryGetEnumerableElementType(type, out var elementType) && IsComplexType(elementType))
+            schema.Items = await context.GetOrCreateSchemaAsync(elementType, null, cancellationToken);
+    }
+
+    private static bool IsComplexType(Type type)
+    {
+        type = Nullable.GetUnderlyingType(type) ?? type;
+        return type != typeof(string)
+            && type != typeof(bool)
+            && type != typeof(int)
+            && type != typeof(long)
+            && type != typeof(short)
+            && type != typeof(byte)
+            && type != typeof(double)
+            && type != typeof(float)
+            && type != typeof(decimal)
+            && type != typeof(DateTime)
+            && type != typeof(DateTimeOffset)
+            && type != typeof(Guid)
+            && !type.IsEnum;
     }
 
     private static bool IsDeltaType(Type type)

@@ -31,7 +31,13 @@ GET {{apiUrl}}/organizations/{{organizationId}}
 Authorization: Bearer {{token}}
 
 ### Invoices
+# @name invoices
 GET {{apiUrl}}/organizations/{{organizationId}}/invoices
+Authorization: Bearer {{token}}
+
+### Invoice by Id
+@invoiceId = {{invoices.response.body.$[0].id}}
+GET {{apiUrl}}/organizations/invoice/{{invoiceId}}
 Authorization: Bearer {{token}}
 
 ### Event Custom Fields

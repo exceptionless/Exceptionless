@@ -72,7 +72,7 @@
                     function onFailure(response) {
                         if (response.status !== 404 && response.data) {
                             notificationService.error(
-                                "Error loading stacks: " + (response.data.message || response.data)
+                                "Error loading stacks: " + (response.data.message || response.data.title || response.data)
                             );
                         }
 

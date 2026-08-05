@@ -129,7 +129,7 @@
                         function onFailure(response) {
                             if (response.status !== 404 && response.data) {
                                 notificationService.error(
-                                    "Error loading events: " + (response.data.message || response.data)
+                                    "Error loading events: " + (response.data.message || response.data.title || response.data)
                                 );
                             }
 
