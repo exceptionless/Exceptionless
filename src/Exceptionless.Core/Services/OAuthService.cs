@@ -74,7 +74,6 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
     private const string AccessTokenClientValidityCachePrefix = "oauth:client-valid:";
     private const int OAuthGrantFamilyPageLimit = 1000;
     private static readonly TimeSpan AccessTokenClientValidityCacheLifetime = TimeSpan.FromSeconds(30);
-    private static readonly TimeSpan RefreshTokenReplayGracePeriod = TimeSpan.FromMinutes(2);
     private const string ClientMetadataNotes = "Discovered from OAuth client metadata document.";
     private const string DynamicClientRegistrationNotes = "Registered through OAuth dynamic client registration.";
     private static readonly Regex CodeChallengeRegex = new("^[A-Za-z0-9_-]{43}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -509,17 +508,9 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (token is null || !String.Equals(token.ClientId, request.ClientId, StringComparison.Ordinal))
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
 
-        if (token.IsSuspended)
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
+        if (token.IsSuspended || (token.IsDisabled && !CanReuseRefreshToken(token, utcNow)))
         {
-            await RevokeOAuthGrantFamilyAsync(token);
-            return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
-        }
-
-        if (token.IsDisabled)
-        {
-            if (IsRecentRefreshTokenReplay(token))
-                return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
-
             await RevokeOAuthGrantFamilyAsync(token);
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
         }
@@ -527,7 +518,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (token.OrganizationIds.Count == 0)
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
 
-        if (token.RefreshExpiresUtc.HasValue && token.RefreshExpiresUtc.Value < timeProvider.GetUtcNow().UtcDateTime)
+        if (token.RefreshExpiresUtc.HasValue && token.RefreshExpiresUtc.Value < utcNow)
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is expired.");
 
         var scopeValidation = ValidateRefreshScopes(token, client);
@@ -551,7 +542,9 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
         }
 
-        await DisableTokenAsync(token, clearRefresh: false);
+        if (!token.IsDisabled)
+            await SpendRefreshTokenAsync(token, utcNow);
+
         return OAuthTokenIssueResult.Success(await CreateTokenAsync(token.UserId, token.ClientId, token.Resource, scopeValidation.Scopes, activeOrganizationIds, token.GrantId));
     }
 
@@ -627,20 +620,27 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         return RefreshScopeValidationResult.Valid(refreshedScopes);
     }
 
-    private bool IsRecentRefreshTokenReplay(OAuthToken token)
+    private bool CanReuseRefreshToken(OAuthToken token, DateTime utcNow)
     {
-        if (String.IsNullOrEmpty(token.RefreshTokenHash))
-            return false;
-
-        return token.UpdatedUtc >= timeProvider.GetUtcNow().UtcDateTime.Subtract(RefreshTokenReplayGracePeriod);
+        return options.RefreshTokenReuseGracePeriod > TimeSpan.Zero
+            && token.RefreshTokenUsedUtc.HasValue
+            && token.RefreshTokenUsedUtc.Value <= utcNow
+            && utcNow - token.RefreshTokenUsedUtc.Value <= options.RefreshTokenReuseGracePeriod;
     }
 
-    private Task DisableTokenAsync(OAuthToken token, bool clearRefresh = true)
+    private Task SpendRefreshTokenAsync(OAuthToken token, DateTime utcNow)
     {
         token.IsDisabled = true;
-        if (clearRefresh)
-            token.RefreshTokenHash = null;
+        token.RefreshTokenUsedUtc = utcNow;
+        token.UpdatedUtc = utcNow;
+        return oauthTokenRepository.SaveAsync(token, o => o.ImmediateConsistency());
+    }
 
+    private Task DisableTokenAsync(OAuthToken token)
+    {
+        token.IsDisabled = true;
+        token.RefreshTokenHash = null;
+        token.RefreshTokenUsedUtc = null;
         token.UpdatedUtc = timeProvider.GetUtcNow().UtcDateTime;
         return oauthTokenRepository.SaveAsync(token, o => o.ImmediateConsistency());
     }

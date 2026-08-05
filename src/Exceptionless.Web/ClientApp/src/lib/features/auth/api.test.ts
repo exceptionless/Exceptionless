@@ -1,4 +1,4 @@
-import { FetchClient } from '@exceptionless/fetchclient';
+import { FetchClient } from '@foundatiofx/fetchclient';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('./exceptionless-session', () => ({

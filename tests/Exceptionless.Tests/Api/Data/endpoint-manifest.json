@@ -1090,20 +1090,6 @@
   },
   {
     "method": "GET",
-    "route": "/api/v2/organizations/check-name",
-    "displayName": "HTTP: GET api/v2/organizations/check-name",
-    "tags": [
-      "Organization"
-    ],
-    "allowAnonymous": false,
-    "authorizationPolicies": [
-      "UserPolicy"
-    ],
-    "authorizationRoles": [],
-    "authenticationSchemes": []
-  },
-  {
-    "method": "GET",
     "route": "/api/v2/organizations/invoice/{id:minlength(10)}",
     "displayName": "HTTP: GET api/v2/organizations/invoice/{id:minlength(10)}",
     "tags": [
@@ -1587,20 +1573,6 @@
     "method": "POST",
     "route": "/api/v2/projects",
     "displayName": "HTTP: POST api/v2/projects",
-    "tags": [
-      "Project"
-    ],
-    "allowAnonymous": false,
-    "authorizationPolicies": [
-      "UserPolicy"
-    ],
-    "authorizationRoles": [],
-    "authenticationSchemes": []
-  },
-  {
-    "method": "GET",
-    "route": "/api/v2/projects/check-name",
-    "displayName": "HTTP: GET api/v2/projects/check-name",
     "tags": [
       "Project"
     ],

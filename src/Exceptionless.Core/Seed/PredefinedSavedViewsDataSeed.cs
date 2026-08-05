@@ -129,15 +129,9 @@ public class PredefinedSavedViewsDataSeed : IDataSeed
             changed = true;
         }
 
-        if (!DictionaryEquals(existing.Columns, definition.Columns))
+        if (!ColumnsEqual(existing.Columns, definition.Columns))
         {
-            existing.Columns = definition.Columns?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-            changed = true;
-        }
-
-        if (!CollectionEquals(existing.ColumnOrder, definition.ColumnOrder))
-        {
-            existing.ColumnOrder = definition.ColumnOrder is null ? null : [.. definition.ColumnOrder];
+            existing.Columns = CopyColumns(definition.Columns);
             changed = true;
         }
 
@@ -190,8 +184,7 @@ public class PredefinedSavedViewsDataSeed : IDataSeed
             Time = definition.Time,
             Sort = definition.Sort,
             FilterDefinitions = GetRawJson(definition.FilterDefinitions),
-            Columns = definition.Columns?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
-            ColumnOrder = definition.ColumnOrder is null ? null : [.. definition.ColumnOrder],
+            Columns = CopyColumns(definition.Columns),
             ShowStats = definition.ShowStats,
             ShowChart = definition.ShowChart,
             Version = 1
@@ -201,7 +194,9 @@ public class PredefinedSavedViewsDataSeed : IDataSeed
         return savedView;
     }
 
-    private static bool CollectionEquals(IReadOnlyCollection<string>? left, IReadOnlyCollection<string>? right)
+    private static bool ColumnsEqual(
+        IReadOnlyDictionary<string, SavedViewColumnSettings>? left,
+        IReadOnlyDictionary<string, SavedViewColumnSettings>? right)
     {
         if (ReferenceEquals(left, right))
             return true;
@@ -209,19 +204,12 @@ public class PredefinedSavedViewsDataSeed : IDataSeed
         if (left is null || right is null || left.Count != right.Count)
             return false;
 
-        return left.SequenceEqual(right, StringComparer.Ordinal);
+        return left.All(entry => right.TryGetValue(entry.Key, out var value) && entry.Value == value);
     }
 
-    private static bool DictionaryEquals(IReadOnlyDictionary<string, bool>? left, IReadOnlyDictionary<string, bool>? right)
-    {
-        if (ReferenceEquals(left, right))
-            return true;
-
-        if (left is null || right is null || left.Count != right.Count)
-            return false;
-
-        return left.All(kvp => right.TryGetValue(kvp.Key, out bool value) && value == kvp.Value);
-    }
+    private static Dictionary<string, SavedViewColumnSettings>? CopyColumns(
+        IReadOnlyDictionary<string, SavedViewColumnSettings>? value)
+        => value?.ToDictionary(entry => entry.Key, entry => entry.Value with { });
 
     public static string? GetRawJson(JsonElement? value)
     {
@@ -259,10 +247,7 @@ public sealed record PredefinedSavedViewDefinition
     public JsonElement? FilterDefinitions { get; init; }
 
     [JsonPropertyName("columns")]
-    public IReadOnlyDictionary<string, bool>? Columns { get; init; }
-
-    [JsonPropertyName("columnOrder")]
-    public IReadOnlyCollection<string>? ColumnOrder { get; init; }
+    public IReadOnlyDictionary<string, SavedViewColumnSettings>? Columns { get; init; }
 
     [JsonPropertyName("showStats")]
     public bool? ShowStats { get; init; }

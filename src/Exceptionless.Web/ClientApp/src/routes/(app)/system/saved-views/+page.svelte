@@ -2,8 +2,6 @@
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
     import * as AlertDialog from '$comp/ui/alert-dialog';
     import { Button, buttonVariants } from '$comp/ui/button';
-    import * as Field from '$comp/ui/field';
-    import { Input } from '$comp/ui/input';
     import { Spinner } from '$comp/ui/spinner';
     import * as Tabs from '$comp/ui/tabs';
     import { Textarea } from '$comp/ui/textarea';
@@ -14,7 +12,7 @@
         putPredefinedSavedViewsMutation
     } from '$features/admin/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
-    import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { ProblemDetails } from '@foundatiofx/fetchclient';
     import Save from '@lucide/svelte/icons/save';
     import { onMount } from 'svelte';
     import { toast } from 'svelte-sonner';
@@ -23,7 +21,6 @@
     let predefinedTab = $state('config');
     let savedPredefinedJson = $state('');
     let forceUpdateOpen = $state(false);
-    let forceUpdateConfirmation = $state('');
     let toastId = $state<number | string>();
 
     const predefinedSavedViews = getPredefinedSavedViewsMutation();
@@ -83,19 +80,12 @@
         }
     }
 
-    $effect(() => {
-        if (!forceUpdateOpen) {
-            forceUpdateConfirmation = '';
-        }
-    });
-
     async function handleForceUpdatePredefined() {
         toast.dismiss(toastId);
 
         try {
             await forceUpdatePredefined.mutateAsync();
             forceUpdateOpen = false;
-            forceUpdateConfirmation = '';
             toastId = toast.success('Force update of matching organization saved views was queued.');
         } catch (error: unknown) {
             toastId = toast.error(`An error occurred while queuing the force update: ${getErrorMessage(error, 'Please try again.')}`);
@@ -155,23 +145,17 @@
         <AlertDialog.Header>
             <AlertDialog.Title>Force Update Matching Organization Saved Views</AlertDialog.Title>
             <AlertDialog.Description>
-                This queues a background job that overwrites every organization-wide saved view whose predefined key matches a saved system definition. It
-                discards customizations to those views. Private, unmatched, and missing views are not changed. Unsaved JSON edits are not included.
+                This queues a background job that overwrites every organization-wide saved view whose predefined key matches a saved system definition. It also
+                creates missing predefined views for organizations with matching views. It discards customizations to matching views. Private and unmatched
+                views are not changed. Unsaved JSON edits are not included.
             </AlertDialog.Description>
         </AlertDialog.Header>
-
-        <div class="py-4">
-            <Field.Field>
-                <Field.Label for="force-update-confirmation">Type FORCE to confirm</Field.Label>
-                <Input id="force-update-confirmation" bind:value={forceUpdateConfirmation} autocomplete="off" placeholder="FORCE" />
-            </Field.Field>
-        </div>
 
         <AlertDialog.Footer>
             <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
             <AlertDialog.Action
                 class={buttonVariants({ variant: 'destructive' })}
-                disabled={forceUpdatePredefined.isPending || forceUpdateConfirmation !== 'FORCE'}
+                disabled={forceUpdatePredefined.isPending}
                 onclick={handleForceUpdatePredefined}
             >
                 {forceUpdatePredefined.isPending ? 'Queuing...' : 'Force Update'}

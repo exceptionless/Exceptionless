@@ -10,6 +10,7 @@ public class OAuthServerOptions
     public TimeSpan RefreshTokenLifetime { get; internal set; } = TimeSpan.FromDays(30);
     public TimeSpan DeviceCodeLifetime { get; internal set; } = TimeSpan.FromMinutes(15);
     public TimeSpan DeviceCodePollingInterval { get; internal set; } = TimeSpan.FromSeconds(5);
+    public TimeSpan RefreshTokenReuseGracePeriod { get; internal set; } = TimeSpan.FromHours(1);
     public bool EnableClientIdMetadataDocuments { get; internal set; } = true;
     public int DynamicClientRegistrationIpLimit { get; internal set; } = 20;
     public int DeviceAuthorizationIpLimit { get; internal set; } = 120;
@@ -25,6 +26,7 @@ public class OAuthServerOptions
         options.RefreshTokenLifetime = TimeSpan.FromDays(config.GetValue("OAuthServer:RefreshTokenLifetimeDays", 30));
         options.DeviceCodeLifetime = TimeSpan.FromMinutes(config.GetValue("OAuthServer:DeviceCodeLifetimeMinutes", 15));
         options.DeviceCodePollingInterval = TimeSpan.FromSeconds(config.GetValue("OAuthServer:DeviceCodePollingIntervalSeconds", 5));
+        options.RefreshTokenReuseGracePeriod = TimeSpan.FromMinutes(Math.Max(0, config.GetValue("OAuthServer:RefreshTokenReuseGracePeriodMinutes", 60)));
         options.EnableClientIdMetadataDocuments = config.GetValue("OAuthServer:EnableClientIdMetadataDocuments", true);
         options.DynamicClientRegistrationIpLimit = config.GetValue("OAuthServer:DynamicClientRegistrationIpLimit", 20);
         options.DeviceAuthorizationIpLimit = config.GetValue("OAuthServer:DeviceAuthorizationIpLimit", 120);

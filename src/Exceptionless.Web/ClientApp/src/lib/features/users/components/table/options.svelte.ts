@@ -1,5 +1,5 @@
 import type { ViewUser } from '$features/users/models';
-import type { FetchClientResponse, ProblemDetails } from '@exceptionless/fetchclient';
+import type { FetchClientResponse, ProblemDetails } from '@foundatiofx/fetchclient';
 import type { CreateQueryResult } from '@tanstack/svelte-query';
 
 import BooleanFormatter from '$features/shared/components/formatters/boolean.svelte';

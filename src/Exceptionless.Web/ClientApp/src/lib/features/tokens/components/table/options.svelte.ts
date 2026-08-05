@@ -1,5 +1,5 @@
 import type { ViewToken } from '$features/tokens/models';
-import type { FetchClientResponse, ProblemDetails } from '@exceptionless/fetchclient';
+import type { FetchClientResponse, ProblemDetails } from '@foundatiofx/fetchclient';
 import type { CreateQueryResult } from '@tanstack/svelte-query';
 
 import { getSharedTableOptions } from '$features/shared/table.svelte';
