@@ -44,7 +44,7 @@
             <Button
                 aria-hidden={showFirst ? undefined : true}
                 aria-label="Go to first page"
-                class={showFirst ? undefined : 'invisible pointer-events-none'}
+                class={showFirst ? undefined : 'pointer-events-none invisible'}
                 disabled={!showFirst}
                 onclick={goToFirstPage}
                 title="First page"
