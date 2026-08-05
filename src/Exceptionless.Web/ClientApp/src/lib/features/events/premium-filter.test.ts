@@ -113,4 +113,9 @@ describe('savedFilterUsesPremiumFeatures', () => {
     it('keeps legacy saved views with free filters free', () => {
         expect(savedFilterUsesPremiumFeatures('status:open type:error', false, 'event')).toBe(false);
     });
+
+    it('classifies legacy stack views using stack-mode event rules', () => {
+        expect(savedFilterUsesPremiumFeatures('stack:ABC123', false, 'event-stack')).toBe(false);
+        expect(savedFilterUsesPremiumFeatures('title:"out of memory"', false, 'event-stack')).toBe(true);
+    });
 });

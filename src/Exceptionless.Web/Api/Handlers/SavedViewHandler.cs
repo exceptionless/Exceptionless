@@ -30,6 +30,7 @@ public partial class SavedViewHandler(
     ILockProvider lockProvider,
     IQueue<WorkItemData> workItemQueue,
     PersistentEventQueryValidator eventQueryValidator,
+    EventStackQueryValidator eventStackQueryValidator,
     ApiMapper mapper,
     LinkGenerator linkGenerator,
     IHttpContextAccessor httpContextAccessor)
@@ -235,7 +236,7 @@ public partial class SavedViewHandler(
 
         if (changedNames.Contains(nameof(UpdateSavedView.Filter)))
         {
-            var validationResult = await eventQueryValidator.ValidateQueryAsync(original.Filter);
+            var validationResult = await ValidateFilterAsync(original.ViewType, original.Filter);
             original.UsesPremiumFeatures = validationResult.UsesPremiumFeatures;
         }
 
@@ -293,7 +294,7 @@ public partial class SavedViewHandler(
         mapped.CreatedByUserId = GetCurrentUserId();
         mapped.Version = 1;
 
-        var validationResult = await eventQueryValidator.ValidateQueryAsync(mapped.Filter);
+        var validationResult = await ValidateFilterAsync(mapped.ViewType, mapped.Filter);
         mapped.UsesPremiumFeatures = validationResult.UsesPremiumFeatures;
 
         var model = await repository.AddAsync(mapped, o => o.Cache());
@@ -302,6 +303,11 @@ public partial class SavedViewHandler(
             ?? throw new InvalidOperationException("Unable to generate saved view location.");
         return Result<ViewSavedView>.Created(viewModel, location);
     }
+
+    private Task<AppQueryValidator.QueryProcessResult> ValidateFilterAsync(string viewType, string? filter)
+        => String.Equals(viewType, "stacks", StringComparison.OrdinalIgnoreCase)
+            ? eventStackQueryValidator.ValidateQueryAsync(filter)
+            : eventQueryValidator.ValidateQueryAsync(filter);
 
     private async Task<Result<ViewSavedView>?> CanAddAsync(SavedView value)
     {

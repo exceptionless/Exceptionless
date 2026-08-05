@@ -18,7 +18,7 @@
         type IndexType,
         parseIndexType
     } from '$features/organizations/custom-fields';
-    import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { ProblemDetails } from '@foundatiofx/fetchclient';
     import Database from '@lucide/svelte/icons/database';
     import { toast } from 'svelte-sonner';
 

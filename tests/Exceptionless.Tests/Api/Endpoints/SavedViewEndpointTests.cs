@@ -2805,4 +2805,27 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         Assert.NotNull(result);
         Assert.False(result.UsesPremiumFeatures, "SavedView with only free fields should have UsesPremiumFeatures = false");
     }
+
+    [Fact]
+    public async Task PostAsync_WithFreeStackModeFilter_DoesNotSetUsesPremiumFeatures()
+    {
+        var newView = new NewSavedView
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            Name = "Stack Filter View",
+            Filter = "stack:ABC123 first:true",
+            ViewType = "stacks"
+        };
+
+        var result = await SendRequestAsAsync<ViewSavedView>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .Content(newView)
+            .StatusCodeShouldBeCreated()
+        );
+
+        Assert.NotNull(result);
+        Assert.False(result.UsesPremiumFeatures);
+    }
 }

@@ -26,7 +26,7 @@
         parseIndexType,
         updateCustomFieldMutation
     } from '$features/organizations/custom-fields';
-    import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { ProblemDetails } from '@foundatiofx/fetchclient';
     import Columns from '@lucide/svelte/icons/columns-3';
     import Pencil from '@lucide/svelte/icons/pencil';
     import Plus from '@lucide/svelte/icons/plus';

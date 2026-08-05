@@ -58,11 +58,7 @@ export function getSearchResourceForPathname(pathname: string): SearchResource {
     return /(?:^|\/)stack(?:\/|$)/.test(pathname) ? 'event-stack' : 'event';
 }
 
-export function savedFilterUsesPremiumFeatures(
-    filter: null | string | undefined,
-    storedValue: boolean | undefined,
-    resource: SearchResource
-): boolean {
+export function savedFilterUsesPremiumFeatures(filter: null | string | undefined, storedValue: boolean | undefined, resource: SearchResource): boolean {
     return storedValue === true || filterUsesPremiumFeatures(filter, resource);
 }
 

@@ -3,10 +3,10 @@ import type {
     NewCustomFieldDefinition as ApiNewCustomFieldDefinition,
     UpdateCustomFieldDefinition as ApiUpdateCustomFieldDefinition
 } from '$lib/generated/api';
-import type { ProblemDetails } from '@exceptionless/fetchclient';
+import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
 import { accessToken } from '$features/auth/index.svelte';
-import { useFetchClient } from '@exceptionless/fetchclient';
+import { useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 
 import { type CustomFieldDefinition, type NewCustomFieldDefinition, parseIndexType, type UpdateCustomFieldDefinition } from './models';

@@ -420,7 +420,7 @@
                     usesPremiumFeatures: savedFilterUsesPremiumFeatures(
                         savedView.filter,
                         savedView.uses_premium_features,
-                        getSearchResourceForPathname(page.url.pathname)
+                        getSearchResourceForPathname(route.href)
                     )
                 })),
                 ...(route.children ?? [])
