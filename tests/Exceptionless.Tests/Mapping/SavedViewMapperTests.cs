@@ -27,8 +27,12 @@ public sealed class SavedViewMapperTests
             Sort = "-last",
             ViewType = "stacks",
             FilterDefinitions = "[{\"type\":\"status\",\"values\":[\"open\",\"regressed\"]}]",
-            Columns = new Dictionary<string, bool> { ["status"] = true, ["users"] = false },
-            ColumnOrder = ["summary", "status", "users"]
+            Columns = new Dictionary<string, SavedViewColumnSettings>
+            {
+                ["summary"] = new() { Position = 0, Visible = true },
+                ["status"] = new() { Position = 1, Visible = true, Width = 180 },
+                ["users"] = new() { Position = 2, Visible = false }
+            }
         };
 
         // Act
@@ -43,9 +47,10 @@ public sealed class SavedViewMapperTests
         Assert.Equal("stacks", result.ViewType);
         Assert.Equal("[{\"type\":\"status\",\"values\":[\"open\",\"regressed\"]}]", result.FilterDefinitions);
         Assert.NotNull(result.Columns);
-        Assert.True(result.Columns["status"]);
-        Assert.False(result.Columns["users"]);
-        Assert.Equal(["summary", "status", "users"], result.ColumnOrder);
+        Assert.True(result.Columns["status"].Visible);
+        Assert.False(result.Columns["users"].Visible);
+        Assert.Equal(1, result.Columns["status"].Position);
+        Assert.Equal(180, result.Columns["status"].Width);
     }
 
     [Fact]
@@ -89,7 +94,6 @@ public sealed class SavedViewMapperTests
         Assert.Null(result.Time);
         Assert.Null(result.FilterDefinitions);
         Assert.Null(result.Columns);
-        Assert.Null(result.ColumnOrder);
     }
 
     [Fact]
@@ -106,8 +110,11 @@ public sealed class SavedViewMapperTests
             UpdatedByUserId = "1ecd0826e447ad1e78822666",
             Filter = "status:open",
             FilterDefinitions = "[{\"type\":\"status\",\"values\":[\"open\"]}]",
-            Columns = new Dictionary<string, bool> { ["status"] = true },
-            ColumnOrder = ["summary", "status"],
+            Columns = new Dictionary<string, SavedViewColumnSettings>
+            {
+                ["summary"] = new() { Position = 0, Visible = true },
+                ["status"] = new() { Position = 1, Visible = true, Width = 180 }
+            },
             Name = "My View",
             Time = "[now-30d TO now]",
             Sort = "-last",
@@ -129,8 +136,9 @@ public sealed class SavedViewMapperTests
         Assert.Equal("status:open", result.Filter);
         Assert.Equal("[{\"type\":\"status\",\"values\":[\"open\"]}]", result.FilterDefinitions);
         Assert.NotNull(result.Columns);
-        Assert.True(result.Columns["status"]);
-        Assert.Equal(["summary", "status"], result.ColumnOrder);
+        Assert.True(result.Columns["status"].Visible);
+        Assert.Equal(1, result.Columns["status"].Position);
+        Assert.Equal(180, result.Columns["status"].Width);
         Assert.Equal("My View", result.Name);
         Assert.Equal("[now-30d TO now]", result.Time);
         Assert.Equal("-last", result.Sort);
@@ -163,7 +171,6 @@ public sealed class SavedViewMapperTests
         Assert.Null(result.Filter);
         Assert.Null(result.FilterDefinitions);
         Assert.Null(result.Columns);
-        Assert.Null(result.ColumnOrder);
         Assert.Null(result.Time);
         Assert.Null(result.Sort);
     }

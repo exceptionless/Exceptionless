@@ -2,11 +2,13 @@
     import type { Snippet } from 'svelte';
 
     import ErrorMessage from '$comp/error-message.svelte';
+    import Currency from '$comp/formatters/currency.svelte';
     import DateTime from '$comp/formatters/date-time.svelte';
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
+    import { getInvoiceStatusLabel } from '$features/billing/invoice';
     import File from '@lucide/svelte/icons/file';
     import MoreHorizontal from '@lucide/svelte/icons/more-horizontal';
 
@@ -38,6 +40,7 @@
                 <Table.Row>
                     <Table.Head>Payment Number</Table.Head>
                     <Table.Head>Date</Table.Head>
+                    <Table.Head>Amount</Table.Head>
                     <Table.Head>Status</Table.Head>
                     <Table.Head class="w-25">Actions</Table.Head>
                 </Table.Row>
@@ -53,7 +56,10 @@
                                 <DateTime value={invoice.date} />
                             </Table.Cell>
                             <Table.Cell class="hover:bg-muted/50 cursor-pointer" onclick={() => onopeninvoice(invoice.id)}>
-                                {invoice.paid ? 'Paid' : 'Unpaid'}
+                                <Currency value={invoice.total} />
+                            </Table.Cell>
+                            <Table.Cell class="hover:bg-muted/50 cursor-pointer" onclick={() => onopeninvoice(invoice.id)}>
+                                {getInvoiceStatusLabel(invoice.status, invoice.total)}
                             </Table.Cell>
                             <Table.Cell>
                                 <DropdownMenu.Root>

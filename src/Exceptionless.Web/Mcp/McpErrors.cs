@@ -207,13 +207,18 @@ public static class McpErrors
         return new McpErrorInfo(McpErrorCodes.QueryFailed, message);
     }
 
-    public static McpErrorInfo UnknownFilterField(string message, string field, IReadOnlySet<string> allowedFields)
+    public static McpErrorInfo UnknownFilterField(string message, string field, IReadOnlySet<string> allowedFields, string? allowedDynamicFieldPattern = null)
     {
-        return new McpErrorInfo(McpErrorCodes.UnknownFilterField, message, new Dictionary<string, object?>
+        var details = new Dictionary<string, object?>
         {
             ["field"] = field,
             ["allowedFields"] = allowedFields.Order(StringComparer.OrdinalIgnoreCase).ToArray()
-        });
+        };
+
+        if (allowedDynamicFieldPattern is not null)
+            details["allowedDynamicFieldPattern"] = allowedDynamicFieldPattern;
+
+        return new McpErrorInfo(McpErrorCodes.UnknownFilterField, message, details);
     }
 
     private static IReadOnlyDictionary<string, object?>? ResourceDetails(string? field, string? value)

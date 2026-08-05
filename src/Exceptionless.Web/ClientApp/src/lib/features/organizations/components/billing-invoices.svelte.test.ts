@@ -8,12 +8,16 @@ const invoices = [
     {
         date: '2026-07-01T14:32:00Z',
         id: paidInvoiceId,
-        paid: true
+        paid: true,
+        status: 'paid',
+        total: 120
     },
     {
         date: '2026-06-01T14:29:00Z',
         id: '665dbff6bc16d969f98f44c2',
-        paid: false
+        paid: false,
+        status: 'open',
+        total: 90
     }
 ];
 
@@ -24,7 +28,7 @@ describe('BillingInvoices', () => {
         render(BillingInvoices, { invoices, onopeninvoice });
 
         expect(screen.getByText('Paid')).toBeTruthy();
-        expect(screen.getByText('Unpaid')).toBeTruthy();
+        expect(screen.getByText('Payment due')).toBeTruthy();
 
         await fireEvent.click(screen.getByText(paidInvoiceId));
 

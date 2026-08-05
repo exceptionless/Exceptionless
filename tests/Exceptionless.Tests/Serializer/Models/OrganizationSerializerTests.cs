@@ -23,11 +23,13 @@ public class OrganizationSerializerTests : TestWithServices
             Id = "550000000000000000000001",
             Name = "Acme Corp",
             StripeCustomerId = "cus_abc123",
+            StripeSubscriptionId = "sub_abc123",
             PlanId = "EX_MEDIUM",
             PlanName = "Medium",
             PlanDescription = "Medium plan",
             CardLast4 = "4242",
             BillingStatus = BillingStatus.Active,
+            StripeSubscriptionEventDate = new DateTime(2024, 5, 31, 8, 30, 0, DateTimeKind.Utc),
             BillingPrice = 49.99m,
             MaxEventsPerMonth = 50000,
             RetentionDays = 30,
@@ -47,8 +49,10 @@ public class OrganizationSerializerTests : TestWithServices
         Assert.Equal("550000000000000000000001", result.Id);
         Assert.Equal("Acme Corp", result.Name);
         Assert.Equal("cus_abc123", result.StripeCustomerId);
+        Assert.Equal("sub_abc123", result.StripeSubscriptionId);
         Assert.Equal("EX_MEDIUM", result.PlanId);
         Assert.Equal(BillingStatus.Active, result.BillingStatus);
+        Assert.Equal(new DateTime(2024, 5, 31, 8, 30, 0, DateTimeKind.Utc), result.StripeSubscriptionEventDate);
         Assert.Equal(49.99m, result.BillingPrice);
         Assert.Equal(50000, result.MaxEventsPerMonth);
         Assert.Equal(30, result.RetentionDays);
