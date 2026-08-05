@@ -1,5 +1,5 @@
 import type { ViewRateNotificationRule } from '$generated/api';
-import type { FetchClientResponse } from '@exceptionless/fetchclient';
+import type { FetchClientResponse } from '@foundatiofx/fetchclient';
 
 import { RateNotificationSignal, RateNotificationSubject } from '$generated/api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -22,7 +22,7 @@ vi.mock('$features/auth/index.svelte', () => ({
     accessToken: { current: 'test-token' }
 }));
 
-vi.mock('@exceptionless/fetchclient', () => ({
+vi.mock('@foundatiofx/fetchclient', () => ({
     useFetchClient: () => mocks.client
 }));
 

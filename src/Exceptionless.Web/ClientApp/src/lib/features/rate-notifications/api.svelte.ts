@@ -6,7 +6,7 @@ import {
     type UpdateRateNotificationRule,
     type ViewRateNotificationRule
 } from '$features/rate-notifications/types';
-import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, type QueryClient, type QueryKey, useQueryClient } from '@tanstack/svelte-query';
 
 const CONSISTENCY_REFRESH_DELAY_MS = 1500;

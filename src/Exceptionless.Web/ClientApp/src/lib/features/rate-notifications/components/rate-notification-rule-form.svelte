@@ -22,7 +22,7 @@
     } from '$features/rate-notifications/types';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { getProjectStacksQuery, getStackQuery } from '$features/stacks/api.svelte';
-    import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { ProblemDetails } from '@foundatiofx/fetchclient';
     import InfoIcon from '@lucide/svelte/icons/info';
     import { createForm } from '@tanstack/svelte-form';
     import { untrack } from 'svelte';
