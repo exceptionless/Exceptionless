@@ -16,7 +16,7 @@
     import { formatOAuthScope, offlineAccessScope } from '$features/auth/oauth';
     import { getOrganizationsQuery } from '$features/organizations/api.svelte';
     import { getMeQuery } from '$features/users/api.svelte';
-    import { useFetchClient } from '@exceptionless/fetchclient';
+    import { useFetchClient } from '@foundatiofx/fetchclient';
     import { SvelteSet } from 'svelte/reactivity';
 
     interface OAuthDeviceConsentResponse {
