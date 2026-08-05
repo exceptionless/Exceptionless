@@ -127,6 +127,7 @@ export const InvoiceSchema = object({
   organization_name: string().min(1, "Organization name is required"),
   date: iso.datetime(),
   paid: boolean(),
+  status: string().min(1, "Status is required"),
   total: number(),
   items: array(lazy(() => InvoiceLineItemSchema)),
 });
@@ -136,6 +137,8 @@ export const InvoiceGridModelSchema = object({
   id: string().min(1, "Id is required"),
   date: iso.datetime(),
   paid: boolean(),
+  status: string().min(1, "Status is required"),
+  total: number(),
 });
 export type InvoiceGridModelFormData = Infer<typeof InvoiceGridModelSchema>;
 
