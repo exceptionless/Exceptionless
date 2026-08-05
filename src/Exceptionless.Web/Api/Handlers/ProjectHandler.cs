@@ -393,7 +393,7 @@ public class ProjectHandler(
 
     public async Task<Result> Handle(CheckProjectName message)
     {
-        if (await IsProjectNameAvailableInternalAsync(message.OrganizationId, message.Name, message.Context))
+        if (await IsProjectNameAvailableInternalAsync(message.OrganizationId, message.Name, message.ProjectId, message.Context))
             return Result.NoContent();
 
         return Result.Created();
@@ -579,14 +579,14 @@ public class ProjectHandler(
         if (String.IsNullOrEmpty(value.Name))
             return Result.BadRequest("Project name is required.");
 
-        if (!await IsProjectNameAvailableInternalAsync(value.OrganizationId, value.Name, httpContext))
+        if (!httpContext.Request.CanAccessOrganization(value.OrganizationId))
+            return Result.BadRequest("Invalid organization id specified.");
+
+        if (!await IsProjectNameAvailableInternalAsync(value.OrganizationId, value.Name, null, httpContext))
             return Result.BadRequest("A project with this name already exists.");
 
         if (!await billingManager.CanAddProjectAsync(value))
             return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, "Please upgrade your plan to add additional projects."));
-
-        if (!httpContext.Request.CanAccessOrganization(value.OrganizationId))
-            return Result.BadRequest("Invalid organization id specified.");
 
         return null;
     }
@@ -604,8 +604,11 @@ public class ProjectHandler(
 
     private async Task<Result<ViewProject>?> CanUpdateAsync(Project original, Delta<UpdateProject> changes, HttpContext httpContext)
     {
+        if (!httpContext.Request.CanAccessOrganization(original.OrganizationId))
+            return Result.BadRequest("Invalid organization id specified.");
+
         var changed = changes.GetEntity();
-        if (changes.ContainsChangedProperty(p => p.Name) && !await IsProjectNameAvailableInternalAsync(original.OrganizationId, changed.Name, httpContext))
+        if (changes.ContainsChangedProperty(p => p.Name) && !await IsProjectNameAvailableInternalAsync(original.OrganizationId, changed.Name, original.Id, httpContext))
             return Result.BadRequest("A project with this name already exists.");
 
         if (changes.ContainsChangedProperty(p => p.IngestLimit!) && changed.IngestLimit?.Type is ProjectIngestLimitType.PercentOfOrganizationLimit)
@@ -614,9 +617,6 @@ public class ProjectHandler(
             if (organization?.GetMaxEventsPerMonthWithBonus(timeProvider) < 0)
                 return Result.BadRequest("A percentage project ingest limit cannot be used with an unlimited organization allowance.");
         }
-
-        if (!httpContext.Request.CanAccessOrganization(original.OrganizationId))
-            return Result.BadRequest("Invalid organization id specified.");
 
         if (changes.GetChangedPropertyNames().Contains(nameof(Project.OrganizationId)))
             return Result.BadRequest("OrganizationId cannot be modified.");
@@ -723,17 +723,16 @@ public class ProjectHandler(
         return await organizationRepository.GetByIdsAsync(associatedOrganizationIds.ToArray(), o => o.Cache());
     }
 
-    private async Task<bool> IsProjectNameAvailableInternalAsync(string? organizationId, string? name, HttpContext httpContext)
+    private async Task<bool> IsProjectNameAvailableInternalAsync(string organizationId, string? name, string? projectId, HttpContext httpContext)
     {
-        if (String.IsNullOrWhiteSpace(name))
+        if (String.IsNullOrWhiteSpace(name) || !httpContext.Request.CanAccessOrganization(organizationId))
             return false;
 
-        var organizationIds = organizationId is not null && httpContext.Request.IsInOrganization(organizationId)
-            ? new[] { organizationId }
-            : httpContext.Request.GetAssociatedOrganizationIds().ToArray();
-        var projects = await repository.GetByOrganizationIdsAsync(organizationIds);
-        string decodedName = Uri.UnescapeDataString(name).Trim().ToLowerInvariant();
-        return !projects.Documents.Any(p => String.Equals(p.Name.Trim().ToLowerInvariant(), decodedName, StringComparison.OrdinalIgnoreCase));
+        var projects = await repository.GetByOrganizationIdAsync(organizationId);
+        string decodedName = Uri.UnescapeDataString(name).Trim();
+        return !projects.Documents.Any(p =>
+            !String.Equals(p.Id, projectId, StringComparison.Ordinal)
+            && String.Equals(p.Name.Trim(), decodedName, StringComparison.OrdinalIgnoreCase));
     }
 
     private async Task<ViewProject> PopulateProjectStatsAsync(ViewProject project)

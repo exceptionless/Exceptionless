@@ -47,6 +47,7 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
             var generatedSchema = await context.GetOrCreateSchemaAsync(property.PropertyType, cancellationToken: cancellationToken);
             DataAnnotationHelper.ApplyToSchema(generatedSchema, property);
             ApplyArrayAnnotations(generatedSchema, property);
+            await PopulateNestedSchemaAsync(generatedSchema, property.PropertyType, context, cancellationToken);
 
             OpenApiSchema propertySchema;
 
@@ -74,6 +75,45 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
 
         // Ensure no required array - all properties are optional for PATCH
         schema.Required = null;
+    }
+
+    private static async Task PopulateNestedSchemaAsync(
+        OpenApiSchema schema,
+        Type type,
+        OpenApiSchemaTransformerContext context,
+        CancellationToken cancellationToken)
+    {
+        type = Nullable.GetUnderlyingType(type) ?? type;
+
+        if (type.IsGenericType && type.GetInterfaces().Concat([type]).Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IDictionary<,>)))
+        {
+            var valueType = type.GetGenericArguments().ElementAtOrDefault(1);
+            if (valueType is not null && IsComplexType(valueType))
+                schema.AdditionalProperties = await context.GetOrCreateSchemaAsync(valueType, null, cancellationToken);
+
+            return;
+        }
+
+        if (TryGetEnumerableElementType(type, out var elementType) && IsComplexType(elementType))
+            schema.Items = await context.GetOrCreateSchemaAsync(elementType, null, cancellationToken);
+    }
+
+    private static bool IsComplexType(Type type)
+    {
+        type = Nullable.GetUnderlyingType(type) ?? type;
+        return type != typeof(string)
+            && type != typeof(bool)
+            && type != typeof(int)
+            && type != typeof(long)
+            && type != typeof(short)
+            && type != typeof(byte)
+            && type != typeof(double)
+            && type != typeof(float)
+            && type != typeof(decimal)
+            && type != typeof(DateTime)
+            && type != typeof(DateTimeOffset)
+            && type != typeof(Guid)
+            && !type.IsEnum;
     }
 
     private static bool IsDeltaType(Type type)

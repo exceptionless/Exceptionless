@@ -75,7 +75,6 @@ public static class OrganizationEndpoints
         .Accepts<NewOrganization>("application/json", "application/*+json")
         .Produces<ViewOrganization>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status400BadRequest)
-        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Create")
         .WithMetadata(new EndpointDocumentation {
@@ -83,7 +82,6 @@ public static class OrganizationEndpoints
             ResponseDescriptions = new() {
                 ["201"] = "Created",
                 ["400"] = "An error occurred while creating the organization.",
-                ["409"] = "The organization already exists.",
             }
         });
 
@@ -381,22 +379,6 @@ public static class OrganizationEndpoints
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ExcludeFromDescription();
-
-        group.MapGet("organizations/check-name", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? name = null)
-            => (await mediator.InvokeAsync<Result>(new OrganizationMessages.CheckOrganizationName(name, httpContext))).ToHttpResult(resultMapper))
-        .Produces(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status201Created)
-        .Produces(StatusCodes.Status204NoContent)
-        .WithSummary("Check for unique name")
-        .WithMetadata(new EndpointDocumentation {
-            ParameterDescriptions = new() {
-                ["name"] = "The organization name to check.",
-            },
-            ResponseDescriptions = new() {
-                ["201"] = "The organization name is available.",
-                ["204"] = "The organization name is not available.",
-            }
-        });
 
         return endpoints;
     }

@@ -3,7 +3,7 @@ import type { WebSocketMessageValue } from '$features/websockets/models';
 
 import { accessToken } from '$features/auth/index.svelte';
 import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
-import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
 export async function invalidateWebhookQueries(queryClient: QueryClient, message: WebSocketMessageValue<'WebhookChanged'>) {

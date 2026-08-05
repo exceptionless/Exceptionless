@@ -50,6 +50,7 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                     onCheckedChange: (checked: 'indeterminate' | boolean) => props.row.getToggleSelectedHandler()({ target: { checked } })
                 }),
             enableHiding: false,
+            enableResizing: false,
             enableSorting: false,
             header: ({ table }) =>
                 renderComponent(Checkbox, {
@@ -64,11 +65,15 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
         },
         {
             cell: (prop) => renderComponent(Summary, { showStatus: false, showType, summary: prop.row.original }),
+            enableResizing: true,
             header: 'Summary',
             id: 'summary',
+            maxSize: 1200,
             meta: {
                 class: 'w-full'
-            }
+            },
+            minSize: 240,
+            size: 480
         },
         {
             accessorFn: (row) => getProject(row),
@@ -76,9 +81,12 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
             enableSorting: false,
             header: 'Project',
             id: 'project',
+            maxSize: 800,
             meta: {
-                class: 'w-40 min-w-40 max-w-40'
-            }
+                class: 'w-60 min-w-60 max-w-60'
+            },
+            minSize: 160,
+            size: 240
         }
     ];
 
@@ -89,18 +97,24 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                 cell: (prop) => renderComponent(EventsUserIdentitySummaryCell, { summary: prop.row.original }),
                 header: 'User',
                 id: 'user',
+                maxSize: 480,
                 meta: {
                     class: 'w-28'
-                }
+                },
+                minSize: 80,
+                size: 112
             },
             {
                 accessorKey: nameof<EventSummaryModel<SummaryTemplateKeys>>('date'),
                 cell: (prop) => renderComponent(TimeAgo, { value: prop.getValue<string>() }),
                 header: 'Date',
                 id: 'date',
+                maxSize: 480,
                 meta: {
                     class: 'w-36'
-                }
+                },
+                minSize: 96,
+                size: 144
             },
             {
                 accessorKey: nameof<EventSummaryModel<SummaryTemplateKeys>>('tags'),
@@ -108,9 +122,12 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                 enableSorting: false,
                 header: 'Tags',
                 id: 'tags',
+                maxSize: 800,
                 meta: {
                     class: 'w-52 min-w-52 max-w-52'
-                }
+                },
+                minSize: 120,
+                size: 208
             },
             {
                 accessorFn: (row) => getSummaryDataValue(row, 'Message'),
@@ -118,18 +135,24 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                 enableSorting: false,
                 header: 'Message',
                 id: 'message',
+                maxSize: 800,
                 meta: {
                     class: 'w-full'
-                }
+                },
+                minSize: 160,
+                size: 320
             },
             {
                 accessorKey: nameof<EventSummaryModel<SummaryTemplateKeys>>('type'),
                 cell: (prop) => formatTextColumn(prop.getValue()),
                 header: 'Type',
                 id: 'type',
+                maxSize: 640,
                 meta: {
                     class: 'w-28'
-                }
+                },
+                minSize: 80,
+                size: 112
             },
             {
                 accessorKey: nameof<EventSummaryModel<SummaryTemplateKeys>>('version'),
@@ -137,27 +160,36 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                 enableSorting: false,
                 header: 'Version',
                 id: 'version',
+                maxSize: 640,
                 meta: {
                     class: 'w-32'
-                }
+                },
+                minSize: 80,
+                size: 128
             },
             {
                 accessorFn: (row) => getSummaryDataValue(row, 'Type'),
                 cell: (prop) => formatTextColumn(prop.getValue()),
                 header: 'Exception Type',
                 id: 'exception_type',
+                maxSize: 800,
                 meta: {
                     class: 'w-36'
-                }
+                },
+                minSize: 112,
+                size: 144
             },
             {
                 accessorFn: (row) => getSource(row),
                 cell: (prop) => formatTextColumn(prop.getValue()),
                 header: 'Source',
                 id: 'source',
+                maxSize: 800,
                 meta: {
                     class: 'w-40'
-                }
+                },
+                minSize: 112,
+                size: 160
             },
             {
                 accessorFn: (row) => getSummaryDataValue(row, 'Name'),
@@ -165,18 +197,24 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                 enableSorting: false,
                 header: 'Name',
                 id: 'name',
+                maxSize: 800,
                 meta: {
                     class: 'w-40'
-                }
+                },
+                minSize: 112,
+                size: 160
             },
             {
                 accessorFn: (row) => getSummaryDataValue(row, 'Level'),
                 cell: (prop) => renderComponent(LogLevel, { level: prop.getValue<string | undefined>() }),
                 header: 'Level',
                 id: 'level',
+                maxSize: 240,
                 meta: {
                     class: 'w-[4.5rem] min-w-[4.5rem] max-w-[4.5rem] px-1 text-center'
-                }
+                },
+                minSize: 64,
+                size: 72
             }
         );
     } else {
@@ -187,9 +225,12 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                 enableSorting: false,
                 header: 'Tags',
                 id: 'tags',
+                maxSize: 800,
                 meta: {
                     class: 'w-52 min-w-52 max-w-52'
-                }
+                },
+                minSize: 120,
+                size: 208
             },
             {
                 accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('status'),
@@ -197,18 +238,24 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                 enableSorting: false,
                 header: 'Status',
                 id: 'status',
+                maxSize: 480,
                 meta: {
                     class: 'w-36'
-                }
+                },
+                minSize: 96,
+                size: 144
             },
             {
                 cell: (prop) => renderComponent(StackUsersSummaryCell, { summary: prop.row.original }),
                 enableSorting: false,
                 header: 'Users',
                 id: 'users',
+                maxSize: 320,
                 meta: {
                     class: 'w-24'
-                }
+                },
+                minSize: 72,
+                size: 96
             },
             {
                 accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('total'),
@@ -216,9 +263,12 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                 enableSorting: false,
                 header: 'Events',
                 id: 'events',
+                maxSize: 320,
                 meta: {
                     class: 'w-24'
-                }
+                },
+                minSize: 72,
+                size: 96
             },
             {
                 accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('first_occurrence'),
@@ -226,9 +276,12 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                 enableSorting: false,
                 header: 'First',
                 id: 'first',
+                maxSize: 480,
                 meta: {
                     class: 'w-36'
-                }
+                },
+                minSize: 96,
+                size: 144
             },
             {
                 accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('last_occurrence'),
@@ -236,9 +289,12 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                 enableSorting: false,
                 header: 'Last',
                 id: 'last',
+                maxSize: 480,
                 meta: {
                     class: 'w-36'
-                }
+                },
+                minSize: 96,
+                size: 144
             }
         );
     }

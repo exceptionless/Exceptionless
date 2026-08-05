@@ -130,6 +130,7 @@ export const InvoiceSchema = object({
   organization_name: string().min(1, "Organization name is required"),
   date: iso.datetime(),
   paid: boolean(),
+  status: string().min(1, "Status is required"),
   total: number(),
   items: array(lazy(() => InvoiceLineItemSchema)),
 });
@@ -139,6 +140,8 @@ export const InvoiceGridModelSchema = object({
   id: string().min(1, "Id is required"),
   date: iso.datetime(),
   paid: boolean(),
+  status: string().min(1, "Status is required"),
+  total: number(),
 });
 export type InvoiceGridModelFormData = Infer<typeof InvoiceGridModelSchema>;
 
@@ -216,8 +219,12 @@ export const NewSavedViewSchema = object({
     .max(100000, "Filter definitions must be at most 100000 characters")
     .nullable()
     .optional(),
-  columns: record(string(), boolean()).nullable().optional(),
-  column_order: array(string()).nullable().optional(),
+  columns: record(
+    string(),
+    lazy(() => SavedViewColumnSettingsSchema),
+  )
+    .nullable()
+    .optional(),
   show_stats: boolean().nullable().optional(),
   show_chart: boolean().nullable().optional(),
   is_private: boolean().nullable().optional(),
@@ -488,9 +495,13 @@ export const PredefinedSavedViewDefinitionSchema = object({
   filter: string().min(1, "Filter is required").nullable().optional(),
   time: string().min(1, "Time is required").nullable().optional(),
   sort: string().min(1, "Sort is required").nullable().optional(),
-  filterDefinitions: unknown().nullable().optional(),
-  columns: record(string(), boolean()).nullable().optional(),
-  columnOrder: array(string()).nullable().optional(),
+  filterDefinitions: unknown().optional(),
+  columns: record(
+    string(),
+    lazy(() => SavedViewColumnSettingsSchema),
+  )
+    .nullable()
+    .optional(),
   showStats: boolean().nullable().optional(),
   showChart: boolean().nullable().optional(),
 });
@@ -525,6 +536,23 @@ export const ResetPasswordModelSchema = object({
 });
 export type ResetPasswordModelFormData = Infer<typeof ResetPasswordModelSchema>;
 
+export const SavedViewColumnSettingsSchema = object({
+  visible: boolean().nullable().optional(),
+  position: int32()
+    .min(0, "Position must be at least 0")
+    .max(49, "Position must be at most 49")
+    .nullable()
+    .optional(),
+  width: int32()
+    .min(48, "Width must be at least 48")
+    .max(1200, "Width must be at most 1200")
+    .nullable()
+    .optional(),
+});
+export type SavedViewColumnSettingsFormData = Infer<
+  typeof SavedViewColumnSettingsSchema
+>;
+
 export const SignupSchema = object({
   name: string().min(1, "Name is required"),
   email: email(),
@@ -537,6 +565,18 @@ export const SignupSchema = object({
     .optional(),
 });
 export type SignupFormData = Infer<typeof SignupSchema>;
+
+export const SourceMapArtifactSchema = object({
+  id: string().min(1, "Id is required"),
+  generated_file_url: url(),
+  source_map_url: url().nullable().optional(),
+  file_name: string().min(1, "File name is required").nullable().optional(),
+  size: int(),
+  is_auto_downloaded: boolean(),
+  created_utc: iso.datetime(),
+  last_used_utc: iso.datetime().nullable().optional(),
+});
+export type SourceMapArtifactFormData = Infer<typeof SourceMapArtifactSchema>;
 
 export const StackSchema = object({
   id: string()
@@ -628,8 +668,12 @@ export const UpdateSavedViewSchema = object({
     .min(1, "Filter definitions is required")
     .nullable()
     .optional(),
-  columns: record(string(), boolean()).nullable().optional(),
-  column_order: array(string()).nullable().optional(),
+  columns: record(
+    string(),
+    lazy(() => SavedViewColumnSettingsSchema),
+  )
+    .nullable()
+    .optional(),
   show_stats: boolean().nullable().optional(),
   show_chart: boolean().nullable().optional(),
 });
@@ -861,8 +905,12 @@ export const ViewSavedViewSchema = object({
     .min(1, "Filter definitions is required")
     .nullable()
     .optional(),
-  columns: record(string(), boolean()).nullable().optional(),
-  column_order: array(string()).nullable().optional(),
+  columns: record(
+    string(),
+    lazy(() => SavedViewColumnSettingsSchema),
+  )
+    .nullable()
+    .optional(),
   show_stats: boolean().nullable().optional(),
   show_chart: boolean().nullable().optional(),
   name: string().min(1, "Name is required"),

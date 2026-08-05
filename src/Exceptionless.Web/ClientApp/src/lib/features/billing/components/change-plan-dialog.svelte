@@ -21,7 +21,7 @@
     import { changePlanMutation, getPlansQuery } from '$features/organizations/api.svelte';
     import { getFormErrorMessages, problemDetailsToFormErrors } from '$features/shared/validation';
     import { Exceptionless } from '@exceptionless/browser';
-    import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { ProblemDetails } from '@foundatiofx/fetchclient';
     import Check from '@lucide/svelte/icons/check';
     import CreditCard from '@lucide/svelte/icons/credit-card';
     import Plus from '@lucide/svelte/icons/plus';

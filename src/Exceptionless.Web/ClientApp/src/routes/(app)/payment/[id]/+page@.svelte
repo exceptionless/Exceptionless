@@ -9,6 +9,7 @@
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
     import { accessToken } from '$features/auth/index.svelte';
+    import { getInvoiceStatusLabel } from '$features/billing/invoice';
     import { getInvoiceQuery } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import Currency from '$features/shared/components/formatters/currency.svelte';
@@ -87,8 +88,8 @@
                         <Table.Row>
                             <Table.Head class="font-semibold">Status</Table.Head>
                             <Table.Cell>
-                                <span class={invoiceQuery.data.paid ? 'font-semibold' : 'text-destructive font-semibold'}>
-                                    {invoiceQuery.data.paid ? 'Paid' : 'Unpaid'}
+                                <span class={['open', 'uncollectible'].includes(invoiceQuery.data.status) ? 'text-destructive font-semibold' : 'font-semibold'}>
+                                    {getInvoiceStatusLabel(invoiceQuery.data.status, invoiceQuery.data.total)}
                                 </span>
                             </Table.Cell>
                         </Table.Row>
@@ -101,7 +102,7 @@
             <div class="bg-muted/50 border-b p-4">
                 <div class="flex items-center gap-2">
                     <Receipt class="size-4" />
-                    <H4 class="mb-0">{invoiceQuery.data.paid ? 'Receipt' : 'Invoice'}</H4>
+                    <H4 class="mb-0">{invoiceQuery.data.total < 0 ? 'Credit' : invoiceQuery.data.paid ? 'Receipt' : 'Invoice'}</H4>
                 </div>
             </div>
 

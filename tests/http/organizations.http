@@ -31,11 +31,13 @@ GET {{apiUrl}}/organizations/{{organizationId}}
 Authorization: Bearer {{token}}
 
 ### Invoices
+# @name invoices
 GET {{apiUrl}}/organizations/{{organizationId}}/invoices
 Authorization: Bearer {{token}}
 
-### Check Name
-GET {{apiUrl}}/organizations/check-name/My New Organization
+### Invoice by Id
+@invoiceId = {{invoices.response.body.$[0].id}}
+GET {{apiUrl}}/organizations/invoice/{{invoiceId}}
 Authorization: Bearer {{token}}
 
 ### Create

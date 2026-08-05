@@ -28,6 +28,7 @@ public class OAuthTokenSerializerTests : TestWithServices
             AccessTokenHash = OAuthService.CreateTokenHash("serializer-access-token"),
             RefreshTokenHash = OAuthService.CreateTokenHash("serializer-refresh-token"),
             RefreshExpiresUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            RefreshTokenUsedUtc = new DateTime(2025, 12, 1, 0, 0, 0, DateTimeKind.Utc),
             OrganizationIds = ["550000000000000000000001", "550000000000000000000002"],
             Scopes = [AuthorizationRoles.ProjectsRead],
             CreatedBy = "660000000000000000000001",
@@ -45,6 +46,7 @@ public class OAuthTokenSerializerTests : TestWithServices
         Assert.Equal(OAuthService.CreateTokenHash("serializer-access-token"), result.AccessTokenHash);
         Assert.Equal(OAuthService.CreateTokenHash("serializer-refresh-token"), result.RefreshTokenHash);
         Assert.Equal(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), result.RefreshExpiresUtc);
+        Assert.Equal(new DateTime(2025, 12, 1, 0, 0, 0, DateTimeKind.Utc), result.RefreshTokenUsedUtc);
         Assert.Contains("550000000000000000000001", result.OrganizationIds);
         Assert.Contains("550000000000000000000002", result.OrganizationIds);
         Assert.Contains(AuthorizationRoles.ProjectsRead, result.Scopes);

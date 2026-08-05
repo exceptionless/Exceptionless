@@ -40,6 +40,11 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     public string? StripeCustomerId { get; set; }
 
     /// <summary>
+    /// Stripe subscription that currently owns this organization's paid billing state.
+    /// </summary>
+    public string? StripeSubscriptionId { get; set; }
+
+    /// <summary>
     /// Billing plan id that the organization belongs to.
     /// </summary>
     [Required]
@@ -69,6 +74,12 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     /// Date the billing information was last changed.
     /// </summary>
     public DateTime BillingChangeDate { get; set; }
+
+    /// <summary>
+    /// UTC source timestamp of the newest Stripe subscription event applied to this organization.
+    /// Null for a provider-reconciled owner whose next event must be refreshed before establishing a new event watermark.
+    /// </summary>
+    public DateTime? StripeSubscriptionEventDate { get; set; }
 
     /// <summary>
     /// User id that the billing information was last changed by.
