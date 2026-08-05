@@ -45,11 +45,8 @@ public partial record SavedView : IOwnedByOrganizationWithIdentity, IHaveDates
     [MaxLength(MaxFilterDefinitionsLength)]
     public string? FilterDefinitions { get; set; }
 
-    /// <summary>Column visibility state per dashboard table, keyed by column id.</summary>
-    public Dictionary<string, bool>? Columns { get; set; }
-
-    /// <summary>Column display order per dashboard table, excluding utility columns.</summary>
-    public List<string>? ColumnOrder { get; set; }
+    /// <summary>Extensible display settings keyed by dashboard column id.</summary>
+    public Dictionary<string, SavedViewColumnSettings>? Columns { get; set; }
 
     /// <summary>Whether dashboard statistic cards are shown for this view. Null means use the default.</summary>
     public bool? ShowStats { get; set; }

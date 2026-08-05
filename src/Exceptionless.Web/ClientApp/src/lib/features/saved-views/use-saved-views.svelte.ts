@@ -1,5 +1,5 @@
 import type { IFilter } from '$comp/faceted-filter';
-import type { ColumnOrderState, ColumnVisibilityState } from '@tanstack/svelte-table';
+import type { ColumnOrderState, ColumnSizingState, ColumnVisibilityState } from '@tanstack/svelte-table';
 
 import { goto } from '$app/navigation';
 import { buildFilterCacheKey, deserializeFilters, serializeFilters } from '$features/events/components/filters/helpers.svelte';
@@ -8,6 +8,7 @@ import { organization } from '$features/organizations/context.svelte';
 import type { SavedView } from './models';
 
 import { getSavedViewsByViewQuery } from './api.svelte';
+import { getSavedColumnOrder, getSavedColumnSizing, getSavedColumnVisibility, savedViewColumnOrderEqual, savedViewColumnSizingEqual } from './column-settings';
 import { savedViewHref, savedViewResolvedSlug } from './slugs';
 
 export interface SavedViewQueryParams {
@@ -25,6 +26,7 @@ export interface UseSavedViewsOptions {
     defaultTime?: null | string;
     filterCacheKey: (filter: null | string) => string;
     getColumnOrder?: () => ColumnOrderState;
+    getColumnSizing?: () => ColumnSizingState;
     getColumnVisibility?: () => ColumnVisibilityState;
     getFilter?: () => null | string;
     getFilterDefinitions?: () => string;
@@ -34,6 +36,7 @@ export interface UseSavedViewsOptions {
     getTime?: () => null | string | undefined;
     queryParams: SavedViewQueryParams;
     setColumnOrder?: (order: ColumnOrderState) => void;
+    setColumnSizing?: (sizing: ColumnSizingState) => void;
     setColumnVisibility?: (visibility: ColumnVisibilityState) => void;
     setShowChart?: (show: boolean) => void;
     setShowStats?: (show: boolean) => void;
@@ -96,10 +99,6 @@ export function hasMissingSavedViewSlug(options: {
     slug: string | undefined;
 }): boolean {
     return !!options.slug && !options.activeSavedView && !!options.savedViews && !options.isLoading;
-}
-
-export function hasSavedColumnOrder(columnOrder: null | string[] | undefined): columnOrder is string[] {
-    return !!columnOrder?.length;
 }
 
 export function hasSavedViewColumnChanges(
@@ -185,14 +184,16 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         return undefined;
     });
 
-    function applyColumnState(view: Pick<SavedView, 'column_order' | 'columns'> | undefined): void {
+    function applyColumnState(view: Pick<SavedView, 'columns'> | undefined): void {
         if (options.setColumnVisibility) {
-            options.setColumnVisibility(view?.columns ?? {});
+            options.setColumnVisibility(getSavedColumnVisibility(view));
         }
 
         if (options.setColumnOrder) {
-            options.setColumnOrder(view?.column_order ?? []);
+            options.setColumnOrder(getSavedColumnOrder(view));
         }
+
+        options.setColumnSizing?.(getSavedColumnSizing(view));
     }
 
     function applyDisplayState(view: Pick<SavedView, 'show_chart' | 'show_stats'> | undefined): void {
@@ -277,11 +278,18 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return true;
         }
 
-        if (options.getColumnVisibility && hasSavedViewColumnChanges(options.getColumnVisibility(), view.columns, options.defaultColumnVisibility)) {
+        if (
+            options.getColumnVisibility &&
+            hasSavedViewColumnChanges(options.getColumnVisibility(), getSavedColumnVisibility(view), options.defaultColumnVisibility)
+        ) {
             return true;
         }
 
-        if (options.getColumnOrder && hasSavedColumnOrder(view.column_order) && !columnOrderEqual(options.getColumnOrder(), view.column_order)) {
+        if (options.getColumnOrder && !savedViewColumnOrderEqual(options.getColumnOrder(), view)) {
+            return true;
+        }
+
+        if (options.getColumnSizing && !savedViewColumnSizingEqual(options.getColumnSizing(), view)) {
             return true;
         }
 
@@ -370,18 +378,6 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return savedViewsListQuery.data ?? [];
         }
     };
-}
-
-function columnOrderEqual(a: ColumnOrderState | undefined, b: null | string[] | undefined): boolean {
-    const normalize = (value: null | string[] | undefined) => (value ?? []).filter((columnId) => columnId !== 'select');
-    const aOrder = normalize(a);
-    const bOrder = normalize(b);
-
-    if (aOrder.length !== bOrder.length) {
-        return false;
-    }
-
-    return aOrder.every((columnId, index) => columnId === bOrder[index]);
 }
 
 function normalizeFilterDefinitions(value: null | string | undefined): string {

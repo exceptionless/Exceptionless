@@ -132,11 +132,11 @@ public partial class SavedViewHandler(
 
     public async Task<Result<IReadOnlyCollection<PredefinedSavedViewDefinition>>> Handle(ReplacePredefinedSavedViews message)
     {
-        foreach (var viewType in NewSavedView.ValidViewTypes)
+        foreach (var definition in message.Definitions)
         {
-            var existingViews = await GetSystemPredefinedSavedViewsAsync(viewType);
-            if (existingViews.Count > 0)
-                await repository.RemoveAsync(existingViews.Select(v => v.Id).ToList(), o => o.ImmediateConsistency());
+            var validationError = NewSavedView.ValidateColumns(definition.ViewType, definition.Columns).FirstOrDefault();
+            if (validationError is not null)
+                return Result.Invalid(ValidationError.Create("definitions", validationError.ErrorMessage ?? "Invalid column configuration."));
         }
 
         var savedViews = message.Definitions.Select(definition => new SavedView
@@ -151,8 +151,7 @@ public partial class SavedViewHandler(
                 Time = definition.Time,
                 Sort = definition.Sort,
                 FilterDefinitions = definition.FilterDefinitions is { } filterDefinitions ? JsonSerializer.Serialize(filterDefinitions) : null,
-                Columns = definition.Columns is { } columns ? new Dictionary<string, bool>(columns) : null,
-                ColumnOrder = definition.ColumnOrder?.ToList(),
+                Columns = CopyColumns(definition.Columns),
                 ShowStats = definition.ShowStats,
                 ShowChart = definition.ShowChart,
                 Version = 1
@@ -161,6 +160,13 @@ public partial class SavedViewHandler(
 
         foreach (var savedView in savedViews)
             savedView.PredefinedContentHash = PredefinedSavedViewContentHasher.GetContentHash(savedView);
+
+        foreach (var viewType in NewSavedView.ValidViewTypes)
+        {
+            var existingViews = await GetSystemPredefinedSavedViewsAsync(viewType);
+            if (existingViews.Count > 0)
+                await repository.RemoveAsync(existingViews.Select(v => v.Id).ToList(), o => o.ImmediateConsistency());
+        }
 
         if (savedViews.Count > 0)
             await repository.AddAsync(savedViews, o => o.Cache().ImmediateConsistency());
@@ -377,7 +383,7 @@ public partial class SavedViewHandler(
             return Result.Invalid(ValidationError.Create("filter_definitions", "FilterDefinitions must be a valid JSON array."));
         }
 
-        if (changedNames.Contains(nameof(UpdateSavedView.Columns)) || changedNames.Contains(nameof(UpdateSavedView.ColumnOrder)))
+        if (changedNames.Contains(nameof(UpdateSavedView.Columns)))
         {
             var patchedChanges = new UpdateSavedView();
             changes.Patch(patchedChanges);
@@ -487,12 +493,7 @@ public partial class SavedViewHandler(
         if (changes.Columns is not null && changes.Columns.Count > 50)
             return new ValidationResult("Columns cannot exceed 50 items.", [nameof(UpdateSavedView.Columns)]);
 
-        if (changes.ColumnOrder is not null && changes.ColumnOrder.Count > 50)
-            return new ValidationResult("ColumnOrder cannot exceed 50 items.", [nameof(UpdateSavedView.ColumnOrder)]);
-
-        return NewSavedView.ValidateColumnKeys(viewType, changes.Columns)
-            .Concat(NewSavedView.ValidateColumnOrder(viewType, changes.ColumnOrder))
-            .FirstOrDefault();
+        return NewSavedView.ValidateColumns(viewType, changes.Columns).FirstOrDefault();
     }
 
     // --- Predefined saved views logic ---
@@ -668,8 +669,7 @@ public partial class SavedViewHandler(
             Time = definition.Time,
             Sort = definition.Sort,
             FilterDefinitions = PredefinedSavedViewsDataSeed.GetRawJson(definition.FilterDefinitions),
-            Columns = Copy(definition.Columns),
-            ColumnOrder = definition.ColumnOrder is null ? null : [.. definition.ColumnOrder],
+            Columns = CopyColumns(definition.Columns),
             ShowStats = definition.ShowStats,
             ShowChart = definition.ShowChart,
             Version = 1
@@ -689,8 +689,7 @@ public partial class SavedViewHandler(
         changed |= SetIfChanged(savedView, definition.Time, static (view, value) => view.Time = value, static view => view.Time);
         changed |= SetIfChanged(savedView, definition.Sort, static (view, value) => view.Sort = value, static view => view.Sort);
         changed |= SetIfChanged(savedView, PredefinedSavedViewsDataSeed.GetRawJson(definition.FilterDefinitions), static (view, value) => view.FilterDefinitions = value, static view => view.FilterDefinitions);
-        changed |= SetDictionaryIfChanged(savedView, definition.Columns);
-        changed |= SetListIfChanged(savedView, definition.ColumnOrder);
+        changed |= SetColumnsIfChanged(savedView, definition.Columns);
         changed |= SetIfChanged(savedView, definition.ShowStats, static (view, value) => view.ShowStats = value, static view => view.ShowStats);
         changed |= SetIfChanged(savedView, definition.ShowChart, static (view, value) => view.ShowChart = value, static view => view.ShowChart);
         changed |= SetIfChanged(savedView, 1, static (view, value) => view.Version = value, static view => view.Version);
@@ -797,7 +796,6 @@ public partial class SavedViewHandler(
             Sort = savedView.Sort,
             FilterDefinitions = ParseFilterDefinitions(savedView.FilterDefinitions),
             Columns = savedView.Columns,
-            ColumnOrder = savedView.ColumnOrder,
             ShowStats = savedView.ShowStats,
             ShowChart = savedView.ShowChart
         };
@@ -835,41 +833,30 @@ public partial class SavedViewHandler(
         return true;
     }
 
-    private static bool SetDictionaryIfChanged(SavedView savedView, IReadOnlyDictionary<string, bool>? value)
+    private static bool SetColumnsIfChanged(SavedView savedView, IReadOnlyDictionary<string, SavedViewColumnSettings>? value)
     {
-        if (DictionaryEquals(savedView.Columns, value))
+        if (ColumnsEqual(savedView.Columns, value))
             return false;
 
-        savedView.Columns = Copy(value);
+        savedView.Columns = CopyColumns(value);
         return true;
     }
 
-    private static bool SetListIfChanged(SavedView savedView, IReadOnlyCollection<string>? value)
-    {
-        if ((savedView.ColumnOrder ?? []).SequenceEqual(value ?? []))
-            return false;
+    private static Dictionary<string, SavedViewColumnSettings>? CopyColumns(
+        IReadOnlyDictionary<string, SavedViewColumnSettings>? value)
+        => value?.ToDictionary(entry => entry.Key, entry => entry.Value with { });
 
-        savedView.ColumnOrder = value is null ? null : [.. value];
-        return true;
-    }
-
-    private static Dictionary<string, bool>? Copy(IReadOnlyDictionary<string, bool>? value)
-    {
-        return value is null ? null : value.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-    }
-
-    private static bool DictionaryEquals(IReadOnlyDictionary<string, bool>? left, IReadOnlyDictionary<string, bool>? right)
+    private static bool ColumnsEqual(
+        IReadOnlyDictionary<string, SavedViewColumnSettings>? left,
+        IReadOnlyDictionary<string, SavedViewColumnSettings>? right)
     {
         if (left is null)
             return right is null;
 
-        if (right is null)
+        if (right is null || left.Count != right.Count)
             return false;
 
-        if (left.Count != right.Count)
-            return false;
-
-        return left.All(kvp => right.TryGetValue(kvp.Key, out var value) && value == kvp.Value);
+        return left.All(entry => right.TryGetValue(entry.Key, out var value) && entry.Value == value);
     }
 
     private static string GetUniqueSlug(string slug, IReadOnlyCollection<SavedView> existingViews, string? excludingId)
