@@ -5,7 +5,7 @@ import { page } from '$app/state';
 import { env } from '$env/dynamic/public';
 import { normalizePath, normalizeRouteId } from '$lib/telemetry';
 import { Exceptionless, guid, toError } from '@exceptionless/browser';
-import { useMiddleware } from '@exceptionless/fetchclient';
+import { useMiddleware } from '@foundatiofx/fetchclient';
 
 // If any of these are set in local storage, use them instead of the build-time environment variables.
 // This allows you to target other environments from your browser without a rebuild.

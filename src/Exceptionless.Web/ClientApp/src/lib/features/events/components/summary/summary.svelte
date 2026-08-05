@@ -19,42 +19,43 @@
     import StackSummary from './stack-summary.svelte';
 
     interface Props {
+        linkToDetails?: boolean;
         showStatus?: boolean;
         showType?: boolean;
         summary: SummaryModel<SummaryTemplateKeys>;
     }
 
-    let { showStatus = true, showType = true, summary }: Props = $props();
+    let { linkToDetails = true, showStatus = true, showType = true, summary }: Props = $props();
     let showBadge: boolean = $derived(showStatus && 'status' in summary && summary.status !== 'open');
     let badgeStatus = $derived<StackStatus>(('status' in summary && (summary.status as StackStatus)) || StackStatus.Open);
 </script>
 
 {#if summary.template_key === 'event-summary'}
-    <EventSummary {showType} {summary} />
+    <EventSummary {linkToDetails} {showType} {summary} />
 {:else if summary.template_key === 'stack-summary'}
     <StackSummary {badgeStatus} {showBadge} {showType} {summary} />
 {:else if summary.template_key === 'event-simple-summary'}
-    <EventSimpleSummary {summary} />
+    <EventSimpleSummary {linkToDetails} {summary} />
 {:else if summary.template_key === 'stack-simple-summary'}
     <StackSimpleSummary {badgeStatus} {showBadge} {summary} />
 {:else if summary.template_key === 'event-error-summary'}
-    <EventErrorSummary {summary} />
+    <EventErrorSummary {linkToDetails} {summary} />
 {:else if summary.template_key === 'stack-error-summary'}
     <StackErrorSummary {badgeStatus} {showBadge} {summary} />
 {:else if summary.template_key === 'event-session-summary'}
-    <EventSessionSummary {showType} {summary} />
+    <EventSessionSummary {linkToDetails} {showType} {summary} />
 {:else if summary.template_key === 'stack-session-summary'}
     <StackSessionSummary {badgeStatus} {showBadge} {showType} {summary} />
 {:else if summary.template_key === 'event-notfound-summary'}
-    <EventNotFoundSummary {showType} {summary} />
+    <EventNotFoundSummary {linkToDetails} {showType} {summary} />
 {:else if summary.template_key === 'stack-notfound-summary'}
     <StackNotFoundSummary {badgeStatus} {showBadge} {showType} {summary} />
 {:else if summary.template_key === 'event-feature-summary'}
-    <EventFeatureSummary {showType} {summary} />
+    <EventFeatureSummary {linkToDetails} {showType} {summary} />
 {:else if summary.template_key === 'stack-feature-summary'}
     <StackFeatureSummary {badgeStatus} {showBadge} {showType} {summary} />
 {:else if summary.template_key === 'event-log-summary'}
-    <EventLogSummary {showType} {summary} />
+    <EventLogSummary {linkToDetails} {showType} {summary} />
 {:else}
     <StackLogSummary {badgeStatus} {showBadge} {showType} {summary} />
 {/if}

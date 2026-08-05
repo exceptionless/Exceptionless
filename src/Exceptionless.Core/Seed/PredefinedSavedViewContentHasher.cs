@@ -20,7 +20,6 @@ public static class PredefinedSavedViewContentHasher
             savedView.Sort,
             savedView.FilterDefinitions,
             savedView.Columns,
-            savedView.ColumnOrder,
             savedView.ShowStats,
             savedView.ShowChart);
     }
@@ -43,7 +42,6 @@ public static class PredefinedSavedViewContentHasher
                     definition.Sort,
                     PredefinedSavedViewsDataSeed.GetRawJson(definition.FilterDefinitions),
                     definition.Columns,
-                    definition.ColumnOrder,
                     definition.ShowStats,
                     definition.ShowChart)
             });
@@ -59,8 +57,7 @@ public static class PredefinedSavedViewContentHasher
         string? time,
         string? sort,
         string? filterDefinitions,
-        IReadOnlyDictionary<string, bool>? columns,
-        IReadOnlyCollection<string>? columnOrder,
+        IReadOnlyDictionary<string, SavedViewColumnSettings>? columns,
         bool? showStats,
         bool? showChart)
     {
@@ -74,7 +71,6 @@ public static class PredefinedSavedViewContentHasher
             sort,
             filterDefinitions = CanonicalizeFilterDefinitions(filterDefinitions),
             Columns = columns?.OrderBy(column => column.Key, StringComparer.Ordinal),
-            columnOrder,
             showStats,
             showChart
         };

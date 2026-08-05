@@ -10,7 +10,7 @@
     import { runMaintenanceJobMutation } from '$features/admin/api.svelte';
     import RunMaintenanceJobDialog from '$features/admin/components/dialogs/run-maintenance-job-dialog.svelte';
     import { maintenanceActions } from '$features/admin/models';
-    import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { ProblemDetails } from '@foundatiofx/fetchclient';
     import Play from '@lucide/svelte/icons/play';
     import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
     import { toast } from 'svelte-sonner';
