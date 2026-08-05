@@ -39,6 +39,10 @@ Authorization: Bearer {{token}}
 GET {{apiUrl}}/stacks?organization={{organizationId}}&filter=tag:production
 Authorization: Bearer {{token}}
 
+### Get By Project With Premium Filter (returns 426 for a free organization)
+GET {{apiUrl}}/projects/{{projectId}}/stacks?filter=title:timeout
+Authorization: Bearer {{token}}
+
 ### Get By Organization Id with Filter (e.g., stacks with type and status)
 GET {{apiUrl}}/stacks?organization={{organizationId}}&filter=type:error%20status:open
 Authorization: Bearer {{token}}

@@ -1,8 +1,6 @@
 <script lang="ts">
     import type { GetEventsParams } from '$features/events/api.svelte';
-    import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
 
-    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import * as DataTable from '$comp/data-table';
     import DelayedRender from '$comp/delayed-render.svelte';
@@ -26,6 +24,7 @@
         updateFilterCache
     } from '$features/events/components/filters/helpers.svelte';
     import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
+    import { buildEventDetailsHref, type EventSummaryModel, type SummaryTemplateKeys } from '$features/events/components/summary/index';
     import { defaultEventColumnVisibility, getColumns } from '$features/events/components/table/options.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
@@ -55,7 +54,7 @@
     }
 
     function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
-        return resolve('/(app)/event/[eventId=objectid]', { eventId: row.id });
+        return buildEventDetailsHref(row.id);
     }
 
     const DEFAULT_FILTERS = [new ProjectFilter([]), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
@@ -86,10 +85,12 @@
         defaultFilter: DEFAULT_PARAMS.filter,
         filterCacheKey,
         getColumnOrder: () => table.state.columnOrder,
+        getColumnSizing: () => table.state.columnSizing,
         getColumnVisibility: () => table.state.columnVisibility,
         getFilterDefinitions: () => serializeFilters(filters ?? []),
         queryParams,
         setColumnOrder: (v) => table.setColumnOrder(v),
+        setColumnSizing: (v) => table.setColumnSizing(v),
         setColumnVisibility: (v) => table.setColumnVisibility(v),
         updateFilterCache,
         view: VIEW
@@ -193,6 +194,7 @@
                 return options;
             },
             defaultColumnVisibility: defaultEventColumnVisibility,
+            enableColumnResizing: true,
             paginationStrategy: 'cursor',
             get queryData() {
                 return queryData;
@@ -206,6 +208,7 @@
         }),
         (state) => ({
             columnOrder: state.columnOrder,
+            columnSizing: state.columnSizing,
             columnVisibility: state.columnVisibility
         })
     );
@@ -238,6 +241,7 @@
         }
 
         const response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, {
+            expectedStatusCodes: [426],
             params: {
                 ...eventsQueryParameters,
                 before
@@ -326,6 +330,7 @@
                 <SavedViewPicker
                     activeSavedView={savedViewsState.activeSavedView}
                     columnOrder={table.state.columnOrder}
+                    columnSizing={table.state.columnSizing}
                     columnVisibility={table.state.columnVisibility}
                     filters={filters ?? []}
                     isModified={savedViewsState.isModified}

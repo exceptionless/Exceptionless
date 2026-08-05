@@ -35,7 +35,6 @@ module.exports = {
             "is-*",
             "lines",
             "match",
-            "organization-name-available-validator",
             "payments-*",
             "project-name-available-validator",
             "refresh-*",
