@@ -337,6 +337,33 @@ public sealed class UsageServiceTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task IncrementTotalAsync_WhenHourlyLimitCrosses_PublishesAfterThrottleStateIsSet()
+    {
+        // Arrange
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+        int eventsLeftInBucket = await _usageService.GetEventsLeftAsync(organization.Id);
+        var throttleState = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var messageBus = GetService<IMessageBus>();
+        await messageBus.SubscribeAsync<PlanOverage>(async overage =>
+        {
+            if (overage.OrganizationId != organization.Id || !overage.IsHourly)
+            {
+                return;
+            }
+
+            var usage = await _usageService.GetUsageAsync(organization.Id);
+            throttleState.TrySetResult(usage.IsThrottled);
+        }, TestCancellationToken);
+
+        // Act
+        await _usageService.IncrementTotalAsync(organization.Id, project.Id, eventsLeftInBucket);
+
+        // Assert
+        Assert.True(await throttleState.Task.WaitAsync(TimeSpan.FromSeconds(5), TestCancellationToken));
+    }
+
+    [Fact]
     public async Task CanIncrementOverageUsageAsync()
     {
         var messageBus = GetService<IMessageBus>();

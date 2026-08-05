@@ -23,6 +23,12 @@ export async function invalidateOrganizationQueries(queryClient: QueryClient, me
     }
 }
 
+export async function invalidatePlanOverageQueries(queryClient: QueryClient, message: WebSocketMessageValue<'PlanOverage'>) {
+    await queryClient.invalidateQueries({ queryKey: queryKeys.id(message.organization_id, undefined) });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.id(message.organization_id, 'stats') });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) });
+}
+
 export const queryKeys = {
     adminSearch: (params: GetAdminSearchOrganizationsParams) => [...queryKeys.list(params.mode), 'admin', { ...params }] as const,
     changePlan: (id: string | undefined) => [...queryKeys.type, id, 'change-plan'] as const,

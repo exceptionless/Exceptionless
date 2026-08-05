@@ -929,6 +929,7 @@ public class OrganizationHandler(
             currentUsage.Discarded = realTimeUsage.CurrentUsage.Discarded;
             currentUsage.TooBig = realTimeUsage.CurrentUsage.TooBig;
             currentUsage.Deleted = realTimeUsage.CurrentUsage.Deleted;
+            viewOrganization.IsOverMonthlyLimit = currentUsage.Limit >= 0 && currentUsage.Total >= currentUsage.Limit;
 
             var currentHourUsage = viewOrganization.GetCurrentHourlyUsage(timeProvider);
             currentHourUsage.Total = realTimeUsage.CurrentHourUsage.Total;
