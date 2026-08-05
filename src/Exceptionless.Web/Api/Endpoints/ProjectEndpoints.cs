@@ -480,8 +480,8 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapGet("projects/check-name", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? name = null, string? organizationId = null)
-            => (await mediator.InvokeAsync<Result>(new ProjectMessages.CheckProjectName(name, organizationId, httpContext))).ToHttpResult(resultMapper))
+        group.MapGet("organizations/{organizationId:objectid}/projects/check-name", async (string organizationId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? name = null, string? projectId = null)
+            => (await mediator.InvokeAsync<Result>(new ProjectMessages.CheckProjectName(name, organizationId, projectId, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status201Created)
         .Produces(StatusCodes.Status204NoContent)
@@ -489,27 +489,12 @@ public static class ProjectEndpoints
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
                 ["name"] = "The project name to check.",
+                ["organizationId"] = "The organization identifier that scopes the name check.",
+                ["projectId"] = "The current project identifier to exclude from the uniqueness check.",
             },
             ResponseDescriptions = new() {
-                ["201"] = "The project name is available.",
-                ["204"] = "The project name is not available.",
-            }
-        });
-
-        group.MapGet("organizations/{organizationId:objectid}/projects/check-name", async (string organizationId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? name = null)
-            => (await mediator.InvokeAsync<Result>(new ProjectMessages.CheckProjectName(name, organizationId, httpContext))).ToHttpResult(resultMapper))
-        .RequireAuthorization(AuthorizationRoles.UserPolicy)
-        .Produces(StatusCodes.Status201Created)
-        .Produces(StatusCodes.Status204NoContent)
-        .WithSummary("Check for unique name")
-        .WithMetadata(new EndpointDocumentation {
-            ParameterDescriptions = new() {
-                ["name"] = "The project name to check.",
-                ["organizationId"] = "If set the check name will be scoped to a specific organization.",
-            },
-            ResponseDescriptions = new() {
-                ["201"] = "The project name is available.",
-                ["204"] = "The project name is not available.",
+                ["201"] = "The project name is not available.",
+                ["204"] = "The project name is available.",
             }
         });
 

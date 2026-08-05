@@ -3,9 +3,11 @@ import { expect, type Page, type TestInfo } from '@playwright/test';
 import type { E2EApiClient } from '../fixtures/api-client';
 import type { E2EScenario } from '../fixtures/e2e-test';
 
-import { createRunName, E2E_ORGANIZATION_NAME_PREFIX } from '../fixtures/e2e-test';
+import { createReferenceId, createRunName, E2E_ORGANIZATION_NAME_PREFIX, E2E_TEST_PASSWORD } from '../fixtures/e2e-test';
 import { runCleanupStep, throwIfCleanupFailed } from './cleanup';
+import { seedRepresentativeEvent } from './event-data';
 import {
+    escapeRegExp,
     getIdFromUrl,
     getProjectTokenFromConfigurePage,
     getUserToken,
@@ -14,10 +16,8 @@ import {
     selectProjectType,
     waitForEmailValidation
 } from './page-helpers';
-import { createRepresentativeEvent } from './synthetic-event';
 
 const FIXED_VERSION = '1.0.0';
-const PASSWORD = 'tester';
 
 export class ExceptionlessE2EJourney {
     email: string;
@@ -61,7 +61,7 @@ export class ExceptionlessE2EJourney {
         this.email = `playwright-${this.run}@exceptionless.test`.toLowerCase();
         this.organizationName = `${E2E_ORGANIZATION_NAME_PREFIX} ${this.run}`;
         this.projectName = `Playwright Project ${this.run}`;
-        this.referenceId = `pw-e2e-${this.run}`;
+        this.referenceId = createReferenceId(this.run);
         this.message = `Playwright onboarding event ${this.run}`;
     }
 
@@ -179,17 +179,21 @@ export class ExceptionlessE2EJourney {
 
     async markStackFixed(version = FIXED_VERSION): Promise<void> {
         expect(this.stackId).toBeTruthy();
-        expect(this.userToken).toBeTruthy();
 
         await this.expectEventDetails();
         await this.page.getByRole('button', { exact: true, name: 'Open' }).click();
         await this.page.getByRole('menuitem', { name: 'Fixed' }).click();
         await expect(this.page.getByRole('heading', { name: 'Mark Stack As Fixed' })).toBeVisible();
         await this.page.getByLabel('Version', { exact: true }).fill(version);
-        await this.page.getByRole('button', { name: 'Mark Stack Fixed' }).click();
 
-        await expect.poll(async () => (await this.e2eApi.getStack(this.userToken!, this.stackId!)).status, { timeout: 30_000 }).toBe('fixed');
+        await this.page.getByRole('button', { name: 'Mark Stack Fixed' }).click();
         await expect(this.page.getByRole('button', { name: 'Fixed' })).toBeVisible({ timeout: 30_000 });
+
+        await expect(async () => {
+            await this.page.reload();
+            await expect(this.page.getByRole('button', { name: 'Fixed' })).toBeVisible({ timeout: 5_000 });
+            await expect(getVisibleText(this.page, `Fixed in ${version}`)).toBeVisible({ timeout: 5_000 });
+        }).toPass({ intervals: [1_000, 2_000, 5_000], timeout: 30_000 });
     }
 
     async onboardProject(): Promise<void> {
@@ -203,7 +207,7 @@ export class ExceptionlessE2EJourney {
         await this.page.getByLabel('Name', { exact: true }).fill(this.userName);
         await this.page.getByLabel('Email', { exact: true }).fill(this.email);
         await waitForEmailValidation(this.page);
-        await this.page.getByLabel('Password', { exact: true }).fill(PASSWORD);
+        await this.page.getByLabel('Password', { exact: true }).fill(E2E_TEST_PASSWORD);
         await this.page.getByRole('button', { name: 'Create My Account' }).click();
 
         this.userToken = await getUserToken(this.page);
@@ -230,18 +234,12 @@ export class ExceptionlessE2EJourney {
         expect(this.projectToken).toBeTruthy();
         expect(this.userToken).toBeTruthy();
 
-        await this.e2eApi.submitEvent(
-            this.projectId!,
-            this.projectToken!,
-            createRepresentativeEvent({
-                appUrl: this.e2eApi.environment.appUrl,
-                message: this.message,
-                referenceId: this.referenceId,
-                runId: this.e2eApi.environment.runId
-            })
-        );
-
-        const event = await this.e2eApi.pollForEventByReference(this.userToken!, this.projectId!, this.referenceId);
+        const event = await seedRepresentativeEvent(this.e2eApi, this.userToken!, {
+            message: this.message,
+            projectId: this.projectId!,
+            projectToken: this.projectToken!,
+            referenceId: this.referenceId
+        });
         expect(event.reference_id).toBe(this.referenceId);
         expect(event.stack_id).toBeTruthy();
 
@@ -265,10 +263,6 @@ export class ExceptionlessE2EJourney {
 
         return organization.id;
     }
-}
-
-function escapeRegExp(value: string): string {
-    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function isE2EScenario(value: E2EScenario | TestInfo): value is E2EScenario {

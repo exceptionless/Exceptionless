@@ -2,10 +2,12 @@ global:
   cloud: aks
   clusterName: ex-k8s-v6
   deploymentEnvironment: prod
-otelCollectorEndpoint: ingest.us.signoz.cloud:443
+otelCollectorEndpoint: https://ingest.us.signoz.cloud:443
 otelInsecure: false
 presets:
   otlpExporter:
+    enabled: false
+  otlphttpExporter:
     enabled: true
   loggingExporter:
     enabled: false
@@ -26,6 +28,24 @@ presets:
         static_configs:
           - targets:
               - es-exporter-prometheus-elasticsearch-exporter.ex-prod:9108
+otelDeployment:
+  config:
+    processors:
+      filter/drop_es_per_index:
+        error_mode: ignore
+        metrics:
+          datapoint:
+            - 'IsMatch(metric.name, "^elasticsearch_") and attributes["index"] != nil'
+      filter/drop_redis_latency:
+        error_mode: ignore
+        metrics:
+          metric:
+            - 'IsMatch(name, "^redis_commands_latencies_usec")'
+            - 'IsMatch(name, "^redis_latency_percentiles_usec")'
+    service:
+      pipelines:
+        metrics/scraper:
+          processors: [resource/deployenv, resourcedetection, filter/drop_es_per_index, filter/drop_redis_latency, batch]
 otelAgent:
   config:
     exporters:
@@ -33,9 +53,43 @@ otelAgent:
         endpoint: http://apm.elastic-system.svc:8200
         tls:
           insecure: true
+    processors:
+      filter/drop_unused_metrics:
+        error_mode: ignore
+        metrics:
+          exclude:
+            match_type: strict
+            metric_names:
+              - http.client.request.duration
+              - http.client.request.time_in_queue
+              - http.client.connection.duration
+              - http.client.open_connections
+              - http.client.active_requests
+              - dns.lookup.duration
+              - kestrel.connection.duration
+              - aspnetcore.authentication.authenticate.duration
+              - aspnetcore.routing.match_attempts
+              - dotnet.exceptions
+              - dotnet.gc.collections
+              - dotnet.gc.last_collection.heap.size
+              - dotnet.gc.last_collection.heap.fragmentation.size
+              - dotnet.process.cpu.time
+              - foundatio.lock.wait.time
+              - ex.posts.size
+              - ex.events.parse.jsoneventparserplugin
+              - ex.events.field.count
+              - ex.eventpipeline.markascriticalaction
+      filter/drop_cache_spans:
+        error_mode: ignore
+        traces:
+          span:
+            - 'attributes["db.system"] == "redis" and status.code != STATUS_CODE_ERROR and (resource.attributes["service.name"] == "exceptionless-web" or resource.attributes["service.name"] == "job-event-posts")'
+            - 'name == "Message: EntityChanged"'
     service:
       pipelines:
         traces:
-          exporters: [otlp, otlp/elastic]
+          processors: [filter/drop_cache_spans, batch]
+          exporters: [otlphttp, otlp/elastic]
         metrics:
-          exporters: [otlp, otlp/elastic]
+          processors: [filter/drop_unused_metrics, batch]
+          exporters: [otlphttp, otlp/elastic]

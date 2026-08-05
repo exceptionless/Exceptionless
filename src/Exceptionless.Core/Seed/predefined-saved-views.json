@@ -17,11 +17,11 @@
             }
         ],
         "columns": {
-            "level": false,
-            "message": false,
-            "name": false,
-            "source": false,
-            "type": false
+            "level": { "visible": false },
+            "message": { "visible": false },
+            "name": { "visible": false },
+            "source": { "visible": false },
+            "type": { "visible": false }
         },
         "showStats": true,
         "showChart": true
@@ -56,12 +56,12 @@
             }
         ],
         "columns": {
-            "exception_type": false,
-            "level": false,
-            "message": false,
-            "name": false,
-            "source": false,
-            "type": false
+            "exception_type": { "visible": false },
+            "level": { "visible": false },
+            "message": { "visible": false },
+            "name": { "visible": false },
+            "source": { "visible": false },
+            "type": { "visible": false }
         },
         "showStats": true,
         "showChart": true
@@ -96,12 +96,12 @@
             }
         ],
         "columns": {
-            "exception_type": false,
-            "level": false,
-            "message": false,
-            "name": false,
-            "source": false,
-            "type": false
+            "exception_type": { "visible": false },
+            "level": { "visible": false },
+            "message": { "visible": false },
+            "name": { "visible": false },
+            "source": { "visible": false },
+            "type": { "visible": false }
         },
         "showStats": true,
         "showChart": true

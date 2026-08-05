@@ -27,6 +27,7 @@
     import type { NewSavedView, SavedView, UpdateSavedView } from '../models';
 
     import { deleteSavedView, markSavedViewDeleted, patchSavedView, postSavedView, restoreDeletedSavedView } from '../api.svelte';
+    import { buildColumnSettings } from '../column-settings';
     import ColumnManagementDialog from './column-management-dialog.svelte';
     import DeleteViewDialog from './delete-view-dialog.svelte';
     import RenameViewDialog from './rename-view-dialog.svelte';
@@ -45,6 +46,7 @@
     interface Props {
         activeSavedView?: SavedView;
         columnOrder?: string[];
+        columnSizing?: Record<string, number>;
         columnVisibility?: Record<string, boolean>;
         filters: IFilter[];
         isModified: boolean;
@@ -65,6 +67,7 @@
     let {
         activeSavedView,
         columnOrder,
+        columnSizing,
         columnVisibility,
         filters,
         isModified,
@@ -154,11 +157,13 @@
         isRenameDialogOpen = true;
     }
 
-    function getSavedColumnOrder(): string[] | undefined {
-        const currentColumnIds = new Set(table.getAllLeafColumns().map((column) => column.id));
-        const savedColumnOrder = (columnOrder ?? []).filter((columnId) => columnId !== 'select' && currentColumnIds.has(columnId));
-
-        return savedColumnOrder.length > 0 ? savedColumnOrder : undefined;
+    function getSavedColumnSettings() {
+        return buildColumnSettings(
+            table.getAllLeafColumns().map((column) => column.id),
+            columnOrder ?? [],
+            columnVisibility ?? {},
+            columnSizing ?? {}
+        );
     }
 
     async function openDeleteDialog(savedView: SavedView) {
@@ -178,10 +183,8 @@
         }
 
         const filterDefinitions = serializeFilters(filters);
-        const savedColumnOrder = getSavedColumnOrder();
         const body: NewSavedView = {
-            column_order: savedColumnOrder,
-            columns: columnVisibility,
+            columns: getSavedColumnSettings(),
             filter: currentFilterString || undefined,
             filter_definitions: filterDefinitions,
             is_private: isPrivate || undefined,
@@ -221,8 +224,7 @@
 
     function getUpdateBody(): UpdateSavedView {
         return {
-            column_order: getSavedColumnOrder() ?? null,
-            columns: columnVisibility,
+            columns: getSavedColumnSettings(),
             filter: currentFilterString || null,
             filter_definitions: serializeFilters(filters),
             show_chart: showChart,
