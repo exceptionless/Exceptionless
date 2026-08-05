@@ -8,7 +8,7 @@ namespace Exceptionless.Core.Queries.Validation;
 
 public sealed class PersistentEventQueryValidator : AppQueryValidator
 {
-    private readonly HashSet<string> _freeQueryFields = new(StringComparer.OrdinalIgnoreCase) {
+    private static readonly HashSet<string> _freeQueryFields = new(StringComparer.OrdinalIgnoreCase) {
             "date",
             "type",
             EventIndex.Alias.ReferenceId,
@@ -93,6 +93,11 @@ public sealed class PersistentEventQueryValidator : AppQueryValidator
 
     public PersistentEventQueryValidator(ExceptionlessElasticConfiguration configuration, ILoggerFactory loggerFactory) : base(configuration.Events.QueryParser, loggerFactory) { }
 
+    internal static bool IsFreeQueryField(string field)
+    {
+        return _freeQueryFields.Contains(field);
+    }
+
     protected override QueryProcessResult ApplyQueryRules(QueryValidationResult result)
     {
         bool hasInvalidReferenceField = result.ReferencedFields.Any(field => field.StartsWith("ref.", StringComparison.OrdinalIgnoreCase));
@@ -100,7 +105,7 @@ public sealed class PersistentEventQueryValidator : AppQueryValidator
         {
             IsValid = result.IsValid && !hasInvalidReferenceField,
             Message = hasInvalidReferenceField ? "Invalid reference field name" : null,
-            UsesPremiumFeatures = !result.ReferencedFields.All(_freeQueryFields.Contains)
+            UsesPremiumFeatures = !result.ReferencedFields.All(IsFreeQueryField)
         };
     }
 

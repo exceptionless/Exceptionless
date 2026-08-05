@@ -1,5 +1,5 @@
 import type { OAuthGrant } from '$features/users/models';
-import type { ProblemDetails } from '@exceptionless/fetchclient';
+import type { ProblemDetails } from '@foundatiofx/fetchclient';
 import type { CreateQueryResult } from '@tanstack/svelte-query';
 
 import { getSharedTableOptions, type TableMemoryPagingParameters } from '$features/shared/table.svelte';

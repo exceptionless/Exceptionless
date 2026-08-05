@@ -4,7 +4,7 @@ import type { CountResult, WorkInProgressResult } from '$shared/models';
 import { accessToken } from '$features/auth/index.svelte';
 import { queryKeys as stackQueryKeys } from '$features/stacks/api.svelte';
 import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
-import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, keepPreviousData, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
 import type { EventSummaryModel, SummaryTemplateKeys } from './components/summary/index';
@@ -29,7 +29,10 @@ export async function invalidatePersistentEventQueries(queryClient: QueryClient,
     }
 
     if (!id && !stack_id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.type });
+        await queryClient.invalidateQueries({
+            predicate: (query) => !isOrganizationEventsQueryKey(query.queryKey),
+            queryKey: queryKeys.type
+        });
     }
 }
 
@@ -40,6 +43,7 @@ export const queryKeys = {
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
     organizations: (id: string | undefined) => [...queryKeys.type, 'organizations', id] as const,
     organizationsCount: (id: string | undefined, params?: GetOrganizationCountRequest['params']) => [...queryKeys.organizations(id), 'count', params] as const,
+    organizationsEvents: (id: string | undefined, params?: GetEventsParams) => [...queryKeys.organizations(id), 'events', params] as const,
     projects: (id: string | undefined) => [...queryKeys.type, 'projects', id] as const,
     projectsCount: (id: string | undefined, params?: GetProjectCountRequest['params']) => [...queryKeys.projects(id), 'count', params] as const,
     sessionEvents: (id: string | undefined, projectId?: string | undefined, params?: GetSessionEventsRequest['params']) =>
@@ -118,10 +122,18 @@ export interface GetOrganizationCountRequest {
     params?: {
         aggregations?: string;
         filter?: string;
-        mode?: 'stack_new';
+        mode?: GetEventsMode;
         offset?: string;
         time?: string;
     };
+    route: {
+        organizationId: string | undefined;
+    };
+}
+
+export interface GetOrganizationEventsRequest {
+    enabled?: () => boolean;
+    params?: GetEventsParams;
     route: {
         organizationId: string | undefined;
     };
@@ -320,6 +332,28 @@ export function getOrganizationCountQuery(request: GetOrganizationCountRequest) 
     }));
 }
 
+export function getOrganizationEventsQuery(request: GetOrganizationEventsRequest) {
+    return createQuery<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>, ProblemDetails>(() => {
+        const organizationId = request.route.organizationId;
+        const params = request.params ? { ...request.params } : undefined;
+
+        return {
+            enabled: () => !!accessToken.current && !!organizationId && (request.enabled?.() ?? true),
+            placeholderData: keepPreviousData,
+            queryFn: async ({ signal }: { signal: AbortSignal }) => {
+                const client = useFetchClient();
+                return await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organizationId}/events`, {
+                    params: params as Record<string, unknown>,
+                    signal
+                });
+            },
+            queryKey: queryKeys.organizationsEvents(organizationId, params),
+            refetchOnWindowFocus: false,
+            staleTime: 0
+        };
+    });
+}
+
 /**
  * Get session count with aggregations for stats and chart data.
  * Uses aggregation: avg:value cardinality:user date:(date^offset cardinality:user)
@@ -448,15 +482,25 @@ export function getStackEventsQuery(request: GetStackEventsRequest) {
 }
 
 export function schedulePersistentEventDeleteReconciliation(queryClient: QueryClient, eventTarget: EventTarget = document) {
+    const invalidateQueryBackedDetails = () =>
+        queryClient.invalidateQueries({
+            predicate: (query) => !isOrganizationEventsQueryKey(query.queryKey),
+            queryKey: queryKeys.type
+        });
+
     eventTarget.dispatchEvent(new Event(PERSISTENT_EVENT_DELETE_RECONCILE_EVENT));
     void queryClient.invalidateQueries({ queryKey: stackQueryKeys.type });
     setTimeout(() => {
-        void queryClient.invalidateQueries({ queryKey: queryKeys.type });
+        void invalidateQueryBackedDetails();
         void queryClient.invalidateQueries({ queryKey: stackQueryKeys.type });
     }, PERSISTENT_EVENT_DELETE_RECONCILE_DELAY);
     setTimeout(() => {
         eventTarget.dispatchEvent(new Event(PERSISTENT_EVENT_DELETE_RECONCILE_EVENT));
-        void queryClient.invalidateQueries({ queryKey: queryKeys.type });
+        void invalidateQueryBackedDetails();
         void queryClient.invalidateQueries({ queryKey: stackQueryKeys.type });
     }, PERSISTENT_EVENT_DELETE_RECONCILE_RETRY_DELAY);
+}
+
+function isOrganizationEventsQueryKey(queryKey: readonly unknown[]): boolean {
+    return queryKey[0] === queryKeys.type[0] && queryKey[1] === 'organizations' && queryKey[3] === 'events';
 }
