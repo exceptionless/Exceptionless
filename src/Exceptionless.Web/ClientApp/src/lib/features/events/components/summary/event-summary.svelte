@@ -1,15 +1,15 @@
 <script lang="ts">
-    import { resolve } from '$app/paths';
-    import { A } from '$comp/typography';
-
     import type { EventSummaryModel, SummaryModel, SummaryTemplateKeys } from './index';
 
+    import EventSummaryLink from './event-summary-link.svelte';
+
     interface EventFeatureSummaryProps {
+        linkToDetails?: boolean;
         showType: boolean;
         summary: SummaryModel<SummaryTemplateKeys>;
     }
 
-    let { showType, summary }: EventFeatureSummaryProps = $props();
+    let { linkToDetails = true, showType, summary }: EventFeatureSummaryProps = $props();
     let source = $derived(summary as EventSummaryModel<'event-summary'>);
 </script>
 
@@ -26,5 +26,5 @@
     {#if showType || source.data.Source}
         :&nbsp;
     {/if}
-    <A class="inline" href={resolve('/(app)/event/[eventId=objectid]', { eventId: source.id })}>{source.data.Message}</A>
+    <EventSummaryLink eventId={source.id} {linkToDetails}>{source.data.Message}</EventSummaryLink>
 </div>

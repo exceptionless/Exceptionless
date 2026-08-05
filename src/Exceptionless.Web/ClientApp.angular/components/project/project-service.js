@@ -86,10 +86,10 @@
                 return _cachedRestangular.one("projects", id).one(integration, "notifications").get();
             }
 
-            function isNameAvailable(organizationId, name) {
+            function isNameAvailable(organizationId, name, projectId) {
                 return Restangular.one("organizations", organizationId)
                     .one("projects", "check-name")
-                    .get({ name: encodeURIComponent(name) });
+                    .get({ name: encodeURIComponent(name), projectId: projectId });
             }
 
             function promoteTab(id, name) {

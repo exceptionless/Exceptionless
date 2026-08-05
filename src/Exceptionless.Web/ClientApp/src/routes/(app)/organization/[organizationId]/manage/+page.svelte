@@ -22,7 +22,7 @@
     import { getProfileImageFileError } from '$features/shared/profile-images';
     import { ariaInvalid, getFormErrorMessages, getProblemMessage, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { getInitials } from '$shared/strings';
-    import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { ProblemDetails } from '@foundatiofx/fetchclient';
     import Events from '@lucide/svelte/icons/calendar-days';
     import Camera from '@lucide/svelte/icons/camera';
     import Projects from '@lucide/svelte/icons/folder-open';

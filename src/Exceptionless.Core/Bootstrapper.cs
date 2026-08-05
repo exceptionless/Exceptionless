@@ -44,16 +44,19 @@ using Foundatio.Repositories.Migrations;
 using Foundatio.Resilience;
 using Foundatio.Serializer;
 using Foundatio.Storage;
+using Foundatio.Utility;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MaintainIndexesJob = Foundatio.Repositories.Elasticsearch.Jobs.MaintainIndexesJob;
+using MigrationJob = Exceptionless.Core.Jobs.Elastic.MigrationJob;
 
 namespace Exceptionless.Core;
 
 public class Bootstrapper
 {
-    public static void RegisterServices(IServiceCollection services, AppOptions appOptions)
+    public static void RegisterServices(IServiceCollection services, AppOptions appOptions, bool runDataSeedStartupAction = true)
     {
         // Register System.Text.Json options with Exceptionless defaults (snake_case, null handling)
         services.AddSingleton(_ => new JsonSerializerOptions().ConfigureExceptionlessDefaults());
@@ -79,7 +82,8 @@ public class Bootstrapper
 
         services.AddSingleton<DataSeedService>();
         services.AddSingleton<IDataSeed, PredefinedSavedViewsDataSeed>();
-        services.AddStartupAction<DataSeedService>();
+        if (runDataSeedStartupAction)
+            services.AddStartupAction<DataSeedService>();
 
         services.AddStartupAction("Create Sample Data", CreateSampleDataAsync);
 
@@ -155,6 +159,7 @@ public class Bootstrapper
         services.AddSingleton<IQueryParser>(s => new ElasticQueryParser());
         services.AddSingleton<IAppQueryValidator, AppQueryValidator>();
         services.AddSingleton<PersistentEventQueryValidator>();
+        services.AddSingleton<EventStackQueryValidator>();
         services.AddSingleton<StackQueryValidator>();
 
         services.AddSingleton<MiniValidationValidator>();
@@ -251,6 +256,9 @@ public class Bootstrapper
 
     public static void LogConfiguration(IServiceProvider serviceProvider, AppOptions appOptions, ILogger logger)
     {
+        if (logger.IsEnabled(LogLevel.Information))
+            LogConfigurationSummary(serviceProvider, appOptions, logger);
+
         if (!logger.IsEnabled(LogLevel.Warning))
             return;
 
@@ -286,6 +294,170 @@ public class Bootstrapper
             logger.LogWarning("Account Creation is NOT enabled on {MachineName}", Environment.MachineName);
     }
 
+    private static void LogConfigurationSummary(IServiceProvider serviceProvider, AppOptions options, ILogger logger)
+    {
+        string environmentName = serviceProvider.GetService<IHostEnvironment>()?.EnvironmentName ?? options.AppMode.ToString();
+        string version = options.InformationalVersion ?? options.Version ?? "unknown";
+
+        logger.LogInformation(
+            "Startup configuration: environment {EnvironmentName}, scope {AppScope}, mode {AppMode}, version {Version}, base URL {BaseUrl}",
+            environmentName,
+            options.AppScope,
+            options.AppMode,
+            version,
+            GetSafeEndpoint(options.BaseURL));
+
+        logger.LogInformation(
+            "Startup infrastructure: Elasticsearch at {ElasticsearchEndpoint}; cache {CacheProvider} at {CacheEndpoint}; message bus {MessageBusProvider} at {MessageBusEndpoint}; queue {QueueProvider} at {QueueEndpoint}; storage {StorageProvider} at {StorageEndpoint}",
+            GetSafeEndpoint(options.ElasticsearchOptions.ServerUrl),
+            GetProvider(options.CacheOptions.Provider),
+            GetProviderEndpoint(options.CacheOptions.Data, options.CacheOptions.ConnectionString),
+            GetProvider(options.MessageBusOptions.Provider),
+            GetProviderEndpoint(options.MessageBusOptions.Data, options.MessageBusOptions.ConnectionString),
+            GetProvider(options.QueueOptions.Provider),
+            GetProviderEndpoint(options.QueueOptions.Data, options.QueueOptions.ConnectionString),
+            GetProvider(options.StorageOptions.Provider),
+            GetProviderEndpoint(options.StorageOptions.Data, options.StorageOptions.ConnectionString));
+
+        logger.LogInformation(
+            "Startup services: event submission {EventSubmission}; WebSockets {WebSockets}; jobs in process {JobsInProcess}; email {Email}; account creation {AccountCreation}; index configuration {IndexConfiguration}",
+            GetStatus(!options.EventSubmissionDisabled),
+            GetStatus(options.EnableWebSockets),
+            GetStatus(options.RunJobsInProcess),
+            GetStatus(!String.IsNullOrWhiteSpace(options.EmailOptions.SmtpHost)),
+            GetStatus(options.AuthOptions.EnableAccountCreation),
+            GetStatus(!options.ElasticsearchOptions.DisableIndexConfiguration));
+
+        logger.LogInformation(
+            "Startup optional integrations/auth providers: {EnabledIntegrations}",
+            GetEnabledIntegrations(options));
+    }
+
+    private static string GetProvider(string? provider)
+        => String.IsNullOrWhiteSpace(provider) ? "disabled" : provider;
+
+    private static string GetStatus(bool enabled) => enabled ? "enabled" : "disabled";
+
+    private static string GetEnabledIntegrations(AppOptions options)
+    {
+        List<string> integrations = [];
+        if (!String.IsNullOrWhiteSpace(options.AuthOptions.GoogleId))
+            integrations.Add("Google OAuth");
+        if (!String.IsNullOrWhiteSpace(options.AuthOptions.MicrosoftId))
+            integrations.Add("Microsoft OAuth");
+        if (!String.IsNullOrWhiteSpace(options.AuthOptions.FacebookId))
+            integrations.Add("Facebook OAuth");
+        if (!String.IsNullOrWhiteSpace(options.AuthOptions.GitHubId))
+            integrations.Add("GitHub OAuth");
+        if (options.AuthOptions.EnableActiveDirectoryAuth)
+            integrations.Add("Active Directory");
+        if (options.IntercomOptions.EnableIntercom)
+            integrations.Add("Intercom");
+        if (options.SlackOptions.EnableSlack)
+            integrations.Add("Slack");
+        if (options.StripeOptions.EnableBilling)
+            integrations.Add("billing");
+        if (!String.IsNullOrWhiteSpace(options.GoogleGeocodingApiKey))
+            integrations.Add("geocoding");
+        if (!String.IsNullOrWhiteSpace(options.MaxMindGeoIpKey))
+            integrations.Add("GeoIP");
+        if (!String.IsNullOrWhiteSpace(options.ExceptionlessApiKey))
+            integrations.Add("internal Exceptionless logging");
+
+        return integrations.Count > 0 ? String.Join(", ", integrations) : "none";
+    }
+
+    private static string GetProviderEndpoint(
+        IDictionary<string, string?>? data,
+        string? connectionString)
+    {
+        string? endpoint = GetConnectionSetting(
+            data,
+            "server",
+            "serviceurl",
+            "endpoint",
+            "host",
+            "hostname",
+            "blobendpoint",
+            "queueendpoint");
+        if (endpoint is not null)
+            return GetSafeEndpoint(endpoint);
+
+        if (String.IsNullOrWhiteSpace(connectionString))
+            return "not configured";
+
+        try
+        {
+            var parsed = connectionString.ParseConnectionString(defaultKey: "server");
+            endpoint = GetConnectionSetting(
+                parsed,
+                "server",
+                "serviceurl",
+                "endpoint",
+                "host",
+                "hostname",
+                "blobendpoint",
+                "queueendpoint");
+            if (endpoint is not null)
+                return GetSafeEndpoint(endpoint);
+        }
+        catch (ArgumentException) { }
+
+        return GetSafeEndpoint(connectionString);
+    }
+
+    private static string? GetConnectionSetting(
+        IDictionary<string, string?>? data,
+        params string[] keys)
+    {
+        if (data is null)
+            return null;
+
+        foreach (string key in keys)
+        {
+            if (data.TryGetValue(key, out string? value) && !String.IsNullOrWhiteSpace(value))
+                return value;
+        }
+
+        return null;
+    }
+
+    private static string GetSafeEndpoint(string? value)
+    {
+        if (String.IsNullOrWhiteSpace(value))
+            return "not configured";
+
+        string candidate = value.Trim().Trim('"', '\'');
+        if (!candidate.Contains("://", StringComparison.Ordinal))
+        {
+            int separatorIndex = candidate.IndexOfAny([',', ';']);
+            if (separatorIndex >= 0)
+                candidate = candidate[..separatorIndex].Trim();
+        }
+
+        if (Uri.TryCreate(candidate, UriKind.Absolute, out var uri) && !String.IsNullOrWhiteSpace(uri.Host))
+            return GetUriEndpoint(uri);
+
+        if (!candidate.Contains('=') && Uri.TryCreate($"tcp://{candidate}", UriKind.Absolute, out uri) && !String.IsNullOrWhiteSpace(uri.Host))
+            return GetHostAndPort(uri.Host, uri.IsDefaultPort ? 0 : uri.Port);
+
+        return "configured";
+    }
+
+    private static string GetUriEndpoint(Uri uri)
+    {
+        string host = uri.HostNameType == UriHostNameType.IPv6 ? $"[{uri.Host}]" : uri.IdnHost;
+        return uri.IsDefaultPort ? $"{uri.Scheme}://{host}" : $"{uri.Scheme}://{host}:{uri.Port}";
+    }
+
+    private static string GetHostAndPort(string? host, int port)
+    {
+        if (String.IsNullOrWhiteSpace(host))
+            return "not configured";
+
+        return port > 0 ? $"{host}:{port}" : host;
+    }
+
     private static async Task CreateSampleDataAsync(IServiceProvider container)
     {
         var options = container.GetRequiredService<AppOptions>();
@@ -313,6 +485,7 @@ public class Bootstrapper
         services.AddJob<EventPostsJob>(o => o.WaitForStartupActions());
         services.AddJob<EventUserDescriptionsJob>(o => o.WaitForStartupActions());
         services.AddJob<MailMessageJob>(o => o.WaitForStartupActions());
+        services.AddJob<MigrationJob>(o => o.WaitForStartupActions());
         services.AddJob<StackStatusJob>(o => o.WaitForStartupActions());
         services.AddJob<StackEventCountJob>(o => o.WaitForStartupActions());
         services.AddJob<WebHooksJob>(o => o.WaitForStartupActions());

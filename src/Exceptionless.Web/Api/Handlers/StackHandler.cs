@@ -408,10 +408,13 @@ public class StackHandler(
             return Result.BadRequest(pr.Message ?? "Invalid filter.");
 
         sf.UsesPremiumFeatures = pr.UsesPremiumFeatures;
+        AppFilter? systemFilter = ApiFilterPolicy.ShouldApplySystemFilter(sf, filter, httpContext.Request) ? sf : null;
+        if (systemFilter is not null && ApiFilterPolicy.IsPremiumFeatureQueryBlocked(systemFilter))
+            return PlanLimitResult<PagedResult<object>>(ApiFilterPolicy.PremiumSearchUpgradeMessage);
 
         try
         {
-            var results = await stackRepository.FindAsync(q => q.AppFilter(ShouldApplySystemFilter(sf, filter, httpContext.Request) ? sf : null).FilterExpression(filter).SortExpression(sort).DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field), o => o.PageNumber(page).PageLimit(limit));
+            var results = await stackRepository.FindAsync(q => q.AppFilter(systemFilter).FilterExpression(filter).SortExpression(sort).DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field), o => o.PageNumber(page).PageLimit(limit));
 
             var stacks = results.Documents.Select(s => s.ApplyOffset(ti.Offset)).ToList();
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase))
@@ -427,25 +430,6 @@ public class StackHandler(
 
             throw;
         }
-    }
-
-    private static bool ShouldApplySystemFilter(AppFilter sf, string? filter, HttpRequest? request = null)
-    {
-        // Apply filter to non admin users.
-        if (request is null || !request.IsGlobalAdmin())
-            return true;
-
-        // Apply filter as it's scoped via a controller action.
-        if (!sf.IsUserOrganizationsFilter)
-            return true;
-
-        // Empty user filter
-        if (String.IsNullOrEmpty(filter))
-            return true;
-
-        // Used for impersonating a user. Only skip the filter if it contains an org, project or stack.
-        var scope = GetFilterScopeVisitor.Run(filter);
-        return !scope.HasScope;
     }
 
     private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, AppFilter eventSystemFilter, TimeInfo ti)

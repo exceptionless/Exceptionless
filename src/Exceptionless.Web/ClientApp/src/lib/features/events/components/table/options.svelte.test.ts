@@ -34,6 +34,17 @@ describe('event table columns', () => {
         expect(defaultEventColumnVisibility.tags).toBe(false);
     });
 
+    it('uses resizable summary and project columns and keeps selection fixed', () => {
+        const columns = getColumns<EventSummaryModel<SummaryTemplateKeys>>();
+        const project = columns.find((column) => column.id === 'project');
+        const select = columns.find((column) => column.id === 'select');
+        const summary = columns.find((column) => column.id === 'summary');
+
+        expect(summary).toMatchObject({ enableResizing: true, maxSize: 1200, minSize: 240, size: 480 });
+        expect(project).toMatchObject({ maxSize: 800, minSize: 160, size: 240 });
+        expect(select?.enableResizing).toBe(false);
+    });
+
     it('offers project and tags as hidden optional stack columns', () => {
         const columns = getColumns<StackSummaryModel<SummaryTemplateKeys>>('stack_frequent');
         const columnIds = columns.map((column) => column.id);
