@@ -122,7 +122,7 @@ export interface GetOrganizationCountRequest {
     params?: {
         aggregations?: string;
         filter?: string;
-        mode?: 'stack_new';
+        mode?: GetEventsMode;
         offset?: string;
         time?: string;
     };

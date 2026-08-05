@@ -154,7 +154,7 @@ kubectl apply -f ex-$ENV-redis.yaml -n ex-$ENV
 
 # install signoz otel collector
 helm repo add signoz https://charts.signoz.io
-helm install signoz-collector signoz/k8s-infra -f signoz.yaml --set "signozApiKey=$SIGNOZ_KEY"
+helm install signoz-collector signoz/k8s-infra --version 0.16.0 -f signoz.yaml --set "signozApiKey=$SIGNOZ_KEY"
 
 # install elasticsearch metrics exporter for signoz (prod only)
 helm install es-exporter prometheus-community/prometheus-elasticsearch-exporter `
