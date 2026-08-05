@@ -10,19 +10,19 @@ const invoices = [
         id: paidInvoiceId,
         paid: true,
         status: 'paid',
-        total: 120
+        total: 199
     },
     {
         date: '2026-06-01T14:29:00Z',
         id: '665dbff6bc16d969f98f44c2',
         paid: false,
         status: 'open',
-        total: 90
+        total: 199
     }
 ];
 
 describe('BillingInvoices', () => {
-    it('renders invoice statuses and opens a selected invoice', async () => {
+    it('renders invoice amounts and statuses and opens a selected invoice', async () => {
         const onopeninvoice = vi.fn();
 
         render(BillingInvoices, { invoices, onopeninvoice });

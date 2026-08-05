@@ -84,7 +84,7 @@
                     {/each}
                 {:else}
                     <Table.Row>
-                        <Table.Cell colspan={4} class="text-center">
+                        <Table.Cell colspan={5} class="text-center">
                             <strong>No invoices were found.</strong>
                         </Table.Cell>
                     </Table.Row>
