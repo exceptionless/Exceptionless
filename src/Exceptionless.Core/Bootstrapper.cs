@@ -323,7 +323,7 @@ public class Bootstrapper
         logger.LogInformation(
             "Startup services: event submission {EventSubmission}; WebSockets {WebSockets}; jobs in process {JobsInProcess}; email {Email}; account creation {AccountCreation}; index configuration {IndexConfiguration}",
             GetStatus(!options.EventSubmissionDisabled),
-            GetStatus(options.EnableWebSockets),
+            GetStatus(options.EnablePush),
             GetStatus(options.RunJobsInProcess),
             GetStatus(!String.IsNullOrWhiteSpace(options.EmailOptions.SmtpHost)),
             GetStatus(options.AuthOptions.EnableAccountCreation),
