@@ -279,7 +279,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
     public async Task SavePendingUsageAsync_UsageOnlyChanges_DoesNotPublishEntityChangedMessages()
     {
         // Arrange
-        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 1_000_000, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
         var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
         var organizationRepository = Assert.IsAssignableFrom<ElasticRepositoryBase<Organization>>(_organizationRepository);
         var projectRepository = Assert.IsAssignableFrom<ElasticRepositoryBase<Project>>(_projectRepository);
@@ -311,6 +311,41 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         {
             organizationRepository.BeforePublishEntityChanged.RemoveHandler(organizationHandler);
             projectRepository.BeforePublishEntityChanged.RemoveHandler(projectHandler);
+        }
+    }
+
+    [Fact]
+    public async Task SavePendingUsageAsync_HourlyThrottleClears_PublishesOrganizationChangedMessage()
+    {
+        // Arrange
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+        int eventsLeftInBucket = await _usageService.GetEventsLeftAsync(organization.Id);
+        var organizationRepository = Assert.IsAssignableFrom<ElasticRepositoryBase<Organization>>(_organizationRepository);
+        int notificationCount = 0;
+        Func<object, BeforePublishEntityChangedEventArgs<Organization>, Task> organizationHandler = (_, _) =>
+        {
+            Interlocked.Increment(ref notificationCount);
+            return Task.CompletedTask;
+        };
+        organizationRepository.BeforePublishEntityChanged.AddHandler(organizationHandler);
+
+        try
+        {
+            await _usageService.IncrementTotalAsync(organization.Id, project.Id, eventsLeftInBucket);
+            Assert.True((await _usageService.GetUsageAsync(organization.Id)).IsThrottled);
+
+            // Act
+            TimeProvider.Advance(TimeSpan.FromMinutes(10));
+            await _usageService.SavePendingUsageAsync();
+
+            // Assert
+            Assert.False((await _usageService.GetUsageAsync(organization.Id)).IsThrottled);
+            Assert.Equal(1, notificationCount);
+        }
+        finally
+        {
+            organizationRepository.BeforePublishEntityChanged.RemoveHandler(organizationHandler);
         }
     }
 

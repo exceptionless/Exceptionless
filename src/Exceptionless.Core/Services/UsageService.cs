@@ -85,6 +85,7 @@ public class UsageService
                     var bucketDiscarded = await _cache.GetAsync<int>(GetBucketDiscardedCacheKey(bucketUtc, organizationId));
                     var bucketTooBig = await _cache.GetAsync<int>(GetBucketTooBigCacheKey(bucketUtc, organizationId));
                     var bucketDeleted = await _cache.GetAsync<int>(GetBucketDeletedCacheKey(bucketUtc, organizationId));
+                    var hourlyThrottleTransition = await _cache.GetAsync<bool>(GetHourlyThrottleTransitionKey(bucketUtc, organizationId));
 
                     bool hasIngestion = (bucketTotal?.Value ?? 0) > 0 || (bucketBlocked?.Value ?? 0) > 0 || (bucketDiscarded?.Value ?? 0) > 0 || (bucketTooBig?.Value ?? 0) > 0;
                     if (hasIngestion)
@@ -113,12 +114,13 @@ public class UsageService
                         GetBucketDiscardedCacheKey(bucketUtc, organizationId),
                         GetBucketTooBigCacheKey(bucketUtc, organizationId),
                         GetBucketDeletedCacheKey(bucketUtc, organizationId),
-                        GetThrottledKey(bucketUtc, organizationId)
+                        GetThrottledKey(bucketUtc, organizationId),
+                        GetHourlyThrottleTransitionKey(bucketUtc, organizationId)
                     });
 
                     await _cache.SetAsync(GetTotalCacheKey(utcNow, organizationId), usage.Total, TimeSpan.FromHours(8));
-                    // Usage counters and last-event timestamps are operational updates, not user-facing entity changes.
-                    await _organizationRepository.SaveAsync(organization, o => o.Notifications(false));
+                    // Routine usage updates stay silent, but clients need one refresh when an hourly throttle clears.
+                    await _organizationRepository.SaveAsync(organization, o => o.Notifications(hourlyThrottleTransition?.Value ?? false));
                 }
             }
 
@@ -260,6 +262,7 @@ public class UsageService
         if (bucketTotal.Value >= bucketLimit)
         {
             await _cache.SetAsync(GetThrottledKey(utcNow, modified.Id), true, TimeSpan.FromMinutes(5));
+            await _cache.SetAsync(GetHourlyThrottleTransitionKey(utcNow, modified.Id), true, TimeSpan.FromHours(8));
             await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = modified.Id, IsHourly = true });
         }
     }
@@ -452,6 +455,7 @@ public class UsageService
         {
             // org will be throttled during the current bucket of time
             await _cache.SetAsync(GetThrottledKey(utcNow, organizationId), true, TimeSpan.FromMinutes(5));
+            await _cache.SetAsync(GetHourlyThrottleTransitionKey(utcNow, organizationId), true, TimeSpan.FromHours(8));
             await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId, IsHourly = true });
         }
     }
@@ -614,6 +618,12 @@ public class UsageService
     {
         int bucket = GetCurrentBucket(utcTime);
         return $"usage:{bucket}:{organizationId}:throttled";
+    }
+
+    private string GetHourlyThrottleTransitionKey(DateTime utcTime, string organizationId)
+    {
+        int bucket = GetCurrentBucket(utcTime);
+        return $"usage:{bucket}:{organizationId}:throttled-transition";
     }
 
     private string GetProjectSetKey(DateTime utcTime)
