@@ -50,4 +50,5 @@ Result: 27 failed during fixture initialization, 0 test bodies executed. Aspire 
 ## Residual gates
 
 - Local focused test execution and changed-surface runtime dogfood remain blocked by the unhealthy Docker runtime.
-- The earlier green PR CI run `30577192830` passed API, client, E2E, Docker, and version jobs at the pre-merge head; the merge-forward push requires a fresh CI result for `f24d4f5f4`.
+- The earlier green PR CI run `30577192830` passed API, client, E2E, Docker, and version jobs at the pre-merge head.
+- Fresh CI run `31013563388` was triggered for the pushed head `19b09a3b6`: `version` and `test-client` passed; `test-api`, `test-e2e`, and `docker-build` were still pending at the final bounded poll. The CLA check was also pending with the contributor agreement unsigned.
