@@ -31,6 +31,7 @@ public static class EventEndpoints
         .RequireAuthorization(AuthorizationRoles.EventsReadPolicy)
         .Produces<CountResult>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
         .WithSummary("Count")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -42,6 +43,7 @@ public static class EventEndpoints
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
+                ["426"] = ApiFilterPolicy.PremiumSearchUpgradeMessage,
             }
         });
 
@@ -50,6 +52,7 @@ public static class EventEndpoints
         .RequireAuthorization(AuthorizationRoles.EventsReadPolicy)
         .Produces<CountResult>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
         .WithSummary("Count by organization")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -62,6 +65,7 @@ public static class EventEndpoints
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
+                ["426"] = ApiFilterPolicy.SuspendedOrPremiumSearchUpgradeDescription,
             }
         });
 
@@ -70,6 +74,7 @@ public static class EventEndpoints
         .RequireAuthorization(AuthorizationRoles.EventsReadPolicy)
         .Produces<CountResult>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
         .WithSummary("Count by project")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -82,6 +87,7 @@ public static class EventEndpoints
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
+                ["426"] = ApiFilterPolicy.SuspendedOrPremiumSearchUpgradeDescription,
             }
         });
 
@@ -132,7 +138,7 @@ public static class EventEndpoints
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
-                ["426"] = "Unable to view event occurrences for the suspended organization.",
+                ["426"] = ApiFilterPolicy.PremiumSearchUpgradeMessage,
             }
         });
 
@@ -162,7 +168,7 @@ public static class EventEndpoints
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
                 ["404"] = "The organization could not be found.",
-                ["426"] = "Unable to view event occurrences for the suspended organization.",
+                ["426"] = ApiFilterPolicy.SuspendedOrPremiumSearchUpgradeDescription,
             }
         });
 
@@ -192,7 +198,7 @@ public static class EventEndpoints
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
                 ["404"] = "The project could not be found.",
-                ["426"] = "Unable to view event occurrences for the suspended organization.",
+                ["426"] = ApiFilterPolicy.SuspendedOrPremiumSearchUpgradeDescription,
             }
         });
 
@@ -222,7 +228,7 @@ public static class EventEndpoints
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
                 ["404"] = "The stack could not be found.",
-                ["426"] = "Unable to view event occurrences for the suspended organization.",
+                ["426"] = ApiFilterPolicy.SuspendedOrPremiumSearchUpgradeDescription,
             }
         });
 
@@ -303,7 +309,7 @@ public static class EventEndpoints
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
-                ["426"] = "Unable to view event occurrences for the suspended organization.",
+                ["426"] = ApiFilterPolicy.PremiumSessionUpgradeMessage,
             }
         });
 
@@ -334,7 +340,7 @@ public static class EventEndpoints
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
                 ["404"] = "The project could not be found.",
-                ["426"] = "Unable to view event occurrences for the suspended organization.",
+                ["426"] = ApiFilterPolicy.SuspendedOrPremiumSessionUpgradeDescription,
             }
         });
 
@@ -344,6 +350,7 @@ public static class EventEndpoints
         .RequireAuthorization(AuthorizationRoles.EventsReadPolicy)
         .Produces<IReadOnlyCollection<PersistentEvent>>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
         .WithSummary("Get a list of all sessions")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -360,6 +367,7 @@ public static class EventEndpoints
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
+                ["426"] = ApiFilterPolicy.PremiumSessionUpgradeMessage,
             }
         });
 
@@ -388,8 +396,8 @@ public static class EventEndpoints
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
-                ["404"] = "The project could not be found.",
-                ["426"] = "Unable to view event occurrences for the suspended organization.",
+                ["404"] = "The organization could not be found.",
+                ["426"] = ApiFilterPolicy.SuspendedOrPremiumSessionUpgradeDescription,
             }
         });
 
@@ -419,7 +427,7 @@ public static class EventEndpoints
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
                 ["404"] = "The project could not be found.",
-                ["426"] = "Unable to view event occurrences for the suspended organization.",
+                ["426"] = ApiFilterPolicy.SuspendedOrPremiumSessionUpgradeDescription,
             }
         });
 

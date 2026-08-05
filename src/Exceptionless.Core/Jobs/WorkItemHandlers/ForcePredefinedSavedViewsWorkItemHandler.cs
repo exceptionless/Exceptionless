@@ -43,6 +43,7 @@ public class ForcePredefinedSavedViewsWorkItemHandler : WorkItemHandlerBase
             workItem.UserId);
 
         int organizationsUpdated = 0;
+        int savedViewsCreated = 0;
         int savedViewsUpdated = 0;
         var savedViews = await _savedViewRepository.GetPredefinedForForceUpdateAsync(
             PredefinedSavedViewsDataSeed.SystemOrganizationId,
@@ -62,11 +63,11 @@ public class ForcePredefinedSavedViewsWorkItemHandler : WorkItemHandlerBase
                     workItem.UserId,
                     predefinedSavedViewsByKey);
 
-                int updatedForOrganization = updateResult;
-                if (updatedForOrganization > 0)
+                if (updateResult.Created > 0 || updateResult.Updated > 0)
                 {
                     organizationsUpdated++;
-                    savedViewsUpdated += updatedForOrganization;
+                    savedViewsCreated += updateResult.Created;
+                    savedViewsUpdated += updateResult.Updated;
                 }
 
                 await context.RenewLockAsync();
@@ -74,8 +75,9 @@ public class ForcePredefinedSavedViewsWorkItemHandler : WorkItemHandlerBase
         } while (!context.CancellationToken.IsCancellationRequested && await savedViews.NextPageAsync());
 
         Log.LogInformation(
-            "Completed predefined saved view force update. OrganizationsUpdated: {OrganizationsUpdated} SavedViewsUpdated: {SavedViewsUpdated} InitiatedByUserId: {UserId}",
+            "Completed predefined saved view force update. OrganizationsUpdated: {OrganizationsUpdated} SavedViewsCreated: {SavedViewsCreated} SavedViewsUpdated: {SavedViewsUpdated} InitiatedByUserId: {UserId}",
             organizationsUpdated,
+            savedViewsCreated,
             savedViewsUpdated,
             workItem.UserId);
     }
@@ -97,34 +99,36 @@ public class ForcePredefinedSavedViewsWorkItemHandler : WorkItemHandlerBase
         return savedViewsByKey;
     }
 
-    private async Task<int> UpdateOrganizationSavedViewsAsync(
+    private async Task<(int Created, int Updated)> UpdateOrganizationSavedViewsAsync(
         string organizationId,
         IEnumerable<string> savedViewIds,
         string userId,
         IReadOnlyDictionary<string, SavedView> predefinedSavedViewsByKey)
     {
-        int updatedSavedViews = 0;
+        (int Created, int Updated) updateResult = default;
         bool lockAcquired = await _lockProvider.TryUsingAsync($"predefined-saved-views:{organizationId}", async () =>
         {
-            updatedSavedViews = await UpdateOrganizationSavedViewsWithLockAsync(organizationId, savedViewIds, userId, predefinedSavedViewsByKey);
+            updateResult = await UpdateOrganizationSavedViewsWithLockAsync(organizationId, savedViewIds, userId, predefinedSavedViewsByKey);
         }, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(15));
 
         if (!lockAcquired)
             Log.LogWarning("Skipping force update for organization {OrganizationId} because the saved view synchronization lock could not be acquired", organizationId);
 
-        return updatedSavedViews;
+        return updateResult;
     }
 
-    private async Task<int> UpdateOrganizationSavedViewsWithLockAsync(
+    private async Task<(int Created, int Updated)> UpdateOrganizationSavedViewsWithLockAsync(
         string organizationId,
         IEnumerable<string> savedViewIds,
         string userId,
         IReadOnlyDictionary<string, SavedView> predefinedSavedViewsByKey)
     {
+        var savedViewsToAdd = new List<SavedView>();
         var savedViewsToSave = new List<SavedView>();
         var savedViewIdsToUpdate = savedViewIds.ToHashSet(StringComparer.Ordinal);
         var results = await _savedViewRepository.FindAsync(q => q.Organization(organizationId), o => o.PageLimit(SavedViewPageLimit));
-        var savedViewsByViewType = results.Documents.GroupBy(savedView => savedView.ViewType, StringComparer.OrdinalIgnoreCase)
+        var organizationSavedViews = results.Documents.ToList();
+        var savedViewsByViewType = organizationSavedViews.GroupBy(savedView => savedView.ViewType, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(group => group.Key, group => group.ToList(), StringComparer.OrdinalIgnoreCase);
 
         foreach (var savedViews in savedViewsByViewType.Values)
@@ -147,13 +151,51 @@ public class ForcePredefinedSavedViewsWorkItemHandler : WorkItemHandlerBase
             }
         }
 
-        if (savedViewsToSave.Count > 0)
-            await _savedViewRepository.SaveAsync(savedViewsToSave, o => o.Cache());
+        foreach (var predefinedSavedView in predefinedSavedViewsByKey.Values)
+        {
+            if (organizationSavedViews.Any(savedView =>
+                savedView.UserId is null
+                && String.Equals(savedView.PredefinedKey, predefinedSavedView.PredefinedKey, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
 
-        return savedViewsToSave.Count;
+            var savedViews = organizationSavedViews
+                .Where(savedView => String.Equals(savedView.ViewType, predefinedSavedView.ViewType, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            var savedView = new SavedView
+            {
+                OrganizationId = organizationId,
+                CreatedByUserId = userId,
+                Name = predefinedSavedView.Name,
+                Slug = GetUniqueSlug(predefinedSavedView.Slug, savedViews, null),
+                ViewType = predefinedSavedView.ViewType
+            };
+
+            PredefinedSavedViewConfiguration.Apply(
+                savedView,
+                predefinedSavedView,
+                predefinedSavedView.PredefinedKey!,
+                savedView.Slug);
+
+            organizationSavedViews.Add(savedView);
+            savedViewsToAdd.Add(savedView);
+        }
+
+        if (savedViewsToAdd.Count > 0)
+        {
+            await _savedViewRepository.AddAsync(savedViewsToAdd, o => o.Cache().ImmediateConsistency());
+        }
+
+        if (savedViewsToSave.Count > 0)
+        {
+            await _savedViewRepository.SaveAsync(savedViewsToSave, o => o.Cache());
+        }
+
+        return (savedViewsToAdd.Count, savedViewsToSave.Count);
     }
 
-    private static string GetUniqueSlug(string slug, IReadOnlyCollection<SavedView> existingViews, string? excludingId)
+    internal static string GetUniqueSlug(string slug, IReadOnlyCollection<SavedView> existingViews, string? excludingId)
     {
         string baseSlug = ToSlug(slug);
         if (String.IsNullOrWhiteSpace(baseSlug))
@@ -163,7 +205,9 @@ public class ForcePredefinedSavedViewsWorkItemHandler : WorkItemHandlerBase
         string candidate = baseSlug;
         int suffix = 2;
 
-        while (existingViews.Any(view => view.Id != excludingId && String.Equals(view.Slug, candidate, StringComparison.OrdinalIgnoreCase)))
+        while (existingViews.Any(view =>
+            (excludingId is null || view.Id != excludingId)
+            && String.Equals(view.Slug, candidate, StringComparison.OrdinalIgnoreCase)))
         {
             string suffixText = $"-{suffix}";
             int maxBaseLength = 100 - suffixText.Length;

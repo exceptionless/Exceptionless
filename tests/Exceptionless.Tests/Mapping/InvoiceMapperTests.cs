@@ -39,7 +39,8 @@ public sealed class InvoiceMapperTests
         {
             Id = "in_5f8a3b2c1d4e",
             Created = expectedDate,
-            Status = "paid"
+            Status = "paid",
+            Total = -1250
         };
 
         // Act
@@ -48,6 +49,8 @@ public sealed class InvoiceMapperTests
         // Assert
         Assert.Equal(expectedDate, result.Date);
         Assert.True(result.Paid);
+        Assert.Equal("paid", result.Status);
+        Assert.Equal(-12.50m, result.Total);
     }
 
     [Fact]

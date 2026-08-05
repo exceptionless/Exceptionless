@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { IFilter } from '$comp/faceted-filter';
     import type { PersistentEvent } from '$features/events/models';
-    import type { ProblemDetails } from '@exceptionless/fetchclient';
+    import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
     import { Muted } from '$comp/typography';
     import { getStackEventsQuery } from '$features/events/api.svelte';

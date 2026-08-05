@@ -80,7 +80,7 @@ helm upgrade vpa fairwinds-stable/vpa --namespace vpa -f vpa-values.yaml --reset
 
 # upgrade signoz
 helm repo update
-helm upgrade --reset-values signoz-collector signoz/k8s-infra -f signoz.yaml --set "signozApiKey=$SIGNOZ_KEY" --dry-run
+helm upgrade --reset-values signoz-collector signoz/k8s-infra --version 0.16.0 -f signoz.yaml --set "signozApiKey=$SIGNOZ_KEY" --dry-run
 
 # upgrade elasticsearch metrics exporter
 helm upgrade --reset-values es-exporter prometheus-community/prometheus-elasticsearch-exporter `

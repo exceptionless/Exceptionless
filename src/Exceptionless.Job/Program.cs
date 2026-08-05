@@ -5,6 +5,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Jobs.Elastic;
 using Exceptionless.Insulation.Configuration;
+using Exceptionless.Insulation.Security;
 using Foundatio.Extensions.Hosting.Jobs;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Jobs;
@@ -58,6 +59,7 @@ public class Program
 
         Log.Logger = new LoggerConfiguration()
             .ReadFrom.Configuration(config)
+            .ApplySensitiveDataLogging()
             .CreateBootstrapLogger()
             .ForContext<Program>();
 
@@ -75,6 +77,7 @@ public class Program
             .UseSerilog((ctx, sp, c) =>
             {
                 c.ReadFrom.Configuration(ctx.Configuration);
+                c.ApplySensitiveDataLogging();
                 c.ReadFrom.Services(sp);
                 c.Enrich.WithMachineName();
 
@@ -132,7 +135,7 @@ public class Program
                 AddJobs(services, jobOptions);
                 services.AddAppOptions(options);
 
-                Bootstrapper.RegisterServices(services, options);
+                Bootstrapper.RegisterServices(services, options, jobOptions.RunDataSeedStartupAction);
                 Insulation.Bootstrapper.RegisterServices(services, options, true);
             })
             .AddApm(apmConfig);

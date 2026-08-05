@@ -6,7 +6,7 @@
     import { Input } from '$comp/ui/input';
     import { ReferenceLinkSchema } from '$features/stacks/schemas';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
-    import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { ProblemDetails } from '@foundatiofx/fetchclient';
     import { createForm } from '@tanstack/svelte-form';
 
     interface Props {

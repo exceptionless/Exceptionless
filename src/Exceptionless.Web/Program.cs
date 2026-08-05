@@ -7,6 +7,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Validation;
 using Exceptionless.Insulation.Configuration;
+using Exceptionless.Insulation.Security;
 using Exceptionless.Web.Api;
 using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Endpoints;
@@ -82,6 +83,7 @@ public partial class Program
             var configuration = (IConfigurationRoot)builder.Configuration;
             Log.Logger = new LoggerConfiguration()
                 .ReadFrom.Configuration(configuration)
+                .ApplySensitiveDataLogging()
                 .CreateBootstrapLogger()
                 .ForContext<Program>();
 
@@ -100,6 +102,7 @@ public partial class Program
                 .UseSerilog((ctx, sp, c) =>
                 {
                     c.ReadFrom.Configuration(ctx.Configuration);
+                    c.ApplySensitiveDataLogging();
                     c.ReadFrom.Services(sp);
                     c.Enrich.WithMachineName();
 
@@ -197,9 +200,10 @@ public partial class Program
                     .MapStatus(ResultStatus.Unavailable, ApiResultMapper.MapUnavailable));
             Bootstrapper.RegisterServices(builder.Services, options, Log.Logger.ToLoggerFactory());
             builder.Services.AddScoped<McpContextService>();
-            builder.Services.AddSingleton<ISessionMigrationHandler, McpSessionMigrationHandler>();
-            builder.Services.AddMcpServer()
-                .WithHttpTransport(o => o.Stateless = false)
+            // Leave the protocol version unset so native v2 and down-level MCP clients can negotiate a supported version.
+            builder.Services.AddMcpServer(options =>
+                options.ServerInstructions = "Exceptionless MCP tools are stateless. Scoped ids may be omitted when the current OAuth grant exposes exactly one matching organization or project; otherwise use list_organizations, list_projects, or resolve_project and pass the required id explicitly. Previous tool calls never change the scope of later calls.")
+                .WithHttpTransport()
                 .WithTools<ExceptionlessMcpTools>();
             builder.Services.AddSingleton(_ => new ThrottlingOptions
             {
@@ -382,6 +386,9 @@ public partial class Program
             app.MapApiEndpoints();
             app.MapEventPostProcessing();
             app.MapEventIngestionV3(runtimeOptions);
+            app.MapGet("/mcp", () => Results.StatusCode(StatusCodes.Status405MethodNotAllowed))
+                .RequireAuthorization(AuthorizationRoles.McpPolicy)
+                .ExcludeFromDescription();
             app.MapMcp("/mcp").RequireAuthorization(AuthorizationRoles.McpPolicy);
             app.MapFallback("{**slug:nonfile}", CreateRequestDelegate(app, "/index.html"))
                 .WithMetadata(new HttpMethodMetadata([HttpMethods.Get]));
