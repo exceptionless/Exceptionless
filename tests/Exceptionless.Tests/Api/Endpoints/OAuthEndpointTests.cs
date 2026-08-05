@@ -18,6 +18,8 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.DependencyInjection;
+using ModelContextProtocol.Client;
+using ModelContextProtocol.Protocol;
 using Xunit;
 
 namespace Exceptionless.Tests.Api.Endpoints;
@@ -330,6 +332,20 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task McpAsync_GetWithOAuthBearer_ReturnsMethodNotAllowed()
+    {
+        var token = await IssueTokenAsync();
+        using var client = _server.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/mcp");
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
+
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.MethodNotAllowed, response.StatusCode);
     }
 
     [Fact]
@@ -793,6 +809,113 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task OAuthBearer_McpV2Client_UsesNativeStatelessProtocolAndCallsTool()
+    {
+        const string nativeProtocolVersion = "2026-07-28";
+        var token = await IssueTokenAsync();
+        using var httpClient = _server.CreateClient();
+        var transport = new HttpClientTransport(
+            new HttpClientTransportOptions
+            {
+                Endpoint = new Uri(_server.BaseAddress, "/mcp"),
+                AdditionalHeaders = new Dictionary<string, string>
+                {
+                    ["Authorization"] = $"Bearer {token.AccessToken}"
+                }
+            },
+            httpClient,
+            GetService<ILoggerFactory>(),
+            ownsHttpClient: false);
+
+        var options = new McpClientOptions
+        {
+            ProtocolVersion = nativeProtocolVersion,
+            ClientInfo = new Implementation
+            {
+                Name = "exceptionless-mcp-v2-tests",
+                Version = "1.0.0"
+            }
+        };
+
+        await using var client = await McpClient.CreateAsync(
+            transport,
+            options,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var tools = await client.ListToolsAsync(cancellationToken: TestContext.Current.CancellationToken);
+        var resolvedProject = await client.CallToolAsync(
+            "resolve_project",
+            new Dictionary<string, object?>
+            {
+                ["projectId"] = TestConstants.ProjectId
+            },
+            cancellationToken: TestContext.Current.CancellationToken);
+        var project = await client.CallToolAsync(
+            "get_project",
+            new Dictionary<string, object?>
+            {
+                ["projectId"] = TestConstants.ProjectId
+            },
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(nativeProtocolVersion, client.NegotiatedProtocolVersion);
+        Assert.Null(client.SessionId);
+        Assert.Contains("stateless", client.ServerInstructions, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(tools, tool => String.Equals(tool.Name, "resolve_project", StringComparison.Ordinal));
+        Assert.DoesNotContain(tools, tool => String.Equals(tool.Name, "get_context", StringComparison.Ordinal));
+        Assert.DoesNotContain(tools, tool => String.Equals(tool.Name, "switch_organization", StringComparison.Ordinal));
+        Assert.DoesNotContain(tools, tool => String.Equals(tool.Name, "switch_project", StringComparison.Ordinal));
+        Assert.DoesNotContain(tools, tool => String.Equals(tool.Name, "resolve_project_context", StringComparison.Ordinal));
+        Assert.NotEqual(true, resolvedProject.IsError);
+        Assert.NotEqual(true, project.IsError);
+        Assert.NotNull(project.StructuredContent);
+        Assert.Contains(TestConstants.ProjectId, project.StructuredContent.ToString(), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("2025-06-18")]
+    [InlineData("2025-11-25")]
+    public async Task OAuthBearer_McpDownLevelClient_NegotiatesAndCallsTool(string downLevelProtocolVersion)
+    {
+        var token = await IssueTokenAsync();
+        using var httpClient = _server.CreateClient();
+        var transport = new HttpClientTransport(
+            new HttpClientTransportOptions
+            {
+                Endpoint = new Uri(_server.BaseAddress, "/mcp"),
+                AdditionalHeaders = new Dictionary<string, string>
+                {
+                    ["Authorization"] = $"Bearer {token.AccessToken}"
+                }
+            },
+            httpClient,
+            GetService<ILoggerFactory>(),
+            ownsHttpClient: false);
+
+        var options = new McpClientOptions
+        {
+            ProtocolVersion = downLevelProtocolVersion,
+            ClientInfo = new Implementation
+            {
+                Name = "exceptionless-mcp-down-level-tests",
+                Version = "1.0.0"
+            }
+        };
+
+        await using var client = await McpClient.CreateAsync(
+            transport,
+            options,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var tools = await client.ListToolsAsync(cancellationToken: TestContext.Current.CancellationToken);
+        var filterFields = await client.CallToolAsync("get_filter_fields", cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(downLevelProtocolVersion, client.NegotiatedProtocolVersion);
+        Assert.Contains("stateless", client.ServerInstructions, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(tools, tool => String.Equals(tool.Name, "get_filter_fields", StringComparison.Ordinal));
+        Assert.NotEqual(true, filterFields.IsError);
+        Assert.NotNull(filterFields.StructuredContent);
     }
 
     [Fact]

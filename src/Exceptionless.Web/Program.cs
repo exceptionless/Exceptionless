@@ -22,7 +22,6 @@ using Exceptionless.Web.Utility.OpenApi;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Mediator;
 using Foundatio.Repositories.Exceptions;
-using HttpIResult = Microsoft.AspNetCore.Http.IResult;
 using Joonasw.AspNetCore.SecurityHeaders;
 using Joonasw.AspNetCore.SecurityHeaders.Csp;
 using Joonasw.AspNetCore.SecurityHeaders.Csp.Builder;
@@ -41,6 +40,7 @@ using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.Exceptionless;
+using HttpIResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Exceptionless.Web;
 
@@ -194,9 +194,10 @@ public partial class Program
                     .MapStatus(ResultStatus.Unavailable, ApiResultMapper.MapUnavailable));
             Bootstrapper.RegisterServices(builder.Services, options, Log.Logger.ToLoggerFactory());
             builder.Services.AddScoped<McpContextService>();
-            builder.Services.AddSingleton<ISessionMigrationHandler, McpSessionMigrationHandler>();
-            builder.Services.AddMcpServer()
-                .WithHttpTransport(o => o.Stateless = false)
+            // Leave the protocol version unset so native v2 and down-level MCP clients can negotiate a supported version.
+            builder.Services.AddMcpServer(options =>
+                options.ServerInstructions = "Exceptionless MCP tools are stateless. Scoped ids may be omitted when the current OAuth grant exposes exactly one matching organization or project; otherwise use list_organizations, list_projects, or resolve_project and pass the required id explicitly. Previous tool calls never change the scope of later calls.")
+                .WithHttpTransport()
                 .WithTools<ExceptionlessMcpTools>();
             builder.Services.AddSingleton(_ => new ThrottlingOptions
             {
@@ -355,6 +356,9 @@ public partial class Program
                     .AddPreferredSecuritySchemes("Bearer");
             });
             app.MapApiEndpoints();
+            app.MapGet("/mcp", () => Results.StatusCode(StatusCodes.Status405MethodNotAllowed))
+                .RequireAuthorization(AuthorizationRoles.McpPolicy)
+                .ExcludeFromDescription();
             app.MapMcp("/mcp").RequireAuthorization(AuthorizationRoles.McpPolicy);
             app.MapFallback("{**slug:nonfile}", CreateRequestDelegate(app, "/index.html"));
 
