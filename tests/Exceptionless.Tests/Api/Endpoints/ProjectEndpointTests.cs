@@ -897,43 +897,50 @@ public sealed class ProjectEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task IsNameAvailableAsync_ExistingName_ReturnsCreated()
-    {
-        // Arrange - the TEST_PROJECT_ID project should have a name
-        var project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
-        Assert.NotNull(project);
-
-        // Act - 201 Created means name is already taken (NOT available)
-        await SendRequestAsync(r => r
-            .AsTestOrganizationUser()
-            .AppendPath("projects/check-name")
-            .QueryString("name", project.Name)
-            .StatusCodeShouldBeCreated()
-        );
-    }
-
-    [Fact]
-    public Task IsNameAvailableAsync_NewName_ReturnsNoContent()
-    {
-        // Act - 204 NoContent means name IS available
-        return SendRequestAsync(r => r
-            .AsTestOrganizationUser()
-            .AppendPath("projects/check-name")
-            .QueryString("name", "UniqueProjectName_" + Guid.NewGuid().ToString("N"))
-            .StatusCodeShouldBeNoContent()
-        );
-    }
-
-    [Fact]
-    public async Task IsNameAvailableAsync_OmittedName_ReturnsCreated()
+    public async Task IsNameAvailableAsync_CurrentProject_ReturnsNoContent()
     {
         // Arrange
-        string path = "projects/check-name";
+        var project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(project);
 
         // Act
         using var response = await SendRequestAsync(r => r
             .AsTestOrganizationUser()
-            .AppendPath(path)
+            .AppendPaths("organizations", project.OrganizationId, "projects", "check-name")
+            .QueryString("name", project.Name)
+            .QueryString("projectId", project.Id)
+            .StatusCodeShouldBeNoContent()
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task IsNameAvailableAsync_DuplicateProject_ReturnsCreated()
+    {
+        // Arrange
+        var existingProject = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(existingProject);
+        var editableProject = await SendRequestAsAsync<ViewProject>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPath("projects")
+            .Content(new NewProject
+            {
+                OrganizationId = existingProject.OrganizationId,
+                Name = "Editable Project " + Guid.NewGuid().ToString("N")
+            })
+            .StatusCodeShouldBeCreated()
+        );
+        Assert.NotNull(editableProject);
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", existingProject.OrganizationId, "projects", "check-name")
+            .QueryString("name", existingProject.Name)
+            .QueryString("projectId", editableProject.Id)
             .StatusCodeShouldBeCreated()
         );
 
@@ -942,7 +949,7 @@ public sealed class ProjectEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task IsNameAvailableAsync_OmittedNameWithOrganizationScope_ReturnsCreated()
+    public async Task IsNameAvailableAsync_MissingName_ReturnsCreated()
     {
         // Arrange
         string organizationId = SampleDataService.TEST_ORG_ID;
@@ -959,15 +966,74 @@ public sealed class ProjectEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public Task IsNameAvailableAsync_ScopedToOrganization_ReturnsNoContent()
+    public async Task IsNameAvailableAsync_UniqueName_ReturnsNoContent()
     {
-        // Act - 204 NoContent means name IS available in this org scope
-        return SendRequestAsync(r => r
+        // Arrange
+        string name = "UniqueOrgScoped_" + Guid.NewGuid().ToString("N");
+
+        // Act
+        using var response = await SendRequestAsync(r => r
             .AsTestOrganizationUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "projects", "check-name")
-            .QueryString("name", "UniqueOrgScoped_" + Guid.NewGuid().ToString("N"))
+            .QueryString("name", name)
             .StatusCodeShouldBeNoContent()
         );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PatchAsync_CurrentProjectName_ReturnsOk()
+    {
+        // Arrange
+        var project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(project);
+
+        // Act
+        var updatedProject = await SendRequestAsAsync<ViewProject>(r => r
+            .AsTestOrganizationUser()
+            .Patch()
+            .AppendPaths("projects", project.Id)
+            .Content(new UpdateProject { Name = project.Name })
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(updatedProject);
+        Assert.Equal(project.Name, updatedProject.Name);
+    }
+
+    [Fact]
+    public async Task PatchAsync_DuplicateProjectNameInOrganization_ReturnsBadRequest()
+    {
+        // Arrange
+        var existingProject = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(existingProject);
+        var editableProject = await SendRequestAsAsync<ViewProject>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPath("projects")
+            .Content(new NewProject
+            {
+                OrganizationId = existingProject.OrganizationId,
+                Name = "Editable Project " + Guid.NewGuid().ToString("N")
+            })
+            .StatusCodeShouldBeCreated()
+        );
+        Assert.NotNull(editableProject);
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Patch()
+            .AppendPaths("projects", editableProject.Id)
+            .Content(new UpdateProject { Name = existingProject.Name.ToUpperInvariant() })
+            .StatusCodeShouldBeBadRequest()
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -1204,6 +1270,64 @@ public sealed class ProjectEndpointTests : IntegrationTestsBase
         Assert.False(deleteBotDataEnabled.GetBoolean());
         Assert.False(root.TryGetProperty("OrganizationId", out _), "Response must not drift back to PascalCase 'OrganizationId'.");
         Assert.False(root.TryGetProperty("DeleteBotDataEnabled", out _), "Response must not drift back to PascalCase 'DeleteBotDataEnabled'.");
+    }
+
+    [Fact]
+    public async Task PostAsync_DuplicateProjectNameInDifferentOrganization_ReturnsCreated()
+    {
+        // Arrange
+        var existingProject = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(existingProject);
+        var otherOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPath("organizations")
+            .Content(new NewOrganization { Name = "Other Project Organization" })
+            .StatusCodeShouldBeCreated()
+        );
+        Assert.NotNull(otherOrganization);
+
+        // Act
+        var createdProject = await SendRequestAsAsync<ViewProject>(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPath("projects")
+            .Content(new NewProject
+            {
+                OrganizationId = otherOrganization.Id,
+                Name = existingProject.Name
+            })
+            .StatusCodeShouldBeCreated()
+        );
+
+        // Assert
+        Assert.NotNull(createdProject);
+        Assert.Equal(otherOrganization.Id, createdProject.OrganizationId);
+        Assert.Equal(existingProject.Name, createdProject.Name);
+    }
+
+    [Fact]
+    public async Task PostAsync_DuplicateProjectNameInSameOrganization_ReturnsBadRequest()
+    {
+        // Arrange
+        var existingProject = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(existingProject);
+
+        // Act
+        using var response = await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPath("projects")
+            .Content(new NewProject
+            {
+                OrganizationId = existingProject.OrganizationId,
+                Name = existingProject.Name.ToUpperInvariant()
+            })
+            .StatusCodeShouldBeBadRequest()
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]

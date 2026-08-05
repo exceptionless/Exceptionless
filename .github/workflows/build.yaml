@@ -558,6 +558,27 @@ jobs:
           sed -i "s/^appVersion:.*$/appVersion: '${VERSION}'/" ./k8s/exceptionless/Chart.yaml
           helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-dev-values.yaml ex-dev --namespace $DEV_NAMESPACE ./k8s/exceptionless
 
+      - name: Run Development Migrations
+        if: ${{ needs.version.outputs.is_dev_deploy == 'true' }}
+        run: |
+          migration_job="ex-dev-jobs-migration-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          kubectl create job --from=cronjob/ex-dev-jobs-migration "$migration_job" --namespace "$DEV_NAMESPACE"
+
+          migration_image=$(kubectl get job "$migration_job" --namespace "$DEV_NAMESPACE" \
+            --output jsonpath='{.spec.template.spec.containers[0].image}')
+          if [[ "$migration_image" != *":${VERSION}" ]]; then
+            echo "::error::Migration job uses ${migration_image}; expected version ${VERSION}."
+            exit 1
+          fi
+
+          if ! kubectl wait --for=condition=complete --timeout=1200s "job/${migration_job}" --namespace "$DEV_NAMESPACE"; then
+            echo "::group::Migration job diagnostics"
+            kubectl describe job "$migration_job" --namespace "$DEV_NAMESPACE"
+            kubectl get pods --selector "job-name=${migration_job}" --namespace "$DEV_NAMESPACE" --output wide
+            echo "::endgroup::"
+            exit 1
+          fi
+
       - name: Ensure Development Workloads are Running
         if: ${{ needs.version.outputs.is_dev_deploy == 'true' }}
         run: |

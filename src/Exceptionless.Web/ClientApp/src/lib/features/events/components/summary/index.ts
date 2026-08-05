@@ -165,11 +165,6 @@ export function buildEventDetailsHref(eventId: string, stackId?: string): string
     return resolve('/(app)/event/[eventId=objectid]', { eventId });
 }
 
-export function buildStackEventsHref(stackId: string): string {
-    const queryParams = new URLSearchParams({
-        stack: stackId,
-        time: 'all'
-    });
-
-    return `${resolve('/(app)/event')}?${queryParams}`;
+export function buildStackDetailsHref(stackId: string): string {
+    return resolve('/(app)/stack/[stackId=objectid]', { stackId });
 }

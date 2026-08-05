@@ -11,7 +11,7 @@ describe('EventTagsSummaryCell', () => {
         expect(screen.getByText('production')).toBeTruthy();
         expect(screen.getByText('+2')).toBeTruthy();
         expect(screen.queryByText('critical')).toBeNull();
-        expect(screen.getByLabelText('Tags: api, production, critical, customer').getAttribute('title')).toBe('api, production, critical, customer');
+        expect(screen.getByLabelText('Tags: api, production, critical, customer').getAttribute('title')).toBeNull();
     });
 
     it('shows an empty value when there are no tags', () => {

@@ -5400,39 +5400,6 @@
         }
       }
     },
-    "/api/v2/projects/check-name": {
-      "get": {
-        "tags": [
-          "Project"
-        ],
-        "summary": "Check for unique name",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "query",
-            "description": "The project name to check.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "organizationId",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "The project name is available."
-          },
-          "204": {
-            "description": "The project name is not available."
-          }
-        }
-      }
-    },
     "/api/v2/organizations/{organizationId}/projects/check-name": {
       "get": {
         "tags": [
@@ -5443,7 +5410,7 @@
           {
             "name": "organizationId",
             "in": "path",
-            "description": "If set the check name will be scoped to a specific organization.",
+            "description": "The organization identifier that scopes the name check.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -5457,14 +5424,22 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "description": "The current project identifier to exclude from the uniqueness check.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
           "201": {
-            "description": "The project name is available."
+            "description": "The project name is not available."
           },
           "204": {
-            "description": "The project name is not available."
+            "description": "The project name is available."
           }
         }
       }
@@ -5663,16 +5638,6 @@
           },
           "400": {
             "description": "An error occurred while creating the organization.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The organization already exists.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -6654,35 +6619,6 @@
         }
       }
     },
-    "/api/v2/organizations/check-name": {
-      "get": {
-        "tags": [
-          "Organization"
-        ],
-        "summary": "Check for unique name",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "query",
-            "description": "The organization name to check.",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "201": {
-            "description": "The organization name is available."
-          },
-          "204": {
-            "description": "The organization name is not available."
-          }
-        }
-      }
-    },
     "/api/v2/stacks/{id}": {
       "get": {
         "tags": [
@@ -7255,6 +7191,16 @@
                 }
               }
             }
+          },
+          "426": {
+            "description": "Please upgrade your plan to use premium search features.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -7372,7 +7318,7 @@
             }
           },
           "426": {
-            "description": "Unable to view stack occurrences for the suspended organization.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -7497,7 +7443,7 @@
             }
           },
           "426": {
-            "description": "Unable to view stack occurrences for the suspended organization.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -7893,6 +7839,16 @@
                 }
               }
             }
+          },
+          "426": {
+            "description": "Please upgrade your plan to use premium search features.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -7975,6 +7931,16 @@
                 }
               }
             }
+          },
+          "426": {
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -8050,6 +8016,16 @@
           },
           "400": {
             "description": "Invalid filter.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8264,7 +8240,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "Please upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8474,7 +8450,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8622,7 +8598,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8842,7 +8818,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium search features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9228,7 +9204,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "Please upgrade your plan to use premium session features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9386,7 +9362,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium session features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9505,6 +9481,16 @@
           },
           "400": {
             "description": "Invalid filter.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "Please upgrade your plan to use premium session features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9642,7 +9628,7 @@
             }
           },
           "404": {
-            "description": "The project could not be found.",
+            "description": "The organization could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9652,7 +9638,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium session features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9800,7 +9786,7 @@
             }
           },
           "426": {
-            "description": "Unable to view event occurrences for the suspended organization.",
+            "description": "The organization is suspended, or you must upgrade your plan to use premium session features.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -11693,6 +11679,7 @@
           "organization_name",
           "date",
           "paid",
+          "status",
           "total",
           "items"
         ],
@@ -11717,6 +11704,9 @@
           "paid": {
             "type": "boolean"
           },
+          "status": {
+            "type": "string"
+          },
           "total": {
             "type": "number",
             "format": "double"
@@ -11733,7 +11723,9 @@
         "required": [
           "id",
           "date",
-          "paid"
+          "paid",
+          "status",
+          "total"
         ],
         "type": "object",
         "properties": {
@@ -11746,6 +11738,13 @@
           },
           "paid": {
             "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "total": {
+            "type": "number",
+            "format": "double"
           }
         }
       },
@@ -11954,17 +11953,7 @@
               "object"
             ],
             "additionalProperties": {
-              "type": "boolean"
-            }
-          },
-          "column_order": {
-            "maxItems": 50,
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/SavedViewColumnSettings"
             }
           },
           "show_stats": {
@@ -12759,16 +12748,7 @@
               "object"
             ],
             "additionalProperties": {
-              "type": "boolean"
-            }
-          },
-          "columnOrder": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/SavedViewColumnSettings"
             }
           },
           "showStats": {
@@ -12865,6 +12845,39 @@
             "type": "string"
           }
         }
+      },
+      "SavedViewColumnSettings": {
+        "type": "object",
+        "properties": {
+          "visible": {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "description": "Whether the column is visible. Null means use the table default."
+          },
+          "position": {
+            "maximum": 49,
+            "minimum": 0,
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Zero-based display position. Null means use the table default order.",
+            "format": "int32"
+          },
+          "width": {
+            "maximum": 1200,
+            "minimum": 48,
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Column width in pixels. Null means use the table default width.",
+            "format": "int32"
+          }
+        },
+        "description": "Per-column display settings for a saved view. All properties are optional so new settings can\nbe added without changing the meaning of existing saved views."
       },
       "Signup": {
         "required": [
@@ -13333,17 +13346,7 @@
               "object"
             ],
             "additionalProperties": {
-              "type": "boolean"
-            }
-          },
-          "column_order": {
-            "maxItems": 50,
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/SavedViewColumnSettings"
             }
           },
           "show_stats": {
@@ -14239,16 +14242,7 @@
               "object"
             ],
             "additionalProperties": {
-              "type": "boolean"
-            }
-          },
-          "column_order": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/SavedViewColumnSettings"
             }
           },
           "show_stats": {

@@ -1,4 +1,6 @@
 using System.Text.Json;
+using Exceptionless.Core.Models;
+using Exceptionless.Web.Api.Infrastructure;
 using Microsoft.AspNetCore.TestHost;
 using Xunit;
 
@@ -80,8 +82,17 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.True(schemas.TryGetProperty("Login", out _));
         Assert.True(schemas.TryGetProperty("Signup", out _));
         Assert.True(schemas.TryGetProperty("NewProject", out _));
+        Assert.True(schemas.TryGetProperty("SavedViewColumnSettings", out var savedViewColumnSettings));
         Assert.True(schemas.TryGetProperty("TokenResult", out _));
         Assert.True(schemas.TryGetProperty("ViewOrganization", out _));
+
+        var savedViewColumnProperties = savedViewColumnSettings.GetProperty("properties");
+        var position = savedViewColumnProperties.GetProperty("position");
+        Assert.Equal(0, position.GetProperty("minimum").GetInt32());
+        Assert.Equal(SavedViewColumnSettings.MaxPosition, position.GetProperty("maximum").GetInt32());
+        var width = savedViewColumnProperties.GetProperty("width");
+        Assert.Equal(SavedViewColumnSettings.MinWidth, width.GetProperty("minimum").GetInt32());
+        Assert.Equal(SavedViewColumnSettings.MaxWidth, width.GetProperty("maximum").GetInt32());
 
         Assert.True(securitySchemes.TryGetProperty("Basic", out var basic));
         Assert.Equal("http", basic.GetProperty("type").GetString());
@@ -133,6 +144,9 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         AssertRequiredJsonRequestBody(paths, "/api/v2/tokens/{id}", "put", "UpdateToken");
         AssertRequiredJsonRequestBody(paths, "/api/v2/saved-views/{id}", "patch", "UpdateSavedView");
         AssertRequiredJsonRequestBody(paths, "/api/v2/saved-views/{id}", "put", "UpdateSavedView");
+        AssertDictionaryValueSchema(document.RootElement, "NewSavedView", "columns", "SavedViewColumnSettings");
+        AssertDictionaryValueSchema(document.RootElement, "UpdateSavedView", "columns", "SavedViewColumnSettings");
+        AssertDictionaryValueSchema(document.RootElement, "ViewSavedView", "columns", "SavedViewColumnSettings");
         AssertRequiredJsonRequestBody(paths, "/api/v2/users/{id}", "patch", "UpdateUser");
         AssertRequiredJsonRequestBody(paths, "/api/v2/users/{id}", "put", "UpdateUser");
 
@@ -169,9 +183,8 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         AssertOperationTag(paths, "/.well-known/oauth-protected-resource/mcp", "OAuth");
         AssertOperationTag(paths, "/.well-known/oauth-protected-resource/api/v2", "OAuth");
 
-        AssertOptionalParameter(paths, "/api/v2/organizations/check-name", "get", "name");
         AssertOptionalParameter(paths, "/api/v2/organizations/{organizationId}/projects/check-name", "get", "name");
-        AssertOptionalParameter(paths, "/api/v2/projects/check-name", "get", "name");
+        AssertOptionalParameter(paths, "/api/v2/organizations/{organizationId}/projects/check-name", "get", "projectId");
         AssertOptionalParameter(paths, "/api/v2/projects/{id}/config", "delete", "key");
         AssertOptionalParameter(paths, "/api/v2/projects/{id}/config", "post", "key");
         AssertOptionalParameter(paths, "/api/v2/projects/{id}/data", "delete", "key");
@@ -186,6 +199,46 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.Contains(eventById.GetProperty("parameters").EnumerateArray(), parameter =>
             String.Equals(parameter.GetProperty("name").GetString(), "expected_stack_id", StringComparison.Ordinal));
         AssertResponseCodes(eventById, "200", "400", "404", "426");
+
+        foreach (string path in new[] { "/api/v2/events/count", "/api/v2/organizations/{organizationId}/events/count", "/api/v2/projects/{projectId}/events/count" })
+            AssertPathResponseCodes(paths, path, "get", "200", "400", "426");
+
+        AssertPathResponseDescription(paths, "/api/v2/events/count", "get", "426", ApiFilterPolicy.PremiumSearchUpgradeMessage);
+        foreach (string path in new[] { "/api/v2/organizations/{organizationId}/events/count", "/api/v2/projects/{projectId}/events/count" })
+            AssertPathResponseDescription(paths, path, "get", "426", ApiFilterPolicy.SuspendedOrPremiumSearchUpgradeDescription);
+
+        foreach (string path in new[] { "/api/v2/events", "/api/v2/organizations/{organizationId}/events", "/api/v2/projects/{projectId}/events", "/api/v2/stacks/{stackId}/events" })
+            AssertPathResponseCodes(paths, path, "get", "200", "400", "426");
+
+        AssertPathResponseDescription(paths, "/api/v2/events", "get", "426", ApiFilterPolicy.PremiumSearchUpgradeMessage);
+        foreach (string path in new[] { "/api/v2/organizations/{organizationId}/events", "/api/v2/projects/{projectId}/events", "/api/v2/stacks/{stackId}/events" })
+            AssertPathResponseDescription(paths, path, "get", "426", ApiFilterPolicy.SuspendedOrPremiumSearchUpgradeDescription);
+
+        foreach (string path in new[] { "/api/v2/stacks", "/api/v2/organizations/{organizationId}/stacks", "/api/v2/projects/{projectId}/stacks" })
+            AssertPathResponseCodes(paths, path, "get", "200", "400", "426");
+
+        AssertPathResponseDescription(paths, "/api/v2/stacks", "get", "426", ApiFilterPolicy.PremiumSearchUpgradeMessage);
+        foreach (string path in new[] { "/api/v2/organizations/{organizationId}/stacks", "/api/v2/projects/{projectId}/stacks" })
+            AssertPathResponseDescription(paths, path, "get", "426", ApiFilterPolicy.SuspendedOrPremiumSearchUpgradeDescription);
+
+        foreach (string path in new[] {
+            "/api/v2/events/sessions/{sessionId}",
+            "/api/v2/projects/{projectId}/events/sessions/{sessionId}",
+            "/api/v2/events/sessions",
+            "/api/v2/organizations/{organizationId}/events/sessions",
+            "/api/v2/projects/{projectId}/events/sessions"
+        })
+            AssertPathResponseCodes(paths, path, "get", "200", "400", "426");
+
+        foreach (string path in new[] { "/api/v2/events/sessions/{sessionId}", "/api/v2/events/sessions" })
+            AssertPathResponseDescription(paths, path, "get", "426", ApiFilterPolicy.PremiumSessionUpgradeMessage);
+
+        foreach (string path in new[] {
+            "/api/v2/projects/{projectId}/events/sessions/{sessionId}",
+            "/api/v2/organizations/{organizationId}/events/sessions",
+            "/api/v2/projects/{projectId}/events/sessions"
+        })
+            AssertPathResponseDescription(paths, path, "get", "426", ApiFilterPolicy.SuspendedOrPremiumSessionUpgradeDescription);
 
         foreach (string path in new[] { "/api/v1/events", "/api/v1/projects/{projectId}/events", "/api/v2/events", "/api/v2/projects/{projectId}/events" })
         {
@@ -219,6 +272,28 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
             Assert.True(responses.TryGetProperty(statusCode, out _), $"Expected response status code '{statusCode}'.");
     }
 
+    private static void AssertPathResponseCodes(JsonElement paths, string path, string method, params string[] expectedStatusCodes)
+    {
+        var operation = paths.GetProperty(path).GetProperty(method);
+        var responses = operation.GetProperty("responses");
+        string actualStatusCodes = String.Join(", ", responses.EnumerateObject().Select(response => response.Name));
+        foreach (string statusCode in expectedStatusCodes)
+            Assert.True(responses.TryGetProperty(statusCode, out _), $"Expected response status code '{statusCode}' for {method.ToUpperInvariant()} {path}. Actual: {actualStatusCodes}.");
+    }
+
+    private static void AssertPathResponseDescription(JsonElement paths, string path, string method, string statusCode, string expectedDescription)
+    {
+        string? description = paths
+            .GetProperty(path)
+            .GetProperty(method)
+            .GetProperty("responses")
+            .GetProperty(statusCode)
+            .GetProperty("description")
+            .GetString();
+
+        Assert.Equal(expectedDescription, description);
+    }
+
     private static void AssertArrayResponseSchema(JsonElement paths, string path, string expectedItemSchema)
     {
         var schema = paths.GetProperty(path)
@@ -237,6 +312,17 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
     {
         var tags = paths.GetProperty(path).GetProperty("get").GetProperty("tags");
         Assert.Equal(expectedTag, Assert.Single(tags.EnumerateArray()).GetString());
+    }
+
+    private static void AssertDictionaryValueSchema(JsonElement document, string schemaName, string propertyName, string expectedValueSchema)
+    {
+        var property = document.GetProperty("components")
+            .GetProperty("schemas")
+            .GetProperty(schemaName)
+            .GetProperty("properties")
+            .GetProperty(propertyName);
+
+        Assert.Equal($"#/components/schemas/{expectedValueSchema}", property.GetProperty("additionalProperties").GetProperty("$ref").GetString());
     }
 
     private static void AssertOptionalParameter(JsonElement paths, string path, string method, string parameterName)

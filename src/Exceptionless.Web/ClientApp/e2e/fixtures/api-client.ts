@@ -27,12 +27,6 @@ export interface E2EProject {
     organization_id?: string;
 }
 
-export interface E2EStack {
-    id: string;
-    status?: string;
-    title?: string;
-}
-
 export interface E2EToken {
     id: string;
     notes?: string;
@@ -100,6 +94,15 @@ export class E2EApiClient {
         });
 
         await expectStatus(response, [202, 404], 'delete organization');
+        return response.status();
+    }
+
+    async deleteOrganizationUser(token: string, organizationId: string, email: string): Promise<number> {
+        const response = await this.request.delete(this.url(`organizations/${organizationId}/users/${encodeURIComponent(email)}`), {
+            headers: this.authHeaders(token)
+        });
+
+        await expectStatus(response, [200, 404], 'delete organization user');
         return response.status();
     }
 
@@ -202,28 +205,32 @@ export class E2EApiClient {
         return toToken(await readJson(response));
     }
 
-    async getStack(token: string, stackId: string): Promise<E2EStack> {
-        const response = await this.request.get(this.url(`stacks/${stackId}`), {
-            headers: this.authHeaders(token)
-        });
+    async login(email = this.environment.email, password = this.environment.password): Promise<string> {
+        const token = await this.loginIfExists(email, password);
+        if (!token) {
+            throw new Error('login failed with status 401');
+        }
 
-        await expectStatus(response, [200], 'get stack');
-        return toStack(await readJson(response));
+        return token;
     }
 
-    async login(): Promise<string> {
-        if (!this.environment.email || !this.environment.password) {
-            throw new Error('E2E_EMAIL and E2E_PASSWORD are required when using API login.');
+    async loginIfExists(email: string, password: string): Promise<string | undefined> {
+        if (!email || !password) {
+            throw new Error('Email and password are required when using API login.');
         }
 
         const response = await this.request.post(this.url('auth/login'), {
             data: {
-                email: this.environment.email,
-                password: this.environment.password
+                email,
+                password
             }
         });
 
-        await expectStatus(response, [200], 'login');
+        await expectStatus(response, [200, 401], 'login');
+        if (response.status() === 401) {
+            return undefined;
+        }
+
         const result = toTokenResult(await readJson(response));
 
         return result.token;
@@ -254,6 +261,44 @@ export class E2EApiClient {
         await expectStatus(response, [200], 'set organization feature');
     }
 
+    async pollForMailToken(email: string, path: 'reset-password' | 'signup', timeoutMs = 30_000): Promise<string> {
+        const deadline = Date.now() + timeoutMs;
+        const normalizedEmail = email.toLowerCase();
+
+        while (Date.now() < deadline) {
+            const messagesResponse = await this.request.get(`${this.environment.mailUrl}/api/v1/messages`);
+            await expectStatus(messagesResponse, [200], 'list local mail');
+            const messagesResult = toRecord(await readJson(messagesResponse), 'mail messages response');
+            const messages = messagesResult.messages;
+
+            if (!Array.isArray(messages)) {
+                throw new Error('mail messages response did not contain a messages array');
+            }
+
+            for (const value of messages) {
+                const message = toRecord(value, 'mail message summary');
+                const subject = getRequiredString(message, 'Subject', 'mail message summary');
+                if (!subject.toLowerCase().includes(normalizedEmail)) {
+                    continue;
+                }
+
+                const id = getRequiredString(message, 'ID', 'mail message summary');
+                const messageResponse = await this.request.get(`${this.environment.mailUrl}/api/v1/message/${encodeURIComponent(id)}`);
+                await expectStatus(messageResponse, [200], 'read local mail');
+                const messageResult = toRecord(await readJson(messageResponse), 'mail message response');
+                const content = `${getOptionalString(messageResult, 'HTML') ?? ''}\n${getOptionalString(messageResult, 'Text') ?? ''}`;
+                const token = extractMailToken(content, path);
+                if (token) {
+                    return token;
+                }
+            }
+
+            await delay(1_000);
+        }
+
+        throw new Error(`Timed out waiting for ${path} email sent to ${email}`);
+    }
+
     async signup(name: string, email: string, password: string): Promise<string> {
         const response = await this.request.post(this.url('auth/signup'), {
             data: {
@@ -279,65 +324,43 @@ export class E2EApiClient {
     }
 
     async waitForCurrentUserDeleted(token: string, timeoutMs = 30_000): Promise<void> {
-        const deadline = Date.now() + timeoutMs;
-        let lastError: Error | undefined;
-
-        while (Date.now() < deadline) {
-            try {
-                const user = await this.getCurrentUser(token);
-                if (!user) {
-                    return;
-                }
-            } catch (error) {
-                lastError = error instanceof Error ? error : new Error(String(error));
-            }
-
-            await delay(1_000);
-        }
-
-        throw new Error(`Timed out waiting for generated E2E user to be inaccessible after deletion${lastError ? `: ${lastError.message}` : ''}`);
+        await waitForCondition(
+            async () => !(await this.getCurrentUser(token)),
+            timeoutMs,
+            'Timed out waiting for generated E2E user to be inaccessible after deletion'
+        );
     }
 
     async waitForOrganizationDeleted(token: string, organizationId: string, timeoutMs = 30_000): Promise<void> {
-        const deadline = Date.now() + timeoutMs;
-        let lastError: Error | undefined;
+        await waitForCondition(
+            async () => !(await this.getOrganization(token, organizationId)),
+            timeoutMs,
+            `Timed out waiting for E2E organization ${organizationId} to be inaccessible after deletion`
+        );
+    }
 
-        while (Date.now() < deadline) {
-            try {
-                const organization = await this.getOrganization(token, organizationId);
-                if (!organization) {
-                    return;
-                }
-            } catch (error) {
-                lastError = error instanceof Error ? error : new Error(String(error));
-            }
+    async waitForOrganizationListed(token: string, organizationId: string, timeoutMs = 30_000): Promise<void> {
+        await waitForCondition(
+            async () => (await this.getOrganizations(token)).some((organization) => organization.id === organizationId),
+            timeoutMs,
+            `Timed out waiting for E2E organization ${organizationId} to appear in the organizations list`
+        );
+    }
 
-            await delay(1_000);
-        }
-
-        throw new Error(
-            `Timed out waiting for E2E organization ${organizationId} to be inaccessible after deletion${lastError ? `: ${lastError.message}` : ''}`
+    async waitForOrganizationNotListed(token: string, organizationId: string, timeoutMs = 30_000): Promise<void> {
+        await waitForCondition(
+            async () => !(await this.getOrganizations(token)).some((organization) => organization.id === organizationId),
+            timeoutMs,
+            `Timed out waiting for E2E organization ${organizationId} to disappear from the organizations list`
         );
     }
 
     async waitForProjectDeleted(token: string, projectId: string, timeoutMs = 30_000): Promise<void> {
-        const deadline = Date.now() + timeoutMs;
-        let lastError: Error | undefined;
-
-        while (Date.now() < deadline) {
-            try {
-                const project = await this.getProject(token, projectId);
-                if (!project) {
-                    return;
-                }
-            } catch (error) {
-                lastError = error instanceof Error ? error : new Error(String(error));
-            }
-
-            await delay(1_000);
-        }
-
-        throw new Error(`Timed out waiting for E2E project ${projectId} to be inaccessible after deletion${lastError ? `: ${lastError.message}` : ''}`);
+        await waitForCondition(
+            async () => !(await this.getProject(token, projectId)),
+            timeoutMs,
+            `Timed out waiting for E2E project ${projectId} to be inaccessible after deletion`
+        );
     }
 
     async waitForProjectRateNotificationsEnabled(token: string, projectId: string, timeoutMs = 30_000): Promise<void> {
@@ -383,6 +406,12 @@ async function expectStatus(response: APIResponse, expectedStatuses: number[], o
 function getOptionalBoolean(value: Record<string, unknown>, key: string): boolean | undefined {
     const property = value[key];
     return typeof property === 'boolean' ? property : undefined;
+}
+
+function extractMailToken(content: string, path: 'reset-password' | 'signup'): string | undefined {
+    const pattern = path === 'reset-password' ? /\/reset-password\/([^?"'<\\\s]+)/ : /\/signup\?token=([^&"'<\\\s]+)/;
+    const match = pattern.exec(content.replaceAll('&amp;', '&'));
+    return match?.[1] ? decodeURIComponent(match[1]) : undefined;
 }
 
 function getOptionalString(value: Record<string, unknown>, key: string): string | undefined {
@@ -479,16 +508,6 @@ function toRecord(value: unknown, context: string): Record<string, unknown> {
     return value;
 }
 
-function toStack(value: unknown): E2EStack {
-    const record = toRecord(value, 'stack response');
-
-    return {
-        id: getRequiredString(record, 'id', 'stack response'),
-        status: getOptionalString(record, 'status'),
-        title: getOptionalString(record, 'title')
-    };
-}
-
 function toToken(value: unknown): E2EToken {
     const record = toRecord(value, 'token response');
 
@@ -504,4 +523,23 @@ function toTokenResult(value: unknown): TokenResult {
     return {
         token: getRequiredString(record, 'token', 'token result')
     };
+}
+
+async function waitForCondition(condition: () => Promise<boolean>, timeoutMs: number, timeoutMessage: string): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+    let lastError: Error | undefined;
+
+    while (Date.now() < deadline) {
+        try {
+            if (await condition()) {
+                return;
+            }
+        } catch (error) {
+            lastError = error instanceof Error ? error : new Error(String(error));
+        }
+
+        await delay(1_000);
+    }
+
+    throw new Error(`${timeoutMessage}${lastError ? `: ${lastError.message}` : ''}`);
 }

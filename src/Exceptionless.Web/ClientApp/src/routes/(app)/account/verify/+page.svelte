@@ -2,7 +2,7 @@
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import { useFetchClient } from '@exceptionless/fetchclient';
+    import { useFetchClient } from '@foundatiofx/fetchclient';
     import { toast } from 'svelte-sonner';
 
     const client = useFetchClient();
