@@ -9,6 +9,8 @@ using Exceptionless.Tests.Extensions;
 using Foundatio.AsyncEx;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch;
+using Foundatio.Repositories.Models;
 using Xunit;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
@@ -271,6 +273,45 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         Assert.Equal(0, usage.Blocked);
         Assert.Equal(0, usage.TooBig);
         Assert.Equal(0, usage.Deleted);
+    }
+
+    [Fact]
+    public async Task SavePendingUsageAsync_UsageOnlyChanges_DoesNotPublishEntityChangedMessages()
+    {
+        // Arrange
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+        var organizationRepository = Assert.IsAssignableFrom<ElasticRepositoryBase<Organization>>(_organizationRepository);
+        var projectRepository = Assert.IsAssignableFrom<ElasticRepositoryBase<Project>>(_projectRepository);
+        int notificationCount = 0;
+        Func<object, BeforePublishEntityChangedEventArgs<Organization>, Task> organizationHandler = (_, _) =>
+        {
+            Interlocked.Increment(ref notificationCount);
+            return Task.CompletedTask;
+        };
+        Func<object, BeforePublishEntityChangedEventArgs<Project>, Task> projectHandler = (_, _) =>
+        {
+            Interlocked.Increment(ref notificationCount);
+            return Task.CompletedTask;
+        };
+        organizationRepository.BeforePublishEntityChanged.AddHandler(organizationHandler);
+        projectRepository.BeforePublishEntityChanged.AddHandler(projectHandler);
+
+        try
+        {
+            // Act
+            await _usageService.IncrementTotalAsync(organization.Id, project.Id);
+            TimeProvider.Advance(TimeSpan.FromMinutes(10));
+            await _usageService.SavePendingUsageAsync();
+
+            // Assert
+            Assert.Equal(0, notificationCount);
+        }
+        finally
+        {
+            organizationRepository.BeforePublishEntityChanged.RemoveHandler(organizationHandler);
+            projectRepository.BeforePublishEntityChanged.RemoveHandler(projectHandler);
+        }
     }
 
     [Fact]

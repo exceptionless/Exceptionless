@@ -9,7 +9,6 @@
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { useEventListener } from 'runed';
     import { SvelteSet } from 'svelte/reactivity';
-    import { debounce } from 'throttle-debounce';
 
     import FreePlanNotification from './notifications/free-plan-notification.svelte';
     import HourlyOverageNotification from './notifications/hourly-overage-notification.svelte';
@@ -95,19 +94,21 @@
     );
     const requiresPremiumUpgrade = $derived(requiresPremium && !organization?.has_premium_features && !needsProjectConfiguration);
 
-    const refetchConfigurationState = debounce(1500, async () => {
-        await Promise.all([organizationQuery.refetch(), projectsQuery.refetch()]);
-    });
-
     useEventListener(document, 'PersistentEventChanged', (event) => {
         const message = (event as CustomEvent<WebSocketMessageValue<'PersistentEventChanged'>>).detail;
+        const projectNeedsConfiguration = projects.some((project) => project.id === message.project_id && project.is_configured === false);
 
-        if (message.change_type === ChangeType.Removed || message.organization_id !== currentOrganizationId.current || !message.project_id) {
+        if (
+            message.change_type === ChangeType.Removed ||
+            message.organization_id !== currentOrganizationId.current ||
+            !message.project_id ||
+            !projectNeedsConfiguration ||
+            configuredProjectIds.has(message.project_id)
+        ) {
             return;
         }
 
         configuredProjectIds.add(message.project_id);
-        void refetchConfigurationState();
     });
 </script>
 
