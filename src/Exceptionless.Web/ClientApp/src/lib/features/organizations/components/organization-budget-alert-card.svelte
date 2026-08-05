@@ -14,7 +14,7 @@
     import { type BudgetAlertCardFormData, BudgetAlertCardSchema } from '$features/organizations/schemas';
     import { getEffectiveEventLimit } from '$features/organizations/utils';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
-    import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { ProblemDetails } from '@foundatiofx/fetchclient';
     import { createForm } from '@tanstack/svelte-form';
     import { toast } from 'svelte-sonner';
 

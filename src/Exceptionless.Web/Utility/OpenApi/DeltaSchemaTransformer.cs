@@ -116,6 +116,28 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
             && !type.IsEnum;
     }
 
+    private static bool TryGetEnumerableElementType(Type type, out Type elementType)
+    {
+        if (type.IsArray)
+        {
+            elementType = type.GetElementType() ?? typeof(object);
+            return true;
+        }
+
+        if (type == typeof(string) || !typeof(System.Collections.IEnumerable).IsAssignableFrom(type))
+        {
+            elementType = typeof(object);
+            return false;
+        }
+
+        var enumerableType = type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>)
+            ? type
+            : type.GetInterfaces().FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+
+        elementType = enumerableType?.GetGenericArguments()[0] ?? typeof(object);
+        return true;
+    }
+
     private static bool IsDeltaType(Type type)
     {
         return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Delta<>);

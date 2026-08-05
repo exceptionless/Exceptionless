@@ -14,7 +14,7 @@
     import { ProjectIngestLimitType, type ViewProject } from '$features/projects/models';
     import { type ProjectBudgetCardFormData, ProjectBudgetCardSchema } from '$features/projects/schemas';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
-    import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { ProblemDetails } from '@foundatiofx/fetchclient';
     import { createForm } from '@tanstack/svelte-form';
     import { untrack } from 'svelte';
     import { toast } from 'svelte-sonner';
