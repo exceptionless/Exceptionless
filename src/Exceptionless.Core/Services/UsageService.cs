@@ -259,8 +259,8 @@ public class UsageService
 
         if (bucketTotal.Value >= bucketLimit)
         {
-            await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = modified.Id, IsHourly = true });
             await _cache.SetAsync(GetThrottledKey(utcNow, modified.Id), true, TimeSpan.FromMinutes(5));
+            await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = modified.Id, IsHourly = true });
         }
     }
 
@@ -451,8 +451,8 @@ public class UsageService
         if (bucketTotal >= bucketLimit && bucketTotal - bucketLimit < eventCount)
         {
             // org will be throttled during the current bucket of time
-            await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId, IsHourly = true });
             await _cache.SetAsync(GetThrottledKey(utcNow, organizationId), true, TimeSpan.FromMinutes(5));
+            await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId, IsHourly = true });
         }
     }
 
