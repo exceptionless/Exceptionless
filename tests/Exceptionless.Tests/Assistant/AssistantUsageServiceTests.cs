@@ -124,13 +124,16 @@ public sealed class AssistantUsageServiceTests
         var service = CreateService(cache, CreateLockProvider(cache, timeProvider), CreateOptions(), timeProvider, recorder);
 
         await using var reservation = await service.TryStartTurnAsync("organization-id", CreatePlanOptions());
-        await service.RecordProviderUsageAsync("organization-id", new AssistantProviderUsage(12_000, 750, 0.002345m));
+        await service.RecordProviderRequestStartedAsync("organization-id");
+        await service.RecordProviderUsageAsync("organization-id", new AssistantProviderUsage(12_000, 750, 0.002345m), providerRequestAlreadyRecorded: true);
         await service.RecordToolCallsAsync("organization-id", 2);
         await service.RecordTurnCompletedAsync("organization-id");
 
         Assert.True(reservation.Allowed);
         Assert.Contains(recorder.Records, record => record.OrganizationId == "organization-id" && record.Increment.Turns == 1);
         Assert.Contains(recorder.Records, record => record.Increment.ProviderRequests == 1
+            && record.Increment.PromptTokens == 0);
+        Assert.Contains(recorder.Records, record => record.Increment.ProviderRequests == 0
             && record.Increment.PromptTokens == 12_000
             && record.Increment.CompletionTokens == 750
             && record.Increment.CostInMicrodollars == 2345);

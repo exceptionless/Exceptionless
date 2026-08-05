@@ -105,6 +105,7 @@
         const history = messages.slice(0, userMessageIndex + 1);
         const replacement: AssistantChatMessage = { content: '', id: crypto.randomUUID(), role: 'assistant', tools: [] };
         messages = [...history, replacement];
+        conversationId = crypto.randomUUID();
         await streamResponse(history, replacement);
     }
 
@@ -205,6 +206,10 @@
 
     function stopStreaming(): void {
         abortController?.abort();
+        messages = messages.map((message) => ({
+            ...message,
+            tools: message.tools.map((tool) => (tool.status === 'running' ? { ...tool, status: 'cancelled' as const } : tool))
+        }));
     }
 
     function clearConversation(): void {

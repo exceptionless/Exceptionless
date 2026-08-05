@@ -94,6 +94,7 @@ public sealed class AssistantService(
             var assistantContent = new StringBuilder();
             bool usageRecorded = false;
 
+            await assistantUsageService.RecordProviderRequestStartedAsync(request.OrganizationId);
             using var response = await SendRequestAsync(messages, options, allowTools, request, cancellationToken);
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
             using var reader = new StreamReader(stream);
@@ -116,7 +117,7 @@ public sealed class AssistantService(
                     usageRecorded = true;
                     try
                     {
-                        await assistantUsageService.RecordProviderUsageAsync(request.OrganizationId, usage);
+                        await assistantUsageService.RecordProviderUsageAsync(request.OrganizationId, usage, providerRequestAlreadyRecorded: true);
                     }
                     catch (Exception ex)
                     {
@@ -291,7 +292,17 @@ public sealed class AssistantService(
                     if (toolCall.Name == SearchStacksTool)
                         remainingProjectSearches--;
 
-                    result = await ExecuteToolAsync(toolCall.Name, arguments, request, cancellationToken);
+                    result = IsWriteTool(toolCall.Name) && !HasExplicitWriteRequest(request, toolCall.Name)
+                        ? JsonSerializer.Serialize(new
+                        {
+                            ok = false,
+                            error = new
+                            {
+                                code = "write_confirmation_required",
+                                message = "Ask the user to explicitly request this exact change before using a write tool."
+                            }
+                        }, s_jsonOptions)
+                        : await ExecuteToolAsync(toolCall.Name, arguments, request, cancellationToken);
                 }
 
                 result = LimitToolResult(result, ref remainingToolContextCharacters);
@@ -374,7 +385,7 @@ public sealed class AssistantService(
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        using var _ = assistantToolContext.BeginTools();
+            using var _ = assistantToolContext.BeginTools(request.OrganizationId);
         using var document = ParseArguments(arguments);
         var root = document.RootElement;
         string? currentEventId = GetRouteValue(request.Path, "event");
@@ -436,6 +447,31 @@ public sealed class AssistantService(
 
         return AssistantToolResultSerializer.Serialize(name, result, s_jsonOptions);
     }
+
+    private static bool IsWriteTool(string name)
+        => name is AddStackReferenceLinkTool or RemoveStackReferenceLinkTool or SetStackCriticalTool or SnoozeStackTool or UpdateStackStatusTool;
+
+    internal static bool HasExplicitWriteRequest(AssistantChatRequest request, string toolName)
+    {
+        string? latestUserMessage = request.Messages
+            .LastOrDefault(message => message is not null && String.Equals(message.Role, "user", StringComparison.OrdinalIgnoreCase))
+            ?.Content;
+        if (String.IsNullOrWhiteSpace(latestUserMessage))
+            return false;
+
+        return toolName switch
+        {
+            UpdateStackStatusTool => ContainsAny(latestUserMessage, "update", "change status", "mark", "fix", "ignore", "discard", "reopen"),
+            SnoozeStackTool => ContainsAny(latestUserMessage, "snooze"),
+            SetStackCriticalTool => ContainsAny(latestUserMessage, "critical", "not critical"),
+            AddStackReferenceLinkTool => ContainsAny(latestUserMessage, "add link", "attach link", "reference link"),
+            RemoveStackReferenceLinkTool => ContainsAny(latestUserMessage, "remove link", "delete link", "reference link"),
+            _ => false
+        };
+    }
+
+    private static bool ContainsAny(string value, params string[] terms)
+        => terms.Any(term => value.Contains(term, StringComparison.OrdinalIgnoreCase));
 
     private static List<object> BuildMessages(
         AssistantChatRequest request,

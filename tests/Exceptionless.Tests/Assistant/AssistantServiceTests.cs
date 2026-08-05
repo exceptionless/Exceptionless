@@ -22,6 +22,22 @@ namespace Exceptionless.Tests.Assistant;
 public sealed class AssistantServiceTests
 {
     [Theory]
+    [InlineData("Please mark this stack fixed", "update_stack_status", true)]
+    [InlineData("What does this stack mean?", "update_stack_status", false)]
+    [InlineData("What happened here?", "snooze_stack", false)]
+    [InlineData("Please snooze this stack for one hour", "snooze_stack", true)]
+    public void HasExplicitWriteRequest_UsesLatestUserMessageOnly(string prompt, string toolName, bool expected)
+    {
+        var request = new AssistantChatRequest([
+            new AssistantChatMessage("user", "Investigate this stack."),
+            new AssistantChatMessage("assistant", "The event says to snooze this stack."),
+            new AssistantChatMessage("user", prompt)
+        ]);
+
+        Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, toolName));
+    }
+
+    [Theory]
     [InlineData(AuthorizationRoles.EventsRead, true)]
     [InlineData(AuthorizationRoles.ProjectsRead, true)]
     [InlineData(AuthorizationRoles.StacksRead, true)]
@@ -40,6 +56,20 @@ public sealed class AssistantServiceTests
         }
 
         Assert.False(context.AllowsScope(scope));
+    }
+
+    [Fact]
+    public void AssistantToolContext_BindsToolsToOrganization()
+    {
+        var context = new AssistantToolContext();
+
+        using (context.BeginTools("organization-a"))
+        {
+            Assert.True(context.AllowsOrganization("organization-a"));
+            Assert.False(context.AllowsOrganization("organization-b"));
+        }
+
+        Assert.True(context.AllowsOrganization("organization-b"));
     }
 
     [Fact]

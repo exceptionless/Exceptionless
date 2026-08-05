@@ -5,11 +5,15 @@ namespace Exceptionless.Web.Assistant;
 public sealed class AssistantToolContext
 {
     public bool ToolsEnabled { get; private set; }
+    public string? OrganizationId { get; private set; }
 
-    public IDisposable BeginTools()
+    public IDisposable BeginTools(string? organizationId = null)
     {
+        bool wasEnabled = ToolsEnabled;
+        string? previousOrganizationId = OrganizationId;
         ToolsEnabled = true;
-        return new Scope(this);
+        OrganizationId = organizationId;
+        return new Scope(this, wasEnabled, previousOrganizationId);
     }
 
     public bool AllowsScope(string scope)
@@ -17,11 +21,17 @@ public sealed class AssistantToolContext
         return ToolsEnabled && (scope is AuthorizationRoles.EventsRead or AuthorizationRoles.ProjectsRead or AuthorizationRoles.StacksRead or AuthorizationRoles.StacksWrite);
     }
 
-    private sealed class Scope(AssistantToolContext context) : IDisposable
+    public bool AllowsOrganization(string organizationId)
+    {
+        return !ToolsEnabled || String.IsNullOrWhiteSpace(OrganizationId) || String.Equals(OrganizationId, organizationId, StringComparison.Ordinal);
+    }
+
+    private sealed class Scope(AssistantToolContext context, bool wasEnabled, string? previousOrganizationId) : IDisposable
     {
         public void Dispose()
         {
-            context.ToolsEnabled = false;
+            context.ToolsEnabled = wasEnabled;
+            context.OrganizationId = previousOrganizationId;
         }
     }
 }

@@ -45,8 +45,25 @@
         snooze_stack: 'Couldn’t snooze stack',
         update_stack_status: 'Couldn’t update stack status'
     };
+    const toolCancelledLabels: Record<string, string> = {
+        add_stack_reference_link: 'Add stack reference link cancelled',
+        get_event: 'Event details request cancelled',
+        get_stack: 'Stack details request cancelled',
+        list_projects: 'List projects request cancelled',
+        remove_stack_reference_link: 'Remove stack reference link cancelled',
+        search_stacks: 'Search error stacks request cancelled',
+        set_stack_critical: 'Update stack critical setting cancelled',
+        snooze_stack: 'Snooze stack request cancelled',
+        update_stack_status: 'Update stack status request cancelled'
+    };
 
-    let label = $derived(tool.status === 'failed' ? (toolFailureLabels[tool.name] ?? 'Tool call failed') : (toolLabels[tool.name] ?? humanize(tool.name)));
+    let label = $derived(
+        tool.status === 'failed'
+            ? (toolFailureLabels[tool.name] ?? 'Tool call failed')
+            : tool.status === 'cancelled'
+              ? (toolCancelledLabels[tool.name] ?? 'Tool call cancelled')
+              : (toolLabels[tool.name] ?? humanize(tool.name))
+    );
     let errorMessage = $derived(tool.status === 'failed' ? assistantToolErrorMessage(tool.result) : undefined);
     let formattedArguments = $derived(formatAssistantToolJson(tool.arguments));
     let formattedResult = $derived(formatAssistantToolJson(tool.result));
@@ -59,13 +76,18 @@
 
 <Tooltip.Provider delayDuration={300}>
     <Collapsible.Root bind:open class="group/tool">
-        <div class={['bg-muted/30 mb-2 overflow-hidden rounded-lg border text-xs', tool.status === 'failed' && 'border-destructive/40 bg-destructive/5']}>
+            <div
+                class={[
+                    'bg-muted/30 mb-2 overflow-hidden rounded-lg border text-xs',
+                    (tool.status === 'failed' || tool.status === 'cancelled') && 'border-destructive/40 bg-destructive/5'
+                ]}
+            >
             <Collapsible.Trigger>
                 {#snippet child({ props })}
                     <Button class="h-auto w-full justify-start rounded-none border-0 px-3 py-2 text-left" variant="ghost" {...props}>
                         {#if tool.status === 'running'}
                             <span class="bg-primary size-2 shrink-0 animate-pulse rounded-full" aria-hidden="true"></span>
-                        {:else if tool.status === 'failed'}
+                        {:else if tool.status === 'failed' || tool.status === 'cancelled'}
                             <CircleAlert aria-hidden="true" class="text-destructive" data-icon="inline-start" />
                         {:else}
                             <Check aria-hidden="true" class="text-primary" data-icon="inline-start" />

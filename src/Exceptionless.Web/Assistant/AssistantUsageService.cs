@@ -1,9 +1,13 @@
 using Exceptionless.Core;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
+using Exceptionless.Web.Extensions;
 using Foundatio.Caching;
 using Foundatio.Lock;
+using Foundatio.Repositories;
+using Foundatio.Repositories.Options;
 
 namespace Exceptionless.Web.Assistant;
 
@@ -13,7 +17,8 @@ public sealed class AssistantUsageService(
     IAssistantUsageRecorder usageRecorder,
     AppOptions appOptions,
     TimeProvider timeProvider,
-    ILogger<AssistantUsageService> logger)
+    ILogger<AssistantUsageService> logger,
+    IOrganizationRepository? organizationRepository = null)
 {
     private const long MicrodollarsPerDollar = 1_000_000;
     private readonly ScopedCacheClient _cache = new(cacheClient, "AssistantUsage");
@@ -120,7 +125,10 @@ public sealed class AssistantUsageService(
         return AssistantUsageDecision.AllowedDecision;
     }
 
-    public async Task RecordProviderUsageAsync(string? organizationId, AssistantProviderUsage usage)
+    public Task RecordProviderRequestStartedAsync(string? organizationId)
+        => TryRecordUsageAsync(organizationId, new AssistantUsageIncrement { ProviderRequests = 1 });
+
+    public async Task RecordProviderUsageAsync(string? organizationId, AssistantProviderUsage usage, bool providerRequestAlreadyRecorded = false)
     {
         if (String.IsNullOrWhiteSpace(organizationId))
             return;
@@ -139,7 +147,7 @@ public sealed class AssistantUsageService(
         await Task.WhenAll(tasks);
         await TryRecordUsageAsync(organizationId, new AssistantUsageIncrement
         {
-            ProviderRequests = 1,
+            ProviderRequests = providerRequestAlreadyRecorded ? 0 : 1,
             PromptTokens = Math.Max(0, usage.PromptTokens),
             CompletionTokens = Math.Max(0, usage.CompletionTokens),
             CostInMicrodollars = costInMicrodollars
@@ -170,6 +178,26 @@ public sealed class AssistantUsageService(
         long promptTokens = await _cache.GetAsync<long>(GetUsageKey(organizationId, month.Id, "prompt-tokens"), 0);
         long completionTokens = await _cache.GetAsync<long>(GetUsageKey(organizationId, month.Id, "completion-tokens"), 0);
         long costInMicrodollars = await _cache.GetAsync<long>(GetUsageKey(organizationId, month.Id, "cost-microdollars"), 0);
+        if (organizationRepository is not null)
+        {
+            try
+            {
+                var organization = await organizationRepository.GetByIdAsync(organizationId, options => options.Cache());
+                var durableUsage = organization?.AssistantUsage.FirstOrDefault(usage => usage.Date.Year == now.Year && usage.Date.Month == now.Month);
+                if (durableUsage is not null)
+                {
+                    turns = Math.Max(turns, durableUsage.Turns);
+                    promptTokens = Math.Max(promptTokens, durableUsage.PromptTokens);
+                    completionTokens = Math.Max(completionTokens, durableUsage.CompletionTokens);
+                    costInMicrodollars = Math.Max(costInMicrodollars, durableUsage.CostInMicrodollars);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Unable to rehydrate durable assistant usage for organization {OrganizationId}", organizationId);
+            }
+        }
+
         return new AssistantMonthlyUsage(turns, promptTokens, completionTokens, costInMicrodollars);
     }
 

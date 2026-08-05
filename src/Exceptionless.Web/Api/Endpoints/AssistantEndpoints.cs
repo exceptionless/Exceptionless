@@ -19,13 +19,21 @@ public static class AssistantEndpoints
         endpoints.MapGet("api/v2/assistant/access", GetAccessAsync)
             .WithName("GetAssistantAccess")
             .RequireAuthorization(AuthorizationRoles.UserPolicy)
-            .ExcludeFromDescription();
+            .Produces<AssistantAccessResponse>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status426UpgradeRequired);
 
         endpoints.MapPost("api/v2/assistant/chat", StreamChatAsync)
             .WithName("StreamAssistantChat")
             .RequireAuthorization(AuthorizationRoles.UserPolicy)
             .WithMetadata(new RequestSizeLimitAttribute(256 * 1024))
-            .ExcludeFromDescription();
+            .Produces(StatusCodes.Status200OK, contentType: "application/x-ndjson")
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status426UpgradeRequired)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
 
         return endpoints;
     }
@@ -45,7 +53,10 @@ public static class AssistantEndpoints
         if (accessFailure is not null)
             return accessFailure;
 
-        if (request.Messages is null || request.Messages.Count == 0 || request.Messages.All(message => String.IsNullOrWhiteSpace(message.Content)))
+        if (request.Messages is null
+            || request.Messages.Count == 0
+            || request.Messages.Any(message => message is null)
+            || request.Messages.All(message => String.IsNullOrWhiteSpace(message?.Content)))
             return HttpResults.ValidationProblem(new Dictionary<string, string[]> { ["messages"] = ["At least one message is required."] });
 
         string? conversationId = NormalizeConversationId(request.ConversationId);

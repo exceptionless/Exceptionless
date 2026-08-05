@@ -26,5 +26,5 @@ export interface AssistantToolActivity {
     id: string;
     name: string;
     result?: string;
-    status: 'complete' | 'failed' | 'running';
+    status: 'cancelled' | 'complete' | 'failed' | 'running';
 }

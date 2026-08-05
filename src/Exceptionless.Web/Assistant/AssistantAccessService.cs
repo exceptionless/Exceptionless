@@ -35,6 +35,9 @@ public sealed class AssistantAccessService(
         if (organization is null)
             return AssistantAccessDecision.Unavailable(AssistantAccessReason.OrganizationNotAccessible, "The selected organization could not be found.");
 
+        if (organization.IsSuspended)
+            return AssistantAccessDecision.Unavailable(AssistantAccessReason.OrganizationNotAccessible, "The selected organization is suspended.");
+
         return EvaluatePlan(billingPlans.GetPlan(organization.PlanId)?.Assistant);
     }
 

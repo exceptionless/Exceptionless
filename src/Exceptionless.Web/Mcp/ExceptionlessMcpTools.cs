@@ -1059,6 +1059,9 @@ public sealed class ExceptionlessMcpTools
     {
         if (!Request.CanAccessOrganization(organizationId))
             throw new UnauthorizedAccessException("The current user cannot access the requested organization.");
+
+        if (_assistantToolContext is not null && !_assistantToolContext.AllowsOrganization(organizationId))
+            throw new UnauthorizedAccessException("The requested resource is outside the assistant organization.");
     }
 
     private static bool TryValidateLimit(int limit, out int resolvedLimit, out string? error, out string? warning)
