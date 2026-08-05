@@ -45,6 +45,7 @@ function validateTemplateRegistry(names: string[]): void {
 }
 
 function cleanHtml(html: string): string {
+    html = html.replace(/<!--[\da-z]+-->/gi, '');
     html = html.replace(/<!--\[!?-->/g, '');
     html = html.replace(/<!--]-->/g, '');
     html = html.replace(/<!--\[-->/g, '');
