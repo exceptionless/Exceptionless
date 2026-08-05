@@ -1,6 +1,6 @@
 <script lang="ts">
     import type { IFilter } from '$comp/faceted-filter';
-    import type { ProblemDetails } from '@exceptionless/fetchclient';
+    import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';

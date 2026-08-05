@@ -11,6 +11,7 @@ public record Invoice
 
     public required DateTime Date { get; set; }
     public required bool Paid { get; set; }
+    public required string Status { get; set; }
     public required decimal Total { get; set; }
 
     public IList<InvoiceLineItem> Items { get; set; } = new List<InvoiceLineItem>();

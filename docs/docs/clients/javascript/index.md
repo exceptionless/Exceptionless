@@ -55,6 +55,10 @@ To install via a script tag referencing Exceptionless over a CDN, add the follow
 `</script>`
 ```
 
+## Production stack traces
+
+Production bundles are often minified, which makes their stack traces difficult to read and group. Exceptionless can automatically discover public source maps or accept private source maps from your CI/CD pipeline. See [JavaScript Source Maps](/docs/source-maps) for setup and upload instructions.
+
 ---
 
 [Next > Configuration](/docs/clients/javascript/client-configuration)

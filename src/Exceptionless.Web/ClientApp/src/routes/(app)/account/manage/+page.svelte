@@ -25,7 +25,7 @@
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
     import { type UpdateUserEmailAddressFormData, UpdateUserEmailAddressSchema, type UpdateUserFormData, UpdateUserSchema } from '$features/users/schemas';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
-    import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+    import { ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
     import Camera from '@lucide/svelte/icons/camera';
     import Trash from '@lucide/svelte/icons/trash-2';
     import X from '@lucide/svelte/icons/x';

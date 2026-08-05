@@ -25,6 +25,18 @@ public sealed class StripeBillingClient : IStripeBillingClient
         return (await service.ListAsync(options)).ToList();
     }
 
+    public IAsyncEnumerable<Stripe.Invoice> ListInvoicesAutoPagingAsync(InvoiceListOptions options)
+    {
+        var service = new InvoiceService(Client);
+        return service.ListAutoPagingAsync(options);
+    }
+
+    public Task<Stripe.Invoice> FinalizeInvoiceAsync(string id, InvoiceFinalizeOptions options, string idempotencyKey)
+    {
+        var service = new InvoiceService(Client);
+        return service.FinalizeInvoiceAsync(id, options, new RequestOptions { IdempotencyKey = idempotencyKey });
+    }
+
     public Task<Customer> CreateCustomerAsync(CustomerCreateOptions options)
     {
         var service = new CustomerService(Client);
@@ -43,6 +55,12 @@ public sealed class StripeBillingClient : IStripeBillingClient
         return service.CreateAsync(options);
     }
 
+    public Task<Subscription> GetSubscriptionAsync(string id)
+    {
+        var service = new SubscriptionService(Client);
+        return service.GetAsync(id);
+    }
+
     public Task<Subscription> UpdateSubscriptionAsync(string subscriptionId, SubscriptionUpdateOptions options)
     {
         var service = new SubscriptionService(Client);
@@ -53,6 +71,12 @@ public sealed class StripeBillingClient : IStripeBillingClient
     {
         var service = new SubscriptionService(Client);
         return (await service.ListAsync(options)).ToList();
+    }
+
+    public IAsyncEnumerable<Subscription> ListSubscriptionsAutoPagingAsync(SubscriptionListOptions options)
+    {
+        var service = new SubscriptionService(Client);
+        return service.ListAutoPagingAsync(options);
     }
 
     public Task<Subscription> CancelSubscriptionAsync(string subscriptionId, SubscriptionCancelOptions options)

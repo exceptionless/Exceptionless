@@ -23,7 +23,7 @@
     } from '$features/admin/api.svelte';
     import { type OAuthApplicationFormData, OAuthApplicationSchema } from '$features/admin/schemas';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
-    import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { ProblemDetails } from '@foundatiofx/fetchclient';
     import Check from '@lucide/svelte/icons/check';
     import CircleSlash from '@lucide/svelte/icons/circle-slash';
     import Plus from '@lucide/svelte/icons/plus';
