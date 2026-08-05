@@ -85,10 +85,12 @@
         defaultFilter: DEFAULT_PARAMS.filter,
         filterCacheKey,
         getColumnOrder: () => table.state.columnOrder,
+        getColumnSizing: () => table.state.columnSizing,
         getColumnVisibility: () => table.state.columnVisibility,
         getFilterDefinitions: () => serializeFilters(filters ?? []),
         queryParams,
         setColumnOrder: (v) => table.setColumnOrder(v),
+        setColumnSizing: (v) => table.setColumnSizing(v),
         setColumnVisibility: (v) => table.setColumnVisibility(v),
         updateFilterCache,
         view: VIEW
@@ -192,6 +194,7 @@
                 return options;
             },
             defaultColumnVisibility: defaultEventColumnVisibility,
+            enableColumnResizing: true,
             paginationStrategy: 'cursor',
             get queryData() {
                 return queryData;
@@ -205,6 +208,7 @@
         }),
         (state) => ({
             columnOrder: state.columnOrder,
+            columnSizing: state.columnSizing,
             columnVisibility: state.columnVisibility
         })
     );
@@ -326,6 +330,7 @@
                 <SavedViewPicker
                     activeSavedView={savedViewsState.activeSavedView}
                     columnOrder={table.state.columnOrder}
+                    columnSizing={table.state.columnSizing}
                     columnVisibility={table.state.columnVisibility}
                     filters={filters ?? []}
                     isModified={savedViewsState.isModified}

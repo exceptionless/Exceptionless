@@ -93,6 +93,7 @@ public class JobRunnerOptions
     public bool MailMessage { get; }
     public bool MaintainIndexes { get; }
     public bool Migration { get; }
+    public bool RunDataSeedStartupAction => !Migration;
     public bool StackStatus { get; }
     public bool StackEventCount { get; }
     public bool WebHooks { get; }

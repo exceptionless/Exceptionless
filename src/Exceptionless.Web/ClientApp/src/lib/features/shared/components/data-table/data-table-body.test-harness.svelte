@@ -54,9 +54,19 @@
                 {
                     cell: (props) => renderComponent(Summary, { showStatus: false, summary: props.row.original }),
                     header: 'Summary',
-                    id: 'summary'
+                    id: 'summary',
+                    meta: { class: 'w-60 min-w-60 max-w-60' },
+                    minSize: 120,
+                    size: 160
+                },
+                {
+                    cell: (props) => props.row.original.id,
+                    enableResizing: false,
+                    header: 'Date',
+                    id: 'date'
                 }
             ],
+            enableColumnResizing: true,
             paginationStrategy: 'memory',
             get queryData() {
                 return [summary];

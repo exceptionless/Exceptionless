@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Exceptionless.Core.Models;
 using Exceptionless.Web.Api.Infrastructure;
 using Microsoft.AspNetCore.TestHost;
 using Xunit;
@@ -81,8 +82,17 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.True(schemas.TryGetProperty("Login", out _));
         Assert.True(schemas.TryGetProperty("Signup", out _));
         Assert.True(schemas.TryGetProperty("NewProject", out _));
+        Assert.True(schemas.TryGetProperty("SavedViewColumnSettings", out var savedViewColumnSettings));
         Assert.True(schemas.TryGetProperty("TokenResult", out _));
         Assert.True(schemas.TryGetProperty("ViewOrganization", out _));
+
+        var savedViewColumnProperties = savedViewColumnSettings.GetProperty("properties");
+        var position = savedViewColumnProperties.GetProperty("position");
+        Assert.Equal(0, position.GetProperty("minimum").GetInt32());
+        Assert.Equal(SavedViewColumnSettings.MaxPosition, position.GetProperty("maximum").GetInt32());
+        var width = savedViewColumnProperties.GetProperty("width");
+        Assert.Equal(SavedViewColumnSettings.MinWidth, width.GetProperty("minimum").GetInt32());
+        Assert.Equal(SavedViewColumnSettings.MaxWidth, width.GetProperty("maximum").GetInt32());
 
         Assert.True(securitySchemes.TryGetProperty("Basic", out var basic));
         Assert.Equal("http", basic.GetProperty("type").GetString());
@@ -134,6 +144,9 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         AssertRequiredJsonRequestBody(paths, "/api/v2/tokens/{id}", "put", "UpdateToken");
         AssertRequiredJsonRequestBody(paths, "/api/v2/saved-views/{id}", "patch", "UpdateSavedView");
         AssertRequiredJsonRequestBody(paths, "/api/v2/saved-views/{id}", "put", "UpdateSavedView");
+        AssertDictionaryValueSchema(document.RootElement, "NewSavedView", "columns", "SavedViewColumnSettings");
+        AssertDictionaryValueSchema(document.RootElement, "UpdateSavedView", "columns", "SavedViewColumnSettings");
+        AssertDictionaryValueSchema(document.RootElement, "ViewSavedView", "columns", "SavedViewColumnSettings");
         AssertRequiredJsonRequestBody(paths, "/api/v2/users/{id}", "patch", "UpdateUser");
         AssertRequiredJsonRequestBody(paths, "/api/v2/users/{id}", "put", "UpdateUser");
 
@@ -299,6 +312,17 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
     {
         var tags = paths.GetProperty(path).GetProperty("get").GetProperty("tags");
         Assert.Equal(expectedTag, Assert.Single(tags.EnumerateArray()).GetString());
+    }
+
+    private static void AssertDictionaryValueSchema(JsonElement document, string schemaName, string propertyName, string expectedValueSchema)
+    {
+        var property = document.GetProperty("components")
+            .GetProperty("schemas")
+            .GetProperty(schemaName)
+            .GetProperty("properties")
+            .GetProperty(propertyName);
+
+        Assert.Equal($"#/components/schemas/{expectedValueSchema}", property.GetProperty("additionalProperties").GetProperty("$ref").GetString());
     }
 
     private static void AssertOptionalParameter(JsonElement paths, string path, string method, string parameterName)

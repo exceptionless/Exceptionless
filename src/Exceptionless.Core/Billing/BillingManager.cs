@@ -3,25 +3,35 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
+using Foundatio.Lock;
 
 namespace Exceptionless.Core.Billing;
 
 public class BillingManager
 {
+    private static readonly TimeSpan BillingLockDuration = TimeSpan.FromMinutes(5);
+    private readonly ILockProvider _lockProvider;
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly IUserRepository _userRepository;
     private readonly BillingPlans _plans;
     private readonly TimeProvider _timeProvider;
 
-    public BillingManager(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IUserRepository userRepository, BillingPlans plans, TimeProvider timeProvider)
+    public BillingManager(ILockProvider lockProvider, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IUserRepository userRepository, BillingPlans plans, TimeProvider timeProvider)
     {
+        _lockProvider = lockProvider;
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
         _userRepository = userRepository;
         _plans = plans;
         _timeProvider = timeProvider;
     }
+
+    public Task<ILock> AcquireOrganizationLockAsync(string organizationId)
+        => _lockProvider.AcquireAsync(GetOrganizationLockKey(organizationId), BillingLockDuration, TimeSpan.FromSeconds(30));
+
+    public Task<ILock?> TryAcquireOrganizationLockAsync(string organizationId)
+        => _lockProvider.TryAcquireAsync(GetOrganizationLockKey(organizationId), BillingLockDuration, TimeSpan.Zero);
 
     public async Task<bool> CanAddOrganizationAsync(User? user)
     {
@@ -152,5 +162,21 @@ public class BillingManager
         organization.BonusEventsPerMonth = bonusEvents;
         organization.BonusExpiration = expires;
         organization.GetCurrentUsage(_timeProvider).Limit = organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
+    }
+
+    internal void SetStripeSubscriptionId(Organization organization, string? subscriptionId)
+    {
+        ArgumentNullException.ThrowIfNull(organization);
+        if (String.Equals(organization.StripeSubscriptionId, subscriptionId, StringComparison.Ordinal))
+            return;
+
+        organization.StripeSubscriptionId = subscriptionId;
+        organization.StripeSubscriptionEventDate = null;
+    }
+
+    private static string GetOrganizationLockKey(string organizationId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(organizationId);
+        return $"Organization:{organizationId}:billing-plan";
     }
 }
