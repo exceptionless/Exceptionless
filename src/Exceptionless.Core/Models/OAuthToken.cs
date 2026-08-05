@@ -35,6 +35,7 @@ public class OAuthToken : IIdentity, IHaveDates, IValidatableObject
 
     public DateTime? ExpiresUtc { get; set; }
     public DateTime? RefreshExpiresUtc { get; set; }
+    public DateTime? RefreshTokenUsedUtc { get; set; }
     public HashSet<string> OrganizationIds { get; set; } = new(StringComparer.Ordinal);
     public HashSet<string> Scopes { get; set; } = new(StringComparer.Ordinal);
     public bool IsDisabled { get; set; }

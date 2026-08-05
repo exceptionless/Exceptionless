@@ -3,7 +3,7 @@ import type { WebSocketMessageValue } from '$features/websockets/models';
 
 import { accessToken } from '$features/auth/index.svelte';
 import { ChangeType } from '$features/websockets/models';
-import { type ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+import { type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, type QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
 import type { NewSavedView, SavedView, UpdateSavedView } from './models';

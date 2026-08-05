@@ -1,7 +1,7 @@
 import { env } from '$env/dynamic/public';
 import { getIntercomTokenSessionKey, intercomTokenRefreshIntervalMs } from '$features/intercom/config';
 import { organization } from '$features/organizations/context.svelte';
-import { ProblemDetails, useFetchClient } from '@exceptionless/fetchclient';
+import { ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { hide as hideIntercom, shutdown as shutdownIntercom } from '@intercom/messenger-js-sdk';
 import { createQuery, type QueryClient } from '@tanstack/svelte-query';
 

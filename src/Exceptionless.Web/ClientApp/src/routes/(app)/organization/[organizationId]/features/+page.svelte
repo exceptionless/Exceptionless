@@ -9,7 +9,7 @@
     import { getOrganizationQuery, removeOrganizationFeature, setOrganizationFeature } from '$features/organizations/api.svelte';
     import { postPredefinedSavedViews } from '$features/saved-views/api.svelte';
     import { getMeQuery } from '$features/users/api.svelte';
-    import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { ProblemDetails } from '@foundatiofx/fetchclient';
     import RefreshCw from '@lucide/svelte/icons/refresh-cw';
     import { toast } from 'svelte-sonner';
 

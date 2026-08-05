@@ -6,7 +6,7 @@
     import { Input } from '$comp/ui/input';
     import { ClientConfigurationSettingSchema } from '$features/projects/schemas';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
-    import { ProblemDetails } from '@exceptionless/fetchclient';
+    import { ProblemDetails } from '@foundatiofx/fetchclient';
     import { createForm } from '@tanstack/svelte-form';
 
     import type { ClientConfigurationSetting } from '../../models';

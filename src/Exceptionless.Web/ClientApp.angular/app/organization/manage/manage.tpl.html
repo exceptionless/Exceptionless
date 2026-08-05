@@ -29,7 +29,6 @@
                                             ng-model="vm.organization.name"
                                             ng-model-options="{ debounce: 500 }"
                                             ng-change="vm.save(vm.organizationForm.$valid)"
-                                            organization-name-available-validator
                                             ng-required="true"
                                             autofocus
                                         />
@@ -45,9 +44,6 @@
                                     >
                                         <small ng-message="required"
                                             >{{::'Organization Name is required.' | translate}}</small
-                                        >
-                                        <small ng-message="unique"
-                                            >{{::'A organizations with this name already exists.' | translate}}</small
                                         >
                                     </div>
                                 </div>
