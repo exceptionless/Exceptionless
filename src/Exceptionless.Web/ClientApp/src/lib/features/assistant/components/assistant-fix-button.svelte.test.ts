@@ -18,7 +18,7 @@ describe('AssistantFixButton', () => {
         const prepareContext = vi.fn(() => calls.push('prepare'));
         renderButton({ ask, enabled: () => true }, 'stack', prepareContext);
 
-        await fireEvent.click(screen.getByRole('button', { name: 'Ask Exie to fix this stack' }));
+        await fireEvent.click(screen.getByRole('button', { name: 'Fix this stack with Exie' }));
 
         expect(calls[0]).toBe('prepare');
         expect(ask).toHaveBeenCalledWith(expect.stringContaining('Analyze this stack'));
@@ -29,7 +29,7 @@ describe('AssistantFixButton', () => {
         const ask = vi.fn();
         renderButton({ ask, enabled: () => true }, 'event');
 
-        await fireEvent.click(screen.getByRole('button', { name: 'Ask Exie to fix this event' }));
+        await fireEvent.click(screen.getByRole('button', { name: 'Fix this event with Exie' }));
 
         expect(ask).toHaveBeenCalledWith(expect.stringContaining('event and its stack context'));
     });
@@ -37,6 +37,6 @@ describe('AssistantFixButton', () => {
     it('is hidden when the assistant feature is disabled', () => {
         renderButton({ ask: vi.fn(), enabled: () => false }, 'stack');
 
-        expect(screen.queryByRole('button', { name: 'Ask Exie to fix this stack' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Fix this stack with Exie' })).toBeNull();
     });
 });

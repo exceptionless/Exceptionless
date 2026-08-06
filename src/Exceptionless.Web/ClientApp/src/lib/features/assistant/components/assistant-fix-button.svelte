@@ -26,15 +26,14 @@
 
 {#if assistant?.enabled()}
     <Button
-        aria-label={`Ask Exie to fix this ${resource}`}
+        aria-label={`Fix this ${resource} with Exie`}
         data-assistant-trigger
         onclick={askExie}
         size="sm"
-        title={`Ask Exie to fix this ${resource}`}
+        title={`Fix this ${resource} with Exie`}
         variant="outline"
     >
         <Bot aria-hidden="true" />
-        <span class="hidden sm:inline">Ask Exie to fix it</span>
-        <span class="sm:hidden">Fix with Exie</span>
+        <span>Fix with Exie</span>
     </Button>
 {/if}
