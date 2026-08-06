@@ -26,15 +26,16 @@ describe('DateRangePicker', () => {
         expect(onselect).toHaveBeenLastCalledWith('[now-1y TO now]');
     });
 
-    it('allows editing a custom range after selecting the last 90 days while custom range is open', async () => {
+    it('initializes a persisted common range after the picker is remounted', async () => {
         const onselect = vi.fn();
-        render(DateRangePicker, {
-            onselect,
-            value: '[now-30d TO now]'
-        });
+        const initialRender = render(DateRangePicker, { onselect, value: '[now-30d TO now]' });
 
-        await fireEvent.click(screen.getByRole('button', { name: 'Custom range' }));
         await fireEvent.click(screen.getByRole('button', { name: 'Last 90 days' }));
+        expect(onselect).toHaveBeenLastCalledWith('[now-90d TO now]');
+        initialRender.unmount();
+
+        render(DateRangePicker, { onselect, value: '[now-90d TO now]' });
+        await fireEvent.click(screen.getByRole('button', { name: 'Custom range' }));
 
         const startInput = screen.getByPlaceholderText('Start: now-1h, 2024-01-01');
         const endInput = screen.getByPlaceholderText('End: now, 2024-12-31');

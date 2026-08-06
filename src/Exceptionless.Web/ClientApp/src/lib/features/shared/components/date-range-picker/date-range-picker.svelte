@@ -1,6 +1,4 @@
 <script lang="ts">
-    import type { CustomDateRange } from '$features/shared/models';
-
     import DateTime from '$comp/formatters/date-time.svelte';
     import { Button } from '$comp/ui/button';
     import { Input } from '$comp/ui/input';
@@ -32,16 +30,21 @@
     let startValue = $state('');
     let endValue = $state('');
 
-    // Initialize custom fields from current value if it's not a common range
+    // Keep custom fields synchronized with the persisted range. Common ranges stay collapsed,
+    // but their values must still be available when Custom range is opened after a remount.
     $effect(() => {
-        const isCommon = commonRanges.some((r) => r.value === value);
-        if (!isCommon && value && typeof value === 'string') {
-            const range = extractRangeExpressions(value) as CustomDateRange | null;
-            if (range) {
-                startValue = range.start ?? '';
-                endValue = range.end ?? '';
+        const range = typeof value === 'string' ? extractRangeExpressions(value) : null;
+        if (range) {
+            startValue = range.start ?? '';
+            endValue = range.end ?? '';
+
+            if (!commonRanges.some((r) => r.value === value)) {
                 showCustom = true;
             }
+        } else if (!value) {
+            startValue = '';
+            endValue = '';
+            showCustom = false;
         }
     });
 
@@ -52,12 +55,6 @@
     const isCustomValid = $derived(startValidation.valid && endValidation.valid && !!startValue && !!endValue);
 
     function selectRange(rangeValue: string) {
-        const range = extractRangeExpressions(rangeValue);
-        if (range) {
-            startValue = range.start ?? '';
-            endValue = range.end ?? '';
-        }
-
         value = rangeValue;
         onselect?.(rangeValue);
     }
