@@ -1,4 +1,5 @@
 using Exceptionless.Core;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Services;
 using Exceptionless.Web.Assistant;
@@ -116,6 +117,31 @@ public sealed class AssistantUsageServiceTests
     }
 
     [Fact]
+    public async Task RecordProviderUsageAsync_EmptyCache_SeedsDurableUsageBeforeIncrementing()
+    {
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 8, 2, 12, 0, 0, TimeSpan.Zero));
+        using var cache = CreateCache(timeProvider);
+        var organization = new Organization { Id = "organization-id", Name = "Test" };
+        organization.AssistantUsage.Add(new AssistantUsageInfo
+        {
+            Date = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc),
+            Turns = 4,
+            PromptTokens = 900,
+            CompletionTokens = 50,
+            CostInMicrodollars = 900_000
+        });
+        var service = CreateService(cache, CreateOptions(), timeProvider, _ => Task.FromResult<Organization?>(organization));
+
+        await service.RecordProviderUsageAsync("organization-id", new AssistantProviderUsage(100, 25, 0.10m));
+        var usage = await service.GetMonthlyUsageAsync("organization-id");
+
+        Assert.Equal(4, usage.Turns);
+        Assert.Equal(1_000, usage.PromptTokens);
+        Assert.Equal(75, usage.CompletionTokens);
+        Assert.Equal(1.00m, usage.CostUsd);
+    }
+
+    [Fact]
     public async Task UsageActivity_IsForwardedToDurableOrganizationRecorder()
     {
         var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 8, 2, 12, 0, 0, TimeSpan.Zero));
@@ -139,6 +165,42 @@ public sealed class AssistantUsageServiceTests
             && record.Increment.CostInMicrodollars == 2345);
         Assert.Contains(recorder.Records, record => record.Increment.ToolCalls == 2);
         Assert.Contains(recorder.Records, record => record.Increment.Completed == 1);
+    }
+
+    [Fact]
+    public async Task RecordProviderRequestStartedAsync_WithoutUsage_KeepsConservativeMonthlyReservation()
+    {
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 8, 2, 12, 0, 0, TimeSpan.Zero));
+        using var cache = CreateCache(timeProvider);
+        var service = CreateService(cache, CreateOptions(), timeProvider);
+
+        var reservation = await service.RecordProviderRequestStartedAsync("organization-id", providerInputCharacters: 1_000);
+        var usage = await service.GetMonthlyUsageAsync("organization-id");
+
+        Assert.True(reservation.HasValue);
+        Assert.Equal(1_000, usage.PromptTokens);
+        Assert.Equal(AssistantLimits.MaximumOutputTokens, usage.CompletionTokens);
+        Assert.True(usage.CostInMicrodollars > 0);
+    }
+
+    [Fact]
+    public async Task RecordProviderUsageAsync_WithReservation_ReplacesEstimateWithActualUsage()
+    {
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 8, 2, 12, 0, 0, TimeSpan.Zero));
+        using var cache = CreateCache(timeProvider);
+        var service = CreateService(cache, CreateOptions(), timeProvider);
+        var reservation = await service.RecordProviderRequestStartedAsync("organization-id", providerInputCharacters: 1_000);
+
+        await service.RecordProviderUsageAsync(
+            "organization-id",
+            new AssistantProviderUsage(250, 50, 0.001m),
+            providerRequestAlreadyRecorded: true,
+            reservation);
+        var usage = await service.GetMonthlyUsageAsync("organization-id");
+
+        Assert.Equal(250, usage.PromptTokens);
+        Assert.Equal(50, usage.CompletionTokens);
+        Assert.Equal(0.001m, usage.CostUsd);
     }
 
     [Fact]
@@ -225,6 +287,20 @@ public sealed class AssistantUsageServiceTests
 
     private static AssistantUsageService CreateService(ICacheClient cache, ILockProvider lockProvider, AppOptions options, TimeProvider timeProvider, IAssistantUsageRecorder usageRecorder)
         => new(cache, lockProvider, usageRecorder, options, timeProvider, NullLogger<AssistantUsageService>.Instance);
+
+    private static AssistantUsageService CreateService(
+        ICacheClient cache,
+        AppOptions options,
+        TimeProvider timeProvider,
+        Func<string, Task<Organization?>> loadOrganizationAsync)
+        => new(
+            cache,
+            CreateLockProvider(cache, timeProvider),
+            new RecordingAssistantUsageRecorder(),
+            options,
+            timeProvider,
+            NullLogger<AssistantUsageService>.Instance,
+            loadOrganizationAsync);
 
     private static ILockProvider CreateLockProvider(ICacheClient cache, TimeProvider timeProvider)
     {

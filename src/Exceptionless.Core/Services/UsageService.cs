@@ -12,6 +12,40 @@ namespace Exceptionless.Core.Services;
 
 public class UsageService : IAssistantUsageRecorder
 {
+    private static class AssistantUsageMetrics
+    {
+        public const string Turns = "turns";
+        public const string Completed = "completed";
+        public const string Failed = "failed";
+        public const string Cancelled = "cancelled";
+        public const string ProviderRequests = "provider-requests";
+        public const string ToolCalls = "tool-calls";
+        public const string PromptTokens = "prompt-tokens";
+        public const string CompletionTokens = "completion-tokens";
+        public const string CostInMicrodollars = "cost-microdollars";
+        public const string BlockedByConcurrency = "blocked-concurrency";
+        public const string BlockedByRateLimit = "blocked-rate";
+        public const string BlockedByTokenLimit = "blocked-tokens";
+        public const string BlockedByCostLimit = "blocked-cost";
+
+        public static readonly string[] All =
+        [
+            Turns,
+            Completed,
+            Failed,
+            Cancelled,
+            ProviderRequests,
+            ToolCalls,
+            PromptTokens,
+            CompletionTokens,
+            CostInMicrodollars,
+            BlockedByConcurrency,
+            BlockedByRateLimit,
+            BlockedByTokenLimit,
+            BlockedByCostLimit
+        ];
+    }
+
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly ICacheClient _cache;
@@ -85,19 +119,30 @@ public class UsageService : IAssistantUsageRecorder
                     var bucketDiscarded = await _cache.GetAsync<int>(GetBucketDiscardedCacheKey(bucketUtc, organizationId));
                     var bucketTooBig = await _cache.GetAsync<int>(GetBucketTooBigCacheKey(bucketUtc, organizationId));
                     var bucketDeleted = await _cache.GetAsync<int>(GetBucketDeletedCacheKey(bucketUtc, organizationId));
-                    var assistantTurns = await _cache.GetAsync<long>(GetAssistantBucketCacheKey(bucketUtc, organizationId, "turns"));
-                    var assistantCompleted = await _cache.GetAsync<long>(GetAssistantBucketCacheKey(bucketUtc, organizationId, "completed"));
-                    var assistantFailed = await _cache.GetAsync<long>(GetAssistantBucketCacheKey(bucketUtc, organizationId, "failed"));
-                    var assistantCancelled = await _cache.GetAsync<long>(GetAssistantBucketCacheKey(bucketUtc, organizationId, "cancelled"));
-                    var assistantProviderRequests = await _cache.GetAsync<long>(GetAssistantBucketCacheKey(bucketUtc, organizationId, "provider-requests"));
-                    var assistantToolCalls = await _cache.GetAsync<long>(GetAssistantBucketCacheKey(bucketUtc, organizationId, "tool-calls"));
-                    var assistantPromptTokens = await _cache.GetAsync<long>(GetAssistantBucketCacheKey(bucketUtc, organizationId, "prompt-tokens"));
-                    var assistantCompletionTokens = await _cache.GetAsync<long>(GetAssistantBucketCacheKey(bucketUtc, organizationId, "completion-tokens"));
-                    var assistantCost = await _cache.GetAsync<long>(GetAssistantBucketCacheKey(bucketUtc, organizationId, "cost-microdollars"));
-                    var assistantBlockedByConcurrency = await _cache.GetAsync<long>(GetAssistantBucketCacheKey(bucketUtc, organizationId, "blocked-concurrency"));
-                    var assistantBlockedByRateLimit = await _cache.GetAsync<long>(GetAssistantBucketCacheKey(bucketUtc, organizationId, "blocked-rate"));
-                    var assistantBlockedByTokenLimit = await _cache.GetAsync<long>(GetAssistantBucketCacheKey(bucketUtc, organizationId, "blocked-tokens"));
-                    var assistantBlockedByCostLimit = await _cache.GetAsync<long>(GetAssistantBucketCacheKey(bucketUtc, organizationId, "blocked-cost"));
+                    var assistantCacheKeys = AssistantUsageMetrics.All.ToDictionary(
+                        metric => metric,
+                        metric => GetAssistantBucketCacheKey(bucketUtc, organizationId, metric),
+                        StringComparer.Ordinal);
+                    var assistantCacheValues = await _cache.GetAllAsync<long>(assistantCacheKeys.Values);
+                    long GetAssistantValue(string metric)
+                    {
+                        var value = assistantCacheValues[assistantCacheKeys[metric]];
+                        return value.HasValue ? value.Value : 0;
+                    }
+
+                    long assistantTurns = GetAssistantValue(AssistantUsageMetrics.Turns);
+                    long assistantCompleted = GetAssistantValue(AssistantUsageMetrics.Completed);
+                    long assistantFailed = GetAssistantValue(AssistantUsageMetrics.Failed);
+                    long assistantCancelled = GetAssistantValue(AssistantUsageMetrics.Cancelled);
+                    long assistantProviderRequests = GetAssistantValue(AssistantUsageMetrics.ProviderRequests);
+                    long assistantToolCalls = GetAssistantValue(AssistantUsageMetrics.ToolCalls);
+                    long assistantPromptTokens = GetAssistantValue(AssistantUsageMetrics.PromptTokens);
+                    long assistantCompletionTokens = GetAssistantValue(AssistantUsageMetrics.CompletionTokens);
+                    long assistantCost = GetAssistantValue(AssistantUsageMetrics.CostInMicrodollars);
+                    long assistantBlockedByConcurrency = GetAssistantValue(AssistantUsageMetrics.BlockedByConcurrency);
+                    long assistantBlockedByRateLimit = GetAssistantValue(AssistantUsageMetrics.BlockedByRateLimit);
+                    long assistantBlockedByTokenLimit = GetAssistantValue(AssistantUsageMetrics.BlockedByTokenLimit);
+                    long assistantBlockedByCostLimit = GetAssistantValue(AssistantUsageMetrics.BlockedByCostLimit);
 
                     bool hasIngestion = (bucketTotal?.Value ?? 0) > 0 || (bucketBlocked?.Value ?? 0) > 0 || (bucketDiscarded?.Value ?? 0) > 0 || (bucketTooBig?.Value ?? 0) > 0;
                     if (hasIngestion)
@@ -122,62 +167,50 @@ public class UsageService : IAssistantUsageRecorder
                         hourlyUsage.Deleted += bucketDeleted?.Value ?? 0;
                     }
 
-                    bool hasAssistantUsage = (assistantTurns?.Value ?? 0) > 0
-                        || (assistantCompleted?.Value ?? 0) > 0
-                        || (assistantFailed?.Value ?? 0) > 0
-                        || (assistantCancelled?.Value ?? 0) > 0
-                        || (assistantProviderRequests?.Value ?? 0) > 0
-                        || (assistantToolCalls?.Value ?? 0) > 0
-                        || (assistantPromptTokens?.Value ?? 0) > 0
-                        || (assistantCompletionTokens?.Value ?? 0) > 0
-                        || (assistantCost?.Value ?? 0) > 0
-                        || (assistantBlockedByConcurrency?.Value ?? 0) > 0
-                        || (assistantBlockedByRateLimit?.Value ?? 0) > 0
-                        || (assistantBlockedByTokenLimit?.Value ?? 0) > 0
-                        || (assistantBlockedByCostLimit?.Value ?? 0) > 0;
+                    bool hasAssistantUsage = assistantTurns > 0
+                        || assistantCompleted > 0
+                        || assistantFailed > 0
+                        || assistantCancelled > 0
+                        || assistantProviderRequests > 0
+                        || assistantToolCalls > 0
+                        || assistantPromptTokens > 0
+                        || assistantCompletionTokens > 0
+                        || assistantCost > 0
+                        || assistantBlockedByConcurrency > 0
+                        || assistantBlockedByRateLimit > 0
+                        || assistantBlockedByTokenLimit > 0
+                        || assistantBlockedByCostLimit > 0;
                     if (hasAssistantUsage)
                     {
                         var assistantUsage = organization.GetAssistantUsage(bucketUtc);
                         assistantUsage.PlanId = organization.PlanId;
-                        assistantUsage.Turns += assistantTurns?.Value ?? 0;
-                        assistantUsage.Completed += assistantCompleted?.Value ?? 0;
-                        assistantUsage.Failed += assistantFailed?.Value ?? 0;
-                        assistantUsage.Cancelled += assistantCancelled?.Value ?? 0;
-                        assistantUsage.ProviderRequests += assistantProviderRequests?.Value ?? 0;
-                        assistantUsage.ToolCalls += assistantToolCalls?.Value ?? 0;
-                        assistantUsage.PromptTokens += assistantPromptTokens?.Value ?? 0;
-                        assistantUsage.CompletionTokens += assistantCompletionTokens?.Value ?? 0;
-                        assistantUsage.CostInMicrodollars += assistantCost?.Value ?? 0;
-                        assistantUsage.BlockedByConcurrency += assistantBlockedByConcurrency?.Value ?? 0;
-                        assistantUsage.BlockedByRateLimit += assistantBlockedByRateLimit?.Value ?? 0;
-                        assistantUsage.BlockedByTokenLimit += assistantBlockedByTokenLimit?.Value ?? 0;
-                        assistantUsage.BlockedByCostLimit += assistantBlockedByCostLimit?.Value ?? 0;
+                        assistantUsage.Turns += assistantTurns;
+                        assistantUsage.Completed += assistantCompleted;
+                        assistantUsage.Failed += assistantFailed;
+                        assistantUsage.Cancelled += assistantCancelled;
+                        assistantUsage.ProviderRequests += assistantProviderRequests;
+                        assistantUsage.ToolCalls += assistantToolCalls;
+                        assistantUsage.PromptTokens += assistantPromptTokens;
+                        assistantUsage.CompletionTokens += assistantCompletionTokens;
+                        assistantUsage.CostInMicrodollars += assistantCost;
+                        assistantUsage.BlockedByConcurrency += assistantBlockedByConcurrency;
+                        assistantUsage.BlockedByRateLimit += assistantBlockedByRateLimit;
+                        assistantUsage.BlockedByTokenLimit += assistantBlockedByTokenLimit;
+                        assistantUsage.BlockedByCostLimit += assistantBlockedByCostLimit;
                         assistantUsage.LastUsedUtc = bucketUtc.Add(_bucketSize);
                     }
 
                     organization.TrimUsage(_timeProvider);
 
-                    await _cache.RemoveAllAsync(new[] {
+                    await _cache.RemoveAllAsync([
                         GetBucketTotalCacheKey(bucketUtc, organizationId),
                         GetBucketBlockedCacheKey(bucketUtc, organizationId),
                         GetBucketDiscardedCacheKey(bucketUtc, organizationId),
                         GetBucketTooBigCacheKey(bucketUtc, organizationId),
                         GetBucketDeletedCacheKey(bucketUtc, organizationId),
-                        GetAssistantBucketCacheKey(bucketUtc, organizationId, "turns"),
-                        GetAssistantBucketCacheKey(bucketUtc, organizationId, "completed"),
-                        GetAssistantBucketCacheKey(bucketUtc, organizationId, "failed"),
-                        GetAssistantBucketCacheKey(bucketUtc, organizationId, "cancelled"),
-                        GetAssistantBucketCacheKey(bucketUtc, organizationId, "provider-requests"),
-                        GetAssistantBucketCacheKey(bucketUtc, organizationId, "tool-calls"),
-                        GetAssistantBucketCacheKey(bucketUtc, organizationId, "prompt-tokens"),
-                        GetAssistantBucketCacheKey(bucketUtc, organizationId, "completion-tokens"),
-                        GetAssistantBucketCacheKey(bucketUtc, organizationId, "cost-microdollars"),
-                        GetAssistantBucketCacheKey(bucketUtc, organizationId, "blocked-concurrency"),
-                        GetAssistantBucketCacheKey(bucketUtc, organizationId, "blocked-rate"),
-                        GetAssistantBucketCacheKey(bucketUtc, organizationId, "blocked-tokens"),
-                        GetAssistantBucketCacheKey(bucketUtc, organizationId, "blocked-cost"),
+                        ..assistantCacheKeys.Values,
                         GetThrottledKey(bucketUtc, organizationId)
-                    });
+                    ]);
 
                     if (hasEventUsage)
                         await _cache.SetAsync(GetTotalCacheKey(utcNow, organizationId), organization.GetUsage(bucketUtc, _timeProvider).Total, TimeSpan.FromHours(8));
@@ -603,19 +636,19 @@ public class UsageService : IAssistantUsageRecorder
             _cache.ListAddAsync(GetOrganizationSetKey(utcNow), organizationId, TimeSpan.FromHours(8))
         };
 
-        AddAssistantIncrement(tasks, utcNow, organizationId, "turns", increment.Turns);
-        AddAssistantIncrement(tasks, utcNow, organizationId, "completed", increment.Completed);
-        AddAssistantIncrement(tasks, utcNow, organizationId, "failed", increment.Failed);
-        AddAssistantIncrement(tasks, utcNow, organizationId, "cancelled", increment.Cancelled);
-        AddAssistantIncrement(tasks, utcNow, organizationId, "provider-requests", increment.ProviderRequests);
-        AddAssistantIncrement(tasks, utcNow, organizationId, "tool-calls", increment.ToolCalls);
-        AddAssistantIncrement(tasks, utcNow, organizationId, "prompt-tokens", increment.PromptTokens);
-        AddAssistantIncrement(tasks, utcNow, organizationId, "completion-tokens", increment.CompletionTokens);
-        AddAssistantIncrement(tasks, utcNow, organizationId, "cost-microdollars", increment.CostInMicrodollars);
-        AddAssistantIncrement(tasks, utcNow, organizationId, "blocked-concurrency", increment.BlockedByConcurrency);
-        AddAssistantIncrement(tasks, utcNow, organizationId, "blocked-rate", increment.BlockedByRateLimit);
-        AddAssistantIncrement(tasks, utcNow, organizationId, "blocked-tokens", increment.BlockedByTokenLimit);
-        AddAssistantIncrement(tasks, utcNow, organizationId, "blocked-cost", increment.BlockedByCostLimit);
+        AddAssistantIncrement(tasks, utcNow, organizationId, AssistantUsageMetrics.Turns, increment.Turns);
+        AddAssistantIncrement(tasks, utcNow, organizationId, AssistantUsageMetrics.Completed, increment.Completed);
+        AddAssistantIncrement(tasks, utcNow, organizationId, AssistantUsageMetrics.Failed, increment.Failed);
+        AddAssistantIncrement(tasks, utcNow, organizationId, AssistantUsageMetrics.Cancelled, increment.Cancelled);
+        AddAssistantIncrement(tasks, utcNow, organizationId, AssistantUsageMetrics.ProviderRequests, increment.ProviderRequests);
+        AddAssistantIncrement(tasks, utcNow, organizationId, AssistantUsageMetrics.ToolCalls, increment.ToolCalls);
+        AddAssistantIncrement(tasks, utcNow, organizationId, AssistantUsageMetrics.PromptTokens, increment.PromptTokens);
+        AddAssistantIncrement(tasks, utcNow, organizationId, AssistantUsageMetrics.CompletionTokens, increment.CompletionTokens);
+        AddAssistantIncrement(tasks, utcNow, organizationId, AssistantUsageMetrics.CostInMicrodollars, increment.CostInMicrodollars);
+        AddAssistantIncrement(tasks, utcNow, organizationId, AssistantUsageMetrics.BlockedByConcurrency, increment.BlockedByConcurrency);
+        AddAssistantIncrement(tasks, utcNow, organizationId, AssistantUsageMetrics.BlockedByRateLimit, increment.BlockedByRateLimit);
+        AddAssistantIncrement(tasks, utcNow, organizationId, AssistantUsageMetrics.BlockedByTokenLimit, increment.BlockedByTokenLimit);
+        AddAssistantIncrement(tasks, utcNow, organizationId, AssistantUsageMetrics.BlockedByCostLimit, increment.BlockedByCostLimit);
 
         await Task.WhenAll(tasks);
         AppDiagnostics.AssistantTurns.Add(increment.Turns);

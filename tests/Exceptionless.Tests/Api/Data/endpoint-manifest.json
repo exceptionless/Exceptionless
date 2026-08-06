@@ -262,7 +262,7 @@
   {
     "method": "GET",
     "route": "/api/v2/admin/assistant-usage",
-    "displayName": "HTTP: GET api/v2/admin/assistant-usage",
+    "displayName": "HTTP: GET api/v2/admin/assistant-usage =\u003E GetAssistantUsageAsync",
     "tags": [],
     "allowAnonymous": false,
     "authorizationPolicies": [

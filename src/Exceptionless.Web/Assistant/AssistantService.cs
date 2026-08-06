@@ -94,7 +94,8 @@ public sealed class AssistantService(
             var assistantContent = new StringBuilder();
             bool usageRecorded = false;
 
-            await assistantUsageService.RecordProviderRequestStartedAsync(request.OrganizationId);
+            int providerInputCharacters = JsonSerializer.Serialize(messages, s_jsonOptions).Length;
+            var providerReservation = await assistantUsageService.RecordProviderRequestStartedAsync(request.OrganizationId, providerInputCharacters);
             using var response = await SendRequestAsync(messages, options, allowTools, request, cancellationToken);
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
             using var reader = new StreamReader(stream);
@@ -117,7 +118,11 @@ public sealed class AssistantService(
                     usageRecorded = true;
                     try
                     {
-                        await assistantUsageService.RecordProviderUsageAsync(request.OrganizationId, usage, providerRequestAlreadyRecorded: true);
+                        await assistantUsageService.RecordProviderUsageAsync(
+                            request.OrganizationId,
+                            usage,
+                            providerRequestAlreadyRecorded: true,
+                            providerReservation);
                     }
                     catch (Exception ex)
                     {
@@ -292,7 +297,7 @@ public sealed class AssistantService(
                     if (toolCall.Name == SearchStacksTool)
                         remainingProjectSearches--;
 
-                    result = IsWriteTool(toolCall.Name) && !HasExplicitWriteRequest(request, toolCall.Name)
+                    result = IsWriteTool(toolCall.Name) && !HasExplicitWriteRequest(request, toolCall.Name, arguments)
                         ? JsonSerializer.Serialize(new
                         {
                             ok = false,
@@ -451,7 +456,7 @@ public sealed class AssistantService(
     private static bool IsWriteTool(string name)
         => name is AddStackReferenceLinkTool or RemoveStackReferenceLinkTool or SetStackCriticalTool or SnoozeStackTool or UpdateStackStatusTool;
 
-    internal static bool HasExplicitWriteRequest(AssistantChatRequest request, string toolName)
+    internal static bool HasExplicitWriteRequest(AssistantChatRequest request, string toolName, string arguments = "{}")
     {
         string? latestUserMessage = request.Messages
             .LastOrDefault(message => message is not null && String.Equals(message.Role, "user", StringComparison.OrdinalIgnoreCase))
@@ -459,15 +464,62 @@ public sealed class AssistantService(
         if (String.IsNullOrWhiteSpace(latestUserMessage))
             return false;
 
+        using var document = ParseArguments(arguments);
+        var root = document.RootElement;
+        string? requestedStackId = GetString(root, "stackId", "stack_id");
+        string? currentStackId = GetRouteValue(request.Path, "stack");
+        if (!String.IsNullOrWhiteSpace(requestedStackId)
+            && !String.Equals(requestedStackId, currentStackId, StringComparison.Ordinal)
+            && !latestUserMessage.Contains(requestedStackId, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
         return toolName switch
         {
-            UpdateStackStatusTool => ContainsAny(latestUserMessage, "update", "change status", "mark", "fix", "ignore", "discard", "reopen"),
+            UpdateStackStatusTool => HasExplicitStackStatusRequest(latestUserMessage, root),
             SnoozeStackTool => ContainsAny(latestUserMessage, "snooze"),
-            SetStackCriticalTool => ContainsAny(latestUserMessage, "critical", "not critical"),
-            AddStackReferenceLinkTool => ContainsAny(latestUserMessage, "add link", "attach link", "reference link"),
-            RemoveStackReferenceLinkTool => ContainsAny(latestUserMessage, "remove link", "delete link", "reference link"),
+            SetStackCriticalTool => GetBoolean(root, "critical") switch
+            {
+                true => ContainsAny(latestUserMessage, "mark critical", "set critical", "make critical"),
+                false => ContainsAny(latestUserMessage, "not critical", "remove critical", "unmark critical"),
+                _ => false
+            },
+            AddStackReferenceLinkTool => HasExplicitReferenceLinkRequest(latestUserMessage, root, remove: false),
+            RemoveStackReferenceLinkTool => HasExplicitReferenceLinkRequest(latestUserMessage, root, remove: true),
             _ => false
         };
+    }
+
+    private static bool HasExplicitStackStatusRequest(string message, JsonElement arguments)
+    {
+        string? status = GetString(arguments, "status")?.Trim().ToLowerInvariant();
+        bool explicitlyRequested = status switch
+        {
+            "fixed" => message.Contains("fixed", StringComparison.OrdinalIgnoreCase)
+                && ContainsAny(message, "mark", "set status", "change status"),
+            "ignored" => ContainsAny(message, "ignore this stack", "ignore the stack", "mark ignored", "mark it ignored", "set status to ignored", "change status to ignored"),
+            "discarded" => ContainsAny(message, "discard this stack", "discard the stack", "mark discarded", "mark it discarded", "set status to discarded", "change status to discarded"),
+            "open" => ContainsAny(message, "reopen", "mark open", "mark it open", "set status to open", "change status to open"),
+            _ => false
+        };
+        if (!explicitlyRequested)
+            return false;
+
+        string? fixedInVersion = GetString(arguments, "fixedInVersion", "fixed_in_version");
+        return String.IsNullOrWhiteSpace(fixedInVersion) || message.Contains(fixedInVersion, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool HasExplicitReferenceLinkRequest(string message, JsonElement arguments, bool remove)
+    {
+        bool explicitlyRequested = remove
+            ? ContainsAny(message, "remove link", "delete link", "remove reference", "delete reference")
+            : ContainsAny(message, "add link", "attach link", "add reference", "attach reference");
+        if (!explicitlyRequested)
+            return false;
+
+        string? url = GetString(arguments, "url");
+        return String.IsNullOrWhiteSpace(url) || message.Contains(url, StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool ContainsAny(string value, params string[] terms)

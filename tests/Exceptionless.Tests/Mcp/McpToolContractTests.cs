@@ -10,7 +10,7 @@ public sealed class McpToolContractTests
     [Fact]
     public async Task ValidateProjectScopeAsync_DirectResourceWithoutProjectContext_Succeeds()
     {
-        var service = new McpContextService(null!, null!, null!);
+        var service = new McpContextService(null!, null!, null!, null);
 
         var error = await service.ValidateProjectScopeAsync("organization-id", "project-id", requestedProjectId: null);
 

@@ -22,6 +22,22 @@ public sealed class AssistantUsageService(
 {
     private const long MicrodollarsPerDollar = 1_000_000;
     private readonly ScopedCacheClient _cache = new(cacheClient, "AssistantUsage");
+    private readonly Func<string, Task<Organization?>>? _loadOrganizationAsync = organizationRepository is null
+        ? null
+        : organizationId => organizationRepository.GetByIdAsync(organizationId, options => options.Cache());
+
+    internal AssistantUsageService(
+        ICacheClient cacheClient,
+        ILockProvider lockProvider,
+        IAssistantUsageRecorder usageRecorder,
+        AppOptions appOptions,
+        TimeProvider timeProvider,
+        ILogger<AssistantUsageService> logger,
+        Func<string, Task<Organization?>> loadOrganizationAsync)
+        : this(cacheClient, lockProvider, usageRecorder, appOptions, timeProvider, logger)
+    {
+        _loadOrganizationAsync = loadOrganizationAsync;
+    }
 
     public async Task<AssistantTurnReservation> TryStartTurnAsync(string? organizationId, AssistantPlanOptions? planOptions)
     {
@@ -125,15 +141,40 @@ public sealed class AssistantUsageService(
         return AssistantUsageDecision.AllowedDecision;
     }
 
-    public Task RecordProviderRequestStartedAsync(string? organizationId)
-        => TryRecordUsageAsync(organizationId, new AssistantUsageIncrement { ProviderRequests = 1 });
+    public async Task<AssistantProviderReservation> RecordProviderRequestStartedAsync(string? organizationId, int providerInputCharacters = 0)
+    {
+        await TryRecordUsageAsync(organizationId, new AssistantUsageIncrement { ProviderRequests = 1 });
+        if (String.IsNullOrWhiteSpace(organizationId) || providerInputCharacters <= 0)
+            return AssistantProviderReservation.Empty;
 
-    public async Task RecordProviderUsageAsync(string? organizationId, AssistantProviderUsage usage, bool providerRequestAlreadyRecorded = false)
+        var now = timeProvider.GetUtcNow();
+        await EnsureMonthlyUsageCacheAsync(organizationId, now);
+        var month = GetMonthWindow(now);
+        long promptTokens = providerInputCharacters;
+        long completionTokens = AssistantLimits.MaximumOutputTokens;
+        long costInMicrodollars = ToMicrodollars(
+            promptTokens * AssistantLimits.MaximumProviderPromptPricePerMillionTokens / 1_000_000m
+            + completionTokens * AssistantLimits.MaximumProviderCompletionPricePerMillionTokens / 1_000_000m);
+        await Task.WhenAll(
+            _cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "reserved-prompt-tokens"), promptTokens, month.ResetAtUtc.UtcDateTime),
+            _cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "reserved-completion-tokens"), completionTokens, month.ResetAtUtc.UtcDateTime),
+            _cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "reserved-cost-microdollars"), costInMicrodollars, month.ResetAtUtc.UtcDateTime));
+
+        return new AssistantProviderReservation(promptTokens, completionTokens, costInMicrodollars);
+    }
+
+    public async Task RecordProviderUsageAsync(
+        string? organizationId,
+        AssistantProviderUsage usage,
+        bool providerRequestAlreadyRecorded = false,
+        AssistantProviderReservation? reservation = null)
     {
         if (String.IsNullOrWhiteSpace(organizationId))
             return;
 
-        var month = GetMonthWindow(timeProvider.GetUtcNow());
+        var now = timeProvider.GetUtcNow();
+        await EnsureMonthlyUsageCacheAsync(organizationId, now);
+        var month = GetMonthWindow(now);
         var tasks = new List<Task>
         {
             _cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "prompt-tokens"), Math.Max(0, usage.PromptTokens), month.ResetAtUtc.UtcDateTime),
@@ -143,6 +184,12 @@ public sealed class AssistantUsageService(
         long costInMicrodollars = ToMicrodollars(usage.CostUsd);
         if (costInMicrodollars > 0)
             tasks.Add(_cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "cost-microdollars"), costInMicrodollars, month.ResetAtUtc.UtcDateTime));
+        if (reservation is { HasValue: true })
+        {
+            tasks.Add(_cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "reserved-prompt-tokens"), -reservation.PromptTokens, month.ResetAtUtc.UtcDateTime));
+            tasks.Add(_cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "reserved-completion-tokens"), -reservation.CompletionTokens, month.ResetAtUtc.UtcDateTime));
+            tasks.Add(_cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "reserved-cost-microdollars"), -reservation.CostInMicrodollars, month.ResetAtUtc.UtcDateTime));
+        }
 
         await Task.WhenAll(tasks);
         await TryRecordUsageAsync(organizationId, new AssistantUsageIncrement
@@ -174,31 +221,50 @@ public sealed class AssistantUsageService(
         ArgumentException.ThrowIfNullOrWhiteSpace(organizationId);
 
         var month = GetMonthWindow(now);
+        await EnsureMonthlyUsageCacheAsync(organizationId, now);
         long turns = await _cache.GetAsync<long>(GetTurnKey(organizationId, "month", month.Id), 0);
         long promptTokens = await _cache.GetAsync<long>(GetUsageKey(organizationId, month.Id, "prompt-tokens"), 0);
         long completionTokens = await _cache.GetAsync<long>(GetUsageKey(organizationId, month.Id, "completion-tokens"), 0);
         long costInMicrodollars = await _cache.GetAsync<long>(GetUsageKey(organizationId, month.Id, "cost-microdollars"), 0);
-        if (organizationRepository is not null)
-        {
-            try
-            {
-                var organization = await organizationRepository.GetByIdAsync(organizationId, options => options.Cache());
-                var durableUsage = organization?.AssistantUsage.FirstOrDefault(usage => usage.Date.Year == now.Year && usage.Date.Month == now.Month);
-                if (durableUsage is not null)
-                {
-                    turns = Math.Max(turns, durableUsage.Turns);
-                    promptTokens = Math.Max(promptTokens, durableUsage.PromptTokens);
-                    completionTokens = Math.Max(completionTokens, durableUsage.CompletionTokens);
-                    costInMicrodollars = Math.Max(costInMicrodollars, durableUsage.CostInMicrodollars);
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Unable to rehydrate durable assistant usage for organization {OrganizationId}", organizationId);
-            }
-        }
+        long reservedPromptTokens = await _cache.GetAsync<long>(GetUsageKey(organizationId, month.Id, "reserved-prompt-tokens"), 0);
+        long reservedCompletionTokens = await _cache.GetAsync<long>(GetUsageKey(organizationId, month.Id, "reserved-completion-tokens"), 0);
+        long reservedCostInMicrodollars = await _cache.GetAsync<long>(GetUsageKey(organizationId, month.Id, "reserved-cost-microdollars"), 0);
 
-        return new AssistantMonthlyUsage(turns, promptTokens, completionTokens, costInMicrodollars);
+        return new AssistantMonthlyUsage(
+            turns,
+            promptTokens + Math.Max(0, reservedPromptTokens),
+            completionTokens + Math.Max(0, reservedCompletionTokens),
+            costInMicrodollars + Math.Max(0, reservedCostInMicrodollars));
+    }
+
+    private async Task EnsureMonthlyUsageCacheAsync(string organizationId, DateTimeOffset now)
+    {
+        var month = GetMonthWindow(now);
+        string initializedKey = GetUsageKey(organizationId, month.Id, "initialized");
+        if (await _cache.ExistsAsync(initializedKey))
+            return;
+
+        await using var initializationLock = await lockProvider.AcquireAsync(
+            $"assistant-usage-initialize:{organizationId}:{month.Id}",
+            TimeSpan.FromSeconds(15),
+            TimeSpan.FromSeconds(15));
+        if (await _cache.ExistsAsync(initializedKey))
+            return;
+
+        var durableUsage = _loadOrganizationAsync is null
+            ? null
+            : (await _loadOrganizationAsync(organizationId))?.AssistantUsage.FirstOrDefault(usage => usage.Date.Year == now.Year && usage.Date.Month == now.Month);
+
+        TimeSpan expiresIn = month.ResetAtUtc - now;
+        await Task.WhenAll(
+            _cache.SetAsync(GetTurnKey(organizationId, "month", month.Id), durableUsage?.Turns ?? 0, expiresIn),
+            _cache.SetAsync(GetUsageKey(organizationId, month.Id, "prompt-tokens"), durableUsage?.PromptTokens ?? 0, expiresIn),
+            _cache.SetAsync(GetUsageKey(organizationId, month.Id, "completion-tokens"), durableUsage?.CompletionTokens ?? 0, expiresIn),
+            _cache.SetAsync(GetUsageKey(organizationId, month.Id, "cost-microdollars"), durableUsage?.CostInMicrodollars ?? 0, expiresIn),
+            _cache.SetAsync(GetUsageKey(organizationId, month.Id, "reserved-prompt-tokens"), 0L, expiresIn),
+            _cache.SetAsync(GetUsageKey(organizationId, month.Id, "reserved-completion-tokens"), 0L, expiresIn),
+            _cache.SetAsync(GetUsageKey(organizationId, month.Id, "reserved-cost-microdollars"), 0L, expiresIn));
+        await _cache.SetAsync(initializedKey, true, expiresIn);
     }
 
     private async Task<AssistantUsageDecision?> TryReserveWindowAsync(
@@ -285,6 +351,12 @@ public sealed record AssistantUsageDecision(
 }
 
 public sealed record AssistantProviderUsage(long PromptTokens, long CompletionTokens, decimal CostUsd);
+
+public sealed record AssistantProviderReservation(long PromptTokens, long CompletionTokens, long CostInMicrodollars)
+{
+    public static AssistantProviderReservation Empty { get; } = new(0, 0, 0);
+    public bool HasValue => PromptTokens > 0 || CompletionTokens > 0 || CostInMicrodollars > 0;
+}
 
 public sealed class AssistantTurnReservation : IAsyncDisposable
 {

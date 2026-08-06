@@ -1,5 +1,6 @@
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Web.Assistant;
 using Exceptionless.Web.Extensions;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Options;
@@ -9,7 +10,8 @@ namespace Exceptionless.Web.Mcp;
 public sealed class McpContextService(
     IHttpContextAccessor httpContextAccessor,
     IOrganizationRepository organizationRepository,
-    IProjectRepository projectRepository)
+    IProjectRepository projectRepository,
+    AssistantToolContext? assistantToolContext = null)
 {
     private const int CandidateLimit = 100;
 
@@ -240,11 +242,15 @@ public sealed class McpContextService(
 
     private async Task<IReadOnlyList<Organization>> GetAccessibleOrganizationsAsync()
     {
-        var organizationIds = Request.GetAssociatedOrganizationIds();
+        var organizationIds = Request.GetAssociatedOrganizationIds().ToHashSet(StringComparer.Ordinal);
+        if (assistantToolContext?.ToolsEnabled == true && !String.IsNullOrWhiteSpace(assistantToolContext.OrganizationId))
+            organizationIds.Add(assistantToolContext.OrganizationId);
+
+        organizationIds.RemoveWhere(organizationId => assistantToolContext is not null && !assistantToolContext.AllowsOrganization(organizationId));
         if (organizationIds.Count == 0)
             return [];
 
-        var organizations = await organizationRepository.GetByIdsAsync(organizationIds.Distinct(StringComparer.Ordinal).ToArray(), o => o.Cache());
+        var organizations = await organizationRepository.GetByIdsAsync(organizationIds.ToArray(), o => o.Cache());
         return organizations
             .OrderBy(o => o.Name, StringComparer.OrdinalIgnoreCase)
             .ThenBy(o => o.Id, StringComparer.Ordinal)
@@ -257,8 +263,15 @@ public sealed class McpContextService(
         if (project is null)
             return McpProjectAccess.Failed(McpErrors.NotFound($"Project {projectId} was not found.", "projectId", projectId));
 
-        if (!Request.GetAssociatedOrganizationIds().Contains(project.OrganizationId))
+        bool hasRequestAccess = Request.GetAssociatedOrganizationIds().Contains(project.OrganizationId);
+        bool hasBoundAssistantAccess = assistantToolContext?.ToolsEnabled == true
+            && assistantToolContext.AllowsOrganization(project.OrganizationId)
+            && String.Equals(assistantToolContext.OrganizationId, project.OrganizationId, StringComparison.Ordinal);
+        if (!hasRequestAccess && !hasBoundAssistantAccess)
             return McpProjectAccess.Failed(McpErrors.NotAccessible($"Project {projectId} is not accessible.", "projectId", projectId));
+
+        if (assistantToolContext is not null && !assistantToolContext.AllowsOrganization(project.OrganizationId))
+            return McpProjectAccess.Failed(McpErrors.NotAccessible($"Project {projectId} is outside the assistant organization.", "projectId", projectId));
 
         return McpProjectAccess.Success(project);
     }

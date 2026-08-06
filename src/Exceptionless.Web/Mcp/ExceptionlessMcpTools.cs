@@ -782,7 +782,10 @@ public sealed class ExceptionlessMcpTools
                 return McpResponse<McpStackUpdateResult>.Failed(snoozeError);
 
             var stack = await GetAccessibleStackForWriteAsync(stackId, projectId);
-            bool changed = stack.Status != StackStatus.Snoozed || stack.SnoozeUntilUtc != untilUtc;
+            bool changed = stack.Status != StackStatus.Snoozed
+                || stack.SnoozeUntilUtc != untilUtc
+                || stack.FixedInVersion is not null
+                || stack.DateFixed is not null;
             if (changed)
             {
                 stack.Status = StackStatus.Snoozed;

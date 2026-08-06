@@ -22,11 +22,13 @@ namespace Exceptionless.Tests.Assistant;
 public sealed class AssistantServiceTests
 {
     [Theory]
-    [InlineData("Please mark this stack fixed", "update_stack_status", true)]
-    [InlineData("What does this stack mean?", "update_stack_status", false)]
-    [InlineData("What happened here?", "snooze_stack", false)]
-    [InlineData("Please snooze this stack for one hour", "snooze_stack", true)]
-    public void HasExplicitWriteRequest_UsesLatestUserMessageOnly(string prompt, string toolName, bool expected)
+    [InlineData("Please mark this stack fixed", "update_stack_status", "{\"status\":\"fixed\"}", true)]
+    [InlineData("Fix with Exie: Analyze this stack and explain how to fix the underlying issue.", "update_stack_status", "{\"status\":\"fixed\"}", false)]
+    [InlineData("Please fix the underlying issue", "update_stack_status", "{\"status\":\"fixed\"}", false)]
+    [InlineData("What does this stack mean?", "update_stack_status", "{\"status\":\"fixed\"}", false)]
+    [InlineData("What happened here?", "snooze_stack", "{}", false)]
+    [InlineData("Please snooze this stack for one hour", "snooze_stack", "{}", true)]
+    public void HasExplicitWriteRequest_UsesLatestUserMessageOnly(string prompt, string toolName, string arguments, bool expected)
     {
         var request = new AssistantChatRequest([
             new AssistantChatMessage("user", "Investigate this stack."),
@@ -34,7 +36,21 @@ public sealed class AssistantServiceTests
             new AssistantChatMessage("user", prompt)
         ]);
 
-        Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, toolName));
+        Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, toolName, arguments));
+    }
+
+    [Theory]
+    [InlineData("Please mark this stack fixed in 2.1.0", "{\"status\":\"fixed\",\"fixedInVersion\":\"2.1.0\"}", true)]
+    [InlineData("Please mark this stack fixed", "{\"status\":\"ignored\"}", false)]
+    [InlineData("Please mark this stack fixed", "{\"status\":\"fixed\",\"stackId\":\"different-stack\"}", false)]
+    [InlineData("Please mark stack different-stack fixed", "{\"status\":\"fixed\",\"stackId\":\"different-stack\"}", true)]
+    public void HasExplicitWriteRequest_StackStatusArgumentsMustMatchRequest(string prompt, string arguments, bool expected)
+    {
+        var request = new AssistantChatRequest(
+            [new AssistantChatMessage("user", prompt)],
+            Path: "/next/stack/current-stack");
+
+        Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, "update_stack_status", arguments));
     }
 
     [Theory]
