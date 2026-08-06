@@ -91,6 +91,16 @@ public class UsageService
                     if (hasIngestion)
                         organization.LastEventDateUtc = _timeProvider.GetUtcNow().UtcDateTime;
 
+                    var currentMonthUtc = bucketUtc.StartOfMonth();
+                    var previousMonthUtc = currentMonthUtc.AddMonths(-1);
+                    bool hasCurrentMonthUsage = organization.Usage.Any(u => u.Date.Year == currentMonthUtc.Year && u.Date.Month == currentMonthUtc.Month);
+                    var previousMonthUsage = organization.Usage.FirstOrDefault(u => u.Date.Year == previousMonthUtc.Year && u.Date.Month == previousMonthUtc.Month);
+                    bool monthlyOverageCleared = !hasCurrentMonthUsage && previousMonthUsage is { Limit: > 0 } && previousMonthUsage.Total >= previousMonthUsage.Limit;
+                    int bucketLimit = GetBucketEventLimit(organization.GetMaxEventsPerMonthWithBonus(_timeProvider), bucketUtc);
+                    bool hourlyThrottleCleared = hourlyThrottleTransition is { HasValue: true } transition
+                        ? transition.Value
+                        : bucketLimit >= 0 && bucketTotal is { HasValue: true } total && total.Value >= bucketLimit;
+
                     var usage = organization.GetUsage(bucketUtc, _timeProvider);
                     usage.Limit = organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
                     usage.Total += bucketTotal?.Value ?? 0;
@@ -119,8 +129,8 @@ public class UsageService
                     });
 
                     await _cache.SetAsync(GetTotalCacheKey(utcNow, organizationId), usage.Total, TimeSpan.FromHours(8));
-                    // Routine usage updates stay silent, but clients need one refresh when an hourly throttle clears.
-                    await _organizationRepository.SaveAsync(organization, o => o.Notifications(hourlyThrottleTransition?.Value ?? false));
+                    // Routine usage updates stay silent, but clients need one refresh when an overage clears.
+                    await _organizationRepository.SaveAsync(organization, o => o.Notifications(hourlyThrottleCleared || monthlyOverageCleared));
                 }
             }
 
@@ -534,10 +544,14 @@ public class UsageService
 
     private int GetBucketEventLimit(int maxEventsPerMonth)
     {
+        return GetBucketEventLimit(maxEventsPerMonth, _timeProvider.GetUtcNow().UtcDateTime);
+    }
+
+    private int GetBucketEventLimit(int maxEventsPerMonth, DateTime utcNow)
+    {
         if (maxEventsPerMonth < 5000)
             return maxEventsPerMonth;
 
-        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         var timeLeftInMonth = utcNow.EndOfMonth() - utcNow;
         if (timeLeftInMonth < TimeSpan.FromDays(1))
             return maxEventsPerMonth;
