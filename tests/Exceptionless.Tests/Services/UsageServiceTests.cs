@@ -359,7 +359,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task SavePendingUsageAsync_WhenMonthlyOverageClearsAfterPlanIncrease_PublishesOrganizationChangedMessage()
+    public async Task SavePendingUsageAsync_WhenMonthRollsOver_DoesNotPublishOrganizationChangedMessage()
     {
         // Arrange
         TimeProvider.SetUtcNow(new DateTime(2015, 2, 28, 23, 55, 0, DateTimeKind.Utc));
@@ -390,12 +390,12 @@ public sealed class UsageServiceTests : IntegrationTestsBase
             organization = await _organizationRepository.GetByIdAsync(organization.Id);
             Assert.NotNull(organization);
             Assert.False(organization.IsOverMonthlyLimit(TimeProvider));
-            Assert.Equal(1, notificationCount);
+            Assert.Equal(0, notificationCount);
 
             await _usageService.IncrementTotalAsync(organization.Id, project.Id);
             TimeProvider.Advance(TimeSpan.FromMinutes(10));
             await _usageService.SavePendingUsageAsync();
-            Assert.Equal(1, notificationCount);
+            Assert.Equal(0, notificationCount);
         }
         finally
         {

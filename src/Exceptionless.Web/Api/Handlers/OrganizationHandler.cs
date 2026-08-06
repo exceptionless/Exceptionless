@@ -923,7 +923,7 @@ public class OrganizationHandler(
             viewOrganization.TrimUsage(timeProvider);
 
             var currentUsage = viewOrganization.GetCurrentUsage(timeProvider);
-            currentUsage.Limit = realTimeUsage.CurrentUsage.Limit;
+            currentUsage.Limit = viewOrganization.GetMaxEventsPerMonthWithBonus(timeProvider);
             currentUsage.Total = realTimeUsage.CurrentUsage.Total;
             currentUsage.Blocked = realTimeUsage.CurrentUsage.Blocked;
             currentUsage.Discarded = realTimeUsage.CurrentUsage.Discarded;

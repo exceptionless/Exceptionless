@@ -117,6 +117,7 @@ export interface GetProjectIntegrationNotificationSettingsRequest {
 }
 
 export interface GetProjectRequest {
+    refetchInterval?: false | number;
     route: {
         id: string | undefined;
     };
@@ -396,7 +397,8 @@ export function getProjectQuery(request: GetProjectRequest) {
 
             return response.data!;
         },
-        queryKey: queryKeys.id(request.route.id)
+        queryKey: queryKeys.id(request.route.id),
+        refetchInterval: request.refetchInterval
     }));
 }
 

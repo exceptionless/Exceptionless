@@ -23,10 +23,18 @@ export async function invalidateOrganizationQueries(queryClient: QueryClient, me
     }
 }
 
+export async function invalidateOrganizationUsageQueries(queryClient: QueryClient, organizationId?: string) {
+    const invalidations = [queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) })];
+    if (organizationId) {
+        invalidations.push(queryClient.invalidateQueries({ exact: true, queryKey: queryKeys.id(organizationId, undefined) }));
+        invalidations.push(queryClient.invalidateQueries({ exact: true, queryKey: queryKeys.id(organizationId, 'stats') }));
+    }
+
+    await Promise.all(invalidations);
+}
+
 export async function invalidatePlanOverageQueries(queryClient: QueryClient, message: WebSocketMessageValue<'PlanOverage'>) {
-    await queryClient.invalidateQueries({ queryKey: queryKeys.id(message.organization_id, undefined) });
-    await queryClient.invalidateQueries({ queryKey: queryKeys.id(message.organization_id, 'stats') });
-    await queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) });
+    await invalidateOrganizationUsageQueries(queryClient, message.organization_id);
 }
 
 export const queryKeys = {
@@ -114,6 +122,7 @@ export interface GetOrganizationRequest {
     params?: {
         mode: 'stats' | undefined;
     };
+    refetchInterval?: false | number;
     route: {
         id: string | undefined;
     };
@@ -366,7 +375,8 @@ export function getOrganizationQuery(request: GetOrganizationRequest) {
 
             return response.data!;
         },
-        queryKey: queryKeys.id(request.route.id, request.params?.mode)
+        queryKey: queryKeys.id(request.route.id, request.params?.mode),
+        refetchInterval: request.refetchInterval
     }));
 }
 
