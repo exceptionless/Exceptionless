@@ -3,7 +3,7 @@ import { render } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import OrganizationNotifications from './organization-notifications.svelte';
+import OrganizationNotifications, { recordConfiguredProjectId } from './organization-notifications.svelte';
 
 const organizationRefetch = vi.hoisted(() => vi.fn());
 const projectsRefetch = vi.hoisted(() => vi.fn());
@@ -31,6 +31,25 @@ describe('OrganizationNotifications', () => {
         organizationRefetch.mockReset();
         projectsRefetch.mockReset();
         projects[0]!.is_configured = false;
+    });
+
+    it('records configuration events before project data loads', () => {
+        const configuredProjectIds = new Set<string>();
+
+        const recorded = recordConfiguredProjectId(
+            {
+                change_type: ChangeType.Added,
+                data: {},
+                organization_id: 'organization-id',
+                project_id: 'project-id',
+                type: 'PersistentEvent'
+            },
+            'organization-id',
+            configuredProjectIds
+        );
+
+        expect(recorded).toBe(true);
+        expect(configuredProjectIds).toContain('project-id');
     });
 
     it('does not refetch organization or project state for persistent event changes', async () => {
