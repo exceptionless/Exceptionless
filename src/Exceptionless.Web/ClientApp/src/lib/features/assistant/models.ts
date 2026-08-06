@@ -16,6 +16,11 @@ export interface AssistantChatMessage {
 
 export type AssistantFeedback = 'helpful' | 'not-helpful';
 
+export interface AssistantPromptRequest {
+    id: string;
+    prompt: string;
+}
+
 export interface AssistantSuggestedAction {
     label: string;
     prompt: string;

@@ -10,7 +10,7 @@
     import Eraser from '@lucide/svelte/icons/eraser';
     import { tick } from 'svelte';
 
-    import type { AssistantChatMessage, AssistantFeedback } from '../models';
+    import type { AssistantChatMessage, AssistantFeedback, AssistantPromptRequest } from '../models';
 
     import { createAssistantChatRequest } from '../assistant-request';
     import { type AssistantStreamEvent, readAssistantStream } from '../assistant-stream';
@@ -26,10 +26,11 @@
         organizationId?: string;
         path?: string;
         projectId?: string;
+        promptRequest?: AssistantPromptRequest;
         upgradeRequired?: boolean;
     }
 
-    let { accessMessage, hasAccess = true, open = $bindable(false), organizationId, path, projectId, upgradeRequired = false }: Props = $props();
+    let { accessMessage, hasAccess = true, open = $bindable(false), organizationId, path, projectId, promptRequest, upgradeRequired = false }: Props = $props();
     let messages = $state<AssistantChatMessage[]>([]);
     let conversationId = $state(crypto.randomUUID());
     let conversationOrganizationId = $state<string>();
@@ -40,6 +41,7 @@
     let showScrollToBottom = $state(false);
     let conversationElement = $state<HTMLDivElement>();
     let abortController: AbortController | undefined;
+    let handledPromptRequestId: string | undefined;
     let latestAssistantMessage = $derived(messages.filter((message) => message.role === 'assistant').at(-1));
 
     const suggestions = [
@@ -57,6 +59,15 @@
         if (!hasAccess) {
             stopStreaming();
         }
+    });
+
+    $effect(() => {
+        if (!open || !hasAccess || isStreaming || !promptRequest || promptRequest.id === handledPromptRequestId) {
+            return;
+        }
+
+        handledPromptRequestId = promptRequest.id;
+        void submitPrompt(promptRequest.prompt);
     });
 
     $effect(() => {

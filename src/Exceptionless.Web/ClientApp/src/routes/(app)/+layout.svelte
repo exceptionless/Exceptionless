@@ -1,4 +1,5 @@
 <script lang="ts">
+    import type { AssistantPromptRequest } from '$features/assistant/models';
     import type { SavedView } from '$features/saved-views/models';
     import type { Snippet } from 'svelte';
 
@@ -8,6 +9,7 @@
     import { useSidebar } from '$comp/ui/sidebar';
     import { env } from '$env/dynamic/public';
     import { getAssistantAccessQuery, invalidateAssistantAccessQueries } from '$features/assistant/api.svelte';
+    import { setAssistantControls } from '$features/assistant/controls.svelte';
     import { assistantPageContext, type AssistantResourceContext } from '$features/assistant/page-context.svelte';
     import { getIntercomTokenQuery } from '$features/auth/api.svelte';
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
@@ -60,6 +62,7 @@
     let isCommandOpen = $state(false);
     let isAssistantOpen = $state(false);
     let AssistantPanel = $state<typeof import('$features/assistant/components/assistant-panel.svelte').default>();
+    let assistantPromptRequest = $state<AssistantPromptRequest>();
     let assistantResourceContext = $derived(assistantPageContext.getContext(page.params.eventId, page.params.stackId));
     let assistantProjectId = $derived(assistantResourceContext?.projectId ?? page.params.projectId);
     let assistantPath = $derived(getAssistantPath(assistantResourceContext, `${page.url.pathname}${page.url.search}`));
@@ -81,6 +84,12 @@
     async function toggleAssistantPanel(): Promise<void> {
         AssistantPanel ??= (await import('$features/assistant/components/assistant-panel.svelte')).default;
         isAssistantOpen = !isAssistantOpen;
+    }
+
+    async function askAssistant(prompt: string): Promise<void> {
+        AssistantPanel ??= (await import('$features/assistant/components/assistant-panel.svelte')).default;
+        isAssistantOpen = true;
+        assistantPromptRequest = { id: crypto.randomUUID(), prompt };
     }
 
     function getAssistantPath(context: AssistantResourceContext | undefined, fallback: string): string {
@@ -146,6 +155,11 @@
     });
     let assistantAccess = $derived(assistantAccessQuery.data);
     let isAssistantEnabled = $derived(assistantAccess?.enabled === true);
+
+    setAssistantControls({
+        ask: (prompt) => void askAssistant(prompt),
+        enabled: () => isAssistantEnabled
+    });
 
     async function onMessage(message: MessageEvent) {
         const data: { message: unknown; type: WebSocketMessageType } = message.data ? JSON.parse(message.data) : null;
@@ -504,6 +518,7 @@
             hasAccess={assistantAccess?.has_access ?? false}
             organizationId={organization.current}
             path={assistantPath}
+            promptRequest={assistantPromptRequest}
             projectId={assistantProjectId}
             upgradeRequired={assistantAccess?.upgrade_required ?? false}
         />

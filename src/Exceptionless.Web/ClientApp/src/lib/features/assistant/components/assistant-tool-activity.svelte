@@ -76,12 +76,12 @@
 
 <Tooltip.Provider delayDuration={300}>
     <Collapsible.Root bind:open class="group/tool">
-            <div
-                class={[
-                    'bg-muted/30 mb-2 overflow-hidden rounded-lg border text-xs',
-                    (tool.status === 'failed' || tool.status === 'cancelled') && 'border-destructive/40 bg-destructive/5'
-                ]}
-            >
+        <div
+            class={[
+                'bg-muted/30 mb-2 overflow-hidden rounded-lg border text-xs',
+                (tool.status === 'failed' || tool.status === 'cancelled') && 'border-destructive/40 bg-destructive/5'
+            ]}
+        >
             <Collapsible.Trigger>
                 {#snippet child({ props })}
                     <Button class="h-auto w-full justify-start rounded-none border-0 px-3 py-2 text-left" variant="ghost" {...props}>
