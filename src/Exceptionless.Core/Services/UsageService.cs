@@ -91,11 +91,6 @@ public class UsageService
                     if (hasIngestion)
                         organization.LastEventDateUtc = _timeProvider.GetUtcNow().UtcDateTime;
 
-                    var currentMonthUtc = bucketUtc.StartOfMonth();
-                    var previousMonthUtc = currentMonthUtc.AddMonths(-1);
-                    bool hasCurrentMonthUsage = organization.Usage.Any(u => u.Date.Year == currentMonthUtc.Year && u.Date.Month == currentMonthUtc.Month);
-                    var previousMonthUsage = organization.Usage.FirstOrDefault(u => u.Date.Year == previousMonthUtc.Year && u.Date.Month == previousMonthUtc.Month);
-                    bool monthlyOverageCleared = !hasCurrentMonthUsage && previousMonthUsage is { Limit: > 0 } && previousMonthUsage.Total >= previousMonthUsage.Limit;
                     int bucketLimit = GetBucketEventLimit(organization.GetMaxEventsPerMonthWithBonus(_timeProvider), bucketUtc);
                     bool hourlyThrottleCleared = hourlyThrottleTransition is { HasValue: true } transition
                         ? transition.Value
@@ -129,8 +124,8 @@ public class UsageService
                     });
 
                     await _cache.SetAsync(GetTotalCacheKey(utcNow, organizationId), usage.Total, TimeSpan.FromHours(8));
-                    // Routine usage updates stay silent, but clients need one refresh when an overage clears.
-                    await _organizationRepository.SaveAsync(organization, o => o.Notifications(hourlyThrottleCleared || monthlyOverageCleared));
+                    // Routine usage updates stay silent, but clients need one refresh when hourly throttling clears.
+                    await _organizationRepository.SaveAsync(organization, o => o.Notifications(hourlyThrottleCleared));
                 }
             }
 

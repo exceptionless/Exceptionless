@@ -19,11 +19,13 @@
         getOrganizationQuery,
         getOrganizationsQuery,
         invalidateOrganizationQueries,
+        invalidateOrganizationUsageQueries,
         invalidatePlanOverageQueries
     } from '$features/organizations/api.svelte';
     import OrganizationNotifications from '$features/organizations/components/organization-notifications.svelte';
     import { organization, showOrganizationNotifications } from '$features/organizations/context.svelte';
     import { premiumPage } from '$features/organizations/premium-page.svelte';
+    import { getUtcMonthKey, ORGANIZATION_USAGE_ROLLOVER_CHECK_INTERVAL_MS } from '$features/organizations/utils';
     import { invalidateProjectQueries } from '$features/projects/api.svelte';
     import { getSavedViewsQuery, invalidateSavedViewQueries, isSavedViewDeleted } from '$features/saved-views/api.svelte';
     import { savedViewHref } from '$features/saved-views/slugs';
@@ -38,6 +40,7 @@
     import { Telemetry } from '$lib/telemetry';
     import { useMiddleware } from '@foundatiofx/fetchclient';
     import { useQueryClient } from '@tanstack/svelte-query';
+    import { useInterval } from 'runed';
     import { tick } from 'svelte';
     import { fade } from 'svelte/transition';
 
@@ -120,6 +123,20 @@
     });
 
     const queryClient = useQueryClient();
+    let organizationUsageMonth = getUtcMonthKey();
+    useInterval(() => ORGANIZATION_USAGE_ROLLOVER_CHECK_INTERVAL_MS, {
+        callback: () => {
+            const currentMonth = getUtcMonthKey();
+            if (currentMonth === organizationUsageMonth) {
+                return;
+            }
+
+            organizationUsageMonth = currentMonth;
+            void invalidateOrganizationUsageQueries(queryClient, organization.current);
+        },
+        immediate: false
+    });
+
     async function onMessage(message: MessageEvent) {
         const data: { message: unknown; type: WebSocketMessageType } = message.data ? JSON.parse(message.data) : null;
 
