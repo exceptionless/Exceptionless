@@ -52,6 +52,12 @@
     const isCustomValid = $derived(startValidation.valid && endValidation.valid && !!startValue && !!endValue);
 
     function selectRange(rangeValue: string) {
+        const range = extractRangeExpressions(rangeValue);
+        if (range) {
+            startValue = range.start ?? '';
+            endValue = range.end ?? '';
+        }
+
         value = rangeValue;
         onselect?.(rangeValue);
     }
