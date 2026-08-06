@@ -20,7 +20,7 @@
                 }
 
                 _usageMonth = usageMonth;
-                $rootScope.$broadcast("OrganizationChanged");
+                $rootScope.$broadcast("OrganizationChanged", {});
             }, 60000);
 
             function getUsageMonth() {
