@@ -135,6 +135,7 @@ export interface GetProjectsParams {
 
 export interface GetProjectsRequest {
     params?: GetProjectsParams;
+    refetchInterval?: false | number;
 }
 
 export interface GetProjectUserNotificationSettingsRequest {
@@ -425,7 +426,8 @@ export function getProjectsQuery(request: GetProjectsRequest) {
 
             return response;
         },
-        queryKey: [queryKeys.projects(), { params: request.params }]
+        queryKey: [queryKeys.projects(), { params: request.params }],
+        refetchInterval: request.refetchInterval
     }));
 }
 
