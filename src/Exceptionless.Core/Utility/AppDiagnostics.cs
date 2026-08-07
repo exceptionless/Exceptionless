@@ -96,11 +96,18 @@ public static class AppDiagnostics
     internal static readonly Counter<int> EventsProcessErrors = Meter.CreateCounter<int>("ex.events.processing.errors", description: "Errors processing events");
     internal static readonly Counter<int> EventsDiscarded = Meter.CreateCounter<int>("ex.events.discarded", description: "Events that were discarded");
     internal static readonly Counter<int> EventsBlocked = Meter.CreateCounter<int>("ex.events.blocked", description: "Events that were blocked");
+    internal static readonly Counter<int> EventsSmartThrottled = Meter.CreateCounter<int>("ex.events.smart_throttled", description: "Events blocked by automatic project throttling");
     internal static readonly Counter<int> EventsProcessCancelled = Meter.CreateCounter<int>("ex.events.processing.cancelled", description: "Events that started processing and were cancelled");
     internal static readonly Counter<int> EventsDeleted = Meter.CreateCounter<int>("ex.events.deleted", description: "Events that were deleted");
     internal static readonly Counter<int> EventsRetryCount = Meter.CreateCounter<int>("ex.events.retry.count", description: "Events where processing was retried");
     internal static readonly Counter<int> EventsRetryErrors = Meter.CreateCounter<int>("ex.events.retry.errors", description: "Events where retry processing got an error");
     internal static readonly Histogram<double> EventsFieldCount = Meter.CreateHistogram<double>("ex.events.field.count", description: "Number of fields per event");
+    internal static readonly Histogram<double> IngestReservationReserveTime = Meter.CreateHistogram<double>("ex.usage.ingest_reservation.reserve_time", unit: "ms", description: "Time to reserve event ingest capacity");
+    internal static readonly Histogram<double> IngestReservationCompleteTime = Meter.CreateHistogram<double>("ex.usage.ingest_reservation.complete_time", unit: "ms", description: "Time to complete an event ingest reservation");
+    internal static readonly Histogram<double> IngestReservationReleaseTime = Meter.CreateHistogram<double>("ex.usage.ingest_reservation.release_time", unit: "ms", description: "Time to release an event ingest reservation");
+    internal static readonly Histogram<double> IngestReservationLockWait = Meter.CreateHistogram<double>("ex.usage.ingest_reservation.lock_wait", unit: "ms", description: "Time spent waiting for the ingest reservation lock");
+    internal static readonly Histogram<int> IngestReservationRecordSize = Meter.CreateHistogram<int>("ex.usage.ingest_reservation.record_size", unit: "characters", description: "Serialized ingest reservation record length");
+    internal static readonly Counter<int> IngestReservationCasConflicts = Meter.CreateCounter<int>("ex.usage.ingest_reservation.cas_conflicts", description: "Ingest reservation compare-and-set conflicts");
 
     internal static readonly Counter<int> PostsParsed = Meter.CreateCounter<int>("ex.posts.parsed", description: "Post batch submission parsed");
     internal static readonly Histogram<double> PostsEventCount = Meter.CreateHistogram<double>("ex.posts.eventcount", description: "Number of events in post batch submission");

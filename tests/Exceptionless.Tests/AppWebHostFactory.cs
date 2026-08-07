@@ -41,6 +41,13 @@ public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program
     public int InstanceId { get; }
     public bool IndexesHaveBeenConfigured { get; set; }
 
+    public static async Task<string> GetConnectionStringAsync(string resourceName)
+    {
+        var app = await s_sharedAppHost.Value;
+        return await app.GetConnectionStringAsync(resourceName)
+            ?? throw new InvalidOperationException($"Unable to resolve the '{resourceName}' connection string.");
+    }
+
     public async ValueTask InitializeAsync()
     {
         _ = await s_sharedAppHost.Value;

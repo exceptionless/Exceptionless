@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -14,7 +15,7 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Tests.Services;
 
-public sealed class UsageServiceTests : IntegrationTestsBase
+public sealed partial class UsageServiceTests : IntegrationTestsBase
 {
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
@@ -655,4 +656,5 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         sw.Stop();
         _logger.LogInformation("Time: {Duration:g}, Avg: ({AverageTickDuration:g}ticks | {AverageDuration}ms)", sw.Elapsed, sw.ElapsedTicks / iterations, sw.ElapsedMilliseconds / iterations);
     }
+
 }

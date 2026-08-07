@@ -11,7 +11,7 @@ public record GetAdminOrganizations(string? Criteria, bool? Paid, bool? Suspende
 public record GetOrganizationPlanStats(HttpContext Context);
 public record GetOrganizationById(string Id, string? Mode, HttpContext Context);
 public record CreateOrganization(NewOrganization Organization, HttpContext Context);
-public record UpdateOrganizationMessage(string Id, Delta<NewOrganization> Changes, HttpContext Context);
+public record UpdateOrganizationMessage(string Id, Delta<UpdateOrganization> Changes, HttpContext Context);
 public record SetOrganizationIcon(string Id, string FileName, HttpContext Context);
 public record DeleteOrganizationIcon(string Id, HttpContext Context);
 public record DeleteOrganizations(string[] Ids, HttpContext Context);
