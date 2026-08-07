@@ -12,6 +12,7 @@
             $rootScope.$on("OrganizationChanged", _cache.removeAll);
             $rootScope.$on("ProjectChanged", _cache.removeAll);
             $rootScope.$on("PlanOverage", _cache.removeAll);
+            $rootScope.$on("UsageChanged", _cache.removeAll);
 
             $interval(function () {
                 var usageMonth = getUsageMonth();
@@ -22,6 +23,10 @@
                 _usageMonth = usageMonth;
                 $rootScope.$broadcast("OrganizationChanged", {});
             }, 60000);
+
+            $interval(function () {
+                $rootScope.$broadcast("UsageChanged");
+            }, 300000);
 
             function getUsageMonth() {
                 var now = new Date();
@@ -51,7 +56,7 @@
                     plan_id: options.planId,
                     stripe_token: options.stripeToken,
                     last4: options.last4,
-                    coupon_id: options.couponId
+                    coupon_id: options.couponId,
                 };
                 return Restangular.one("organizations", id).customPOST(body, "change-plan");
             }
