@@ -13,6 +13,7 @@
     import OrganizationsDataTable from '$features/organizations/components/table/organizations-data-table.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
+    import { ORGANIZATION_USAGE_REFETCH_INTERVAL_MS } from '$features/organizations/utils';
     import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
     import { queryParamsState } from 'kit-query-params';
@@ -42,7 +43,8 @@
     const organizationsQuery = getOrganizationsQuery({
         get params() {
             return organizationsQueryParameters;
-        }
+        },
+        refetchInterval: ORGANIZATION_USAGE_REFETCH_INTERVAL_MS
     });
 
     const table = createTable(getTableOptions<ViewOrganization>(organizationsQueryParameters, organizationsQuery));

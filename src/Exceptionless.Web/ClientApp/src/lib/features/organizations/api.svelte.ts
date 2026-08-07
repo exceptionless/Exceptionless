@@ -137,6 +137,7 @@ export interface GetOrganizationsParams {
 
 export interface GetOrganizationsRequest {
     params?: GetOrganizationsParams;
+    refetchInterval?: false | number;
 }
 
 export interface GetPlansRequest {
@@ -404,7 +405,8 @@ export function getOrganizationsQuery(request: GetOrganizationsRequest) {
 
             return response;
         },
-        queryKey: [...queryKeys.list(request.params?.mode ?? undefined), { params: { ...request.params } }]
+        queryKey: [...queryKeys.list(request.params?.mode ?? undefined), { params: { ...request.params } }],
+        refetchInterval: request.refetchInterval
     }));
 }
 
