@@ -112,6 +112,7 @@ public class Bootstrapper
                 container.ReplaceSingleton<ICacheClient>(CreateRedisCacheClient);
 
             container.ReplaceSingleton<IConnectionMapping, RedisConnectionMapping>();
+            container.ReplaceSingleton<IConnectionLeaseStore, RedisConnectionLeaseStore>();
         }
     }
 
