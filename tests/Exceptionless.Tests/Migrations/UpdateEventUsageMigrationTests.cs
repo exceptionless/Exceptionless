@@ -1,12 +1,15 @@
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Migrations;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Lock;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch;
 using Foundatio.Repositories.Migrations;
+using Foundatio.Repositories.Models;
 using Foundatio.Utility;
 using Xunit;
 
@@ -84,5 +87,50 @@ public class UpdateEventUsageMigrationTests : IntegrationTestsBase
         currentMonthsUsage = project.GetUsage(currentMonthUsageDate);
         Assert.Equal(10, currentMonthsUsage.Total);
         Assert.Equal(limit, currentMonthsUsage.Limit);
+    }
+
+    [Fact]
+    public async Task RunAsync_WhenCurrentMonthRepairCrossesLimit_PublishesOneOrganizationChangedMessage()
+    {
+        // Arrange
+        var billingPlans = GetService<BillingPlans>();
+        var organization = _organizationData.GenerateSampleOrganizationWithPlan(GetService<BillingManager>(), billingPlans, billingPlans.SmallPlan);
+        organization.MaxEventsPerMonth = 10;
+        organization.GetCurrentUsage(TimeProvider).Total = 5;
+        organization = await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
+
+        var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
+        var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
+        var currentMonthUsageDate = DateTime.UtcNow.StartOfMonth();
+        await _eventRepository.AddAsync(_eventData.GenerateEvents(count: 10, stackId: stack.Id, startDate: currentMonthUsageDate, endDate: DateTime.UtcNow), o => o.ImmediateConsistency());
+
+        var organizationRepository = Assert.IsAssignableFrom<ElasticRepositoryBase<Organization>>(GetService<IOrganizationRepository>());
+        int notificationCount = 0;
+        Func<object, BeforePublishEntityChangedEventArgs<Organization>, Task> organizationHandler = (_, _) =>
+        {
+            Interlocked.Increment(ref notificationCount);
+            return Task.CompletedTask;
+        };
+        organizationRepository.BeforePublishEntityChanged.AddHandler(organizationHandler);
+
+        try
+        {
+            var migration = GetService<UpdateEventUsage>();
+            var context = new MigrationContext(GetService<ILock>(), _logger, TestCancellationToken);
+
+            // Act
+            await migration.RunAsync(context);
+            await migration.RunAsync(context);
+
+            // Assert
+            Assert.Equal(1, notificationCount);
+            var updatedOrganization = await _organizationRepository.GetByIdAsync(organization.Id);
+            Assert.NotNull(updatedOrganization);
+            Assert.Equal(10, updatedOrganization.GetCurrentUsage(TimeProvider).Total);
+        }
+        finally
+        {
+            organizationRepository.BeforePublishEntityChanged.RemoveHandler(organizationHandler);
+        }
     }
 }

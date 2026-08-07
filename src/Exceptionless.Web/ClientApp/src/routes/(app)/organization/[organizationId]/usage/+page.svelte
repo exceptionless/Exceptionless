@@ -10,13 +10,14 @@
     import { env } from '$env/dynamic/public';
     import { ChangePlanDialog } from '$features/billing';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
-    import { getNextBillingDateUtc, getRemainingEventLimit } from '$features/organizations/utils';
+    import { getNextBillingDateUtc, getRemainingEventLimit, ORGANIZATION_USAGE_REFETCH_INTERVAL_MS } from '$features/organizations/utils';
     import { formatDateLabel, formatLongDate } from '$shared/dates';
     import { scaleUtc } from 'd3-scale';
     import { curveNatural } from 'd3-shape';
     import { AreaChart } from 'layerchart';
 
     const organizationQuery = getOrganizationQuery({
+        refetchInterval: ORGANIZATION_USAGE_REFETCH_INTERVAL_MS,
         route: {
             get id() {
                 return page.params.organizationId || '';
