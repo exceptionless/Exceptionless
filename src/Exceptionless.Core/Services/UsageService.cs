@@ -69,6 +69,9 @@ public class UsageService
         {
             if (organizationIdsValue.HasValue)
             {
+                foreach (string? organizationId in organizationIdsValue.Value)
+                    await PublishPendingHourlyOverageAsync(bucketUtc, organizationId);
+
                 // Should we wait to remove this in case there is a failure? We should just remove the organization id once processed.
                 await _cache.RemoveAsync(GetOrganizationSetKey(bucketUtc));
 
@@ -268,7 +271,8 @@ public class UsageService
         {
             await _cache.SetAsync(GetThrottledKey(utcNow, modified.Id), true, TimeSpan.FromMinutes(5));
             await _cache.SetAsync(GetHourlyThrottleTransitionKey(utcNow, modified.Id), true, TimeSpan.FromHours(8));
-            await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = modified.Id, IsHourly = true });
+            await _cache.SetAsync(GetHourlyOveragePendingKey(utcNow, modified.Id), true, TimeSpan.FromHours(8));
+            await PublishPendingHourlyOverageAsync(utcNow, modified.Id);
         }
     }
 
@@ -461,8 +465,20 @@ public class UsageService
             // org will be throttled during the current bucket of time
             await _cache.SetAsync(GetThrottledKey(utcNow, organizationId), true, TimeSpan.FromMinutes(5));
             await _cache.SetAsync(GetHourlyThrottleTransitionKey(utcNow, organizationId), true, TimeSpan.FromHours(8));
-            await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId, IsHourly = true });
+            await _cache.SetAsync(GetHourlyOveragePendingKey(utcNow, organizationId), true, TimeSpan.FromHours(8));
+            await PublishPendingHourlyOverageAsync(utcNow, organizationId);
         }
+    }
+
+    private async Task PublishPendingHourlyOverageAsync(DateTime utcTime, string organizationId)
+    {
+        string pendingKey = GetHourlyOveragePendingKey(utcTime, organizationId);
+        var pending = await _cache.GetAsync<bool>(pendingKey);
+        if (!pending.HasValue || !pending.Value)
+            return;
+
+        await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId, IsHourly = true });
+        await _cache.RemoveAsync(pendingKey);
     }
 
     public async Task IncrementBlockedAsync(string organizationId, string? projectId, int eventCount = 1)
@@ -633,6 +649,12 @@ public class UsageService
     {
         int bucket = GetCurrentBucket(utcTime);
         return $"usage:{bucket}:{organizationId}:throttled-transition";
+    }
+
+    private string GetHourlyOveragePendingKey(DateTime utcTime, string organizationId)
+    {
+        int bucket = GetCurrentBucket(utcTime);
+        return $"usage:{bucket}:{organizationId}:hourly-overage-pending";
     }
 
     private string GetProjectSetKey(DateTime utcTime)
