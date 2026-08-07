@@ -453,6 +453,48 @@ public sealed class UsageServiceTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task IncrementTotalAsync_WhenHourlyOveragePublicationFails_RetriesDuringPendingUsageSave()
+    {
+        // Arrange
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+        int eventsLeftInBucket = await _usageService.GetEventsLeftAsync(organization.Id);
+        var cache = GetService<ICacheClient>();
+        var messageBus = GetService<IMessageBus>();
+        var publisher = new FailOnceHourlyPlanOveragePublisher(messageBus);
+        var usageService = new UsageService(
+            _organizationRepository,
+            _projectRepository,
+            cache,
+            publisher,
+            _notificationService,
+            TimeProvider,
+            GetService<ILoggerFactory>());
+        var published = new AsyncCountdownEvent(1);
+        await messageBus.SubscribeAsync<PlanOverage>(overage =>
+        {
+            if (overage.OrganizationId == organization.Id && overage.IsHourly)
+                published.Signal();
+        }, TestCancellationToken);
+
+        int bucket = TimeProvider.GetUtcNow().UtcDateTime.Floor(TimeSpan.FromMinutes(5)).ToEpoch();
+        string pendingPublicationKey = $"usage:{bucket}:{organization.Id}:hourly-overage-pending";
+
+        // Act
+        await Assert.ThrowsAsync<InvalidOperationException>(() => usageService.IncrementTotalAsync(organization.Id, project.Id, eventsLeftInBucket));
+
+        // Assert
+        Assert.True((await cache.GetAsync<bool>(pendingPublicationKey)).Value);
+
+        TimeProvider.Advance(TimeSpan.FromMinutes(10));
+        await usageService.SavePendingUsageAsync();
+        await published.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(2, publisher.HourlyAttempts);
+        Assert.False((await cache.GetAsync<bool>(pendingPublicationKey)).HasValue);
+    }
+
+    [Fact]
     public async Task CanIncrementOverageUsageAsync()
     {
         var messageBus = GetService<IMessageBus>();
@@ -811,5 +853,20 @@ public sealed class UsageServiceTests : IntegrationTestsBase
 
         sw.Stop();
         _logger.LogInformation("Time: {Duration:g}, Avg: ({AverageTickDuration:g}ticks | {AverageDuration}ms)", sw.Elapsed, sw.ElapsedTicks / iterations, sw.ElapsedMilliseconds / iterations);
+    }
+
+    private sealed class FailOnceHourlyPlanOveragePublisher(IMessagePublisher inner) : IMessagePublisher
+    {
+        private int _hourlyAttempts;
+
+        public int HourlyAttempts => _hourlyAttempts;
+
+        public Task PublishAsync(Type messageType, object message, MessageOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            if (message is PlanOverage { IsHourly: true } && Interlocked.Increment(ref _hourlyAttempts) == 1)
+                return Task.FromException(new InvalidOperationException("Simulated hourly overage publication failure."));
+
+            return inner.PublishAsync(messageType, message, options, cancellationToken);
+        }
     }
 }
