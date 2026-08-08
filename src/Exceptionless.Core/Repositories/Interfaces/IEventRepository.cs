@@ -13,7 +13,16 @@ public interface IEventRepository : IRepositoryOwnedByOrganizationAndProject<Per
     Task<bool> UpdateSessionStartLastActivityAsync(string id, DateTime lastActivityUtc, bool isSessionEnd = false, bool hasError = false, bool sendNotifications = true);
     Task<long> RemoveAllAsync(string organizationId, string? clientIpAddress, DateTime? utcStart, DateTime? utcEnd, CommandOptionsDescriptor<PersistentEvent>? options = null);
     Task<long> RemoveAllByStackIdsAsync(string[] stackIds);
+    Task<long> RemoveAllByStackIdsAsync(string[] stackIds, CommandOptionsDescriptor<PersistentEvent>? options);
+    Task<long> RemoveAllByProjectIdsAsync(string[] projectIds, CommandOptionsDescriptor<PersistentEvent>? options = null);
+    Task<long> RemoveAllByOrganizationIdsAsync(string[] organizationIds, CommandOptionsDescriptor<PersistentEvent>? options = null);
+    Task<long> ReassignStackAsync(IEnumerable<string> sourceStackIds, string targetStackId, CancellationToken cancellationToken = default);
+    Task<DistinctValuePage> GetDistinctStackIdsAsync(int batchSize, string? afterValue = null, CancellationToken cancellationToken = default);
+    Task<DistinctValuePage> GetDistinctProjectIdsAsync(int batchSize, string? afterValue = null, CancellationToken cancellationToken = default);
+    Task<DistinctValuePage> GetDistinctOrganizationIdsAsync(int batchSize, string? afterValue = null, CancellationToken cancellationToken = default);
 }
+
+public sealed record DistinctValuePage(IReadOnlyCollection<string> Values, string? NextValue);
 
 public static class EventRepositoryExtensions
 {
