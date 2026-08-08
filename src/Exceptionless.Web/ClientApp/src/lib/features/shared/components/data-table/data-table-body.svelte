@@ -22,7 +22,6 @@
 
     const selectColumnClass = 'w-8 min-w-8 max-w-8';
     const selectColumnWidth = 32;
-    const tanstackDefaultColumnWidth = 150;
 
     function getHeaderColumnClass(header: Header<StockFeatures, TData, unknown>) {
         if (header.column.id === 'select') {
@@ -84,8 +83,9 @@
     }
 
     function getFlexibleDataColumnId(): string | undefined {
-        const unsizedColumns = getVisibleDataColumns().filter((column) => column.getSize() === (column.columnDef.size ?? tanstackDefaultColumnWidth));
-        return unsizedColumns.at(-1)?.id ?? getVisibleDataColumns().at(-1)?.id;
+        const columnSizing = table.atoms.columnSizing?.get() ?? {};
+        const unsizedColumns = getVisibleDataColumns().filter((column) => columnSizing[column.id] === undefined);
+        return unsizedColumns.at(-1)?.id;
     }
 
     function getVisibleDataColumnCount(): number {
@@ -102,7 +102,7 @@
         }
 
         const minimumWidth = selectColumnWidth + getVisibleDataColumns().reduce((total, column) => total + column.getSize(), 0);
-        return `min-width: ${minimumWidth}px;`;
+        return getFlexibleDataColumnId() ? `min-width: ${minimumWidth}px;` : `width: ${minimumWidth}px; min-width: ${minimumWidth}px;`;
     }
 
     function hasSelectColumn(): boolean {
