@@ -19,10 +19,17 @@
     import { buildIntercomBootOptions, IntercomShell } from '$features/intercom';
     import { shouldLoadIntercomOrganization } from '$features/intercom/config';
     import Notifications from '$features/notifications/components/notifications.svelte';
-    import { getOrganizationQuery, getOrganizationsQuery, invalidateOrganizationQueries } from '$features/organizations/api.svelte';
+    import {
+        getOrganizationQuery,
+        getOrganizationsQuery,
+        invalidateOrganizationQueries,
+        invalidateOrganizationUsageQueries,
+        invalidatePlanOverageQueries
+    } from '$features/organizations/api.svelte';
     import OrganizationNotifications from '$features/organizations/components/organization-notifications.svelte';
     import { organization, showOrganizationNotifications } from '$features/organizations/context.svelte';
     import { premiumPage } from '$features/organizations/premium-page.svelte';
+    import { getUtcMonthKey, ORGANIZATION_USAGE_ROLLOVER_CHECK_INTERVAL_MS } from '$features/organizations/utils';
     import { invalidateProjectQueries } from '$features/projects/api.svelte';
     import { getSavedViewsQuery, invalidateSavedViewQueries, isSavedViewDeleted } from '$features/saved-views/api.svelte';
     import { savedViewHref } from '$features/saved-views/slugs';
@@ -32,11 +39,12 @@
     import { getMeQuery, invalidateUserQueries } from '$features/users/api.svelte';
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
     import { invalidateWebhookQueries } from '$features/webhooks/api.svelte';
-    import { isEntityChangedType, type WebSocketMessageType } from '$features/websockets/models';
+    import { isEntityChangedType, isPlanOverageType, type WebSocketMessageType } from '$features/websockets/models';
     import { WebSocketClient } from '$features/websockets/web-socket-client.svelte';
     import { Telemetry } from '$lib/telemetry';
     import { useMiddleware } from '@foundatiofx/fetchclient';
     import { useQueryClient } from '@tanstack/svelte-query';
+    import { useInterval } from 'runed';
     import { tick } from 'svelte';
     import { fade } from 'svelte/transition';
 
@@ -161,6 +169,20 @@
         enabled: () => isAssistantEnabled
     });
 
+    let organizationUsageMonth = getUtcMonthKey();
+    useInterval(() => ORGANIZATION_USAGE_ROLLOVER_CHECK_INTERVAL_MS, {
+        callback: () => {
+            const currentMonth = getUtcMonthKey();
+            if (currentMonth === organizationUsageMonth) {
+                return;
+            }
+
+            organizationUsageMonth = currentMonth;
+            void invalidateOrganizationUsageQueries(queryClient, organization.current);
+        },
+        immediate: false
+    });
+
     async function onMessage(message: MessageEvent) {
         const data: { message: unknown; type: WebSocketMessageType } = message.data ? JSON.parse(message.data) : null;
 
@@ -179,7 +201,9 @@
             await invalidateAssistantAccessQueries(queryClient);
         }
 
-        if (isEntityChangedType(data)) {
+        if (isPlanOverageType(data)) {
+            await invalidatePlanOverageQueries(queryClient, data.message);
+        } else if (isEntityChangedType(data)) {
             switch (data.type) {
                 case 'OrganizationChanged':
                     await invalidateOrganizationQueries(queryClient, data.message);

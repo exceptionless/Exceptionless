@@ -1,3 +1,25 @@
+<script module lang="ts">
+    import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
+
+    export function recordConfiguredProjectId(
+        message: WebSocketMessageValue<'PersistentEventChanged'>,
+        organizationId: string | undefined,
+        configuredProjectIds: Set<string>
+    ): boolean {
+        if (
+            message.change_type === ChangeType.Removed ||
+            message.organization_id !== organizationId ||
+            !message.project_id ||
+            configuredProjectIds.has(message.project_id)
+        ) {
+            return false;
+        }
+
+        configuredProjectIds.add(message.project_id);
+        return true;
+    }
+</script>
+
 <script lang="ts">
     import type { NotificationProps } from '$comp/notification';
 
@@ -6,10 +28,8 @@
     import { SuspensionCode } from '$features/organizations/models';
     import { getOrganizationProjectsQuery } from '$features/projects/api.svelte';
     import { getMeQuery } from '$features/users/api.svelte';
-    import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { useEventListener } from 'runed';
     import { SvelteSet } from 'svelte/reactivity';
-    import { debounce } from 'throttle-debounce';
 
     import FreePlanNotification from './notifications/free-plan-notification.svelte';
     import HourlyOverageNotification from './notifications/hourly-overage-notification.svelte';
@@ -95,19 +115,9 @@
     );
     const requiresPremiumUpgrade = $derived(requiresPremium && !organization?.has_premium_features && !needsProjectConfiguration);
 
-    const refetchConfigurationState = debounce(1500, async () => {
-        await Promise.all([organizationQuery.refetch(), projectsQuery.refetch()]);
-    });
-
     useEventListener(document, 'PersistentEventChanged', (event) => {
         const message = (event as CustomEvent<WebSocketMessageValue<'PersistentEventChanged'>>).detail;
-
-        if (message.change_type === ChangeType.Removed || message.organization_id !== currentOrganizationId.current || !message.project_id) {
-            return;
-        }
-
-        configuredProjectIds.add(message.project_id);
-        void refetchConfigurationState();
+        recordConfiguredProjectId(message, currentOrganizationId.current, configuredProjectIds);
     });
 </script>
 
