@@ -14,3 +14,10 @@ updates:
     interval: "weekly"
   cooldown:
     default-days: 7
+
+- package-ecosystem: "npm"
+  directory: "/src/Exceptionless.EmailTemplates"
+  schedule:
+    interval: "weekly"
+  cooldown:
+    default-days: 7

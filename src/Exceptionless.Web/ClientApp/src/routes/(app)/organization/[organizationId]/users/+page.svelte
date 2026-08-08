@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { ViewUser } from '$features/users/models';
 
+    import { page } from '$app/state';
     import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
     import { Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
@@ -18,7 +19,7 @@
     import { queryParamsState } from 'kit-query-params';
     import { toast } from 'svelte-sonner';
 
-    const organizationId = organization.current!;
+    const organizationId = page.params.organizationId || organization.current!;
 
     const DEFAULT_PARAMS = {
         limit: DEFAULT_LIMIT
