@@ -21,6 +21,7 @@
     let { children, rowClick, rowHref, table }: Props = $props();
 
     const selectColumnClass = 'w-8 min-w-8 max-w-8';
+    const selectColumnWidth = 32;
 
     function getHeaderColumnClass(header: Header<StockFeatures, TData, unknown>) {
         if (header.column.id === 'select') {
@@ -62,6 +63,14 @@
     }
 
     function getColumnStyle(column: Cell<StockFeatures, TData, unknown>['column'] | Header<StockFeatures, TData, unknown>['column']): string | undefined {
+        if (column.id === 'select') {
+            return `width: ${selectColumnWidth}px; min-width: ${selectColumnWidth}px; max-width: ${selectColumnWidth}px;`;
+        }
+
+        if (hasSelectColumn() && column.id === getFlexibleDataColumnId()) {
+            return 'width: 100%;';
+        }
+
         if (!column.getCanResize() || getVisibleDataColumnCount() === 1) {
             return undefined;
         }
@@ -73,8 +82,31 @@
         return (meta as { class?: string })?.class ?? '';
     }
 
+    function getFlexibleDataColumnId(): string | undefined {
+        const columnSizing = table.atoms.columnSizing?.get() ?? {};
+        const unsizedColumns = getVisibleDataColumns().filter((column) => columnSizing[column.id] === undefined);
+        return unsizedColumns.at(-1)?.id;
+    }
+
     function getVisibleDataColumnCount(): number {
-        return table.getVisibleLeafColumns().filter((column) => column.id !== 'select').length;
+        return getVisibleDataColumns().length;
+    }
+
+    function getVisibleDataColumns() {
+        return table.getVisibleLeafColumns().filter((column) => column.id !== 'select');
+    }
+
+    function getTableStyle(): string | undefined {
+        if (!hasSelectColumn()) {
+            return undefined;
+        }
+
+        const minimumWidth = selectColumnWidth + getVisibleDataColumns().reduce((total, column) => total + column.getSize(), 0);
+        return getFlexibleDataColumnId() ? `min-width: ${minimumWidth}px;` : `width: ${minimumWidth}px; min-width: ${minimumWidth}px;`;
+    }
+
+    function hasSelectColumn(): boolean {
+        return table.getVisibleLeafColumns().some((column) => column.id === 'select');
     }
 
     function isWidthClass(className: string): boolean {
@@ -138,7 +170,7 @@
 </script>
 
 <div class="rounded-md border">
-    <Table.Root>
+    <Table.Root class={hasSelectColumn() ? 'table-fixed' : undefined} style={getTableStyle()}>
         <Table.Header class="bg-card">
             {#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
                 <Table.Row>
