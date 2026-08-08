@@ -58,7 +58,7 @@ public class ProjectMaintenanceWorkItemHandler : WorkItemHandlerBase
             }
 
             if (workItem.UpdateDefaultBotList || workItem.IncrementConfigurationVersion || workItem.RemoveOldUsageStats)
-                await _projectRepository.SaveAsync(results.Documents);
+                await _projectRepository.SaveAsync(results.Documents, o => o.Notifications(workItem.UpdateDefaultBotList || workItem.IncrementConfigurationVersion));
 
             // Sleep so we are not hammering the backend.
             await Task.Delay(TimeSpan.FromSeconds(2.5), _timeProvider);
