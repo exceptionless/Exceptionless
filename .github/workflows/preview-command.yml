@@ -77,6 +77,7 @@ jobs:
             const headRepository = pullRequest.head.repo.full_name;
             const headRef = pullRequest.head.ref;
             const headSha = pullRequest.head.sha;
+            const baseSha = pullRequest.base.sha;
             const headLabel = pullRequest.head.label;
             const headShortSha = headSha.slice(0, 12);
 
@@ -95,6 +96,7 @@ jobs:
             core.setOutput("head-ref", headRef);
             core.setOutput("head-label", headLabel);
             core.setOutput("head-sha", headSha);
+            core.setOutput("base-sha", baseSha);
             core.setOutput("head-short-sha", headShortSha);
 
             const previewLabel = "dev-preview";
@@ -142,6 +144,7 @@ jobs:
           HEAD_REF: ${{ steps.preview.outputs.head-ref }}
           HEAD_LABEL: ${{ steps.preview.outputs.head-label }}
           HEAD_SHA: ${{ steps.preview.outputs.head-sha }}
+          BASE_SHA: ${{ steps.preview.outputs.base-sha }}
         with:
           script: |
             await github.rest.repos.createDispatchEvent({
@@ -152,7 +155,8 @@ jobs:
                 pr_number: Number(process.env.PR_NUMBER),
                 head_ref: process.env.HEAD_REF,
                 head_label: process.env.HEAD_LABEL,
-                head_sha: process.env.HEAD_SHA
+                head_sha: process.env.HEAD_SHA,
+                base_sha: process.env.BASE_SHA
               }
             });
 
