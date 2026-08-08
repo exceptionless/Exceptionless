@@ -1,0 +1,35 @@
+export interface AssistantAccess {
+    enabled: boolean;
+    has_access: boolean;
+    message?: string;
+    upgrade_required: boolean;
+}
+
+export interface AssistantChatMessage {
+    content: string;
+    feedback?: AssistantFeedback;
+    id: string;
+    role: 'assistant' | 'user';
+    suggestedActions?: AssistantSuggestedAction[];
+    tools: AssistantToolActivity[];
+}
+
+export type AssistantFeedback = 'helpful' | 'not-helpful';
+
+export interface AssistantPromptRequest {
+    id: string;
+    prompt: string;
+}
+
+export interface AssistantSuggestedAction {
+    label: string;
+    prompt: string;
+}
+
+export interface AssistantToolActivity {
+    arguments: string;
+    id: string;
+    name: string;
+    result?: string;
+    status: 'cancelled' | 'complete' | 'failed' | 'running';
+}

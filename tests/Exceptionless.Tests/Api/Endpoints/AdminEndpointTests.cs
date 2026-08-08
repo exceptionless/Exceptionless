@@ -25,6 +25,7 @@ public class AdminEndpointTests : IntegrationTestsBase
     private readonly IStackRepository _stackRepository;
     private readonly IEventRepository _eventRepository;
     private readonly IProjectRepository _projectRepository;
+    private readonly IOrganizationRepository _organizationRepository;
     private readonly IUserRepository _userRepository;
     private readonly IFileStorage _fileStorage;
     private readonly StackData _stackData;
@@ -37,10 +38,55 @@ public class AdminEndpointTests : IntegrationTestsBase
         _stackRepository = GetService<IStackRepository>();
         _eventRepository = GetService<IEventRepository>();
         _projectRepository = GetService<IProjectRepository>();
+        _organizationRepository = GetService<IOrganizationRepository>();
         _userRepository = GetService<IUserRepository>();
         _fileStorage = GetService<IFileStorage>();
         _stackData = GetService<StackData>();
         _eventData = GetService<EventData>();
+    }
+
+    [Fact]
+    public async Task AssistantUsageAsync_AsGlobalAdmin_ReturnsOrganizationsRankedByCost()
+    {
+        var month = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc);
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        organization.PlanId = "EX_MEDIUM";
+        organization.AssistantUsage.Add(new AssistantUsageInfo
+        {
+            Date = month,
+            PlanId = organization.PlanId,
+            Turns = 2,
+            Completed = 1,
+            Failed = 1,
+            ProviderRequests = 3,
+            ToolCalls = 4,
+            PromptTokens = 12_000,
+            CompletionTokens = 750,
+            CostInMicrodollars = 2345,
+            LastUsedUtc = month.AddHours(1)
+        });
+        await _organizationRepository.SaveAsync(organization, options => options.ImmediateConsistency());
+
+        var response = await SendRequestAsAsync<AdminAssistantUsageResponse>(request => request
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "assistant-usage")
+            .QueryString("month", "2026-08-01")
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(response);
+        Assert.Equal(month, response.Month);
+        Assert.Equal(1, response.ActiveOrganizations);
+        Assert.Equal(2, response.Turns);
+        Assert.Equal(12_000, response.PromptTokens);
+        Assert.Equal(750, response.CompletionTokens);
+        Assert.Equal(0.002345m, response.CostUsd);
+        var usage = Assert.Single(response.Organizations);
+        Assert.Equal(organization.Id, usage.OrganizationId);
+        Assert.Equal(25_000_000, usage.MonthlyTokenLimit);
+        Assert.Equal(5m, usage.MonthlyCostLimitUsd);
+        Assert.Equal(0.0005m, usage.TokenUtilization);
+        Assert.Equal(0.0005m, usage.CostUtilization);
     }
 
     protected override async Task ResetDataAsync()

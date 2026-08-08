@@ -278,6 +278,51 @@ public sealed class UsageServiceTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task AssistantUsage_IsPersistedByOrganizationAndMonth()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization
+        {
+            Name = "Assistant Usage",
+            MaxEventsPerMonth = 75_000,
+            PlanId = _plans.MediumPlan.Id
+        }, options => options.ImmediateConsistency().Cache());
+
+        await _usageService.RecordAssistantUsageAsync(organization.Id, new AssistantUsageIncrement
+        {
+            Turns = 2,
+            Completed = 1,
+            Failed = 1,
+            ProviderRequests = 3,
+            ToolCalls = 4,
+            PromptTokens = 12_000,
+            CompletionTokens = 750,
+            CostInMicrodollars = 2345,
+            BlockedByRateLimit = 1
+        });
+        TimeProvider.Advance(TimeSpan.FromMinutes(10));
+
+        await _usageService.SavePendingUsageAsync();
+
+        organization = await _organizationRepository.GetByIdAsync(organization.Id);
+        Assert.NotNull(organization);
+        Assert.Empty(organization.Usage);
+        Assert.Empty(organization.UsageHours);
+        var usage = Assert.Single(organization.AssistantUsage);
+        Assert.Equal(_plans.MediumPlan.Id, usage.PlanId);
+        Assert.Equal(2, usage.Turns);
+        Assert.Equal(1, usage.Completed);
+        Assert.Equal(1, usage.Failed);
+        Assert.Equal(3, usage.ProviderRequests);
+        Assert.Equal(4, usage.ToolCalls);
+        Assert.Equal(12_000, usage.PromptTokens);
+        Assert.Equal(750, usage.CompletionTokens);
+        Assert.Equal(2345, usage.CostInMicrodollars);
+        Assert.Equal(1, usage.BlockedByRateLimit);
+        Assert.Equal(new DateTime(2015, 2, 13, 0, 5, 0, DateTimeKind.Utc), usage.LastUsedUtc);
+
+    }
+
+    [Fact]
     public async Task SavePendingUsageAsync_UsageOnlyChanges_DoesNotPublishEntityChangedMessages()
     {
         // Arrange

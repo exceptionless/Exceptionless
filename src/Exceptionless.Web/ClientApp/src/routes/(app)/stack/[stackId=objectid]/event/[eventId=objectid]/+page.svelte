@@ -6,6 +6,7 @@
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
+    import { assistantPageContext } from '$features/assistant/page-context.svelte';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing';
     import { buildEventDetailsHref } from '$features/events/components/summary';
     import { organization } from '$features/organizations/context.svelte';
@@ -43,6 +44,8 @@
     }
 
     async function handleEventLoaded(event: PersistentEvent) {
+        assistantPageContext.setPageEvent(event);
+
         if (event.id !== eventId || event.stack_id !== stackId) {
             await goto(buildEventDetailsHref(event.id, event.stack_id), { replaceState: true });
         }
