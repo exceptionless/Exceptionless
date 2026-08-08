@@ -25,8 +25,8 @@
         githubLogin,
         googleClientId,
         googleLogin,
-        liveLogin,
-        microsoftClientId
+        microsoftClientId,
+        microsoftLogin
     } from '$features/auth/index.svelte';
     import { type LoginFormData, LoginSchema } from '$features/auth/schemas';
     import { getSafeRedirectUrl } from '$features/shared/url';
@@ -161,7 +161,7 @@
                 </div>
                 <div class="grid auto-cols-2 grid-flow-col grid-rows-2 gap-4">
                     {#if microsoftClientId}
-                        <Button aria-label="Login with Microsoft" tabindex={4} onclick={() => liveLogin(redirectUrl)}>
+                        <Button aria-label="Login with Microsoft" tabindex={4} onclick={() => microsoftLogin(redirectUrl)}>
                             <MicrosoftIcon class="size-4" /> Microsoft
                         </Button>
                     {/if}

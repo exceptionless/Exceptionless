@@ -548,16 +548,16 @@ public class AuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task LiveAsync_WithConfiguredProvider_ReturnsToken()
+    public async Task MicrosoftAsync_WithConfiguredProvider_ReturnsToken()
     {
         // Arrange
-        const string code = "live-user";
+        const string code = "microsoft-user";
 
         // Act
-        var result = await SendExternalLoginAsync("live", code);
+        var result = await SendExternalLoginAsync("microsoft", code);
 
         // Assert
-        await AssertExternalLoginAsync(result, "windowslive", code);
+        await AssertExternalLoginAsync(result, "microsoft", code);
     }
 
     [Fact]

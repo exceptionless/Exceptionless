@@ -14,7 +14,7 @@
                 FACEBOOK_APPID,
                 GOOGLE_APPID,
                 GITHUB_APPID,
-                LIVE_APPID,
+                MICROSOFT_APPID,
                 notificationService,
                 projectService,
                 userService,
@@ -194,7 +194,7 @@
 
                 function isExternalLoginEnabled(provider) {
                     if (!provider) {
-                        return !!FACEBOOK_APPID || !!GITHUB_APPID || !!GOOGLE_APPID || !!LIVE_APPID;
+                        return !!FACEBOOK_APPID || !!GITHUB_APPID || !!GOOGLE_APPID || !!MICROSOFT_APPID;
                     }
 
                     switch (provider) {
@@ -204,8 +204,8 @@
                             return !!GITHUB_APPID;
                         case "google":
                             return !!GOOGLE_APPID;
-                        case "live":
-                            return !!LIVE_APPID;
+                        case "microsoft":
+                            return !!MICROSOFT_APPID;
                         default:
                             return false;
                     }

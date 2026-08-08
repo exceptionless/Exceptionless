@@ -42,7 +42,7 @@ export interface OAuthResponseData {
     state: string;
 }
 
-export type SupportedOAuthProviders = 'facebook' | 'github' | 'google' | 'live' | 'slack';
+export type SupportedOAuthProviders = 'facebook' | 'github' | 'google' | 'microsoft' | 'slack';
 
 const authSerializer = {
     deserialize: (value: null | string): null | string => {
@@ -122,20 +122,20 @@ export async function gotoLogin() {
     await goto(redirect, { replaceState: true });
 }
 
-export async function liveLogin(redirectUrl?: string) {
+export async function microsoftLogin(redirectUrl?: string) {
     if (!microsoftClientId) {
-        throw new Error('Live client id not set');
+        throw new Error('Microsoft client id not set');
     }
 
     await oauthLogin({
-        authUrl: 'https://login.live.com/oauth20_authorize.srf',
+        authUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
         clientId: microsoftClientId,
         extraParams: {
-            display: 'popup'
+            state: crypto.randomUUID()
         },
-        provider: 'live',
+        provider: 'microsoft',
         redirectUrl,
-        scope: 'wl.emails'
+        scope: 'User.Read'
     });
 }
 
