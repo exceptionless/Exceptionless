@@ -8,10 +8,10 @@
     import * as Chart from '$comp/ui/chart/index';
     import { Skeleton } from '$comp/ui/skeleton';
     import { env } from '$env/dynamic/public';
-    import { ChangePlanDialog } from '$features/billing';
-    import { getOrganizationQuery } from '$features/organizations/api.svelte';
-    import { organization } from '$features/organizations/context.svelte';
-    import { getEffectiveEventLimit, getNextBillingDateUtc, getRemainingEventLimit } from '$features/organizations/utils';
+import { ChangePlanDialog } from '$features/billing';
+import { getOrganizationQuery } from '$features/organizations/api.svelte';
+import { organization } from '$features/organizations/context.svelte';
+import { getEffectiveEventLimit, getNextBillingDateUtc, getRemainingEventLimit, ORGANIZATION_USAGE_REFETCH_INTERVAL_MS } from '$features/organizations/utils';
     import { getProjectQuery } from '$features/projects/api.svelte';
     import ProjectIngestLimitCard from '$features/projects/components/project-ingest-limit-card.svelte';
     import { formatDateLabel, formatLongDate } from '$shared/dates';
@@ -23,6 +23,7 @@
         params: {
             mode: 'stats'
         },
+        refetchInterval: ORGANIZATION_USAGE_REFETCH_INTERVAL_MS,
         route: {
             get id() {
                 return organization.current;
@@ -37,6 +38,7 @@
     const nextBillingDate = $derived(getNextBillingDateUtc(organizationQuery.data));
 
     const projectQuery = getProjectQuery({
+        refetchInterval: ORGANIZATION_USAGE_REFETCH_INTERVAL_MS,
         route: {
             get id() {
                 return page.params.projectId || '';

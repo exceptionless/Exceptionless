@@ -3,13 +3,35 @@
 
     angular
         .module("exceptionless.organization", ["restangular"])
-        .factory("organizationService", function ($cacheFactory, $rootScope, objectIDService, Restangular) {
+        .factory("organizationService", function ($cacheFactory, $interval, $rootScope, objectIDService, Restangular) {
             var _cache = $cacheFactory("http:organization");
+            var _usageMonth = getUsageMonth();
             $rootScope.$on("cache:clear", _cache.removeAll);
             $rootScope.$on("cache:clear-organization", _cache.removeAll);
             $rootScope.$on("auth:logout", _cache.removeAll);
             $rootScope.$on("OrganizationChanged", _cache.removeAll);
             $rootScope.$on("ProjectChanged", _cache.removeAll);
+            $rootScope.$on("PlanOverage", _cache.removeAll);
+            $rootScope.$on("UsageChanged", _cache.removeAll);
+
+            $interval(function () {
+                var usageMonth = getUsageMonth();
+                if (usageMonth === _usageMonth) {
+                    return;
+                }
+
+                _usageMonth = usageMonth;
+                $rootScope.$broadcast("OrganizationChanged", {});
+            }, 60000);
+
+            $interval(function () {
+                $rootScope.$broadcast("UsageChanged");
+            }, 300000);
+
+            function getUsageMonth() {
+                var now = new Date();
+                return now.getUTCFullYear() * 12 + now.getUTCMonth();
+            }
 
             $rootScope.$on("StackChanged", function ($event, data) {
                 if (data.added) {
@@ -34,7 +56,7 @@
                     plan_id: options.planId,
                     stripe_token: options.stripeToken,
                     last4: options.last4,
-                    coupon_id: options.couponId
+                    coupon_id: options.couponId,
                 };
                 return Restangular.one("organizations", id).customPOST(body, "change-plan");
             }
