@@ -5,6 +5,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
@@ -614,6 +615,65 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(viewOrg);
         Assert.False(viewOrg.IsOverMonthlyLimit);
+    }
+
+    [Fact]
+    public async Task GetAsync_WithPendingUsageAtMonthlyLimit_ReturnsRealTimeOverageState()
+    {
+        // Arrange
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+
+        organization.MaxEventsPerMonth = 1;
+        organization.Usage.Clear();
+        organization.UsageHours.Clear();
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
+
+        var usageService = GetService<UsageService>();
+        await usageService.IncrementTotalAsync(organization.Id, SampleDataService.TEST_PROJECT_ID);
+
+        // Act
+        var viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", organization.Id)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(viewOrganization);
+        Assert.Equal(1, viewOrganization.GetCurrentUsage(TimeProvider).Total);
+        Assert.True(viewOrganization.IsOverMonthlyLimit);
+    }
+
+    [Fact]
+    public async Task GetAsync_WithExpiredBonusAndStaleUsageLimit_ReturnsLiveOverageState()
+    {
+        // Arrange
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+
+        organization.MaxEventsPerMonth = 1;
+        organization.BonusEventsPerMonth = 10;
+        organization.BonusExpiration = TimeProvider.GetUtcNow().UtcDateTime.Subtract(TimeSpan.FromMinutes(1));
+        organization.Usage.Clear();
+        organization.UsageHours.Clear();
+        var currentUsage = organization.GetCurrentUsage(TimeProvider);
+        currentUsage.Limit = organization.MaxEventsPerMonth + organization.BonusEventsPerMonth;
+        currentUsage.Total = 2;
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
+
+        // Act
+        var viewOrganization = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", organization.Id)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(viewOrganization);
+        Assert.Equal(organization.MaxEventsPerMonth, viewOrganization.GetCurrentUsage(TimeProvider).Limit);
+        Assert.Equal(2, viewOrganization.GetCurrentUsage(TimeProvider).Total);
+        Assert.True(viewOrganization.IsOverMonthlyLimit);
     }
 
     [Fact]

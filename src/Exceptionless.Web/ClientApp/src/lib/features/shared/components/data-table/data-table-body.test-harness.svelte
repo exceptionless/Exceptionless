@@ -12,11 +12,12 @@
     type TestSummary = EventSummaryModel<'event-error-summary'> | StackSummaryModel<'stack-error-summary'>;
 
     interface Props {
+        allColumnsSized?: boolean;
         kind: 'event' | 'stack';
         onRowClick: (row: TestSummary) => void;
     }
 
-    let { kind, onRowClick }: Props = $props();
+    let { allColumnsSized = false, kind, onRowClick }: Props = $props();
 
     const summaryData = {
         Message: 'Unexpected end of Stream, the content may have already been read by another component.',
@@ -52,6 +53,12 @@
             columnPersistenceKey: 'row-navigation-test',
             columns: [
                 {
+                    cell: 'Select row',
+                    enableResizing: false,
+                    header: 'Select',
+                    id: 'select'
+                },
+                {
                     cell: (props) => renderComponent(Summary, { showStatus: false, summary: props.row.original }),
                     header: 'Summary',
                     id: 'summary',
@@ -61,11 +68,13 @@
                 },
                 {
                     cell: (props) => props.row.original.id,
-                    enableResizing: false,
                     header: 'Date',
                     id: 'date'
                 }
             ],
+            get defaultColumnSizing() {
+                return allColumnsSized ? { date: 130, summary: 140 } : undefined;
+            },
             enableColumnResizing: true,
             paginationStrategy: 'memory',
             get queryData() {

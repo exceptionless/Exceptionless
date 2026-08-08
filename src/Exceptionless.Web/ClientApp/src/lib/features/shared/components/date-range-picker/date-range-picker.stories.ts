@@ -74,6 +74,19 @@ export const AutoSelectQuickTab: Story = {
     }
 };
 
+export const QuickRangeCustomEditing: Story = {
+    args: {
+        value: '[now-90d TO now]'
+    },
+    parameters: {
+        docs: {
+            description: {
+                story: 'A persisted quick range should populate the Custom range fields when the section is opened after the picker mounts.'
+            }
+        }
+    }
+};
+
 export const CommandSearchFiltering: Story = {
     args: {
         value: '[now-5m TO now]'
