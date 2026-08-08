@@ -56,7 +56,7 @@ public class OrganizationMaintenanceWorkItemHandler : WorkItemHandlerBase
             }
 
             if (wi.UpgradePlans || wi.RemoveOldUsageStats)
-                await _organizationRepository.SaveAsync(results.Documents);
+                await _organizationRepository.SaveAsync(results.Documents, o => o.Notifications(wi.UpgradePlans));
 
             // Sleep so we are not hammering the backend.
             await Task.Delay(TimeSpan.FromSeconds(2.5), _timeProvider);
