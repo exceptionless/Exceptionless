@@ -4,6 +4,18 @@ import { describe, expect, it, vi } from 'vitest';
 import DataTableBodyTestHarness from './data-table-body.test-harness.svelte';
 
 describe('DataTableBody', () => {
+    it('keeps the row selection column at a fixed width', () => {
+        render(DataTableBodyTestHarness, { kind: 'event', onRowClick: vi.fn() });
+
+        const table = screen.getByRole('table');
+        const selectHeader = screen.getByRole('columnheader', { name: 'Select' });
+        const selectCell = screen.getByText('Select row').closest('td');
+
+        expect(table.classList.contains('table-fixed')).toBe(true);
+        expect(selectHeader.style.cssText).toBe('width: 32px; min-width: 32px; max-width: 32px;');
+        expect(selectCell?.style.cssText).toBe('width: 32px; min-width: 32px; max-width: 32px;');
+    });
+
     it('lets a resized header shrink below its metadata width', () => {
         render(DataTableBodyTestHarness, { kind: 'event', onRowClick: vi.fn() });
 
