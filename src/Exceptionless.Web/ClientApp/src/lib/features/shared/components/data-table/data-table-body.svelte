@@ -22,6 +22,7 @@
 
     const selectColumnClass = 'w-8 min-w-8 max-w-8';
     const selectColumnWidth = 32;
+    const tanstackDefaultColumnWidth = 150;
 
     function getHeaderColumnClass(header: Header<StockFeatures, TData, unknown>) {
         if (header.column.id === 'select') {
@@ -67,6 +68,10 @@
             return `width: ${selectColumnWidth}px; min-width: ${selectColumnWidth}px; max-width: ${selectColumnWidth}px;`;
         }
 
+        if (hasSelectColumn() && column.id === getFlexibleDataColumnId()) {
+            return 'width: 100%;';
+        }
+
         if (!column.getCanResize() || getVisibleDataColumnCount() === 1) {
             return undefined;
         }
@@ -78,8 +83,26 @@
         return (meta as { class?: string })?.class ?? '';
     }
 
+    function getFlexibleDataColumnId(): string | undefined {
+        const unsizedColumns = getVisibleDataColumns().filter((column) => column.getSize() === (column.columnDef.size ?? tanstackDefaultColumnWidth));
+        return unsizedColumns.at(-1)?.id ?? getVisibleDataColumns().at(-1)?.id;
+    }
+
     function getVisibleDataColumnCount(): number {
-        return table.getVisibleLeafColumns().filter((column) => column.id !== 'select').length;
+        return getVisibleDataColumns().length;
+    }
+
+    function getVisibleDataColumns() {
+        return table.getVisibleLeafColumns().filter((column) => column.id !== 'select');
+    }
+
+    function getTableStyle(): string | undefined {
+        if (!hasSelectColumn()) {
+            return undefined;
+        }
+
+        const minimumWidth = selectColumnWidth + getVisibleDataColumns().reduce((total, column) => total + column.getSize(), 0);
+        return `min-width: ${minimumWidth}px;`;
     }
 
     function hasSelectColumn(): boolean {
@@ -147,7 +170,7 @@
 </script>
 
 <div class="rounded-md border">
-    <Table.Root class={hasSelectColumn() ? 'table-fixed' : undefined}>
+    <Table.Root class={hasSelectColumn() ? 'table-fixed' : undefined} style={getTableStyle()}>
         <Table.Header class="bg-card">
             {#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
                 <Table.Row>
