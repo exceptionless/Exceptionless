@@ -21,6 +21,7 @@
     let { children, rowClick, rowHref, table }: Props = $props();
 
     const selectColumnClass = 'w-8 min-w-8 max-w-8';
+    const selectColumnWidth = 32;
 
     function getHeaderColumnClass(header: Header<StockFeatures, TData, unknown>) {
         if (header.column.id === 'select') {
@@ -62,6 +63,10 @@
     }
 
     function getColumnStyle(column: Cell<StockFeatures, TData, unknown>['column'] | Header<StockFeatures, TData, unknown>['column']): string | undefined {
+        if (column.id === 'select') {
+            return `width: ${selectColumnWidth}px; min-width: ${selectColumnWidth}px; max-width: ${selectColumnWidth}px;`;
+        }
+
         if (!column.getCanResize() || getVisibleDataColumnCount() === 1) {
             return undefined;
         }
@@ -75,6 +80,10 @@
 
     function getVisibleDataColumnCount(): number {
         return table.getVisibleLeafColumns().filter((column) => column.id !== 'select').length;
+    }
+
+    function hasSelectColumn(): boolean {
+        return table.getVisibleLeafColumns().some((column) => column.id === 'select');
     }
 
     function isWidthClass(className: string): boolean {
@@ -138,7 +147,7 @@
 </script>
 
 <div class="rounded-md border">
-    <Table.Root>
+    <Table.Root class={hasSelectColumn() ? 'table-fixed' : undefined}>
         <Table.Header class="bg-card">
             {#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
                 <Table.Row>

@@ -52,6 +52,12 @@
             columnPersistenceKey: 'row-navigation-test',
             columns: [
                 {
+                    cell: 'Select row',
+                    enableResizing: false,
+                    header: 'Select',
+                    id: 'select'
+                },
+                {
                     cell: (props) => renderComponent(Summary, { showStatus: false, summary: props.row.original }),
                     header: 'Summary',
                     id: 'summary',
