@@ -127,6 +127,11 @@ public sealed class ContactHandlerTests : TestWithServices
             return Task.CompletedTask;
         }
 
+        public Task SendRateNotificationAsync(User user, Project project, RateNotificationRule rule, long observedCount, DateTime windowStartUtc, DateTime windowEndUtc, Stack? stack)
+        {
+            return Task.CompletedTask;
+        }
+
         public Task SendUserEmailVerifyAsync(User user)
         {
             return Task.CompletedTask;
