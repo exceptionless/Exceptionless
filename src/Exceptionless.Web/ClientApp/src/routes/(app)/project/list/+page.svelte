@@ -9,6 +9,7 @@
     import { Input } from '$comp/ui/input';
     import { organization } from '$features/organizations/context.svelte';
     import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
+    import { ORGANIZATION_USAGE_REFETCH_INTERVAL_MS } from '$features/organizations/utils';
     import { type GetProjectsParams, getProjectsQuery } from '$features/projects/api.svelte';
     import { getTableOptions } from '$features/projects/components/table/options.svelte';
     import ProjectsDataTable from '$features/projects/components/table/projects-data-table.svelte';
@@ -50,7 +51,8 @@
     const projectsQuery = getProjectsQuery({
         get params() {
             return projectsQueryParameters;
-        }
+        },
+        refetchInterval: ORGANIZATION_USAGE_REFETCH_INTERVAL_MS
     });
 
     const table = createTable(getTableOptions<ViewProject>(projectsQueryParameters, projectsQuery, { includeOrganizationColumn: true }));

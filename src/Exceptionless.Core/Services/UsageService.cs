@@ -69,6 +69,9 @@ public class UsageService
         {
             if (organizationIdsValue.HasValue)
             {
+                foreach (string? organizationId in organizationIdsValue.Value)
+                    await PublishPendingHourlyOverageAsync(bucketUtc, organizationId);
+
                 // Should we wait to remove this in case there is a failure? We should just remove the organization id once processed.
                 await _cache.RemoveAsync(GetOrganizationSetKey(bucketUtc));
 
@@ -85,10 +88,16 @@ public class UsageService
                     var bucketDiscarded = await _cache.GetAsync<int>(GetBucketDiscardedCacheKey(bucketUtc, organizationId));
                     var bucketTooBig = await _cache.GetAsync<int>(GetBucketTooBigCacheKey(bucketUtc, organizationId));
                     var bucketDeleted = await _cache.GetAsync<int>(GetBucketDeletedCacheKey(bucketUtc, organizationId));
+                    var hourlyThrottleTransition = await _cache.GetAsync<bool>(GetHourlyThrottleTransitionKey(bucketUtc, organizationId));
 
                     bool hasIngestion = (bucketTotal?.Value ?? 0) > 0 || (bucketBlocked?.Value ?? 0) > 0 || (bucketDiscarded?.Value ?? 0) > 0 || (bucketTooBig?.Value ?? 0) > 0;
                     if (hasIngestion)
                         organization.LastEventDateUtc = _timeProvider.GetUtcNow().UtcDateTime;
+
+                    int bucketLimit = GetBucketEventLimit(organization.GetMaxEventsPerMonthWithBonus(_timeProvider), bucketUtc);
+                    bool hourlyThrottleCleared = hourlyThrottleTransition is { HasValue: true } transition
+                        ? transition.Value
+                        : bucketLimit >= 0 && bucketTotal is { HasValue: true } total && total.Value >= bucketLimit;
 
                     var usage = organization.GetUsage(bucketUtc, _timeProvider);
                     usage.Limit = organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
@@ -113,11 +122,13 @@ public class UsageService
                         GetBucketDiscardedCacheKey(bucketUtc, organizationId),
                         GetBucketTooBigCacheKey(bucketUtc, organizationId),
                         GetBucketDeletedCacheKey(bucketUtc, organizationId),
-                        GetThrottledKey(bucketUtc, organizationId)
+                        GetThrottledKey(bucketUtc, organizationId),
+                        GetHourlyThrottleTransitionKey(bucketUtc, organizationId)
                     });
 
                     await _cache.SetAsync(GetTotalCacheKey(utcNow, organizationId), usage.Total, TimeSpan.FromHours(8));
-                    await _organizationRepository.SaveAsync(organization);
+                    // Routine usage updates stay silent, but clients need one refresh when hourly throttling clears.
+                    await _organizationRepository.SaveAsync(organization, o => o.Notifications(hourlyThrottleCleared));
                 }
             }
 
@@ -204,7 +215,8 @@ public class UsageService
 
                     await _cache.SetAsync(GetTotalCacheKey(utcNow, project.OrganizationId, projectId), usage.Total, TimeSpan.FromHours(8));
 
-                    await _projectRepository.SaveAsync(project);
+                    // Project configuration changes have their own save path and should remain the source of ProjectChanged messages.
+                    await _projectRepository.SaveAsync(project, o => o.Notifications(false));
                 }
             }
 
@@ -257,8 +269,10 @@ public class UsageService
 
         if (bucketTotal.Value >= bucketLimit)
         {
-            await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = modified.Id, IsHourly = true });
             await _cache.SetAsync(GetThrottledKey(utcNow, modified.Id), true, TimeSpan.FromMinutes(5));
+            await _cache.SetAsync(GetHourlyThrottleTransitionKey(utcNow, modified.Id), true, TimeSpan.FromHours(8));
+            await _cache.SetAsync(GetHourlyOveragePendingKey(utcNow, modified.Id), true, TimeSpan.FromHours(8));
+            await PublishPendingHourlyOverageAsync(utcNow, modified.Id);
         }
     }
 
@@ -449,9 +463,22 @@ public class UsageService
         if (bucketTotal >= bucketLimit && bucketTotal - bucketLimit < eventCount)
         {
             // org will be throttled during the current bucket of time
-            await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId, IsHourly = true });
             await _cache.SetAsync(GetThrottledKey(utcNow, organizationId), true, TimeSpan.FromMinutes(5));
+            await _cache.SetAsync(GetHourlyThrottleTransitionKey(utcNow, organizationId), true, TimeSpan.FromHours(8));
+            await _cache.SetAsync(GetHourlyOveragePendingKey(utcNow, organizationId), true, TimeSpan.FromHours(8));
+            await PublishPendingHourlyOverageAsync(utcNow, organizationId);
         }
+    }
+
+    private async Task PublishPendingHourlyOverageAsync(DateTime utcTime, string organizationId)
+    {
+        string pendingKey = GetHourlyOveragePendingKey(utcTime, organizationId);
+        var pending = await _cache.GetAsync<bool>(pendingKey);
+        if (!pending.HasValue || !pending.Value)
+            return;
+
+        await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId, IsHourly = true });
+        await _cache.RemoveAsync(pendingKey);
     }
 
     public async Task IncrementBlockedAsync(string organizationId, string? projectId, int eventCount = 1)
@@ -528,10 +555,14 @@ public class UsageService
 
     private int GetBucketEventLimit(int maxEventsPerMonth)
     {
+        return GetBucketEventLimit(maxEventsPerMonth, _timeProvider.GetUtcNow().UtcDateTime);
+    }
+
+    private int GetBucketEventLimit(int maxEventsPerMonth, DateTime utcNow)
+    {
         if (maxEventsPerMonth < 5000)
             return maxEventsPerMonth;
 
-        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         var timeLeftInMonth = utcNow.EndOfMonth() - utcNow;
         if (timeLeftInMonth < TimeSpan.FromDays(1))
             return maxEventsPerMonth;
@@ -612,6 +643,18 @@ public class UsageService
     {
         int bucket = GetCurrentBucket(utcTime);
         return $"usage:{bucket}:{organizationId}:throttled";
+    }
+
+    private string GetHourlyThrottleTransitionKey(DateTime utcTime, string organizationId)
+    {
+        int bucket = GetCurrentBucket(utcTime);
+        return $"usage:{bucket}:{organizationId}:throttled-transition";
+    }
+
+    private string GetHourlyOveragePendingKey(DateTime utcTime, string organizationId)
+    {
+        int bucket = GetCurrentBucket(utcTime);
+        return $"usage:{bucket}:{organizationId}:hourly-overage-pending";
     }
 
     private string GetProjectSetKey(DateTime utcTime)
