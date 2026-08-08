@@ -2,6 +2,7 @@
 using Elastic.Clients.Elasticsearch.Aggregations;
 using Elastic.Clients.Elasticsearch.Core.ReindexRethrottle;
 using Elastic.Clients.Elasticsearch.QueryDsl;
+using Elastic.Transport.Products.Elasticsearch;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
@@ -23,6 +24,14 @@ namespace Exceptionless.Core.Jobs;
 [Job(Description = "Deletes orphaned data.", IsContinuous = false)]
 public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
 {
+    // Keep this aligned with the cron registrations in Bootstrapper and Exceptionless.Job.
+    private static readonly TimeSpan ScheduledInterval = TimeSpan.FromHours(8);
+    private static readonly TimeSpan LockLeaseDuration = TimeSpan.FromHours(2);
+    private static readonly TimeSpan HealthCheckGracePeriod = TimeSpan.FromHours(1);
+    private static readonly TimeSpan SuccessfulRunHealthWindow = ScheduledInterval + HealthCheckGracePeriod;
+    private static readonly TimeSpan ActiveRunProgressHealthWindow = LockLeaseDuration + HealthCheckGracePeriod;
+    private static readonly TimeSpan OrphanedEventLookback = TimeSpan.FromDays(3);
+    private readonly object _healthStateLock = new();
     private readonly ExceptionlessElasticConfiguration _config;
     private readonly ElasticsearchClient _elasticClient;
     private readonly IStackRepository _stackRepository;
@@ -31,7 +40,9 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
     private readonly IEventRepository _eventRepository;
     private readonly ICacheClient _cacheClient;
     private readonly ILockProvider _lockProvider;
-    private DateTime? _lastRun;
+    private DateTime? _lastSuccessfulRunUtc;
+    private DateTime? _lastRunProgressUtc;
+    private bool _isRunning;
 
     public CleanupOrphanedDataJob(ExceptionlessElasticConfiguration config, IStackRepository stackRepository,
         IProjectRepository projectRepository, IOrganizationRepository organizationRepository,
@@ -53,27 +64,45 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
 
     protected override Task<ILock?> GetLockAsync(CancellationToken cancellationToken = default)
     {
-        return _lockProvider.TryAcquireAsync(nameof(CleanupOrphanedDataJob), TimeSpan.FromHours(2), cancellationToken);
+        return _lockProvider.TryAcquireAsync(nameof(CleanupOrphanedDataJob), LockLeaseDuration, cancellationToken);
     }
 
     protected override async Task<JobResult> RunInternalAsync(JobContext context)
     {
-        await DeleteOrphanedEventsByStackAsync(context);
-        await DeleteOrphanedEventsByProjectAsync(context);
-        await DeleteOrphanedEventsByOrganizationAsync(context);
+        MarkRunStarted();
+        bool completedSuccessfully = false;
+        try
+        {
+            var orphanedEventCutoffUtc = GetOrphanedEventCutoffUtc();
+            await DeleteOrphanedEventsByStackAsync(context, orphanedEventCutoffUtc);
+            await DeleteOrphanedEventsByProjectAsync(context, orphanedEventCutoffUtc);
+            await DeleteOrphanedEventsByOrganizationAsync(context, orphanedEventCutoffUtc);
 
-        await FixDuplicateStacks(context);
+            await FixDuplicateStacks(context);
 
-        return JobResult.Success;
+            completedSuccessfully = true;
+            return JobResult.Success;
+        }
+        finally
+        {
+            MarkRunFinished(completedSuccessfully);
+        }
     }
 
-    public async Task DeleteOrphanedEventsByStackAsync(JobContext context)
+    public Task DeleteOrphanedEventsByStackAsync(JobContext context)
+    {
+        return DeleteOrphanedEventsByStackAsync(context, GetOrphanedEventCutoffUtc());
+    }
+
+    private async Task DeleteOrphanedEventsByStackAsync(JobContext context, DateTime orphanedEventCutoffUtc)
     {
         // get approximate number of unique stack ids
         var stackCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s
             .Indices(GetEventIndexPattern())
             .Size(0)
+            .Query(q => RecentEventQuery(q, orphanedEventCutoffUtc))
             .AddAggregation("cardinality_stack_id", a => a.Cardinality(c => c.Field(f => f.StackId).PrecisionThreshold(40000))));
+        EnsureValidSearchResponse(stackCardinality, "getting stack cardinality");
 
         double? uniqueStackIdCount = stackCardinality.Aggregations?.GetCardinality("cardinality_stack_id")?.Value;
         if (!uniqueStackIdCount.HasValue || uniqueStackIdCount.Value <= 0)
@@ -83,7 +112,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
         const int batchSize = 500;
         int buckets = (int)uniqueStackIdCount.Value / batchSize;
         buckets = Math.Max(1, buckets);
-        int totalOrphanedEventCount = 0;
+        long totalDeletedEventCount = 0;
         int totalStackIds = 0;
 
         for (int batchNumber = 0; batchNumber < buckets; batchNumber++)
@@ -93,7 +122,9 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             var stackIdTerms = await _elasticClient.SearchAsync<PersistentEvent>(s => s
                 .Indices(GetEventIndexPattern())
                 .Size(0)
+                .Query(q => RecentEventQuery(q, orphanedEventCutoffUtc))
                 .AddAggregation("terms_stack_id", a => a.Terms(c => c.Field(f => f.StackId).Include(new TermsInclude(batchNumber, buckets)).Size(batchSize * 2))));
+            EnsureValidSearchResponse(stackIdTerms, "getting stack ids");
 
             string[] stackIds = stackIdTerms.Aggregations?.GetStringTerms("terms_stack_id")?.Buckets.Select(b => b.Key.ToString()!).ToArray() ?? [];
             if (stackIds.Length == 0)
@@ -111,23 +142,34 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                 continue;
             }
 
-            totalOrphanedEventCount += missingStackIds.Length;
-            _logger.LogInformation("{BatchNumber}/{BatchCount}: Found {OrphanedEventCount} orphaned events from missing stacks {MissingStackIds} out of {StackIdCount}", batchNumber, buckets, missingStackIds.Length, missingStackIds, stackIds.Length);
-            await _elasticClient.DeleteByQueryAsync<PersistentEvent>(r => r
+            _logger.LogInformation("{BatchNumber}/{BatchCount}: Found {MissingStackIdCount} missing stack IDs {MissingStackIds} out of {StackIdCount}", batchNumber, buckets, missingStackIds.Length, missingStackIds, stackIds.Length);
+            var deleteResponse = await _elasticClient.DeleteByQueryAsync<PersistentEvent>(r => r
                 .Indices(GetEventIndexPattern())
-                .Query(q => q.Terms(t => t.Field(f => f.StackId).Terms(new TermsQueryField(missingStackIds.Select(FieldValueHelper.ToFieldValue).ToList())))));
+                .Conflicts(Conflicts.Proceed)
+                .Query(q => q.Bool(b => b.Filter(
+                    f => f.Terms(t => t.Field(e => e.StackId).Terms(new TermsQueryField(missingStackIds.Select(id => FieldValueHelper.ToFieldValue(id)).ToList()))),
+                    f => RecentEventQuery(f, orphanedEventCutoffUtc)))));
+            EnsureValidDeleteResponse(deleteResponse, "deleting events with missing stacks");
+            totalDeletedEventCount += deleteResponse.Deleted ?? 0;
         }
 
-        _logger.LogInformation("Found {OrphanedEventCount} orphaned events from missing stacks out of {StackIdCount}", totalOrphanedEventCount, totalStackIds);
+        _logger.LogInformation("Deleted {DeletedEventCount} recent events referencing missing stacks out of {StackIdCount} distinct stack IDs since {OrphanedEventCutoffUtc}", totalDeletedEventCount, totalStackIds, orphanedEventCutoffUtc);
     }
 
-    public async Task DeleteOrphanedEventsByProjectAsync(JobContext context)
+    public Task DeleteOrphanedEventsByProjectAsync(JobContext context)
+    {
+        return DeleteOrphanedEventsByProjectAsync(context, GetOrphanedEventCutoffUtc());
+    }
+
+    private async Task DeleteOrphanedEventsByProjectAsync(JobContext context, DateTime orphanedEventCutoffUtc)
     {
         // get approximate number of unique project ids
         var projectCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s
             .Indices(GetEventIndexPattern())
             .Size(0)
+            .Query(q => RecentEventQuery(q, orphanedEventCutoffUtc))
             .AddAggregation("cardinality_project_id", a => a.Cardinality(c => c.Field(f => f.ProjectId).PrecisionThreshold(40000))));
+        EnsureValidSearchResponse(projectCardinality, "getting project cardinality");
 
         double? uniqueProjectIdCount = projectCardinality.Aggregations?.GetCardinality("cardinality_project_id")?.Value;
         if (!uniqueProjectIdCount.HasValue || uniqueProjectIdCount.Value <= 0)
@@ -137,7 +179,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
         const int batchSize = 500;
         int buckets = (int)uniqueProjectIdCount.Value / batchSize;
         buckets = Math.Max(1, buckets);
-        int totalOrphanedEventCount = 0;
+        long totalDeletedEventCount = 0;
         int totalProjectIds = 0;
 
         for (int batchNumber = 0; batchNumber < buckets; batchNumber++)
@@ -147,7 +189,9 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             var projectIdTerms = await _elasticClient.SearchAsync<PersistentEvent>(s => s
                 .Indices(GetEventIndexPattern())
                 .Size(0)
+                .Query(q => RecentEventQuery(q, orphanedEventCutoffUtc))
                 .AddAggregation("terms_project_id", a => a.Terms(c => c.Field(f => f.ProjectId).Include(new TermsInclude(batchNumber, buckets)).Size(batchSize * 2))));
+            EnsureValidSearchResponse(projectIdTerms, "getting project ids");
 
             string[] projectIds = projectIdTerms.Aggregations?.GetStringTerms("terms_project_id")?.Buckets.Select(b => b.Key.ToString()!).ToArray() ?? [];
             if (projectIds.Length == 0)
@@ -165,23 +209,34 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                 continue;
             }
 
-            totalOrphanedEventCount += missingProjectIds.Length;
-            _logger.LogInformation("{BatchNumber}/{BatchCount}: Found {OrphanedEventCount} orphaned events from missing projects {MissingProjectIds} out of {ProjectIdCount}", batchNumber, buckets, missingProjectIds.Length, missingProjectIds, projectIds.Length);
-            await _elasticClient.DeleteByQueryAsync<PersistentEvent>(r => r
+            _logger.LogInformation("{BatchNumber}/{BatchCount}: Found {MissingProjectIdCount} missing project IDs {MissingProjectIds} out of {ProjectIdCount}", batchNumber, buckets, missingProjectIds.Length, missingProjectIds, projectIds.Length);
+            var deleteResponse = await _elasticClient.DeleteByQueryAsync<PersistentEvent>(r => r
                 .Indices(GetEventIndexPattern())
-                .Query(q => q.Terms(t => t.Field(f => f.ProjectId).Terms(new TermsQueryField(missingProjectIds.Select(FieldValueHelper.ToFieldValue).ToList())))));
+                .Conflicts(Conflicts.Proceed)
+                .Query(q => q.Bool(b => b.Filter(
+                    f => f.Terms(t => t.Field(e => e.ProjectId).Terms(new TermsQueryField(missingProjectIds.Select(id => FieldValueHelper.ToFieldValue(id)).ToList()))),
+                    f => RecentEventQuery(f, orphanedEventCutoffUtc)))));
+            EnsureValidDeleteResponse(deleteResponse, "deleting events with missing projects");
+            totalDeletedEventCount += deleteResponse.Deleted ?? 0;
         }
 
-        _logger.LogInformation("Found {OrphanedEventCount} orphaned events from missing projects out of {ProjectIdCount}", totalOrphanedEventCount, totalProjectIds);
+        _logger.LogInformation("Deleted {DeletedEventCount} recent events referencing missing projects out of {ProjectIdCount} distinct project IDs since {OrphanedEventCutoffUtc}", totalDeletedEventCount, totalProjectIds, orphanedEventCutoffUtc);
     }
 
-    public async Task DeleteOrphanedEventsByOrganizationAsync(JobContext context)
+    public Task DeleteOrphanedEventsByOrganizationAsync(JobContext context)
+    {
+        return DeleteOrphanedEventsByOrganizationAsync(context, GetOrphanedEventCutoffUtc());
+    }
+
+    private async Task DeleteOrphanedEventsByOrganizationAsync(JobContext context, DateTime orphanedEventCutoffUtc)
     {
         // get approximate number of unique organization ids
         var organizationCardinality = await _elasticClient.SearchAsync<PersistentEvent>(s => s
             .Indices(GetEventIndexPattern())
             .Size(0)
+            .Query(q => RecentEventQuery(q, orphanedEventCutoffUtc))
             .AddAggregation("cardinality_organization_id", a => a.Cardinality(c => c.Field(f => f.OrganizationId).PrecisionThreshold(40000))));
+        EnsureValidSearchResponse(organizationCardinality, "getting organization cardinality");
 
         double? uniqueOrganizationIdCount = organizationCardinality.Aggregations?.GetCardinality("cardinality_organization_id")?.Value;
         if (!uniqueOrganizationIdCount.HasValue || uniqueOrganizationIdCount.Value <= 0)
@@ -191,7 +246,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
         const int batchSize = 500;
         int buckets = (int)uniqueOrganizationIdCount.Value / batchSize;
         buckets = Math.Max(1, buckets);
-        int totalOrphanedEventCount = 0;
+        long totalDeletedEventCount = 0;
         int totalOrganizationIds = 0;
 
         for (int batchNumber = 0; batchNumber < buckets; batchNumber++)
@@ -201,7 +256,9 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             var organizationIdTerms = await _elasticClient.SearchAsync<PersistentEvent>(s => s
                 .Indices(GetEventIndexPattern())
                 .Size(0)
+                .Query(q => RecentEventQuery(q, orphanedEventCutoffUtc))
                 .AddAggregation("terms_organization_id", a => a.Terms(c => c.Field(f => f.OrganizationId).Include(new TermsInclude(batchNumber, buckets)).Size(batchSize * 2))));
+            EnsureValidSearchResponse(organizationIdTerms, "getting organization ids");
 
             string[] organizationIds = organizationIdTerms.Aggregations?.GetStringTerms("terms_organization_id")?.Buckets.Select(b => b.Key.ToString()!).ToArray() ?? [];
             if (organizationIds.Length == 0)
@@ -219,14 +276,18 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                 continue;
             }
 
-            totalOrphanedEventCount += missingOrganizationIds.Length;
-            _logger.LogInformation("{BatchNumber}/{BatchCount}: Found {OrphanedEventCount} orphaned events from missing organizations {MissingOrganizationIds} out of {OrganizationIdCount}", batchNumber, buckets, missingOrganizationIds.Length, missingOrganizationIds, organizationIds.Length);
-            await _elasticClient.DeleteByQueryAsync<PersistentEvent>(r => r
+            _logger.LogInformation("{BatchNumber}/{BatchCount}: Found {MissingOrganizationIdCount} missing organization IDs {MissingOrganizationIds} out of {OrganizationIdCount}", batchNumber, buckets, missingOrganizationIds.Length, missingOrganizationIds, organizationIds.Length);
+            var deleteResponse = await _elasticClient.DeleteByQueryAsync<PersistentEvent>(r => r
                 .Indices(GetEventIndexPattern())
-                .Query(q => q.Terms(t => t.Field(f => f.OrganizationId).Terms(new TermsQueryField(missingOrganizationIds.Select(FieldValueHelper.ToFieldValue).ToList())))));
+                .Conflicts(Conflicts.Proceed)
+                .Query(q => q.Bool(b => b.Filter(
+                    f => f.Terms(t => t.Field(e => e.OrganizationId).Terms(new TermsQueryField(missingOrganizationIds.Select(id => FieldValueHelper.ToFieldValue(id)).ToList()))),
+                    f => RecentEventQuery(f, orphanedEventCutoffUtc)))));
+            EnsureValidDeleteResponse(deleteResponse, "deleting events with missing organizations");
+            totalDeletedEventCount += deleteResponse.Deleted ?? 0;
         }
 
-        _logger.LogInformation("Found {OrphanedEventCount} orphaned events from missing organizations out of {OrganizationIdCount}", totalOrphanedEventCount, totalOrganizationIds);
+        _logger.LogInformation("Deleted {DeletedEventCount} recent events referencing missing organizations out of {OrganizationIdCount} distinct organization IDs since {OrphanedEventCutoffUtc}", totalDeletedEventCount, totalOrganizationIds, orphanedEventCutoffUtc);
     }
 
     public async Task FixDuplicateStacks(JobContext context)
@@ -239,6 +300,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             .Size(0)
             .AddAggregation("stacks", a => a.Terms(t => t.Field(f => f.DuplicateSignature).MinDocCount(2).Size(10000))));
         _logger.LogRequest(duplicateStackAgg, LogLevel.Trace);
+        EnsureValidSearchResponse(duplicateStackAgg, "getting duplicate stacks");
 
         var buckets = duplicateStackAgg.Aggregations?.GetStringTerms("stacks")?.Buckets.ToList() ?? [];
         int total = buckets.Count;
@@ -378,13 +440,15 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                 }
             }
 
-            await _elasticClient.Indices.RefreshAsync(_config.Stacks.VersionedName);
+            var refreshResponse = await _elasticClient.Indices.RefreshAsync(_config.Stacks.VersionedName);
+            EnsureValidResponse(refreshResponse, "refreshing stacks");
             duplicateStackAgg = await _elasticClient.SearchAsync<Stack>(q => q
                 .Indices(_config.Stacks.VersionedName)
                 .Query(q => q.QueryString(qs => qs.Query("is_deleted:false")))
                 .Size(0)
                 .AddAggregation("stacks", a => a.Terms(t => t.Field(f => f.DuplicateSignature).MinDocCount(2).Size(10000))));
             _logger.LogRequest(duplicateStackAgg, LogLevel.Trace);
+            EnsureValidSearchResponse(duplicateStackAgg, "getting duplicate stacks");
 
             buckets = duplicateStackAgg.Aggregations?.GetStringTerms("stacks")?.Buckets.ToList() ?? [];
             total += buckets.Count;
@@ -395,10 +459,54 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
         }
     }
 
-    private Task RenewLockAsync(JobContext context)
+    private async Task RenewLockAsync(JobContext context)
     {
-        _lastRun = _timeProvider.GetUtcNow().UtcDateTime;
-        return context.RenewLockAsync();
+        await context.RenewLockAsync();
+
+        lock (_healthStateLock)
+        {
+            if (_isRunning)
+                _lastRunProgressUtc = _timeProvider.GetUtcNow().UtcDateTime;
+        }
+    }
+
+    private static void EnsureValidResponse(ElasticsearchResponse response, string operation)
+    {
+        if (!response.IsValidResponse)
+            throw new ApplicationException($"Error {operation}: {response.DebugInformation}", response.ApiCallDetails.OriginalException);
+    }
+
+    internal static void EnsureValidSearchResponse<T>(SearchResponse<T> response, string operation)
+    {
+        if (response.TimedOut)
+            throw new ApplicationException($"Error {operation}: Elasticsearch timed out before completing the search.");
+
+        int failedShards = response.Shards?.Failed ?? 0;
+        if (failedShards > 0)
+            throw new ApplicationException($"Error {operation}: Elasticsearch reported {failedShards} failed search shards.");
+
+        EnsureValidResponse(response, operation);
+    }
+
+    internal static void EnsureValidDeleteResponse(DeleteByQueryResponse response, string operation)
+    {
+        if (response.Failures is { Count: > 0 })
+            throw new ApplicationException($"Error {operation}: Elasticsearch reported {response.Failures.Count} unrecoverable delete failures.");
+
+        if (response.TimedOut.GetValueOrDefault())
+            throw new ApplicationException($"Error {operation}: Elasticsearch timed out before completing the delete.");
+
+        EnsureValidResponse(response, operation);
+    }
+
+    private DateTime GetOrphanedEventCutoffUtc()
+    {
+        return _timeProvider.GetUtcNow().UtcDateTime.Subtract(OrphanedEventLookback);
+    }
+
+    private static QueryDescriptor<PersistentEvent> RecentEventQuery(QueryDescriptor<PersistentEvent> query, DateTime orphanedEventCutoffUtc)
+    {
+        return query.Range(r => r.Date(d => d.Field(e => e.CreatedUtc).Gte(orphanedEventCutoffUtc)));
     }
 
     private string GetEventIndexPattern()
@@ -406,14 +514,49 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
         return $"{_config.Events.VersionedName}-*";
     }
 
+    private void MarkRunStarted()
+    {
+        lock (_healthStateLock)
+        {
+            _isRunning = true;
+            _lastRunProgressUtc = _timeProvider.GetUtcNow().UtcDateTime;
+        }
+    }
+
+    private void MarkRunFinished(bool completedSuccessfully)
+    {
+        lock (_healthStateLock)
+        {
+            if (completedSuccessfully)
+                _lastSuccessfulRunUtc = _timeProvider.GetUtcNow().UtcDateTime;
+
+            _isRunning = false;
+        }
+    }
+
     public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
-        if (!_lastRun.HasValue)
-            return Task.FromResult(HealthCheckResult.Healthy("Job has not been run yet."));
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        DateTime? lastSuccessfulRunUtc;
+        lock (_healthStateLock)
+        {
+            if (_isRunning)
+            {
+                if (_lastRunProgressUtc.HasValue && utcNow.Subtract(_lastRunProgressUtc.Value) <= ActiveRunProgressHealthWindow)
+                    return Task.FromResult(HealthCheckResult.Healthy("Job is running and has reported progress in the last 3 hours."));
 
-        if (_timeProvider.GetUtcNow().UtcDateTime.Subtract(_lastRun.Value) > TimeSpan.FromMinutes(65))
-            return Task.FromResult(HealthCheckResult.Unhealthy("Job has not run in the last 65 minutes."));
+                return Task.FromResult(HealthCheckResult.Unhealthy("Job is running but has not reported progress in the last 3 hours."));
+            }
 
-        return Task.FromResult(HealthCheckResult.Healthy("Job has run in the last 65 minutes."));
+            lastSuccessfulRunUtc = _lastSuccessfulRunUtc;
+        }
+
+        if (!lastSuccessfulRunUtc.HasValue)
+            return Task.FromResult(HealthCheckResult.Healthy("Job has not completed successfully yet."));
+
+        if (utcNow.Subtract(lastSuccessfulRunUtc.Value) > SuccessfulRunHealthWindow)
+            return Task.FromResult(HealthCheckResult.Unhealthy("Job has not completed successfully in the last 9 hours."));
+
+        return Task.FromResult(HealthCheckResult.Healthy("Job has completed successfully in the last 9 hours."));
     }
 }
