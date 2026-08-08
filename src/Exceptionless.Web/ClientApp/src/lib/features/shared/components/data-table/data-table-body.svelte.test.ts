@@ -16,6 +16,18 @@ describe('DataTableBody', () => {
         expect(selectCell?.style.cssText).toBe('width: 32px; min-width: 32px; max-width: 32px;');
     });
 
+    it('preserves every explicitly sized data column', () => {
+        render(DataTableBodyTestHarness, { allColumnsSized: true, kind: 'event', onRowClick: vi.fn() });
+
+        const table = screen.getByRole('table');
+        const summaryHeader = screen.getByRole('columnheader', { name: 'Summary' });
+        const dateHeader = screen.getByRole('columnheader', { name: 'Date' });
+
+        expect(table.style.cssText).toBe('width: 302px; min-width: 302px;');
+        expect(summaryHeader.style.cssText).toBe('width: 140px; min-width: 140px; max-width: 140px;');
+        expect(dateHeader.style.cssText).toBe('width: 130px; min-width: 130px; max-width: 130px;');
+    });
+
     it('lets a resized header shrink below its metadata width', () => {
         render(DataTableBodyTestHarness, { kind: 'event', onRowClick: vi.fn() });
 

@@ -65,4 +65,14 @@ test('row selection column stays fixed at desktop and narrow widths', async ({ e
     }
 
     expect(selectionWidths[0]).toBeCloseTo(selectionWidths[1]!, 1);
+
+    await page.setViewportSize({ height: 900, width: 1440 });
+    for (const columnId of ['summary', 'user', 'date']) {
+        await table.getByRole('button', { name: `Resize ${columnId} column` }).press('ArrowRight');
+    }
+
+    const explicitlySizedTableBox = await table.boundingBox();
+    const explicitlySizedSelectionBox = await table.locator('thead th').first().boundingBox();
+    expect(explicitlySizedTableBox!.width).toBeCloseTo(816, 1);
+    expect(explicitlySizedSelectionBox!.width).toBeCloseTo(32, 1);
 });
