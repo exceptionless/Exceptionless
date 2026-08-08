@@ -1,9 +1,29 @@
 using Exceptionless.Core.Models;
+using Exceptionless.DateTimeExtensions;
 
 namespace Exceptionless.Core.Extensions;
 
 public static class UsageExtensions
 {
+    public static UsageInfo GetUsage(this ICollection<UsageInfo> usages, DateTime dateUtc, int limit)
+    {
+        var startOfMonth = dateUtc.ToUniversalTime().StartOfMonth();
+        var usage = usages.FirstOrDefault(u => u.Date.Year == startOfMonth.Year && u.Date.Month == startOfMonth.Month);
+        if (usage is not null)
+        {
+            return usage;
+        }
+
+        usage = new UsageInfo
+        {
+            Date = startOfMonth,
+            Limit = limit
+        };
+        usages.Add(usage);
+
+        return usage;
+    }
+
     public static void SetUsage(this ICollection<UsageInfo> usages, DateTime dateUtc, int total, int blocked, int tooBig, int limit, TimeSpan? maxUsageAge, TimeProvider timeProvider)
     {
         var usageInfo = usages.FirstOrDefault(o => o.Date == dateUtc);
