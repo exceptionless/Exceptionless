@@ -657,6 +657,10 @@
             columnPersistenceKey: 'stacks-column-visibility',
             get columns() {
                 return getColumns<EventSummaryModel<SummaryTemplateKeys>>(eventsQueryParameters.mode, {
+                    onStackSort: (mode) => {
+                        eventsQueryParameters.mode = mode;
+                        table.setPageIndex(0);
+                    },
                     onTagClick: (tag) => onFilterChanged(new TagFilter([tag])),
                     showType: !hasSingleTypeFilter(eventsQueryParameters.filter)
                 });
