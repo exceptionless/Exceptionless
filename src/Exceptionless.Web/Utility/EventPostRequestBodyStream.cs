@@ -9,19 +9,31 @@ public sealed class EventPostRequestBodyStream : Stream, IEventPostBodyReadState
 
     private readonly Stream _inner;
     private readonly long _maximumBytes;
+    private readonly string _limitRejectionReason;
+    private readonly int? _invalidOperationStatusCode;
+    private readonly string? _invalidOperationRejectionReason;
     private long _bytesRead;
 
-    public EventPostRequestBodyStream(Stream inner, long maximumBytes)
+    public EventPostRequestBodyStream(
+        Stream inner,
+        long maximumBytes,
+        string limitRejectionReason = "Request body too large.",
+        int? invalidOperationStatusCode = null,
+        string? invalidOperationRejectionReason = null)
     {
         ArgumentNullException.ThrowIfNull(inner);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximumBytes);
 
         _inner = inner;
         _maximumBytes = maximumBytes;
+        _limitRejectionReason = limitRejectionReason;
+        _invalidOperationStatusCode = invalidOperationStatusCode;
+        _invalidOperationRejectionReason = invalidOperationRejectionReason;
     }
 
     public int? RejectedStatusCode { get; private set; }
     public string? RejectionReason { get; private set; }
+    public long BytesRead => _bytesRead;
 
     public override bool CanRead => _inner.CanRead;
     public override bool CanSeek => false;
@@ -49,11 +61,15 @@ public sealed class EventPostRequestBodyStream : Stream, IEventPostBodyReadState
         ValidateBufferArguments(buffer, offset, count);
 
         if (count == 0 || RejectedStatusCode.HasValue)
+        {
             return 0;
+        }
 
         int readLength = GetReadLength(count);
         if (readLength == 0)
+        {
             return 0;
+        }
 
         try
         {
@@ -65,16 +81,25 @@ public sealed class EventPostRequestBodyStream : Stream, IEventPostBodyReadState
             Reject(ex.StatusCode, ex.Message);
             return 0;
         }
+        catch (InvalidOperationException) when (_invalidOperationStatusCode.HasValue)
+        {
+            Reject(_invalidOperationStatusCode.Value, _invalidOperationRejectionReason ?? "Request body is invalid.");
+            return 0;
+        }
     }
 
     public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
     {
         if (buffer.Length == 0 || RejectedStatusCode.HasValue)
+        {
             return 0;
+        }
 
         int readLength = GetReadLength(buffer.Length);
         if (readLength == 0)
+        {
             return 0;
+        }
 
         try
         {
@@ -84,6 +109,11 @@ public sealed class EventPostRequestBodyStream : Stream, IEventPostBodyReadState
         catch (HttpBadHttpRequestException ex)
         {
             Reject(ex.StatusCode, ex.Message);
+            return 0;
+        }
+        catch (InvalidOperationException) when (_invalidOperationStatusCode.HasValue)
+        {
+            Reject(_invalidOperationStatusCode.Value, _invalidOperationRejectionReason ?? "Request body is invalid.");
             return 0;
         }
     }
@@ -114,15 +144,19 @@ public sealed class EventPostRequestBodyStream : Stream, IEventPostBodyReadState
         long remaining = _maximumBytes - _bytesRead;
         if (remaining < 0)
         {
-            Reject(StatusCodes.Status413RequestEntityTooLarge, "Request body too large.");
+            Reject(StatusCodes.Status413RequestEntityTooLarge, _limitRejectionReason);
             return 0;
         }
 
         if (remaining == 0)
+        {
             return 1;
+        }
 
         if (remaining >= requestedLength)
+        {
             return requestedLength;
+        }
 
         return (int)remaining + 1;
     }
@@ -130,12 +164,14 @@ public sealed class EventPostRequestBodyStream : Stream, IEventPostBodyReadState
     private int HandleReadResult(int bytesRead)
     {
         if (bytesRead == 0)
+        {
             return 0;
+        }
 
         long totalBytesRead = _bytesRead + bytesRead;
         if (totalBytesRead > _maximumBytes)
         {
-            Reject(StatusCodes.Status413RequestEntityTooLarge, "Request body too large.");
+            Reject(StatusCodes.Status413RequestEntityTooLarge, _limitRejectionReason);
             return 0;
         }
 

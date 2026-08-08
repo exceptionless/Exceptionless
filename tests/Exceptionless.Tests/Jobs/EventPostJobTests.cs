@@ -43,7 +43,7 @@ public class EventPostJobTests : IntegrationTestsBase
         _job = GetService<EventPostsJob>();
         _eventQueue = GetService<IQueue<EventPost>>();
         _storage = GetService<IFileStorage>();
-        _eventPostService = new EventPostService(_eventQueue, _storage, TimeProvider, Log);
+        _eventPostService = new EventPostService(_eventQueue, _storage, GetService<Foundatio.Caching.ICacheClient>(), TimeProvider, Log);
         _organizationData = GetService<OrganizationData>();
         _organizationRepository = GetService<IOrganizationRepository>();
         _projectData = GetService<ProjectData>();
@@ -71,7 +71,7 @@ public class EventPostJobTests : IntegrationTestsBase
     public async Task CanRunJob()
     {
         var ev = GenerateEvent();
-        Assert.NotNull(await EnqueueEventPostAsync(ev));
+        string queueEntryId = Assert.IsType<string>(await EnqueueEventPostAsync(ev, trackProcessing: true));
         Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
         var files = await _storage.GetFileListAsync(cancellationToken: TestCancellationToken);
         Assert.Single(files);
@@ -88,6 +88,32 @@ public class EventPostJobTests : IntegrationTestsBase
 
         files = await _storage.GetFileListAsync(cancellationToken: TestCancellationToken);
         Assert.Empty(files);
+
+        var processingStatuses = await _eventPostService.GetProcessingStatusesAsync([queueEntryId]);
+        Assert.True(processingStatuses[queueEntryId].IsCompleted);
+    }
+
+    [Fact]
+    public async Task CanTrackEmptyPostToTerminalCompletion()
+    {
+        var eventPost = new EventPost(false)
+        {
+            OrganizationId = TestConstants.OrganizationId,
+            ProjectId = TestConstants.ProjectId,
+            ApiVersion = 2,
+            CharSet = "utf-8",
+            MediaType = "application/json",
+            TrackProcessing = true,
+            UserAgent = "exceptionless-test"
+        };
+        await using var stream = new MemoryStream();
+        string queueEntryId = Assert.IsType<string>(await _eventPostService.EnqueueAsync(eventPost, stream, TestCancellationToken));
+
+        var result = await _job.RunAsync(TestCancellationToken);
+
+        Assert.True(result.IsSuccess);
+        var processingStatuses = await _eventPostService.GetProcessingStatusesAsync([queueEntryId]);
+        Assert.True(processingStatuses[queueEntryId].IsCompleted);
     }
 
     [Fact]
@@ -239,12 +265,12 @@ public class EventPostJobTests : IntegrationTestsBase
         }
     }
 
-    private Task<string?> EnqueueEventPostAsync(PersistentEvent ev)
+    private Task<string?> EnqueueEventPostAsync(PersistentEvent ev, string? processingCorrelationId = null, bool trackProcessing = false)
     {
-        return EnqueueEventPostAsync([ev]);
+        return EnqueueEventPostAsync([ev], processingCorrelationId, trackProcessing);
     }
 
-    private Task<string?> EnqueueEventPostAsync(List<PersistentEvent> ev)
+    private Task<string?> EnqueueEventPostAsync(List<PersistentEvent> ev, string? processingCorrelationId = null, bool trackProcessing = false)
     {
         var first = ev.First();
 
@@ -256,7 +282,9 @@ public class EventPostJobTests : IntegrationTestsBase
             CharSet = "utf-8",
             ContentEncoding = "gzip",
             MediaType = "application/json",
+            ProcessingCorrelationId = processingCorrelationId,
             UserAgent = "exceptionless-test",
+            TrackProcessing = trackProcessing,
         };
 
         var stream = new MemoryStream(_serializer.SerializeToBytes(ev).Compress());

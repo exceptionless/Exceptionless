@@ -38,6 +38,7 @@ public sealed class OrganizationIndex : VersionedIndex<Organization>
                     .Keyword("token")
                     .Text("email_address", t => t.Analyzer(KEYWORD_LOWERCASE_ANALYZER))))
                 .Date(e => e.LastEventDateUtc)
+                .Date(e => e.LastAppliedUsageBucketUtc)
                 .AddUsageMappings());
     }
 

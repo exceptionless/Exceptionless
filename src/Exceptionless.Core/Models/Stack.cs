@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Runtime.Serialization;
@@ -71,6 +72,23 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
     public DateTime? DateFixed { get; set; }
 
     /// <summary>
+    /// The event that most recently caused this stack to regress.
+    /// </summary>
+    [ObjectId]
+    public string? RegressionEventId { get; set; }
+
+    /// <summary>
+    /// Durable identity of the event selected as the first occurrence while V3 creates a stack.
+    /// A retry can therefore recover first-occurrence side effects if the process stops after the
+    /// stack write but before the event write.
+    /// </summary>
+    [ObjectId]
+    [ReadOnly(true)]
+    [ApiIgnore]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? IngestionFirstEventId { get; set; }
+
+    /// <summary>
     /// The stack title.
     /// </summary>
     [StringLength(1000)]
@@ -80,6 +98,13 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
     /// The total number of occurrences in the stack.
     /// </summary>
     public int TotalOccurrences { get; set; }
+
+    /// <summary>
+    /// Monotonic fence for idempotent V3 aggregate settlements. This is persisted with the stack
+    /// so full-document saves cannot erase the last applied settlement identity.
+    /// </summary>
+    [ApiIgnore]
+    public long IngestionStackUsageSequence { get; set; }
 
     /// <summary>
     /// The date of the 1st occurrence of this stack in UTC time.

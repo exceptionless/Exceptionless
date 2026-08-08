@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Exceptionless.Core\Exceptionless.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Compile the production reader source so the microbenchmark cannot drift to a substitute parser. -->
+    <Compile Include="..\..\src\Exceptionless.Web\Utility\EventIngestionV3StreamReader.cs"
+      Link="Production\EventIngestionV3StreamReader.cs" />
+  </ItemGroup>
+</Project>

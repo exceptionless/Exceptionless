@@ -30,7 +30,9 @@ public static class AppDiagnostics
     public static void Counter(string name, int value = 1)
     {
         if (!_counters.TryGetValue(_metricsPrefix + name, out var counter))
+        {
             counter = _counters.GetOrAdd(_metricsPrefix + name, key => Meter.CreateCounter<int>(key));
+        }
 
         counter.Add(value);
     }
@@ -38,7 +40,9 @@ public static class AppDiagnostics
     public static void Gauge(string name, double value)
     {
         if (!_gauges.TryGetValue(_metricsPrefix + name, out var gauge))
+        {
             gauge = _gauges.GetOrAdd(_metricsPrefix + name, key => new GaugeInfo(Meter, key));
+        }
 
         gauge.Value = value;
     }
@@ -46,7 +50,9 @@ public static class AppDiagnostics
     public static void Timer(string name, int milliseconds)
     {
         if (!_timers.TryGetValue(_metricsPrefix + name, out var timer))
+        {
             timer = _timers.GetOrAdd(_metricsPrefix + name, key => Meter.CreateHistogram<double>(key, "ms"));
+        }
 
         timer.Record(milliseconds);
     }
@@ -54,7 +60,9 @@ public static class AppDiagnostics
     public static IDisposable StartTimer(string name)
     {
         if (!_timers.TryGetValue(_metricsPrefix + name, out var timer))
+        {
             timer = _timers.GetOrAdd(_metricsPrefix + name, key => Meter.CreateHistogram<double>(key, "ms"));
+        }
 
         return timer.StartTimer();
     }
@@ -62,19 +70,25 @@ public static class AppDiagnostics
     public static async Task TimeAsync(Func<Task> action, string name)
     {
         using (StartTimer(name))
+        {
             await action();
+        }
     }
 
     public static void Time(Action action, string name)
     {
         using (StartTimer(name))
+        {
             action();
+        }
     }
 
     public static async Task<T> TimeAsync<T>(Func<Task<T>> func, string name)
     {
         using (StartTimer(name))
+        {
             return await func();
+        }
     }
 
     private class GaugeInfo
@@ -101,6 +115,35 @@ public static class AppDiagnostics
     internal static readonly Counter<int> EventsRetryCount = Meter.CreateCounter<int>("ex.events.retry.count", description: "Events where processing was retried");
     internal static readonly Counter<int> EventsRetryErrors = Meter.CreateCounter<int>("ex.events.retry.errors", description: "Events where retry processing got an error");
     internal static readonly Histogram<double> EventsFieldCount = Meter.CreateHistogram<double>("ex.events.field.count", description: "Number of fields per event");
+
+    internal static readonly Counter<int> IngestionV3Received = Meter.CreateCounter<int>("ex.ingestion.v3.received", description: "V3 events received");
+    internal static readonly Counter<int> IngestionV3Persisted = Meter.CreateCounter<int>("ex.ingestion.v3.persisted", description: "V3 events durably persisted");
+    internal static readonly Counter<int> IngestionV3Discarded = Meter.CreateCounter<int>("ex.ingestion.v3.discarded", description: "V3 events terminated by a discard rule");
+    internal static readonly Counter<int> IngestionV3Duplicate = Meter.CreateCounter<int>("ex.ingestion.v3.duplicate", description: "V3 duplicate events acknowledged");
+    internal static readonly Counter<int> IngestionV3Blocked = Meter.CreateCounter<int>("ex.ingestion.v3.blocked", description: "V3 events blocked by billable quota");
+    internal static readonly Counter<int> IngestionV3Invalid = Meter.CreateCounter<int>("ex.ingestion.v3.invalid", description: "Invalid V3 events");
+    internal static readonly Counter<int> IngestionV3RouteCacheHits = Meter.CreateCounter<int>("ex.ingestion.v3.route.cache_hits");
+    internal static readonly Counter<int> IngestionV3RouteCacheMisses = Meter.CreateCounter<int>("ex.ingestion.v3.route.cache_misses");
+    internal static readonly Counter<int> IngestionV3RouteNegativeHits = Meter.CreateCounter<int>("ex.ingestion.v3.route.negative_hits");
+    internal static readonly Counter<int> IngestionV3ParserFallbacks = Meter.CreateCounter<int>("ex.ingestion.v3.parser.fallbacks", description: "V3 stack traces that used normalized raw-trace fingerprinting");
+    internal static readonly Counter<int> IngestionV3Failures = Meter.CreateCounter<int>("ex.ingestion.v3.failures", description: "V3 requests that failed before acknowledgement");
+    internal static readonly Counter<int> IngestionV3RouteLocalDeduplicated = Meter.CreateCounter<int>("ex.ingestion.v3.route.local_deduplicated");
+    internal static readonly Counter<int> IngestionV3RouteRepositoryLookups = Meter.CreateCounter<int>("ex.ingestion.v3.route.repository_lookups");
+    internal static readonly Counter<int> IngestionV3WriteReconciliations = Meter.CreateCounter<int>("ex.ingestion.v3.write.reconciliations");
+    internal static readonly Counter<int> IngestionV3UsageCommitted = Meter.CreateCounter<int>("ex.ingestion.v3.usage.committed", description: "V3 newly persisted events committed to billable usage");
+    internal static readonly Counter<int> IngestionV3AmbiguousSettlementsSkipped = Meter.CreateCounter<int>("ex.ingestion.v3.usage.ambiguous_skipped", description: "V3 durable events skipped for billing after an ambiguous write outcome to prevent double charging");
+    internal static readonly Histogram<double> IngestionV3MicroBatchSize = Meter.CreateHistogram<double>("ex.ingestion.v3.microbatch.size", unit: "events");
+    internal static readonly Histogram<long> IngestionV3CompressedSize = Meter.CreateHistogram<long>("ex.ingestion.v3.compressed.size", unit: "bytes");
+    internal static readonly Histogram<long> IngestionV3DecompressedSize = Meter.CreateHistogram<long>("ex.ingestion.v3.decompressed.size", unit: "bytes");
+    internal static readonly Histogram<double> IngestionV3FingerprintTime = Meter.CreateHistogram<double>("ex.ingestion.v3.fingerprint.duration", unit: "ms");
+    internal static readonly Histogram<double> IngestionV3RouteResolutionTime = Meter.CreateHistogram<double>("ex.ingestion.v3.route.duration", unit: "ms");
+    internal static readonly Histogram<double> IngestionV3QuotaTime = Meter.CreateHistogram<double>("ex.ingestion.v3.quota.duration", unit: "ms");
+    internal static readonly Histogram<double> IngestionV3MaterializationTime = Meter.CreateHistogram<double>("ex.ingestion.v3.materialize.duration", unit: "ms");
+    internal static readonly Histogram<double> IngestionV3WriteTime = Meter.CreateHistogram<double>("ex.ingestion.v3.write.duration", unit: "ms");
+    internal static readonly Histogram<double> IngestionV3OutboxWriteTime = Meter.CreateHistogram<double>("ex.ingestion.v3.outbox.duration", unit: "ms");
+    internal static readonly Histogram<double> IngestionV3SettlementTime = Meter.CreateHistogram<double>("ex.ingestion.v3.settlement.duration", unit: "ms");
+    internal static readonly UpDownCounter<int> IngestionV3ActiveStreams = Meter.CreateUpDownCounter<int>("ex.ingestion.v3.active_streams");
+    internal static readonly UpDownCounter<int> IngestionV3InFlightEvents = Meter.CreateUpDownCounter<int>("ex.ingestion.v3.in_flight_events");
 
     internal static readonly Counter<int> PostsParsed = Meter.CreateCounter<int>("ex.posts.parsed", description: "Post batch submission parsed");
     internal static readonly Histogram<double> PostsEventCount = Meter.CreateHistogram<double>("ex.posts.eventcount", description: "Number of events in post batch submission");
@@ -137,19 +180,25 @@ public static class MetricsClientExtensions
     public static async Task TimeAsync(this Histogram<double> histogram, Func<Task> action)
     {
         using (histogram.StartTimer())
+        {
             await action();
+        }
     }
 
     public static void Time(this Histogram<double> histogram, Action action)
     {
         using (histogram.StartTimer())
+        {
             action();
+        }
     }
 
     public static async Task<T> TimeAsync<T>(this Histogram<double> histogram, Func<Task<T>> func)
     {
         using (histogram.StartTimer())
+        {
             return await func();
+        }
     }
 }
 
@@ -168,7 +217,9 @@ public class HistogramTimer : IDisposable
     public void Dispose()
     {
         if (_disposed)
+        {
             return;
+        }
 
         _disposed = true;
         _stopWatch.Stop();

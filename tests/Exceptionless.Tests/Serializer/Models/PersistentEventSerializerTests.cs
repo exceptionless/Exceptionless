@@ -127,6 +127,63 @@ public class PersistentEventSerializerTests : TestWithServices
         Assert.Equal("org1", deserialized.OrganizationId);
         Assert.Equal("proj1", deserialized.ProjectId);
         Assert.Equal(Event.KnownTypes.Log, deserialized.Type);
+        Assert.DoesNotContain("\"is_regression\"", json);
+        Assert.DoesNotContain("\"ingestion_is_regression_candidate\"", json);
+    }
+
+    [Fact]
+    public void SerializeToString_RegressionEvent_PreservesRecoveryMarkers()
+    {
+        var ev = new PersistentEvent
+        {
+            Id = "event123",
+            OrganizationId = "org456",
+            ProjectId = "proj789",
+            StackId = "stack012",
+            Type = Event.KnownTypes.Error,
+            Date = FixedDate,
+            IsRegression = true,
+            IngestionIsRegressionCandidate = true,
+            IngestionRegressionFixedInVersion = "1.0.0",
+            IngestionRegressionDateFixed = FixedDate.UtcDateTime
+        };
+
+        string? json = _serializer.SerializeToString(ev);
+        var deserialized = _serializer.Deserialize<PersistentEvent>(json);
+
+        Assert.Contains("\"is_regression\":true", json);
+        Assert.Contains("\"ingestion_is_regression_candidate\":true", json);
+        Assert.NotNull(deserialized);
+        Assert.True(deserialized.IsRegression);
+        Assert.True(deserialized.IngestionIsRegressionCandidate);
+        Assert.Equal("1.0.0", deserialized.IngestionRegressionFixedInVersion);
+        Assert.Equal(FixedDate.UtcDateTime, deserialized.IngestionRegressionDateFixed);
+    }
+
+    [Fact]
+    public void ConfigureExceptionlessApiDefaults_RegressionRepairFields_AreExcluded()
+    {
+        var ev = new PersistentEvent
+        {
+            Id = "event123",
+            OrganizationId = "org456",
+            ProjectId = "proj789",
+            StackId = "stack012",
+            Type = Event.KnownTypes.Error,
+            Date = FixedDate,
+            IsRegression = true,
+            IngestionIsRegressionCandidate = true,
+            IngestionRegressionFixedInVersion = "1.0.0",
+            IngestionRegressionDateFixed = FixedDate.UtcDateTime
+        };
+        var options = new System.Text.Json.JsonSerializerOptions().ConfigureExceptionlessApiDefaults();
+
+        string json = System.Text.Json.JsonSerializer.Serialize(ev, options);
+
+        Assert.Contains("\"is_regression\":true", json);
+        Assert.DoesNotContain("ingestion_is_regression_candidate", json);
+        Assert.DoesNotContain("ingestion_regression_fixed_in_version", json);
+        Assert.DoesNotContain("ingestion_regression_date_fixed", json);
     }
 
     [Fact]

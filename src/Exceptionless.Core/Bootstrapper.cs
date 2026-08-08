@@ -19,6 +19,7 @@ using Exceptionless.Core.Plugins.EventUpgrader;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queries.Validation;
+using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
@@ -105,6 +106,7 @@ public class Bootstrapper
             handlers.Register<UpdateProjectNotificationSettingsWorkItem>(s.GetRequiredService<UpdateProjectNotificationSettingsWorkItemHandler>);
             handlers.Register<UserMaintenanceWorkItem>(s.GetRequiredService<UserMaintenanceWorkItemHandler>);
             handlers.Register<GenerateSampleEventsWorkItem>(s.GetRequiredService<GenerateSampleEventsWorkItemHandler>);
+            handlers.Register<EventIngestionSideEffectsWorkItem>(s.GetRequiredService<EventIngestionSideEffectsWorkItemHandler>);
             return handlers;
         });
 
@@ -116,6 +118,12 @@ public class Bootstrapper
         services.AddSingleton(s => CreateQueue<WorkItemData>(s, TimeSpan.FromHours(1)));
 
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IQueueBehavior<WorkItemData>, WorkItemDuplicateDetectionQueueBehavior>());
+        // V2 keeps Foundatio-compatible dequeue-scoped duplicate detection. V3 bypasses that
+        // claim and uses only the durable pending/completed behavior so enqueue failures recover.
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IQueueBehavior<EventNotification>, EventNotificationDuplicateDetectionQueueBehavior>());
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IQueueBehavior<EventNotification>, DurableEventNotificationDuplicateDetectionQueueBehavior>());
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IQueueBehavior<WebHookNotification>, WebHookNotificationDuplicateDetectionQueueBehavior>());
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IQueueBehavior<WebHookNotification>, DurableWebHookNotificationDuplicateDetectionQueueBehavior>());
 
         services.AddSingleton<IConnectionMapping, ConnectionMapping>();
         services.AddSingleton<MessageService>();
@@ -213,6 +221,20 @@ public class Bootstrapper
         services.AddSingleton<UsageService>();
         services.AddSingleton<SlackService>();
         services.AddSingleton<StackService>();
+        services.AddSingleton<IngestionSideEffectExecutor>();
+        services.AddSingleton<IIngestionStackUsageStore, InMemoryIngestionStackUsageStore>();
+        services.AddSingleton<StackTraceParser>();
+        services.AddSingleton<StackFingerprintService>();
+        services.AddSingleton<IStackFingerprintService>(s => s.GetRequiredService<StackFingerprintService>());
+        services.AddSingleton<IStackRouteCache, StackRouteCache>();
+        services.AddSingleton<StackRouteResolver>();
+        services.AddSingleton<IStackRouteResolver>(s => s.GetRequiredService<StackRouteResolver>());
+        services.AddSingleton<EventIngestionV3Processor>();
+        services.AddSingleton<IEventMaterializer, EventMaterializer>();
+        services.AddSingleton<IEventIngestionIdStore, EventIngestionIdStore>();
+        services.AddSingleton<IEventBatchWriter, EventBatchWriter>();
+        services.AddSingleton<IIngestionQuotaStore, InMemoryIngestionQuotaStore>();
+        services.AddSingleton<IIngestionQuotaService, IngestionQuotaService>();
 
         services.AddTransient<IDomainLoginProvider, ActiveDirectoryLoginProvider>();
     }
@@ -488,6 +510,7 @@ public class Bootstrapper
         services.AddJob<MigrationJob>(o => o.WaitForStartupActions());
         services.AddJob<StackStatusJob>(o => o.WaitForStartupActions());
         services.AddJob<StackEventCountJob>(o => o.WaitForStartupActions());
+        services.AddJob<IngestionStackEventCountJob>(o => o.WaitForStartupActions());
         services.AddJob<WebHooksJob>(o => o.WaitForStartupActions());
         services.AddJob<WorkItemJob>(o => o.WaitForStartupActions());
 
@@ -518,4 +541,16 @@ public class Bootstrapper
 
     private sealed class WorkItemDuplicateDetectionQueueBehavior(ICacheClient cacheClient, ILoggerFactory loggerFactory)
         : DuplicateDetectionQueueBehavior<WorkItemData>(cacheClient, loggerFactory, TimeSpan.FromHours(24));
+
+    private sealed class EventNotificationDuplicateDetectionQueueBehavior(ICacheClient cacheClient, AppOptions options, ILoggerFactory loggerFactory)
+        : ConditionalDuplicateDetectionQueueBehavior<EventNotification>(cacheClient, loggerFactory, options.EventIngestionV3.IdempotencyWindow);
+
+    private sealed class DurableEventNotificationDuplicateDetectionQueueBehavior(ICacheClient cacheClient, AppOptions options, ILoggerFactory loggerFactory)
+        : DurableDuplicateDetectionQueueBehavior<EventNotification>(cacheClient, loggerFactory, options.EventIngestionV3.IdempotencyWindow);
+
+    private sealed class WebHookNotificationDuplicateDetectionQueueBehavior(ICacheClient cacheClient, AppOptions options, ILoggerFactory loggerFactory)
+        : ConditionalDuplicateDetectionQueueBehavior<WebHookNotification>(cacheClient, loggerFactory, options.EventIngestionV3.IdempotencyWindow);
+
+    private sealed class DurableWebHookNotificationDuplicateDetectionQueueBehavior(ICacheClient cacheClient, AppOptions options, ILoggerFactory loggerFactory)
+        : DurableDuplicateDetectionQueueBehavior<WebHookNotification>(cacheClient, loggerFactory, options.EventIngestionV3.IdempotencyWindow);
 }
