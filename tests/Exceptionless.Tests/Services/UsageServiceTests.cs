@@ -467,8 +467,11 @@ public sealed partial class UsageServiceTests : IntegrationTestsBase
             _organizationRepository,
             _projectRepository,
             cache,
+            GetService<Foundatio.Lock.ILockProvider>(),
+            GetService<IAtomicCacheBatch>(),
             publisher,
             _notificationService,
+            GetService<Exceptionless.Core.AppOptions>(),
             TimeProvider,
             GetService<ILoggerFactory>());
         var published = new AsyncCountdownEvent(1);
