@@ -15,6 +15,8 @@ using Foundatio.Caching;
 using Foundatio.Lock;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch;
+using Foundatio.Repositories.Models;
 using Xunit;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
@@ -280,6 +282,132 @@ public sealed partial class UsageServiceTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task SavePendingUsageAsync_UsageOnlyChanges_DoesNotPublishEntityChangedMessages()
+    {
+        // Arrange
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 1_000_000, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+        var organizationRepository = Assert.IsAssignableFrom<ElasticRepositoryBase<Organization>>(_organizationRepository);
+        var projectRepository = Assert.IsAssignableFrom<ElasticRepositoryBase<Project>>(_projectRepository);
+        int notificationCount = 0;
+        Func<object, BeforePublishEntityChangedEventArgs<Organization>, Task> organizationHandler = (_, _) =>
+        {
+            Interlocked.Increment(ref notificationCount);
+            return Task.CompletedTask;
+        };
+        Func<object, BeforePublishEntityChangedEventArgs<Project>, Task> projectHandler = (_, _) =>
+        {
+            Interlocked.Increment(ref notificationCount);
+            return Task.CompletedTask;
+        };
+        organizationRepository.BeforePublishEntityChanged.AddHandler(organizationHandler);
+        projectRepository.BeforePublishEntityChanged.AddHandler(projectHandler);
+
+        try
+        {
+            // Act
+            await _usageService.IncrementTotalAsync(organization.Id, project.Id);
+            TimeProvider.Advance(TimeSpan.FromMinutes(10));
+            await _usageService.SavePendingUsageAsync();
+
+            // Assert
+            Assert.Equal(0, notificationCount);
+        }
+        finally
+        {
+            organizationRepository.BeforePublishEntityChanged.RemoveHandler(organizationHandler);
+            projectRepository.BeforePublishEntityChanged.RemoveHandler(projectHandler);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SavePendingUsageAsync_HourlyThrottleClears_PublishesOrganizationChangedMessage(bool removeTransitionMarker)
+    {
+        // Arrange
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+        int eventsLeftInBucket = await _usageService.GetEventsLeftAsync(organization.Id);
+        var organizationRepository = Assert.IsAssignableFrom<ElasticRepositoryBase<Organization>>(_organizationRepository);
+        int notificationCount = 0;
+        Func<object, BeforePublishEntityChangedEventArgs<Organization>, Task> organizationHandler = (_, _) =>
+        {
+            Interlocked.Increment(ref notificationCount);
+            return Task.CompletedTask;
+        };
+        organizationRepository.BeforePublishEntityChanged.AddHandler(organizationHandler);
+
+        try
+        {
+            await _usageService.IncrementTotalAsync(organization.Id, project.Id, eventsLeftInBucket);
+            Assert.True((await _usageService.GetUsageAsync(organization.Id)).IsThrottled);
+            if (removeTransitionMarker)
+            {
+                int bucket = TimeProvider.GetUtcNow().UtcDateTime.Floor(TimeSpan.FromMinutes(5)).ToEpoch();
+                await GetService<ICacheClient>().RemoveAsync($"usage:{bucket}:{organization.Id}:throttled-transition");
+            }
+
+            // Act
+            TimeProvider.Advance(TimeSpan.FromMinutes(10));
+            await _usageService.SavePendingUsageAsync();
+
+            // Assert
+            Assert.False((await _usageService.GetUsageAsync(organization.Id)).IsThrottled);
+            Assert.Equal(1, notificationCount);
+        }
+        finally
+        {
+            organizationRepository.BeforePublishEntityChanged.RemoveHandler(organizationHandler);
+        }
+    }
+
+    [Fact]
+    public async Task SavePendingUsageAsync_WhenMonthRollsOver_DoesNotPublishOrganizationChangedMessage()
+    {
+        // Arrange
+        TimeProvider.SetUtcNow(new DateTime(2015, 2, 28, 23, 55, 0, DateTimeKind.Utc));
+        var organization = new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id };
+        organization.GetCurrentUsage(TimeProvider).Total = organization.MaxEventsPerMonth;
+        organization.MaxEventsPerMonth = 1_500;
+        organization = await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+        var organizationRepository = Assert.IsAssignableFrom<ElasticRepositoryBase<Organization>>(_organizationRepository);
+        int notificationCount = 0;
+        Func<object, BeforePublishEntityChangedEventArgs<Organization>, Task> organizationHandler = (_, _) =>
+        {
+            Interlocked.Increment(ref notificationCount);
+            return Task.CompletedTask;
+        };
+        organizationRepository.BeforePublishEntityChanged.AddHandler(organizationHandler);
+
+        try
+        {
+            TimeProvider.SetUtcNow(new DateTime(2015, 3, 1, 0, 0, 0, DateTimeKind.Utc));
+            await _usageService.IncrementTotalAsync(organization.Id, project.Id);
+
+            // Act
+            TimeProvider.Advance(TimeSpan.FromMinutes(10));
+            await _usageService.SavePendingUsageAsync();
+
+            // Assert
+            organization = await _organizationRepository.GetByIdAsync(organization.Id);
+            Assert.NotNull(organization);
+            Assert.False(organization.IsOverMonthlyLimit(TimeProvider));
+            Assert.Equal(0, notificationCount);
+
+            await _usageService.IncrementTotalAsync(organization.Id, project.Id);
+            TimeProvider.Advance(TimeSpan.FromMinutes(10));
+            await _usageService.SavePendingUsageAsync();
+            Assert.Equal(0, notificationCount);
+        }
+        finally
+        {
+            organizationRepository.BeforePublishEntityChanged.RemoveHandler(organizationHandler);
+        }
+    }
+
+    [Fact]
     public async Task CanGetEventsLeft()
     {
         var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
@@ -299,6 +427,75 @@ public sealed partial class UsageServiceTests : IntegrationTestsBase
 
         eventsLeft = await _usageService.GetEventsLeftAsync(organization.Id);
         Assert.Equal(0, eventsLeft);
+    }
+
+    [Fact]
+    public async Task IncrementTotalAsync_WhenHourlyLimitCrosses_PublishesAfterThrottleStateIsSet()
+    {
+        // Arrange
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+        int eventsLeftInBucket = await _usageService.GetEventsLeftAsync(organization.Id);
+        var throttleState = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var messageBus = GetService<IMessageBus>();
+        await messageBus.SubscribeAsync<PlanOverage>(async overage =>
+        {
+            if (overage.OrganizationId != organization.Id || !overage.IsHourly)
+            {
+                return;
+            }
+
+            var usage = await _usageService.GetUsageAsync(organization.Id);
+            throttleState.TrySetResult(usage.IsThrottled);
+        }, TestCancellationToken);
+
+        // Act
+        await _usageService.IncrementTotalAsync(organization.Id, project.Id, eventsLeftInBucket);
+
+        // Assert
+        Assert.True(await throttleState.Task.WaitAsync(TimeSpan.FromSeconds(5), TestCancellationToken));
+    }
+
+    [Fact]
+    public async Task IncrementTotalAsync_WhenHourlyOveragePublicationFails_RetriesDuringPendingUsageSave()
+    {
+        // Arrange
+        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
+        int eventsLeftInBucket = await _usageService.GetEventsLeftAsync(organization.Id);
+        var cache = GetService<ICacheClient>();
+        var messageBus = GetService<IMessageBus>();
+        var publisher = new FailOnceHourlyPlanOveragePublisher(messageBus);
+        var usageService = new UsageService(
+            _organizationRepository,
+            _projectRepository,
+            cache,
+            publisher,
+            _notificationService,
+            TimeProvider,
+            GetService<ILoggerFactory>());
+        var published = new AsyncCountdownEvent(1);
+        await messageBus.SubscribeAsync<PlanOverage>(overage =>
+        {
+            if (overage.OrganizationId == organization.Id && overage.IsHourly)
+                published.Signal();
+        }, TestCancellationToken);
+
+        int bucket = TimeProvider.GetUtcNow().UtcDateTime.Floor(TimeSpan.FromMinutes(5)).ToEpoch();
+        string pendingPublicationKey = $"usage:{bucket}:{organization.Id}:hourly-overage-pending";
+
+        // Act
+        await Assert.ThrowsAsync<InvalidOperationException>(() => usageService.IncrementTotalAsync(organization.Id, project.Id, eventsLeftInBucket));
+
+        // Assert
+        Assert.True((await cache.GetAsync<bool>(pendingPublicationKey)).Value);
+
+        TimeProvider.Advance(TimeSpan.FromMinutes(10));
+        await usageService.SavePendingUsageAsync();
+        await published.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(2, publisher.HourlyAttempts);
+        Assert.False((await cache.GetAsync<bool>(pendingPublicationKey)).HasValue);
     }
 
     [Fact]
@@ -981,5 +1178,23 @@ public sealed partial class UsageServiceTests : IntegrationTestsBase
                 throw;
             }
         }
+
+        }
     }
+
+    private sealed class FailOnceHourlyPlanOveragePublisher(IMessagePublisher inner) : IMessagePublisher
+    {
+        private int _hourlyAttempts;
+
+        public int HourlyAttempts => _hourlyAttempts;
+
+        public Task PublishAsync(Type messageType, object message, MessageOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            if (message is PlanOverage { IsHourly: true } && Interlocked.Increment(ref _hourlyAttempts) == 1)
+                return Task.FromException(new InvalidOperationException("Simulated hourly overage publication failure."));
+
+            return inner.PublishAsync(messageType, message, options, cancellationToken);
+        }
+    }
+
 }

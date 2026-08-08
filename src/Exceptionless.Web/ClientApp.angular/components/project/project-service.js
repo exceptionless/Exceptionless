@@ -10,6 +10,7 @@
             $rootScope.$on("auth:logout", _cache.removeAll);
             $rootScope.$on("OrganizationChanged", _cache.removeAll);
             $rootScope.$on("ProjectChanged", _cache.removeAll);
+            $rootScope.$on("UsageChanged", _cache.removeAll);
 
             $rootScope.$on("StackChanged", function ($event, data) {
                 if (data.added) {

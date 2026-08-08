@@ -84,6 +84,8 @@ public class UsageService
             DateTime pendingBucketUtc = bucketUtc;
             await DrainPendingUsageIdsAsync(GetOrganizationSetKey(pendingBucketUtc), async organizationId =>
             {
+                await PublishPendingHourlyOverageAsync(pendingBucketUtc, organizationId);
+
                 await using var usageLock = await _lockProvider.TryAcquireAsync(
                     GetUsageBucketLockKey(pendingBucketUtc, organizationId),
                     TimeSpan.FromMinutes(1),
@@ -190,7 +192,6 @@ public class UsageService
                 var project = await _projectRepository.GetByIdAsync(projectId);
                 if (project is null)
                 {
-                    return;
                 }
 
                 await using var usageLock = await _lockProvider.TryAcquireAsync(
@@ -372,8 +373,10 @@ public class UsageService
 
         if (bucketTotal >= bucketLimit)
         {
-            await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = modified.Id, IsHourly = true });
             await _cache.SetAsync(GetThrottledKey(utcNow, modified.Id), true, TimeSpan.FromMinutes(5));
+            await _cache.SetAsync(GetHourlyThrottleTransitionKey(utcNow, modified.Id), true, TimeSpan.FromHours(8));
+            await _cache.SetAsync(GetHourlyOveragePendingKey(utcNow, modified.Id), true, TimeSpan.FromHours(8));
+            await PublishPendingHourlyOverageAsync(utcNow, modified.Id);
         }
     }
 
@@ -644,8 +647,10 @@ public class UsageService
         if (bucketTotal >= bucketLimit && bucketTotal - bucketLimit < eventCount)
         {
             // org will be throttled during the current bucket of time
-            await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId, IsHourly = true });
             await _cache.SetAsync(GetThrottledKey(utcNow, organizationId), true, TimeSpan.FromMinutes(5));
+            await _cache.SetAsync(GetHourlyThrottleTransitionKey(utcNow, organizationId), true, TimeSpan.FromHours(8));
+            await _cache.SetAsync(GetHourlyOveragePendingKey(utcNow, organizationId), true, TimeSpan.FromHours(8));
+            await PublishPendingHourlyOverageAsync(utcNow, organizationId);
         }
     }
 
@@ -748,6 +753,17 @@ public class UsageService
         }
     }
 
+    private async Task PublishPendingHourlyOverageAsync(DateTime utcTime, string organizationId)
+    {
+        string pendingKey = GetHourlyOveragePendingKey(utcTime, organizationId);
+        var pending = await _cache.GetAsync<bool>(pendingKey);
+        if (!pending.HasValue || !pending.Value)
+            return;
+
+        await _messagePublisher.PublishAsync(new PlanOverage { OrganizationId = organizationId, IsHourly = true });
+        await _cache.RemoveAsync(pendingKey);
+    }
+
     public async Task IncrementBlockedAsync(string organizationId, string? projectId, int eventCount = 1)
     {
         if (eventCount <= 0)
@@ -832,12 +848,16 @@ public class UsageService
 
     private int GetBucketEventLimit(int maxEventsPerMonth)
     {
+        return GetBucketEventLimit(maxEventsPerMonth, _timeProvider.GetUtcNow().UtcDateTime);
+    }
+
+    private int GetBucketEventLimit(int maxEventsPerMonth, DateTime utcNow)
+    {
         if (maxEventsPerMonth < 5000)
         {
             return maxEventsPerMonth;
         }
 
-        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         var timeLeftInMonth = utcNow.EndOfMonth() - utcNow;
         if (timeLeftInMonth < TimeSpan.FromDays(1))
         {
@@ -954,6 +974,18 @@ public class UsageService
     {
         int bucket = GetCurrentBucket(utcTime);
         return $"usage:{bucket}:{organizationId}:throttled";
+    }
+
+    private string GetHourlyThrottleTransitionKey(DateTime utcTime, string organizationId)
+    {
+        int bucket = GetCurrentBucket(utcTime);
+        return $"usage:{bucket}:{organizationId}:throttled-transition";
+    }
+
+    private string GetHourlyOveragePendingKey(DateTime utcTime, string organizationId)
+    {
+        int bucket = GetCurrentBucket(utcTime);
+        return $"usage:{bucket}:{organizationId}:hourly-overage-pending";
     }
 
     private string GetProjectSetKey(DateTime utcTime)
