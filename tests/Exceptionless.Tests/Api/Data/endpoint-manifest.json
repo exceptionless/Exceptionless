@@ -959,6 +959,72 @@
     "authenticationSchemes": []
   },
   {
+    "method": "GET",
+    "route": "/api/v2/oauth/device",
+    "displayName": "HTTP: GET api/v2/oauth/device",
+    "tags": [
+      "OAuth"
+    ],
+    "allowAnonymous": true,
+    "authorizationPolicies": [],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "POST",
+    "route": "/api/v2/oauth/device/authorize",
+    "displayName": "HTTP: POST api/v2/oauth/device/authorize",
+    "tags": [
+      "OAuth"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "POST",
+    "route": "/api/v2/oauth/device/consent",
+    "displayName": "HTTP: POST api/v2/oauth/device/consent",
+    "tags": [
+      "OAuth"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "POST",
+    "route": "/api/v2/oauth/device/deny",
+    "displayName": "HTTP: POST api/v2/oauth/device/deny",
+    "tags": [
+      "OAuth"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "POST",
+    "route": "/api/v2/oauth/device_authorization",
+    "displayName": "HTTP: POST api/v2/oauth/device_authorization =\u003E CreateDeviceAuthorizationAsync",
+    "tags": [
+      "OAuth"
+    ],
+    "allowAnonymous": true,
+    "authorizationPolicies": [],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
     "method": "POST",
     "route": "/api/v2/oauth/register",
     "displayName": "HTTP: POST api/v2/oauth/register",
