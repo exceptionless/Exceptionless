@@ -70,6 +70,9 @@ public sealed class UpdateEventUsage : MigrationBase
                 using var _ = _logger.BeginScope(new ExceptionlessState().Organization(organization.Id));
                 try
                 {
+                    int effectiveMonthlyLimit = organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
+                    var currentMonthUtc = _timeProvider.GetUtcNow().UtcDateTime.StartOfMonth();
+                    int currentMonthTotalBeforeRepair = organization.Usage.FirstOrDefault(u => u.Date == currentMonthUtc)?.Total ?? 0;
                     var result = await _eventRepository.CountAsync(q => q.Organization(organization.Id).AggregationsExpression("date:date~1M"));
                     var dateAggs = result.Aggregations.DateHistogram("date_date");
                     if (dateAggs?.Buckets is null)
@@ -86,7 +89,11 @@ public sealed class UpdateEventUsage : MigrationBase
                         }
                     }
 
-                    await _organizationRepository.SaveAsync(organization);
+                    int currentMonthTotalAfterRepair = organization.Usage.FirstOrDefault(u => u.Date == currentMonthUtc)?.Total ?? 0;
+                    bool monthlyOverageStarted = effectiveMonthlyLimit >= 0
+                        && currentMonthTotalBeforeRepair < effectiveMonthlyLimit
+                        && currentMonthTotalAfterRepair >= effectiveMonthlyLimit;
+                    await _organizationRepository.SaveAsync(organization, o => o.Notifications(monthlyOverageStarted));
                     await UpdateProjectsUsageAsync(context, organization);
                     processed++;
                     await context.Lock.RenewAsync();
@@ -142,7 +149,7 @@ public sealed class UpdateEventUsage : MigrationBase
                             usage.Limit = organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
                     }
 
-                    await _projectRepository.SaveAsync(project);
+                    await _projectRepository.SaveAsync(project, o => o.Notifications(false));
                 }
                 catch (Exception ex)
                 {
