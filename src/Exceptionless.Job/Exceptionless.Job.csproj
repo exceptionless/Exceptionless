@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
   <ItemGroup>
     <ProjectReference Include="..\Exceptionless.Insulation\Exceptionless.Insulation.csproj" />
   </ItemGroup>
@@ -21,9 +21,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Update="appsettings.yml" CopyToOutputDirectory="Always" />
-    <Content Update="appsettings.*.yml" DependentUpon="appsettings.yml"
-      CopyToOutputDirectory="Always" />
+    <Content Include="appsettings.yml" CopyToOutputDirectory="Always" />
+    <Content Include="appsettings.*.yml" DependentUpon="appsettings.yml"
+             CopyToOutputDirectory="Always" />
   </ItemGroup>
 
   <ItemGroup>
