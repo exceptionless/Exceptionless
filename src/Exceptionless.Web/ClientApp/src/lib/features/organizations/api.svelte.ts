@@ -23,6 +23,20 @@ export async function invalidateOrganizationQueries(queryClient: QueryClient, me
     }
 }
 
+export async function invalidateOrganizationUsageQueries(queryClient: QueryClient, organizationId?: string) {
+    const invalidations = [queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) })];
+    if (organizationId) {
+        invalidations.push(queryClient.invalidateQueries({ exact: true, queryKey: queryKeys.id(organizationId, undefined) }));
+        invalidations.push(queryClient.invalidateQueries({ exact: true, queryKey: queryKeys.id(organizationId, 'stats') }));
+    }
+
+    await Promise.all(invalidations);
+}
+
+export async function invalidatePlanOverageQueries(queryClient: QueryClient, message: WebSocketMessageValue<'PlanOverage'>) {
+    await invalidateOrganizationUsageQueries(queryClient, message.organization_id);
+}
+
 export const queryKeys = {
     adminSearch: (params: GetAdminSearchOrganizationsParams) => [...queryKeys.list(params.mode), 'admin', { ...params }] as const,
     changePlan: (id: string | undefined) => [...queryKeys.type, id, 'change-plan'] as const,
@@ -108,6 +122,7 @@ export interface GetOrganizationRequest {
     params?: {
         mode: 'stats' | undefined;
     };
+    refetchInterval?: false | number;
     route: {
         id: string | undefined;
     };
@@ -122,6 +137,7 @@ export interface GetOrganizationsParams {
 
 export interface GetOrganizationsRequest {
     params?: GetOrganizationsParams;
+    refetchInterval?: false | number;
 }
 
 export interface GetPlansRequest {
@@ -360,7 +376,8 @@ export function getOrganizationQuery(request: GetOrganizationRequest) {
 
             return response.data!;
         },
-        queryKey: queryKeys.id(request.route.id, request.params?.mode)
+        queryKey: queryKeys.id(request.route.id, request.params?.mode),
+        refetchInterval: request.refetchInterval
     }));
 }
 
@@ -388,7 +405,8 @@ export function getOrganizationsQuery(request: GetOrganizationsRequest) {
 
             return response;
         },
-        queryKey: [...queryKeys.list(request.params?.mode ?? undefined), { params: { ...request.params } }]
+        queryKey: [...queryKeys.list(request.params?.mode ?? undefined), { params: { ...request.params } }],
+        refetchInterval: request.refetchInterval
     }));
 }
 

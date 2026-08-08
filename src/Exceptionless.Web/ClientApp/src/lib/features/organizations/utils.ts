@@ -2,6 +2,9 @@ import { isSameUtcMonth } from '$features/shared/dates';
 
 import type { ViewOrganization } from './models';
 
+export const ORGANIZATION_USAGE_REFETCH_INTERVAL_MS = 5 * 60 * 1000;
+export const ORGANIZATION_USAGE_ROLLOVER_CHECK_INTERVAL_MS = 60 * 1000;
+
 export function getNextBillingDateUtc(organization?: ViewOrganization): Date {
     if (organization?.subscribe_date) {
         console.log('Organization subscribe date for next billing date:', organization.subscribe_date);
@@ -29,4 +32,8 @@ export function getRemainingEventLimit(organization?: ViewOrganization): number 
     }
 
     return organization.max_events_per_month + bonusEvents;
+}
+
+export function getUtcMonthKey(date = new Date()): number {
+    return date.getUTCFullYear() * 12 + date.getUTCMonth();
 }

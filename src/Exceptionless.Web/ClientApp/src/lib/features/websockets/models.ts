@@ -67,6 +67,10 @@ export function isEntityChangedType(message: { message: unknown; type: WebSocket
     return message.type !== 'PlanChanged' && message.type !== 'UserMembershipChanged' && message.type.endsWith('Changed');
 }
 
+export function isPlanOverageType(message: { message: unknown; type: WebSocketMessageType }): message is WebSocketMessage<'PlanOverage'> {
+    return message.type === 'PlanOverage';
+}
+
 export function isWebSocketMessageType(type: string): type is WebSocketMessageType {
     return (
         (['PlanChanged', 'PlanOverage', 'UserMembershipChanged', 'ReleaseNotification', 'SystemNotification'] as const).includes(
