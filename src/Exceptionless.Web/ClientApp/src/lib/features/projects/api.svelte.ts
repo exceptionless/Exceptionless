@@ -117,6 +117,7 @@ export interface GetProjectIntegrationNotificationSettingsRequest {
 }
 
 export interface GetProjectRequest {
+    refetchInterval?: false | number;
     route: {
         id: string | undefined;
     };
@@ -134,6 +135,7 @@ export interface GetProjectsParams {
 
 export interface GetProjectsRequest {
     params?: GetProjectsParams;
+    refetchInterval?: false | number;
 }
 
 export interface GetProjectUserNotificationSettingsRequest {
@@ -396,7 +398,8 @@ export function getProjectQuery(request: GetProjectRequest) {
 
             return response.data!;
         },
-        queryKey: queryKeys.id(request.route.id)
+        queryKey: queryKeys.id(request.route.id),
+        refetchInterval: request.refetchInterval
     }));
 }
 
@@ -423,7 +426,8 @@ export function getProjectsQuery(request: GetProjectsRequest) {
 
             return response;
         },
-        queryKey: [queryKeys.projects(), { params: request.params }]
+        queryKey: [queryKeys.projects(), { params: request.params }],
+        refetchInterval: request.refetchInterval
     }));
 }
 
