@@ -1,3 +1,9 @@
+<script module lang="ts">
+    export function formatReferenceResultCount(total: number, previewCount: number): string {
+        return total > previewCount ? `Showing ${previewCount} of ${total} events for this reference.` : `Found ${total} events for this reference.`;
+    }
+</script>
+
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
@@ -6,6 +12,7 @@
     import { Button } from '$comp/ui/button';
     import { Spinner } from '$comp/ui/spinner';
     import { getEventsByReferenceQuery } from '$features/events/api.svelte';
+    import { ReferenceFilter } from '$features/events/components/filters';
     import { buildEventDetailsHref } from '$features/events/components/summary';
     import Summary from '$features/events/components/summary/summary.svelte';
 
@@ -17,11 +24,13 @@
             }
         }
     });
-    const eventListHref = $derived(`${resolve('/(app)/event')}?filter=${encodeURIComponent(`reference:${referenceId}`)}&limit=20`);
+    const events = $derived(eventsQuery.data?.data ?? []);
+    const total = $derived(typeof eventsQuery.data?.meta.total === 'number' ? eventsQuery.data.meta.total : events.length);
+    const eventListHref = $derived(`${resolve('/(app)/event')}?filter=${encodeURIComponent(new ReferenceFilter(referenceId).toFilter())}&limit=20`);
     let redirectedEventId = $state<string>();
 
     $effect(() => {
-        const event = eventsQuery.data?.length === 1 ? eventsQuery.data[0] : undefined;
+        const event = total === 1 ? events[0] : undefined;
         if (event?.id && event.id !== redirectedEventId) {
             redirectedEventId = event.id;
             void goto(buildEventDetailsHref(event.id), { replaceState: true });
@@ -46,19 +55,19 @@
         </div>
     {:else if eventsQuery.error}
         <div class="border-destructive/40 bg-destructive/5 text-destructive rounded-md border p-4 text-sm">Unable to load events for this reference.</div>
-    {:else if (eventsQuery.data?.length ?? 0) === 0}
+    {:else if total === 0}
         <div class="space-y-3">
             <Muted>No events were found for this reference.</Muted>
             <Button variant="secondary" href={eventListHref}>Search Events</Button>
         </div>
-    {:else if (eventsQuery.data?.length ?? 0) > 1}
+    {:else if total > 1}
         <div class="flex items-center justify-between gap-4">
-            <Muted>Found {eventsQuery.data?.length} events for this reference.</Muted>
+            <Muted>{formatReferenceResultCount(total, events.length)}</Muted>
             <Button variant="secondary" href={eventListHref}>View In Events</Button>
         </div>
 
         <div class="space-y-3">
-            {#each eventsQuery.data ?? [] as event (event.id)}
+            {#each events as event (event.id)}
                 <div class="rounded-md border p-4">
                     <Summary summary={event} />
                     <A class="mt-2 inline-block" href={buildEventDetailsHref(event.id)}>Open Event</A>

@@ -252,7 +252,7 @@ export function getEventQuery(request: GetEventRequest) {
 }
 
 export function getEventsByReferenceQuery(request: GetEventsByReferenceRequest) {
-    return createQuery<EventSummaryModel<SummaryTemplateKeys>[], ProblemDetails>(() => ({
+    return createQuery<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.referenceId,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
@@ -265,12 +265,13 @@ export function getEventsByReferenceQuery(request: GetEventsByReferenceRequest) 
                     limit: 20,
                     mode: 'summary',
                     page: 1,
-                    ...request.params
+                    ...request.params,
+                    include: 'total'
                 },
                 signal
             });
 
-            return response.data!;
+            return response;
         },
         queryKey: queryKeys.eventsByReference(request.route.referenceId, request.route.projectId, request.params)
     }));

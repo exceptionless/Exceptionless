@@ -52,6 +52,10 @@
         return refs;
     });
 
+    function isValidReferenceName(name: string): boolean {
+        return /^[\p{L}\p{Nd}-]{1,25}$/u.test(name);
+    }
+
     let level = $derived(event.data?.['@level']?.toLowerCase());
     let location = $derived(getLocation(event));
 
@@ -95,9 +99,17 @@
                 {#if reference.name === 'session'}
                     <Table.Head class="w-40 font-semibold whitespace-nowrap">Session</Table.Head>
                     <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.SessionTrigger changed={filterChanged} value={reference.id} /></Table.Cell>
-                {:else}
+                {:else if reference.name === 'parent'}
                     <Table.Head class="w-40 font-semibold whitespace-nowrap">{reference.name}</Table.Head>
                     <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.ReferenceTrigger changed={filterChanged} value={reference.id} /></Table.Cell>
+                {:else if isValidReferenceName(reference.name)}
+                    <Table.Head class="w-40 font-semibold whitespace-nowrap">{reference.name}</Table.Head>
+                    <Table.Cell class="w-4 pr-0"
+                        ><EventsFacetedFilter.StringTrigger changed={filterChanged} term={`ref.${reference.name}`} value={reference.id} /></Table.Cell
+                    >
+                {:else}
+                    <Table.Head class="w-40 font-semibold whitespace-nowrap">{reference.name}</Table.Head>
+                    <Table.Cell class="w-4 pr-0"></Table.Cell>
                 {/if}
                 <Table.Cell><A href={resolve('/(app)/event/by-ref/[referenceId]', { referenceId: reference.id })}>{reference.id}</A></Table.Cell>
             </Table.Row>
