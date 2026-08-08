@@ -1,7 +1,7 @@
 import type { Stripe, StripeElements } from '@stripe/stripe-js';
 
 import { env } from '$env/dynamic/public';
-import { loadStripe } from '@stripe/stripe-js';
+import { loadStripe } from '@stripe/stripe-js/pure';
 import { getContext, setContext } from 'svelte';
 
 const STRIPE_CONTEXT_KEY = Symbol('stripe-context');
