@@ -470,8 +470,11 @@ public sealed partial class UsageServiceTests : IntegrationTestsBase
             _organizationRepository,
             _projectRepository,
             cache,
+            GetService<IIngestionQuotaStore>(),
             publisher,
             _notificationService,
+            GetService<ILockProvider>(),
+            GetService<AppOptions>(),
             TimeProvider,
             GetService<ILoggerFactory>());
         var published = new AsyncCountdownEvent(1);
@@ -1177,8 +1180,6 @@ public sealed partial class UsageServiceTests : IntegrationTestsBase
                 ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
                 throw;
             }
-        }
-
         }
     }
 

@@ -192,6 +192,7 @@ public class UsageService
                 var project = await _projectRepository.GetByIdAsync(projectId);
                 if (project is null)
                 {
+                    return;
                 }
 
                 await using var usageLock = await _lockProvider.TryAcquireAsync(
