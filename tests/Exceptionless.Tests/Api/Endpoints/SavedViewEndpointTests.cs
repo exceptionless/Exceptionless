@@ -12,6 +12,8 @@ using Exceptionless.Web.Models;
 using FluentRest;
 using Foundatio.Jobs;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch.CustomFields;
+using Foundatio.Repositories.Options;
 using Xunit;
 
 namespace Exceptionless.Tests.Api.Endpoints;
@@ -1664,6 +1666,34 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task SoftDeleteOrganization_RemovesOnlyItsCustomFieldDefinitions()
+    {
+        var definitions = GetService<ICustomFieldDefinitionRepository>();
+        await definitions.AddFieldAsync(nameof(PersistentEvent), SampleDataService.TEST_ORG_ID, "target_field", "keyword");
+        var deletedDefinition = await definitions.AddFieldAsync(nameof(PersistentEvent), SampleDataService.TEST_ORG_ID, "deleted_target_field", "keyword");
+        deletedDefinition.IsDeleted = true;
+        await definitions.SaveAsync(deletedDefinition);
+        await definitions.AddFieldAsync(nameof(PersistentEvent), TestConstants.OrganizationId2, "other_field", "keyword");
+
+        var testUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(testUser);
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+
+        await _organizationService.SoftDeleteOrganizationAsync(organization, testUser.Id);
+        await RefreshDataAsync();
+
+        var targetDefinitions = await definitions.FindAsync(
+            q => q
+                .FieldEquals(field => field.EntityType, nameof(PersistentEvent))
+                .FieldEquals(field => field.TenantKey, SampleDataService.TEST_ORG_ID),
+            o => o.IncludeSoftDeletes());
+        var otherDefinitions = await definitions.FindByTenantAsync(nameof(PersistentEvent), TestConstants.OrganizationId2);
+        Assert.Empty(targetDefinitions.Documents);
+        Assert.Single(otherDefinitions.Documents);
+    }
+
+    [Fact]
     public async Task RemoveUserSavedViews_WithMixedVisibility_OnlyDeletesPrivateViews()
     {
         // Arrange
@@ -2724,4 +2754,78 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
             || IsPredefinedSavedView(savedView, "stacks", "Most Used Features");
     }
 
+    [Fact]
+    public async Task PostAsync_WithCustomFieldFilter_SetsUsesPremiumFeatures()
+    {
+        // Arrange — a filter that references an idx.* custom field is a premium filter.
+        var newView = new NewSavedView
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            Name = "Custom Field View",
+            Filter = "idx.my_field:test",
+            ViewType = "events"
+        };
+
+        // Act
+        var result = await SendRequestAsAsync<ViewSavedView>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .Content(newView)
+            .StatusCodeShouldBeCreated()
+        );
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.UsesPremiumFeatures, "SavedView with idx.* filter should have UsesPremiumFeatures = true");
+    }
+
+    [Fact]
+    public async Task PostAsync_WithFreeFilter_DoesNotSetUsesPremiumFeatures()
+    {
+        // Arrange — a filter that only references free fields.
+        var newView = new NewSavedView
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            Name = "Free Filter View",
+            Filter = "status:open",
+            ViewType = "events"
+        };
+
+        // Act
+        var result = await SendRequestAsAsync<ViewSavedView>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .Content(newView)
+            .StatusCodeShouldBeCreated()
+        );
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.False(result.UsesPremiumFeatures, "SavedView with only free fields should have UsesPremiumFeatures = false");
+    }
+
+    [Fact]
+    public async Task PostAsync_WithFreeStackModeFilter_DoesNotSetUsesPremiumFeatures()
+    {
+        var newView = new NewSavedView
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            Name = "Stack Filter View",
+            Filter = "stack:ABC123 first:true",
+            ViewType = "stacks"
+        };
+
+        var result = await SendRequestAsAsync<ViewSavedView>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .Content(newView)
+            .StatusCodeShouldBeCreated()
+        );
+
+        Assert.NotNull(result);
+        Assert.False(result.UsesPremiumFeatures);
+    }
 }

@@ -2,6 +2,7 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Repositories;
@@ -13,13 +14,15 @@ public class OrganizationMaintenanceWorkItemHandler : WorkItemHandlerBase
 {
     private readonly IOrganizationRepository _organizationRepository;
     private readonly BillingManager _billingManager;
+    private readonly EventCustomFieldService _eventCustomFieldService;
     private readonly TimeProvider _timeProvider;
     private readonly ILockProvider _lockProvider;
 
-    public OrganizationMaintenanceWorkItemHandler(IOrganizationRepository organizationRepository, ILockProvider lockProvider, BillingManager billingManager, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public OrganizationMaintenanceWorkItemHandler(IOrganizationRepository organizationRepository, ILockProvider lockProvider, BillingManager billingManager, EventCustomFieldService eventCustomFieldService, TimeProvider timeProvider, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _billingManager = billingManager;
+        _eventCustomFieldService = eventCustomFieldService;
         _timeProvider = timeProvider;
         _lockProvider = lockProvider;
     }
@@ -34,7 +37,8 @@ public class OrganizationMaintenanceWorkItemHandler : WorkItemHandlerBase
         const int LIMIT = 100;
         var wi = context.GetData<OrganizationMaintenanceWorkItem>()!;
 
-        Log.LogInformation("Received upgrade organizations work item. Upgrade Plans: {UpgradePlans}", wi.UpgradePlans);
+        Log.LogInformation("Received organization maintenance work item. UpgradePlans: {UpgradePlans} RemoveOldUsageStats: {RemoveOldUsageStats} EnsureSystemCustomFields: {EnsureSystemCustomFields}",
+            wi.UpgradePlans, wi.RemoveOldUsageStats, wi.EnsureSystemCustomFields);
 
         var results = await _organizationRepository.GetAllAsync(o => o.PageLimit(LIMIT));
         while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
@@ -52,6 +56,18 @@ public class OrganizationMaintenanceWorkItemHandler : WorkItemHandlerBase
 
                     foreach (var usage in organization.Usage.Where(u => u.Date < utcNow.Subtract(TimeSpan.FromDays(366))).ToList())
                         organization.Usage.Remove(usage);
+                }
+
+                if (wi.EnsureSystemCustomFields)
+                {
+                    try
+                    {
+                        await _eventCustomFieldService.EnsureSystemFieldsAsync(organization.Id);
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        Log.LogError(ex, "Error ensuring system custom fields for organization {OrganizationId}", organization.Id);
+                    }
                 }
             }
 

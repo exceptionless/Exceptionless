@@ -703,6 +703,9 @@ public class EventHandler(
         if (systemFilter is not null && ApiFilterPolicy.IsPremiumFeatureQueryBlocked(systemFilter))
             return PlanLimitResult<CountResult>(ApiFilterPolicy.PremiumSearchUpgradeMessage);
 
+        if (sf.UsesPremiumFeatures && sf.Organizations.Count > 0 && sf.Organizations.All(organization => !organization.HasPremiumFeatures))
+            return PlanLimitResult<CountResult>("Searching with custom fields requires a paid plan. Please upgrade to use this filter.");
+
         if (mode == "stack_new")
             filter = AddFirstOccurrenceFilter(ti.Range, filter);
 
@@ -763,6 +766,9 @@ public class EventHandler(
         AppFilter? appliedAppFilter = ApiFilterPolicy.ShouldApplySystemFilter(sf, filter, httpContext.Request) ? sf : null;
         if (appliedAppFilter is not null && ApiFilterPolicy.IsPremiumFeatureQueryBlocked(appliedAppFilter))
             return PlanLimitResult<PagedResult<object>>(premiumFeatureUpgradeMessage ?? ApiFilterPolicy.PremiumSearchUpgradeMessage);
+
+        if (sf.UsesPremiumFeatures && sf.Organizations.Count > 0 && sf.Organizations.All(organization => !organization.HasPremiumFeatures))
+            return PlanLimitResult<PagedResult<object>>("Searching with custom fields requires a paid plan. Please upgrade to use this filter.");
 
         try
         {

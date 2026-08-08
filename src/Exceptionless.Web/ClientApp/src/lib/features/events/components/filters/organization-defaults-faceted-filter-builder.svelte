@@ -4,6 +4,8 @@
     }
 
     const { includeDateFacets = true }: Props = $props();
+    import CustomFieldFilterBuilders from '$features/organizations/custom-fields/components/custom-field-filter-builders.svelte';
+
     import * as FacetedFilter from './index';
 
     type KnownTermsFilterConfig = {
@@ -106,3 +108,5 @@
 {#each eventsVersionFilters as { priority, term, title } (term)}
     <FacetedFilter.VersionBuilder {priority} {term} {title} />
 {/each}
+
+<CustomFieldFilterBuilders />

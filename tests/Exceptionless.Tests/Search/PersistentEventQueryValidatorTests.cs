@@ -1,6 +1,5 @@
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories.Configuration;
-using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Parsers.ElasticQueries;
 using Foundatio.Parsers.ElasticQueries.Visitors;
 using Foundatio.Parsers.LuceneQueries;
@@ -24,31 +23,11 @@ public sealed class PersistentEventQueryValidatorTests : TestWithServices
     [Theory]
     [InlineData("data.@user.identity:blake", "data.@user.identity:blake", true, true)]
     [InlineData("user:blake", "data.@user.identity:blake", true, true)]
-    [InlineData("NOT _exists_:data.sessionend", "NOT _exists_:idx.sessionend-d", true, true)]
-    [InlineData("data.SessionEnd:<now", "idx.sessionend-d:<now", true, true)]
-    [InlineData("data.haserror:true", "idx.haserror-b:true", true, true)]
-    [InlineData("data.field:(now criteria2)", "idx.field-s:(now AND criteria2)", true, true)]
-    [InlineData("data.date:>now", "idx.date-d:>now", true, true)]
-    [InlineData("data.date:[now/d-4d TO now/d+1d}", "idx.date-d:[now/d-4d TO now/d+1d}", true, true)]
-    [InlineData("data.date:[2012-01-01 TO 2012-12-31]", "idx.date-d:[2012-01-01 TO 2012-12-31]", true, true)]
-    [InlineData("data.date:[* TO 2012-12-31]", "idx.date-d:[* TO 2012-12-31]", true, true)]
-    [InlineData("data.date:[2012-01-01 TO *]", "idx.date-d:[2012-01-01 TO *]", true, true)]
-    [InlineData("(data.date:[now/d-4d TO now/d+1d})", "(idx.date-d:[now/d-4d TO now/d+1d})", true, true)]
-    [InlineData("data.count:[1..5}", "idx.count-n:[1..5}", true, true)]
-    [InlineData("data.Windows-identity:ejsmith", "idx.windows-identity-s:ejsmith", true, true)]
-    [InlineData("data.age:(>30 AND <=40)", "idx.age-n:(>30 AND <=40)", true, true)]
-    [InlineData("data.age:(+>=10 AND < 20)", "idx.age-n:(+>=10 AND <20)", true, true)]
-    [InlineData("data.age:(+>=10 +<20)", "idx.age-n:(+>=10 AND +<20)", true, true)]
-    [InlineData("data.age:(->=10 AND < 20)", "idx.age-n:(->=10 AND <20)", true, true)]
-    [InlineData("data.age:[10 TO *]", "idx.age-n:[10 TO *]", true, true)]
-    [InlineData("data.age:[* TO 10]", "idx.age-n:[* TO 10]", true, true)]
-    [InlineData("type:404 AND data.age:(>30 AND <=40)", "type:404 AND idx.age-n:(>30 AND <=40)", true, true)]
     [InlineData("type:404", "type:404", true, false)]
     [InlineData("reference:404", "reference:404", true, false)]
     [InlineData("organization:404", "organization:404", true, false)]
     [InlineData("project:404", "project:404", true, false)]
     [InlineData("stack:404", "stack:404", true, false)]
-    [InlineData("ref.session:12345678", "idx.session-r:12345678", true, true)]
     [InlineData("status:open", "status:open", true, false)]
     public async Task CanProcessQueryAsync(string query, string expected, bool isValid, bool usesPremiumFeatures)
     {
@@ -74,8 +53,6 @@ public sealed class PersistentEventQueryValidatorTests : TestWithServices
             return;
         }
 
-        // NOTE: we have to do this because we don't have access to the right query parser instance.
-        result = await EventFieldsQueryVisitor.RunAsync(result, context);
         Assert.NotNull(result);
         Assert.Equal(expected, await GenerateQueryVisitor.RunAsync(result, context));
 

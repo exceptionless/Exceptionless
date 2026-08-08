@@ -2,6 +2,7 @@ import { resolve } from '$app/paths';
 import { page } from '$app/state';
 import { organization } from '$features/organizations/context.svelte';
 import Usage from '@lucide/svelte/icons/bar-chart';
+import Columns from '@lucide/svelte/icons/columns-3';
 import Billing from '@lucide/svelte/icons/credit-card';
 import Settings from '@lucide/svelte/icons/settings';
 import Users from '@lucide/svelte/icons/users';
@@ -22,6 +23,12 @@ export function routes(): NavigationItem[] {
             href: resolve('/(app)/organization/[organizationId]/manage', { organizationId }),
             icon: Settings,
             title: 'General'
+        },
+        {
+            group: 'Organization Settings',
+            href: resolve('/(app)/organization/[organizationId]/custom-fields', { organizationId }),
+            icon: Columns,
+            title: 'Custom Fields'
         },
         {
             group: 'Organization Settings',

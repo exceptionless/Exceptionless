@@ -3,7 +3,9 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch.CustomFields;
 using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Options;
 using Microsoft.Extensions.Logging;
 using Stripe;
 
@@ -14,6 +16,7 @@ public class OrganizationService : IStartupAction
     private const int BATCH_SIZE = 50;
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
+    private readonly ICustomFieldDefinitionRepository _customFieldDefinitionRepository;
     private readonly ISavedViewRepository _savedViewRepository;
     private readonly ITokenRepository _tokenRepository;
     private readonly IUserRepository _userRepository;
@@ -22,10 +25,11 @@ public class OrganizationService : IStartupAction
     private readonly UsageService _usageService;
     private readonly ILogger _logger;
 
-    public OrganizationService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ISavedViewRepository savedViewRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, IStripeBillingClient stripeBillingClient, UsageService usageService, ILoggerFactory loggerFactory)
+    public OrganizationService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ICustomFieldDefinitionRepository customFieldDefinitionRepository, ISavedViewRepository savedViewRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, IStripeBillingClient stripeBillingClient, UsageService usageService, ILoggerFactory loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
+        _customFieldDefinitionRepository = customFieldDefinitionRepository;
         _savedViewRepository = savedViewRepository;
         _tokenRepository = tokenRepository;
         _userRepository = userRepository;
@@ -187,6 +191,15 @@ public class OrganizationService : IStartupAction
         return _savedViewRepository.RemoveAllByOrganizationIdAsync(organization.Id);
     }
 
+    public Task<long> RemoveCustomFieldDefinitionsAsync(Organization organization)
+    {
+        _logger.LogDebug("Removing custom field definitions for {OrganizationName} ({OrganizationId})", organization.Name, organization.Id);
+        return _customFieldDefinitionRepository.RemoveAllAsync(q => q
+            .FieldEquals(field => field.EntityType, nameof(PersistentEvent))
+            .FieldEquals(field => field.TenantKey, organization.Id),
+            o => o.SoftDeleteMode(SoftDeleteQueryMode.All));
+    }
+
     public Task<long> RemoveUserSavedViewsAsync(string organizationId, string userId)
     {
         _logger.LogDebug("Removing private saved views for user {UserId} in organization {OrganizationId}", userId, organizationId);
@@ -201,6 +214,7 @@ public class OrganizationService : IStartupAction
         await RemoveTokensAsync(organization);
         await RemoveWebHooksAsync(organization);
         await RemoveSavedViewsAsync(organization);
+        await RemoveCustomFieldDefinitionsAsync(organization);
         await CancelSubscriptionsAsync(organization);
         await RemoveUsersAsync(organization, currentUserId);
         await CleanupProjectNotificationSettingsAsync(organization, []);

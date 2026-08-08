@@ -221,6 +221,28 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetOpenSessionsAsync_LegacySessionEndIdxField_ExcludesClosedSession()
+    {
+        var firstEvent = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(35));
+
+        var openSession = _eventData.GenerateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2,
+            occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "legacy-open-session", generateData: false);
+
+        var legacyClosedSession = _eventData.GenerateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2,
+            occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "legacy-closed-session", generateData: false);
+        legacyClosedSession.Idx = new DataDictionary {
+            { "sessionend-d", firstEvent.UtcDateTime.AddMinutes(5) }
+        };
+
+        await _repository.AddAsync([openSession, legacyClosedSession], o => o.ImmediateConsistency());
+
+        var results = await _repository.GetOpenSessionsAsync(DateTime.UtcNow.SubtractMinutes(30));
+
+        Assert.Single(results.Documents);
+        Assert.Equal(openSession.Id, results.Documents.Single().Id);
+    }
+
+    [Fact]
     public async Task RemoveAllByClientIpAndDateAsync()
     {
         const string _clientIpAddress = "123.123.12.255";
