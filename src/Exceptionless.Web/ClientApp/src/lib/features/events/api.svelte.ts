@@ -10,6 +10,14 @@ import { createMutation, createQuery, keepPreviousData, QueryClient, useQueryCli
 import type { EventSummaryModel, SummaryTemplateKeys } from './components/summary/index';
 import type { PersistentEvent } from './models';
 
+export async function invalidateOrganizationEventListQueries(queryClient: QueryClient, organizationId?: string) {
+    await queryClient.invalidateQueries({
+        predicate: (query) => isOrganizationEventsQueryKey(query.queryKey),
+        queryKey: organizationId ? queryKeys.organizations(organizationId) : queryKeys.type,
+        refetchType: 'none'
+    });
+}
+
 export async function invalidatePersistentEventQueries(queryClient: QueryClient, message: WebSocketMessageValue<'PersistentEventChanged'>) {
     const { id, organization_id, project_id, stack_id } = message;
     if (id) {
@@ -27,6 +35,8 @@ export async function invalidatePersistentEventQueries(queryClient: QueryClient,
     if (organization_id) {
         await queryClient.invalidateQueries({ exact: true, queryKey: queryKeys.organizations(organization_id) });
     }
+
+    await invalidateOrganizationEventListQueries(queryClient, organization_id);
 
     if (!id && !stack_id) {
         await queryClient.invalidateQueries({
@@ -59,6 +69,7 @@ export const queryKeys = {
 export const PERSISTENT_EVENT_DELETE_RECONCILE_EVENT = 'PersistentEventDeleteReconcile';
 export const PERSISTENT_EVENT_DELETE_RECONCILE_DELAY = 1500;
 export const PERSISTENT_EVENT_DELETE_RECONCILE_RETRY_DELAY = 5000;
+export const ORGANIZATION_EVENT_QUERY_STALE_TIME_MS = 60 * 1000;
 
 export interface DeleteEventsRequest {
     route: {
@@ -331,7 +342,8 @@ export function getOrganizationCountQuery(request: GetOrganizationCountRequest) 
 
                 return response.data!;
             },
-            queryKey: queryKeys.organizationsCount(organizationId, params)
+            queryKey: queryKeys.organizationsCount(organizationId, params),
+            staleTime: ORGANIZATION_EVENT_QUERY_STALE_TIME_MS
         };
     });
 }
@@ -351,7 +363,8 @@ export function getOrganizationEventsQuery(request: GetOrganizationEventsRequest
                     signal
                 });
             },
-            queryKey: queryKeys.organizationsEvents(organizationId, params)
+            queryKey: queryKeys.organizationsEvents(organizationId, params),
+            staleTime: ORGANIZATION_EVENT_QUERY_STALE_TIME_MS
         };
     });
 }

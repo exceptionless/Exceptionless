@@ -82,12 +82,12 @@ test('event list and detail effects stay bounded through paging and background c
 
     await measureAction(diagnostics, 'event list paging', async () => {
         for (let index = 0; index < 4; index++) {
-            await clickAndWaitForList(page, e2eScenario.organizationId, 'Go to next page');
+            await clickAndWaitForPage(page, e2eScenario.organizationId, 'Go to next page', 2, index === 0);
             await expect(page.getByRole('button', { name: 'Go to previous page' })).toBeEnabled();
-            await clickAndWaitForList(page, e2eScenario.organizationId, 'Go to previous page');
+            await clickAndWaitForPage(page, e2eScenario.organizationId, 'Go to previous page', 1);
         }
     });
-    expect(actionSample(diagnostics, 'event list paging').eventList).toBe(8);
+    expect(actionSample(diagnostics, 'event list paging').eventList).toBe(1);
 
     await measureAction(diagnostics, 'event detail sheet mount and teardown', async () => {
         for (let index = 0; index < 5; index++) {
@@ -239,11 +239,25 @@ function actionSample(diagnostics: RuntimeDiagnostics, name: string): ActionSamp
     return sample;
 }
 
-function clickAndWaitForList(page: Page, organizationId: string, buttonName: string): Promise<unknown> {
-    return Promise.all([
-        page.waitForResponse((response) => isEventListResponse(response, organizationId)),
-        page.getByRole('button', { name: buttonName }).click()
-    ]);
+async function clickAndWaitForPage(
+    page: Page,
+    organizationId: string,
+    buttonName: string,
+    expectedPage: number,
+    waitForNetwork: boolean = false
+): Promise<void> {
+    const response = waitForNetwork ? page.waitForResponse((candidate) => isEventListResponse(candidate, organizationId)) : undefined;
+
+    await page.getByRole('button', { name: buttonName }).click();
+    await expect(
+        page
+            .getByText(new RegExp(`^Page ${expectedPage} of`))
+            .filter({ visible: true })
+            .first()
+    ).toBeVisible();
+    if (response) {
+        expect((await response).ok()).toBe(true);
+    }
 }
 
 function createGroupedEvent(appUrl: string, message: string, run: string, index: number): { event: Record<string, unknown>; referenceId: string } {
