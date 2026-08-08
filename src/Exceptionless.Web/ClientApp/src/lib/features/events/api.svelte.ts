@@ -312,23 +312,28 @@ export function getEventWithNavigationQuery(request: GetEventRequest) {
 export function getOrganizationCountQuery(request: GetOrganizationCountRequest) {
     const queryClient = useQueryClient();
 
-    return createQuery<CountResult, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.organizationId && (request.enabled?.() ?? true),
-        queryClient,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
-            const client = useFetchClient();
-            const response = await client.getJSON<CountResult>(`/organizations/${request.route.organizationId}/events/count`, {
-                params: {
-                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
-                    ...request.params
-                },
-                signal
-            });
+    return createQuery<CountResult, ProblemDetails>(() => {
+        const organizationId = request.route.organizationId;
+        const params = request.params ? { ...request.params } : undefined;
 
-            return response.data!;
-        },
-        queryKey: queryKeys.organizationsCount(request.route.organizationId, request.params)
-    }));
+        return {
+            enabled: () => !!accessToken.current && !!organizationId && (request.enabled?.() ?? true),
+            queryClient,
+            queryFn: async ({ signal }: { signal: AbortSignal }) => {
+                const client = useFetchClient();
+                const response = await client.getJSON<CountResult>(`/organizations/${organizationId}/events/count`, {
+                    params: {
+                        ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                        ...params
+                    },
+                    signal
+                });
+
+                return response.data!;
+            },
+            queryKey: queryKeys.organizationsCount(organizationId, params)
+        };
+    });
 }
 
 export function getOrganizationEventsQuery(request: GetOrganizationEventsRequest) {
@@ -346,9 +351,7 @@ export function getOrganizationEventsQuery(request: GetOrganizationEventsRequest
                     signal
                 });
             },
-            queryKey: queryKeys.organizationsEvents(organizationId, params),
-            refetchOnWindowFocus: false,
-            staleTime: 0
+            queryKey: queryKeys.organizationsEvents(organizationId, params)
         };
     });
 }

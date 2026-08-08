@@ -71,7 +71,7 @@ test('stack effects stay bounded through background, paging, and navigation chao
             await expect(page).not.toHaveURL(/(?:\?|&)page=2(?:&|$)/);
         }
     });
-    expect(actionSample(diagnostics, 'paging').listRequests).toBe(8);
+    expect(actionSample(diagnostics, 'paging').listRequests).toBe(1);
 
     await measureAction(diagnostics, 'stack detail mount and teardown', async () => {
         for (let index = 0; index < 5; index++) {

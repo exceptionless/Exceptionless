@@ -53,7 +53,7 @@
     import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
     import { useSavedViews } from '$features/saved-views/use-saved-views.svelte';
     import * as agg from '$features/shared/api/aggregations';
-    import { createPageSizePreference, getSharedTableOptions, isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
+    import { createPageSizePreference, getSharedTableOptions, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
     import { fillDateSeries } from '$features/shared/utils/charts.js';
     import { toDateMathRange } from '$features/shared/utils/datemath';
     import { parseDateMathRange } from '$features/shared/utils/datemath.js';
@@ -277,7 +277,11 @@
         view: VIEW
     });
     const pageTitle = $derived(savedViewsState.activeSavedView?.name ?? 'Events');
-    const isSavedViewRoutePending = $derived(!!page.params.slug && !savedViewsState.activeSavedView);
+    // Keep queries disabled until saved-view state and its URL overrides have both settled.
+    let normalizedSavedViewId = $state<string>();
+    const isSavedViewRoutePending = $derived(
+        !!page.params.slug && (!savedViewsState.activeSavedView || savedViewsState.activeSavedView.id !== normalizedSavedViewId)
+    );
 
     $effect(() => {
         document.title = `${pageTitle} - Exceptionless`;
@@ -520,13 +524,15 @@
 
     $effect(() => {
         const activeSavedViewId = savedViewsState.activeSavedView?.id;
-        if (!activeSavedViewId) {
+        if (!activeSavedViewId || activeSavedViewId !== savedViewsState.hydratedSavedViewId) {
+            normalizedSavedViewId = undefined;
             return;
         }
 
         untrack(() => {
             updateFilters(getCurrentFilters(getListFilterQueryParams(page.url.searchParams)), { clearPagination: false });
         });
+        normalizedSavedViewId = activeSavedViewId;
     });
 
     function getQueryFilterParams(filters: FacetedFilter.IFilter[]) {
@@ -914,19 +920,6 @@
             totalEvents,
             totalStacks
         };
-    });
-
-    let lastStatsRefreshKey = $state<string>();
-
-    $effect(() => {
-        const refreshKey = `${organization.current}:${page.url.search}:${stats.totalEvents}`;
-
-        if (!eventsQuery.data?.ok || stats.totalEvents <= 0 || !isTableEmpty(table) || lastStatsRefreshKey === refreshKey) {
-            return;
-        }
-
-        lastStatsRefreshKey = refreshKey;
-        void eventsQuery.refetch();
     });
 
     function onRangeSelect(start: Date, end: Date) {
