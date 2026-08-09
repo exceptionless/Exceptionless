@@ -126,8 +126,11 @@ public sealed class CustomFieldEndpointContractTests : IntegrationTestsBase
         Assert.Contains(EventCustomFieldQueryPolicy.UnknownFilterField, problem.Errors.Keys);
     }
 
-    [Fact]
-    public async Task PromotePredefinedView_OrganizationCustomField_ReturnsValidationError()
+    [Theory]
+    [InlineData("idx.customer_id:value", null)]
+    [InlineData("type:error", "[{\"type\":\"string\",\"term\":\"idx.customer_id\",\"value\":\"value\"}]")]
+    [InlineData("type:error", "[{\"type\":\"keyword\",\"value\":\"idx.customer_id:value\"}]")]
+    public async Task PromotePredefinedView_OrganizationCustomField_ReturnsValidationError(string filter, string? filterDefinitions)
     {
         var savedView = await GetService<ISavedViewRepository>().AddAsync(new SavedView
         {
@@ -136,8 +139,8 @@ public sealed class CustomFieldEndpointContractTests : IntegrationTestsBase
             Name = "Organization-specific filter",
             Slug = "organization-specific-filter",
             ViewType = "events",
-            Filter = "type:error",
-            FilterDefinitions = """[{"type":"string","term":"idx.customer_id","value":"value"}]""",
+            Filter = filter,
+            FilterDefinitions = filterDefinitions,
             Version = 1
         }, options => options.ImmediateConsistency());
 
