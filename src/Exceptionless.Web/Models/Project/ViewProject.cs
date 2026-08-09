@@ -1,4 +1,5 @@
 ﻿using Exceptionless.Core.Attributes;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories.Models;
@@ -53,21 +54,12 @@ public static class ViewProjectExtensions
     {
         var endDateUtc = timeProvider.GetUtcNow().UtcDateTime.StartOfMonth();
         var startDateUtc = endDateUtc.SubtractYears(1);
-        var createdMonthUtc = organizationCreatedUtc.ToUniversalTime().StartOfMonth();
-        if (project.CreatedUtc > organizationCreatedUtc)
-        {
-            createdMonthUtc = project.CreatedUtc.ToUniversalTime().StartOfMonth();
-        }
-        if (createdMonthUtc > startDateUtc)
-        {
-            startDateUtc = createdMonthUtc;
-        }
+        var organizationCreatedMonthUtc = organizationCreatedUtc.ToUniversalTime().StartOfMonth();
+        var projectCreatedMonthUtc = project.CreatedUtc.ToUniversalTime().StartOfMonth();
+        var createdMonthUtc = projectCreatedMonthUtc > organizationCreatedMonthUtc ? projectCreatedMonthUtc : organizationCreatedMonthUtc;
+        startDateUtc = createdMonthUtc > startDateUtc ? createdMonthUtc : startDateUtc;
 
-        while (startDateUtc < endDateUtc)
-        {
-            project.GetUsage(startDateUtc, limit);
-            startDateUtc = startDateUtc.AddMonths(1).StartOfMonth();
-        }
+        project.Usage = project.Usage.MaterializeMonthlyUsage(startDateUtc, endDateUtc.AddMonths(-1), limit);
     }
 
     public static UsageInfo GetCurrentUsage(this ViewProject project, int limit, TimeProvider timeProvider)
@@ -77,18 +69,7 @@ public static class ViewProjectExtensions
 
     public static UsageInfo GetUsage(this ViewProject project, DateTime date, int limit)
     {
-        var usage = project.Usage.FirstOrDefault(o => o.Date == date.ToUniversalTime().StartOfMonth());
-        if (usage is not null)
-            return usage;
-
-        usage = new UsageInfo
-        {
-            Date = date.ToUniversalTime().StartOfMonth(),
-            Limit = limit
-        };
-        project.Usage.Add(usage);
-
-        return usage;
+        return project.Usage.GetOrAddMonthlyUsage(date, limit);
     }
 
     public static void TrimUsage(this ViewProject project, TimeProvider timeProvider)

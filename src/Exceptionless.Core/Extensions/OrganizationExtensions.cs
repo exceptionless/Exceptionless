@@ -129,18 +129,6 @@ public static class OrganizationExtensions
 
     public static UsageInfo GetUsage(this Organization organization, DateTime date, TimeProvider timeProvider)
     {
-        var startOfMonth = date.ToUniversalTime().StartOfMonth();
-        var usage = organization.Usage.FirstOrDefault(o => o.Date.Year == startOfMonth.Year && o.Date.Month == startOfMonth.Month);
-        if (usage is not null)
-            return usage;
-
-        usage = new UsageInfo
-        {
-            Date = startOfMonth,
-            Limit = organization.GetMaxEventsPerMonthWithBonus(timeProvider)
-        };
-        organization.Usage.Add(usage);
-
-        return usage;
+        return organization.Usage.GetOrAddMonthlyUsage(date, organization.GetMaxEventsPerMonthWithBonus(timeProvider));
     }
 }

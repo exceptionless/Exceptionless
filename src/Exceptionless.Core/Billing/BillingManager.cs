@@ -150,7 +150,7 @@ public class BillingManager
             return;
         }
 
-        var previousUsage = organization.Usage.GetUsage(previousMonthUtc, organization.MaxEventsPerMonth);
+        var previousUsage = organization.Usage.GetOrAddMonthlyUsage(previousMonthUtc, organization.MaxEventsPerMonth);
         if (previousUsage.Limit == 0)
         {
             previousUsage.Limit = organization.MaxEventsPerMonth;

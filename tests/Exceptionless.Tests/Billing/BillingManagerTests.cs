@@ -1,83 +1,38 @@
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
+using Exceptionless.DateTimeExtensions;
 using Xunit;
 
 namespace Exceptionless.Tests.Billing;
 
 public class BillingManagerTests : TestWithServices
 {
+    private static readonly DateTime PlanChangeUtc = new(2026, 6, 15, 0, 0, 0, DateTimeKind.Utc);
+    private static readonly DateTime PreviousMonthUtc = new(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc);
+
     public BillingManagerTests(ITestOutputHelper output) : base(output) { }
 
-    [Fact]
-    public void ApplyBillingPlan_BonusWithoutUsage_CreatesPreviousPlanAnchorWithoutBonus()
+    [Theory]
+    [InlineData("bonus without usage", null, 5_000, 15_000)]
+    [InlineData("persisted bonus", 20_000, 5_000, 20_000)]
+    [InlineData("missing usage", null, 0, 15_000)]
+    [InlineData("zero-valued usage", 0, 0, 15_000)]
+    public void ApplyBillingPlan_ConfirmedPreviousPlan_CreatesExpectedAnchor(string _, int? persistedLimit, int bonusEvents, int expectedLimit)
     {
         // Arrange
         var billingManager = GetService<BillingManager>();
         var plans = GetService<BillingPlans>();
-        TimeProvider.SetUtcNow(new DateTime(2026, 6, 15, 0, 0, 0, DateTimeKind.Utc));
+        TimeProvider.SetUtcNow(PlanChangeUtc);
         var organization = new Organization
         {
             CreatedUtc = new DateTime(2026, 4, 15, 0, 0, 0, DateTimeKind.Utc),
             PlanId = plans.SmallPlan.Id,
             MaxEventsPerMonth = plans.SmallPlan.MaxEventsPerMonth,
-            BonusEventsPerMonth = 5_000,
-            BonusExpiration = new DateTime(2026, 7, 1, 0, 0, 0, DateTimeKind.Utc)
+            BonusEventsPerMonth = bonusEvents,
+            BonusExpiration = bonusEvents > 0 ? PlanChangeUtc.AddMonths(1) : null
         };
-
-        // Act
-        billingManager.ApplyBillingPlan(organization, plans.MediumPlan);
-
-        // Assert
-        Assert.Equal(plans.SmallPlan.MaxEventsPerMonth,
-            organization.Usage.Single(u => u.Date == new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc)).Limit);
-    }
-
-    [Fact]
-    public void ApplyBillingPlan_ExistingBonus_PreservesPreviousPlanAnchorWithBonus()
-    {
-        // Arrange
-        var billingManager = GetService<BillingManager>();
-        var plans = GetService<BillingPlans>();
-        TimeProvider.SetUtcNow(new DateTime(2026, 6, 15, 0, 0, 0, DateTimeKind.Utc));
-        var organization = new Organization
-        {
-            CreatedUtc = new DateTime(2026, 4, 15, 0, 0, 0, DateTimeKind.Utc),
-            PlanId = plans.SmallPlan.Id,
-            MaxEventsPerMonth = plans.SmallPlan.MaxEventsPerMonth,
-            BonusEventsPerMonth = 5_000,
-            BonusExpiration = new DateTime(2026, 7, 1, 0, 0, 0, DateTimeKind.Utc),
-            Usage =
-            [
-                new UsageInfo
-                {
-                    Date = new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc),
-                    Limit = plans.SmallPlan.MaxEventsPerMonth + 5_000
-                }
-            ]
-        };
-
-        // Act
-        billingManager.ApplyBillingPlan(organization, plans.MediumPlan);
-
-        // Assert
-        Assert.Equal(plans.SmallPlan.MaxEventsPerMonth + organization.BonusEventsPerMonth,
-            organization.Usage.Single(u => u.Date == new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc)).Limit);
-    }
-
-    [Fact]
-    public void ApplyBillingPlan_ExistingPlanWithoutUsage_CreatesPreviousPlanAnchor()
-    {
-        // Arrange
-        var billingManager = GetService<BillingManager>();
-        var plans = GetService<BillingPlans>();
-        var utcNow = new DateTime(2026, 6, 15, 0, 0, 0, DateTimeKind.Utc);
-        TimeProvider.SetUtcNow(utcNow);
-        var organization = new Organization
-        {
-            CreatedUtc = new DateTime(2026, 4, 15, 0, 0, 0, DateTimeKind.Utc),
-            PlanId = plans.SmallPlan.Id,
-            MaxEventsPerMonth = plans.SmallPlan.MaxEventsPerMonth
-        };
+        if (persistedLimit.HasValue)
+            organization.Usage = [new UsageInfo { Date = PreviousMonthUtc, Limit = persistedLimit.Value }];
 
         // Act
         billingManager.ApplyBillingPlan(organization, plans.MediumPlan);
@@ -85,121 +40,54 @@ public class BillingManagerTests : TestWithServices
         // Assert
         Assert.Equal(2, organization.Usage.Count);
         Assert.DoesNotContain(organization.Usage, usage => usage.Date < new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc));
-        Assert.Equal(plans.SmallPlan.MaxEventsPerMonth, organization.Usage.Single(u => u.Date == new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc)).Limit);
-        Assert.Equal(plans.MediumPlan.MaxEventsPerMonth, organization.Usage.Single(u => u.Date == new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc)).Limit);
+        Assert.Equal(expectedLimit, organization.Usage.Single(usage => usage.Date == PreviousMonthUtc).Limit);
+        Assert.Equal(plans.MediumPlan.MaxEventsPerMonth + bonusEvents,
+            organization.Usage.Single(usage => usage.Date == PlanChangeUtc.StartOfMonth()).Limit);
     }
 
-    [Fact]
-    public void ApplyBillingPlan_ExistingZeroLimit_ReplacesPreviousPlanAnchor()
+    [Theory]
+    [InlineData(PreviousPlanScenario.MissingLimit)]
+    [InlineData(PreviousPlanScenario.NewOrganization)]
+    [InlineData(PreviousPlanScenario.CreatedThisMonth)]
+    [InlineData(PreviousPlanScenario.UnchangedPlan)]
+    public void ApplyBillingPlan_WithoutConfirmedPreviousMonth_DoesNotCreateAnchor(PreviousPlanScenario scenario)
     {
         // Arrange
         var billingManager = GetService<BillingManager>();
         var plans = GetService<BillingPlans>();
-        TimeProvider.SetUtcNow(new DateTime(2026, 6, 15, 0, 0, 0, DateTimeKind.Utc));
-        var organization = new Organization
+        TimeProvider.SetUtcNow(PlanChangeUtc);
+        var (organization, targetPlan) = scenario switch
         {
-            CreatedUtc = new DateTime(2026, 4, 15, 0, 0, 0, DateTimeKind.Utc),
-            PlanId = plans.SmallPlan.Id,
-            MaxEventsPerMonth = plans.SmallPlan.MaxEventsPerMonth,
-            Usage =
-            [
-                new UsageInfo { Date = new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc), Limit = 0 }
-            ]
+            PreviousPlanScenario.MissingLimit => (
+                new Organization { CreatedUtc = PlanChangeUtc.AddMonths(-2), PlanId = plans.SmallPlan.Id },
+                plans.MediumPlan),
+            PreviousPlanScenario.NewOrganization => (new Organization(), plans.FreePlan),
+            PreviousPlanScenario.CreatedThisMonth => (
+                new Organization
+                {
+                    CreatedUtc = PlanChangeUtc.AddDays(-5),
+                    PlanId = plans.FreePlan.Id,
+                    MaxEventsPerMonth = plans.FreePlan.MaxEventsPerMonth
+                },
+                plans.SmallPlan),
+            PreviousPlanScenario.UnchangedPlan => (
+                new Organization
+                {
+                    CreatedUtc = PlanChangeUtc.AddMonths(-2),
+                    PlanId = plans.SmallPlan.Id.ToUpperInvariant(),
+                    MaxEventsPerMonth = plans.SmallPlan.MaxEventsPerMonth
+                },
+                plans.SmallPlan),
+            _ => throw new ArgumentOutOfRangeException(nameof(scenario))
         };
 
         // Act
-        billingManager.ApplyBillingPlan(organization, plans.MediumPlan);
-
-        // Assert
-        Assert.Equal(plans.SmallPlan.MaxEventsPerMonth,
-            organization.Usage.Single(u => u.Date == new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc)).Limit);
-    }
-
-    [Fact]
-    public void ApplyBillingPlan_MissingPreviousLimit_DoesNotInventPreviousPlanHistory()
-    {
-        // Arrange
-        var billingManager = GetService<BillingManager>();
-        var plans = GetService<BillingPlans>();
-        TimeProvider.SetUtcNow(new DateTime(2026, 6, 15, 0, 0, 0, DateTimeKind.Utc));
-        var organization = new Organization
-        {
-            CreatedUtc = new DateTime(2026, 4, 15, 0, 0, 0, DateTimeKind.Utc),
-            PlanId = plans.SmallPlan.Id
-        };
-
-        // Act
-        billingManager.ApplyBillingPlan(organization, plans.MediumPlan);
+        billingManager.ApplyBillingPlan(organization, targetPlan);
 
         // Assert
         var usage = Assert.Single(organization.Usage);
-        Assert.Equal(new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc), usage.Date);
-        Assert.Equal(plans.MediumPlan.MaxEventsPerMonth, usage.Limit);
-    }
-
-    [Fact]
-    public void ApplyBillingPlan_NewOrganization_DoesNotInventPreviousPlanHistory()
-    {
-        // Arrange
-        var billingManager = GetService<BillingManager>();
-        var plans = GetService<BillingPlans>();
-        var utcNow = new DateTime(2026, 6, 15, 0, 0, 0, DateTimeKind.Utc);
-        TimeProvider.SetUtcNow(utcNow);
-        var organization = new Organization();
-
-        // Act
-        billingManager.ApplyBillingPlan(organization, plans.FreePlan);
-
-        // Assert
-        var usage = Assert.Single(organization.Usage);
-        Assert.Equal(new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc), usage.Date);
-        Assert.Equal(plans.FreePlan.MaxEventsPerMonth, usage.Limit);
-    }
-
-    [Fact]
-    public void ApplyBillingPlan_OrganizationCreatedThisMonth_DoesNotInventPreviousPlanHistory()
-    {
-        // Arrange
-        var billingManager = GetService<BillingManager>();
-        var plans = GetService<BillingPlans>();
-        TimeProvider.SetUtcNow(new DateTime(2026, 6, 15, 0, 0, 0, DateTimeKind.Utc));
-        var organization = new Organization
-        {
-            CreatedUtc = new DateTime(2026, 6, 10, 0, 0, 0, DateTimeKind.Utc),
-            PlanId = plans.FreePlan.Id,
-            MaxEventsPerMonth = plans.FreePlan.MaxEventsPerMonth
-        };
-
-        // Act
-        billingManager.ApplyBillingPlan(organization, plans.SmallPlan);
-
-        // Assert
-        var usage = Assert.Single(organization.Usage);
-        Assert.Equal(new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc), usage.Date);
-        Assert.Equal(plans.SmallPlan.MaxEventsPerMonth, usage.Limit);
-    }
-
-    [Fact]
-    public void ApplyBillingPlan_UnchangedPlan_DoesNotCreatePreviousPlanAnchor()
-    {
-        // Arrange
-        var billingManager = GetService<BillingManager>();
-        var plans = GetService<BillingPlans>();
-        TimeProvider.SetUtcNow(new DateTime(2026, 6, 15, 0, 0, 0, DateTimeKind.Utc));
-        var organization = new Organization
-        {
-            CreatedUtc = new DateTime(2026, 4, 15, 0, 0, 0, DateTimeKind.Utc),
-            PlanId = plans.SmallPlan.Id.ToUpperInvariant(),
-            MaxEventsPerMonth = plans.SmallPlan.MaxEventsPerMonth
-        };
-
-        // Act
-        billingManager.ApplyBillingPlan(organization, plans.SmallPlan);
-
-        // Assert
-        var usage = Assert.Single(organization.Usage);
-        Assert.Equal(new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc), usage.Date);
-        Assert.Equal(plans.SmallPlan.MaxEventsPerMonth, usage.Limit);
+        Assert.Equal(PlanChangeUtc.StartOfMonth(), usage.Date);
+        Assert.Equal(targetPlan.MaxEventsPerMonth, usage.Limit);
     }
 
     [Fact]
@@ -312,5 +200,13 @@ public class BillingManagerTests : TestWithServices
 
         // Assert
         Assert.Equal(eventWatermarkUtc, organization.StripeSubscriptionEventDate);
+    }
+
+    public enum PreviousPlanScenario
+    {
+        MissingLimit,
+        NewOrganization,
+        CreatedThisMonth,
+        UnchangedPlan
     }
 }

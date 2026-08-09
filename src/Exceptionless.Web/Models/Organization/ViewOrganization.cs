@@ -77,34 +77,12 @@ public static class ViewOrganizationExtensions
         var endDateUtc = timeProvider.GetUtcNow().UtcDateTime.StartOfMonth();
         var startDateUtc = endDateUtc.SubtractMonths(11);
         var organizationCreatedMonthUtc = organization.CreatedUtc.ToUniversalTime().StartOfMonth();
-        if (organizationCreatedMonthUtc > startDateUtc)
-        {
-            startDateUtc = organizationCreatedMonthUtc;
-        }
+        startDateUtc = organizationCreatedMonthUtc > startDateUtc ? organizationCreatedMonthUtc : startDateUtc;
 
-        var knownUsages = organization.Usage
-            .Where(u => u.Limit != 0)
-            .OrderBy(u => u.Date)
-            .ToList();
-        int limit = knownUsages
-            .LastOrDefault(u => u.Date <= startDateUtc)?.Limit
-            ?? knownUsages.FirstOrDefault()?.Limit
-            ?? organization.GetMaxEventsPerMonthWithBonus(timeProvider);
-
-        while (startDateUtc <= endDateUtc)
-        {
-            var usage = organization.Usage.GetUsage(startDateUtc, limit);
-            if (usage.Limit == 0)
-            {
-                usage.Limit = limit;
-            }
-            else
-            {
-                limit = usage.Limit;
-            }
-
-            startDateUtc = startDateUtc.AddMonths(1).StartOfMonth();
-        }
+        organization.Usage = organization.Usage.MaterializeMonthlyUsage(
+            startDateUtc,
+            endDateUtc,
+            organization.GetMaxEventsPerMonthWithBonus(timeProvider));
     }
 
     public static UsageInfo GetCurrentUsage(this ViewOrganization organization, TimeProvider timeProvider)
@@ -114,7 +92,7 @@ public static class ViewOrganizationExtensions
 
     public static UsageInfo GetUsage(this ViewOrganization organization, DateTime date, TimeProvider timeProvider)
     {
-        return organization.Usage.GetUsage(date, organization.GetMaxEventsPerMonthWithBonus(timeProvider));
+        return organization.Usage.GetOrAddMonthlyUsage(date, organization.GetMaxEventsPerMonthWithBonus(timeProvider));
     }
 
     public static int GetMaxEventsPerMonthWithBonus(this ViewOrganization organization, TimeProvider timeProvider)
