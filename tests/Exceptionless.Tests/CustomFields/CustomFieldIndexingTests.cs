@@ -769,9 +769,19 @@ public sealed class CustomFieldIndexingTests : IntegrationTestsBase
         var stored = await _elasticConfiguration.Client.GetAsync<PersistentEvent>(eventDocument.Id, request => request
             .Index(index), TestContext.Current.CancellationToken);
         Assert.True(stored.IsValidResponse, stored.DebugInformation);
-        Assert.NotNull(stored.Source?.Idx);
+        var storedIdx = Assert.IsType<DataDictionary>(stored.Source?.Idx);
         foreach (var (key, value) in eventDocument.Idx ?? [])
-            Assert.Equal(value, stored.Source.Idx[key]);
+        {
+            if (value is DateTime expectedDate)
+            {
+                var storedDate = Assert.IsType<DateTimeOffset>(storedIdx[key]);
+                Assert.Equal(expectedDate, storedDate.UtcDateTime);
+            }
+            else
+            {
+                Assert.Equal(value, storedIdx[key]);
+            }
+        }
     }
 
     private async Task CreateProjectDataAsync()
