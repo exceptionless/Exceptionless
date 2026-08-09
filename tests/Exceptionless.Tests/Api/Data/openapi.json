@@ -11668,11 +11668,11 @@
             "type": "string"
           },
           "description": {
+            "maxLength": 500,
             "type": [
               "null",
               "string"
-            ],
-            "maxLength": 500
+            ]
           },
           "display_order": {
             "type": [
@@ -12971,11 +12971,11 @@
         "type": "object",
         "properties": {
           "description": {
-            "maxLength": 500,
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "maxLength": 500
           },
           "display_order": {
             "type": [
