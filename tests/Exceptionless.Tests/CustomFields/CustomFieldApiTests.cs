@@ -188,7 +188,7 @@ public sealed class CustomFieldApiTests : IntegrationTestsBase
             .Post()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "event-custom-fields")
             .Content(new NewCustomFieldDefinition { Name = "field_overflow", IndexType = "keyword" })
-            .StatusCodeShouldBeBadRequest()
+            .StatusCodeShouldBeUnprocessableEntity()
         );
     }
 
@@ -259,7 +259,7 @@ public sealed class CustomFieldApiTests : IntegrationTestsBase
             .AsTestOrganizationUser()
             .Delete()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "event-custom-fields", definition.Id)
-            .StatusCodeShouldBeAccepted()
+            .StatusCodeShouldBeNoContent()
         );
 
         // Verify the field no longer appears in the active list (soft-deleted)
@@ -295,7 +295,7 @@ public sealed class CustomFieldApiTests : IntegrationTestsBase
             .Post()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "event-custom-fields")
             .Content(new NewCustomFieldDefinition { Name = "duplicate_field", IndexType = "keyword" })
-            .StatusCodeShouldBeBadRequest()
+            .ExpectedStatus(System.Net.HttpStatusCode.Conflict)
         );
     }
 
@@ -310,7 +310,7 @@ public sealed class CustomFieldApiTests : IntegrationTestsBase
             .Post()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "event-custom-fields")
             .Content(new NewCustomFieldDefinition { Name = "myfield", IndexType = "keyword" })
-            .StatusCodeShouldBeBadRequest()
+            .ExpectedStatus(System.Net.HttpStatusCode.Conflict)
         );
     }
 
@@ -325,7 +325,7 @@ public sealed class CustomFieldApiTests : IntegrationTestsBase
             .AsTestOrganizationUser()
             .Delete()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "event-custom-fields", definition.Id)
-            .StatusCodeShouldBeAccepted()
+            .StatusCodeShouldBeNoContent()
         );
 
         // Second delete — field is now hidden from queries (soft-deleted), returns 404.
@@ -639,7 +639,7 @@ public sealed class CustomFieldApiTests : IntegrationTestsBase
             .AsTestOrganizationUser()
             .Delete()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "event-custom-fields", definition.Id)
-            .StatusCodeShouldBeAccepted()
+            .StatusCodeShouldBeNoContent()
         );
     }
 
@@ -669,12 +669,12 @@ public sealed class CustomFieldApiTests : IntegrationTestsBase
             .AsTestOrganizationUser()
             .Delete()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "event-custom-fields", definition.Id)
-            .StatusCodeShouldBeAccepted()
+            .StatusCodeShouldBeNoContent()
         );
     }
 
     [Fact]
-    public async Task PostField_QuotaCountsOnlyActiveFields_SoftDeletedDoNotCount()
+    public async Task PostField_SoftDeletedFieldFreesActiveCapacityButNotLifetimeCapacity()
     {
         // Fill up to max-1 fields directly.
         int maxFields = 20;
@@ -697,50 +697,17 @@ public sealed class CustomFieldApiTests : IntegrationTestsBase
             .AsTestOrganizationUser()
             .Delete()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "event-custom-fields", lastField.Id)
-            .StatusCodeShouldBeAccepted()
+            .StatusCodeShouldBeNoContent()
         );
 
-        // Quota now has room for one more active field (soft-deleted do not count).
+        // Active capacity is available, but the retired slot still consumes lifetime capacity.
         await SendRequestAsync(r => r
             .AsTestOrganizationUser()
             .Post()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "event-custom-fields")
             .Content(new NewCustomFieldDefinition { Name = "replacement_field", IndexType = "keyword" })
-            .ExpectedStatus(System.Net.HttpStatusCode.Created)
+            .StatusCodeShouldBeUnprocessableEntity()
         );
-    }
-
-    [Fact]
-    public async Task PostField_AllowsSameNameAfterHardDelete()
-    {
-        // Ensure system fields are provisioned first (they occupy deterministic slots).
-        var eventCustomFieldService = GetService<EventCustomFieldService>();
-        await eventCustomFieldService.EnsureSystemFieldsAsync(SampleDataService.TEST_ORG_ID);
-
-        // After a field is hard-deleted (slot freed), the same name can be reused.
-        var original = await _customFieldDefinitionRepository.AddFieldAsync(
-            nameof(PersistentEvent), SampleDataService.TEST_ORG_ID, "reusable_field", "keyword");
-        int originalSlot = original.IndexSlot;
-
-        // Hard-delete directly through repository (bypasses the soft-delete work-item cycle).
-        await _customFieldDefinitionRepository.RemoveAsync(original, o => o.ImmediateConsistency());
-
-        // Creating a field with the same name must succeed and get a new (recycled) slot.
-        var replacement = await SendRequestAsAsync<CustomFieldDefinitionResponse>(r => r
-            .AsTestOrganizationUser()
-            .Post()
-            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "event-custom-fields")
-            .Content(new NewCustomFieldDefinition { Name = "reusable_field", IndexType = "keyword" })
-            .ExpectedStatus(System.Net.HttpStatusCode.Created)
-        );
-
-        Assert.NotNull(replacement);
-        Assert.Equal("reusable_field", replacement.Name);
-
-        // IndexSlot is not exposed via API (security), so verify recycling via repository.
-        var repoField = await _customFieldDefinitionRepository.GetByIdAsync(replacement.Id);
-        Assert.NotNull(repoField);
-        Assert.Equal(originalSlot, repoField.IndexSlot);
     }
 
     [Fact]
@@ -776,7 +743,7 @@ public sealed class CustomFieldApiTests : IntegrationTestsBase
             .AsTestOrganizationUser()
             .Delete()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "event-custom-fields", created.Id)
-            .StatusCodeShouldBeAccepted()
+            .StatusCodeShouldBeNoContent()
         );
 
         // PATCH on a soft-deleted field must return 404
@@ -805,7 +772,7 @@ public sealed class CustomFieldApiTests : IntegrationTestsBase
             .AsTestOrganizationUser()
             .Delete()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "event-custom-fields", created.Id)
-            .StatusCodeShouldBeAccepted()
+            .StatusCodeShouldBeNoContent()
         );
 
         // Second delete must return 404, not 200 or 409
@@ -898,19 +865,19 @@ public sealed class CustomFieldApiTests : IntegrationTestsBase
         for (int i = 0; i < maxFields - 1; i++)
         {
             var result = await service.CreateFieldAsync(
-                SampleDataService.TEST_ORG_ID, $"field_{i}", "keyword", maxFields,
+                SampleDataService.TEST_ORG_ID, $"field_{i}", "keyword", maxFields, maxFields,
                 cancellationToken: TestContext.Current.CancellationToken);
-            Assert.NotNull(result);
+            Assert.Equal(EventCustomFieldService.CreateFieldStatus.Created, result.Status);
         }
 
         // Fire two concurrent creates for the final slot
-        var task1 = service.CreateFieldAsync(SampleDataService.TEST_ORG_ID, "race_a", "keyword", maxFields,
+        var task1 = service.CreateFieldAsync(SampleDataService.TEST_ORG_ID, "race_a", "keyword", maxFields, maxFields,
             cancellationToken: TestContext.Current.CancellationToken);
-        var task2 = service.CreateFieldAsync(SampleDataService.TEST_ORG_ID, "race_b", "keyword", maxFields,
+        var task2 = service.CreateFieldAsync(SampleDataService.TEST_ORG_ID, "race_b", "keyword", maxFields, maxFields,
             cancellationToken: TestContext.Current.CancellationToken);
 
         var results = await Task.WhenAll(task1, task2);
-        var succeeded = results.Count(r => r is not null);
+        var succeeded = results.Count(r => r.Status == EventCustomFieldService.CreateFieldStatus.Created);
 
         // Exactly one must succeed; quota must not be exceeded
         Assert.Equal(1, succeeded);

@@ -28,7 +28,7 @@ The custom fields system is built on [Foundatio.Repositories.Elasticsearch custo
 | `bool` | Boolean | `idx.bool-{n}` | true, false, exists, missing |
 | `date` | Date | `idx.date-{n}` | equals, range, gt, gte, lt, lte, exists, missing |
 
-> **Note on `string` cost**: Each `string` slot creates **two** Elasticsearch field mappers (the `text` field and its `.keyword` sub-field), making it twice as expensive as other types toward Elasticsearch's `index.mapping.total_fields.limit` (default 1,000).
+> **Note on `string` cost**: Each `string` slot creates **two** Elasticsearch field mappers (the `text` field and its `.keyword` sub-field), making it twice as expensive as other types toward Elasticsearch's `index.mapping.total_fields.limit` (Exceptionless default 1,500).
 
 ### Choosing a Field Type
 
@@ -67,13 +67,11 @@ Legacy event documents can still contain the pre-pooled fields `idx.session-r`, 
 
 ### Slot Exhaustion and Elasticsearch Field Limits
 
-Elasticsearch's default `index.mapping.total_fields.limit` is **1,000 field mappers**. Physical slot fields are only created in the index mapping the first time a document with that slot is indexed. The maximum Elasticsearch fields from custom fields is bounded by the highest slot number ever used, multiplied by number of types, multiplied by 2 (for `string` types).
+Exceptionless configures `index.mapping.total_fields.limit` from `Elasticsearch:FieldsLimit`, which defaults to **1,500 field mappers** (Elasticsearch itself defaults to 1,000). Physical slot fields are only created in the index mapping the first time a document with that slot is indexed. The maximum Elasticsearch fields from custom fields is bounded by the highest slot number ever used, multiplied by number of types, multiplied by 2 (for `string` types).
 
-With a hard limit of 20 active fields per organization and slot recycling deferred beyond the retention window, slot numbers grow slowly over time. For a typical organization cycling through fields over years, the slot high-water mark remains very low (well under 100 per type). Across many organizations sharing the same physical ES index, the absolute maximum slot number approaches the highest number ever assigned to any organization — still bounded in practice.
+Two limits bound allocation per organization. `MaxFieldsPerOrganization` limits active user definitions, and `MaxLifetimeFieldsPerOrganization` limits all user definitions ever allocated, including soft-deleted definitions. Both default to 20; system fields are excluded. Existing organizations already above a reduced limit remain readable and indexable, but cannot allocate another slot.
 
-**Field churn analysis**: The worst-case scenario is an organization that continuously creates and deletes the maximum 20 fields. Each create/delete cycle permanently consumes one slot. For any single `(EntityType, TenantKey, IndexType)` combination, the slot high-water mark is bounded by the number of distinct fields ever created. Across 8 types and 20 active fields with unlimited churn, the theoretical maximum is `8 types × unlimited cycles` — but since fields created in Elasticsearch are shared across all tenants in the index, the practical concern is the *total* unique slot number across all active organizations, not per-organization. The active per-organization cap of 20 limits how many fields a single organization can consume in any given period.
-
-There is no application-level per-type slot ceiling — the framework relies on Elasticsearch's mapping limit (default 1,000 field mappers) as the ultimate guard. Retention-aware hard deletion and slot reclamation are not implemented; until they are, deleted definitions continue to reserve their slots.
+Retention-aware hard deletion and slot reclamation are not implemented. Deleted definitions continue to reserve their slots, and the lifetime ceiling prevents create/delete churn from growing the slot high-water mark without bound.
 
 ## Field Lifecycle
 
@@ -86,7 +84,7 @@ There is no application-level per-type slot ceiling — the framework relies on 
 5. **From this point on, new events with matching data keys are indexed into the slot**
 6. **Existing events are NOT backfilled** — they retain their original `Idx` content unchanged
 
-> **Search semantics on creation**: Custom field indexing applies only to events processed **after** the field definition is created. Historical events are not re-indexed. Both `data.fieldname:value` and `idx.fieldname:value` resolve to the new pooled slot, so neither expression searches a retained legacy named index. Re-ingest historical events if they must be searchable through the new definition.
+> **Search semantics on creation**: Custom field indexing applies only to events processed **after** the field definition is created. Historical events are not re-indexed. Both `data.fieldname:value` and `idx.fieldname:value` resolve to the new pooled slot, so neither expression searches a retained legacy named index. V1 has no built-in historical backfill. Elasticsearch reindexing alone is insufficient because it does not run the Exceptionless custom-field transform that populates pooled slots. Replaying original payloads can create duplicate events and requires an operator-owned deduplication plan.
 
 ### Upgrade Cutover from Automatic Extended-Data Indexing
 
@@ -97,7 +95,7 @@ Before this custom-field model, paid organizations automatically copied primitiv
 - Creating a definition indexes only events processed after creation; there is no automatic backfill.
 - The Exceptionless-owned session fields (`@ref:session`, `sessionend`, and `haserror`) are the narrow compatibility exception and continue to read both legacy and pooled storage during the retention window.
 
-Before upgrading a self-hosted installation, inventory saved views and integrations that filter arbitrary `data.*` fields. After upgrading, create definitions for the fields that still matter before resuming ingestion when uninterrupted forward indexing is required. Re-ingest retained historical events only when historical search continuity is worth the one-time cost.
+Before upgrading a self-hosted installation, inventory saved views and integrations that filter arbitrary `data.*` fields. After upgrading, create definitions for the fields that still matter before resuming ingestion when uninterrupted forward indexing is required. There is no supported general backfill in v1.
 
 ### Updating a Field
 
@@ -112,7 +110,7 @@ Deletion is a synchronous soft-delete designed to prevent **slot reuse corruptio
 3. The field name is freed from the slot system (a new field can use the same name)
 4. The slot number is **not** freed — it remains occupied
 5. New events no longer index data into this slot
-6. API returns 202 Accepted; the field disappears from the management UI
+6. API returns 204 No Content; the field disappears from the management UI
 
 > **Slot Reuse Safety**: If a slot is freed and immediately recycled for a new field, historical events within the retention window that had data for the old field will appear in queries for the new field. For example: delete "customer_id" (keyword-3), create "project_id" (gets keyword-3), then searching `project_id:acme` returns historical events where `customer_id` was `acme`. This is a data integrity violation.
 
@@ -140,11 +138,11 @@ The active field limit (`MaxFieldsPerOrganization`, default 20) counts only fiel
 - Not soft-deleted (`IsDeleted = false`)
 - Not system fields (`sessionend`, `haserror`, `@ref:session`)
 
-Soft-deleted fields awaiting cleanup do **not** count toward the active quota. A user who has 20 active fields can delete some and immediately create replacements — the quota check reflects the current active state.
+Soft-deleted fields do **not** count toward the active quota, but they do count toward `MaxLifetimeFieldsPerOrganization` (default 20). A deleted field therefore does not guarantee that another slot can be allocated.
 
 ### Deletion Blocked by Saved Views
 
-If a custom field is referenced in any saved view filter for the organization, deletion is blocked with HTTP 409 Conflict. The filter is checked using a regex that matches either `idx.{fieldName}` or `data.{fieldName}` tokens in the filter string. Users must remove the field from all saved view filters before deletion proceeds.
+If a custom field is referenced in any saved view filter for the organization, deletion is blocked with HTTP 409 Conflict. References are taken from the canonical parsed query tree, so quoted values and escaped text do not create false positives. Users must remove the logical `idx.{fieldName}` or `data.{fieldName}` reference from all saved views before deletion proceeds.
 
 ## Plan Restrictions
 
@@ -161,9 +159,11 @@ Custom fields require a paid plan. Organizations on the free plan receive HTTP 4
 ## Elasticsearch Mapping Considerations
 
 - Custom field slot templates are registered via `AddStandardCustomFieldTypes()` in `EventIndex`
+- Startup applies and validates all eight typed templates on every retained event index before readiness; legacy suffix templates remain during mixed-version rollout
+- An incompatible existing typed-slot mapping is a rollout blocker that requires an explicit migration; Elasticsearch cannot safely change an existing field type in place
 - Templates use the pattern `idx.{type}-*` (e.g., `idx.keyword-*`, `idx.double-*`)
 - Elasticsearch creates field mappings dynamically on first document write — unused slots have zero mapping cost
-- Monitor total field count relative to `index.mapping.total_fields.limit` (default 1,000) in high-volume deployments
+- Monitor total field count relative to `index.mapping.total_fields.limit` (`Elasticsearch:FieldsLimit`, Exceptionless default 1,500) in high-volume deployments
 - The `string` type creates 2 field mappers per slot; all other types create 1 field mapper per slot
 
 ## Common Questions
@@ -172,7 +172,7 @@ Custom fields require a paid plan. Organizations on the free plan receive HTTP 4
 Yes, immediately. After soft-deletion, the field name is freed and can be used for a new field. The new field gets a **new** slot number (not the old one), which prevents historical events for the deleted field from appearing in queries for the new field. Slot numbers grow monotonically and are not recycled while retention-aware cleanup remains unimplemented.
 
 **Does the 20-field quota include soft-deleted fields?**
-No. The quota counts only *active* (non-deleted, non-system) fields. Soft-deleted fields awaiting cleanup are excluded. You can delete fields and immediately create replacements up to the quota.
+The active quota does not. The lifetime quota does. With both defaults set to 20, a soft-deleted field frees active capacity but not lifetime slot capacity.
 
 **Will deleting a field break existing queries?**
 Saved view filters that reference the field are blocked at deletion time. Custom code cannot query `idx.keyword-N:value` directly because raw slot access is blocked. The Exceptionless query builder translates active field names to slot paths automatically.
@@ -184,7 +184,16 @@ No. The active quota (`MaxFieldsPerOrganization = 20`) is a total across all typ
 Existing field definitions and indexed data are preserved. The custom fields management UI becomes read-only. New field creation requires re-upgrading.
 
 **Can I have more than 20 fields?**
-The default limit is 20 per organization. This can be increased via the `MaxFieldsPerOrganization` configuration key for self-hosted deployments.
+Both limits default to 20 per organization. Self-hosted deployments can raise `MaxFieldsPerOrganization` and `MaxLifetimeFieldsPerOrganization`; the lifetime limit must be greater than or equal to the active limit. When only the active key is specified, the lifetime limit defaults to that value.
 
 **Can slot numbers grow unboundedly from field churn?**
-Yes. Each delete-then-recreate cycle consumes another slot number because reclamation is not currently implemented. Operators should monitor Elasticsearch's total-field mapping limit, particularly for deployments whose organizations churn through many custom-field definitions.
+No for a single organization under the default lifetime ceiling. Slot reclamation is still unavailable, so operators should monitor Elasticsearch total-field headroom across all organizations and retained daily indices.
+
+## Production Rollout and Recovery
+
+1. Deploy ingestion and API instances first. Every instance gates readiness on the shared schema-and-day marker; one distributed-lock holder installs and validates retained-index mappings, and waiting instances proceed only after that succeeds. Drain older writers before exposing typed writes.
+2. Seed required definitions only after the backend fleet is current. Expose the management UI after exact, range, and facet canaries succeed.
+3. Monitor the low-cardinality custom-field diagnostics for mapping/provision failures, conversion skips, lifetime-limit rejection, and Elasticsearch field-count headroom. Alert on any mapping or provisioning failure.
+4. On failure, stop further rollout and definition mutations, preserve definitions and raw event data, fix forward, and repeat the canary. Never hard-delete definitions or reclaim slots during incident response.
+
+The two-phase indexing transform builds replacement managed slots away from the document. New-event mapping failures preserve raw `Data` while stripping untrusted managed slots; saved-event infrastructure failures abort the write rather than persisting a de-indexed event.

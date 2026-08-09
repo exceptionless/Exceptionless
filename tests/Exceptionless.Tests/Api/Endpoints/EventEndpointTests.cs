@@ -26,6 +26,7 @@ using Exceptionless.Web.Utility;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch.CustomFields;
 using Foundatio.Repositories.Models;
 using Foundatio.Serializer;
 using Foundatio.Storage;
@@ -2448,11 +2449,13 @@ public partial class EventEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public Task GetEvents_WithCustomFieldFilter_Returns426_ForFreeOrganization()
+    public async Task GetEvents_WithCustomFieldFilter_Returns426_ForFreeOrganization()
     {
-        // A free org searching on an idx.* custom field should get 426 Upgrade Required.
         string orgId = SampleDataService.FREE_ORG_ID;
-        return SendRequestAsync(r => r
+        await GetService<ICustomFieldDefinitionRepository>().AddFieldAsync(
+            nameof(PersistentEvent), orgId, "my_field", "keyword");
+
+        await SendRequestAsync(r => r
             .AsFreeOrganizationUser()
             .AppendPaths("organizations", orgId, "events")
             .QueryString("filter", "idx.my_field:some_value")

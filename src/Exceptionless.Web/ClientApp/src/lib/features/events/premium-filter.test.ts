@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { filterUsesPremiumFeatures, getSearchResourceForPathname, savedFilterUsesPremiumFeatures } from './premium-filter';
+import { filterUsesPremiumFeatures, getSearchResourceForPathname } from './premium-filter';
 
 describe('filterUsesPremiumFeatures', () => {
     it.each([
@@ -97,25 +97,5 @@ describe('getSearchResourceForPathname', () => {
 
     it.each(['/event', '/stream', '/sessions'])('identifies event search routes: %s', (pathname) => {
         expect(getSearchResourceForPathname(pathname)).toBe('event');
-    });
-});
-
-describe('savedFilterUsesPremiumFeatures', () => {
-    it('preserves a stored premium classification', () => {
-        expect(savedFilterUsesPremiumFeatures('status:open', true, 'event')).toBe(true);
-    });
-
-    it('classifies legacy saved views from their filter', () => {
-        expect(savedFilterUsesPremiumFeatures('data.customer_id:42', false, 'event')).toBe(true);
-        expect(savedFilterUsesPremiumFeatures('idx.customer_id:42', undefined, 'event')).toBe(true);
-    });
-
-    it('keeps legacy saved views with free filters free', () => {
-        expect(savedFilterUsesPremiumFeatures('status:open type:error', false, 'event')).toBe(false);
-    });
-
-    it('classifies legacy stack views using stack-mode event rules', () => {
-        expect(savedFilterUsesPremiumFeatures('stack:ABC123', false, 'event-stack')).toBe(false);
-        expect(savedFilterUsesPremiumFeatures('title:"out of memory"', false, 'event-stack')).toBe(true);
     });
 });

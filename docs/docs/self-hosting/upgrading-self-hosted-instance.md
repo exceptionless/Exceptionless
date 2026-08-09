@@ -16,7 +16,7 @@ After upgrading:
 
 1. Create definitions for the extended-data fields that must remain searchable.
 2. If uninterrupted forward indexing matters, create those definitions before resuming event ingestion.
-3. Re-ingest retained events only if historical search continuity is required; definitions do not backfill or reindex existing events.
+3. Plan for forward-only indexing. V1 has no built-in historical backfill, and Elasticsearch reindexing alone does not populate pooled slots. Replaying original payloads is operator-owned and requires a deduplication strategy because it can create duplicate events.
 
 Existing legacy index values remain in Elasticsearch until their events age out, but new custom-field queries use pooled slots and do not search those legacy values. Exceptionless-owned session fields retain dual-read compatibility during this transition.
 

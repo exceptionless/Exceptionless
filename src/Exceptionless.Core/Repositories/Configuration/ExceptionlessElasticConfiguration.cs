@@ -8,6 +8,7 @@ using Exceptionless.Core.Serialization;
 using Foundatio.Caching;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Jobs;
+using Foundatio.Lock;
 using Foundatio.Messaging;
 using Foundatio.Queues;
 using Foundatio.Repositories.Elasticsearch;
@@ -24,6 +25,8 @@ namespace Exceptionless.Core.Repositories.Configuration;
 public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IStartupAction
 {
     private readonly AppOptions _appOptions;
+    private readonly ICacheClient _cacheClient;
+    private readonly TimeProvider _timeProvider;
 
     public ExceptionlessElasticConfiguration(
         AppOptions appOptions,
@@ -38,6 +41,8 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
     ) : base(workItemQueue, cacheClient, messageBus, serializer, timeProvider, resiliencePolicyProvider, loggerFactory)
     {
         _appOptions = appOptions;
+        _cacheClient = cacheClient;
+        _timeProvider = timeProvider;
 
         _logger.LogInformation("All new indexes will be created with {ElasticsearchNumberOfShards} Shards and {ElasticsearchNumberOfReplicas} Replicas", _appOptions.ElasticsearchOptions.NumberOfShards, _appOptions.ElasticsearchOptions.NumberOfReplicas);
         AddIndex(Stacks = new StackIndex(this));
@@ -54,12 +59,33 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
         AddIndex(WebHooks = new WebHookIndex(this));
     }
 
-    public Task RunAsync(CancellationToken shutdownToken = default)
+    public async Task RunAsync(CancellationToken shutdownToken = default)
     {
         if (_appOptions.ElasticsearchOptions.DisableIndexConfiguration)
-            return Task.CompletedTask;
+            return;
 
-        return ConfigureIndexesAsync();
+        await ConfigureIndexesAsync();
+
+        // This schema gate is deliberately independent of Foundatio's numeric index-version
+        // configuration marker. Typed pooled slots do not require a v2 reindex, but every
+        // retained v1 daily partition must receive the templates before the host is ready.
+        // The date is part of the marker so the first host started each UTC day verifies the
+        // newly-created daily partition. A new schema version must use a new marker version.
+        string mappingMarkerKey = $"event-custom-field-mappings:v1:{_timeProvider.GetUtcNow():yyyyMMdd}";
+        if ((await _cacheClient.GetAsync<bool>(mappingMarkerKey)).HasValue)
+            return;
+
+        await using var mappingLock = await _lockProvider.AcquireAsync(
+            $"{mappingMarkerKey}:lock",
+            TimeSpan.FromMinutes(15),
+            true,
+            shutdownToken);
+
+        if ((await _cacheClient.GetAsync<bool>(mappingMarkerKey)).HasValue)
+            return;
+
+        await Events.EnsureCustomFieldMappingsAsync();
+        await _cacheClient.SetAsync(mappingMarkerKey, true, TimeSpan.FromDays(2));
     }
 
     public override void ConfigureGlobalQueryBuilders(ElasticQueryBuilder builder)

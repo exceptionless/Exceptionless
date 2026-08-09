@@ -1,4 +1,5 @@
 using System.Globalization;
+using Exceptionless;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Foundatio.Extensions.Hosting.Startup;
@@ -41,6 +42,9 @@ public class EventCustomFieldService : IStartupAction
         SessionHasErrorField
     ];
 
+    public static string GetSavedViewConsistencyLockName(string organizationId)
+        => $"custom-field-saved-views:{organizationId}";
+
     /// <summary>
     /// The set of index types registered by <c>AddStandardCustomFieldTypes()</c> in <c>EventIndex</c>.
     /// Only these types are supported for custom field definitions; any other type string would result
@@ -78,10 +82,23 @@ public class EventCustomFieldService : IStartupAction
 
     private async Task EnsureSystemFieldsAsync(string organizationId, CancellationToken cancellationToken)
     {
-        await using var provisioningLock = await _lockProvider.AcquireAsync(
+        try
+        {
+            await EnsureSystemFieldsCoreAsync(organizationId, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            AppDiagnostics.CustomFieldProvisioningFailures.Add(1);
+            throw;
+        }
+    }
+
+    private async Task EnsureSystemFieldsCoreAsync(string organizationId, CancellationToken cancellationToken)
+    {
+        await using var provisioningLock = await _lockProvider.TryAcquireAsync(
             $"custom-field-system:{organizationId}",
             TimeSpan.FromSeconds(30),
-            cancellationToken: cancellationToken);
+            TimeSpan.FromSeconds(5));
         if (provisioningLock is null)
             throw new TimeoutException("System custom field provisioning is already in progress for this organization. Please try again.");
 
@@ -143,13 +160,14 @@ public class EventCustomFieldService : IStartupAction
     /// <summary>
     /// Creates a new custom field definition under a distributed lock so concurrent requests
     /// from the same organization cannot race past the quota check.
-    /// Returns null when the field cannot be created (quota exceeded or duplicate name).
+    /// Returns a typed outcome so callers can distinguish duplicate names from capacity limits.
     /// </summary>
-    public async Task<CustomFieldDefinition?> CreateFieldAsync(
+    public async Task<CreateFieldResult> CreateFieldAsync(
         string organizationId,
         string name,
         string indexType,
         int maxFieldsPerOrganization,
+        int maxLifetimeFieldsPerOrganization,
         string? description = null,
         int? displayOrder = null,
         CancellationToken cancellationToken = default)
@@ -157,30 +175,47 @@ public class EventCustomFieldService : IStartupAction
         // Ensure system fields are provisioned before user-defined fields so they occupy slot 1 of their type.
         await EnsureSystemFieldsAsync(organizationId, cancellationToken);
 
-        await using var fieldLock = await _lockProvider.AcquireAsync($"custom-field-create:{organizationId}", TimeSpan.FromSeconds(30), cancellationToken: cancellationToken);
+        await using var fieldLock = await _lockProvider.TryAcquireAsync(
+            $"custom-field-create:{organizationId}", TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(5));
         if (fieldLock is null)
         {
             _logger.LogWarning("Could not acquire custom field creation lock for organization {OrganizationId}", organizationId);
             throw new TimeoutException("Custom field creation is already in progress for this organization. Please try again.");
         }
 
-        // Re-read the field mapping inside the lock for an accurate count.
-        var existingPage = await _customFieldDefinitionRepository.FindByTenantAsync(nameof(PersistentEvent), organizationId);
-        var allActive = new List<CustomFieldDefinition>(existingPage.Documents);
-        while (await existingPage.NextPageAsync())
-            allActive.AddRange(existingPage.Documents);
+        // Re-read active and soft-deleted definitions inside the lock. Soft-deleted definitions
+        // still own their physical slot and therefore count against the lifetime mapping budget.
+        var existingPage = await _customFieldDefinitionRepository.FindAsync(
+            q => q
+                .FieldEquals(field => field.EntityType, nameof(PersistentEvent))
+                .FieldEquals(field => field.TenantKey, organizationId),
+            o => o.IncludeSoftDeletes().SearchAfterPaging().PageLimit(1000));
+        var allDefinitions = new List<CustomFieldDefinition>();
+        do
+        {
+            allDefinitions.AddRange(existingPage.Documents);
+        } while (await existingPage.NextPageAsync());
+
+        var activeDefinitions = allDefinitions.Where(field => !field.IsDeleted).ToList();
+
+        if (activeDefinitions.Any(field => String.Equals(field.Name, name, StringComparison.OrdinalIgnoreCase)))
+            return new CreateFieldResult(CreateFieldStatus.Duplicate);
 
         // System fields are not counted against the user quota.
-        var userDefinedActiveCount = allActive.Count(f => !IsSystemField(f.Name));
+        var userDefinedActiveCount = activeDefinitions.Count(field => !IsSystemField(field.Name));
         if (userDefinedActiveCount >= maxFieldsPerOrganization)
-            return null;
+            return new CreateFieldResult(CreateFieldStatus.ActiveLimitReached);
 
-        // Case-insensitive duplicate check inside the lock.
-        if (allActive.Any(f => String.Equals(f.Name, name, StringComparison.OrdinalIgnoreCase)))
-            return null;
+        var userDefinedLifetimeCount = allDefinitions.Count(field => !IsSystemField(field.Name));
+        if (userDefinedLifetimeCount >= maxLifetimeFieldsPerOrganization)
+        {
+            AppDiagnostics.CustomFieldLifetimeLimitReached.Add(1);
+            return new CreateFieldResult(CreateFieldStatus.LifetimeLimitReached);
+        }
 
-        return await _customFieldDefinitionRepository.AddFieldAsync(
+        var definition = await _customFieldDefinitionRepository.AddFieldAsync(
             nameof(PersistentEvent), organizationId, name, indexType, description, displayOrder ?? 0);
+        return new CreateFieldResult(CreateFieldStatus.Created, definition);
     }
 
     private async Task OnDocumentsChangingAsync(object sender, DocumentsChangeEventArgs<PersistentEvent> args)
@@ -192,16 +227,12 @@ public class EventCustomFieldService : IStartupAction
             return;
 
         var documentsByOrganization = args.Documents
-            .Select(d => d.Value)
-            .OfType<PersistentEvent>()
-            .GroupBy(d => d.OrganizationId)
+            .Where(document => document.Value is not null)
+            .GroupBy(document => document.Value.OrganizationId)
             .Where(g => !String.IsNullOrEmpty(g.Key));
 
         foreach (var organizationGroup in documentsByOrganization)
         {
-            foreach (var document in organizationGroup)
-                ClearCustomFieldSlots(document);
-
             IDictionary<string, CustomFieldDefinition>? fieldMapping = null;
             try
             {
@@ -217,30 +248,59 @@ public class EventCustomFieldService : IStartupAction
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
+                AppDiagnostics.CustomFieldMappingFailures.Add(1);
                 _logger.LogError(ex, "Error loading custom field definitions for organization {OrganizationId}", organizationGroup.Key);
-                continue;
+
+                if (args.ChangeType == ChangeType.Added)
+                {
+                    foreach (var document in organizationGroup)
+                        ClearCustomFieldSlots(document.Value);
+
+                    continue;
+                }
+
+                // Never persist a saved event after stripping or partially rebuilding its slots.
+                // The caller can retry once the definition repository is available again.
+                throw;
             }
 
             foreach (var document in organizationGroup)
             {
                 try
                 {
-                    ProcessEventCustomFields(document, fieldMapping);
+                    document.Value.Idx = BuildCustomFieldSlots(
+                        document.Value,
+                        fieldMapping,
+                        preserveUnmanagedSlots: args.ChangeType != ChangeType.Added);
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
-                    _logger.LogError(ex, "Error processing custom fields for event {EventId}", document.Id);
+                    AppDiagnostics.CustomFieldProcessingFailures.Add(1);
+                    _logger.LogError(ex, "Error processing custom fields for event {EventId}", document.Value.Id);
+
+                    if (args.ChangeType == ChangeType.Added)
+                    {
+                        ClearCustomFieldSlots(document.Value);
+                        continue;
+                    }
+
+                    throw;
                 }
             }
         }
     }
 
-    private void ProcessEventCustomFields(PersistentEvent ev, IDictionary<string, CustomFieldDefinition> fieldMapping)
+    private DataDictionary? BuildCustomFieldSlots(
+        PersistentEvent ev,
+        IDictionary<string, CustomFieldDefinition> fieldMapping,
+        bool preserveUnmanagedSlots)
     {
-        if (fieldMapping.Count == 0 || ev.Data is null || ev.Data.Count == 0)
-            return;
+        var idx = !preserveUnmanagedSlots || ev.Idx is null
+            ? new DataDictionary()
+            : new DataDictionary(ev.Idx.Where(field => !IsManagedCustomFieldSlotKey(field.Key)));
 
-        var idx = ((IHaveVirtualCustomFields)ev).Idx;
+        if (fieldMapping.Count == 0 || ev.Data is null || ev.Data.Count == 0)
+            return idx.Count == 0 ? null : idx;
 
         // Iterate the field mapping (max ~20 entries) rather than all of ev.Data
         // to avoid allocating an intermediate dictionary for events with large payloads.
@@ -262,34 +322,27 @@ public class EventCustomFieldService : IStartupAction
                 var value = ConvertValue(rawValue, definition.IndexType);
                 if (value is not null)
                     idx[definition.GetIdxName()] = value;
+                else
+                    AppDiagnostics.CustomFieldConversionSkips.Add(1, new KeyValuePair<string, object?>("index_type", definition.IndexType));
             }
             catch (Exception ex) when (ex is FormatException or InvalidCastException or OverflowException)
             {
+                AppDiagnostics.CustomFieldConversionSkips.Add(1, new KeyValuePair<string, object?>("index_type", definition.IndexType));
                 _logger.LogDebug(ex, "Skipping custom field {FieldName}: type mismatch for index type {IndexType}", fieldName, definition.IndexType);
             }
         }
 
-        if (ev.Idx?.Count == 0)
-            ev.Idx = null;
+        return idx.Count == 0 ? null : idx;
     }
 
     private static void ClearCustomFieldSlots(PersistentEvent ev)
     {
-        if (ev.Idx is null || ev.Idx.Count == 0)
-            return;
-
-        // Only clear new-format managed slot keys (type-N, e.g. keyword-1, date-2).
-        // Legacy keys (e.g. sessionend-d from pre-PR data) are preserved so that ES queries
-        // that check both formats (GetOpenSessionsAsync) remain backward-compatible.
-        // Client-injected new-format slots are therefore stripped before server re-population.
-        foreach (var idxKey in ev.Idx.Keys.Where(IsManagedCustomFieldSlotKey).ToArray())
-            ev.Idx.Remove(idxKey);
-
-        if (ev.Idx.Count == 0)
-            ev.Idx = null;
+        // Idx is server-managed. New events must never persist client-supplied pooled or
+        // legacy compatibility slots; saved legacy events preserve unmanaged slots above.
+        ev.Idx = null;
     }
 
-    private static bool IsManagedCustomFieldSlotKey(string idxKey)
+    public static bool IsManagedCustomFieldSlotKey(string idxKey)
     {
         if (String.IsNullOrWhiteSpace(idxKey))
             return false;
@@ -386,9 +439,9 @@ public class EventCustomFieldService : IStartupAction
             byte b => (int)b,
             sbyte sb => (int)sb,
             long l when l is >= Int32.MinValue and <= Int32.MaxValue => (int)l,
-            double d when Double.IsFinite(d) && d is >= Int32.MinValue and <= Int32.MaxValue => (int)d,
-            float f when Single.IsFinite(f) && f is >= Int32.MinValue and <= Int32.MaxValue => (int)f,
-            decimal m when m is >= Int32.MinValue and <= Int32.MaxValue => (int)m,
+            double d when Double.IsFinite(d) && d is >= Int32.MinValue and <= Int32.MaxValue && Math.Truncate(d) == d => (int)d,
+            float f when Single.IsFinite(f) && f is >= Int32.MinValue and <= Int32.MaxValue && MathF.Truncate(f) == f => (int)f,
+            decimal m when m is >= Int32.MinValue and <= Int32.MaxValue && Decimal.Truncate(m) == m => (int)m,
             string s when Int32.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) => parsed,
             _ => null
         };
@@ -403,9 +456,9 @@ public class EventCustomFieldService : IStartupAction
             short s => (long)s,
             byte b => (long)b,
             sbyte sb => (long)sb,
-            double d when Double.IsFinite(d) && d >= (double)Int64.MinValue && d < (double)Int64.MaxValue => (long)d,
-            float f when Single.IsFinite(f) && f >= (float)Int64.MinValue && f < (float)Int64.MaxValue => (long)f,
-            decimal m when m is >= Int64.MinValue and <= Int64.MaxValue => (long)m,
+            double d when Double.IsFinite(d) && d >= Int64.MinValue && d < Int64.MaxValue && Math.Truncate(d) == d => (long)d,
+            float f when Single.IsFinite(f) && f >= Int64.MinValue && f < Int64.MaxValue && MathF.Truncate(f) == f => (long)f,
+            decimal m when m is >= Int64.MinValue and <= Int64.MaxValue && Decimal.Truncate(m) == m => (long)m,
             string s when Int64.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) => parsed,
             _ => null
         };
@@ -417,8 +470,7 @@ public class EventCustomFieldService : IStartupAction
         {
             float f when Single.IsFinite(f) => f,
             int i => (float)i,
-            // long range must be checked at runtime; Single.MinValue/MaxValue don't fit in long constants
-            long l => l >= -16777216L && l <= 16777216L ? (float)l : (object?)null,
+            long l => (float)l,
             double d when Double.IsFinite(d) && d is >= Single.MinValue and <= Single.MaxValue => (float)d,
             decimal m => (float)m,
             string s when Single.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed) && Single.IsFinite(parsed) => parsed,
@@ -473,6 +525,15 @@ public class EventCustomFieldService : IStartupAction
         if (name.StartsWith('@'))
             return false;
 
+        // Physical pooled slots and legacy compatibility slots are implementation details.
+        // Allowing a logical definition with one of these names would make idx.<name>
+        // ambiguous or unqueryable.
+        if (IsManagedCustomFieldSlotKey(name)
+            || SystemFields.Any(field => String.Equals(field.LegacyIdxField, name, StringComparison.OrdinalIgnoreCase)))
+        {
+            return false;
+        }
+
         // Only ASCII alphanumeric, underscore, dot, and dash — no Unicode identifiers
         return name.All(c => Char.IsAsciiLetterOrDigit(c) || c == '_' || c == '.' || c == '-');
     }
@@ -505,4 +566,14 @@ public class EventCustomFieldService : IStartupAction
     }
 
     public sealed record SystemFieldDescriptor(string Name, string IndexType, string IdxField, string LegacyIdxField);
+
+    public enum CreateFieldStatus
+    {
+        Created,
+        Duplicate,
+        ActiveLimitReached,
+        LifetimeLimitReached
+    }
+
+    public sealed record CreateFieldResult(CreateFieldStatus Status, CustomFieldDefinition? Definition = null);
 }

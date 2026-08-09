@@ -58,10 +58,6 @@ export function getSearchResourceForPathname(pathname: string): SearchResource {
     return /(?:^|\/)stack(?:\/|$)/.test(pathname) ? 'event-stack' : 'event';
 }
 
-export function savedFilterUsesPremiumFeatures(filter: null | string | undefined, storedValue: boolean | undefined, resource: SearchResource): boolean {
-    return storedValue === true || filterUsesPremiumFeatures(filter, resource);
-}
-
 /**
  * Extracts field names from a Lucene-style filter string.
  * Matches patterns like `field:value` or `field:(value1 OR value2)`.

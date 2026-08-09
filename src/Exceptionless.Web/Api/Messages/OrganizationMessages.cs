@@ -21,7 +21,7 @@ public record GetPlans(string Id, HttpContext Context);
 public record ChangeOrganizationPlan(string Id, ChangePlanRequest? Model, string? PlanId, string? StripeToken, string? Last4, string? CouponId, HttpContext Context);
 public record GetEventCustomFields(string Id, HttpContext Context);
 public record CreateEventCustomField(string Id, NewCustomFieldDefinition Field, HttpContext Context);
-public record UpdateEventCustomField(string Id, string FieldId, UpdateCustomFieldDefinition Field, HttpContext Context);
+public record UpdateEventCustomField(string Id, string FieldId, Delta<UpdateCustomFieldDefinition> Changes, HttpContext Context);
 public record DeleteEventCustomField(string Id, string FieldId, HttpContext Context);
 public record AddOrganizationUser(string Id, string Email, HttpContext Context);
 public record RemoveOrganizationUser(string Id, string Email, HttpContext Context);

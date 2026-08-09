@@ -1,4 +1,6 @@
 <script lang="ts">
+    import type { CustomFieldDefinition } from '$features/organizations/custom-fields';
+
     import { deletePromotedTab } from '$features/projects/api.svelte';
     import { toast } from 'svelte-sonner';
 
@@ -7,12 +9,13 @@
     import ExtendedDataItem from '../extended-data-item.svelte';
 
     interface Props {
+        customFields?: CustomFieldDefinition[];
         demoted: (name: string) => void;
         event: PersistentEvent;
         title: string;
     }
 
-    let { demoted, event, title }: Props = $props();
+    let { customFields, demoted, event, title }: Props = $props();
 
     const demoteTab = deletePromotedTab({
         route: {
@@ -32,4 +35,5 @@
     }
 </script>
 
-<ExtendedDataItem data={event.data?.[title]} demote={onDemote} isPromoted={true} showTitle={false} {title}></ExtendedDataItem>
+<ExtendedDataItem {customFields} data={event.data?.[title]} demote={onDemote} isPromoted={true} organizationId={event.organization_id} showTitle={false} {title}
+></ExtendedDataItem>

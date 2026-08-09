@@ -65,6 +65,15 @@ Content-Type: application/json
     "description": "External customer identifier"
 }
 
+### Clear Event Custom Field Description
+PATCH {{apiUrl}}/organizations/{{organizationId}}/event-custom-fields/{{newEventCustomField.response.body.$.id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "description": null
+}
+
 ### Delete Event Custom Field
 DELETE {{apiUrl}}/organizations/{{organizationId}}/event-custom-fields/{{newEventCustomField.response.body.$.id}}
 Authorization: Bearer {{token}}

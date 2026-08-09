@@ -8,6 +8,7 @@ public static class McpErrorCodes
 {
     public const string ContextMismatch = "context_mismatch";
     public const string ContextRequired = "context_required";
+    public const string CustomFieldScopeRequired = "custom_field_scope_required";
     public const string Forbidden = "forbidden";
     public const string InvalidClientPlatform = "invalid_client_platform";
     public const string InvalidCursor = "invalid_cursor";
@@ -55,6 +56,11 @@ public static class McpErrors
             ["organizations"] = organizations,
             ["projects"] = projects
         });
+    }
+
+    public static McpErrorInfo CustomFieldScopeRequired(string message)
+    {
+        return new McpErrorInfo(McpErrorCodes.CustomFieldScopeRequired, message);
     }
 
     public static McpErrorInfo Forbidden(string message, string requiredScope)

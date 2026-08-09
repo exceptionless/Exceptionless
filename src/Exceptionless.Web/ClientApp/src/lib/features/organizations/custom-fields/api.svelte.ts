@@ -9,7 +9,7 @@ import { accessToken } from '$features/auth/index.svelte';
 import { useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 
-import { type CustomFieldDefinition, type NewCustomFieldDefinition, parseIndexType, type UpdateCustomFieldDefinition } from './models';
+import { type CustomFieldDefinition, type NewCustomFieldDefinition, parseApiIndexType, type UpdateCustomFieldDefinition } from './models';
 
 export const queryKeys = {
     customFields: (organizationId: string | undefined) => ['Organization', organizationId, 'custom-fields'] as const,
@@ -110,7 +110,7 @@ function mapApiDefinition(definition: ApiCustomFieldDefinition): CustomFieldDefi
         description: definition.description ?? undefined,
         displayOrder: definition.display_order,
         id: definition.id,
-        indexType: parseIndexType(definition.index_type),
+        indexType: parseApiIndexType(definition.index_type),
         name: definition.name,
         updatedUtc: definition.updated_utc
     };

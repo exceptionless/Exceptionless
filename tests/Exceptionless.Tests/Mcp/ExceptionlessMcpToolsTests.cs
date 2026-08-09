@@ -11,6 +11,7 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Mcp;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch.CustomFields;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Serializer;
 using Microsoft.AspNetCore.Http;
@@ -418,7 +419,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
 
         Assert.False(result.Ok);
         Assert.Equal(McpErrorCodes.UnknownFilterField, result.Error?.Code);
-        Assert.Equal("Unknown filter field 'idx.customer.email-s'.", result.Error?.Message);
+        Assert.Contains("not an active configured custom field", result.Error?.Message);
         Assert.Null(result.Data);
     }
 
@@ -428,7 +429,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     [InlineData("+data.Customer.plan:Business")]
     [InlineData("data.customer_plan:Business")]
     [InlineData("data.abcdefghijklmnopqrstuvwxyz:Business")]
-    public async Task SearchEventsAsync_UnindexableCustomDataFilter_ReturnsUnknownFilterField(string filter)
+    public async Task SearchEventsAsync_UnconfiguredCustomDataFilter_ReturnsUnknownFilterField(string filter)
     {
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
 
@@ -436,14 +437,16 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
 
         Assert.False(result.Ok);
         Assert.Equal(McpErrorCodes.UnknownFilterField, result.Error?.Code);
-        Assert.Contains("top-level scalar custom data field", result.Error?.Message);
-        Assert.Equal("data.<field>", result.Error?.Details?["allowedDynamicFieldPattern"]);
+        Assert.Contains("active configured custom field", result.Error?.Message);
+        Assert.Equal("data.<configured-field> or idx.<configured-field>", result.Error?.Details?["allowedDynamicFieldPattern"]);
         Assert.Null(result.Data);
     }
 
     [Fact]
     public async Task SearchEventsAsync_IndexableCustomDataFilter_ReturnsMatchingEvent()
     {
+        await GetService<ICustomFieldDefinitionRepository>().AddFieldAsync(
+            nameof(PersistentEvent), TestConstants.OrganizationId, "plan", "keyword");
         var (_, events) = await CreateDataAsync(d => d.Event()
             .TestProject()
             .Mutate(ev =>
@@ -1438,6 +1441,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
             _tokenRepository,
             GetService<StackQueryValidator>(),
             GetService<PersistentEventQueryValidator>(),
+            GetService<EventCustomFieldQueryPolicy>(),
             contextService,
             GetService<SemanticVersionParser>(),
             GetService<ITextSerializer>(),

@@ -1,14 +1,15 @@
 using System.ComponentModel.DataAnnotations;
-using System.Text.RegularExpressions;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Services;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models;
+using Foundatio.Lock;
 using Foundatio.Mediator;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.CustomFields;
@@ -22,6 +23,9 @@ public sealed class EventCustomFieldHandler(
     IOrganizationRepository organizationRepository,
     ICustomFieldDefinitionRepository customFieldDefinitionRepository,
     ISavedViewRepository savedViewRepository,
+    ILockProvider lockProvider,
+    PersistentEventQueryValidator eventQueryValidator,
+    EventStackQueryValidator eventStackQueryValidator,
     AppOptions options)
 {
     public async Task<Result<IReadOnlyCollection<CustomFieldDefinitionResponse>>> Handle(GetEventCustomFields message)
@@ -39,7 +43,10 @@ public sealed class EventCustomFieldHandler(
                 .Select(CustomFieldDefinitionResponse.FromDefinition));
         } while (await results.NextPageAsync());
 
-        return fields;
+        return fields
+            .OrderBy(field => field.DisplayOrder)
+            .ThenBy(field => field.Name, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
     }
 
     public async Task<Result<CustomFieldDefinitionResponse>> Handle(CreateEventCustomField message)
@@ -54,14 +61,15 @@ public sealed class EventCustomFieldHandler(
         if (EventCustomFieldService.IsSystemField(message.Field.Name))
             return Result.BadRequest($"'{message.Field.Name}' is a reserved system field and cannot be created manually.");
 
-        CustomFieldDefinition? definition;
+        EventCustomFieldService.CreateFieldResult createResult;
         try
         {
-            definition = await eventCustomFieldService.CreateFieldAsync(
+            createResult = await eventCustomFieldService.CreateFieldAsync(
                 message.Id,
                 message.Field.Name,
                 message.Field.IndexType.ToLowerInvariant(),
                 options.CustomFieldOptions.MaxFieldsPerOrganization,
+                options.CustomFieldOptions.MaxLifetimeFieldsPerOrganization,
                 message.Field.Description,
                 message.Field.DisplayOrder,
                 message.Context.RequestAborted);
@@ -75,22 +83,24 @@ public sealed class EventCustomFieldHandler(
             return Result.Invalid(ValidationError.Create("general", ex.Message));
         }
 
-        if (definition is null)
+        if (createResult.Status == EventCustomFieldService.CreateFieldStatus.Duplicate)
+            return Result.Conflict($"A custom field named '{message.Field.Name}' already exists for this organization.");
+
+        if (createResult.Status == EventCustomFieldService.CreateFieldStatus.ActiveLimitReached)
         {
-            var existingPage = await customFieldDefinitionRepository.FindByTenantAsync(nameof(PersistentEvent), message.Id);
-            var allActive = new List<CustomFieldDefinition>();
-            do
-            {
-                allActive.AddRange(existingPage.Documents);
-            } while (await existingPage.NextPageAsync());
-
-            if (allActive.Any(field => String.Equals(field.Name, message.Field.Name, StringComparison.OrdinalIgnoreCase)))
-                return Result.BadRequest($"A custom field named '{message.Field.Name}' already exists for this organization.");
-
-            return Result.BadRequest($"Maximum of {options.CustomFieldOptions.MaxFieldsPerOrganization} custom fields per organization has been reached.");
+            return Result.Invalid(ValidationError.Create(
+                ApiValidationErrorIdentifiers.CustomFieldActiveLimit,
+                $"Maximum of {options.CustomFieldOptions.MaxFieldsPerOrganization} active custom fields per organization has been reached."));
         }
 
-        var response = CustomFieldDefinitionResponse.FromDefinition(definition);
+        if (createResult.Status == EventCustomFieldService.CreateFieldStatus.LifetimeLimitReached)
+        {
+            return Result.Invalid(ValidationError.Create(
+                ApiValidationErrorIdentifiers.CustomFieldLifetimeLimit,
+                $"Maximum lifetime allocation of {options.CustomFieldOptions.MaxLifetimeFieldsPerOrganization} custom field slots per organization has been reached."));
+        }
+
+        var response = CustomFieldDefinitionResponse.FromDefinition(createResult.Definition!);
         return Result<CustomFieldDefinitionResponse>.Created(response, $"/api/v2/organizations/{message.Id}/event-custom-fields");
     }
 
@@ -103,6 +113,10 @@ public sealed class EventCustomFieldHandler(
         if (!organization.HasPremiumFeatures)
             return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, "Custom fields require a paid plan. Please upgrade to manage custom fields."));
 
+        await using var consistencyLock = await TryAcquireConsistencyLockAsync(message.Id);
+        if (consistencyLock is null)
+            return Result.Conflict("Custom field or saved-view changes are already in progress for this organization. Please try again.");
+
         var definition = await GetDefinitionAsync(message.Id, message.FieldId);
         if (definition is null)
             return Result.NotFound("Custom field not found.");
@@ -110,16 +124,17 @@ public sealed class EventCustomFieldHandler(
         if (EventCustomFieldService.IsSystemField(definition.Name))
             return Result.BadRequest($"'{definition.Name}' is a reserved system field and cannot be modified.");
 
+        var changes = message.Changes.GetEntity();
         bool changed = false;
-        if (message.Field.Description is not null)
+        if (message.Changes.ContainsChangedProperty(field => field.Description!))
         {
-            definition.Description = message.Field.Description.Length == 0 ? null : message.Field.Description;
+            definition.Description = String.IsNullOrEmpty(changes.Description) ? null : changes.Description;
             changed = true;
         }
 
-        if (message.Field.DisplayOrder.HasValue)
+        if (message.Changes.ContainsChangedProperty(field => field.DisplayOrder!) && changes.DisplayOrder.HasValue)
         {
-            definition.DisplayOrder = message.Field.DisplayOrder.Value;
+            definition.DisplayOrder = changes.DisplayOrder.Value;
             changed = true;
         }
 
@@ -138,6 +153,10 @@ public sealed class EventCustomFieldHandler(
         if (!organization.HasPremiumFeatures)
             return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, "Custom fields require a paid plan. Please upgrade to manage custom fields."));
 
+        await using var consistencyLock = await TryAcquireConsistencyLockAsync(message.Id);
+        if (consistencyLock is null)
+            return Result.Conflict("Custom field or saved-view changes are already in progress for this organization. Please try again.");
+
         var definition = await GetDefinitionAsync(message.Id, message.FieldId);
         if (definition is null)
             return Result.NotFound("Custom field not found.");
@@ -145,18 +164,30 @@ public sealed class EventCustomFieldHandler(
         if (EventCustomFieldService.IsSystemField(definition.Name))
             return Result.BadRequest($"'{definition.Name}' is a reserved system field and cannot be deleted.");
 
-        var fieldNamePattern = BuildFieldNameRegex(definition.Name);
         var savedViews = await savedViewRepository.GetByOrganizationIdAsync(message.Id, o => o.SearchAfterPaging().PageLimit(1000));
         do
         {
-            if (savedViews.Documents.Any(view => IsCustomFieldUsedInFilter(view.Filter, fieldNamePattern)))
-                return Result.Conflict($"Custom field '{definition.Name}' is used in one or more saved filters and cannot be deleted. Remove it from all filters first.");
+            foreach (var savedView in savedViews.Documents)
+            {
+                var queryValidator = String.Equals(savedView.ViewType, "stacks", StringComparison.OrdinalIgnoreCase)
+                    ? (AppQueryValidator)eventStackQueryValidator
+                    : eventQueryValidator;
+                var validation = await queryValidator.ValidateQueryAsync(savedView.Filter);
+                if (!validation.IsValid)
+                    continue;
+
+                bool isReferenced = validation.ReferencedFields.Any(field =>
+                    String.Equals(field, $"data.{definition.Name}", StringComparison.OrdinalIgnoreCase)
+                    || String.Equals(field, $"idx.{definition.Name}", StringComparison.OrdinalIgnoreCase));
+                if (isReferenced)
+                    return Result.Conflict($"Custom field '{definition.Name}' is used in one or more saved filters and cannot be deleted. Remove it from all filters first.");
+            }
         } while (await savedViews.NextPageAsync());
 
         definition.IsDeleted = true;
         await customFieldDefinitionRepository.SaveAsync(definition);
 
-        return Result.Accepted();
+        return Result.NoContent();
     }
 
     private async Task<Organization?> GetOrganizationAsync(string organizationId, HttpContext httpContext)
@@ -178,12 +209,10 @@ public sealed class EventCustomFieldHandler(
             : definition;
     }
 
-    private static Regex BuildFieldNameRegex(string fieldName)
-    {
-        var escapedName = Regex.Escape(fieldName);
-        return new Regex($@"(?<![a-zA-Z0-9_.-])(?:idx|data)\.{escapedName}(?![a-zA-Z0-9_.-])", RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
-    }
+    private Task<ILock?> TryAcquireConsistencyLockAsync(string organizationId)
+        => lockProvider.TryAcquireAsync(
+            EventCustomFieldService.GetSavedViewConsistencyLockName(organizationId),
+            TimeSpan.FromMinutes(5),
+            TimeSpan.FromSeconds(5));
 
-    private static bool IsCustomFieldUsedInFilter(string? filter, Regex fieldNamePattern)
-        => !String.IsNullOrWhiteSpace(filter) && fieldNamePattern.IsMatch(filter);
 }

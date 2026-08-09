@@ -117,7 +117,7 @@ public sealed class PersistentEventQueryValidator : AppQueryValidator
             return new QueryProcessResult { Message = "Aggregation count exceeded" };
 
         // Only allow fields that are numeric or have high commonality.
-        if (!result.ReferencedFields.All(_allowedAggregationFields.Contains))
+        if (!result.ReferencedFields.All(IsAllowedAggregationField))
             return new QueryProcessResult { Message = "One or more aggregation fields are not allowed" };
 
         // Distinct queries are expensive.
@@ -135,4 +135,9 @@ public sealed class PersistentEventQueryValidator : AppQueryValidator
             UsesPremiumFeatures = usesPremiumFeatures
         };
     }
+
+    private static bool IsAllowedAggregationField(string field)
+        => _allowedAggregationFields.Contains(field)
+            || field.StartsWith("data.", StringComparison.OrdinalIgnoreCase)
+            || field.StartsWith("idx.", StringComparison.OrdinalIgnoreCase);
 }

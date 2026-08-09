@@ -23,7 +23,7 @@ public record NewCustomFieldDefinition : IValidatableObject
     {
         if (!EventCustomFieldService.IsValidFieldName(Name))
             yield return new ValidationResult(
-                "Field names must be 1-100 characters, alphanumeric with underscores, dots, and dashes, and cannot start with '@'.",
+                "Field names must be 1-100 characters, alphanumeric with underscores, dots, and dashes, cannot start with '@', and cannot use a reserved storage-slot name.",
                 [nameof(Name)]);
 
         if (!EventCustomFieldService.SupportedIndexTypes.Contains(IndexType))

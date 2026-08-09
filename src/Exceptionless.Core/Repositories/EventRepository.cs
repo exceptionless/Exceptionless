@@ -226,6 +226,10 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
     /// </summary>
     protected override string? GetTenantKey(IRepositoryQuery query)
     {
+        var appFilter = query.GetAppFilter();
+        if (appFilter?.Organizations.Count == 1)
+            return appFilter.Organizations.Single().Id;
+
         var organizationIds = query.GetOrganizations();
         return organizationIds.Count == 1 ? organizationIds.First() : null;
     }
@@ -295,6 +299,10 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
 
     private async Task<string?> ResolveTenantKeyAsync(IRepositoryQuery query)
     {
+        var appFilter = query.GetAppFilter();
+        if (appFilter?.Organizations.Count == 1)
+            return appFilter.Organizations.Single().Id;
+
         var organizationIds = query.GetOrganizations();
         if (organizationIds.Count == 1)
             return organizationIds.Single();

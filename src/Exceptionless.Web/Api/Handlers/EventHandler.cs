@@ -46,6 +46,7 @@ public class EventHandler(
     ITextSerializer serializer,
     PersistentEventQueryValidator validator,
     EventStackQueryValidator stackModeValidator,
+    EventCustomFieldQueryPolicy eventCustomFieldQueryPolicy,
     AppOptions appOptions,
     UsageService usageService,
     TimeProvider timeProvider,
@@ -57,6 +58,8 @@ public class EventHandler(
     private static readonly ICollection<string> _allowedDateFields = new List<string> { EventIndex.Alias.Date };
     private const string DefaultDateField = EventIndex.Alias.Date;
     private static Result<T> PlanLimitResult<T>(string message) => Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, message));
+    private static Result<T> CustomFieldValidationResult<T>(EventCustomFieldQueryPolicy.ValidationResult validation)
+        => Result.Invalid(ValidationError.Create(validation.ErrorCode!, validation.Message!));
     private static bool ShouldIncludeTotal(string? include) => ShouldInclude(include, "total");
 
     private static bool ShouldInclude(string? include, string value)
@@ -698,13 +701,15 @@ public class EventHandler(
         if (!far.IsValid)
             return Result.BadRequest(far.Message ?? "Invalid aggregations.");
 
+        var customFieldValidation = await eventCustomFieldQueryPolicy.ValidateAsync(
+            pr.ReferencedFields.Concat(far.ReferencedFields), sf, httpContext.RequestAborted);
+        if (!customFieldValidation.IsValid)
+            return CustomFieldValidationResult<CountResult>(customFieldValidation);
+
         sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || far.UsesPremiumFeatures;
         AppFilter? systemFilter = ApiFilterPolicy.ShouldApplySystemFilter(sf, filter, httpContext.Request) ? sf : null;
         if (systemFilter is not null && ApiFilterPolicy.IsPremiumFeatureQueryBlocked(systemFilter))
             return PlanLimitResult<CountResult>(ApiFilterPolicy.PremiumSearchUpgradeMessage);
-
-        if (sf.UsesPremiumFeatures && sf.Organizations.Count > 0 && sf.Organizations.All(organization => !organization.HasPremiumFeatures))
-            return PlanLimitResult<CountResult>("Searching with custom fields requires a paid plan. Please upgrade to use this filter.");
 
         if (mode == "stack_new")
             filter = AddFirstOccurrenceFilter(ti.Range, filter);
@@ -762,13 +767,14 @@ public class EventHandler(
         if (!pr.IsValid)
             return Result.BadRequest(pr.Message ?? "Invalid filter.");
 
+        var customFieldValidation = await eventCustomFieldQueryPolicy.ValidateAsync(pr.ReferencedFields, sf, httpContext.RequestAborted);
+        if (!customFieldValidation.IsValid)
+            return CustomFieldValidationResult<PagedResult<object>>(customFieldValidation);
+
         sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || premiumFeatureUpgradeMessage is not null;
         AppFilter? appliedAppFilter = ApiFilterPolicy.ShouldApplySystemFilter(sf, filter, httpContext.Request) ? sf : null;
         if (appliedAppFilter is not null && ApiFilterPolicy.IsPremiumFeatureQueryBlocked(appliedAppFilter))
             return PlanLimitResult<PagedResult<object>>(premiumFeatureUpgradeMessage ?? ApiFilterPolicy.PremiumSearchUpgradeMessage);
-
-        if (sf.UsesPremiumFeatures && sf.Organizations.Count > 0 && sf.Organizations.All(organization => !organization.HasPremiumFeatures))
-            return PlanLimitResult<PagedResult<object>>("Searching with custom fields requires a paid plan. Please upgrade to use this filter.");
 
         try
         {
