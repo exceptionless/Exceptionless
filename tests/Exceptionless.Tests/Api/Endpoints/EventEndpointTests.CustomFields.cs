@@ -28,8 +28,8 @@ public partial class EventEndpointTests
         await GetService<EventPostsJob>().RunUntilEmptyAsync(TestCancellationToken);
         await RefreshDataAsync();
 
-        var production = await GetEventByReferenceIdWithCustomFieldsAsync("database-version-production");
-        var development = await GetEventByReferenceIdWithCustomFieldsAsync("database-version-development");
+        var production = await GetEventBySourceWithCustomFieldsAsync("database-version-production");
+        var development = await GetEventBySourceWithCustomFieldsAsync("database-version-development");
         Assert.Equal("4.90", Assert.IsType<string>(production.Data!["DatabaseVersion"]));
         Assert.Equal("4.90", Assert.IsType<string>(production.Idx![definition.GetIdxName()]));
         Assert.Equal("4.90 build 1234 30-Aug-2024", Assert.IsType<string>(development.Data!["DatabaseVersion"]));
@@ -49,8 +49,8 @@ public partial class EventEndpointTests
         await GetService<EventPostsJob>().RunUntilEmptyAsync(TestCancellationToken);
         await RefreshDataAsync();
 
-        var numeric = await GetEventByReferenceIdWithCustomFieldsAsync("database-version-numeric");
-        var nonnumeric = await GetEventByReferenceIdWithCustomFieldsAsync("database-version-nonnumeric");
+        var numeric = await GetEventBySourceWithCustomFieldsAsync("database-version-numeric");
+        var nonnumeric = await GetEventBySourceWithCustomFieldsAsync("database-version-nonnumeric");
         Assert.Equal("4.90", Assert.IsType<string>(numeric.Data!["DatabaseVersionNumeric"]));
         Assert.Equal(4.9d, Assert.IsType<double>(numeric.Idx![definition.GetIdxName()]));
         Assert.Equal("4.90 build 1234 30-Aug-2024", Assert.IsType<string>(nonnumeric.Data!["DatabaseVersionNumeric"]));
@@ -73,18 +73,19 @@ public partial class EventEndpointTests
         return Assert.IsType<CustomFieldDefinition>(result.Definition);
     }
 
-    private async Task<PersistentEvent> GetEventByReferenceIdWithCustomFieldsAsync(string referenceId)
+    private async Task<PersistentEvent> GetEventBySourceWithCustomFieldsAsync(string source)
     {
-        // Search a bounded test-project page and filter the raw _source value in memory. This avoids
-        // coupling the ingestion regression to the separate reference-id search helper while still
-        // proving the event, Data, and managed Idx values round-trip through Elasticsearch.
+        // Use a unique, normally mapped source field to locate the event, keeping this regression
+        // focused on raw custom-data ingestion and the Data/Idx Elasticsearch _source round trip.
         var events = await _eventRepository.FindAsync(
-            query => query.Project(SampleDataService.TEST_PROJECT_ID),
-            options => options.PageLimit(1000).Include(
-                eventDocument => eventDocument.ReferenceId,
+            query => query
+                .Project(SampleDataService.TEST_PROJECT_ID)
+                .FieldEquals(eventDocument => eventDocument.Source, source),
+            options => options.Include(
+                eventDocument => eventDocument.Source,
                 eventDocument => eventDocument.Data,
                 eventDocument => eventDocument.Idx));
-        return Assert.Single(events.Documents, eventDocument => eventDocument.ReferenceId == referenceId);
+        return Assert.Single(events.Documents);
     }
 
     private Task PostRawEventAsync(string referenceId, string customDataProperty)
@@ -92,6 +93,7 @@ public partial class EventEndpointTests
         string payload = $$"""
         {
           "type": "log",
+          "source": "{{referenceId}}",
           "message": "custom field raw ingestion",
           "reference_id": "{{referenceId}}",
           "data": {
