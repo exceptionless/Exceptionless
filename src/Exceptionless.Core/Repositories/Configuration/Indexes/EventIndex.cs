@@ -109,7 +109,9 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
                 .IntegerNumber(e => e.Count)
                 .Boolean(e => e.IsFirstOccurrence)
                     .FieldAlias(Alias.IsFirstOccurrence, a => a.Path(f => f.IsFirstOccurrence))
-                .Object(e => e.Idx, o => o.Properties(ConfigureCustomFieldSlotProperties))
+                .Object(e => e.Idx, o => o
+                    .Dynamic(DynamicMapping.True)
+                    .Properties(ConfigureCustomFieldSlotProperties))
                 .Object(e => e.Data, o => o.Properties(p2 => p2
                     .AddVersionMapping<PersistentEvent>()
                     .AddLevelMapping<PersistentEvent>()
@@ -182,7 +184,9 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
             {
                 mapping.Indices(index.Index);
                 mapping.DynamicTemplates(templates => ConfigureCustomFieldDynamicTemplates(templates));
-                mapping.Properties(properties => properties.Object(e => e.Idx, o => o.Properties(ConfigureCustomFieldSlotProperties)));
+                mapping.Properties(properties => properties.Object(e => e.Idx, o => o
+                    .Dynamic(DynamicMapping.True)
+                    .Properties(ConfigureCustomFieldSlotProperties)));
             });
 
             logger.LogRequest(response);

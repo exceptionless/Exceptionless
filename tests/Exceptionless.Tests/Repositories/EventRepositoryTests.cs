@@ -246,6 +246,11 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
             .Refresh(Refresh.WaitFor), TestContext.Current.CancellationToken);
         Assert.True(indexResponse.IsValidResponse, indexResponse.DebugInformation);
 
+        var storedLegacySession = await _elasticConfiguration.Client.GetAsync<PersistentEvent>(legacyClosedSession.Id, request => request
+            .Index(_elasticConfiguration.Events.GetIndex(legacyClosedSession)), TestContext.Current.CancellationToken);
+        Assert.True(storedLegacySession.IsValidResponse, storedLegacySession.DebugInformation);
+        Assert.Equal(firstEvent.UtcDateTime.AddMinutes(5), storedLegacySession.Source?.Idx?["sessionend-d"]);
+
         var results = await _repository.GetOpenSessionsAsync(DateTime.UtcNow.SubtractMinutes(30));
 
         Assert.Single(results.Documents);

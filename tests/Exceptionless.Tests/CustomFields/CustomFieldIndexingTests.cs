@@ -758,12 +758,20 @@ public sealed class CustomFieldIndexingTests : IntegrationTestsBase
 
     private async Task IndexLegacyEventAsync(PersistentEvent eventDocument)
     {
+        string index = _elasticConfiguration.Events.GetIndex(eventDocument);
         await _elasticConfiguration.Events.EnsureIndexAsync(eventDocument);
         var response = await _elasticConfiguration.Client.IndexAsync(eventDocument, request => request
-            .Index(_elasticConfiguration.Events.GetIndex(eventDocument))
+            .Index(index)
             .Id(eventDocument.Id)
             .Refresh(Refresh.WaitFor), TestContext.Current.CancellationToken);
         Assert.True(response.IsValidResponse, response.DebugInformation);
+
+        var stored = await _elasticConfiguration.Client.GetAsync<PersistentEvent>(eventDocument.Id, request => request
+            .Index(index), TestContext.Current.CancellationToken);
+        Assert.True(stored.IsValidResponse, stored.DebugInformation);
+        Assert.NotNull(stored.Source?.Idx);
+        foreach (var (key, value) in eventDocument.Idx ?? [])
+            Assert.Equal(value, stored.Source.Idx[key]);
     }
 
     private async Task CreateProjectDataAsync()

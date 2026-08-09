@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text.Json;
+using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -445,9 +446,18 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     [Fact]
     public async Task SearchEventsAsync_IndexableCustomDataFilter_ReturnsMatchingEvent()
     {
-        await GetService<ICustomFieldDefinitionRepository>().AddFieldAsync(
-            nameof(PersistentEvent), TestConstants.OrganizationId, "plan", "keyword");
+        var options = GetService<AppOptions>().CustomFieldOptions;
+        var createResult = await GetService<EventCustomFieldService>().CreateFieldAsync(
+            TestConstants.OrganizationId,
+            "plan",
+            "keyword",
+            options.MaxFieldsPerOrganization,
+            options.MaxLifetimeFieldsPerOrganization,
+            cancellationToken: TestCancellationToken);
+        Assert.Equal(EventCustomFieldService.CreateFieldStatus.Created, createResult.Status);
+        var definition = Assert.IsType<CustomFieldDefinition>(createResult.Definition);
         await RefreshDataAsync();
+
         var (_, events) = await CreateDataAsync(d => d.Event()
             .TestProject()
             .Mutate(ev =>
@@ -457,6 +467,12 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
             })
             .Message("MCP indexed custom data"));
         await RefreshDataAsync();
+
+        var storedEvent = await _eventRepository.GetByIdAsync(
+            events[0].Id, query => query.Include(eventDocument => eventDocument.Idx));
+        Assert.NotNull(storedEvent);
+        Assert.Equal("Business", Assert.IsType<string>(storedEvent.Idx?[definition.GetIdxName()]));
+
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
 
         var result = await tools.SearchEventsAsync(TestConstants.ProjectId, filter: "data.plan:Business");
@@ -839,7 +855,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         Assert.Contains("data.", item.Events.DynamicFilterPrefixes);
         Assert.DoesNotContain("idx.", item.Events.DynamicFilterPrefixes);
         Assert.DoesNotContain("idx", item.Events.FilterFields);
-        Assert.Contains("active configured custom field", item.Events.Notes, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("active configured custom-field definition", item.Events.Notes, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
