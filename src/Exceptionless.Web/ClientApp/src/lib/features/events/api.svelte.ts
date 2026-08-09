@@ -6,9 +6,43 @@ import { queryKeys as stackQueryKeys } from '$features/stacks/api.svelte';
 import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, keepPreviousData, QueryClient, useQueryClient } from '@tanstack/svelte-query';
+import { SvelteSet } from 'svelte/reactivity';
+import { throttle } from 'throttle-debounce';
 
 import type { EventSummaryModel, SummaryTemplateKeys } from './components/summary/index';
 import type { PersistentEvent } from './models';
+
+export interface OrganizationEventNotificationRefresher {
+    cancel: () => void;
+    schedule: (organizationId?: string) => void;
+}
+
+export function createOrganizationEventNotificationRefresher(queryClient: QueryClient): OrganizationEventNotificationRefresher {
+    const pendingOrganizationIds = new SvelteSet<string | undefined>();
+    const refresh = throttle(ORGANIZATION_EVENT_NOTIFICATION_THROTTLE_MS, () => {
+        const organizationIds = [...pendingOrganizationIds];
+        pendingOrganizationIds.clear();
+
+        void queryClient.invalidateQueries({
+            predicate: (query) =>
+                isOrganizationEventDashboardQueryKey(query.queryKey) &&
+                (organizationIds.includes(undefined) || organizationIds.includes(query.queryKey[2] as string)),
+            queryKey: queryKeys.type,
+            refetchType: 'active'
+        });
+    });
+
+    return {
+        cancel: () => {
+            pendingOrganizationIds.clear();
+            refresh.cancel();
+        },
+        schedule: (organizationId?: string) => {
+            pendingOrganizationIds.add(organizationId);
+            refresh();
+        }
+    };
+}
 
 export async function invalidatePersistentEventQueries(queryClient: QueryClient, message: WebSocketMessageValue<'PersistentEventChanged'>) {
     const { id, organization_id, project_id, stack_id } = message;
@@ -60,7 +94,7 @@ export const PERSISTENT_EVENT_DELETE_RECONCILE_EVENT = 'PersistentEventDeleteRec
 export const PERSISTENT_EVENT_DELETE_RECONCILE_DELAY = 1500;
 export const PERSISTENT_EVENT_DELETE_RECONCILE_RETRY_DELAY = 5000;
 export const ORGANIZATION_EVENT_QUERY_STALE_TIME_MS = 60 * 1000;
-export const ORGANIZATION_EVENT_QUERY_REFRESH_INTERVAL_MS = ORGANIZATION_EVENT_QUERY_STALE_TIME_MS;
+export const ORGANIZATION_EVENT_NOTIFICATION_THROTTLE_MS = 5 * 1000;
 
 export interface DeleteEventsRequest {
     route: {
@@ -334,7 +368,6 @@ export function getOrganizationCountQuery(request: GetOrganizationCountRequest) 
                 return response.data!;
             },
             queryKey: queryKeys.organizationsCount(organizationId, params),
-            refetchInterval: ORGANIZATION_EVENT_QUERY_REFRESH_INTERVAL_MS,
             staleTime: ORGANIZATION_EVENT_QUERY_STALE_TIME_MS
         };
     });
@@ -356,7 +389,6 @@ export function getOrganizationEventsQuery(request: GetOrganizationEventsRequest
                 });
             },
             queryKey: queryKeys.organizationsEvents(organizationId, params),
-            refetchInterval: ORGANIZATION_EVENT_QUERY_REFRESH_INTERVAL_MS,
             staleTime: ORGANIZATION_EVENT_QUERY_STALE_TIME_MS
         };
     });

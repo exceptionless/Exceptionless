@@ -4,7 +4,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { queryKeys as stackQueryKeys } from '../stacks/api.svelte';
 import {
+    createOrganizationEventNotificationRefresher,
     invalidatePersistentEventQueries,
+    ORGANIZATION_EVENT_NOTIFICATION_THROTTLE_MS,
     PERSISTENT_EVENT_DELETE_RECONCILE_DELAY,
     PERSISTENT_EVENT_DELETE_RECONCILE_EVENT,
     PERSISTENT_EVENT_DELETE_RECONCILE_RETRY_DELAY,
@@ -14,6 +16,46 @@ import {
 
 afterEach(() => {
     vi.useRealTimers();
+});
+
+describe('createOrganizationEventNotificationRefresher', () => {
+    it('refreshes matching active dashboards immediately and at most once per throttle window', async () => {
+        // Arrange
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2026-08-09T20:00:00Z'));
+        const queryClient = new QueryClient();
+        const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries').mockImplementation(async () => {});
+        const refresher = createOrganizationEventNotificationRefresher(queryClient);
+
+        // Act
+        refresher.schedule('organization-id');
+        for (let index = 0; index < 30; index++) {
+            refresher.schedule(index % 2 === 0 ? 'organization-id' : 'other-organization-id');
+        }
+
+        // Assert
+        expect(invalidateSpy).toHaveBeenCalledOnce();
+        const firstInvalidation = invalidateSpy.mock.calls[0]?.[0];
+        expect(firstInvalidation?.refetchType).toBe('active');
+        expect(firstInvalidation?.predicate?.({ queryKey: queryKeys.organizationsEvents('organization-id') } as never)).toBe(true);
+        expect(firstInvalidation?.predicate?.({ queryKey: queryKeys.organizationsCount('organization-id') } as never)).toBe(true);
+        expect(firstInvalidation?.predicate?.({ queryKey: queryKeys.organizationsEvents('other-organization-id') } as never)).toBe(false);
+        expect(firstInvalidation?.predicate?.({ queryKey: queryKeys.id('event-id') } as never)).toBe(false);
+
+        await vi.advanceTimersByTimeAsync(ORGANIZATION_EVENT_NOTIFICATION_THROTTLE_MS - 1);
+        expect(invalidateSpy).toHaveBeenCalledOnce();
+
+        await vi.advanceTimersByTimeAsync(1);
+        expect(invalidateSpy).toHaveBeenCalledTimes(2);
+        const trailingInvalidation = invalidateSpy.mock.calls[1]?.[0];
+        expect(trailingInvalidation?.predicate?.({ queryKey: queryKeys.organizationsEvents('organization-id') } as never)).toBe(true);
+        expect(trailingInvalidation?.predicate?.({ queryKey: queryKeys.organizationsCount('other-organization-id') } as never)).toBe(true);
+
+        refresher.schedule('organization-id');
+        refresher.cancel();
+        await vi.advanceTimersByTimeAsync(ORGANIZATION_EVENT_NOTIFICATION_THROTTLE_MS);
+        expect(invalidateSpy).toHaveBeenCalledTimes(2);
+    });
 });
 
 describe('invalidatePersistentEventQueries', () => {

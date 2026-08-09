@@ -10,7 +10,11 @@
     import { getIntercomTokenQuery } from '$features/auth/api.svelte';
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
     import { UpgradeRequiredDialog } from '$features/billing';
-    import { invalidatePersistentEventQueries } from '$features/events/api.svelte';
+    import {
+        createOrganizationEventNotificationRefresher,
+        invalidatePersistentEventQueries,
+        type OrganizationEventNotificationRefresher
+    } from '$features/events/api.svelte';
     import { filterUsesPremiumFeatures, getSearchResourceForPathname } from '$features/events/premium-filter';
     import { buildIntercomBootOptions, IntercomShell } from '$features/intercom';
     import { shouldLoadIntercomOrganization } from '$features/intercom/config';
@@ -30,7 +34,7 @@
     import { getSavedViewsQuery, invalidateSavedViewQueries, isSavedViewDeleted } from '$features/saved-views/api.svelte';
     import { savedViewHref } from '$features/saved-views/slugs';
     import { appKeyboardShortcuts, isKeyboardShortcut } from '$features/shared/keyboard-shortcuts';
-    import { invalidateStackQueries } from '$features/stacks/api.svelte';
+    import { createProjectStackNotificationRefresher, invalidateStackQueries, type ProjectStackNotificationRefresher } from '$features/stacks/api.svelte';
     import { invalidateTokenQueries } from '$features/tokens/api.svelte';
     import { getMeQuery, invalidateUserQueries } from '$features/users/api.svelte';
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
@@ -137,7 +141,11 @@
         immediate: false
     });
 
-    async function onMessage(message: MessageEvent) {
+    async function onMessage(
+        message: MessageEvent,
+        organizationEventRefresher: OrganizationEventNotificationRefresher,
+        projectStackRefresher: ProjectStackNotificationRefresher
+    ) {
         const data: { message: unknown; type: WebSocketMessageType } = message.data ? JSON.parse(message.data) : null;
 
         if (!data?.type) {
@@ -159,6 +167,7 @@
                     await invalidateOrganizationQueries(queryClient, data.message);
                     break;
                 case 'PersistentEventChanged':
+                    organizationEventRefresher.schedule(data.message.organization_id);
                     await invalidatePersistentEventQueries(queryClient, data.message);
                     break;
                 case 'ProjectChanged':
@@ -168,6 +177,8 @@
                     await invalidateSavedViewQueries(queryClient, data.message);
                     break;
                 case 'StackChanged':
+                    organizationEventRefresher.schedule(data.message.organization_id);
+                    projectStackRefresher.schedule(data.message.project_id);
                     await invalidateStackQueries(queryClient, data.message);
                     break;
                 case 'TokenChanged':
@@ -278,8 +289,10 @@
 
         document.addEventListener('keydown', handleKeydown, { capture: true });
 
+        const organizationEventRefresher = createOrganizationEventNotificationRefresher(queryClient);
+        const projectStackRefresher = createProjectStackNotificationRefresher(queryClient);
         const ws = new WebSocketClient();
-        ws.onMessage = onMessage;
+        ws.onMessage = (message) => void onMessage(message, organizationEventRefresher, projectStackRefresher);
         ws.onOpen = (_, isReconnect) => {
             if (isReconnect) {
                 queryClient.invalidateQueries();
@@ -294,6 +307,8 @@
 
         return () => {
             document.removeEventListener('keydown', handleKeydown, { capture: true });
+            organizationEventRefresher.cancel();
+            projectStackRefresher.cancel();
             ws?.close();
         };
     });

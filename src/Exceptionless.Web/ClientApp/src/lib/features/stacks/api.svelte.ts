@@ -4,8 +4,41 @@ import type { WorkInProgressResult } from '$shared/models';
 import { accessToken } from '$features/auth/index.svelte';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
+import { SvelteSet } from 'svelte/reactivity';
+import { throttle } from 'throttle-debounce';
 
 import type { Stack, StackStatus } from './models';
+
+export interface ProjectStackNotificationRefresher {
+    cancel: () => void;
+    schedule: (projectId?: string) => void;
+}
+
+export function createProjectStackNotificationRefresher(queryClient: QueryClient): ProjectStackNotificationRefresher {
+    const pendingProjectIds = new SvelteSet<string | undefined>();
+    const refresh = throttle(STACK_NOTIFICATION_THROTTLE_MS, () => {
+        const projectIds = [...pendingProjectIds];
+        pendingProjectIds.clear();
+
+        void queryClient.invalidateQueries({
+            predicate: (query) =>
+                isProjectStacksQueryKey(query.queryKey) && (projectIds.includes(undefined) || projectIds.includes(query.queryKey[2] as string)),
+            queryKey: queryKeys.type,
+            refetchType: 'active'
+        });
+    });
+
+    return {
+        cancel: () => {
+            pendingProjectIds.clear();
+            refresh.cancel();
+        },
+        schedule: (projectId?: string) => {
+            pendingProjectIds.add(projectId);
+            refresh();
+        }
+    };
+}
 
 export async function invalidateStackQueries(queryClient: QueryClient, message: WebSocketMessageValue<'StackChanged'>) {
     const { id } = message;
@@ -19,7 +52,8 @@ export async function invalidateStackQueries(queryClient: QueryClient, message: 
     }
 }
 
-export const STACK_LIST_QUERY_REFRESH_INTERVAL_MS = 60 * 1000;
+export const STACK_LIST_QUERY_STALE_TIME_MS = 60 * 1000;
+export const STACK_NOTIFICATION_THROTTLE_MS = 5 * 1000;
 
 export const queryKeys = {
     deleteMarkCritical: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'mark-not-critical'] as const,
@@ -165,8 +199,7 @@ export function getProjectStacksQuery(request: GetProjectStacksRequest) {
             return response;
         },
         queryKey: queryKeys.project(request.route.projectId, request.params),
-        refetchInterval: STACK_LIST_QUERY_REFRESH_INTERVAL_MS,
-        staleTime: STACK_LIST_QUERY_REFRESH_INTERVAL_MS
+        staleTime: STACK_LIST_QUERY_STALE_TIME_MS
     }));
 }
 
