@@ -136,7 +136,8 @@ public sealed class CustomFieldEndpointContractTests : IntegrationTestsBase
             Name = "Organization-specific filter",
             Slug = "organization-specific-filter",
             ViewType = "events",
-            Filter = "idx.customer_id:value",
+            Filter = "type:error",
+            FilterDefinitions = """[{"type":"string","term":"idx.customer_id","value":"value"}]""",
             Version = 1
         }, options => options.ImmediateConsistency());
 

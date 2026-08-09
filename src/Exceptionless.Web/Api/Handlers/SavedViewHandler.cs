@@ -144,7 +144,7 @@ public partial class SavedViewHandler(
             if (validationError is not null)
                 return Result.Invalid(ValidationError.Create("definitions", validationError.ErrorMessage ?? "Invalid column configuration."));
 
-            string? portabilityError = await ValidatePredefinedFilterPortabilityAsync(definition.ViewType, definition.Filter);
+            string? portabilityError = await ValidatePredefinedFilterPortabilityAsync(definition.ViewType, definition.Filter, definition.FilterDefinitions);
             if (portabilityError is not null)
                 return Result.Invalid(ValidationError.Create("definitions", portabilityError));
         }
@@ -203,7 +203,7 @@ public partial class SavedViewHandler(
         if (source is null)
             return Result.NotFound("Saved view not found.");
 
-        string? portabilityError = await ValidatePredefinedFilterPortabilityAsync(source.ViewType, source.Filter);
+        string? portabilityError = await ValidatePredefinedFilterPortabilityAsync(source.ViewType, source.Filter, ParseFilterDefinitions(source.FilterDefinitions));
         if (portabilityError is not null)
             return Result.Invalid(ValidationError.Create("filter", portabilityError));
 
@@ -802,7 +802,7 @@ public partial class SavedViewHandler(
         return existing;
     }
 
-    private async Task<string?> ValidatePredefinedFilterPortabilityAsync(string viewType, string? filter)
+    private async Task<string?> ValidatePredefinedFilterPortabilityAsync(string viewType, string? filter, JsonElement? filterDefinitions)
     {
         var queryValidator = String.Equals(viewType, "stacks", StringComparison.OrdinalIgnoreCase)
             ? (AppQueryValidator)eventStackQueryValidator
@@ -814,7 +814,65 @@ public partial class SavedViewHandler(
         if (validation.ReferencedFields.Any(IsOrganizationCustomFieldReference))
             return "Predefined saved views cannot reference organization custom fields because they are applied to every organization.";
 
+        if (filterDefinitions.HasValue)
+        {
+            var structuredTerms = new List<string>();
+            var keywordFilters = new List<string>();
+            CollectStructuredFilterReferences(filterDefinitions.Value, structuredTerms, keywordFilters);
+            if (structuredTerms.Any(IsOrganizationCustomFieldReference))
+                return "Predefined saved views cannot reference organization custom fields because they are applied to every organization.";
+
+            foreach (string keywordFilter in keywordFilters)
+            {
+                var keywordValidation = await queryValidator.ValidateQueryAsync(keywordFilter);
+                if (!keywordValidation.IsValid)
+                    return keywordValidation.Message ?? "Invalid structured keyword filter.";
+                if (keywordValidation.ReferencedFields.Any(IsOrganizationCustomFieldReference))
+                    return "Predefined saved views cannot reference organization custom fields because they are applied to every organization.";
+            }
+        }
+
         return null;
+    }
+
+    private static void CollectStructuredFilterReferences(JsonElement element, ICollection<string> terms, ICollection<string> keywordFilters)
+    {
+        if (element.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in element.EnumerateArray())
+                CollectStructuredFilterReferences(item, terms, keywordFilters);
+            return;
+        }
+
+        if (element.ValueKind != JsonValueKind.Object)
+            return;
+
+        string? type = null;
+        string? value = null;
+        foreach (var property in element.EnumerateObject())
+        {
+            if (property.Value.ValueKind == JsonValueKind.String
+                && property.Name.Equals("term", StringComparison.OrdinalIgnoreCase))
+            {
+                terms.Add(property.Value.GetString()!);
+            }
+            else if (property.Value.ValueKind == JsonValueKind.String
+                && property.Name.Equals("type", StringComparison.OrdinalIgnoreCase))
+            {
+                type = property.Value.GetString();
+            }
+            else if (property.Value.ValueKind == JsonValueKind.String
+                && property.Name.Equals("value", StringComparison.OrdinalIgnoreCase))
+            {
+                value = property.Value.GetString();
+            }
+
+            if (property.Value.ValueKind is JsonValueKind.Array or JsonValueKind.Object)
+                CollectStructuredFilterReferences(property.Value, terms, keywordFilters);
+        }
+
+        if (String.Equals(type, "keyword", StringComparison.OrdinalIgnoreCase) && !String.IsNullOrWhiteSpace(value))
+            keywordFilters.Add(value);
     }
 
     private static bool IsOrganizationCustomFieldReference(string field)
