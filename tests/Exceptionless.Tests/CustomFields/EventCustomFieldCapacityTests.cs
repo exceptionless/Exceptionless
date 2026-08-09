@@ -48,6 +48,7 @@ public sealed class EventCustomFieldCapacityTests : IntegrationTestsBase
     [Fact]
     public async Task CreateFieldAsync_ExistingOverLimitDefinitionsRemainReadableButCannotAllocate()
     {
+        await _service.EnsureSystemFieldsAsync(SampleDataService.TEST_ORG_ID);
         await _definitionRepository.AddFieldAsync(nameof(PersistentEvent), SampleDataService.TEST_ORG_ID, "legacy_one", "keyword");
         await _definitionRepository.AddFieldAsync(nameof(PersistentEvent), SampleDataService.TEST_ORG_ID, "legacy_two", "keyword");
 
@@ -64,6 +65,7 @@ public sealed class EventCustomFieldCapacityTests : IntegrationTestsBase
     [Fact]
     public async Task PostField_LifetimeCapacityReached_ReturnsStableValidationIdentifier()
     {
+        await _service.EnsureSystemFieldsAsync(SampleDataService.TEST_ORG_ID);
         for (int index = 0; index < 20; index++)
         {
             var definition = await _definitionRepository.AddFieldAsync(

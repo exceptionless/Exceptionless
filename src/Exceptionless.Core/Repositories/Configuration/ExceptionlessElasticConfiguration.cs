@@ -71,7 +71,7 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
         // retained v1 daily partition must receive the templates before the host is ready.
         // The date is part of the marker so the first host started each UTC day verifies the
         // newly-created daily partition. A new schema version must use a new marker version.
-        string mappingMarkerKey = $"event-custom-field-mappings:v1:{_timeProvider.GetUtcNow():yyyyMMdd}";
+        string mappingMarkerKey = $"event-custom-field-mappings:v2:{_timeProvider.GetUtcNow():yyyyMMdd}";
         if ((await _cacheClient.GetAsync<bool>(mappingMarkerKey)).HasValue)
             return;
 
@@ -84,7 +84,7 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
         if ((await _cacheClient.GetAsync<bool>(mappingMarkerKey)).HasValue)
             return;
 
-        await Events.EnsureCustomFieldMappingsAsync();
+        await Events.EnsureCustomFieldMappingsAsync(() => mappingLock.RenewAsync(TimeSpan.FromMinutes(15)));
         await _cacheClient.SetAsync(mappingMarkerKey, true, TimeSpan.FromDays(2));
     }
 

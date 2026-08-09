@@ -102,7 +102,7 @@ public static class OrganizationEndpoints
         .ProducesProblem(StatusCodes.Status426UpgradeRequired)
         .WithSummary("Create event custom field");
 
-        group.MapPatch("organizations/{id:objectid}/event-custom-fields/{fieldId:objectid}", async (string id, string fieldId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] Delta<UpdateCustomFieldDefinition>? changes) =>
+        group.MapPatch("organizations/{id:objectid}/event-custom-fields/{fieldId:objectid}", async (string id, string fieldId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] Delta<UpdateCustomFieldDefinition> changes) =>
         {
             if (changes is null)
                 return ApiValidation.MissingRequestBody();

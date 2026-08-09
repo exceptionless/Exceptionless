@@ -447,6 +447,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     {
         await GetService<ICustomFieldDefinitionRepository>().AddFieldAsync(
             nameof(PersistentEvent), TestConstants.OrganizationId, "plan", "keyword");
+        await RefreshDataAsync();
         var (_, events) = await CreateDataAsync(d => d.Event()
             .TestProject()
             .Mutate(ev =>
@@ -838,7 +839,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         Assert.Contains("data.", item.Events.DynamicFilterPrefixes);
         Assert.DoesNotContain("idx.", item.Events.DynamicFilterPrefixes);
         Assert.DoesNotContain("idx", item.Events.FilterFields);
-        Assert.Contains("indexed for search", item.Events.Notes, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("active configured custom field", item.Events.Notes, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

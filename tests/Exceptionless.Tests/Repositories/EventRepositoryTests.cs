@@ -1,7 +1,9 @@
 using System.Diagnostics;
+using Elastic.Clients.Elasticsearch;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Helpers;
 using Exceptionless.Tests.Utility;
@@ -22,6 +24,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     private readonly StackData _stackData;
     private readonly IStackRepository _stackRepository;
     private readonly ITextSerializer _serializer;
+    private readonly ExceptionlessElasticConfiguration _elasticConfiguration;
 
     public EventRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
@@ -31,6 +34,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         _stackData = GetService<StackData>();
         _stackRepository = GetService<IStackRepository>();
         _serializer = GetService<ITextSerializer>();
+        _elasticConfiguration = GetService<ExceptionlessElasticConfiguration>();
     }
 
     [Fact]
@@ -234,7 +238,13 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
             { "sessionend-d", firstEvent.UtcDateTime.AddMinutes(5) }
         };
 
-        await _repository.AddAsync([openSession, legacyClosedSession], o => o.ImmediateConsistency());
+        await _repository.AddAsync(openSession, o => o.ImmediateConsistency());
+        await _elasticConfiguration.Events.EnsureIndexAsync(legacyClosedSession);
+        var indexResponse = await _elasticConfiguration.Client.IndexAsync(legacyClosedSession, request => request
+            .Index(_elasticConfiguration.Events.GetIndex(legacyClosedSession))
+            .Id(legacyClosedSession.Id)
+            .Refresh(Refresh.WaitFor), TestContext.Current.CancellationToken);
+        Assert.True(indexResponse.IsValidResponse, indexResponse.DebugInformation);
 
         var results = await _repository.GetOpenSessionsAsync(DateTime.UtcNow.SubtractMinutes(30));
 

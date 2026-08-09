@@ -21,17 +21,17 @@ public partial class EventEndpointTests
         var definitions = GetService<ICustomFieldDefinitionRepository>();
         var definition = await definitions.AddFieldAsync(
             nameof(PersistentEvent), SampleDataService.TEST_ORG_ID, "DatabaseVersion", "keyword");
+        await RefreshDataAsync();
 
         await PostRawEventAsync("database-version-production", """"DatabaseVersion":"4.90"""");
         await PostRawEventAsync("database-version-development", """"DatabaseVersion":"4.90 build 1234 30-Aug-2024"""");
         await GetService<EventPostsJob>().RunAsync(TestCancellationToken);
         await RefreshDataAsync();
 
-        var stored = await _eventRepository.GetAllAsync(
-            options => options.Include(eventDocument => eventDocument.ReferenceId, eventDocument => eventDocument.Data, eventDocument => eventDocument.Idx));
-
-        var production = Assert.Single(stored.Documents, eventDocument => eventDocument.ReferenceId == "database-version-production");
-        var development = Assert.Single(stored.Documents, eventDocument => eventDocument.ReferenceId == "database-version-development");
+        var production = Assert.Single((await _eventRepository.GetByReferenceIdAsync(
+            SampleDataService.TEST_PROJECT_ID, "database-version-production")).Documents);
+        var development = Assert.Single((await _eventRepository.GetByReferenceIdAsync(
+            SampleDataService.TEST_PROJECT_ID, "database-version-development")).Documents);
         Assert.Equal("4.90", Assert.IsType<string>(production.Data!["DatabaseVersion"]));
         Assert.Equal("4.90", Assert.IsType<string>(production.Idx![definition.GetIdxName()]));
         Assert.Equal("4.90 build 1234 30-Aug-2024", Assert.IsType<string>(development.Data!["DatabaseVersion"]));
@@ -47,17 +47,17 @@ public partial class EventEndpointTests
         var definitions = GetService<ICustomFieldDefinitionRepository>();
         var definition = await definitions.AddFieldAsync(
             nameof(PersistentEvent), SampleDataService.TEST_ORG_ID, "DatabaseVersionNumeric", "double");
+        await RefreshDataAsync();
 
         await PostRawEventAsync("database-version-numeric", """"DatabaseVersionNumeric":"4.90"""");
         await PostRawEventAsync("database-version-nonnumeric", """"DatabaseVersionNumeric":"4.90 build 1234 30-Aug-2024"""");
         await GetService<EventPostsJob>().RunAsync(TestCancellationToken);
         await RefreshDataAsync();
 
-        var stored = await _eventRepository.GetAllAsync(
-            options => options.Include(eventDocument => eventDocument.ReferenceId, eventDocument => eventDocument.Data, eventDocument => eventDocument.Idx));
-
-        var numeric = Assert.Single(stored.Documents, eventDocument => eventDocument.ReferenceId == "database-version-numeric");
-        var nonnumeric = Assert.Single(stored.Documents, eventDocument => eventDocument.ReferenceId == "database-version-nonnumeric");
+        var numeric = Assert.Single((await _eventRepository.GetByReferenceIdAsync(
+            SampleDataService.TEST_PROJECT_ID, "database-version-numeric")).Documents);
+        var nonnumeric = Assert.Single((await _eventRepository.GetByReferenceIdAsync(
+            SampleDataService.TEST_PROJECT_ID, "database-version-nonnumeric")).Documents);
         Assert.Equal("4.90", Assert.IsType<string>(numeric.Data!["DatabaseVersionNumeric"]));
         Assert.Equal(4.9d, Assert.IsType<double>(numeric.Idx![definition.GetIdxName()]));
         Assert.Equal("4.90 build 1234 30-Aug-2024", Assert.IsType<string>(nonnumeric.Data!["DatabaseVersionNumeric"]));
@@ -71,7 +71,9 @@ public partial class EventEndpointTests
           "type": "log",
           "message": "custom field raw ingestion",
           "reference_id": "{{referenceId}}",
-          {{customDataProperty}}
+          "data": {
+            {{customDataProperty}}
+          }
         }
         """;
 

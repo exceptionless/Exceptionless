@@ -159,12 +159,12 @@ Custom fields require a paid plan. Organizations on the free plan receive HTTP 4
 ## Elasticsearch Mapping Considerations
 
 - Custom field slot templates are registered via `AddStandardCustomFieldTypes()` in `EventIndex`
-- Startup applies and validates all eight typed templates on every retained event index before readiness; legacy suffix templates remain during mixed-version rollout
+- Startup applies and validates all eight typed templates and the bounded pooled-slot mappings on every current, aliased, non-expired event index before readiness; legacy suffix templates remain during mixed-version rollout
 - An incompatible existing typed-slot mapping is a rollout blocker that requires an explicit migration; Elasticsearch cannot safely change an existing field type in place
 - Templates use the pattern `idx.{type}-*` (e.g., `idx.keyword-*`, `idx.double-*`)
-- Elasticsearch creates field mappings dynamically on first document write — unused slots have zero mapping cost
+- Event indices predeclare every allocatable pooled slot through `MaxLifetimeFieldsPerOrganization + 1` (the extra slot accounts for reserved system fields). This keeps exact string, facet, and sort resolution stable when the newest daily partition has no value for a sparse slot.
 - Monitor total field count relative to `index.mapping.total_fields.limit` (`Elasticsearch:FieldsLimit`, Exceptionless default 1,500) in high-volume deployments
-- The `string` type creates 2 field mappers per slot; all other types create 1 field mapper per slot
+- Each predeclared slot number reserves nine field mappers across the eight types: the `string` type creates a text mapper plus its `.keyword` mapper, and all other types create one. Startup rejects configurations where this pool would consume more than 80% of `Elasticsearch:FieldsLimit`, preserving headroom for the event schema.
 
 ## Common Questions
 
@@ -184,7 +184,7 @@ No. The active quota (`MaxFieldsPerOrganization = 20`) is a total across all typ
 Existing field definitions and indexed data are preserved. The custom fields management UI becomes read-only. New field creation requires re-upgrading.
 
 **Can I have more than 20 fields?**
-Both limits default to 20 per organization. Self-hosted deployments can raise `MaxFieldsPerOrganization` and `MaxLifetimeFieldsPerOrganization`; the lifetime limit must be greater than or equal to the active limit. When only the active key is specified, the lifetime limit defaults to that value.
+Both limits default to 20 per organization. Self-hosted deployments can raise `MaxFieldsPerOrganization` and `MaxLifetimeFieldsPerOrganization`; the lifetime limit must be greater than or equal to the active limit. When only the active key is specified, the lifetime limit defaults to that value. Because all possible pooled slots are declared up front, raising the lifetime limit may also require raising `Elasticsearch:FieldsLimit`; invalid combinations fail during startup rather than later during event ingestion.
 
 **Can slot numbers grow unboundedly from field churn?**
 No for a single organization under the default lifetime ceiling. Slot reclamation is still unavailable, so operators should monitor Elasticsearch total-field headroom across all organizations and retained daily indices.

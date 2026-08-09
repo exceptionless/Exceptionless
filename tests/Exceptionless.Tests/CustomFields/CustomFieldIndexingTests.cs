@@ -4,10 +4,13 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Services;
 using Exceptionless.Tests.Utility;
+using Elastic.Clients.Elasticsearch;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.CustomFields;
+using Foundatio.Repositories.Models;
 using Xunit;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
@@ -22,6 +25,7 @@ public sealed class CustomFieldIndexingTests : IntegrationTestsBase
     private readonly IProjectRepository _projectRepository;
     private readonly ICustomFieldDefinitionRepository _customFieldDefinitionRepository;
     private readonly EventCustomFieldService _eventCustomFieldService;
+    private readonly ExceptionlessElasticConfiguration _elasticConfiguration;
     private readonly OrganizationData _organizationData;
     private readonly ProjectData _projectData;
     private readonly UserData _userData;
@@ -37,6 +41,7 @@ public sealed class CustomFieldIndexingTests : IntegrationTestsBase
         _projectRepository = GetService<IProjectRepository>();
         _customFieldDefinitionRepository = GetService<ICustomFieldDefinitionRepository>();
         _eventCustomFieldService = GetService<EventCustomFieldService>();
+        _elasticConfiguration = GetService<ExceptionlessElasticConfiguration>();
         _organizationData = GetService<OrganizationData>();
         _projectData = GetService<ProjectData>();
         _userData = GetService<UserData>();
@@ -170,23 +175,22 @@ public sealed class CustomFieldIndexingTests : IntegrationTestsBase
         var missingHasError = GenerateEvent();
         missingHasError.Source = "system-field-has-error";
 
-        PersistentEvent[] events =
+        PersistentEvent[] currentEvents =
         [
                 currentReference,
-                legacyReference,
                 currentSessionEnd,
-                legacySessionEnd,
                 missingSessionEnd,
                 currentHasError,
-                legacyHasError,
                 currentNoError,
-                legacyNoError,
                 missingHasError
         ];
-        foreach (var eventDocument in events)
+        PersistentEvent[] legacyEvents = [legacyReference, legacySessionEnd, legacyHasError, legacyNoError];
+        foreach (var eventDocument in currentEvents.Concat(legacyEvents))
             eventDocument.StackId = TestConstants.StackId;
 
-        await _eventRepository.AddAsync(events, o => o.ImmediateConsistency());
+        await _eventRepository.AddAsync(currentEvents, o => o.ImmediateConsistency());
+        foreach (var legacyEvent in legacyEvents)
+            await IndexLegacyEventAsync(legacyEvent);
         await RefreshDataAsync();
 
         Assert.Equal(2, await CountSystemFieldMatchesAsync("system-field-reference", "ref.session:session-42"));
@@ -240,6 +244,47 @@ public sealed class CustomFieldIndexingTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task SparseStringSlot_AcrossDailyIndexes_RetainsExactAndTermsResolution()
+    {
+        var definition = await _customFieldDefinitionRepository.AddFieldAsync(
+            nameof(PersistentEvent), TestConstants.OrganizationId, "sparse_label", "string");
+        await RefreshDataAsync();
+
+        var priorDayEvent = GenerateEvent(new DateTimeOffset(DateTime.UtcNow.Date.AddDays(-1).AddHours(12), TimeSpan.Zero));
+        priorDayEvent.Source = "sparse-daily-mapping";
+        priorDayEvent.Data = new DataDictionary { ["sparse_label"] = "Acme" };
+        var priorDayContext = await _pipeline.RunAsync(priorDayEvent, GetOrganization(), GetProject());
+        Assert.False(priorDayContext.HasError, priorDayContext.ErrorMessage);
+
+        // Materialize a newer daily partition without the sparse slot. Exact and terms resolution
+        // must still come from the declared pooled mapping, not only the latest server mapping.
+        var currentDayEvent = GenerateEvent(new DateTimeOffset(DateTime.UtcNow.Date.AddHours(12), TimeSpan.Zero));
+        currentDayEvent.Source = "sparse-daily-mapping";
+        var currentDayContext = await _pipeline.RunAsync(currentDayEvent, GetOrganization(), GetProject());
+        Assert.False(currentDayContext.HasError, currentDayContext.ErrorMessage);
+        await RefreshDataAsync();
+
+        string physicalField = $"idx.{definition.GetIdxName()}";
+        Assert.Equal($"{physicalField}.keyword", _elasticConfiguration.Events.MappingResolver.GetNonAnalyzedFieldName(physicalField));
+
+        var exactMatches = await _eventRepository.FindAsync(query => query
+            .Organization(TestConstants.OrganizationId)
+            .FieldEquals(eventDocument => eventDocument.Source, "sparse-daily-mapping")
+            .FilterExpression("data.sparse_label:Acme"));
+        Assert.Single(exactMatches.Documents);
+        Assert.Equal(priorDayContext.Event.Id, exactMatches.Documents.Single().Id);
+
+        var aggregation = await _eventRepository.CountAsync(query => query
+            .Organization(TestConstants.OrganizationId)
+            .FieldEquals(eventDocument => eventDocument.Source, "sparse-daily-mapping")
+            .AggregationsExpression("terms:data.sparse_label"));
+        var terms = aggregation.Aggregations.Terms<string>("terms_data.sparse_label");
+        var bucket = Assert.Single(terms?.Buckets ?? []);
+        Assert.Equal("Acme", bucket.KeyAsString);
+        Assert.Equal(1, bucket.Total);
+    }
+
+    [Fact]
     public async Task Event_WithNoMatchingDefinition_DoesNotGetCustomIndexed()
     {
         // No custom field definition created for this org's "unregistered_field"
@@ -271,7 +316,7 @@ public sealed class CustomFieldIndexingTests : IntegrationTestsBase
         legacyEvent.StackId = TestConstants.StackId;
         legacyEvent.Data = new DataDictionary { ["customer_id"] = "acme" };
         legacyEvent.Idx = new DataDictionary { ["customer_id-s"] = "acme" };
-        await _eventRepository.AddAsync(legacyEvent, o => o.ImmediateConsistency());
+        await IndexLegacyEventAsync(legacyEvent);
 
         var definition = await _customFieldDefinitionRepository.AddFieldAsync(
             nameof(PersistentEvent), TestConstants.OrganizationId, "customer_id", "keyword");
@@ -709,6 +754,16 @@ public sealed class CustomFieldIndexingTests : IntegrationTestsBase
             .FieldEquals(eventDocument => eventDocument.Source, source)
             .FilterExpression(filter));
         return results.Total;
+    }
+
+    private async Task IndexLegacyEventAsync(PersistentEvent eventDocument)
+    {
+        await _elasticConfiguration.Events.EnsureIndexAsync(eventDocument);
+        var response = await _elasticConfiguration.Client.IndexAsync(eventDocument, request => request
+            .Index(_elasticConfiguration.Events.GetIndex(eventDocument))
+            .Id(eventDocument.Id)
+            .Refresh(Refresh.WaitFor), TestContext.Current.CancellationToken);
+        Assert.True(response.IsValidResponse, response.DebugInformation);
     }
 
     private async Task CreateProjectDataAsync()
