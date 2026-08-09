@@ -12971,11 +12971,11 @@
         "type": "object",
         "properties": {
           "description": {
+            "maxLength": 500,
             "type": [
               "null",
               "string"
-            ],
-            "maxLength": 500
+            ]
           },
           "display_order": {
             "type": [
@@ -13041,46 +13041,46 @@
         "type": "object",
         "properties": {
           "name": {
+            "maxLength": 100,
             "type": [
               "null",
               "string"
-            ],
-            "maxLength": 100
+            ]
           },
           "filter": {
+            "maxLength": 2000,
             "type": [
               "null",
               "string"
-            ],
-            "maxLength": 2000
+            ]
           },
           "time": {
+            "maxLength": 100,
             "type": [
               "null",
               "string"
-            ],
-            "maxLength": 100
+            ]
           },
           "sort": {
+            "maxLength": 100,
             "type": [
               "null",
               "string"
-            ],
-            "maxLength": 100
+            ]
           },
           "slug": {
+            "maxLength": 100,
             "type": [
               "null",
               "string"
-            ],
-            "maxLength": 100
+            ]
           },
           "filter_definitions": {
+            "maxLength": 100000,
             "type": [
               "null",
               "string"
-            ],
-            "maxLength": 100000
+            ]
           },
           "columns": {
             "type": [
