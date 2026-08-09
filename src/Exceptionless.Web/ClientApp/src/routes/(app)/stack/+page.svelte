@@ -707,9 +707,9 @@
         await eventsQuery.refetch();
     }
 
-    const debouncedRefetch = debounce(1500, () => eventsQuery.refetch());
+    const debouncedReconciliationRefetch = debounce(1500, () => eventsQuery.refetch());
     onDestroy(() => {
-        debouncedRefetch.cancel();
+        debouncedReconciliationRefetch.cancel();
     });
 
     function onStackChanged(message: WebSocketMessageValue<'StackChanged'>) {
@@ -726,11 +726,9 @@
 
             removeTableData(table, (doc: EventSummaryModel<SummaryTemplateKeys>) => doc.id === message.id);
         }
-
-        debouncedRefetch();
     }
 
-    useEventListener(document, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT, () => debouncedRefetch());
+    useEventListener(document, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT, () => debouncedReconciliationRefetch());
     useEventListener(document, 'StackChanged', (event) => onStackChanged((event as CustomEvent).detail));
 
     let lastEmptyResponseAt = 0;

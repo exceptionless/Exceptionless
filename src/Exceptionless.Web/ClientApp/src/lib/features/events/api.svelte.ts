@@ -10,14 +10,6 @@ import { createMutation, createQuery, keepPreviousData, QueryClient, useQueryCli
 import type { EventSummaryModel, SummaryTemplateKeys } from './components/summary/index';
 import type { PersistentEvent } from './models';
 
-export async function invalidateOrganizationEventListQueries(queryClient: QueryClient, organizationId?: string) {
-    await queryClient.invalidateQueries({
-        predicate: (query) => isOrganizationEventsQueryKey(query.queryKey),
-        queryKey: organizationId ? queryKeys.organizations(organizationId) : queryKeys.type,
-        refetchType: 'none'
-    });
-}
-
 export async function invalidatePersistentEventQueries(queryClient: QueryClient, message: WebSocketMessageValue<'PersistentEventChanged'>) {
     const { id, organization_id, project_id, stack_id } = message;
     if (id) {
@@ -36,11 +28,9 @@ export async function invalidatePersistentEventQueries(queryClient: QueryClient,
         await queryClient.invalidateQueries({ exact: true, queryKey: queryKeys.organizations(organization_id) });
     }
 
-    await invalidateOrganizationEventListQueries(queryClient, organization_id);
-
     if (!id && !stack_id) {
         await queryClient.invalidateQueries({
-            predicate: (query) => !isOrganizationEventsQueryKey(query.queryKey),
+            predicate: (query) => !isOrganizationEventDashboardQueryKey(query.queryKey),
             queryKey: queryKeys.type
         });
     }
@@ -70,6 +60,7 @@ export const PERSISTENT_EVENT_DELETE_RECONCILE_EVENT = 'PersistentEventDeleteRec
 export const PERSISTENT_EVENT_DELETE_RECONCILE_DELAY = 1500;
 export const PERSISTENT_EVENT_DELETE_RECONCILE_RETRY_DELAY = 5000;
 export const ORGANIZATION_EVENT_QUERY_STALE_TIME_MS = 60 * 1000;
+export const ORGANIZATION_EVENT_QUERY_REFRESH_INTERVAL_MS = ORGANIZATION_EVENT_QUERY_STALE_TIME_MS;
 
 export interface DeleteEventsRequest {
     route: {
@@ -343,6 +334,7 @@ export function getOrganizationCountQuery(request: GetOrganizationCountRequest) 
                 return response.data!;
             },
             queryKey: queryKeys.organizationsCount(organizationId, params),
+            refetchInterval: ORGANIZATION_EVENT_QUERY_REFRESH_INTERVAL_MS,
             staleTime: ORGANIZATION_EVENT_QUERY_STALE_TIME_MS
         };
     });
@@ -364,6 +356,7 @@ export function getOrganizationEventsQuery(request: GetOrganizationEventsRequest
                 });
             },
             queryKey: queryKeys.organizationsEvents(organizationId, params),
+            refetchInterval: ORGANIZATION_EVENT_QUERY_REFRESH_INTERVAL_MS,
             staleTime: ORGANIZATION_EVENT_QUERY_STALE_TIME_MS
         };
     });
@@ -514,6 +507,10 @@ export function schedulePersistentEventDeleteReconciliation(queryClient: QueryCl
         void invalidateQueryBackedDetails();
         void queryClient.invalidateQueries({ queryKey: stackQueryKeys.type });
     }, PERSISTENT_EVENT_DELETE_RECONCILE_RETRY_DELAY);
+}
+
+function isOrganizationEventDashboardQueryKey(queryKey: readonly unknown[]): boolean {
+    return queryKey[0] === queryKeys.type[0] && queryKey[1] === 'organizations' && (queryKey[3] === 'count' || queryKey[3] === 'events');
 }
 
 function isOrganizationEventsQueryKey(queryKey: readonly unknown[]): boolean {

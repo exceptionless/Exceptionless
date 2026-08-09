@@ -37,7 +37,6 @@
         getFiltersFromCache,
         hasSingleTypeFilter,
         serializeFilters,
-        shouldRefreshPersistentEventChanged,
         shouldRefreshPersistentEventRemoval,
         toFilter,
         updateFilterCache
@@ -820,11 +819,8 @@
             return;
         }
 
-        if (!shouldRefreshPersistentEventChanged(filters, queryParams.filter, message.organization_id, message.project_id, message.stack_id, message.id)) {
-            return;
-        }
-
-        scheduleRefetch();
+        // Added and saved events are refreshed by the bounded active-query interval. Refetching here would bypass
+        // staleTime and make sustained production notifications drive an unbounded request/render loop.
     }
 
     useEventListener(document, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT, () => scheduleRefetch(true));

@@ -10,7 +10,7 @@
     import { getIntercomTokenQuery } from '$features/auth/api.svelte';
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
     import { UpgradeRequiredDialog } from '$features/billing';
-    import { invalidateOrganizationEventListQueries, invalidatePersistentEventQueries } from '$features/events/api.svelte';
+    import { invalidatePersistentEventQueries } from '$features/events/api.svelte';
     import { filterUsesPremiumFeatures, getSearchResourceForPathname } from '$features/events/premium-filter';
     import { buildIntercomBootOptions, IntercomShell } from '$features/intercom';
     import { shouldLoadIntercomOrganization } from '$features/intercom/config';
@@ -169,7 +169,6 @@
                     break;
                 case 'StackChanged':
                     await invalidateStackQueries(queryClient, data.message);
-                    await invalidateOrganizationEventListQueries(queryClient, data.message.organization_id);
                     break;
                 case 'TokenChanged':
                     await invalidateTokenQueries(queryClient, data.message);

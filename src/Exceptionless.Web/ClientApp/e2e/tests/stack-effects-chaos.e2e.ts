@@ -5,6 +5,7 @@ import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
 import { createRepresentativeEvent } from '../support/synthetic-event';
 
 interface ActionSample {
+    countRequests: number;
     listRequests: number;
     name: string;
     runtimeErrors: number;
@@ -13,6 +14,7 @@ interface ActionSample {
 interface RuntimeDiagnostics {
     actionSamples: ActionSample[];
     activeAction: string;
+    countRequests: number;
     listRequests: number;
     networkFailures: { action: string; status: number; url: string }[];
     runtimeErrors: { action: string; message: string }[];
@@ -25,6 +27,7 @@ test('stack effects stay bounded through background, paging, and navigation chao
     const diagnostics: RuntimeDiagnostics = {
         actionSamples: [],
         activeAction: 'setup',
+        countRequests: 0,
         listRequests: 0,
         networkFailures: [],
         runtimeErrors: []
@@ -103,25 +106,35 @@ test('stack effects stay bounded through background, paging, and navigation chao
     });
     expect(actionSample(diagnostics, 'background ingestion and resume').listRequests).toBeLessThanOrEqual(1);
 
-    await measureAction(diagnostics, 'bursty stack change notifications', async () => {
-        await page.evaluate((organizationId) => {
-            for (let index = 0; index < 30; index++) {
-                document.dispatchEvent(
-                    new CustomEvent('StackChanged', {
-                        detail: {
-                            change_type: 2,
-                            data: {},
-                            id: `chaos-missing-stack-${index}`,
-                            organization_id: organizationId,
-                            type: 'Stack'
-                        }
-                    })
-                );
-            }
-        }, e2eScenario.organizationId);
+    await measureAction(diagnostics, 'sustained stack change notifications', async () => {
+        for (let wave = 0; wave < 4; wave++) {
+            await page.evaluate(
+                ({ organizationId, wave }) => {
+                    for (let index = 0; index < 30; index++) {
+                        document.dispatchEvent(
+                            new CustomEvent('StackChanged', {
+                                detail: {
+                                    change_type: 2,
+                                    data: {},
+                                    id: `chaos-missing-stack-${wave}-${index}`,
+                                    organization_id: organizationId,
+                                    type: 'Stack'
+                                }
+                            })
+                        );
+                    }
+                },
+                { organizationId: e2eScenario.organizationId, wave }
+            );
+            await page.waitForTimeout(1_600);
+        }
+
         await page.waitForTimeout(2_000);
     });
-    expect(actionSample(diagnostics, 'bursty stack change notifications').listRequests).toBe(1);
+    const sustainedNotificationSample = actionSample(diagnostics, 'sustained stack change notifications');
+    expect(sustainedNotificationSample.countRequests).toBeLessThanOrEqual(1);
+    expect(sustainedNotificationSample.listRequests).toBeLessThanOrEqual(1);
+    expect(sustainedNotificationSample.runtimeErrors).toBe(0);
 
     await measureAction(diagnostics, 'route remounts', async () => {
         for (let index = 0; index < 5; index++) {
@@ -178,11 +191,13 @@ function isStackListResponse(response: Response, organizationId: string): boolea
 async function measureAction(diagnostics: RuntimeDiagnostics, name: string, action: () => Promise<void>): Promise<void> {
     diagnostics.activeAction = name;
     const initialListRequests = diagnostics.listRequests;
+    const initialCountRequests = diagnostics.countRequests;
     const initialRuntimeErrors = diagnostics.runtimeErrors.length;
 
     await action();
 
     diagnostics.actionSamples.push({
+        countRequests: diagnostics.countRequests - initialCountRequests,
         listRequests: diagnostics.listRequests - initialListRequests,
         name,
         runtimeErrors: diagnostics.runtimeErrors.length - initialRuntimeErrors
@@ -199,6 +214,12 @@ function recordConsoleError(diagnostics: RuntimeDiagnostics, message: ConsoleMes
 function recordListRequest(diagnostics: RuntimeDiagnostics, request: Request, organizationId: string): void {
     if (isStackListRequest(request, organizationId)) {
         diagnostics.listRequests++;
+        return;
+    }
+
+    const url = new URL(request.url());
+    if (url.pathname === `/api/v2/organizations/${organizationId}/events/count` && url.searchParams.get('mode') === 'stack_frequent') {
+        diagnostics.countRequests++;
     }
 }
 

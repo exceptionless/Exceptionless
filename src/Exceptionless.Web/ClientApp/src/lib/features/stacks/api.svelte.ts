@@ -8,18 +8,18 @@ import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanst
 import type { Stack, StackStatus } from './models';
 
 export async function invalidateStackQueries(queryClient: QueryClient, message: WebSocketMessageValue<'StackChanged'>) {
-    const { id, project_id } = message;
+    const { id } = message;
     if (id) {
         await queryClient.invalidateQueries({ queryKey: queryKeys.id(id) });
-        await queryClient.invalidateQueries({
-            predicate: (query) => isProjectStacksQueryKey(query.queryKey),
-            queryKey: project_id ? queryKeys.projects(project_id) : queryKeys.type,
-            refetchType: 'none'
-        });
     } else {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.type });
+        await queryClient.invalidateQueries({
+            predicate: (query) => !isProjectStacksQueryKey(query.queryKey),
+            queryKey: queryKeys.type
+        });
     }
 }
+
+export const STACK_LIST_QUERY_REFRESH_INTERVAL_MS = 60 * 1000;
 
 export const queryKeys = {
     deleteMarkCritical: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'mark-not-critical'] as const,
@@ -164,7 +164,9 @@ export function getProjectStacksQuery(request: GetProjectStacksRequest) {
 
             return response;
         },
-        queryKey: queryKeys.project(request.route.projectId, request.params)
+        queryKey: queryKeys.project(request.route.projectId, request.params),
+        refetchInterval: STACK_LIST_QUERY_REFRESH_INTERVAL_MS,
+        staleTime: STACK_LIST_QUERY_REFRESH_INTERVAL_MS
     }));
 }
 

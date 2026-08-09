@@ -10,6 +10,7 @@ interface ActionSample extends RequestCounts {
 }
 
 interface RequestCounts {
+    eventCount: number;
     eventDetails: number;
     eventList: number;
     stackDetails: number;
@@ -144,33 +145,41 @@ test('event list and detail effects stay bounded through paging and background c
     });
     expect(actionSample(diagnostics, 'event list background ingestion and resume').eventList).toBeLessThanOrEqual(1);
 
-    await measureAction(diagnostics, 'bursty persistent event notifications', async () => {
-        await page.evaluate(
-            ({ organizationId, projectId, stackId }) => {
-                for (let index = 0; index < 30; index++) {
-                    document.dispatchEvent(
-                        new CustomEvent('PersistentEventChanged', {
-                            detail: {
-                                change_type: 0,
-                                id: `chaos-missing-event-${index}`,
-                                organization_id: organizationId,
-                                project_id: projectId,
-                                stack_id: stackId,
-                                type: 'PersistentEvent'
-                            }
-                        })
-                    );
+    await measureAction(diagnostics, 'sustained persistent event notifications', async () => {
+        for (let wave = 0; wave < 4; wave++) {
+            await page.evaluate(
+                ({ organizationId, projectId, stackId, wave }) => {
+                    for (let index = 0; index < 30; index++) {
+                        document.dispatchEvent(
+                            new CustomEvent('PersistentEventChanged', {
+                                detail: {
+                                    change_type: 0,
+                                    id: `chaos-missing-event-${wave}-${index}`,
+                                    organization_id: organizationId,
+                                    project_id: projectId,
+                                    stack_id: stackId,
+                                    type: 'PersistentEvent'
+                                }
+                            })
+                        );
+                    }
+                },
+                {
+                    organizationId: e2eScenario.organizationId,
+                    projectId: e2eScenario.projectId,
+                    stackId: journey.stackId!,
+                    wave
                 }
-            },
-            {
-                organizationId: e2eScenario.organizationId,
-                projectId: e2eScenario.projectId,
-                stackId: journey.stackId!
-            }
-        );
+            );
+            await page.waitForTimeout(1_600);
+        }
+
         await page.waitForTimeout(2_000);
     });
-    expect(actionSample(diagnostics, 'bursty persistent event notifications').eventList).toBe(1);
+    const sustainedNotificationSample = actionSample(diagnostics, 'sustained persistent event notifications');
+    expect(sustainedNotificationSample.eventCount).toBeLessThanOrEqual(1);
+    expect(sustainedNotificationSample.eventList).toBeLessThanOrEqual(1);
+    expect(sustainedNotificationSample.runtimeErrors).toBe(0);
 
     await measureAction(diagnostics, 'event detail alias route remounts', async () => {
         for (let index = 0; index < 5; index++) {
@@ -275,6 +284,7 @@ function createGroupedEvent(appUrl: string, message: string, run: string, index:
 
 function emptyRequestCounts(): RequestCounts {
     return {
+        eventCount: 0,
         eventDetails: 0,
         eventList: 0,
         stackDetails: 0,
@@ -299,6 +309,7 @@ async function measureAction(diagnostics: RuntimeDiagnostics, name: string, acti
     await action();
 
     diagnostics.actionSamples.push({
+        eventCount: diagnostics.requests.eventCount - initialRequests.eventCount,
         eventDetails: diagnostics.requests.eventDetails - initialRequests.eventDetails,
         eventList: diagnostics.requests.eventList - initialRequests.eventList,
         name,
@@ -329,6 +340,8 @@ function recordRequest(diagnostics: RuntimeDiagnostics, request: Request, organi
     const url = new URL(request.url());
     if (isEventListRequest(request, organizationId)) {
         diagnostics.requests.eventList++;
+    } else if (url.pathname === `/api/v2/organizations/${organizationId}/events/count`) {
+        diagnostics.requests.eventCount++;
     } else if (/^\/api\/v2\/events\/[a-f0-9]{24}$/.test(url.pathname)) {
         diagnostics.requests.eventDetails++;
     } else if (/^\/api\/v2\/stacks\/[a-f0-9]{24}\/events$/.test(url.pathname)) {
