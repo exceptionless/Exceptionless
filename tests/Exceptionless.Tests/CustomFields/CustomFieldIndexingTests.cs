@@ -11,6 +11,7 @@ using Elastic.Clients.Elasticsearch;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.CustomFields;
 using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Utility;
 using Xunit;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
@@ -758,6 +759,9 @@ public sealed class CustomFieldIndexingTests : IntegrationTestsBase
 
     private async Task IndexLegacyEventAsync(PersistentEvent eventDocument)
     {
+        if (String.IsNullOrEmpty(eventDocument.Id))
+            eventDocument.Id = ObjectId.GenerateNewId().ToString();
+
         string index = _elasticConfiguration.Events.GetIndex(eventDocument);
         await _elasticConfiguration.Events.EnsureIndexAsync(eventDocument);
         var response = await _elasticConfiguration.Client.IndexAsync(eventDocument, request => request

@@ -75,10 +75,16 @@ public partial class EventEndpointTests
 
     private async Task<PersistentEvent> GetEventByReferenceIdWithCustomFieldsAsync(string referenceId)
     {
-        var match = Assert.Single((await _eventRepository.GetByReferenceIdAsync(
-            SampleDataService.TEST_PROJECT_ID, referenceId)).Documents);
-        return Assert.IsType<PersistentEvent>(await _eventRepository.GetByIdAsync(
-            match.Id, options => options.Include(eventDocument => eventDocument.Data, eventDocument => eventDocument.Idx)));
+        // Search a bounded test-project page and filter the raw _source value in memory. This avoids
+        // coupling the ingestion regression to the separate reference-id search helper while still
+        // proving the event, Data, and managed Idx values round-trip through Elasticsearch.
+        var events = await _eventRepository.FindAsync(
+            query => query.Project(SampleDataService.TEST_PROJECT_ID),
+            options => options.PageLimit(1000).Include(
+                eventDocument => eventDocument.ReferenceId,
+                eventDocument => eventDocument.Data,
+                eventDocument => eventDocument.Idx));
+        return Assert.Single(events.Documents, eventDocument => eventDocument.ReferenceId == referenceId);
     }
 
     private Task PostRawEventAsync(string referenceId, string customDataProperty)

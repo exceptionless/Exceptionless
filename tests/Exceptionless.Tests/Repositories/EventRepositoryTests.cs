@@ -234,6 +234,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
 
         var legacyClosedSession = _eventData.GenerateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2,
             occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "legacy-closed-session", generateData: false);
+        legacyClosedSession.Id = ObjectId.GenerateNewId().ToString();
         legacyClosedSession.Idx = new DataDictionary {
             { "sessionend-d", firstEvent.UtcDateTime.AddMinutes(5) }
         };
