@@ -266,7 +266,11 @@
         view: VIEW
     });
     const pageTitle = $derived(savedViewsState.activeSavedView?.name ?? 'Stacks');
-    const isSavedViewRoutePending = $derived(!!page.params.slug && !savedViewsState.activeSavedView);
+    // Keep queries disabled until saved-view state and its URL overrides have both settled.
+    let normalizedSavedViewId = $state<string>();
+    const isSavedViewRoutePending = $derived(
+        !!page.params.slug && (!savedViewsState.activeSavedView || savedViewsState.activeSavedView.id !== normalizedSavedViewId)
+    );
 
     $effect(() => {
         document.title = `${pageTitle} - Exceptionless`;
@@ -511,13 +515,15 @@
 
     $effect(() => {
         const activeSavedViewId = savedViewsState.activeSavedView?.id;
-        if (!activeSavedViewId) {
+        if (!activeSavedViewId || activeSavedViewId !== savedViewsState.hydratedSavedViewId) {
+            normalizedSavedViewId = undefined;
             return;
         }
 
         untrack(() => {
             updateFilters(getCurrentFilters(getListFilterQueryParams(page.url.searchParams)), { clearPagination: false });
         });
+        normalizedSavedViewId = activeSavedViewId;
     });
 
     function getQueryFilterParams(filters: FacetedFilter.IFilter[]) {

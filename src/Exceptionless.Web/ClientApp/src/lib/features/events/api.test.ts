@@ -17,10 +17,14 @@ afterEach(() => {
 });
 
 describe('invalidatePersistentEventQueries', () => {
-    it('does not invalidate nested count aggregation queries for event updates', async () => {
+    it('marks cached organization event lists stale without refetching them immediately', async () => {
         // Arrange
         const queryClient = new QueryClient();
-        const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries').mockImplementation(async () => {});
+        const eventListKey = queryKeys.organizationsEvents('organization-id', { mode: 'summary' });
+        const otherOrganizationEventListKey = queryKeys.organizationsEvents('other-organization-id', { mode: 'summary' });
+        queryClient.setQueryData(eventListKey, { data: [] });
+        queryClient.setQueryData(otherOrganizationEventListKey, { data: [] });
+        const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
         // Act
         await invalidatePersistentEventQueries(queryClient, {
@@ -39,9 +43,19 @@ describe('invalidatePersistentEventQueries', () => {
         expect(invalidateSpy).toHaveBeenCalledWith({ exact: true, queryKey: queryKeys.projects('project-id') });
         expect(invalidateSpy).toHaveBeenCalledWith({ exact: true, queryKey: queryKeys.organizations('organization-id') });
         expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: queryKeys.stacks('stack-id') });
+
+        const listInvalidation = invalidateSpy.mock.calls.find(([filters]) => filters?.refetchType === 'none')?.[0];
+        expect(listInvalidation).toMatchObject({
+            queryKey: queryKeys.organizations('organization-id'),
+            refetchType: 'none'
+        });
+        expect(listInvalidation?.predicate?.({ queryKey: eventListKey } as never)).toBe(true);
+        expect(listInvalidation?.predicate?.({ queryKey: queryKeys.organizationsCount('organization-id') } as never)).toBe(false);
+        expect(queryClient.getQueryState(eventListKey)?.isInvalidated).toBe(true);
+        expect(queryClient.getQueryState(otherOrganizationEventListKey)?.isInvalidated).toBe(false);
     });
 
-    it('leaves organization event list refreshes to the document event handler for bulk updates', async () => {
+    it('marks all cached organization event lists stale for bulk updates', async () => {
         // Arrange
         const queryClient = new QueryClient();
         const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries').mockImplementation(async () => {});
@@ -62,6 +76,10 @@ describe('invalidatePersistentEventQueries', () => {
         const broadInvalidation = invalidateSpy.mock.calls.find(([filters]) => filters?.queryKey === queryKeys.type)?.[0];
         expect(broadInvalidation?.predicate?.({ queryKey: queryKeys.organizationsEvents('organization-id') } as never)).toBe(false);
         expect(broadInvalidation?.predicate?.({ queryKey: queryKeys.organizationsCount('organization-id') } as never)).toBe(true);
+
+        const listInvalidation = invalidateSpy.mock.calls.find(([filters]) => filters?.refetchType === 'none')?.[0];
+        expect(listInvalidation?.predicate?.({ queryKey: queryKeys.organizationsEvents('organization-id') } as never)).toBe(true);
+        expect(listInvalidation?.predicate?.({ queryKey: queryKeys.organizationsCount('organization-id') } as never)).toBe(false);
     });
 });
 
