@@ -678,9 +678,7 @@ public sealed class CustomFieldIndexingTests : IntegrationTestsBase
 
         await _eventRepository.AddAsync(eventDocument, o => o.ImmediateConsistency());
 
-        Assert.NotNull(eventDocument.Idx);
-        Assert.DoesNotContain(EventCustomFieldService.SessionReferenceIdxField, eventDocument.Idx.Keys);
-        Assert.Equal("legacy_server_field", eventDocument.Idx["session-r"]);
+        Assert.Null(eventDocument.Idx);
     }
 
     private Organization GetOrganization()

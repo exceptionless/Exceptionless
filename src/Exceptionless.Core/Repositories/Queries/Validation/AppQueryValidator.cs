@@ -58,7 +58,9 @@ public class AppQueryValidator : IAppQueryValidator
     public async Task<QueryProcessResult> ValidateQueryAsync(IQueryNode query)
     {
         var info = await ValidationVisitor.RunAsync(query);
-        return ApplyQueryRules(info);
+        var result = ApplyQueryRules(info);
+        result.ReferencedFields = info.ReferencedFields.ToArray();
+        return result;
     }
 
     protected virtual QueryProcessResult ApplyQueryRules(QueryValidationResult result)
@@ -95,7 +97,9 @@ public class AppQueryValidator : IAppQueryValidator
     public async Task<QueryProcessResult> ValidateAggregationsAsync(IQueryNode query)
     {
         var info = await ValidationVisitor.RunAsync(query, new QueryVisitorContext());
-        return ApplyAggregationRules(info);
+        var result = ApplyAggregationRules(info);
+        result.ReferencedFields = info.ReferencedFields.ToArray();
+        return result;
     }
 
     protected virtual QueryProcessResult ApplyAggregationRules(QueryValidationResult result)
@@ -108,5 +112,6 @@ public class AppQueryValidator : IAppQueryValidator
         public bool IsValid { get; init; }
         public string? Message { get; set; }
         public bool UsesPremiumFeatures { get; set; }
+        public IReadOnlyCollection<string> ReferencedFields { get; set; } = [];
     }
 }

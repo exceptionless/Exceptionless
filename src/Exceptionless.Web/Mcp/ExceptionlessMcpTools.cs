@@ -12,6 +12,7 @@ using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
+using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Web.Extensions;
 using Foundatio.Repositories;
@@ -42,9 +43,9 @@ public sealed class ExceptionlessMcpTools
     private const string SnoozeDurationDescription = "Optional relative snooze duration such as 2h, 3d, or 1w. Do not combine with snoozeUntilUtc.";
     private const string ProjectFilterDescription = "Optional Exceptionless filter expression applied to projects. Supported fields: id, name, organization_id, created_utc, updated_utc, last_event_date_utc.";
     private const string StackFilterDescription = "Optional Exceptionless filter expression. Supported fields include: stack, project, project_id, organization, organization_id, type, status, title, description, tag, tags, references, fixed, hidden, regressed, error, first, first_occurrence, last, last_occurrence, occurrences, total_occurrences.";
-    private const string EventFilterDescription = "Optional Exceptionless filter expression applied to events. Supported fields include: id, project, project_id, stack, stack_id, organization, organization_id, type, source, message, date, tag, tags, user, user.name, user.email, path, error, error.type, error.message, error.code, status, data.*. data.* works for custom data values that were indexed for search; arbitrary event detail data is returned by get_event but is not searchable unless indexed.";
+    private const string EventFilterDescription = "Optional Exceptionless filter expression applied to events. Supported fields include: id, project, project_id, stack, stack_id, organization, organization_id, type, source, message, date, tag, tags, user, user.name, user.email, path, error, error.type, error.message, error.code, status, data.*. Searchable data.* fields require an active configured custom-field definition; arbitrary event detail data returned by get_event is not searchable.";
 
-    private const string IndexedDataFilterNote = "data.* filters work for custom data values that were indexed for search. Arbitrary event detail data is returned by get_event but is not searchable unless indexed.";
+    private const string IndexedDataFilterNote = "Searchable data.* fields require an active configured custom-field definition. Arbitrary event detail data returned by get_event is not searchable.";
 
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IOrganizationRepository _organizationRepository;
@@ -55,6 +56,7 @@ public sealed class ExceptionlessMcpTools
     private readonly ITokenRepository _tokenRepository;
     private readonly StackQueryValidator _stackQueryValidator;
     private readonly PersistentEventQueryValidator _eventQueryValidator;
+    private readonly EventCustomFieldQueryPolicy _eventCustomFieldQueryPolicy;
     private readonly SemanticVersionParser _semanticVersionParser;
     private readonly ITextSerializer _serializer;
     private readonly ILogger<ExceptionlessMcpTools> _logger;
@@ -69,6 +71,7 @@ public sealed class ExceptionlessMcpTools
         ITokenRepository tokenRepository,
         StackQueryValidator stackQueryValidator,
         PersistentEventQueryValidator eventQueryValidator,
+        EventCustomFieldQueryPolicy eventCustomFieldQueryPolicy,
         McpContextService mcpContextService,
         SemanticVersionParser semanticVersionParser,
         ITextSerializer serializer,
@@ -83,6 +86,7 @@ public sealed class ExceptionlessMcpTools
         _tokenRepository = tokenRepository;
         _stackQueryValidator = stackQueryValidator;
         _eventQueryValidator = eventQueryValidator;
+        _eventCustomFieldQueryPolicy = eventCustomFieldQueryPolicy;
         _semanticVersionParser = semanticVersionParser;
         _serializer = serializer;
         _logger = logger;
@@ -437,6 +441,9 @@ public sealed class ExceptionlessMcpTools
 
             var (stack, organization) = await GetStackAndOrganizationAsync(stackId, projectId);
             var systemFilter = new AppFilter(stack, organization);
+            var customFieldError = await ValidateCustomFieldsAsync(validation.ReferencedFields, systemFilter);
+            if (customFieldError is not null)
+                return McpResponse<McpListData<McpEventResult>>.Failed(customFieldError);
 
             var results = await _eventRepository.FindAsync(
                 q => ApplyEventTimeRange(q.AppFilter(systemFilter).FilterExpression(filter).EnforceEventStackFilter().SortExpression(sort ?? "-date"), timeRange),
@@ -502,6 +509,9 @@ public sealed class ExceptionlessMcpTools
             var project = projectContext.Project!;
             var organization = projectContext.Organization!;
             var systemFilter = new AppFilter(project, organization);
+            var customFieldError = await ValidateCustomFieldsAsync(validation.ReferencedFields, systemFilter);
+            if (customFieldError is not null)
+                return McpResponse<McpListData<McpEventResult>>.Failed(customFieldError);
 
             var results = await _eventRepository.FindAsync(
                 q => ApplyEventTimeRange(q.AppFilter(systemFilter).FilterExpression(filter).EnforceEventStackFilter().SortExpression(sort ?? "-date"), timeRange),
@@ -612,6 +622,9 @@ public sealed class ExceptionlessMcpTools
             var project = projectContext.Project!;
             var organization = projectContext.Organization!;
             var systemFilter = new AppFilter(project, organization);
+            var customFieldError = await ValidateCustomFieldsAsync(validation.ReferencedFields, systemFilter);
+            if (customFieldError is not null)
+                return McpResponse<McpEventCountResult>.Failed(customFieldError);
             string aggregations = BuildCountEventsAggregations(interval, resolvedGroupBy, resolvedGroupLimit);
 
             var aggregationValidation = await _eventQueryValidator.ValidateAggregationsAsync(aggregations);
@@ -1085,6 +1098,22 @@ public sealed class ExceptionlessMcpTools
         return new SearchValidationResult(resolvedLimit, warning);
     }
 
+    private async Task<McpErrorInfo?> ValidateCustomFieldsAsync(IEnumerable<string> referencedFields, AppFilter appFilter)
+    {
+        var validation = await _eventCustomFieldQueryPolicy.ValidateAsync(referencedFields, appFilter);
+        if (validation.IsValid)
+            return null;
+
+        if (validation.ErrorCode == EventCustomFieldQueryPolicy.CustomFieldScopeRequired)
+            return McpErrors.CustomFieldScopeRequired(validation.Message!);
+
+        return McpErrors.UnknownFilterField(
+            validation.Message!,
+            validation.Field ?? "custom field",
+            EventFilterFields,
+            "data.<configured-field> or idx.<configured-field>");
+    }
+
     private async Task<SearchValidationResult> ValidateSearchAsync(
         string? filter,
         string? sort,
@@ -1108,7 +1137,7 @@ public sealed class ExceptionlessMcpTools
         if (filterFieldError is not null)
             return SearchValidationResult.Failed(filterFieldError);
 
-        return new SearchValidationResult(resolvedLimit, warning);
+        return new SearchValidationResult(resolvedLimit, warning) { ReferencedFields = queryValidation.ReferencedFields };
     }
 
     private static bool TryValidateSort(string? sort, IReadOnlySet<string> allowedSortFields, out string? error)
@@ -1459,17 +1488,21 @@ public sealed class ExceptionlessMcpTools
             if (allowedFilterFields.Contains(field))
                 continue;
 
-            if (allowIndexedDataFields && field.StartsWith("data.", StringComparison.OrdinalIgnoreCase))
+            if (allowIndexedDataFields
+                && (field.StartsWith("data.", StringComparison.OrdinalIgnoreCase)
+                    || field.StartsWith("idx.", StringComparison.OrdinalIgnoreCase)))
             {
-                string indexedDataField = field["data.".Length..];
-                if (indexedDataField.StartsWith('@') || indexedDataField.IsValidFieldName())
+                string indexedDataField = field[(field.IndexOf('.') + 1)..];
+                if ((field.StartsWith("data.", StringComparison.OrdinalIgnoreCase) && indexedDataField.StartsWith('@'))
+                    || EventCustomFieldService.IsSystemField(indexedDataField)
+                    || EventCustomFieldService.IsValidFieldName(indexedDataField))
                     continue;
 
                 return McpErrors.UnknownFilterField(
-                    $"Custom data filter field '{field}' cannot be indexed. Use a top-level scalar custom data field in the form data.<field>, where <field> contains 1 to 25 letters, numbers, or hyphens.",
+                    $"Custom data filter field '{field}' has an invalid name. Configured custom-field names contain 1 to 100 ASCII letters, numbers, underscores, dots, or hyphens.",
                     field,
                     allowedFilterFields,
-                    "data.<field>");
+                    "data.<configured-field> or idx.<configured-field>");
             }
 
             return McpErrors.UnknownFilterField($"Unknown filter field '{field}'.", field, allowedFilterFields);
@@ -1925,6 +1958,8 @@ public sealed class ExceptionlessMcpTools
 
     private sealed record SearchValidationResult(int Limit, string? Warning = null, McpErrorInfo? Error = null)
     {
+        public IReadOnlyCollection<string> ReferencedFields { get; init; } = [];
+
         public static SearchValidationResult Failed(McpErrorInfo error)
         {
             return new SearchValidationResult(DefaultLimit, Error: error);

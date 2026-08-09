@@ -37,13 +37,22 @@ export const INDEX_TYPE_LABELS: Record<IndexType, string> = {
 export const INDEX_TYPE_DESCRIPTIONS: Record<IndexType, string> = {
     bool: 'True/false values.',
     date: 'ISO 8601 date or timestamp.',
-    double: '64-bit decimal. Higher precision.',
-    float: '32-bit decimal. Lower precision.',
+    double: '64-bit binary floating-point. Use Keyword when formatting such as "4.90" matters.',
+    float: '32-bit binary floating-point. Use Keyword when formatting such as "4.90" matters.',
     int: '32-bit whole number (-2B to 2B).',
     keyword: 'Exact-match string. Best for IDs, codes, tags.',
     long: '64-bit whole number. For very large integers.',
     string: 'Full-text search. Best for messages and descriptions.'
 };
+
+export function parseApiIndexType(value: string): IndexType {
+    const indexType = INDEX_TYPES.find((candidate) => candidate === value);
+    if (!indexType) {
+        throw new Error(`Unsupported custom-field index type '${value}'.`);
+    }
+
+    return indexType;
+}
 
 export function parseIndexType(value: null | string | undefined, fallback: IndexType = 'keyword'): IndexType {
     return INDEX_TYPES.find((indexType) => indexType === value) ?? fallback;

@@ -100,6 +100,13 @@ public static class AppDiagnostics
     internal static readonly Counter<int> EventsDeleted = Meter.CreateCounter<int>("ex.events.deleted", description: "Events that were deleted");
     internal static readonly Counter<int> EventsRetryCount = Meter.CreateCounter<int>("ex.events.retry.count", description: "Events where processing was retried");
     internal static readonly Counter<int> EventsRetryErrors = Meter.CreateCounter<int>("ex.events.retry.errors", description: "Events where retry processing got an error");
+
+    internal static readonly Counter<int> CustomFieldMappingFailures = Meter.CreateCounter<int>("ex.custom_fields.mapping.failures", description: "Custom field definition mapping load failures");
+    internal static readonly Counter<int> CustomFieldProvisioningFailures = Meter.CreateCounter<int>("ex.custom_fields.provisioning.failures", description: "Custom field system-definition provisioning failures");
+    internal static readonly Counter<int> CustomFieldProcessingFailures = Meter.CreateCounter<int>("ex.custom_fields.processing.failures", description: "Unexpected custom field processing failures");
+    internal static readonly Counter<int> CustomFieldConversionSkips = Meter.CreateCounter<int>("ex.custom_fields.conversion.skips", description: "Custom field values skipped because they do not match the configured index type");
+    internal static readonly Counter<int> CustomFieldLifetimeLimitReached = Meter.CreateCounter<int>("ex.custom_fields.lifetime_limit.reached", description: "Custom field creation attempts rejected by the lifetime slot limit");
+    internal static readonly Histogram<int> CustomFieldMappedFieldCount = Meter.CreateHistogram<int>("ex.custom_fields.mapping.field_count", description: "Total mapped fields observed while validating a retained event index");
     internal static readonly Histogram<double> EventsFieldCount = Meter.CreateHistogram<double>("ex.events.field.count", description: "Number of fields per event");
 
     internal static readonly Counter<int> PostsParsed = Meter.CreateCounter<int>("ex.posts.parsed", description: "Post batch submission parsed");

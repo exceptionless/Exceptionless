@@ -152,15 +152,15 @@ export class NumberFilter implements IFilter {
     public term = $state<string>();
     public type: string = 'number';
 
-    public value = $state<number>();
+    public value = $state<string>();
 
     public get key(): string {
         return `${this.type}-${this.term}`;
     }
 
-    constructor(term?: string, value?: number) {
+    constructor(term?: string, value?: number | string) {
         this.term = term;
-        this.value = value;
+        this.value = value === undefined ? undefined : String(value);
     }
 
     public clone(): IFilter {

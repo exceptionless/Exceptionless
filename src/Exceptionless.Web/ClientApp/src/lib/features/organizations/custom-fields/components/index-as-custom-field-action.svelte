@@ -3,48 +3,38 @@
     import { Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Dialog from '$comp/ui/dialog';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import * as Field from '$comp/ui/field';
     import * as Select from '$comp/ui/select';
     import { Spinner } from '$comp/ui/spinner';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
-    import { organization } from '$features/organizations/context.svelte';
     import {
         createCustomFieldMutation,
-        getCustomFieldsQuery,
+        type CustomFieldDefinition,
+        CustomFieldNameSchema,
         INDEX_TYPE_DESCRIPTIONS,
         INDEX_TYPE_LABELS,
         INDEX_TYPES,
-        type IndexType,
-        parseIndexType
+        parseIndexType,
+        type QuickCreateCustomFieldFormData,
+        QuickCreateCustomFieldSchema
     } from '$features/organizations/custom-fields';
+    import { getFormErrorMessages, problemDetailsToFormErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
-    import Database from '@lucide/svelte/icons/database';
+    import { createForm } from '@tanstack/svelte-form';
     import { toast } from 'svelte-sonner';
 
     interface Props {
+        customFields: CustomFieldDefinition[];
         fieldName: string;
+        open?: boolean;
+        organizationId: string;
     }
 
-    let { fieldName }: Props = $props();
-
-    const organizationId = $derived(organization.current ?? '');
-
-    const customFieldsQuery = getCustomFieldsQuery({
-        route: {
-            get organizationId() {
-                return organizationId;
-            }
-        }
-    });
+    let { customFields, fieldName, open = $bindable(false), organizationId }: Props = $props();
 
     const isReservedSystemField = $derived(['haserror', 'sessionend'].includes(fieldName.toLowerCase()));
-    const isAlreadyIndexed = $derived(customFieldsQuery.data?.some((field) => field.name.toLowerCase() === fieldName.toLowerCase()) ?? false);
-    const canCreate = $derived(!isReservedSystemField && customFieldsQuery.isSuccess && !isAlreadyIndexed);
-
-    let showDialog = $state(false);
-    let selectedType = $state<IndexType>('keyword');
-    let error = $state('');
+    const isAlreadyIndexed = $derived(customFields.some((field) => field.name.toLowerCase() === fieldName.toLowerCase()));
+    const canCreate = $derived(!isReservedSystemField && CustomFieldNameSchema.safeParse(fieldName).success && !isAlreadyIndexed);
 
     const createField = createCustomFieldMutation({
         route: {
@@ -54,37 +44,40 @@
         }
     });
 
-    async function handleCreate() {
-        error = '';
-        try {
-            await createField.mutateAsync({
-                indexType: selectedType,
-                name: fieldName
-            });
-            toast.success(`"${fieldName}" is now indexed as a custom field. Future events will include it in search.`);
-            showDialog = false;
-        } catch (e: unknown) {
-            if (showBillingDialogOnUpgradeProblem(e, organizationId, () => handleCreate())) {
-                error = '';
-                return;
-            }
+    const form = createForm(() => ({
+        defaultValues: { indexType: 'keyword' } as QuickCreateCustomFieldFormData,
+        validators: {
+            onSubmit: QuickCreateCustomFieldSchema,
+            onSubmitAsync: async ({ value }) => {
+                try {
+                    await createField.mutateAsync({ indexType: value.indexType, name: fieldName });
+                    toast.success(`"${fieldName}" is now indexed as a custom field. Future events will include it in search.`);
+                    open = false;
+                    return null;
+                } catch (error: unknown) {
+                    if (showBillingDialogOnUpgradeProblem(error, organizationId, () => form.handleSubmit())) {
+                        return null;
+                    }
 
-            if (e instanceof ProblemDetails) {
-                error = e.errors?.['general']?.[0] ?? e.title ?? e.detail ?? 'An error occurred.';
-            } else {
-                error = 'An unexpected error occurred.';
+                    if (error instanceof ProblemDetails) {
+                        return problemDetailsToFormErrors(error);
+                    }
+
+                    return { form: 'An unexpected error occurred.' };
+                }
             }
         }
-    }
+    }));
+
+    $effect(() => {
+        if (open) {
+            form.reset();
+        }
+    });
 </script>
 
 {#if organizationId && canCreate}
-    <DropdownMenu.Item onclick={() => (showDialog = true)} title="Index this field for filtering">
-        <Database data-icon="inline-start" />
-        Index as Custom Field
-    </DropdownMenu.Item>
-
-    <Dialog.Root bind:open={showDialog}>
+    <Dialog.Root bind:open>
         <Dialog.Content class="sm:max-w-[400px]">
             <Dialog.Header>
                 <Dialog.Title>Index "{fieldName}" as Custom Field</Dialog.Title>
@@ -98,42 +91,52 @@
                 class="flex flex-col gap-4"
                 onsubmit={(e) => {
                     e.preventDefault();
-                    handleCreate();
+                    form.handleSubmit();
                 }}
             >
-                {#if error}
-                    <ErrorMessage message={error} />
-                {/if}
+                <form.Subscribe selector={(state) => state.errors}>
+                    {#snippet children(errors)}
+                        <ErrorMessage message={getFormErrorMessages(errors)} />
+                    {/snippet}
+                </form.Subscribe>
 
-                <Field.Field>
-                    <Field.Label for="index-type">Index Type</Field.Label>
-                    <Select.Root type="single" value={selectedType} onValueChange={(value) => (selectedType = parseIndexType(value))}>
-                        <Select.Trigger id="index-type" class="w-full">
-                            <span class="font-medium">{INDEX_TYPE_LABELS[selectedType]}</span>
-                            <span class="text-muted-foreground ml-2 text-xs">{INDEX_TYPE_DESCRIPTIONS[selectedType]}</span>
-                        </Select.Trigger>
-                        <Select.Content class="max-h-72">
-                            <Select.Group>
-                                {#each INDEX_TYPES as type (type)}
-                                    <Select.Item value={type} class="flex flex-col items-start gap-0.5 py-2">
-                                        <span class="font-medium">{INDEX_TYPE_LABELS[type]}</span>
-                                        <span class="text-muted-foreground text-xs">{INDEX_TYPE_DESCRIPTIONS[type]}</span>
-                                    </Select.Item>
-                                {/each}
-                            </Select.Group>
-                        </Select.Content>
-                    </Select.Root>
-                    <Muted>Choose the type that best matches this field's data.</Muted>
-                </Field.Field>
+                <form.Field name="indexType">
+                    {#snippet children(field)}
+                        <Field.Field>
+                            <Field.Label for={field.name}>Index Type</Field.Label>
+                            <Select.Root type="single" value={field.state.value} onValueChange={(value) => field.handleChange(parseIndexType(value))}>
+                                <Select.Trigger id={field.name} class="w-full">
+                                    <span class="font-medium">{INDEX_TYPE_LABELS[field.state.value]}</span>
+                                    <span class="text-muted-foreground ml-2 text-xs">{INDEX_TYPE_DESCRIPTIONS[field.state.value]}</span>
+                                </Select.Trigger>
+                                <Select.Content class="max-h-72">
+                                    <Select.Group>
+                                        {#each INDEX_TYPES as type (type)}
+                                            <Select.Item value={type} class="flex flex-col items-start gap-0.5 py-2">
+                                                <span class="font-medium">{INDEX_TYPE_LABELS[type]}</span>
+                                                <span class="text-muted-foreground text-xs">{INDEX_TYPE_DESCRIPTIONS[type]}</span>
+                                            </Select.Item>
+                                        {/each}
+                                    </Select.Group>
+                                </Select.Content>
+                            </Select.Root>
+                            <Muted>Choose the type that best matches this field's data.</Muted>
+                        </Field.Field>
+                    {/snippet}
+                </form.Field>
 
                 <Dialog.Footer>
-                    <Button variant="outline" type="button" onclick={() => (showDialog = false)}>Cancel</Button>
-                    <Button type="submit" disabled={createField.isPending}>
-                        {#if createField.isPending}
-                            <Spinner data-icon="inline-start" />
-                        {/if}
-                        Index Field
-                    </Button>
+                    <Button variant="outline" type="button" onclick={() => (open = false)}>Cancel</Button>
+                    <form.Subscribe selector={(state) => state.isSubmitting}>
+                        {#snippet children(isSubmitting)}
+                            <Button type="submit" disabled={isSubmitting}>
+                                {#if isSubmitting}
+                                    <Spinner data-icon="inline-start" />
+                                {/if}
+                                Index Field
+                            </Button>
+                        {/snippet}
+                    </form.Subscribe>
                 </Dialog.Footer>
             </form>
         </Dialog.Content>

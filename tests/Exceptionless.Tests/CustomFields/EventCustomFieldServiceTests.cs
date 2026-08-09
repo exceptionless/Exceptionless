@@ -57,6 +57,17 @@ public class EventCustomFieldServiceTests
     }
 
     [Theory]
+    [InlineData("keyword-7")]
+    [InlineData("bool-1")]
+    [InlineData("session-r")]
+    [InlineData("sessionend-d")]
+    [InlineData("haserror-b")]
+    public void IsValidFieldName_InternalStorageNames_ReturnsFalse(string name)
+    {
+        Assert.False(EventCustomFieldService.IsValidFieldName(name));
+    }
+
+    [Theory]
     [InlineData("my_field")]
     [InlineData("response.time")]
     [InlineData("user-agent")]
@@ -81,6 +92,13 @@ public class EventCustomFieldServiceTests
     public void IsValidFieldName_SpecialChars_ReturnsFalse(string name)
     {
         Assert.False(EventCustomFieldService.IsValidFieldName(name));
+    }
+
+    [Fact]
+    public void ConvertValue_Float_AcceptsEquivalentIntAndLongValues()
+    {
+        Assert.Equal(20_000_000f, EventCustomFieldService.ConvertValue(20_000_000, "float"));
+        Assert.Equal(20_000_000f, EventCustomFieldService.ConvertValue(20_000_000L, "float"));
     }
 
     #endregion
@@ -189,6 +207,9 @@ public class EventCustomFieldServiceTests
         Assert.Null(EventCustomFieldService.ConvertValue("not-a-number", "int"));
         Assert.Null(EventCustomFieldService.ConvertValue(Double.NaN, "int"));
         Assert.Null(EventCustomFieldService.ConvertValue(Double.PositiveInfinity, "int"));
+        Assert.Null(EventCustomFieldService.ConvertValue(1.5d, "int"));
+        Assert.Null(EventCustomFieldService.ConvertValue(1.5f, "int"));
+        Assert.Null(EventCustomFieldService.ConvertValue(1.5m, "int"));
     }
 
     [Fact]
@@ -196,6 +217,17 @@ public class EventCustomFieldServiceTests
     {
         Assert.Equal(42L, EventCustomFieldService.ConvertValue(42L, "long"));
         Assert.Equal(42L, EventCustomFieldService.ConvertValue(42, "long"));
+    }
+
+    [Fact]
+    public void ConvertValue_Long_RejectsFractionalAndOutOfRangeValues()
+    {
+        Assert.Null(EventCustomFieldService.ConvertValue(1.5d, "long"));
+        Assert.Null(EventCustomFieldService.ConvertValue(1.5f, "long"));
+        Assert.Null(EventCustomFieldService.ConvertValue(1.5m, "long"));
+        Assert.Null(EventCustomFieldService.ConvertValue(Double.NaN, "long"));
+        Assert.Null(EventCustomFieldService.ConvertValue(Double.PositiveInfinity, "long"));
+        Assert.Null(EventCustomFieldService.ConvertValue(Decimal.MaxValue, "long"));
     }
 
     [Fact]

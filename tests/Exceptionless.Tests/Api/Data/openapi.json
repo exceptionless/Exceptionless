@@ -3057,6 +3057,16 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "A definition is invalid or references an organization-specific custom field.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -3167,6 +3177,16 @@
           },
           "404": {
             "description": "The saved view could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The saved view references an organization-specific custom field.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -6072,6 +6092,16 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Unprocessable Entity",
             "content": {
@@ -6120,8 +6150,8 @@
           }
         ],
         "responses": {
-          "202": {
-            "description": "Accepted"
+          "204": {
+            "description": "No Content"
           },
           "400": {
             "description": "Bad Request",
@@ -13778,7 +13808,6 @@
           "name",
           "slug",
           "version",
-          "uses_premium_features",
           "view_type",
           "created_utc",
           "updated_utc"
@@ -13875,9 +13904,6 @@
           "version": {
             "type": "integer",
             "format": "int32"
-          },
-          "uses_premium_features": {
-            "type": "boolean"
           },
           "view_type": {
             "type": "string"

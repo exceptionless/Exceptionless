@@ -72,7 +72,7 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.True(customFieldPath.TryGetProperty("patch", out var customFieldPatch));
         AssertResponseCodes(customFieldPatch, "200", "400", "404", "422", "426");
         Assert.True(customFieldPath.TryGetProperty("delete", out var customFieldDelete));
-        AssertResponseCodes(customFieldDelete, "202", "400", "404", "409", "426");
+        AssertResponseCodes(customFieldDelete, "204", "400", "404", "409", "426");
 
         Assert.True(paths.TryGetProperty("/api/v2/events/by-ref/{referenceId}/user-description", out var userDescriptionPath));
         Assert.True(userDescriptionPath.TryGetProperty("post", out var userDescriptionPost));

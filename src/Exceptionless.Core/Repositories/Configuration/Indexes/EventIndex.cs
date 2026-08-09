@@ -2,6 +2,8 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
+using Exceptionless;
+using Elastic.Clients.Elasticsearch.Fluent;
 using Elastic.Clients.Elasticsearch.IndexManagement;
 using Elastic.Clients.Elasticsearch.Mapping;
 using Exceptionless.Core.Configuration;
@@ -24,6 +26,18 @@ namespace Exceptionless.Core.Repositories.Configuration;
 
 public sealed class EventIndex : DailyIndex<PersistentEvent>
 {
+    private static readonly IReadOnlyDictionary<string, string> _customFieldElasticsearchTypes = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["bool"] = "boolean",
+        ["date"] = "date",
+        ["double"] = "double",
+        ["float"] = "float",
+        ["int"] = "integer",
+        ["keyword"] = "keyword",
+        ["long"] = "long",
+        ["string"] = "text"
+    };
+
     private readonly ExceptionlessElasticConfiguration _configuration;
     private readonly IServiceProvider _serviceProvider;
 
@@ -56,6 +70,7 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
     {
         map
             .Dynamic(DynamicMapping.False)
+            .DynamicTemplates(templates => ConfigureCustomFieldDynamicTemplates(templates))
             .Properties(p => p
                 .SetupDefaults()
                 .Keyword(e => e.OrganizationId)
@@ -127,6 +142,98 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
         }
 
         await base.ConfigureAsync();
+    }
+
+    public async Task EnsureCustomFieldMappingsAsync()
+    {
+        var logger = Configuration.LoggerFactory.CreateLogger<EventIndex>();
+        var indexes = await GetIndexesAsync();
+        if (MaxIndexAge.HasValue)
+        {
+            DateTime oldestRetainedDate = DateTime.UtcNow.Date.Subtract(MaxIndexAge.Value).AddDays(-1);
+            indexes = indexes.Where(index => index.DateUtc >= oldestRetainedDate).ToList();
+        }
+
+        foreach (var index in indexes)
+        {
+            await ValidateExistingCustomFieldMappingsAsync(index.Index, logger);
+
+            var response = await Configuration.Client.Indices.PutMappingAsync<PersistentEvent>(mapping =>
+            {
+                mapping.Indices(index.Index);
+                mapping.DynamicTemplates(templates => ConfigureCustomFieldDynamicTemplates(templates));
+            });
+
+            logger.LogRequest(response);
+            if (response.IsValidResponse)
+                continue;
+
+            AppDiagnostics.CustomFieldMappingFailures.Add(1);
+            string errorMessage = response.DebugInformation;
+            logger.LogError(response.ApiCallDetails.OriginalException, "Error updating typed custom field mappings on event index {Index}: {Message}", index.Index, errorMessage);
+            throw new ApplicationException($"Error updating typed custom field mappings on event index {index.Index}: {errorMessage}", response.ApiCallDetails.OriginalException);
+        }
+    }
+
+    private async Task ValidateExistingCustomFieldMappingsAsync(string indexName, ILogger logger)
+    {
+        var response = await Configuration.Client.FieldCapsAsync(indexName, request => request
+            .Fields("*")
+            .IncludeEmptyFields());
+        logger.LogRequest(response);
+        if (!response.IsValidResponse)
+        {
+            AppDiagnostics.CustomFieldMappingFailures.Add(1);
+            throw new ApplicationException($"Error reading custom field mappings from event index {indexName}: {response.DebugInformation}", response.ApiCallDetails.OriginalException);
+        }
+
+        AppDiagnostics.CustomFieldMappedFieldCount.Record(response.Fields.Count);
+        if (response.Fields.Count >= _configuration.Options.FieldsLimit * 0.8)
+            logger.LogWarning("Event index {Index} has {FieldCount} mapped fields against a total field limit of {FieldLimit}", indexName, response.Fields.Count, _configuration.Options.FieldsLimit);
+
+        foreach (var (fieldName, capabilities) in response.Fields)
+        {
+            if (!fieldName.StartsWith("idx.", StringComparison.Ordinal))
+                continue;
+
+            string slotName = fieldName["idx.".Length..];
+            int separatorIndex = slotName.LastIndexOf('-');
+            if (separatorIndex <= 0 || !Int32.TryParse(slotName.AsSpan(separatorIndex + 1), out _))
+                continue;
+
+            string slotType = slotName[..separatorIndex];
+            if (!_customFieldElasticsearchTypes.TryGetValue(slotType, out string? expectedType))
+                continue;
+
+            if (capabilities.ContainsKey(expectedType))
+                continue;
+
+            AppDiagnostics.CustomFieldMappingFailures.Add(1);
+            string actualTypes = String.Join(", ", capabilities.Keys.Order(StringComparer.Ordinal));
+            throw new InvalidOperationException(
+                $"Event index '{indexName}' has incompatible mapping for '{fieldName}'. Expected '{expectedType}', found '{actualTypes}'. An explicit migration is required before rollout.");
+        }
+    }
+
+    private void ConfigureCustomFieldDynamicTemplates(FluentCollectionOfKeyValuePairOfStringDynamicTemplate<PersistentEvent> templates)
+    {
+        // Retain legacy suffix templates while older ingestion nodes may still write them.
+        templates
+            .Add("idx_legacy_bool", template => template.PathMatch("idx.*").Match("*-b").Mapping(mapping => mapping.Boolean()))
+            .Add("idx_legacy_date", template => template.PathMatch("idx.*").Match("*-d").Mapping(mapping => mapping.Date()))
+            .Add("idx_legacy_number", template => template.PathMatch("idx.*").Match("*-n").Mapping(mapping => mapping.DoubleNumber()))
+            .Add("idx_legacy_reference", template => template.PathMatch("idx.*").Match("*-r").Mapping(mapping => mapping.Keyword(keyword => keyword.IgnoreAbove(256))))
+            .Add("idx_legacy_string", template => template.PathMatch("idx.*").Match("*-s").Mapping(mapping => mapping.Keyword(keyword => keyword.IgnoreAbove(1024))));
+
+        foreach (var customFieldType in CustomFieldTypes.Values)
+        {
+            templates.Add(
+                $"idx_{customFieldType.Type}",
+                template => template
+                    .PathMatch("idx.*")
+                    .Match($"{customFieldType.Type}-*")
+                    .Mapping(customFieldType.ConfigureMapping<PersistentEvent>()));
+        }
     }
 
     protected override void ConfigureQueryParser(ElasticQueryParserConfiguration config)

@@ -1,4 +1,5 @@
 <script lang="ts">
+    import type { CustomFieldDefinition } from '$features/organizations/custom-fields';
     import type { ViewProject } from '$features/projects/models';
 
     import { getExtendedDataItems } from '$features/events/persistent-event';
@@ -10,12 +11,13 @@
     import ExtendedDataItem from '../extended-data-item.svelte';
 
     interface Props {
+        customFields?: CustomFieldDefinition[];
         event: PersistentEvent;
         project?: ViewProject;
         promoted: (name: string) => void;
     }
 
-    let { event, project, promoted }: Props = $props();
+    let { customFields, event, project, promoted }: Props = $props();
     let items = $derived(getExtendedDataItems(event, project));
 
     const promoteTab = postPromotedTab({
@@ -40,7 +42,7 @@
     {#each items as { data, promoted, title } (title)}
         {#if promoted === false}
             <div data-id={title}>
-                <ExtendedDataItem {data} promote={onPromote} {title}></ExtendedDataItem>
+                <ExtendedDataItem {customFields} {data} organizationId={event.organization_id} promote={onPromote} {title}></ExtendedDataItem>
             </div>
         {/if}
     {/each}

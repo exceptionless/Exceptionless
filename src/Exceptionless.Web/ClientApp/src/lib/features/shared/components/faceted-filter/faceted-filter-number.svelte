@@ -7,13 +7,13 @@
     import { onDestroy } from 'svelte';
 
     interface Props {
-        changed: (value?: number) => void;
+        changed: (value?: string) => void;
         hidden?: boolean;
         open: boolean;
         remove: () => void;
         title: string;
         toggleHidden?: () => void;
-        value?: number;
+        value?: string;
     }
 
     let { changed, hidden = false, open = $bindable(), remove, title, toggleHidden, value }: Props = $props();
@@ -21,7 +21,7 @@
     const DEBOUNCE_MS = 500;
 
     // eslint-disable-next-line svelte/prefer-writable-derived
-    let updatedValue = $state<number | undefined>();
+    let updatedValue = $state<string | undefined>();
     let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
     onDestroy(() => clearTimeout(debounceTimer));
@@ -32,9 +32,14 @@
 
     function scheduleApply() {
         clearTimeout(debounceTimer);
+        const candidate = updatedValue;
+        if (!isValidNumericLiteral(candidate)) {
+            return;
+        }
+
         debounceTimer = setTimeout(() => {
-            if (updatedValue !== value) {
-                changed(updatedValue);
+            if (isValidNumericLiteral(candidate) && candidate !== value) {
+                changed(candidate);
             }
         }, DEBOUNCE_MS);
     }
@@ -51,6 +56,10 @@
 
     function applyAndClose() {
         clearTimeout(debounceTimer);
+        if (!isValidNumericLiteral(updatedValue)) {
+            return;
+        }
+
         if (updatedValue !== value) {
             changed(updatedValue);
         }
@@ -76,7 +85,12 @@
     }
 
     export function onClearFilter() {
+        clearTimeout(debounceTimer);
         updatedValue = undefined;
+    }
+
+    function isValidNumericLiteral(candidate: string | undefined): boolean {
+        return candidate === undefined || /^-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(candidate);
     }
 </script>
 
@@ -86,7 +100,7 @@
             <Button {...props} class="gap-x-1 px-3" size="lg" variant="outline" aria-describedby={`${title}-help`}>
                 {title}
                 <Separator class="mx-2" orientation="vertical" />
-                {#if value !== undefined && !isNaN(value)}
+                {#if value !== undefined && isValidNumericLiteral(value)}
                     <FacetedFilter.BadgeValue>{value}</FacetedFilter.BadgeValue>
                 {:else}
                     <FacetedFilter.BadgeValue>No Value</FacetedFilter.BadgeValue>
@@ -99,7 +113,10 @@
             <Input
                 bind:value={updatedValue}
                 placeholder={title}
-                type="number"
+                type="text"
+                inputmode="decimal"
+                pattern="^-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$"
+                aria-invalid={!isValidNumericLiteral(updatedValue)}
                 aria-label={`Filter by ${title}`}
                 aria-describedby={`${title}-help`}
                 onkeydown={handleKeyDown}

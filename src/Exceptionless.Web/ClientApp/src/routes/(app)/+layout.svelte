@@ -11,7 +11,7 @@
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
     import { UpgradeRequiredDialog } from '$features/billing';
     import { invalidateOrganizationEventListQueries, invalidatePersistentEventQueries } from '$features/events/api.svelte';
-    import { filterUsesPremiumFeatures, getSearchResourceForPathname, savedFilterUsesPremiumFeatures } from '$features/events/premium-filter';
+    import { filterUsesPremiumFeatures, getSearchResourceForPathname } from '$features/events/premium-filter';
     import { buildIntercomBootOptions, IntercomShell } from '$features/intercom';
     import { shouldLoadIntercomOrganization } from '$features/intercom/config';
     import Notifications from '$features/notifications/components/notifications.svelte';
@@ -442,11 +442,7 @@
                 ...sortedViews.map((savedView) => ({
                     href: buildSavedViewHref(savedView),
                     title: savedView.name,
-                    usesPremiumFeatures: savedFilterUsesPremiumFeatures(
-                        savedView.filter,
-                        savedView.uses_premium_features,
-                        getSearchResourceForPathname(route.href)
-                    )
+                    usesPremiumFeatures: filterUsesPremiumFeatures(savedView.filter, getSearchResourceForPathname(route.href))
                 })),
                 ...(route.children ?? [])
             ];

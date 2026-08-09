@@ -180,6 +180,7 @@ public class Bootstrapper
         services.AddSingleton<IStripeBillingClient, StripeBillingClient>();
         services.AddSingleton<BillingManager>();
         services.AddSingleton<BillingPlans>();
+        services.AddSingleton<EventCustomFieldQueryPolicy>();
         services.AddSingleton<EventCustomFieldService>();
         services.AddStartupAction<EventCustomFieldService>();
         services.AddSingleton<EventPostService>();

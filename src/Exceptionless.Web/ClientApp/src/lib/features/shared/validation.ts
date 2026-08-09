@@ -201,7 +201,9 @@ export function problemDetailsToFormErrors(problem: null | ProblemDetails): null
     const result: { fields?: Record<string, string>; form?: string } = {};
 
     // Handle general/form-level errors
-    const generalErrors = problem.errors?.['general']?.join(', ');
+    const formErrorKeys = ['general', 'custom_field_active_limit', 'custom_field_lifetime_limit'];
+    const formMessages = formErrorKeys.flatMap((key) => problem.errors?.[key] ?? []);
+    const generalErrors = formMessages.join(', ');
     if (generalErrors) {
         result.form = generalErrors;
     } else if (problem.status !== 422) {
@@ -215,7 +217,7 @@ export function problemDetailsToFormErrors(problem: null | ProblemDetails): null
     if (problem.status === 422 && problem.errors) {
         result.fields = {};
         for (const key in problem.errors) {
-            if (key === 'general') {
+            if (formErrorKeys.includes(key)) {
                 continue;
             }
 
