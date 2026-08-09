@@ -12983,7 +12983,8 @@
               "integer"
             ]
           }
-        }
+        },
+        "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
       },
       "UpdateEmailAddressResult": {
         "required": [
