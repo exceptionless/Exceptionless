@@ -35,7 +35,9 @@ public record NewCustomFieldDefinition : IValidatableObject
 
 public record UpdateCustomFieldDefinition
 {
-    [MaxLength(500)]
+    public const int MaxDescriptionLength = 500;
+
+    [MaxLength(MaxDescriptionLength)]
     public string? Description { get; init; }
 
     public int? DisplayOrder { get; init; }

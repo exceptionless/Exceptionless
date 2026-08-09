@@ -57,6 +57,23 @@ public sealed class CustomFieldEndpointContractTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task Patch_DescriptionOverMaximumLength_ReturnsValidationError()
+    {
+        var definition = await _definitionRepository.AddFieldAsync(
+            nameof(PersistentEvent), SampleDataService.TEST_ORG_ID, "customer_id", "keyword");
+
+        var problem = await SendRequestAsAsync<ValidationProblemDetails>(request => request
+            .AsTestOrganizationUser()
+            .Patch()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "event-custom-fields", definition.Id)
+            .Content(new UpdateCustomFieldDefinition { Description = new string('x', 501) })
+            .ExpectedStatus(System.Net.HttpStatusCode.UnprocessableEntity));
+
+        Assert.NotNull(problem);
+        Assert.Contains("description", problem.Errors.Keys);
+    }
+
+    [Fact]
     public async Task Get_SortsByDisplayOrderThenName()
     {
         await _definitionRepository.AddFieldAsync(nameof(PersistentEvent), SampleDataService.TEST_ORG_ID, "zeta", "keyword", displayOrder: 2);

@@ -13044,37 +13044,43 @@
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "maxLength": 100
           },
           "filter": {
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "maxLength": 2000
           },
           "time": {
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "maxLength": 100
           },
           "sort": {
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "maxLength": 100
           },
           "slug": {
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "maxLength": 100
           },
           "filter_definitions": {
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "maxLength": 100000
           },
           "columns": {
             "type": [

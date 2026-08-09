@@ -125,6 +125,9 @@ public sealed class EventCustomFieldHandler(
             return Result.BadRequest($"'{definition.Name}' is a reserved system field and cannot be modified.");
 
         var changes = message.Changes.GetEntity();
+        if (message.Changes.ContainsChangedProperty(field => field.Description!) && changes.Description?.Length > UpdateCustomFieldDefinition.MaxDescriptionLength)
+            return Result.Invalid(ValidationError.Create("description", $"Description cannot exceed {UpdateCustomFieldDefinition.MaxDescriptionLength} characters."));
+
         bool changed = false;
         if (message.Changes.ContainsChangedProperty(field => field.Description!))
         {
