@@ -28,7 +28,6 @@ describe('FacetedFilterNumber', () => {
 
         expect(changed).not.toHaveBeenCalled();
     });
-
     it('cancels a pending valid value when the filter is cleared', async () => {
         vi.useFakeTimers();
         const changed = vi.fn();
