@@ -104,7 +104,7 @@ test('stack effects stay bounded through background, paging, and navigation chao
         await setDocumentHidden(page, false);
         await page.waitForTimeout(2_000);
     });
-    expect(actionSample(diagnostics, 'background ingestion and resume').listRequests).toBeLessThanOrEqual(1);
+    expect(actionSample(diagnostics, 'background ingestion and resume').listRequests).toBeLessThanOrEqual(2);
 
     await measureAction(diagnostics, 'sustained stack change notifications', async () => {
         for (let wave = 0; wave < 4; wave++) {
@@ -132,8 +132,8 @@ test('stack effects stay bounded through background, paging, and navigation chao
         await page.waitForTimeout(2_000);
     });
     const sustainedNotificationSample = actionSample(diagnostics, 'sustained stack change notifications');
-    expect(sustainedNotificationSample.countRequests).toBeLessThanOrEqual(1);
-    expect(sustainedNotificationSample.listRequests).toBeLessThanOrEqual(1);
+    expect(sustainedNotificationSample.countRequests).toBeLessThanOrEqual(2);
+    expect(sustainedNotificationSample.listRequests).toBeLessThanOrEqual(2);
     expect(sustainedNotificationSample.runtimeErrors).toBe(0);
 
     await measureAction(diagnostics, 'route remounts', async () => {

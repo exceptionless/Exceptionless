@@ -74,7 +74,8 @@
         getListFilterQueryParams,
         type ListFilterQueryParams,
         redirectToEventsWithFilter,
-        serializeTimeQueryParam
+        serializeTimeQueryParam,
+        setQueryParamIfChanged
     } from '../redirect-to-events.svelte';
 
     // TODO: Update this page to use StackSummaryModel instead of EventSummaryModel.
@@ -494,23 +495,23 @@
             isInternalFilterUpdate = true;
         }
 
-        queryParams.bot = queryFilterParams.bot;
-        queryParams.first = queryFilterParams.first;
-        queryParams.level = queryFilterParams.level;
-        queryParams.project = queryFilterParams.project;
-        queryParams.reference = queryFilterParams.reference;
-        queryParams.session = queryFilterParams.session;
-        queryParams.stack = queryFilterParams.stack;
-        queryParams.status = queryFilterParams.status;
-        queryParams.tag = queryFilterParams.tag;
-        queryParams.type = queryFilterParams.type;
-        queryParams.version = queryFilterParams.version;
-        queryParams.time = newTimeParam;
-        queryParams.filter = newFilterParam;
+        setQueryParamIfChanged(queryParams, 'bot', queryFilterParams.bot);
+        setQueryParamIfChanged(queryParams, 'first', queryFilterParams.first);
+        setQueryParamIfChanged(queryParams, 'level', queryFilterParams.level);
+        setQueryParamIfChanged(queryParams, 'project', queryFilterParams.project);
+        setQueryParamIfChanged(queryParams, 'reference', queryFilterParams.reference);
+        setQueryParamIfChanged(queryParams, 'session', queryFilterParams.session);
+        setQueryParamIfChanged(queryParams, 'stack', queryFilterParams.stack);
+        setQueryParamIfChanged(queryParams, 'status', queryFilterParams.status);
+        setQueryParamIfChanged(queryParams, 'tag', queryFilterParams.tag);
+        setQueryParamIfChanged(queryParams, 'type', queryFilterParams.type);
+        setQueryParamIfChanged(queryParams, 'version', queryFilterParams.version);
+        setQueryParamIfChanged(queryParams, 'time', newTimeParam);
+        setQueryParamIfChanged(queryParams, 'filter', newFilterParam);
     }
 
     function clearPaginationQueryParams(): void {
-        queryParams.page = null;
+        setQueryParamIfChanged(queryParams, 'page', null);
     }
 
     $effect(() => {

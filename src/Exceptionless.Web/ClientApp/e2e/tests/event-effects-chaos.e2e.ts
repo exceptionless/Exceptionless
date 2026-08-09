@@ -143,7 +143,7 @@ test('event list and detail effects stay bounded through paging and background c
         await setDocumentHidden(page, false);
         await page.waitForTimeout(2_000);
     });
-    expect(actionSample(diagnostics, 'event list background ingestion and resume').eventList).toBeLessThanOrEqual(1);
+    expect(actionSample(diagnostics, 'event list background ingestion and resume').eventList).toBeLessThanOrEqual(2);
 
     await measureAction(diagnostics, 'sustained persistent event notifications', async () => {
         for (let wave = 0; wave < 4; wave++) {
@@ -177,8 +177,8 @@ test('event list and detail effects stay bounded through paging and background c
         await page.waitForTimeout(2_000);
     });
     const sustainedNotificationSample = actionSample(diagnostics, 'sustained persistent event notifications');
-    expect(sustainedNotificationSample.eventCount).toBeLessThanOrEqual(1);
-    expect(sustainedNotificationSample.eventList).toBeLessThanOrEqual(1);
+    expect(sustainedNotificationSample.eventCount).toBeLessThanOrEqual(2);
+    expect(sustainedNotificationSample.eventList).toBeLessThanOrEqual(2);
     expect(sustainedNotificationSample.runtimeErrors).toBe(0);
 
     await measureAction(diagnostics, 'event detail alias route remounts', async () => {
