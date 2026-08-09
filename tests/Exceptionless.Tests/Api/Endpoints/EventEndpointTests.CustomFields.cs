@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
@@ -23,8 +24,12 @@ public partial class EventEndpointTests
     {
         var definition = await CreateEventCustomFieldAsync("DatabaseVersion", "keyword");
 
-        await PostRawEventAsync("database-version-production", """"DatabaseVersion":"4.90"""");
-        await PostRawEventAsync("database-version-development", """"DatabaseVersion":"4.90 build 1234 30-Aug-2024"""");
+        await PostRawEventAsync("database-version-production", """
+            "DatabaseVersion": "4.90"
+            """);
+        await PostRawEventAsync("database-version-development", """
+            "DatabaseVersion": "4.90 build 1234 30-Aug-2024"
+            """);
         await GetService<EventPostsJob>().RunUntilEmptyAsync(TestCancellationToken);
         await RefreshDataAsync();
 
@@ -44,8 +49,12 @@ public partial class EventEndpointTests
     {
         var definition = await CreateEventCustomFieldAsync("DatabaseVersionNumeric", "double");
 
-        await PostRawEventAsync("database-version-numeric", """"DatabaseVersionNumeric":"4.90"""");
-        await PostRawEventAsync("database-version-nonnumeric", """"DatabaseVersionNumeric":"4.90 build 1234 30-Aug-2024"""");
+        await PostRawEventAsync("database-version-numeric", """
+            "DatabaseVersionNumeric": "4.90"
+            """);
+        await PostRawEventAsync("database-version-nonnumeric", """
+            "DatabaseVersionNumeric": "4.90 build 1234 30-Aug-2024"
+            """);
         await GetService<EventPostsJob>().RunUntilEmptyAsync(TestCancellationToken);
         await RefreshDataAsync();
 
@@ -101,6 +110,8 @@ public partial class EventEndpointTests
           }
         }
         """;
+
+        using var _ = JsonDocument.Parse(payload);
 
         return SendRequestAsync(request => request
             .Post()
