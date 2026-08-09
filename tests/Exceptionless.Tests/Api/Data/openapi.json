@@ -12981,8 +12981,7 @@
             "type": [
               "null",
               "integer"
-            ],
-            "format": "int32"
+            ]
           }
         }
       },
