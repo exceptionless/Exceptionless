@@ -1,5 +1,5 @@
 import { building } from '$app/environment';
-import { afterNavigate, beforeNavigate, goto } from '$app/navigation';
+import { afterNavigate, beforeNavigate, pushState, replaceState } from '$app/navigation';
 import { page } from '$app/state';
 import { onDestroy } from 'svelte';
 
@@ -23,11 +23,12 @@ export function createQueryParameters<T extends QueryParameterSchema>({
         }
 
         const query = searchParams.toString();
-        void goto(`?${query}${window.location.hash}`, {
-            keepFocus: true,
-            noScroll: true,
-            replaceState: history === 'replace'
-        });
+        const url = `?${query}${window.location.hash}`;
+        if (history === 'replace') {
+            replaceState(url, page.state);
+        } else {
+            pushState(url, page.state);
+        }
     };
 
     const scheduleSynchronization = createDebouncedFunction(synchronizeURL, debounceMilliseconds);
