@@ -8,9 +8,14 @@ import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanst
 import type { Stack, StackStatus } from './models';
 
 export async function invalidateStackQueries(queryClient: QueryClient, message: WebSocketMessageValue<'StackChanged'>) {
-    const { id } = message;
+    const { id, project_id } = message;
     if (id) {
         await queryClient.invalidateQueries({ queryKey: queryKeys.id(id) });
+        await queryClient.invalidateQueries({
+            predicate: (query) => isProjectStacksQueryKey(query.queryKey),
+            queryKey: project_id ? queryKeys.projects(project_id) : queryKeys.type,
+            refetchType: 'none'
+        });
     } else {
         await queryClient.invalidateQueries({ queryKey: queryKeys.type });
     }
@@ -28,7 +33,8 @@ export const queryKeys = {
     postMarkSnoozed: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'mark-snoozed'] as const,
     postPromote: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'promote'] as const,
     postRemoveLink: (id: string | undefined) => [...queryKeys.id(id), 'remove-link'] as const,
-    project: (projectId: string | undefined, params?: GetProjectStacksParams) => [...queryKeys.type, 'project', projectId, { params }] as const,
+    project: (projectId: string | undefined, params?: GetProjectStacksParams) => [...queryKeys.projects(projectId), { params }] as const,
+    projects: (projectId: string | undefined) => [...queryKeys.type, 'project', projectId] as const,
     type: ['Stack'] as const
 };
 
@@ -324,4 +330,8 @@ export async function prefetchStack(request: GetStackRequest) {
         },
         queryKey: queryKeys.id(request.route.id)
     });
+}
+
+function isProjectStacksQueryKey(queryKey: readonly unknown[]): boolean {
+    return queryKey[0] === queryKeys.type[0] && queryKey[1] === 'project';
 }
