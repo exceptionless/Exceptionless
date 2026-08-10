@@ -30,6 +30,21 @@ describe('query parameter updates', () => {
         expect(result.searchParams.toString()).toBe(searchParams.toString());
     });
 
+    it('does not serialize unchanged values supplied by defaults', () => {
+        // Arrange
+        const searchParams = new URLSearchParams('unknown=preserved');
+        const defaults = { filter: 'all', page: 1 };
+        const state = parseURL(searchParams, schema, defaults);
+
+        // Act
+        const result = applyQueryParamUpdates(state, searchParams, defaults, schema);
+
+        // Assert
+        expect(result.stateChanged).toBe(false);
+        expect(result.urlChanged).toBe(false);
+        expect(result.searchParams.toString()).toBe('unknown=preserved');
+    });
+
     it('applies multiple values atomically while preserving unknown parameters', () => {
         // Arrange
         const searchParams = new URLSearchParams('filter=old&page=1&unknown=preserved');

@@ -36,11 +36,12 @@ export function applyQueryParamUpdates<T extends Schema>(
         }
 
         const coerced = coercePrimitive(primitive, value);
-        if (!valuesEqual(stateValues[key], coerced)) {
-            stateValues[key] = coerced;
-            stateChanged = true;
+        if (valuesEqual(stateValues[key], coerced)) {
+            continue;
         }
 
+        stateValues[key] = coerced;
+        stateChanged = true;
         setSearchParam(searchParams, key, stringifyPrimitive(primitive, coerced));
     }
 
