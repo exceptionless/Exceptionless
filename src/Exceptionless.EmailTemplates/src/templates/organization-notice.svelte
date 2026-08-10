@@ -51,7 +51,7 @@
             {#snippet actions()}
                 <li class="mt-[5px] ml-[5px]">
                     <Link
-                        href="{'{{BaseUrl}}'}/organization/{'{{OrganizationId}}'}/manage"
+                        href="{'{{BaseUrl}}'}/organization/{'{{OrganizationId}}'}/usage"
                         class="text-primary-action no-underline">View usage</Link
                     >
                 </li>
