@@ -13,7 +13,7 @@
     import { getTableOptions } from '$features/tokens/components/table/options.svelte';
     import TokensDataTable from '$features/tokens/components/table/tokens-data-table.svelte';
     import { createProjectToken, type ProjectTokenScope } from '$features/tokens/project-token';
-    import { queryParamsState } from '$lib/vendor/kit-query-params/index.svelte';
+    import { createQueryParameters } from '$shared/query-params';
     import FileCode from '@lucide/svelte/icons/file-code-2';
     import KeyRound from '@lucide/svelte/icons/key-round';
     import Plus from '@lucide/svelte/icons/plus';
@@ -50,9 +50,9 @@
         limit: DEFAULT_LIMIT
     };
 
-    const queryParams = queryParamsState({
-        default: DEFAULT_PARAMS,
-        pushHistory: true,
+    const queryParams = createQueryParameters({
+        defaults: DEFAULT_PARAMS,
+        history: 'push',
         schema: {
             limit: 'number'
         }

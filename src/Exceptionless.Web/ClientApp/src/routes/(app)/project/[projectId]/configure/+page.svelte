@@ -15,7 +15,7 @@
     import { getProjectDefaultTokenQuery, patchToken } from '$features/tokens/api.svelte';
     import EnableTokenDialog from '$features/tokens/components/dialogs/enable-token-dialog.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
-    import { queryParamsState } from '$lib/vendor/kit-query-params/index.svelte';
+    import { createQueryParameters } from '$shared/query-params';
     import ArrowLeft from '@lucide/svelte/icons/arrow-left';
     import Bot from '@lucide/svelte/icons/bot';
     import Events from '@lucide/svelte/icons/calendar-days';
@@ -118,12 +118,12 @@
 
     const projectTypesGroupedByPlatform = Object.groupBy(projectTypes, (p) => p.platform);
 
-    const queryParams = queryParamsState({
-        default: {
+    const queryParams = createQueryParameters({
+        defaults: {
             redirect: false,
             type: undefined
         },
-        pushHistory: true,
+        history: 'push',
         schema: {
             redirect: 'boolean',
             type: 'string'

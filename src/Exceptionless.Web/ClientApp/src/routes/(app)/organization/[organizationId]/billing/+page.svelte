@@ -14,7 +14,7 @@
     import { getInvoicesQuery, getOrganizationQuery } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import GlobalUser from '$features/users/components/global-user.svelte';
-    import { queryParamsState } from '$lib/vendor/kit-query-params/index.svelte';
+    import { createQueryParameters } from '$shared/query-params';
     import CreditCard from '@lucide/svelte/icons/credit-card';
     import File from '@lucide/svelte/icons/file';
     import MoreHorizontal from '@lucide/svelte/icons/more-horizontal';
@@ -37,9 +37,9 @@
 
     const canChangePlan = $derived(organizationQuery.isSuccess && !!env.PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
-    const params = queryParamsState({
-        default: { changePlan: false },
-        pushHistory: true,
+    const params = createQueryParameters({
+        defaults: { changePlan: false },
+        history: 'push',
         schema: { changePlan: 'boolean' }
     });
 

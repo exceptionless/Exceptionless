@@ -58,8 +58,8 @@
     import { parseDateMathRange } from '$features/shared/utils/datemath.js';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
-    import { queryParamsState } from '$lib/vendor/kit-query-params/index.svelte';
     import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
+    import { createQueryParameters } from '$shared/query-params';
     import { type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
     import { error } from '@sveltejs/kit';
     import { createTable } from '@tanstack/svelte-table';
@@ -220,9 +220,9 @@
     }
 
     updateFilterCache(filterCacheKey(DEFAULT_FILTER), DEFAULT_FILTERS);
-    const queryParams = queryParamsState({
-        default: DEFAULT_PARAMS,
-        pushHistory: true,
+    const queryParams = createQueryParameters({
+        defaults: DEFAULT_PARAMS,
+        history: 'push',
         schema: {
             after: 'string',
             before: 'string',

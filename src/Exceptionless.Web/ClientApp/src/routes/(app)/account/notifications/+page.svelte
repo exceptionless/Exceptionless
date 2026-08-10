@@ -13,7 +13,7 @@
     import AlertTitle from '$features/shared/components/ui/alert/alert-title.svelte';
     import Alert from '$features/shared/components/ui/alert/alert.svelte';
     import { getMeQuery, patchUser, resendVerificationEmail } from '$features/users/api.svelte';
-    import { queryParamsState } from '$lib/vendor/kit-query-params/index.svelte';
+    import { createQueryParameters } from '$shared/query-params';
     import AlertCircleIcon from '@lucide/svelte/icons/alert-circle';
     import { toast } from 'svelte-sonner';
     import { debounce } from 'throttle-debounce';
@@ -21,9 +21,9 @@
     let toastId = $state<number | string>();
 
     const meQuery = getMeQuery();
-    const queryParams = queryParamsState({
-        default: { project: '' },
-        pushHistory: true,
+    const queryParams = createQueryParameters({
+        defaults: { project: '' },
+        history: 'push',
         schema: { project: 'string' }
     });
 

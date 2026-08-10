@@ -12,7 +12,7 @@
     import InviteUserDialog from '$features/users/components/invite-user-dialog.svelte';
     import { getTableOptions } from '$features/users/components/table/options.svelte';
     import UsersDataTable from '$features/users/components/table/users-data-table.svelte';
-    import { queryParamsState } from '$lib/vendor/kit-query-params/index.svelte';
+    import { createQueryParameters } from '$shared/query-params';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
     import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
@@ -24,9 +24,9 @@
         limit: DEFAULT_LIMIT
     };
 
-    const queryParams = queryParamsState({
-        default: DEFAULT_PARAMS,
-        pushHistory: true,
+    const queryParams = createQueryParameters({
+        defaults: DEFAULT_PARAMS,
+        history: 'push',
         schema: {
             limit: 'number'
         }

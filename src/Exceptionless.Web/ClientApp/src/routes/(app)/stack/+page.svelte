@@ -58,8 +58,8 @@
     import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/stacks-bulk-actions-dropdown-menu.svelte';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
-    import { queryParamsState } from '$lib/vendor/kit-query-params/index.svelte';
     import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
+    import { createQueryParameters } from '$shared/query-params';
     import { error } from '@sveltejs/kit';
     import { createTable } from '@tanstack/svelte-table';
     import { useEventListener, watch } from 'runed';
@@ -214,9 +214,9 @@
     }
 
     updateFilterCache(filterCacheKey(DEFAULT_FILTER), DEFAULT_FILTERS);
-    const queryParams = queryParamsState({
-        default: DEFAULT_PARAMS,
-        pushHistory: true,
+    const queryParams = createQueryParameters({
+        defaults: DEFAULT_PARAMS,
+        history: 'push',
         schema: {
             bot: 'string',
             filter: 'string',

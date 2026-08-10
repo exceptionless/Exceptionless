@@ -13,8 +13,8 @@
     import { type GetProjectsParams, getProjectsQuery } from '$features/projects/api.svelte';
     import { getTableOptions } from '$features/projects/components/table/options.svelte';
     import ProjectsDataTable from '$features/projects/components/table/projects-data-table.svelte';
-    import { queryParamsState } from '$lib/vendor/kit-query-params/index.svelte';
     import { DEFAULT_LIMIT } from '$shared/api/api.svelte';
+    import { createQueryParameters } from '$shared/query-params';
     import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
 
@@ -23,9 +23,9 @@
         limit: DEFAULT_LIMIT
     };
 
-    const queryParams = queryParamsState({
-        default: DEFAULT_PARAMS,
-        pushHistory: true,
+    const queryParams = createQueryParameters({
+        defaults: DEFAULT_PARAMS,
+        history: 'push',
         schema: {
             filter: 'string',
             limit: 'number'

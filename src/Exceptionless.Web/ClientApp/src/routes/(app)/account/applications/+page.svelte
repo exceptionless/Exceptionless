@@ -7,7 +7,7 @@
     import { getOAuthGrantsQuery } from '$features/users/api.svelte';
     import OAuthGrantsDataTable from '$features/users/components/oauth-grants/table/oauth-grants-data-table.svelte';
     import { getTableOptions } from '$features/users/components/oauth-grants/table/options.svelte';
-    import { queryParamsState } from '$lib/vendor/kit-query-params/index.svelte';
+    import { createQueryParameters } from '$shared/query-params';
     import { createTable } from '@tanstack/svelte-table';
 
     const grantsQuery = getOAuthGrantsQuery();
@@ -23,9 +23,9 @@
         page: 1
     };
 
-    const queryParams = queryParamsState({
-        default: DEFAULT_PARAMS,
-        pushHistory: true,
+    const queryParams = createQueryParameters({
+        defaults: DEFAULT_PARAMS,
+        history: 'push',
         schema: {
             limit: 'number',
             page: 'number'

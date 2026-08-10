@@ -39,12 +39,6 @@ export default ts.config(
         ignores: ['.agents/', 'build/', '.svelte-kit/', 'dist/', 'src/lib/generated/', 'src/lib/features/shared/components/ui/']
     },
     {
-        files: ['src/lib/vendor/kit-query-params/index.svelte.ts'],
-        rules: {
-            'svelte/prefer-svelte-reactivity': 'off'
-        }
-    },
-    {
         rules: {
             '@tanstack/query/exhaustive-deps': 'off'
         }

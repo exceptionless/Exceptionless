@@ -31,8 +31,8 @@
     import { StackStatus } from '$features/stacks/models';
     import { describeStackFilter, isStackFilterSupported, splitSupportedStackFilters } from '$features/stacks/stack-filter-support';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
-    import { queryParamsState } from '$lib/vendor/kit-query-params/index.svelte';
     import { DEFAULT_LIMIT } from '$shared/api/api.svelte';
+    import { createQueryParameters } from '$shared/query-params';
     import { createTable } from '@tanstack/svelte-table';
     import { useEventListener, watch } from 'runed';
     import { toast } from 'svelte-sonner';
@@ -56,9 +56,9 @@
     }
 
     updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
-    const queryParams = queryParamsState({
-        default: DEFAULT_PARAMS,
-        pushHistory: true,
+    const queryParams = createQueryParameters({
+        defaults: DEFAULT_PARAMS,
+        history: 'push',
         schema: {
             filter: 'string',
             limit: 'number',
