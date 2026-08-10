@@ -1,7 +1,9 @@
+using System.Globalization;
 using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Exceptionless.Core;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Models.Billing;
@@ -29,6 +31,9 @@ public sealed class AssistantService(
     private const string SetStackCriticalTool = "set_stack_critical";
     private const string SnoozeStackTool = "snooze_stack";
     private const string UpdateStackStatusTool = "update_stack_status";
+    private static readonly Regex s_durationRegex = new(
+        @"(?<![A-Za-z0-9])(?<value>\d+|one|two|three|four|five|six|seven|a|an)\s*(?<unit>m|min(?:ute)?s?|h|hrs?|hours?|d|days?|w|weeks?)(?![A-Za-z0-9])",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web).ConfigureExceptionlessApiDefaults();
 
     public async IAsyncEnumerable<AssistantStreamEvent> StreamAsync(
@@ -95,7 +100,7 @@ public sealed class AssistantService(
             bool usageRecorded = false;
 
             int providerInputCharacters = JsonSerializer.Serialize(messages, s_jsonOptions).Length;
-            var providerReservation = await assistantUsageService.RecordProviderRequestStartedAsync(request.OrganizationId, providerInputCharacters);
+            await using var providerRequest = await assistantUsageService.StartProviderRequestAsync(request.OrganizationId, providerInputCharacters);
             using var response = await SendRequestAsync(messages, options, allowTools, request, cancellationToken);
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
             using var reader = new StreamReader(stream);
@@ -118,16 +123,12 @@ public sealed class AssistantService(
                     usageRecorded = true;
                     try
                     {
-                        await assistantUsageService.RecordProviderUsageAsync(
-                            request.OrganizationId,
-                            usage,
-                            providerRequestAlreadyRecorded: true,
-                            providerReservation);
+                        await providerRequest.ReconcileAsync(usage);
                     }
                     catch (Exception ex)
                     {
-                        // The turn was already reserved before the provider call, so the hard request
-                        // limits still protect spend if detailed provider accounting is unavailable.
+                        // Disposal records the conservative reservation when detailed provider
+                        // accounting cannot be reconciled.
                         logger.LogError(ex, "Unable to record assistant provider usage for organization {OrganizationId}", request.OrganizationId);
                     }
                 }
@@ -390,7 +391,7 @@ public sealed class AssistantService(
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-            using var _ = assistantToolContext.BeginTools(request.OrganizationId);
+        using var _ = assistantToolContext.BeginTools(request.OrganizationId);
         using var document = ParseArguments(arguments);
         var root = document.RootElement;
         string? currentEventId = GetRouteValue(request.Path, "event");
@@ -478,7 +479,7 @@ public sealed class AssistantService(
         return toolName switch
         {
             UpdateStackStatusTool => HasExplicitStackStatusRequest(latestUserMessage, root),
-            SnoozeStackTool => ContainsAny(latestUserMessage, "snooze"),
+            SnoozeStackTool => HasExplicitSnoozeRequest(latestUserMessage, root),
             SetStackCriticalTool => GetBoolean(root, "critical") switch
             {
                 true => ContainsAny(latestUserMessage, "mark critical", "set critical", "make critical"),
@@ -508,6 +509,98 @@ public sealed class AssistantService(
 
         string? fixedInVersion = GetString(arguments, "fixedInVersion", "fixed_in_version");
         return String.IsNullOrWhiteSpace(fixedInVersion) || message.Contains(fixedInVersion, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool HasExplicitSnoozeRequest(string message, JsonElement arguments)
+    {
+        if (!ContainsAny(message, "snooze"))
+            return false;
+
+        string? duration = GetString(arguments, "duration")?.Trim();
+        string? snoozeUntilUtc = GetString(arguments, "snoozeUntilUtc", "snooze_until_utc")?.Trim();
+        if (String.IsNullOrWhiteSpace(duration) == String.IsNullOrWhiteSpace(snoozeUntilUtc))
+            return false;
+
+        return duration is not null
+            ? MessageContainsDuration(message, duration)
+            : MessageContainsUtcDateTime(message, snoozeUntilUtc!);
+    }
+
+    private static bool MessageContainsDuration(string message, string duration)
+    {
+        if (!TryParseDuration(duration, out var expectedDuration))
+            return false;
+
+        return s_durationRegex.Matches(message)
+            .Any(match => TryParseDuration(match.Value, out var requestedDuration) && requestedDuration == expectedDuration);
+    }
+
+    private static bool TryParseDuration(string value, out TimeSpan duration)
+    {
+        duration = TimeSpan.Zero;
+        string normalized = value.Trim();
+        var match = s_durationRegex.Match(normalized);
+        if (!match.Success || match.Index != 0 || match.Length != normalized.Length)
+            return false;
+
+        string rawValue = match.Groups["value"].Value;
+        int amount = rawValue.ToLowerInvariant() switch
+        {
+            "a" or "an" or "one" => 1,
+            "two" => 2,
+            "three" => 3,
+            "four" => 4,
+            "five" => 5,
+            "six" => 6,
+            "seven" => 7,
+            _ when Int32.TryParse(rawValue, NumberStyles.None, CultureInfo.InvariantCulture, out int parsed) => parsed,
+            _ => 0
+        };
+        if (amount <= 0)
+            return false;
+
+        string unit = match.Groups["unit"].Value.ToLowerInvariant();
+        try
+        {
+            duration = unit[0] switch
+            {
+                'm' => TimeSpan.FromMinutes(amount),
+                'h' => TimeSpan.FromHours(amount),
+                'd' => TimeSpan.FromDays(amount),
+                'w' => TimeSpan.FromDays(amount * 7L),
+                _ => TimeSpan.Zero
+            };
+        }
+        catch (OverflowException)
+        {
+            return false;
+        }
+
+        return duration > TimeSpan.Zero;
+    }
+
+    private static bool MessageContainsUtcDateTime(string message, string snoozeUntilUtc)
+    {
+        if (message.Contains(snoozeUntilUtc, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (!DateTimeOffset.TryParse(
+                snoozeUntilUtc,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                out var untilUtc))
+        {
+            return false;
+        }
+
+        string[] terms =
+        [
+            untilUtc.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture),
+            untilUtc.ToString("yyyy-MM-dd'T'HH:mm'Z'", CultureInfo.InvariantCulture),
+            untilUtc.ToString("yyyy-MM-dd HH:mm 'UTC'", CultureInfo.InvariantCulture),
+            untilUtc.ToString("yyyy-MM-dd h:mm tt 'UTC'", CultureInfo.InvariantCulture)
+        ];
+        return terms.Any(term => message.Contains(term, StringComparison.OrdinalIgnoreCase));
     }
 
     private static bool HasExplicitReferenceLinkRequest(string message, JsonElement arguments, bool remove)

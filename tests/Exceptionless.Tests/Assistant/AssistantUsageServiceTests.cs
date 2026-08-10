@@ -1,6 +1,8 @@
+using System.Text.Json;
 using Exceptionless.Core;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
+using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Services;
 using Exceptionless.Web.Assistant;
 using Foundatio.Caching;
@@ -8,8 +10,6 @@ using Foundatio.Lock;
 using Foundatio.Messaging;
 using Foundatio.Resilience;
 using Foundatio.Serializer;
-using Exceptionless.Core.Serialization;
-using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
@@ -168,39 +168,63 @@ public sealed class AssistantUsageServiceTests
     }
 
     [Fact]
-    public async Task RecordProviderRequestStartedAsync_WithoutUsage_KeepsConservativeMonthlyReservation()
+    public async Task StartProviderRequestAsync_WithoutUsage_PersistsConservativeMonthlyUsage()
     {
         var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 8, 2, 12, 0, 0, TimeSpan.Zero));
         using var cache = CreateCache(timeProvider);
-        var service = CreateService(cache, CreateOptions(), timeProvider);
+        var recorder = new RecordingAssistantUsageRecorder();
+        var service = CreateService(cache, CreateLockProvider(cache, timeProvider), CreateOptions(), timeProvider, recorder);
 
-        var reservation = await service.RecordProviderRequestStartedAsync("organization-id", providerInputCharacters: 1_000);
+        await using (await service.StartProviderRequestAsync("organization-id", providerInputCharacters: 1_000))
+        {
+        }
         var usage = await service.GetMonthlyUsageAsync("organization-id");
 
-        Assert.True(reservation.HasValue);
         Assert.Equal(1_000, usage.PromptTokens);
         Assert.Equal(AssistantLimits.MaximumOutputTokens, usage.CompletionTokens);
         Assert.True(usage.CostInMicrodollars > 0);
+        Assert.Contains(recorder.Records, record => record.Increment.ProviderRequests == 1);
+        var fallback = Assert.Single(recorder.Records, record => record.Increment.PromptTokens == 1_000);
+        Assert.Equal(AssistantLimits.MaximumOutputTokens, fallback.Increment.CompletionTokens);
+        Assert.Equal(usage.CostInMicrodollars, fallback.Increment.CostInMicrodollars);
+
+        var organization = new Organization { Id = "organization-id", Name = "Test" };
+        organization.AssistantUsage.Add(new AssistantUsageInfo
+        {
+            Date = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc),
+            PromptTokens = fallback.Increment.PromptTokens,
+            CompletionTokens = fallback.Increment.CompletionTokens,
+            CostInMicrodollars = fallback.Increment.CostInMicrodollars
+        });
+        using var restartedCache = CreateCache(timeProvider);
+        var restartedService = CreateService(restartedCache, CreateOptions(), timeProvider, _ => Task.FromResult<Organization?>(organization));
+
+        var rehydratedUsage = await restartedService.GetMonthlyUsageAsync("organization-id");
+
+        Assert.Equal(usage.PromptTokens, rehydratedUsage.PromptTokens);
+        Assert.Equal(usage.CompletionTokens, rehydratedUsage.CompletionTokens);
+        Assert.Equal(usage.CostInMicrodollars, rehydratedUsage.CostInMicrodollars);
     }
 
     [Fact]
-    public async Task RecordProviderUsageAsync_WithReservation_ReplacesEstimateWithActualUsage()
+    public async Task StartProviderRequestAsync_WithActualUsage_ReplacesEstimateWithoutFallback()
     {
         var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 8, 2, 12, 0, 0, TimeSpan.Zero));
         using var cache = CreateCache(timeProvider);
-        var service = CreateService(cache, CreateOptions(), timeProvider);
-        var reservation = await service.RecordProviderRequestStartedAsync("organization-id", providerInputCharacters: 1_000);
+        var recorder = new RecordingAssistantUsageRecorder();
+        var service = CreateService(cache, CreateLockProvider(cache, timeProvider), CreateOptions(), timeProvider, recorder);
 
-        await service.RecordProviderUsageAsync(
-            "organization-id",
-            new AssistantProviderUsage(250, 50, 0.001m),
-            providerRequestAlreadyRecorded: true,
-            reservation);
+        await using (var providerRequest = await service.StartProviderRequestAsync("organization-id", providerInputCharacters: 1_000))
+            await providerRequest.ReconcileAsync(new AssistantProviderUsage(250, 50, 0.001m));
         var usage = await service.GetMonthlyUsageAsync("organization-id");
 
         Assert.Equal(250, usage.PromptTokens);
         Assert.Equal(50, usage.CompletionTokens);
         Assert.Equal(0.001m, usage.CostUsd);
+        Assert.Single(recorder.Records, record => record.Increment.PromptTokens > 0);
+        Assert.Contains(recorder.Records, record => record.Increment.PromptTokens == 250
+            && record.Increment.CompletionTokens == 50
+            && record.Increment.CostInMicrodollars == 1_000);
     }
 
     [Fact]

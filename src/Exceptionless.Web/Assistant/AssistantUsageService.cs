@@ -163,6 +163,12 @@ public sealed class AssistantUsageService(
         return new AssistantProviderReservation(promptTokens, completionTokens, costInMicrodollars);
     }
 
+    public async Task<AssistantProviderUsageLifecycle> StartProviderRequestAsync(string? organizationId, int providerInputCharacters = 0)
+    {
+        var reservation = await RecordProviderRequestStartedAsync(organizationId, providerInputCharacters);
+        return new AssistantProviderUsageLifecycle(this, organizationId, reservation);
+    }
+
     public async Task RecordProviderUsageAsync(
         string? organizationId,
         AssistantProviderUsage usage,
@@ -172,16 +178,52 @@ public sealed class AssistantUsageService(
         if (String.IsNullOrWhiteSpace(organizationId))
             return;
 
+        await RecordProviderUsageAsync(
+            organizationId,
+            Math.Max(0, usage.PromptTokens),
+            Math.Max(0, usage.CompletionTokens),
+            ToMicrodollars(usage.CostUsd),
+            providerRequestAlreadyRecorded,
+            reservation);
+    }
+
+    internal async Task RecordUnreconciledProviderReservationAsync(
+        string? organizationId,
+        AssistantProviderReservation reservation)
+    {
+        if (String.IsNullOrWhiteSpace(organizationId) || !reservation.HasValue)
+            return;
+
+        logger.LogWarning(
+            "Recording conservative assistant provider usage for organization {OrganizationId} because actual usage was not received",
+            organizationId);
+
+        await RecordProviderUsageAsync(
+            organizationId,
+            reservation.PromptTokens,
+            reservation.CompletionTokens,
+            reservation.CostInMicrodollars,
+            providerRequestAlreadyRecorded: true,
+            reservation);
+    }
+
+    private async Task RecordProviderUsageAsync(
+        string organizationId,
+        long promptTokens,
+        long completionTokens,
+        long costInMicrodollars,
+        bool providerRequestAlreadyRecorded,
+        AssistantProviderReservation? reservation)
+    {
         var now = timeProvider.GetUtcNow();
         await EnsureMonthlyUsageCacheAsync(organizationId, now);
         var month = GetMonthWindow(now);
         var tasks = new List<Task>
         {
-            _cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "prompt-tokens"), Math.Max(0, usage.PromptTokens), month.ResetAtUtc.UtcDateTime),
-            _cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "completion-tokens"), Math.Max(0, usage.CompletionTokens), month.ResetAtUtc.UtcDateTime)
+            _cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "prompt-tokens"), promptTokens, month.ResetAtUtc.UtcDateTime),
+            _cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "completion-tokens"), completionTokens, month.ResetAtUtc.UtcDateTime)
         };
 
-        long costInMicrodollars = ToMicrodollars(usage.CostUsd);
         if (costInMicrodollars > 0)
             tasks.Add(_cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "cost-microdollars"), costInMicrodollars, month.ResetAtUtc.UtcDateTime));
         if (reservation is { HasValue: true })
@@ -195,8 +237,8 @@ public sealed class AssistantUsageService(
         await TryRecordUsageAsync(organizationId, new AssistantUsageIncrement
         {
             ProviderRequests = providerRequestAlreadyRecorded ? 0 : 1,
-            PromptTokens = Math.Max(0, usage.PromptTokens),
-            CompletionTokens = Math.Max(0, usage.CompletionTokens),
+            PromptTokens = promptTokens,
+            CompletionTokens = completionTokens,
             CostInMicrodollars = costInMicrodollars
         });
     }
@@ -356,6 +398,62 @@ public sealed record AssistantProviderReservation(long PromptTokens, long Comple
 {
     public static AssistantProviderReservation Empty { get; } = new(0, 0, 0);
     public bool HasValue => PromptTokens > 0 || CompletionTokens > 0 || CostInMicrodollars > 0;
+}
+
+public sealed class AssistantProviderUsageLifecycle : IAsyncDisposable
+{
+    private readonly AssistantUsageService _usageService;
+    private readonly string? _organizationId;
+    private readonly AssistantProviderReservation _reservation;
+    private int _completionState;
+
+    internal AssistantProviderUsageLifecycle(
+        AssistantUsageService usageService,
+        string? organizationId,
+        AssistantProviderReservation reservation)
+    {
+        _usageService = usageService;
+        _organizationId = organizationId;
+        _reservation = reservation;
+    }
+
+    public async Task ReconcileAsync(AssistantProviderUsage usage)
+    {
+        if (Interlocked.CompareExchange(ref _completionState, 1, 0) != 0)
+            throw new InvalidOperationException("Provider usage has already been completed.");
+
+        try
+        {
+            await _usageService.RecordProviderUsageAsync(
+                _organizationId,
+                usage,
+                providerRequestAlreadyRecorded: true,
+                _reservation);
+            Volatile.Write(ref _completionState, 2);
+        }
+        catch
+        {
+            Volatile.Write(ref _completionState, 0);
+            throw;
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (Interlocked.CompareExchange(ref _completionState, 1, 0) != 0)
+            return;
+
+        try
+        {
+            await _usageService.RecordUnreconciledProviderReservationAsync(_organizationId, _reservation);
+            Volatile.Write(ref _completionState, 2);
+        }
+        catch
+        {
+            Volatile.Write(ref _completionState, 0);
+            throw;
+        }
+    }
 }
 
 public sealed class AssistantTurnReservation : IAsyncDisposable

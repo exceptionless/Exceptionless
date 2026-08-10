@@ -32,8 +32,10 @@ public static class AssistantEndpoints
             .Produces(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status426UpgradeRequired)
-            .ProducesProblem(StatusCodes.Status429TooManyRequests);
+            .ProducesProblem(StatusCodes.Status429TooManyRequests)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
 
         return endpoints;
     }
@@ -146,7 +148,7 @@ public static class AssistantEndpoints
         return HttpResults.Ok(access.ToResponse());
     }
 
-    private static IResult? MapAccessFailure(AssistantAccessDecision access) => access.Reason switch
+    internal static IResult? MapAccessFailure(AssistantAccessDecision access) => access.Reason switch
     {
         AssistantAccessReason.Available => null,
         AssistantAccessReason.Disabled => HttpResults.NotFound(),

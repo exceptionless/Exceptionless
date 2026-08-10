@@ -2,7 +2,9 @@ using System.Net;
 using System.Text.Json;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
+using Exceptionless.Web.Assistant;
 using FluentRest;
+using Microsoft.AspNetCore.Http;
 using Xunit;
 
 namespace Exceptionless.Tests.Api.Endpoints;
@@ -37,6 +39,20 @@ public sealed class AssistantEndpointTests : IntegrationTestsBase
             .AppendPath("assistant/chat")
             .Content(new { messages = new[] { new { role = "user", content = "Hello" } } })
             .ExpectedStatus(HttpStatusCode.NotFound));
+    }
+
+    [Fact]
+    public void MapAccessFailure_NotConfigured_ReturnsServiceUnavailable()
+    {
+        var decision = AssistantAccessDecision.Unavailable(
+            AssistantAccessReason.NotConfigured,
+            "Exie is not configured.",
+            enabled: false);
+
+        var result = Exceptionless.Web.Api.Endpoints.AssistantEndpoints.MapAccessFailure(decision);
+
+        var statusCodeResult = Assert.IsAssignableFrom<IStatusCodeHttpResult>(result);
+        Assert.Equal(StatusCodes.Status503ServiceUnavailable, statusCodeResult.StatusCode);
     }
 
     [Fact]

@@ -27,7 +27,7 @@ public sealed class AssistantServiceTests
     [InlineData("Please fix the underlying issue", "update_stack_status", "{\"status\":\"fixed\"}", false)]
     [InlineData("What does this stack mean?", "update_stack_status", "{\"status\":\"fixed\"}", false)]
     [InlineData("What happened here?", "snooze_stack", "{}", false)]
-    [InlineData("Please snooze this stack for one hour", "snooze_stack", "{}", true)]
+    [InlineData("Please snooze this stack for one hour", "snooze_stack", "{}", false)]
     public void HasExplicitWriteRequest_UsesLatestUserMessageOnly(string prompt, string toolName, string arguments, bool expected)
     {
         var request = new AssistantChatRequest([
@@ -51,6 +51,24 @@ public sealed class AssistantServiceTests
             Path: "/next/stack/current-stack");
 
         Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, "update_stack_status", arguments));
+    }
+
+    [Theory]
+    [InlineData("Please snooze this stack for one hour", "{\"duration\":\"1h\"}", true)]
+    [InlineData("Please snooze this stack for one hour", "{\"duration\":\"60m\"}", true)]
+    [InlineData("Please snooze this stack for one hour", "{\"duration\":\"1w\"}", false)]
+    [InlineData("Snooze the stack for 2 hours", "{\"duration\":\"2h\"}", true)]
+    [InlineData("Snooze the stack for 2 hours", "{\"duration\":\"2d\"}", false)]
+    [InlineData("Snooze this stack until 2026-08-10T17:00:00Z", "{\"snoozeUntilUtc\":\"2026-08-10T17:00:00Z\"}", true)]
+    [InlineData("Snooze this stack until 2026-08-10T17:00:00Z", "{\"snoozeUntilUtc\":\"2026-08-11T17:00:00Z\"}", false)]
+    [InlineData("Please snooze this stack for one hour", "{\"duration\":\"1h\",\"snoozeUntilUtc\":\"2026-08-10T17:00:00Z\"}", false)]
+    public void HasExplicitWriteRequest_SnoozeArgumentsMustMatchRequest(string prompt, string arguments, bool expected)
+    {
+        var request = new AssistantChatRequest(
+            [new AssistantChatMessage("user", prompt)],
+            Path: "/next/stack/current-stack");
+
+        Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, "snooze_stack", arguments));
     }
 
     [Theory]
@@ -502,6 +520,98 @@ public sealed class AssistantServiceTests
         Assert.Equal(12_000, usage.PromptTokens);
         Assert.Equal(750, usage.CompletionTokens);
         Assert.Equal(0.002345m, usage.CostUsd);
+    }
+
+    [Fact]
+    public async Task StreamAsync_EarlyConsumerDisposal_PersistsConservativeProviderUsage()
+    {
+        var handler = new StubHttpMessageHandler(
+            """
+            data: {"choices":[{"delta":{"content":"Answer"}}]}
+
+            data: [DONE]
+
+            """);
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["AppMode"] = AppMode.Production.ToString(),
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            })
+            .Build());
+        using var cache = new InMemoryCacheClient(new InMemoryCacheClientOptions
+        {
+            LoggerFactory = NullLoggerFactory.Instance,
+            TimeProvider = TimeProvider.System
+        });
+        var lockProvider = CreateLockProvider(cache, TimeProvider.System);
+        var recorder = new RecordingAssistantUsageRecorder();
+        var usageService = new AssistantUsageService(cache, lockProvider, recorder, appOptions, TimeProvider.System, NullLogger<AssistantUsageService>.Instance);
+        var service = CreateAssistantService(handler, appOptions, cache, lockProvider, usageService);
+
+        await foreach (var _ in service.StreamAsync(
+            new AssistantChatRequest(
+                [new AssistantChatMessage("user", "Investigate this")],
+                OrganizationId: "organization-id"),
+            "user-id",
+            CreatePlanOptions(),
+            TestContext.Current.CancellationToken))
+        {
+            break;
+        }
+
+        var usage = await usageService.GetMonthlyUsageAsync("organization-id");
+        Assert.True(usage.PromptTokens > 0);
+        Assert.Equal(AssistantLimits.MaximumOutputTokens, usage.CompletionTokens);
+        Assert.Contains(recorder.Records, record => record.Increment.PromptTokens > 0
+            && record.Increment.CompletionTokens == AssistantLimits.MaximumOutputTokens);
+    }
+
+    [Fact]
+    public async Task StreamAsync_ProviderError_PersistsConservativeProviderUsage()
+    {
+        var handler = new StubHttpMessageHandler(
+            """
+            data: {"error":{"message":"Provider failed"}}
+
+            """);
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["AppMode"] = AppMode.Production.ToString(),
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            })
+            .Build());
+        using var cache = new InMemoryCacheClient(new InMemoryCacheClientOptions
+        {
+            LoggerFactory = NullLoggerFactory.Instance,
+            TimeProvider = TimeProvider.System
+        });
+        var lockProvider = CreateLockProvider(cache, TimeProvider.System);
+        var recorder = new RecordingAssistantUsageRecorder();
+        var usageService = new AssistantUsageService(cache, lockProvider, recorder, appOptions, TimeProvider.System, NullLogger<AssistantUsageService>.Instance);
+        var service = CreateAssistantService(handler, appOptions, cache, lockProvider, usageService);
+
+        await Assert.ThrowsAsync<AssistantProviderException>(async () =>
+        {
+            await foreach (var _ in service.StreamAsync(
+                new AssistantChatRequest(
+                    [new AssistantChatMessage("user", "Investigate this")],
+                    OrganizationId: "organization-id"),
+                "user-id",
+                CreatePlanOptions(),
+                TestContext.Current.CancellationToken))
+            {
+            }
+        });
+
+        var usage = await usageService.GetMonthlyUsageAsync("organization-id");
+        Assert.True(usage.PromptTokens > 0);
+        Assert.Equal(AssistantLimits.MaximumOutputTokens, usage.CompletionTokens);
+        Assert.Contains(recorder.Records, record => record.Increment.PromptTokens > 0
+            && record.Increment.CompletionTokens == AssistantLimits.MaximumOutputTokens);
     }
 
     [Fact]
