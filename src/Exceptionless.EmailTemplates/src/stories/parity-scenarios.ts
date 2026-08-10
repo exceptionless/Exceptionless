@@ -41,6 +41,8 @@ export type ParityScenario = {
     legacyHtml: string;
 };
 
+type RouteMigration = [legacyRoute: string, svelteRoute: string];
+
 type ScenarioDefinition = {
     id: string;
     template: string;
@@ -48,34 +50,44 @@ type ScenarioDefinition = {
     height: number;
     modernTemplate: string;
     legacyTemplate: string;
+    routeMigrations?: RouteMigration[];
     tokens: TokenData;
 };
 
-function migrateLegacyRoutesForParity(template: string): string {
-    const migrations: Array<[string, string]> = [
-        ['{{BaseUrl}}/stack/{{StackId}}/mark-fixed', '{{BaseUrl}}/project/{{ProjectId}}/stacks/{{StackId}}'],
-        ['{{BaseUrl}}/stack/{{StackId}}/ignored', '{{BaseUrl}}/project/{{ProjectId}}/stacks/{{StackId}}'],
-        ['{{BaseUrl}}/stack/{{StackId}}/discarded', '{{BaseUrl}}/project/{{ProjectId}}/stacks/{{StackId}}'],
-        [
-            '{{BaseUrl}}/account/manage?projectId={{ProjectId}}&tab=notifications',
-            '{{BaseUrl}}/account/notifications?project={{ProjectId}}'
-        ],
-        ['{{BaseUrl}}/organization/{{OrganizationId}}/dashboard', '{{BaseUrl}}/organization/{{OrganizationId}}/manage'],
-        [
-            '{{BaseUrl}}/organization/{{OrganizationId}}/upgrade',
-            '{{BaseUrl}}/organization/{{OrganizationId}}/billing?changePlan=true'
-        ],
-        ['{{BaseUrl}}/organization/{{OrganizationId}}/frequent', '{{BaseUrl}}/stack?status=open,regressed'],
-        ['{{BaseUrl}}/account/manage?tab=notifications', '{{BaseUrl}}/account/notifications'],
-        [
-            '{{BaseUrl}}/organization/{{OrganizationId}}/manage?tab=billing',
-            '{{BaseUrl}}/organization/{{OrganizationId}}/billing'
-        ],
-        ['{{BaseUrl}}/project/{{ProjectId}}/error/timeline', '{{BaseUrl}}/event?project={{ProjectId}}&type=error'],
-        ['{{../BaseUrl}}/stack/{{StackId}}', '{{../BaseUrl}}/project/{{../ProjectId}}/stacks/{{StackId}}'],
-        ['{{BaseUrl}}/project/{{ProjectId}}/error/frequent', '{{BaseUrl}}/project/{{ProjectId}}/stacks?sort=-total'],
-        ['{{BaseUrl}}/project/{{ProjectId}}/error/new', '{{BaseUrl}}/project/{{ProjectId}}/stacks?sort=-first']
-    ];
+const commonRouteMigrations: RouteMigration[] = [
+    ['{{BaseUrl}}/stack/{{StackId}}/mark-fixed', '{{BaseUrl}}/project/{{ProjectId}}/stacks/{{StackId}}'],
+    ['{{BaseUrl}}/stack/{{StackId}}/ignored', '{{BaseUrl}}/project/{{ProjectId}}/stacks/{{StackId}}'],
+    ['{{BaseUrl}}/stack/{{StackId}}/discarded', '{{BaseUrl}}/project/{{ProjectId}}/stacks/{{StackId}}'],
+    [
+        '{{BaseUrl}}/account/manage?projectId={{ProjectId}}&tab=notifications',
+        '{{BaseUrl}}/account/notifications?project={{ProjectId}}'
+    ],
+    [
+        '{{BaseUrl}}/organization/{{OrganizationId}}/upgrade',
+        '{{BaseUrl}}/organization/{{OrganizationId}}/billing?changePlan=true'
+    ],
+    ['{{BaseUrl}}/organization/{{OrganizationId}}/frequent', '{{BaseUrl}}/stack?status=open,regressed'],
+    ['{{BaseUrl}}/account/manage?tab=notifications', '{{BaseUrl}}/account/notifications'],
+    [
+        '{{BaseUrl}}/organization/{{OrganizationId}}/manage?tab=billing',
+        '{{BaseUrl}}/organization/{{OrganizationId}}/billing'
+    ],
+    ['{{BaseUrl}}/project/{{ProjectId}}/error/timeline', '{{BaseUrl}}/event?project={{ProjectId}}&type=error'],
+    ['{{../BaseUrl}}/stack/{{StackId}}', '{{../BaseUrl}}/project/{{../ProjectId}}/stacks/{{StackId}}'],
+    ['{{BaseUrl}}/project/{{ProjectId}}/error/frequent', '{{BaseUrl}}/project/{{ProjectId}}/stacks?sort=-total'],
+    ['{{BaseUrl}}/project/{{ProjectId}}/error/new', '{{BaseUrl}}/project/{{ProjectId}}/stacks?sort=-first']
+];
+
+const organizationAddedRouteMigrations: RouteMigration[] = [
+    ['{{BaseUrl}}/organization/{{OrganizationId}}/dashboard', '{{BaseUrl}}/organization/{{OrganizationId}}/manage']
+];
+
+const organizationNoticeRouteMigrations: RouteMigration[] = [
+    ['{{BaseUrl}}/organization/{{OrganizationId}}/manage', '{{BaseUrl}}/organization/{{OrganizationId}}/usage']
+];
+
+function migrateLegacyRoutesForParity(template: string, routeMigrations: RouteMigration[] = []): string {
+    const migrations = [...commonRouteMigrations, ...routeMigrations];
 
     return migrations.reduce((html, [legacyRoute, svelteRoute]) => html.replaceAll(legacyRoute, svelteRoute), template);
 }
@@ -115,6 +127,7 @@ const definitions: ScenarioDefinition[] = [
         height: 700,
         modernTemplate: modernOrganizationAdded,
         legacyTemplate: legacyOrganizationAdded,
+        routeMigrations: organizationAddedRouteMigrations,
         tokens: organizationAddedTokens
     },
     {
@@ -133,6 +146,7 @@ const definitions: ScenarioDefinition[] = [
         height: 650,
         modernTemplate: modernOrganizationNotice,
         legacyTemplate: legacyOrganizationNotice,
+        routeMigrations: organizationNoticeRouteMigrations,
         tokens: organizationNoticeTokens
     },
     {
@@ -142,6 +156,7 @@ const definitions: ScenarioDefinition[] = [
         height: 650,
         modernTemplate: modernOrganizationNotice,
         legacyTemplate: legacyOrganizationNotice,
+        routeMigrations: organizationNoticeRouteMigrations,
         tokens: monthlyOrganizationNoticeTokens
     },
     {
@@ -201,7 +216,7 @@ const definitions: ScenarioDefinition[] = [
 ];
 
 export const parityScenarios: ParityScenario[] = definitions.map(
-    ({ id, template, variant, height, modernTemplate, legacyTemplate, tokens }) => ({
+    ({ id, template, variant, height, modernTemplate, legacyTemplate, routeMigrations, tokens }) => ({
         id,
         template,
         variant,
@@ -209,6 +224,6 @@ export const parityScenarios: ParityScenario[] = definitions.map(
         modernHtml: fillTokens(modernTemplate, tokens),
         // Route-only migrations do not affect rendering, but keep semantic parity
         // explicit while email links move from legacy Angular routes to Svelte.
-        legacyHtml: fillTokens(migrateLegacyRoutesForParity(legacyTemplate), tokens)
+        legacyHtml: fillTokens(migrateLegacyRoutesForParity(legacyTemplate, routeMigrations), tokens)
     })
 );
