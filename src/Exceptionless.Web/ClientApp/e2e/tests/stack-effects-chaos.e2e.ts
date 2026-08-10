@@ -56,6 +56,33 @@ test('stack effects stay bounded through background, paging, and navigation chao
         await expect(page.getByRole('button', { name: 'Go to next page' })).toBeEnabled();
     });
 
+    await test.step('open a stack route without aborting detail requests', async () => {
+        const failedDetailRequests: { failure: null | string; pageUrl: string; requestUrl: string }[] = [];
+        const recordFailedDetailRequest = (request: Request) => {
+            if (new URL(request.url()).pathname.startsWith('/api/v2/')) {
+                failedDetailRequests.push({
+                    failure: request.failure()?.errorText ?? null,
+                    pageUrl: page.url(),
+                    requestUrl: request.url()
+                });
+            }
+        };
+
+        page.on('requestfailed', recordFailedDetailRequest);
+
+        try {
+            await page.goto(`/next/stack/${journey.stackId}`);
+            await expect(page).toHaveURL(new RegExp(`/next/stack/${journey.stackId}$`));
+            await expect(page.getByRole('tab', { name: 'Overview' })).toBeVisible();
+        } finally {
+            page.off('requestfailed', recordFailedDetailRequest);
+        }
+
+        expect(failedDetailRequests).toEqual([]);
+        await page.goto('/next/stack?limit=5');
+        await expect(page.getByRole('heading', { name: 'Stacks' })).toBeVisible();
+    });
+
     await measureAction(diagnostics, 'selected stack refresh', async () => {
         const rowSelection = page.getByRole('checkbox', { name: 'Select row' }).first();
         await rowSelection.click();

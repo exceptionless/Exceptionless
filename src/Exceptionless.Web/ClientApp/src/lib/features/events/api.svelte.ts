@@ -434,23 +434,28 @@ export function getOrganizationSessionsCountQuery(request: GetOrganizationSessio
 export function getProjectCountQuery(request: GetProjectCountRequest) {
     const queryClient = useQueryClient();
 
-    return createQuery<CountResult, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.projectId,
-        queryClient,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
-            const client = useFetchClient();
-            const response = await client.getJSON<CountResult>(`/projects/${request.route.projectId}/events/count`, {
-                params: {
-                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
-                    ...request.params
-                },
-                signal
-            });
+    return createQuery<CountResult, ProblemDetails>(() => {
+        const projectId = request.route.projectId;
+        const params = request.params ? { ...request.params } : undefined;
 
-            return response.data!;
-        },
-        queryKey: queryKeys.projectsCount(request.route.projectId, request.params)
-    }));
+        return {
+            enabled: () => !!accessToken.current && !!projectId,
+            queryClient,
+            queryFn: async ({ signal }: { signal: AbortSignal }) => {
+                const client = useFetchClient();
+                const response = await client.getJSON<CountResult>(`/projects/${projectId}/events/count`, {
+                    params: {
+                        ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                        ...params
+                    },
+                    signal
+                });
+
+                return response.data!;
+            },
+            queryKey: queryKeys.projectsCount(projectId, params)
+        };
+    });
 }
 
 /**
