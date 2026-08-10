@@ -94,12 +94,12 @@ public class StatusEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public Task GetSystemNotificationAsync_WhenNoneSet_ReturnsOk()
+    public Task GetSystemNotificationAsync_WhenNoneSet_ReturnsNoContent()
     {
         return SendRequestAsync(r => r
             .AsGlobalAdminUser()
             .AppendPath("notifications/system")
-            .StatusCodeShouldBeOk());
+            .StatusCodeShouldBeNoContent());
     }
 
     [Fact]
@@ -168,7 +168,7 @@ public class StatusEndpointTests : IntegrationTestsBase
         var response = await SendRequestAsync(r => r
             .AsGlobalAdminUser()
             .AppendPath("notifications/system")
-            .StatusCodeShouldBeOk());
+            .StatusCodeShouldBeNoContent());
         string content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         Assert.DoesNotContain("To be removed", content);
     }
