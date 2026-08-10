@@ -19,6 +19,28 @@ afterEach(() => {
 });
 
 describe('createOrganizationEventNotificationRefresher', () => {
+    it('performs a delayed reconciliation after an isolated notification', async () => {
+        // Arrange
+        vi.useFakeTimers();
+        const queryClient = new QueryClient();
+        const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries').mockImplementation(async () => {});
+        const refresher = createOrganizationEventNotificationRefresher(queryClient);
+
+        // Act
+        refresher.schedule('organization-id');
+
+        // Assert
+        expect(invalidateSpy).toHaveBeenCalledOnce();
+        await vi.advanceTimersByTimeAsync(ORGANIZATION_EVENT_NOTIFICATION_THROTTLE_MS - 1);
+        expect(invalidateSpy).toHaveBeenCalledOnce();
+
+        await vi.advanceTimersByTimeAsync(1);
+        expect(invalidateSpy).toHaveBeenCalledTimes(2);
+        const reconciliation = invalidateSpy.mock.calls[1]?.[0];
+        expect(reconciliation?.predicate?.({ queryKey: queryKeys.organizationsEvents('organization-id') } as never)).toBe(true);
+        expect(reconciliation?.predicate?.({ queryKey: queryKeys.organizationsCount('organization-id') } as never)).toBe(true);
+    });
+
     it('refreshes matching active dashboards immediately and at most once per throttle window', async () => {
         // Arrange
         vi.useFakeTimers();
@@ -52,9 +74,10 @@ describe('createOrganizationEventNotificationRefresher', () => {
         expect(trailingInvalidation?.predicate?.({ queryKey: queryKeys.organizationsCount('other-organization-id') } as never)).toBe(true);
 
         refresher.schedule('organization-id');
+        expect(invalidateSpy).toHaveBeenCalledTimes(3);
         refresher.cancel();
         await vi.advanceTimersByTimeAsync(ORGANIZATION_EVENT_NOTIFICATION_THROTTLE_MS);
-        expect(invalidateSpy).toHaveBeenCalledTimes(2);
+        expect(invalidateSpy).toHaveBeenCalledTimes(3);
     });
 });
 

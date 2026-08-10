@@ -7,7 +7,6 @@ import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, keepPreviousData, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 import { SvelteSet } from 'svelte/reactivity';
-import { throttle } from 'throttle-debounce';
 
 import type { EventSummaryModel, SummaryTemplateKeys } from './components/summary/index';
 import type { PersistentEvent } from './models';
@@ -19,9 +18,9 @@ export interface OrganizationEventNotificationRefresher {
 
 export function createOrganizationEventNotificationRefresher(queryClient: QueryClient): OrganizationEventNotificationRefresher {
     const pendingOrganizationIds = new SvelteSet<string | undefined>();
-    const refresh = throttle(ORGANIZATION_EVENT_NOTIFICATION_THROTTLE_MS, () => {
+    let trailingRefresh: ReturnType<typeof setTimeout> | undefined;
+    const refresh = () => {
         const organizationIds = [...pendingOrganizationIds];
-        pendingOrganizationIds.clear();
 
         void queryClient.invalidateQueries({
             predicate: (query) =>
@@ -30,16 +29,28 @@ export function createOrganizationEventNotificationRefresher(queryClient: QueryC
             queryKey: queryKeys.type,
             refetchType: 'active'
         });
-    });
+    };
 
     return {
         cancel: () => {
             pendingOrganizationIds.clear();
-            refresh.cancel();
+            if (trailingRefresh !== undefined) {
+                clearTimeout(trailingRefresh);
+                trailingRefresh = undefined;
+            }
         },
         schedule: (organizationId?: string) => {
             pendingOrganizationIds.add(organizationId);
+            if (trailingRefresh !== undefined) {
+                return;
+            }
+
             refresh();
+            trailingRefresh = setTimeout(() => {
+                trailingRefresh = undefined;
+                refresh();
+                pendingOrganizationIds.clear();
+            }, ORGANIZATION_EVENT_NOTIFICATION_THROTTLE_MS);
         }
     };
 }
