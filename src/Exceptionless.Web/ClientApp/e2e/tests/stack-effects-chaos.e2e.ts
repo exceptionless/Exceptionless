@@ -5,6 +5,8 @@ import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
 import { createRepresentativeEvent } from '../support/synthetic-event';
 import { dispatchWebSocketMessages, installWebSocketTestHarness } from '../support/web-socket';
 
+const STACK_NOTIFICATION_TRAILING_REFRESH_MS = 5_000;
+
 interface ActionSample {
     countRequests: number;
     listRequests: number;
@@ -140,6 +142,32 @@ test('stack effects stay bounded through background, paging, and navigation chao
         await page.waitForTimeout(2_000);
     });
     expect(actionSample(diagnostics, 'background ingestion and resume').listRequests).toBeLessThanOrEqual(2);
+
+    await page.waitForTimeout(STACK_NOTIFICATION_TRAILING_REFRESH_MS);
+    await measureAction(diagnostics, 'removal notification leading window', async () => {
+        await dispatchWebSocketMessages(page, [
+            {
+                message: {
+                    change_type: 2,
+                    data: {},
+                    id: 'chaos-removed-stack',
+                    organization_id: e2eScenario.organizationId,
+                    project_id: e2eScenario.projectId,
+                    type: 'Stack'
+                },
+                type: 'StackChanged'
+            }
+        ]);
+        await page.waitForTimeout(2_000);
+    });
+    expect(actionSample(diagnostics, 'removal notification leading window').countRequests).toBe(0);
+    expect(actionSample(diagnostics, 'removal notification leading window').listRequests).toBe(0);
+
+    await measureAction(diagnostics, 'removal notification trailing reconciliation', async () => {
+        await page.waitForTimeout(STACK_NOTIFICATION_TRAILING_REFRESH_MS - 1_500);
+    });
+    expect(actionSample(diagnostics, 'removal notification trailing reconciliation').countRequests).toBe(1);
+    expect(actionSample(diagnostics, 'removal notification trailing reconciliation').listRequests).toBe(1);
 
     await measureAction(diagnostics, 'sustained stack change notifications', async () => {
         for (let wave = 0; wave < 4; wave++) {

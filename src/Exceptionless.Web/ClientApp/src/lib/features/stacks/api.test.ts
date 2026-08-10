@@ -9,6 +9,22 @@ afterEach(() => {
 });
 
 describe('createProjectStackNotificationRefresher', () => {
+    it('defers removal reconciliation without a leading refetch', async () => {
+        // Arrange
+        vi.useFakeTimers();
+        const queryClient = new QueryClient();
+        const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries').mockImplementation(async () => {});
+        const refresher = createProjectStackNotificationRefresher(queryClient);
+
+        // Act
+        refresher.schedule('project-id', false);
+
+        // Assert
+        expect(invalidateSpy).not.toHaveBeenCalled();
+        await vi.advanceTimersByTimeAsync(STACK_NOTIFICATION_THROTTLE_MS);
+        expect(invalidateSpy).toHaveBeenCalledOnce();
+    });
+
     it('performs a delayed reconciliation after an isolated notification', async () => {
         // Arrange
         vi.useFakeTimers();

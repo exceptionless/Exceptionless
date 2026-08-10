@@ -39,7 +39,7 @@
     import { getMeQuery, invalidateUserQueries } from '$features/users/api.svelte';
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
     import { invalidateWebhookQueries } from '$features/webhooks/api.svelte';
-    import { isEntityChangedType, isPlanOverageType, type WebSocketMessageType } from '$features/websockets/models';
+    import { ChangeType, isEntityChangedType, isPlanOverageType, type WebSocketMessageType } from '$features/websockets/models';
     import { WebSocketClient } from '$features/websockets/web-socket-client.svelte';
     import { Telemetry } from '$lib/telemetry';
     import { useMiddleware } from '@foundatiofx/fetchclient';
@@ -167,7 +167,7 @@
                     await invalidateOrganizationQueries(queryClient, data.message);
                     break;
                 case 'PersistentEventChanged':
-                    organizationEventRefresher.schedule(data.message.organization_id);
+                    organizationEventRefresher.schedule(data.message.organization_id, data.message.change_type !== ChangeType.Removed);
                     await invalidatePersistentEventQueries(queryClient, data.message);
                     break;
                 case 'ProjectChanged':
@@ -177,8 +177,8 @@
                     await invalidateSavedViewQueries(queryClient, data.message);
                     break;
                 case 'StackChanged':
-                    organizationEventRefresher.schedule(data.message.organization_id);
-                    projectStackRefresher.schedule(data.message.project_id);
+                    organizationEventRefresher.schedule(data.message.organization_id, data.message.change_type !== ChangeType.Removed);
+                    projectStackRefresher.schedule(data.message.project_id, data.message.change_type !== ChangeType.Removed);
                     await invalidateStackQueries(queryClient, data.message);
                     break;
                 case 'TokenChanged':

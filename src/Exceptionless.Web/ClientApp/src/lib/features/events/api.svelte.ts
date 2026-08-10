@@ -13,7 +13,7 @@ import type { PersistentEvent } from './models';
 
 export interface OrganizationEventNotificationRefresher {
     cancel: () => void;
-    schedule: (organizationId?: string) => void;
+    schedule: (organizationId?: string, refreshImmediately?: boolean) => void;
 }
 
 export function createOrganizationEventNotificationRefresher(queryClient: QueryClient): OrganizationEventNotificationRefresher {
@@ -39,13 +39,16 @@ export function createOrganizationEventNotificationRefresher(queryClient: QueryC
                 trailingRefresh = undefined;
             }
         },
-        schedule: (organizationId?: string) => {
+        schedule: (organizationId?: string, refreshImmediately = true) => {
             pendingOrganizationIds.add(organizationId);
             if (trailingRefresh !== undefined) {
                 return;
             }
 
-            refresh();
+            if (refreshImmediately) {
+                refresh();
+            }
+
             trailingRefresh = setTimeout(() => {
                 trailingRefresh = undefined;
                 refresh();

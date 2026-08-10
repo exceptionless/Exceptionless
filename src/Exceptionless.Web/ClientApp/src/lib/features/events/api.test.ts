@@ -29,6 +29,22 @@ afterEach(() => {
 });
 
 describe('createOrganizationEventNotificationRefresher', () => {
+    it('defers removal reconciliation without a leading refetch', async () => {
+        // Arrange
+        vi.useFakeTimers();
+        const queryClient = new QueryClient();
+        const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries').mockImplementation(async () => {});
+        const refresher = createOrganizationEventNotificationRefresher(queryClient);
+
+        // Act
+        refresher.schedule('organization-id', false);
+
+        // Assert
+        expect(invalidateSpy).not.toHaveBeenCalled();
+        await vi.advanceTimersByTimeAsync(ORGANIZATION_EVENT_NOTIFICATION_THROTTLE_MS);
+        expect(invalidateSpy).toHaveBeenCalledOnce();
+    });
+
     it('performs a delayed reconciliation after an isolated notification', async () => {
         // Arrange
         vi.useFakeTimers();

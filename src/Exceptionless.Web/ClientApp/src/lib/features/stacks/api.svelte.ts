@@ -10,7 +10,7 @@ import type { Stack, StackStatus } from './models';
 
 export interface ProjectStackNotificationRefresher {
     cancel: () => void;
-    schedule: (projectId?: string) => void;
+    schedule: (projectId?: string, refreshImmediately?: boolean) => void;
 }
 
 export function createProjectStackNotificationRefresher(queryClient: QueryClient): ProjectStackNotificationRefresher {
@@ -35,13 +35,16 @@ export function createProjectStackNotificationRefresher(queryClient: QueryClient
                 trailingRefresh = undefined;
             }
         },
-        schedule: (projectId?: string) => {
+        schedule: (projectId?: string, refreshImmediately = true) => {
             pendingProjectIds.add(projectId);
             if (trailingRefresh !== undefined) {
                 return;
             }
 
-            refresh();
+            if (refreshImmediately) {
+                refresh();
+            }
+
             trailingRefresh = setTimeout(() => {
                 trailingRefresh = undefined;
                 refresh();
