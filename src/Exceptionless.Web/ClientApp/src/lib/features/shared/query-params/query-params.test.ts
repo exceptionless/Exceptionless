@@ -76,7 +76,7 @@ describe('query parameter updates', () => {
 });
 
 describe('query parameter proxy', () => {
-    it('delegates property and batch assignments to update operations', () => {
+    it('delegates supported assignments and ignores unsupported properties', () => {
         // Arrange
         const schema = { filter: 'string', page: 'number' } satisfies QueryParameterSchema;
         const state = { filter: null, page: 1 };
@@ -86,10 +86,12 @@ describe('query parameter proxy', () => {
         // Act
         queryParams.page = 2;
         queryParams.update({ filter: 'new', page: 3 });
+        (queryParams as typeof queryParams & { filters: null | string }).filters = null;
 
         // Assert
         expect(update).toHaveBeenNthCalledWith(1, { page: 2 });
         expect(update).toHaveBeenNthCalledWith(2, { filter: 'new', page: 3 });
+        expect(update).toHaveBeenCalledTimes(2);
     });
 });
 

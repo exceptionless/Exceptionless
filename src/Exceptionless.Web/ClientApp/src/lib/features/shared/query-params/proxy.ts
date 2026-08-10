@@ -23,7 +23,7 @@ export function createQueryParameterProxy<T extends QueryParameterSchema>(
                 return true;
             }
 
-            return false;
+            return true;
         }
     };
 
