@@ -10,9 +10,9 @@ vi.mock('$app/paths', () => ({
 }));
 
 describe('redirect-to-events', () => {
-    it('clears every list filter query parameter without changing unrelated state', async () => {
+    it('defines every list filter query parameter reset without unrelated state', async () => {
         // Arrange
-        const { clearListFilterQueryParams } = await import('./redirect-to-events.svelte');
+        const { LIST_FILTER_QUERY_PARAM_RESET } = await import('./redirect-to-events.svelte');
         const queryParams = {
             bot: 'true',
             filter: 'message:test',
@@ -31,7 +31,7 @@ describe('redirect-to-events', () => {
         };
 
         // Act
-        clearListFilterQueryParams(queryParams);
+        Object.assign(queryParams, LIST_FILTER_QUERY_PARAM_RESET);
 
         // Assert
         expect(queryParams).toEqual({
