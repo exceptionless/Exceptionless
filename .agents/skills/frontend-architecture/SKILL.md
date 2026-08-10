@@ -99,7 +99,7 @@ import { cn } from "$lib/utils";                // $lib
 
 - Prefer `$derived` for computed state and `$effect` for side effects.
 - Use `untrack()` inside `$effect` when needed to avoid reactive loops.
-- Prefer `kit-query-params` (`queryParamsState`) for route query parameter binding instead of ad-hoc URL parsing.
+- Prefer `createQueryParameters` from `$shared/query-params` for route query parameter binding instead of ad-hoc URL parsing.
 - Use Svelte 5 event attributes such as `onclick` and `oninput`; do not use legacy `on:click` syntax in new code.
 - Use snippets (`{#snippet children(...)}` / `{@render children?.()}`) instead of slots in new components.
 - Use array class syntax or the local `cn()` helper for conditional classes.
