@@ -5,7 +5,6 @@ import { accessToken } from '$features/auth/index.svelte';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 import { SvelteSet } from 'svelte/reactivity';
-import { throttle } from 'throttle-debounce';
 
 import type { Stack, StackStatus } from './models';
 
@@ -16,9 +15,9 @@ export interface ProjectStackNotificationRefresher {
 
 export function createProjectStackNotificationRefresher(queryClient: QueryClient): ProjectStackNotificationRefresher {
     const pendingProjectIds = new SvelteSet<string | undefined>();
-    const refresh = throttle(STACK_NOTIFICATION_THROTTLE_MS, () => {
+    let trailingRefresh: ReturnType<typeof setTimeout> | undefined;
+    const refresh = () => {
         const projectIds = [...pendingProjectIds];
-        pendingProjectIds.clear();
 
         void queryClient.invalidateQueries({
             predicate: (query) =>
@@ -26,16 +25,28 @@ export function createProjectStackNotificationRefresher(queryClient: QueryClient
             queryKey: queryKeys.type,
             refetchType: 'active'
         });
-    });
+    };
 
     return {
         cancel: () => {
             pendingProjectIds.clear();
-            refresh.cancel();
+            if (trailingRefresh !== undefined) {
+                clearTimeout(trailingRefresh);
+                trailingRefresh = undefined;
+            }
         },
         schedule: (projectId?: string) => {
             pendingProjectIds.add(projectId);
+            if (trailingRefresh !== undefined) {
+                return;
+            }
+
             refresh();
+            trailingRefresh = setTimeout(() => {
+                trailingRefresh = undefined;
+                refresh();
+                pendingProjectIds.clear();
+            }, STACK_NOTIFICATION_THROTTLE_MS);
         }
     };
 }

@@ -9,6 +9,27 @@ afterEach(() => {
 });
 
 describe('createProjectStackNotificationRefresher', () => {
+    it('performs a delayed reconciliation after an isolated notification', async () => {
+        // Arrange
+        vi.useFakeTimers();
+        const queryClient = new QueryClient();
+        const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries').mockImplementation(async () => {});
+        const refresher = createProjectStackNotificationRefresher(queryClient);
+
+        // Act
+        refresher.schedule('project-id');
+
+        // Assert
+        expect(invalidateSpy).toHaveBeenCalledOnce();
+        await vi.advanceTimersByTimeAsync(STACK_NOTIFICATION_THROTTLE_MS - 1);
+        expect(invalidateSpy).toHaveBeenCalledOnce();
+
+        await vi.advanceTimersByTimeAsync(1);
+        expect(invalidateSpy).toHaveBeenCalledTimes(2);
+        const reconciliation = invalidateSpy.mock.calls[1]?.[0];
+        expect(reconciliation?.predicate?.({ queryKey: queryKeys.project('project-id') } as never)).toBe(true);
+    });
+
     it('refreshes matching active project lists immediately and at most once per throttle window', async () => {
         // Arrange
         vi.useFakeTimers();
@@ -41,9 +62,10 @@ describe('createProjectStackNotificationRefresher', () => {
         expect(trailingInvalidation?.predicate?.({ queryKey: queryKeys.project('other-project-id') } as never)).toBe(true);
 
         refresher.schedule('project-id');
+        expect(invalidateSpy).toHaveBeenCalledTimes(3);
         refresher.cancel();
         await vi.advanceTimersByTimeAsync(STACK_NOTIFICATION_THROTTLE_MS);
-        expect(invalidateSpy).toHaveBeenCalledTimes(2);
+        expect(invalidateSpy).toHaveBeenCalledTimes(3);
     });
 });
 

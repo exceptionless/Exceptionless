@@ -3,6 +3,7 @@ import type { ConsoleMessage, Page, Request, Response } from '@playwright/test';
 import { expect, test } from '../fixtures/e2e-test';
 import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
 import { createRepresentativeEvent } from '../support/synthetic-event';
+import { dispatchWebSocketMessages, installWebSocketTestHarness } from '../support/web-socket';
 
 interface ActionSample {
     countRequests: number;
@@ -22,6 +23,7 @@ interface RuntimeDiagnostics {
 
 test('stack effects stay bounded through background, paging, and navigation chaos @signup', async ({ e2eApi, e2eScenario, page }, testInfo) => {
     test.slow();
+    await installWebSocketTestHarness(page);
 
     const journey = ExceptionlessE2EJourney.fromScenario(page, e2eApi, e2eScenario);
     const diagnostics: RuntimeDiagnostics = {
@@ -108,23 +110,19 @@ test('stack effects stay bounded through background, paging, and navigation chao
 
     await measureAction(diagnostics, 'sustained stack change notifications', async () => {
         for (let wave = 0; wave < 4; wave++) {
-            await page.evaluate(
-                ({ organizationId, wave }) => {
-                    for (let index = 0; index < 30; index++) {
-                        document.dispatchEvent(
-                            new CustomEvent('StackChanged', {
-                                detail: {
-                                    change_type: 2,
-                                    data: {},
-                                    id: `chaos-missing-stack-${wave}-${index}`,
-                                    organization_id: organizationId,
-                                    type: 'Stack'
-                                }
-                            })
-                        );
-                    }
-                },
-                { organizationId: e2eScenario.organizationId, wave }
+            await dispatchWebSocketMessages(
+                page,
+                Array.from({ length: 30 }, (_, index) => ({
+                    message: {
+                        change_type: 1,
+                        data: {},
+                        id: `chaos-missing-stack-${wave}-${index}`,
+                        organization_id: e2eScenario.organizationId,
+                        project_id: e2eScenario.projectId,
+                        type: 'Stack'
+                    },
+                    type: 'StackChanged'
+                }))
             );
             await page.waitForTimeout(1_600);
         }
@@ -132,7 +130,9 @@ test('stack effects stay bounded through background, paging, and navigation chao
         await page.waitForTimeout(2_000);
     });
     const sustainedNotificationSample = actionSample(diagnostics, 'sustained stack change notifications');
+    expect(sustainedNotificationSample.countRequests).toBeGreaterThanOrEqual(1);
     expect(sustainedNotificationSample.countRequests).toBeLessThanOrEqual(2);
+    expect(sustainedNotificationSample.listRequests).toBeGreaterThanOrEqual(1);
     expect(sustainedNotificationSample.listRequests).toBeLessThanOrEqual(2);
     expect(sustainedNotificationSample.runtimeErrors).toBe(0);
 

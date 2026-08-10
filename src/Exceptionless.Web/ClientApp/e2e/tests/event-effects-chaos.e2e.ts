@@ -3,6 +3,7 @@ import type { ConsoleMessage, Page, Request, Response } from '@playwright/test';
 import { expect, test } from '../fixtures/e2e-test';
 import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
 import { createRepresentativeEvent } from '../support/synthetic-event';
+import { dispatchWebSocketMessages, installWebSocketTestHarness } from '../support/web-socket';
 
 interface ActionSample extends RequestCounts {
     name: string;
@@ -27,6 +28,7 @@ interface RuntimeDiagnostics {
 
 test('event list and detail effects stay bounded through paging and background chaos @signup', async ({ e2eApi, e2eScenario, page }, testInfo) => {
     test.slow();
+    await installWebSocketTestHarness(page);
 
     const journey = ExceptionlessE2EJourney.fromScenario(page, e2eApi, e2eScenario);
     const diagnostics: RuntimeDiagnostics = {
@@ -147,29 +149,19 @@ test('event list and detail effects stay bounded through paging and background c
 
     await measureAction(diagnostics, 'sustained persistent event notifications', async () => {
         for (let wave = 0; wave < 4; wave++) {
-            await page.evaluate(
-                ({ organizationId, projectId, stackId, wave }) => {
-                    for (let index = 0; index < 30; index++) {
-                        document.dispatchEvent(
-                            new CustomEvent('PersistentEventChanged', {
-                                detail: {
-                                    change_type: 0,
-                                    id: `chaos-missing-event-${wave}-${index}`,
-                                    organization_id: organizationId,
-                                    project_id: projectId,
-                                    stack_id: stackId,
-                                    type: 'PersistentEvent'
-                                }
-                            })
-                        );
-                    }
-                },
-                {
-                    organizationId: e2eScenario.organizationId,
-                    projectId: e2eScenario.projectId,
-                    stackId: journey.stackId!,
-                    wave
-                }
+            await dispatchWebSocketMessages(
+                page,
+                Array.from({ length: 30 }, (_, index) => ({
+                    message: {
+                        change_type: 0,
+                        id: `chaos-missing-event-${wave}-${index}`,
+                        organization_id: e2eScenario.organizationId,
+                        project_id: e2eScenario.projectId,
+                        stack_id: journey.stackId!,
+                        type: 'PersistentEvent'
+                    },
+                    type: 'PersistentEventChanged'
+                }))
             );
             await page.waitForTimeout(1_600);
         }
@@ -177,7 +169,9 @@ test('event list and detail effects stay bounded through paging and background c
         await page.waitForTimeout(2_000);
     });
     const sustainedNotificationSample = actionSample(diagnostics, 'sustained persistent event notifications');
+    expect(sustainedNotificationSample.eventCount).toBeGreaterThanOrEqual(1);
     expect(sustainedNotificationSample.eventCount).toBeLessThanOrEqual(2);
+    expect(sustainedNotificationSample.eventList).toBeGreaterThanOrEqual(1);
     expect(sustainedNotificationSample.eventList).toBeLessThanOrEqual(2);
     expect(sustainedNotificationSample.runtimeErrors).toBe(0);
 
