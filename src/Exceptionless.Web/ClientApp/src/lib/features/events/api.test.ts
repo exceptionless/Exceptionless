@@ -2,9 +2,13 @@ import { ChangeType } from '$features/websockets/models';
 import { QueryClient } from '@tanstack/svelte-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import type { PersistentEvent } from './models';
+
 import { queryKeys as stackQueryKeys } from '../stacks/api.svelte';
 import {
+    createEventWithNavigationQueryOptions,
     createOrganizationEventNotificationRefresher,
+    type GetEventRequest,
     invalidatePersistentEventQueries,
     ORGANIZATION_EVENT_NOTIFICATION_THROTTLE_MS,
     PERSISTENT_EVENT_DELETE_RECONCILE_DELAY,
@@ -13,6 +17,12 @@ import {
     queryKeys,
     schedulePersistentEventDeleteReconciliation
 } from './api.svelte';
+
+const fetchClientMocks = vi.hoisted(() => ({ getJSON: vi.fn() }));
+
+vi.mock('@foundatiofx/fetchclient', () => ({
+    useFetchClient: () => ({ getJSON: fetchClientMocks.getJSON })
+}));
 
 afterEach(() => {
     vi.useRealTimers();
@@ -78,6 +88,42 @@ describe('createOrganizationEventNotificationRefresher', () => {
         refresher.cancel();
         await vi.advanceTimersByTimeAsync(ORGANIZATION_EVENT_NOTIFICATION_THROTTLE_MS);
         expect(invalidateSpy).toHaveBeenCalledTimes(3);
+    });
+});
+
+describe('createEventWithNavigationQueryOptions', () => {
+    it('caches a delayed response under the event ID that started the request', async () => {
+        // Arrange
+        const queryClient = new QueryClient();
+        const request: GetEventRequest = {
+            params: { time: '1h' },
+            route: { id: 'event-a' }
+        };
+        const event = { id: 'event-a' } as PersistentEvent;
+        let resolveResponse: ((response: { data: PersistentEvent; meta: { links: Record<string, never> } }) => void) | undefined;
+        fetchClientMocks.getJSON.mockImplementationOnce(
+            () =>
+                new Promise((resolve) => {
+                    resolveResponse = resolve;
+                })
+        );
+        const options = createEventWithNavigationQueryOptions(request, queryClient);
+
+        // Act
+        const resultPromise = options.queryFn();
+        request.route.id = 'event-b';
+        request.params = { time: '7d' };
+        resolveResponse?.({ data: event, meta: { links: {} } });
+        const result = await resultPromise;
+
+        // Assert
+        expect(fetchClientMocks.getJSON).toHaveBeenCalledWith('events/event-a', {
+            params: expect.objectContaining({ time: '1h' })
+        });
+        expect(options.queryKey).toEqual([...queryKeys.id('event-a'), 'withNavigation', { time: '1h' }]);
+        expect(result.event).toBe(event);
+        expect(queryClient.getQueryData(queryKeys.id('event-a'))).toBe(event);
+        expect(queryClient.getQueryData(queryKeys.id('event-b'))).toBeUndefined();
     });
 });
 

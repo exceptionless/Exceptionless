@@ -258,6 +258,40 @@ export interface GetStackEventsRequest {
     };
 }
 
+export function createEventWithNavigationQueryOptions(request: GetEventRequest, queryClient: QueryClient) {
+    const eventId = request.route.id;
+    const params = request.params ? { ...request.params } : undefined;
+
+    return {
+        enabled: () => !!accessToken.current && !!eventId,
+        placeholderData: keepPreviousData,
+        queryFn: async () => {
+            const client = useFetchClient();
+            const response = await client.getJSON<PersistentEvent>(`events/${eventId}`, {
+                params: {
+                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                    ...params
+                }
+            });
+
+            const event = response.data!;
+            queryClient.setQueryData(queryKeys.id(eventId), event);
+
+            const previousUrl = response.meta?.links?.previous?.url;
+            const nextUrl = response.meta?.links?.next?.url;
+
+            return {
+                event,
+                navigation: {
+                    nextId: nextUrl ? (nextUrl.split('/').pop() ?? null) : null,
+                    previousId: previousUrl ? (previousUrl.split('/').pop() ?? null) : null
+                }
+            };
+        },
+        queryKey: [...queryKeys.id(eventId), 'withNavigation', params]
+    };
+}
+
 export function deleteEvent(request: DeleteEventsRequest) {
     const queryClient = useQueryClient();
     return createMutation<WorkInProgressResult, ProblemDetails, void>(() => ({
@@ -324,34 +358,7 @@ export function getEventsByReferenceQuery(request: GetEventsByReferenceRequest) 
 
 export function getEventWithNavigationQuery(request: GetEventRequest) {
     const queryClient = useQueryClient();
-    return createQuery<EventWithNavigation, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.id,
-        placeholderData: keepPreviousData,
-        queryFn: async () => {
-            const client = useFetchClient();
-            const response = await client.getJSON<PersistentEvent>(`events/${request.route.id}`, {
-                params: {
-                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
-                    ...request.params
-                }
-            });
-
-            const event = response.data!;
-            queryClient.setQueryData(queryKeys.id(request.route.id), event);
-
-            const previousUrl = response.meta?.links?.previous?.url;
-            const nextUrl = response.meta?.links?.next?.url;
-
-            return {
-                event,
-                navigation: {
-                    nextId: nextUrl ? (nextUrl.split('/').pop() ?? null) : null,
-                    previousId: previousUrl ? (previousUrl.split('/').pop() ?? null) : null
-                }
-            };
-        },
-        queryKey: [...queryKeys.id(request.route.id), 'withNavigation', request.params]
-    }));
+    return createQuery<EventWithNavigation, ProblemDetails>(() => createEventWithNavigationQueryOptions(request, queryClient));
 }
 
 export function getOrganizationCountQuery(request: GetOrganizationCountRequest) {
