@@ -3,7 +3,7 @@
 
     const queryParameters = createQueryParameters({
         debounceMilliseconds: 200,
-        history: 'replace',
+        history: 'push',
         schema: { filter: 'string' }
     });
 </script>

@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/svelte';
+import { tick } from 'svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import QueryParametersTestHarness from './query-params.test-harness.svelte';
@@ -11,7 +12,7 @@ const navigation = vi.hoisted(() => ({
 }));
 const pageState = vi.hoisted(() => ({}));
 
-vi.mock('$app/environment', () => ({ building: false }));
+vi.mock('$app/environment', () => ({ browser: true, building: false }));
 vi.mock('$app/navigation', () => navigation);
 vi.mock('$app/state', () => ({
     page: {
@@ -23,7 +24,10 @@ vi.mock('$app/state', () => ({
 describe('createQueryParameters', () => {
     beforeEach(() => {
         vi.useFakeTimers();
+        vi.clearAllMocks();
         window.history.replaceState({}, '', '/');
+        navigation.pushState.mockImplementation((url: string | URL, state: App.PageState) => window.history.pushState(state, '', url));
+        navigation.replaceState.mockImplementation((url: string | URL, state: App.PageState) => window.history.replaceState(state, '', url));
     });
 
     afterEach(() => {
@@ -41,8 +45,26 @@ describe('createQueryParameters', () => {
 
         // Assert
         expect(screen.getByText('second').textContent).toBe('second');
-        expect(navigation.replaceState).toHaveBeenCalledOnce();
-        expect(navigation.replaceState).toHaveBeenCalledWith('?filter=second', pageState);
-        expect(navigation.pushState).not.toHaveBeenCalled();
+        expect(navigation.pushState).toHaveBeenCalledOnce();
+        expect(navigation.pushState).toHaveBeenCalledWith('?filter=second', pageState);
+        expect(navigation.replaceState).not.toHaveBeenCalled();
+    });
+
+    it('restores reactive state when shallow history is traversed', async () => {
+        // Arrange
+        render(QueryParametersTestHarness);
+        await fireEvent.click(screen.getByRole('button', { name: 'First' }));
+        await vi.advanceTimersByTimeAsync(200);
+        await fireEvent.click(screen.getByRole('button', { name: 'Second' }));
+        await vi.advanceTimersByTimeAsync(200);
+
+        // Act
+        window.history.replaceState(pageState, '', '?filter=first');
+        window.dispatchEvent(new PopStateEvent('popstate', { state: pageState }));
+        await tick();
+
+        // Assert
+        expect(navigation.pushState).toHaveBeenCalledTimes(2);
+        expect(screen.getByText('first').textContent).toBe('first');
     });
 });

@@ -1,4 +1,4 @@
-import { building } from '$app/environment';
+import { browser, building } from '$app/environment';
 import { afterNavigate, beforeNavigate, pushState, replaceState } from '$app/navigation';
 import { page } from '$app/state';
 import { onDestroy } from 'svelte';
@@ -50,18 +50,31 @@ export function createQueryParameters<T extends QueryParameterSchema>({
         commit(applyQueryParameterUpdates(current, searchParams, values, schema));
     };
 
-    afterNavigate(({ to }) => {
-        if (!to) {
-            return;
-        }
-
-        const nextSearchParams = createSearchParams(to.url.search);
+    const synchronizeState = (search: string) => {
+        const nextSearchParams = createSearchParams(search);
         if (searchParamsEqual(searchParams, nextSearchParams)) {
             return;
         }
 
         searchParams = nextSearchParams;
         Object.assign(current, parseQueryParameters(searchParams, schema, defaults));
+    };
+
+    const synchronizeStateFromLocation = () => synchronizeState(window.location.search);
+    if (browser) {
+        window.addEventListener('popstate', synchronizeStateFromLocation);
+    }
+
+    onDestroy(() => {
+        if (browser) {
+            window.removeEventListener('popstate', synchronizeStateFromLocation);
+        }
+    });
+
+    afterNavigate(({ to }) => {
+        if (to) {
+            synchronizeState(to.url.search);
+        }
     });
 
     return createQueryParameterProxy(current, schema, { update });
