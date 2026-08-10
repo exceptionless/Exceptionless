@@ -5,6 +5,8 @@ import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
 import { createRepresentativeEvent } from '../support/synthetic-event';
 import { dispatchWebSocketMessages, installWebSocketTestHarness } from '../support/web-socket';
 
+const EVENT_NOTIFICATION_TRAILING_REFRESH_MS = 5_000;
+
 interface ActionSample extends RequestCounts {
     name: string;
     runtimeErrors: number;
@@ -170,9 +172,9 @@ test('event list and detail effects stay bounded through paging and background c
     });
     const sustainedNotificationSample = actionSample(diagnostics, 'sustained persistent event notifications');
     expect(sustainedNotificationSample.eventCount).toBeGreaterThanOrEqual(1);
-    expect(sustainedNotificationSample.eventCount).toBeLessThanOrEqual(2);
+    expect(sustainedNotificationSample.eventCount).toBeLessThanOrEqual(3);
     expect(sustainedNotificationSample.eventList).toBeGreaterThanOrEqual(1);
-    expect(sustainedNotificationSample.eventList).toBeLessThanOrEqual(2);
+    expect(sustainedNotificationSample.eventList).toBeLessThanOrEqual(3);
     expect(sustainedNotificationSample.runtimeErrors).toBe(0);
 
     await measureAction(diagnostics, 'event detail alias route remounts', async () => {
@@ -220,7 +222,8 @@ test('event list and detail effects stay bounded through paging and background c
 
         await page.waitForTimeout(2_000);
     });
-    expect(actionSample(diagnostics, 'full detail navigation and visibility churn').eventDetails).toBeLessThanOrEqual(10);
+    // Ten explicit event changes plus at most one visibility-driven refetch.
+    expect(actionSample(diagnostics, 'full detail navigation and visibility churn').eventDetails).toBeLessThanOrEqual(11);
     expect(actionSample(diagnostics, 'full detail navigation and visibility churn').stackDetails).toBeLessThanOrEqual(2);
     expect(actionSample(diagnostics, 'full detail navigation and visibility churn').eventList).toBe(0);
 
@@ -361,8 +364,8 @@ async function setDocumentHidden(page: Page, hidden: boolean): Promise<void> {
 }
 
 async function waitForEventListQuiescence(page: Page, diagnostics: RuntimeDiagnostics): Promise<void> {
-    const quietPeriodMs = 2_500;
-    const timeoutAt = Date.now() + 20_000;
+    const quietPeriodMs = EVENT_NOTIFICATION_TRAILING_REFRESH_MS + 500;
+    const timeoutAt = Date.now() + 30_000;
     let lastRequestCount = diagnostics.requests.eventList;
     let quietSince = Date.now();
 

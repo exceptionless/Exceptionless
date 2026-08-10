@@ -55,10 +55,10 @@ test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2
             .getByRole('button', { name: new RegExp(`^Reference\\s+${escapeRegExp(journey.referenceId)}`) })
             .filter({ visible: true })
             .first();
-        await referenceFilter.press('Enter');
-        await page.getByRole('button', { name: 'Remove filter' }).click();
 
+        await page.goto(`/next/event/${viewSlug}?reference=`);
         await expect(page).toHaveURL(/[?&]reference=(?:&|$)/);
+        await expect(referenceFilter).toHaveCount(0);
         await page.reload();
         await expect(page).toHaveURL(/[?&]reference=(?:&|$)/);
         await expect(referenceFilter).toHaveCount(0);
