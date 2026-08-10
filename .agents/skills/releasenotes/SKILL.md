@@ -15,7 +15,7 @@ Generate a changelog for all changes from the most recent release until now.
    - **Minor:** Any substantive user-facing feature or meaningful new capability. Small improvements may remain patch-level when they do not materially expand what users can do.
    - **Major:** Breaking changes, deliberately incompatible behavior, or unusually large features that materially redefine the product or its public contracts.
 5. Use the highest-impact change to recommend the next version. Mixed ranges take the highest classification.
-6. If the range contains any substantive feature, breaking change, unusually large feature, or ambiguous version impact, explain the classification and ask the user what the next version should be before assigning a version, creating a tag, or publishing a release. Recommend a minor increment for normal features and a major increment for breaking changes or unusually large features.
+6. If the range contains any substantive feature, breaking change, unusually large feature, or ambiguous version impact, explain the classification and recommend a minor increment for normal features or a major increment for breaking changes and unusually large features. If the user already supplied a version, honor it and state any mismatch with the recommendation without asking them to repeat or reconfirm it. Otherwise, ask what the next version should be before assigning a version, creating a tag, or publishing a release.
 7. If the range is patch-only, use the next patch version unless the user supplied a different version or the repository follows another established versioning scheme.
 8. Categorize changes into sections: Breaking Changes, Added, Changed, Fixed, Notes
 9. Focus on user-facing changes, important bug fixes, and breaking changes
