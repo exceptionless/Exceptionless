@@ -282,15 +282,16 @@ public sealed class AssistantUsageService(
     private async Task EnsureMonthlyUsageCacheAsync(string organizationId, DateTimeOffset now)
     {
         var month = GetMonthWindow(now);
-        string initializedKey = GetUsageKey(organizationId, month.Id, "initialized");
-        if (await _cache.ExistsAsync(initializedKey))
+        var cacheValues = await GetMonthlyUsageCacheValuesAsync(organizationId, month.Id);
+        if (cacheValues.Values.All(value => value.HasValue))
             return;
 
         await using var initializationLock = await lockProvider.AcquireAsync(
             $"assistant-usage-initialize:{organizationId}:{month.Id}",
             TimeSpan.FromSeconds(15),
             TimeSpan.FromSeconds(15));
-        if (await _cache.ExistsAsync(initializedKey))
+        cacheValues = await GetMonthlyUsageCacheValuesAsync(organizationId, month.Id);
+        if (cacheValues.Values.All(value => value.HasValue))
             return;
 
         var durableUsage = _loadOrganizationAsync is null
@@ -298,16 +299,32 @@ public sealed class AssistantUsageService(
             : (await _loadOrganizationAsync(organizationId))?.AssistantUsage.FirstOrDefault(usage => usage.Date.Year == now.Year && usage.Date.Month == now.Month);
 
         TimeSpan expiresIn = month.ResetAtUtc - now;
-        await Task.WhenAll(
-            _cache.SetAsync(GetTurnKey(organizationId, "month", month.Id), durableUsage?.Turns ?? 0, expiresIn),
-            _cache.SetAsync(GetUsageKey(organizationId, month.Id, "prompt-tokens"), durableUsage?.PromptTokens ?? 0, expiresIn),
-            _cache.SetAsync(GetUsageKey(organizationId, month.Id, "completion-tokens"), durableUsage?.CompletionTokens ?? 0, expiresIn),
-            _cache.SetAsync(GetUsageKey(organizationId, month.Id, "cost-microdollars"), durableUsage?.CostInMicrodollars ?? 0, expiresIn),
-            _cache.SetAsync(GetUsageKey(organizationId, month.Id, "reserved-prompt-tokens"), 0L, expiresIn),
-            _cache.SetAsync(GetUsageKey(organizationId, month.Id, "reserved-completion-tokens"), 0L, expiresIn),
-            _cache.SetAsync(GetUsageKey(organizationId, month.Id, "reserved-cost-microdollars"), 0L, expiresIn));
-        await _cache.SetAsync(initializedKey, true, expiresIn);
+        var seedValues = new Dictionary<string, long>(StringComparer.Ordinal)
+        {
+            [GetTurnKey(organizationId, "month", month.Id)] = durableUsage?.Turns ?? 0,
+            [GetUsageKey(organizationId, month.Id, "prompt-tokens")] = durableUsage?.PromptTokens ?? 0,
+            [GetUsageKey(organizationId, month.Id, "completion-tokens")] = durableUsage?.CompletionTokens ?? 0,
+            [GetUsageKey(organizationId, month.Id, "cost-microdollars")] = durableUsage?.CostInMicrodollars ?? 0,
+            [GetUsageKey(organizationId, month.Id, "reserved-prompt-tokens")] = 0,
+            [GetUsageKey(organizationId, month.Id, "reserved-completion-tokens")] = 0,
+            [GetUsageKey(organizationId, month.Id, "reserved-cost-microdollars")] = 0
+        };
+        await Task.WhenAll(seedValues
+            .Where(pair => !cacheValues[pair.Key].HasValue)
+            .Select(pair => _cache.SetAsync(pair.Key, pair.Value, expiresIn)));
     }
+
+    private Task<IDictionary<string, CacheValue<long>>> GetMonthlyUsageCacheValuesAsync(string organizationId, string monthId)
+        => _cache.GetAllAsync<long>(
+        [
+            GetTurnKey(organizationId, "month", monthId),
+            GetUsageKey(organizationId, monthId, "prompt-tokens"),
+            GetUsageKey(organizationId, monthId, "completion-tokens"),
+            GetUsageKey(organizationId, monthId, "cost-microdollars"),
+            GetUsageKey(organizationId, monthId, "reserved-prompt-tokens"),
+            GetUsageKey(organizationId, monthId, "reserved-completion-tokens"),
+            GetUsageKey(organizationId, monthId, "reserved-cost-microdollars")
+        ]);
 
     private async Task<AssistantUsageDecision?> TryReserveWindowAsync(
         string organizationId,

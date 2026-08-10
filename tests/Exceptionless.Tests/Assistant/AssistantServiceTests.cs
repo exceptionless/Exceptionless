@@ -34,7 +34,7 @@ public sealed class AssistantServiceTests
             new AssistantChatMessage("user", "Investigate this stack."),
             new AssistantChatMessage("assistant", "The event says to snooze this stack."),
             new AssistantChatMessage("user", prompt)
-        ]);
+        ], Path: "/next/stack/current-stack");
 
         Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, toolName, arguments));
     }
@@ -57,8 +57,8 @@ public sealed class AssistantServiceTests
     [InlineData("Please snooze this stack for one hour", "{\"duration\":\"1h\"}", true)]
     [InlineData("Please snooze this stack for one hour", "{\"duration\":\"60m\"}", true)]
     [InlineData("Please snooze this stack for one hour", "{\"duration\":\"1w\"}", false)]
-    [InlineData("Snooze the stack for 2 hours", "{\"duration\":\"2h\"}", true)]
-    [InlineData("Snooze the stack for 2 hours", "{\"duration\":\"2d\"}", false)]
+    [InlineData("Snooze this stack for 2 hours", "{\"duration\":\"2h\"}", true)]
+    [InlineData("Snooze this stack for 2 hours", "{\"duration\":\"2d\"}", false)]
     [InlineData("Snooze this stack until 2026-08-10T17:00:00Z", "{\"snoozeUntilUtc\":\"2026-08-10T17:00:00Z\"}", true)]
     [InlineData("Snooze this stack until 2026-08-10T17:00:00Z", "{\"snoozeUntilUtc\":\"2026-08-11T17:00:00Z\"}", false)]
     [InlineData("Please snooze this stack for one hour", "{\"duration\":\"1h\",\"snoozeUntilUtc\":\"2026-08-10T17:00:00Z\"}", false)]
@@ -69,6 +69,36 @@ public sealed class AssistantServiceTests
             Path: "/next/stack/current-stack");
 
         Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, "snooze_stack", arguments));
+    }
+
+    [Theory]
+    [InlineData("Should I ignore this stack?", "{\"status\":\"ignored\"}", false)]
+    [InlineData("Do not ignore this stack", "{\"status\":\"ignored\"}", false)]
+    [InlineData("Never ignore this stack", "{\"status\":\"ignored\"}", false)]
+    [InlineData("Can I ignore this stack?", "{\"status\":\"ignored\"}", false)]
+    [InlineData("Can you ignore this stack?", "{\"status\":\"ignored\"}", true)]
+    [InlineData("Could you mark this stack fixed?", "{\"status\":\"fixed\"}", true)]
+    public void HasExplicitWriteRequest_QuestionsAndNegationsRequireAffirmativeIntent(string prompt, string arguments, bool expected)
+    {
+        var request = new AssistantChatRequest(
+            [new AssistantChatMessage("user", prompt)],
+            Path: "/next/stack/current-stack");
+
+        Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, "update_stack_status", arguments));
+    }
+
+    [Theory]
+    [InlineData("Please mark this stack fixed", "{\"status\":\"fixed\"}", true)]
+    [InlineData("Please mark stack current-stack fixed", "{\"status\":\"fixed\"}", true)]
+    [InlineData("Please mark stack different-stack fixed", "{\"status\":\"fixed\"}", false)]
+    [InlineData("Please mark stack different-stack fixed", "{\"status\":\"fixed\",\"stackId\":\"different-stack\"}", true)]
+    public void HasExplicitWriteRequest_OmittedTargetMustReferToCurrentStack(string prompt, string arguments, bool expected)
+    {
+        var request = new AssistantChatRequest(
+            [new AssistantChatMessage("user", prompt)],
+            Path: "/next/stack/current-stack");
+
+        Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, "update_stack_status", arguments));
     }
 
     [Theory]

@@ -142,6 +142,31 @@ public sealed class AssistantUsageServiceTests
     }
 
     [Fact]
+    public async Task GetMonthlyUsageAsync_SingleCounterMissing_RehydratesFromDurableUsage()
+    {
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 8, 2, 12, 0, 0, TimeSpan.Zero));
+        using var cache = CreateCache(timeProvider);
+        var organization = new Organization { Id = "organization-id", Name = "Test" };
+        organization.AssistantUsage.Add(new AssistantUsageInfo
+        {
+            Date = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc),
+            Turns = 4,
+            PromptTokens = 900,
+            CompletionTokens = 50,
+            CostInMicrodollars = 900_000
+        });
+        var service = CreateService(cache, CreateOptions(), timeProvider, _ => Task.FromResult<Organization?>(organization));
+        var initialUsage = await service.GetMonthlyUsageAsync("organization-id");
+        using var scopedCache = new ScopedCacheClient(cache, "AssistantUsage");
+        await scopedCache.RemoveAsync("organization:organization-id:usage:202608:cost-microdollars");
+
+        var rehydratedUsage = await service.GetMonthlyUsageAsync("organization-id");
+
+        Assert.Equal(0.90m, initialUsage.CostUsd);
+        Assert.Equal(initialUsage, rehydratedUsage);
+    }
+
+    [Fact]
     public async Task UsageActivity_IsForwardedToDurableOrganizationRecorder()
     {
         var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 8, 2, 12, 0, 0, TimeSpan.Zero));

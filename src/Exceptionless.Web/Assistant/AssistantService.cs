@@ -465,12 +465,19 @@ public sealed class AssistantService(
         if (String.IsNullOrWhiteSpace(latestUserMessage))
             return false;
 
+        if (!HasAffirmativeWriteIntent(latestUserMessage))
+            return false;
+
         using var document = ParseArguments(arguments);
         var root = document.RootElement;
         string? requestedStackId = GetString(root, "stackId", "stack_id");
         string? currentStackId = GetRouteValue(request.Path, "stack");
-        if (!String.IsNullOrWhiteSpace(requestedStackId)
-            && !String.Equals(requestedStackId, currentStackId, StringComparison.Ordinal)
+        if (String.IsNullOrWhiteSpace(requestedStackId))
+        {
+            if (String.IsNullOrWhiteSpace(currentStackId) || !ReferencesCurrentStack(latestUserMessage, currentStackId))
+                return false;
+        }
+        else if (!String.Equals(requestedStackId, currentStackId, StringComparison.Ordinal)
             && !latestUserMessage.Contains(requestedStackId, StringComparison.Ordinal))
         {
             return false;
@@ -491,6 +498,26 @@ public sealed class AssistantService(
             _ => false
         };
     }
+
+    private static bool HasAffirmativeWriteIntent(string message)
+    {
+        if (Regex.IsMatch(
+            message,
+            @"\b(?:do not|don['’]?t|never|should not|shouldn['’]?t|must not|mustn['’]?t)\b",
+            RegexOptions.IgnoreCase))
+        {
+            return false;
+        }
+
+        return !Regex.IsMatch(
+            message.TrimStart(),
+            @"^(?:should\s+(?:i|we)|(?:can|could|would)\s+(?:i|we)|do\s+(?:i|we)|does\b|did\b|is\s+(?:it|this|the)\b|are\s+(?:we|you|these|those)\b|what\b|why\b|how\b)",
+            RegexOptions.IgnoreCase);
+    }
+
+    private static bool ReferencesCurrentStack(string message, string currentStackId)
+        => message.Contains(currentStackId, StringComparison.Ordinal)
+            || ContainsAny(message, "this stack", "current stack", "this issue", "current issue");
 
     private static bool HasExplicitStackStatusRequest(string message, JsonElement arguments)
     {

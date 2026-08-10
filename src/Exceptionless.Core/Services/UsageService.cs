@@ -106,9 +106,6 @@ public class UsageService : IAssistantUsageRecorder
                 foreach (string? organizationId in organizationIdsValue.Value)
                     await PublishPendingHourlyOverageAsync(bucketUtc, organizationId);
 
-                // Should we wait to remove this in case there is a failure? We should just remove the organization id once processed.
-                await _cache.RemoveAsync(GetOrganizationSetKey(bucketUtc));
-
                 foreach (string? organizationId in organizationIdsValue.Value)
                 {
                     var organization = await _organizationRepository.GetByIdAsync(organizationId);
@@ -215,6 +212,8 @@ public class UsageService : IAssistantUsageRecorder
 
                     organization.TrimUsage(_timeProvider);
 
+                    // Routine usage updates stay silent, but clients need one refresh when hourly throttling clears.
+                    await _organizationRepository.SaveAsync(organization, o => o.Notifications(hourlyThrottleCleared));
                     await _cache.RemoveAllAsync([
                         GetBucketTotalCacheKey(bucketUtc, organizationId),
                         GetBucketBlockedCacheKey(bucketUtc, organizationId),
@@ -225,11 +224,10 @@ public class UsageService : IAssistantUsageRecorder
                         GetThrottledKey(bucketUtc, organizationId),
                         GetHourlyThrottleTransitionKey(bucketUtc, organizationId)
                     ]);
-
                     await _cache.SetAsync(GetTotalCacheKey(utcNow, organizationId), usageTotal, TimeSpan.FromHours(8));
-                    // Routine usage updates stay silent, but clients need one refresh when hourly throttling clears.
-                    await _organizationRepository.SaveAsync(organization, o => o.Notifications(hourlyThrottleCleared));
                 }
+
+                await _cache.RemoveAsync(GetOrganizationSetKey(bucketUtc));
             }
 
             await _cache.SetAsync("usage:last-organization-save", bucketUtc, TimeSpan.FromHours(8));
