@@ -61,13 +61,14 @@ public class PublicApiCompatibilityTests
     }
 
     [Fact]
-    public void Stack_InternalCleanupState_IsNotSerializedByApi()
+    public void ConfigureExceptionlessApiDefaults_StackWithInternalState_OmitsInternalProperties()
     {
         var stack = new Stack
         {
             RedirectToStackId = "target-stack",
             MergedDuplicateStackTotals = new Dictionary<string, int> { ["source-stack"] = 42 },
-            NeedsRedirectReconciliation = true
+            NeedsRedirectReconciliation = true,
+            ElasticVersion = "42"
         };
 
         string apiJson = JsonSerializer.Serialize(stack, new JsonSerializerOptions().ConfigureExceptionlessApiDefaults());
@@ -76,8 +77,10 @@ public class PublicApiCompatibilityTests
         Assert.DoesNotContain("redirect_to_stack_id", apiJson);
         Assert.DoesNotContain("merged_duplicate_stack_totals", apiJson);
         Assert.DoesNotContain("needs_redirect_reconciliation", apiJson);
+        Assert.DoesNotContain("elastic_version", apiJson);
         Assert.Contains("redirect_to_stack_id", storageJson);
         Assert.Contains("merged_duplicate_stack_totals", storageJson);
         Assert.Contains("needs_redirect_reconciliation", storageJson);
+        Assert.Contains("elastic_version", storageJson);
     }
 }

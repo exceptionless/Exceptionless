@@ -76,6 +76,8 @@ public class StackRepository : RepositoryOwnedByOrganizationAndProject<Stack>, I
 
     public async Task<bool> IncrementEventCounterAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true)
     {
+        // An in-flight counter update can reach a redirect tombstone after event reassignment.
+        // Mark it dirty because no remaining source event may exist for the orphan scan to find.
         // If total occurrences are zero (stack data was reset), then set first occurrence date
         // Only update the LastOccurrence if the new date is greater than the existing date.
         const string script = @"
@@ -135,6 +137,8 @@ if (ctx._source.redirect_to_stack_id != null) {
 
     public async Task<bool> SetEventCounterAsync(string stackId, DateTime firstOccurrenceUtc, DateTime lastOccurrenceUtc, long totalOccurrences, bool sendNotifications = true)
     {
+        // Keep redirected stacks discoverable when a late stats repair changes their counters
+        // after all source events have already moved to the canonical stack.
         const string script = @"
 Instant parseDate(def dt) {
     if (dt != null) {
@@ -293,7 +297,7 @@ if (ctx._source.redirect_to_stack_id != null) {
     {
         ArgumentNullException.ThrowIfNull(stackIds);
         var ids = new Ids(stackIds.Distinct(StringComparer.Ordinal));
-        if (ids.Count == 0)
+        if (ids.Count is 0)
             return Task.FromResult(0L);
 
         return PatchAsync(
@@ -362,6 +366,8 @@ ctx._source.remove('fixed_in_version');";
         ArgumentException.ThrowIfNullOrEmpty(sourceStack.Id);
         ArgumentException.ThrowIfNullOrEmpty(sourceStack.RedirectToStackId);
 
+        // Clear the dirty marker only if no concurrent counter update or redirect change landed
+        // after the caller read this tombstone. Otherwise the next cleanup pass retries it.
         const string script = @"
 Instant parseDate(def dt) {
     if (dt != null) {
@@ -374,6 +380,8 @@ Instant parseDate(def dt) {
 
 if (ctx._source.needs_redirect_reconciliation == true
     && ctx._source.total_occurrences == params.expectedTotalOccurrences
+    && parseDate(ctx._source.first_occurrence).equals(parseDate(params.expectedFirstOccurrence))
+    && parseDate(ctx._source.last_occurrence).equals(parseDate(params.expectedLastOccurrence))
     && parseDate(ctx._source.updated_utc).equals(parseDate(params.expectedUpdatedUtc))
     && ctx._source.redirect_to_stack_id == params.expectedTargetStackId) {
     ctx._source.needs_redirect_reconciliation = false;
@@ -388,6 +396,8 @@ if (ctx._source.needs_redirect_reconciliation == true
                 Params = new Dictionary<string, object>
                 {
                     ["expectedTotalOccurrences"] = sourceStack.TotalOccurrences,
+                    ["expectedFirstOccurrence"] = sourceStack.FirstOccurrence,
+                    ["expectedLastOccurrence"] = sourceStack.LastOccurrence,
                     ["expectedUpdatedUtc"] = sourceStack.UpdatedUtc,
                     ["expectedTargetStackId"] = sourceStack.RedirectToStackId
                 }
@@ -439,6 +449,7 @@ for (def contribution : params.sourceContributions.entrySet()) {
 
 if (occurrenceDelta <= 0
     && !parseDate(ctx._source.created_utc).isAfter(parseDate(params.createdUtc))
+    && !parseDate(ctx._source.first_occurrence).isAfter(parseDate(params.firstOccurrence))
     && !parseDate(ctx._source.last_occurrence).isBefore(parseDate(params.lastOccurrence))
     && (params.hasSnoozeUntilUtc == false || !parseDate(ctx._source.snooze_until_utc).isBefore(parseDate(params.snoozeUntilUtc)))
     && (params.hasDateFixed == false || !parseDate(ctx._source.date_fixed).isBefore(parseDate(params.dateFixed)))
@@ -462,6 +473,9 @@ if (occurrenceDelta <= 0
 
     if (parseDate(ctx._source.created_utc).isAfter(parseDate(params.createdUtc))) {
         ctx._source.created_utc = params.createdUtc;
+    }
+    if (parseDate(ctx._source.first_occurrence).isAfter(parseDate(params.firstOccurrence))) {
+        ctx._source.first_occurrence = params.firstOccurrence;
     }
     if (parseDate(ctx._source.last_occurrence).isBefore(parseDate(params.lastOccurrence))) {
         ctx._source.last_occurrence = params.lastOccurrence;
@@ -503,6 +517,7 @@ if (occurrenceDelta <= 0
             {
                 ["sourceContributions"] = sourceContributions,
                 ["createdUtc"] = sourceStack.CreatedUtc,
+                ["firstOccurrence"] = sourceStack.FirstOccurrence,
                 ["lastOccurrence"] = sourceStack.LastOccurrence,
                 ["snoozeUntilUtc"] = sourceStack.SnoozeUntilUtc ?? DateTime.MinValue,
                 ["hasSnoozeUntilUtc"] = sourceStack.SnoozeUntilUtc.HasValue,

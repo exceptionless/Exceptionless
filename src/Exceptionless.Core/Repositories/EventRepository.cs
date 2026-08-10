@@ -2,7 +2,6 @@ using System.Linq.Expressions;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Aggregations;
 using Elastic.Clients.Elasticsearch.QueryDsl;
-using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
@@ -83,7 +82,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         if (!String.IsNullOrEmpty(clientIpAddress))
             query = query.FieldEquals(EventIndex.Alias.IpAddress, clientIpAddress);
 
-        return RemoveAllIgnoringMissingEventIndexesAsync(q => query, options);
+        return RemoveAllAsync(q => query, options);
     }
 
     public Task<FindResults<PersistentEvent>> GetByReferenceIdAsync(string projectId, string referenceId)
@@ -197,76 +196,13 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         return FindAsync(q => q.Project(projectId).SortDescending(e => e.Date).SortDescending(e => e.Id), options);
     }
 
-    public override Task<long> RemoveAllByOrganizationIdAsync(string organizationId)
-    {
-        ArgumentException.ThrowIfNullOrEmpty(organizationId);
-
-        return RemoveAllIgnoringMissingEventIndexesAsync(q => q.Organization(organizationId));
-    }
-
-    public override Task<long> RemoveAllByProjectIdAsync(string organizationId, string projectId)
-    {
-        ArgumentException.ThrowIfNullOrEmpty(organizationId);
-        ArgumentException.ThrowIfNullOrEmpty(projectId);
-
-        return RemoveAllIgnoringMissingEventIndexesAsync(q => q.Organization(organizationId).Project(projectId));
-    }
-
     public Task<long> RemoveAllByStackIdsAsync(string[] stackIds)
-        => RemoveAllByStackIdsAsync(stackIds, null);
-
-    public Task<long> RemoveAllByStackIdsAsync(string[] stackIds, CommandOptionsDescriptor<PersistentEvent>? options)
     {
         ArgumentNullException.ThrowIfNull(stackIds);
         if (stackIds is [])
             throw new ArgumentOutOfRangeException(nameof(stackIds));
 
-        return RemoveAllIgnoringMissingEventIndexesAsync(q => q.Stack(stackIds), options);
-    }
-
-    public Task<long> RemoveAllByProjectIdsAsync(string[] projectIds, CommandOptionsDescriptor<PersistentEvent>? options = null)
-    {
-        ArgumentNullException.ThrowIfNull(projectIds);
-        if (projectIds is [])
-            throw new ArgumentOutOfRangeException(nameof(projectIds));
-
-        return RemoveAllIgnoringMissingEventIndexesAsync(q => q.Project(projectIds), options);
-    }
-
-    public Task<long> RemoveAllByOrganizationIdsAsync(string[] organizationIds, CommandOptionsDescriptor<PersistentEvent>? options = null)
-    {
-        ArgumentNullException.ThrowIfNull(organizationIds);
-        if (organizationIds is [])
-            throw new ArgumentOutOfRangeException(nameof(organizationIds));
-
-        return RemoveAllIgnoringMissingEventIndexesAsync(q => q.Organization(organizationIds), options);
-    }
-
-    private async Task<long> RemoveAllIgnoringMissingEventIndexesAsync(
-        RepositoryQueryDescriptor<PersistentEvent> query, CommandOptionsDescriptor<PersistentEvent>? options = null)
-    {
-        try
-        {
-            return await RemoveAllAsync(query, options);
-        }
-        catch (RepositoryException ex) when (IsIndexNotFound(ex.InnerException as TransportException))
-        {
-            return 0;
-        }
-        catch (TransportException ex) when (IsIndexNotFound(ex))
-        {
-            return 0;
-        }
-    }
-
-    private static bool IsIndexNotFound(TransportException? ex)
-    {
-        if (ex?.ApiCallDetails?.HttpStatusCode != 404)
-            return false;
-
-        return ex.ApiCallDetails.ProductError is ElasticsearchServerError serverError
-            ? IsIndexNotFound(serverError)
-            : ex.DebugInformation.Contains("index_not_found_exception", StringComparison.Ordinal);
+        return RemoveAllAsync(q => q.Stack(stackIds));
     }
 
     private static bool IsIndexNotFound(ElasticsearchServerError serverError)
@@ -302,10 +238,12 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         // Materialize to avoid multiple enumeration and guard against empty; an empty
         // .Stack() filter would match ALL events and reassign them to the target stack.
         var sourceIds = sourceStackIds.Distinct(StringComparer.Ordinal).ToList();
-        if (sourceIds.Count == 0)
+        if (sourceIds.Count is 0)
             return 0;
         if (sourceIds.Contains(targetStackId, StringComparer.Ordinal))
             throw new ArgumentException("Source and target stack ids must be different.", nameof(sourceStackIds));
+
+        cancellationToken.ThrowIfCancellationRequested();
 
         const int maxAttempts = 5;
         long remaining = await CountEventsByStackIdsStrictAsync(sourceIds, cancellationToken);

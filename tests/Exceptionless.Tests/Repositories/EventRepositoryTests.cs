@@ -346,43 +346,65 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task RemoveAllByProjectIdsAsync_WithMixedEvents_RemovesOnlyMatchingEvents()
+    public async Task ReassignStackAsync_WithDuplicateMultipleSources_MovesEachEventOnce()
     {
         // Arrange
-        var stack = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
-        string otherProjectId = ObjectId.GenerateNewId().ToString();
-        await _repository.AddAsync(_eventData.GenerateEvents(10, TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id), o => o.ImmediateConsistency());
-        await _repository.AddAsync(_eventData.GenerateEvents(3, TestConstants.OrganizationId, otherProjectId, stack.Id), o => o.ImmediateConsistency());
+        var source1 = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
+        var source2 = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
+        var target = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
+        await _repository.AddAsync(_eventData.GenerateEvents(4, TestConstants.OrganizationId, TestConstants.ProjectId, source1.Id), o => o.ImmediateConsistency());
+        await _repository.AddAsync(_eventData.GenerateEvents(6, TestConstants.OrganizationId, TestConstants.ProjectId, source2.Id), o => o.ImmediateConsistency());
+        await _repository.AddAsync(_eventData.GenerateEvents(2, TestConstants.OrganizationId, TestConstants.ProjectId, target.Id), o => o.ImmediateConsistency());
 
         // Act
-        long removed = await _repository.RemoveAllByProjectIdsAsync([TestConstants.ProjectId]);
+        long affected = await _repository.ReassignStackAsync(
+            [source1.Id, source1.Id, source2.Id],
+            target.Id,
+            TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.Equal(10, removed);
-
+        Assert.Equal(10, affected);
         await RefreshDataAsync();
-        Assert.Equal(0, await _repository.CountAsync(q => q.Project(TestConstants.ProjectId)));
-        Assert.Equal(3, await _repository.CountAsync(q => q.Project(otherProjectId)));
+        Assert.Equal(0, await _repository.CountAsync(q => q.Stack(source1.Id)));
+        Assert.Equal(0, await _repository.CountAsync(q => q.Stack(source2.Id)));
+        Assert.Equal(12, await _repository.CountAsync(q => q.Stack(target.Id)));
     }
 
     [Fact]
-    public async Task RemoveAllByOrganizationIdsAsync_WithMixedEvents_RemovesOnlyMatchingEvents()
+    public async Task ReassignStackAsync_WithTargetInSources_ThrowsWithoutModification()
     {
         // Arrange
-        var stack = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
-        string otherOrganizationId = ObjectId.GenerateNewId().ToString();
-        await _repository.AddAsync(_eventData.GenerateEvents(10, TestConstants.OrganizationId, TestConstants.ProjectId, stack.Id), o => o.ImmediateConsistency());
-        await _repository.AddAsync(_eventData.GenerateEvents(3, otherOrganizationId, TestConstants.ProjectId, stack.Id), o => o.ImmediateConsistency());
+        var source = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
+        var target = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
+        await _repository.AddAsync(_eventData.GenerateEvents(4, TestConstants.OrganizationId, TestConstants.ProjectId, source.Id), o => o.ImmediateConsistency());
+        await _repository.AddAsync(_eventData.GenerateEvents(2, TestConstants.OrganizationId, TestConstants.ProjectId, target.Id), o => o.ImmediateConsistency());
 
         // Act
-        long removed = await _repository.RemoveAllByOrganizationIdsAsync([TestConstants.OrganizationId]);
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _repository.ReassignStackAsync([source.Id, target.Id], target.Id, TestContext.Current.CancellationToken));
 
         // Assert
-        Assert.Equal(10, removed);
+        Assert.Equal(4, await _repository.CountAsync(q => q.Stack(source.Id)));
+        Assert.Equal(2, await _repository.CountAsync(q => q.Stack(target.Id)));
+    }
 
-        await RefreshDataAsync();
-        Assert.Equal(0, await _repository.CountAsync(q => q.Organization(TestConstants.OrganizationId)));
-        Assert.Equal(3, await _repository.CountAsync(q => q.Organization(otherOrganizationId)));
+    [Fact]
+    public async Task ReassignStackAsync_WithCanceledToken_ThrowsWithoutModification()
+    {
+        // Arrange
+        var source = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
+        var target = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId), o => o.ImmediateConsistency());
+        await _repository.AddAsync(_eventData.GenerateEvents(4, TestConstants.OrganizationId, TestConstants.ProjectId, source.Id), o => o.ImmediateConsistency());
+        using var cancellationTokenSource = new CancellationTokenSource();
+        await cancellationTokenSource.CancelAsync();
+
+        // Act
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            _repository.ReassignStackAsync([source.Id], target.Id, cancellationTokenSource.Token));
+
+        // Assert
+        Assert.Equal(4, await _repository.CountAsync(q => q.Stack(source.Id)));
+        Assert.Equal(0, await _repository.CountAsync(q => q.Stack(target.Id)));
     }
 
     [Fact]
