@@ -50,6 +50,23 @@ describe('createQueryParameters', () => {
         expect(navigation.replaceState).not.toHaveBeenCalled();
     });
 
+    it('flushes a pending update before full navigation', async () => {
+        // Arrange
+        render(QueryParametersTestHarness);
+        await fireEvent.click(screen.getByRole('button', { name: 'First' }));
+        const beforeNavigation = navigation.beforeNavigate.mock.calls[0]?.[0] as (() => void) | undefined;
+
+        // Act
+        beforeNavigation?.();
+        await vi.advanceTimersByTimeAsync(200);
+
+        // Assert
+        expect(beforeNavigation).toBeDefined();
+        expect(navigation.pushState).toHaveBeenCalledOnce();
+        expect(navigation.pushState).toHaveBeenCalledWith('?filter=first', pageState);
+        expect(window.location.search).toBe('?filter=first');
+    });
+
     it('restores reactive state when shallow history is traversed', async () => {
         // Arrange
         render(QueryParametersTestHarness);

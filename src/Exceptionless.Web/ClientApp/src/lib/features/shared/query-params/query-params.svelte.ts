@@ -32,7 +32,10 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     };
 
     const scheduleSynchronization = createDebouncedFunction(synchronizeURL, debounceMilliseconds);
-    beforeNavigate(scheduleSynchronization.cancel);
+    beforeNavigate(() => {
+        scheduleSynchronization.cancel();
+        synchronizeURL();
+    });
     onDestroy(scheduleSynchronization.cancel);
 
     const commit = (result: ReturnType<typeof applyQueryParameterUpdates<T>>) => {
