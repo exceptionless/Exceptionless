@@ -71,6 +71,7 @@
     let commandResetKey = $state(0);
     let isKeyboardShortcutsOpen = $state(false);
     let isOrganizationSwitcherOpen = $state(false);
+    let isImpersonateOrganizationOpen = $state(false);
     let isUserMenuOpen = $state(false);
 
     // Auto-reset premium page state on navigation so pages don't need cleanup
@@ -85,6 +86,7 @@
 
     async function openOrganizationSwitcher(): Promise<void> {
         isCommandOpen = false;
+        isImpersonateOrganizationOpen = false;
         isKeyboardShortcutsOpen = false;
         isUserMenuOpen = false;
         if (singleOrganization?.id) {
@@ -98,6 +100,7 @@
 
     async function openUserMenu(): Promise<void> {
         isCommandOpen = false;
+        isImpersonateOrganizationOpen = false;
         isKeyboardShortcutsOpen = false;
         isOrganizationSwitcherOpen = false;
         await tick();
@@ -106,10 +109,26 @@
 
     async function openKeyboardShortcuts(): Promise<void> {
         isCommandOpen = false;
+        isImpersonateOrganizationOpen = false;
         isOrganizationSwitcherOpen = false;
         isUserMenuOpen = false;
         await tick();
         isKeyboardShortcutsOpen = true;
+    }
+
+    async function openImpersonateOrganization(): Promise<void> {
+        isCommandOpen = false;
+        isKeyboardShortcutsOpen = false;
+        isOrganizationSwitcherOpen = false;
+        isUserMenuOpen = false;
+        await tick();
+        isImpersonateOrganizationOpen = true;
+    }
+
+    async function stopImpersonating(): Promise<void> {
+        isCommandOpen = false;
+        await goto(resolve('/(app)/stack'));
+        organization.current = organizations[0]?.id;
     }
 
     useMiddleware(async (ctx, next) => {
@@ -239,6 +258,7 @@
                 e.metaKey ||
                 e.altKey ||
                 isCommandOpen ||
+                isImpersonateOrganizationOpen ||
                 isKeyboardShortcutsOpen ||
                 isOrganizationSwitcherOpen ||
                 isUserMenuOpen ||
@@ -497,6 +517,7 @@
     <Sidebar routes={filteredRoutes}>
         {#snippet header()}
             <SidebarOrganizationSwitcher
+                bind:impersonateDialogOpen={isImpersonateOrganizationOpen}
                 isLoading={organizationsQuery.isLoading}
                 {organizations}
                 {impersonatedOrganization}
@@ -525,11 +546,18 @@
             <main class="flex-1 px-4 pt-4">
                 <NavigationCommand
                     bind:open={isCommandOpen}
+                    {isChatEnabled}
+                    {isGlobalAdmin}
+                    {isImpersonating}
+                    {openChat}
+                    {openImpersonateOrganization}
                     {openKeyboardShortcuts}
                     {openOrganizationSwitcher}
                     {openUserMenu}
+                    {organizations}
                     resetKey={commandResetKey}
                     routes={filteredRoutes}
+                    {stopImpersonating}
                 />
                 <KeyboardShortcutsDialog bind:open={isKeyboardShortcutsOpen} />
 
