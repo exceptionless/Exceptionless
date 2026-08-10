@@ -9,6 +9,7 @@ const EVENT_NOTIFICATION_TRAILING_REFRESH_MS = 5_000;
 
 interface ActionSample extends RequestCounts {
     name: string;
+    requestFailures: number;
     runtimeErrors: number;
 }
 
@@ -16,6 +17,7 @@ interface RequestCounts {
     eventCount: number;
     eventDetails: number;
     eventList: number;
+    savedViews: number;
     stackDetails: number;
     stackEvents: number;
 }
@@ -24,6 +26,7 @@ interface RuntimeDiagnostics {
     actionSamples: ActionSample[];
     activeAction: string;
     networkFailures: { action: string; status: number; url: string }[];
+    requestFailures: { action: string; error: null | string; method: string; url: string }[];
     requests: RequestCounts;
     runtimeErrors: { action: string; message: string }[];
 }
@@ -37,6 +40,7 @@ test('event list and detail effects stay bounded through paging and background c
         actionSamples: [],
         activeAction: 'setup',
         networkFailures: [],
+        requestFailures: [],
         requests: emptyRequestCounts(),
         runtimeErrors: []
     };
@@ -44,6 +48,7 @@ test('event list and detail effects stay bounded through paging and background c
     page.on('console', (message) => recordConsoleMessage(diagnostics, message));
     page.on('pageerror', (error) => diagnostics.runtimeErrors.push({ action: diagnostics.activeAction, message: error.stack ?? error.message }));
     page.on('request', (request) => recordRequest(diagnostics, request, e2eScenario.organizationId));
+    page.on('requestfailed', (request) => recordRequestFailure(diagnostics, request));
     page.on('response', (response) => recordNetworkFailure(diagnostics, response));
 
     await test.step('seed enough events in one stack to exercise list and detail navigation', async () => {
@@ -233,6 +238,7 @@ test('event list and detail effects stay bounded through paging and background c
     });
     expect(diagnostics.runtimeErrors).toEqual([]);
     expect(diagnostics.networkFailures).toEqual([]);
+    expect(diagnostics.requestFailures).toEqual([]);
     await expect(page.getByRole('tab', { name: 'Overview' })).toBeVisible();
 });
 
@@ -284,6 +290,7 @@ function emptyRequestCounts(): RequestCounts {
         eventCount: 0,
         eventDetails: 0,
         eventList: 0,
+        savedViews: 0,
         stackDetails: 0,
         stackEvents: 0
     };
@@ -301,6 +308,7 @@ function isEventListResponse(response: Response, organizationId: string): boolea
 async function measureAction(diagnostics: RuntimeDiagnostics, name: string, action: () => Promise<void>): Promise<void> {
     diagnostics.activeAction = name;
     const initialRequests = { ...diagnostics.requests };
+    const initialRequestFailures = diagnostics.requestFailures.length;
     const initialRuntimeErrors = diagnostics.runtimeErrors.length;
 
     await action();
@@ -310,6 +318,7 @@ async function measureAction(diagnostics: RuntimeDiagnostics, name: string, acti
         eventDetails: diagnostics.requests.eventDetails - initialRequests.eventDetails,
         eventList: diagnostics.requests.eventList - initialRequests.eventList,
         name,
+        requestFailures: diagnostics.requestFailures.length - initialRequestFailures,
         runtimeErrors: diagnostics.runtimeErrors.length - initialRuntimeErrors,
         stackDetails: diagnostics.requests.stackDetails - initialRequests.stackDetails,
         stackEvents: diagnostics.requests.stackEvents - initialRequests.stackEvents
@@ -335,6 +344,11 @@ function recordNetworkFailure(diagnostics: RuntimeDiagnostics, response: Respons
 
 function recordRequest(diagnostics: RuntimeDiagnostics, request: Request, organizationId: string): void {
     const url = new URL(request.url());
+    if (url.pathname.startsWith(`/api/v2/organizations/${organizationId}/saved-views`)) {
+        diagnostics.requests.savedViews++;
+        return;
+    }
+
     if (isEventListRequest(request, organizationId)) {
         diagnostics.requests.eventList++;
     } else if (url.pathname === `/api/v2/organizations/${organizationId}/events/count`) {
@@ -346,6 +360,19 @@ function recordRequest(diagnostics: RuntimeDiagnostics, request: Request, organi
     } else if (/^\/api\/v2\/stacks\/[a-f0-9]{24}$/.test(url.pathname)) {
         diagnostics.requests.stackDetails++;
     }
+}
+
+function recordRequestFailure(diagnostics: RuntimeDiagnostics, request: Request): void {
+    if (!new URL(request.url()).pathname.startsWith('/api/v2/')) {
+        return;
+    }
+
+    diagnostics.requestFailures.push({
+        action: diagnostics.activeAction,
+        error: request.failure()?.errorText ?? null,
+        method: request.method(),
+        url: request.url()
+    });
 }
 
 async function setDocumentHidden(page: Page, hidden: boolean): Promise<void> {

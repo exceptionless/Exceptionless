@@ -9,6 +9,7 @@ interface ActionSample {
     countRequests: number;
     listRequests: number;
     name: string;
+    requestFailures: number;
     runtimeErrors: number;
 }
 
@@ -18,7 +19,9 @@ interface RuntimeDiagnostics {
     countRequests: number;
     listRequests: number;
     networkFailures: { action: string; status: number; url: string }[];
+    requestFailures: { action: string; error: null | string; method: string; url: string }[];
     runtimeErrors: { action: string; message: string }[];
+    savedViewRequests: number;
 }
 
 test('stack effects stay bounded through background, paging, and navigation chaos @signup', async ({ e2eApi, e2eScenario, page }, testInfo) => {
@@ -32,12 +35,15 @@ test('stack effects stay bounded through background, paging, and navigation chao
         countRequests: 0,
         listRequests: 0,
         networkFailures: [],
-        runtimeErrors: []
+        requestFailures: [],
+        runtimeErrors: [],
+        savedViewRequests: 0
     };
 
     page.on('console', (message) => recordConsoleError(diagnostics, message));
     page.on('pageerror', (error) => diagnostics.runtimeErrors.push({ action: diagnostics.activeAction, message: error.stack ?? error.message }));
-    page.on('request', (request) => recordListRequest(diagnostics, request, e2eScenario.organizationId));
+    page.on('request', (request) => recordRequest(diagnostics, request, e2eScenario.organizationId));
+    page.on('requestfailed', (request) => recordRequestFailure(diagnostics, request));
     page.on('response', (response) => recordNetworkFailure(diagnostics, response));
 
     await test.step('seed enough independent stacks to exercise pagination', async () => {
@@ -180,6 +186,7 @@ test('stack effects stay bounded through background, paging, and navigation chao
 
     expect(diagnostics.runtimeErrors).toEqual([]);
     expect(diagnostics.networkFailures).toEqual([]);
+    expect(diagnostics.requestFailures).toEqual([]);
     await expect(page.getByRole('heading', { name: 'Stacks' })).toBeVisible();
 });
 
@@ -219,6 +226,7 @@ async function measureAction(diagnostics: RuntimeDiagnostics, name: string, acti
     diagnostics.activeAction = name;
     const initialListRequests = diagnostics.listRequests;
     const initialCountRequests = diagnostics.countRequests;
+    const initialRequestFailures = diagnostics.requestFailures.length;
     const initialRuntimeErrors = diagnostics.runtimeErrors.length;
 
     await action();
@@ -227,6 +235,7 @@ async function measureAction(diagnostics: RuntimeDiagnostics, name: string, acti
         countRequests: diagnostics.countRequests - initialCountRequests,
         listRequests: diagnostics.listRequests - initialListRequests,
         name,
+        requestFailures: diagnostics.requestFailures.length - initialRequestFailures,
         runtimeErrors: diagnostics.runtimeErrors.length - initialRuntimeErrors
     });
 }
@@ -238,7 +247,22 @@ function recordConsoleError(diagnostics: RuntimeDiagnostics, message: ConsoleMes
     }
 }
 
-function recordListRequest(diagnostics: RuntimeDiagnostics, request: Request, organizationId: string): void {
+function recordNetworkFailure(diagnostics: RuntimeDiagnostics, response: Response): void {
+    if (response.status() >= 400) {
+        diagnostics.networkFailures.push({
+            action: diagnostics.activeAction,
+            status: response.status(),
+            url: response.url()
+        });
+    }
+}
+
+function recordRequest(diagnostics: RuntimeDiagnostics, request: Request, organizationId: string): void {
+    if (new URL(request.url()).pathname.startsWith(`/api/v2/organizations/${organizationId}/saved-views`)) {
+        diagnostics.savedViewRequests++;
+        return;
+    }
+
     if (isStackListRequest(request, organizationId)) {
         diagnostics.listRequests++;
         return;
@@ -250,14 +274,17 @@ function recordListRequest(diagnostics: RuntimeDiagnostics, request: Request, or
     }
 }
 
-function recordNetworkFailure(diagnostics: RuntimeDiagnostics, response: Response): void {
-    if (response.status() >= 400) {
-        diagnostics.networkFailures.push({
-            action: diagnostics.activeAction,
-            status: response.status(),
-            url: response.url()
-        });
+function recordRequestFailure(diagnostics: RuntimeDiagnostics, request: Request): void {
+    if (!new URL(request.url()).pathname.startsWith('/api/v2/')) {
+        return;
     }
+
+    diagnostics.requestFailures.push({
+        action: diagnostics.activeAction,
+        error: request.failure()?.errorText ?? null,
+        method: request.method(),
+        url: request.url()
+    });
 }
 
 async function setDocumentHidden(page: Page, hidden: boolean): Promise<void> {

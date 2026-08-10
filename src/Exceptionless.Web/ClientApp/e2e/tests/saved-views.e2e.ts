@@ -1,10 +1,11 @@
-import type { Page } from '@playwright/test';
+import type { Page, Request } from '@playwright/test';
 
 import { expect, test } from '../fixtures/e2e-test';
 import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
 import { getVisibleText } from '../support/page-helpers';
 
 test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2eApi, e2eScenario, page }) => {
+    const failedApiRequests = captureFailedApiRequests(page);
     const journey = ExceptionlessE2EJourney.fromScenario(page, e2eApi, e2eScenario);
     const suffix = journey.run.slice(-36);
     const viewName = `E2E Events ${suffix}`;
@@ -92,9 +93,12 @@ test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2
         await expect(page).toHaveURL(/\/next\/event(?:[?#]|$)/);
         await expect(page.getByRole('heading', { name: renamedViewName })).toHaveCount(0);
     });
+
+    expect(failedApiRequests).toEqual([]);
 });
 
 test('switching saved views discards temporary filter overrides', async ({ e2eApi, e2eScenario, page }) => {
+    const failedApiRequests = captureFailedApiRequests(page);
     const journey = ExceptionlessE2EJourney.fromScenario(page, e2eApi, e2eScenario);
     const suffix = journey.run.slice(-28);
     const firstViewName = `E2E First View ${suffix}`;
@@ -121,7 +125,23 @@ test('switching saved views discards temporary filter overrides', async ({ e2eAp
             .filter({ visible: true })
             .first()
     ).toBeVisible();
+    expect(failedApiRequests).toEqual([]);
 });
+
+function captureFailedApiRequests(page: Page): { error: null | string; method: string; url: string }[] {
+    const failures: { error: null | string; method: string; url: string }[] = [];
+    page.on('requestfailed', (request: Request) => {
+        if (new URL(request.url()).pathname.startsWith('/api/v2/')) {
+            failures.push({
+                error: request.failure()?.errorText ?? null,
+                method: request.method(),
+                url: request.url()
+            });
+        }
+    });
+
+    return failures;
+}
 
 function escapeRegExp(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

@@ -525,6 +525,36 @@ describe('useSavedViews', () => {
             expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.organization(TEST_ORG_ID) });
         });
 
+        it('coalesces rapid saved view notifications until the latest refresh window', async () => {
+            // Arrange
+            vi.useFakeTimers();
+            const queryClient = new QueryClient();
+            const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries').mockImplementation(async () => {});
+
+            // Act
+            await invalidateSavedViewQueries(queryClient, {
+                change_type: ChangeType.Added,
+                data: {},
+                organization_id: TEST_ORG_ID,
+                type: 'SavedView'
+            });
+            await vi.advanceTimersByTimeAsync(SAVED_VIEW_REFRESH_DELAY_MS - 1);
+            await invalidateSavedViewQueries(queryClient, {
+                change_type: ChangeType.Added,
+                data: {},
+                organization_id: TEST_ORG_ID,
+                type: 'SavedView'
+            });
+            await vi.advanceTimersByTimeAsync(1);
+
+            // Assert
+            expect(invalidateSpy).not.toHaveBeenCalled();
+
+            await vi.advanceTimersByTimeAsync(SAVED_VIEW_REFRESH_DELAY_MS - 1);
+            expect(invalidateSpy).toHaveBeenCalledOnce();
+            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.organization(TEST_ORG_ID) });
+        });
+
         it('removes from cache in-place for Removed events when view is cached', async () => {
             // Arrange
             const queryClient = new QueryClient();

@@ -189,6 +189,7 @@ export function deleteStack(request: DeleteStackRequest) {
     }));
 }
 
+// Cacheable reads intentionally finish after their observer unmounts so navigation can reuse the result instead of aborting and restarting the request.
 export function getProjectStacksQuery(request: GetProjectStacksRequest) {
     const queryClient = useQueryClient();
 
@@ -200,11 +201,10 @@ export function getProjectStacksQuery(request: GetProjectStacksRequest) {
             });
         },
         queryClient,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+        queryFn: async () => {
             const client = useFetchClient();
             const response = await client.getJSON<Stack[]>(`projects/${request.route.projectId}/stacks`, {
-                params: request.params as Record<string, unknown>,
-                signal
+                params: request.params as Record<string, unknown>
             });
 
             return response;
@@ -217,11 +217,9 @@ export function getProjectStacksQuery(request: GetProjectStacksRequest) {
 export function getStackQuery(request: GetStackRequest) {
     return createQuery<Stack, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.id,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+        queryFn: async () => {
             const client = useFetchClient();
-            const response = await client.getJSON<Stack>(`stacks/${request.route.id}`, {
-                signal
-            });
+            const response = await client.getJSON<Stack>(`stacks/${request.route.id}`);
 
             return response.data!;
         },
@@ -366,11 +364,9 @@ export async function prefetchStack(request: GetStackRequest) {
 
     const queryClient = useQueryClient();
     await queryClient.prefetchQuery<Stack, ProblemDetails>({
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+        queryFn: async () => {
             const client = useFetchClient();
-            const response = await client.getJSON<Stack>(`stacks/${request.route.id}`, {
-                signal
-            });
+            const response = await client.getJSON<Stack>(`stacks/${request.route.id}`);
 
             return response.data!;
         },

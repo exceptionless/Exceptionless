@@ -279,17 +279,17 @@ export function deleteEvent(request: DeleteEventsRequest) {
     }));
 }
 
+// Cacheable reads intentionally finish after their observer unmounts so navigation can reuse the result instead of aborting and restarting the request.
 export function getEventQuery(request: GetEventRequest) {
     return createQuery<PersistentEvent, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.id,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+        queryFn: async () => {
             const client = useFetchClient();
             const response = await client.getJSON<PersistentEvent>(`events/${request.route.id}`, {
                 params: {
                     ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
                     ...request.params
-                },
-                signal
+                }
             });
 
             return response.data!;
@@ -301,7 +301,7 @@ export function getEventQuery(request: GetEventRequest) {
 export function getEventsByReferenceQuery(request: GetEventsByReferenceRequest) {
     return createQuery<EventSummaryModel<SummaryTemplateKeys>[], ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.referenceId,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+        queryFn: async () => {
             const client = useFetchClient();
             const path = request.route.projectId
                 ? `projects/${request.route.projectId}/events/by-ref/${encodeURIComponent(request.route.referenceId ?? '')}`
@@ -313,8 +313,7 @@ export function getEventsByReferenceQuery(request: GetEventsByReferenceRequest) 
                     mode: 'summary',
                     page: 1,
                     ...request.params
-                },
-                signal
+                }
             });
 
             return response.data!;
@@ -328,14 +327,13 @@ export function getEventWithNavigationQuery(request: GetEventRequest) {
     return createQuery<EventWithNavigation, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.id,
         placeholderData: keepPreviousData,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+        queryFn: async () => {
             const client = useFetchClient();
             const response = await client.getJSON<PersistentEvent>(`events/${request.route.id}`, {
                 params: {
                     ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
                     ...request.params
-                },
-                signal
+                }
             });
 
             const event = response.data!;
@@ -366,14 +364,13 @@ export function getOrganizationCountQuery(request: GetOrganizationCountRequest) 
         return {
             enabled: () => !!accessToken.current && !!organizationId && (request.enabled?.() ?? true),
             queryClient,
-            queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            queryFn: async () => {
                 const client = useFetchClient();
                 const response = await client.getJSON<CountResult>(`/organizations/${organizationId}/events/count`, {
                     params: {
                         ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
                         ...params
-                    },
-                    signal
+                    }
                 });
 
                 return response.data!;
@@ -392,11 +389,10 @@ export function getOrganizationEventsQuery(request: GetOrganizationEventsRequest
         return {
             enabled: () => !!accessToken.current && !!organizationId && (request.enabled?.() ?? true),
             placeholderData: keepPreviousData,
-            queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            queryFn: async () => {
                 const client = useFetchClient();
                 return await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organizationId}/events`, {
-                    params: params as Record<string, unknown>,
-                    signal
+                    params: params as Record<string, unknown>
                 });
             },
             queryKey: queryKeys.organizationsEvents(organizationId, params),
@@ -415,14 +411,13 @@ export function getOrganizationSessionsCountQuery(request: GetOrganizationSessio
     return createQuery<CountResult, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.organizationId,
         queryClient,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+        queryFn: async () => {
             const client = useFetchClient();
             const response = await client.getJSON<CountResult>(`/organizations/${request.route.organizationId}/events/count`, {
                 params: {
                     ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
                     ...request.params
-                },
-                signal
+                }
             });
 
             return response.data!;
@@ -441,14 +436,13 @@ export function getProjectCountQuery(request: GetProjectCountRequest) {
         return {
             enabled: () => !!accessToken.current && !!projectId,
             queryClient,
-            queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            queryFn: async () => {
                 const client = useFetchClient();
                 const response = await client.getJSON<CountResult>(`/projects/${projectId}/events/count`, {
                     params: {
                         ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
                         ...params
-                    },
-                    signal
+                    }
                 });
 
                 return response.data!;
@@ -465,7 +459,7 @@ export function getProjectCountQuery(request: GetProjectCountRequest) {
 export function getSessionEventsQuery(request: GetSessionEventsRequest) {
     return createQuery<EventSummaryModel<SummaryTemplateKeys>[], ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.sessionId,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+        queryFn: async () => {
             const client = useFetchClient();
             const path = request.route.projectId
                 ? `projects/${request.route.projectId}/events/sessions/${request.route.sessionId}`
@@ -475,8 +469,7 @@ export function getSessionEventsQuery(request: GetSessionEventsRequest) {
                     ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
                     mode: 'summary',
                     ...request.params
-                },
-                signal
+                }
             });
 
             return response.data!;
@@ -491,7 +484,7 @@ export function getStackCountQuery(request: GetStackCountRequest) {
     return createQuery<CountResult, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.stackId,
         queryClient,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+        queryFn: async () => {
             const client = useFetchClient();
             const response = await client.getJSON<CountResult>('events/count', {
                 params: {
@@ -500,8 +493,7 @@ export function getStackCountQuery(request: GetStackCountRequest) {
                     filter: request.params?.filter?.includes(`stack:${request.route.stackId}`)
                         ? request.params.filter
                         : [request.params?.filter, `stack:${request.route.stackId}`].filter(Boolean).join(' ')
-                },
-                signal
+                }
             });
 
             return response.data!;
@@ -521,14 +513,13 @@ export function getStackEventsQuery(request: GetStackEventsRequest) {
             });
         },
         queryClient,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+        queryFn: async () => {
             const client = useFetchClient();
             const response = await client.getJSON<PersistentEvent[]>(`stacks/${request.route.stackId}/events`, {
                 params: {
                     ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
                     ...request.params
-                },
-                signal
+                }
             });
 
             return response.data!;
