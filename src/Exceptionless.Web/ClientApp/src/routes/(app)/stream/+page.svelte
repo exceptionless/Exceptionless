@@ -105,8 +105,7 @@
         () => organization.current,
         () => {
             updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
-            //params.$reset(); // Work around for https://github.com/beynar/kit-query-params/issues/7
-            Object.assign(queryParams, DEFAULT_PARAMS);
+            queryParams.update(DEFAULT_PARAMS);
             paused = false;
         },
         { lazy: true }

@@ -1,107 +1,53 @@
-import type { OutputOfPrimitive, Primitive, Schema, SchemaOutput } from './types.js';
+import type { OutputOfPrimitive, Primitive } from './types.js';
 
-export const validateEnum = (enumType: string, value: null | string | undefined) => {
-    if (!value) {
-        return false;
-    }
-
-    const types = enumType.replace('<', '').replace('>', '').split(',');
-    return types.includes(value);
-};
-
-export const coerceArray = (schema: Schema, value: any[] | null, DEFAULT_VALUE: any = null): SchemaOutput<Schema>[] => {
-    if (!value) {
-        return DEFAULT_VALUE;
-    }
-
-    return value.map((v, index) => coerceObject(schema, v, DEFAULT_VALUE?.[index]));
-};
-
-export const coerceObject = (schema: Schema, value: any, DEFAULT_VALUE: any = null): SchemaOutput<Schema> => {
-    if (!value) {
-        return DEFAULT_VALUE;
-    }
-
-    const result: Record<string, any> = {};
-    for (const [key, schemaType] of Object.entries(schema)) {
-        if (typeof schemaType === 'string') {
-            // Handle primitive types
-            result[key] = coercePrimitive(schemaType as Primitive, value[key], DEFAULT_VALUE?.[key]);
-        } else if (Array.isArray(schemaType)) {
-            // Handle array types
-            const arraySchema = schemaType[0];
-            if (typeof arraySchema === 'string') {
-                result[key] = coercePrimitiveArray(arraySchema as Primitive, value[key], DEFAULT_VALUE?.[key]);
-            } else {
-                result[key] = coerceArray(arraySchema, value[key], DEFAULT_VALUE?.[key]);
-            }
-        } else if (typeof schemaType === 'object') {
-            // Handle nested object types
-            result[key] = coerceObject(schemaType, value[key], DEFAULT_VALUE?.[key]);
-        }
-    }
-
-    return result as SchemaOutput<Schema>;
-};
-
-export const coercePrimitiveArray = (primitiveType: Primitive, value: null | string[], DEFAULT_VALUE: any = null): OutputOfPrimitive<Primitive>[] => {
-    if (!value) {
-        return DEFAULT_VALUE;
-    }
-
-    return value.map((v, index) => coercePrimitive(primitiveType, v, DEFAULT_VALUE?.[index])).filter((v) => v !== null);
-};
-
-export const coercePrimitive = (primitiveType: Primitive, value: null | string | undefined, DEFAULT_VALUE: any = null): OutputOfPrimitive<Primitive> => {
-    if (value === 'null' || value === '' || value === null) {
-        return DEFAULT_VALUE;
+export function coercePrimitive<T extends Primitive>(primitiveType: T, value: unknown, fallback: OutputOfPrimitive<T> = null as OutputOfPrimitive<T>) {
+    if (value === undefined || value === null || value === '' || value === 'null') {
+        return fallback;
     }
 
     switch (primitiveType) {
         case 'boolean': {
-            if (value === null || value === undefined) {
-                return DEFAULT_VALUE;
-            }
-
             if (typeof value === 'boolean') {
-                return value;
+                return value as OutputOfPrimitive<T>;
             }
 
-            if (Number(value) === 1) {
-                return true;
+            if (value === 1 || value === '1' || (typeof value === 'string' && value.toLowerCase() === 'true')) {
+                return true as OutputOfPrimitive<T>;
             }
 
-            if (Number(value) === 0) {
-                return false;
+            if (value === 0 || value === '0' || (typeof value === 'string' && value.toLowerCase() === 'false')) {
+                return false as OutputOfPrimitive<T>;
             }
 
-            if (typeof value === 'string') {
-                return value.toLowerCase() === 'true' ? true : value.toLowerCase() === 'false' ? false : DEFAULT_VALUE;
-            }
-
-            return DEFAULT_VALUE;
+            return fallback;
         }
 
         case 'date': {
-            return value ? (isNaN(new Date(value).getTime()) ? DEFAULT_VALUE : new Date(value === '0' ? 0 : value)) : DEFAULT_VALUE;
+            const date = value instanceof Date ? value : new Date(value === '0' ? 0 : String(value));
+
+            return (Number.isNaN(date.getTime()) ? fallback : date) as OutputOfPrimitive<T>;
         }
 
         case 'number': {
-            const parsed = Number(value);
-            if ((!value || isNaN(parsed)) && parsed !== 0) {
-                return DEFAULT_VALUE;
-            }
+            const number = typeof value === 'number' ? value : Number(value);
 
-            return parsed;
+            return (Number.isFinite(number) ? number : fallback) as OutputOfPrimitive<T>;
         }
 
         case 'string': {
-            return value && value.toString ? value.toString() : DEFAULT_VALUE;
+            return String(value) as OutputOfPrimitive<T>;
         }
 
         default: {
-            // Assume it is an enum
-            return validateEnum(primitiveType, value) ? value! : DEFAULT_VALUE;
+            return (validateEnum(primitiveType, value) ? value : fallback) as OutputOfPrimitive<T>;
         }
     }
-};
+}
+
+function validateEnum(enumType: string, value: unknown): value is string {
+    if (typeof value !== 'string' || !value) {
+        return false;
+    }
+
+    return enumType.slice(1, -1).split(',').includes(value);
+}

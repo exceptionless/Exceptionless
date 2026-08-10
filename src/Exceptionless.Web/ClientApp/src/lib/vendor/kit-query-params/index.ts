@@ -1,2 +1,2 @@
 export * from './index.svelte.js';
-export { parseURL } from './utils.js';
+export type { QueryParamsState } from './types.js';

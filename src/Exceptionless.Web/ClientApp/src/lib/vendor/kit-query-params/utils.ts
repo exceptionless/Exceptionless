@@ -1,16 +1,60 @@
-import type { SvelteURLSearchParams } from 'svelte/reactivity';
+import type { Primitive, PrimitiveValue, QueryParamValues, Schema, SchemaOutput } from './types.js';
 
-import type { Default, Primitive, Schema, SchemaOutput } from './types.js';
-
-import { coercePrimitive, validateEnum } from './coerce.js';
+import { coercePrimitive } from './coerce.js';
 
 export interface DebouncedFunction {
     (): void;
     cancel: () => void;
 }
 
-export const debounce = (fn: () => void, delay: false | number): DebouncedFunction => {
+export interface QueryParamUpdate<T extends Schema> {
+    searchParams: URLSearchParams;
+    state: SchemaOutput<T>;
+    stateChanged: boolean;
+    urlChanged: boolean;
+}
+
+export function applyQueryParamUpdates<T extends Schema>(
+    currentState: SchemaOutput<T>,
+    currentSearchParams: URLSearchParams,
+    values: Partial<QueryParamValues<T>>,
+    schema: T
+): QueryParamUpdate<T> {
+    const searchParams = new URLSearchParams(currentSearchParams);
+    const state = { ...currentState };
+    const stateValues = state as Record<string, PrimitiveValue>;
+    let stateChanged = false;
+
+    for (const [key, value] of Object.entries(values)) {
+        if (!Object.hasOwn(schema, key)) {
+            continue;
+        }
+
+        const primitive = schema[key];
+        if (!primitive) {
+            continue;
+        }
+
+        const coerced = coercePrimitive(primitive, value);
+        if (!valuesEqual(stateValues[key], coerced)) {
+            stateValues[key] = coerced;
+            stateChanged = true;
+        }
+
+        setSearchParam(searchParams, key, stringifyPrimitive(primitive, coerced));
+    }
+
+    return {
+        searchParams,
+        state,
+        stateChanged,
+        urlChanged: searchParams.toString() !== currentSearchParams.toString()
+    };
+}
+
+export function debounce(fn: () => void, delay: false | number): DebouncedFunction {
     let timeout: ReturnType<typeof setTimeout> | undefined;
+
     const cancel = () => {
         if (timeout !== undefined) {
             clearTimeout(timeout);
@@ -19,11 +63,13 @@ export const debounce = (fn: () => void, delay: false | number): DebouncedFuncti
     };
 
     const debounced = () => {
-        if (delay === false) {
+        cancel();
+
+        if (delay === false || delay <= 0) {
+            fn();
             return;
         }
 
-        cancel();
         timeout = setTimeout(() => {
             timeout = undefined;
             fn();
@@ -32,164 +78,83 @@ export const debounce = (fn: () => void, delay: false | number): DebouncedFuncti
 
     debounced.cancel = cancel;
     return debounced;
-};
+}
 
-export const clearSearchParamPaths = (searchParams: SvelteURLSearchParams | URLSearchParams, path: string): boolean => {
-    let changed = false;
-    for (const key of Array.from(searchParams.keys())) {
-        if (key.startsWith(path)) {
-            searchParams.delete(key);
-            changed = true;
+export function parseURL<T extends Schema>(searchParams: URLSearchParams, schema: T, defaults?: Partial<QueryParamValues<T>>): SchemaOutput<T> {
+    const result = {} as SchemaOutput<T>;
+    const resultValues = result as Record<string, PrimitiveValue>;
+    const defaultValues = defaults as Partial<Record<string, PrimitiveValue | undefined>> | undefined;
+
+    for (const key of Object.keys(schema)) {
+        const primitive = schema[key];
+        if (!primitive) {
+            continue;
         }
+
+        const fallback = coercePrimitive(primitive, defaultValues?.[key]);
+        resultValues[key] = coercePrimitive(primitive, searchParams.get(key), fallback);
     }
 
-    return changed;
-};
+    return result;
+}
 
-export const setSearchParamIfChanged = (searchParams: SvelteURLSearchParams | URLSearchParams, key: string, stringified: null | string): boolean => {
-    if (stringified === null || stringified === '') {
-        if (!searchParams.has(key)) {
-            return false;
-        }
-
+export function resetQueryParams<T extends Schema>(
+    currentState: SchemaOutput<T>,
+    currentSearchParams: URLSearchParams,
+    schema: T,
+    defaults?: Partial<QueryParamValues<T>>
+): QueryParamUpdate<T> {
+    const searchParams = new URLSearchParams(currentSearchParams);
+    for (const key of Object.keys(schema)) {
         searchParams.delete(key);
-        return true;
     }
 
-    if (searchParams.get(key) === stringified) {
-        return false;
+    const state = parseURL(searchParams, schema, defaults);
+
+    return {
+        searchParams,
+        state,
+        stateChanged: Object.keys(schema).some((key) => !valuesEqual(currentState[key], state[key])),
+        urlChanged: searchParams.toString() !== currentSearchParams.toString()
+    };
+}
+
+function setSearchParam(searchParams: URLSearchParams, key: string, value: null | string) {
+    if (value === null || value === '') {
+        searchParams.delete(key);
+    } else {
+        searchParams.set(key, value);
     }
+}
 
-    searchParams.set(key, stringified);
-    return true;
-};
-
-export const stringifyPrimitive = (primitiveType: Primitive, value: any): null | string => {
+function stringifyPrimitive(primitiveType: Primitive, value: PrimitiveValue): null | string {
     switch (primitiveType) {
         case 'boolean': {
             return value === null ? null : value ? 'true' : 'false';
         }
 
         case 'date': {
-            const isDate = value && value instanceof Date && !isNaN(value.getTime());
-            return value === null ? null : isDate ? value.toISOString() : null;
+            return value instanceof Date && !Number.isNaN(value.getTime()) ? value.toISOString() : null;
         }
 
         case 'number': {
-            return value === null ? null : value || value === 0 ? value.toString() : null;
+            return typeof value === 'number' && Number.isFinite(value) ? String(value) : null;
         }
 
         case 'string': {
-            return !value ? null : String(value);
+            return typeof value === 'string' && value ? value : null;
         }
 
         default: {
-            // it is an enum
-            return validateEnum(primitiveType, value) ? value : null;
+            return typeof value === 'string' && value ? value : null;
         }
     }
-};
+}
 
-const getSearchParams = (data: string | SvelteURLSearchParams | URL | URLSearchParams) => {
-    return typeof data === 'string' ? new URL(data).searchParams : data instanceof URL ? data.searchParams : data;
-};
-
-export const parseURL = <S extends Schema, D extends Default<S> | undefined, Enforce extends boolean = false>(
-    data: string | SvelteURLSearchParams | URL | URLSearchParams,
-    schema: S,
-    defaultValue?: D
-): SchemaOutput<S, D, Enforce> => {
-    const searchParams = getSearchParams(data);
-    const paths = Array.from(searchParams.entries());
-    const result: any = {};
-    const pathMap = new Map(paths);
-
-    const parseSchemaRecursive = (currentSchema: any, currentResult: any, currentPath: string = '', defaultSchema: any) => {
-        for (const [key, schemaType] of Object.entries(currentSchema)) {
-            const newPath = currentPath ? `${currentPath}.${key}` : key;
-            const defaultValue = defaultSchema?.[key];
-            const isArray = Array.isArray(schemaType);
-            const type = isArray ? schemaType[0] : schemaType;
-            const primitive = isPrimitive(type) ? type : undefined;
-            const schema = isPrimitive(type) ? undefined : type;
-
-            if (primitive) {
-                if (isArray) {
-                    currentResult[key] = [];
-                    for (let i = 0; ; i++) {
-                        const arrayPath = `${newPath}.${i}`;
-                        const value = pathMap.get(arrayPath);
-                        if (!value && !defaultValue?.[i]) {
-                            break;
-                        }
-
-                        currentResult[key].push(coercePrimitive(primitive as Primitive, value, defaultValue?.[i]));
-                    }
-                } else {
-                    // Handle primitive types
-                    const value = pathMap.get(newPath);
-                    currentResult[key] = coercePrimitive(schemaType as Primitive, value, defaultValue);
-                }
-            } else if (schema) {
-                if (isArray) {
-                    // Handle array types
-                    currentResult[key] = [];
-
-                    for (let i = 0; ; i++) {
-                        const arrayPath = `${newPath}.${i}`;
-                        const hasPaths = Array.from(pathMap.keys()).some((path) => path.startsWith(arrayPath));
-                        if (!defaultValue?.[i] && !hasPaths) {
-                            break;
-                        }
-
-                        currentResult[key][i] = {};
-                        parseSchemaRecursive(schema, currentResult[key][i], arrayPath, defaultValue?.[i]);
-                    }
-                } else {
-                    currentResult[key] = {};
-                    parseSchemaRecursive(schemaType, currentResult[key], newPath, defaultValue);
-                }
-            }
-        }
-    };
-
-    parseSchemaRecursive(schema, result, '', defaultValue);
-    return result;
-};
-
-export const isValidPath = (path: string, schema: Schema): boolean => {
-    const parts = path.split('.');
-    let currentSchema: any = schema;
-
-    for (let i = 0; i < parts.length; i++) {
-        const part = parts[i];
-        if (part === undefined) {
-            return false;
-        }
-
-        if (typeof currentSchema === 'string') {
-            return false;
-        }
-
-        if (Array.isArray(currentSchema)) {
-            if (!/^\d+$/.test(part)) {
-                return false;
-            }
-
-            currentSchema = currentSchema[0];
-            continue;
-        }
-
-        if (typeof currentSchema !== 'object' || currentSchema === null || !(part in currentSchema)) {
-            return false;
-        }
-
-        currentSchema = currentSchema[part];
+function valuesEqual(current: unknown, next: unknown): boolean {
+    if (current instanceof Date && next instanceof Date) {
+        return current.getTime() === next.getTime();
     }
 
-    return true;
-};
-
-export const isPrimitive = (value: any): value is Primitive => {
-    return ['boolean', 'date', 'number', 'string'].includes(value) || (value.startsWith?.('<') && value.endsWith?.('>'));
-};
+    return Object.is(current, next);
+}

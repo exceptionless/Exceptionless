@@ -1,84 +1,115 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { Schema } from './types';
+import type { QueryParamValues, Schema } from './types';
 
 import { createProxy } from './proxy';
-import { clearSearchParamPaths, debounce, setSearchParamIfChanged } from './utils';
+import { applyQueryParamUpdates, debounce, parseURL, resetQueryParams } from './utils';
 
 afterEach(() => {
     vi.useRealTimers();
 });
 
-describe('query parameter proxy', () => {
-    it('does not publish unchanged primitive values after coercion', () => {
+describe('query parameter updates', () => {
+    const schema = { date: 'date', filter: 'string', page: 'number' } satisfies Schema;
+
+    it('does not change state or URL for unchanged values after coercion', () => {
         // Arrange
-        const onUpdate = vi.fn();
-        const schema = { date: 'date', page: 'number' } satisfies Schema;
-        const queryParams = createProxy(
-            { date: new Date('2026-08-09T00:00:00Z'), page: 1 },
-            {
-                onUpdate,
-                reset: vi.fn(),
-                schema,
-                searchParams: new URLSearchParams(),
-                sync: vi.fn()
-            }
-        );
+        const searchParams = new URLSearchParams('date=2026-08-09T00%3A00%3A00.000Z&page=1');
+        const state = parseURL(searchParams, schema);
+        const values = {
+            date: new Date('2026-08-09T00:00:00Z'),
+            page: '1'
+        } as unknown as Partial<QueryParamValues<typeof schema>>;
 
         // Act
-        queryParams.page = 1;
-        queryParams.date = new Date('2026-08-09T00:00:00Z');
-        Reflect.set(queryParams, 'page', '1');
+        const result = applyQueryParamUpdates(state, searchParams, values, schema);
 
         // Assert
-        expect(onUpdate).not.toHaveBeenCalled();
+        expect(result.stateChanged).toBe(false);
+        expect(result.urlChanged).toBe(false);
+        expect(result.searchParams.toString()).toBe(searchParams.toString());
     });
 
-    it('publishes a changed primitive value once', () => {
+    it('applies multiple values atomically while preserving unknown parameters', () => {
         // Arrange
-        const onUpdate = vi.fn();
-        const schema = { page: 'number' } satisfies Schema;
-        const queryParams = createProxy(
-            { page: 1 },
-            {
-                onUpdate,
-                reset: vi.fn(),
-                schema,
-                searchParams: new URLSearchParams(),
-                sync: vi.fn()
-            }
-        );
+        const searchParams = new URLSearchParams('filter=old&page=1&unknown=preserved');
+        const state = parseURL(searchParams, schema);
+
+        // Act
+        const result = applyQueryParamUpdates(state, searchParams, { filter: 'new', page: 2 }, schema);
+
+        // Assert
+        expect(result.state).toEqual({ date: null, filter: 'new', page: 2 });
+        expect(result.stateChanged).toBe(true);
+        expect(result.urlChanged).toBe(true);
+        expect(result.searchParams.toString()).toBe('filter=new&page=2&unknown=preserved');
+        expect(searchParams.toString()).toBe('filter=old&page=1&unknown=preserved');
+    });
+
+    it('treats the literal null as an absent value', () => {
+        // Arrange
+        const searchParams = new URLSearchParams('filter=old&page=1');
+        const state = parseURL(searchParams, schema);
+
+        // Act
+        const result = applyQueryParamUpdates(state, searchParams, { filter: 'null' }, schema);
+
+        // Assert
+        expect(result.state.filter).toBeNull();
+        expect(result.searchParams.toString()).toBe('page=1');
+    });
+
+    it('resets schema values to defaults without removing unknown parameters', () => {
+        // Arrange
+        const searchParams = new URLSearchParams('filter=old&page=2&unknown=preserved');
+        const state = parseURL(searchParams, schema);
+
+        // Act
+        const result = resetQueryParams(state, searchParams, schema, { filter: 'default', page: 1 });
+
+        // Assert
+        expect(result.state).toEqual({ date: null, filter: 'default', page: 1 });
+        expect(result.searchParams.toString()).toBe('unknown=preserved');
+        expect(result.stateChanged).toBe(true);
+        expect(result.urlChanged).toBe(true);
+    });
+});
+
+describe('query parameter proxy', () => {
+    it('delegates property and batch updates to one update operation', () => {
+        // Arrange
+        const schema = { filter: 'string', page: 'number' } satisfies Schema;
+        const state = { filter: null, page: 1 };
+        const update = vi.fn();
+        const reset = vi.fn();
+        const toURLSearchParams = vi.fn(() => new URLSearchParams('page=1'));
+        const queryParams = createProxy(state, schema, { reset, toURLSearchParams, update });
 
         // Act
         queryParams.page = 2;
+        queryParams.update({ filter: 'new', page: 3 });
+        queryParams.reset();
+        const searchParams = queryParams.toURLSearchParams();
 
         // Assert
-        expect(onUpdate).toHaveBeenCalledOnce();
-        expect(onUpdate).toHaveBeenCalledWith('page', '2');
+        expect(update).toHaveBeenNthCalledWith(1, { page: 2 });
+        expect(update).toHaveBeenNthCalledWith(2, { filter: 'new', page: 3 });
+        expect(reset).toHaveBeenCalledOnce();
+        expect(searchParams.toString()).toBe('page=1');
     });
 });
 
 describe('query parameter URL synchronization', () => {
-    it('changes search parameters only when their serialized value changes', () => {
+    it('runs immediately when debouncing is disabled', () => {
         // Arrange
-        const searchParams = new URLSearchParams('page=1&filter=value');
+        const synchronize = vi.fn();
+        const synchronizeImmediately = debounce(synchronize, false);
 
-        // Act and assert
-        expect(setSearchParamIfChanged(searchParams, 'page', '1')).toBe(false);
-        expect(setSearchParamIfChanged(searchParams, 'missing', null)).toBe(false);
-        expect(setSearchParamIfChanged(searchParams, 'page', '2')).toBe(true);
-        expect(setSearchParamIfChanged(searchParams, 'filter', null)).toBe(true);
-        expect(searchParams.toString()).toBe('page=2');
-    });
+        // Act
+        synchronizeImmediately();
 
-    it('clears matching paths only when they exist', () => {
-        // Arrange
-        const searchParams = new URLSearchParams('filters.0=a&filters.1=b&page=1');
-
-        // Act and assert
-        expect(clearSearchParamPaths(searchParams, 'missing')).toBe(false);
-        expect(clearSearchParamPaths(searchParams, 'filters')).toBe(true);
-        expect(searchParams.toString()).toBe('page=1');
+        // Assert
+        expect(synchronize).toHaveBeenCalledOnce();
     });
 
     it('cancels pending synchronization before it runs', async () => {

@@ -69,10 +69,10 @@
 
     import {
         ALL_TIME_QUERY_VALUE,
-        clearListFilterQueryParams,
         deserializeTimeQueryParam,
         getEventsNavigationOptionsForFilter,
         getListFilterQueryParams,
+        LIST_FILTER_QUERY_PARAM_RESET,
         type ListFilterQueryParams,
         redirectToEventsWithFilter,
         serializeTimeQueryParam
@@ -299,8 +299,7 @@
             }
 
             updateFilterCache(filterCacheKey(DEFAULT_FILTER), DEFAULT_FILTERS);
-            //params.$reset(); // Work around for https://github.com/beynar/kit-query-params/issues/7
-            Object.assign(queryParams, DEFAULT_PARAMS);
+            queryParams.update(DEFAULT_PARAMS);
             reset();
         },
         { lazy: true }
@@ -427,7 +426,7 @@
 
     function handleResetToSaved(): void {
         isInternalFilterUpdate = false;
-        clearListFilterQueryParams(queryParams);
+        queryParams.update(LIST_FILTER_QUERY_PARAM_RESET);
         savedViewsState.handleResetToSaved();
         filters = getCurrentFilters();
     }
@@ -490,9 +489,6 @@
         const paginationWillChange = shouldClearPaginationForFilter && (queryParams.after != null || queryParams.before != null || queryParams.page != null);
 
         updateFilterCache(filterCacheKey(filter), updatedFilters);
-        if (shouldClearPaginationForFilter) {
-            clearPaginationQueryParams();
-        }
 
         // Only skip the watch when the URL will actually change from our update.
         // If the URL doesn't change, the watch won't fire and the flag would stay stale.
@@ -500,25 +496,24 @@
             isInternalFilterUpdate = true;
         }
 
-        queryParams.bot = queryFilterParams.bot;
-        queryParams.first = queryFilterParams.first;
-        queryParams.level = queryFilterParams.level;
-        queryParams.project = queryFilterParams.project;
-        queryParams.reference = queryFilterParams.reference;
-        queryParams.session = queryFilterParams.session;
-        queryParams.stack = queryFilterParams.stack;
-        queryParams.status = queryFilterParams.status;
-        queryParams.tag = queryFilterParams.tag;
-        queryParams.type = queryFilterParams.type;
-        queryParams.version = queryFilterParams.version;
-        queryParams.time = newTimeParam;
-        queryParams.filter = newFilterParam;
-    }
-
-    function clearPaginationQueryParams(): void {
-        queryParams.after = null;
-        queryParams.before = null;
-        queryParams.page = null;
+        queryParams.update({
+            after: shouldClearPaginationForFilter ? null : queryParams.after,
+            before: shouldClearPaginationForFilter ? null : queryParams.before,
+            bot: queryFilterParams.bot,
+            filter: newFilterParam,
+            first: queryFilterParams.first,
+            level: queryFilterParams.level,
+            page: shouldClearPaginationForFilter ? null : queryParams.page,
+            project: queryFilterParams.project,
+            reference: queryFilterParams.reference,
+            session: queryFilterParams.session,
+            stack: queryFilterParams.stack,
+            status: queryFilterParams.status,
+            tag: queryFilterParams.tag,
+            time: newTimeParam,
+            type: queryFilterParams.type,
+            version: queryFilterParams.version
+        });
     }
 
     $effect(() => {

@@ -39,12 +39,8 @@ export default ts.config(
         ignores: ['.agents/', 'build/', '.svelte-kit/', 'dist/', 'src/lib/generated/', 'src/lib/features/shared/components/ui/']
     },
     {
-        files: ['src/lib/vendor/kit-query-params/**/*.ts'],
-        ignores: ['src/lib/vendor/kit-query-params/**/*.test.ts'],
+        files: ['src/lib/vendor/kit-query-params/index.svelte.ts'],
         rules: {
-            '@typescript-eslint/no-explicit-any': 'off',
-            '@typescript-eslint/no-unsafe-function-type': 'off',
-            '@typescript-eslint/no-unused-expressions': 'off',
             'svelte/prefer-svelte-reactivity': 'off'
         }
     },

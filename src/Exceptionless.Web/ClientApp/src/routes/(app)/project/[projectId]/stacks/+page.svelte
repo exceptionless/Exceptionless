@@ -72,7 +72,7 @@
         () => {
             selectedStackId = undefined;
             updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
-            Object.assign(queryParams, DEFAULT_PARAMS);
+            queryParams.update(DEFAULT_PARAMS);
             reset();
         },
         { lazy: true }
