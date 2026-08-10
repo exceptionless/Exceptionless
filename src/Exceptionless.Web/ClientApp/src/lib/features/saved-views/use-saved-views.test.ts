@@ -577,6 +577,38 @@ describe('useSavedViews', () => {
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'stacks'))).toEqual([otherView]);
         });
 
+        it('preserves a pending reconciliation when a cached view is removed', async () => {
+            // Arrange
+            vi.useFakeTimers();
+            const queryClient = new QueryClient();
+            const removedView = buildSavedView({ id: 'view-1', name: 'Removed View' });
+            queryClient.setQueryData(queryKeys.organization(TEST_ORG_ID), [removedView]);
+            const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries').mockImplementation(async () => {});
+
+            // Act
+            await invalidateSavedViewQueries(queryClient, {
+                change_type: ChangeType.Added,
+                data: {},
+                organization_id: TEST_ORG_ID,
+                type: 'SavedView'
+            });
+            await invalidateSavedViewQueries(queryClient, {
+                change_type: ChangeType.Removed,
+                data: {},
+                id: removedView.id,
+                organization_id: TEST_ORG_ID,
+                type: 'SavedView'
+            });
+
+            // Assert
+            expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([]);
+            expect(invalidateSpy).not.toHaveBeenCalled();
+
+            await vi.advanceTimersByTimeAsync(SAVED_VIEW_REFRESH_DELAY_MS);
+            expect(invalidateSpy).toHaveBeenCalledOnce();
+            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.organization(TEST_ORG_ID) });
+        });
+
         it('falls back to invalidation for Removed events when view is not cached', async () => {
             // Arrange
             const queryClient = new QueryClient();

@@ -18,7 +18,6 @@ export async function invalidateSavedViewQueries(queryClient: QueryClient, messa
 
     // Removals: evict from cache immediately without a refetch.
     if (change_type === ChangeType.Removed) {
-        cancelScheduledSavedViewInvalidation(queryClient, organization_id);
         if (id && organization_id) {
             const cached = queryClient.getQueryData<SavedView[]>(queryKeys.organization(organization_id));
             const savedView = cached?.find((v) => v.id === id);
