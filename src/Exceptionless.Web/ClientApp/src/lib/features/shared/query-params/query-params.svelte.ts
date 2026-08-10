@@ -32,9 +32,11 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     };
 
     const scheduleSynchronization = createDebouncedFunction(synchronizeURL, debounceMilliseconds);
-    beforeNavigate(() => {
+    beforeNavigate(({ type }) => {
         scheduleSynchronization.cancel();
-        synchronizeURL();
+        if (type !== 'popstate') {
+            synchronizeURL();
+        }
     });
     onDestroy(scheduleSynchronization.cancel);
 

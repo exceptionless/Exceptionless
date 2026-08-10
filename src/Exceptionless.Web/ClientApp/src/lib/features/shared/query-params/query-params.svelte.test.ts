@@ -54,10 +54,10 @@ describe('createQueryParameters', () => {
         // Arrange
         render(QueryParametersTestHarness);
         await fireEvent.click(screen.getByRole('button', { name: 'First' }));
-        const beforeNavigation = navigation.beforeNavigate.mock.calls[0]?.[0] as (() => void) | undefined;
+        const beforeNavigation = navigation.beforeNavigate.mock.calls[0]?.[0] as ((navigation: { type: string }) => void) | undefined;
 
         // Act
-        beforeNavigation?.();
+        beforeNavigation?.({ type: 'link' });
         await vi.advanceTimersByTimeAsync(200);
 
         // Assert
@@ -65,6 +65,26 @@ describe('createQueryParameters', () => {
         expect(navigation.pushState).toHaveBeenCalledOnce();
         expect(navigation.pushState).toHaveBeenCalledWith('?filter=first', pageState);
         expect(window.location.search).toBe('?filter=first');
+    });
+
+    it('discards a pending update when popstate has already changed the location', async () => {
+        // Arrange
+        render(QueryParametersTestHarness);
+        await fireEvent.click(screen.getByRole('button', { name: 'First' }));
+        const beforeNavigation = navigation.beforeNavigate.mock.calls[0]?.[0] as ((navigation: { type: string }) => void) | undefined;
+        window.history.replaceState(pageState, '', '?filter=previous');
+
+        // Act
+        beforeNavigation?.({ type: 'popstate' });
+        window.dispatchEvent(new PopStateEvent('popstate', { state: pageState }));
+        await vi.advanceTimersByTimeAsync(200);
+        await tick();
+
+        // Assert
+        expect(beforeNavigation).toBeDefined();
+        expect(navigation.pushState).not.toHaveBeenCalled();
+        expect(window.location.search).toBe('?filter=previous');
+        expect(screen.getByText('previous').textContent).toBe('previous');
     });
 
     it('restores reactive state when shallow history is traversed', async () => {
