@@ -50,6 +50,25 @@ test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2
         await expect(getVisibleText(page, journey.message)).toBeVisible();
     });
 
+    await test.step('persist removal of a saved filter through reload', async () => {
+        const referenceFilter = page
+            .getByRole('button', { name: new RegExp(`^Reference\\s+${escapeRegExp(journey.referenceId)}`) })
+            .filter({ visible: true })
+            .first();
+        await referenceFilter.press('Enter');
+        await page.getByRole('button', { name: 'Remove filter' }).click();
+
+        await expect(page).toHaveURL(/[?&]reference=(?:&|$)/);
+        await page.reload();
+        await expect(page).toHaveURL(/[?&]reference=(?:&|$)/);
+        await expect(referenceFilter).toHaveCount(0);
+
+        await openViewMenu(page);
+        await page.getByRole('menuitem', { name: 'Reset to Saved' }).click();
+        await expect(page).not.toHaveURL(/[?&]reference=/);
+        await expect(referenceFilter).toBeVisible();
+    });
+
     await test.step('reset route-specific filter overrides to the saved view', async () => {
         await page.goto(`/next/event/${viewSlug}?project=${e2eScenario.projectId}`);
         await openViewMenu(page);

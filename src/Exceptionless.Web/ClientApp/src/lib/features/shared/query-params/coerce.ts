@@ -5,7 +5,7 @@ export function coerceQueryParameter<T extends QueryParameterType>(
     value: unknown,
     fallback: QueryParameterTypeOutput<T> = null as QueryParameterTypeOutput<T>
 ): QueryParameterTypeOutput<T> {
-    if (value === undefined || value === null || value === '' || value === 'null') {
+    if (value === undefined || value === null || value === 'null' || (value === '' && parameterType !== 'string')) {
         return fallback;
     }
 

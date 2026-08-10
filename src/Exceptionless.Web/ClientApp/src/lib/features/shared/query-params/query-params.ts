@@ -120,7 +120,7 @@ function queryParameterValuesEqual(current: unknown, next: unknown): boolean {
 }
 
 function setSearchParameter(searchParams: URLSearchParams, key: string, value: null | string): void {
-    if (value === null || value === '') {
+    if (value === null) {
         searchParams.delete(key);
     } else {
         searchParams.set(key, value);
@@ -142,7 +142,7 @@ function stringifyQueryParameter(parameterType: QueryParameterType, value: Query
         }
 
         case 'string': {
-            return typeof value === 'string' && value ? value : null;
+            return typeof value === 'string' ? value : null;
         }
 
         default: {

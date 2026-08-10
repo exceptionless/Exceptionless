@@ -73,6 +73,22 @@ describe('query parameter updates', () => {
         expect(result.state.filter).toBeNull();
         expect(result.searchParams.toString()).toBe('page=1');
     });
+
+    it('preserves empty string markers only for string parameters', () => {
+        // Arrange
+        const searchParams = new URLSearchParams('filter=old&page=1');
+        const state = parseQueryParameters(searchParams, schema);
+        const values = { filter: '', page: '' } as unknown as Partial<QueryParameterInput<typeof schema>>;
+
+        // Act
+        const result = applyQueryParameterUpdates(state, searchParams, values, schema);
+        const reparsed = parseQueryParameters(result.searchParams, schema);
+
+        // Assert
+        expect(result.state).toEqual({ date: null, filter: '', page: null });
+        expect(result.searchParams.toString()).toBe('filter=');
+        expect(reparsed).toEqual({ date: null, filter: '', page: null });
+    });
 });
 
 describe('query parameter proxy', () => {
