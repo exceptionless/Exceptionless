@@ -181,7 +181,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task SetEventCounterAsync_WhenIncomingValuesAreOlderOrLower_ShouldOnlyApplyMonotonicUpdates()
+    public async Task SetEventCounterAsync_WithNonMonotonicInputs_AppliesOnlyMonotonicUpdates()
     {
         // Arrange
         var originalFirst = new DateTime(2026, 2, 15, 0, 0, 0, DateTimeKind.Utc);
@@ -224,6 +224,123 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
         Assert.Equal(15, updated.TotalOccurrences);
         Assert.Equal(originalFirst.AddDays(-1), updated.FirstOccurrence);
         Assert.Equal(originalLast.AddDays(1), updated.LastOccurrence);
+    }
+
+    [Fact]
+    public async Task IncrementEventCounterAsync_WithReconciledRedirect_MarksReconciliationPending()
+    {
+        // Arrange
+        var source = await CreateReconciledRedirectAsync();
+
+        // Act
+        await _repository.IncrementEventCounterAsync(
+            source.OrganizationId,
+            source.ProjectId,
+            source.Id,
+            source.FirstOccurrence,
+            source.LastOccurrence.AddMinutes(1),
+            1,
+            sendNotifications: false);
+
+        // Assert
+        var updated = await _repository.GetByIdAsync(source.Id, o => o.IncludeSoftDeletes().ImmediateConsistency());
+        Assert.NotNull(updated);
+        Assert.True(updated.NeedsRedirectReconciliation);
+        Assert.Equal(source.TotalOccurrences + 1, updated.TotalOccurrences);
+    }
+
+    [Fact]
+    public async Task SetEventCounterAsync_WithReconciledRedirect_MarksReconciliationPending()
+    {
+        // Arrange
+        var source = await CreateReconciledRedirectAsync();
+
+        // Act
+        await _repository.SetEventCounterAsync(
+            source.Id,
+            source.FirstOccurrence.AddMinutes(-1),
+            source.LastOccurrence.AddMinutes(1),
+            source.TotalOccurrences + 1,
+            sendNotifications: false);
+
+        // Assert
+        var updated = await _repository.GetByIdAsync(source.Id, o => o.IncludeSoftDeletes().ImmediateConsistency());
+        Assert.NotNull(updated);
+        Assert.True(updated.NeedsRedirectReconciliation);
+        Assert.Equal(source.TotalOccurrences + 1, updated.TotalOccurrences);
+    }
+
+    [Fact]
+    public async Task MarkDuplicateStackReconciledAsync_WithCounterUpdateAfterRead_LeavesReconciliationPending()
+    {
+        // Arrange
+        var target = _stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId);
+        var source = target.DeepClone();
+        source.Id = ObjectId.GenerateNewId().ToString();
+        source.TotalOccurrences = 10;
+        await _repository.AddAsync([target, source], o => o.ImmediateConsistency());
+        await _repository.SetDuplicateStackRedirectAsync(source, target.Id, isDeleted: true);
+
+        var staleSource = await _repository.GetByIdAsync(source.Id, o => o.IncludeSoftDeletes().ImmediateConsistency());
+        Assert.NotNull(staleSource);
+
+        await _repository.IncrementEventCounterAsync(
+            source.OrganizationId,
+            source.ProjectId,
+            source.Id,
+            source.FirstOccurrence,
+            source.LastOccurrence.AddMinutes(1),
+            1,
+            sendNotifications: false);
+
+        // Act
+        await _repository.MarkDuplicateStackReconciledAsync(staleSource);
+
+        // Assert
+        var updated = await _repository.GetByIdAsync(source.Id, o => o.IncludeSoftDeletes().ImmediateConsistency());
+        Assert.NotNull(updated);
+        Assert.True(updated.NeedsRedirectReconciliation);
+        Assert.Equal(source.TotalOccurrences + 1, updated.TotalOccurrences);
+    }
+
+    [Fact]
+    public async Task MarkDuplicateStackReconciledAsync_WithDateOnlyUpdateAtSameTimestamp_LeavesReconciliationPending()
+    {
+        // Arrange: keep updated_utc identical so the occurrence bounds must fence the write.
+        TimeProvider.SetUtcNow(new DateTime(2026, 8, 9, 12, 0, 0, DateTimeKind.Utc));
+        var target = _stackData.GenerateStack(
+            generateId: true,
+            organizationId: TestConstants.OrganizationId,
+            projectId: TestConstants.ProjectId,
+            totalOccurrences: 10);
+        var source = target.DeepClone();
+        source.Id = ObjectId.GenerateNewId().ToString();
+        await _repository.AddAsync([target, source], o => o.ImmediateConsistency());
+        await _repository.SetDuplicateStackRedirectAsync(source, target.Id, isDeleted: true);
+
+        var staleSource = await _repository.GetByIdAsync(source.Id, o => o.IncludeSoftDeletes().ImmediateConsistency());
+        Assert.NotNull(staleSource);
+        DateTime earlierFirstOccurrence = staleSource.FirstOccurrence.AddMinutes(-1);
+        DateTime laterLastOccurrence = staleSource.LastOccurrence.AddMinutes(1);
+
+        await _repository.SetEventCounterAsync(
+            source.Id,
+            earlierFirstOccurrence,
+            laterLastOccurrence,
+            staleSource.TotalOccurrences,
+            sendNotifications: false);
+
+        // Act
+        await _repository.MarkDuplicateStackReconciledAsync(staleSource);
+
+        // Assert
+        var updated = await _repository.GetByIdAsync(source.Id, o => o.IncludeSoftDeletes().ImmediateConsistency());
+        Assert.NotNull(updated);
+        Assert.True(updated.NeedsRedirectReconciliation);
+        Assert.Equal(staleSource.TotalOccurrences, updated.TotalOccurrences);
+        Assert.Equal(earlierFirstOccurrence, updated.FirstOccurrence);
+        Assert.Equal(laterLastOccurrence, updated.LastOccurrence);
+        Assert.Equal(staleSource.UpdatedUtc, updated.UpdatedUtc);
     }
 
     [Fact]
@@ -356,19 +473,38 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
     [Fact]
     public async Task GetCanonicalStackAsync_WithRedirect_ReturnsActiveTarget()
     {
-        var target = _stackData.GenerateSampleStack();
+        // Arrange
+        var target = _stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId);
         var source = target.DeepClone();
         source.Id = ObjectId.GenerateNewId().ToString();
         source.IsDeleted = true;
         source.RedirectToStackId = target.Id;
         await _repository.AddAsync([target, source], o => o.ImmediateConsistency());
 
+        // Act
         var canonical = await _repository.GetCanonicalStackAsync(source.Id);
+
+        // Assert
+        Assert.NotNull(canonical);
+        Assert.Equal(target.Id, canonical.Id);
+    }
+
+    [Fact]
+    public async Task AddEventTagsAsync_WithRedirect_UpdatesCanonicalTarget()
+    {
+        // Arrange
+        var target = _stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId);
+        var source = target.DeepClone();
+        source.Id = ObjectId.GenerateNewId().ToString();
+        source.IsDeleted = true;
+        source.RedirectToStackId = target.Id;
+        await _repository.AddAsync([target, source], o => o.ImmediateConsistency());
+
+        // Act
         await _repository.AddEventTagsAsync(source.Id, ["redirected-tag"]);
         var updatedTarget = await _repository.GetByIdAsync(target.Id, o => o.ImmediateConsistency());
 
-        Assert.NotNull(canonical);
-        Assert.Equal(target.Id, canonical.Id);
+        // Assert
         Assert.NotNull(updatedTarget);
         Assert.Contains("redirected-tag", updatedTarget.Tags);
     }
@@ -574,6 +710,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
         // Arrange
         var target = _stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId);
         target.CreatedUtc = new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Utc);
+        target.FirstOccurrence = new DateTime(2026, 1, 2, 1, 0, 0, DateTimeKind.Utc);
         target.LastOccurrence = new DateTime(2026, 1, 2, 1, 0, 0, DateTimeKind.Utc);
         target.TotalOccurrences = 100;
         target.SnoozeUntilUtc = null;
@@ -583,6 +720,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
 
         var source = _stackData.GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId);
         source.CreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        source.FirstOccurrence = new DateTime(2026, 1, 1, 1, 0, 0, DateTimeKind.Utc);
         source.LastOccurrence = new DateTime(2026, 1, 3, 1, 0, 0, DateTimeKind.Utc);
         source.TotalOccurrences = 10;
         source.Status = StackStatus.Fixed;
@@ -618,6 +756,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
         Assert.NotNull(merged);
         Assert.Equal(110, merged.TotalOccurrences);
         Assert.Equal(source.CreatedUtc, merged.CreatedUtc);
+        Assert.Equal(source.FirstOccurrence, merged.FirstOccurrence);
         Assert.Equal(source.LastOccurrence, merged.LastOccurrence);
         Assert.Equal(StackStatus.Fixed, merged.Status);
         Assert.Null(merged.SnoozeUntilUtc);
@@ -638,5 +777,27 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
         Assert.NotNull(merged);
         Assert.Equal(115, merged.TotalOccurrences);
         Assert.Equal(source.LastOccurrence, merged.LastOccurrence);
+    }
+
+    private async Task<Stack> CreateReconciledRedirectAsync()
+    {
+        var target = _stackData.GenerateStack(
+            generateId: true,
+            organizationId: TestConstants.OrganizationId,
+            projectId: TestConstants.ProjectId);
+        var source = target.DeepClone();
+        source.Id = ObjectId.GenerateNewId().ToString();
+        source.TotalOccurrences = 10;
+        await _repository.AddAsync([target, source], o => o.ImmediateConsistency());
+        await _repository.SetDuplicateStackRedirectAsync(source, target.Id, isDeleted: true);
+
+        source = await _repository.GetByIdAsync(source.Id, o => o.IncludeSoftDeletes().ImmediateConsistency())
+            ?? throw new InvalidOperationException();
+        await _repository.MarkDuplicateStackReconciledAsync(source);
+
+        source = await _repository.GetByIdAsync(source.Id, o => o.IncludeSoftDeletes().ImmediateConsistency())
+            ?? throw new InvalidOperationException();
+        Assert.False(source.NeedsRedirectReconciliation);
+        return source;
     }
 }

@@ -75,18 +75,21 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
 
             var page = await _eventRepository.GetDistinctStackIdsAsync(500, nextValue, context.CancellationToken);
             var stackIds = page.Values;
-            if (stackIds.Count == 0)
+            if (stackIds.Count is 0)
                 break;
 
             nextValue = page.NextValue;
             hasMore = !String.IsNullOrEmpty(nextValue);
             totalStackIds += stackIds.Count;
 
+            // Keep this destructive existence check on real-time multi-get. An OnlyIds search can
+            // continue with stale results after a failed refresh, and IsDeleted must be hydrated
+            // because default soft-delete filtering is applied client-side to multi-get results.
             var existingStacks = await _stackRepository.GetByIdsAsync(stackIds.ToArray(), o => o.Include(s => s.Id, s => s.IsDeleted));
             var existingStackIds = existingStacks.Select(s => s.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
             string[] missingStackIds = stackIds.Where(id => !existingStackIds.Contains(id)).ToArray();
 
-            if (missingStackIds.Length == 0)
+            if (missingStackIds.Length is 0)
                 continue;
 
             // Redirect tombstones are intentionally retained so events from an in-flight ingestion
@@ -107,10 +110,12 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                 await ReconcileRedirectedStacksAsync(redirectedStackDocuments, context);
 
             string[] orphanedStackIds = missingStackIds.Where(id => !redirectedStackIds.Contains(id)).ToArray();
-            if (orphanedStackIds.Length == 0)
+            if (orphanedStackIds.Length is 0)
                 continue;
 
-            long deletedCount = await _eventRepository.RemoveAllByStackIdsAsync(orphanedStackIds, o => o.Notifications(false));
+            long deletedCount = await _eventRepository.RemoveAllAsync(
+                q => q.Stack(orphanedStackIds),
+                o => o.Notifications(false));
             totalOrphanedEvents += deletedCount;
 
             _logger.LogInformation("Deleted {DeletedCount} orphaned events from {MissingStackCount} missing stacks out of {StackIdCount} checked", deletedCount, orphanedStackIds.Length, stackIds.Count);
@@ -135,7 +140,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
 
             var page = await _eventRepository.GetDistinctProjectIdsAsync(500, nextValue, context.CancellationToken);
             var projectIds = page.Values;
-            if (projectIds.Count == 0)
+            if (projectIds.Count is 0)
                 break;
 
             nextValue = page.NextValue;
@@ -146,10 +151,12 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             var existingProjectIds = existingProjects.Select(p => p.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
             string[] missingProjectIds = projectIds.Where(id => !existingProjectIds.Contains(id)).ToArray();
 
-            if (missingProjectIds.Length == 0)
+            if (missingProjectIds.Length is 0)
                 continue;
 
-            long deletedCount = await _eventRepository.RemoveAllByProjectIdsAsync(missingProjectIds, o => o.Notifications(false));
+            long deletedCount = await _eventRepository.RemoveAllAsync(
+                q => q.Project(missingProjectIds),
+                o => o.Notifications(false));
             totalOrphanedEvents += deletedCount;
 
             _logger.LogInformation("Deleted {DeletedCount} orphaned events from {MissingProjectCount} missing projects out of {ProjectIdCount} checked", deletedCount, missingProjectIds.Length, projectIds.Count);
@@ -172,7 +179,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
 
             var page = await _eventRepository.GetDistinctOrganizationIdsAsync(500, nextValue, context.CancellationToken);
             var organizationIds = page.Values;
-            if (organizationIds.Count == 0)
+            if (organizationIds.Count is 0)
                 break;
 
             nextValue = page.NextValue;
@@ -183,10 +190,12 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             var existingOrganizationIds = existingOrganizations.Select(organization => organization.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
             string[] missingOrganizationIds = organizationIds.Where(id => !existingOrganizationIds.Contains(id)).ToArray();
 
-            if (missingOrganizationIds.Length == 0)
+            if (missingOrganizationIds.Length is 0)
                 continue;
 
-            long deletedCount = await _eventRepository.RemoveAllByOrganizationIdsAsync(missingOrganizationIds, o => o.Notifications(false));
+            long deletedCount = await _eventRepository.RemoveAllAsync(
+                q => q.Organization(missingOrganizationIds),
+                o => o.Notifications(false));
             totalOrphanedEvents += deletedCount;
 
             _logger.LogInformation("Deleted {DeletedCount} orphaned events from {MissingOrganizationCount} missing organizations out of {OrganizationIdCount} checked", deletedCount, missingOrganizationIds.Length, organizationIds.Count);
@@ -212,7 +221,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
         while (!context.CancellationToken.IsCancellationRequested)
         {
             var duplicateSignatures = await _stackRepository.GetDuplicateSignaturesAsync();
-            if (duplicateSignatures.Count == 0)
+            if (duplicateSignatures.Count is 0)
                 break;
 
             batch++;
@@ -247,7 +256,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                     }
 
                     var targetCandidates = stacks.Documents.Where(s => String.IsNullOrEmpty(s.RedirectToStackId)).ToList();
-                    if (targetCandidates.Count == 0)
+                    if (targetCandidates.Count is 0)
                     {
                         _logger.LogError("Did not find a canonical stack for signature {SignatureHash} and project {ProjectId}", signature, projectId);
                         continue;
@@ -326,7 +335,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
 
             // If nothing was processed this batch (all errors), stop to avoid an infinite loop
             // where the same failing signatures are retried indefinitely.
-            if (batchProcessed == 0)
+            if (batchProcessed is 0)
                 break;
         }
 
@@ -397,14 +406,24 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
 
             foreach (var sourceStack in group.Sources)
             {
+                var reconciliationSnapshot = sourceStack;
                 if (!sourceStack.IsDeleted)
                 {
                     await _stackRepository.SetDuplicateStackRedirectAsync(sourceStack, group.Target.Id, isDeleted: true);
-                    sourceStack.IsDeleted = true;
-                    sourceStack.RedirectToStackId = group.Target.Id;
+                    reconciliationSnapshot = await _stackRepository.GetByIdAsync(
+                        sourceStack.Id,
+                        o => o.IncludeSoftDeletes().ImmediateConsistency())
+                        ?? throw new DocumentNotFoundException(sourceStack.Id);
+
+                    // A counter can land between the first metadata merge and finalization. Merge
+                    // the fresh tombstone before clearing so that late delta is never acknowledged
+                    // without first being applied to the canonical target.
+                    await _stackRepository.MergeDuplicateStackAsync(group.Target.Id, reconciliationSnapshot);
                 }
 
-                await _stackRepository.MarkDuplicateStackReconciledAsync(sourceStack);
+                // Clear against the snapshot that was actually merged. A still-later counter
+                // update changes updated_utc, fails this compare-and-set, and remains retryable.
+                await _stackRepository.MarkDuplicateStackReconciledAsync(reconciliationSnapshot);
             }
 
             if (reassigned > 0)

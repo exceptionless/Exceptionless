@@ -137,6 +137,11 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
     [JsonIgnoreForExternalSerialization]
     internal IDictionary<string, int> MergedDuplicateStackTotals { get; set; } = new Dictionary<string, int>();
 
+    /// <summary>
+    /// Marks a redirect tombstone whose counters changed after its events may already have been
+    /// reassigned. With no source events left, the orphan scan cannot rediscover that late update;
+    /// this durable marker lets cleanup replay the idempotent contribution ledger instead.
+    /// </summary>
     [JsonInclude]
     [JsonIgnoreForExternalSerialization]
     internal bool NeedsRedirectReconciliation { get; set; }
