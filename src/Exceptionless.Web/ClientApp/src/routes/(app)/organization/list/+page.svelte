@@ -14,9 +14,9 @@
     import { organization } from '$features/organizations/context.svelte';
     import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
     import { ORGANIZATION_USAGE_REFETCH_INTERVAL_MS } from '$features/organizations/utils';
+    import { queryParamsState } from '$lib/vendor/kit-query-params/index.svelte';
     import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
-    import { queryParamsState } from 'kit-query-params';
 
     const DEFAULT_PARAMS = {
         filter: ''

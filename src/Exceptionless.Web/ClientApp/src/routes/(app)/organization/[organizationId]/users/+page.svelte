@@ -12,10 +12,10 @@
     import InviteUserDialog from '$features/users/components/invite-user-dialog.svelte';
     import { getTableOptions } from '$features/users/components/table/options.svelte';
     import UsersDataTable from '$features/users/components/table/users-data-table.svelte';
+    import { queryParamsState } from '$lib/vendor/kit-query-params/index.svelte';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
     import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
-    import { queryParamsState } from 'kit-query-params';
     import { toast } from 'svelte-sonner';
 
     const organizationId = organization.current!;

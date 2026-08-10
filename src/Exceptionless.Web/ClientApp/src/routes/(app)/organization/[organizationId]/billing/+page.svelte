@@ -14,10 +14,10 @@
     import { getInvoicesQuery, getOrganizationQuery } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import GlobalUser from '$features/users/components/global-user.svelte';
+    import { queryParamsState } from '$lib/vendor/kit-query-params/index.svelte';
     import CreditCard from '@lucide/svelte/icons/credit-card';
     import File from '@lucide/svelte/icons/file';
     import MoreHorizontal from '@lucide/svelte/icons/more-horizontal';
-    import { queryParamsState } from 'kit-query-params';
 
     const organizationQuery = getOrganizationQuery({
         route: {

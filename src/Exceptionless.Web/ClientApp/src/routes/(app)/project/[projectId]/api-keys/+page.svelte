@@ -13,11 +13,11 @@
     import { getTableOptions } from '$features/tokens/components/table/options.svelte';
     import TokensDataTable from '$features/tokens/components/table/tokens-data-table.svelte';
     import { createProjectToken, type ProjectTokenScope } from '$features/tokens/project-token';
+    import { queryParamsState } from '$lib/vendor/kit-query-params/index.svelte';
     import FileCode from '@lucide/svelte/icons/file-code-2';
     import KeyRound from '@lucide/svelte/icons/key-round';
     import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
-    import { queryParamsState } from 'kit-query-params';
     import { toast } from 'svelte-sonner';
 
     const projectId = $derived(page.params.projectId || '');

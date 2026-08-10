@@ -10,31 +10,6 @@ vi.mock('$app/paths', () => ({
 }));
 
 describe('redirect-to-events', () => {
-    it('does not write unchanged query parameters through reactive proxies', async () => {
-        // Arrange
-        const { setQueryParamIfChanged } = await import('./redirect-to-events.svelte');
-        let writes = 0;
-        const queryParams = new Proxy(
-            { time: '1d' },
-            {
-                set(target, key, value) {
-                    writes++;
-                    return Reflect.set(target, key, value);
-                }
-            }
-        );
-
-        // Act
-        const unchanged = setQueryParamIfChanged(queryParams, 'time', '1d');
-        const changed = setQueryParamIfChanged(queryParams, 'time', '90d');
-
-        // Assert
-        expect(unchanged).toBe(false);
-        expect(changed).toBe(true);
-        expect(queryParams.time).toBe('90d');
-        expect(writes).toBe(1);
-    });
-
     it('clears every list filter query parameter without changing unrelated state', async () => {
         // Arrange
         const { clearListFilterQueryParams } = await import('./redirect-to-events.svelte');

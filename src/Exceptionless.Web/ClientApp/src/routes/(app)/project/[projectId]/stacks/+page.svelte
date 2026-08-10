@@ -31,9 +31,9 @@
     import { StackStatus } from '$features/stacks/models';
     import { describeStackFilter, isStackFilterSupported, splitSupportedStackFilters } from '$features/stacks/stack-filter-support';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
+    import { queryParamsState } from '$lib/vendor/kit-query-params/index.svelte';
     import { DEFAULT_LIMIT } from '$shared/api/api.svelte';
     import { createTable } from '@tanstack/svelte-table';
-    import { queryParamsState } from 'kit-query-params';
     import { useEventListener, watch } from 'runed';
     import { toast } from 'svelte-sonner';
 

@@ -36,10 +36,10 @@
     import { fillDateSeries } from '$features/shared/utils/charts.js';
     import { parseDateMathRange, toDateMathRange } from '$features/shared/utils/datemath';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
+    import { queryParamsState } from '$lib/vendor/kit-query-params/index.svelte';
     import { DEFAULT_LIMIT, DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
     import { type FetchClientResponse, useFetchClient } from '@foundatiofx/fetchclient';
     import { createTable } from '@tanstack/svelte-table';
-    import { queryParamsState } from 'kit-query-params';
     import { useEventListener, watch } from 'runed';
     import { onDestroy } from 'svelte';
     import { debounce } from 'throttle-debounce';

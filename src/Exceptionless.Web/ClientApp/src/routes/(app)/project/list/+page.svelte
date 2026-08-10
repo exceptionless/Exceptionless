@@ -13,10 +13,10 @@
     import { type GetProjectsParams, getProjectsQuery } from '$features/projects/api.svelte';
     import { getTableOptions } from '$features/projects/components/table/options.svelte';
     import ProjectsDataTable from '$features/projects/components/table/projects-data-table.svelte';
+    import { queryParamsState } from '$lib/vendor/kit-query-params/index.svelte';
     import { DEFAULT_LIMIT } from '$shared/api/api.svelte';
     import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
-    import { queryParamsState } from 'kit-query-params';
 
     const DEFAULT_PARAMS = {
         filter: '',

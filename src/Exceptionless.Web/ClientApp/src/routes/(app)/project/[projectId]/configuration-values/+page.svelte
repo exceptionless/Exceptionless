@@ -10,9 +10,9 @@
     import { getTableOptions } from '$features/projects/components/table/config-options.svelte';
     import ProjectsConfigDataTable from '$features/projects/components/table/projects-config-data-table.svelte';
     import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
+    import { queryParamsState } from '$lib/vendor/kit-query-params/index.svelte';
     import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
-    import { queryParamsState } from 'kit-query-params';
     import { toast } from 'svelte-sonner';
 
     const projectId = $derived(page.params.projectId || '');

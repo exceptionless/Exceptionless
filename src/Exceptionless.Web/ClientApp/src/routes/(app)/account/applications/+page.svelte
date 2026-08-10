@@ -7,8 +7,8 @@
     import { getOAuthGrantsQuery } from '$features/users/api.svelte';
     import OAuthGrantsDataTable from '$features/users/components/oauth-grants/table/oauth-grants-data-table.svelte';
     import { getTableOptions } from '$features/users/components/oauth-grants/table/options.svelte';
+    import { queryParamsState } from '$lib/vendor/kit-query-params/index.svelte';
     import { createTable } from '@tanstack/svelte-table';
-    import { queryParamsState } from 'kit-query-params';
 
     const grantsQuery = getOAuthGrantsQuery();
     const organizationsQuery = getOrganizationsQuery({});

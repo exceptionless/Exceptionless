@@ -58,11 +58,11 @@
     import { parseDateMathRange } from '$features/shared/utils/datemath.js';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
+    import { queryParamsState } from '$lib/vendor/kit-query-params/index.svelte';
     import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
     import { type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
     import { error } from '@sveltejs/kit';
     import { createTable } from '@tanstack/svelte-table';
-    import { queryParamsState } from 'kit-query-params';
     import { useEventListener, watch } from 'runed';
     import { onDestroy, untrack } from 'svelte';
     import { debounce } from 'throttle-debounce';
@@ -75,8 +75,7 @@
         getListFilterQueryParams,
         type ListFilterQueryParams,
         redirectToEventsWithFilter,
-        serializeTimeQueryParam,
-        setQueryParamIfChanged
+        serializeTimeQueryParam
     } from '../redirect-to-events.svelte';
 
     let selectedEventId: null | string = $state(null);
@@ -501,25 +500,25 @@
             isInternalFilterUpdate = true;
         }
 
-        setQueryParamIfChanged(queryParams, 'bot', queryFilterParams.bot);
-        setQueryParamIfChanged(queryParams, 'first', queryFilterParams.first);
-        setQueryParamIfChanged(queryParams, 'level', queryFilterParams.level);
-        setQueryParamIfChanged(queryParams, 'project', queryFilterParams.project);
-        setQueryParamIfChanged(queryParams, 'reference', queryFilterParams.reference);
-        setQueryParamIfChanged(queryParams, 'session', queryFilterParams.session);
-        setQueryParamIfChanged(queryParams, 'stack', queryFilterParams.stack);
-        setQueryParamIfChanged(queryParams, 'status', queryFilterParams.status);
-        setQueryParamIfChanged(queryParams, 'tag', queryFilterParams.tag);
-        setQueryParamIfChanged(queryParams, 'type', queryFilterParams.type);
-        setQueryParamIfChanged(queryParams, 'version', queryFilterParams.version);
-        setQueryParamIfChanged(queryParams, 'time', newTimeParam);
-        setQueryParamIfChanged(queryParams, 'filter', newFilterParam);
+        queryParams.bot = queryFilterParams.bot;
+        queryParams.first = queryFilterParams.first;
+        queryParams.level = queryFilterParams.level;
+        queryParams.project = queryFilterParams.project;
+        queryParams.reference = queryFilterParams.reference;
+        queryParams.session = queryFilterParams.session;
+        queryParams.stack = queryFilterParams.stack;
+        queryParams.status = queryFilterParams.status;
+        queryParams.tag = queryFilterParams.tag;
+        queryParams.type = queryFilterParams.type;
+        queryParams.version = queryFilterParams.version;
+        queryParams.time = newTimeParam;
+        queryParams.filter = newFilterParam;
     }
 
     function clearPaginationQueryParams(): void {
-        setQueryParamIfChanged(queryParams, 'after', null);
-        setQueryParamIfChanged(queryParams, 'before', null);
-        setQueryParamIfChanged(queryParams, 'page', null);
+        queryParams.after = null;
+        queryParams.before = null;
+        queryParams.page = null;
     }
 
     $effect(() => {

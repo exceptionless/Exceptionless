@@ -135,15 +135,6 @@ export function serializeTimeQueryParam(time: string): string {
     return trimmed;
 }
 
-export function setQueryParamIfChanged<T extends object, K extends keyof T>(queryParams: T, key: K, value: T[K]): boolean {
-    if (queryParams[key] === value) {
-        return false;
-    }
-
-    queryParams[key] = value;
-    return true;
-}
-
 function trySetRegisteredFilterQueryParam(queryParams: SvelteURLSearchParams, filter: IFilter): boolean {
     if (filter.type === 'string' && filter.key === 'string-stack' && 'value' in filter && typeof filter.value === 'string' && filter.value.trim()) {
         queryParams.set('stack', filter.value);
