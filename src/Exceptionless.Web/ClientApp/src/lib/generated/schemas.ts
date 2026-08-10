@@ -301,6 +301,7 @@ export const OAuthAuthorizationServerMetadataSchema = object({
   scopes_supported: array(string()),
   resource_documentation: string().min(1, "Resource documentation is required"),
   client_id_metadata_document_supported: boolean(),
+  authorization_response_iss_parameter_supported: boolean(),
 });
 export type OAuthAuthorizationServerMetadataFormData = Infer<
   typeof OAuthAuthorizationServerMetadataSchema

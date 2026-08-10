@@ -28,12 +28,10 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         AuthorizationRoles.ProjectsRead,
         AuthorizationRoles.StacksRead,
         AuthorizationRoles.StacksWrite,
-        AuthorizationRoles.EventsRead,
-        AuthorizationRoles.OfflineAccess
+        AuthorizationRoles.EventsRead
     ],
     [
-        AuthorizationRoles.McpRead,
-        AuthorizationRoles.OfflineAccess
+        AuthorizationRoles.McpRead
     ]);
 
     public static readonly OAuthResourceDefinition RestApiResource = new("/api/v2",
@@ -242,6 +240,9 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (!String.Equals(metadata.ClientId, clientId, StringComparison.Ordinal))
             return false;
 
+        if (String.IsNullOrWhiteSpace(metadata.ClientName))
+            return false;
+
         if (metadata.GrantTypes is { Length: > 0 } && !metadata.GrantTypes.Contains(OAuthGrantTypes.AuthorizationCode, StringComparer.Ordinal))
             return false;
 
@@ -251,14 +252,11 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (!String.IsNullOrWhiteSpace(metadata.TokenEndpointAuthMethod) && !String.Equals(metadata.TokenEndpointAuthMethod, "none", StringComparison.Ordinal))
             return false;
 
-        string[] redirectUris = metadata.RedirectUris?
-            .Where(OAuthApplication.IsValidRedirectUri)
-            .Distinct(StringComparer.Ordinal)
-            .Take(20)
-            .ToArray() ?? [];
-
-        if (redirectUris.Length == 0)
+        if (metadata.RedirectUris is not { Length: > 0 and <= 20 }
+            || metadata.RedirectUris.Any(uri => !OAuthApplication.IsValidRedirectUri(uri)))
             return false;
+
+        string[] redirectUris = metadata.RedirectUris.Distinct(StringComparer.Ordinal).ToArray();
 
         var metadataScopes = NormalizeScopes(metadata.Scope);
         string[] scopes = metadataScopes.Count > 0

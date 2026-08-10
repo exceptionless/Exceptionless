@@ -333,6 +333,7 @@ public partial class Program
             app.UseDefaultFiles();
             app.UseFileServer();
             app.UseRouting();
+            app.UseMiddleware<McpOriginValidationMiddleware>();
             app.UseCors("AllowAny");
             app.UseHttpMethodOverride();
             app.UseForwardedHeaders();
