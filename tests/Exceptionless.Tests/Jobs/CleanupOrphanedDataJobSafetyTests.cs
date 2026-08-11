@@ -6,6 +6,7 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Jobs;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Exceptions;
+using Foundatio.Repositories.Options;
 using Xunit;
 
 namespace Exceptionless.Tests.Jobs;
@@ -72,6 +73,42 @@ public class CleanupOrphanedDataJobSafetyTests : IntegrationTestsBase
             _configuration.Organizations.VersionedName,
             context => _job.DeleteOrphanedEventsByOrganizationAsync(context),
             stackId);
+    }
+
+    [Fact]
+    public async Task DeleteOrphanedEventsByStackAsync_WithStackRestoredBetweenExistenceChecks_PreservesEvents()
+    {
+        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
+        await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
+        var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
+        var stack = _stackData.GenerateSampleStack();
+        stack.IsDeleted = true;
+        await _stackRepository.AddAsync(stack, o => o.ImmediateConsistency());
+        await _eventRepository.AddAsync(
+            _eventData.GenerateEvent(organization.Id, project.Id, stack.Id),
+            o => o.ImmediateConsistency());
+
+        bool restoredDuringRecheck = false;
+        var stackRepository = Assert.IsType<StackRepository>(_stackRepository);
+        using var handler = stackRepository.BeforeGet.AddHandler(async (_, args) =>
+        {
+            if (restoredDuringRecheck
+                || args.Options.GetSoftDeleteMode() is not SoftDeleteQueryMode.All
+                || !args.Ids.Any(id => String.Equals(id.Value, stack.Id, StringComparison.Ordinal)))
+            {
+                return;
+            }
+
+            restoredDuringRecheck = true;
+            stack.IsDeleted = false;
+            await _stackRepository.SaveAsync(stack, o => o.ImmediateConsistency());
+        });
+
+        await _job.DeleteOrphanedEventsByStackAsync(new JobContext(TestCancellationToken));
+
+        Assert.True(restoredDuringRecheck);
+        Assert.NotNull(await _stackRepository.GetByIdAsync(stack.Id, o => o.ImmediateConsistency()));
+        Assert.Equal(1, await _eventRepository.CountAsync(q => q.Stack(stack.Id), o => o.ImmediateConsistency()));
     }
 
     private async Task<string> CreateValidEventAsync()

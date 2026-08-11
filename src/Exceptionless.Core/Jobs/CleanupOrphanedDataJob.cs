@@ -96,25 +96,32 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             if (missingStackIds.Length is 0)
                 continue;
 
-            // Redirect tombstones are intentionally retained so events from an in-flight ingestion
-            // context can never be mistaken for orphaned data. Move those late events to the
-            // canonical stack and refresh its metadata before deleting only truly missing stacks.
-            var redirectedStacks = await _stackRepository.GetByIdsStrictAsync(
+            // Recheck missing IDs with soft deletes included: a concurrently restored active stack
+            // is still valid, and redirect tombstones are intentionally retained so events from an
+            // in-flight ingestion context can never be mistaken for orphaned data. Move late events
+            // to the canonical stack before deleting only truly missing or deleted stacks.
+            var recheckedStacks = await _stackRepository.GetByIdsStrictAsync(
                 missingStackIds,
                 o => o.SoftDeleteMode(SoftDeleteQueryMode.All),
                 context.CancellationToken);
-            var redirectedStackIds = redirectedStacks
+            var activeRecheckedStackIds = recheckedStacks
+                .Where(s => !s.IsDeleted)
+                .Select(s => s.Id)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var redirectedStackIds = recheckedStacks
                 .Where(s => !String.IsNullOrEmpty(s.RedirectToStackId))
                 .Select(s => s.Id)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var redirectedStackDocuments = redirectedStacks
+            var redirectedStackDocuments = recheckedStacks
                 .Where(s => redirectedStackIds.Contains(s.Id))
                 .ToList();
 
             if (redirectedStackDocuments.Count > 0)
                 await ReconcileRedirectedStacksAsync(redirectedStackDocuments, context);
 
-            string[] orphanedStackIds = missingStackIds.Where(id => !redirectedStackIds.Contains(id)).ToArray();
+            string[] orphanedStackIds = missingStackIds
+                .Where(id => !activeRecheckedStackIds.Contains(id) && !redirectedStackIds.Contains(id))
+                .ToArray();
             if (orphanedStackIds.Length is 0)
                 continue;
 
