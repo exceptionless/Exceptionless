@@ -51,7 +51,6 @@
     function handleStackLoaded(stack: Stack) {
         assistantPageContext.setPageStack(stack);
     }
-
     async function handleNavigate(newEventId: string) {
         await goto(buildEventDetailsHref(newEventId, stackId));
     }
