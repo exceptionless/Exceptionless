@@ -190,7 +190,7 @@
             columns: getSavedColumnSettings(),
             filter: currentFilterString || undefined,
             filter_definitions: filterDefinitions,
-            is_private: isPrivate || undefined,
+            is_private: productTourRuntime.isActive('create-saved-view') || isPrivate ? true : undefined,
             name,
             organization_id: organizationId,
             show_chart: showChart,
@@ -294,7 +294,7 @@
             </Button>
         {/snippet}
     </DropdownMenu.Trigger>
-    <DropdownMenu.Content align="end" class="w-64">
+    <DropdownMenu.Content align="end" class="w-64" data-tour="saved-view-settings">
         <DropdownMenu.Group>
             <DropdownMenu.Label>Saved View</DropdownMenu.Label>
             {#if activeView}
@@ -374,6 +374,11 @@
         defaultPrivate={productTourRuntime.isActive('create-saved-view')}
         onSave={handleSave}
         onClose={() => (isSaveDialogOpen = false)}
+        onCancel={() => {
+            if (productTourRuntime.isActive('create-saved-view')) {
+                document.dispatchEvent(new CustomEvent('product-tour:dismissed', { detail: { tourId: 'create-saved-view' } }));
+            }
+        }}
         {onLoadView}
     />
 {/if}

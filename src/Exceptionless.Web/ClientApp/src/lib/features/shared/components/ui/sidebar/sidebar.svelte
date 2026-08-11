@@ -40,6 +40,7 @@
 	>
 		<Sheet.Content
 			bind:ref
+			data-tour="app-navigation"
 			data-sidebar="sidebar"
 			data-slot="sidebar"
 			data-mobile="true"

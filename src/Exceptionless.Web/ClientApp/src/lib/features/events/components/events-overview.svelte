@@ -269,6 +269,7 @@
     $effect(() => {
         if (event && event.id !== notifiedEventId) {
             notifiedEventId = event.id;
+            document.dispatchEvent(new CustomEvent('product-tour:event-opened', { detail: { eventType: event.type } }));
             onEventLoaded?.(event);
         }
     });

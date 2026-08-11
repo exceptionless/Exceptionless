@@ -14,7 +14,7 @@
 
     import type { ProductTourContext, ProductTourId, ProductTourKey, ProductTourLaunchSource, ProductTourListItem, ProductTourStep } from '../types';
 
-    import { productTourSelector } from '../anchors';
+    import { PRODUCT_TOUR_ANCHORS, productTourSelector } from '../anchors';
     import { getProductTour, getProductTourItems, getRecommendedProductTourId } from '../catalog';
     import { shouldOfferProductTourWelcome } from '../eligibility';
     import { productTourRuntime } from '../state.svelte';
@@ -198,6 +198,16 @@
         );
     }
 
+    async function waitForCompetingOverlaysToClose(timeout = 1000): Promise<boolean> {
+        await tick();
+        const deadline = performance.now() + timeout;
+        while (hasCompetingOverlay() && performance.now() < deadline) {
+            await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+        }
+
+        return !hasCompetingOverlay();
+    }
+
     export function openCatalog(source: ProductTourLaunchSource = 'catalog'): void {
         closeOverlays();
         catalogSource = source;
@@ -218,8 +228,7 @@
         catalogOpen = false;
         welcomeOpen = false;
         closeOverlays();
-        await tick();
-        if (hasCompetingOverlay()) {
+        if (!(await waitForCompetingOverlaysToClose())) {
             toast.info('Close the open dialog or panel before starting a guided tour.');
             return;
         }
@@ -313,8 +322,10 @@
             onCloseClick: () => void dismissTour(id, definition.version, source),
             onDestroyed: () => {
                 const activeStepId = productTourRuntime.activeStepId;
+                const preservingNavigation = isNavigatingTour || (driverPath !== '' && driverPath !== pathname);
+                const preservingPendingEvent = id === 'investigate-error' && (activeStepId === 'choose-error' || readStoredState()?.stepId === 'choose-error');
                 driverInstance = undefined;
-                if (!isSuspendingInline && !isNavigatingTour) {
+                if (!isSuspendingInline && !preservingNavigation && !preservingPendingEvent) {
                     productTourRuntime.clear();
                     activeSource = undefined;
                     activeOrganizationId = undefined;
@@ -324,7 +335,7 @@
                     }
                 }
 
-                if (!isFinishing && !isSuspendingInline && !isNavigatingTour) {
+                if (!isFinishing && !isSuspendingInline && !preservingNavigation && !preservingPendingEvent) {
                     void recordProgress(id, definition.version, 'dismissed').catch(() => toast.error('We could not save your guided-tour progress.'));
                 }
             },
@@ -350,12 +361,14 @@
                     doneBtnText: 'Done',
                     nextBtnText: step.advanceOnClick ? 'Continue' : 'Next',
                     onNextClick: () => void advance(id, definition.version, source, steps, index),
-                    showButtons: getButtons(step, index, steps.length),
+                    showButtons: getButtons(step),
                     title: step.title
                 }
             }))
         });
         driverPath = pathname;
+        productTourRuntime.set(id, firstStep.id);
+        writeStoredState({ source, stepId: firstStep.resumeStepId ?? firstStep.id, tourId: id, version: definition.version });
 
         if (emitStarted) {
             void track('started', id, definition.version, source);
@@ -364,13 +377,10 @@
         driverInstance.drive(0);
     }
 
-    function getButtons(step: ProductTourStep, index: number, count: number): Array<'close' | 'next' | 'previous'> {
+    function getButtons(step: ProductTourStep): Array<'close' | 'next' | 'previous'> {
         const buttons: Array<'close' | 'next' | 'previous'> = ['close'];
-        if (index > 0) {
-            buttons.push('previous');
-        }
 
-        if (index < count - 1 || step.showDone !== false) {
+        if (step.showDone !== false) {
             buttons.push('next');
         }
 
@@ -386,6 +396,17 @@
 
         const next = steps[index + 1];
         if (!next) {
+            if (step.advanceOnClick && step.resumeStepId) {
+                isFinishing = true;
+                writeStoredState({ source, stepId: step.resumeStepId, tourId: id, version });
+                driverInstance?.destroy();
+                driverInstance = undefined;
+                productTourRuntime.clear();
+                activeSource = undefined;
+                activeOrganizationId = undefined;
+                return;
+            }
+
             await completeTour(id, version, source);
             return;
         }
@@ -414,7 +435,17 @@
             return;
         }
 
-        driverInstance?.moveNext();
+        if (driverInstance && driverPath === pathname) {
+            driverInstance.moveNext();
+        } else {
+            isNavigatingTour = true;
+            isFinishing = true;
+            driverInstance?.destroy();
+            driverInstance = undefined;
+            isNavigatingTour = false;
+            isFinishing = false;
+            await launch(id, source, next.id, false);
+        }
     }
 
     async function ensureTarget(step: ProductTourStep): Promise<boolean> {
@@ -423,6 +454,10 @@
         }
 
         const selector = productTourSelector(step.anchor);
+        if (step.anchor === PRODUCT_TOUR_ANCHORS.appNavigation && !document.querySelector(selector)) {
+            (document.querySelector(productTourSelector('mobile-navigation-trigger')) as HTMLElement | null)?.click();
+        }
+
         if (document.querySelector(selector)) {
             return true;
         }
@@ -594,12 +629,67 @@
         void dismissTour(id, definition.version, activeSource);
     }
 
+    function onInlineAdvance(event: Event): void {
+        const detail = (event as CustomEvent<{ stepId?: string; tourId?: ProductTourId }>).detail;
+        const id = detail?.tourId;
+        const stepId = detail?.stepId;
+        if (!id || !stepId || productTourRuntime.activeTourId !== id || productTourRuntime.activeStepId !== stepId || !activeSource) {
+            return;
+        }
+
+        const definition = getProductTour(id);
+        const steps = definition.getSteps(context).filter((step) => !step.optional || !step.anchor || document.querySelector(productTourSelector(step.anchor)));
+        const index = steps.findIndex((step) => step.id === stepId);
+        if (index >= 0) {
+            void advance(id, definition.version, activeSource, steps, index);
+        }
+    }
+
+    function onEventOpened(event: Event): void {
+        const eventType = (event as CustomEvent<{ eventType?: string }>).detail?.eventType;
+        const stored = readStoredState();
+        const isActiveChooseError =
+            productTourRuntime.activeTourId === 'investigate-error' && productTourRuntime.activeStepId === 'choose-error' && !!activeSource;
+        const isResumableChooseError = stored?.tourId === 'investigate-error' && stored.stepId === 'choose-error';
+        if (eventType !== 'error' || (!isActiveChooseError && !isResumableChooseError)) {
+            if (productTourRuntime.activeTourId === 'investigate-error' && eventType && eventType !== 'error') {
+                toast.info('Choose an error event to continue this guide.');
+            }
+
+            return;
+        }
+
+        const definition = getProductTour('investigate-error');
+        if (!isActiveChooseError && stored) {
+            activeSource = stored.source;
+            activeOrganizationId = organizationId;
+            productTourRuntime.set('investigate-error', 'choose-error');
+        }
+
+        const source = activeSource ?? stored?.source;
+        if (!source) {
+            return;
+        }
+
+        const steps = definition.getSteps(context).filter((step) => !step.optional || !step.anchor || document.querySelector(productTourSelector(step.anchor)));
+        const index = steps.findIndex((step) => step.id === 'choose-error');
+        if (index >= 0) {
+            productTourRuntime.set('investigate-error', 'inspect-details');
+            writeStoredState({ source, stepId: 'inspect-details', tourId: 'investigate-error', version: definition.version });
+            void advance('investigate-error', definition.version, source, steps, index);
+        }
+    }
+
     $effect(() => {
         document.addEventListener('product-tour:completed', onDomainComplete);
         document.addEventListener('product-tour:dismissed', onDomainDismiss);
+        document.addEventListener('product-tour:advance', onInlineAdvance);
+        document.addEventListener('product-tour:event-opened', onEventOpened);
         return () => {
             document.removeEventListener('product-tour:completed', onDomainComplete);
             document.removeEventListener('product-tour:dismissed', onDomainDismiss);
+            document.removeEventListener('product-tour:advance', onInlineAdvance);
+            document.removeEventListener('product-tour:event-opened', onEventOpened);
         };
     });
 </script>

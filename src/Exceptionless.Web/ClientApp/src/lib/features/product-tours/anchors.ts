@@ -17,6 +17,7 @@ export const PRODUCT_TOUR_ANCHORS = {
     savedViewNavigation: 'saved-view-navigation',
     savedViewPrivate: 'saved-view-private',
     savedViewSaveAs: 'saved-view-save-as',
+    savedViewSettings: 'saved-view-settings',
     savedViewSubmit: 'saved-view-submit',
     savedViewTrigger: 'saved-view-trigger',
     setupOrganizationName: 'setup-organization-name'

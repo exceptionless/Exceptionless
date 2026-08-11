@@ -1,11 +1,17 @@
 import { expect, test } from '../fixtures/e2e-test';
+import { seedRepresentativeEvent } from '../support/event-data';
 
-test('completed and dismissed tours remain replayable from command search', async ({ page }) => {
+test.use({ e2eUseGeneratedUser: true });
+
+test('Explore the new UI is replayable from command search', async ({ e2eScenario: _e2eScenario, page }, testInfo) => {
+    void _e2eScenario;
+    await page.setViewportSize({ height: 900, width: 1440 });
     await page.goto('/next/stack');
 
     await startTourFromCommand(page, 'Explore the new UI');
     const tour = page.locator('.driver-popover');
     await expect(tour.getByText('Your workspace navigation')).toBeVisible();
+    await page.screenshot({ fullPage: true, path: testInfo.outputPath('new-ui-overview-desktop.png') });
     await tour.getByRole('button', { name: 'Close' }).click();
     await expect(tour).toBeHidden();
 
@@ -14,7 +20,123 @@ test('completed and dismissed tours remain replayable from command search', asyn
     await tour.getByRole('button', { name: 'Close' }).click();
 });
 
-test('Meet Exie opens contextual UI without sending a provider request', async ({ page }) => {
+test('Explore the new UI opens its navigation target on mobile', async ({ e2eScenario: _e2eScenario, page }, testInfo) => {
+    void _e2eScenario;
+    await page.setViewportSize({ height: 844, width: 390 });
+    await page.goto('/next/stack');
+
+    await startTourFromCommand(page, 'Explore the new UI');
+    const tour = page.locator('.driver-popover');
+    await expect(tour.getByText('Your workspace navigation')).toBeVisible();
+    await page.screenshot({ fullPage: true, path: testInfo.outputPath('new-ui-overview-mobile.png') });
+    await tour.getByRole('button', { name: 'Close' }).click();
+});
+
+test('Configure a project resumes through its first event', async ({ e2eApi, e2eScenario, page }, testInfo) => {
+    await page.setViewportSize({ height: 900, width: 1440 });
+    await page.goto('/next/stack');
+
+    let createdProjectId: string | undefined;
+    await startTourFromCommand(page, 'Configure a project');
+    if (await page.getByRole('alertdialog', { name: 'Create another project?' }).isVisible()) {
+        await page.getByRole('button', { name: 'Create Project' }).click();
+        await expect(page.getByRole('heading', { name: 'Add Project' })).toBeVisible();
+        await page.getByLabel('Project Name', { exact: true }).fill(`Tour Project ${e2eScenario.run}`);
+        await expect(page.locator('.driver-popover').getByText('Name your project', { exact: true })).toBeVisible();
+        await page.locator('.driver-popover').getByRole('button', { name: 'Next' }).click();
+        await expect(page.locator('.driver-popover').getByText('Continue to configuration')).toBeVisible();
+        await page.locator('.driver-popover').getByRole('button', { name: 'Continue' }).click();
+        await page.waitForURL(/\/next\/project\/[^/]+\/configure\?redirect=true/);
+        createdProjectId = page.url().match(/\/project\/([^/]+)\/configure/)?.[1];
+    }
+
+    await page.waitForURL(/\/next\/project\/[^/]+\/configure\?redirect=true/);
+    const tour = page.locator('.driver-popover');
+    await expect(tour.getByText('Choose your SDK')).toBeVisible();
+    await page.screenshot({ fullPage: true, path: testInfo.outputPath('configure-project-platform.png') });
+
+    await page.getByRole('button', { name: 'Next' }).click();
+    await expect(tour.getByText('Use the project token')).toBeVisible();
+    await page.getByRole('button', { name: 'Next' }).click();
+    await expect(page.getByText('Connect your application', { exact: true })).toBeVisible();
+    await page.screenshot({ fullPage: true, path: testInfo.outputPath('configure-project-inline.png') });
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await expect(page.getByText('Waiting for your first event')).toBeVisible();
+
+    try {
+        const projectId = createdProjectId ?? e2eScenario.projectId;
+        const projectToken = createdProjectId ? (await e2eApi.getProjectDefaultToken(e2eScenario.userToken, createdProjectId)).id : e2eScenario.projectToken;
+        await seedRepresentativeEvent(e2eApi, e2eScenario.userToken, {
+            message: e2eScenario.message,
+            projectId,
+            projectToken,
+            referenceId: e2eScenario.referenceId
+        });
+        await expect(page).toHaveURL(/\/next\/event/);
+        await expect(page.getByText('First event received. Opening Events...')).toBeHidden();
+    } finally {
+        if (createdProjectId) {
+            await e2eApi.deleteProject(e2eScenario.userToken, createdProjectId);
+            await e2eApi.waitForProjectDeleted(e2eScenario.userToken, createdProjectId);
+        }
+    }
+});
+
+test('Create a saved view retains a private hydrated view', async ({ e2eScenario, page }, testInfo) => {
+    await page.setViewportSize({ height: 900, width: 1440 });
+    await page.goto('/next/event');
+
+    await startTourFromCommand(page, 'Create a saved view');
+    const tour = page.locator('.driver-popover');
+    await expect(tour.getByText('Open View settings')).toBeVisible();
+    await page.screenshot({ fullPage: true, path: testInfo.outputPath('saved-view-open.png') });
+    await tour.getByRole('button', { name: 'Continue' }).click();
+    await expect(tour.getByText('Configure what the view remembers')).toBeVisible();
+    await page.screenshot({ fullPage: true, path: testInfo.outputPath('saved-view-settings.png') });
+    await tour.getByRole('button', { name: 'Next' }).click();
+    await expect(tour.getByText('Create a new view')).toBeVisible();
+    await tour.getByRole('button', { name: 'Continue' }).click();
+
+    const viewName = `Tour View ${e2eScenario.run}`;
+    await expect(page.getByText('Review and name your view')).toBeVisible();
+    await page.getByLabel('Name', { exact: true }).fill(viewName);
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await expect(page.getByText('Keep it private')).toBeVisible();
+    await page.screenshot({ fullPage: true, path: testInfo.outputPath('saved-view-private.png') });
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await expect(page.getByText('Create the saved view')).toBeVisible();
+    await page.getByRole('button', { exact: true, name: 'Save' }).click();
+
+    await expect(page.getByRole('heading', { name: viewName })).toBeVisible({ timeout: 30_000 });
+    await expect(page).toHaveURL(/\/next\/event\/[^/]+/);
+    await expect(page.getByText('Create the saved view')).toBeHidden();
+});
+
+test('Investigate an error advances only after an error report opens', async ({ e2eApi, e2eScenario, page }, testInfo) => {
+    const event = await seedRepresentativeEvent(e2eApi, e2eScenario.userToken, {
+        message: e2eScenario.message,
+        projectId: e2eScenario.projectId,
+        projectToken: e2eScenario.projectToken,
+        referenceId: e2eScenario.referenceId
+    });
+
+    await page.setViewportSize({ height: 900, width: 1440 });
+    await page.goto('/next/event?time=all');
+    await expect(page.getByText(e2eScenario.message)).toBeVisible({ timeout: 30_000 });
+    await startTourFromCommand(page, 'Investigate an error');
+    const tour = page.locator('.driver-popover');
+    await expect(tour.getByText('Open a real error')).toBeVisible();
+    await page.screenshot({ fullPage: true, path: testInfo.outputPath('investigate-error-list.png') });
+    await page.locator('tr').filter({ hasText: e2eScenario.message }).first().click();
+    await expect(tour.getByText('Investigate the evidence')).toBeVisible({ timeout: 30_000 });
+    await page.screenshot({ fullPage: true, path: testInfo.outputPath('investigate-error-details.png') });
+    await tour.getByRole('button', { name: 'Next' }).click();
+    await expect(page.getByText('Investigate the evidence')).toBeHidden();
+    expect(event.type).toBe('error');
+});
+
+test('Meet Exie opens contextual UI without sending a provider request', async ({ e2eScenario: _e2eScenario, page }, testInfo) => {
+    void _e2eScenario;
     let chatRequests = 0;
     await page.route('**/api/v2/assistant/access**', async (route) => {
         await route.fulfill({
@@ -22,23 +144,25 @@ test('Meet Exie opens contextual UI without sending a provider request', async (
             json: { enabled: true, has_access: true, message: null, upgrade_required: false }
         });
     });
-    page.on('request', (request) => {
-        if (new URL(request.url()).pathname === '/api/v2/assistant/chat') {
-            chatRequests += 1;
-        }
+    await page.route('**/api/v2/assistant/chat**', async (route) => {
+        chatRequests += 1;
+        await route.abort();
     });
 
+    await page.setViewportSize({ height: 900, width: 1440 });
     await page.goto('/next/stack');
     await startTourFromCommand(page, 'Meet Exie');
 
     const tour = page.locator('.driver-popover');
-    await expect(tour.getByText('Open Exie')).toBeVisible();
+    await expect(tour.getByText('Open Exie', { exact: true })).toBeVisible();
+    await page.screenshot({ fullPage: true, path: testInfo.outputPath('meet-exie-trigger.png') });
     await tour.getByRole('button', { name: 'Continue' }).click();
     await expect(page.getByRole('dialog', { name: 'Exie' })).toBeVisible();
     await expect(tour.getByText('You control every request')).toBeVisible();
+    await page.screenshot({ fullPage: true, path: testInfo.outputPath('meet-exie-panel.png') });
     expect(chatRequests).toBe(0);
 
-    await tour.getByRole('button', { name: 'Done' }).click();
+    await tour.getByRole('button', { name: 'Next' }).click();
     expect(chatRequests).toBe(0);
 });
 

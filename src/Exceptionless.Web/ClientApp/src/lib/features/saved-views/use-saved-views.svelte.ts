@@ -319,9 +319,9 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         })
     );
 
-    function handleLoadView(view: SavedView) {
+    async function handleLoadView(view: SavedView): Promise<void> {
         if (options.baseHref) {
-            goto(savedViewHref(view));
+            await goto(savedViewHref(view));
             return;
         }
 

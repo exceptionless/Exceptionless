@@ -35,6 +35,7 @@
         currentEvent = event;
         currentEventDetails = { eventId: event.id, stackId: event.stack_id };
         assistantPageContext.setOverlayEvent(assistantContextOwner, event);
+        document.dispatchEvent(new CustomEvent('product-tour:event-opened', { detail: { eventType: event.type } }));
     }
 
     function prepareAssistantContext(): void {

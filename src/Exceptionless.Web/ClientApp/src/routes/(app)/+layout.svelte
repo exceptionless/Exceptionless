@@ -700,7 +700,10 @@
         organizationId={organization.current}
         pathname={page.url.pathname}
         projects={productTourProjects}
-        stateSettled={meQuery.isSuccess && organizationsQuery.isSuccess && projectsQuery.isSuccess}
+        stateSettled={meQuery.isSuccess &&
+            organizationsQuery.isSuccess &&
+            projectsQuery.isSuccess &&
+            (assistantAccessQuery.isSuccess || assistantAccessQuery.isError)}
     />
     <IntercomShell
         appId={intercomAppId || undefined}

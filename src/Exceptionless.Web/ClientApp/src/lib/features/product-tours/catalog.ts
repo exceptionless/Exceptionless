@@ -86,6 +86,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
                         title: 'Name your first project'
                     },
                     {
+                        advanceOnClick: true,
                         anchor: PRODUCT_TOUR_ANCHORS.projectSetupSubmit,
                         description: 'Create both records, then continue to the SDK instructions.',
                         id: 'create-setup',
@@ -104,6 +105,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
                         title: 'Name your project'
                     },
                     {
+                        advanceOnClick: true,
                         anchor: PRODUCT_TOUR_ANCHORS.projectSetupSubmit,
                         description: 'Create the project, then continue to its SDK instructions.',
                         id: 'create-project',
@@ -161,6 +163,13 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
                 title: 'Open View settings'
             },
             {
+                anchor: PRODUCT_TOUR_ANCHORS.savedViewSettings,
+                description: 'Review filters, time range, sorting, chart and stat choices, and columns here. The guide will not change them for you.',
+                id: 'review-settings',
+                title: 'Configure what the view remembers',
+                waitForElement: 5000
+            },
+            {
                 advanceOnClick: true,
                 anchor: PRODUCT_TOUR_ANCHORS.savedViewSaveAs,
                 description: 'Save As creates a reusable view without changing any existing view.',
@@ -199,20 +208,13 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
     },
     {
         description: 'Open a real error and learn where to find its exception, request, environment, and custom data.',
-        getAvailability: (context) => {
-            if (!context.organizationId) {
-                return { available: false, reason: 'Create and configure a project first.' };
-            }
-
-            return context.projects.some((project) => project.event_count > 0)
-                ? { available: true }
-                : { available: false, reason: 'Send an error event before starting this guide.' };
-        },
+        getAvailability: requireOrganization,
         getSteps: () => [
             {
                 anchor: PRODUCT_TOUR_ANCHORS.eventList,
-                description: 'Choose an error row to open its detail sheet. This guide never changes stack status.',
+                description: 'Choose an error row to open its detail sheet. The guide will continue when the error report is loaded.',
                 id: 'choose-error',
+                showDone: false,
                 title: 'Open a real error'
             },
             {

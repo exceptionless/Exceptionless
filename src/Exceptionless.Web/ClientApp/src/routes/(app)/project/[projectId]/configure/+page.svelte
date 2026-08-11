@@ -12,6 +12,7 @@
     import { openSupportChat } from '$features/intercom/chat';
     import { organization } from '$features/organizations/context.svelte';
     import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
+    import ProductTourInlineCallout from '$features/product-tours/components/product-tour-inline-callout.svelte';
     import { productTourRuntime } from '$features/product-tours/state.svelte';
     import { getProjectQuery } from '$features/projects/api.svelte';
     import { getProjectDefaultTokenQuery, patchToken } from '$features/tokens/api.svelte';
@@ -378,7 +379,7 @@ public partial class App : Application {
 </script>
 
 <div class="space-y-6">
-    <Muted data-tour="project-configure-token">Choose your project type and follow the steps below to connect your application to Exceptionless.</Muted>
+    <Muted>Choose your project type and follow the steps below to connect your application to Exceptionless.</Muted>
 
     {#if isTokenDisabled}
         <Notification variant="destructive">
@@ -420,303 +421,319 @@ public partial class App : Application {
         </Notification>
     {/if}
 
-    <ol class="my-6 ml-6 list-decimal [&>li]:mt-2" data-tour="project-configure-instructions">
-        <li>
-            <P>Choose your project type.</P>
-            <Select.Root
-                type="single"
-                bind:value={queryParams.type as string | undefined}
-                onValueChange={(value) => {
-                    selectedProjectType = projectTypes.find((P) => P.id === value) || null;
-                    queryParams.type = value;
-                }}
-            >
-                <Select.Trigger class="w-full" data-tour="project-configure-platform">
-                    <span
-                        >{#if selectedProjectType}
-                            {selectedProjectType.platform}: {selectedProjectType.label}
+    <div data-tour="project-configure-instructions">
+        <ol class="my-6 ml-6 list-decimal [&>li]:mt-2" data-tour="project-configure-token">
+            <li>
+                <P>Choose your project type.</P>
+                <Select.Root
+                    type="single"
+                    bind:value={queryParams.type as string | undefined}
+                    onValueChange={(value) => {
+                        selectedProjectType = projectTypes.find((P) => P.id === value) || null;
+                        queryParams.type = value;
+                    }}
+                >
+                    <Select.Trigger class="w-full" data-tour="project-configure-platform">
+                        <span
+                            >{#if selectedProjectType}
+                                {selectedProjectType.platform}: {selectedProjectType.label}
+                            {:else}
+                                Please select a project type
+                            {/if}</span
+                        >
+                    </Select.Trigger>
+                    <Select.Content>
+                        {#each Object.entries(projectTypesGroupedByPlatform) as [platform, types = []], index (platform)}
+                            <Select.Group>
+                                <Select.Label class="text-primary">{platform}</Select.Label>
+                                {#each types as type (type.id)}
+                                    <Select.Item value={type.id}>
+                                        {type.label}
+                                    </Select.Item>
+                                {/each}
+                            </Select.Group>
+                            {#if index < Object.keys(projectTypesGroupedByPlatform).length - 1}
+                                <Select.Separator />
+                            {/if}
+                        {/each}
+                    </Select.Content>
+                </Select.Root>
+            </li>
+
+            {#if selectedProjectType}
+                {#if isCommandLine}
+                    <li>
+                        <P>Execute the following in your shell.</P>
+                        <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                            {#if isBashShell}
+                                <CodeBlock code={codeSamples.bashShell} language="shellscript" />
+                            {:else}
+                                <CodeBlock code={codeSamples.powerShell} language="powershell" />
+                            {/if}
+                            <div class="absolute top-2 right-2">
+                                <CopyToClipboardButton value={isBashShell ? codeSamples.bashShell : codeSamples.powerShell} />
+                            </div>
+                        </div>
+                    </li>
+                {:else if isDotNet}
+                    <li>
+                        <P
+                            >Install the <A href="https://www.nuget.org/packages/{selectedProjectType.package}/" target="_blank"
+                                ><strong>{selectedProjectType.package}</strong> NuGet package</A
+                            > in your .NET project by executing this command from the project directory.</P
+                        >
+                        <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                            <CodeBlock code="dotnet add package {selectedProjectType.package}" language="shellscript" />
+                            <div class="absolute top-2 right-2">
+                                <CopyToClipboardButton value={`dotnet add package ${selectedProjectType.package}`} />
+                            </div>
+                        </div>
+                    </li>
+                    {#if selectedProjectType.package === 'Exceptionless'}
+                        <li>
+                            <P
+                                >On app startup, import the Exceptionless namespace and call the client.Startup() extension method to wire up to any runtime
+                                specific error handlers and read any available configuration.</P
+                            >
+                            <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                                <CodeBlock code={codeSamples.exceptionless} language="csharp" />
+                                <div class="absolute top-2 right-2">
+                                    <CopyToClipboardButton value={codeSamples.exceptionless} />
+                                </div>
+                            </div>
+                            <P
+                                >This library is platform-agnostic and is compiled against different runtimes. Depending on the referenced runtime,
+                                Exceptionless will attempt to wire up to available error handlers and attempt to discover configuration settings available to
+                                that runtime. For these reasons if you are on a known platform then use the platform specific package to save you time
+                                configuring while giving you more contextual information. For more information and configuration examples please read the <A
+                                    href="https://exceptionless.com/docs/clients/dotnet/configuration/"
+                                    target="_blank">Exceptionless Configuration documentation</A
+                                > for more information.</P
+                            >
+                        </li>
+                    {:else if selectedProjectType.package === 'Exceptionless.AspNetCore'}
+                        <li>
+                            <P>You must import the Exceptionless namespace and add the following code to register and configure the Exceptionless client.</P>
+                            <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                                <CodeBlock code={codeSamples.aspNetCore} language="csharp" />
+                                <div class="absolute top-2 right-2">
+                                    <CopyToClipboardButton value={codeSamples.aspNetCore} />
+                                </div>
+                            </div>
+                            <P
+                                >In order to start gathering unhandled exceptions, you need to register the Exceptionless middleware after building your
+                                application as shown above. Alternatively, you can use different overloads of the AddExceptionless method for additional
+                                configuration options.</P
+                            >
+                        </li>
+                    {:else if selectedProjectType.package === 'Exceptionless.Windows' || selectedProjectType.package === 'Exceptionless.Wpf'}
+                        <li>
+                            <P>Configure your Exceptionless assembly attribute to your projects AssemblyInfo.cs file.</P>
+                            <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                                <CodeBlock code={codeSamples.windowsAttributeConfiguration} language="csharp" />
+                                <div class="absolute top-2 right-2">
+                                    <CopyToClipboardButton value={codeSamples.windowsAttributeConfiguration} />
+                                </div>
+                            </div>
+                        </li>
+                        {#if selectedProjectType.package === 'Exceptionless.Wpf'}
+                            <li>
+                                <P
+                                    >Finally, import the Exceptionless namespace and include the following line of code in your App.xaml.cs file to enable
+                                    reporting of unhandled exceptions.</P
+                                >
+                                <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                                    <CodeBlock code={codeSamples.wpfRegister} language="csharp" />
+                                    <div class="absolute top-2 right-2">
+                                        <CopyToClipboardButton value={codeSamples.wpfRegister} />
+                                    </div>
+                                </div>
+                            </li>
                         {:else}
-                            Please select a project type
-                        {/if}</span
-                    >
-                </Select.Trigger>
-                <Select.Content>
-                    {#each Object.entries(projectTypesGroupedByPlatform) as [platform, types = []], index (platform)}
-                        <Select.Group>
-                            <Select.Label class="text-primary">{platform}</Select.Label>
-                            {#each types as type (type.id)}
-                                <Select.Item value={type.id}>
-                                    {type.label}
-                                </Select.Item>
-                            {/each}
-                        </Select.Group>
-                        {#if index < Object.keys(projectTypesGroupedByPlatform).length - 1}
-                            <Select.Separator />
+                            <li>
+                                <P
+                                    >Finally, import the Exceptionless namespace and include the following line of code in your Program.cs file to enable
+                                    reporting of unhandled exceptions.</P
+                                >
+                                <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                                    <CodeBlock code={codeSamples.windowsRegister} language="csharp" />
+                                    <div class="absolute top-2 right-2">
+                                        <CopyToClipboardButton value={codeSamples.windowsRegister} />
+                                    </div>
+                                </div>
+                            </li>
                         {/if}
+                    {/if}
+                {:else if isDotNetLegacy}
+                    <li>
+                        <P
+                            >Install the <A href="https://www.nuget.org/packages/{selectedProjectType.package}/" target="_blank"
+                                ><strong>{selectedProjectType.package}</strong> NuGet package</A
+                            > to your Visual Studio project by running this command in the <A
+                                href="http://docs.nuget.org/docs/start-here/using-the-package-manager-console"
+                                target="_blank">Package Manager Console.</A
+                            ></P
+                        >
+                        <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                            <CodeBlock code="Install-Package {selectedProjectType.package}" language="shellscript" />
+                            <div class="absolute top-2 right-2">
+                                <CopyToClipboardButton value={`Install-Package ${selectedProjectType.package}`} />
+                            </div>
+                        </div>
+                    </li>
+                    {#if selectedProjectType.package === 'Exceptionless'}
+                        <li>
+                            <P
+                                >On app startup, import the Exceptionless namespace and call the client.Startup() extension method to wire up to any runtime
+                                specific error handlers and read any available configuration.</P
+                            >
+                            <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                                <CodeBlock code={codeSamples.exceptionless} language="csharp" />
+                                <div class="absolute top-2 right-2">
+                                    <CopyToClipboardButton value={codeSamples.exceptionless} />
+                                </div>
+                            </div>
+                            <P
+                                >For more information and additional configuration methods please read the <A
+                                    href="https://exceptionless.com/docs/clients/dotnet/configuration/"
+                                    target="_blank">Exceptionless Configuration documentation</A
+                                > for more information.</P
+                            >
+                        </li>
+                    {:else if selectedProjectType.package === 'Exceptionless.Windows' || selectedProjectType.package === 'Exceptionless.Wpf'}
+                        <li>
+                            <P
+                                >Configure your Exceptionless API key in your project's app.config file, and add it under the Exceptionless section within the
+                                file.</P
+                            >
+                            <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                                <CodeBlock code={codeSamples.legacyAppConfigSectionXml} language="xml" />
+                                <div class="absolute top-2 right-2">
+                                    <CopyToClipboardButton value={codeSamples.legacyAppConfigSectionXml} />
+                                </div>
+                            </div>
+                        </li>
+                        {#if selectedProjectType.package === 'Exceptionless.Wpf'}
+                            <li>
+                                <P
+                                    >Finally, import the Exceptionless namespace and include the following line of code in your App.xaml.cs file to enable
+                                    reporting of unhandled exceptions.</P
+                                >
+                                <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                                    <CodeBlock code={codeSamples.wpfRegister} language="csharp" />
+                                    <div class="absolute top-2 right-2">
+                                        <CopyToClipboardButton value={codeSamples.wpfRegister} />
+                                    </div>
+                                </div>
+                            </li>
+                        {:else}
+                            <li>
+                                <P
+                                    >Finally, import the Exceptionless namespace and include the following line of code in your Program.cs file to enable
+                                    reporting of unhandled exceptions.</P
+                                >
+                                <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                                    <CodeBlock code={codeSamples.windowsRegister} language="csharp" />
+                                    <div class="absolute top-2 right-2">
+                                        <CopyToClipboardButton value={codeSamples.windowsRegister} />
+                                    </div>
+                                </div>
+                            </li>
+                        {/if}
+                    {/if}
+
+                    {#if selectedProjectType.package === 'Exceptionless.Mvc' || selectedProjectType.package === 'Exceptionless.Web' || selectedProjectType.package === 'Exceptionless.WebApi'}
+                        <li>
+                            <P
+                                >Configure your Exceptionless API key in your project's web.config file, and add it under the Exceptionless section within the
+                                file.</P
+                            >
+                            <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                                <CodeBlock code={codeSamples.legacyAppConfigSectionXml} language="xml" />
+                                <div class="absolute top-2 right-2">
+                                    <CopyToClipboardButton value={codeSamples.legacyAppConfigSectionXml} />
+                                </div>
+                            </div>
+                        </li>
+                    {/if}
+
+                    {#if selectedProjectType.package === 'Exceptionless.WebApi'}
+                        <li>
+                            <P
+                                >Finally, you must import the Exceptionless namespace and call <CodeBlock
+                                    code="ExceptionlessClient.Default.RegisterWebApi(config)"
+                                    language="csharp"
+                                    class="inline-block"
+                                /> method with an instance of HttpConfiguration during the startup of your app.</P
+                            >
+                            <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                                <CodeBlock code={codeSamples.webApiRegister} language="csharp" />
+                                <div class="absolute top-2 right-2">
+                                    <CopyToClipboardButton value={codeSamples.webApiRegister} />
+                                </div>
+                            </div>
+                            <P>If you are hosting Web API inside of ASP.NET, you would register Exceptionless using GlobalConfiguration.</P>
+                            <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                                <CodeBlock code={codeSamples.webApiRegisterAspNet} language="csharp" />
+                                <div class="absolute top-2 right-2">
+                                    <CopyToClipboardButton value={codeSamples.webApiRegisterAspNet} />
+                                </div>
+                            </div>
+                        </li>
+                    {/if}
+                {/if}
+
+                {#if isJavaScript && javascriptClientConfiguration}
+                    <li>
+                        <P
+                            >Install the <strong>{javascriptClientConfiguration.packageName}</strong> npm package in your JavaScript project by running this
+                            command in the project directory. {javascriptClientConfiguration.installNote ?? ''}</P
+                        >
+                        <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                            <CodeBlock code={javascriptClientConfiguration.installCommand} language="shellscript" />
+                            <div class="absolute top-2 right-2">
+                                <CopyToClipboardButton value={javascriptClientConfiguration.installCommand} />
+                            </div>
+                        </div>
+                    </li>
+                    {#each javascriptClientConfiguration.extraSteps ?? [] as step (step.description)}
+                        <li>
+                            <P>{step.description}</P>
+                            <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
+                                <CodeBlock code={step.code} language={step.language} />
+                                <div class="absolute top-2 right-2">
+                                    <CopyToClipboardButton value={step.code} />
+                                </div>
+                            </div>
+                            {#if step.note}
+                                <P>{step.note}</P>
+                            {/if}
+                        </li>
                     {/each}
-                </Select.Content>
-            </Select.Root>
-        </li>
-
-        {#if selectedProjectType}
-            {#if isCommandLine}
-                <li>
-                    <P>Execute the following in your shell.</P>
-                    <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
-                        {#if isBashShell}
-                            <CodeBlock code={codeSamples.bashShell} language="shellscript" />
-                        {:else}
-                            <CodeBlock code={codeSamples.powerShell} language="powershell" />
-                        {/if}
-                        <div class="absolute top-2 right-2">
-                            <CopyToClipboardButton value={isBashShell ? codeSamples.bashShell : codeSamples.powerShell} />
-                        </div>
-                    </div>
-                </li>
-            {:else if isDotNet}
-                <li>
-                    <P
-                        >Install the <A href="https://www.nuget.org/packages/{selectedProjectType.package}/" target="_blank"
-                            ><strong>{selectedProjectType.package}</strong> NuGet package</A
-                        > in your .NET project by executing this command from the project directory.</P
-                    >
-                    <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
-                        <CodeBlock code="dotnet add package {selectedProjectType.package}" language="shellscript" />
-                        <div class="absolute top-2 right-2">
-                            <CopyToClipboardButton value={`dotnet add package ${selectedProjectType.package}`} />
-                        </div>
-                    </div>
-                </li>
-                {#if selectedProjectType.package === 'Exceptionless'}
                     <li>
-                        <P
-                            >On app startup, import the Exceptionless namespace and call the client.Startup() extension method to wire up to any runtime
-                            specific error handlers and read any available configuration.</P
-                        >
+                        <P>Configure the ExceptionlessClient with your Exceptionless API key.</P>
                         <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
-                            <CodeBlock code={codeSamples.exceptionless} language="csharp" />
+                            <CodeBlock code={javascriptClientConfiguration.startupCode} language="javascript" />
                             <div class="absolute top-2 right-2">
-                                <CopyToClipboardButton value={codeSamples.exceptionless} />
-                            </div>
-                        </div>
-                        <P
-                            >This library is platform-agnostic and is compiled against different runtimes. Depending on the referenced runtime, Exceptionless
-                            will attempt to wire up to available error handlers and attempt to discover configuration settings available to that runtime. For
-                            these reasons if you are on a known platform then use the platform specific package to save you time configuring while giving you
-                            more contextual information. For more information and configuration examples please read the <A
-                                href="https://exceptionless.com/docs/clients/dotnet/configuration/"
-                                target="_blank">Exceptionless Configuration documentation</A
-                            > for more information.</P
-                        >
-                    </li>
-                {:else if selectedProjectType.package === 'Exceptionless.AspNetCore'}
-                    <li>
-                        <P>You must import the Exceptionless namespace and add the following code to register and configure the Exceptionless client.</P>
-                        <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
-                            <CodeBlock code={codeSamples.aspNetCore} language="csharp" />
-                            <div class="absolute top-2 right-2">
-                                <CopyToClipboardButton value={codeSamples.aspNetCore} />
-                            </div>
-                        </div>
-                        <P
-                            >In order to start gathering unhandled exceptions, you need to register the Exceptionless middleware after building your application
-                            as shown above. Alternatively, you can use different overloads of the AddExceptionless method for additional configuration options.</P
-                        >
-                    </li>
-                {:else if selectedProjectType.package === 'Exceptionless.Windows' || selectedProjectType.package === 'Exceptionless.Wpf'}
-                    <li>
-                        <P>Configure your Exceptionless assembly attribute to your projects AssemblyInfo.cs file.</P>
-                        <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
-                            <CodeBlock code={codeSamples.windowsAttributeConfiguration} language="csharp" />
-                            <div class="absolute top-2 right-2">
-                                <CopyToClipboardButton value={codeSamples.windowsAttributeConfiguration} />
-                            </div>
-                        </div>
-                    </li>
-                    {#if selectedProjectType.package === 'Exceptionless.Wpf'}
-                        <li>
-                            <P
-                                >Finally, import the Exceptionless namespace and include the following line of code in your App.xaml.cs file to enable reporting
-                                of unhandled exceptions.</P
-                            >
-                            <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
-                                <CodeBlock code={codeSamples.wpfRegister} language="csharp" />
-                                <div class="absolute top-2 right-2">
-                                    <CopyToClipboardButton value={codeSamples.wpfRegister} />
-                                </div>
-                            </div>
-                        </li>
-                    {:else}
-                        <li>
-                            <P
-                                >Finally, import the Exceptionless namespace and include the following line of code in your Program.cs file to enable reporting
-                                of unhandled exceptions.</P
-                            >
-                            <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
-                                <CodeBlock code={codeSamples.windowsRegister} language="csharp" />
-                                <div class="absolute top-2 right-2">
-                                    <CopyToClipboardButton value={codeSamples.windowsRegister} />
-                                </div>
-                            </div>
-                        </li>
-                    {/if}
-                {/if}
-            {:else if isDotNetLegacy}
-                <li>
-                    <P
-                        >Install the <A href="https://www.nuget.org/packages/{selectedProjectType.package}/" target="_blank"
-                            ><strong>{selectedProjectType.package}</strong> NuGet package</A
-                        > to your Visual Studio project by running this command in the <A
-                            href="http://docs.nuget.org/docs/start-here/using-the-package-manager-console"
-                            target="_blank">Package Manager Console.</A
-                        ></P
-                    >
-                    <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
-                        <CodeBlock code="Install-Package {selectedProjectType.package}" language="shellscript" />
-                        <div class="absolute top-2 right-2">
-                            <CopyToClipboardButton value={`Install-Package ${selectedProjectType.package}`} />
-                        </div>
-                    </div>
-                </li>
-                {#if selectedProjectType.package === 'Exceptionless'}
-                    <li>
-                        <P
-                            >On app startup, import the Exceptionless namespace and call the client.Startup() extension method to wire up to any runtime
-                            specific error handlers and read any available configuration.</P
-                        >
-                        <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
-                            <CodeBlock code={codeSamples.exceptionless} language="csharp" />
-                            <div class="absolute top-2 right-2">
-                                <CopyToClipboardButton value={codeSamples.exceptionless} />
-                            </div>
-                        </div>
-                        <P
-                            >For more information and additional configuration methods please read the <A
-                                href="https://exceptionless.com/docs/clients/dotnet/configuration/"
-                                target="_blank">Exceptionless Configuration documentation</A
-                            > for more information.</P
-                        >
-                    </li>
-                {:else if selectedProjectType.package === 'Exceptionless.Windows' || selectedProjectType.package === 'Exceptionless.Wpf'}
-                    <li>
-                        <P
-                            >Configure your Exceptionless API key in your project's app.config file, and add it under the Exceptionless section within the file.</P
-                        >
-                        <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
-                            <CodeBlock code={codeSamples.legacyAppConfigSectionXml} language="xml" />
-                            <div class="absolute top-2 right-2">
-                                <CopyToClipboardButton value={codeSamples.legacyAppConfigSectionXml} />
-                            </div>
-                        </div>
-                    </li>
-                    {#if selectedProjectType.package === 'Exceptionless.Wpf'}
-                        <li>
-                            <P
-                                >Finally, import the Exceptionless namespace and include the following line of code in your App.xaml.cs file to enable reporting
-                                of unhandled exceptions.</P
-                            >
-                            <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
-                                <CodeBlock code={codeSamples.wpfRegister} language="csharp" />
-                                <div class="absolute top-2 right-2">
-                                    <CopyToClipboardButton value={codeSamples.wpfRegister} />
-                                </div>
-                            </div>
-                        </li>
-                    {:else}
-                        <li>
-                            <P
-                                >Finally, import the Exceptionless namespace and include the following line of code in your Program.cs file to enable reporting
-                                of unhandled exceptions.</P
-                            >
-                            <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
-                                <CodeBlock code={codeSamples.windowsRegister} language="csharp" />
-                                <div class="absolute top-2 right-2">
-                                    <CopyToClipboardButton value={codeSamples.windowsRegister} />
-                                </div>
-                            </div>
-                        </li>
-                    {/if}
-                {/if}
-
-                {#if selectedProjectType.package === 'Exceptionless.Mvc' || selectedProjectType.package === 'Exceptionless.Web' || selectedProjectType.package === 'Exceptionless.WebApi'}
-                    <li>
-                        <P
-                            >Configure your Exceptionless API key in your project's web.config file, and add it under the Exceptionless section within the file.</P
-                        >
-                        <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
-                            <CodeBlock code={codeSamples.legacyAppConfigSectionXml} language="xml" />
-                            <div class="absolute top-2 right-2">
-                                <CopyToClipboardButton value={codeSamples.legacyAppConfigSectionXml} />
-                            </div>
-                        </div>
-                    </li>
-                {/if}
-
-                {#if selectedProjectType.package === 'Exceptionless.WebApi'}
-                    <li>
-                        <P
-                            >Finally, you must import the Exceptionless namespace and call <CodeBlock
-                                code="ExceptionlessClient.Default.RegisterWebApi(config)"
-                                language="csharp"
-                                class="inline-block"
-                            /> method with an instance of HttpConfiguration during the startup of your app.</P
-                        >
-                        <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
-                            <CodeBlock code={codeSamples.webApiRegister} language="csharp" />
-                            <div class="absolute top-2 right-2">
-                                <CopyToClipboardButton value={codeSamples.webApiRegister} />
-                            </div>
-                        </div>
-                        <P>If you are hosting Web API inside of ASP.NET, you would register Exceptionless using GlobalConfiguration.</P>
-                        <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
-                            <CodeBlock code={codeSamples.webApiRegisterAspNet} language="csharp" />
-                            <div class="absolute top-2 right-2">
-                                <CopyToClipboardButton value={codeSamples.webApiRegisterAspNet} />
+                                <CopyToClipboardButton value={javascriptClientConfiguration.startupCode} />
                             </div>
                         </div>
                     </li>
                 {/if}
             {/if}
+        </ol>
+    </div>
 
-            {#if isJavaScript && javascriptClientConfiguration}
-                <li>
-                    <P
-                        >Install the <strong>{javascriptClientConfiguration.packageName}</strong> npm package in your JavaScript project by running this command
-                        in the project directory. {javascriptClientConfiguration.installNote ?? ''}</P
-                    >
-                    <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
-                        <CodeBlock code={javascriptClientConfiguration.installCommand} language="shellscript" />
-                        <div class="absolute top-2 right-2">
-                            <CopyToClipboardButton value={javascriptClientConfiguration.installCommand} />
-                        </div>
-                    </div>
-                </li>
-                {#each javascriptClientConfiguration.extraSteps ?? [] as step (step.description)}
-                    <li>
-                        <P>{step.description}</P>
-                        <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
-                            <CodeBlock code={step.code} language={step.language} />
-                            <div class="absolute top-2 right-2">
-                                <CopyToClipboardButton value={step.code} />
-                            </div>
-                        </div>
-                        {#if step.note}
-                            <P>{step.note}</P>
-                        {/if}
-                    </li>
-                {/each}
-                <li>
-                    <P>Configure the ExceptionlessClient with your Exceptionless API key.</P>
-                    <div class="bg-muted relative min-h-13 overflow-hidden rounded-md">
-                        <CodeBlock code={javascriptClientConfiguration.startupCode} language="javascript" />
-                        <div class="absolute top-2 right-2">
-                            <CopyToClipboardButton value={javascriptClientConfiguration.startupCode} />
-                        </div>
-                    </div>
-                </li>
-            {/if}
-        {/if}
-    </ol>
+    {#if productTourRuntime.isActive('configure-project') && productTourRuntime.activeStepId === 'sdk-instructions'}
+        <ProductTourInlineCallout
+            description="Follow these SDK instructions in your own application. When it is connected, return here and continue to wait for the first event."
+            onContinue={() =>
+                document.dispatchEvent(new CustomEvent('product-tour:advance', { detail: { stepId: 'sdk-instructions', tourId: 'configure-project' } }))}
+            onDismiss={() => document.dispatchEvent(new CustomEvent('product-tour:dismissed', { detail: { tourId: 'configure-project' } }))}
+            title="Connect your application"
+            tourId="configure-project"
+        />
+    {/if}
 
     {#if selectedProjectType}
         <P
