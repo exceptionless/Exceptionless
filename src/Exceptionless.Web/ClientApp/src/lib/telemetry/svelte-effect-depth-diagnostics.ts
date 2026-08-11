@@ -184,6 +184,10 @@ function recordStateUpdate(source: unknown) {
     totalStateUpdates++;
     let updates = stateSourceUpdates.get(source);
     if (!updates) {
+        if (stateSourceUpdates.size >= MAX_STATE_SOURCES) {
+            return;
+        }
+
         updates = { captureCount: 0, count: 0, stacks: new Map() };
         stateSourceUpdates.set(source, updates);
     }

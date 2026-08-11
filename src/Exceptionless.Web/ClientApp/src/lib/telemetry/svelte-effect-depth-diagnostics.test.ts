@@ -72,4 +72,27 @@ describe('Svelte effect-depth diagnostics', () => {
         expect(attached.stateSources[0]?.stacks.length).toBeLessThanOrEqual(4);
         expect(JSON.stringify(attached)).not.toContain('secret-state-value');
     });
+
+    it('bounds state source collection during high-fan-out updates', () => {
+        installSvelteEffectDepthDiagnostics();
+        const diagnostics = globalThis.__exceptionlessSvelteEffectDepthDiagnostics!;
+
+        diagnostics.startFlush();
+        for (let index = 0; index < 100; index++) {
+            diagnostics.recordStateUpdate({ index });
+        }
+
+        const overflowSource = {};
+        for (let index = 0; index < 100; index++) {
+            diagnostics.recordStateUpdate(overflowSource);
+        }
+
+        const error = new Error('effect_update_depth_exceeded');
+        diagnostics.attachEffectDepthError(error, null);
+
+        const attached = (error as Error & { svelte_effect_depth: { stateSources: { count: number }[]; totalStateUpdates: number } }).svelte_effect_depth;
+        expect(attached.totalStateUpdates).toBe(200);
+        expect(attached.stateSources).toHaveLength(8);
+        expect(attached.stateSources.every((source) => source.count === 1)).toBe(true);
+    });
 });
