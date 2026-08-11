@@ -305,7 +305,7 @@
         }
 
         const allSteps = orderStepsForViewport(id, definition.getSteps(context)).filter(
-            (step) => !step.optional || !step.anchor || document.querySelector(productTourSelector(step.anchor))
+            (step) => !step.optional || !step.anchor || hasVisibleTarget(productTourSelector(step.anchor))
         );
         const detailRouteResume = id === 'investigate-error' && resumeStepId === 'choose-error' && /\/(event|stack)\//.test(pathname);
         const effectiveResumeStepId = detailRouteResume ? 'inspect-details' : resumeStepId;
@@ -496,18 +496,18 @@
         }
 
         const selector = productTourSelector(step.anchor);
-        if (step.anchor === PRODUCT_TOUR_ANCHORS.appNavigation && !document.querySelector(selector)) {
+        if (step.anchor === PRODUCT_TOUR_ANCHORS.appNavigation && isMobileViewport() && !hasVisibleTarget(selector)) {
             (document.querySelector(productTourSelector('mobile-navigation-trigger')) as HTMLElement | null)?.click();
         }
 
-        if (document.querySelector(selector)) {
+        if (hasVisibleTarget(selector)) {
             return true;
         }
 
         const timeout = step.waitForElement ?? 1200;
         return await new Promise((resolvePromise) => {
             const observer = new MutationObserver(() => {
-                if (!document.querySelector(selector)) {
+                if (!hasVisibleTarget(selector)) {
                     return;
                 }
 
@@ -519,8 +519,13 @@
                 observer.disconnect();
                 resolvePromise(false);
             }, timeout);
-            observer.observe(document.body, { childList: true, subtree: true });
+            observer.observe(document.body, { attributes: true, childList: true, subtree: true });
         });
+    }
+
+    function hasVisibleTarget(selector: string): boolean {
+        const element = document.querySelector<HTMLElement>(selector);
+        return !!element && element.getClientRects().length > 0;
     }
 
     function isMobileViewport(): boolean {
@@ -537,7 +542,7 @@
     }
 
     function closeMobileNavigation(): void {
-        if (document.querySelector(productTourSelector(PRODUCT_TOUR_ANCHORS.appNavigation))) {
+        if (hasVisibleTarget(productTourSelector(PRODUCT_TOUR_ANCHORS.appNavigation))) {
             (document.querySelector(productTourSelector('mobile-navigation-trigger')) as HTMLElement | null)?.click();
         }
     }
@@ -708,7 +713,7 @@
         }
 
         const definition = getProductTour(id);
-        const steps = definition.getSteps(context).filter((step) => !step.optional || !step.anchor || document.querySelector(productTourSelector(step.anchor)));
+        const steps = definition.getSteps(context).filter((step) => !step.optional || !step.anchor || hasVisibleTarget(productTourSelector(step.anchor)));
         const index = steps.findIndex((step) => step.id === stepId);
         if (index >= 0) {
             void advance(id, definition.version, activeSource, steps, index);
@@ -741,7 +746,7 @@
             return;
         }
 
-        const steps = definition.getSteps(context).filter((step) => !step.optional || !step.anchor || document.querySelector(productTourSelector(step.anchor)));
+        const steps = definition.getSteps(context).filter((step) => !step.optional || !step.anchor || hasVisibleTarget(productTourSelector(step.anchor)));
         const index = steps.findIndex((step) => step.id === 'choose-error');
         if (index >= 0) {
             productTourRuntime.set('investigate-error', 'inspect-details');
