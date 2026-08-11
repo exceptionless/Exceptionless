@@ -23,6 +23,7 @@
     import Braces from '@lucide/svelte/icons/braces';
     import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
     import Help from '@lucide/svelte/icons/circle-help';
+    import Compass from '@lucide/svelte/icons/compass';
     import CreditCard from '@lucide/svelte/icons/credit-card';
     import LogOut from '@lucide/svelte/icons/log-out';
     import Plus from '@lucide/svelte/icons/plus';
@@ -36,6 +37,7 @@
         isLoading: boolean;
         open?: boolean;
         openChat: () => void;
+        openGuidedTours: () => void;
         openKeyboardShortcuts: () => Promise<void> | void;
         organizations?: ViewOrganization[];
         user: undefined | ViewCurrentUser;
@@ -48,6 +50,7 @@
         isLoading,
         open = $bindable(false),
         openChat,
+        openGuidedTours,
         openKeyboardShortcuts,
         organizations = [],
         user
@@ -75,6 +78,12 @@
     function onKeyboardShortcutsClick() {
         onMenuClick();
         void openKeyboardShortcuts();
+    }
+
+    function onGuidedToursClick(): void {
+        onMenuClick();
+        open = false;
+        openGuidedTours();
     }
 
     function navigateTo(href: string): void {
@@ -131,7 +140,12 @@
             <DropdownMenu.Root bind:open>
                 <DropdownMenu.Trigger>
                     {#snippet child({ props })}
-                        <Sidebar.MenuButton size="lg" class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground" {...props}>
+                        <Sidebar.MenuButton
+                            size="lg"
+                            class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                            data-tour="help-menu"
+                            {...props}
+                        >
                             <Avatar.Root class="size-8 rounded-lg" title="Profile Image">
                                 {#await gravatar.src}
                                     <Avatar.Fallback class="rounded-lg">{gravatar.initials}</Avatar.Fallback>
@@ -215,6 +229,10 @@
                             Help
                         </DropdownMenu.SubTrigger>
                         <DropdownMenu.SubContent>
+                            <DropdownMenu.Item onSelect={onGuidedToursClick}>
+                                <Compass />
+                                <span class="w-full">Guided Tours…</span>
+                            </DropdownMenu.Item>
                             {#if isChatEnabled}
                                 <DropdownMenu.Item class="gap-2 p-2" onSelect={onChatClick}>
                                     <Help />

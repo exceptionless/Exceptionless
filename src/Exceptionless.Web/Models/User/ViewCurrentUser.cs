@@ -2,12 +2,19 @@
 using System.Text;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
 
 namespace Exceptionless.Web.Models;
 
 public record ViewCurrentUser : ViewUser
 {
-    public ViewCurrentUser(User user, IntercomOptions options)
+    public ViewCurrentUser()
+    {
+        OAuthAccounts = [];
+        ProductTours = new Dictionary<string, ProductTourProgress>(StringComparer.Ordinal);
+    }
+
+    public ViewCurrentUser(User user, IntercomOptions options) : this()
     {
         Id = user.Id;
         OrganizationIds = user.OrganizationIds;
@@ -22,11 +29,13 @@ public record ViewCurrentUser : ViewUser
         Hash = HMACSHA256HashString(user.Id, options);
         HasLocalAccount = !String.IsNullOrWhiteSpace(user.Password);
         OAuthAccounts = user.OAuthAccounts;
+        ProductTours = new Dictionary<string, ProductTourProgress>(user.ProductTours, StringComparer.Ordinal);
     }
 
     public string? Hash { get; set; }
     public bool HasLocalAccount { get; set; }
     public ICollection<OAuthAccount> OAuthAccounts { get; set; }
+    public IDictionary<string, ProductTourProgress> ProductTours { get; set; }
 
     private static string? HMACSHA256HashString(string value, IntercomOptions options)
     {

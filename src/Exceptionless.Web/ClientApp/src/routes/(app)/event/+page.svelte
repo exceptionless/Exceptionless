@@ -981,22 +981,30 @@
             />
         {/if}
 
-        <EventsDataTable bind:limit={eventsQueryParameters.limit!} isLoading={isSavedViewRoutePending || eventsQuery.isFetching} {rowClick} {rowHref} {table}>
-            {#snippet footerChildren()}
-                <div class="h-9 min-w-35">
-                    {#if table.getSelectedRowModel().flatRows.length}
-                        <EventsBulkActionsDropdownMenu {table} />
-                    {/if}
-                </div>
+        <div data-tour="event-list">
+            <EventsDataTable
+                bind:limit={eventsQueryParameters.limit!}
+                isLoading={isSavedViewRoutePending || eventsQuery.isFetching}
+                {rowClick}
+                {rowHref}
+                {table}
+            >
+                {#snippet footerChildren()}
+                    <div class="h-9 min-w-35">
+                        {#if table.getSelectedRowModel().flatRows.length}
+                            <EventsBulkActionsDropdownMenu {table} />
+                        {/if}
+                    </div>
 
-                <DataTable.Selection {table} />
-                <DataTable.PageSize bind:value={eventsQueryParameters.limit!} {table}></DataTable.PageSize>
-                <div class="flex items-center space-x-6 lg:space-x-8">
-                    <DataTable.PageCount {table} />
-                    <DataTable.Pagination {table} />
-                </div>
-            {/snippet}
-        </EventsDataTable>
+                    <DataTable.Selection {table} />
+                    <DataTable.PageSize bind:value={eventsQueryParameters.limit!} {table}></DataTable.PageSize>
+                    <div class="flex items-center space-x-6 lg:space-x-8">
+                        <DataTable.PageCount {table} />
+                        <DataTable.Pagination {table} />
+                    </div>
+                {/snippet}
+            </EventsDataTable>
+        </div>
     </div>
 </div>
 

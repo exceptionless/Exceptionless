@@ -1,0 +1,630 @@
+<script lang="ts">
+    import type { AssistantAccess } from '$features/assistant/models';
+    import type { ViewProject } from '$features/projects/models';
+    import type { ViewCurrentUser } from '$features/users/models';
+    import type { Driver } from 'driver.js';
+
+    import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
+    import * as AlertDialog from '$comp/ui/alert-dialog';
+    import { submitFeatureUsage } from '$features/auth/exceptionless-session';
+    import { putCurrentUserProductTour } from '$features/users/api.svelte';
+    import { tick } from 'svelte';
+    import { toast } from 'svelte-sonner';
+
+    import type { ProductTourContext, ProductTourId, ProductTourKey, ProductTourLaunchSource, ProductTourListItem, ProductTourStep } from '../types';
+
+    import { productTourSelector } from '../anchors';
+    import { getProductTour, getProductTourItems, getRecommendedProductTourId } from '../catalog';
+    import { shouldOfferProductTourWelcome } from '../eligibility';
+    import { productTourRuntime } from '../state.svelte';
+    import { buildProductTourTelemetryEvent, type ProductTourTelemetryEvent } from '../telemetry';
+    import ProductTourCatalog from './product-tour-catalog.svelte';
+    import ProductTourWelcome from './product-tour-welcome.svelte';
+    import 'driver.js/dist/driver.css';
+
+    import '../product-tours.css';
+
+    interface Props {
+        assistantAccess?: AssistantAccess;
+        closeOverlays: () => void;
+        currentUser?: ViewCurrentUser;
+        isAnyOverlayOpen: boolean;
+        isImpersonating: boolean;
+        isSetupPage: boolean;
+        organizationId?: string;
+        pathname: string;
+        projects: ViewProject[];
+        stateSettled: boolean;
+    }
+
+    interface StoredTourState {
+        source: ProductTourLaunchSource;
+        stepId?: string;
+        tourId: ProductTourId;
+        version: number;
+    }
+
+    const WELCOME_VERSION = 1;
+    const SESSION_KEY = 'exceptionless.product-tour';
+    const SYSTEM_PATH = resolve('/(app)/system');
+
+    let {
+        assistantAccess,
+        closeOverlays,
+        currentUser,
+        isAnyOverlayOpen,
+        isImpersonating,
+        isSetupPage,
+        organizationId,
+        pathname,
+        projects,
+        stateSettled
+    }: Props = $props();
+
+    let catalogOpen = $state(false);
+    let catalogSource = $state<ProductTourLaunchSource>('catalog');
+    let welcomeOpen = $state(false);
+    let welcomeHandled = $state(false);
+    let welcomeShown = $state(false);
+    let welcomeBrowsePending = $state(false);
+    let confirmNewProjectOpen = $state(false);
+    let pendingConfigureSource = $state<ProductTourLaunchSource>();
+    let driverInstance = $state.raw<Driver>();
+    let activeSource = $state<ProductTourLaunchSource>();
+    let activeOrganizationId = $state<string>();
+    let isFinishing = false;
+    let isSuspendingInline = false;
+    let isNavigatingTour = false;
+    let driverPath = '';
+    let resumeAttemptedPath = '';
+    let overlayRevision = $state(0);
+
+    const progressMutation = putCurrentUserProductTour();
+    const context = $derived<ProductTourContext>({ assistantAccess, isSetupPage, organizationId, pathname, projects });
+    const items = $derived(getProductTourItems(context, currentUser?.product_tours));
+    const recommended = $derived.by(() => {
+        const id = getRecommendedProductTourId(context);
+        return items.find((item) => item.id === id) ?? items[0]!;
+    });
+
+    $effect(() => {
+        const welcomeProgress = currentUser?.product_tours?.welcome;
+        void overlayRevision;
+        const shouldShow =
+            stateSettled &&
+            !!currentUser &&
+            !welcomeHandled &&
+            !welcomeOpen &&
+            !catalogOpen &&
+            !isAnyOverlayOpen &&
+            !hasCompetingOverlay() &&
+            !isImpersonating &&
+            !pathname.startsWith(SYSTEM_PATH) &&
+            shouldOfferProductTourWelcome(welcomeProgress, WELCOME_VERSION);
+
+        if (!shouldShow) {
+            return;
+        }
+
+        welcomeOpen = true;
+        if (!welcomeShown) {
+            welcomeShown = true;
+            void track('chooser-shown', 'welcome', WELCOME_VERSION, 'automatic');
+        }
+    });
+
+    $effect(() => {
+        const observer = new MutationObserver(() => (overlayRevision += 1));
+        observer.observe(document.body, { childList: true });
+        return () => observer.disconnect();
+    });
+
+    $effect(() => {
+        const currentPath = pathname;
+        if (!stateSettled || driverInstance || resumeAttemptedPath === currentPath) {
+            return;
+        }
+
+        const stored = readStoredState();
+        if (!stored) {
+            return;
+        }
+
+        let storedVersion: number;
+        try {
+            storedVersion = getProductTour(stored.tourId).version;
+        } catch {
+            clearStoredState();
+            return;
+        }
+
+        if (storedVersion !== stored.version) {
+            clearStoredState();
+            return;
+        }
+
+        resumeAttemptedPath = currentPath;
+        void launch(stored.tourId, stored.source, stored.stepId, false);
+    });
+
+    $effect(() => {
+        const currentPath = pathname;
+        if (!driverInstance || !driverPath || driverPath === currentPath) {
+            return;
+        }
+
+        isNavigatingTour = true;
+        isFinishing = true;
+        driverInstance.destroy();
+        isNavigatingTour = false;
+        isFinishing = false;
+        driverPath = '';
+        resumeAttemptedPath = '';
+    });
+
+    $effect(() => {
+        if (!stateSettled || currentUser) {
+            return;
+        }
+
+        driverInstance?.destroy();
+        driverInstance = undefined;
+        productTourRuntime.clear();
+        clearStoredState();
+    });
+
+    $effect(() => {
+        const currentOrganizationId = organizationId;
+        if (!productTourRuntime.activeTourId || activeOrganizationId === currentOrganizationId) {
+            return;
+        }
+
+        if (productTourRuntime.activeTourId === 'configure-project' && pathname === resolve('/(app)/organization/add')) {
+            activeOrganizationId = currentOrganizationId;
+            return;
+        }
+
+        stopActiveTour(true);
+    });
+
+    function getItem(id: ProductTourId): ProductTourListItem {
+        return items.find((item) => item.id === id)!;
+    }
+
+    function hasCompetingOverlay(): boolean {
+        return Array.from(document.querySelectorAll<HTMLElement>('[role="alertdialog"], [role="dialog"], [data-assistant-panel]')).some(
+            (element) => element.getClientRects().length > 0 && !element.closest('.driver-popover') && !element.closest('[data-product-tour-overlay]')
+        );
+    }
+
+    export function openCatalog(source: ProductTourLaunchSource = 'catalog'): void {
+        closeOverlays();
+        catalogSource = source;
+        catalogOpen = true;
+    }
+
+    export async function startTour(id: ProductTourId, source: ProductTourLaunchSource = 'catalog'): Promise<void> {
+        if (productTourRuntime.activeTourId) {
+            stopActiveTour(true);
+        }
+
+        const item = getItem(id);
+        if (!item.availability.available) {
+            openCatalog(source);
+            return;
+        }
+
+        catalogOpen = false;
+        welcomeOpen = false;
+        closeOverlays();
+        await tick();
+        if (hasCompetingOverlay()) {
+            toast.info('Close the open dialog or panel before starting a guided tour.');
+            return;
+        }
+
+        if (welcomeBrowsePending) {
+            try {
+                await recordProgress('welcome', WELCOME_VERSION, 'completed');
+            } catch {
+                toast.error('We could not save your guided-tour preference. Please try again.');
+                return;
+            }
+
+            welcomeBrowsePending = false;
+            void track('chooser-started', id, item.version, source);
+        }
+
+        if (id === 'configure-project' && organizationId && !projects.some((project) => !project.is_configured) && !pathname.includes('/project/add')) {
+            pendingConfigureSource = source;
+            confirmNewProjectOpen = true;
+            return;
+        }
+
+        await navigateOrLaunch(id, source);
+    }
+
+    async function navigateOrLaunch(id: ProductTourId, source: ProductTourLaunchSource): Promise<void> {
+        const destination = getDestination(id);
+        const definition = getProductTour(id);
+
+        if (destination && destination !== pathname) {
+            writeStoredState({ source, tourId: id, version: definition.version });
+            await goto(destination);
+            return;
+        }
+
+        await launch(id, source);
+    }
+
+    function getDestination(id: ProductTourId): string | undefined {
+        if (id === 'create-saved-view' || id === 'investigate-error') {
+            return resolve('/(app)/event');
+        }
+
+        if (id !== 'configure-project') {
+            return undefined;
+        }
+
+        if (!organizationId) {
+            return resolve('/(app)/organization/add');
+        }
+
+        const project = projects.find((item) => !item.is_configured);
+        return project?.id ? `${resolve('/(app)/project/[projectId]/configure', { projectId: project.id })}?redirect=true` : undefined;
+    }
+
+    async function launch(id: ProductTourId, source: ProductTourLaunchSource, resumeStepId?: string, emitStarted = true): Promise<void> {
+        const definition = getProductTour(id);
+        const allSteps = definition
+            .getSteps(context)
+            .filter((step) => !step.optional || !step.anchor || document.querySelector(productTourSelector(step.anchor)));
+        let startIndex = resumeStepId ? allSteps.findIndex((step) => step.id === resumeStepId) : 0;
+        if (startIndex < 0) {
+            startIndex = 0;
+        }
+
+        const firstStep = allSteps[startIndex];
+        if (!firstStep || !(await ensureTarget(firstStep))) {
+            await failTour(id, definition.version, firstStep?.id ?? 'missing-start', source);
+            return;
+        }
+
+        if (firstStep.presentation === 'inline') {
+            activeSource = source;
+            activeOrganizationId = organizationId;
+            productTourRuntime.set(id, firstStep.id);
+            writeStoredState({ source, stepId: firstStep.id, tourId: id, version: definition.version });
+            void track(emitStarted ? 'started' : 'step', id, definition.version, source, firstStep.id);
+            return;
+        }
+
+        const { driver } = await import('driver.js');
+        activeSource = source;
+        activeOrganizationId = organizationId;
+        isFinishing = false;
+        const steps = allSteps.slice(startIndex);
+
+        driverInstance = driver({
+            allowClose: true,
+            animate: !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+            disableActiveInteraction: false,
+            onCloseClick: () => void dismissTour(id, definition.version, source),
+            onDestroyed: () => {
+                const activeStepId = productTourRuntime.activeStepId;
+                driverInstance = undefined;
+                if (!isSuspendingInline && !isNavigatingTour) {
+                    productTourRuntime.clear();
+                    activeSource = undefined;
+                    activeOrganizationId = undefined;
+                    if (!isFinishing) {
+                        clearStoredState();
+                        void track('dismissed', id, definition.version, source, activeStepId);
+                    }
+                }
+
+                if (!isFinishing && !isSuspendingInline && !isNavigatingTour) {
+                    void recordProgress(id, definition.version, 'dismissed').catch(() => toast.error('We could not save your guided-tour progress.'));
+                }
+            },
+            onHighlighted: (_, __, options) => {
+                const index = options.state.activeIndex ?? 0;
+                const step = steps[index];
+                if (!step) {
+                    return;
+                }
+
+                productTourRuntime.set(id, step.id);
+                writeStoredState({ source, stepId: step.resumeStepId ?? step.id, tourId: id, version: definition.version });
+                void track('step', id, definition.version, source, step.id);
+            },
+            overlayClickBehavior: 'close',
+            popoverClass: 'product-tour-popover',
+            showProgress: true,
+            smoothScroll: true,
+            steps: steps.map((step, index) => ({
+                element: step.anchor ? () => document.querySelector(productTourSelector(step.anchor!))! : undefined,
+                popover: {
+                    description: step.description,
+                    doneBtnText: 'Done',
+                    nextBtnText: step.advanceOnClick ? 'Continue' : 'Next',
+                    onNextClick: () => void advance(id, definition.version, source, steps, index),
+                    showButtons: getButtons(step, index, steps.length),
+                    title: step.title
+                }
+            }))
+        });
+        driverPath = pathname;
+
+        if (emitStarted) {
+            void track('started', id, definition.version, source);
+        }
+
+        driverInstance.drive(0);
+    }
+
+    function getButtons(step: ProductTourStep, index: number, count: number): Array<'close' | 'next' | 'previous'> {
+        const buttons: Array<'close' | 'next' | 'previous'> = ['close'];
+        if (index > 0) {
+            buttons.push('previous');
+        }
+
+        if (index < count - 1 || step.showDone !== false) {
+            buttons.push('next');
+        }
+
+        return buttons;
+    }
+
+    async function advance(id: ProductTourId, version: number, source: ProductTourLaunchSource, steps: ProductTourStep[], index: number): Promise<void> {
+        const step = steps[index]!;
+        if (step.advanceOnClick && step.anchor) {
+            (document.querySelector(productTourSelector(step.anchor)) as HTMLElement | null)?.click();
+            await tick();
+        }
+
+        const next = steps[index + 1];
+        if (!next) {
+            await completeTour(id, version, source);
+            return;
+        }
+
+        if (!(await ensureTarget(next))) {
+            if (next.optional) {
+                driverInstance?.moveNext();
+                return;
+            }
+
+            await failTour(id, version, next.id, source);
+            return;
+        }
+
+        if (next.presentation === 'inline') {
+            isSuspendingInline = true;
+            isFinishing = true;
+            writeStoredState({ source, stepId: next.id, tourId: id, version });
+            driverInstance?.destroy();
+            isSuspendingInline = false;
+            isFinishing = false;
+            activeSource = source;
+            activeOrganizationId = organizationId;
+            productTourRuntime.set(id, next.id);
+            void track('step', id, version, source, next.id);
+            return;
+        }
+
+        driverInstance?.moveNext();
+    }
+
+    async function ensureTarget(step: ProductTourStep): Promise<boolean> {
+        if (!step.anchor) {
+            return true;
+        }
+
+        const selector = productTourSelector(step.anchor);
+        if (document.querySelector(selector)) {
+            return true;
+        }
+
+        const timeout = step.waitForElement ?? 1200;
+        return await new Promise((resolvePromise) => {
+            const observer = new MutationObserver(() => {
+                if (!document.querySelector(selector)) {
+                    return;
+                }
+
+                observer.disconnect();
+                window.clearTimeout(timeoutId);
+                resolvePromise(true);
+            });
+            const timeoutId = window.setTimeout(() => {
+                observer.disconnect();
+                resolvePromise(false);
+            }, timeout);
+            observer.observe(document.body, { childList: true, subtree: true });
+        });
+    }
+
+    async function onWelcomeStart(): Promise<void> {
+        try {
+            await recordProgress('welcome', WELCOME_VERSION, 'completed');
+        } catch {
+            toast.error('We could not save your guided-tour preference. Please try again.');
+            return;
+        }
+
+        welcomeHandled = true;
+        welcomeOpen = false;
+        void track('chooser-started', recommended.id, recommended.version, 'automatic');
+        await startTour(recommended.id, 'automatic');
+    }
+
+    async function onWelcomeSkip(): Promise<void> {
+        try {
+            await recordProgress('welcome', WELCOME_VERSION, 'dismissed');
+        } catch {
+            toast.error('We could not save your guided-tour preference. Please try again.');
+            return;
+        }
+
+        welcomeHandled = true;
+        welcomeOpen = false;
+        void track('chooser-skipped', 'welcome', WELCOME_VERSION, 'automatic');
+    }
+
+    function onWelcomeBrowse(): void {
+        welcomeHandled = true;
+        welcomeBrowsePending = true;
+        welcomeOpen = false;
+        openCatalog('catalog');
+    }
+
+    async function confirmNewProject(): Promise<void> {
+        const source = pendingConfigureSource ?? 'catalog';
+        pendingConfigureSource = undefined;
+        confirmNewProjectOpen = false;
+        const definition = getProductTour('configure-project');
+        writeStoredState({ source, tourId: definition.id, version: definition.version });
+        await goto(resolve('/(app)/project/add'));
+    }
+
+    async function completeTour(id: ProductTourId, version: number, source: ProductTourLaunchSource): Promise<void> {
+        isFinishing = true;
+        try {
+            await recordProgress(id, version, 'completed');
+        } catch {
+            isFinishing = false;
+            toast.error('We could not save your guided-tour progress. Please try again.');
+            return;
+        }
+
+        clearStoredState();
+        void track('completed', id, version, source);
+        driverInstance?.destroy();
+        productTourRuntime.clear();
+        activeSource = undefined;
+        activeOrganizationId = undefined;
+    }
+
+    async function dismissTour(id: ProductTourId, version: number, source: ProductTourLaunchSource): Promise<void> {
+        isFinishing = true;
+        clearStoredState();
+        await recordProgress(id, version, 'dismissed').catch(() => toast.error('We could not save your guided-tour progress.'));
+        void track('dismissed', id, version, source, productTourRuntime.activeStepId);
+        driverInstance?.destroy();
+        productTourRuntime.clear();
+        activeSource = undefined;
+        activeOrganizationId = undefined;
+    }
+
+    async function failTour(id: ProductTourId, version: number, stepId: string, source: ProductTourLaunchSource): Promise<void> {
+        isFinishing = true;
+        clearStoredState();
+        void track('failed', id, version, source, stepId);
+        toast.error('This guide could not find the next screen. You can restart it from Guided Tours.');
+        driverInstance?.destroy();
+        productTourRuntime.clear();
+        activeSource = undefined;
+        activeOrganizationId = undefined;
+    }
+
+    function stopActiveTour(clearSession: boolean): void {
+        isFinishing = true;
+        if (clearSession) {
+            clearStoredState();
+        }
+
+        driverInstance?.destroy();
+        productTourRuntime.clear();
+        activeSource = undefined;
+        activeOrganizationId = undefined;
+    }
+
+    async function recordProgress(key: string, version: number, status: 'completed' | 'dismissed'): Promise<void> {
+        await progressMutation.mutateAsync({ progress: { status, version }, tourId: key });
+    }
+
+    async function track(
+        event: ProductTourTelemetryEvent,
+        id: ProductTourKey,
+        version: number,
+        source: ProductTourLaunchSource,
+        stepId?: string
+    ): Promise<void> {
+        await submitFeatureUsage(buildProductTourTelemetryEvent(event, id, version, source, stepId)).catch(() => undefined);
+    }
+
+    function readStoredState(): StoredTourState | undefined {
+        try {
+            const value = sessionStorage.getItem(SESSION_KEY);
+            return value ? (JSON.parse(value) as StoredTourState) : undefined;
+        } catch {
+            clearStoredState();
+            return undefined;
+        }
+    }
+
+    function writeStoredState(state: StoredTourState): void {
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(state));
+    }
+
+    function clearStoredState(): void {
+        sessionStorage.removeItem(SESSION_KEY);
+    }
+
+    function onDomainComplete(event: Event): void {
+        const detail = (event as CustomEvent<{ tourId?: ProductTourId }>).detail;
+        const id = detail?.tourId;
+        if (!id || productTourRuntime.activeTourId !== id || !activeSource) {
+            return;
+        }
+
+        const definition = getProductTour(id);
+        void completeTour(id, definition.version, activeSource);
+    }
+
+    function onDomainDismiss(event: Event): void {
+        const id = (event as CustomEvent<{ tourId?: ProductTourId }>).detail?.tourId;
+        if (!id || productTourRuntime.activeTourId !== id || !activeSource) {
+            return;
+        }
+
+        const definition = getProductTour(id);
+        void dismissTour(id, definition.version, activeSource);
+    }
+
+    $effect(() => {
+        document.addEventListener('product-tour:completed', onDomainComplete);
+        document.addEventListener('product-tour:dismissed', onDomainDismiss);
+        return () => {
+            document.removeEventListener('product-tour:completed', onDomainComplete);
+            document.removeEventListener('product-tour:dismissed', onDomainDismiss);
+        };
+    });
+</script>
+
+<ProductTourWelcome
+    bind:open={welcomeOpen}
+    onBrowse={onWelcomeBrowse}
+    onSkip={() => void onWelcomeSkip()}
+    onStart={() => void onWelcomeStart()}
+    {recommended}
+/>
+
+<ProductTourCatalog bind:open={catalogOpen} {items} onStart={(id) => void startTour(id, catalogSource)} />
+
+<AlertDialog.Root bind:open={confirmNewProjectOpen}>
+    <AlertDialog.Content data-product-tour-overlay>
+        <AlertDialog.Header>
+            <AlertDialog.Title>Create another project?</AlertDialog.Title>
+            <AlertDialog.Description>
+                Every accessible project is already configured. A new project uses plan capacity and will remain after the guide.
+            </AlertDialog.Description>
+        </AlertDialog.Header>
+        <AlertDialog.Footer>
+            <AlertDialog.Cancel onclick={() => (pendingConfigureSource = undefined)}>Cancel</AlertDialog.Cancel>
+            <AlertDialog.Action onclick={() => void confirmNewProject()}>Create Project</AlertDialog.Action>
+        </AlertDialog.Footer>
+    </AlertDialog.Content>
+</AlertDialog.Root>

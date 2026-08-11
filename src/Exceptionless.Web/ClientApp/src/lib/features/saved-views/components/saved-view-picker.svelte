@@ -14,6 +14,7 @@
     import { toFilter } from '$features/events/components/filters/helpers.svelte';
     import { serializeFilters } from '$features/events/components/filters/helpers.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import { productTourRuntime } from '$features/product-tours/state.svelte';
     import Columns3 from '@lucide/svelte/icons/columns-3';
     import Pencil from '@lucide/svelte/icons/pencil';
     import Plus from '@lucide/svelte/icons/plus';
@@ -51,8 +52,9 @@
         filters: IFilter[];
         isModified: boolean;
         onClearSavedView: () => void;
-        onLoadView: (view: SavedView) => void;
+        onLoadView: (view: SavedView) => Promise<void> | void;
         onResetToSaved: () => void;
+        onSavedViewCreated?: (view: SavedView) => Promise<void> | void;
         savedViews: SavedView[];
         setShowChart?: (show: boolean) => void;
         setShowStats?: (show: boolean) => void;
@@ -74,6 +76,7 @@
         onClearSavedView,
         onLoadView,
         onResetToSaved,
+        onSavedViewCreated,
         savedViews,
         setShowChart,
         setShowStats,
@@ -201,7 +204,9 @@
         try {
             const result = await createMutation.mutateAsync(body);
             isSaveDialogOpen = false;
-            onLoadView(result);
+            await onLoadView(result);
+            await onSavedViewCreated?.(result);
+            document.dispatchEvent(new CustomEvent('product-tour:completed', { detail: { tourId: 'create-saved-view' } }));
             toast.success(`Saved view "${result.name}" created.`);
         } catch (error) {
             toast.error(getErrorMessage(error, 'Failed to save view. Please try again.'));
@@ -280,7 +285,7 @@
 <DropdownMenu.Root bind:open={isMenuOpen}>
     <DropdownMenu.Trigger>
         {#snippet child({ props })}
-            <Button {...props} class="relative gap-x-1.5 px-3" size="lg" variant="outline" title="Manage View Settings">
+            <Button {...props} class="relative gap-x-1.5 px-3" data-tour="saved-view-trigger" size="lg" variant="outline" title="Manage View Settings">
                 <SlidersHorizontal class="size-4" aria-hidden="true" />
                 <span>View</span>
                 {#if isModified}
@@ -298,7 +303,7 @@
                     Save
                 </DropdownMenu.Item>
             {/if}
-            <DropdownMenu.Item disabled={saving} onclick={openSaveDialog}>
+            <DropdownMenu.Item data-tour="saved-view-save-as" disabled={saving} onclick={openSaveDialog}>
                 <Plus class="mr-2 size-4" aria-hidden="true" />
                 Save As...
             </DropdownMenu.Item>
@@ -366,6 +371,7 @@
         {duplicateView}
         {savedViews}
         {saving}
+        defaultPrivate={productTourRuntime.isActive('create-saved-view')}
         onSave={handleSave}
         onClose={() => (isSaveDialogOpen = false)}
         {onLoadView}

@@ -129,7 +129,9 @@ export function getSavedViewsByViewQuery(request: { route: { organizationId: str
         enabled: () => !!accessToken.current && !!request.route.organizationId && !!request.route.view,
         queryFn: async () => {
             const client = useFetchClient();
-            const response = await client.getJSON<SavedView[]>(`organizations/${request.route.organizationId}/saved-views/${request.route.view}`);
+            const response = await client.getJSON<SavedView[]>(`organizations/${request.route.organizationId}/saved-views/${request.route.view}`, {
+                params: { limit: 1000 }
+            });
             return response.data!;
         },
         queryKey: queryKeys.view(request.route.organizationId, request.route.view),
@@ -142,7 +144,7 @@ export function getSavedViewsQuery(request: { route: { organizationId: string | 
         enabled: () => !!accessToken.current && !!request.route.organizationId,
         queryFn: async () => {
             const client = useFetchClient();
-            const response = await client.getJSON<SavedView[]>(`organizations/${request.route.organizationId}/saved-views`);
+            const response = await client.getJSON<SavedView[]>(`organizations/${request.route.organizationId}/saved-views`, { params: { limit: 1000 } });
             return response.data!;
         },
         queryKey: queryKeys.organization(request.route.organizationId),

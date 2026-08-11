@@ -79,6 +79,8 @@
         <AssistantFixButton prepareContext={prepareAssistantContext} resource="event" />
     {/snippet}
     {#if eventId}
-        <EventsOverview {filterChanged} id={eventId} {handleError} onEventLoaded={handleEventLoaded} onNavigate={(newId) => (eventId = newId)} />
+        <div data-tour="event-details">
+            <EventsOverview {filterChanged} id={eventId} {handleError} onEventLoaded={handleEventLoaded} onNavigate={(newId) => (eventId = newId)} />
+        </div>
     {/if}
 </DetailSheet>

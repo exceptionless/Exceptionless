@@ -100,6 +100,7 @@
                     <Field.Field data-invalid={ariaInvalid(field)}>
                         <Field.Label for={field.name}>Organization Name</Field.Label>
                         <Input
+                            data-tour="setup-organization-name"
                             id={field.name}
                             name={field.name}
                             placeholder="Enter organization name"
@@ -117,6 +118,7 @@
                     <Field.Field data-invalid={ariaInvalid(field)}>
                         <Field.Label for={field.name}>Project Name</Field.Label>
                         <Input
+                            data-tour="project-name"
                             id={field.name}
                             name={field.name}
                             placeholder="Enter project name"
@@ -131,7 +133,7 @@
             </form.Field>
             <form.Subscribe selector={(state) => state.isSubmitting}>
                 {#snippet children(isSubmitting)}
-                    <Button type="submit" class="mt-4 w-full" disabled={isSubmitting}>
+                    <Button data-tour="project-setup-submit" type="submit" class="mt-4 w-full" disabled={isSubmitting}>
                         {#if isSubmitting}
                             <Spinner /> Creating Setup...
                         {:else}

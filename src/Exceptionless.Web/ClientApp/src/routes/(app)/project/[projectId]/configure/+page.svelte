@@ -12,6 +12,8 @@
     import { openSupportChat } from '$features/intercom/chat';
     import { organization } from '$features/organizations/context.svelte';
     import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
+    import { productTourRuntime } from '$features/product-tours/state.svelte';
+    import { getProjectQuery } from '$features/projects/api.svelte';
     import { getProjectDefaultTokenQuery, patchToken } from '$features/tokens/api.svelte';
     import EnableTokenDialog from '$features/tokens/components/dialogs/enable-token-dialog.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
@@ -33,6 +35,13 @@
     const defaultTokenQuery = getProjectDefaultTokenQuery({
         route: {
             get projectId() {
+                return projectId;
+            }
+        }
+    });
+    const projectQuery = getProjectQuery({
+        route: {
+            get id() {
                 return projectId;
             }
         }
@@ -332,10 +341,29 @@ public partial class App : Application {
         const message = (event as CustomEvent<WebSocketMessageValue<'PersistentEventChanged'>>).detail;
 
         if (queryParams.redirect && message.project_id === projectId && message.change_type !== ChangeType.Removed) {
+            document.dispatchEvent(new CustomEvent('product-tour:completed', { detail: { tourId: 'configure-project' } }));
             toast.success('First event received. Opening Events...');
             await redirectToEventsWithFilter(organization.current, new ProjectFilter([projectId]));
         }
     });
+
+    async function refreshConfiguredProject(): Promise<void> {
+        if (!queryParams.redirect) {
+            return;
+        }
+
+        const result = await projectQuery.refetch();
+        if (!result.data?.is_configured) {
+            return;
+        }
+
+        document.dispatchEvent(new CustomEvent('product-tour:completed', { detail: { tourId: 'configure-project' } }));
+        toast.success('First event received. Opening Events...');
+        await redirectToEventsWithFilter(organization.current, new ProjectFilter([projectId]));
+    }
+
+    useEventListener(window, 'focus', () => void refreshConfiguredProject());
+    useEventListener(document, 'refresh', () => void refreshConfiguredProject());
 
     // Use Intercom from parent provider context
     const intercom = getIntercom();
@@ -350,7 +378,7 @@ public partial class App : Application {
 </script>
 
 <div class="space-y-6">
-    <Muted>Choose your project type and follow the steps below to connect your application to Exceptionless.</Muted>
+    <Muted data-tour="project-configure-token">Choose your project type and follow the steps below to connect your application to Exceptionless.</Muted>
 
     {#if isTokenDisabled}
         <Notification variant="destructive">
@@ -375,15 +403,24 @@ public partial class App : Application {
     {/if}
 
     {#if queryParams.redirect}
-        <Notification>
+        <Notification data-tour="project-configure-waiting">
             <NotificationTitle>Waiting for your first event</NotificationTitle>
             <NotificationDescription>
                 <P>Send an event from your app. When it arrives, we'll open the project Events page automatically.</P>
+                {#if productTourRuntime.isActive('configure-project')}
+                    <P class="mt-2">You can leave this tab while updating your application. The guide will resume here when you return.</P>
+                    <Button
+                        class="mt-2"
+                        onclick={() => document.dispatchEvent(new CustomEvent('product-tour:dismissed', { detail: { tourId: 'configure-project' } }))}
+                        size="sm"
+                        variant="outline">End guide</Button
+                    >
+                {/if}
             </NotificationDescription>
         </Notification>
     {/if}
 
-    <ol class="my-6 ml-6 list-decimal [&>li]:mt-2">
+    <ol class="my-6 ml-6 list-decimal [&>li]:mt-2" data-tour="project-configure-instructions">
         <li>
             <P>Choose your project type.</P>
             <Select.Root
@@ -394,7 +431,7 @@ public partial class App : Application {
                     queryParams.type = value;
                 }}
             >
-                <Select.Trigger class="w-full">
+                <Select.Trigger class="w-full" data-tour="project-configure-platform">
                     <span
                         >{#if selectedProjectType}
                             {selectedProjectType.platform}: {selectedProjectType.label}

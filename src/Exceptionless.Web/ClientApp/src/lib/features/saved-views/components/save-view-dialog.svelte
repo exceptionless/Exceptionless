@@ -1,10 +1,12 @@
 <script lang="ts">
     import { Muted } from '$comp/typography';
+    import * as Alert from '$comp/ui/alert';
     import { Button } from '$comp/ui/button';
     import * as Dialog from '$comp/ui/dialog';
     import { Input } from '$comp/ui/input';
     import { Label } from '$comp/ui/label';
     import { Switch } from '$comp/ui/switch';
+    import Info from '@lucide/svelte/icons/info';
 
     import type { SavedView } from '../models';
 
@@ -19,6 +21,7 @@
     } from '../slugs';
 
     interface Props {
+        defaultPrivate?: boolean;
         duplicateView?: SavedView;
         onClose: () => void;
         onLoadView: (view: SavedView) => void;
@@ -28,7 +31,7 @@
         saving: boolean;
     }
 
-    let { duplicateView, onClose, onLoadView, onSave, open = $bindable(), savedViews, saving }: Props = $props();
+    let { defaultPrivate = false, duplicateView, onClose, onLoadView, onSave, open = $bindable(), savedViews, saving }: Props = $props();
 
     let saveName = $state('');
     let saveSlug = $state('');
@@ -87,7 +90,7 @@
             saveName = '';
             saveSlug = '';
             isSlugDirty = false;
-            isPrivate = false;
+            isPrivate = defaultPrivate;
             attemptedSubmit = false;
         }
     });
@@ -115,12 +118,40 @@
     }
 </script>
 
-<Dialog.Root bind:open>
-    <Dialog.Content class="sm:max-w-100">
+<Dialog.Root
+    {open}
+    onOpenChange={(nextOpen) => {
+        if (nextOpen || !saving) {
+            open = nextOpen;
+        }
+    }}
+>
+    <Dialog.Content
+        class="sm:max-w-100"
+        data-tour="saved-view-dialog"
+        onEscapeKeydown={(event) => saving && event.preventDefault()}
+        onInteractOutside={(event) => saving && event.preventDefault()}
+    >
         <Dialog.Header>
             <Dialog.Title>Save View</Dialog.Title>
             <Dialog.Description>Save the current view configuration for quick access.</Dialog.Description>
         </Dialog.Header>
+        {#if defaultPrivate}
+            <Alert.Root data-tour="saved-view-inline-guide">
+                <Info aria-hidden="true" />
+                <Alert.Title>Guided tour</Alert.Title>
+                <Alert.Description>
+                    Review the current filters, time, display options, and columns. This practice view defaults to Private and is retained.
+                    <Button
+                        class="mt-2"
+                        onclick={() => document.dispatchEvent(new CustomEvent('product-tour:dismissed', { detail: { tourId: 'create-saved-view' } }))}
+                        size="sm"
+                        type="button"
+                        variant="outline">End guide</Button
+                    >
+                </Alert.Description>
+            </Alert.Root>
+        {/if}
         {#if duplicateView}
             <div class="bg-muted rounded-md p-3">
                 <Muted>
@@ -146,6 +177,7 @@
             <div class="flex flex-col gap-2">
                 <Label for="view-name">Name</Label>
                 <Input
+                    data-tour="saved-view-name"
                     id="view-name"
                     bind:value={saveName}
                     placeholder="e.g., Production Errors"
@@ -177,7 +209,7 @@
                     <p id="view-slug-error" class="text-destructive text-sm">{visibleSlugError}</p>
                 {/if}
             </div>
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between" data-tour="saved-view-private">
                 <div>
                     <Label for="view-private" class="text-sm">Private</Label>
                     <Muted>Only visible to you</Muted>
@@ -185,8 +217,8 @@
                 <Switch id="view-private" bind:checked={isPrivate} />
             </div>
             <Dialog.Footer>
-                <Button variant="outline" onclick={onClose}>Cancel</Button>
-                <Button type="submit" disabled={!canSave}>
+                <Button variant="outline" disabled={saving} onclick={onClose}>Cancel</Button>
+                <Button data-tour="saved-view-submit" type="submit" disabled={!canSave}>
                     {saving ? 'Saving...' : 'Save'}
                 </Button>
             </Dialog.Footer>
