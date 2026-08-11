@@ -10,7 +10,7 @@ describe('TimeAgo', () => {
         vi.useRealTimers();
     });
 
-    it('uses a fixed clock when adaptive clocks straddle an age boundary', async () => {
+    it('does not loop when adaptive clocks straddle an age boundary', async () => {
         vi.useFakeTimers();
         const base = new Date('2026-08-11T12:00:00Z');
         vi.setSystemTime(base);
