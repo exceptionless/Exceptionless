@@ -2,7 +2,6 @@
     import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
     import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
-    import { beforeNavigate } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import * as DataTable from '$comp/data-table';
@@ -94,12 +93,6 @@
     function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
         return resolve('/(app)/stack/[stackId=objectid]', { stackId: row.id });
     }
-
-    beforeNavigate(({ to }) => {
-        if (selectedStackId && to?.url.pathname !== page.url.pathname) {
-            selectedStackId = undefined;
-        }
-    });
 
     const DEFAULT_TIME_RANGE = '[now-7d TO now]';
     const DEFAULT_FILTERS = [

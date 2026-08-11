@@ -116,31 +116,6 @@ test('stack effects stay bounded through background, paging, and navigation chao
     });
     expect(actionSample(diagnostics, 'stack timeline drag').runtimeErrors).toBe(0);
 
-    await measureAction(diagnostics, 'saved view navigation with stack detail open', async () => {
-        await page.locator('tbody tr:visible').first().click();
-        await expect(page.getByRole('dialog')).toBeVisible();
-
-        const savedViewHrefs = ['/next/stack/all', '/next/stack/most-frequent-errors'];
-        for (const href of savedViewHrefs) {
-            await expect(page.locator(`a[href="${href}"]`).first()).toBeAttached();
-        }
-
-        await page.evaluate((hrefs) => {
-            for (let index = 0; index < 20; index++) {
-                const href = hrefs[index % hrefs.length]!;
-                document.querySelector<HTMLAnchorElement>(`a[href="${href}"]`)?.click();
-            }
-        }, savedViewHrefs);
-
-        await expect(page).toHaveURL(/\/next\/stack\/most-frequent-errors(?:[?#]|$)/);
-        await expect(page.getByRole('dialog')).not.toBeVisible();
-        await expect(page.getByRole('heading', { exact: true, name: 'Most Frequent Errors' })).toBeVisible();
-
-        await page.goto('/next/stack?limit=5');
-        await expect(page.getByRole('button', { name: 'Go to next page' })).toBeEnabled();
-    });
-    expect(actionSample(diagnostics, 'saved view navigation with stack detail open').runtimeErrors).toBe(0);
-
     await measureAction(diagnostics, 'selected stack refresh', async () => {
         const rowSelection = page.getByRole('checkbox', { name: 'Select row' }).first();
         await rowSelection.click();
