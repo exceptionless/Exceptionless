@@ -37,7 +37,6 @@
         getFiltersFromCache,
         hasSingleTypeFilter,
         serializeFilters,
-        shouldRefreshPersistentEventChanged,
         shouldRefreshPersistentEventRemoval,
         toFilter,
         updateFilterCache
@@ -60,20 +59,20 @@
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
+    import { createQueryParameters } from '$shared/query-params';
     import { type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
     import { error } from '@sveltejs/kit';
     import { createTable } from '@tanstack/svelte-table';
-    import { queryParamsState } from 'kit-query-params';
     import { useEventListener, watch } from 'runed';
     import { onDestroy, untrack } from 'svelte';
     import { debounce } from 'throttle-debounce';
 
     import {
         ALL_TIME_QUERY_VALUE,
-        clearListFilterQueryParams,
         deserializeTimeQueryParam,
         getEventsNavigationOptionsForFilter,
         getListFilterQueryParams,
+        LIST_FILTER_QUERY_PARAM_RESET,
         type ListFilterQueryParams,
         redirectToEventsWithFilter,
         serializeTimeQueryParam
@@ -221,9 +220,9 @@
     }
 
     updateFilterCache(filterCacheKey(DEFAULT_FILTER), DEFAULT_FILTERS);
-    const queryParams = queryParamsState({
-        default: DEFAULT_PARAMS,
-        pushHistory: true,
+    const queryParams = createQueryParameters({
+        defaults: DEFAULT_PARAMS,
+        history: 'push',
         schema: {
             after: 'string',
             before: 'string',
@@ -300,8 +299,7 @@
             }
 
             updateFilterCache(filterCacheKey(DEFAULT_FILTER), DEFAULT_FILTERS);
-            //params.$reset(); // Work around for https://github.com/beynar/kit-query-params/issues/7
-            Object.assign(queryParams, DEFAULT_PARAMS);
+            queryParams.update(DEFAULT_PARAMS);
             reset();
         },
         { lazy: true }
@@ -428,7 +426,7 @@
 
     function handleResetToSaved(): void {
         isInternalFilterUpdate = false;
-        clearListFilterQueryParams(queryParams);
+        queryParams.update(LIST_FILTER_QUERY_PARAM_RESET);
         savedViewsState.handleResetToSaved();
         filters = getCurrentFilters();
     }
@@ -491,9 +489,6 @@
         const paginationWillChange = shouldClearPaginationForFilter && (queryParams.after != null || queryParams.before != null || queryParams.page != null);
 
         updateFilterCache(filterCacheKey(filter), updatedFilters);
-        if (shouldClearPaginationForFilter) {
-            clearPaginationQueryParams();
-        }
 
         // Only skip the watch when the URL will actually change from our update.
         // If the URL doesn't change, the watch won't fire and the flag would stay stale.
@@ -501,25 +496,24 @@
             isInternalFilterUpdate = true;
         }
 
-        queryParams.bot = queryFilterParams.bot;
-        queryParams.first = queryFilterParams.first;
-        queryParams.level = queryFilterParams.level;
-        queryParams.project = queryFilterParams.project;
-        queryParams.reference = queryFilterParams.reference;
-        queryParams.session = queryFilterParams.session;
-        queryParams.stack = queryFilterParams.stack;
-        queryParams.status = queryFilterParams.status;
-        queryParams.tag = queryFilterParams.tag;
-        queryParams.type = queryFilterParams.type;
-        queryParams.version = queryFilterParams.version;
-        queryParams.time = newTimeParam;
-        queryParams.filter = newFilterParam;
-    }
-
-    function clearPaginationQueryParams(): void {
-        queryParams.after = null;
-        queryParams.before = null;
-        queryParams.page = null;
+        queryParams.update({
+            after: shouldClearPaginationForFilter ? null : queryParams.after,
+            before: shouldClearPaginationForFilter ? null : queryParams.before,
+            bot: queryFilterParams.bot,
+            filter: newFilterParam,
+            first: queryFilterParams.first,
+            level: queryFilterParams.level,
+            page: shouldClearPaginationForFilter ? null : queryParams.page,
+            project: queryFilterParams.project,
+            reference: queryFilterParams.reference,
+            session: queryFilterParams.session,
+            stack: queryFilterParams.stack,
+            status: queryFilterParams.status,
+            tag: queryFilterParams.tag,
+            time: newTimeParam,
+            type: queryFilterParams.type,
+            version: queryFilterParams.version
+        });
     }
 
     $effect(() => {
@@ -820,11 +814,8 @@
             return;
         }
 
-        if (!shouldRefreshPersistentEventChanged(filters, queryParams.filter, message.organization_id, message.project_id, message.stack_id, message.id)) {
-            return;
-        }
-
-        scheduleRefetch();
+        // Added and saved events are refreshed by the bounded active-query interval. Refetching here would bypass
+        // staleTime and make sustained production notifications drive an unbounded request/render loop.
     }
 
     useEventListener(document, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT, () => scheduleRefetch(true));
