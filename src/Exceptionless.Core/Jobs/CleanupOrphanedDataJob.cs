@@ -82,10 +82,14 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             hasMore = !String.IsNullOrEmpty(nextValue);
             totalStackIds += stackIds.Count;
 
-            // Keep this destructive existence check on real-time multi-get. An OnlyIds search can
-            // continue with stale results after a failed refresh, and IsDeleted must be hydrated
-            // because default soft-delete filtering is applied client-side to multi-get results.
-            var existingStacks = await _stackRepository.GetByIdsAsync(stackIds.ToArray(), o => o.Include(s => s.Id, s => s.IsDeleted));
+            // Keep this destructive existence check on strict real-time multi-get. An OnlyIds
+            // search can continue with stale results after a failed refresh, and per-item read
+            // errors must never look like missing parents. IsDeleted must also be hydrated because
+            // default soft-delete filtering is applied client-side to multi-get results.
+            var existingStacks = await _stackRepository.GetByIdsStrictAsync(
+                stackIds.ToArray(),
+                o => o.Include(s => s.Id, s => s.IsDeleted),
+                context.CancellationToken);
             var existingStackIds = existingStacks.Select(s => s.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
             string[] missingStackIds = stackIds.Where(id => !existingStackIds.Contains(id)).ToArray();
 
@@ -95,9 +99,10 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             // Redirect tombstones are intentionally retained so events from an in-flight ingestion
             // context can never be mistaken for orphaned data. Move those late events to the
             // canonical stack and refresh its metadata before deleting only truly missing stacks.
-            var redirectedStacks = await _stackRepository.GetByIdsAsync(
+            var redirectedStacks = await _stackRepository.GetByIdsStrictAsync(
                 missingStackIds,
-                o => o.SoftDeleteMode(SoftDeleteQueryMode.All));
+                o => o.SoftDeleteMode(SoftDeleteQueryMode.All),
+                context.CancellationToken);
             var redirectedStackIds = redirectedStacks
                 .Where(s => !String.IsNullOrEmpty(s.RedirectToStackId))
                 .Select(s => s.Id)
@@ -147,7 +152,10 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             hasMore = !String.IsNullOrEmpty(nextValue);
             totalProjectIds += projectIds.Count;
 
-            var existingProjects = await _projectRepository.GetByIdsAsync(projectIds.ToArray(), o => o.Include(p => p.Id, p => p.IsDeleted));
+            var existingProjects = await _projectRepository.GetByIdsStrictAsync(
+                projectIds.ToArray(),
+                o => o.Include(p => p.Id, p => p.IsDeleted),
+                context.CancellationToken);
             var existingProjectIds = existingProjects.Select(p => p.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
             string[] missingProjectIds = projectIds.Where(id => !existingProjectIds.Contains(id)).ToArray();
 
@@ -186,7 +194,10 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             hasMore = !String.IsNullOrEmpty(nextValue);
             totalOrganizationIds += organizationIds.Count;
 
-            var existingOrganizations = await _organizationRepository.GetByIdsAsync(organizationIds.ToArray(), o => o.Include(organization => organization.Id, organization => organization.IsDeleted));
+            var existingOrganizations = await _organizationRepository.GetByIdsStrictAsync(
+                organizationIds.ToArray(),
+                o => o.Include(organization => organization.Id, organization => organization.IsDeleted),
+                context.CancellationToken);
             var existingOrganizationIds = existingOrganizations.Select(organization => organization.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
             string[] missingOrganizationIds = organizationIds.Where(id => !existingOrganizationIds.Contains(id)).ToArray();
 
