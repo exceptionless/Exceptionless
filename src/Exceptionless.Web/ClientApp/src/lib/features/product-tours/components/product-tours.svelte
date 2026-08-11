@@ -12,7 +12,15 @@
     import { tick } from 'svelte';
     import { toast } from 'svelte-sonner';
 
-    import type { ProductTourContext, ProductTourId, ProductTourKey, ProductTourLaunchSource, ProductTourListItem, ProductTourStep } from '../types';
+    import type {
+        ProductTourContext,
+        ProductTourErrorEventAvailability,
+        ProductTourId,
+        ProductTourKey,
+        ProductTourLaunchSource,
+        ProductTourListItem,
+        ProductTourStep
+    } from '../types';
 
     import { PRODUCT_TOUR_ANCHORS, productTourSelector } from '../anchors';
     import { getProductTour, getProductTourItems, getRecommendedProductTourId } from '../catalog';
@@ -29,6 +37,7 @@
         assistantAccess?: AssistantAccess;
         closeOverlays: () => void;
         currentUser?: ViewCurrentUser;
+        errorEventAvailability: ProductTourErrorEventAvailability;
         isAnyOverlayOpen: boolean;
         isImpersonating: boolean;
         isSetupPage: boolean;
@@ -53,6 +62,7 @@
         assistantAccess,
         closeOverlays,
         currentUser,
+        errorEventAvailability,
         isAnyOverlayOpen,
         isImpersonating,
         isSetupPage,
@@ -81,7 +91,7 @@
     let overlayRevision = $state(0);
 
     const progressMutation = putCurrentUserProductTour();
-    const context = $derived<ProductTourContext>({ assistantAccess, isSetupPage, organizationId, pathname, projects });
+    const context = $derived<ProductTourContext>({ assistantAccess, errorEventAvailability, isSetupPage, organizationId, pathname, projects });
     const items = $derived(getProductTourItems(context, currentUser?.product_tours));
     const recommended = $derived.by(() => {
         const id = getRecommendedProductTourId(context);
@@ -258,7 +268,7 @@
         const destination = getDestination(id);
         const definition = getProductTour(id);
 
-        if (destination && destination !== pathname) {
+        if (destination && (destination !== pathname || id === 'investigate-error')) {
             writeStoredState({ source, tourId: id, version: definition.version });
             await goto(destination);
             return;
@@ -268,8 +278,12 @@
     }
 
     function getDestination(id: ProductTourId): string | undefined {
-        if (id === 'create-saved-view' || id === 'investigate-error') {
+        if (id === 'create-saved-view') {
             return resolve('/(app)/event');
+        }
+
+        if (id === 'investigate-error') {
+            return `${resolve('/(app)/event')}?time=all&type=error`;
         }
 
         if (id !== 'configure-project') {
@@ -286,10 +300,16 @@
 
     async function launch(id: ProductTourId, source: ProductTourLaunchSource, resumeStepId?: string, emitStarted = true): Promise<void> {
         const definition = getProductTour(id);
-        const allSteps = definition
-            .getSteps(context)
-            .filter((step) => !step.optional || !step.anchor || document.querySelector(productTourSelector(step.anchor)));
-        let startIndex = resumeStepId ? allSteps.findIndex((step) => step.id === resumeStepId) : 0;
+        if (id === 'new-ui-overview' && isMobileViewport()) {
+            await ensureTarget({ anchor: PRODUCT_TOUR_ANCHORS.appNavigation, description: '', id: 'mobile-navigation', title: '' });
+        }
+
+        const allSteps = orderStepsForViewport(id, definition.getSteps(context)).filter(
+            (step) => !step.optional || !step.anchor || document.querySelector(productTourSelector(step.anchor))
+        );
+        const detailRouteResume = id === 'investigate-error' && resumeStepId === 'choose-error' && /\/(event|stack)\//.test(pathname);
+        const effectiveResumeStepId = detailRouteResume ? 'inspect-details' : resumeStepId;
+        let startIndex = effectiveResumeStepId ? allSteps.findIndex((step) => step.id === effectiveResumeStepId) : 0;
         if (startIndex < 0) {
             startIndex = 0;
         }
@@ -389,9 +409,26 @@
 
     async function advance(id: ProductTourId, version: number, source: ProductTourLaunchSource, steps: ProductTourStep[], index: number): Promise<void> {
         const step = steps[index]!;
+        if (id === 'configure-project' && step.id === 'choose-platform') {
+            const platform = document.querySelector(productTourSelector(PRODUCT_TOUR_ANCHORS.projectConfigurePlatform));
+            if (!platform || /Please select a project type/i.test(platform.textContent ?? '')) {
+                toast.info('Choose the SDK platform before continuing.');
+                return;
+            }
+        }
+
+        const previousPath = pathname;
+        const previousUrlPath = window.location.pathname;
         if (step.advanceOnClick && step.anchor) {
             (document.querySelector(productTourSelector(step.anchor)) as HTMLElement | null)?.click();
-            await tick();
+            if (id === 'configure-project' && step.resumeStepId) {
+                if (!(await waitForPathChange(previousPath, previousUrlPath))) {
+                    toast.info('Finish the required fields before continuing this guide.');
+                    return;
+                }
+            } else {
+                await tick();
+            }
         }
 
         const next = steps[index + 1];
@@ -409,6 +446,11 @@
 
             await completeTour(id, version, source);
             return;
+        }
+
+        if (id === 'new-ui-overview' && isMobileViewport() && next.id !== 'help' && next.id !== 'saved-views' && next.id !== 'navigation') {
+            closeMobileNavigation();
+            await tick();
         }
 
         if (!(await ensureTarget(next))) {
@@ -479,6 +521,34 @@
             }, timeout);
             observer.observe(document.body, { childList: true, subtree: true });
         });
+    }
+
+    function isMobileViewport(): boolean {
+        return window.matchMedia('(max-width: 767px)').matches;
+    }
+
+    function orderStepsForViewport(id: ProductTourId, steps: ProductTourStep[]): ProductTourStep[] {
+        if (id !== 'new-ui-overview' || !isMobileViewport()) {
+            return steps;
+        }
+
+        const order = ['navigation', 'saved-views', 'help', 'command-search', 'exie'];
+        return order.map((stepId) => steps.find((step) => step.id === stepId)).filter((step): step is ProductTourStep => !!step);
+    }
+
+    function closeMobileNavigation(): void {
+        if (document.querySelector(productTourSelector(PRODUCT_TOUR_ANCHORS.appNavigation))) {
+            (document.querySelector(productTourSelector('mobile-navigation-trigger')) as HTMLElement | null)?.click();
+        }
+    }
+
+    async function waitForPathChange(previousPath: string, previousUrlPath: string, timeout = 10000): Promise<boolean> {
+        const deadline = performance.now() + timeout;
+        while (pathname === previousPath && window.location.pathname === previousUrlPath && performance.now() < deadline) {
+            await new Promise<void>((resolvePromise) => setTimeout(resolvePromise, 50));
+        }
+
+        return pathname !== previousPath || window.location.pathname !== previousUrlPath;
     }
 
     async function onWelcomeStart(): Promise<void> {

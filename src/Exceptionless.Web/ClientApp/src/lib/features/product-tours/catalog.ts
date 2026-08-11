@@ -12,6 +12,26 @@ function requireApplicationShell(context: ProductTourContext) {
     return { available: true };
 }
 
+function requireErrorEvent(context: ProductTourContext) {
+    if (!context.organizationId) {
+        return { available: false, reason: 'Create an organization and project first.' };
+    }
+
+    if (context.errorEventAvailability === 'loading') {
+        return { available: false, reason: 'Checking for an accessible error report…' };
+    }
+
+    if (context.errorEventAvailability === 'error') {
+        return { available: false, reason: 'Error reports could not be checked right now. Try again shortly.' };
+    }
+
+    if (context.errorEventAvailability === 'empty') {
+        return { available: false, reason: 'Send or retain an error report before starting this guide.' };
+    }
+
+    return { available: true };
+}
+
 function requireOrganization(context: ProductTourContext) {
     return context.organizationId ? { available: true } : { available: false, reason: 'Create an organization and project first.' };
 }
@@ -208,7 +228,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
     },
     {
         description: 'Open a real error and learn where to find its exception, request, environment, and custom data.',
-        getAvailability: requireOrganization,
+        getAvailability: requireErrorEvent,
         getSteps: () => [
             {
                 anchor: PRODUCT_TOUR_ANCHORS.eventList,

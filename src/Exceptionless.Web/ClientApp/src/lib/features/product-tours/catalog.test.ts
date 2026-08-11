@@ -6,6 +6,7 @@ import { getProductTourItems, getRecommendedProductTourId, productTourCatalog } 
 
 function context(overrides: Partial<ProductTourContext> = {}): ProductTourContext {
     return {
+        errorEventAvailability: 'available',
         isSetupPage: false,
         organizationId: 'organization-id',
         pathname: '/next/event',

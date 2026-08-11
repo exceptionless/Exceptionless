@@ -8,6 +8,7 @@ export interface ProductTourAvailability {
 }
 export interface ProductTourContext {
     assistantAccess?: AssistantAccess;
+    errorEventAvailability: ProductTourErrorEventAvailability;
     isSetupPage: boolean;
     organizationId?: string;
     pathname: string;
@@ -22,6 +23,7 @@ export interface ProductTourDefinition {
     title: string;
     version: number;
 }
+export type ProductTourErrorEventAvailability = 'available' | 'empty' | 'error' | 'loading';
 export type ProductTourId = 'configure-project' | 'create-saved-view' | 'investigate-error' | 'meet-exie' | 'new-ui-overview';
 
 export type ProductTourKey = 'welcome' | ProductTourId;

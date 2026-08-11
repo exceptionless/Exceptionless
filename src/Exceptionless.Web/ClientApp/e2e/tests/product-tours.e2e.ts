@@ -29,6 +29,13 @@ test('Explore the new UI opens its navigation target on mobile', async ({ e2eSce
     const tour = page.locator('.driver-popover');
     await expect(tour.getByText('Your workspace navigation')).toBeVisible();
     await page.screenshot({ fullPage: true, path: testInfo.outputPath('new-ui-overview-mobile.png') });
+    await tour.getByRole('button', { name: 'Next' }).click();
+    await expect(tour.getByText('Reuse configured views')).toBeVisible();
+    await tour.getByRole('button', { name: 'Next' }).click();
+    await expect(tour.getByText('Help is always nearby')).toBeVisible();
+    await tour.getByRole('button', { name: 'Next' }).click();
+    await expect(tour.getByText('Find anything quickly')).toBeVisible();
+    await expect(page.locator('[data-tour="mobile-navigation-trigger"]')).toBeVisible();
     await tour.getByRole('button', { name: 'Close' }).click();
 });
 
@@ -55,6 +62,8 @@ test('Configure a project resumes through its first event', async ({ e2eApi, e2e
     await expect(tour.getByText('Choose your SDK')).toBeVisible();
     await page.screenshot({ fullPage: true, path: testInfo.outputPath('configure-project-platform.png') });
 
+    await page.locator('[data-tour="project-configure-platform"]').click();
+    await page.getByRole('option', { name: 'Browser applications' }).click();
     await page.getByRole('button', { name: 'Next' }).click();
     await expect(tour.getByText('Use the project token')).toBeVisible();
     await page.getByRole('button', { name: 'Next' }).click();

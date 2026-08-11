@@ -17,6 +17,7 @@
     import { UpgradeRequiredDialog } from '$features/billing';
     import {
         createOrganizationEventNotificationRefresher,
+        getOrganizationEventsQuery,
         invalidatePersistentEventQueries,
         type OrganizationEventNotificationRefresher
     } from '$features/events/api.svelte';
@@ -421,6 +422,25 @@
     const projectsQuery = getProjectsQuery({ params: { limit: 1000 } });
     const projects = $derived(projectsQuery.data?.data ?? []);
     const productTourProjects = $derived(projects.filter((project) => !organization.current || project.organization_id === organization.current));
+    const productTourErrorEventsQuery = getOrganizationEventsQuery({
+        params: { filter: 'type:error', limit: 1, mode: 'summary', time: 'all' },
+        route: {
+            get organizationId() {
+                return organization.current;
+            }
+        }
+    });
+    const productTourErrorEventAvailability = $derived.by(() => {
+        if (!organization.current || productTourErrorEventsQuery.isPending) {
+            return 'loading' as const;
+        }
+
+        if (productTourErrorEventsQuery.isError) {
+            return 'error' as const;
+        }
+
+        return (productTourErrorEventsQuery.data?.data?.length ?? 0) > 0 ? ('available' as const) : ('empty' as const);
+    });
 
     const impersonatingOrganizationId = $derived.by(() => {
         // Only consider impersonation if user data is loaded and user has organizations
@@ -578,6 +598,7 @@
         getProductTourItems(
             {
                 assistantAccess,
+                errorEventAvailability: productTourErrorEventAvailability,
                 isSetupPage,
                 organizationId: organization.current,
                 pathname: page.url.pathname,
@@ -694,6 +715,7 @@
         bind:this={productToursComponent}
         closeOverlays={closeProductTourOverlays}
         currentUser={meQuery.data}
+        errorEventAvailability={productTourErrorEventAvailability}
         isAnyOverlayOpen={isAnyProductTourOverlayOpen}
         {isImpersonating}
         {isSetupPage}
