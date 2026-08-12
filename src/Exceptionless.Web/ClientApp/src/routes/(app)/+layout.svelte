@@ -722,6 +722,7 @@
         organizationId={organization.current}
         pathname={page.url.pathname}
         projects={productTourProjects}
+        routeKey={`${page.url.pathname}${page.url.search}`}
         stateSettled={meQuery.isSuccess &&
             organizationsQuery.isSuccess &&
             projectsQuery.isSuccess &&

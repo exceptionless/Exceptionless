@@ -121,7 +121,7 @@ test('Create a saved view retains a private hydrated view', async ({ e2eScenario
     await expect(page.getByText('Create the saved view')).toBeHidden();
 });
 
-test('Investigate an error advances only after an error report opens', async ({ e2eApi, e2eScenario, page }, testInfo) => {
+test('Investigate an error resumes after navigation and advances only after an error opens', async ({ e2eApi, e2eScenario, page }, testInfo) => {
     const event = await seedRepresentativeEvent(e2eApi, e2eScenario.userToken, {
         message: e2eScenario.message,
         projectId: e2eScenario.projectId,
@@ -135,12 +135,29 @@ test('Investigate an error advances only after an error report opens', async ({ 
     await startTourFromCommand(page, 'Investigate an error');
     const tour = page.locator('.driver-popover');
     await expect(tour.getByText('Open a real error')).toBeVisible();
+    await expect(page).toHaveURL(/\/next\/event\?time=all&type=error/);
+    await tour.getByRole('button', { name: 'Close' }).click();
+
+    await page.goto('/next/stack');
+    await startTourFromCommand(page, 'Investigate an error');
+    const navigationConfirmation = page.getByRole('alertdialog', { name: 'Open Errors?' });
+    await expect(navigationConfirmation).toBeVisible();
+    await navigationConfirmation.getByRole('button', { name: 'Open Errors' }).click();
+    await expect(tour.getByText('Open a real error')).toBeVisible();
+    await expect(page).toHaveURL(/\/next\/event\?time=all&type=error/);
     await page.screenshot({ fullPage: true, path: testInfo.outputPath('investigate-error-list.png') });
     await page.locator('tr').filter({ hasText: e2eScenario.message }).first().click();
-    await expect(tour.getByText('Investigate the evidence')).toBeVisible({ timeout: 30_000 });
+    const investigationCallout = page.locator('[data-product-tour-inline="investigate-error"]');
+    await expect(investigationCallout.getByText('Investigate the evidence')).toBeVisible({ timeout: 30_000 });
     await page.screenshot({ fullPage: true, path: testInfo.outputPath('investigate-error-details.png') });
-    await tour.getByRole('button', { name: 'Next' }).click();
+    await investigationCallout.getByRole('button', { name: 'Continue' }).click();
     await expect(page.getByText('Investigate the evidence')).toBeHidden();
+
+    await page.goto(`/next/event/${event.id}`);
+    await expect(page.locator('[data-tour="event-details"]')).toBeVisible({ timeout: 30_000 });
+    await startTourFromCommand(page, 'Investigate an error');
+    await expect(investigationCallout.getByText('Investigate the evidence')).toBeVisible();
+    await investigationCallout.getByRole('button', { name: 'End guide' }).click();
     expect(event.type).toBe('error');
 });
 

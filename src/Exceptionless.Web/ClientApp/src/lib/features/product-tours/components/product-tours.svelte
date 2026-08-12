@@ -45,6 +45,7 @@
         organizationId?: string;
         pathname: string;
         projects: ViewProject[];
+        routeKey: string;
         stateSettled: boolean;
     }
 
@@ -72,6 +73,7 @@
         organizationId,
         pathname,
         projects,
+        routeKey,
         stateSettled
     }: Props = $props();
 
@@ -85,14 +87,16 @@
     let exieAnnouncementShown = $state(false);
     let confirmNewProjectOpen = $state(false);
     let pendingConfigureSource = $state<ProductTourLaunchSource>();
+    let confirmErrorNavigationOpen = $state(false);
+    let pendingInvestigateSource = $state<ProductTourLaunchSource>();
     let driverInstance = $state.raw<Driver>();
     let activeSource = $state<ProductTourLaunchSource>();
     let activeOrganizationId = $state<string>();
     let isFinishing = false;
     let isSuspendingInline = false;
     let isNavigatingTour = false;
-    let driverPath = '';
-    let resumeAttemptedPath = '';
+    let driverRoute = '';
+    let resumeAttemptedRoute = '';
     let overlayRevision = $state(0);
 
     const progressMutation = putCurrentUserProductTour();
@@ -167,8 +171,8 @@
     });
 
     $effect(() => {
-        const currentPath = pathname;
-        if (!stateSettled || driverInstance || resumeAttemptedPath === currentPath) {
+        const currentRoute = routeKey;
+        if (!stateSettled || driverInstance || resumeAttemptedRoute === currentRoute) {
             return;
         }
 
@@ -190,13 +194,13 @@
             return;
         }
 
-        resumeAttemptedPath = currentPath;
+        resumeAttemptedRoute = currentRoute;
         void launch(stored.tourId, stored.source, stored.stepId, false);
     });
 
     $effect(() => {
-        const currentPath = pathname;
-        if (!driverInstance || !driverPath || driverPath === currentPath) {
+        const currentRoute = routeKey;
+        if (!driverInstance || !driverRoute || driverRoute === currentRoute) {
             return;
         }
 
@@ -205,8 +209,8 @@
         driverInstance.destroy();
         isNavigatingTour = false;
         isFinishing = false;
-        driverPath = '';
-        resumeAttemptedPath = '';
+        driverRoute = '';
+        resumeAttemptedRoute = '';
     });
 
     $effect(() => {
@@ -275,7 +279,8 @@
         welcomeOpen = false;
         exieAnnouncementOpen = false;
         closeOverlays();
-        if (!(await waitForCompetingOverlaysToClose())) {
+        const canReuseOpenError = id === 'investigate-error' && hasVisibleTarget(productTourSelector(PRODUCT_TOUR_ANCHORS.eventDetails));
+        if (!(await waitForCompetingOverlaysToClose()) && !canReuseOpenError) {
             toast.info('Close the open dialog or panel before starting a guided tour.');
             return;
         }
@@ -298,14 +303,36 @@
             return;
         }
 
+        if (id === 'investigate-error') {
+            if (canReuseOpenError) {
+                await launch(id, source, 'inspect-details');
+                return;
+            }
+
+            if (pathname !== resolve('/(app)/event')) {
+                pendingInvestigateSource = source;
+                confirmErrorNavigationOpen = true;
+                return;
+            }
+        }
+
         await navigateOrLaunch(id, source);
+    }
+
+    async function confirmErrorNavigation(): Promise<void> {
+        const source = pendingInvestigateSource;
+        pendingInvestigateSource = undefined;
+        confirmErrorNavigationOpen = false;
+        if (source) {
+            await navigateOrLaunch('investigate-error', source);
+        }
     }
 
     async function navigateOrLaunch(id: ProductTourId, source: ProductTourLaunchSource): Promise<void> {
         const destination = getDestination(id);
         const definition = getProductTour(id);
 
-        if (destination && (destination !== pathname || id === 'investigate-error')) {
+        if (destination && destination !== routeKey) {
             writeStoredState({ source, tourId: id, version: definition.version });
             await goto(destination);
             return;
@@ -379,7 +406,7 @@
             onCloseClick: () => void dismissTour(id, definition.version, source),
             onDestroyed: () => {
                 const activeStepId = productTourRuntime.activeStepId;
-                const preservingNavigation = isNavigatingTour || (driverPath !== '' && driverPath !== pathname);
+                const preservingNavigation = isNavigatingTour || (driverRoute !== '' && driverRoute !== routeKey);
                 const preservingPendingEvent = id === 'investigate-error' && (activeStepId === 'choose-error' || readStoredState()?.stepId === 'choose-error');
                 driverInstance = undefined;
                 if (!isSuspendingInline && !preservingNavigation && !preservingPendingEvent) {
@@ -423,7 +450,7 @@
                 }
             }))
         });
-        driverPath = pathname;
+        driverRoute = routeKey;
         productTourRuntime.set(id, firstStep.id);
         writeStoredState({ source, stepId: firstStep.resumeStepId ?? firstStep.id, tourId: id, version: definition.version });
 
@@ -454,12 +481,11 @@
             }
         }
 
-        const previousPath = pathname;
-        const previousUrlPath = window.location.pathname;
+        const previousRoute = routeKey;
         if (step.advanceOnClick && step.anchor) {
             (document.querySelector(productTourSelector(step.anchor)) as HTMLElement | null)?.click();
             if (id === 'configure-project' && step.resumeStepId) {
-                if (!(await waitForPathChange(previousPath, previousUrlPath))) {
+                if (!(await waitForRouteChange(previousRoute))) {
                     toast.info('Finish the required fields before continuing this guide.');
                     return;
                 }
@@ -514,7 +540,7 @@
             return;
         }
 
-        if (driverInstance && driverPath === pathname) {
+        if (driverInstance && driverRoute === routeKey) {
             driverInstance.moveNext();
         } else {
             isNavigatingTour = true;
@@ -584,13 +610,13 @@
         }
     }
 
-    async function waitForPathChange(previousPath: string, previousUrlPath: string, timeout = 10000): Promise<boolean> {
+    async function waitForRouteChange(previousRoute: string, timeout = 10000): Promise<boolean> {
         const deadline = performance.now() + timeout;
-        while (pathname === previousPath && window.location.pathname === previousUrlPath && performance.now() < deadline) {
+        while (routeKey === previousRoute && `${window.location.pathname}${window.location.search}` === previousRoute && performance.now() < deadline) {
             await new Promise<void>((resolvePromise) => setTimeout(resolvePromise, 50));
         }
 
-        return pathname !== previousPath || window.location.pathname !== previousUrlPath;
+        return routeKey !== previousRoute || `${window.location.pathname}${window.location.search}` !== previousRoute;
     }
 
     async function onWelcomeStart(): Promise<void> {
@@ -861,6 +887,19 @@
         <AlertDialog.Footer>
             <AlertDialog.Cancel onclick={() => (pendingConfigureSource = undefined)}>Cancel</AlertDialog.Cancel>
             <AlertDialog.Action onclick={() => void confirmNewProject()}>Create Project</AlertDialog.Action>
+        </AlertDialog.Footer>
+    </AlertDialog.Content>
+</AlertDialog.Root>
+
+<AlertDialog.Root bind:open={confirmErrorNavigationOpen}>
+    <AlertDialog.Content data-product-tour-overlay>
+        <AlertDialog.Header>
+            <AlertDialog.Title>Open Errors?</AlertDialog.Title>
+            <AlertDialog.Description>This guide starts in Errors so you can choose a real report. Your current page will change.</AlertDialog.Description>
+        </AlertDialog.Header>
+        <AlertDialog.Footer>
+            <AlertDialog.Cancel onclick={() => (pendingInvestigateSource = undefined)}>Cancel</AlertDialog.Cancel>
+            <AlertDialog.Action onclick={() => void confirmErrorNavigation()}>Open Errors</AlertDialog.Action>
         </AlertDialog.Footer>
     </AlertDialog.Content>
 </AlertDialog.Root>

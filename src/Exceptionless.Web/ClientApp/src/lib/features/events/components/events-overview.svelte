@@ -15,6 +15,8 @@
     import * as EventsFacetedFilter from '$features/events/components/filters';
     import { getExtendedDataItems, hasErrorOrSimpleError } from '$features/events/persistent-event';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
+    import ProductTourInlineCallout from '$features/product-tours/components/product-tour-inline-callout.svelte';
+    import { productTourRuntime } from '$features/product-tours/state.svelte';
     import { getProjectQuery, updateProject } from '$features/projects/api.svelte';
     import StackCard from '$features/stacks/components/stack-card.svelte';
     import Braces from '@lucide/svelte/icons/braces';
@@ -256,6 +258,14 @@
         }
     }
 
+    function completeInvestigationTour(): void {
+        document.dispatchEvent(new CustomEvent('product-tour:completed', { detail: { tourId: 'investigate-error' } }));
+    }
+
+    function dismissInvestigationTour(): void {
+        document.dispatchEvent(new CustomEvent('product-tour:dismissed', { detail: { tourId: 'investigate-error' } }));
+    }
+
     $effect(() => {
         if (projectQuery.isError) {
             handleError(projectQuery.error);
@@ -299,6 +309,16 @@
         };
     });
 </script>
+
+{#if event && productTourRuntime.activeTourId === 'investigate-error' && productTourRuntime.activeStepId === 'inspect-details'}
+    <ProductTourInlineCallout
+        description="Review the summary and the available Exception, Request, Environment, trace, session, and extended-data tabs."
+        onContinue={completeInvestigationTour}
+        onDismiss={dismissInvestigationTour}
+        title="Investigate the evidence"
+        tourId="investigate-error"
+    />
+{/if}
 
 <section>
     <h4 class="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">Stack</h4>

@@ -241,6 +241,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
                 anchor: PRODUCT_TOUR_ANCHORS.eventDetails,
                 description: 'Review the summary and the available Exception, Request, Environment, trace, session, and extended-data tabs.',
                 id: 'inspect-details',
+                presentation: 'inline',
                 showDone: true,
                 title: 'Investigate the evidence',
                 waitForElement: 60000
