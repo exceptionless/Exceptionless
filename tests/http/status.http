@@ -32,6 +32,7 @@ GET {{apiUrl}}/queue-stats
 Authorization: Bearer {{token}}
 
 ### System Notification
+# Returns 204 No Content when no system notification is configured.
 GET {{apiUrl}}/notifications/system
 Authorization: Bearer {{token}}
 

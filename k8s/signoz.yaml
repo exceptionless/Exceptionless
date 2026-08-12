@@ -17,6 +17,15 @@ presets:
     detectors:
       - azure
       - system
+  hostMetrics:
+    enabled: true
+    collectionInterval: 60s
+  kubeletMetrics:
+    enabled: true
+    collectionInterval: 60s
+  clusterMetrics:
+    enabled: true
+    collectionInterval: 60s
   prometheus:
     enabled: true
     scrapeInterval: 30s
@@ -79,6 +88,11 @@ otelAgent:
               - ex.events.parse.jsoneventparserplugin
               - ex.events.field.count
               - ex.eventpipeline.markascriticalaction
+      filter/volumes_pvc_only:
+        error_mode: ignore
+        metrics:
+          datapoint:
+            - 'IsMatch(metric.name, "^k8s\\.volume\\.") and attributes["k8s.volume.type"] != "persistentVolumeClaim"'
       filter/drop_cache_spans:
         error_mode: ignore
         traces:
@@ -91,5 +105,5 @@ otelAgent:
           processors: [filter/drop_cache_spans, batch]
           exporters: [otlphttp, otlp/elastic]
         metrics:
-          processors: [filter/drop_unused_metrics, batch]
+          processors: [filter/drop_unused_metrics, filter/volumes_pvc_only, batch]
           exporters: [otlphttp, otlp/elastic]
