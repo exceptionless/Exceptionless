@@ -56,7 +56,7 @@ public class MessageBusOptionsTests
         });
 
         Assert.Equal("redis", options.Provider);
-        Assert.Equal("ssl=true;server=localhost:6379;abortConnect=false", options.ConnectionString);
+        Assert.Equal("server=localhost:6379;abortConnect=false;ssl=true", options.ConnectionString);
         Assert.Equal("true", options.Data["ssl"]);
         Assert.Equal("localhost:6379", options.Data["server"]);
         Assert.Equal("false", options.Data["abortConnect"]);

@@ -60,10 +60,10 @@ public class BootstrapperTests
         Bootstrapper.LogConfiguration(serviceProvider, options, logger);
 
         string output = String.Join(Environment.NewLine, logger.Entries.Select(entry => entry.Message));
-        Assert.Contains("cache disabled at not configured", output, StringComparison.Ordinal);
-        Assert.Contains("message bus disabled at not configured", output, StringComparison.Ordinal);
-        Assert.Contains("queue disabled at not configured", output, StringComparison.Ordinal);
-        Assert.Contains("storage disabled at not configured", output, StringComparison.Ordinal);
+        Assert.Contains("cache local at not configured", output, StringComparison.Ordinal);
+        Assert.Contains("message bus local at not configured", output, StringComparison.Ordinal);
+        Assert.Contains("queue local at not configured", output, StringComparison.Ordinal);
+        Assert.Contains("storage local at not configured", output, StringComparison.Ordinal);
         Assert.Contains("event submission disabled", output, StringComparison.Ordinal);
         Assert.Contains("WebSockets disabled", output, StringComparison.Ordinal);
         Assert.Contains("email disabled", output, StringComparison.Ordinal);

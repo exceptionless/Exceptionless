@@ -62,6 +62,9 @@ public class Bootstrapper
         if (!String.IsNullOrEmpty(appOptions.MaxMindGeoIpKey))
             services.ReplaceSingleton<IGeoIpService, MaxMindGeoIpService>();
 
+        if (UsesRedis(appOptions))
+            services.AddSingleton<RedisConnectionRegistry>();
+
         RegisterCache(services, appOptions.CacheOptions);
         RegisterMessageBus(services, appOptions.MessageBusOptions);
         RegisterQueue(services, appOptions.QueueOptions, runMaintenanceTasks);
@@ -104,14 +107,16 @@ public class Bootstrapper
     {
         if (String.Equals(options.Provider, "redis"))
         {
-            container.ReplaceSingleton(s => GetRedisConnection(options.ConnectionString!, s.GetRequiredService<ILoggerFactory>()));
+            container.ReplaceSingleton<IConnectionMultiplexer>(s =>
+                s.GetRequiredService<RedisConnectionRegistry>().GetCacheConnection(options.ConnectionString!));
 
             if (!String.IsNullOrEmpty(options.Scope))
                 container.ReplaceSingleton<ICacheClient>(s => new ScopedCacheClient(CreateRedisCacheClient(s), options.Scope));
             else
                 container.ReplaceSingleton<ICacheClient>(CreateRedisCacheClient);
 
-            container.ReplaceSingleton<IConnectionMapping, RedisConnectionMapping>();
+            container.ReplaceSingleton<IConnectionMapping>(s => new RedisConnectionMapping(
+                s.GetRequiredService<RedisConnectionRegistry>().GetConnection(options.ConnectionString!)));
         }
     }
 
@@ -119,11 +124,9 @@ public class Bootstrapper
     {
         if (String.Equals(options.Provider, "redis"))
         {
-            container.ReplaceSingleton(s => GetRedisConnection(options.ConnectionString!, s.GetRequiredService<ILoggerFactory>()));
-
             container.ReplaceSingleton<IMessageBus>(s => new RedisMessageBus(new RedisMessageBusOptions
             {
-                Subscriber = s.GetRequiredService<IConnectionMultiplexer>().GetSubscriber(),
+                Subscriber = s.GetRequiredService<RedisConnectionRegistry>().GetConnection(options.ConnectionString!).GetSubscriber(),
                 Topic = options.Topic,
                 Serializer = s.GetRequiredService<ISerializer>(),
                 TimeProvider = s.GetRequiredService<TimeProvider>(),
@@ -143,11 +146,6 @@ public class Bootstrapper
                 LoggerFactory = s.GetRequiredService<ILoggerFactory>()
             }));
         }
-    }
-
-    private static IConnectionMultiplexer GetRedisConnection(string connectionString, ILoggerFactory loggerFactory)
-    {
-        return ConnectionMultiplexer.Connect(connectionString, o => o.LoggerFactory = loggerFactory);
     }
 
     private static void RegisterQueue(IServiceCollection container, QueueOptions options, bool runMaintenanceTasks)
@@ -262,7 +260,7 @@ public class Bootstrapper
     {
         return new RedisQueue<T>(new RedisQueueOptions<T>
         {
-            ConnectionMultiplexer = container.GetRequiredService<IConnectionMultiplexer>(),
+            ConnectionMultiplexer = container.GetRequiredService<RedisConnectionRegistry>().GetConnection(options.ConnectionString!),
             Name = GetQueueName<T>(options),
             Retries = retries,
             Behaviors = container.GetServices<IQueueBehavior<T>>().ToList(),
@@ -287,6 +285,13 @@ public class Bootstrapper
             ResiliencePolicyProvider = container.GetRequiredService<IResiliencePolicyProvider>(),
             LoggerFactory = container.GetRequiredService<ILoggerFactory>()
         });
+    }
+
+    private static bool UsesRedis(AppOptions options)
+    {
+        return String.Equals(options.CacheOptions.Provider, "redis", StringComparison.OrdinalIgnoreCase)
+            || String.Equals(options.MessageBusOptions.Provider, "redis", StringComparison.OrdinalIgnoreCase)
+            || String.Equals(options.QueueOptions.Provider, "redis", StringComparison.OrdinalIgnoreCase);
     }
 
     private static IQueue<T> CreateSQSQueue<T>(IServiceProvider container, QueueOptions options, int retries = 2, TimeSpan? workItemTimeout = null) where T : class

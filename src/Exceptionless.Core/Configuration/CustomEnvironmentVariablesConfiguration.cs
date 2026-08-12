@@ -28,28 +28,32 @@ public class CustomEnvironmentVariablesConfigurationProvider : ConfigurationProv
     {
         var data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
-        IDictionaryEnumerator e = envVariables.GetEnumerator();
-        try
-        {
-            while (e.MoveNext())
-            {
-                string key = (string)e.Entry.Key;
-                string? value = (string?)e.Entry.Value;
+        var variables = envVariables.Cast<DictionaryEntry>()
+            .Select(entry => new KeyValuePair<string, string?>((string)entry.Key, (string?)entry.Value))
+            .ToList();
 
-                string normalizedKey = Normalize(key);
-                // remove EX_ prefix
-                if (normalizedKey.StartsWith("EX_"))
-                    data[normalizedKey.Substring(3)] = value;
-                else
-                    data[normalizedKey] = value;
-            }
-        }
-        finally
-        {
-            (e as IDisposable)?.Dispose();
-        }
+        // Aspire-style variables are the base. Product-specific EX_ variables are
+        // applied second so their precedence never depends on dictionary iteration order.
+        AddVariables(data, variables, prefixed: false);
+        AddVariables(data, variables, prefixed: true);
 
         Data = data;
+    }
+
+    private static void AddVariables(
+        IDictionary<string, string?> data,
+        IEnumerable<KeyValuePair<string, string?>> variables,
+        bool prefixed)
+    {
+        foreach ((string key, string? value) in variables)
+        {
+            string normalizedKey = Normalize(key);
+            bool hasPrefix = normalizedKey.StartsWith("EX_", StringComparison.OrdinalIgnoreCase);
+            if (hasPrefix != prefixed)
+                continue;
+
+            data[hasPrefix ? normalizedKey[3..] : normalizedKey] = value;
+        }
     }
 
     private static string Normalize(string key) => key.Replace("__", ConfigurationPath.KeyDelimiter);

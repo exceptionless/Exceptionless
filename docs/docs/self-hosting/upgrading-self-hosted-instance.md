@@ -6,6 +6,10 @@ title: "Upgrading"
 
 **Please ensure that you have created backups before upgrading!**
 
+## Layered infrastructure connection strings
+
+Existing Helm values, Docker Compose settings, and explicit `provider=...` role connection strings require no changes. They continue to override automatic provider selection. New installations may use the simpler technology-named connection strings described in [Infrastructure Configuration](/docs/self-hosting/configuration).
+
 **If you are upgrading from v1 or [v2](https://github.com/exceptionless/Exceptionless/releases/tag/v2.0.0) you will need to upgrade to [v3.0](https://github.com/exceptionless/Exceptionless/releases/tag/v3.0.0) before upgrading to the latest release.**
 
 ## Upgrading from v7.1 to v8
