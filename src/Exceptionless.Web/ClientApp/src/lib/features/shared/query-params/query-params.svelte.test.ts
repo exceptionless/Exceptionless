@@ -34,7 +34,7 @@ describe('createQueryParameters', () => {
         vi.useRealTimers();
     });
 
-    it('creates a durable history entry immediately while coalescing rapid updates', async () => {
+    it('creates a durable history entry immediately while throttling rapid replacements', async () => {
         // Arrange
         render(QueryParametersTestHarness);
 
@@ -46,14 +46,32 @@ describe('createQueryParameters', () => {
         expect(screen.getByText('second').textContent).toBe('second');
         expect(navigation.pushState).toHaveBeenCalledOnce();
         expect(navigation.pushState).toHaveBeenCalledWith('/?filter=first', pageState);
-        expect(navigation.replaceState).toHaveBeenCalledOnce();
-        expect(navigation.replaceState).toHaveBeenCalledWith('/?filter=second', pageState);
-        expect(window.location.search).toBe('?filter=second');
+        expect(navigation.replaceState).not.toHaveBeenCalled();
+        expect(window.location.search).toBe('?filter=first');
 
         await vi.advanceTimersByTimeAsync(200);
 
         expect(navigation.pushState).toHaveBeenCalledOnce();
         expect(navigation.replaceState).toHaveBeenCalledOnce();
+        expect(navigation.replaceState).toHaveBeenCalledWith('/?filter=second', pageState);
+        expect(window.location.search).toBe('?filter=second');
+    });
+
+    it('cancels a pending replacement when state returns to the visible URL', async () => {
+        // Arrange
+        render(QueryParametersTestHarness);
+        await fireEvent.click(screen.getByRole('button', { name: 'First' }));
+        await fireEvent.click(screen.getByRole('button', { name: 'Second' }));
+
+        // Act
+        await fireEvent.click(screen.getByRole('button', { name: 'First' }));
+        await vi.advanceTimersByTimeAsync(200);
+
+        // Assert
+        expect(navigation.pushState).toHaveBeenCalledOnce();
+        expect(navigation.pushState).toHaveBeenCalledWith('/?filter=first', pageState);
+        expect(navigation.replaceState).not.toHaveBeenCalled();
+        expect(window.location.search).toBe('?filter=first');
     });
 
     it('starts a new push history entry after the coalescing window settles', async () => {
@@ -160,6 +178,22 @@ describe('createQueryParameters', () => {
         expect(window.location.search).toBe('?filter=first');
     });
 
+    it('flushes a throttled replacement before reload', async () => {
+        // Arrange
+        render(QueryParametersTestHarness);
+        await fireEvent.click(screen.getByRole('button', { name: 'First' }));
+        await fireEvent.click(screen.getByRole('button', { name: 'Second' }));
+
+        // Act
+        window.dispatchEvent(new Event('beforeunload'));
+
+        // Assert
+        expect(navigation.pushState).toHaveBeenCalledOnce();
+        expect(navigation.replaceState).toHaveBeenCalledOnce();
+        expect(navigation.replaceState).toHaveBeenCalledWith('/?filter=second', pageState);
+        expect(window.location.search).toBe('?filter=second');
+    });
+
     it('restores popstate without scheduling another history write', async () => {
         // Arrange
         render(QueryParametersTestHarness);
@@ -167,8 +201,8 @@ describe('createQueryParameters', () => {
         const beforeNavigation = navigation.beforeNavigate.mock.calls[0]?.[0] as ((navigation: { type: string }) => void) | undefined;
 
         // Act
-        beforeNavigation?.({ type: 'popstate' });
         window.history.replaceState(pageState, '', '?filter=previous');
+        beforeNavigation?.({ type: 'popstate' });
         window.dispatchEvent(new PopStateEvent('popstate', { state: pageState }));
         await vi.advanceTimersByTimeAsync(200);
         await tick();

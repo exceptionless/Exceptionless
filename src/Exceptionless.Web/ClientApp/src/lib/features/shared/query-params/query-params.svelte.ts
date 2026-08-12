@@ -21,17 +21,34 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     // for an immediate Back action and can navigate a newly opened tab to about:blank.
     let isCoalescingPushHistoryEntry = false;
     let coalescingStartUrl: string | undefined;
-    const schedulePushHistoryEntrySettlement = createDebouncedFunction(() => {
-        isCoalescingPushHistoryEntry = false;
-        coalescingStartUrl = undefined;
-    }, debounceMilliseconds);
+    let pendingReplacementUrl: string | undefined;
     const getCurrentUrl = () => {
         const query = createSearchParams(window.location.search).toString();
         return `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`;
     };
 
+    const settlePushHistoryEntry = () => {
+        isCoalescingPushHistoryEntry = false;
+        coalescingStartUrl = undefined;
+    };
+
+    const flushPendingReplacement = () => {
+        if (pendingReplacementUrl) {
+            replaceState(pendingReplacementUrl, page.state);
+            pendingReplacementUrl = undefined;
+        }
+    };
+
+    const finalizePushHistoryEntry = () => {
+        flushPendingReplacement();
+        settlePushHistoryEntry();
+    };
+
+    const schedulePushHistoryEntryFinalization = createDebouncedFunction(finalizePushHistoryEntry, debounceMilliseconds);
+
     const synchronizeURL = () => {
         if (searchParamsEqual(searchParams, window.location.search)) {
+            pendingReplacementUrl = undefined;
             return;
         }
 
@@ -46,26 +63,37 @@ export function createQueryParameters<T extends QueryParameterSchema>({
         } else if (url === coalescingStartUrl) {
             // Keep the transient state as a meaningful Back target instead of
             // replacing it with a duplicate of the entry behind it.
+            schedulePushHistoryEntryFinalization.cancel();
+            pendingReplacementUrl = undefined;
             pushState(url, page.state);
-            isCoalescingPushHistoryEntry = false;
-            coalescingStartUrl = undefined;
+            settlePushHistoryEntry();
         } else {
-            replaceState(url, page.state);
+            // Avoid exhausting browser History API mutation quotas during sustained input.
+            pendingReplacementUrl = url;
         }
 
-        if (history === 'push') {
-            schedulePushHistoryEntrySettlement();
+        if (history === 'push' && isCoalescingPushHistoryEntry) {
+            schedulePushHistoryEntryFinalization();
         }
     };
 
-    const settlePushHistoryEntry = () => {
-        schedulePushHistoryEntrySettlement.cancel();
-        isCoalescingPushHistoryEntry = false;
-        coalescingStartUrl = undefined;
+    const handleBeforeNavigate = ({ type }: { type: string }) => {
+        schedulePushHistoryEntryFinalization.cancel();
+        if (type !== 'popstate') {
+            flushPendingReplacement();
+        } else {
+            pendingReplacementUrl = undefined;
+        }
+
+        settlePushHistoryEntry();
     };
 
-    beforeNavigate(settlePushHistoryEntry);
-    onDestroy(settlePushHistoryEntry);
+    beforeNavigate(handleBeforeNavigate);
+    if (browser) {
+        window.addEventListener('beforeunload', flushPendingReplacement);
+    }
+
+    onDestroy(finalizePushHistoryEntry);
 
     const commit = (result: ReturnType<typeof applyQueryParameterUpdates<T>>) => {
         searchParams = result.searchParams;
@@ -100,6 +128,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     onDestroy(() => {
         if (browser) {
             window.removeEventListener('popstate', synchronizeStateFromLocation);
+            window.removeEventListener('beforeunload', flushPendingReplacement);
         }
     });
 
