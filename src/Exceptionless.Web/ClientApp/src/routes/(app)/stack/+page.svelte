@@ -214,16 +214,16 @@
             .filter((item) => item);
     }
 
-    function getPersistedStackSort(): StackSortMode | undefined {
+    function getPersistedStackSort(): string | undefined {
         if (queryParams.sort != null) {
             return getStackSortMode(queryParams.sort) ?? 'stack_frequent';
         }
 
-        return getStackSortMode(savedViewsState.activeSavedView?.sort);
+        return savedViewsState.activeSavedView?.sort ?? undefined;
     }
 
     function getEffectiveStackSort(): StackSortMode {
-        return getPersistedStackSort() ?? 'stack_frequent';
+        return getStackSortMode(getPersistedStackSort()) ?? 'stack_frequent';
     }
 
     function setStackSort(mode: StackSortMode): void {
@@ -883,7 +883,7 @@
                     {showStats}
                     setShowChart={(v) => (showChart = v)}
                     setShowStats={(v) => (showStats = v)}
-                    sort={getPersistedStackSort()}
+                    sort={getStackSortMode(getPersistedStackSort())}
                     {table}
                     time={getQueryTime() ?? undefined}
                     view={VIEW}

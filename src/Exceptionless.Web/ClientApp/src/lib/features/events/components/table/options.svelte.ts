@@ -320,7 +320,15 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
 }
 
 export function getStackSortMode(value: null | string | undefined): StackSortMode | undefined {
-    return value === 'stack_frequent' || value === 'stack_recent' ? value : undefined;
+    if (value === 'stack_frequent' || value === '-events') {
+        return 'stack_frequent';
+    }
+
+    if (value === 'stack_recent' || value === '-last') {
+        return 'stack_recent';
+    }
+
+    return undefined;
 }
 
 function formatTextColumn(value: unknown): string {

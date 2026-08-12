@@ -8,6 +8,8 @@ describe('event table columns', () => {
     it('accepts only supported stack sort modes', () => {
         expect(getStackSortMode('stack_frequent')).toBe('stack_frequent');
         expect(getStackSortMode('stack_recent')).toBe('stack_recent');
+        expect(getStackSortMode('-events')).toBe('stack_frequent');
+        expect(getStackSortMode('-last')).toBe('stack_recent');
         expect(getStackSortMode('stack_new')).toBeUndefined();
         expect(getStackSortMode('-last_occurrence')).toBeUndefined();
         expect(getStackSortMode(undefined)).toBeUndefined();
