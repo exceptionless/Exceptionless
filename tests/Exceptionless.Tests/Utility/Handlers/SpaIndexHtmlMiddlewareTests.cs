@@ -334,14 +334,14 @@ public sealed class SpaIndexHtmlMiddlewareTests
                 {
                     app.UseCsp(FrontendContentSecurityPolicy.Configure);
                     app.UseDefaultFiles();
-                    app.UseMiddleware<SpaIndexHtmlMiddleware>();
+                    app.Use(Exceptionless.Web.Program.InjectCspNonceAsync);
                     app.UseStaticFiles();
                     app.UseRouting();
                     app.UseEndpoints(endpoints =>
                     {
                         endpoints.MapScalarApiReference("/docs", (options, context) =>
                             options.WithNonce(context.RequestServices.GetRequiredService<ICspNonceService>().GetNonce()));
-                        endpoints.MapFallbackToFile("index.html");
+                        endpoints.MapFallback("{**slug:nonfile}", Exceptionless.Web.Program.CreateRequestDelegate(endpoints, "index.html"));
                     });
                 }))
             .Build();
