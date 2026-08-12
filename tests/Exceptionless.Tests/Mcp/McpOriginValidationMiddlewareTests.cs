@@ -23,7 +23,9 @@ public sealed class McpOriginValidationMiddlewareTests
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["Mcp:AllowedOrigins:0"] = "https://web-ex.dev.localhost:7131"
+                ["Mcp:AllowedOrigins:App0"] = "https://web-ex.dev.localhost:7131",
+                ["Mcp:AllowedOrigins:App1"] = "https://app.exceptionless.io",
+                ["Mcp:AllowedOrigins:Api0"] = "https://api.exceptionless.io"
             })
             .Build();
         var middleware = new McpOriginValidationMiddleware(
@@ -37,6 +39,8 @@ public sealed class McpOriginValidationMiddlewareTests
         DefaultHttpContext[] contexts =
         [
             CreateContext("https://web-ex.dev.localhost:7131"),
+            CreateContext("https://app.exceptionless.io"),
+            CreateContext("https://api.exceptionless.io"),
             CreateContext("http://localhost:9001")
         ];
 
@@ -45,7 +49,7 @@ public sealed class McpOriginValidationMiddlewareTests
             await middleware.InvokeAsync(context);
 
         // Assert
-        Assert.Equal(2, nextInvocationCount);
+        Assert.Equal(4, nextInvocationCount);
     }
 
     [Theory]
