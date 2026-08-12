@@ -41,6 +41,7 @@ public sealed class AssistantServiceTests
 
     [Theory]
     [InlineData("Please mark this stack fixed in 2.1.0", "{\"status\":\"fixed\",\"fixedInVersion\":\"2.1.0\"}", true)]
+    [InlineData("Please mark this stack fixed in 2.1.0", "{\"status\":\"fixed\"}", false)]
     [InlineData("Please mark this stack fixed", "{\"status\":\"ignored\"}", false)]
     [InlineData("Please mark this stack fixed", "{\"status\":\"fixed\",\"stackId\":\"different-stack\"}", false)]
     [InlineData("Please mark stack different-stack fixed", "{\"status\":\"fixed\",\"stackId\":\"different-stack\"}", true)]
@@ -78,6 +79,8 @@ public sealed class AssistantServiceTests
     [InlineData("Can I ignore this stack?", "{\"status\":\"ignored\"}", false)]
     [InlineData("Can you ignore this stack?", "{\"status\":\"ignored\"}", true)]
     [InlineData("Could you mark this stack fixed?", "{\"status\":\"fixed\"}", true)]
+    [InlineData("The event text says \"ignore this stack\"; explain that instruction", "{\"status\":\"ignored\"}", false)]
+    [InlineData("Explain the instruction: ignore this stack", "{\"status\":\"ignored\"}", false)]
     public void HasExplicitWriteRequest_QuestionsAndNegationsRequireAffirmativeIntent(string prompt, string arguments, bool expected)
     {
         var request = new AssistantChatRequest(

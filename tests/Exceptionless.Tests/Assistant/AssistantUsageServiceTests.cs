@@ -253,6 +253,53 @@ public sealed class AssistantUsageServiceTests
     }
 
     [Fact]
+    public async Task StartProviderRequestAsync_MonthBoundary_ReconcilesOriginalMonthReservation()
+    {
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 8, 31, 23, 59, 0, TimeSpan.Zero));
+        using var cache = CreateCache(timeProvider);
+        var service = CreateService(cache, CreateOptions(), timeProvider);
+        var providerRequest = await service.StartProviderRequestAsync("organization-id", providerInputCharacters: 1_000);
+
+        timeProvider.Advance(TimeSpan.FromMinutes(2));
+        await providerRequest.ReconcileAsync(new AssistantProviderUsage(2_000, 500, 0.01m));
+
+        var septemberUsage = await service.GetMonthlyUsageAsync("organization-id");
+        using var scopedCache = new ScopedCacheClient(cache, "AssistantUsage");
+        long augustPromptTokens = await scopedCache.GetAsync<long>("organization:organization-id:usage:202608:prompt-tokens", 0);
+        long augustReservedTokens = await scopedCache.GetAsync<long>("organization:organization-id:usage:202608:reserved-prompt-tokens", 0);
+        long septemberReservedTokens = await scopedCache.GetAsync<long>("organization:organization-id:usage:202609:reserved-prompt-tokens", 0);
+
+        Assert.Equal(2_000, augustPromptTokens);
+        Assert.Equal(0, augustReservedTokens);
+        Assert.Equal(0, septemberUsage.TotalTokens);
+        Assert.Equal(0, septemberReservedTokens);
+    }
+
+    [Fact]
+    public async Task StartProviderRequestAsync_DurableReconciliationFails_PropagatesAndPreservesReservation()
+    {
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 8, 2, 12, 0, 0, TimeSpan.Zero));
+        using var cache = CreateCache(timeProvider);
+        var recorder = new RecordingAssistantUsageRecorder();
+        var service = CreateService(cache, CreateLockProvider(cache, timeProvider), CreateOptions(), timeProvider, recorder);
+        var providerRequest = await service.StartProviderRequestAsync("organization-id", providerInputCharacters: 1_000);
+        recorder.Exception = new InvalidOperationException("durable usage unavailable");
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => providerRequest.ReconcileAsync(new AssistantProviderUsage(250, 50, 0.001m)));
+        var reservedUsage = await service.GetMonthlyUsageAsync("organization-id");
+
+        Assert.Equal(1_000, reservedUsage.PromptTokens);
+        Assert.Equal(AssistantLimits.MaximumOutputTokens, reservedUsage.CompletionTokens);
+
+        recorder.Exception = null;
+        await providerRequest.DisposeAsync();
+        var reconciledUsage = await service.GetMonthlyUsageAsync("organization-id");
+
+        Assert.Equal(reservedUsage, reconciledUsage);
+        Assert.Single(recorder.Records, record => record.Increment.PromptTokens == 1_000);
+    }
+
+    [Fact]
     public async Task TryStartTurnAsync_MonthlyCostReached_BlocksBeforeProviderCall()
     {
         var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 8, 2, 12, 0, 0, TimeSpan.Zero));

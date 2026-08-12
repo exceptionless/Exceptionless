@@ -524,19 +524,34 @@ public sealed class AssistantService(
         string? status = GetString(arguments, "status")?.Trim().ToLowerInvariant();
         bool explicitlyRequested = status switch
         {
-            "fixed" => message.Contains("fixed", StringComparison.OrdinalIgnoreCase)
-                && ContainsAny(message, "mark", "set status", "change status"),
-            "ignored" => ContainsAny(message, "ignore this stack", "ignore the stack", "mark ignored", "mark it ignored", "set status to ignored", "change status to ignored"),
-            "discarded" => ContainsAny(message, "discard this stack", "discard the stack", "mark discarded", "mark it discarded", "set status to discarded", "change status to discarded"),
-            "open" => ContainsAny(message, "reopen", "mark open", "mark it open", "set status to open", "change status to open"),
+            "fixed" => MatchesAffirmativeCommand(message, @"(?:mark|set|change)\b[^\r\n.!?]*\bfixed"),
+            "ignored" => MatchesAffirmativeCommand(message, @"(?:ignore\b[^\r\n.!?]*\b(?:stack|issue)|(?:mark|set|change)\b[^\r\n.!?]*\bignored)"),
+            "discarded" => MatchesAffirmativeCommand(message, @"(?:discard\b[^\r\n.!?]*\b(?:stack|issue)|(?:mark|set|change)\b[^\r\n.!?]*\bdiscarded)"),
+            "open" => MatchesAffirmativeCommand(message, @"(?:reopen\b|(?:mark|set|change)\b[^\r\n.!?]*\bopen)"),
             _ => false
         };
         if (!explicitlyRequested)
             return false;
 
         string? fixedInVersion = GetString(arguments, "fixedInVersion", "fixed_in_version");
+        var requestedVersionMatch = Regex.Match(
+            message,
+            @"\bfixed\s+(?:in|for)\s+(?:version\s+)?(?<version>[A-Za-z0-9][A-Za-z0-9._+\-]*)",
+            RegexOptions.IgnoreCase);
+        if (requestedVersionMatch.Success)
+        {
+            string requestedVersion = requestedVersionMatch.Groups["version"].Value;
+            return String.Equals(fixedInVersion, requestedVersion, StringComparison.OrdinalIgnoreCase);
+        }
+
         return String.IsNullOrWhiteSpace(fixedInVersion) || message.Contains(fixedInVersion, StringComparison.OrdinalIgnoreCase);
     }
+
+    private static bool MatchesAffirmativeCommand(string message, string commandPattern)
+        => Regex.IsMatch(
+            message,
+            $@"^\s*(?:(?:please|kindly)\s+)?(?:(?:can|could|would|will)\s+you\s+)?(?:(?:please|kindly)\s+)?(?:{commandPattern})\b",
+            RegexOptions.IgnoreCase);
 
     private static bool HasExplicitSnoozeRequest(string message, JsonElement arguments)
     {
