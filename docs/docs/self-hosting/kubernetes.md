@@ -29,22 +29,20 @@ _Please note that if you are specifying configuration via `docker-compose`, then
 
 ## ConnectionStrings
 
+See [Infrastructure Configuration](/docs/self-hosting/configuration) for the technology priority table, RabbitMQ examples, legacy compatibility controls, and the `local` opt-out. Existing Helm values remain supported without changes.
+
 ```yaml
-# connection string used for any provider specifying Redis.
+# Redis automatically supplies Cache, MessageBus, and Queue when a higher-priority
+# technology for a role is not configured.
 EX_ConnectionStrings__Redis: localhost:6379,abortConnect=false
 
-EX_ConnectionStrings__Cache: provider=redis;
 EX_ConnectionStrings__Elasticsearch: server=http://10.0.0.4:9200;
 EX_ConnectionStrings__Email: smtps://user%40domain.com:password@smtp.domain.com:465
-EX_ConnectionStrings__MessageBus: provider=redis;
-EX_ConnectionStrings__Metrics: provider=statsd;server=localhost
-EX_ConnectionStrings__Queue: provider=redis;
-EX_ConnectionStrings__Storage: provider=azurestorage;
+EX_ConnectionStrings__AzureQueues: DefaultEndpointsProtocol=https;AccountName=example;AccountKey=secret
+EX_ConnectionStrings__AzureStorage: DefaultEndpointsProtocol=https;AccountName=example;AccountKey=secret
 ```
 
-You can append values to any connection string using a `;`. For example, you can control many shards and replicas each Elasticsearch index should be created with by appending to the `EX_ConnectionStrings__Elasticsearch` connection string. For a Elasticsearch cluster (3 nodes, two masters), you would append `shards=3;replicas=1`.
-
-The `provider` value determines what implementations to use for the various abstractions. We've made it easier to reuse a single connection string by automatically looking up a connection string by the provider name and adding any key value pairs to the current connection string (as shown above with redis).
+Structured connection strings support provider-specific key-value options. For example, you can control how many shards and replicas each Elasticsearch index should be created with by appending `shards=3;replicas=1` to `EX_ConnectionStrings__Elasticsearch`. Redis and RabbitMQ use their native complete connection-string formats.
 
 ## General Configuration
 

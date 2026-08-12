@@ -262,16 +262,16 @@ public class Bootstrapper
         if (!logger.IsEnabled(LogLevel.Warning))
             return;
 
-        if (String.IsNullOrEmpty(appOptions.CacheOptions.Provider))
+        if (!IsDistributedProvider(appOptions.CacheOptions.Provider))
             logger.LogWarning("Distributed cache is NOT enabled on {MachineName}", Environment.MachineName);
 
-        if (String.IsNullOrEmpty(appOptions.MessageBusOptions.Provider))
+        if (!IsDistributedProvider(appOptions.MessageBusOptions.Provider))
             logger.LogWarning("Distributed message bus is NOT enabled on {MachineName}", Environment.MachineName);
 
-        if (String.IsNullOrEmpty(appOptions.QueueOptions.Provider))
+        if (!IsDistributedProvider(appOptions.QueueOptions.Provider))
             logger.LogWarning("Distributed queue is NOT enabled on {MachineName}", Environment.MachineName);
 
-        if (String.IsNullOrEmpty(appOptions.StorageOptions.Provider))
+        if (!IsDistributedProvider(appOptions.StorageOptions.Provider))
             logger.LogWarning("Distributed storage is NOT enabled on {MachineName}", Environment.MachineName);
 
         if (!appOptions.EnableWebSockets)
@@ -331,6 +331,12 @@ public class Bootstrapper
         logger.LogInformation(
             "Startup optional integrations/auth providers: {EnabledIntegrations}",
             GetEnabledIntegrations(options));
+    }
+
+    private static bool IsDistributedProvider(string? provider)
+    {
+        return !String.IsNullOrWhiteSpace(provider)
+            && !String.Equals(provider, "local", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string GetProvider(string? provider)

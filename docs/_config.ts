@@ -29,7 +29,14 @@ site.ignore(
   "snapshots",
 )
 
-site.use(codeHighlight())
+// Mermaid fences are rendered by Mermaid-compatible documentation viewers;
+// leave their source untouched instead of asking Highlight.js to parse it.
+site.use(codeHighlight({
+  options: {
+    noHighlightRe: /^(no-?highlight|language-mermaid|mermaid)$/i,
+    languageDetectRe: /\blanguage-(?!mermaid\b)([\w-]+)\b/i,
+  },
+}))
 site.use(picture())
 site.use(transformImages())
 site.add("public/assets/img/dashboard-2-1024x594.png", "assets/img/dashboard-2-1024x594.png")
