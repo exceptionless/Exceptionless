@@ -67,7 +67,7 @@ public class OAuthApplication : IIdentity, IHaveDates, IValidatableObject
             yield return new ValidationResult("The refresh_token grant type requires authorization_code or device_code.", [nameof(GrantTypes)]);
 
         if (Scopes.Contains(AuthorizationRoles.OfflineAccess, StringComparer.Ordinal) && !GrantTypes.Contains(OAuthGrantTypes.RefreshToken, StringComparer.Ordinal))
-            yield return new ValidationResult("The offline_access scope requires the refresh_token grant type.", [nameof(Scopes)]);
+            yield return new ValidationResult($"The {AuthorizationRoles.OfflineAccess} scope requires the {OAuthGrantTypes.RefreshToken} grant type.", [nameof(Scopes)]);
 
         if (supportsAuthorizationCode && RedirectUris.Length == 0)
             yield return new ValidationResult("Redirect URIs are required for authorization_code clients.", [nameof(RedirectUris)]);

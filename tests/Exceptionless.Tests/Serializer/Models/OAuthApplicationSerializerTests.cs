@@ -17,6 +17,7 @@ public sealed class OAuthApplicationSerializerTests : TestWithServices
     [Fact]
     public void Deserialize_MissingGrantTypes_DefaultsToLegacyAuthorizationCodeFlow()
     {
+        /* language=json */
         const string json = """
             {
               "id": "650000000000000000000005",

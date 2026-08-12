@@ -119,7 +119,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             return OAuthClientRegistrationResult.Invalid("invalid_client_metadata", "One or more scopes are not supported.");
 
         if (scopes.Contains(AuthorizationRoles.OfflineAccess, StringComparer.Ordinal) && !grantTypes.Contains(OAuthGrantTypes.RefreshToken, StringComparer.Ordinal))
-            return OAuthClientRegistrationResult.Invalid("invalid_client_metadata", "The offline_access scope requires the refresh_token grant type.");
+            return OAuthClientRegistrationResult.Invalid("invalid_client_metadata", $"The {AuthorizationRoles.OfflineAccess} scope requires the {OAuthGrantTypes.RefreshToken} grant type.");
 
         var utcNow = timeProvider.GetUtcNow().UtcDateTime;
         string clientId = await CreateUniqueClientIdAsync();
@@ -420,7 +420,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             return OAuthValidationResult.Invalid("invalid_scope", "One or more scopes are not allowed for this client.");
 
         if (requestedScopes.Contains(AuthorizationRoles.OfflineAccess, StringComparer.Ordinal) && !client.GrantTypes.Contains(OAuthGrantTypes.RefreshToken, StringComparer.Ordinal))
-            return OAuthValidationResult.Invalid("invalid_scope", "The offline_access scope requires the refresh_token grant type.");
+            return OAuthValidationResult.Invalid("invalid_scope", $"The {AuthorizationRoles.OfflineAccess} scope requires the {OAuthGrantTypes.RefreshToken} grant type.");
 
         if (resourceDefinition.RequiredScopes.Any(s => !requestedScopes.Contains(s, StringComparer.Ordinal)))
             return OAuthValidationResult.Invalid("invalid_scope", "One or more required resource scopes are missing.");
