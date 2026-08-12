@@ -19,9 +19,11 @@
         bootOptions?: BootOptions;
         children: Snippet;
         routeKey?: string;
+        /** @deprecated Intercom updates are event-driven; this value is retained as a no-op for compatibility. */
+        updateIntervalMs?: number;
     }
 
-    let { bootOptions = undefined, children, routeKey = undefined }: Props = $props();
+    let { bootOptions = undefined, children, routeKey = undefined, updateIntervalMs = undefined }: Props = $props();
 
     const intercom = useIntercom();
     let hasBooted = false;
@@ -29,6 +31,11 @@
     let previousRouteKey: string | undefined;
 
     setContext<IntercomContext>(INTERCOM_CONTEXT_KEY, intercom);
+
+    // Retain the deprecated prop reactively without restoring periodic updates.
+    $effect(() => {
+        void updateIntervalMs;
+    });
 
     // The provider boots with the initial options. Only update after boot when the route or
     // identity/company data changes; eager or periodic updates create duplicate impressions.
