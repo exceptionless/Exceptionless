@@ -1,3 +1,4 @@
+using Exceptionless.Core.Migrations;
 using Foundatio.Repositories.Migrations;
 using Xunit;
 
@@ -25,5 +26,14 @@ public sealed class MigrationRegistrationTests : TestWithServices
             .ToList();
 
         Assert.Empty(duplicateVersions);
+    }
+
+    [Fact]
+    public void BackfillParentReferences_UsesNextUnusedVersion()
+    {
+        var migration = GetService<BackfillParentReferences>();
+
+        Assert.Equal(MigrationType.VersionedAndResumable, migration.MigrationType);
+        Assert.Equal(6, migration.Version);
     }
 }
