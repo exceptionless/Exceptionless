@@ -9,8 +9,6 @@
     import type { BootOptions } from 'svelte-intercom';
 
     import { accessToken } from '$features/auth/index.svelte';
-    import { DocumentVisibility } from '$shared/document-visibility.svelte';
-    import { useInterval } from 'runed';
     import { untrack } from 'svelte';
     import { setContext } from 'svelte';
     import { useIntercom } from 'svelte-intercom';
@@ -21,46 +19,32 @@
         bootOptions?: BootOptions;
         children: Snippet;
         routeKey?: string;
-        updateIntervalMs?: number;
     }
 
-    let { bootOptions = undefined, children, routeKey = undefined, updateIntervalMs = 90_000 }: Props = $props();
+    let { bootOptions = undefined, children, routeKey = undefined }: Props = $props();
 
     const intercom = useIntercom();
-    const visibility = new DocumentVisibility();
+    let hasBooted = false;
 
     setContext<IntercomContext>(INTERCOM_CONTEXT_KEY, intercom);
 
-    const interval = useInterval(() => updateIntervalMs, {
-        callback: () => {
-            if (bootOptions && visibility.visible) {
-                intercom.update(bootOptions);
-            }
-        },
-        immediate: false
-    });
-
-    const shouldUpdate = $derived(bootOptions && visibility.visible);
-
-    // Sync identity/company data and manage interval when boot options or visibility changes.
+    // The provider boots with the initial options. Only update after boot when the route or
+    // identity/company data changes; eager or periodic updates create duplicate impressions.
     $effect(() => {
-        if (!bootOptions) {
-            interval.pause();
+        void routeKey;
+        const options = bootOptions;
+        if (!options) {
+            hasBooted = false;
             return;
         }
 
-        if (visibility.visible) {
-            interval.resume();
-        } else {
-            interval.pause();
+        if (!hasBooted) {
+            hasBooted = true;
+            return;
         }
-    });
 
-    // Sync on route transitions and visibility changes.
-    $effect(() => {
-        void routeKey;
-        if (shouldUpdate) {
-            untrack(() => intercom.update(bootOptions!));
+        if (typeof window.Intercom === 'function') {
+            untrack(() => intercom.update(options));
         }
     });
 
