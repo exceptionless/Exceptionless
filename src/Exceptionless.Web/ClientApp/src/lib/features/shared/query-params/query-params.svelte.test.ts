@@ -89,7 +89,7 @@ describe('createQueryParameters', () => {
         expect(window.location.search).toBe('?filter=second');
     });
 
-    it('does not leave a trailing question mark when a burst returns to its starting URL', async () => {
+    it('keeps a meaningful Back target when a burst returns to its starting URL', async () => {
         // Arrange
         window.history.replaceState({}, '', '/events#details');
         render(QueryParametersTestHarness);
@@ -100,12 +100,30 @@ describe('createQueryParameters', () => {
         await vi.advanceTimersByTimeAsync(200);
 
         // Assert
-        expect(navigation.pushState).toHaveBeenCalledWith('/events?filter=first#details', pageState);
-        expect(navigation.replaceState).toHaveBeenCalledOnce();
-        expect(navigation.replaceState).toHaveBeenCalledWith('/events#details', pageState);
+        expect(navigation.pushState).toHaveBeenCalledTimes(2);
+        expect(navigation.pushState).toHaveBeenNthCalledWith(1, '/events?filter=first#details', pageState);
+        expect(navigation.pushState).toHaveBeenNthCalledWith(2, '/events#details', pageState);
+        expect(navigation.replaceState).not.toHaveBeenCalled();
         expect(window.location.pathname).toBe('/events');
         expect(window.location.search).toBe('');
         expect(window.location.hash).toBe('#details');
+    });
+
+    it('starts a new coalescing burst after returning to the starting URL', async () => {
+        // Arrange
+        render(QueryParametersTestHarness);
+        await fireEvent.click(screen.getByRole('button', { name: 'First' }));
+        await fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+
+        // Act
+        await fireEvent.click(screen.getByRole('button', { name: 'Second' }));
+
+        // Assert
+        expect(navigation.pushState).toHaveBeenCalledTimes(3);
+        expect(navigation.pushState).toHaveBeenNthCalledWith(1, '/?filter=first', pageState);
+        expect(navigation.pushState).toHaveBeenNthCalledWith(2, '/', pageState);
+        expect(navigation.pushState).toHaveBeenNthCalledWith(3, '/?filter=second', pageState);
+        expect(navigation.replaceState).not.toHaveBeenCalled();
     });
 
     it('does not add a delayed history write after full navigation', async () => {

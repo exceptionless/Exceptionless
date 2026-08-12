@@ -20,9 +20,12 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     // belong to the same user interaction. Deferring the first push leaves no target
     // for an immediate Back action and can navigate a newly opened tab to about:blank.
     let isCoalescingPushHistoryEntry = false;
+    let coalescingStartUrl: string | undefined;
     const schedulePushHistoryEntrySettlement = createDebouncedFunction(() => {
         isCoalescingPushHistoryEntry = false;
+        coalescingStartUrl = undefined;
     }, debounceMilliseconds);
+    const getCurrentUrl = () => `${window.location.pathname}${window.location.search}${window.location.hash}`;
 
     const synchronizeURL = () => {
         if (searchParamsEqual(searchParams, window.location.search)) {
@@ -31,11 +34,20 @@ export function createQueryParameters<T extends QueryParameterSchema>({
 
         const query = searchParams.toString();
         const url = `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`;
-        if (history === 'replace' || isCoalescingPushHistoryEntry) {
+        if (history === 'replace') {
             replaceState(url, page.state);
-        } else {
+        } else if (!isCoalescingPushHistoryEntry) {
+            coalescingStartUrl = getCurrentUrl();
             pushState(url, page.state);
             isCoalescingPushHistoryEntry = true;
+        } else if (url === coalescingStartUrl) {
+            // Keep the transient state as a meaningful Back target instead of
+            // replacing it with a duplicate of the entry behind it.
+            pushState(url, page.state);
+            isCoalescingPushHistoryEntry = false;
+            coalescingStartUrl = undefined;
+        } else {
+            replaceState(url, page.state);
         }
 
         if (history === 'push') {
@@ -46,6 +58,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     const settlePushHistoryEntry = () => {
         schedulePushHistoryEntrySettlement.cancel();
         isCoalescingPushHistoryEntry = false;
+        coalescingStartUrl = undefined;
     };
 
     beforeNavigate(settlePushHistoryEntry);

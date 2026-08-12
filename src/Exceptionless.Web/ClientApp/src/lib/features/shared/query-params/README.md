@@ -28,6 +28,6 @@ queryParams.update({ filter: 'status:open', page: 1 });
 
 Updates may also assign a single schema property directly. Use `update()` when several parameters form one logical state change so they produce one reactive update and one URL synchronization.
 
-URL synchronization is synchronous: once query-parameter state changes, a reload observes the same state. With `history: 'push'`, the first update immediately pushes a Back-button entry and rapid follow-up updates replace that entry until `debounceMilliseconds` elapses. Coalescing settles before navigation or teardown. With `history: 'replace'`, every update immediately replaces the current entry.
+URL synchronization is synchronous: once query-parameter state changes, a reload observes the same state. With `history: 'push'`, the first update immediately pushes a Back-button entry and rapid follow-up updates replace that entry until `debounceMilliseconds` elapses. If a burst returns to its starting URL, the return is pushed so the transient state remains a meaningful Back target rather than creating adjacent duplicate URLs. Coalescing settles before navigation or teardown. With `history: 'replace'`, every update immediately replaces the current entry.
 
 The implementation was originally derived from [beynar/kit-query-params](https://github.com/beynar/kit-query-params) version 0.0.26 at commit `7c90edf7`. The original copyright and MIT license are retained in [LICENSE](./LICENSE). This module is maintained as first-party Exceptionless code and does not track the upstream package API.
