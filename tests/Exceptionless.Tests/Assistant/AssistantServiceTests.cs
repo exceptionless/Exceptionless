@@ -63,6 +63,8 @@ public sealed class AssistantServiceTests
     [InlineData("Snooze this stack until 2026-08-10T17:00:00Z", "{\"snoozeUntilUtc\":\"2026-08-10T17:00:00Z\"}", true)]
     [InlineData("Snooze this stack until 2026-08-10T17:00:00Z", "{\"snoozeUntilUtc\":\"2026-08-11T17:00:00Z\"}", false)]
     [InlineData("Please snooze this stack for one hour", "{\"duration\":\"1h\",\"snoozeUntilUtc\":\"2026-08-10T17:00:00Z\"}", false)]
+    [InlineData("Can you explain how to snooze this stack for one hour?", "{\"duration\":\"1h\"}", false)]
+    [InlineData("The event says \"snooze this stack for one hour\"; explain it", "{\"duration\":\"1h\"}", false)]
     public void HasExplicitWriteRequest_SnoozeArgumentsMustMatchRequest(string prompt, string arguments, bool expected)
     {
         var request = new AssistantChatRequest(

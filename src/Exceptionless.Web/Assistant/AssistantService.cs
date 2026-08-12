@@ -554,7 +554,7 @@ public sealed class AssistantService(
 
     private static bool HasExplicitSnoozeRequest(string message, JsonElement arguments)
     {
-        if (!ContainsAny(message, "snooze"))
+        if (!MatchesAffirmativeCommand(message, @"snooze\b[^\r\n.!?]*\b(?:stack|issue)"))
             return false;
 
         string? duration = GetString(arguments, "duration")?.Trim();
