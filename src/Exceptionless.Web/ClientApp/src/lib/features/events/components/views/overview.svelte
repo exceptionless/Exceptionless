@@ -96,10 +96,10 @@
         {/if}
         {#each references as reference (reference.id)}
             <Table.Row class="group">
-                {#if reference.name === 'session'}
+                {#if reference.name.toLowerCase() === 'session'}
                     <Table.Head class="w-40 font-semibold whitespace-nowrap">Session</Table.Head>
                     <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.SessionTrigger changed={filterChanged} value={reference.id} /></Table.Cell>
-                {:else if reference.name === 'parent'}
+                {:else if reference.name.toLowerCase() === 'parent'}
                     <Table.Head class="w-40 font-semibold whitespace-nowrap">{reference.name}</Table.Head>
                     <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.ReferenceTrigger changed={filterChanged} value={reference.id} /></Table.Cell>
                 {:else if isValidReferenceName(reference.name)}
