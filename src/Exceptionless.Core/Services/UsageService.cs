@@ -151,7 +151,8 @@ public class UsageService : IAssistantUsageRecorder
                         organization.LastEventDateUtc = _timeProvider.GetUtcNow().UtcDateTime;
 
                     bool hasEventUsage = hasIngestion || (bucketDeleted?.Value ?? 0) > 0;
-                    int bucketLimit = GetBucketEventLimit(organization.GetMaxEventsPerMonthWithBonus(_timeProvider), bucketUtc);
+                    int currentMonthlyLimit = organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
+                    int bucketLimit = GetBucketEventLimit(currentMonthlyLimit, bucketUtc);
                     bool hourlyThrottleCleared = hourlyThrottleTransition is { HasValue: true } transition
                         ? transition.Value
                         : bucketLimit >= 0 && bucketTotal is { HasValue: true } total && total.Value >= bucketLimit;
@@ -162,7 +163,8 @@ public class UsageService : IAssistantUsageRecorder
                     if (hasEventUsage)
                     {
                         var usage = organization.GetUsage(bucketUtc, _timeProvider);
-                        usage.Limit = organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
+                        if (usage.Limit == 0 || bucketUtc.StartOfMonth() == utcNow.StartOfMonth())
+                            usage.Limit = currentMonthlyLimit;
                         usage.Total += bucketTotal?.Value ?? 0;
                         usage.Blocked += bucketBlocked?.Value ?? 0;
                         usage.Discarded += bucketDiscarded?.Value ?? 0;

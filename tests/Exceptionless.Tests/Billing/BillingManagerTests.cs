@@ -1,5 +1,6 @@
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Billing;
 using Exceptionless.DateTimeExtensions;
 using Xunit;
 
@@ -110,6 +111,31 @@ public class BillingManagerTests : TestWithServices
 
         // Assert
         Assert.Equal(TimeProvider.GetUtcNow().UtcDateTime, organization.BillingChangeDate);
+    }
+
+    [Fact]
+    public void ApplyBillingPlan_SamePlanWithChangedLimit_CreatesOutgoingAnchor()
+    {
+        // Arrange
+        var billingManager = GetService<BillingManager>();
+        var plans = GetService<BillingPlans>();
+        TimeProvider.SetUtcNow(PlanChangeUtc);
+        var organization = new Organization
+        {
+            CreatedUtc = PlanChangeUtc.AddMonths(-2),
+            PlanId = plans.SmallPlan.Id,
+            MaxEventsPerMonth = plans.SmallPlan.MaxEventsPerMonth
+        };
+        BillingPlan updatedPlan = plans.SmallPlan with { MaxEventsPerMonth = plans.SmallPlan.MaxEventsPerMonth * 2 };
+
+        // Act
+        billingManager.ApplyBillingPlan(organization, updatedPlan);
+
+        // Assert
+        Assert.Equal(plans.SmallPlan.MaxEventsPerMonth,
+            organization.Usage.Single(usage => usage.Date == PreviousMonthUtc).Limit);
+        Assert.Equal(updatedPlan.MaxEventsPerMonth,
+            organization.Usage.Single(usage => usage.Date == PlanChangeUtc.StartOfMonth()).Limit);
     }
 
     [Fact]
