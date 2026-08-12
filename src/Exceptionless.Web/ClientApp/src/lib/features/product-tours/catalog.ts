@@ -391,7 +391,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
         id: 'investigate-error',
         keywords: ['error report', 'event details', 'exception', 'request', 'environment', 'filter', 'stack', 'status', 'triage'],
         title: 'Investigate an error',
-        version: 2
+        version: 1
     },
     {
         description: 'See how Exie uses the current page as context without sending a prompt.',
