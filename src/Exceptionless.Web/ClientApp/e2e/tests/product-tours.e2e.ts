@@ -231,35 +231,39 @@ test('Exie announcement can be dismissed without hiding the replayable guide', a
     await expect(page.locator('.driver-popover').getByText('Open Exie', { exact: true })).toBeVisible();
 });
 
-test('Meet Exie opens contextual UI without sending a provider request', async ({ e2eScenario: _e2eScenario, page }, testInfo) => {
-    void _e2eScenario;
-    let chatRequests = 0;
-    await page.route('**/api/v2/assistant/access**', async (route) => {
-        await route.fulfill({
-            contentType: 'application/json',
-            json: { enabled: true, has_access: true, message: null, upgrade_required: false }
+test.describe('with the seeded user', () => {
+    test.use({ e2eUseGeneratedUser: false });
+
+    test('Meet Exie opens contextual UI without sending a provider request', async ({ e2eScenario: _e2eScenario, page }, testInfo) => {
+        void _e2eScenario;
+        let chatRequests = 0;
+        await page.route('**/api/v2/assistant/access**', async (route) => {
+            await route.fulfill({
+                contentType: 'application/json',
+                json: { enabled: true, has_access: true, message: null, upgrade_required: false }
+            });
         });
+        await page.route('**/api/v2/assistant/chat**', async (route) => {
+            chatRequests += 1;
+            await route.abort();
+        });
+
+        await page.setViewportSize({ height: 900, width: 1440 });
+        await page.goto('/next/stack');
+        await startTourFromCommand(page, 'Meet Exie');
+
+        const tour = page.locator('.driver-popover');
+        await expect(tour.getByText('Open Exie', { exact: true })).toBeVisible();
+        await page.screenshot({ fullPage: true, path: testInfo.outputPath('meet-exie-trigger.png') });
+        await tour.getByRole('button', { name: 'Continue' }).click();
+        await expect(page.getByRole('dialog', { name: 'Exie' })).toBeVisible();
+        await expect(tour.getByText('You control every request')).toBeVisible();
+        await page.screenshot({ fullPage: true, path: testInfo.outputPath('meet-exie-panel.png') });
+        expect(chatRequests).toBe(0);
+
+        await tour.getByRole('button', { name: 'Next' }).click();
+        expect(chatRequests).toBe(0);
     });
-    await page.route('**/api/v2/assistant/chat**', async (route) => {
-        chatRequests += 1;
-        await route.abort();
-    });
-
-    await page.setViewportSize({ height: 900, width: 1440 });
-    await page.goto('/next/stack');
-    await startTourFromCommand(page, 'Meet Exie');
-
-    const tour = page.locator('.driver-popover');
-    await expect(tour.getByText('Open Exie', { exact: true })).toBeVisible();
-    await page.screenshot({ fullPage: true, path: testInfo.outputPath('meet-exie-trigger.png') });
-    await tour.getByRole('button', { name: 'Continue' }).click();
-    await expect(page.getByRole('dialog', { name: 'Exie' })).toBeVisible();
-    await expect(tour.getByText('You control every request')).toBeVisible();
-    await page.screenshot({ fullPage: true, path: testInfo.outputPath('meet-exie-panel.png') });
-    expect(chatRequests).toBe(0);
-
-    await tour.getByRole('button', { name: 'Next' }).click();
-    expect(chatRequests).toBe(0);
 });
 
 async function startTourFromCommand(page: import('@playwright/test').Page, title: string): Promise<void> {
