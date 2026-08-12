@@ -253,14 +253,6 @@ export class E2EApiClient {
         throw new Error(`Timed out waiting for E2E event with reference id ${referenceId}`);
     }
 
-    async setOrganizationFeature(token: string, organizationId: string, feature: string): Promise<void> {
-        const response = await this.request.post(this.url(`organizations/${organizationId}/features/${encodeURIComponent(feature)}`), {
-            headers: this.authHeaders(token)
-        });
-
-        await expectStatus(response, [200], 'set organization feature');
-    }
-
     async pollForMailToken(email: string, path: 'reset-password' | 'signup', timeoutMs = 30_000): Promise<string> {
         const deadline = Date.now() + timeoutMs;
         const normalizedEmail = email.toLowerCase();
@@ -297,6 +289,14 @@ export class E2EApiClient {
         }
 
         throw new Error(`Timed out waiting for ${path} email sent to ${email}`);
+    }
+
+    async setOrganizationFeature(token: string, organizationId: string, feature: string): Promise<void> {
+        const response = await this.request.post(this.url(`organizations/${organizationId}/features/${encodeURIComponent(feature)}`), {
+            headers: this.authHeaders(token)
+        });
+
+        await expectStatus(response, [200], 'set organization feature');
     }
 
     async signup(name: string, email: string, password: string): Promise<string> {
@@ -403,15 +403,15 @@ async function expectStatus(response: APIResponse, expectedStatuses: number[], o
     throw new Error(`${operation} failed with status ${response.status()} ${response.statusText()}${body ? `: ${body}` : ''}`);
 }
 
-function getOptionalBoolean(value: Record<string, unknown>, key: string): boolean | undefined {
-    const property = value[key];
-    return typeof property === 'boolean' ? property : undefined;
-}
-
 function extractMailToken(content: string, path: 'reset-password' | 'signup'): string | undefined {
     const pattern = path === 'reset-password' ? /\/reset-password\/([^?"'<\\\s]+)/ : /\/signup\?token=([^&"'<\\\s]+)/;
     const match = pattern.exec(content.replaceAll('&amp;', '&'));
     return match?.[1] ? decodeURIComponent(match[1]) : undefined;
+}
+
+function getOptionalBoolean(value: Record<string, unknown>, key: string): boolean | undefined {
+    const property = value[key];
+    return typeof property === 'boolean' ? property : undefined;
 }
 
 function getOptionalString(value: Record<string, unknown>, key: string): string | undefined {
