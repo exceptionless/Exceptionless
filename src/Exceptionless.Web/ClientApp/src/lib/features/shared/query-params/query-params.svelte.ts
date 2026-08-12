@@ -25,7 +25,10 @@ export function createQueryParameters<T extends QueryParameterSchema>({
         isCoalescingPushHistoryEntry = false;
         coalescingStartUrl = undefined;
     }, debounceMilliseconds);
-    const getCurrentUrl = () => `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    const getCurrentUrl = () => {
+        const query = createSearchParams(window.location.search).toString();
+        return `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`;
+    };
 
     const synchronizeURL = () => {
         if (searchParamsEqual(searchParams, window.location.search)) {

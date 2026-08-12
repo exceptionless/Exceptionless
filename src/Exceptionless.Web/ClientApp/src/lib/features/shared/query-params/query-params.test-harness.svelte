@@ -15,5 +15,6 @@
 
 <button onclick={() => (queryParameters.filter = 'first')}>First</button>
 <button onclick={() => (queryParameters.filter = 'second')}>Second</button>
+<button onclick={() => (queryParameters.filter = 'a b')}>Spaced</button>
 <button onclick={() => (queryParameters.filter = null)}>Clear</button>
 <output>{queryParameters.filter}</output>

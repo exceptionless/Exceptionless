@@ -126,6 +126,22 @@ describe('createQueryParameters', () => {
         expect(navigation.replaceState).not.toHaveBeenCalled();
     });
 
+    it('recognizes an encoded equivalent of the starting URL', async () => {
+        // Arrange
+        window.history.replaceState({}, '', '/?filter=a%20b');
+        render(QueryParametersTestHarness);
+        await fireEvent.click(screen.getByRole('button', { name: 'First' }));
+
+        // Act
+        await fireEvent.click(screen.getByRole('button', { name: 'Spaced' }));
+
+        // Assert
+        expect(navigation.pushState).toHaveBeenCalledTimes(2);
+        expect(navigation.pushState).toHaveBeenNthCalledWith(1, '/?filter=first', pageState);
+        expect(navigation.pushState).toHaveBeenNthCalledWith(2, '/?filter=a+b', pageState);
+        expect(navigation.replaceState).not.toHaveBeenCalled();
+    });
+
     it('does not add a delayed history write after full navigation', async () => {
         // Arrange
         render(QueryParametersTestHarness);
