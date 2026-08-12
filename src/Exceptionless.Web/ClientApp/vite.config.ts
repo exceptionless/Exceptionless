@@ -3,6 +3,10 @@ import type { Plugin } from 'vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { svelteTesting } from '@testing-library/svelte/vite';
+import MagicString from 'magic-string';
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { dirname, join } from 'node:path';
 import { defineConfig } from 'vitest/config';
 
 const apiTarget = process.env.API_HTTPS || process.env.API_HTTP;
@@ -18,6 +22,86 @@ const hmr = codespaceName && codespaceDomain ? { clientPort: 443, host: `${codes
 const allowedHosts = ['web-ex.dev.localhost', 'localhost', '127.0.0.1'];
 if (codespaceName && codespaceDomain) {
     allowedHosts.push(`${codespaceName}-${port}.${codespaceDomain}`);
+}
+
+const SVELTE_RUNTIME_DIAGNOSTICS_GLOBAL = '__exceptionlessSvelteEffectDepthDiagnostics';
+const SUPPORTED_SVELTE_RUNTIME_VERSION = '5.56.8';
+
+// Svelte's useful effect-depth diagnostics are development-only. Preserve the
+// minimal state-write tracking needed to diagnose production-only loops.
+function svelteEffectDepthDiagnostics(): Plugin {
+    const require = createRequire(import.meta.url);
+    const packagePath = require.resolve('svelte/package.json');
+    const packageDirectory = dirname(packagePath);
+    const sourcesPath = join(packageDirectory, 'src/internal/client/reactivity/sources.js');
+    const batchPath = join(packageDirectory, 'src/internal/client/reactivity/batch.js');
+
+    const stateUpdateNeedle = '\tif (!source.equals(value)) {\n';
+    const stateUpdateReplacement = `${stateUpdateNeedle}\t\tglobalThis.${SVELTE_RUNTIME_DIAGNOSTICS_GLOBAL}?.recordStateUpdate(source);\n`;
+    const flushStartNeedle = '\tflush() {\n\t\ttry {\n';
+    const flushStartReplacement = `\tflush() {\n\t\tglobalThis.${SVELTE_RUNTIME_DIAGNOSTICS_GLOBAL}?.startFlush();\n\n\t\ttry {\n`;
+    const flushEndNeedle = '\t\t} finally {\n\t\t\tflush_count = 0;\n';
+    const flushEndReplacement = `\t\t} finally {\n\t\t\tglobalThis.${SVELTE_RUNTIME_DIAGNOSTICS_GLOBAL}?.endFlush();\n\t\t\tflush_count = 0;\n`;
+    const effectDepthNeedle = '\t} catch (error) {\n\t\tif (DEV) {\n\t\t\t// stack contains no useful information, replace it\n';
+    const effectDepthReplacement = `\t} catch (error) {\n\t\tglobalThis.${SVELTE_RUNTIME_DIAGNOSTICS_GLOBAL}?.attachEffectDepthError(error, last_scheduled_effect);\n\n\t\tif (DEV) {\n\t\t\t// stack contains no useful information, replace it\n`;
+
+    function instrumentRuntime(code: string, id: string, replacements: [needle: string, replacement: string][]) {
+        const instrumented = new MagicString(code, { filename: id });
+        for (const [needle, replacement] of replacements) {
+            const start = code.indexOf(needle);
+            if (start < 0) {
+                throw new Error(`Unable to instrument ${id}; the expected Svelte runtime source was not found.`);
+            }
+
+            instrumented.overwrite(start, start + needle.length, replacement);
+        }
+
+        return {
+            code: instrumented.toString(),
+            map: instrumented.generateMap({ hires: true, includeContent: true, source: id })
+        };
+    }
+
+    function assertRuntimeShape() {
+        const packageJson = JSON.parse(readFileSync(packagePath, 'utf8')) as { version?: string };
+        if (packageJson.version !== SUPPORTED_SVELTE_RUNTIME_VERSION) {
+            throw new Error(
+                `Svelte effect-depth diagnostics support ${SUPPORTED_SVELTE_RUNTIME_VERSION}, but ${packageJson.version ?? 'an unknown version'} is installed. Review Svelte's runtime before updating the supported version.`
+            );
+        }
+
+        const sources = readFileSync(sourcesPath, 'utf8');
+        const batch = readFileSync(batchPath, 'utf8');
+        if (
+            !sources.includes(stateUpdateNeedle) ||
+            !batch.includes(flushStartNeedle) ||
+            !batch.includes(flushEndNeedle) ||
+            !batch.includes(effectDepthNeedle)
+        ) {
+            throw new Error('Svelte runtime internals changed; update the effect-depth diagnostic instrumentation before building.');
+        }
+    }
+
+    return {
+        apply: 'build',
+        configResolved: assertRuntimeShape,
+        enforce: 'pre',
+        name: 'exceptionless-svelte-effect-depth-diagnostics',
+        transform(code, id) {
+            const path = id.split('?', 1)[0]?.replaceAll('\\', '/');
+            if (path?.endsWith('/svelte/src/internal/client/reactivity/sources.js')) {
+                return instrumentRuntime(code, id, [[stateUpdateNeedle, stateUpdateReplacement]]);
+            }
+
+            if (path?.endsWith('/svelte/src/internal/client/reactivity/batch.js')) {
+                return instrumentRuntime(code, id, [
+                    [flushStartNeedle, flushStartReplacement],
+                    [flushEndNeedle, flushEndReplacement],
+                    [effectDepthNeedle, effectDepthReplacement]
+                ]);
+            }
+        }
+    };
 }
 
 function svelteKitRuntimeDefines(): Plugin {
@@ -56,7 +140,7 @@ export default defineConfig({
     },
     clearScreen: false,
     logLevel: 'info',
-    plugins: [tailwindcss(), sveltekit(), svelteKitRuntimeDefines()],
+    plugins: [tailwindcss(), sveltekit(), svelteKitRuntimeDefines(), svelteEffectDepthDiagnostics()],
     server: {
         allowedHosts,
         hmr,
