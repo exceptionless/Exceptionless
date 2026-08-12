@@ -53,7 +53,7 @@
     });
 
     function isValidReferenceName(name: string): boolean {
-        return /^[\p{L}\p{Nd}-]{1,25}$/u.test(name);
+        return !/[\uD800-\uDFFF]/.test(name) && /^[\p{L}\p{Nd}-]{1,25}$/u.test(name);
     }
 
     let level = $derived(event.data?.['@level']?.toLowerCase());
