@@ -500,7 +500,7 @@ public partial class Program
     [GeneratedRegex("\\snonce(?=[\\s=>/]|$)(?:\\s*=\\s*(?:\"[^\"]*\"|'[^']*'|[^\\s>]+))?", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex NonceAttributeRegex();
 
-    private static RequestDelegate CreateRequestDelegate(IEndpointRouteBuilder endpoints, string filePath)
+    internal static RequestDelegate CreateRequestDelegate(IEndpointRouteBuilder endpoints, string filePath)
     {
         var app = endpoints.CreateApplicationBuilder();
         string[] reservedPrefixes = ["/api", "/docs", "/health", "/ready", "/mcp", "/.well-known", "/_app"];
