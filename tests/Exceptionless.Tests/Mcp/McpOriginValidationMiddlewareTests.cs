@@ -16,10 +16,10 @@ public sealed class McpOriginValidationMiddlewareTests
     };
 
     [Fact]
-    public async Task InvokeAsync_ConfiguredOrigin_InvokesNextMiddleware()
+    public async Task InvokeAsync_ConfiguredOrigins_InvokeNextMiddleware()
     {
         // Arrange
-        bool nextInvoked = false;
+        int nextInvocationCount = 0;
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
@@ -29,20 +29,23 @@ public sealed class McpOriginValidationMiddlewareTests
         var middleware = new McpOriginValidationMiddleware(
             _ =>
             {
-                nextInvoked = true;
+                nextInvocationCount++;
                 return Task.CompletedTask;
             },
-            new AppOptions { BaseURL = "https://api-ex.dev.localhost:7111" },
+            new AppOptions { BaseURL = "http://localhost:9001/#!" },
             configuration);
-        var context = new DefaultHttpContext();
-        context.Request.Path = OAuthService.McpResource.Path;
-        context.Request.Headers.Origin = "https://web-ex.dev.localhost:7131";
+        DefaultHttpContext[] contexts =
+        [
+            CreateContext("https://web-ex.dev.localhost:7131"),
+            CreateContext("http://localhost:9001")
+        ];
 
         // Act
-        await middleware.InvokeAsync(context);
+        foreach (var context in contexts)
+            await middleware.InvokeAsync(context);
 
         // Assert
-        Assert.True(nextInvoked);
+        Assert.Equal(2, nextInvocationCount);
     }
 
     [Theory]
@@ -75,5 +78,13 @@ public sealed class McpOriginValidationMiddlewareTests
 
         // Assert
         Assert.False(isAllowed);
+    }
+
+    private static DefaultHttpContext CreateContext(string origin)
+    {
+        var context = new DefaultHttpContext();
+        context.Request.Path = OAuthService.McpResource.Path;
+        context.Request.Headers.Origin = origin;
+        return context;
     }
 }

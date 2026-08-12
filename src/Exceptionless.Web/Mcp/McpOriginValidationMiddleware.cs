@@ -12,13 +12,14 @@ public sealed class McpOriginValidationMiddleware
     public McpOriginValidationMiddleware(RequestDelegate next, AppOptions appOptions, IConfiguration configuration)
     {
         _next = next;
-        _allowedOrigins = configuration.GetSection("Mcp:AllowedOrigins")
+        var allowedOrigins = configuration.GetSection("Mcp:AllowedOrigins")
             .GetChildren()
             .Select(c => c.Value)
-            .Prepend(appOptions.BaseURL)
             .Where(v => TryNormalizeOrigin(v, out _))
             .Select(v => NormalizeOrigin(v!))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        allowedOrigins.Add(new Uri(appOptions.BaseURL).GetLeftPart(UriPartial.Authority));
+        _allowedOrigins = allowedOrigins;
     }
 
     public async Task InvokeAsync(HttpContext context)
