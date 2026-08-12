@@ -18,6 +18,7 @@ int oldAppPort = worktreePorts?.OldAppHttps ?? 7121;
 int oldAppLiveReloadPort = worktreePorts?.OldAppLiveReload ?? 35729;
 string oldAppAspNetCoreUrls = String.Concat("http://localhost:", oldAppHttpPort);
 int appPort = worktreePorts?.AppHttps ?? 7131;
+string appOrigin = worktreePorts?.AppHttpsUrl ?? $"https://web-ex.dev.localhost:{appPort}";
 int docsPort = worktreePorts?.DocsHttp ?? 7141;
 const int DefaultApiHttpsPort = 7111;
 string exceptionlessServerUrl = worktreePorts?.ApiHttpsUrl ?? $"https://api-ex.dev.localhost:{DefaultApiHttpsPort}";
@@ -108,6 +109,7 @@ if (!servicesOnly)
         .WithReference(storageBlobs, "AzureStorage")
         .WithReference(storageQueues, "AzureQueues")
         .WithEnvironment("ConnectionStrings:Email", SharedEmailConnectionString)
+        .WithEnvironment("Mcp:AllowedOrigins:0", appOrigin)
         .WithEnvironment("RunJobsInProcess", "false")
         .WaitFor(elastic)
         .WaitFor(cache)
