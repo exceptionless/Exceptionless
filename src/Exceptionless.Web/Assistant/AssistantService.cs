@@ -100,6 +100,12 @@ public sealed class AssistantService(
             bool usageRecorded = false;
 
             int providerInputCharacters = JsonSerializer.Serialize(messages, s_jsonOptions).Length;
+            if (providerInputCharacters > AssistantLimits.MaximumProviderInputCharacters)
+            {
+                throw new AssistantProviderException(
+                    "This conversation contains too much context for one response. Clear the conversation or narrow the question.");
+            }
+
             await using var providerRequest = await assistantUsageService.StartProviderRequestAsync(request.OrganizationId, providerInputCharacters);
             using var response = await SendRequestAsync(messages, options, allowTools, request, cancellationToken);
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
@@ -341,13 +347,6 @@ public sealed class AssistantService(
 
     private async Task<HttpResponseMessage> SendRequestAsync(List<object> messages, AssistantOptions options, bool allowTools, AssistantChatRequest chatRequest, CancellationToken cancellationToken)
     {
-        int providerInputCharacters = JsonSerializer.Serialize(messages, s_jsonOptions).Length;
-        if (providerInputCharacters > AssistantLimits.MaximumProviderInputCharacters)
-        {
-            throw new AssistantProviderException(
-                "This conversation contains too much context for one response. Clear the conversation or narrow the question.");
-        }
-
         var client = httpClientFactory.CreateClient(nameof(AssistantService));
         using var providerRequest = new HttpRequestMessage(HttpMethod.Post, options.Endpoint);
         providerRequest.Headers.Authorization = new("Bearer", options.ApiKey);

@@ -164,7 +164,8 @@ public sealed class AssistantUsageService(
         return new AssistantProviderReservation(promptTokens, completionTokens, costInMicrodollars)
         {
             MonthId = month.Id,
-            ExpiresAtUtc = reservationExpiresAtUtc
+            ExpiresAtUtc = reservationExpiresAtUtc,
+            UsageDateUtc = now.UtcDateTime
         };
     }
 
@@ -247,7 +248,8 @@ public sealed class AssistantUsageService(
                 ProviderRequests = providerRequestAlreadyRecorded ? 0 : 1,
                 PromptTokens = promptTokens,
                 CompletionTokens = completionTokens,
-                CostInMicrodollars = costInMicrodollars
+                CostInMicrodollars = costInMicrodollars,
+                ProviderUsageDateUtc = reservation?.UsageDateUtc
             });
         }
         catch
@@ -468,6 +470,7 @@ public sealed record AssistantProviderReservation(long PromptTokens, long Comple
     public bool HasValue => PromptTokens > 0 || CompletionTokens > 0 || CostInMicrodollars > 0;
     internal string? MonthId { get; init; }
     internal DateTimeOffset? ExpiresAtUtc { get; init; }
+    internal DateTime? UsageDateUtc { get; init; }
 }
 
 public sealed class AssistantProviderUsageLifecycle : IAsyncDisposable

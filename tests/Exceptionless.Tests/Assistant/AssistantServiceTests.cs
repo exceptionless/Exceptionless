@@ -648,6 +648,48 @@ public sealed class AssistantServiceTests
     }
 
     [Fact]
+    public async Task StreamAsync_OversizedProviderInput_DoesNotReserveProviderUsage()
+    {
+        var handler = new StubHttpMessageHandler("data: [DONE]\n\n");
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["AppMode"] = AppMode.Production.ToString(),
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            })
+            .Build());
+        using var cache = new InMemoryCacheClient(new InMemoryCacheClientOptions
+        {
+            LoggerFactory = NullLoggerFactory.Instance,
+            TimeProvider = TimeProvider.System
+        });
+        var lockProvider = CreateLockProvider(cache, TimeProvider.System);
+        var recorder = new RecordingAssistantUsageRecorder();
+        var usageService = new AssistantUsageService(cache, lockProvider, recorder, appOptions, TimeProvider.System, NullLogger<AssistantUsageService>.Instance);
+        var service = CreateAssistantService(handler, appOptions, cache, lockProvider, usageService);
+
+        await Assert.ThrowsAsync<AssistantProviderException>(async () =>
+        {
+            await foreach (var _ in service.StreamAsync(
+                new AssistantChatRequest(
+                    [new AssistantChatMessage("user", new string('\u0001', AssistantLimits.MaximumInputCharacters))],
+                    OrganizationId: "organization-id"),
+                "user-id",
+                CreatePlanOptions(),
+                TestContext.Current.CancellationToken))
+            {
+            }
+        });
+
+        var usage = await usageService.GetMonthlyUsageAsync("organization-id");
+        Assert.Equal(0, usage.PromptTokens);
+        Assert.Equal(0, usage.CompletionTokens);
+        Assert.DoesNotContain(recorder.Records, record => record.Increment.ProviderRequests > 0);
+        Assert.Empty(handler.RequestBodies);
+    }
+
+    [Fact]
     public void Serialize_StackAndProjectResults_AddsWebNavigationLinks()
     {
         var serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web).ConfigureExceptionlessApiDefaults();

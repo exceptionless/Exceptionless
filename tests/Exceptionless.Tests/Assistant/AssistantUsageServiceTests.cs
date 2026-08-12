@@ -257,7 +257,8 @@ public sealed class AssistantUsageServiceTests
     {
         var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 8, 31, 23, 59, 0, TimeSpan.Zero));
         using var cache = CreateCache(timeProvider);
-        var service = CreateService(cache, CreateOptions(), timeProvider);
+        var recorder = new RecordingAssistantUsageRecorder();
+        var service = CreateService(cache, CreateLockProvider(cache, timeProvider), CreateOptions(), timeProvider, recorder);
         var providerRequest = await service.StartProviderRequestAsync("organization-id", providerInputCharacters: 1_000);
 
         timeProvider.Advance(TimeSpan.FromMinutes(2));
@@ -273,6 +274,8 @@ public sealed class AssistantUsageServiceTests
         Assert.Equal(0, augustReservedTokens);
         Assert.Equal(0, septemberUsage.TotalTokens);
         Assert.Equal(0, septemberReservedTokens);
+        var durableUsage = Assert.Single(recorder.Records, record => record.Increment.PromptTokens == 2_000);
+        Assert.Equal(new DateTime(2026, 8, 31, 23, 59, 0, DateTimeKind.Utc), durableUsage.Increment.ProviderUsageDateUtc);
     }
 
     [Fact]
