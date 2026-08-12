@@ -11,6 +11,8 @@ import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-qu
 
 import { type CustomFieldDefinition, type NewCustomFieldDefinition, parseApiIndexType, type UpdateCustomFieldDefinition } from './models';
 
+export const CUSTOM_FIELD_QUERY_STALE_TIME_MS = 5 * 60 * 1000;
+
 export const queryKeys = {
     customFields: (organizationId: string | undefined) => ['Organization', organizationId, 'custom-fields'] as const,
     type: ['CustomField'] as const
@@ -60,6 +62,21 @@ export function createCustomFieldMutation(request: CreateCustomFieldRequest) {
     }));
 }
 
+export function createCustomFieldsQueryOptions(request: GetCustomFieldsRequest) {
+    const organizationId = request.route.organizationId;
+
+    return {
+        enabled: () => !!accessToken.current && !!organizationId,
+        queryFn: async () => {
+            const client = useFetchClient();
+            const response = await client.getJSON<ApiCustomFieldDefinition[]>(`organizations/${organizationId}/event-custom-fields`);
+            return response.data?.map(mapApiDefinition) ?? [];
+        },
+        queryKey: queryKeys.customFields(organizationId),
+        staleTime: CUSTOM_FIELD_QUERY_STALE_TIME_MS
+    };
+}
+
 export function deleteCustomFieldMutation(request: DeleteCustomFieldRequest) {
     const queryClient = useQueryClient();
     return createMutation<void, ProblemDetails, void>(() => ({
@@ -75,15 +92,7 @@ export function deleteCustomFieldMutation(request: DeleteCustomFieldRequest) {
 }
 
 export function getCustomFieldsQuery(request: GetCustomFieldsRequest) {
-    return createQuery<CustomFieldDefinition[], ProblemDetails>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.organizationId,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
-            const client = useFetchClient();
-            const response = await client.getJSON<ApiCustomFieldDefinition[]>(`organizations/${request.route.organizationId}/event-custom-fields`, { signal });
-            return response.data?.map(mapApiDefinition) ?? [];
-        },
-        queryKey: queryKeys.customFields(request.route.organizationId)
-    }));
+    return createQuery<CustomFieldDefinition[], ProblemDetails>(() => createCustomFieldsQueryOptions(request));
 }
 
 export function updateCustomFieldMutation(request: UpdateCustomFieldRequest) {
