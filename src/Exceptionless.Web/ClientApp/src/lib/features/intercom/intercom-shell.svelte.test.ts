@@ -98,6 +98,7 @@ describe('IntercomShell', () => {
         // Assert
         expect(intercomUpdate).toHaveBeenCalledOnce();
         expect(intercomUpdate).toHaveBeenLastCalledWith({
+            intercom_user_jwt: 'token_0',
             last_request_at: expect.any(Number),
             user_id: 'user_123'
         });

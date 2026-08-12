@@ -15,6 +15,7 @@ describe('Intercom updates', () => {
 
         expect(buildIntercomRouteUpdate(bootOptions, 1_750_000_123_456)).toEqual({
             email: 'user@example.com',
+            intercomUserJwt: 'signed-token',
             lastRequestAt: 1_750_000_123,
             userId: 'user_123'
         });
@@ -45,12 +46,14 @@ describe('Intercom updates', () => {
         const previousBootOptions = {
             company: { id: 'organization_123', name: 'Acme' },
             email: 'user@example.com',
+            intercomUserJwt: 'signed-token',
             name: 'Example User',
             userId: 'user_123'
         } as BootOptions;
         const bootOptions = {
             company: { id: 'organization_123', name: 'Acme, Inc.' },
             email: 'user@example.com',
+            intercomUserJwt: 'signed-token',
             name: 'Example User',
             userId: 'user_123'
         } as BootOptions;
@@ -58,6 +61,7 @@ describe('Intercom updates', () => {
         expect(buildIntercomDataUpdate(previousBootOptions, bootOptions)).toEqual({
             company: { id: 'organization_123', name: 'Acme, Inc.' },
             email: 'user@example.com',
+            intercomUserJwt: 'signed-token',
             userId: 'user_123'
         });
     });
