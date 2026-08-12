@@ -121,6 +121,7 @@ RUN microdnf install -y \
     \
     # .NET dependencies
     glibc \
+    gzip \
     libgcc \
     libicu \
     openssl-libs \
