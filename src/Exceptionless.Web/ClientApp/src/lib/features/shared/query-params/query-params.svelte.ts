@@ -27,7 +27,6 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     // for an immediate Back action and can navigate a newly opened tab to about:blank.
     let isCoalescingPushHistoryEntry = false;
     let coalescingStartUrl: string | undefined;
-    let coalescingEntryUrl: string | undefined;
     let coalescingEntryId: string | undefined;
     let pendingReplacementUrl: string | undefined;
     const normalizeUrl = (url: string) => {
@@ -40,14 +39,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
 
     const getCurrentUrl = () => normalizeUrl(`${window.location.pathname}${window.location.search}${window.location.hash}`);
 
-    const getCurrentHistoryEntryId = () => {
-        const pageStateEntryId = (page.state as QueryHistoryPageState)[queryHistoryEntryIdKey];
-        if (pageStateEntryId) {
-            return pageStateEntryId;
-        }
-
-        return (window.history.state as null | QueryHistoryPageState)?.[queryHistoryEntryIdKey];
-    };
+    const getCurrentHistoryEntryId = () => (window.history.state as null | QueryHistoryPageState)?.[queryHistoryEntryIdKey];
 
     const createHistoryState = (entryId: string | undefined) => ({ ...page.state, ...(entryId ? { [queryHistoryEntryIdKey]: entryId } : {}) }) as App.PageState;
 
@@ -67,7 +59,6 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     const settlePushHistoryEntry = () => {
         isCoalescingPushHistoryEntry = false;
         coalescingStartUrl = undefined;
-        coalescingEntryUrl = undefined;
         coalescingEntryId = undefined;
     };
 
@@ -87,7 +78,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     };
 
     const finalizePushHistoryEntry = () => {
-        if (!coalescingEntryUrl || getCurrentUrl() === coalescingEntryUrl) {
+        if (!coalescingEntryId || getCurrentHistoryEntryId() === coalescingEntryId) {
             flushPendingReplacement();
             settlePushHistoryEntry();
         }
@@ -101,7 +92,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
             return;
         }
 
-        if (history === 'push' && isCoalescingPushHistoryEntry && getCurrentUrl() !== coalescingEntryUrl) {
+        if (history === 'push' && isCoalescingPushHistoryEntry && getCurrentHistoryEntryId() !== coalescingEntryId) {
             // A popstate traversal may retain a pending replacement for the entry
             // we left. Editing this destination discards that Forward entry, so
             // start a fresh burst here instead of mutating the retained source.
@@ -118,7 +109,6 @@ export function createQueryParameters<T extends QueryParameterSchema>({
             coalescingStartUrl = getCurrentUrl();
             coalescingEntryId = crypto.randomUUID();
             pushState(url, createHistoryState(coalescingEntryId));
-            coalescingEntryUrl = normalizeUrl(url);
             isCoalescingPushHistoryEntry = true;
         } else if (normalizeUrl(url) === coalescingStartUrl) {
             // Keep the transient state as a meaningful Back target instead of
@@ -143,7 +133,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     const handleBeforeNavigate = ({ type }: { type: string }) => {
         schedulePushHistoryEntryFinalization.cancel();
         if (type === 'popstate') {
-            if (pendingReplacementUrl && getCurrentUrl() === coalescingEntryUrl) {
+            if (pendingReplacementUrl && getCurrentHistoryEntryId() === coalescingEntryId) {
                 flushPendingReplacement();
                 settlePushHistoryEntry();
             }
@@ -151,7 +141,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
             return;
         }
 
-        if (getCurrentUrl() === coalescingEntryUrl) {
+        if (getCurrentHistoryEntryId() === coalescingEntryId) {
             flushPendingReplacement();
         } else {
             discardPendingReplacement();

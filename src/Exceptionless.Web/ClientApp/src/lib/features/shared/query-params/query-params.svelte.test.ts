@@ -11,7 +11,8 @@ const navigation = vi.hoisted(() => ({
     replaceState: vi.fn()
 }));
 const pageState = vi.hoisted(() => ({}));
-const queryHistoryState = () => expect.objectContaining({ __exceptionlessQueryHistoryEntryId: expect.any(String) });
+const queryHistoryEntryIdKey = '__exceptionlessQueryHistoryEntryId';
+const queryHistoryState = () => expect.objectContaining({ [queryHistoryEntryIdKey]: expect.any(String) });
 
 vi.mock('$app/environment', () => ({ browser: true, building: false }));
 vi.mock('$app/navigation', () => navigation);
@@ -28,6 +29,7 @@ describe('createQueryParameters', () => {
     beforeEach(() => {
         vi.useFakeTimers();
         vi.clearAllMocks();
+        delete (pageState as Record<string, unknown>)[queryHistoryEntryIdKey];
         sessionStorage.clear();
         window.history.replaceState({}, '', '/');
         navigation.pushState.mockImplementation((url: string | URL, state: App.PageState) => window.history.pushState(state, '', url));
@@ -242,10 +244,12 @@ describe('createQueryParameters', () => {
         render(QueryParametersTestHarness);
         await fireEvent.click(screen.getByRole('button', { name: 'First' }));
         await fireEvent.click(screen.getByRole('button', { name: 'Second' }));
+        const sourceEntryState = window.history.state as Record<string, unknown>;
+        (pageState as Record<string, unknown>)[queryHistoryEntryIdKey] = sourceEntryState[queryHistoryEntryIdKey];
         const beforeNavigation = navigation.beforeNavigate.mock.calls[0]?.[0] as ((navigation: { type: string }) => void) | undefined;
 
-        // Act: traverse Back before the replacement settles.
-        window.history.replaceState(pageState, '', '/');
+        // Act: traverse Back before the replacement settles while page.state is still stale.
+        window.history.replaceState({}, '', '/');
         beforeNavigation?.({ type: 'popstate' });
         window.dispatchEvent(new PopStateEvent('popstate', { state: pageState }));
         await tick();
@@ -256,9 +260,9 @@ describe('createQueryParameters', () => {
         expect(document.querySelector('output')?.textContent).toBe('');
 
         // Act: traverse Forward to the source entry.
-        window.history.replaceState(pageState, '', '/?filter=first');
+        window.history.replaceState(sourceEntryState, '', '/?filter=first');
         beforeNavigation?.({ type: 'popstate' });
-        window.dispatchEvent(new PopStateEvent('popstate', { state: pageState }));
+        window.dispatchEvent(new PopStateEvent('popstate', { state: sourceEntryState }));
         await tick();
 
         // Assert: the source entry and reactive state restore the latest value.
