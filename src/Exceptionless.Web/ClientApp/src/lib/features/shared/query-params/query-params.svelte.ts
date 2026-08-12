@@ -8,11 +8,6 @@ import type { CreateQueryParametersOptions, QueryParameterSchema, QueryParameter
 import { createQueryParameterProxy } from './proxy.js';
 import { applyQueryParameterUpdates, createDebouncedFunction, createSearchParams, parseQueryParameters, searchParamsEqual } from './query-params.js';
 
-interface HistoryEntrySnapshot {
-    state: App.PageState;
-    url: string;
-}
-
 export function createQueryParameters<T extends QueryParameterSchema>({
     debounceMilliseconds = 200,
     defaults,
@@ -21,30 +16,13 @@ export function createQueryParameters<T extends QueryParameterSchema>({
 }: CreateQueryParametersOptions<T>) {
     let searchParams = createSearchParams(building ? '' : page.url.search);
     const current = $state<QueryParameterState<T>>(parseQueryParameters(searchParams, schema, defaults));
-    let pendingPushHistoryEntry: HistoryEntrySnapshot | undefined;
-    const getCurrentUrl = () => `${window.location.pathname}${window.location.search}${window.location.hash}`;
-
-    const finalizePushHistoryEntry = () => {
-        const previousEntry = pendingPushHistoryEntry;
-        pendingPushHistoryEntry = undefined;
-        if (!previousEntry) {
-            return;
-        }
-
-        const currentEntry = { state: page.state, url: getCurrentUrl() };
-        if (currentEntry.url === previousEntry.url) {
-            return;
-        }
-
-        replaceState(previousEntry.url, previousEntry.state);
-        pushState(currentEntry.url, currentEntry.state);
-    };
-
-    const schedulePushHistoryEntryFinalization = createDebouncedFunction(finalizePushHistoryEntry, debounceMilliseconds);
-    const flushPendingPushHistoryEntry = () => {
-        schedulePushHistoryEntryFinalization.cancel();
-        finalizePushHistoryEntry();
-    };
+    // Create the Back target synchronously, then replace it while rapid updates still
+    // belong to the same user interaction. Deferring the first push leaves no target
+    // for an immediate Back action and can navigate a newly opened tab to about:blank.
+    let isCoalescingPushHistoryEntry = false;
+    const schedulePushHistoryEntrySettlement = createDebouncedFunction(() => {
+        isCoalescingPushHistoryEntry = false;
+    }, debounceMilliseconds);
 
     const synchronizeURL = () => {
         if (searchParamsEqual(searchParams, window.location.search)) {
@@ -53,21 +31,25 @@ export function createQueryParameters<T extends QueryParameterSchema>({
 
         const query = searchParams.toString();
         const url = `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`;
-        if (history === 'replace') {
+        if (history === 'replace' || isCoalescingPushHistoryEntry) {
             replaceState(url, page.state);
-            return;
+        } else {
+            pushState(url, page.state);
+            isCoalescingPushHistoryEntry = true;
         }
 
-        if (!pendingPushHistoryEntry) {
-            pendingPushHistoryEntry = { state: page.state, url: getCurrentUrl() };
+        if (history === 'push') {
+            schedulePushHistoryEntrySettlement();
         }
-
-        replaceState(url, page.state);
-        schedulePushHistoryEntryFinalization();
     };
 
-    beforeNavigate(flushPendingPushHistoryEntry);
-    onDestroy(flushPendingPushHistoryEntry);
+    const settlePushHistoryEntry = () => {
+        schedulePushHistoryEntrySettlement.cancel();
+        isCoalescingPushHistoryEntry = false;
+    };
+
+    beforeNavigate(settlePushHistoryEntry);
+    onDestroy(settlePushHistoryEntry);
 
     const commit = (result: ReturnType<typeof applyQueryParameterUpdates<T>>) => {
         searchParams = result.searchParams;
