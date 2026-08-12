@@ -404,6 +404,49 @@ public sealed class UsageServiceTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task SavePendingUsageAsync_PriorMonthUsageAfterPlanChange_PreservesHistoricalLimit()
+    {
+        // Arrange
+        var mayUsageBucketUtc = new DateTime(2015, 5, 31, 23, 55, 0, DateTimeKind.Utc);
+        TimeProvider.SetUtcNow(mayUsageBucketUtc);
+        var organization = await _organizationRepository.AddAsync(new Organization
+        {
+            Name = "Test",
+            CreatedUtc = mayUsageBucketUtc.AddMonths(-2),
+            PlanId = _plans.SmallPlan.Id,
+            MaxEventsPerMonth = _plans.SmallPlan.MaxEventsPerMonth,
+            StripeCustomerId = "cus_test",
+            CardLast4 = "4242",
+            SubscribeDate = mayUsageBucketUtc.AddMonths(-2),
+            BillingChangedByUserId = "507f1f77bcf86cd799439011"
+        }, o => o.ImmediateConsistency().Cache());
+        var project = await _projectRepository.AddAsync(new Project
+        {
+            Name = "Test",
+            OrganizationId = organization.Id,
+            NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks
+        }, o => o.ImmediateConsistency().Cache());
+        await _usageService.IncrementTotalAsync(organization.Id, project.Id);
+
+        TimeProvider.SetUtcNow(new DateTime(2015, 6, 1, 0, 0, 0, DateTimeKind.Utc));
+        GetService<BillingManager>().ApplyBillingPlan(organization, _plans.MediumPlan);
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache());
+
+        // Act
+        TimeProvider.Advance(TimeSpan.FromMinutes(10));
+        await _usageService.SavePendingUsageAsync();
+
+        // Assert
+        organization = await _organizationRepository.GetByIdAsync(organization.Id);
+        Assert.NotNull(organization);
+        var mayUsage = organization.Usage.Single(usage => usage.Date == mayUsageBucketUtc.StartOfMonth());
+        Assert.Equal(_plans.SmallPlan.MaxEventsPerMonth, mayUsage.Limit);
+        Assert.Equal(1, mayUsage.Total);
+        Assert.Equal(_plans.MediumPlan.MaxEventsPerMonth,
+            organization.Usage.Single(usage => usage.Date == TimeProvider.GetUtcNow().UtcDateTime.StartOfMonth()).Limit);
+    }
+
+    [Fact]
     public async Task CanGetEventsLeft()
     {
         var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());

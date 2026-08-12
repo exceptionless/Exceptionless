@@ -136,8 +136,10 @@ public class BillingManager
 
     private void CaptureOutgoingUsageLimit(Organization organization, BillingPlan plan, DateTime utcNow)
     {
+        bool isUnchangedPlan = String.Equals(organization.PlanId, plan.Id, StringComparison.OrdinalIgnoreCase)
+            && organization.MaxEventsPerMonth == plan.MaxEventsPerMonth;
         if (String.IsNullOrEmpty(organization.PlanId)
-            || String.Equals(organization.PlanId, plan.Id, StringComparison.OrdinalIgnoreCase)
+            || isUnchangedPlan
             || organization.MaxEventsPerMonth == 0)
         {
             return;
