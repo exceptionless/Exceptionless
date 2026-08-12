@@ -62,6 +62,15 @@ export function createQueryParameters<T extends QueryParameterSchema>({
             return;
         }
 
+        if (history === 'push' && isCoalescingPushHistoryEntry && getCurrentUrl() !== coalescingEntryUrl) {
+            // A popstate traversal may retain a pending replacement for the entry
+            // we left. Editing this destination discards that Forward entry, so
+            // start a fresh burst here instead of mutating the retained source.
+            schedulePushHistoryEntryFinalization.cancel();
+            pendingReplacementUrl = undefined;
+            settlePushHistoryEntry();
+        }
+
         const query = searchParams.toString();
         const url = `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`;
         if (history === 'replace') {
