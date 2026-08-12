@@ -2,14 +2,17 @@ import { browser, building } from '$app/environment';
 import { afterNavigate, beforeNavigate, pushState, replaceState } from '$app/navigation';
 import { page } from '$app/state';
 import { onDestroy } from 'svelte';
-import { SvelteMap, SvelteURL } from 'svelte/reactivity';
+import { SvelteURL } from 'svelte/reactivity';
 
 import type { CreateQueryParametersOptions, QueryParameterSchema, QueryParameterState } from './types.js';
 
 import { createQueryParameterProxy } from './proxy.js';
 import { applyQueryParameterUpdates, createDebouncedFunction, createSearchParams, parseQueryParameters, searchParamsEqual } from './query-params.js';
 
-const pendingPushHistoryReplacements = new SvelteMap<string, string>();
+const queryHistoryEntryIdKey = '__exceptionlessQueryHistoryEntryId';
+const pendingReplacementStoragePrefix = 'exceptionless:query-history:';
+
+type QueryHistoryPageState = App.PageState & { [queryHistoryEntryIdKey]?: string };
 
 export function createQueryParameters<T extends QueryParameterSchema>({
     debounceMilliseconds = 200,
@@ -25,6 +28,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     let isCoalescingPushHistoryEntry = false;
     let coalescingStartUrl: string | undefined;
     let coalescingEntryUrl: string | undefined;
+    let coalescingEntryId: string | undefined;
     let pendingReplacementUrl: string | undefined;
     const normalizeUrl = (url: string) => {
         const value = new SvelteURL(url, window.location.origin);
@@ -36,12 +40,25 @@ export function createQueryParameters<T extends QueryParameterSchema>({
 
     const getCurrentUrl = () => normalizeUrl(`${window.location.pathname}${window.location.search}${window.location.hash}`);
 
+    const getCurrentHistoryEntryId = () => {
+        const pageStateEntryId = (page.state as QueryHistoryPageState)[queryHistoryEntryIdKey];
+        if (pageStateEntryId) {
+            return pageStateEntryId;
+        }
+
+        return (window.history.state as null | QueryHistoryPageState)?.[queryHistoryEntryIdKey];
+    };
+
+    const createHistoryState = (entryId: string | undefined) => ({ ...page.state, ...(entryId ? { [queryHistoryEntryIdKey]: entryId } : {}) }) as App.PageState;
+
+    const getPendingReplacementStorageKey = (entryId: string) => `${pendingReplacementStoragePrefix}${entryId}`;
+
     if (browser) {
-        const currentUrl = getCurrentUrl();
-        const retainedReplacementUrl = pendingPushHistoryReplacements.get(currentUrl);
-        if (retainedReplacementUrl) {
-            pendingPushHistoryReplacements.delete(currentUrl);
-            replaceState(retainedReplacementUrl, page.state);
+        const currentHistoryEntryId = getCurrentHistoryEntryId();
+        const retainedReplacementUrl = currentHistoryEntryId ? sessionStorage.getItem(getPendingReplacementStorageKey(currentHistoryEntryId)) : undefined;
+        if (currentHistoryEntryId && retainedReplacementUrl) {
+            sessionStorage.removeItem(getPendingReplacementStorageKey(currentHistoryEntryId));
+            replaceState(retainedReplacementUrl, createHistoryState(currentHistoryEntryId));
             searchParams = createSearchParams(window.location.search);
             Object.assign(current, parseQueryParameters(searchParams, schema, defaults));
         }
@@ -51,12 +68,21 @@ export function createQueryParameters<T extends QueryParameterSchema>({
         isCoalescingPushHistoryEntry = false;
         coalescingStartUrl = undefined;
         coalescingEntryUrl = undefined;
+        coalescingEntryId = undefined;
+    };
+
+    const discardPendingReplacement = () => {
+        if (browser && coalescingEntryId) {
+            sessionStorage.removeItem(getPendingReplacementStorageKey(coalescingEntryId));
+        }
+
+        pendingReplacementUrl = undefined;
     };
 
     const flushPendingReplacement = () => {
         if (pendingReplacementUrl) {
-            replaceState(pendingReplacementUrl, page.state);
-            pendingReplacementUrl = undefined;
+            replaceState(pendingReplacementUrl, createHistoryState(coalescingEntryId));
+            discardPendingReplacement();
         }
     };
 
@@ -71,7 +97,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
 
     const synchronizeURL = () => {
         if (searchParamsEqual(searchParams, window.location.search)) {
-            pendingReplacementUrl = undefined;
+            discardPendingReplacement();
             return;
         }
 
@@ -80,7 +106,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
             // we left. Editing this destination discards that Forward entry, so
             // start a fresh burst here instead of mutating the retained source.
             schedulePushHistoryEntryFinalization.cancel();
-            pendingReplacementUrl = undefined;
+            discardPendingReplacement();
             settlePushHistoryEntry();
         }
 
@@ -90,19 +116,23 @@ export function createQueryParameters<T extends QueryParameterSchema>({
             replaceState(url, page.state);
         } else if (!isCoalescingPushHistoryEntry) {
             coalescingStartUrl = getCurrentUrl();
-            pushState(url, page.state);
+            coalescingEntryId = crypto.randomUUID();
+            pushState(url, createHistoryState(coalescingEntryId));
             coalescingEntryUrl = normalizeUrl(url);
             isCoalescingPushHistoryEntry = true;
         } else if (normalizeUrl(url) === coalescingStartUrl) {
             // Keep the transient state as a meaningful Back target instead of
             // replacing it with a duplicate of the entry behind it.
             schedulePushHistoryEntryFinalization.cancel();
-            pendingReplacementUrl = undefined;
+            discardPendingReplacement();
             pushState(url, page.state);
             settlePushHistoryEntry();
         } else {
             // Avoid exhausting browser History API mutation quotas during sustained input.
             pendingReplacementUrl = url;
+            if (browser && coalescingEntryId) {
+                sessionStorage.setItem(getPendingReplacementStorageKey(coalescingEntryId), url);
+            }
         }
 
         if (history === 'push' && isCoalescingPushHistoryEntry) {
@@ -124,7 +154,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
         if (getCurrentUrl() === coalescingEntryUrl) {
             flushPendingReplacement();
         } else {
-            pendingReplacementUrl = undefined;
+            discardPendingReplacement();
         }
 
         settlePushHistoryEntry();
@@ -140,16 +170,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
         window.addEventListener('beforeunload', handleBeforeUnload);
     }
 
-    onDestroy(() => {
-        if (pendingReplacementUrl && coalescingEntryUrl && getCurrentUrl() !== coalescingEntryUrl) {
-            pendingPushHistoryReplacements.set(coalescingEntryUrl, pendingReplacementUrl);
-            pendingReplacementUrl = undefined;
-            settlePushHistoryEntry();
-            return;
-        }
-
-        finalizePushHistoryEntry();
-    });
+    onDestroy(finalizePushHistoryEntry);
 
     const commit = (result: ReturnType<typeof applyQueryParameterUpdates<T>>) => {
         searchParams = result.searchParams;

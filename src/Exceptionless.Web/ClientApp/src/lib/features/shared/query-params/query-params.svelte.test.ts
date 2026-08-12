@@ -11,6 +11,7 @@ const navigation = vi.hoisted(() => ({
     replaceState: vi.fn()
 }));
 const pageState = vi.hoisted(() => ({}));
+const queryHistoryState = () => expect.objectContaining({ __exceptionlessQueryHistoryEntryId: expect.any(String) });
 
 vi.mock('$app/environment', () => ({ browser: true, building: false }));
 vi.mock('$app/navigation', () => navigation);
@@ -27,6 +28,7 @@ describe('createQueryParameters', () => {
     beforeEach(() => {
         vi.useFakeTimers();
         vi.clearAllMocks();
+        sessionStorage.clear();
         window.history.replaceState({}, '', '/');
         navigation.pushState.mockImplementation((url: string | URL, state: App.PageState) => window.history.pushState(state, '', url));
         navigation.replaceState.mockImplementation((url: string | URL, state: App.PageState) => window.history.replaceState(state, '', url));
@@ -47,7 +49,7 @@ describe('createQueryParameters', () => {
         // Assert
         expect(screen.getByText('second').textContent).toBe('second');
         expect(navigation.pushState).toHaveBeenCalledOnce();
-        expect(navigation.pushState).toHaveBeenCalledWith('/?filter=first', pageState);
+        expect(navigation.pushState).toHaveBeenCalledWith('/?filter=first', queryHistoryState());
         expect(navigation.replaceState).not.toHaveBeenCalled();
         expect(window.location.search).toBe('?filter=first');
 
@@ -55,7 +57,7 @@ describe('createQueryParameters', () => {
 
         expect(navigation.pushState).toHaveBeenCalledOnce();
         expect(navigation.replaceState).toHaveBeenCalledOnce();
-        expect(navigation.replaceState).toHaveBeenCalledWith('/?filter=second', pageState);
+        expect(navigation.replaceState).toHaveBeenCalledWith('/?filter=second', queryHistoryState());
         expect(window.location.search).toBe('?filter=second');
     });
 
@@ -71,7 +73,7 @@ describe('createQueryParameters', () => {
 
         // Assert
         expect(navigation.pushState).toHaveBeenCalledOnce();
-        expect(navigation.pushState).toHaveBeenCalledWith('/?filter=first', pageState);
+        expect(navigation.pushState).toHaveBeenCalledWith('/?filter=first', queryHistoryState());
         expect(navigation.replaceState).not.toHaveBeenCalled();
         expect(window.location.search).toBe('?filter=first');
     });
@@ -88,8 +90,8 @@ describe('createQueryParameters', () => {
 
         // Assert
         expect(navigation.pushState).toHaveBeenCalledTimes(2);
-        expect(navigation.pushState).toHaveBeenNthCalledWith(1, '/?filter=first', pageState);
-        expect(navigation.pushState).toHaveBeenNthCalledWith(2, '/?filter=second', pageState);
+        expect(navigation.pushState).toHaveBeenNthCalledWith(1, '/?filter=first', queryHistoryState());
+        expect(navigation.pushState).toHaveBeenNthCalledWith(2, '/?filter=second', queryHistoryState());
         expect(navigation.replaceState).not.toHaveBeenCalled();
     });
 
@@ -121,7 +123,7 @@ describe('createQueryParameters', () => {
 
         // Assert
         expect(navigation.pushState).toHaveBeenCalledTimes(2);
-        expect(navigation.pushState).toHaveBeenNthCalledWith(1, '/events?filter=first#details', pageState);
+        expect(navigation.pushState).toHaveBeenNthCalledWith(1, '/events?filter=first#details', queryHistoryState());
         expect(navigation.pushState).toHaveBeenNthCalledWith(2, '/events#details', pageState);
         expect(navigation.replaceState).not.toHaveBeenCalled();
         expect(window.location.pathname).toBe('/events');
@@ -140,9 +142,9 @@ describe('createQueryParameters', () => {
 
         // Assert
         expect(navigation.pushState).toHaveBeenCalledTimes(3);
-        expect(navigation.pushState).toHaveBeenNthCalledWith(1, '/?filter=first', pageState);
+        expect(navigation.pushState).toHaveBeenNthCalledWith(1, '/?filter=first', queryHistoryState());
         expect(navigation.pushState).toHaveBeenNthCalledWith(2, '/', pageState);
-        expect(navigation.pushState).toHaveBeenNthCalledWith(3, '/?filter=second', pageState);
+        expect(navigation.pushState).toHaveBeenNthCalledWith(3, '/?filter=second', queryHistoryState());
         expect(navigation.replaceState).not.toHaveBeenCalled();
     });
 
@@ -157,7 +159,7 @@ describe('createQueryParameters', () => {
 
         // Assert
         expect(navigation.pushState).toHaveBeenCalledTimes(2);
-        expect(navigation.pushState).toHaveBeenNthCalledWith(1, '/?filter=first', pageState);
+        expect(navigation.pushState).toHaveBeenNthCalledWith(1, '/?filter=first', queryHistoryState());
         expect(navigation.pushState).toHaveBeenNthCalledWith(2, '/?filter=a+b', pageState);
         expect(navigation.replaceState).not.toHaveBeenCalled();
     });
@@ -175,7 +177,7 @@ describe('createQueryParameters', () => {
 
         // Assert
         expect(navigation.pushState).toHaveBeenCalledTimes(3);
-        expect(navigation.pushState).toHaveBeenNthCalledWith(2, '/?project=p', pageState);
+        expect(navigation.pushState).toHaveBeenNthCalledWith(2, '/?project=p', queryHistoryState());
         expect(navigation.pushState).toHaveBeenNthCalledWith(3, '/?project=p&filter=a', pageState);
         expect(navigation.replaceState).not.toHaveBeenCalled();
     });
@@ -193,7 +195,7 @@ describe('createQueryParameters', () => {
         // Assert
         expect(beforeNavigation).toBeDefined();
         expect(navigation.pushState).toHaveBeenCalledOnce();
-        expect(navigation.pushState).toHaveBeenCalledWith('/?filter=first', pageState);
+        expect(navigation.pushState).toHaveBeenCalledWith('/?filter=first', queryHistoryState());
         expect(navigation.replaceState).not.toHaveBeenCalled();
         expect(window.location.search).toBe('?filter=first');
     });
@@ -210,7 +212,7 @@ describe('createQueryParameters', () => {
         // Assert
         expect(navigation.pushState).toHaveBeenCalledOnce();
         expect(navigation.replaceState).toHaveBeenCalledOnce();
-        expect(navigation.replaceState).toHaveBeenCalledWith('/?filter=second', pageState);
+        expect(navigation.replaceState).toHaveBeenCalledWith('/?filter=second', queryHistoryState());
         expect(window.location.search).toBe('?filter=second');
     });
 
@@ -261,7 +263,7 @@ describe('createQueryParameters', () => {
 
         // Assert: the source entry and reactive state restore the latest value.
         expect(navigation.replaceState).toHaveBeenCalledOnce();
-        expect(navigation.replaceState).toHaveBeenCalledWith('/?filter=second', pageState);
+        expect(navigation.replaceState).toHaveBeenCalledWith('/?filter=second', queryHistoryState());
         expect(window.location.search).toBe('?filter=second');
         expect(screen.getByText('second').textContent).toBe('second');
     });
@@ -283,7 +285,7 @@ describe('createQueryParameters', () => {
 
         // Assert
         expect(navigation.pushState).toHaveBeenCalledTimes(2);
-        expect(navigation.pushState).toHaveBeenNthCalledWith(2, '/?filter=a', pageState);
+        expect(navigation.pushState).toHaveBeenNthCalledWith(2, '/?filter=a', queryHistoryState());
         expect(navigation.replaceState).not.toHaveBeenCalled();
         expect(window.location.search).toBe('?filter=a');
         expect(screen.getByText('a').textContent).toBe('a');
@@ -294,23 +296,51 @@ describe('createQueryParameters', () => {
         const view = render(QueryParametersTestHarness);
         await fireEvent.click(screen.getByRole('button', { name: 'First' }));
         await fireEvent.click(screen.getByRole('button', { name: 'Second' }));
+        const sourceEntryState = navigation.pushState.mock.calls[0]?.[1] as App.PageState;
+        const beforeNavigation = navigation.beforeNavigate.mock.calls[0]?.[0] as ((navigation: { type: string }) => void) | undefined;
+        window.history.replaceState(pageState, '', '/');
+        beforeNavigation?.({ type: 'popstate' });
+        window.dispatchEvent(new PopStateEvent('popstate', { state: pageState }));
+        await tick();
+        window.dispatchEvent(new Event('beforeunload'));
+        expect(sessionStorage).toHaveLength(1);
+
+        // Act: reload/leave the route, then recreate it by traversing Forward to the source entry.
+        view.unmount();
+        window.history.replaceState(sourceEntryState, '', '/?filter=first');
+        render(QueryParametersTestHarness);
+        await tick();
+
+        // Assert
+        expect(navigation.replaceState).toHaveBeenCalledOnce();
+        expect(navigation.replaceState).toHaveBeenCalledWith('/?filter=second', sourceEntryState);
+        expect(window.location.search).toBe('?filter=second');
+        expect(screen.getByText('second').textContent).toBe('second');
+    });
+
+    it('does not restore a retained replacement after its Forward branch is discarded', async () => {
+        // Arrange
+        const view = render(QueryParametersTestHarness);
+        await fireEvent.click(screen.getByRole('button', { name: 'First' }));
+        await fireEvent.click(screen.getByRole('button', { name: 'Second' }));
         const beforeNavigation = navigation.beforeNavigate.mock.calls[0]?.[0] as ((navigation: { type: string }) => void) | undefined;
         window.history.replaceState(pageState, '', '/');
         beforeNavigation?.({ type: 'popstate' });
         window.dispatchEvent(new PopStateEvent('popstate', { state: pageState }));
         await tick();
 
-        // Act: leave the route, then recreate it by traversing Forward to the source entry.
+        // Act: link navigation discards Forward, then a later visit reuses the same URL.
+        beforeNavigation?.({ type: 'link' });
         view.unmount();
         window.history.replaceState(pageState, '', '/?filter=first');
         render(QueryParametersTestHarness);
         await tick();
 
         // Assert
-        expect(navigation.replaceState).toHaveBeenCalledOnce();
-        expect(navigation.replaceState).toHaveBeenCalledWith('/?filter=second', pageState);
-        expect(window.location.search).toBe('?filter=second');
-        expect(screen.getByText('second').textContent).toBe('second');
+        expect(sessionStorage).toHaveLength(0);
+        expect(navigation.replaceState).not.toHaveBeenCalled();
+        expect(window.location.search).toBe('?filter=first');
+        expect(screen.getByText('first').textContent).toBe('first');
     });
 
     it('restores reactive state when shallow history is traversed', async () => {
