@@ -1,9 +1,12 @@
 import { FetchClient } from '@foundatiofx/fetchclient';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+const clearAuthenticationSession = vi.hoisted(() => vi.fn());
+
 vi.mock('./exceptionless-session', () => ({
     endSession: vi.fn()
 }));
+vi.mock('./session.svelte', () => ({ clearAuthenticationSession }));
 
 import { login, logout } from './api.svelte';
 
@@ -30,6 +33,7 @@ describe('login', () => {
 
 describe('logout', () => {
     beforeEach(() => {
+        clearAuthenticationSession.mockReset();
         // Mock localStorage for server-side tests
         Object.defineProperty(globalThis, 'localStorage', {
             configurable: true,
@@ -49,5 +53,6 @@ describe('logout', () => {
         await logout(undefined, mockClient);
 
         expect(mockClient.get).toHaveBeenCalledWith('auth/logout', { expectedStatusCodes: [200, 401, 403] });
+        expect(clearAuthenticationSession).toHaveBeenCalledOnce();
     });
 });

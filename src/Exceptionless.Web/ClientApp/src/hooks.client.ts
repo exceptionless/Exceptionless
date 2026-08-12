@@ -4,8 +4,11 @@ import { dev } from '$app/environment';
 import { page } from '$app/state';
 import { env } from '$env/dynamic/public';
 import { normalizePath, normalizeRouteId } from '$lib/telemetry';
+import { installSvelteEffectDepthDiagnostics } from '$lib/telemetry/svelte-effect-depth-diagnostics';
 import { Exceptionless, guid, toError } from '@exceptionless/browser';
 import { useMiddleware } from '@foundatiofx/fetchclient';
+
+installSvelteEffectDepthDiagnostics();
 
 // If any of these are set in local storage, use them instead of the build-time environment variables.
 // This allows you to target other environments from your browser without a rebuild.
