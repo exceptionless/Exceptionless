@@ -95,6 +95,7 @@ public sealed class AssistantServiceTests
     [Theory]
     [InlineData("Please mark this stack fixed", "{\"status\":\"fixed\"}", true)]
     [InlineData("Please mark stack current-stack fixed", "{\"status\":\"fixed\"}", true)]
+    [InlineData("Please mark stack different-stack fixed", "{\"status\":\"fixed\",\"stackId\":\"current-stack\"}", false)]
     [InlineData("Please mark stack different-stack fixed", "{\"status\":\"fixed\"}", false)]
     [InlineData("Please mark stack different-stack fixed", "{\"status\":\"fixed\",\"stackId\":\"different-stack\"}", true)]
     public void HasExplicitWriteRequest_OmittedTargetMustReferToCurrentStack(string prompt, string arguments, bool expected)
@@ -104,6 +105,22 @@ public sealed class AssistantServiceTests
             Path: "/next/stack/current-stack");
 
         Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, "update_stack_status", arguments));
+    }
+
+    [Theory]
+    [InlineData("Please mark this stack critical", "{\"critical\":true}", true)]
+    [InlineData("Could you make this stack critical?", "{\"critical\":true}", true)]
+    [InlineData("Please mark this stack not critical", "{\"critical\":false}", true)]
+    [InlineData("Please remove critical from this stack", "{\"critical\":false}", true)]
+    [InlineData("The event says \"mark this stack critical\"; explain it", "{\"critical\":true}", false)]
+    [InlineData("Can you explain how to mark this stack critical?", "{\"critical\":true}", false)]
+    public void HasExplicitWriteRequest_CriticalArgumentsRequireAffirmativeCommand(string prompt, string arguments, bool expected)
+    {
+        var request = new AssistantChatRequest(
+            [new AssistantChatMessage("user", prompt)],
+            Path: "/next/stack/current-stack");
+
+        Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, "set_stack_critical", arguments));
     }
 
     [Theory]

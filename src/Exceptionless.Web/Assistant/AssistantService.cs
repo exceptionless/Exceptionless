@@ -476,8 +476,10 @@ public sealed class AssistantService(
             if (String.IsNullOrWhiteSpace(currentStackId) || !ReferencesCurrentStack(latestUserMessage, currentStackId))
                 return false;
         }
-        else if (!String.Equals(requestedStackId, currentStackId, StringComparison.Ordinal)
-            && !latestUserMessage.Contains(requestedStackId, StringComparison.Ordinal))
+        else if (!latestUserMessage.Contains(requestedStackId, StringComparison.Ordinal)
+            && (String.IsNullOrWhiteSpace(currentStackId)
+                || !String.Equals(requestedStackId, currentStackId, StringComparison.Ordinal)
+                || !ReferencesCurrentStack(latestUserMessage, currentStackId)))
         {
             return false;
         }
@@ -488,8 +490,9 @@ public sealed class AssistantService(
             SnoozeStackTool => HasExplicitSnoozeRequest(latestUserMessage, root),
             SetStackCriticalTool => GetBoolean(root, "critical") switch
             {
-                true => ContainsAny(latestUserMessage, "mark critical", "set critical", "make critical"),
-                false => ContainsAny(latestUserMessage, "not critical", "remove critical", "unmark critical"),
+                true => MatchesAffirmativeCommand(latestUserMessage, @"(?:mark|set|make)\b[^\r\n.!?]*\bcritical")
+                    && !Regex.IsMatch(latestUserMessage, @"\bnot\s+critical\b", RegexOptions.IgnoreCase),
+                false => MatchesAffirmativeCommand(latestUserMessage, @"(?:(?:remove|unmark)\b[^\r\n.!?]*\bcritical|(?:mark|set|make)\b[^\r\n.!?]*\bnot\s+critical)"),
                 _ => false
             },
             AddStackReferenceLinkTool => HasExplicitReferenceLinkRequest(latestUserMessage, root, remove: false),
