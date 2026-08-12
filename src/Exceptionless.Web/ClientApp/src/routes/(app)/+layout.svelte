@@ -10,10 +10,15 @@
     import { getIntercomTokenQuery } from '$features/auth/api.svelte';
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
     import { UpgradeRequiredDialog } from '$features/billing';
-    import { invalidateOrganizationEventListQueries, invalidatePersistentEventQueries } from '$features/events/api.svelte';
+    import {
+        createOrganizationEventNotificationRefresher,
+        invalidatePersistentEventQueries,
+        type OrganizationEventNotificationRefresher
+    } from '$features/events/api.svelte';
     import { filterUsesPremiumFeatures, getSearchResourceForPathname } from '$features/events/premium-filter';
     import { buildIntercomBootOptions, IntercomShell } from '$features/intercom';
     import { shouldLoadIntercomOrganization } from '$features/intercom/config';
+    import { getIntercomRouteKey } from '$features/intercom/updates';
     import Notifications from '$features/notifications/components/notifications.svelte';
     import {
         getOrganizationQuery,
@@ -30,12 +35,12 @@
     import { getSavedViewsQuery, invalidateSavedViewQueries, isSavedViewDeleted } from '$features/saved-views/api.svelte';
     import { savedViewHref } from '$features/saved-views/slugs';
     import { appKeyboardShortcuts, isKeyboardShortcut } from '$features/shared/keyboard-shortcuts';
-    import { invalidateStackQueries } from '$features/stacks/api.svelte';
+    import { createProjectStackNotificationRefresher, invalidateStackQueries, type ProjectStackNotificationRefresher } from '$features/stacks/api.svelte';
     import { invalidateTokenQueries } from '$features/tokens/api.svelte';
     import { getMeQuery, invalidateUserQueries } from '$features/users/api.svelte';
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
     import { invalidateWebhookQueries } from '$features/webhooks/api.svelte';
-    import { isEntityChangedType, isPlanOverageType, type WebSocketMessageType } from '$features/websockets/models';
+    import { ChangeType, isEntityChangedType, isPlanOverageType, type WebSocketMessageType } from '$features/websockets/models';
     import { WebSocketClient } from '$features/websockets/web-socket-client.svelte';
     import { Telemetry } from '$lib/telemetry';
     import { useMiddleware } from '@foundatiofx/fetchclient';
@@ -67,6 +72,7 @@
     let commandResetKey = $state(0);
     let isKeyboardShortcutsOpen = $state(false);
     let isOrganizationSwitcherOpen = $state(false);
+    let isImpersonateOrganizationOpen = $state(false);
     let isUserMenuOpen = $state(false);
 
     // Auto-reset premium page state on navigation so pages don't need cleanup
@@ -81,6 +87,7 @@
 
     async function openOrganizationSwitcher(): Promise<void> {
         isCommandOpen = false;
+        isImpersonateOrganizationOpen = false;
         isKeyboardShortcutsOpen = false;
         isUserMenuOpen = false;
         if (singleOrganization?.id) {
@@ -94,6 +101,7 @@
 
     async function openUserMenu(): Promise<void> {
         isCommandOpen = false;
+        isImpersonateOrganizationOpen = false;
         isKeyboardShortcutsOpen = false;
         isOrganizationSwitcherOpen = false;
         await tick();
@@ -102,10 +110,26 @@
 
     async function openKeyboardShortcuts(): Promise<void> {
         isCommandOpen = false;
+        isImpersonateOrganizationOpen = false;
         isOrganizationSwitcherOpen = false;
         isUserMenuOpen = false;
         await tick();
         isKeyboardShortcutsOpen = true;
+    }
+
+    async function openImpersonateOrganization(): Promise<void> {
+        isCommandOpen = false;
+        isKeyboardShortcutsOpen = false;
+        isOrganizationSwitcherOpen = false;
+        isUserMenuOpen = false;
+        await tick();
+        isImpersonateOrganizationOpen = true;
+    }
+
+    async function stopImpersonating(): Promise<void> {
+        isCommandOpen = false;
+        await goto(resolve('/(app)/stack'));
+        organization.current = organizations[0]?.id;
     }
 
     useMiddleware(async (ctx, next) => {
@@ -137,7 +161,11 @@
         immediate: false
     });
 
-    async function onMessage(message: MessageEvent) {
+    async function onMessage(
+        message: MessageEvent,
+        organizationEventRefresher: OrganizationEventNotificationRefresher,
+        projectStackRefresher: ProjectStackNotificationRefresher
+    ) {
         const data: { message: unknown; type: WebSocketMessageType } = message.data ? JSON.parse(message.data) : null;
 
         if (!data?.type) {
@@ -159,6 +187,7 @@
                     await invalidateOrganizationQueries(queryClient, data.message);
                     break;
                 case 'PersistentEventChanged':
+                    organizationEventRefresher.schedule(data.message.organization_id, data.message.change_type !== ChangeType.Removed);
                     await invalidatePersistentEventQueries(queryClient, data.message);
                     break;
                 case 'ProjectChanged':
@@ -168,8 +197,9 @@
                     await invalidateSavedViewQueries(queryClient, data.message);
                     break;
                 case 'StackChanged':
+                    organizationEventRefresher.schedule(data.message.organization_id, data.message.change_type !== ChangeType.Removed);
+                    projectStackRefresher.schedule(data.message.project_id, data.message.change_type !== ChangeType.Removed);
                     await invalidateStackQueries(queryClient, data.message);
-                    await invalidateOrganizationEventListQueries(queryClient, data.message.organization_id);
                     break;
                 case 'TokenChanged':
                     await invalidateTokenQueries(queryClient, data.message);
@@ -229,6 +259,7 @@
                 e.metaKey ||
                 e.altKey ||
                 isCommandOpen ||
+                isImpersonateOrganizationOpen ||
                 isKeyboardShortcutsOpen ||
                 isOrganizationSwitcherOpen ||
                 isUserMenuOpen ||
@@ -279,8 +310,10 @@
 
         document.addEventListener('keydown', handleKeydown, { capture: true });
 
+        const organizationEventRefresher = createOrganizationEventNotificationRefresher(queryClient);
+        const projectStackRefresher = createProjectStackNotificationRefresher(queryClient);
         const ws = new WebSocketClient();
-        ws.onMessage = onMessage;
+        ws.onMessage = (message) => void onMessage(message, organizationEventRefresher, projectStackRefresher);
         ws.onOpen = (_, isReconnect) => {
             if (isReconnect) {
                 queryClient.invalidateQueries();
@@ -295,6 +328,8 @@
 
         return () => {
             document.removeEventListener('keydown', handleKeydown, { capture: true });
+            organizationEventRefresher.cancel();
+            projectStackRefresher.cancel();
             ws?.close();
         };
     });
@@ -484,6 +519,7 @@
     <Sidebar routes={filteredRoutes}>
         {#snippet header()}
             <SidebarOrganizationSwitcher
+                bind:impersonateDialogOpen={isImpersonateOrganizationOpen}
                 isLoading={organizationsQuery.isLoading}
                 {organizations}
                 {impersonatedOrganization}
@@ -512,11 +548,18 @@
             <main class="flex-1 px-4 pt-4">
                 <NavigationCommand
                     bind:open={isCommandOpen}
+                    {isChatEnabled}
+                    {isGlobalAdmin}
+                    {isImpersonating}
+                    {openChat}
+                    {openImpersonateOrganization}
                     {openKeyboardShortcuts}
                     {openOrganizationSwitcher}
                     {openUserMenu}
+                    {organizations}
                     resetKey={commandResetKey}
                     routes={filteredRoutes}
+                    {stopImpersonating}
                 />
                 <KeyboardShortcutsDialog bind:open={isKeyboardShortcutsOpen} />
 
@@ -541,7 +584,7 @@
         appId={intercomAppId || undefined}
         bootOptions={intercomBootOptions}
         onUnreadCountChange={onIntercomUnreadCountChange}
-        routeKey={page.url.pathname}
+        routeKey={getIntercomRouteKey(page.route.id, page.url.pathname)}
     >
         {#snippet children(openChat)}
             {#if isSetupPage}

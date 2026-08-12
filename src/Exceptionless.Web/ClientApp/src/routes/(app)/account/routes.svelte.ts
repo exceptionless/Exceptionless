@@ -35,6 +35,7 @@ export function routes(): NavigationItem[] {
             group: 'My Account',
             href: resolve('/(app)/account/ai-tools'),
             icon: Bot,
+            keywords: ['MCP', 'Claude', 'Codex', 'Copilot', 'OpenCode', 'AI assistant'],
             title: 'AI Tools'
         },
         {
