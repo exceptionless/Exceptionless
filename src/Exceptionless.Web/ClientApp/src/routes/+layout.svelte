@@ -7,6 +7,7 @@
     import * as Sidebar from '$comp/ui/sidebar';
     import { Toaster } from '$comp/ui/sonner';
     import { accessToken } from '$features/auth/index.svelte';
+    import { handleUnexpectedUnauthorized } from '$features/auth/unauthorized';
     import { type FetchClientContext, ProblemDetails, setAccessTokenFunc, setBaseUrl, setRequestOptions, useMiddleware } from '@foundatiofx/fetchclient';
     import { error } from '@sveltejs/kit';
     import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
@@ -41,10 +42,8 @@
             return;
         }
 
-        if (status === 401 && !ctx.options.expectedStatusCodes?.includes(401)) {
-            if (accessToken.current) {
-                accessToken.current = '';
-            }
+        if (handleUnexpectedUnauthorized(status, ctx.options.expectedStatusCodes)) {
+            return;
         } else if (status === 404 && !ctx.options.expectedStatusCodes?.includes(404)) {
             throw error(404, 'Not found');
         } else if ([0, 408, 503].includes(status) && !ctx.options.expectedStatusCodes?.includes(status)) {

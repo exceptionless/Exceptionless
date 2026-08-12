@@ -4,17 +4,70 @@ import type { WorkInProgressResult } from '$shared/models';
 import { accessToken } from '$features/auth/index.svelte';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
+import { SvelteSet } from 'svelte/reactivity';
 
 import type { Stack, StackStatus } from './models';
+
+export interface ProjectStackNotificationRefresher {
+    cancel: () => void;
+    schedule: (projectId?: string, refreshImmediately?: boolean) => void;
+}
+
+export function createProjectStackNotificationRefresher(queryClient: QueryClient): ProjectStackNotificationRefresher {
+    const pendingProjectIds = new SvelteSet<string | undefined>();
+    let trailingRefresh: ReturnType<typeof setTimeout> | undefined;
+    const refresh = () => {
+        const projectIds = [...pendingProjectIds];
+
+        void queryClient.invalidateQueries({
+            predicate: (query) =>
+                isProjectStacksQueryKey(query.queryKey) && (projectIds.includes(undefined) || projectIds.includes(query.queryKey[2] as string)),
+            queryKey: queryKeys.type,
+            refetchType: 'active'
+        });
+    };
+
+    return {
+        cancel: () => {
+            pendingProjectIds.clear();
+            if (trailingRefresh !== undefined) {
+                clearTimeout(trailingRefresh);
+                trailingRefresh = undefined;
+            }
+        },
+        schedule: (projectId?: string, refreshImmediately = true) => {
+            pendingProjectIds.add(projectId);
+            if (trailingRefresh !== undefined) {
+                return;
+            }
+
+            if (refreshImmediately) {
+                refresh();
+            }
+
+            trailingRefresh = setTimeout(() => {
+                trailingRefresh = undefined;
+                refresh();
+                pendingProjectIds.clear();
+            }, STACK_NOTIFICATION_THROTTLE_MS);
+        }
+    };
+}
 
 export async function invalidateStackQueries(queryClient: QueryClient, message: WebSocketMessageValue<'StackChanged'>) {
     const { id } = message;
     if (id) {
         await queryClient.invalidateQueries({ queryKey: queryKeys.id(id) });
     } else {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.type });
+        await queryClient.invalidateQueries({
+            predicate: (query) => !isProjectStacksQueryKey(query.queryKey),
+            queryKey: queryKeys.type
+        });
     }
 }
+
+export const STACK_LIST_QUERY_STALE_TIME_MS = 60 * 1000;
+export const STACK_NOTIFICATION_THROTTLE_MS = 5 * 1000;
 
 export const queryKeys = {
     deleteMarkCritical: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'mark-not-critical'] as const,
@@ -28,7 +81,8 @@ export const queryKeys = {
     postMarkSnoozed: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'mark-snoozed'] as const,
     postPromote: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'promote'] as const,
     postRemoveLink: (id: string | undefined) => [...queryKeys.id(id), 'remove-link'] as const,
-    project: (projectId: string | undefined, params?: GetProjectStacksParams) => [...queryKeys.type, 'project', projectId, { params }] as const,
+    project: (projectId: string | undefined, params?: GetProjectStacksParams) => [...queryKeys.projects(projectId), { params }] as const,
+    projects: (projectId: string | undefined) => [...queryKeys.type, 'project', projectId] as const,
     type: ['Stack'] as const
 };
 
@@ -138,6 +192,7 @@ export function deleteStack(request: DeleteStackRequest) {
     }));
 }
 
+// Cacheable reads intentionally finish after their observer unmounts so navigation can reuse the result instead of aborting and restarting the request.
 export function getProjectStacksQuery(request: GetProjectStacksRequest) {
     const queryClient = useQueryClient();
 
@@ -149,27 +204,25 @@ export function getProjectStacksQuery(request: GetProjectStacksRequest) {
             });
         },
         queryClient,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+        queryFn: async () => {
             const client = useFetchClient();
             const response = await client.getJSON<Stack[]>(`projects/${request.route.projectId}/stacks`, {
-                params: request.params as Record<string, unknown>,
-                signal
+                params: request.params as Record<string, unknown>
             });
 
             return response;
         },
-        queryKey: queryKeys.project(request.route.projectId, request.params)
+        queryKey: queryKeys.project(request.route.projectId, request.params),
+        staleTime: STACK_LIST_QUERY_STALE_TIME_MS
     }));
 }
 
 export function getStackQuery(request: GetStackRequest) {
     return createQuery<Stack, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.id,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+        queryFn: async () => {
             const client = useFetchClient();
-            const response = await client.getJSON<Stack>(`stacks/${request.route.id}`, {
-                signal
-            });
+            const response = await client.getJSON<Stack>(`stacks/${request.route.id}`);
 
             return response.data!;
         },
@@ -314,14 +367,16 @@ export async function prefetchStack(request: GetStackRequest) {
 
     const queryClient = useQueryClient();
     await queryClient.prefetchQuery<Stack, ProblemDetails>({
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+        queryFn: async () => {
             const client = useFetchClient();
-            const response = await client.getJSON<Stack>(`stacks/${request.route.id}`, {
-                signal
-            });
+            const response = await client.getJSON<Stack>(`stacks/${request.route.id}`);
 
             return response.data!;
         },
         queryKey: queryKeys.id(request.route.id)
     });
+}
+
+function isProjectStacksQueryKey(queryKey: readonly unknown[]): boolean {
+    return queryKey[0] === queryKeys.type[0] && queryKey[1] === 'project';
 }
