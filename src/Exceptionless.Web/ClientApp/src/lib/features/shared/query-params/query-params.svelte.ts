@@ -11,8 +11,10 @@ import { applyQueryParameterUpdates, createDebouncedFunction, createSearchParams
 
 const queryHistoryEntryIdKey = '__exceptionlessQueryHistoryEntryId';
 const pendingReplacementStoragePrefix = 'exceptionless:query-history:';
+const svelteKitPageStateKey = 'sveltekit:states';
 
 type QueryHistoryPageState = App.PageState & { [queryHistoryEntryIdKey]?: string };
+type SvelteKitHistoryState = { [svelteKitPageStateKey]?: QueryHistoryPageState };
 
 export function createQueryParameters<T extends QueryParameterSchema>({
     debounceMilliseconds = 200,
@@ -39,7 +41,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
 
     const getCurrentUrl = () => normalizeUrl(`${window.location.pathname}${window.location.search}${window.location.hash}`);
 
-    const getCurrentHistoryEntryId = () => (window.history.state as null | QueryHistoryPageState)?.[queryHistoryEntryIdKey];
+    const getCurrentHistoryEntryId = () => (window.history.state as null | SvelteKitHistoryState)?.[svelteKitPageStateKey]?.[queryHistoryEntryIdKey];
 
     const createHistoryState = (entryId: string | undefined) => ({ ...page.state, ...(entryId ? { [queryHistoryEntryIdKey]: entryId } : {}) }) as App.PageState;
 
@@ -187,7 +189,16 @@ export function createQueryParameters<T extends QueryParameterSchema>({
         Object.assign(current, parseQueryParameters(searchParams, schema, defaults));
     };
 
-    const synchronizeStateFromLocation = () => synchronizeState(window.location.search);
+    const synchronizeStateFromLocation = () => {
+        schedulePushHistoryEntryFinalization.cancel();
+        if (pendingReplacementUrl && getCurrentHistoryEntryId() === coalescingEntryId) {
+            flushPendingReplacement();
+            settlePushHistoryEntry();
+        }
+
+        synchronizeState(window.location.search);
+    };
+
     if (browser) {
         window.addEventListener('popstate', synchronizeStateFromLocation);
     }

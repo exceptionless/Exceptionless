@@ -12,7 +12,9 @@ const navigation = vi.hoisted(() => ({
 }));
 const pageState = vi.hoisted(() => ({}));
 const queryHistoryEntryIdKey = '__exceptionlessQueryHistoryEntryId';
+const svelteKitPageStateKey = 'sveltekit:states';
 const queryHistoryState = () => expect.objectContaining({ [queryHistoryEntryIdKey]: expect.any(String) });
+const createSvelteKitHistoryState = (state: App.PageState) => ({ [svelteKitPageStateKey]: state });
 
 vi.mock('$app/environment', () => ({ browser: true, building: false }));
 vi.mock('$app/navigation', () => navigation);
@@ -31,9 +33,13 @@ describe('createQueryParameters', () => {
         vi.clearAllMocks();
         delete (pageState as Record<string, unknown>)[queryHistoryEntryIdKey];
         sessionStorage.clear();
-        window.history.replaceState({}, '', '/');
-        navigation.pushState.mockImplementation((url: string | URL, state: App.PageState) => window.history.pushState(state, '', url));
-        navigation.replaceState.mockImplementation((url: string | URL, state: App.PageState) => window.history.replaceState(state, '', url));
+        window.history.replaceState(createSvelteKitHistoryState(pageState), '', '/');
+        navigation.pushState.mockImplementation((url: string | URL, state: App.PageState) =>
+            window.history.pushState(createSvelteKitHistoryState(state), '', url)
+        );
+        navigation.replaceState.mockImplementation((url: string | URL, state: App.PageState) =>
+            window.history.replaceState(createSvelteKitHistoryState(state), '', url)
+        );
     });
 
     afterEach(() => {
@@ -244,13 +250,12 @@ describe('createQueryParameters', () => {
         render(QueryParametersTestHarness);
         await fireEvent.click(screen.getByRole('button', { name: 'First' }));
         await fireEvent.click(screen.getByRole('button', { name: 'Second' }));
-        const sourceEntryState = window.history.state as Record<string, unknown>;
-        (pageState as Record<string, unknown>)[queryHistoryEntryIdKey] = sourceEntryState[queryHistoryEntryIdKey];
-        const beforeNavigation = navigation.beforeNavigate.mock.calls[0]?.[0] as ((navigation: { type: string }) => void) | undefined;
+        const sourceEntryState = window.history.state;
+        const sourcePageState = navigation.pushState.mock.calls[0]?.[1] as Record<string, unknown>;
+        (pageState as Record<string, unknown>)[queryHistoryEntryIdKey] = sourcePageState[queryHistoryEntryIdKey];
 
         // Act: traverse Back before the replacement settles while page.state is still stale.
         window.history.replaceState({}, '', '/');
-        beforeNavigation?.({ type: 'popstate' });
         window.dispatchEvent(new PopStateEvent('popstate', { state: pageState }));
         await tick();
 
@@ -261,7 +266,6 @@ describe('createQueryParameters', () => {
 
         // Act: traverse Forward to the source entry.
         window.history.replaceState(sourceEntryState, '', '/?filter=first');
-        beforeNavigation?.({ type: 'popstate' });
         window.dispatchEvent(new PopStateEvent('popstate', { state: sourceEntryState }));
         await tick();
 
@@ -300,7 +304,7 @@ describe('createQueryParameters', () => {
         const view = render(QueryParametersTestHarness);
         await fireEvent.click(screen.getByRole('button', { name: 'First' }));
         await fireEvent.click(screen.getByRole('button', { name: 'Second' }));
-        const sourceEntryState = navigation.pushState.mock.calls[0]?.[1] as App.PageState;
+        const sourceEntryState = window.history.state;
         const beforeNavigation = navigation.beforeNavigate.mock.calls[0]?.[0] as ((navigation: { type: string }) => void) | undefined;
         window.history.replaceState(pageState, '', '/');
         beforeNavigation?.({ type: 'popstate' });
@@ -317,7 +321,7 @@ describe('createQueryParameters', () => {
 
         // Assert
         expect(navigation.replaceState).toHaveBeenCalledOnce();
-        expect(navigation.replaceState).toHaveBeenCalledWith('/?filter=second', sourceEntryState);
+        expect(navigation.replaceState).toHaveBeenCalledWith('/?filter=second', queryHistoryState());
         expect(window.location.search).toBe('?filter=second');
         expect(screen.getByText('second').textContent).toBe('second');
     });
