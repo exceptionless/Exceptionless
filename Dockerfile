@@ -125,6 +125,7 @@ RUN microdnf install -y \
     libicu \
     openssl-libs \
     libstdc++ \
+    tar \
     tzdata \
     && pip3 install --no-cache-dir supervisor==4.3.0 \
     && microdnf clean all \
