@@ -113,21 +113,21 @@ COPY ./build/supervisord.conf /etc/
 USER root
 
 # install dotnet and supervisor
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-    supervisor \
+RUN microdnf install -y \
     wget \
     dos2unix \
     ca-certificates \
+    python3-pip \
     \
     # .NET dependencies
-    libc6 \
-    libgcc-s1 \
-    libicu74 \
-    libssl3 \
-    libstdc++6 \
+    glibc \
+    libgcc \
+    libicu \
+    openssl-libs \
+    libstdc++ \
     tzdata \
-    && rm -rf /var/lib/apt/lists/* \
+    && pip3 install --no-cache-dir supervisor==4.3.0 \
+    && microdnf clean all \
     && dos2unix /app/docker-entrypoint.sh
 
 ENV discovery.type=single-node \
