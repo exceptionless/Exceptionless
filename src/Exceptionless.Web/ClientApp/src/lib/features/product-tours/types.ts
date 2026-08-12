@@ -26,9 +26,9 @@ export interface ProductTourDefinition {
 export type ProductTourErrorEventAvailability = 'available' | 'empty' | 'error' | 'loading';
 export type ProductTourId = 'configure-project' | 'create-saved-view' | 'investigate-error' | 'meet-exie' | 'new-ui-overview';
 
-export type ProductTourKey = 'welcome' | ProductTourId;
+export type ProductTourKey = 'exie-announcement' | 'welcome' | ProductTourId;
 
-export type ProductTourLaunchSource = 'automatic' | 'catalog' | 'command-palette' | 'help-menu';
+export type ProductTourLaunchSource = 'automatic' | 'catalog' | 'command-palette' | 'feature-announcement' | 'help-menu';
 
 export interface ProductTourListItem extends ProductTourDefinition {
     availability: ProductTourAvailability;

@@ -24,10 +24,11 @@
 
     import { PRODUCT_TOUR_ANCHORS, productTourSelector } from '../anchors';
     import { getProductTour, getProductTourItems, getRecommendedProductTourId } from '../catalog';
-    import { shouldOfferProductTourWelcome } from '../eligibility';
+    import { shouldOfferProductTourAnnouncement, shouldOfferProductTourWelcome } from '../eligibility';
     import { productTourRuntime } from '../state.svelte';
     import { buildProductTourTelemetryEvent, type ProductTourTelemetryEvent } from '../telemetry';
     import ProductTourCatalog from './product-tour-catalog.svelte';
+    import ProductTourFeatureAnnouncement from './product-tour-feature-announcement.svelte';
     import ProductTourWelcome from './product-tour-welcome.svelte';
     import 'driver.js/dist/driver.css';
 
@@ -55,6 +56,8 @@
     }
 
     const WELCOME_VERSION = 1;
+    const EXIE_ANNOUNCEMENT_VERSION = 1;
+    const EXIE_ANNOUNCEMENT_KEY = 'exie-announcement' as const;
     const SESSION_KEY = 'exceptionless.product-tour';
     const SYSTEM_PATH = resolve('/(app)/system');
 
@@ -78,6 +81,8 @@
     let welcomeHandled = $state(false);
     let welcomeShown = $state(false);
     let welcomeBrowsePending = $state(false);
+    let exieAnnouncementOpen = $state(false);
+    let exieAnnouncementShown = $state(false);
     let confirmNewProjectOpen = $state(false);
     let pendingConfigureSource = $state<ProductTourLaunchSource>();
     let driverInstance = $state.raw<Driver>();
@@ -122,6 +127,37 @@
             welcomeShown = true;
             void track('chooser-shown', 'welcome', WELCOME_VERSION, 'automatic');
         }
+    });
+
+    $effect(() => {
+        const welcomeProgress = currentUser?.product_tours?.welcome;
+        const announcementProgress = currentUser?.product_tours?.[EXIE_ANNOUNCEMENT_KEY];
+        const isMeaningfulAppRoute = pathname.startsWith('/next/event') || pathname.startsWith('/next/stack');
+        const shouldShow =
+            stateSettled &&
+            !!currentUser &&
+            !!assistantAccess?.enabled &&
+            isMeaningfulAppRoute &&
+            !isSetupPage &&
+            !isImpersonating &&
+            !productTourRuntime.activeTourId &&
+            !exieAnnouncementShown &&
+            !exieAnnouncementOpen &&
+            !welcomeOpen &&
+            !catalogOpen &&
+            !isAnyOverlayOpen &&
+            !hasCompetingOverlay() &&
+            !pathname.startsWith(SYSTEM_PATH) &&
+            !shouldOfferProductTourWelcome(welcomeProgress, WELCOME_VERSION) &&
+            shouldOfferProductTourAnnouncement(announcementProgress, EXIE_ANNOUNCEMENT_VERSION);
+
+        if (!shouldShow) {
+            return;
+        }
+
+        exieAnnouncementOpen = true;
+        exieAnnouncementShown = true;
+        void track('announcement-shown', EXIE_ANNOUNCEMENT_KEY, EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
     });
 
     $effect(() => {
@@ -237,6 +273,7 @@
 
         catalogOpen = false;
         welcomeOpen = false;
+        exieAnnouncementOpen = false;
         closeOverlays();
         if (!(await waitForCompetingOverlaysToClose())) {
             toast.info('Close the open dialog or panel before starting a guided tour.');
@@ -570,6 +607,31 @@
         await startTour(recommended.id, 'automatic');
     }
 
+    async function onExieAnnouncementStart(): Promise<void> {
+        try {
+            await recordProgress(EXIE_ANNOUNCEMENT_KEY, EXIE_ANNOUNCEMENT_VERSION, 'completed');
+        } catch {
+            toast.error('We could not save the Exie announcement preference. Please try again.');
+            return;
+        }
+
+        exieAnnouncementOpen = false;
+        void track('announcement-started', EXIE_ANNOUNCEMENT_KEY, EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
+        await startTour('meet-exie', 'feature-announcement');
+    }
+
+    async function onExieAnnouncementDismiss(): Promise<void> {
+        try {
+            await recordProgress(EXIE_ANNOUNCEMENT_KEY, EXIE_ANNOUNCEMENT_VERSION, 'dismissed');
+        } catch {
+            toast.error('We could not save the Exie announcement preference. Please try again.');
+            return;
+        }
+
+        exieAnnouncementOpen = false;
+        void track('announcement-dismissed', EXIE_ANNOUNCEMENT_KEY, EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
+    }
+
     async function onWelcomeSkip(): Promise<void> {
         try {
             await recordProgress('welcome', WELCOME_VERSION, 'dismissed');
@@ -776,6 +838,15 @@
     onStart={() => void onWelcomeStart()}
     {recommended}
 />
+
+{#if exieAnnouncementOpen && assistantAccess}
+    <ProductTourFeatureAnnouncement
+        hasAccess={assistantAccess.has_access}
+        message={assistantAccess.message}
+        onDismiss={() => void onExieAnnouncementDismiss()}
+        onStart={() => void onExieAnnouncementStart()}
+    />
+{/if}
 
 <ProductTourCatalog bind:open={catalogOpen} {items} onStart={(id) => void startTour(id, catalogSource)} />
 

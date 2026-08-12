@@ -144,6 +144,33 @@ test('Investigate an error advances only after an error report opens', async ({ 
     expect(event.type).toBe('error');
 });
 
+test('Exie announcement can be dismissed without hiding the replayable guide', async ({ e2eScenario: _e2eScenario, page }, testInfo) => {
+    void _e2eScenario;
+    await page.route('**/api/v2/assistant/access**', async (route) => {
+        await route.fulfill({
+            contentType: 'application/json',
+            json: { enabled: true, has_access: true, message: null, upgrade_required: false }
+        });
+    });
+
+    await page.setViewportSize({ height: 900, width: 1440 });
+    await page.goto('/next/stack');
+
+    const announcement = page.locator('[data-product-tour-announcement="exie"]');
+    await expect(announcement).toBeVisible();
+    await page.screenshot({ fullPage: true, path: testInfo.outputPath('meet-exie-announcement.png') });
+    const dismissed = page.waitForResponse(
+        (response) => response.url().includes('/product-tours/exie-announcement') && response.request().method() === 'PUT' && response.status() === 200
+    );
+    await announcement.getByRole('button', { exact: true, name: 'Dismiss' }).click();
+    await dismissed;
+    await page.reload();
+    await expect(announcement).toBeHidden();
+
+    await startTourFromCommand(page, 'Meet Exie');
+    await expect(page.locator('.driver-popover').getByText('Open Exie', { exact: true })).toBeVisible();
+});
+
 test('Meet Exie opens contextual UI without sending a provider request', async ({ e2eScenario: _e2eScenario, page }, testInfo) => {
     void _e2eScenario;
     let chatRequests = 0;

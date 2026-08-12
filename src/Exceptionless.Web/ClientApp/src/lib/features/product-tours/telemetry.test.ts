@@ -7,6 +7,9 @@ describe('product tour telemetry', () => {
         expect(buildProductTourTelemetryEvent('step', 'new-ui-overview', 1, 'command-palette', 'command-search')).toBe(
             'product-tour.step.new-ui-overview.v1.command-palette.command-search'
         );
+        expect(buildProductTourTelemetryEvent('announcement-started', 'exie-announcement', 1, 'feature-announcement')).toBe(
+            'product-tour.announcement-started.exie-announcement.v1.feature-announcement'
+        );
     });
 
     it('rejects resource data and invalid versions', () => {

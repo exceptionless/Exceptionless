@@ -1,6 +1,17 @@
 import type { ProductTourKey, ProductTourLaunchSource } from './types';
 
-export type ProductTourTelemetryEvent = 'chooser-shown' | 'chooser-skipped' | 'chooser-started' | 'completed' | 'dismissed' | 'failed' | 'started' | 'step';
+export type ProductTourTelemetryEvent =
+    | 'announcement-dismissed'
+    | 'announcement-shown'
+    | 'announcement-started'
+    | 'chooser-shown'
+    | 'chooser-skipped'
+    | 'chooser-started'
+    | 'completed'
+    | 'dismissed'
+    | 'failed'
+    | 'started'
+    | 'step';
 
 const SAFE_SEGMENT = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
