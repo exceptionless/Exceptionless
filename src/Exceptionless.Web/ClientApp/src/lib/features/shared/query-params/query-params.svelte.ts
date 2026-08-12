@@ -16,6 +16,11 @@ export function createQueryParameters<T extends QueryParameterSchema>({
 }: CreateQueryParametersOptions<T>) {
     let searchParams = createSearchParams(building ? '' : page.url.search);
     const current = $state<QueryParameterState<T>>(parseQueryParameters(searchParams, schema, defaults));
+    // Create a durable entry immediately, then replace it while rapid updates still belong to the same user action.
+    let isCoalescingPushHistoryEntry = false;
+    const schedulePushHistoryEntrySettlement = createDebouncedFunction(() => {
+        isCoalescingPushHistoryEntry = false;
+    }, debounceMilliseconds);
 
     const synchronizeURL = () => {
         if (searchParamsEqual(searchParams, window.location.search)) {
@@ -23,22 +28,26 @@ export function createQueryParameters<T extends QueryParameterSchema>({
         }
 
         const query = searchParams.toString();
-        const url = `?${query}${window.location.hash}`;
-        if (history === 'replace') {
+        const url = `${query ? `?${query}` : window.location.pathname}${window.location.hash}`;
+        if (history === 'replace' || isCoalescingPushHistoryEntry) {
             replaceState(url, page.state);
         } else {
             pushState(url, page.state);
+            isCoalescingPushHistoryEntry = true;
+        }
+
+        if (history === 'push') {
+            schedulePushHistoryEntrySettlement();
         }
     };
 
-    const scheduleSynchronization = createDebouncedFunction(synchronizeURL, debounceMilliseconds);
-    beforeNavigate(({ type }) => {
-        scheduleSynchronization.cancel();
-        if (type !== 'popstate') {
-            synchronizeURL();
-        }
-    });
-    onDestroy(scheduleSynchronization.cancel);
+    const settlePushHistoryEntry = () => {
+        schedulePushHistoryEntrySettlement.cancel();
+        isCoalescingPushHistoryEntry = false;
+    };
+
+    beforeNavigate(settlePushHistoryEntry);
+    onDestroy(settlePushHistoryEntry);
 
     const commit = (result: ReturnType<typeof applyQueryParameterUpdates<T>>) => {
         searchParams = result.searchParams;
@@ -47,7 +56,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
         }
 
         if (result.urlChanged) {
-            scheduleSynchronization();
+            synchronizeURL();
         }
     };
 

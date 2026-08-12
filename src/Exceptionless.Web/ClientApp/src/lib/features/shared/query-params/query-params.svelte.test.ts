@@ -34,23 +34,72 @@ describe('createQueryParameters', () => {
         vi.useRealTimers();
     });
 
-    it('writes only the latest debounced update with shallow routing', async () => {
+    it('writes updates immediately while coalescing rapid push history entries', async () => {
         // Arrange
         render(QueryParametersTestHarness);
 
         // Act
         await fireEvent.click(screen.getByRole('button', { name: 'First' }));
         await fireEvent.click(screen.getByRole('button', { name: 'Second' }));
-        await vi.advanceTimersByTimeAsync(200);
 
         // Assert
         expect(screen.getByText('second').textContent).toBe('second');
         expect(navigation.pushState).toHaveBeenCalledOnce();
-        expect(navigation.pushState).toHaveBeenCalledWith('?filter=second', pageState);
+        expect(navigation.pushState).toHaveBeenCalledWith('?filter=first', pageState);
+        expect(navigation.replaceState).toHaveBeenCalledOnce();
+        expect(navigation.replaceState).toHaveBeenCalledWith('?filter=second', pageState);
+        expect(window.location.search).toBe('?filter=second');
+    });
+
+    it('starts a new push history entry after the coalescing window settles', async () => {
+        // Arrange
+        render(QueryParametersTestHarness);
+        await fireEvent.click(screen.getByRole('button', { name: 'First' }));
+        await vi.advanceTimersByTimeAsync(200);
+
+        // Act
+        await fireEvent.click(screen.getByRole('button', { name: 'Second' }));
+
+        // Assert
+        expect(navigation.pushState).toHaveBeenCalledTimes(2);
+        expect(navigation.pushState).toHaveBeenNthCalledWith(1, '?filter=first', pageState);
+        expect(navigation.pushState).toHaveBeenNthCalledWith(2, '?filter=second', pageState);
         expect(navigation.replaceState).not.toHaveBeenCalled();
     });
 
-    it('flushes a pending update before full navigation', async () => {
+    it('writes replace-history updates immediately without adding entries', async () => {
+        // Arrange
+        render(QueryParametersTestHarness, { history: 'replace' });
+
+        // Act
+        await fireEvent.click(screen.getByRole('button', { name: 'First' }));
+        await fireEvent.click(screen.getByRole('button', { name: 'Second' }));
+
+        // Assert
+        expect(navigation.pushState).not.toHaveBeenCalled();
+        expect(navigation.replaceState).toHaveBeenCalledTimes(2);
+        expect(navigation.replaceState).toHaveBeenNthCalledWith(1, '?filter=first', pageState);
+        expect(navigation.replaceState).toHaveBeenNthCalledWith(2, '?filter=second', pageState);
+        expect(window.location.search).toBe('?filter=second');
+    });
+
+    it('does not leave a trailing question mark when the last parameter is cleared', async () => {
+        // Arrange
+        window.history.replaceState({}, '', '/events#details');
+        render(QueryParametersTestHarness);
+        await fireEvent.click(screen.getByRole('button', { name: 'First' }));
+
+        // Act
+        await fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+
+        // Assert
+        expect(navigation.replaceState).toHaveBeenCalledWith('/events#details', pageState);
+        expect(window.location.pathname).toBe('/events');
+        expect(window.location.search).toBe('');
+        expect(window.location.hash).toBe('#details');
+    });
+
+    it('does not add a delayed history write after full navigation', async () => {
         // Arrange
         render(QueryParametersTestHarness);
         await fireEvent.click(screen.getByRole('button', { name: 'First' }));
@@ -64,10 +113,11 @@ describe('createQueryParameters', () => {
         expect(beforeNavigation).toBeDefined();
         expect(navigation.pushState).toHaveBeenCalledOnce();
         expect(navigation.pushState).toHaveBeenCalledWith('?filter=first', pageState);
+        expect(navigation.replaceState).not.toHaveBeenCalled();
         expect(window.location.search).toBe('?filter=first');
     });
 
-    it('discards a pending update when popstate has already changed the location', async () => {
+    it('restores popstate without scheduling another history write', async () => {
         // Arrange
         render(QueryParametersTestHarness);
         await fireEvent.click(screen.getByRole('button', { name: 'First' }));
@@ -82,7 +132,8 @@ describe('createQueryParameters', () => {
 
         // Assert
         expect(beforeNavigation).toBeDefined();
-        expect(navigation.pushState).not.toHaveBeenCalled();
+        expect(navigation.pushState).toHaveBeenCalledOnce();
+        expect(navigation.replaceState).not.toHaveBeenCalled();
         expect(window.location.search).toBe('?filter=previous');
         expect(screen.getByText('previous').textContent).toBe('previous');
     });
@@ -102,6 +153,7 @@ describe('createQueryParameters', () => {
 
         // Assert
         expect(navigation.pushState).toHaveBeenCalledTimes(2);
+        expect(navigation.replaceState).not.toHaveBeenCalled();
         expect(screen.getByText('first').textContent).toBe('first');
     });
 });
