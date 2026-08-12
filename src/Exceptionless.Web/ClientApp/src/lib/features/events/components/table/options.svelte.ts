@@ -319,6 +319,10 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
     return columns;
 }
 
+export function getStackSortMode(value: null | string | undefined): StackSortMode | undefined {
+    return value === 'stack_frequent' || value === 'stack_recent' ? value : undefined;
+}
+
 function formatTextColumn(value: unknown): string {
     return typeof value === 'string' && value.length > 0 ? value : '—';
 }

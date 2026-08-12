@@ -2,9 +2,17 @@ import { describe, expect, it } from 'vitest';
 
 import type { EventSummaryModel, StackSummaryModel, SummaryTemplateKeys } from '../summary';
 
-import { defaultEventColumnVisibility, defaultStackColumnVisibility, getColumns } from './options.svelte';
+import { defaultEventColumnVisibility, defaultStackColumnVisibility, getColumns, getStackSortMode } from './options.svelte';
 
 describe('event table columns', () => {
+    it('accepts only supported stack sort modes', () => {
+        expect(getStackSortMode('stack_frequent')).toBe('stack_frequent');
+        expect(getStackSortMode('stack_recent')).toBe('stack_recent');
+        expect(getStackSortMode('stack_new')).toBeUndefined();
+        expect(getStackSortMode('-last_occurrence')).toBeUndefined();
+        expect(getStackSortMode(undefined)).toBeUndefined();
+    });
+
     it('uses dedicated stack-mode controls instead of API sort parameters', () => {
         const result = getColumns<StackSummaryModel<SummaryTemplateKeys>>('stack_frequent');
         const columnsById = Object.fromEntries(result.map((column) => [column.id, column]));
