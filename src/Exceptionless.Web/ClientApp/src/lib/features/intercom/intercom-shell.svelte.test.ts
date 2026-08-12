@@ -97,6 +97,10 @@ describe('IntercomShell', () => {
 
         // Assert
         expect(intercomUpdate).toHaveBeenCalledOnce();
+        expect(intercomUpdate).toHaveBeenLastCalledWith({
+            last_request_at: expect.any(Number),
+            user_id: 'user_123'
+        });
 
         // Act
         await rerender({
@@ -107,6 +111,23 @@ describe('IntercomShell', () => {
 
         // Assert
         expect(intercomUpdate).toHaveBeenCalledTimes(2);
+        expect(intercomUpdate).toHaveBeenLastCalledWith({
+            intercom_user_jwt: 'token_1',
+            user_id: 'user_123'
+        });
+    });
+
+    it('does not update when navigation stays within the same normalized route', async () => {
+        const bootOptions = { email: 'user@example.com', userId: 'user_123' } as BootOptions;
+        const routeKey = '/(app)/project/[projectId]/event/[eventId]';
+        const { rerender } = render(IntercomShellTestHarness, {
+            props: { appId: 'app_123', bootOptions, routeKey }
+        });
+        await tick();
+
+        await rerender({ appId: 'app_123', bootOptions, routeKey });
+
+        expect(intercomUpdate).not.toHaveBeenCalled();
     });
 
     it('does not update before the client SDK initializes', async () => {

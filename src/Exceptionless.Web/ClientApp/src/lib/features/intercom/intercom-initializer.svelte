@@ -8,12 +8,12 @@
     import type { Snippet } from 'svelte';
     import type { BootOptions } from 'svelte-intercom';
 
-    import { accessToken } from '$features/auth/index.svelte';
     import { untrack } from 'svelte';
     import { setContext } from 'svelte';
     import { useIntercom } from 'svelte-intercom';
 
     import { INTERCOM_CONTEXT_KEY } from './keys';
+    import { buildIntercomDataUpdate, buildIntercomRouteUpdate } from './updates';
 
     interface Props {
         bootOptions?: BootOptions;
@@ -25,33 +25,44 @@
 
     const intercom = useIntercom();
     let hasBooted = false;
+    let previousBootOptions: BootOptions | undefined;
+    let previousRouteKey: string | undefined;
 
     setContext<IntercomContext>(INTERCOM_CONTEXT_KEY, intercom);
 
     // The provider boots with the initial options. Only update after boot when the route or
     // identity/company data changes; eager or periodic updates create duplicate impressions.
     $effect(() => {
-        void routeKey;
         const options = bootOptions;
+        const currentRouteKey = routeKey;
         if (!options) {
             hasBooted = false;
+            previousBootOptions = undefined;
+            previousRouteKey = undefined;
             return;
         }
 
         if (!hasBooted) {
             hasBooted = true;
+            previousBootOptions = options;
+            previousRouteKey = currentRouteKey;
             return;
         }
 
-        if (typeof window.Intercom === 'function') {
-            untrack(() => intercom.update(options));
+        if (typeof window.Intercom !== 'function') {
+            return;
         }
-    });
 
-    // Shutdown when the user logs out.
-    $effect(() => {
-        if (!accessToken.current) {
-            untrack(() => intercom.shutdown());
+        const priorBootOptions = previousBootOptions!;
+        const bootOptionsChanged = options !== priorBootOptions;
+        const routeChanged = currentRouteKey !== previousRouteKey;
+        previousBootOptions = options;
+        previousRouteKey = currentRouteKey;
+
+        if (bootOptionsChanged) {
+            untrack(() => intercom.update(buildIntercomDataUpdate(priorBootOptions, options)));
+        } else if (routeChanged) {
+            untrack(() => intercom.update(buildIntercomRouteUpdate(options)));
         }
     });
 </script>
