@@ -850,7 +850,7 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task RunAsync_FirstElasticsearchFailure_HealthReportsNoSuccessfulCompletion()
+    public async Task RunAsync_FirstElasticsearchFailure_ChangesHealthFromHealthyToUnhealthy()
     {
         // Arrange
         var job = CreateJob();
@@ -861,12 +861,16 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
             .GetField("_elasticClient", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(job, failingClient);
 
+        var health = await job.CheckHealthAsync(new HealthCheckContext(), TestCancellationToken);
+        Assert.Equal(HealthStatus.Healthy, health.Status);
+        Assert.Equal("Job has not run yet.", health.Description);
+
         // Act
         await Assert.ThrowsAsync<ApplicationException>(() => job.RunAsync(TestCancellationToken));
 
         // Assert
-        var health = await job.CheckHealthAsync(new HealthCheckContext(), TestCancellationToken);
-        Assert.Equal(HealthStatus.Healthy, health.Status);
+        health = await job.CheckHealthAsync(new HealthCheckContext(), TestCancellationToken);
+        Assert.Equal(HealthStatus.Unhealthy, health.Status);
         Assert.Equal("Job has not completed successfully yet.", health.Description);
     }
 

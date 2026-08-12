@@ -42,6 +42,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
     private readonly ILockProvider _lockProvider;
     private DateTime? _lastSuccessfulRunUtc;
     private DateTime? _lastRunProgressUtc;
+    private bool _hasRunAttempted;
     private bool _isRunning;
 
     public CleanupOrphanedDataJob(ExceptionlessElasticConfiguration config, IStackRepository stackRepository,
@@ -518,6 +519,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
     {
         lock (_healthStateLock)
         {
+            _hasRunAttempted = true;
             _isRunning = true;
             _lastRunProgressUtc = _timeProvider.GetUtcNow().UtcDateTime;
         }
@@ -538,6 +540,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
     {
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         DateTime? lastSuccessfulRunUtc;
+        bool hasRunAttempted;
         lock (_healthStateLock)
         {
             if (_isRunning)
@@ -549,10 +552,15 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             }
 
             lastSuccessfulRunUtc = _lastSuccessfulRunUtc;
+            hasRunAttempted = _hasRunAttempted;
         }
 
         if (!lastSuccessfulRunUtc.HasValue)
-            return Task.FromResult(HealthCheckResult.Healthy("Job has not completed successfully yet."));
+        {
+            return Task.FromResult(hasRunAttempted
+                ? HealthCheckResult.Unhealthy("Job has not completed successfully yet.")
+                : HealthCheckResult.Healthy("Job has not run yet."));
+        }
 
         if (utcNow.Subtract(lastSuccessfulRunUtc.Value) > SuccessfulRunHealthWindow)
             return Task.FromResult(HealthCheckResult.Unhealthy("Job has not completed successfully in the last 9 hours."));
