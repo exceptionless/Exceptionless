@@ -2,7 +2,7 @@ import type { ProductTourProgress } from '$features/users/models';
 
 import { resolve } from '$app/paths';
 
-import type { ProductTourContext, ProductTourDefinition, ProductTourListItem, ProductTourStartAction } from './types';
+import type { ProductTourContext, ProductTourDefinition, ProductTourListItem, ProductTourStartAction, ProductTourStep } from './types';
 
 import { PRODUCT_TOUR_ANCHORS } from './anchors';
 
@@ -34,7 +34,7 @@ function getConfigureProjectStartAction(context: ProductTourContext): ProductTou
 
 function getInvestigateErrorStartAction(context: ProductTourContext): ProductTourStartAction {
     if (context.openEventType === 'error') {
-        return { stepId: 'inspect-details', type: 'launch' };
+        return { stepId: 'stack-summary', type: 'launch' };
     }
 
     const destination = `${resolve('/(app)/event')}?time=all&type=error`;
@@ -50,6 +50,113 @@ function getInvestigateErrorStartAction(context: ProductTourContext): ProductTou
         type: 'confirm-navigation'
     };
 }
+
+export const investigateErrorSteps: readonly ProductTourStep[] = [
+    {
+        anchor: PRODUCT_TOUR_ANCHORS.eventFilters,
+        description: 'Errors are already selected. Narrow the list by project, status, date, version, tags, or search terms when you need a specific incident.',
+        id: 'filter-errors',
+        title: 'Start with the right errors'
+    },
+    {
+        anchor: PRODUCT_TOUR_ANCHORS.eventList,
+        description: 'Choose an error row to open its detail sheet. The guide continues only after a real error report is loaded.',
+        id: 'choose-error',
+        showDone: false,
+        title: 'Open a real error'
+    },
+    {
+        anchor: PRODUCT_TOUR_ANCHORS.eventStack,
+        description:
+            'The stack groups matching occurrences into one issue. Use its title, total events, affected users, first and last occurrence, and trend to judge scope and impact.',
+        id: 'stack-summary',
+        presentation: 'inline',
+        title: 'Understand the grouped issue',
+        waitForElement: 60000
+    },
+    {
+        anchor: PRODUCT_TOUR_ANCHORS.eventStackTriage,
+        description:
+            'Status tracks the team workflow: open, fixed, snoozed, ignored, or discarded. Options manage critical occurrences, external promotion, references, stacking information, and deletion. These actions change shared state, so this guide will not click them.',
+        id: 'stack-triage',
+        presentation: 'inline',
+        title: 'Triage deliberately',
+        waitForElement: 60000
+    },
+    {
+        anchor: PRODUCT_TOUR_ANCHORS.eventOccurrence,
+        description:
+            'Below the stack is this specific occurrence. Its timestamp, raw JSON, and older/newer controls help you compare what happened at one moment with neighboring events.',
+        id: 'event-occurrence',
+        presentation: 'inline',
+        title: 'Inspect the occurrence'
+    },
+    {
+        anchor: PRODUCT_TOUR_ANCHORS.eventTabOverview,
+        description: 'Overview summarizes the message and the most useful event fields. Field filter icons can turn evidence into a narrower Events query.',
+        id: 'tab-overview',
+        presentation: 'inline',
+        title: 'Begin with the overview'
+    },
+    {
+        anchor: PRODUCT_TOUR_ANCHORS.eventTabException,
+        description: 'Exception shows the error type, message, stack trace, and inner exceptions. Start here when you need the failing code path.',
+        id: 'tab-exception',
+        optional: true,
+        presentation: 'inline',
+        title: 'Follow the exception'
+    },
+    {
+        anchor: PRODUCT_TOUR_ANCHORS.eventTabRequest,
+        description: 'Request captures the URL, HTTP method, client, headers, cookies, and other request data that may explain how the failure was reached.',
+        id: 'tab-request',
+        optional: true,
+        presentation: 'inline',
+        title: 'Reconstruct the request'
+    },
+    {
+        anchor: PRODUCT_TOUR_ANCHORS.eventTabEnvironment,
+        description: 'Environment identifies the machine, runtime, architecture, and process context so you can spot deployment-specific failures.',
+        id: 'tab-environment',
+        optional: true,
+        presentation: 'inline',
+        title: 'Check where it happened'
+    },
+    {
+        anchor: PRODUCT_TOUR_ANCHORS.eventTabTrace,
+        description: 'Trace Log provides the diagnostic trail captured around this occurrence. It appears only when trace data was submitted.',
+        id: 'tab-trace',
+        optional: true,
+        presentation: 'inline',
+        title: 'Read the surrounding trace'
+    },
+    {
+        anchor: PRODUCT_TOUR_ANCHORS.eventTabSession,
+        description: 'Session Events shows nearby activity from the same session, helping you understand the actions that led to the error.',
+        id: 'tab-session',
+        optional: true,
+        presentation: 'inline',
+        title: 'Follow the user session'
+    },
+    {
+        anchor: PRODUCT_TOUR_ANCHORS.eventTabExtendedData,
+        description:
+            'Extended Data contains application-specific values that did not fit the standard fields. Treat it as supporting evidence after the core exception and request details.',
+        id: 'tab-extended-data',
+        optional: true,
+        presentation: 'inline',
+        title: 'Review custom context'
+    },
+    {
+        anchor: PRODUCT_TOUR_ANCHORS.eventStackFilter,
+        description:
+            'When you are ready to compare occurrences, use Show all events to filter the Events list to this stack. The guide leaves the page unchanged so you decide when to pivot.',
+        id: 'filter-stack-events',
+        presentation: 'inline',
+        showDone: true,
+        title: 'Compare every occurrence'
+    }
+] as const;
 
 function requireApplicationShell(context: ProductTourContext) {
     if (context.isSetupPage || !context.organizationId) {
@@ -277,31 +384,14 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
         version: 1
     },
     {
-        description: 'Open a real error and learn where to find its exception, request, environment, and custom data.',
+        description: 'Filter to a real error, assess its stack and status, then inspect the evidence available for that occurrence.',
         getAvailability: requireErrorEvent,
         getStartAction: getInvestigateErrorStartAction,
-        getSteps: () => [
-            {
-                anchor: PRODUCT_TOUR_ANCHORS.eventList,
-                description: 'Choose an error row to open its detail sheet. The guide will continue when the error report is loaded.',
-                id: 'choose-error',
-                showDone: false,
-                title: 'Open a real error'
-            },
-            {
-                anchor: PRODUCT_TOUR_ANCHORS.eventDetails,
-                description: 'Review the summary and the available Exception, Request, Environment, trace, session, and extended-data tabs.',
-                id: 'inspect-details',
-                presentation: 'inline',
-                showDone: true,
-                title: 'Investigate the evidence',
-                waitForElement: 60000
-            }
-        ],
+        getSteps: () => [...investigateErrorSteps],
         id: 'investigate-error',
-        keywords: ['error report', 'event details', 'exception', 'request', 'environment'],
+        keywords: ['error report', 'event details', 'exception', 'request', 'environment', 'filter', 'stack', 'status', 'triage'],
         title: 'Investigate an error',
-        version: 1
+        version: 2
     },
     {
         description: 'See how Exie uses the current page as context without sending a prompt.',

@@ -4,6 +4,7 @@
     import Info from '@lucide/svelte/icons/info';
 
     interface Props {
+        continueLabel?: string;
         description: string;
         onContinue?: () => void;
         onDismiss: () => void;
@@ -11,7 +12,7 @@
         tourId: string;
     }
 
-    let { description, onContinue, onDismiss, title, tourId }: Props = $props();
+    let { continueLabel = 'Continue', description, onContinue, onDismiss, title, tourId }: Props = $props();
 </script>
 
 <Alert.Root data-product-tour-inline={tourId}>
@@ -21,7 +22,7 @@
         {description}
         <div class="mt-2 flex flex-wrap gap-2">
             {#if onContinue}
-                <Button onclick={onContinue} size="sm" type="button">Continue</Button>
+                <Button onclick={onContinue} size="sm" type="button">{continueLabel}</Button>
             {/if}
             <Button onclick={onDismiss} size="sm" type="button" variant="outline">End guide</Button>
         </div>

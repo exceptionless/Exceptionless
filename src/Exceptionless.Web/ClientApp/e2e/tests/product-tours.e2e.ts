@@ -134,6 +134,8 @@ test('Investigate an error resumes after navigation and advances only after an e
     await expect(page.getByText(e2eScenario.message)).toBeVisible({ timeout: 30_000 });
     await startTourFromCommand(page, 'Investigate an error');
     const tour = page.locator('.driver-popover');
+    await expect(tour.getByText('Start with the right errors')).toBeVisible();
+    await tour.getByRole('button', { name: 'Next' }).click();
     await expect(tour.getByText('Open a real error')).toBeVisible();
     await expect(page).toHaveURL(/\/next\/event\?time=all&type=error/);
     await tour.getByRole('button', { name: 'Close' }).click();
@@ -143,20 +145,39 @@ test('Investigate an error resumes after navigation and advances only after an e
     const navigationConfirmation = page.getByRole('alertdialog', { name: 'Open Errors?' });
     await expect(navigationConfirmation).toBeVisible();
     await navigationConfirmation.getByRole('button', { name: 'Open Errors' }).click();
+    await expect(tour.getByText('Start with the right errors')).toBeVisible();
+    await tour.getByRole('button', { name: 'Next' }).click();
     await expect(tour.getByText('Open a real error')).toBeVisible();
     await expect(page).toHaveURL(/\/next\/event\?time=all&type=error/);
     await page.screenshot({ fullPage: true, path: testInfo.outputPath('investigate-error-list.png') });
     await page.locator('tr').filter({ hasText: e2eScenario.message }).first().click();
     const investigationCallout = page.locator('[data-product-tour-inline="investigate-error"]');
-    await expect(investigationCallout.getByText('Investigate the evidence')).toBeVisible({ timeout: 30_000 });
+    await expect(investigationCallout.getByText('Understand the grouped issue')).toBeVisible({ timeout: 30_000 });
     await page.screenshot({ fullPage: true, path: testInfo.outputPath('investigate-error-details.png') });
-    await investigationCallout.getByRole('button', { name: 'Continue' }).click();
-    await expect(page.getByText('Investigate the evidence')).toBeHidden();
+
+    for (const title of [
+        'Triage deliberately',
+        'Inspect the occurrence',
+        'Begin with the overview',
+        'Follow the exception',
+        'Reconstruct the request',
+        'Check where it happened',
+        'Review custom context',
+        'Compare every occurrence'
+    ]) {
+        await investigationCallout.getByRole('button', { name: 'Continue' }).click();
+        await expect(investigationCallout.getByText(title)).toBeVisible();
+    }
+
+    await expect(page.locator('[data-tour="event-tab-extended-data"]')).toHaveAttribute('data-state', 'active');
+    await investigationCallout.getByRole('button', { name: 'Finish guide' }).click();
+    await expect(investigationCallout).toBeHidden();
 
     await page.goto(`/next/event/${event.id}`);
     await expect(page.locator('[data-tour="event-details"]')).toBeVisible({ timeout: 30_000 });
     await startTourFromCommand(page, 'Investigate an error');
-    await expect(investigationCallout.getByText('Investigate the evidence')).toBeVisible();
+    await expect(investigationCallout.getByText('Understand the grouped issue')).toBeVisible();
+    await investigationCallout.getByRole('button', { name: 'Continue' }).click();
     await investigationCallout.getByRole('button', { name: 'End guide' }).click();
     expect(event.type).toBe('error');
 
@@ -171,6 +192,7 @@ test('Investigate an error resumes after navigation and advances only after an e
     const usageEvent = await e2eApi.pollForEventByReference(e2eScenario.userToken, e2eScenario.projectId, usageReferenceId);
     await page.goto(`/next/event/${usageEvent.id}`);
     await expect(page.locator('[data-tour="event-details"][data-event-type="usage"]')).toBeVisible({ timeout: 30_000 });
+    await page.waitForURL(/\/next\/stack\/[^/]+\/event\/[^/]+/);
 
     const usageUrl = page.url();
     await startTourFromCommand(page, 'Investigate an error');

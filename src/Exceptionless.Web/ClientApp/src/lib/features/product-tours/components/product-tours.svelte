@@ -9,7 +9,7 @@
     import * as AlertDialog from '$comp/ui/alert-dialog';
     import { submitFeatureUsage } from '$features/auth/exceptionless-session';
     import { putCurrentUserProductTour } from '$features/users/api.svelte';
-    import { tick } from 'svelte';
+    import { onMount, tick } from 'svelte';
     import { toast } from 'svelte-sonner';
 
     import type {
@@ -159,8 +159,19 @@
 
     $effect(() => {
         const observer = new MutationObserver(() => (overlayRevision += 1));
-        observer.observe(document.body, { childList: true });
+        observer.observe(document.body, { attributes: true, childList: true, subtree: true });
         return () => observer.disconnect();
+    });
+
+    $effect(() => {
+        void overlayRevision;
+        if (productTourHost.activeTourId !== 'investigate-error' || productTourHost.activeStepId !== 'choose-error') {
+            return;
+        }
+
+        if (getVisibleEventType() === 'error') {
+            onEventOpened('error');
+        }
     });
 
     $effect(() => {
@@ -276,7 +287,7 @@
         exieAnnouncementOpen = false;
         closeOverlays();
         const startAction = item.getStartAction?.({ ...context, openEventType: getVisibleEventType() }) ?? { type: 'launch' };
-        const canLaunchInsideOverlay = startAction.type === 'launch' && startAction.stepId === 'inspect-details';
+        const canLaunchInsideOverlay = startAction.type === 'launch' && startAction.stepId === 'stack-summary';
         if (!(await waitForCompetingOverlaysToClose()) && !canLaunchInsideOverlay) {
             toast.info('Close the open dialog or panel before starting a guided tour.');
             return;
@@ -750,8 +761,8 @@
         const steps = definition.getSteps(context).filter((step) => !step.optional || !step.anchor || hasVisibleTarget(productTourSelector(step.anchor)));
         const index = steps.findIndex((step) => step.id === 'choose-error');
         if (index >= 0) {
-            productTourHost.set('investigate-error', 'inspect-details', source, organizationId);
-            writeProductTourSession({ source, stepId: 'inspect-details', tourId: 'investigate-error', version: definition.version });
+            productTourHost.set('investigate-error', 'stack-summary', source, organizationId);
+            writeProductTourSession({ source, stepId: 'stack-summary', tourId: 'investigate-error', version: definition.version });
             void advance('investigate-error', definition.version, source, steps, index);
         }
     }
@@ -773,7 +784,7 @@
         }
     }
 
-    $effect(() => productTourHost.subscribe(onHostEvent));
+    onMount(() => productTourHost.subscribe(onHostEvent));
 </script>
 
 <ProductTourWelcome

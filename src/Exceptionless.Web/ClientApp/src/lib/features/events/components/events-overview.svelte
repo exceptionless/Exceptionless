@@ -15,6 +15,8 @@
     import * as EventsFacetedFilter from '$features/events/components/filters';
     import { getExtendedDataItems, hasErrorOrSimpleError } from '$features/events/persistent-event';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
+    import { PRODUCT_TOUR_ANCHORS, productTourSelector } from '$features/product-tours/anchors';
+    import { investigateErrorSteps } from '$features/product-tours/catalog';
     import ProductTourInlineCallout from '$features/product-tours/components/product-tour-inline-callout.svelte';
     import { productTourHost } from '$features/product-tours/state.svelte';
     import { getProjectQuery, updateProject } from '$features/projects/api.svelte';
@@ -150,6 +152,54 @@
     let notifiedEventId = $state('');
     let showJsonDialog = $state(false);
 
+    const activeInvestigationStep = $derived(
+        productTourHost.activeTourId === 'investigate-error' ? investigateErrorSteps.find((step) => step.id === productTourHost.activeStepId) : undefined
+    );
+    const activeInvestigationTab = $derived.by(() => {
+        switch (activeInvestigationStep?.id) {
+            case 'tab-environment':
+                return 'Environment';
+            case 'tab-exception':
+                return 'Exception';
+            case 'tab-extended-data':
+                return 'Extended Data';
+            case 'tab-overview':
+                return 'Overview';
+            case 'tab-request':
+                return 'Request';
+            case 'tab-session':
+                return 'Session Events';
+            case 'tab-trace':
+                return 'Trace Log';
+            default:
+                return undefined;
+        }
+    });
+    const isStackInvestigationStep = $derived(activeInvestigationStep?.id === 'stack-summary' || activeInvestigationStep?.id === 'stack-triage');
+    const isEventInvestigationStep = $derived(activeInvestigationStep?.id === 'event-occurrence' || activeInvestigationStep?.id === 'filter-stack-events');
+    const isTabInvestigationStep = $derived(activeInvestigationStep?.id.startsWith('tab-') ?? false);
+
+    function getTabTourAnchor(tab: TabType): string | undefined {
+        switch (tab) {
+            case 'Environment':
+                return PRODUCT_TOUR_ANCHORS.eventTabEnvironment;
+            case 'Exception':
+                return PRODUCT_TOUR_ANCHORS.eventTabException;
+            case 'Extended Data':
+                return PRODUCT_TOUR_ANCHORS.eventTabExtendedData;
+            case 'Overview':
+                return PRODUCT_TOUR_ANCHORS.eventTabOverview;
+            case 'Request':
+                return PRODUCT_TOUR_ANCHORS.eventTabRequest;
+            case 'Session Events':
+                return PRODUCT_TOUR_ANCHORS.eventTabSession;
+            case 'Trace Log':
+                return PRODUCT_TOUR_ANCHORS.eventTabTrace;
+            default:
+                return undefined;
+        }
+    }
+
     function isPromotedTab(tab: TabType): boolean {
         return !!projectQuery.data?.promoted_tabs?.includes(tab);
     }
@@ -258,8 +308,17 @@
         }
     }
 
-    function completeInvestigationTour(): void {
-        productTourHost.complete('investigate-error');
+    function continueInvestigationTour(): void {
+        if (!activeInvestigationStep) {
+            return;
+        }
+
+        if (activeInvestigationStep.id === 'filter-stack-events') {
+            productTourHost.complete('investigate-error');
+            return;
+        }
+
+        productTourHost.advance('investigate-error', activeInvestigationStep.id);
     }
 
     function dismissInvestigationTour(): void {
@@ -279,7 +338,8 @@
     $effect(() => {
         if (event && event.id !== notifiedEventId) {
             notifiedEventId = event.id;
-            productTourHost.eventOpened(event.type);
+            const eventType = hasErrorOrSimpleError(event) ? 'error' : event.type;
+            void tick().then(() => productTourHost.eventOpened(eventType));
             onEventLoaded?.(event);
         }
     });
@@ -290,6 +350,26 @@
             if (tabCount === tabs.length) {
                 updateTabsOverflow();
             }
+        });
+    });
+
+    $effect(() => {
+        const step = activeInvestigationStep;
+        const tab = activeInvestigationTab;
+        if (!event || !step) {
+            return;
+        }
+
+        if (tab && tabs.includes(tab)) {
+            activeTab = tab;
+        }
+
+        void tick().then(() => {
+            if (productTourHost.activeStepId !== step.id || !step.anchor) {
+                return;
+            }
+
+            document.querySelector<HTMLElement>(productTourSelector(step.anchor))?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         });
     });
 
@@ -310,24 +390,40 @@
     });
 </script>
 
-{#if event && productTourHost.activeTourId === 'investigate-error' && productTourHost.activeStepId === 'inspect-details'}
+{#if event && isStackInvestigationStep && activeInvestigationStep}
     <ProductTourInlineCallout
-        description="Review the summary and the available Exception, Request, Environment, trace, session, and extended-data tabs."
-        onContinue={completeInvestigationTour}
+        description={activeInvestigationStep.description}
+        onContinue={continueInvestigationTour}
         onDismiss={dismissInvestigationTour}
-        title="Investigate the evidence"
+        title={activeInvestigationStep.title}
         tourId="investigate-error"
     />
 {/if}
 
-<section data-event-type={event ? (hasErrorOrSimpleError(event) ? 'error' : event.type) : undefined} data-tour={event ? 'event-details' : undefined}>
+<section
+    data-event-type={event ? (hasErrorOrSimpleError(event) ? 'error' : event.type) : undefined}
+    data-tour={event ? PRODUCT_TOUR_ANCHORS.eventDetails : undefined}
+>
     <h4 class="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">Stack</h4>
     {#if event?.stack_id}
-        <StackCard {filterChanged} id={event.stack_id}></StackCard>
+        <div data-tour={PRODUCT_TOUR_ANCHORS.eventStack}>
+            <StackCard {filterChanged} id={event.stack_id}></StackCard>
+        </div>
     {/if}
 </section>
 
-<section class="mt-2">
+{#if event && isEventInvestigationStep && activeInvestigationStep}
+    <ProductTourInlineCallout
+        continueLabel={activeInvestigationStep.id === 'filter-stack-events' ? 'Finish guide' : 'Continue'}
+        description={activeInvestigationStep.description}
+        onContinue={continueInvestigationTour}
+        onDismiss={dismissInvestigationTour}
+        title={activeInvestigationStep.title}
+        tourId="investigate-error"
+    />
+{/if}
+
+<section class="mt-2" data-tour={event ? PRODUCT_TOUR_ANCHORS.eventOccurrence : undefined}>
     <div class="mb-2 flex items-center justify-between">
         <h4 class="text-muted-foreground text-sm font-semibold tracking-wide uppercase">Event</h4>
         <div class="flex items-center gap-1">
@@ -339,6 +435,7 @@
             {#if event?.stack_id}
                 <Button
                     aria-label="Show all events"
+                    data-tour={PRODUCT_TOUR_ANCHORS.eventStackFilter}
                     onclick={() => filterChanged(new EventsFacetedFilter.StringFilter('stack', event!.stack_id))}
                     size="icon-sm"
                     title="Show all events"
@@ -381,6 +478,15 @@
     </Table.Root>
 
     {#if event}
+        {#if isTabInvestigationStep && activeInvestigationStep}
+            <ProductTourInlineCallout
+                description={activeInvestigationStep.description}
+                onContinue={continueInvestigationTour}
+                onDismiss={dismissInvestigationTour}
+                title={activeInvestigationStep.title}
+                tourId="investigate-error"
+            />
+        {/if}
         <Tabs.Root class="mt-4 mb-4" value={activeTab}>
             <div class="relative">
                 {#if canScrollTabsLeft}
@@ -408,6 +514,7 @@
                                 draggedPromotedTab === tab && 'bg-accent/70'
                             ]}
                             draggable={isPromotedTab(tab)}
+                            data-tour={getTabTourAnchor(tab)}
                             ondragstart={(event) => handlePromotedTabDragStart(event, tab)}
                             ondragover={(event) => handlePromotedTabDragOver(event, tab)}
                             ondrop={(event) => handlePromotedTabDrop(event, tab)}

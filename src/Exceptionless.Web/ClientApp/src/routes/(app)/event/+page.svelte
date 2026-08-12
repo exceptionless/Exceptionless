@@ -925,7 +925,7 @@
 <div class="flex flex-col">
     <div class="mb-4 flex flex-wrap items-start gap-2">
         <H3 class="my-0 shrink-0">{pageTitle}</H3>
-        <div class="flex min-w-0 flex-1 flex-wrap items-start gap-2">
+        <div class="flex min-w-0 flex-1 flex-wrap items-start gap-2" data-tour="event-filters">
             <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
                 <OrganizationDefaultsFacetedFilterBuilder />
             </FacetedFilter.Root>

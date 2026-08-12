@@ -54,7 +54,7 @@ describe('product tour catalog', () => {
         const investigate = productTourCatalog.find((tour) => tour.id === 'investigate-error')!;
 
         expect(investigate.getStartAction?.(context({ openEventType: 'error', pathname: '/next/event/error-id' }))).toEqual({
-            stepId: 'inspect-details',
+            stepId: 'stack-summary',
             type: 'launch'
         });
         expect(investigate.getStartAction?.(context({ openEventType: 'usage', pathname: '/next/event/usage-id' }))).toMatchObject({
@@ -65,6 +65,29 @@ describe('product tour catalog', () => {
             destination: '/next/event?time=all&type=error',
             type: 'navigate'
         });
+    });
+
+    it('teaches error filtering, stack triage, occurrence evidence, and only the tabs that are present', () => {
+        const investigate = productTourCatalog.find((tour) => tour.id === 'investigate-error')!;
+        const steps = investigate.getSteps(context());
+
+        expect(steps.map((step) => step.id)).toEqual([
+            'filter-errors',
+            'choose-error',
+            'stack-summary',
+            'stack-triage',
+            'event-occurrence',
+            'tab-overview',
+            'tab-exception',
+            'tab-request',
+            'tab-environment',
+            'tab-trace',
+            'tab-session',
+            'tab-extended-data',
+            'filter-stack-events'
+        ]);
+        expect(steps.filter((step) => step.id.startsWith('tab-') && step.id !== 'tab-overview').every((step) => step.optional)).toBe(true);
+        expect(steps.filter((step) => ['filter-stack-events', 'stack-triage'].includes(step.id)).every((step) => !step.advanceOnClick)).toBe(true);
     });
 
     it('requires confirmation before setup consumes capacity when every project is configured', () => {
