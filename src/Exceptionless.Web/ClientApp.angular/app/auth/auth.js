@@ -1,6 +1,19 @@
 (function () {
     "use strict";
 
+    function createOAuthState() {
+        if (typeof window.crypto.randomUUID === "function") {
+            return window.crypto.randomUUID();
+        }
+
+        var bytes = window.crypto.getRandomValues(new Uint8Array(16));
+        return Array.prototype.map
+            .call(bytes, function (value) {
+                return ("0" + value.toString(16)).slice(-2);
+            })
+            .join("");
+    }
+
     angular
         .module("app.auth", [
             "directives.inputMatch",
@@ -52,7 +65,7 @@
                     scope: ["User.Read"],
                     scopeDelimiter: " ",
                     state: function () {
-                        return window.crypto.randomUUID();
+                        return createOAuthState();
                     },
                     popupOptions: { width: 500, height: 560 },
                 });
