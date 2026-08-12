@@ -2,6 +2,7 @@ import { browser, building } from '$app/environment';
 import { afterNavigate, beforeNavigate, pushState, replaceState } from '$app/navigation';
 import { page } from '$app/state';
 import { onDestroy } from 'svelte';
+import { SvelteURL } from 'svelte/reactivity';
 
 import type { CreateQueryParametersOptions, QueryParameterSchema, QueryParameterState } from './types.js';
 
@@ -21,15 +22,22 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     // for an immediate Back action and can navigate a newly opened tab to about:blank.
     let isCoalescingPushHistoryEntry = false;
     let coalescingStartUrl: string | undefined;
+    let coalescingEntryUrl: string | undefined;
     let pendingReplacementUrl: string | undefined;
-    const getCurrentUrl = () => {
-        const query = createSearchParams(window.location.search).toString();
-        return `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`;
+    const normalizeUrl = (url: string) => {
+        const value = new SvelteURL(url, window.location.origin);
+        value.searchParams.sort();
+        const query = value.searchParams.toString();
+
+        return `${value.pathname}${query ? `?${query}` : ''}${value.hash}`;
     };
+
+    const getCurrentUrl = () => normalizeUrl(`${window.location.pathname}${window.location.search}${window.location.hash}`);
 
     const settlePushHistoryEntry = () => {
         isCoalescingPushHistoryEntry = false;
         coalescingStartUrl = undefined;
+        coalescingEntryUrl = undefined;
     };
 
     const flushPendingReplacement = () => {
@@ -40,8 +48,10 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     };
 
     const finalizePushHistoryEntry = () => {
-        flushPendingReplacement();
-        settlePushHistoryEntry();
+        if (!coalescingEntryUrl || getCurrentUrl() === coalescingEntryUrl) {
+            flushPendingReplacement();
+            settlePushHistoryEntry();
+        }
     };
 
     const schedulePushHistoryEntryFinalization = createDebouncedFunction(finalizePushHistoryEntry, debounceMilliseconds);
@@ -59,8 +69,9 @@ export function createQueryParameters<T extends QueryParameterSchema>({
         } else if (!isCoalescingPushHistoryEntry) {
             coalescingStartUrl = getCurrentUrl();
             pushState(url, page.state);
+            coalescingEntryUrl = normalizeUrl(url);
             isCoalescingPushHistoryEntry = true;
-        } else if (url === coalescingStartUrl) {
+        } else if (normalizeUrl(url) === coalescingStartUrl) {
             // Keep the transient state as a meaningful Back target instead of
             // replacing it with a duplicate of the entry behind it.
             schedulePushHistoryEntryFinalization.cancel();
@@ -79,7 +90,16 @@ export function createQueryParameters<T extends QueryParameterSchema>({
 
     const handleBeforeNavigate = ({ type }: { type: string }) => {
         schedulePushHistoryEntryFinalization.cancel();
-        if (type !== 'popstate') {
+        if (type === 'popstate') {
+            if (pendingReplacementUrl && getCurrentUrl() === coalescingEntryUrl) {
+                flushPendingReplacement();
+                settlePushHistoryEntry();
+            }
+
+            return;
+        }
+
+        if (getCurrentUrl() === coalescingEntryUrl) {
             flushPendingReplacement();
         } else {
             pendingReplacementUrl = undefined;
@@ -88,9 +108,14 @@ export function createQueryParameters<T extends QueryParameterSchema>({
         settlePushHistoryEntry();
     };
 
+    const handleBeforeUnload = () => {
+        schedulePushHistoryEntryFinalization.cancel();
+        finalizePushHistoryEntry();
+    };
+
     beforeNavigate(handleBeforeNavigate);
     if (browser) {
-        window.addEventListener('beforeunload', flushPendingReplacement);
+        window.addEventListener('beforeunload', handleBeforeUnload);
     }
 
     onDestroy(finalizePushHistoryEntry);
@@ -128,13 +153,13 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     onDestroy(() => {
         if (browser) {
             window.removeEventListener('popstate', synchronizeStateFromLocation);
-            window.removeEventListener('beforeunload', flushPendingReplacement);
+            window.removeEventListener('beforeunload', handleBeforeUnload);
         }
     });
 
-    afterNavigate(({ to }) => {
-        if (to) {
-            synchronizeState(to.url.search);
+    afterNavigate(() => {
+        if (browser) {
+            synchronizeStateFromLocation();
         }
     });
 

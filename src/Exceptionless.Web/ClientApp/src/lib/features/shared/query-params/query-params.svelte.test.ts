@@ -17,7 +17,9 @@ vi.mock('$app/navigation', () => navigation);
 vi.mock('$app/state', () => ({
     page: {
         state: pageState,
-        url: new URL('http://localhost/')
+        get url() {
+            return new URL(window.location.href);
+        }
     }
 }));
 
@@ -160,6 +162,24 @@ describe('createQueryParameters', () => {
         expect(navigation.replaceState).not.toHaveBeenCalled();
     });
 
+    it('recognizes an equivalent starting URL with reordered parameters', async () => {
+        // Arrange
+        window.history.replaceState({}, '', '/?project=p');
+        render(QueryParametersTestHarness);
+        await fireEvent.click(screen.getByRole('button', { name: 'Alpha' }));
+        await vi.advanceTimersByTimeAsync(200);
+        await fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+
+        // Act
+        await fireEvent.click(screen.getByRole('button', { name: 'Alpha' }));
+
+        // Assert
+        expect(navigation.pushState).toHaveBeenCalledTimes(3);
+        expect(navigation.pushState).toHaveBeenNthCalledWith(2, '/?project=p', pageState);
+        expect(navigation.pushState).toHaveBeenNthCalledWith(3, '/?project=p&filter=a', pageState);
+        expect(navigation.replaceState).not.toHaveBeenCalled();
+    });
+
     it('does not add a delayed history write after full navigation', async () => {
         // Arrange
         render(QueryParametersTestHarness);
@@ -213,6 +233,37 @@ describe('createQueryParameters', () => {
         expect(navigation.replaceState).not.toHaveBeenCalled();
         expect(window.location.search).toBe('?filter=previous');
         expect(screen.getByText('previous').textContent).toBe('previous');
+    });
+
+    it('preserves a throttled replacement across immediate Back and Forward', async () => {
+        // Arrange
+        render(QueryParametersTestHarness);
+        await fireEvent.click(screen.getByRole('button', { name: 'First' }));
+        await fireEvent.click(screen.getByRole('button', { name: 'Second' }));
+        const beforeNavigation = navigation.beforeNavigate.mock.calls[0]?.[0] as ((navigation: { type: string }) => void) | undefined;
+
+        // Act: traverse Back before the replacement settles.
+        window.history.replaceState(pageState, '', '/');
+        beforeNavigation?.({ type: 'popstate' });
+        window.dispatchEvent(new PopStateEvent('popstate', { state: pageState }));
+        await tick();
+
+        // Assert: the destination is untouched and the pending source value is retained.
+        expect(navigation.replaceState).not.toHaveBeenCalled();
+        expect(window.location.search).toBe('');
+        expect(document.querySelector('output')?.textContent).toBe('');
+
+        // Act: traverse Forward to the source entry.
+        window.history.replaceState(pageState, '', '/?filter=first');
+        beforeNavigation?.({ type: 'popstate' });
+        window.dispatchEvent(new PopStateEvent('popstate', { state: pageState }));
+        await tick();
+
+        // Assert: the source entry and reactive state restore the latest value.
+        expect(navigation.replaceState).toHaveBeenCalledOnce();
+        expect(navigation.replaceState).toHaveBeenCalledWith('/?filter=second', pageState);
+        expect(window.location.search).toBe('?filter=second');
+        expect(screen.getByText('second').textContent).toBe('second');
     });
 
     it('restores reactive state when shallow history is traversed', async () => {
