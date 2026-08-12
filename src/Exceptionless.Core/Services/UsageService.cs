@@ -122,12 +122,18 @@ public class UsageService
                 var bucketDiscarded = await _cache.GetAsync<int>(GetBucketDiscardedCacheKey(pendingBucketUtc, organizationId));
                 var bucketTooBig = await _cache.GetAsync<int>(GetBucketTooBigCacheKey(pendingBucketUtc, organizationId));
                 var bucketDeleted = await _cache.GetAsync<int>(GetBucketDeletedCacheKey(pendingBucketUtc, organizationId));
+                var hourlyThrottleTransition = await _cache.GetAsync<bool>(GetHourlyThrottleTransitionKey(pendingBucketUtc, organizationId));
 
                 bool hasIngestion = bucketTotal > 0 || (bucketBlocked?.Value ?? 0) > 0 || (bucketDiscarded?.Value ?? 0) > 0 || (bucketTooBig?.Value ?? 0) > 0;
                 if (hasIngestion)
                 {
                     organization.LastEventDateUtc = _timeProvider.GetUtcNow().UtcDateTime;
                 }
+
+                int bucketLimit = GetBucketEventLimit(organization.GetMaxEventsPerMonthWithBonus(_timeProvider), pendingBucketUtc);
+                bool hourlyThrottleCleared = hourlyThrottleTransition is { HasValue: true } transition
+                    ? transition.Value
+                    : bucketLimit >= 0 && bucketTotal >= bucketLimit;
 
                 var usage = organization.GetUsage(pendingBucketUtc, _timeProvider);
                 usage.Limit = organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
@@ -149,7 +155,8 @@ public class UsageService
                 // Persist the authoritative marker with the totals. A retry after this save can
                 // finish Redis acknowledgement and cleanup without applying the bucket twice.
                 organization.LastAppliedUsageBucketUtc = pendingBucketUtc;
-                await _organizationRepository.SaveAsync(organization);
+                // Routine usage updates stay silent, but clients need one refresh when hourly throttling clears.
+                await _organizationRepository.SaveAsync(organization, o => o.Notifications(hourlyThrottleCleared));
                 await _cache.SetAsync(GetV3BucketProcessedKey(pendingBucketUtc, organizationId), true, _idempotencyWindow);
                 await CompleteOrganizationUsageBucketAsync(organization, pendingBucketUtc, utcNow);
             });
@@ -260,7 +267,8 @@ public class UsageService
                 project.TrimUsage(_timeProvider);
 
                 project.LastAppliedUsageBucketUtc = pendingBucketUtc;
-                await _projectRepository.SaveAsync(project);
+                // Project configuration changes have their own save path and should remain the source of ProjectChanged messages.
+                await _projectRepository.SaveAsync(project, o => o.Notifications(false));
                 await _cache.SetAsync(GetV3BucketProcessedKey(pendingBucketUtc, project.OrganizationId, projectId), true, _idempotencyWindow);
                 await CompleteProjectUsageBucketAsync(project, pendingBucketUtc, utcNow);
             });
@@ -305,7 +313,8 @@ public class UsageService
                 GetBucketDiscardedCacheKey(bucketUtc, organization.Id),
                 GetBucketTooBigCacheKey(bucketUtc, organization.Id),
                 GetBucketDeletedCacheKey(bucketUtc, organization.Id),
-                GetThrottledKey(bucketUtc, organization.Id)
+                GetThrottledKey(bucketUtc, organization.Id),
+                GetHourlyThrottleTransitionKey(bucketUtc, organization.Id)
             }),
             _cache.SetAsync(GetTotalCacheKey(utcNow, organization.Id), usage.Total, TimeSpan.FromHours(8)));
     }
