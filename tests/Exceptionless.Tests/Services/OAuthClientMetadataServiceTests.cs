@@ -53,6 +53,34 @@ public sealed class OAuthClientMetadataServiceTests
     }
 
     [Fact]
+    public async Task GetClientMetadataAsync_PrivateResponse_DoesNotCacheDocument()
+    {
+        // Arrange
+        var handler = new StubHttpMessageHandler(CreateMetadataResponse);
+        using var service = CreateService(handler);
+
+        // Act
+        var firstResult = await service.ClientMetadataService.GetClientMetadataAsync("https://oauth.example/client.json");
+        var secondResult = await service.ClientMetadataService.GetClientMetadataAsync("https://oauth.example/client.json");
+
+        // Assert
+        Assert.NotNull(firstResult);
+        Assert.NotNull(secondResult);
+        Assert.Equal(2, handler.RequestCount);
+
+        static HttpResponseMessage CreateMetadataResponse()
+        {
+            var response = CreateSuccessfulMetadataResponse();
+            response.Headers.CacheControl = new CacheControlHeaderValue
+            {
+                Private = true,
+                MaxAge = TimeSpan.FromHours(1)
+            };
+            return response;
+        }
+    }
+
+    [Fact]
     public async Task GetClientMetadataAsync_MaxAgeResponse_CachesDocument()
     {
         // Arrange

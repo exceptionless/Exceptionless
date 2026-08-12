@@ -110,7 +110,7 @@ public sealed class OAuthClientMetadataService(HttpClient httpClient, OAuthServe
     private TimeSpan? GetCacheLifetime(HttpResponseMessage response)
     {
         var cacheControl = response.Headers.CacheControl;
-        if (cacheControl is { NoStore: true } or { NoCache: true })
+        if (cacheControl is { NoStore: true } or { NoCache: true } or { Private: true })
             return null;
 
         TimeSpan responseAge = response.Headers.Age ?? TimeSpan.Zero;
