@@ -46,12 +46,35 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     const createHistoryState = (entryId: string | undefined) => ({ ...page.state, ...(entryId ? { [queryHistoryEntryIdKey]: entryId } : {}) }) as App.PageState;
 
     const getPendingReplacementStorageKey = (entryId: string) => `${pendingReplacementStoragePrefix}${entryId}`;
+    const getStoredPendingReplacement = (entryId: string) => {
+        try {
+            return sessionStorage.getItem(getPendingReplacementStorageKey(entryId)) ?? undefined;
+        } catch {
+            return undefined;
+        }
+    };
+
+    const removeStoredPendingReplacement = (entryId: string) => {
+        try {
+            sessionStorage.removeItem(getPendingReplacementStorageKey(entryId));
+        } catch {
+            // Storage can be denied by browser policy; in-memory coalescing still works.
+        }
+    };
+
+    const storePendingReplacement = (entryId: string, url: string) => {
+        try {
+            sessionStorage.setItem(getPendingReplacementStorageKey(entryId), url);
+        } catch {
+            // Storage can be denied by browser policy; in-memory coalescing still works.
+        }
+    };
 
     if (browser) {
         const currentHistoryEntryId = getCurrentHistoryEntryId();
-        const retainedReplacementUrl = currentHistoryEntryId ? sessionStorage.getItem(getPendingReplacementStorageKey(currentHistoryEntryId)) : undefined;
+        const retainedReplacementUrl = currentHistoryEntryId ? getStoredPendingReplacement(currentHistoryEntryId) : undefined;
         if (currentHistoryEntryId && retainedReplacementUrl) {
-            sessionStorage.removeItem(getPendingReplacementStorageKey(currentHistoryEntryId));
+            removeStoredPendingReplacement(currentHistoryEntryId);
             replaceState(retainedReplacementUrl, createHistoryState(currentHistoryEntryId));
             searchParams = createSearchParams(window.location.search);
             Object.assign(current, parseQueryParameters(searchParams, schema, defaults));
@@ -66,7 +89,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
 
     const discardPendingReplacement = () => {
         if (browser && coalescingEntryId) {
-            sessionStorage.removeItem(getPendingReplacementStorageKey(coalescingEntryId));
+            removeStoredPendingReplacement(coalescingEntryId);
         }
 
         pendingReplacementUrl = undefined;
@@ -123,7 +146,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
             // Avoid exhausting browser History API mutation quotas during sustained input.
             pendingReplacementUrl = url;
             if (browser && coalescingEntryId) {
-                sessionStorage.setItem(getPendingReplacementStorageKey(coalescingEntryId), url);
+                storePendingReplacement(coalescingEntryId, url);
             }
         }
 
@@ -135,7 +158,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     const handleBeforeNavigate = ({ type }: { type: string }) => {
         schedulePushHistoryEntryFinalization.cancel();
         if (type === 'popstate') {
-            if (pendingReplacementUrl && getCurrentHistoryEntryId() === coalescingEntryId) {
+            if (coalescingEntryId && getCurrentHistoryEntryId() === coalescingEntryId) {
                 flushPendingReplacement();
                 settlePushHistoryEntry();
             }
@@ -191,7 +214,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
 
     const synchronizeStateFromLocation = () => {
         schedulePushHistoryEntryFinalization.cancel();
-        if (pendingReplacementUrl && getCurrentHistoryEntryId() === coalescingEntryId) {
+        if (coalescingEntryId && getCurrentHistoryEntryId() === coalescingEntryId) {
             flushPendingReplacement();
             settlePushHistoryEntry();
         }

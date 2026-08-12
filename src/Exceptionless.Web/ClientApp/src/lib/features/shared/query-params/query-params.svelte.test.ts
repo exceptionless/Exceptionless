@@ -43,6 +43,7 @@ describe('createQueryParameters', () => {
     });
 
     afterEach(() => {
+        vi.restoreAllMocks();
         vi.useRealTimers();
     });
 
@@ -273,6 +274,54 @@ describe('createQueryParameters', () => {
         expect(navigation.replaceState).toHaveBeenCalledOnce();
         expect(navigation.replaceState).toHaveBeenCalledWith('/?filter=second', queryHistoryState());
         expect(window.location.search).toBe('?filter=second');
+        expect(screen.getByText('second').textContent).toBe('second');
+    });
+
+    it('settles the source entry after Back and Forward without a pending replacement', async () => {
+        // Arrange
+        render(QueryParametersTestHarness);
+        await fireEvent.click(screen.getByRole('button', { name: 'First' }));
+        const sourceEntryState = window.history.state;
+
+        // Act: traverse away from and back to the source before its timer settles.
+        window.history.replaceState({}, '', '/');
+        window.dispatchEvent(new PopStateEvent('popstate', { state: pageState }));
+        await tick();
+        window.history.replaceState(sourceEntryState, '', '/?filter=first');
+        window.dispatchEvent(new PopStateEvent('popstate', { state: sourceEntryState }));
+        await tick();
+        await fireEvent.click(screen.getByRole('button', { name: 'Second' }));
+
+        // Assert: the later edit starts a new burst instead of replacing the old entry.
+        expect(navigation.pushState).toHaveBeenCalledTimes(2);
+        expect(navigation.pushState).toHaveBeenNthCalledWith(2, '/?filter=second', queryHistoryState());
+        expect(navigation.replaceState).not.toHaveBeenCalled();
+    });
+
+    it('falls back to in-memory coalescing when session storage is unavailable', async () => {
+        // Arrange
+        window.history.replaceState(createSvelteKitHistoryState({ [queryHistoryEntryIdKey]: 'source-entry' }), '', '/');
+        const storageError = new DOMException('Storage is unavailable', 'SecurityError');
+        vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+            throw storageError;
+        });
+        vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+            throw storageError;
+        });
+        vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
+            throw storageError;
+        });
+        render(QueryParametersTestHarness);
+
+        // Act
+        await fireEvent.click(screen.getByRole('button', { name: 'First' }));
+        await fireEvent.click(screen.getByRole('button', { name: 'Second' }));
+        await vi.advanceTimersByTimeAsync(200);
+
+        // Assert
+        expect(navigation.pushState).toHaveBeenCalledOnce();
+        expect(navigation.replaceState).toHaveBeenCalledOnce();
+        expect(navigation.replaceState).toHaveBeenCalledWith('/?filter=second', queryHistoryState());
         expect(screen.getByText('second').textContent).toBe('second');
     });
 
