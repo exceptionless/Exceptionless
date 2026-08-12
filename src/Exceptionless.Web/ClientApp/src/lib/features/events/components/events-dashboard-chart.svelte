@@ -72,6 +72,8 @@
                         if (start instanceof Date && end instanceof Date) {
                             onRangeSelect?.(start, end);
                         }
+
+                        e.brush.reset();
                     }
                 }}
                 props={{

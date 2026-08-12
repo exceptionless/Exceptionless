@@ -18,7 +18,6 @@
     import { filterUsesPremiumFeatures, getSearchResourceForPathname } from '$features/events/premium-filter';
     import { buildIntercomBootOptions, IntercomShell } from '$features/intercom';
     import { shouldLoadIntercomOrganization } from '$features/intercom/config';
-    import { getIntercomRouteKey } from '$features/intercom/updates';
     import Notifications from '$features/notifications/components/notifications.svelte';
     import {
         getOrganizationQuery,
@@ -583,7 +582,7 @@
         appId={intercomAppId || undefined}
         bootOptions={intercomBootOptions}
         onUnreadCountChange={onIntercomUnreadCountChange}
-        routeKey={getIntercomRouteKey(page.route.id, page.url.pathname)}
+        routeKey={page.url.pathname}
     >
         {#snippet children(openChat)}
             {#if isSetupPage}

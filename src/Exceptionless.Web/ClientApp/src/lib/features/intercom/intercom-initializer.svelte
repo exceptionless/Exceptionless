@@ -8,68 +8,66 @@
     import type { Snippet } from 'svelte';
     import type { BootOptions } from 'svelte-intercom';
 
+    import { accessToken } from '$features/auth/index.svelte';
+    import { DocumentVisibility } from '$shared/document-visibility.svelte';
+    import { useInterval } from 'runed';
     import { untrack } from 'svelte';
     import { setContext } from 'svelte';
     import { useIntercom } from 'svelte-intercom';
 
     import { INTERCOM_CONTEXT_KEY } from './keys';
-    import { buildIntercomDataUpdate, buildIntercomRouteUpdate } from './updates';
 
     interface Props {
         bootOptions?: BootOptions;
         children: Snippet;
         routeKey?: string;
-        /** @deprecated Intercom updates are event-driven; this value is retained as a no-op for compatibility. */
         updateIntervalMs?: number;
     }
 
-    let { bootOptions = undefined, children, routeKey = undefined, updateIntervalMs = undefined }: Props = $props();
+    let { bootOptions = undefined, children, routeKey = undefined, updateIntervalMs = 90_000 }: Props = $props();
 
     const intercom = useIntercom();
-    let hasBooted = false;
-    let previousBootOptions: BootOptions | undefined;
-    let previousRouteKey: string | undefined;
+    const visibility = new DocumentVisibility();
 
     setContext<IntercomContext>(INTERCOM_CONTEXT_KEY, intercom);
 
-    // Retain the deprecated prop reactively without restoring periodic updates.
-    $effect(() => {
-        void updateIntervalMs;
+    const interval = useInterval(() => updateIntervalMs, {
+        callback: () => {
+            if (bootOptions && visibility.visible) {
+                intercom.update(bootOptions);
+            }
+        },
+        immediate: false
     });
 
-    // The provider boots with the initial options. Only update after boot when the route or
-    // identity/company data changes; eager or periodic updates create duplicate impressions.
+    const shouldUpdate = $derived(bootOptions && visibility.visible);
+
+    // Sync identity/company data and manage interval when boot options or visibility changes.
     $effect(() => {
-        const options = bootOptions;
-        const currentRouteKey = routeKey;
-        if (!options) {
-            hasBooted = false;
-            previousBootOptions = undefined;
-            previousRouteKey = undefined;
+        if (!bootOptions) {
+            interval.pause();
             return;
         }
 
-        if (!hasBooted) {
-            hasBooted = true;
-            previousBootOptions = options;
-            previousRouteKey = currentRouteKey;
-            return;
+        if (visibility.visible) {
+            interval.resume();
+        } else {
+            interval.pause();
         }
+    });
 
-        if (typeof window.Intercom !== 'function') {
-            return;
+    // Sync on route transitions and visibility changes.
+    $effect(() => {
+        void routeKey;
+        if (shouldUpdate) {
+            untrack(() => intercom.update(bootOptions!));
         }
+    });
 
-        const priorBootOptions = previousBootOptions!;
-        const bootOptionsChanged = options !== priorBootOptions;
-        const routeChanged = currentRouteKey !== previousRouteKey;
-        previousBootOptions = options;
-        previousRouteKey = currentRouteKey;
-
-        if (bootOptionsChanged) {
-            untrack(() => intercom.update(buildIntercomDataUpdate(priorBootOptions, options)));
-        } else if (routeChanged) {
-            untrack(() => intercom.update(buildIntercomRouteUpdate(options)));
+    // Shutdown when the user logs out.
+    $effect(() => {
+        if (!accessToken.current) {
+            untrack(() => intercom.shutdown());
         }
     });
 </script>
