@@ -34,7 +34,7 @@ describe('createQueryParameters', () => {
         vi.useRealTimers();
     });
 
-    it('writes updates immediately while coalescing rapid push history entries', async () => {
+    it('writes updates immediately and commits one settled push history entry', async () => {
         // Arrange
         render(QueryParametersTestHarness);
 
@@ -44,11 +44,17 @@ describe('createQueryParameters', () => {
 
         // Assert
         expect(screen.getByText('second').textContent).toBe('second');
-        expect(navigation.pushState).toHaveBeenCalledOnce();
-        expect(navigation.pushState).toHaveBeenCalledWith('?filter=first', pageState);
-        expect(navigation.replaceState).toHaveBeenCalledOnce();
-        expect(navigation.replaceState).toHaveBeenCalledWith('?filter=second', pageState);
+        expect(navigation.pushState).not.toHaveBeenCalled();
+        expect(navigation.replaceState).toHaveBeenCalledTimes(2);
+        expect(navigation.replaceState).toHaveBeenNthCalledWith(1, '/?filter=first', pageState);
+        expect(navigation.replaceState).toHaveBeenNthCalledWith(2, '/?filter=second', pageState);
         expect(window.location.search).toBe('?filter=second');
+
+        await vi.advanceTimersByTimeAsync(200);
+
+        expect(navigation.replaceState).toHaveBeenNthCalledWith(3, '/', pageState);
+        expect(navigation.pushState).toHaveBeenCalledOnce();
+        expect(navigation.pushState).toHaveBeenCalledWith('/?filter=second', pageState);
     });
 
     it('starts a new push history entry after the coalescing window settles', async () => {
@@ -59,12 +65,14 @@ describe('createQueryParameters', () => {
 
         // Act
         await fireEvent.click(screen.getByRole('button', { name: 'Second' }));
+        await vi.advanceTimersByTimeAsync(200);
 
         // Assert
         expect(navigation.pushState).toHaveBeenCalledTimes(2);
-        expect(navigation.pushState).toHaveBeenNthCalledWith(1, '?filter=first', pageState);
-        expect(navigation.pushState).toHaveBeenNthCalledWith(2, '?filter=second', pageState);
-        expect(navigation.replaceState).not.toHaveBeenCalled();
+        expect(navigation.pushState).toHaveBeenNthCalledWith(1, '/?filter=first', pageState);
+        expect(navigation.pushState).toHaveBeenNthCalledWith(2, '/?filter=second', pageState);
+        expect(navigation.replaceState).toHaveBeenCalledTimes(4);
+        expect(navigation.replaceState).toHaveBeenNthCalledWith(4, '/?filter=first', pageState);
     });
 
     it('writes replace-history updates immediately without adding entries', async () => {
@@ -78,12 +86,12 @@ describe('createQueryParameters', () => {
         // Assert
         expect(navigation.pushState).not.toHaveBeenCalled();
         expect(navigation.replaceState).toHaveBeenCalledTimes(2);
-        expect(navigation.replaceState).toHaveBeenNthCalledWith(1, '?filter=first', pageState);
-        expect(navigation.replaceState).toHaveBeenNthCalledWith(2, '?filter=second', pageState);
+        expect(navigation.replaceState).toHaveBeenNthCalledWith(1, '/?filter=first', pageState);
+        expect(navigation.replaceState).toHaveBeenNthCalledWith(2, '/?filter=second', pageState);
         expect(window.location.search).toBe('?filter=second');
     });
 
-    it('does not leave a trailing question mark when the last parameter is cleared', async () => {
+    it('does not push a duplicate entry or trailing question mark when a burst returns to its starting URL', async () => {
         // Arrange
         window.history.replaceState({}, '', '/events#details');
         render(QueryParametersTestHarness);
@@ -91,15 +99,18 @@ describe('createQueryParameters', () => {
 
         // Act
         await fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+        await vi.advanceTimersByTimeAsync(200);
 
         // Assert
+        expect(navigation.pushState).not.toHaveBeenCalled();
+        expect(navigation.replaceState).toHaveBeenCalledTimes(2);
         expect(navigation.replaceState).toHaveBeenCalledWith('/events#details', pageState);
         expect(window.location.pathname).toBe('/events');
         expect(window.location.search).toBe('');
         expect(window.location.hash).toBe('#details');
     });
 
-    it('does not add a delayed history write after full navigation', async () => {
+    it('commits a pending push history entry before full navigation', async () => {
         // Arrange
         render(QueryParametersTestHarness);
         await fireEvent.click(screen.getByRole('button', { name: 'First' }));
@@ -112,8 +123,9 @@ describe('createQueryParameters', () => {
         // Assert
         expect(beforeNavigation).toBeDefined();
         expect(navigation.pushState).toHaveBeenCalledOnce();
-        expect(navigation.pushState).toHaveBeenCalledWith('?filter=first', pageState);
-        expect(navigation.replaceState).not.toHaveBeenCalled();
+        expect(navigation.pushState).toHaveBeenCalledWith('/?filter=first', pageState);
+        expect(navigation.replaceState).toHaveBeenCalledTimes(2);
+        expect(navigation.replaceState).toHaveBeenNthCalledWith(2, '/', pageState);
         expect(window.location.search).toBe('?filter=first');
     });
 
@@ -122,10 +134,10 @@ describe('createQueryParameters', () => {
         render(QueryParametersTestHarness);
         await fireEvent.click(screen.getByRole('button', { name: 'First' }));
         const beforeNavigation = navigation.beforeNavigate.mock.calls[0]?.[0] as ((navigation: { type: string }) => void) | undefined;
-        window.history.replaceState(pageState, '', '?filter=previous');
 
         // Act
         beforeNavigation?.({ type: 'popstate' });
+        window.history.replaceState(pageState, '', '?filter=previous');
         window.dispatchEvent(new PopStateEvent('popstate', { state: pageState }));
         await vi.advanceTimersByTimeAsync(200);
         await tick();
@@ -133,7 +145,7 @@ describe('createQueryParameters', () => {
         // Assert
         expect(beforeNavigation).toBeDefined();
         expect(navigation.pushState).toHaveBeenCalledOnce();
-        expect(navigation.replaceState).not.toHaveBeenCalled();
+        expect(navigation.replaceState).toHaveBeenCalledTimes(2);
         expect(window.location.search).toBe('?filter=previous');
         expect(screen.getByText('previous').textContent).toBe('previous');
     });
@@ -153,7 +165,7 @@ describe('createQueryParameters', () => {
 
         // Assert
         expect(navigation.pushState).toHaveBeenCalledTimes(2);
-        expect(navigation.replaceState).not.toHaveBeenCalled();
+        expect(navigation.replaceState).toHaveBeenCalledTimes(4);
         expect(screen.getByText('first').textContent).toBe('first');
     });
 });
