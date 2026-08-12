@@ -38,8 +38,6 @@
         }
     });
 
-    const latestEvent = $derived(stackEventsQuery.data?.[0]);
-
     $effect(() => {
         if (initialEventId) {
             selectedEventId = initialEventId;
@@ -51,12 +49,9 @@
     });
 
     $effect(() => {
-        if (initialEventId || !latestEvent?.id) {
-            return;
+        if (!initialEventId && stackEventsQuery.isSuccess) {
+            selectedEventId = stackEventsQuery.data?.[0]?.id ?? null;
         }
-
-        selectedEventId = latestEvent.id;
-        onEventLoaded?.(latestEvent);
     });
 
     $effect(() => {
@@ -77,7 +72,7 @@
 
 {#if selectedEventId}
     <EventsOverview expectedStackId={stackId} {filterChanged} id={selectedEventId} {handleError} {onEventLoaded} onNavigate={handleNavigate} />
-{:else if stackEventsQuery.isSuccess && !latestEvent?.id}
+{:else if stackEventsQuery.isSuccess}
     <section>
         <h4 class="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">Stack</h4>
         <StackCard {filterChanged} id={stackId} {onDeleted} onError={handleError} />

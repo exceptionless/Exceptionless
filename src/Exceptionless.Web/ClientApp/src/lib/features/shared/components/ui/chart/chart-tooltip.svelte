@@ -103,7 +103,7 @@
 	{/if}
 {/snippet}
 
-<TooltipPrimitive.Root pointerEvents={false} variant="none">
+<TooltipPrimitive.Root variant="none">
 	<div
 		bind:this={ref}
 		class={cn(

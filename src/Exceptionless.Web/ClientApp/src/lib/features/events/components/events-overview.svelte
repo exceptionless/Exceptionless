@@ -301,9 +301,7 @@
 
 <section>
     <h4 class="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">Stack</h4>
-    {#if event?.stack_id}
-        <StackCard {filterChanged} id={event.stack_id}></StackCard>
-    {/if}
+    <StackCard {filterChanged} id={event?.stack_id}></StackCard>
 </section>
 
 <section class="mt-2">

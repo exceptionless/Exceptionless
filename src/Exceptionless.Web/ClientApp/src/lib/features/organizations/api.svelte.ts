@@ -358,32 +358,27 @@ export function getInvoicesQuery(request: GetInvoicesRequest) {
 export function getOrganizationQuery(request: GetOrganizationRequest) {
     const queryClient = useQueryClient();
 
-    return createQuery<ViewOrganization, ProblemDetails>(() => {
-        const id = request.route.id;
-        const mode = request.params?.mode;
+    return createQuery<ViewOrganization, ProblemDetails>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        onSuccess: (data: ViewOrganization) => {
+            if (request.params?.mode) {
+                queryClient.setQueryData(queryKeys.id(request.route.id, request.params.mode), data);
+            }
 
-        return {
-            enabled: () => !!accessToken.current && !!id,
-            onSuccess: (data: ViewOrganization) => {
-                if (mode) {
-                    queryClient.setQueryData(queryKeys.id(id, mode), data);
-                }
+            queryClient.setQueryData(queryKeys.id(request.route.id!, undefined), data);
+        },
+        queryClient,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<ViewOrganization>(`organizations/${request.route.id}`, {
+                signal
+            });
 
-                queryClient.setQueryData(queryKeys.id(id!, undefined), data);
-            },
-            queryClient,
-            queryFn: async ({ signal }: { signal: AbortSignal }) => {
-                const client = useFetchClient();
-                const response = await client.getJSON<ViewOrganization>(`organizations/${id}`, {
-                    signal
-                });
-
-                return response.data!;
-            },
-            queryKey: queryKeys.id(id, mode),
-            refetchInterval: request.refetchInterval
-        };
-    });
+            return response.data!;
+        },
+        queryKey: queryKeys.id(request.route.id, request.params?.mode),
+        refetchInterval: request.refetchInterval
+    }));
 }
 
 export function getOrganizationsQuery(request: GetOrganizationsRequest) {

@@ -64,7 +64,6 @@ export function routes(): NavigationItem[] {
             group: 'Help',
             href: apiReferenceHref,
             icon: ApiDocumentations,
-            keywords: ['OpenAPI', 'Swagger', 'API Reference'],
             openInNewTab: true,
             title: 'API'
         },

@@ -24,7 +24,6 @@
 
     type Props = HTMLAttributes<HTMLUListElement> & {
         currentOrganizationId: string | undefined;
-        impersonateDialogOpen?: boolean;
         impersonatedOrganization: undefined | ViewOrganization;
         isGlobalAdmin: boolean;
         isLoading: boolean;
@@ -35,7 +34,6 @@
     let {
         class: className,
         currentOrganizationId = $bindable(),
-        impersonateDialogOpen = $bindable(false),
         impersonatedOrganization,
         isGlobalAdmin,
         isLoading,
@@ -48,6 +46,7 @@
     const isImpersonating = $derived(!!impersonatedOrganization);
     const useSingleOrganizationShortcut = $derived(!isGlobalAdmin && !isImpersonating && organizations.length === 1 && !!activeOrganization?.id);
     let menuContentElement = $state<HTMLElement | null>(null);
+    let openImpersonateDialog = $state(false);
 
     $effect(() => {
         if (open) {
@@ -219,7 +218,7 @@
                                     <span class="font-medium">Stop Impersonating</span>
                                 </DropdownMenu.Item>
                             {:else}
-                                <DropdownMenu.Item onSelect={() => (impersonateDialogOpen = true)} class="gap-2 p-2">
+                                <DropdownMenu.Item onSelect={() => (openImpersonateDialog = true)} class="gap-2 p-2">
                                     <div class="bg-background flex size-6 items-center justify-center rounded-md border">
                                         <Eye class="size-4" aria-hidden="true" />
                                     </div>
@@ -248,9 +247,9 @@
     </DelayedRender>
 {/if}
 
-{#if impersonateDialogOpen}
+{#if openImpersonateDialog}
     <ImpersonateOrganizationDialog
-        bind:open={impersonateDialogOpen}
+        bind:open={openImpersonateDialog}
         impersonateOrganization={handleImpersonate}
         userOrganizationIds={organizations.map((o) => o.id)}
     />
