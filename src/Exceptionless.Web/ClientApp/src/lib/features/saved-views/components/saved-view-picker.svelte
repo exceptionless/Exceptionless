@@ -14,7 +14,7 @@
     import { toFilter } from '$features/events/components/filters/helpers.svelte';
     import { serializeFilters } from '$features/events/components/filters/helpers.svelte';
     import { organization } from '$features/organizations/context.svelte';
-    import { productTourRuntime } from '$features/product-tours/state.svelte';
+    import { productTourHost } from '$features/product-tours/state.svelte';
     import Columns3 from '@lucide/svelte/icons/columns-3';
     import Pencil from '@lucide/svelte/icons/pencil';
     import Plus from '@lucide/svelte/icons/plus';
@@ -190,7 +190,7 @@
             columns: getSavedColumnSettings(),
             filter: currentFilterString || undefined,
             filter_definitions: filterDefinitions,
-            is_private: productTourRuntime.isActive('create-saved-view') || isPrivate ? true : undefined,
+            is_private: productTourHost.isActive('create-saved-view') || isPrivate ? true : undefined,
             name,
             organization_id: organizationId,
             show_chart: showChart,
@@ -206,7 +206,7 @@
             isSaveDialogOpen = false;
             await onLoadView(result);
             await onSavedViewCreated?.(result);
-            document.dispatchEvent(new CustomEvent('product-tour:completed', { detail: { tourId: 'create-saved-view' } }));
+            productTourHost.complete('create-saved-view');
             toast.success(`Saved view "${result.name}" created.`);
         } catch (error) {
             toast.error(getErrorMessage(error, 'Failed to save view. Please try again.'));
@@ -371,12 +371,12 @@
         {duplicateView}
         {savedViews}
         {saving}
-        defaultPrivate={productTourRuntime.isActive('create-saved-view')}
+        defaultPrivate={productTourHost.isActive('create-saved-view')}
         onSave={handleSave}
         onClose={() => (isSaveDialogOpen = false)}
         onCancel={() => {
-            if (productTourRuntime.isActive('create-saved-view')) {
-                document.dispatchEvent(new CustomEvent('product-tour:dismissed', { detail: { tourId: 'create-saved-view' } }));
+            if (productTourHost.isActive('create-saved-view')) {
+                productTourHost.dismiss('create-saved-view');
             }
         }}
         {onLoadView}

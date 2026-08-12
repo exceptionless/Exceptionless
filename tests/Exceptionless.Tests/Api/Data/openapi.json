@@ -12720,7 +12720,10 @@
           "dismissed",
           "completed"
         ],
-        "type": "string"
+        "x-enumNames": [
+          "Dismissed",
+          "Completed"
+        ]
       },
       "ResetPasswordModel": {
         "required": [
@@ -13084,8 +13087,8 @@
       },
       "UpdateProductTourProgress": {
         "required": [
-          "version",
-          "status"
+          "status",
+          "version"
         ],
         "type": "object",
         "properties": {
@@ -13096,7 +13099,14 @@
             "format": "int32"
           },
           "status": {
-            "$ref": "#/components/schemas/ProductTourStatus"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProductTourStatus"
+              }
+            ]
           }
         }
       },

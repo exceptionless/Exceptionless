@@ -35,7 +35,6 @@
         currentEvent = event;
         currentEventDetails = { eventId: event.id, stackId: event.stack_id };
         assistantPageContext.setOverlayEvent(assistantContextOwner, event);
-        document.dispatchEvent(new CustomEvent('product-tour:event-opened', { detail: { eventType: event.type } }));
     }
 
     function prepareAssistantContext(): void {
@@ -80,8 +79,6 @@
         <AssistantFixButton prepareContext={prepareAssistantContext} resource="event" />
     {/snippet}
     {#if eventId}
-        <div data-tour="event-details">
-            <EventsOverview {filterChanged} id={eventId} {handleError} onEventLoaded={handleEventLoaded} onNavigate={(newId) => (eventId = newId)} />
-        </div>
+        <EventsOverview {filterChanged} id={eventId} {handleError} onEventLoaded={handleEventLoaded} onNavigate={(newId) => (eventId = newId)} />
     {/if}
 </DetailSheet>

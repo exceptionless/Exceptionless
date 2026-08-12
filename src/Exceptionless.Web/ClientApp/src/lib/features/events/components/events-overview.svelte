@@ -16,7 +16,7 @@
     import { getExtendedDataItems, hasErrorOrSimpleError } from '$features/events/persistent-event';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
     import ProductTourInlineCallout from '$features/product-tours/components/product-tour-inline-callout.svelte';
-    import { productTourRuntime } from '$features/product-tours/state.svelte';
+    import { productTourHost } from '$features/product-tours/state.svelte';
     import { getProjectQuery, updateProject } from '$features/projects/api.svelte';
     import StackCard from '$features/stacks/components/stack-card.svelte';
     import Braces from '@lucide/svelte/icons/braces';
@@ -259,11 +259,11 @@
     }
 
     function completeInvestigationTour(): void {
-        document.dispatchEvent(new CustomEvent('product-tour:completed', { detail: { tourId: 'investigate-error' } }));
+        productTourHost.complete('investigate-error');
     }
 
     function dismissInvestigationTour(): void {
-        document.dispatchEvent(new CustomEvent('product-tour:dismissed', { detail: { tourId: 'investigate-error' } }));
+        productTourHost.dismiss('investigate-error');
     }
 
     $effect(() => {
@@ -279,7 +279,7 @@
     $effect(() => {
         if (event && event.id !== notifiedEventId) {
             notifiedEventId = event.id;
-            document.dispatchEvent(new CustomEvent('product-tour:event-opened', { detail: { eventType: event.type } }));
+            productTourHost.eventOpened(event.type);
             onEventLoaded?.(event);
         }
     });
@@ -310,7 +310,7 @@
     });
 </script>
 
-{#if event && productTourRuntime.activeTourId === 'investigate-error' && productTourRuntime.activeStepId === 'inspect-details'}
+{#if event && productTourHost.activeTourId === 'investigate-error' && productTourHost.activeStepId === 'inspect-details'}
     <ProductTourInlineCallout
         description="Review the summary and the available Exception, Request, Environment, trace, session, and extended-data tabs."
         onContinue={completeInvestigationTour}
@@ -320,7 +320,7 @@
     />
 {/if}
 
-<section>
+<section data-event-type={event ? (hasErrorOrSimpleError(event) ? 'error' : event.type) : undefined} data-tour={event ? 'event-details' : undefined}>
     <h4 class="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">Stack</h4>
     {#if event?.stack_id}
         <StackCard {filterChanged} id={event.stack_id}></StackCard>

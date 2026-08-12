@@ -45,7 +45,6 @@
 
     async function handleEventLoaded(event: PersistentEvent) {
         assistantPageContext.setPageEvent(event);
-        document.dispatchEvent(new CustomEvent('product-tour:event-opened', { detail: { eventType: event.type } }));
         await goto(buildEventDetailsHref(event.id, event.stack_id), { replaceState: true });
     }
 
@@ -61,14 +60,12 @@
     });
 </script>
 
-<div data-tour="event-details">
-    <StackDetails
-        {filterChanged}
-        {handleError}
-        onDeleted={handleDeleted}
-        onEventLoaded={handleEventLoaded}
-        onNavigate={handleNavigate}
-        onStackLoaded={handleStackLoaded}
-        {stackId}
-    />
-</div>
+<StackDetails
+    {filterChanged}
+    {handleError}
+    onDeleted={handleDeleted}
+    onEventLoaded={handleEventLoaded}
+    onNavigate={handleNavigate}
+    onStackLoaded={handleStackLoaded}
+    {stackId}
+/>

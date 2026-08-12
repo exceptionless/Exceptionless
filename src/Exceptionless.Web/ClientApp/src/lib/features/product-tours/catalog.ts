@@ -1,8 +1,55 @@
 import type { ProductTourProgress } from '$features/users/models';
 
-import type { ProductTourContext, ProductTourDefinition, ProductTourListItem } from './types';
+import { resolve } from '$app/paths';
+
+import type { ProductTourContext, ProductTourDefinition, ProductTourListItem, ProductTourStartAction } from './types';
 
 import { PRODUCT_TOUR_ANCHORS } from './anchors';
+
+function getConfigureProjectStartAction(context: ProductTourContext): ProductTourStartAction {
+    if (!context.organizationId) {
+        return { destination: resolve('/(app)/organization/add'), type: 'navigate' };
+    }
+
+    if (context.pathname.includes('/project/add')) {
+        return { type: 'launch' };
+    }
+
+    const project = context.projects.find((item) => !item.is_configured);
+    if (project?.id) {
+        return {
+            destination: `${resolve('/(app)/project/[projectId]/configure', { projectId: project.id })}?redirect=true`,
+            type: 'navigate'
+        };
+    }
+
+    return {
+        actionLabel: 'Create Project',
+        description: 'Every accessible project is already configured. A new project uses plan capacity and will remain after the guide.',
+        destination: resolve('/(app)/project/add'),
+        title: 'Create another project?',
+        type: 'confirm-navigation'
+    };
+}
+
+function getInvestigateErrorStartAction(context: ProductTourContext): ProductTourStartAction {
+    if (context.openEventType === 'error') {
+        return { stepId: 'inspect-details', type: 'launch' };
+    }
+
+    const destination = `${resolve('/(app)/event')}?time=all&type=error`;
+    if (context.pathname === resolve('/(app)/event')) {
+        return { destination, type: 'navigate' };
+    }
+
+    return {
+        actionLabel: 'Open Errors',
+        description: 'This guide starts in Errors so you can choose a real report. Your current page will change.',
+        destination,
+        title: 'Open Errors?',
+        type: 'confirm-navigation'
+    };
+}
 
 function requireApplicationShell(context: ProductTourContext) {
     if (context.isSetupPage || !context.organizationId) {
@@ -79,7 +126,8 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
                 id: 'help',
                 optional: true,
                 showDone: true,
-                title: 'Help is always nearby'
+                title: 'Help is always nearby',
+                waitForElement: 5000
             }
         ],
         id: 'new-ui-overview',
@@ -90,6 +138,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
     {
         description: 'Create or resume a project, connect an SDK, and wait for its first real event.',
         getAvailability: () => ({ available: true }),
+        getStartAction: getConfigureProjectStartAction,
         getSteps: (context) => {
             if (!context.organizationId) {
                 return [
@@ -174,6 +223,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
     {
         description: 'Save the current Events configuration as a private view that only you can see.',
         getAvailability: requireOrganization,
+        getStartAction: () => ({ destination: resolve('/(app)/event'), type: 'navigate' }),
         getSteps: () => [
             {
                 advanceOnClick: true,
@@ -229,6 +279,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
     {
         description: 'Open a real error and learn where to find its exception, request, environment, and custom data.',
         getAvailability: requireErrorEvent,
+        getStartAction: getInvestigateErrorStartAction,
         getSteps: () => [
             {
                 anchor: PRODUCT_TOUR_ANCHORS.eventList,

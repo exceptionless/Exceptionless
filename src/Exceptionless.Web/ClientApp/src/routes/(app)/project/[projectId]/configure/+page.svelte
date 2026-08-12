@@ -13,7 +13,7 @@
     import { organization } from '$features/organizations/context.svelte';
     import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
     import ProductTourInlineCallout from '$features/product-tours/components/product-tour-inline-callout.svelte';
-    import { productTourRuntime } from '$features/product-tours/state.svelte';
+    import { productTourHost } from '$features/product-tours/state.svelte';
     import { getProjectQuery } from '$features/projects/api.svelte';
     import { getProjectDefaultTokenQuery, patchToken } from '$features/tokens/api.svelte';
     import EnableTokenDialog from '$features/tokens/components/dialogs/enable-token-dialog.svelte';
@@ -342,7 +342,7 @@ public partial class App : Application {
         const message = (event as CustomEvent<WebSocketMessageValue<'PersistentEventChanged'>>).detail;
 
         if (queryParams.redirect && message.project_id === projectId && message.change_type !== ChangeType.Removed) {
-            document.dispatchEvent(new CustomEvent('product-tour:completed', { detail: { tourId: 'configure-project' } }));
+            productTourHost.complete('configure-project');
             toast.success('First event received. Opening Events...');
             await redirectToEventsWithFilter(organization.current, new ProjectFilter([projectId]));
         }
@@ -358,7 +358,7 @@ public partial class App : Application {
             return;
         }
 
-        document.dispatchEvent(new CustomEvent('product-tour:completed', { detail: { tourId: 'configure-project' } }));
+        productTourHost.complete('configure-project');
         toast.success('First event received. Opening Events...');
         await redirectToEventsWithFilter(organization.current, new ProjectFilter([projectId]));
     }
@@ -408,14 +408,9 @@ public partial class App : Application {
             <NotificationTitle>Waiting for your first event</NotificationTitle>
             <NotificationDescription>
                 <P>Send an event from your app. When it arrives, we'll open the project Events page automatically.</P>
-                {#if productTourRuntime.isActive('configure-project')}
+                {#if productTourHost.isActive('configure-project')}
                     <P class="mt-2">You can leave this tab while updating your application. The guide will resume here when you return.</P>
-                    <Button
-                        class="mt-2"
-                        onclick={() => document.dispatchEvent(new CustomEvent('product-tour:dismissed', { detail: { tourId: 'configure-project' } }))}
-                        size="sm"
-                        variant="outline">End guide</Button
-                    >
+                    <Button class="mt-2" onclick={() => productTourHost.dismiss('configure-project')} size="sm" variant="outline">End guide</Button>
                 {/if}
             </NotificationDescription>
         </Notification>
@@ -724,12 +719,11 @@ public partial class App : Application {
         </ol>
     </div>
 
-    {#if productTourRuntime.isActive('configure-project') && productTourRuntime.activeStepId === 'sdk-instructions'}
+    {#if productTourHost.isActive('configure-project') && productTourHost.activeStepId === 'sdk-instructions'}
         <ProductTourInlineCallout
             description="Follow these SDK instructions in your own application. When it is connected, return here and continue to wait for the first event."
-            onContinue={() =>
-                document.dispatchEvent(new CustomEvent('product-tour:advance', { detail: { stepId: 'sdk-instructions', tourId: 'configure-project' } }))}
-            onDismiss={() => document.dispatchEvent(new CustomEvent('product-tour:dismissed', { detail: { tourId: 'configure-project' } }))}
+            onContinue={() => productTourHost.advance('configure-project', 'sdk-instructions')}
+            onDismiss={() => productTourHost.dismiss('configure-project')}
             title="Connect your application"
             tourId="configure-project"
         />

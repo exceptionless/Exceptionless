@@ -88,6 +88,7 @@
     let isImpersonateOrganizationOpen = $state(false);
     let isUserMenuOpen = $state(false);
     let productToursComponent = $state<ProductTours>();
+    let productTourErrorCheckEnabled = $state(false);
 
     // Auto-reset premium page state on navigation so pages don't need cleanup
     beforeNavigate(() => {
@@ -96,6 +97,7 @@
 
     function openCommandPalette(): void {
         commandResetKey += 1;
+        productTourErrorCheckEnabled = true;
         isCommandOpen = true;
     }
 
@@ -171,6 +173,7 @@
     }
 
     function openGuidedTours(source: ProductTourLaunchSource): void {
+        productTourErrorCheckEnabled = true;
         productToursComponent?.openCatalog(source);
     }
 
@@ -423,6 +426,7 @@
     const projects = $derived(projectsQuery.data?.data ?? []);
     const productTourProjects = $derived(projects.filter((project) => !organization.current || project.organization_id === organization.current));
     const productTourErrorEventsQuery = getOrganizationEventsQuery({
+        enabled: () => productTourErrorCheckEnabled,
         params: { filter: 'type:error', limit: 1, mode: 'summary', time: 'all' },
         route: {
             get organizationId() {
@@ -431,7 +435,7 @@
         }
     });
     const productTourErrorEventAvailability = $derived.by(() => {
-        if (!organization.current || productTourErrorEventsQuery.isPending) {
+        if (!organization.current || !productTourErrorCheckEnabled || productTourErrorEventsQuery.isPending) {
             return 'loading' as const;
         }
 
@@ -722,6 +726,7 @@
         organizationId={organization.current}
         pathname={page.url.pathname}
         projects={productTourProjects}
+        requestErrorAvailability={() => (productTourErrorCheckEnabled = true)}
         routeKey={`${page.url.pathname}${page.url.search}`}
         stateSettled={meQuery.isSuccess &&
             organizationsQuery.isSuccess &&

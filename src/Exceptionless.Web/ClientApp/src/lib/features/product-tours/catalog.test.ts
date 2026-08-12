@@ -49,4 +49,30 @@ describe('product tour catalog', () => {
         expect(investigate?.availability.available).toBe(false);
         expect(investigate?.availability.reason).toBeTruthy();
     });
+
+    it('reuses only an open error and otherwise asks before leaving a detail page', () => {
+        const investigate = productTourCatalog.find((tour) => tour.id === 'investigate-error')!;
+
+        expect(investigate.getStartAction?.(context({ openEventType: 'error', pathname: '/next/event/error-id' }))).toEqual({
+            stepId: 'inspect-details',
+            type: 'launch'
+        });
+        expect(investigate.getStartAction?.(context({ openEventType: 'usage', pathname: '/next/event/usage-id' }))).toMatchObject({
+            destination: '/next/event?time=all&type=error',
+            type: 'confirm-navigation'
+        });
+        expect(investigate.getStartAction?.(context({ pathname: '/next/event' }))).toEqual({
+            destination: '/next/event?time=all&type=error',
+            type: 'navigate'
+        });
+    });
+
+    it('requires confirmation before setup consumes capacity when every project is configured', () => {
+        const configure = productTourCatalog.find((tour) => tour.id === 'configure-project')!;
+
+        expect(configure.getStartAction?.(context({ pathname: '/next/stack', projects: [{ is_configured: true } as never] }))).toMatchObject({
+            destination: '/next/project/add',
+            type: 'confirm-navigation'
+        });
+    });
 });

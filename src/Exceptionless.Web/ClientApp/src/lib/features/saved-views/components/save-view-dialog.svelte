@@ -6,7 +6,7 @@
     import { Label } from '$comp/ui/label';
     import { Switch } from '$comp/ui/switch';
     import ProductTourInlineCallout from '$features/product-tours/components/product-tour-inline-callout.svelte';
-    import { productTourRuntime } from '$features/product-tours/state.svelte';
+    import { productTourHost } from '$features/product-tours/state.svelte';
 
     import type { SavedView } from '../models';
 
@@ -145,25 +145,23 @@
             <Dialog.Title>Save View</Dialog.Title>
             <Dialog.Description>Save the current view configuration for quick access.</Dialog.Description>
         </Dialog.Header>
-        {#if defaultPrivate && productTourRuntime.activeStepId === 'name-view'}
+        {#if defaultPrivate && productTourHost.activeStepId === 'name-view'}
             <ProductTourInlineCallout
                 description="Review the current filters, time, display options, and columns. Choose a meaningful name, then continue."
-                onContinue={() =>
-                    document.dispatchEvent(new CustomEvent('product-tour:advance', { detail: { stepId: 'name-view', tourId: 'create-saved-view' } }))}
+                onContinue={() => productTourHost.advance('create-saved-view', 'name-view')}
                 onDismiss={dismissTour}
                 title="Review and name your view"
                 tourId="create-saved-view"
             />
-        {:else if defaultPrivate && productTourRuntime.activeStepId === 'private-view'}
+        {:else if defaultPrivate && productTourHost.activeStepId === 'private-view'}
             <ProductTourInlineCallout
                 description="Private is enabled for this guide so the practice view is visible only to you. Continue when you are ready to save it."
-                onContinue={() =>
-                    document.dispatchEvent(new CustomEvent('product-tour:advance', { detail: { stepId: 'private-view', tourId: 'create-saved-view' } }))}
+                onContinue={() => productTourHost.advance('create-saved-view', 'private-view')}
                 onDismiss={dismissTour}
                 title="Keep it private"
                 tourId="create-saved-view"
             />
-        {:else if defaultPrivate && productTourRuntime.activeStepId === 'save-view'}
+        {:else if defaultPrivate && productTourHost.activeStepId === 'save-view'}
             <ProductTourInlineCallout
                 description="Click Save when ready. The guide completes only after the private view is successfully created and loaded."
                 onDismiss={dismissTour}

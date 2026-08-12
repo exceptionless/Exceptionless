@@ -19,13 +19,15 @@
         ProductTourKey,
         ProductTourLaunchSource,
         ProductTourListItem,
+        ProductTourStartAction,
         ProductTourStep
     } from '../types';
 
     import { PRODUCT_TOUR_ANCHORS, productTourSelector } from '../anchors';
     import { getProductTour, getProductTourItems, getRecommendedProductTourId } from '../catalog';
     import { shouldOfferProductTourAnnouncement, shouldOfferProductTourWelcome } from '../eligibility';
-    import { productTourRuntime } from '../state.svelte';
+    import { clearProductTourSession, readProductTourSession, writeProductTourSession } from '../session';
+    import { productTourHost, type ProductTourHostEvent } from '../state.svelte';
     import { buildProductTourTelemetryEvent, type ProductTourTelemetryEvent } from '../telemetry';
     import ProductTourCatalog from './product-tour-catalog.svelte';
     import ProductTourFeatureAnnouncement from './product-tour-feature-announcement.svelte';
@@ -45,21 +47,14 @@
         organizationId?: string;
         pathname: string;
         projects: ViewProject[];
+        requestErrorAvailability: () => void;
         routeKey: string;
         stateSettled: boolean;
-    }
-
-    interface StoredTourState {
-        source: ProductTourLaunchSource;
-        stepId?: string;
-        tourId: ProductTourId;
-        version: number;
     }
 
     const WELCOME_VERSION = 1;
     const EXIE_ANNOUNCEMENT_VERSION = 1;
     const EXIE_ANNOUNCEMENT_KEY = 'exie-announcement' as const;
-    const SESSION_KEY = 'exceptionless.product-tour';
     const SYSTEM_PATH = resolve('/(app)/system');
 
     let {
@@ -73,6 +68,7 @@
         organizationId,
         pathname,
         projects,
+        requestErrorAvailability,
         routeKey,
         stateSettled
     }: Props = $props();
@@ -85,16 +81,13 @@
     let welcomeBrowsePending = $state(false);
     let exieAnnouncementOpen = $state(false);
     let exieAnnouncementShown = $state(false);
-    let confirmNewProjectOpen = $state(false);
-    let pendingConfigureSource = $state<ProductTourLaunchSource>();
-    let confirmErrorNavigationOpen = $state(false);
-    let pendingInvestigateSource = $state<ProductTourLaunchSource>();
+    let pendingConfirmation = $state<{
+        action: Extract<ProductTourStartAction, { type: 'confirm-navigation' }>;
+        id: ProductTourId;
+        source: ProductTourLaunchSource;
+    }>();
     let driverInstance = $state.raw<Driver>();
-    let activeSource = $state<ProductTourLaunchSource>();
-    let activeOrganizationId = $state<string>();
-    let isFinishing = false;
-    let isSuspendingInline = false;
-    let isNavigatingTour = false;
+    let driverTransition: 'active' | 'finishing' | 'inline' | 'navigation' = 'active';
     let driverRoute = '';
     let resumeAttemptedRoute = '';
     let overlayRevision = $state(0);
@@ -144,7 +137,7 @@
             isMeaningfulAppRoute &&
             !isSetupPage &&
             !isImpersonating &&
-            !productTourRuntime.activeTourId &&
+            !productTourHost.activeTourId &&
             !exieAnnouncementShown &&
             !exieAnnouncementOpen &&
             !welcomeOpen &&
@@ -176,7 +169,7 @@
             return;
         }
 
-        const stored = readStoredState();
+        const stored = readProductTourSession();
         if (!stored) {
             return;
         }
@@ -185,16 +178,20 @@
         try {
             storedVersion = getProductTour(stored.tourId).version;
         } catch {
-            clearStoredState();
+            clearProductTourSession();
             return;
         }
 
         if (storedVersion !== stored.version) {
-            clearStoredState();
+            clearProductTourSession();
             return;
         }
 
         resumeAttemptedRoute = currentRoute;
+        if (stored.tourId === 'investigate-error' && stored.stepId === 'choose-error' && /\/(event|stack)\//.test(pathname)) {
+            return;
+        }
+
         void launch(stored.tourId, stored.source, stored.stepId, false);
     });
 
@@ -204,11 +201,9 @@
             return;
         }
 
-        isNavigatingTour = true;
-        isFinishing = true;
+        driverTransition = 'navigation';
         driverInstance.destroy();
-        isNavigatingTour = false;
-        isFinishing = false;
+        driverTransition = 'active';
         driverRoute = '';
         resumeAttemptedRoute = '';
     });
@@ -220,18 +215,18 @@
 
         driverInstance?.destroy();
         driverInstance = undefined;
-        productTourRuntime.clear();
-        clearStoredState();
+        productTourHost.clear();
+        clearProductTourSession();
     });
 
     $effect(() => {
         const currentOrganizationId = organizationId;
-        if (!productTourRuntime.activeTourId || activeOrganizationId === currentOrganizationId) {
+        if (!productTourHost.activeTourId || productTourHost.organizationId === currentOrganizationId) {
             return;
         }
 
-        if (productTourRuntime.activeTourId === 'configure-project' && pathname === resolve('/(app)/organization/add')) {
-            activeOrganizationId = currentOrganizationId;
+        if (productTourHost.activeTourId === 'configure-project' && pathname === resolve('/(app)/organization/add')) {
+            productTourHost.set(productTourHost.activeTourId, productTourHost.activeStepId, productTourHost.source, currentOrganizationId);
             return;
         }
 
@@ -260,12 +255,13 @@
 
     export function openCatalog(source: ProductTourLaunchSource = 'catalog'): void {
         closeOverlays();
+        requestErrorAvailability();
         catalogSource = source;
         catalogOpen = true;
     }
 
     export async function startTour(id: ProductTourId, source: ProductTourLaunchSource = 'catalog'): Promise<void> {
-        if (productTourRuntime.activeTourId) {
+        if (productTourHost.activeTourId) {
             stopActiveTour(true);
         }
 
@@ -279,8 +275,9 @@
         welcomeOpen = false;
         exieAnnouncementOpen = false;
         closeOverlays();
-        const canReuseOpenError = id === 'investigate-error' && hasVisibleTarget(productTourSelector(PRODUCT_TOUR_ANCHORS.eventDetails));
-        if (!(await waitForCompetingOverlaysToClose()) && !canReuseOpenError) {
+        const startAction = item.getStartAction?.({ ...context, openEventType: getVisibleEventType() }) ?? { type: 'launch' };
+        const canLaunchInsideOverlay = startAction.type === 'launch' && startAction.stepId === 'inspect-details';
+        if (!(await waitForCompetingOverlaysToClose()) && !canLaunchInsideOverlay) {
             toast.info('Close the open dialog or panel before starting a guided tour.');
             return;
         }
@@ -297,69 +294,22 @@
             void track('chooser-started', id, item.version, source);
         }
 
-        if (id === 'configure-project' && organizationId && !projects.some((project) => !project.is_configured) && !pathname.includes('/project/add')) {
-            pendingConfigureSource = source;
-            confirmNewProjectOpen = true;
+        await executeStartAction(id, source, startAction);
+    }
+
+    async function executeStartAction(id: ProductTourId, source: ProductTourLaunchSource, action: ProductTourStartAction): Promise<void> {
+        if (action.type === 'confirm-navigation') {
+            pendingConfirmation = { action, id, source };
             return;
         }
 
-        if (id === 'investigate-error') {
-            if (canReuseOpenError) {
-                await launch(id, source, 'inspect-details');
-                return;
-            }
-
-            if (pathname !== resolve('/(app)/event')) {
-                pendingInvestigateSource = source;
-                confirmErrorNavigationOpen = true;
-                return;
-            }
-        }
-
-        await navigateOrLaunch(id, source);
-    }
-
-    async function confirmErrorNavigation(): Promise<void> {
-        const source = pendingInvestigateSource;
-        pendingInvestigateSource = undefined;
-        confirmErrorNavigationOpen = false;
-        if (source) {
-            await navigateOrLaunch('investigate-error', source);
-        }
-    }
-
-    async function navigateOrLaunch(id: ProductTourId, source: ProductTourLaunchSource): Promise<void> {
-        const destination = getDestination(id);
-        const definition = getProductTour(id);
-
-        if (destination && destination !== routeKey) {
-            writeStoredState({ source, tourId: id, version: definition.version });
-            await goto(destination);
+        if (action.type === 'navigate' && action.destination !== routeKey) {
+            writeProductTourSession({ source, tourId: id, version: getProductTour(id).version });
+            await goto(action.destination);
             return;
         }
 
-        await launch(id, source);
-    }
-
-    function getDestination(id: ProductTourId): string | undefined {
-        if (id === 'create-saved-view') {
-            return resolve('/(app)/event');
-        }
-
-        if (id === 'investigate-error') {
-            return `${resolve('/(app)/event')}?time=all&type=error`;
-        }
-
-        if (id !== 'configure-project') {
-            return undefined;
-        }
-
-        if (!organizationId) {
-            return resolve('/(app)/organization/add');
-        }
-
-        const project = projects.find((item) => !item.is_configured);
-        return project?.id ? `${resolve('/(app)/project/[projectId]/configure', { projectId: project.id })}?redirect=true` : undefined;
+        await launch(id, source, action.type === 'launch' ? action.stepId : undefined);
     }
 
     async function launch(id: ProductTourId, source: ProductTourLaunchSource, resumeStepId?: string, emitStarted = true): Promise<void> {
@@ -368,12 +318,8 @@
             await ensureTarget({ anchor: PRODUCT_TOUR_ANCHORS.appNavigation, description: '', id: 'mobile-navigation', title: '' });
         }
 
-        const allSteps = orderStepsForViewport(id, definition.getSteps(context)).filter(
-            (step) => !step.optional || !step.anchor || hasVisibleTarget(productTourSelector(step.anchor))
-        );
-        const detailRouteResume = id === 'investigate-error' && resumeStepId === 'choose-error' && /\/(event|stack)\//.test(pathname);
-        const effectiveResumeStepId = detailRouteResume ? 'inspect-details' : resumeStepId;
-        let startIndex = effectiveResumeStepId ? allSteps.findIndex((step) => step.id === effectiveResumeStepId) : 0;
+        const allSteps = await getAvailableSteps(id, definition.getSteps(context));
+        let startIndex = resumeStepId ? allSteps.findIndex((step) => step.id === resumeStepId) : 0;
         if (startIndex < 0) {
             startIndex = 0;
         }
@@ -385,18 +331,14 @@
         }
 
         if (firstStep.presentation === 'inline') {
-            activeSource = source;
-            activeOrganizationId = organizationId;
-            productTourRuntime.set(id, firstStep.id);
-            writeStoredState({ source, stepId: firstStep.id, tourId: id, version: definition.version });
+            productTourHost.set(id, firstStep.id, source, organizationId);
+            writeProductTourSession({ source, stepId: firstStep.id, tourId: id, version: definition.version });
             void track(emitStarted ? 'started' : 'step', id, definition.version, source, firstStep.id);
             return;
         }
 
         const { driver } = await import('driver.js');
-        activeSource = source;
-        activeOrganizationId = organizationId;
-        isFinishing = false;
+        driverTransition = 'active';
         const steps = allSteps.slice(startIndex);
 
         driverInstance = driver({
@@ -405,21 +347,20 @@
             disableActiveInteraction: false,
             onCloseClick: () => void dismissTour(id, definition.version, source),
             onDestroyed: () => {
-                const activeStepId = productTourRuntime.activeStepId;
-                const preservingNavigation = isNavigatingTour || (driverRoute !== '' && driverRoute !== routeKey);
-                const preservingPendingEvent = id === 'investigate-error' && (activeStepId === 'choose-error' || readStoredState()?.stepId === 'choose-error');
+                const activeStepId = productTourHost.activeStepId;
+                const preservingNavigation = driverTransition === 'navigation' || (driverRoute !== '' && driverRoute !== routeKey);
+                const preservingPendingEvent =
+                    id === 'investigate-error' && (activeStepId === 'choose-error' || readProductTourSession()?.stepId === 'choose-error');
                 driverInstance = undefined;
-                if (!isSuspendingInline && !preservingNavigation && !preservingPendingEvent) {
-                    productTourRuntime.clear();
-                    activeSource = undefined;
-                    activeOrganizationId = undefined;
-                    if (!isFinishing) {
-                        clearStoredState();
+                if (driverTransition !== 'inline' && !preservingNavigation && !preservingPendingEvent) {
+                    productTourHost.clear();
+                    if (driverTransition === 'active') {
+                        clearProductTourSession();
                         void track('dismissed', id, definition.version, source, activeStepId);
                     }
                 }
 
-                if (!isFinishing && !isSuspendingInline && !preservingNavigation && !preservingPendingEvent) {
+                if (driverTransition === 'active' && !preservingNavigation && !preservingPendingEvent) {
                     void recordProgress(id, definition.version, 'dismissed').catch(() => toast.error('We could not save your guided-tour progress.'));
                 }
             },
@@ -430,8 +371,8 @@
                     return;
                 }
 
-                productTourRuntime.set(id, step.id);
-                writeStoredState({ source, stepId: step.resumeStepId ?? step.id, tourId: id, version: definition.version });
+                productTourHost.set(id, step.id, source, organizationId);
+                writeProductTourSession({ source, stepId: step.resumeStepId ?? step.id, tourId: id, version: definition.version });
                 void track('step', id, definition.version, source, step.id);
             },
             overlayClickBehavior: 'close',
@@ -451,8 +392,8 @@
             }))
         });
         driverRoute = routeKey;
-        productTourRuntime.set(id, firstStep.id);
-        writeStoredState({ source, stepId: firstStep.resumeStepId ?? firstStep.id, tourId: id, version: definition.version });
+        productTourHost.set(id, firstStep.id, source, organizationId);
+        writeProductTourSession({ source, stepId: firstStep.resumeStepId ?? firstStep.id, tourId: id, version: definition.version });
 
         if (emitStarted) {
             void track('started', id, definition.version, source);
@@ -497,13 +438,11 @@
         const next = steps[index + 1];
         if (!next) {
             if (step.advanceOnClick && step.resumeStepId) {
-                isFinishing = true;
-                writeStoredState({ source, stepId: step.resumeStepId, tourId: id, version });
+                driverTransition = 'finishing';
+                writeProductTourSession({ source, stepId: step.resumeStepId, tourId: id, version });
                 driverInstance?.destroy();
                 driverInstance = undefined;
-                productTourRuntime.clear();
-                activeSource = undefined;
-                activeOrganizationId = undefined;
+                productTourHost.clear();
                 return;
             }
 
@@ -527,15 +466,11 @@
         }
 
         if (next.presentation === 'inline') {
-            isSuspendingInline = true;
-            isFinishing = true;
-            writeStoredState({ source, stepId: next.id, tourId: id, version });
+            driverTransition = 'inline';
+            writeProductTourSession({ source, stepId: next.id, tourId: id, version });
             driverInstance?.destroy();
-            isSuspendingInline = false;
-            isFinishing = false;
-            activeSource = source;
-            activeOrganizationId = organizationId;
-            productTourRuntime.set(id, next.id);
+            driverTransition = 'active';
+            productTourHost.set(id, next.id, source, organizationId);
             void track('step', id, version, source, next.id);
             return;
         }
@@ -543,12 +478,10 @@
         if (driverInstance && driverRoute === routeKey) {
             driverInstance.moveNext();
         } else {
-            isNavigatingTour = true;
-            isFinishing = true;
+            driverTransition = 'navigation';
             driverInstance?.destroy();
             driverInstance = undefined;
-            isNavigatingTour = false;
-            isFinishing = false;
+            driverTransition = 'active';
             await launch(id, source, next.id, false);
         }
     }
@@ -591,8 +524,20 @@
         return !!element && element.getClientRects().length > 0;
     }
 
+    function getVisibleEventType(): string | undefined {
+        const element = document.querySelector<HTMLElement>(productTourSelector(PRODUCT_TOUR_ANCHORS.eventDetails));
+        return element?.getClientRects().length ? element.dataset.eventType : undefined;
+    }
+
     function isMobileViewport(): boolean {
         return window.matchMedia('(max-width: 767px)').matches;
+    }
+
+    async function getAvailableSteps(id: ProductTourId, steps: ProductTourStep[]): Promise<ProductTourStep[]> {
+        const orderedSteps = orderStepsForViewport(id, steps);
+        const availability = await Promise.all(orderedSteps.map((step) => (!step.optional || !step.anchor ? Promise.resolve(true) : ensureTarget(step))));
+
+        return orderedSteps.filter((_, index) => availability[index]);
     }
 
     function orderStepsForViewport(id: ProductTourId, steps: ProductTourStep[]): ProductTourStep[] {
@@ -678,65 +623,60 @@
         openCatalog('catalog');
     }
 
-    async function confirmNewProject(): Promise<void> {
-        const source = pendingConfigureSource ?? 'catalog';
-        pendingConfigureSource = undefined;
-        confirmNewProjectOpen = false;
-        const definition = getProductTour('configure-project');
-        writeStoredState({ source, tourId: definition.id, version: definition.version });
-        await goto(resolve('/(app)/project/add'));
+    async function confirmNavigation(): Promise<void> {
+        const confirmation = pendingConfirmation;
+        pendingConfirmation = undefined;
+        if (confirmation) {
+            await executeStartAction(confirmation.id, confirmation.source, { destination: confirmation.action.destination, type: 'navigate' });
+        }
     }
 
     async function completeTour(id: ProductTourId, version: number, source: ProductTourLaunchSource): Promise<void> {
-        isFinishing = true;
+        driverTransition = 'finishing';
         try {
             await recordProgress(id, version, 'completed');
         } catch {
-            isFinishing = false;
+            driverTransition = 'active';
             toast.error('We could not save your guided-tour progress. Please try again.');
             return;
         }
 
-        clearStoredState();
+        clearProductTourSession();
         void track('completed', id, version, source);
         driverInstance?.destroy();
-        productTourRuntime.clear();
-        activeSource = undefined;
-        activeOrganizationId = undefined;
+        productTourHost.clear();
+        driverTransition = 'active';
     }
 
     async function dismissTour(id: ProductTourId, version: number, source: ProductTourLaunchSource): Promise<void> {
-        isFinishing = true;
-        clearStoredState();
+        driverTransition = 'finishing';
+        clearProductTourSession();
         await recordProgress(id, version, 'dismissed').catch(() => toast.error('We could not save your guided-tour progress.'));
-        void track('dismissed', id, version, source, productTourRuntime.activeStepId);
+        void track('dismissed', id, version, source, productTourHost.activeStepId);
         driverInstance?.destroy();
-        productTourRuntime.clear();
-        activeSource = undefined;
-        activeOrganizationId = undefined;
+        productTourHost.clear();
+        driverTransition = 'active';
     }
 
     async function failTour(id: ProductTourId, version: number, stepId: string, source: ProductTourLaunchSource): Promise<void> {
-        isFinishing = true;
-        clearStoredState();
+        driverTransition = 'finishing';
+        clearProductTourSession();
         void track('failed', id, version, source, stepId);
         toast.error('This guide could not find the next screen. You can restart it from Guided Tours.');
         driverInstance?.destroy();
-        productTourRuntime.clear();
-        activeSource = undefined;
-        activeOrganizationId = undefined;
+        productTourHost.clear();
+        driverTransition = 'active';
     }
 
     function stopActiveTour(clearSession: boolean): void {
-        isFinishing = true;
+        driverTransition = 'finishing';
         if (clearSession) {
-            clearStoredState();
+            clearProductTourSession();
         }
 
         driverInstance?.destroy();
-        productTourRuntime.clear();
-        activeSource = undefined;
-        activeOrganizationId = undefined;
+        productTourHost.clear();
+        driverTransition = 'active';
     }
 
     async function recordProgress(key: string, version: number, status: 'completed' | 'dismissed'): Promise<void> {
@@ -753,50 +693,26 @@
         await submitFeatureUsage(buildProductTourTelemetryEvent(event, id, version, source, stepId)).catch(() => undefined);
     }
 
-    function readStoredState(): StoredTourState | undefined {
-        try {
-            const value = sessionStorage.getItem(SESSION_KEY);
-            return value ? (JSON.parse(value) as StoredTourState) : undefined;
-        } catch {
-            clearStoredState();
-            return undefined;
-        }
-    }
-
-    function writeStoredState(state: StoredTourState): void {
-        sessionStorage.setItem(SESSION_KEY, JSON.stringify(state));
-    }
-
-    function clearStoredState(): void {
-        sessionStorage.removeItem(SESSION_KEY);
-    }
-
-    function onDomainComplete(event: Event): void {
-        const detail = (event as CustomEvent<{ tourId?: ProductTourId }>).detail;
-        const id = detail?.tourId;
-        if (!id || productTourRuntime.activeTourId !== id || !activeSource) {
+    function onDomainComplete(id: ProductTourId): void {
+        if (productTourHost.activeTourId !== id || !productTourHost.source) {
             return;
         }
 
         const definition = getProductTour(id);
-        void completeTour(id, definition.version, activeSource);
+        void completeTour(id, definition.version, productTourHost.source);
     }
 
-    function onDomainDismiss(event: Event): void {
-        const id = (event as CustomEvent<{ tourId?: ProductTourId }>).detail?.tourId;
-        if (!id || productTourRuntime.activeTourId !== id || !activeSource) {
+    function onDomainDismiss(id: ProductTourId): void {
+        if (productTourHost.activeTourId !== id || !productTourHost.source) {
             return;
         }
 
         const definition = getProductTour(id);
-        void dismissTour(id, definition.version, activeSource);
+        void dismissTour(id, definition.version, productTourHost.source);
     }
 
-    function onInlineAdvance(event: Event): void {
-        const detail = (event as CustomEvent<{ stepId?: string; tourId?: ProductTourId }>).detail;
-        const id = detail?.tourId;
-        const stepId = detail?.stepId;
-        if (!id || !stepId || productTourRuntime.activeTourId !== id || productTourRuntime.activeStepId !== stepId || !activeSource) {
+    function onInlineAdvance(id: ProductTourId, stepId: string): void {
+        if (productTourHost.activeTourId !== id || productTourHost.activeStepId !== stepId || !productTourHost.source) {
             return;
         }
 
@@ -804,18 +720,17 @@
         const steps = definition.getSteps(context).filter((step) => !step.optional || !step.anchor || hasVisibleTarget(productTourSelector(step.anchor)));
         const index = steps.findIndex((step) => step.id === stepId);
         if (index >= 0) {
-            void advance(id, definition.version, activeSource, steps, index);
+            void advance(id, definition.version, productTourHost.source, steps, index);
         }
     }
 
-    function onEventOpened(event: Event): void {
-        const eventType = (event as CustomEvent<{ eventType?: string }>).detail?.eventType;
-        const stored = readStoredState();
+    function onEventOpened(eventType?: string): void {
+        const stored = readProductTourSession();
         const isActiveChooseError =
-            productTourRuntime.activeTourId === 'investigate-error' && productTourRuntime.activeStepId === 'choose-error' && !!activeSource;
+            productTourHost.activeTourId === 'investigate-error' && productTourHost.activeStepId === 'choose-error' && !!productTourHost.source;
         const isResumableChooseError = stored?.tourId === 'investigate-error' && stored.stepId === 'choose-error';
         if (eventType !== 'error' || (!isActiveChooseError && !isResumableChooseError)) {
-            if (productTourRuntime.activeTourId === 'investigate-error' && eventType && eventType !== 'error') {
+            if (productTourHost.activeTourId === 'investigate-error' && eventType && eventType !== 'error') {
                 toast.info('Choose an error event to continue this guide.');
             }
 
@@ -824,12 +739,10 @@
 
         const definition = getProductTour('investigate-error');
         if (!isActiveChooseError && stored) {
-            activeSource = stored.source;
-            activeOrganizationId = organizationId;
-            productTourRuntime.set('investigate-error', 'choose-error');
+            productTourHost.set('investigate-error', 'choose-error', stored.source, organizationId);
         }
 
-        const source = activeSource ?? stored?.source;
+        const source = productTourHost.source ?? stored?.source;
         if (!source) {
             return;
         }
@@ -837,24 +750,30 @@
         const steps = definition.getSteps(context).filter((step) => !step.optional || !step.anchor || hasVisibleTarget(productTourSelector(step.anchor)));
         const index = steps.findIndex((step) => step.id === 'choose-error');
         if (index >= 0) {
-            productTourRuntime.set('investigate-error', 'inspect-details');
-            writeStoredState({ source, stepId: 'inspect-details', tourId: 'investigate-error', version: definition.version });
+            productTourHost.set('investigate-error', 'inspect-details', source, organizationId);
+            writeProductTourSession({ source, stepId: 'inspect-details', tourId: 'investigate-error', version: definition.version });
             void advance('investigate-error', definition.version, source, steps, index);
         }
     }
 
-    $effect(() => {
-        document.addEventListener('product-tour:completed', onDomainComplete);
-        document.addEventListener('product-tour:dismissed', onDomainDismiss);
-        document.addEventListener('product-tour:advance', onInlineAdvance);
-        document.addEventListener('product-tour:event-opened', onEventOpened);
-        return () => {
-            document.removeEventListener('product-tour:completed', onDomainComplete);
-            document.removeEventListener('product-tour:dismissed', onDomainDismiss);
-            document.removeEventListener('product-tour:advance', onInlineAdvance);
-            document.removeEventListener('product-tour:event-opened', onEventOpened);
-        };
-    });
+    function onHostEvent(event: ProductTourHostEvent): void {
+        switch (event.type) {
+            case 'advance':
+                onInlineAdvance(event.tourId, event.stepId);
+                break;
+            case 'completed':
+                onDomainComplete(event.tourId);
+                break;
+            case 'dismissed':
+                onDomainDismiss(event.tourId);
+                break;
+            case 'event-opened':
+                onEventOpened(event.eventType);
+                break;
+        }
+    }
+
+    $effect(() => productTourHost.subscribe(onHostEvent));
 </script>
 
 <ProductTourWelcome
@@ -876,30 +795,24 @@
 
 <ProductTourCatalog bind:open={catalogOpen} {items} onStart={(id) => void startTour(id, catalogSource)} />
 
-<AlertDialog.Root bind:open={confirmNewProjectOpen}>
-    <AlertDialog.Content data-product-tour-overlay>
-        <AlertDialog.Header>
-            <AlertDialog.Title>Create another project?</AlertDialog.Title>
-            <AlertDialog.Description>
-                Every accessible project is already configured. A new project uses plan capacity and will remain after the guide.
-            </AlertDialog.Description>
-        </AlertDialog.Header>
-        <AlertDialog.Footer>
-            <AlertDialog.Cancel onclick={() => (pendingConfigureSource = undefined)}>Cancel</AlertDialog.Cancel>
-            <AlertDialog.Action onclick={() => void confirmNewProject()}>Create Project</AlertDialog.Action>
-        </AlertDialog.Footer>
-    </AlertDialog.Content>
-</AlertDialog.Root>
-
-<AlertDialog.Root bind:open={confirmErrorNavigationOpen}>
-    <AlertDialog.Content data-product-tour-overlay>
-        <AlertDialog.Header>
-            <AlertDialog.Title>Open Errors?</AlertDialog.Title>
-            <AlertDialog.Description>This guide starts in Errors so you can choose a real report. Your current page will change.</AlertDialog.Description>
-        </AlertDialog.Header>
-        <AlertDialog.Footer>
-            <AlertDialog.Cancel onclick={() => (pendingInvestigateSource = undefined)}>Cancel</AlertDialog.Cancel>
-            <AlertDialog.Action onclick={() => void confirmErrorNavigation()}>Open Errors</AlertDialog.Action>
-        </AlertDialog.Footer>
-    </AlertDialog.Content>
-</AlertDialog.Root>
+{#if pendingConfirmation}
+    <AlertDialog.Root
+        open
+        onOpenChange={(open) => {
+            if (!open) {
+                pendingConfirmation = undefined;
+            }
+        }}
+    >
+        <AlertDialog.Content data-product-tour-overlay>
+            <AlertDialog.Header>
+                <AlertDialog.Title>{pendingConfirmation.action.title}</AlertDialog.Title>
+                <AlertDialog.Description>{pendingConfirmation.action.description}</AlertDialog.Description>
+            </AlertDialog.Header>
+            <AlertDialog.Footer>
+                <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+                <AlertDialog.Action onclick={() => void confirmNavigation()}>{pendingConfirmation.action.actionLabel}</AlertDialog.Action>
+            </AlertDialog.Footer>
+        </AlertDialog.Content>
+    </AlertDialog.Root>
+{/if}

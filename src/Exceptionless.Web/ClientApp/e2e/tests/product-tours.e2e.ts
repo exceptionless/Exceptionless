@@ -159,6 +159,27 @@ test('Investigate an error resumes after navigation and advances only after an e
     await expect(investigationCallout.getByText('Investigate the evidence')).toBeVisible();
     await investigationCallout.getByRole('button', { name: 'End guide' }).click();
     expect(event.type).toBe('error');
+
+    const usageReferenceId = `pw-e2e-tour-usage-${e2eScenario.run}`.slice(0, 100);
+    await e2eApi.submitEvent(e2eScenario.projectId, e2eScenario.projectToken, {
+        data: { e2e_reference: usageReferenceId },
+        message: `Feature usage ${e2eScenario.run}`,
+        reference_id: usageReferenceId,
+        source: 'playwright-e2e',
+        type: 'usage'
+    });
+    const usageEvent = await e2eApi.pollForEventByReference(e2eScenario.userToken, e2eScenario.projectId, usageReferenceId);
+    await page.goto(`/next/event/${usageEvent.id}`);
+    await expect(page.locator('[data-tour="event-details"][data-event-type="usage"]')).toBeVisible({ timeout: 30_000 });
+
+    const usageUrl = page.url();
+    await startTourFromCommand(page, 'Investigate an error');
+    const nonErrorConfirmation = page.getByRole('alertdialog', { name: 'Open Errors?' });
+    await expect(nonErrorConfirmation).toBeVisible();
+    await nonErrorConfirmation.getByRole('button', { name: 'Cancel' }).click();
+    await expect(nonErrorConfirmation).toBeHidden();
+    expect(page.url()).toBe(usageUrl);
+    await expect(investigationCallout).toBeHidden();
 });
 
 test('Exie announcement can be dismissed without hiding the replayable guide', async ({ e2eScenario: _e2eScenario, page }, testInfo) => {

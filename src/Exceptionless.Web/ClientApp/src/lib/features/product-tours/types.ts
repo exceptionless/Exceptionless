@@ -10,6 +10,7 @@ export interface ProductTourContext {
     assistantAccess?: AssistantAccess;
     errorEventAvailability: ProductTourErrorEventAvailability;
     isSetupPage: boolean;
+    openEventType?: string;
     organizationId?: string;
     pathname: string;
     projects: ViewProject[];
@@ -17,6 +18,7 @@ export interface ProductTourContext {
 export interface ProductTourDefinition {
     description: string;
     getAvailability: (context: ProductTourContext) => ProductTourAvailability;
+    getStartAction?: (context: ProductTourContext) => ProductTourStartAction;
     getSteps: (context: ProductTourContext) => ProductTourStep[];
     id: ProductTourId;
     keywords: readonly string[];
@@ -25,7 +27,6 @@ export interface ProductTourDefinition {
 }
 export type ProductTourErrorEventAvailability = 'available' | 'empty' | 'error' | 'loading';
 export type ProductTourId = 'configure-project' | 'create-saved-view' | 'investigate-error' | 'meet-exie' | 'new-ui-overview';
-
 export type ProductTourKey = 'exie-announcement' | 'welcome' | ProductTourId;
 
 export type ProductTourLaunchSource = 'automatic' | 'catalog' | 'command-palette' | 'feature-announcement' | 'help-menu';
@@ -36,6 +37,11 @@ export interface ProductTourListItem extends ProductTourDefinition {
 }
 
 export type ProductTourPresentation = 'inline' | 'spotlight';
+
+export type ProductTourStartAction =
+    | { actionLabel: string; description: string; destination: string; title: string; type: 'confirm-navigation' }
+    | { destination: string; type: 'navigate' }
+    | { stepId?: string; type: 'launch' };
 
 export interface ProductTourStep {
     advanceOnClick?: boolean;
