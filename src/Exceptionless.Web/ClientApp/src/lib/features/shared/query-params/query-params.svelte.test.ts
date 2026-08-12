@@ -289,6 +289,30 @@ describe('createQueryParameters', () => {
         expect(screen.getByText('a').textContent).toBe('a');
     });
 
+    it('preserves a throttled replacement across route teardown', async () => {
+        // Arrange
+        const view = render(QueryParametersTestHarness);
+        await fireEvent.click(screen.getByRole('button', { name: 'First' }));
+        await fireEvent.click(screen.getByRole('button', { name: 'Second' }));
+        const beforeNavigation = navigation.beforeNavigate.mock.calls[0]?.[0] as ((navigation: { type: string }) => void) | undefined;
+        window.history.replaceState(pageState, '', '/');
+        beforeNavigation?.({ type: 'popstate' });
+        window.dispatchEvent(new PopStateEvent('popstate', { state: pageState }));
+        await tick();
+
+        // Act: leave the route, then recreate it by traversing Forward to the source entry.
+        view.unmount();
+        window.history.replaceState(pageState, '', '/?filter=first');
+        render(QueryParametersTestHarness);
+        await tick();
+
+        // Assert
+        expect(navigation.replaceState).toHaveBeenCalledOnce();
+        expect(navigation.replaceState).toHaveBeenCalledWith('/?filter=second', pageState);
+        expect(window.location.search).toBe('?filter=second');
+        expect(screen.getByText('second').textContent).toBe('second');
+    });
+
     it('restores reactive state when shallow history is traversed', async () => {
         // Arrange
         render(QueryParametersTestHarness);

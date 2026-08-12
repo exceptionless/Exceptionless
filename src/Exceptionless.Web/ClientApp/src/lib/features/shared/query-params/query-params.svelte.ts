@@ -2,12 +2,14 @@ import { browser, building } from '$app/environment';
 import { afterNavigate, beforeNavigate, pushState, replaceState } from '$app/navigation';
 import { page } from '$app/state';
 import { onDestroy } from 'svelte';
-import { SvelteURL } from 'svelte/reactivity';
+import { SvelteMap, SvelteURL } from 'svelte/reactivity';
 
 import type { CreateQueryParametersOptions, QueryParameterSchema, QueryParameterState } from './types.js';
 
 import { createQueryParameterProxy } from './proxy.js';
 import { applyQueryParameterUpdates, createDebouncedFunction, createSearchParams, parseQueryParameters, searchParamsEqual } from './query-params.js';
+
+const pendingPushHistoryReplacements = new SvelteMap<string, string>();
 
 export function createQueryParameters<T extends QueryParameterSchema>({
     debounceMilliseconds = 200,
@@ -33,6 +35,17 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     };
 
     const getCurrentUrl = () => normalizeUrl(`${window.location.pathname}${window.location.search}${window.location.hash}`);
+
+    if (browser) {
+        const currentUrl = getCurrentUrl();
+        const retainedReplacementUrl = pendingPushHistoryReplacements.get(currentUrl);
+        if (retainedReplacementUrl) {
+            pendingPushHistoryReplacements.delete(currentUrl);
+            replaceState(retainedReplacementUrl, page.state);
+            searchParams = createSearchParams(window.location.search);
+            Object.assign(current, parseQueryParameters(searchParams, schema, defaults));
+        }
+    }
 
     const settlePushHistoryEntry = () => {
         isCoalescingPushHistoryEntry = false;
@@ -127,7 +140,16 @@ export function createQueryParameters<T extends QueryParameterSchema>({
         window.addEventListener('beforeunload', handleBeforeUnload);
     }
 
-    onDestroy(finalizePushHistoryEntry);
+    onDestroy(() => {
+        if (pendingReplacementUrl && coalescingEntryUrl && getCurrentUrl() !== coalescingEntryUrl) {
+            pendingPushHistoryReplacements.set(coalescingEntryUrl, pendingReplacementUrl);
+            pendingReplacementUrl = undefined;
+            settlePushHistoryEntry();
+            return;
+        }
+
+        finalizePushHistoryEntry();
+    });
 
     const commit = (result: ReturnType<typeof applyQueryParameterUpdates<T>>) => {
         searchParams = result.searchParams;
