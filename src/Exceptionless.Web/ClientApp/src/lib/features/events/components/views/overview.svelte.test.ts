@@ -25,4 +25,14 @@ describe('Overview', () => {
         expect(filterChanged).toHaveBeenCalledOnce();
         expect(filterChanged).toHaveBeenCalledWith(expect.any(FilterType));
     });
+
+    it('does not offer a filter for a supplementary-plane reference name rejected by the backend', () => {
+        const event = {
+            data: { '@ref:𐐀': 'reference-id' }
+        } as unknown as PersistentEvent;
+
+        render(Overview, { event, filterChanged: vi.fn() });
+
+        expect(screen.queryByTitle('Filter ref.𐐀:reference-id')).toBeNull();
+    });
 });
