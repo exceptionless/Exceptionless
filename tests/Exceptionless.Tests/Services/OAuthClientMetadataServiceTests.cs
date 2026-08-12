@@ -19,20 +19,29 @@ public sealed class OAuthClientMetadataServiceTests
     [InlineData("https://oauth.example/client.json#fragment", false)]
     public void TryCreateClientMetadataDocumentUri_WithClientId_ValidatesHttpsPath(string clientId, bool expected)
     {
+        // Arrange is provided by the theory data.
+
+        // Act
         bool isValid = OAuthClientMetadataService.TryCreateClientMetadataDocumentUri(clientId, out _);
 
+        // Assert
         Assert.Equal(expected, isValid);
     }
 
     [Fact]
     public async Task GetClientMetadataAsync_NoStoreResponse_DoesNotCacheDocument()
     {
+        // Arrange
         var handler = new StubHttpMessageHandler(CreateMetadataResponse);
         using var service = CreateService(handler);
 
-        Assert.NotNull(await service.ClientMetadataService.GetClientMetadataAsync("https://oauth.example/client.json"));
-        Assert.NotNull(await service.ClientMetadataService.GetClientMetadataAsync("https://oauth.example/client.json"));
+        // Act
+        var firstResult = await service.ClientMetadataService.GetClientMetadataAsync("https://oauth.example/client.json");
+        var secondResult = await service.ClientMetadataService.GetClientMetadataAsync("https://oauth.example/client.json");
 
+        // Assert
+        Assert.NotNull(firstResult);
+        Assert.NotNull(secondResult);
         Assert.Equal(2, handler.RequestCount);
 
         static HttpResponseMessage CreateMetadataResponse()
@@ -46,18 +55,51 @@ public sealed class OAuthClientMetadataServiceTests
     [Fact]
     public async Task GetClientMetadataAsync_MaxAgeResponse_CachesDocument()
     {
+        // Arrange
         var handler = new StubHttpMessageHandler(CreateMetadataResponse);
         using var service = CreateService(handler);
 
-        Assert.NotNull(await service.ClientMetadataService.GetClientMetadataAsync("https://oauth.example/client.json"));
-        Assert.NotNull(await service.ClientMetadataService.GetClientMetadataAsync("https://oauth.example/client.json"));
+        // Act
+        var firstResult = await service.ClientMetadataService.GetClientMetadataAsync("https://oauth.example/client.json");
+        var secondResult = await service.ClientMetadataService.GetClientMetadataAsync("https://oauth.example/client.json");
 
+        // Assert
+        Assert.NotNull(firstResult);
+        Assert.NotNull(secondResult);
         Assert.Equal(1, handler.RequestCount);
 
         static HttpResponseMessage CreateMetadataResponse()
         {
             var response = CreateSuccessfulMetadataResponse();
             response.Headers.CacheControl = new CacheControlHeaderValue { MaxAge = TimeSpan.FromMinutes(10) };
+            return response;
+        }
+    }
+
+    [Fact]
+    public async Task GetClientMetadataAsync_ZeroSharedMaxAgeResponse_DoesNotCacheDocument()
+    {
+        // Arrange
+        var handler = new StubHttpMessageHandler(CreateMetadataResponse);
+        using var service = CreateService(handler);
+
+        // Act
+        var firstResult = await service.ClientMetadataService.GetClientMetadataAsync("https://oauth.example/client.json");
+        var secondResult = await service.ClientMetadataService.GetClientMetadataAsync("https://oauth.example/client.json");
+
+        // Assert
+        Assert.NotNull(firstResult);
+        Assert.NotNull(secondResult);
+        Assert.Equal(2, handler.RequestCount);
+
+        static HttpResponseMessage CreateMetadataResponse()
+        {
+            var response = CreateSuccessfulMetadataResponse();
+            response.Headers.CacheControl = new CacheControlHeaderValue
+            {
+                MaxAge = TimeSpan.FromHours(1),
+                SharedMaxAge = TimeSpan.Zero
+            };
             return response;
         }
     }

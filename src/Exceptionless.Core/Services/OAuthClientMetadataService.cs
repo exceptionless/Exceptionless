@@ -114,7 +114,7 @@ public sealed class OAuthClientMetadataService(HttpClient httpClient, OAuthServe
             return null;
 
         TimeSpan responseAge = response.Headers.Age ?? TimeSpan.Zero;
-        TimeSpan? cacheLifetime = cacheControl?.MaxAge - responseAge;
+        TimeSpan? cacheLifetime = (cacheControl?.SharedMaxAge ?? cacheControl?.MaxAge) - responseAge;
         if (!cacheLifetime.HasValue && response.Content.Headers.Expires.HasValue)
             cacheLifetime = response.Content.Headers.Expires.Value - timeProvider.GetUtcNow();
 

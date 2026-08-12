@@ -257,7 +257,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         Assert.Contains("http://localhost:7110", metadata.AuthorizationServers);
         Assert.Contains("header", metadata.BearerMethodsSupported);
         Assert.Contains(AuthorizationRoles.McpRead, metadata.ScopesSupported);
-        Assert.DoesNotContain(AuthorizationRoles.OfflineAccess, metadata.ScopesSupported);
+        Assert.Contains(AuthorizationRoles.OfflineAccess, metadata.ScopesSupported);
     }
 
     [Fact]
@@ -312,6 +312,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
     [Fact]
     public async Task McpAsync_UntrustedOrigin_ReturnsForbidden()
     {
+        // Arrange
         using var client = _server.CreateClient();
         using var request = new HttpRequestMessage(HttpMethod.Post, "/mcp")
         {
@@ -319,14 +320,17 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         };
         request.Headers.Add("Origin", "https://attacker.example");
 
+        // Act
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     [Fact]
     public async Task McpAsync_CanonicalOrigin_ContinuesToAuthorization()
     {
+        // Arrange
         using var client = _server.CreateClient();
         using var request = new HttpRequestMessage(HttpMethod.Post, "/mcp")
         {
@@ -334,8 +338,10 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         };
         request.Headers.Add("Origin", "http://localhost:7110");
 
+        // Act
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
@@ -705,11 +711,14 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
     [Fact]
     public async Task CompleteAuthorizeAsync_ClientMetadataDocumentMissingName_ReturnsBadRequest()
     {
+        // Arrange
         using var client = CreateHttpClient();
         using var request = CreateAuthorizeJsonRequest(PkceVerifier, MetadataRedirectUri, clientId: MetadataMissingNameClientId);
 
+        // Act
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var error = await response.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
         Assert.NotNull(error);
@@ -990,6 +999,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
     [Fact]
     public async Task OAuthBearer_McpResourceMissingRequiredScope_ReturnsInsufficientScopeChallenge()
     {
+        // Arrange
         var token = await IssueTokenAsync();
         var storedToken = await GetStoredOAuthTokenAsync(token.AccessToken);
         Assert.NotNull(storedToken);
@@ -1000,8 +1010,10 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         using var request = new HttpRequestMessage(HttpMethod.Get, "/mcp");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
 
+        // Act
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         var challenge = Assert.Single(response.Headers.WwwAuthenticate);
         Assert.Equal("Bearer", challenge.Scheme);
