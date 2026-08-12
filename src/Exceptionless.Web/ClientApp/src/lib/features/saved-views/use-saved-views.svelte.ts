@@ -50,6 +50,7 @@ export interface UseSavedViewsReturn {
     handleClearSavedView: () => void;
     handleLoadView: (view: SavedView) => void;
     handleResetToSaved: () => void;
+    hydratedSavedViewId: string | undefined;
     isEnabled: boolean;
     isLoading: boolean;
     isMissing: boolean;
@@ -204,6 +205,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     // Hydrate saved view state when a saved view loads. Query params remain URL overrides.
     // lastLoadedViewId prevents re-hydration on background refetches (which would stomp user edits).
     let lastLoadedViewId = '';
+    let hydratedSavedViewId = $state<string>();
     $effect(() => {
         const savedViewKey = options.slug ?? options.queryParams.saved;
         const view = activeSavedView;
@@ -221,10 +223,12 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
                 lastLoadedViewId = '';
             }
 
+            hydratedSavedViewId = undefined;
             return;
         }
 
         if (!view) {
+            hydratedSavedViewId = undefined;
             // Skip while refetching to avoid false-positive clears during cache invalidation
             if (isFetching) {
                 return;
@@ -235,6 +239,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
         // Already loaded this view — skip to avoid stomping user edits on background refetch
         if (view.id === lastLoadedViewId) {
+            hydratedSavedViewId = view.id;
             return;
         }
 
@@ -251,6 +256,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
         applyColumnState(view);
         applyDisplayState(view);
+        hydratedSavedViewId = view.id;
     });
 
     // Detect if current filters or columns differ from the active saved view
@@ -362,6 +368,9 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         handleClearSavedView,
         handleLoadView,
         handleResetToSaved,
+        get hydratedSavedViewId() {
+            return hydratedSavedViewId;
+        },
         get isEnabled() {
             return isEnabled;
         },

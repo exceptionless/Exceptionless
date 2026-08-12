@@ -6,9 +6,57 @@ import { queryKeys as stackQueryKeys } from '$features/stacks/api.svelte';
 import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, keepPreviousData, QueryClient, useQueryClient } from '@tanstack/svelte-query';
+import { SvelteSet } from 'svelte/reactivity';
 
 import type { EventSummaryModel, SummaryTemplateKeys } from './components/summary/index';
 import type { PersistentEvent } from './models';
+
+export interface OrganizationEventNotificationRefresher {
+    cancel: () => void;
+    schedule: (organizationId?: string, refreshImmediately?: boolean) => void;
+}
+
+export function createOrganizationEventNotificationRefresher(queryClient: QueryClient): OrganizationEventNotificationRefresher {
+    const pendingOrganizationIds = new SvelteSet<string | undefined>();
+    let trailingRefresh: ReturnType<typeof setTimeout> | undefined;
+    const refresh = () => {
+        const organizationIds = [...pendingOrganizationIds];
+
+        void queryClient.invalidateQueries({
+            predicate: (query) =>
+                isOrganizationEventDashboardQueryKey(query.queryKey) &&
+                (organizationIds.includes(undefined) || organizationIds.includes(query.queryKey[2] as string)),
+            queryKey: queryKeys.type,
+            refetchType: 'active'
+        });
+    };
+
+    return {
+        cancel: () => {
+            pendingOrganizationIds.clear();
+            if (trailingRefresh !== undefined) {
+                clearTimeout(trailingRefresh);
+                trailingRefresh = undefined;
+            }
+        },
+        schedule: (organizationId?: string, refreshImmediately = true) => {
+            pendingOrganizationIds.add(organizationId);
+            if (trailingRefresh !== undefined) {
+                return;
+            }
+
+            if (refreshImmediately) {
+                refresh();
+            }
+
+            trailingRefresh = setTimeout(() => {
+                trailingRefresh = undefined;
+                refresh();
+                pendingOrganizationIds.clear();
+            }, ORGANIZATION_EVENT_NOTIFICATION_THROTTLE_MS);
+        }
+    };
+}
 
 export async function invalidatePersistentEventQueries(queryClient: QueryClient, message: WebSocketMessageValue<'PersistentEventChanged'>) {
     const { id, organization_id, project_id, stack_id } = message;
@@ -30,7 +78,7 @@ export async function invalidatePersistentEventQueries(queryClient: QueryClient,
 
     if (!id && !stack_id) {
         await queryClient.invalidateQueries({
-            predicate: (query) => !isOrganizationEventsQueryKey(query.queryKey),
+            predicate: (query) => !isOrganizationEventDashboardQueryKey(query.queryKey),
             queryKey: queryKeys.type
         });
     }
@@ -59,6 +107,8 @@ export const queryKeys = {
 export const PERSISTENT_EVENT_DELETE_RECONCILE_EVENT = 'PersistentEventDeleteReconcile';
 export const PERSISTENT_EVENT_DELETE_RECONCILE_DELAY = 1500;
 export const PERSISTENT_EVENT_DELETE_RECONCILE_RETRY_DELAY = 5000;
+export const ORGANIZATION_EVENT_QUERY_STALE_TIME_MS = 60 * 1000;
+export const ORGANIZATION_EVENT_NOTIFICATION_THROTTLE_MS = 5 * 1000;
 
 export interface DeleteEventsRequest {
     route: {
@@ -211,6 +261,40 @@ export interface GetStackEventsRequest {
     };
 }
 
+export function createEventWithNavigationQueryOptions(request: GetEventRequest, queryClient: QueryClient) {
+    const eventId = request.route.id;
+    const params = request.params ? { ...request.params } : undefined;
+
+    return {
+        enabled: () => !!accessToken.current && !!eventId,
+        placeholderData: keepPreviousData,
+        queryFn: async () => {
+            const client = useFetchClient();
+            const response = await client.getJSON<PersistentEvent>(`events/${eventId}`, {
+                params: {
+                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                    ...params
+                }
+            });
+
+            const event = response.data!;
+            queryClient.setQueryData(queryKeys.id(eventId), event);
+
+            const previousUrl = response.meta?.links?.previous?.url;
+            const nextUrl = response.meta?.links?.next?.url;
+
+            return {
+                event,
+                navigation: {
+                    nextId: nextUrl ? (nextUrl.split('/').pop() ?? null) : null,
+                    previousId: previousUrl ? (previousUrl.split('/').pop() ?? null) : null
+                }
+            };
+        },
+        queryKey: [...queryKeys.id(eventId), 'withNavigation', params]
+    };
+}
+
 export function deleteEvent(request: DeleteEventsRequest) {
     const queryClient = useQueryClient();
     return createMutation<WorkInProgressResult, ProblemDetails, void>(() => ({
@@ -232,17 +316,17 @@ export function deleteEvent(request: DeleteEventsRequest) {
     }));
 }
 
+// Cacheable reads intentionally finish after their observer unmounts so navigation can reuse the result instead of aborting and restarting the request.
 export function getEventQuery(request: GetEventRequest) {
     return createQuery<PersistentEvent, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.id,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+        queryFn: async () => {
             const client = useFetchClient();
             const response = await client.getJSON<PersistentEvent>(`events/${request.route.id}`, {
                 params: {
                     ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
                     ...request.params
-                },
-                signal
+                }
             });
 
             return response.data!;
@@ -254,7 +338,7 @@ export function getEventQuery(request: GetEventRequest) {
 export function getEventsByReferenceQuery(request: GetEventsByReferenceRequest) {
     return createQuery<EventSummaryModel<SummaryTemplateKeys>[], ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.referenceId,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+        queryFn: async () => {
             const client = useFetchClient();
             const path = request.route.projectId
                 ? `projects/${request.route.projectId}/events/by-ref/${encodeURIComponent(request.route.referenceId ?? '')}`
@@ -266,8 +350,7 @@ export function getEventsByReferenceQuery(request: GetEventsByReferenceRequest) 
                     mode: 'summary',
                     page: 1,
                     ...request.params
-                },
-                signal
+                }
             });
 
             return response.data!;
@@ -278,57 +361,34 @@ export function getEventsByReferenceQuery(request: GetEventsByReferenceRequest) 
 
 export function getEventWithNavigationQuery(request: GetEventRequest) {
     const queryClient = useQueryClient();
-    return createQuery<EventWithNavigation, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.id,
-        placeholderData: keepPreviousData,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
-            const client = useFetchClient();
-            const response = await client.getJSON<PersistentEvent>(`events/${request.route.id}`, {
-                params: {
-                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
-                    ...request.params
-                },
-                signal
-            });
-
-            const event = response.data!;
-            queryClient.setQueryData(queryKeys.id(request.route.id), event);
-
-            const previousUrl = response.meta?.links?.previous?.url;
-            const nextUrl = response.meta?.links?.next?.url;
-
-            return {
-                event,
-                navigation: {
-                    nextId: nextUrl ? (nextUrl.split('/').pop() ?? null) : null,
-                    previousId: previousUrl ? (previousUrl.split('/').pop() ?? null) : null
-                }
-            };
-        },
-        queryKey: [...queryKeys.id(request.route.id), 'withNavigation', request.params]
-    }));
+    return createQuery<EventWithNavigation, ProblemDetails>(() => createEventWithNavigationQueryOptions(request, queryClient));
 }
 
 export function getOrganizationCountQuery(request: GetOrganizationCountRequest) {
     const queryClient = useQueryClient();
 
-    return createQuery<CountResult, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.organizationId && (request.enabled?.() ?? true),
-        queryClient,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
-            const client = useFetchClient();
-            const response = await client.getJSON<CountResult>(`/organizations/${request.route.organizationId}/events/count`, {
-                params: {
-                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
-                    ...request.params
-                },
-                signal
-            });
+    return createQuery<CountResult, ProblemDetails>(() => {
+        const organizationId = request.route.organizationId;
+        const params = request.params ? { ...request.params } : undefined;
 
-            return response.data!;
-        },
-        queryKey: queryKeys.organizationsCount(request.route.organizationId, request.params)
-    }));
+        return {
+            enabled: () => !!accessToken.current && !!organizationId && (request.enabled?.() ?? true),
+            queryClient,
+            queryFn: async () => {
+                const client = useFetchClient();
+                const response = await client.getJSON<CountResult>(`/organizations/${organizationId}/events/count`, {
+                    params: {
+                        ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                        ...params
+                    }
+                });
+
+                return response.data!;
+            },
+            queryKey: queryKeys.organizationsCount(organizationId, params),
+            staleTime: ORGANIZATION_EVENT_QUERY_STALE_TIME_MS
+        };
+    });
 }
 
 export function getOrganizationEventsQuery(request: GetOrganizationEventsRequest) {
@@ -339,16 +399,14 @@ export function getOrganizationEventsQuery(request: GetOrganizationEventsRequest
         return {
             enabled: () => !!accessToken.current && !!organizationId && (request.enabled?.() ?? true),
             placeholderData: keepPreviousData,
-            queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            queryFn: async () => {
                 const client = useFetchClient();
                 return await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organizationId}/events`, {
-                    params: params as Record<string, unknown>,
-                    signal
+                    params: params as Record<string, unknown>
                 });
             },
             queryKey: queryKeys.organizationsEvents(organizationId, params),
-            refetchOnWindowFocus: false,
-            staleTime: 0
+            staleTime: ORGANIZATION_EVENT_QUERY_STALE_TIME_MS
         };
     });
 }
@@ -363,14 +421,13 @@ export function getOrganizationSessionsCountQuery(request: GetOrganizationSessio
     return createQuery<CountResult, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.organizationId,
         queryClient,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+        queryFn: async () => {
             const client = useFetchClient();
             const response = await client.getJSON<CountResult>(`/organizations/${request.route.organizationId}/events/count`, {
                 params: {
                     ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
                     ...request.params
-                },
-                signal
+                }
             });
 
             return response.data!;
@@ -382,23 +439,27 @@ export function getOrganizationSessionsCountQuery(request: GetOrganizationSessio
 export function getProjectCountQuery(request: GetProjectCountRequest) {
     const queryClient = useQueryClient();
 
-    return createQuery<CountResult, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.projectId,
-        queryClient,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
-            const client = useFetchClient();
-            const response = await client.getJSON<CountResult>(`/projects/${request.route.projectId}/events/count`, {
-                params: {
-                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
-                    ...request.params
-                },
-                signal
-            });
+    return createQuery<CountResult, ProblemDetails>(() => {
+        const projectId = request.route.projectId;
+        const params = request.params ? { ...request.params } : undefined;
 
-            return response.data!;
-        },
-        queryKey: queryKeys.projectsCount(request.route.projectId, request.params)
-    }));
+        return {
+            enabled: () => !!accessToken.current && !!projectId,
+            queryClient,
+            queryFn: async () => {
+                const client = useFetchClient();
+                const response = await client.getJSON<CountResult>(`/projects/${projectId}/events/count`, {
+                    params: {
+                        ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                        ...params
+                    }
+                });
+
+                return response.data!;
+            },
+            queryKey: queryKeys.projectsCount(projectId, params)
+        };
+    });
 }
 
 /**
@@ -408,7 +469,7 @@ export function getProjectCountQuery(request: GetProjectCountRequest) {
 export function getSessionEventsQuery(request: GetSessionEventsRequest) {
     return createQuery<EventSummaryModel<SummaryTemplateKeys>[], ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.sessionId,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+        queryFn: async () => {
             const client = useFetchClient();
             const path = request.route.projectId
                 ? `projects/${request.route.projectId}/events/sessions/${request.route.sessionId}`
@@ -418,8 +479,7 @@ export function getSessionEventsQuery(request: GetSessionEventsRequest) {
                     ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
                     mode: 'summary',
                     ...request.params
-                },
-                signal
+                }
             });
 
             return response.data!;
@@ -434,7 +494,7 @@ export function getStackCountQuery(request: GetStackCountRequest) {
     return createQuery<CountResult, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.stackId,
         queryClient,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+        queryFn: async () => {
             const client = useFetchClient();
             const response = await client.getJSON<CountResult>('events/count', {
                 params: {
@@ -443,8 +503,7 @@ export function getStackCountQuery(request: GetStackCountRequest) {
                     filter: request.params?.filter?.includes(`stack:${request.route.stackId}`)
                         ? request.params.filter
                         : [request.params?.filter, `stack:${request.route.stackId}`].filter(Boolean).join(' ')
-                },
-                signal
+                }
             });
 
             return response.data!;
@@ -464,14 +523,13 @@ export function getStackEventsQuery(request: GetStackEventsRequest) {
             });
         },
         queryClient,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+        queryFn: async () => {
             const client = useFetchClient();
             const response = await client.getJSON<PersistentEvent[]>(`stacks/${request.route.stackId}/events`, {
                 params: {
                     ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
                     ...request.params
-                },
-                signal
+                }
             });
 
             return response.data!;
@@ -498,6 +556,10 @@ export function schedulePersistentEventDeleteReconciliation(queryClient: QueryCl
         void invalidateQueryBackedDetails();
         void queryClient.invalidateQueries({ queryKey: stackQueryKeys.type });
     }, PERSISTENT_EVENT_DELETE_RECONCILE_RETRY_DELAY);
+}
+
+function isOrganizationEventDashboardQueryKey(queryKey: readonly unknown[]): boolean {
+    return queryKey[0] === queryKeys.type[0] && queryKey[1] === 'organizations' && (queryKey[3] === 'count' || queryKey[3] === 'events');
 }
 
 function isOrganizationEventsQueryKey(queryKey: readonly unknown[]): boolean {

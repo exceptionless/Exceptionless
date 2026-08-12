@@ -2,6 +2,76 @@
     border-radius: 0px;
 }
 
+.system-notification-banner {
+    position: relative;
+    min-height: 44px;
+    padding: 11px 48px 11px 52px;
+    border-width: 0 0 1px;
+    box-shadow: none;
+    font-size: @font-size-base;
+    line-height: @line-height-computed;
+
+    &.alert-info {
+        color: #245b30;
+        background-color: #e7f6e9;
+        border-color: #b8ddb9;
+    }
+
+    .system-notification-icon {
+        position: absolute;
+        top: 50%;
+        left: 20px;
+        color: currentColor;
+        font-family: FontAwesome;
+        font-size: @font-size-md;
+        line-height: 1;
+        transform: translateY(-50%);
+
+        &:before {
+            content: "\f05a";
+        }
+    }
+
+    &.alert-warning .system-notification-icon:before {
+        content: "\f071";
+    }
+
+    &.alert-danger .system-notification-icon:before {
+        content: "\f06a";
+    }
+
+    .close {
+        position: absolute;
+        top: 50%;
+        right: 17px;
+        color: currentColor;
+        line-height: 1;
+        transform: translateY(-50%);
+    }
+
+    .system-notification-message {
+        > :first-child {
+            margin-top: 0;
+        }
+
+        > :last-child {
+            margin-bottom: 0;
+        }
+
+        // Messages support HTML and may include legacy alert markup. The banner
+        // already supplies the level styling, so avoid rendering an alert inside it.
+        > .alert {
+            margin: 0;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            box-shadow: none;
+            color: inherit;
+            font-size: inherit;
+        }
+    }
+}
+
 .alert-banner a {
     text-decoration: underline;
 }
