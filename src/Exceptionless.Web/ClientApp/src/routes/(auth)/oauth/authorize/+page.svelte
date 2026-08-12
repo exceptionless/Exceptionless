@@ -12,6 +12,7 @@
     import { Checkbox } from '$comp/ui/checkbox';
     import { Spinner } from '$comp/ui/spinner';
     import { accessToken } from '$features/auth/index.svelte';
+    import { clearAuthenticationSession } from '$features/auth/session.svelte';
     import { getOrganizationsQuery } from '$features/organizations/api.svelte';
     import { getMeQuery } from '$features/users/api.svelte';
     import { useFetchClient } from '@foundatiofx/fetchclient';
@@ -224,7 +225,7 @@
     }
 
     async function redirectToLogin(): Promise<void> {
-        accessToken.current = null;
+        clearAuthenticationSession();
         const returnUrl = `${page.url.pathname}${page.url.search}`;
         const loginUrl = `${resolve('/(auth)/login')}?redirect=${encodeURIComponent(returnUrl)}`;
         await goto(loginUrl, { replaceState: true });
