@@ -63,4 +63,12 @@ public sealed class MigrationRegistrationTests : TestWithServices
         Assert.Equal(MigrationType.VersionedAndResumable, migration.MigrationType);
         Assert.Equal(9, migration.Version);
     }
+    [Fact]
+    public void BackfillParentReferences_UsesNextUnusedVersion()
+    {
+        var migration = GetService<BackfillParentReferences>();
+
+        Assert.Equal(MigrationType.VersionedAndResumable, migration.MigrationType);
+        Assert.Equal(6, migration.Version);
+    }
 }

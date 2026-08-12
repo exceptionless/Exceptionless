@@ -23,7 +23,7 @@ public sealed class BackfillParentReferences : MigrationBase
         _timeProvider = timeProvider;
 
         MigrationType = MigrationType.VersionedAndResumable;
-        Version = 3;
+        Version = 6;
     }
 
     public override async Task RunAsync(MigrationContext context)
