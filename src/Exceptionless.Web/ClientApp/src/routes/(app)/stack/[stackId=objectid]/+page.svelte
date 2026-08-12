@@ -1,5 +1,6 @@
 <script lang="ts">
     import type { IFilter } from '$comp/faceted-filter';
+    import type { PersistentEvent } from '$features/events/models';
     import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
     import { goto } from '$app/navigation';
@@ -40,6 +41,10 @@
         await goto(resolve('/(app)/stack'));
     }
 
+    async function handleEventLoaded(event: PersistentEvent) {
+        await goto(buildEventDetailsHref(event.id, event.stack_id), { replaceState: true });
+    }
+
     async function handleNavigate(newEventId: string) {
         await goto(buildEventDetailsHref(newEventId, stackId));
     }
@@ -49,4 +54,4 @@
     });
 </script>
 
-<StackDetails {filterChanged} {handleError} onDeleted={handleDeleted} onNavigate={handleNavigate} {stackId} />
+<StackDetails {filterChanged} {handleError} onDeleted={handleDeleted} onEventLoaded={handleEventLoaded} onNavigate={handleNavigate} {stackId} />

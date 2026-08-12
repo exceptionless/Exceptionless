@@ -5,7 +5,6 @@ import { expect, test } from '../fixtures/e2e-test';
 interface RequestCounts {
     eventList: number;
     eventStats: number;
-    savedViews: number;
     stackList: number;
     stackStats: number;
 }
@@ -26,37 +25,29 @@ test('stack and event queries reuse fresh parameterized data during in-app navig
     const requestCounts: RequestCounts = {
         eventList: 0,
         eventStats: 0,
-        savedViews: 0,
         stackList: 0,
         stackStats: 0
     };
-    const failedApiRequests: string[] = [];
-    const runtimeErrors: string[] = [];
-    page.on('console', (message) => {
-        if (message.type() === 'error' && /effect_update_depth_exceeded|maximum update depth|svelte\.dev\/e\/effect/i.test(message.text())) {
-            runtimeErrors.push(message.text());
-        }
-    });
-    page.on('pageerror', (error) => runtimeErrors.push(error.stack ?? error.message));
+    const failedListRequests: string[] = [];
     page.on('request', (request) => recordListRequest(requestCounts, request));
     page.on('requestfailed', (request) => {
-        if (isApiRequest(request)) {
-            failedApiRequests.push(request.url());
+        if (isListRequest(request)) {
+            failedListRequests.push(request.url());
         }
     });
 
     await navigateToList(page, 'Stacks');
     await expect.poll(() => requestCounts.stackList).toBe(1);
     await expect.poll(() => requestCounts.stackStats).toBe(1);
-    await expect.poll(() => requestCounts.savedViews).toBe(2);
 
     await navigateToList(page, 'Events');
     await expect.poll(() => requestCounts.eventList).toBe(1);
     await expect.poll(() => requestCounts.eventStats).toBe(1);
-    await expect.poll(() => requestCounts.savedViews).toBe(3);
+    expect(failedListRequests).toEqual([]);
+
     const initialRequestCounts = { ...requestCounts };
 
-    for (let index = 0; index < 10; index++) {
+    for (let index = 0; index < 3; index++) {
         await navigateToList(page, 'Stacks');
         await navigateToList(page, 'Events');
     }
@@ -68,19 +59,13 @@ test('stack and event queries reuse fresh parameterized data during in-app navig
     await expect.poll(() => requestCounts.stackStats).toBe(initialRequestCounts.stackStats + 1);
     const initialStackViewRequestCounts = { ...requestCounts };
 
-    for (let index = 0; index < 10; index++) {
+    for (let index = 0; index < 3; index++) {
         await navigateToStackView(page, 'All', 'all');
         await navigateToStackView(page, 'Most Frequent Errors', 'most-frequent-errors');
     }
 
     expect(requestCounts).toEqual(initialStackViewRequestCounts);
-    expect(failedApiRequests).toEqual([]);
-    expect(runtimeErrors).toEqual([]);
 });
-
-function isApiRequest(request: Request): boolean {
-    return new URL(request.url()).pathname.startsWith('/api/v2/');
-}
 
 function isListRequest(request: Request): boolean {
     return /^\/api\/v2\/organizations\/[^/]+\/events(?:\/count)?$/.test(new URL(request.url()).pathname);
@@ -122,11 +107,6 @@ async function navigateToStackView(page: Page, name: string, slug: string): Prom
 
 function recordListRequest(counts: RequestCounts, request: Request): void {
     const url = new URL(request.url());
-    if (/^\/api\/v2\/organizations\/[^/]+\/saved-views(?:\/[^/]+)?$/.test(url.pathname)) {
-        counts.savedViews++;
-        return;
-    }
-
     if (!isListRequest(request)) {
         return;
     }

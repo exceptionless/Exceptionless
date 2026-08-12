@@ -26,10 +26,10 @@
     import AddWebhookDialog from '$features/webhooks/components/dialogs/add-webhook-dialog.svelte';
     import { getTableOptions } from '$features/webhooks/components/table/options.svelte';
     import WebhooksDataTable from '$features/webhooks/components/table/webhooks-data-table.svelte';
-    import { createQueryParameters } from '$shared/query-params';
     import Plus from '@lucide/svelte/icons/plus';
     import Zapier from '@lucide/svelte/icons/zap';
     import { createTable } from '@tanstack/svelte-table';
+    import { queryParamsState } from 'kit-query-params';
     import { toast } from 'svelte-sonner';
 
     let toastId = $state<number | string>();
@@ -140,9 +140,9 @@
         limit: DEFAULT_LIMIT
     };
 
-    const queryParams = createQueryParameters({
-        defaults: DEFAULT_PARAMS,
-        history: 'push',
+    const queryParams = queryParamsState({
+        default: DEFAULT_PARAMS,
+        pushHistory: true,
         schema: {
             limit: 'number'
         }

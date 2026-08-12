@@ -1,6 +1,6 @@
 <div refresh-on="SystemNotification" refresh-action="svm.processSystemNotification(data)">
     <div
-        class="alert alert-banner alert-dismissible system-notification-banner m-b-none"
+        class="alert alert-banner alert-dismissible m-b-none"
         ng-class="svm.systemNotificationClass"
         ng-if="!!svm.systemNotificationMessage && svm.systemNotificationKey !== svm.dismissedSystemNotificationKey"
         role="alert"
@@ -14,7 +14,6 @@
         >
             <span aria-hidden="true">&times;</span>
         </button>
-        <span class="system-notification-icon" aria-hidden="true"></span>
-        <div class="system-notification-message" ng-bind-html="svm.systemNotificationMessage"></div>
+        <div ng-bind-html="svm.systemNotificationMessage"></div>
     </div>
 </div>

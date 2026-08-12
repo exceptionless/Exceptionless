@@ -33,9 +33,9 @@
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_LIMIT, DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
-    import { createQueryParameters } from '$shared/query-params';
     import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
     import { createTable } from '@tanstack/svelte-table';
+    import { queryParamsState } from 'kit-query-params';
     import { useEventListener, watch } from 'runed';
     import { onDestroy } from 'svelte';
     import { debounce } from 'throttle-debounce';
@@ -69,9 +69,9 @@
     }
 
     updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
-    const queryParams = createQueryParameters({
-        defaults: DEFAULT_PARAMS,
-        history: 'push',
+    const queryParams = queryParamsState({
+        default: DEFAULT_PARAMS,
+        pushHistory: true,
         schema: {
             filter: 'string',
             limit: 'number',
@@ -105,7 +105,8 @@
         () => organization.current,
         () => {
             updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
-            queryParams.update(DEFAULT_PARAMS);
+            //params.$reset(); // Work around for https://github.com/beynar/kit-query-params/issues/7
+            Object.assign(queryParams, DEFAULT_PARAMS);
             paused = false;
         },
         { lazy: true }

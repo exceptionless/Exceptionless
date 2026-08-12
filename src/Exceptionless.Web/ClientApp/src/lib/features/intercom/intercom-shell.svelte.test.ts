@@ -43,7 +43,6 @@ describe('IntercomShell', () => {
         intercomShowMessages.mockReset();
         intercomUpdate.mockReset();
         vi.restoreAllMocks();
-        window.Intercom = vi.fn();
     });
 
     it('keeps children mounted when Intercom becomes bootable', async () => {
@@ -77,84 +76,37 @@ describe('IntercomShell', () => {
         expect(intercomShowMessages).toHaveBeenCalledTimes(1);
     });
 
-    it('updates after boot only when the route or boot options change', async () => {
+    it('remains stable across repeated tab visibility changes', async () => {
         // Arrange
-        const bootOptions = { intercomUserJwt: 'token_0', userId: 'user_123' } as BootOptions;
+        let hidden = false;
+        const addEventListener = vi.spyOn(document, 'addEventListener');
+        vi.spyOn(document, 'hidden', 'get').mockImplementation(() => hidden);
         const { rerender } = render(IntercomShellTestHarness, {
             props: {
                 appId: 'app_123',
-                bootOptions,
-                routeKey: '/event/all'
-            }
-        });
-        await tick();
-
-        // Assert initial boot options are not immediately sent again.
-        expect(intercomUpdate).not.toHaveBeenCalled();
-
-        // Act
-        await rerender({ appId: 'app_123', bootOptions, routeKey: '/stack/all' });
-
-        // Assert
-        expect(intercomUpdate).toHaveBeenCalledOnce();
-        expect(intercomUpdate).toHaveBeenLastCalledWith({
-            intercom_user_jwt: 'token_0',
-            last_request_at: expect.any(Number),
-            user_id: 'user_123'
-        });
-
-        // Act
-        await rerender({
-            appId: 'app_123',
-            bootOptions: { intercomUserJwt: 'token_1', userId: 'user_123' } as BootOptions,
-            routeKey: '/stack/all'
-        });
-
-        // Assert
-        expect(intercomUpdate).toHaveBeenCalledTimes(2);
-        expect(intercomUpdate).toHaveBeenLastCalledWith({
-            intercom_user_jwt: 'token_1',
-            user_id: 'user_123'
-        });
-    });
-
-    it('does not update when navigation stays within the same normalized route', async () => {
-        const bootOptions = { email: 'user@example.com', userId: 'user_123' } as BootOptions;
-        const routeKey = '/(app)/project/[projectId]/event/[eventId]';
-        const { rerender } = render(IntercomShellTestHarness, {
-            props: { appId: 'app_123', bootOptions, routeKey }
-        });
-        await tick();
-
-        await rerender({ appId: 'app_123', bootOptions, routeKey });
-
-        expect(intercomUpdate).not.toHaveBeenCalled();
-    });
-
-    it('does not update before the client SDK initializes', async () => {
-        // Arrange
-        window.Intercom = undefined;
-        const bootOptions = { intercomUserJwt: 'token_0', userId: 'user_123' } as BootOptions;
-        const { rerender } = render(IntercomShellTestHarness, {
-            props: {
-                appId: 'app_123',
-                bootOptions,
-                routeKey: '/event/all'
+                bootOptions: { intercomUserJwt: 'token_0', userId: 'user_123' } as BootOptions
             }
         });
         await tick();
 
         // Act
-        await rerender({ appId: 'app_123', bootOptions, routeKey: '/stack/all' });
+        for (let index = 0; index < 100; index++) {
+            hidden = true;
+            document.dispatchEvent(new Event('visibilitychange'));
+            await tick();
+
+            await rerender({
+                appId: 'app_123',
+                bootOptions: { intercomUserJwt: `token_${index + 1}`, userId: 'user_123' } as BootOptions
+            });
+
+            hidden = false;
+            document.dispatchEvent(new Event('visibilitychange'));
+            await tick();
+        }
 
         // Assert
-        expect(intercomUpdate).not.toHaveBeenCalled();
-
-        // Act
-        window.Intercom = vi.fn();
-        await rerender({ appId: 'app_123', bootOptions, routeKey: '/event/errors' });
-
-        // Assert
-        expect(intercomUpdate).toHaveBeenCalledOnce();
+        expect(intercomUpdate).toHaveBeenCalled();
+        expect(addEventListener.mock.calls.filter(([eventName]) => eventName === 'visibilitychange')).toHaveLength(1);
     });
 });

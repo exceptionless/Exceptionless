@@ -60,10 +60,11 @@ export function buildListPageHref(page: ListPage, _organizationId: string | unde
     return `${path}?${queryParams}`;
 }
 
-export const LIST_FILTER_QUERY_PARAM_RESET = Object.fromEntries(LIST_FILTER_QUERY_PARAM_NAMES.map((name) => [name, null])) as Record<
-    ListFilterQueryParamName,
-    null
->;
+export function clearListFilterQueryParams(queryParams: ListFilterQueryParams): void {
+    for (const name of LIST_FILTER_QUERY_PARAM_NAMES) {
+        queryParams[name] = null;
+    }
+}
 
 export function deserializeTimeQueryParam(time: string): string {
     const trimmed = time.trim();

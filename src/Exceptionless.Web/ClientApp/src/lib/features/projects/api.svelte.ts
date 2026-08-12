@@ -388,23 +388,19 @@ export function getProjectIntegrationNotificationSettings(request: GetProjectInt
 }
 
 export function getProjectQuery(request: GetProjectRequest) {
-    return createQuery<ViewProject, ProblemDetails>(() => {
-        const id = request.route.id;
+    return createQuery<ViewProject, ProblemDetails>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<ViewProject>(`projects/${request.route.id}`, {
+                signal
+            });
 
-        return {
-            enabled: () => !!accessToken.current && !!id,
-            queryFn: async ({ signal }: { signal: AbortSignal }) => {
-                const client = useFetchClient();
-                const response = await client.getJSON<ViewProject>(`projects/${id}`, {
-                    signal
-                });
-
-                return response.data!;
-            },
-            queryKey: queryKeys.id(id),
-            refetchInterval: request.refetchInterval
-        };
-    });
+            return response.data!;
+        },
+        queryKey: queryKeys.id(request.route.id),
+        refetchInterval: request.refetchInterval
+    }));
 }
 
 export function getProjectsQuery(request: GetProjectsRequest) {

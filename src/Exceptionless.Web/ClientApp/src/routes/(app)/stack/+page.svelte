@@ -59,19 +59,19 @@
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
-    import { createQueryParameters } from '$shared/query-params';
     import { error } from '@sveltejs/kit';
     import { createTable } from '@tanstack/svelte-table';
+    import { queryParamsState } from 'kit-query-params';
     import { useEventListener, watch } from 'runed';
     import { onDestroy, untrack } from 'svelte';
     import { debounce } from 'throttle-debounce';
 
     import {
         ALL_TIME_QUERY_VALUE,
+        clearListFilterQueryParams,
         deserializeTimeQueryParam,
         getEventsNavigationOptionsForFilter,
         getListFilterQueryParams,
-        LIST_FILTER_QUERY_PARAM_RESET,
         type ListFilterQueryParams,
         redirectToEventsWithFilter,
         serializeTimeQueryParam
@@ -214,9 +214,9 @@
     }
 
     updateFilterCache(filterCacheKey(DEFAULT_FILTER), DEFAULT_FILTERS);
-    const queryParams = createQueryParameters({
-        defaults: DEFAULT_PARAMS,
-        history: 'push',
+    const queryParams = queryParamsState({
+        default: DEFAULT_PARAMS,
+        pushHistory: true,
         schema: {
             bot: 'string',
             filter: 'string',
@@ -288,7 +288,8 @@
             }
 
             updateFilterCache(filterCacheKey(DEFAULT_FILTER), DEFAULT_FILTERS);
-            queryParams.update(DEFAULT_PARAMS);
+            //params.$reset(); // Work around for https://github.com/beynar/kit-query-params/issues/7
+            Object.assign(queryParams, DEFAULT_PARAMS);
             reset();
         },
         { lazy: true }
@@ -418,7 +419,7 @@
 
     function handleResetToSaved(): void {
         isInternalFilterUpdate = false;
-        queryParams.update(LIST_FILTER_QUERY_PARAM_RESET);
+        clearListFilterQueryParams(queryParams);
         savedViewsState.handleResetToSaved();
         filters = getCurrentFilters();
     }
@@ -483,6 +484,9 @@
         const paginationWillChange = shouldClearPaginationForFilter && queryParams.page != null;
 
         updateFilterCache(filterCacheKey(filter), updatedFilters);
+        if (shouldClearPaginationForFilter) {
+            clearPaginationQueryParams();
+        }
 
         // Only skip the watch when the URL will actually change from our update.
         // If the URL doesn't change, the watch won't fire and the flag would stay stale.
@@ -490,22 +494,23 @@
             isInternalFilterUpdate = true;
         }
 
-        queryParams.update({
-            bot: queryFilterParams.bot,
-            filter: newFilterParam,
-            first: queryFilterParams.first,
-            level: queryFilterParams.level,
-            page: shouldClearPaginationForFilter ? null : queryParams.page,
-            project: queryFilterParams.project,
-            reference: queryFilterParams.reference,
-            session: queryFilterParams.session,
-            stack: queryFilterParams.stack,
-            status: queryFilterParams.status,
-            tag: queryFilterParams.tag,
-            time: newTimeParam,
-            type: queryFilterParams.type,
-            version: queryFilterParams.version
-        });
+        queryParams.bot = queryFilterParams.bot;
+        queryParams.first = queryFilterParams.first;
+        queryParams.level = queryFilterParams.level;
+        queryParams.project = queryFilterParams.project;
+        queryParams.reference = queryFilterParams.reference;
+        queryParams.session = queryFilterParams.session;
+        queryParams.stack = queryFilterParams.stack;
+        queryParams.status = queryFilterParams.status;
+        queryParams.tag = queryFilterParams.tag;
+        queryParams.type = queryFilterParams.type;
+        queryParams.version = queryFilterParams.version;
+        queryParams.time = newTimeParam;
+        queryParams.filter = newFilterParam;
+    }
+
+    function clearPaginationQueryParams(): void {
+        queryParams.page = null;
     }
 
     $effect(() => {
@@ -702,9 +707,9 @@
         await eventsQuery.refetch();
     }
 
-    const debouncedReconciliationRefetch = debounce(1500, () => eventsQuery.refetch());
+    const debouncedRefetch = debounce(1500, () => eventsQuery.refetch());
     onDestroy(() => {
-        debouncedReconciliationRefetch.cancel();
+        debouncedRefetch.cancel();
     });
 
     function onStackChanged(message: WebSocketMessageValue<'StackChanged'>) {
@@ -721,9 +726,11 @@
 
             removeTableData(table, (doc: EventSummaryModel<SummaryTemplateKeys>) => doc.id === message.id);
         }
+
+        debouncedRefetch();
     }
 
-    useEventListener(document, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT, () => debouncedReconciliationRefetch());
+    useEventListener(document, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT, () => debouncedRefetch());
     useEventListener(document, 'StackChanged', (event) => onStackChanged((event as CustomEvent).detail));
 
     let lastEmptyResponseAt = 0;

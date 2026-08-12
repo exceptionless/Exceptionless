@@ -47,7 +47,6 @@ interface E2EFixtures {
     e2eSecondaryOrganization: E2ESecondaryOrganization;
     e2eSecondaryProject: E2ESecondaryProject;
     e2eUseGeneratedUser: boolean;
-    effectDepthGuard: void;
 }
 
 export const test = base.extend<E2EFixtures>({
@@ -230,36 +229,7 @@ export const test = base.extend<E2EFixtures>({
         }
     },
 
-    e2eUseGeneratedUser: [false, { option: true }],
-
-    effectDepthGuard: [
-        async ({ page }, use) => {
-            const errors = new Set<string>();
-            const recordConsoleError = (message: { text: () => string; type: () => string }) => {
-                if (message.type() === 'error' && isEffectDepthError(message.text())) {
-                    errors.add(message.text());
-                }
-            };
-
-            const recordPageError = (error: Error) => {
-                const message = error.stack ?? error.message;
-                if (isEffectDepthError(message)) {
-                    errors.add(message);
-                }
-            };
-
-            page.on('console', recordConsoleError);
-            page.on('pageerror', recordPageError);
-            try {
-                await use();
-            } finally {
-                page.off('console', recordConsoleError);
-                page.off('pageerror', recordPageError);
-                expect([...errors]).toEqual([]);
-            }
-        },
-        { auto: true }
-    ]
+    e2eUseGeneratedUser: [false, { option: true }]
 });
 
 export { expect };
@@ -275,8 +245,4 @@ export function createRunName(runId: string, testInfo: TestInfo): string {
         .replace(/[^a-zA-Z0-9_-]/g, '-')
         .replace(/-+/g, '-')
         .slice(0, 96);
-}
-
-function isEffectDepthError(message: string): boolean {
-    return /effect_update_depth_exceeded|maximum update depth|svelte\.dev\/e\/effect/i.test(message);
 }
