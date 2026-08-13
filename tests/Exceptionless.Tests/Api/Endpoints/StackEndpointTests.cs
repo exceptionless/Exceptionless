@@ -202,6 +202,47 @@ public class StackEndpointTests : IntegrationTestsBase
         Assert.NotNull(stack.DateFixed);
     }
 
+    [Theory]
+    [InlineData("ignored", StackStatus.Ignored)]
+    [InlineData("DISCARDED", StackStatus.Discarded)]
+    [InlineData("OpEn", StackStatus.Open)]
+    [InlineData("FiXeD", StackStatus.Fixed)]
+    public async Task ChangeStatusAsync_WithCaseInsensitiveStatus_UpdatesStack(string status, StackStatus expectedStatus)
+    {
+        // Arrange
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/change-status")
+            .QueryString("status", status)
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        var stack = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stack);
+        Assert.Equal(expectedStatus, stack.Status);
+    }
+
+    [Fact]
+    public async Task ChangeStatusAsync_WithUnsupportedStatus_ReturnsBadRequest()
+    {
+        // Arrange
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/change-status")
+            .QueryString("status", "unknown")
+            .StatusCodeShouldBeBadRequest());
+    }
+
     [Fact]
     public async Task ChangeStatusAsync_ToOpen_ClearsFixedFields()
     {
