@@ -2,10 +2,8 @@ import type { WebSocketMessageValue } from '$features/websockets/models';
 import type { WorkInProgressResult } from '$shared/models';
 
 import { accessToken } from '$features/auth/index.svelte';
-import { getProblemMessage } from '$features/shared/validation';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
-import { toast } from 'svelte-sonner';
 import { SvelteSet } from 'svelte/reactivity';
 
 import type { Stack, StackStatus } from './models';
@@ -259,9 +257,8 @@ export function postChangeStatus(request: PostChangeStatusRequest) {
             await client.post(`stacks/${request.route.ids?.join(',')}/change-status`, undefined, { params: { status } });
         },
         mutationKey: queryKeys.postChangeStatus(request.route.ids),
-        onError: (error) => {
+        onError: () => {
             request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
-            toast.error(getProblemMessage(error, 'Unable to change stack status.'));
         },
         onSuccess: () => {
             request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
@@ -314,9 +311,8 @@ export function postMarkSnoozed(request: PostMarkSnoozedRequest) {
             await client.post(`stacks/${request.route.ids?.join(',')}/mark-snoozed`, undefined, { params: { snoozeUntilUtc: snoozeUntilUtc.toISOString() } });
         },
         mutationKey: queryKeys.postMarkSnoozed(request.route.ids),
-        onError: (error) => {
+        onError: () => {
             request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
-            toast.error(getProblemMessage(error, 'Unable to snooze stacks.'));
         },
         onSuccess: () => {
             request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));

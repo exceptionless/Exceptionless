@@ -5,6 +5,7 @@
 <script generics="TData extends RowData" lang="ts">
     import Button from '$comp/ui/button/button.svelte';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
+    import { getProblemMessage } from '$shared/validation';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
     import { type RowData, type StockFeatures, type Table } from '@tanstack/svelte-table';
     import { toast } from 'svelte-sonner';
@@ -56,6 +57,18 @@
             get ids() {
                 return ids;
             }
+        }
+    });
+
+    $effect(() => {
+        if (changeStatus.isError) {
+            toast.error(getProblemMessage(changeStatus.error, 'Unable to change stack status.'));
+        }
+    });
+
+    $effect(() => {
+        if (updateMarkSnoozed.isError) {
+            toast.error(getProblemMessage(updateMarkSnoozed.error, 'Unable to snooze selected stacks.'));
         }
     });
 

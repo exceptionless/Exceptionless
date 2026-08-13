@@ -1,4 +1,3 @@
-using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
@@ -24,7 +23,6 @@ public sealed record AdditionalParameterDefinition(
 public sealed record EndpointDocumentation
 {
     private Dictionary<string, string> _parameterDescriptions = new(StringComparer.OrdinalIgnoreCase);
-    private Dictionary<string, IReadOnlyCollection<string>> _parameterEnumValues = new(StringComparer.OrdinalIgnoreCase);
 
     public string? RequestBodyDescription { get; init; }
     public bool RequestBodyRequired { get; init; }
@@ -32,11 +30,6 @@ public sealed record EndpointDocumentation
     {
         get => _parameterDescriptions;
         init => _parameterDescriptions = new(value, StringComparer.OrdinalIgnoreCase);
-    }
-    public Dictionary<string, IReadOnlyCollection<string>> ParameterEnumValues
-    {
-        get => _parameterEnumValues;
-        init => _parameterEnumValues = new(value, StringComparer.OrdinalIgnoreCase);
     }
     public Dictionary<string, string> ResponseDescriptions { get; init; } = new();
     public List<AdditionalParameterDefinition> AdditionalParameters { get; init; } = new();
@@ -127,9 +120,6 @@ public class EndpointDocumentationOperationTransformer : IOpenApiOperationTransf
                     param.Description = description;
                     unmatchedParameterDescriptions.Remove(param.Name);
                 }
-
-                if (param.Name is not null && documentation.ParameterEnumValues.TryGetValue(param.Name, out var enumValues) && param.Schema is OpenApiSchema schema)
-                    schema.Enum = enumValues.Select(value => JsonValue.Create(value)).Cast<JsonNode>().ToList();
             }
         }
 

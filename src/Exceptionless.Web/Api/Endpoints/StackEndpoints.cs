@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
@@ -175,17 +176,12 @@ public static class StackEndpoints
         });
 
         // Change status
-        group.MapPost("stacks/{ids:objectids}/change-status", async (string ids, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [AsParameters] ChangeStackStatusRequest request) =>
-        {
-            var status = request.Status is null
-                ? StackStatus.Open
-                : Enum.Parse<StackStatus>(request.Status, ignoreCase: true);
-
-            return (await mediator.InvokeAsync<Result>(new ChangeStacksStatus(ids, status, httpContext))).ToHttpResult(resultMapper);
-        })
+        group.MapPost("stacks/{ids:objectids}/change-status", async (string ids, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper,
+            [MinLength(1, ErrorMessage = "The status is invalid.")]
+            [RegularExpression(Stack.KnownStatuses.ChangeablePattern, ErrorMessage = "The status is invalid.")] string? status = null)
+            => (await mediator.InvokeAsync<Result>(new ChangeStacksStatus(ids, Enum.Parse<StackStatus>(status ?? Stack.KnownStatuses.Open, ignoreCase: true), httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.StacksWritePolicy)
         .Produces(StatusCodes.Status200OK)
-        .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Change stack status")
@@ -193,9 +189,6 @@ public static class StackEndpoints
             ParameterDescriptions = new() {
                 ["ids"] = "A comma-delimited list of stack identifiers.",
                 ["status"] = "The status that the stack should be changed to.",
-            },
-            ParameterEnumValues = new() {
-                ["status"] = Stack.KnownStatuses.Changeable,
             },
             ResponseDescriptions = new() {
                 ["422"] = "The requested status is invalid.",
@@ -324,5 +317,4 @@ public static class StackEndpoints
 
         return endpoints;
     }
-
 }

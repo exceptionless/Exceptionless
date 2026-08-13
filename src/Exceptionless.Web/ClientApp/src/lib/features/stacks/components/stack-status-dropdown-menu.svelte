@@ -3,7 +3,9 @@
 
     import Button from '$comp/ui/button/button.svelte';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
+    import { getProblemMessage } from '$shared/validation';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
+    import { toast } from 'svelte-sonner';
     import { SvelteDate } from 'svelte/reactivity';
 
     import type { Stack } from '../models';
@@ -47,6 +49,18 @@
             get ids() {
                 return [stack?.id].filter(Boolean);
             }
+        }
+    });
+
+    $effect(() => {
+        if (changeStatus.isError) {
+            toast.error(getProblemMessage(changeStatus.error, 'Unable to change stack status.'));
+        }
+    });
+
+    $effect(() => {
+        if (updateMarkSnoozed.isError) {
+            toast.error(getProblemMessage(updateMarkSnoozed.error, 'Unable to snooze this stack.'));
         }
     });
 

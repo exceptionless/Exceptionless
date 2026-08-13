@@ -55,7 +55,7 @@ test('status update failure is visible to the user @signup', async ({ e2eApi, e2
         route.fulfill({
             body: JSON.stringify({ title: 'Status update rejected by test.' }),
             contentType: 'application/problem+json',
-            status: 400
+            status: 422
         })
     );
 

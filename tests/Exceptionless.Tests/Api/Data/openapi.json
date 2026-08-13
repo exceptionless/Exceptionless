@@ -6969,12 +6969,8 @@
             "in": "query",
             "description": "The status that the stack should be changed to.",
             "schema": {
-              "enum": [
-                "open",
-                "fixed",
-                "ignored",
-                "discarded"
-              ],
+              "minLength": 1,
+              "pattern": "(?i)^(open|fixed|ignored|discarded)$",
               "type": "string"
             }
           }
@@ -6982,16 +6978,6 @@
         "responses": {
           "200": {
             "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
           },
           "422": {
             "description": "The requested status is invalid.",

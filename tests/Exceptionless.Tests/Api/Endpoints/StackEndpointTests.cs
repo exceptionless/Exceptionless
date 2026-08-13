@@ -227,20 +227,27 @@ public class StackEndpointTests : IntegrationTestsBase
         Assert.Equal(expectedStatus, stack.Status);
     }
 
-    [Fact]
-    public async Task ChangeStatusAsync_WithUnsupportedStatus_ReturnsUnprocessableEntity()
+    [Theory]
+    [InlineData("")]
+    [InlineData("unknown")]
+    public async Task ChangeStatusAsync_WithUnsupportedStatus_ReturnsUnprocessableEntity(string status)
     {
         // Arrange
         var ev = await SubmitErrorEventAsync();
         Assert.NotNull(ev.StackId);
 
         // Act
-        await SendRequestAsync(r => r
+        var problemDetails = await SendRequestAsAsync<ValidationProblemDetails>(r => r
             .Post()
             .AsGlobalAdminUser()
             .AppendPath($"stacks/{ev.StackId}/change-status")
-            .QueryString("status", "unknown")
+            .QueryString("status", status)
             .StatusCodeShouldBeUnprocessableEntity());
+
+        // Assert
+        Assert.NotNull(problemDetails);
+        Assert.Equal(StatusCodes.Status422UnprocessableEntity, problemDetails.Status);
+        Assert.Equal(["The status is invalid."], problemDetails.Errors["status"]);
     }
 
     [Fact]
@@ -273,7 +280,7 @@ public class StackEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task ChangeStatusAsync_ToRegressed_ReturnsBadRequest()
+    public async Task ChangeStatusAsync_ToRegressed_ReturnsUnprocessableEntity()
     {
         // Arrange
         var ev = await SubmitErrorEventAsync();
@@ -285,11 +292,11 @@ public class StackEndpointTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath($"stacks/{ev.StackId}/change-status")
             .QueryString("status", "Regressed")
-            .StatusCodeShouldBeBadRequest());
+            .StatusCodeShouldBeUnprocessableEntity());
     }
 
     [Fact]
-    public async Task ChangeStatusAsync_ToSnoozed_ReturnsBadRequest()
+    public async Task ChangeStatusAsync_ToSnoozed_ReturnsUnprocessableEntity()
     {
         // Arrange
         var ev = await SubmitErrorEventAsync();
@@ -303,7 +310,7 @@ public class StackEndpointTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath($"stacks/{ev.StackId}/change-status")
             .QueryString("status", "Snoozed")
-            .StatusCodeShouldBeBadRequest());
+            .StatusCodeShouldBeUnprocessableEntity());
 
         // Assert — status must not have changed
         var stackAfter = await _stackRepository.GetByIdAsync(ev.StackId);
