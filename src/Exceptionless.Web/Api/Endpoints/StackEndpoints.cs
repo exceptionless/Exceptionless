@@ -10,6 +10,7 @@ using Exceptionless.Web.Models;
 using Foundatio.Mediator;
 using HttpIResult = Microsoft.AspNetCore.Http.IResult;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.OpenApi;
 using Exceptionless.Web.Utility.OpenApi;
 
 namespace Exceptionless.Web.Api.Endpoints;
@@ -185,6 +186,15 @@ public static class StackEndpoints
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Change stack status")
+        .AddOpenApiOperationTransformer((operation, context, _) =>
+        {
+            var statusParameter = operation.Parameters?.OfType<OpenApiParameter>().FirstOrDefault(parameter =>
+                String.Equals(parameter.Name, "status", StringComparison.OrdinalIgnoreCase));
+            if (statusParameter is not null)
+                statusParameter.Schema = new OpenApiSchemaReference(nameof(StackStatus), context.Document);
+
+            return Task.CompletedTask;
+        })
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
                 ["ids"] = "A comma-delimited list of stack identifiers.",

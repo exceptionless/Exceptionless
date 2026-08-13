@@ -6969,9 +6969,7 @@
             "in": "query",
             "description": "The status that the stack should be changed to.",
             "schema": {
-              "minLength": 1,
-              "pattern": "(?i)^(open|fixed|ignored|discarded)$",
-              "type": "string"
+              "$ref": "#/components/schemas/StackStatus"
             }
           }
         ],
