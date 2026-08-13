@@ -13,11 +13,12 @@
 
     interface Props {
         allColumnsSized?: boolean;
+        fullWidthSummary?: boolean;
         kind: 'event' | 'stack';
         onRowClick: (row: TestSummary) => void;
     }
 
-    let { allColumnsSized = false, kind, onRowClick }: Props = $props();
+    let { allColumnsSized = false, fullWidthSummary = false, kind, onRowClick }: Props = $props();
 
     const summaryData = {
         Message: 'Unexpected end of Stream, the content may have already been read by another component.',
@@ -62,7 +63,11 @@
                     cell: (props) => renderComponent(Summary, { showStatus: false, summary: props.row.original }),
                     header: 'Summary',
                     id: 'summary',
-                    meta: { class: 'w-60 min-w-60 max-w-60' },
+                    meta: {
+                        get class() {
+                            return fullWidthSummary ? 'w-full' : 'w-60 min-w-60 max-w-60';
+                        }
+                    },
                     minSize: 120,
                     size: 160
                 },

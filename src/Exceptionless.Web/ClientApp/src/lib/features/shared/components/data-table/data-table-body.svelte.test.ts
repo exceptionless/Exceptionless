@@ -28,6 +28,16 @@ describe('DataTableBody', () => {
         expect(dateHeader.style.cssText).toBe('width: 130px; min-width: 130px; max-width: 130px;');
     });
 
+    it('uses the full-width data column as the flexible column', () => {
+        render(DataTableBodyTestHarness, { fullWidthSummary: true, kind: 'event', onRowClick: vi.fn() });
+
+        const summaryHeader = screen.getByRole('columnheader', { name: 'Summary' });
+        const dateHeader = screen.getByRole('columnheader', { name: 'Date' });
+
+        expect(summaryHeader.style.cssText).toBe('width: 100%;');
+        expect(dateHeader.style.cssText).toBe('width: 150px; min-width: 150px; max-width: 150px;');
+    });
+
     it('lets a resized header shrink below its metadata width', () => {
         render(DataTableBodyTestHarness, { kind: 'event', onRowClick: vi.fn() });
 

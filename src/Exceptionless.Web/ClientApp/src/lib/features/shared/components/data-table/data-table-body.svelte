@@ -85,7 +85,8 @@
     function getFlexibleDataColumnId(): string | undefined {
         const columnSizing = table.atoms.columnSizing?.get() ?? {};
         const unsizedColumns = getVisibleDataColumns().filter((column) => columnSizing[column.id] === undefined);
-        return unsizedColumns.at(-1)?.id;
+        const fullWidthColumn = unsizedColumns.find((column) => getMetaClass(column.columnDef.meta).split(' ').includes('w-full'));
+        return fullWidthColumn?.id ?? unsizedColumns.at(-1)?.id;
     }
 
     function getVisibleDataColumnCount(): number {
