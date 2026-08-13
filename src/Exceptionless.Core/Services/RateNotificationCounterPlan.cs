@@ -60,7 +60,7 @@ public sealed class RateNotificationCounterPlan
             !rule.IsEnabled || rule.IsDeleted ||
             !String.Equals(rule.ProjectId, projectId, StringComparison.Ordinal) ||
             rule.Threshold <= 0 ||
-            rule.Window <= TimeSpan.Zero || rule.Window > RateNotificationRule.MaximumWindow ||
+            !RateNotificationRule.SupportedWindows.Contains(rule.Window) ||
             rule.Cooldown < rule.Window || rule.Cooldown > RateNotificationRule.MaximumCooldown ||
             !Enum.IsDefined(rule.Signal) ||
             !Enum.IsDefined(rule.Subject))

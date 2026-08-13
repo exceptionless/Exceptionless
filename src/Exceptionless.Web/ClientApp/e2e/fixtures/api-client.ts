@@ -364,18 +364,11 @@ export class E2EApiClient {
     }
 
     async waitForProjectRateNotificationsEnabled(token: string, projectId: string, timeoutMs = 30_000): Promise<void> {
-        const deadline = Date.now() + timeoutMs;
-
-        while (Date.now() < deadline) {
-            const project = await this.getProject(token, projectId);
-            if (project?.has_rate_notifications) {
-                return;
-            }
-
-            await delay(1_000);
-        }
-
-        throw new Error(`Timed out waiting for rate notifications to be enabled for E2E project ${projectId}`);
+        await waitForCondition(
+            async () => (await this.getProject(token, projectId))?.has_rate_notifications === true,
+            timeoutMs,
+            `Timed out waiting for rate notifications to be enabled for E2E project ${projectId}`
+        );
     }
 
     private authHeaders(token: string): Record<string, string> {

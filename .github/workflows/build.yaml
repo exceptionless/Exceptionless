@@ -600,7 +600,6 @@ jobs:
           kubectl patch cronjob/ex-dev-jobs-cleanup-orphaned-data -p '{"spec":{"suspend": false}}' --namespace $DEV_NAMESPACE
           kubectl patch cronjob/ex-dev-jobs-download-geoip-database -p '{"spec":{"suspend": false}}' --namespace $DEV_NAMESPACE
           kubectl patch cronjob/ex-dev-jobs-maintain-indexes -p '{"spec":{"suspend": false}}' --namespace $DEV_NAMESPACE
-          kubectl patch cronjob/ex-dev-jobs-migration -p '{"spec":{"suspend": false}}' --namespace $DEV_NAMESPACE
           kubectl patch cronjob/ex-dev-jobs-rate-notification-evaluator -p '{"spec":{"suspend": false}}' --namespace $DEV_NAMESPACE
 
           wait_for_versioned_pod() {

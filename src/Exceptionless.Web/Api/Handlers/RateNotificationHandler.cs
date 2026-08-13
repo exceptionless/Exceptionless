@@ -24,16 +24,6 @@ public class RateNotificationHandler(
 {
     private const int MaxRulesPerUserPerProject = 20;
 
-    private static readonly TimeSpan[] ValidWindows =
-    [
-        TimeSpan.FromMinutes(1),
-        TimeSpan.FromMinutes(5),
-        TimeSpan.FromMinutes(10),
-        TimeSpan.FromMinutes(15),
-        TimeSpan.FromMinutes(30),
-        TimeSpan.FromHours(1)
-    ];
-
     public async Task<Result<PagedResult<ViewRateNotificationRule>>> Handle(GetRateNotifications message)
     {
         var project = await GetProjectAndCheckAccessAsync(message.ProjectId, message.UserId, message.Context);
@@ -115,7 +105,7 @@ public class RateNotificationHandler(
         string name = model.Name ?? rule.Name;
         var signal = model.Signal ?? rule.Signal;
         var subject = model.Subject ?? rule.Subject;
-        string? stackId = subject == RateNotificationSubject.Stack ? model.StackId ?? rule.StackId : null;
+        string? stackId = subject == RateNotificationSubject.Stack ? model.StackId ?? rule.StackId : model.StackId;
         TimeSpan window = model.Window ?? rule.Window;
         TimeSpan cooldown = model.Cooldown ?? rule.Cooldown;
         var validation = await ValidateRuleAsync(name, signal, subject, stackId, window, cooldown, message.ProjectId, project.OrganizationId);
@@ -214,8 +204,8 @@ public class RateNotificationHandler(
             return Result.Invalid(ValidationError.Create("signal", "Signal is invalid."));
         if (!Enum.IsDefined(subject))
             return Result.Invalid(ValidationError.Create("subject", "Subject is invalid."));
-        if (!ValidWindows.Contains(window))
-            return Result.Invalid(ValidationError.Create("window", $"Window must be one of: {String.Join(", ", ValidWindows.Select(value => value.ToString()))}"));
+        if (!RateNotificationRule.SupportedWindows.Contains(window))
+            return Result.Invalid(ValidationError.Create("window", $"Window must be one of: {String.Join(", ", RateNotificationRule.SupportedWindows.Select(value => value.ToString()))}"));
         if (cooldown < window)
             return Result.Invalid(ValidationError.Create("cooldown", "Cooldown must be greater than or equal to Window."));
         if (cooldown > RateNotificationRule.MaximumCooldown)

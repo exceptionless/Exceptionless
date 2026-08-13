@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.ComponentModel.DataAnnotations;
 using Exceptionless.Core.Attributes;
 using Foundatio.Repositories.Models;
@@ -6,7 +7,16 @@ namespace Exceptionless.Core.Models;
 
 public class RateNotificationRule : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates
 {
-    public static TimeSpan MaximumWindow { get; } = TimeSpan.FromHours(1);
+    public static IReadOnlySet<TimeSpan> SupportedWindows { get; } = new HashSet<TimeSpan>
+    {
+        TimeSpan.FromMinutes(1),
+        TimeSpan.FromMinutes(5),
+        TimeSpan.FromMinutes(10),
+        TimeSpan.FromMinutes(15),
+        TimeSpan.FromMinutes(30),
+        TimeSpan.FromHours(1)
+    }.ToFrozenSet();
+
     public static TimeSpan MaximumCooldown { get; } = TimeSpan.FromDays(1);
 
     [ObjectId]

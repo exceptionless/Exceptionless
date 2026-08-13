@@ -139,12 +139,13 @@ public class RateNotificationEvaluatorJob : JobWithLockBase
             if (!rulesByCounterKey.TryGetValue(counterKey, out var matchingRules))
                 continue;
 
+            var observedCountsByWindowStart = new Dictionary<DateTime, long>();
             foreach (var rule in matchingRules)
             {
                 if (ct.IsCancellationRequested)
                     return;
 
-                await EvaluateRuleAsync(rule, counterKey, evaluationEndUtc, ct);
+                await EvaluateRuleAsync(rule, counterKey, evaluationEndUtc, observedCountsByWindowStart, ct);
                 if (++evaluatedRules % 100 == 0)
                     await context.RenewLockAsync();
             }
@@ -166,7 +167,8 @@ public class RateNotificationEvaluatorJob : JobWithLockBase
         return rules;
     }
 
-    private async Task EvaluateRuleAsync(RateNotificationRule rule, string counterKey, DateTime evaluationEndUtc, CancellationToken ct)
+    private async Task EvaluateRuleAsync(RateNotificationRule rule, string counterKey, DateTime evaluationEndUtc,
+        Dictionary<DateTime, long> observedCountsByWindowStart, CancellationToken ct)
     {
         if (!rule.IsEnabled)
             return;
@@ -188,7 +190,11 @@ public class RateNotificationEvaluatorJob : JobWithLockBase
             ? snoozeBoundaryUtc.Value
             : windowStartUtc;
 
-        var observedCount = await _counterService.SumBucketsAsync(counterKey, effectiveWindowStartUtc, evaluationEndUtc, ct);
+        if (!observedCountsByWindowStart.TryGetValue(effectiveWindowStartUtc, out long observedCount))
+        {
+            observedCount = await _counterService.SumBucketsAsync(counterKey, effectiveWindowStartUtc, evaluationEndUtc, ct);
+            observedCountsByWindowStart.Add(effectiveWindowStartUtc, observedCount);
+        }
 
         if (observedCount < rule.Threshold)
         {

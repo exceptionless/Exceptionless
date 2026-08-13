@@ -683,8 +683,8 @@ export const UpdateRateNotificationRuleSchema = object({
     .max(100, "Name must be at most 100 characters")
     .nullable()
     .optional(),
-  signal: RateNotificationSignalSchema.optional(),
-  subject: RateNotificationSubjectSchema.optional(),
+  signal: RateNotificationSignalSchema.nullable().optional(),
+  subject: RateNotificationSubjectSchema.nullable().optional(),
   stack_id: string()
     .length(24, "Stack id must be exactly 24 characters")
     .regex(/^[a-fA-F0-9]{24}$/, "Stack id has invalid format")

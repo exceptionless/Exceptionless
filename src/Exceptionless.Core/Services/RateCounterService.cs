@@ -40,14 +40,12 @@ public class RateCounterService
         long epochMinute = GetEpochMinute(now);
         var distinctCounterKeys = counterKeys.Distinct(StringComparer.Ordinal).ToList();
 
-        var increments = distinctCounterKeys.Select(async counterKey =>
-        {
-            await _cache.IncrementAsync(GetCountKey(epochMinute, counterKey), 1, BucketTtl);
-        });
-
         string activeKey = GetActiveKey(epochMinute);
-        Task updateActiveKeys = _cache.ListAddAsync(activeKey, distinctCounterKeys, BucketTtl);
-        await Task.WhenAll(increments.Append(updateActiveKeys));
+        await _cache.ListAddAsync(activeKey, distinctCounterKeys, BucketTtl);
+
+        var increments = distinctCounterKeys.Select(counterKey =>
+            _cache.IncrementAsync(GetCountKey(epochMinute, counterKey), 1, BucketTtl));
+        await Task.WhenAll(increments);
     }
 
     /// <summary>Sums all 1-minute bucket counts for the given counter key in the range [fromUtc, toUtc).</summary>
