@@ -60,6 +60,9 @@ test('status update failure is visible to the user @signup', async ({ e2eApi, e2
     );
 
     await page.getByRole('button', { exact: true, name: 'Open' }).click();
-    await page.getByRole('menuitem', { exact: true, name: 'Ignored' }).click();
+    await page.getByRole('menuitem', { exact: true, name: 'Discarded' }).click();
+    await expect(page.getByRole('heading', { name: /Discard Stack/ })).toBeVisible();
+    await page.getByRole('button', { exact: true, name: 'Discard Stack' }).click();
     await expect(page.getByText('Status update rejected by test.', { exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Discard Stack/ })).toBeVisible();
 });
