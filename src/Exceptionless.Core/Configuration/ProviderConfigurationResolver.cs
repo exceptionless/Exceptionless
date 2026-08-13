@@ -36,7 +36,6 @@ internal static class ProviderConfigurationResolver
         string Provider,
         string ConnectionStringName,
         ProviderConnectionStringFormat Format = ProviderConnectionStringFormat.KeyValue,
-        string? DefaultKey = null,
         bool AllowsEmptyConfiguration = false);
 
     private static readonly IReadOnlyDictionary<ProviderRole, ProviderCandidate[]> _providerCandidates =
@@ -44,18 +43,18 @@ internal static class ProviderConfigurationResolver
         {
             [ProviderRole.Cache] =
             [
-                new(RedisProvider, "Redis", ProviderConnectionStringFormat.Redis, ServerKey)
+                new(RedisProvider, "Redis", ProviderConnectionStringFormat.Redis)
             ],
             [ProviderRole.MessageBus] =
             [
-                new(RabbitMqProvider, "RabbitMQ", ProviderConnectionStringFormat.AmqpUri, ServerKey),
-                new(RedisProvider, "Redis", ProviderConnectionStringFormat.Redis, ServerKey)
+                new(RabbitMqProvider, "RabbitMQ", ProviderConnectionStringFormat.AmqpUri),
+                new(RedisProvider, "Redis", ProviderConnectionStringFormat.Redis)
             ],
             [ProviderRole.Queue] =
             [
                 new("azurestorage", "AzureQueues"),
                 new("sqs", "SQS"),
-                new(RedisProvider, "Redis", ProviderConnectionStringFormat.Redis, ServerKey)
+                new(RedisProvider, "Redis", ProviderConnectionStringFormat.Redis)
             ],
             [ProviderRole.Storage] =
             [
@@ -97,7 +96,7 @@ internal static class ProviderConfigurationResolver
         roleData[ProviderKey] = provider;
         if (String.Equals(provider, RedisProvider, StringComparison.Ordinal)
             && inlineConnectionString is null
-            && TryGetOpaqueRedisInlineConnectionString(selector, out inlineConnectionString))
+            && TryGetInlineRedisConnectionString(selector, roleData, out inlineConnectionString))
         {
             roleData.Clear();
             roleData[ProviderKey] = provider;
@@ -120,40 +119,20 @@ internal static class ProviderConfigurationResolver
             return CreateRawConfiguration(roleName, candidate, roleData, inlineConnectionString);
         }
 
-        if (candidate.Format is ProviderConnectionStringFormat.AmqpUri
-            && roleData.TryGetValue(ServerKey, out string? server)
-            && !String.IsNullOrWhiteSpace(server))
-        {
-            return CreateRawConfiguration(roleName, candidate, roleData, server);
-        }
-
         string? providerConnectionString = GetProviderConnectionString(configuration, candidate);
         Dictionary<string, string?> explicitData = roleData
             .Where(pair => !String.Equals(pair.Key, ProviderKey, StringComparison.OrdinalIgnoreCase))
             .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase);
 
-        if (candidate.Format is ProviderConnectionStringFormat.AmqpUri)
-        {
-            if (explicitData.Count > 0 || String.IsNullOrWhiteSpace(providerConnectionString))
-                throw CreateInvalidConfigurationException(roleName);
-
-            return CreateRawConfiguration(roleName, candidate, roleData, providerConnectionString);
-        }
-
-        if (candidate.Format is ProviderConnectionStringFormat.Redis
-            && !String.IsNullOrWhiteSpace(providerConnectionString)
-            && LooksLikeOpaqueRedisConnectionString(providerConnectionString)
-            && explicitData.Count > 0)
-        {
-            throw CreateInvalidConfigurationException(roleName);
-        }
+        if (candidate.Format is not ProviderConnectionStringFormat.KeyValue)
+            return ResolveRawConfiguration(roleName, candidate, roleData, explicitData, providerConnectionString);
 
         if (explicitData.Count == 0 && !String.IsNullOrWhiteSpace(providerConnectionString))
             return CreateConfiguration(candidate, providerConnectionString);
 
         var data = ParseProviderData(candidate, providerConnectionString);
         data.AddRange(explicitData);
-        ValidateProviderData(candidate, data);
+        ValidateProviderIdentity(candidate, data);
         data[ProviderKey] = provider;
 
         string? connectionString = data.BuildConnectionString([ProviderKey]);
@@ -176,7 +155,7 @@ internal static class ProviderConfigurationResolver
             if (String.IsNullOrWhiteSpace(connectionString))
                 continue;
 
-            return candidate.Format is ProviderConnectionStringFormat.AmqpUri
+            return candidate.Format is not ProviderConnectionStringFormat.KeyValue
                 ? CreateRawConfiguration(role.ToString(), candidate, new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase), connectionString)
                 : CreateConfiguration(candidate, connectionString!);
         }
@@ -210,9 +189,29 @@ internal static class ProviderConfigurationResolver
     {
         connectionString = TrimMatchingQuotes(connectionString.Trim());
         var data = ParseProviderData(candidate, connectionString);
-        ValidateProviderData(candidate, data);
+        ValidateProviderIdentity(candidate, data);
         data[ProviderKey] = candidate.Provider;
-        return new ProviderConfiguration(candidate.Provider, connectionString, data);
+        return new ProviderConfiguration(candidate.Provider, data.BuildConnectionString([ProviderKey]), data);
+    }
+
+    private static ProviderConfiguration ResolveRawConfiguration(
+        string roleName,
+        ProviderCandidate candidate,
+        Dictionary<string, string?> roleData,
+        Dictionary<string, string?> explicitData,
+        string? providerConnectionString)
+    {
+        if (explicitData.Count == 1
+            && explicitData.TryGetValue(ServerKey, out string? server)
+            && !String.IsNullOrWhiteSpace(server))
+        {
+            return CreateRawConfiguration(roleName, candidate, roleData, server);
+        }
+
+        if (explicitData.Count > 0 || String.IsNullOrWhiteSpace(providerConnectionString))
+            throw CreateInvalidConfigurationException(roleName);
+
+        return CreateRawConfiguration(roleName, candidate, roleData, providerConnectionString);
     }
 
     private static ProviderConfiguration CreateRawConfiguration(
@@ -224,22 +223,13 @@ internal static class ProviderConfigurationResolver
         connectionString = TrimMatchingQuotes(connectionString.Trim());
         if (candidate.Format is ProviderConnectionStringFormat.AmqpUri && !IsSupportedAbsoluteUri(connectionString))
             throw CreateInvalidConfigurationException(roleName);
+        if (candidate.Format is ProviderConnectionStringFormat.Redis && ContainsProviderMetadata(connectionString))
+            throw CreateInvalidConfigurationException(roleName);
 
         ValidateProviderIdentity(candidate, data);
         data[ProviderKey] = candidate.Provider;
         data[ServerKey] = connectionString;
         return new ProviderConfiguration(candidate.Provider, connectionString, data);
-    }
-
-    private static void ValidateProviderData(ProviderCandidate candidate, IDictionary<string, string?> data)
-    {
-        ValidateProviderIdentity(candidate, data);
-
-        if (candidate.Format is ProviderConnectionStringFormat.Redis
-            && String.IsNullOrWhiteSpace(data.GetString(ServerKey)))
-        {
-            throw CreateInvalidConfigurationException(candidate.ConnectionStringName);
-        }
     }
 
     private static void ValidateProviderIdentity(ProviderCandidate candidate, IDictionary<string, string?> data)
@@ -257,18 +247,9 @@ internal static class ProviderConfigurationResolver
         if (String.IsNullOrWhiteSpace(connectionString))
             return new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
-        if (candidate.Format is ProviderConnectionStringFormat.Redis
-            && LooksLikeOpaqueRedisConnectionString(connectionString))
-        {
-            return new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
-            {
-                [ServerKey] = TrimMatchingQuotes(connectionString.Trim())
-            };
-        }
-
         try
         {
-            return connectionString.ParseConnectionString(defaultKey: candidate.DefaultKey);
+            return connectionString.ParseConnectionString();
         }
         catch (ArgumentException)
         {
@@ -276,25 +257,34 @@ internal static class ProviderConfigurationResolver
         }
     }
 
-    private static bool LooksLikeOpaqueRedisConnectionString(string connectionString)
+    private static bool ContainsProviderMetadata(string connectionString)
     {
-        int equalsIndex = connectionString.IndexOf('=');
-        if (equalsIndex < 0)
-            return true;
-
-        int commaIndex = connectionString.IndexOf(',');
-        return commaIndex >= 0 && commaIndex < equalsIndex;
+        try
+        {
+            return connectionString.ParseConnectionString().ContainsKey(ProviderKey);
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
     }
 
-    private static bool TryGetOpaqueRedisInlineConnectionString(string selector, out string? connectionString)
+    private static bool TryGetInlineRedisConnectionString(
+        string selector,
+        IDictionary<string, string?> roleData,
+        out string? connectionString)
     {
         connectionString = null;
+        if (roleData.ContainsKey(ServerKey))
+            return false;
+
         int separatorIndex = selector.IndexOf(';');
         if (separatorIndex < 0)
             return false;
 
         string value = TrimMatchingQuotes(selector[(separatorIndex + 1)..].Trim());
-        if (String.IsNullOrWhiteSpace(value) || !LooksLikeOpaqueRedisConnectionString(value))
+        if (String.IsNullOrWhiteSpace(value)
+            || (value.Contains('=') && !value.Contains(',')))
             return false;
 
         connectionString = value;

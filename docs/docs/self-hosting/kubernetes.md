@@ -11,7 +11,7 @@ Please follow this section to set up Exceptionless in a Kubernetes environment. 
 
 ## Instructions
 
-Please note that we recommend you use Kubernetes for running in production.
+Please note that we recommend you use Kubernetes for running in production. Configure durable, highly available Redis and Elasticsearch services for a production installation. The chart's bundled single-replica dependencies are intended for evaluation and do not provide a zero-downtime or durable production topology.
 
 1. Follow the steps [here](https://github.com/exceptionless/Exceptionless/blob/master/k8s/ex-setup.ps1) for how to create it in AKS
 2. View the configuration settings below for more information on configuring Exceptionless.
@@ -29,7 +29,16 @@ _Please note that if you are specifying configuration via `docker-compose`, then
 
 ## ConnectionStrings
 
-See [Infrastructure Configuration](/docs/self-hosting/configuration) for the technology priority table, RabbitMQ examples, legacy compatibility controls, and the `local` opt-out. Existing Helm values remain supported without changes.
+See [Infrastructure Configuration](/docs/self-hosting/configuration) for the technology priority table, RabbitMQ examples, compatibility controls, Aspire naming, and rollout guidance. Existing Helm values remain supported without changes.
+
+The current chart renders explicit legacy selectors for Cache, MessageBus, Queue, and Storage. Those selectors intentionally override automatic technology selection. Adding `EX_ConnectionStrings__RabbitMQ` under `config` alone therefore does not switch MessageBus. Use the existing Helm value:
+
+```yaml
+messagebus:
+  connectionString: 'provider=rabbitmq;server="amqps://user:password@rabbitmq:5671/%2F"'
+```
+
+Keep every selector and effective endpoint unchanged during a rolling image upgrade. Changing a selector, provider, or endpoint is a separate infrastructure migration and requires a bridge or dual-read/write process, or a quiesce-and-drain maintenance window. Do not use `local` for a distributed role when multiple replicas may run; each replica would receive isolated in-memory state.
 
 ```yaml
 # Redis automatically supplies Cache, MessageBus, and Queue when a higher-priority

@@ -1,6 +1,7 @@
 using Exceptionless.Core;
 using Exceptionless.Core.Configuration;
 using Microsoft.Extensions.Configuration;
+using StackExchange.Redis;
 using Xunit;
 
 namespace Exceptionless.Tests.Configuration;
@@ -121,13 +122,12 @@ public class ProviderConfigurationTests
     {
         AppOptions options = ReadOptions(new()
         {
-            ["ConnectionStrings:Redis"] = "server=shared:6379;ssl=false;abortConnect=false",
-            ["ConnectionStrings:Cache"] = "provider=redis;server=cache:6380;ssl=true"
+            ["ConnectionStrings:S3"] = "bucket=shared;region=us-east-1",
+            ["ConnectionStrings:Storage"] = "provider=s3;bucket=events"
         });
 
-        Assert.Equal("cache:6380", options.CacheOptions.Data["server"]);
-        Assert.Equal("true", options.CacheOptions.Data["ssl"]);
-        Assert.Equal("false", options.CacheOptions.Data["abortConnect"]);
+        Assert.Equal("events", options.StorageOptions.Data["bucket"]);
+        Assert.Equal("us-east-1", options.StorageOptions.Data["region"]);
     }
 
     [Fact]
@@ -190,6 +190,21 @@ public class ProviderConfigurationTests
         Assert.Equal("redis", options.MessageBusOptions.Provider);
         Assert.Equal("redis", options.QueueOptions.Provider);
         Assert.Equal("local", options.StorageOptions.Provider);
+        Assert.True(options.UsesRedis());
+    }
+
+    [Fact]
+    public void ReadFromConfiguration_RedisQueueOnly_EnablesRedisTelemetry()
+    {
+        AppOptions options = ReadOptions(new()
+        {
+            ["ConnectionStrings:Cache"] = "local",
+            ["ConnectionStrings:MessageBus"] = "local",
+            ["ConnectionStrings:Queue"] = "provider=redis;queue:6379",
+            ["ConnectionStrings:Storage"] = "local"
+        });
+
+        Assert.True(options.UsesRedis());
     }
 
     [Fact]
@@ -211,6 +226,7 @@ public class ProviderConfigurationTests
         Assert.Equal("local", options.MessageBusOptions.Provider);
         Assert.Equal("local", options.QueueOptions.Provider);
         Assert.Equal("local", options.StorageOptions.Provider);
+        Assert.False(options.UsesRedis());
     }
 
     [Fact]
@@ -273,6 +289,59 @@ public class ProviderConfigurationTests
         });
 
         Assert.Equal("redis:6379,password=p%40ss,abortConnect=false", options.CacheOptions.ConnectionString);
+    }
+
+    [Theory]
+    [InlineData("ssl=true,redis:6380")]
+    [InlineData("password=secret,redis:6379")]
+    [InlineData("serviceName=primary,redis:26379")]
+    public void ReadFromConfiguration_OptionFirstRedis_PreservesNativeConnectionString(string connectionString)
+    {
+        AppOptions options = ReadOptions(new() { ["ConnectionStrings:Redis"] = connectionString });
+
+        Assert.Equal(connectionString, options.CacheOptions.ConnectionString);
+        Assert.Equal(connectionString, options.MessageBusOptions.ConnectionString);
+        Assert.Equal(connectionString, options.QueueOptions.ConnectionString);
+        Assert.Equal(connectionString, options.CacheOptions.Data["server"]);
+        Assert.Single(ConfigurationOptions.Parse(connectionString).EndPoints);
+    }
+
+    [Theory]
+    [InlineData("provider=redis;ssl=true,redis:6380", "ssl=true,redis:6380")]
+    [InlineData("provider=redis;server=redis:6379,abortConnect=false", "redis:6379,abortConnect=false")]
+    public void ReadFromConfiguration_LegacyRedisFullOverride_ProducesNativeConnectionString(
+        string selector,
+        string expectedConnectionString)
+    {
+        AppOptions options = ReadOptions(new() { ["ConnectionStrings:Cache"] = selector });
+
+        Assert.Equal(expectedConnectionString, options.CacheOptions.ConnectionString);
+        Assert.Single(ConfigurationOptions.Parse(expectedConnectionString).EndPoints);
+    }
+
+    [Fact]
+    public void ReadFromConfiguration_LegacyRedisPartialOverlay_Throws()
+    {
+        var values = new Dictionary<string, string?>
+        {
+            ["ConnectionStrings:Redis"] = "redis:6379,abortConnect=false",
+            ["ConnectionStrings:Cache"] = "provider=redis;server=cache:6380;ssl=true"
+        };
+
+        Assert.Throws<InvalidOperationException>(() => ReadOptions(values));
+    }
+
+    [Fact]
+    public void ReadFromConfiguration_StructuredTechnologyProviderMetadata_IsRemoved()
+    {
+        AppOptions options = ReadOptions(new()
+        {
+            ["ConnectionStrings:Storage"] = "provider=s3",
+            ["ConnectionStrings:S3"] = "provider=s3;bucket=events;region=us-east-2"
+        });
+
+        Assert.Equal("bucket=events;region=us-east-2", options.StorageOptions.ConnectionString);
+        Assert.DoesNotContain("provider", options.StorageOptions.ConnectionString, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

@@ -29,20 +29,20 @@ site.ignore(
   "snapshots",
 )
 
-// Mermaid fences are rendered by Mermaid-compatible documentation viewers;
-// leave their source untouched instead of asking Highlight.js to parse it.
-site.use(codeHighlight({
-  options: {
-    noHighlightRe: /^(no-?highlight|language-mermaid|mermaid)$/i,
-    languageDetectRe: /\blanguage-(?!mermaid\b)([\w-]+)\b/i,
-  },
-}))
+site.use(codeHighlight())
 site.use(picture())
 site.use(transformImages())
 site.add("public/assets/img/dashboard-2-1024x594.png", "assets/img/dashboard-2-1024x594.png")
 site.add("public/assets/img/toexceptionless.png", "assets/img/toexceptionless.png")
 site.add("public/assets/img/logs-2.jpg", "assets/img/logs-2.jpg")
 site.add("public/assets/img/slider-github.jpg", "assets/img/slider-github.jpg")
+site.add("public/assets/img/docs/configuration-precedence.svg", "assets/img/docs/configuration-precedence.svg")
+site.add(
+  "public/assets/img/docs/infrastructure-role-selection.svg",
+  "assets/img/docs/infrastructure-role-selection.svg",
+)
+site.add("public/assets/img/docs/redis-connection-ownership.svg", "assets/img/docs/redis-connection-ownership.svg")
+site.add("public/assets/img/docs/helm-version-rollout.svg", "assets/img/docs/helm-version-rollout.svg")
 
 site.hooks.markdownIt((markdownIt: any) => {
   const defaultHeadingOpen = markdownIt.renderer.rules.heading_open ??

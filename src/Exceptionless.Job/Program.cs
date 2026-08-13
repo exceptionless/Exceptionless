@@ -65,10 +65,7 @@ public class Program
         // only poll the queue metrics if this process is going to run the stack event count job
         options.QueueOptions.MetricsPollingEnabled = jobOptions.StackEventCount;
 
-        bool redisEnabled = options.CacheOptions.Provider == "redis"
-            || options.MessageBusOptions.Provider == "redis"
-            || options.QueueOptions.Provider == "redis";
-        var apmConfig = new ApmConfig(config, $"job-{jobOptions.JobName.ToLowerUnderscoredWords('-')}", options.InformationalVersion, redisEnabled);
+        var apmConfig = new ApmConfig(config, $"job-{jobOptions.JobName.ToLowerUnderscoredWords('-')}", options.InformationalVersion, options.UsesRedis());
 
         Log.Information("Bootstrapping Exceptionless {JobName} job(s) in {AppMode} mode ({InformationalVersion}) on {MachineName} with scope {AppScope}", jobOptions.JobName ?? "All", environment, options.InformationalVersion, Environment.MachineName, options.AppScope);
 
