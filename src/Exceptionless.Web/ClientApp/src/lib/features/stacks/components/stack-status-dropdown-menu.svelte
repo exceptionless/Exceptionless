@@ -52,24 +52,16 @@
         }
     });
 
-    $effect(() => {
-        if (changeStatus.isError) {
-            toast.error(getProblemMessage(changeStatus.error, 'Unable to change stack status.'));
-        }
-    });
-
-    $effect(() => {
-        if (updateMarkSnoozed.isError) {
-            toast.error(getProblemMessage(updateMarkSnoozed.error, 'Unable to snooze this stack.'));
-        }
-    });
-
     async function markOpen() {
         if (stack.status === StackStatus.Open) {
             return;
         }
 
-        await changeStatus.mutateAsync(StackStatus.Open);
+        try {
+            await changeStatus.mutateAsync(StackStatus.Open);
+        } catch (error) {
+            toast.error(getProblemMessage(error, 'Unable to change stack status.'));
+        }
     }
 
     async function markFixed(version?: string) {
@@ -94,7 +86,11 @@
                 break;
         }
 
-        await updateMarkSnoozed.mutateAsync(snoozeUntilUtc);
+        try {
+            await updateMarkSnoozed.mutateAsync(snoozeUntilUtc);
+        } catch (error) {
+            toast.error(getProblemMessage(error, 'Unable to snooze this stack.'));
+        }
     }
 
     async function markIgnored() {
@@ -102,7 +98,11 @@
             return;
         }
 
-        await changeStatus.mutateAsync(StackStatus.Ignored);
+        try {
+            await changeStatus.mutateAsync(StackStatus.Ignored);
+        } catch (error) {
+            toast.error(getProblemMessage(error, 'Unable to change stack status.'));
+        }
     }
 
     async function markDiscarded() {

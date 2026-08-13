@@ -1,8 +1,6 @@
 using System.Collections.Concurrent;
 using System.ComponentModel.DataAnnotations;
-using System.Reflection;
 using Exceptionless.Core.Extensions;
-using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.Extensions.DependencyInjection;
 using MiniValidation;
 
@@ -14,7 +12,6 @@ namespace Exceptionless.Web.Api.Filters;
 /// </summary>
 public class AutoValidationEndpointFilter : IEndpointFilter
 {
-    private static readonly ConcurrentDictionary<ParameterInfo, ValidationAttribute[]> s_parameterValidationAttributesCache = new();
     private static readonly ConcurrentDictionary<Type, bool> s_validationCandidateCache = new();
 
     public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
@@ -23,8 +20,6 @@ public class AutoValidationEndpointFilter : IEndpointFilter
         var validatableArguments = context.Arguments
             .Where(arg => arg is not null && isService?.IsService(arg.GetType()) != true && ShouldValidate(arg.GetType()));
         var validationErrors = new List<KeyValuePair<string, string>>();
-
-        ValidateParameters(context, validationErrors);
 
         foreach (var argument in validatableArguments)
         {
@@ -53,38 +48,6 @@ public class AutoValidationEndpointFilter : IEndpointFilter
         }
 
         return await next(context);
-    }
-
-    private static void ValidateParameters(EndpointFilterInvocationContext context, List<KeyValuePair<string, string>> validationErrors)
-    {
-        var parameterMetadata = context.HttpContext.GetEndpoint()?.Metadata.GetOrderedMetadata<IParameterBindingMetadata>();
-        if (parameterMetadata is null)
-            return;
-
-        foreach (var metadata in parameterMetadata)
-        {
-            var attributes = s_parameterValidationAttributesCache.GetOrAdd(metadata.ParameterInfo,
-                static parameter => parameter.GetCustomAttributes<ValidationAttribute>(inherit: true).ToArray());
-            if (attributes.Length == 0)
-                continue;
-
-            var parameterName = metadata.ParameterInfo.Name ?? metadata.Name;
-            var value = context.Arguments[metadata.ParameterInfo.Position];
-            var validationContext = new ValidationContext(value ?? new object(), context.HttpContext.RequestServices, items: null) {
-                DisplayName = parameterName,
-                MemberName = parameterName,
-            };
-
-            foreach (var attribute in attributes)
-            {
-                var result = attribute.GetValidationResult(value, validationContext);
-                if (result == ValidationResult.Success)
-                    continue;
-
-                var memberNames = result?.MemberNames.Any() == true ? result.MemberNames : [parameterName];
-                validationErrors.AddRange(memberNames.Select(name => new KeyValuePair<string, string>(name, result?.ErrorMessage ?? "The value is invalid.")));
-            }
-        }
     }
 
     private static bool ShouldValidate(Type type) =>

@@ -2,6 +2,8 @@
     import Number from '$comp/formatters/number.svelte';
     import * as AlertDialog from '$comp/ui/alert-dialog';
     import { buttonVariants } from '$comp/ui/button';
+    import { getProblemMessage } from '$shared/validation';
+    import { toast } from 'svelte-sonner';
 
     interface Props {
         count?: number;
@@ -12,8 +14,12 @@
     let { count = 1, discard, open = $bindable() }: Props = $props();
 
     async function onSubmit() {
-        await discard();
-        open = false;
+        try {
+            await discard();
+            open = false;
+        } catch (error) {
+            toast.error(getProblemMessage(error, 'Unable to discard the selected stacks.'));
+        }
     }
 </script>
 

@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
@@ -176,10 +175,11 @@ public static class StackEndpoints
         });
 
         // Change status
-        group.MapPost("stacks/{ids:objectids}/change-status", async (string ids, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper,
-            [MinLength(1, ErrorMessage = "The status is invalid.")]
-            [RegularExpression(Stack.KnownStatuses.ChangeablePattern, ErrorMessage = "The status is invalid.")] string? status = null)
-            => (await mediator.InvokeAsync<Result>(new ChangeStacksStatus(ids, Enum.Parse<StackStatus>(status ?? Stack.KnownStatuses.Open, ignoreCase: true), httpContext))).ToHttpResult(resultMapper))
+        group.MapPost("stacks/{ids:objectids}/change-status", async (string ids, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [AsParameters] ChangeStackStatusRequest request) =>
+        {
+            var status = Enum.Parse<StackStatus>(request.Status ?? Stack.KnownStatuses.Open, ignoreCase: true);
+            return (await mediator.InvokeAsync<Result>(new ChangeStacksStatus(ids, status, httpContext))).ToHttpResult(resultMapper);
+        })
         .RequireAuthorization(AuthorizationRoles.StacksWritePolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)

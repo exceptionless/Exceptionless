@@ -141,7 +141,6 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
         public const string Snoozed = "snoozed";
         public const string Ignored = "ignored";
         public const string Discarded = "discarded";
-        public const string ChangeablePattern = "(?i)^(" + Open + "|" + Fixed + "|" + Ignored + "|" + Discarded + ")$";
     }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)

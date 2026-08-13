@@ -5,7 +5,6 @@ using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Results;
 using Foundatio.Mediator;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -13,54 +12,6 @@ namespace Exceptionless.Tests.Api.Filters;
 
 public sealed class AutoValidationEndpointFilterTests
 {
-    [Fact]
-    public async Task InvokeAsync_InvalidAnnotatedParameter_ReturnsUnprocessableEntityValidationProblem()
-    {
-        // Arrange
-        var filter = new AutoValidationEndpointFilter();
-        var httpContext = new DefaultHttpContext();
-        var parameter = typeof(AutoValidationEndpointFilterTests).GetMethod(nameof(AnnotatedParameterHandler), BindingFlags.NonPublic | BindingFlags.Static)!.GetParameters()[0];
-        httpContext.SetEndpoint(new Endpoint(_ => Task.CompletedTask, new EndpointMetadataCollection(new TestParameterBindingMetadata(parameter)), "test"));
-        var context = new TestEndpointFilterInvocationContext(httpContext, ["unknown"]);
-        var nextCalled = false;
-
-        // Act
-        var result = await filter.InvokeAsync(context, _ =>
-        {
-            nextCalled = true;
-            return ValueTask.FromResult<object?>("next");
-        });
-
-        // Assert
-        Assert.False(nextCalled);
-        var statusCodeResult = Assert.IsAssignableFrom<IStatusCodeHttpResult>(result);
-        var valueResult = Assert.IsAssignableFrom<IValueHttpResult>(result);
-        var problemDetails = Assert.IsType<HttpValidationProblemDetails>(valueResult.Value);
-
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, statusCodeResult.StatusCode);
-        Assert.Equal(["The status is invalid."], problemDetails.Errors["status"]);
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("ignored")]
-    [InlineData("IGNORED")]
-    public async Task InvokeAsync_ValidAnnotatedParameter_CallsNext(string? status)
-    {
-        // Arrange
-        var filter = new AutoValidationEndpointFilter();
-        var httpContext = new DefaultHttpContext();
-        var parameter = typeof(AutoValidationEndpointFilterTests).GetMethod(nameof(AnnotatedParameterHandler), BindingFlags.NonPublic | BindingFlags.Static)!.GetParameters()[0];
-        httpContext.SetEndpoint(new Endpoint(_ => Task.CompletedTask, new EndpointMetadataCollection(new TestParameterBindingMetadata(parameter)), "test"));
-        var context = new TestEndpointFilterInvocationContext(httpContext, [status]);
-
-        // Act
-        var result = await filter.InvokeAsync(context, _ => ValueTask.FromResult<object?>("next"));
-
-        // Assert
-        Assert.Equal("next", result);
-    }
-
     [Fact]
     public async Task InvokeAsync_InvalidSemanticValue_ReturnsUnprocessableEntityValidationProblem()
     {
@@ -386,16 +337,6 @@ public sealed class AutoValidationEndpointFilterTests
     }
 
     private sealed class ValidationDependency;
-
-    private static void AnnotatedParameterHandler([RegularExpression("(?i)^ignored$", ErrorMessage = "The status is invalid.")] string? status) { }
-
-    private sealed record TestParameterBindingMetadata(ParameterInfo ParameterInfo) : IParameterBindingMetadata
-    {
-        public string Name => ParameterInfo.Name!;
-        public bool HasTryParse => false;
-        public bool HasBindAsync => false;
-        public bool IsOptional => true;
-    }
 
     private sealed class TestEndpointFilterInvocationContext(HttpContext httpContext, IList<object?> arguments) : EndpointFilterInvocationContext
     {
