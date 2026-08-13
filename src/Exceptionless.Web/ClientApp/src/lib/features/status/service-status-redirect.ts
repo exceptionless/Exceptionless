@@ -15,35 +15,30 @@ export function buildServiceStatusUrl(statusPath: string, currentUrl: Pick<URL, 
 export function createServiceStatusRedirector(options: ServiceStatusRedirectorOptions): () => Promise<void> {
     const healthyCacheMilliseconds = options.healthyCacheMilliseconds ?? DEFAULT_HEALTHY_CACHE_MILLISECONDS;
     const now = options.now ?? Date.now;
-    let healthCheckPromise: null | Promise<boolean> = null;
     let healthyUntil = 0;
-    let navigationPromise: null | Promise<void> = null;
+    let redirectPromise: null | Promise<void> = null;
 
-    async function checkHealth(): Promise<boolean> {
+    async function redirect(): Promise<void> {
         try {
-            return await options.checkHealth();
+            if (await options.checkHealth()) {
+                healthyUntil = now() + healthyCacheMilliseconds;
+                return;
+            }
         } catch {
-            return false;
-        } finally {
-            healthCheckPromise = null;
+            // A failed probe means the service cannot be reached.
         }
+
+        await options.navigate();
     }
 
-    return async () => {
+    return () => {
         if (now() < healthyUntil) {
-            return;
+            return Promise.resolve();
         }
 
-        healthCheckPromise ??= checkHealth();
-        const isHealthy = await healthCheckPromise;
-        if (isHealthy) {
-            healthyUntil = now() + healthyCacheMilliseconds;
-            return;
-        }
-
-        navigationPromise ??= options.navigate().finally(() => {
-            navigationPromise = null;
+        redirectPromise ??= redirect().finally(() => {
+            redirectPromise = null;
         });
-        await navigationPromise;
+        return redirectPromise;
     };
 }
