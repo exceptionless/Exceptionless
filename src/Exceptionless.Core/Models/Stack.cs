@@ -133,6 +133,19 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
         public const string SessionEnd = "sessionend";
     }
 
+    public static class KnownStatuses
+    {
+        public const string Open = "open";
+        public const string Fixed = "fixed";
+        public const string Regressed = "regressed";
+        public const string Snoozed = "snoozed";
+        public const string Ignored = "ignored";
+        public const string Discarded = "discarded";
+
+        public static IReadOnlyList<string> All { get; } = [Open, Fixed, Regressed, Snoozed, Ignored, Discarded];
+        public static IReadOnlyList<string> Changeable { get; } = [Open, Fixed, Ignored, Discarded];
+    }
+
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         // NOTE: We need to write a migration to cleanup all old stacks of 50 or more tags so there never is an error while saving.
@@ -156,22 +169,22 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum StackStatus
 {
-    [JsonStringEnumMemberName("open")]
-    [EnumMember(Value = "open")]
+    [JsonStringEnumMemberName(Stack.KnownStatuses.Open)]
+    [EnumMember(Value = Stack.KnownStatuses.Open)]
     Open,
-    [JsonStringEnumMemberName("fixed")]
-    [EnumMember(Value = "fixed")]
+    [JsonStringEnumMemberName(Stack.KnownStatuses.Fixed)]
+    [EnumMember(Value = Stack.KnownStatuses.Fixed)]
     Fixed,
-    [JsonStringEnumMemberName("regressed")]
-    [EnumMember(Value = "regressed")]
+    [JsonStringEnumMemberName(Stack.KnownStatuses.Regressed)]
+    [EnumMember(Value = Stack.KnownStatuses.Regressed)]
     Regressed,
-    [JsonStringEnumMemberName("snoozed")]
-    [EnumMember(Value = "snoozed")]
+    [JsonStringEnumMemberName(Stack.KnownStatuses.Snoozed)]
+    [EnumMember(Value = Stack.KnownStatuses.Snoozed)]
     Snoozed,
-    [JsonStringEnumMemberName("ignored")]
-    [EnumMember(Value = "ignored")]
+    [JsonStringEnumMemberName(Stack.KnownStatuses.Ignored)]
+    [EnumMember(Value = Stack.KnownStatuses.Ignored)]
     Ignored,
-    [JsonStringEnumMemberName("discarded")]
-    [EnumMember(Value = "discarded")]
+    [JsonStringEnumMemberName(Stack.KnownStatuses.Discarded)]
+    [EnumMember(Value = Stack.KnownStatuses.Discarded)]
     Discarded
 }

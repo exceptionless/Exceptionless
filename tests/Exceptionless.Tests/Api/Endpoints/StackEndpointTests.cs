@@ -228,7 +228,7 @@ public class StackEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task ChangeStatusAsync_WithUnsupportedStatus_ReturnsBadRequest()
+    public async Task ChangeStatusAsync_WithUnsupportedStatus_ReturnsUnprocessableEntity()
     {
         // Arrange
         var ev = await SubmitErrorEventAsync();
@@ -240,7 +240,7 @@ public class StackEndpointTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath($"stacks/{ev.StackId}/change-status")
             .QueryString("status", "unknown")
-            .StatusCodeShouldBeBadRequest());
+            .StatusCodeShouldBeUnprocessableEntity());
     }
 
     [Fact]

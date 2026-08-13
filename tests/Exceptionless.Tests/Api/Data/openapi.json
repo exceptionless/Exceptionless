@@ -6993,6 +6993,16 @@
               }
             }
           },
+          "422": {
+            "description": "The requested status is invalid.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "404": {
             "description": "One or more stacks could not be found.",
             "content": {

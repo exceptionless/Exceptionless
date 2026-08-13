@@ -9,7 +9,6 @@ using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Models;
 using Foundatio.Mediator;
 using HttpIResult = Microsoft.AspNetCore.Http.IResult;
-using HttpResults = Microsoft.AspNetCore.Http.Results;
 using Microsoft.AspNetCore.Mvc;
 using Exceptionless.Web.Utility.OpenApi;
 
@@ -176,16 +175,18 @@ public static class StackEndpoints
         });
 
         // Change status
-        group.MapPost("stacks/{ids:objectids}/change-status", async (string ids, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? status = null) =>
+        group.MapPost("stacks/{ids:objectids}/change-status", async (string ids, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [AsParameters] ChangeStackStatusRequest request) =>
         {
-            if (!TryParseStackStatus(status, out var parsedStatus))
-                return HttpResults.Problem(title: "Invalid stack status.", detail: "The status must be one of: open, fixed, ignored, discarded.", statusCode: StatusCodes.Status400BadRequest);
+            var status = request.Status is null
+                ? StackStatus.Open
+                : Enum.Parse<StackStatus>(request.Status, ignoreCase: true);
 
-            return (await mediator.InvokeAsync<Result>(new ChangeStacksStatus(ids, parsedStatus, httpContext))).ToHttpResult(resultMapper);
+            return (await mediator.InvokeAsync<Result>(new ChangeStacksStatus(ids, status, httpContext))).ToHttpResult(resultMapper);
         })
         .RequireAuthorization(AuthorizationRoles.StacksWritePolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Change stack status")
         .WithMetadata(new EndpointDocumentation {
@@ -194,9 +195,10 @@ public static class StackEndpoints
                 ["status"] = "The status that the stack should be changed to.",
             },
             ParameterEnumValues = new() {
-                ["status"] = ["open", "fixed", "ignored", "discarded"],
+                ["status"] = Stack.KnownStatuses.Changeable,
             },
             ResponseDescriptions = new() {
+                ["422"] = "The requested status is invalid.",
                 ["404"] = "One or more stacks could not be found.",
             }
         });
@@ -323,51 +325,4 @@ public static class StackEndpoints
         return endpoints;
     }
 
-    private static bool TryParseStackStatus(string? value, out StackStatus status)
-    {
-        if (value is null)
-        {
-            status = StackStatus.Open;
-            return true;
-        }
-
-        if (value.Equals("open", StringComparison.OrdinalIgnoreCase))
-        {
-            status = StackStatus.Open;
-            return true;
-        }
-
-        if (value.Equals("fixed", StringComparison.OrdinalIgnoreCase))
-        {
-            status = StackStatus.Fixed;
-            return true;
-        }
-
-        if (value.Equals("ignored", StringComparison.OrdinalIgnoreCase))
-        {
-            status = StackStatus.Ignored;
-            return true;
-        }
-
-        if (value.Equals("discarded", StringComparison.OrdinalIgnoreCase))
-        {
-            status = StackStatus.Discarded;
-            return true;
-        }
-
-        if (value.Equals("regressed", StringComparison.OrdinalIgnoreCase))
-        {
-            status = StackStatus.Regressed;
-            return true;
-        }
-
-        if (value.Equals("snoozed", StringComparison.OrdinalIgnoreCase))
-        {
-            status = StackStatus.Snoozed;
-            return true;
-        }
-
-        status = default;
-        return false;
-    }
 }

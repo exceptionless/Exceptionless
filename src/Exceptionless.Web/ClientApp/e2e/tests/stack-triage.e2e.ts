@@ -19,25 +19,25 @@ test('user can restore ignored and discarded stacks through lowercase status req
     await journey.expectEventDetails();
 
     const updateStatus = async (menuItem: string, expectedStatus: string, confirmationButton?: string) => {
-        await page.getByRole('button', { name: /^(Open|Ignored|Discarded)$/, exact: true }).click();
+        await page.getByRole('button', { exact: true, name: /^(Open|Ignored|Discarded)$/ }).click();
 
         if (confirmationButton) {
-            await page.getByRole('menuitem', { name: menuItem, exact: true }).click();
+            await page.getByRole('menuitem', { exact: true, name: menuItem }).click();
             await expect(page.getByRole('heading', { name: /Discard Stack/ })).toBeVisible();
             const responsePromise = page.waitForResponse((candidate) => candidate.url().includes('/change-status'));
-            await page.getByRole('button', { name: confirmationButton, exact: true }).click();
+            await page.getByRole('button', { exact: true, name: confirmationButton }).click();
             const response = await responsePromise;
             expect(response.status()).toBe(200);
             expect(new URL(response.request().url()).searchParams.get('status')).toBe(expectedStatus);
         } else {
             const responsePromise = page.waitForResponse((candidate) => candidate.url().includes('/change-status'));
-            await page.getByRole('menuitem', { name: menuItem, exact: true }).click();
+            await page.getByRole('menuitem', { exact: true, name: menuItem }).click();
             const response = await responsePromise;
             expect(response.status()).toBe(200);
             expect(new URL(response.request().url()).searchParams.get('status')).toBe(expectedStatus);
         }
 
-        await expect(page.getByRole('button', { name: expectedStatus[0].toUpperCase() + expectedStatus.slice(1), exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { exact: true, name: expectedStatus[0].toUpperCase() + expectedStatus.slice(1) })).toBeVisible();
     };
 
     await updateStatus('Ignored', 'ignored');
@@ -59,7 +59,7 @@ test('status update failure is visible to the user @signup', async ({ e2eApi, e2
         })
     );
 
-    await page.getByRole('button', { name: 'Open', exact: true }).click();
-    await page.getByRole('menuitem', { name: 'Ignored', exact: true }).click();
+    await page.getByRole('button', { exact: true, name: 'Open' }).click();
+    await page.getByRole('menuitem', { exact: true, name: 'Ignored' }).click();
     await expect(page.getByText('Status update rejected by test.', { exact: true })).toBeVisible();
 });

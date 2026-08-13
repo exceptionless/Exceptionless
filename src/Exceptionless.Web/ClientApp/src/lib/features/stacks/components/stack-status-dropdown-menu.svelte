@@ -5,14 +5,12 @@
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
     import { SvelteDate } from 'svelte/reactivity';
-    import { toast } from 'svelte-sonner';
 
     import type { Stack } from '../models';
 
     import { postChangeStatus, postMarkFixed, postMarkSnoozed } from '../api.svelte';
     import { StackStatus } from '../models';
     import { stackStatuses } from '../options';
-    import { getProblemMessage } from '$shared/validation';
     import MarkStackDiscardedDialog from './dialogs/mark-stack-discarded-dialog.svelte';
     import MarkStackFixedInVersionDialog from './dialogs/mark-stack-fixed-in-version-dialog.svelte';
 
@@ -57,7 +55,7 @@
             return;
         }
 
-        await updateStatus(StackStatus.Open, 'open');
+        await changeStatus.mutateAsync(StackStatus.Open);
     }
 
     async function markFixed(version?: string) {
@@ -82,11 +80,7 @@
                 break;
         }
 
-        try {
-            await updateMarkSnoozed.mutateAsync(snoozeUntilUtc);
-        } catch (error: unknown) {
-            toast.error(getProblemMessage(error, 'Unable to snooze this stack.'));
-        }
+        await updateMarkSnoozed.mutateAsync(snoozeUntilUtc);
     }
 
     async function markIgnored() {
@@ -94,7 +88,7 @@
             return;
         }
 
-        await updateStatus(StackStatus.Ignored, 'ignored');
+        await changeStatus.mutateAsync(StackStatus.Ignored);
     }
 
     async function markDiscarded() {
@@ -102,15 +96,7 @@
             return;
         }
 
-        await updateStatus(StackStatus.Discarded, 'discarded');
-    }
-
-    async function updateStatus(status: StackStatus, label: string) {
-        try {
-            await changeStatus.mutateAsync(status);
-        } catch (error: unknown) {
-            toast.error(getProblemMessage(error, `Unable to mark this stack as ${label}.`));
-        }
+        await changeStatus.mutateAsync(StackStatus.Discarded);
     }
 </script>
 

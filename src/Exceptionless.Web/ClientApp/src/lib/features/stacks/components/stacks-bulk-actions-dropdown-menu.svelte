@@ -12,7 +12,6 @@
 
     import { deleteStack, postChangeStatus, postMarkFixed, postMarkSnoozed } from '../api.svelte';
     import { StackStatus } from '../models';
-    import { getProblemMessage } from '$shared/validation';
     import MarkStackDiscardedDialog from './dialogs/mark-stack-discarded-dialog.svelte';
     import MarkStackFixedInVersionDialog from './dialogs/mark-stack-fixed-in-version-dialog.svelte';
     import RemoveStackDialog from './dialogs/remove-stack-dialog.svelte';
@@ -61,9 +60,7 @@
     });
 
     async function markOpen() {
-        if (!(await updateStatus(StackStatus.Open, 'open'))) {
-            return;
-        }
+        await changeStatus.mutateAsync(StackStatus.Open);
 
         if (ids.length === 1) {
             toast.success('Successfully marked stack as open.');
@@ -104,12 +101,7 @@
                 break;
         }
 
-        try {
-            await updateMarkSnoozed.mutateAsync(snoozeUntilUtc);
-        } catch (error: unknown) {
-            toast.error(getProblemMessage(error, 'Unable to snooze selected stacks.'));
-            return;
-        }
+        await updateMarkSnoozed.mutateAsync(snoozeUntilUtc);
 
         if (ids.length === 1) {
             toast.success('Successfully marked stack as snoozed.');
@@ -121,9 +113,7 @@
     }
 
     async function markIgnored() {
-        if (!(await updateStatus(StackStatus.Ignored, 'ignored'))) {
-            return;
-        }
+        await changeStatus.mutateAsync(StackStatus.Ignored);
 
         if (ids.length === 1) {
             toast.success('Successfully marked stack as ignored.');
@@ -135,9 +125,7 @@
     }
 
     async function markDiscarded() {
-        if (!(await updateStatus(StackStatus.Discarded, 'discarded'))) {
-            return;
-        }
+        await changeStatus.mutateAsync(StackStatus.Discarded);
 
         if (ids.length === 1) {
             toast.success('Successfully marked stack as discarded.');
@@ -146,16 +134,6 @@
         }
 
         table.resetRowSelection();
-    }
-
-    async function updateStatus(status: StackStatus, label: string): Promise<boolean> {
-        try {
-            await changeStatus.mutateAsync(status);
-            return true;
-        } catch (error: unknown) {
-            toast.error(getProblemMessage(error, `Unable to mark selected stacks as ${label}.`));
-            return false;
-        }
     }
 
     async function remove() {
