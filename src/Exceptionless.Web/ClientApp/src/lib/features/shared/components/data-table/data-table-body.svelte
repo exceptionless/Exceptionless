@@ -84,9 +84,13 @@
 
     function getFlexibleDataColumnId(): string | undefined {
         const columnSizing = table.atoms.columnSizing?.get() ?? {};
-        const unsizedColumns = getVisibleDataColumns().filter((column) => columnSizing[column.id] === undefined);
-        const fullWidthColumn = unsizedColumns.find((column) => getMetaClass(column.columnDef.meta).split(' ').includes('w-full'));
-        return fullWidthColumn?.id ?? unsizedColumns.at(-1)?.id;
+        const visibleDataColumns = getVisibleDataColumns();
+        const fullWidthColumns = visibleDataColumns.filter((column) => getMetaClass(column.columnDef.meta).split(' ').includes('w-full'));
+        if (fullWidthColumns.length > 0) {
+            return fullWidthColumns.find((column) => columnSizing[column.id] === undefined)?.id;
+        }
+
+        return visibleDataColumns.filter((column) => columnSizing[column.id] === undefined).at(-1)?.id;
     }
 
     function getVisibleDataColumnCount(): number {
@@ -153,13 +157,35 @@
         event.preventDefault();
         event.stopPropagation();
         const delta = event.key === 'ArrowLeft' ? -16 : 16;
+        const currentSize = getResizeStartSize(event, header);
         table.setColumnSizing((current) => ({
             ...current,
             [header.column.id]: Math.min(
                 header.column.columnDef.maxSize ?? Number.MAX_SAFE_INTEGER,
-                Math.max(header.column.columnDef.minSize ?? 20, header.column.getSize() + delta)
+                Math.max(header.column.columnDef.minSize ?? 20, currentSize + delta)
             )
         }));
+    }
+
+    function onResizeStart(event: MouseEvent | TouchEvent, header: Header<StockFeatures, TData, unknown>): void {
+        const currentSize = getResizeStartSize(event, header);
+        if (currentSize !== header.column.getSize()) {
+            table.setColumnSizing((current) => ({
+                ...current,
+                [header.column.id]: currentSize
+            }));
+        }
+
+        header.getResizeHandler()(event);
+    }
+
+    function getResizeStartSize(event: KeyboardEvent | MouseEvent | TouchEvent, header: Header<StockFeatures, TData, unknown>): number {
+        if (header.column.id !== getFlexibleDataColumnId()) {
+            return header.column.getSize();
+        }
+
+        const headerElement = (event.currentTarget as HTMLElement | null)?.closest('th');
+        return headerElement?.getBoundingClientRect().width || header.column.getSize();
     }
 
     function removeWidthClasses(className: string): string {
@@ -191,8 +217,8 @@
                                     ]}
                                     ondblclick={() => header.column.resetSize()}
                                     onkeydown={(event) => onResizeKeydown(event, header)}
-                                    onmousedown={header.getResizeHandler()}
-                                    ontouchstart={header.getResizeHandler()}
+                                    onmousedown={(event) => onResizeStart(event, header)}
+                                    ontouchstart={(event) => onResizeStart(event, header)}
                                     title={`Resize ${header.column.id} column`}
                                     type="button"
                                 ></button>

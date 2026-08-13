@@ -38,6 +38,29 @@ describe('DataTableBody', () => {
         expect(dateHeader.style.cssText).toBe('width: 150px; min-width: 150px; max-width: 150px;');
     });
 
+    it('does not transfer flexibility after the full-width column is sized', () => {
+        render(DataTableBodyTestHarness, { fullWidthSummary: true, kind: 'event', onRowClick: vi.fn(), sizedFullWidthSummary: true });
+
+        const table = screen.getByRole('table');
+        const summaryHeader = screen.getByRole('columnheader', { name: 'Summary' });
+        const dateHeader = screen.getByRole('columnheader', { name: 'Date' });
+
+        expect(table.style.cssText).toBe('width: 362px; min-width: 362px;');
+        expect(summaryHeader.style.cssText).toBe('width: 180px; min-width: 180px; max-width: 180px;');
+        expect(dateHeader.style.cssText).toBe('width: 150px; min-width: 150px; max-width: 150px;');
+    });
+
+    it('resizes a flexible column from its rendered width', async () => {
+        render(DataTableBodyTestHarness, { fullWidthSummary: true, kind: 'event', onRowClick: vi.fn() });
+
+        const summaryHeader = screen.getByRole('columnheader', { name: 'Summary' });
+        vi.spyOn(summaryHeader, 'getBoundingClientRect').mockReturnValue({ width: 300 } as DOMRect);
+
+        await fireEvent.keyDown(screen.getByRole('button', { name: 'Resize summary column' }), { key: 'ArrowRight' });
+
+        expect(summaryHeader.style.cssText).toBe('width: 316px; min-width: 316px; max-width: 316px;');
+    });
+
     it('lets a resized header shrink below its metadata width', () => {
         render(DataTableBodyTestHarness, { kind: 'event', onRowClick: vi.fn() });
 
