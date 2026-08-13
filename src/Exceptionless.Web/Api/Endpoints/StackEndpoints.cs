@@ -183,13 +183,13 @@ public static class StackEndpoints
         })
         .RequireAuthorization(AuthorizationRoles.StacksWritePolicy)
         .Produces(StatusCodes.Status200OK)
-        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Change stack status")
         .AddOpenApiOperationTransformer((operation, context, _) =>
         {
             var statusParameter = operation.Parameters?.OfType<OpenApiParameter>().FirstOrDefault(parameter =>
-                String.Equals(parameter.Name, "status", StringComparison.OrdinalIgnoreCase));
+                String.Equals(parameter.Name, "status", StringComparison.Ordinal));
             if (statusParameter is not null)
                 statusParameter.Schema = new OpenApiSchemaReference(nameof(StackStatus), context.Document);
 
