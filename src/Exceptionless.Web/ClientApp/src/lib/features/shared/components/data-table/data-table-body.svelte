@@ -169,14 +169,71 @@
 
     function onResizeStart(event: MouseEvent | TouchEvent, header: Header<StockFeatures, TData, unknown>): void {
         const currentSize = getResizeStartSize(event, header);
-        if (currentSize !== header.column.getSize()) {
+        if (currentSize === header.column.getSize()) {
+            header.getResizeHandler()(event);
+            return;
+        }
+
+        const startPosition = getClientPosition(event);
+        const document = (event.currentTarget as HTMLElement | null)?.ownerDocument;
+        if (startPosition === undefined || !document) {
+            header.getResizeHandler()(event);
+            return;
+        }
+
+        const startEvent = event;
+        const removePendingListeners = () => {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseEnd);
+            document.removeEventListener('touchmove', onTouchMove);
+            document.removeEventListener('touchend', onTouchEnd);
+            document.removeEventListener('touchcancel', onTouchEnd);
+        };
+
+        const startResize = (position: number) => {
+            if (position === startPosition) {
+                return;
+            }
+
+            removePendingListeners();
             table.setColumnSizing((current) => ({
                 ...current,
                 [header.column.id]: currentSize
             }));
-        }
+            header.getResizeHandler()(startEvent);
+            setColumnSize(header, currentSize + position - startPosition);
+        };
 
-        header.getResizeHandler()(event);
+        const onMouseMove = (moveEvent: MouseEvent) => startResize(moveEvent.clientX);
+        const onMouseEnd = () => removePendingListeners();
+        const onTouchMove = (moveEvent: TouchEvent) => {
+            const position = getClientPosition(moveEvent);
+            if (position !== undefined) {
+                startResize(position);
+            }
+        };
+
+        const onTouchEnd = () => removePendingListeners();
+
+        if (event instanceof TouchEvent) {
+            document.addEventListener('touchmove', onTouchMove);
+            document.addEventListener('touchend', onTouchEnd);
+            document.addEventListener('touchcancel', onTouchEnd);
+        } else {
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseEnd);
+        }
+    }
+
+    function getClientPosition(event: MouseEvent | TouchEvent): number | undefined {
+        return event instanceof TouchEvent ? event.touches[0]?.clientX : event.clientX;
+    }
+
+    function setColumnSize(header: Header<StockFeatures, TData, unknown>, size: number): void {
+        table.setColumnSizing((current) => ({
+            ...current,
+            [header.column.id]: Math.min(header.column.columnDef.maxSize ?? Number.MAX_SAFE_INTEGER, Math.max(header.column.columnDef.minSize ?? 20, size))
+        }));
     }
 
     function getResizeStartSize(event: KeyboardEvent | MouseEvent | TouchEvent, header: Header<StockFeatures, TData, unknown>): number {

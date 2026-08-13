@@ -61,6 +61,34 @@ describe('DataTableBody', () => {
         expect(summaryHeader.style.cssText).toBe('width: 316px; min-width: 316px; max-width: 316px;');
     });
 
+    it('keeps a flexible column flexible when its resize handle is clicked without dragging', async () => {
+        render(DataTableBodyTestHarness, { fullWidthSummary: true, kind: 'event', onRowClick: vi.fn() });
+
+        const summaryHeader = screen.getByRole('columnheader', { name: 'Summary' });
+        vi.spyOn(summaryHeader, 'getBoundingClientRect').mockReturnValue({ width: 300 } as DOMRect);
+        const resizeHandle = screen.getByRole('button', { name: 'Resize summary column' });
+
+        await fireEvent.mouseDown(resizeHandle, { clientX: 100 });
+        await fireEvent.mouseUp(document, { clientX: 100 });
+
+        expect(summaryHeader.style.cssText).toBe('width: 100%;');
+    });
+
+    it('starts dragging a flexible column from its rendered width', async () => {
+        render(DataTableBodyTestHarness, { fullWidthSummary: true, kind: 'event', onRowClick: vi.fn() });
+
+        const summaryHeader = screen.getByRole('columnheader', { name: 'Summary' });
+        vi.spyOn(summaryHeader, 'getBoundingClientRect').mockReturnValue({ width: 300 } as DOMRect);
+        const resizeHandle = screen.getByRole('button', { name: 'Resize summary column' });
+
+        await fireEvent.mouseDown(resizeHandle, { clientX: 100 });
+        await fireEvent.mouseMove(document, { clientX: 116 });
+
+        expect(summaryHeader.style.cssText).toBe('width: 316px; min-width: 316px; max-width: 316px;');
+
+        await fireEvent.mouseUp(document, { clientX: 116 });
+    });
+
     it('lets a resized header shrink below its metadata width', () => {
         render(DataTableBodyTestHarness, { kind: 'event', onRowClick: vi.fn() });
 
