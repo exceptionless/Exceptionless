@@ -47,23 +47,21 @@ public class MessageBusOptionsTests
     }
 
     [Fact]
-    public void ReadFromConfiguration_WithRedisProviderSettings_MergesLegacyKeyValueData()
+    public void ReadFromConfiguration_WithRedisProviderAndNamedNativeString_PreservesAtomicValue()
     {
         var options = ReadOptions(new Dictionary<string, string?>
         {
-            ["ConnectionStrings:MessageBus"] = "provider=redis;ssl=true",
-            ["ConnectionStrings:redis"] = "server=localhost:6379;abortConnect=false"
+            ["ConnectionStrings:MessageBus"] = "provider=redis",
+            ["ConnectionStrings:redis"] = "ssl=true,localhost:6379,abortConnect=false"
         });
 
         Assert.Equal("redis", options.Provider);
-        Assert.Equal("server=localhost:6379;abortConnect=false;ssl=true", options.ConnectionString);
-        Assert.Equal("true", options.Data["ssl"]);
-        Assert.Equal("localhost:6379", options.Data["server"]);
-        Assert.Equal("false", options.Data["abortConnect"]);
+        Assert.Equal("ssl=true,localhost:6379,abortConnect=false", options.ConnectionString);
+        Assert.Equal("ssl=true,localhost:6379,abortConnect=false", options.Data["server"]);
     }
 
     [Fact]
-    public void ReadFromConfiguration_WithInlineRedisConnectionString_PreservesLegacyFormatting()
+    public void ReadFromConfiguration_WithLegacyRedisServerWrapper_ProducesNativeConnectionString()
     {
         var options = ReadOptions(new Dictionary<string, string?>
         {
@@ -71,7 +69,7 @@ public class MessageBusOptionsTests
         });
 
         Assert.Equal("redis", options.Provider);
-        Assert.Equal("server=localhost:6379,abortConnect=false", options.ConnectionString);
+        Assert.Equal("localhost:6379,abortConnect=false", options.ConnectionString);
         Assert.Equal("localhost:6379,abortConnect=false", options.Data["server"]);
     }
 

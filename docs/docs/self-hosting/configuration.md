@@ -12,17 +12,7 @@ Configuration sources use the normal application precedence: command-line argume
 
 This model adds automatic provider selection without changing the public option types. New configurations declare technology connection strings only. Existing Helm, Docker Compose, and self-hosted role selectors remain supported as a compatibility layer. The runtime also keeps Redis connections isolated by their effective connection string, so a legacy role-specific endpoint cannot leak into another role.
 
-```mermaid
-flowchart LR
-    yaml["Base and environment YAML"] --> ordinary["Ordinary / Aspire variables"]
-    ordinary --> ex["EX_ environment variables"]
-    ex --> cli["Command-line arguments"]
-    cli --> effective["Effective configuration"]
-    effective --> selector{"Legacy role selector present?"}
-    selector -->|"Yes"| explicit["Validate and preserve existing behavior"]
-    selector -->|"No"| priority["Try the role's fixed provider priority"]
-    priority --> fallback["Use local in-memory implementation"]
-```
+![Configuration sources override one another before explicit role selectors or automatic priorities are evaluated.](/assets/img/docs/configuration-precedence.svg)
 
 ## Automatic role selection
 
@@ -37,20 +27,7 @@ Redis is never selected for file storage. For production file storage, configure
 
 The first configured technology in each role's row wins. Technology connection strings are atomic: extend or replace `ConnectionStrings:Redis` itself rather than defining a second Cache or Queue connection string. Existing `ConnectionStrings:Cache`, `MessageBus`, `Queue`, and `Storage` values still win when present so deployed Helm and Docker configurations remain safe, but they are no longer the recommended configuration model.
 
-```mermaid
-flowchart LR
-    redis["Redis"] --> cache["Cache"]
-    redis --> bus["MessageBus"]
-    redis --> queue["Queue"]
-    rabbit["RabbitMQ"] --> bus
-    azureQueue["AzureQueues"] --> queue
-    sqs["SQS"] --> queue
-    azureStorage["AzureStorage"] --> storage["Storage"]
-    s3["S3"] --> storage
-    aliyun["Aliyun"] --> storage
-    folder["Folder"] --> storage
-    redis -. "never" .-> storage
-```
+![Automatic infrastructure role selection priorities, with Redis intentionally excluded from Storage.](/assets/img/docs/infrastructure-role-selection.svg)
 
 An existing explicit role selector short-circuits this graph. A blank legacy role value is treated as absent.
 
@@ -105,16 +82,7 @@ Redis and RabbitMQ native connection strings are opaque. Options belong in the c
 
 The Redis registration follows the same layering boundary:
 
-```mermaid
-flowchart TB
-    redis["ConnectionStrings:Redis"] --> registry["RedisConnectionRegistry\nexact effective string"]
-    registry --> connection["One shared Redis connection"]
-    connection --> cacheClient["Cache"]
-    connection --> busClient["MessageBus fallback"]
-    connection --> queueClient["Queue fallback"]
-    connection --> mapping["WebSocket mapping"]
-    legacy["Legacy full role endpoint"] -. "compatibility only" .-> registry
-```
+![Redis connections are deduplicated only when roles resolve to the same exact connection string; WebSocket mapping always uses the Cache connection.](/assets/img/docs/redis-connection-ownership.svg)
 
 Equal effective strings are deduplicated; different legacy role endpoints remain isolated. Redis telemetry is enabled whenever Redis supplies any role.
 
@@ -133,21 +101,29 @@ These role keys are retained for upgrades and exceptional compatibility needs; n
 
 Existing Helm values and Docker Compose configurations do not need to change. Their explicit `Cache`, `MessageBus`, `Queue`, and `Storage` selectors have the highest role-selection precedence and remain supported. Helm's folder storage setting and persistent-volume behavior are unchanged.
 
-Aspire injects connection strings by resource name. The existing `Redis`, `AzureStorage`, and `AzureQueues` resource names match the automatic selection aliases, so Aspire does not need role selectors.
+The current Helm chart deliberately operates in legacy-selector mode: it renders explicit values for all four roles. Consequently, adding `EX_ConnectionStrings__RabbitMQ` by itself does **not** switch MessageBus to RabbitMQ because the chart's explicit `MessageBus` value wins. Configure RabbitMQ through the existing Helm value instead:
+
+```yaml
+messagebus:
+  connectionString: 'provider=rabbitmq;server="amqps://user:password@rabbitmq:5671/%2F"'
+```
+
+Do not set any distributed Helm role to `local` when multiple app or job replicas may run. In-memory caches, message buses, queues, and storage are process-local and cannot coordinate replicas.
+
+Aspire injects connection strings as `ConnectionStrings__{resource-name}` environment variables. The existing `Redis`, `AzureStorage`, and `AzureQueues` resource names therefore become `ConnectionStrings__Redis`, `ConnectionStrings__AzureStorage`, and `ConnectionStrings__AzureQueues`, which match the automatic selection aliases. Aspire does not need role selectors. An `EX_ConnectionStrings__{name}` value still wins when both forms are present.
 
 Elasticsearch, email, OAuth, LDAP, and other fixed-service connection strings are not part of infrastructure role selection.
 
 ## Rolling out the change
 
-The safe migration path is additive. Deploy the resolver while keeping existing explicit role selectors; old and new instances then calculate the same providers. After all app and job instances run the new version, remove one selector at a time for the roles you want to infer. Keep a selector for any role that must stay on a particular endpoint or provider.
+A rolling **version-only** Helm upgrade is compatible with mixed old and new Exceptionless instances when every rendered role selector and every effective connection string remains exactly unchanged. Keep the existing `Cache`, `MessageBus`, `Queue`, and `Storage` values in place while upgrading the images. All overlapping instances then use the same providers and endpoints.
 
-For example, with Redis and RabbitMQ both configured, remove `MessageBus` only when you want the automatic RabbitMQ choice. Leave `Cache=provider=redis` and `Queue=provider=redis` in place if those roles should continue using Redis. To roll back, restore the selector values; no data migration is required.
+This compatibility statement covers the Exceptionless app and job workloads. A production installation also needs durable, highly available infrastructure; the chart's bundled single-replica Redis and Elasticsearch resources are convenience dependencies, not a zero-downtime production topology.
 
-```mermaid
-flowchart LR
-    old["Existing explicit selectors"] --> deploy["Deploy resolver with selectors unchanged"]
-    deploy --> verify["Verify effective providers and health"]
-    verify --> simplify["Remove one role selector at a time"]
-    simplify --> stable["Technology strings own only intended roles"]
-    simplify -. "rollback" .-> old
-```
+Removing a selector is safe during normal operation only when the role resolves to the same provider **and the same effective connection string** before and after removal. Compare the resolved result, not merely the technology name. For example, removing `MessageBus=provider=redis` is safe only if automatic selection still chooses Redis with the identical Redis connection string.
+
+Changing a role's provider or endpoint is an infrastructure migration, not a zero-downtime configuration cleanup. During a rolling change, old and new replicas would otherwise be split across message buses, queue backlogs, storage locations, distributed caches, locks, and WebSocket mappings. Use a provider-specific bridge or dual-read/write migration where the technology supports it, or quiesce producers, drain outstanding work, switch every replica together during a maintenance window, and verify the new backend before resuming traffic.
+
+Do not combine a binary upgrade with a selector, provider, or endpoint migration. If a configuration migration must be rolled back, restore the old selector and endpoint first and wait for all replicas to converge before rolling back the application version.
+
+![A safe Helm image rollout keeps selectors and effective endpoints unchanged; provider or endpoint changes follow a separate migration path.](/assets/img/docs/helm-version-rollout.svg)

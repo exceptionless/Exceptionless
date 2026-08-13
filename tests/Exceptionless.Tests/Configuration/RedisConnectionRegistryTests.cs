@@ -100,6 +100,47 @@ public class RedisConnectionRegistryTests
         Assert.Contains(services, descriptor => descriptor.ServiceType == typeof(IQueue<EventPost>));
     }
 
+    [Theory]
+    [InlineData("server=redis:6379")]
+    [InlineData("redis:6379;abortConnect=false")]
+    [InlineData("ssl=true")]
+    [InlineData("redis:6379;password=redis-password-secret-canary")]
+    public void RegisterServices_InvalidRedisConnectionString_FailsBeforeServiceResolution(string connectionString)
+    {
+        AppOptions options = CreateOptions(new()
+        {
+            ["ConnectionStrings:Redis"] = connectionString,
+            ["ConnectionStrings:Storage"] = "local"
+        });
+        var services = new ServiceCollection();
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() =>
+            Exceptionless.Insulation.Bootstrapper.RegisterServices(services, options, runMaintenanceTasks: false));
+
+        Assert.Contains("Redis connection string selected for Cache is invalid", exception.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(connectionString, exception.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("redis-password-secret-canary", exception.ToString(), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("redis:6379,abortConnect=false")]
+    [InlineData("ssl=true,redis:6380")]
+    [InlineData("password=secret,redis:6379")]
+    [InlineData("serviceName=primary,redis:26379")]
+    public void RegisterServices_ValidNativeRedisConnectionString_PassesStartupValidation(string connectionString)
+    {
+        AppOptions options = CreateOptions(new()
+        {
+            ["ConnectionStrings:Redis"] = connectionString,
+            ["ConnectionStrings:Storage"] = "local"
+        });
+        var services = new ServiceCollection();
+
+        Exceptionless.Insulation.Bootstrapper.RegisterServices(services, options, runMaintenanceTasks: false);
+
+        Assert.Contains(services, descriptor => descriptor.ServiceType == typeof(RedisConnectionRegistry));
+    }
+
     [Fact]
     public void RegisterServices_DifferentRedisRoleStrings_RequestIsolatedEndpoints()
     {
