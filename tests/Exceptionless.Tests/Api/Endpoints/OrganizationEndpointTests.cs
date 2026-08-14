@@ -880,7 +880,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     public async Task DeleteAsync_SuspendedOrganizationWithLegacySystemMarker_RemovesOrganization()
     {
         // Arrange
-        var newOrg = new NewOrganization
+        var newOrganization = new NewOrganization
         {
             Name = "Legacy Billing Organization"
         };
@@ -889,7 +889,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
             .AsTestOrganizationUser()
             .Post()
             .AppendPath("organizations")
-            .Content(newOrg)
+            .Content(newOrganization)
             .StatusCodeShouldBeCreated()
         );
 
