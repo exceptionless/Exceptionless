@@ -114,6 +114,35 @@ public class StackSerializerTests : TestWithServices
         }
     }
 
+    [Theory]
+    [InlineData(StackStatus.Open, "open")]
+    [InlineData(StackStatus.Fixed, "fixed")]
+    [InlineData(StackStatus.Regressed, "regressed")]
+    [InlineData(StackStatus.Snoozed, "snoozed")]
+    [InlineData(StackStatus.Ignored, "ignored")]
+    [InlineData(StackStatus.Discarded, "discarded")]
+    public void Serialize_StackStatus_UsesCanonicalLowercaseValue(StackStatus status, string expectedStatus)
+    {
+        // Arrange
+        var stack = new Stack
+        {
+            Id = "stack-status",
+            OrganizationId = "org1",
+            ProjectId = "proj1",
+            Type = Event.KnownTypes.Error,
+            SignatureHash = "hash1",
+            Status = status,
+            FirstOccurrence = FixedDateTime,
+            LastOccurrence = FixedDateTime
+        };
+
+        // Act
+        string? json = _serializer.SerializeToString(stack);
+
+        // Assert
+        Assert.Contains($"\"status\":\"{expectedStatus}\"", json, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Deserialize_StackWithTags_PreservesTags()
     {
