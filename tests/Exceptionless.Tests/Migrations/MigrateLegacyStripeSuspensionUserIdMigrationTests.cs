@@ -15,8 +15,6 @@ namespace Exceptionless.Tests.Migrations;
 
 public sealed class MigrateLegacyStripeSuspensionUserIdMigrationTests : IntegrationTestsBase
 {
-    private const string LegacySystemUserId = "Stripe";
-    private const string ExpectedSystemUserId = "000000000000000000000000";
     private const string ValidSuspendedByUserId = "660000000000000000000001";
     private readonly ExceptionlessElasticConfiguration _configuration;
     private readonly IOrganizationRepository _organizationRepository;
@@ -56,7 +54,7 @@ public sealed class MigrateLegacyStripeSuspensionUserIdMigrationTests : Integrat
             _configuration.Organizations.VersionedName,
             organization.Id,
             update => update
-                .Doc(new Dictionary<string, object> { ["suspended_by_user_id"] = LegacySystemUserId })
+                .Doc(new Dictionary<string, object> { ["suspended_by_user_id"] = StripeConstants.LegacySystemUserId })
                 .Refresh(Refresh.WaitFor),
             TestCancellationToken);
         Assert.True(legacyMarkerUpdate.IsValidResponse);
@@ -73,6 +71,6 @@ public sealed class MigrateLegacyStripeSuspensionUserIdMigrationTests : Integrat
         Assert.Equal(SuspensionCode.Billing, migratedOrganization.SuspensionCode);
         Assert.Equal(organization.SuspensionDate, migratedOrganization.SuspensionDate);
         Assert.Equal(organization.SuspensionNotes, migratedOrganization.SuspensionNotes);
-        Assert.Equal(ExpectedSystemUserId, migratedOrganization.SuspendedByUserId);
+        Assert.Equal(StripeConstants.SystemUserId, migratedOrganization.SuspendedByUserId);
     }
 }
