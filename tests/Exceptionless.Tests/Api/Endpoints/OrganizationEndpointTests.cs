@@ -1,10 +1,12 @@
 using System.Net;
+using Elastic.Clients.Elasticsearch;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
@@ -23,6 +25,7 @@ namespace Exceptionless.Tests.Api.Endpoints;
 public sealed class OrganizationEndpointTests : IntegrationTestsBase
 {
     private readonly IOrganizationRepository _organizationRepository;
+    private readonly ExceptionlessElasticConfiguration _configuration;
     private readonly IProjectRepository _projectRepository;
     private readonly IUserRepository _userRepository;
     private readonly BillingManager _billingManager;
@@ -32,6 +35,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     public OrganizationEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _organizationRepository = GetService<IOrganizationRepository>();
+        _configuration = GetService<ExceptionlessElasticConfiguration>();
         _projectRepository = GetService<IProjectRepository>();
         _userRepository = GetService<IUserRepository>();
         _billingManager = GetService<BillingManager>();
@@ -867,6 +871,57 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         // Assert
         await SendRequestAsync(r => r
             .AsTestOrganizationUser()
+            .AppendPaths("organizations", viewOrg.Id)
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public async Task DeleteAsync_SuspendedOrganizationWithLegacySystemMarker_RemovesOrganization()
+    {
+        // Arrange
+        var newOrg = new NewOrganization
+        {
+            Name = "Legacy Billing Organization"
+        };
+
+        var viewOrg = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPath("organizations")
+            .Content(newOrg)
+            .StatusCodeShouldBeCreated()
+        );
+
+        var organization = await _organizationRepository.GetByIdAsync(viewOrg!.Id);
+        Assert.NotNull(organization);
+        organization.IsSuspended = true;
+        organization.SuspensionCode = SuspensionCode.Billing;
+        organization.SuspensionDate = DateTime.UtcNow;
+        organization.SuspensionNotes = "Synthetic legacy billing suspension.";
+        organization.SuspendedByUserId = "660000000000000000000001";
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
+
+        var legacyMarkerUpdate = await _configuration.Client.UpdateAsync<Organization, Dictionary<string, object>>(
+            _configuration.Organizations.VersionedName,
+            viewOrg.Id,
+            update => update
+                .Doc(new Dictionary<string, object> { ["suspended_by_user_id"] = "legacy-billing-system" })
+                .Refresh(Refresh.WaitFor),
+            TestCancellationToken);
+        Assert.True(legacyMarkerUpdate.IsValidResponse);
+
+        // Act
+        await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .Delete()
+            .AppendPaths("organizations", viewOrg.Id)
+            .StatusCodeShouldBeAccepted()
+        );
+
+        // Assert
+        await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
             .AppendPaths("organizations", viewOrg.Id)
             .StatusCodeShouldBeNotFound()
         );

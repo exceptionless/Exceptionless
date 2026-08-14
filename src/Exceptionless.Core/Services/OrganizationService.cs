@@ -1,4 +1,5 @@
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Foundatio.Extensions.Hosting.Startup;
@@ -205,6 +206,7 @@ public class OrganizationService : IStartupAction
         await RemoveUsersAsync(organization, currentUserId);
         await CleanupProjectNotificationSettingsAsync(organization, []);
 
+        organization.RemoveSuspension();
         organization.IsDeleted = true;
         await _organizationRepository.SaveAsync(organization);
     }
