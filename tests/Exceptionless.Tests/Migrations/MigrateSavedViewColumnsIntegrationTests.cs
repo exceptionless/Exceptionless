@@ -95,8 +95,8 @@ public sealed class MigrateSavedViewColumnsIntegrationTests : IntegrationTestsBa
         var migrationStateRepository = GetService<IMigrationStateRepository>();
         await migrationStateRepository.AddAsync(new MigrationState
         {
-            Id = "5",
-            Version = 5,
+            Id = "7",
+            Version = 7,
             MigrationType = MigrationType.VersionedAndResumable,
             StartedUtc = DateTime.UtcNow,
             CompletedUtc = DateTime.UtcNow
