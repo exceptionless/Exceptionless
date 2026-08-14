@@ -1,12 +1,10 @@
 using System.Net;
-using Elastic.Clients.Elasticsearch;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
@@ -24,8 +22,8 @@ namespace Exceptionless.Tests.Api.Endpoints;
 
 public sealed class OrganizationEndpointTests : IntegrationTestsBase
 {
+    private const string ValidSuspendedByUserId = "660000000000000000000001";
     private readonly IOrganizationRepository _organizationRepository;
-    private readonly ExceptionlessElasticConfiguration _configuration;
     private readonly IProjectRepository _projectRepository;
     private readonly IUserRepository _userRepository;
     private readonly BillingManager _billingManager;
@@ -35,7 +33,6 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     public OrganizationEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _organizationRepository = GetService<IOrganizationRepository>();
-        _configuration = GetService<ExceptionlessElasticConfiguration>();
         _projectRepository = GetService<IProjectRepository>();
         _userRepository = GetService<IUserRepository>();
         _billingManager = GetService<BillingManager>();
@@ -877,7 +874,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task DeleteAsync_SuspendedOrganizationWithLegacySystemMarker_RemovesOrganization()
+    public async Task DeleteAsync_SuspendedOrganization_PreservesSuspensionState()
     {
         // Arrange
         var newOrganization = new NewOrganization
@@ -899,17 +896,8 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         organization.SuspensionCode = SuspensionCode.Billing;
         organization.SuspensionDate = DateTime.UtcNow;
         organization.SuspensionNotes = "Synthetic legacy billing suspension.";
-        organization.SuspendedByUserId = "660000000000000000000001";
+        organization.SuspendedByUserId = ValidSuspendedByUserId;
         await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
-
-        var legacyMarkerUpdate = await _configuration.Client.UpdateAsync<Organization, Dictionary<string, object>>(
-            _configuration.Organizations.VersionedName,
-            viewOrg.Id,
-            update => update
-                .Doc(new Dictionary<string, object> { ["suspended_by_user_id"] = "legacy-billing-system" })
-                .Refresh(Refresh.WaitFor),
-            TestCancellationToken);
-        Assert.True(legacyMarkerUpdate.IsValidResponse);
 
         // Act
         await SendRequestAsync(r => r
@@ -925,6 +913,24 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
             .AppendPaths("organizations", viewOrg.Id)
             .StatusCodeShouldBeNotFound()
         );
+
+        var deletedOrganization = await _organizationRepository.GetByIdAsync(viewOrg.Id, o => o.SoftDeleteMode(SoftDeleteQueryMode.All));
+        Assert.NotNull(deletedOrganization);
+        Assert.True(deletedOrganization.IsDeleted);
+        Assert.True(deletedOrganization.IsSuspended);
+        Assert.Equal(SuspensionCode.Billing, deletedOrganization.SuspensionCode);
+        Assert.Equal(ValidSuspendedByUserId, deletedOrganization.SuspendedByUserId);
+        Assert.Equal("Synthetic legacy billing suspension.", deletedOrganization.SuspensionNotes);
+
+        deletedOrganization.IsDeleted = false;
+        await _organizationRepository.SaveAsync(deletedOrganization, o => o.ImmediateConsistency());
+
+        var undeletedOrganization = await _organizationRepository.GetByIdAsync(viewOrg.Id);
+        Assert.NotNull(undeletedOrganization);
+        Assert.True(undeletedOrganization.IsSuspended);
+        Assert.Equal(SuspensionCode.Billing, undeletedOrganization.SuspensionCode);
+        Assert.Equal(ValidSuspendedByUserId, undeletedOrganization.SuspendedByUserId);
+        Assert.Equal("Synthetic legacy billing suspension.", undeletedOrganization.SuspensionNotes);
     }
 
     [Fact]
