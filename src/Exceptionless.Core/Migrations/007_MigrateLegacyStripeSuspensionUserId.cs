@@ -44,14 +44,16 @@ public sealed class MigrateLegacyStripeSuspensionUserId : MigrationBase
         {
             context.CancellationToken.ThrowIfCancellationRequested();
 
-            foreach (var organization in organizations.Documents)
+            // SuspendedByUserId is not mapped on OrganizationIndex, so the legacy marker must be
+            // filtered after the typed repository query loads the current document source.
+            var organizationsToMigrate = organizations.Documents
+                .Where(organization => String.Equals(organization.SuspendedByUserId, StripeConstants.LegacySystemUserId, StringComparison.Ordinal))
+                .ToList();
+            if (organizationsToMigrate.Count > 0)
             {
-                if (!String.Equals(organization.SuspendedByUserId, StripeConstants.LegacySystemUserId, StringComparison.Ordinal))
-                    continue;
-
-                organization.SuspendedByUserId = StripeConstants.SystemUserId;
-                await _organizationRepository.SaveAsync(organization, options => options.Cache());
-                migrated++;
+                organizationsToMigrate.ForEach(organization => organization.SuspendedByUserId = StripeConstants.SystemUserId);
+                await _organizationRepository.SaveAsync(organizationsToMigrate, options => options.Cache());
+                migrated += organizationsToMigrate.Count;
             }
 
             if (!await organizations.NextPageAsync())

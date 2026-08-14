@@ -29,7 +29,7 @@ public sealed class MigrationRegistrationTests : TestWithServices
     }
 
     [Fact]
-    public void LegacyStripeSuspensionMigration_IsRegisteredAsVersionedAndResumable()
+    public void MigrationRegistration_LegacyStripeSuspensionMigration_IsRegisteredAsVersionedAndResumable()
     {
         var migration = GetService<IEnumerable<IMigration>>()
             .DistinctBy(migration => migration.GetType())
