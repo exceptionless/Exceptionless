@@ -1,7 +1,10 @@
+using Elastic.Clients.Elasticsearch;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Migrations;
 using Microsoft.Extensions.Logging;
 
@@ -10,11 +13,16 @@ namespace Exceptionless.Core.Migrations;
 public sealed class MigrateLegacyStripeSuspensionUserId : MigrationBase
 {
     private const int BatchSize = 100;
+    private readonly ExceptionlessElasticConfiguration _configuration;
     private readonly IOrganizationRepository _organizationRepository;
 
-    public MigrateLegacyStripeSuspensionUserId(IOrganizationRepository organizationRepository, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public MigrateLegacyStripeSuspensionUserId(
+        IOrganizationRepository organizationRepository,
+        ExceptionlessElasticConfiguration configuration,
+        ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _organizationRepository = organizationRepository;
+        _configuration = configuration;
 
         MigrationType = MigrationType.VersionedAndResumable;
         Version = 7;
@@ -48,6 +56,16 @@ public sealed class MigrateLegacyStripeSuspensionUserId : MigrationBase
 
             if (!await organizations.NextPageAsync())
                 break;
+        }
+
+        if (migrated > 0)
+        {
+            var refreshResponse = await _configuration.Client.Indices.RefreshAsync(
+                _configuration.Organizations.VersionedName,
+                context.CancellationToken);
+            _logger.LogRequest(refreshResponse);
+            if (!refreshResponse.IsValidResponse)
+                throw new InvalidOperationException("Unable to refresh organizations after the legacy Stripe suspension user id migration.");
         }
 
         _logger.LogInformation("Migrated {OrganizationCount} organizations with the legacy Stripe suspension user id", migrated);

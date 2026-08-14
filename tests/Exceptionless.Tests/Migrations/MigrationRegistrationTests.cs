@@ -1,3 +1,4 @@
+using Exceptionless.Core.Migrations;
 using Foundatio.Repositories.Migrations;
 using Xunit;
 
@@ -25,5 +26,17 @@ public sealed class MigrationRegistrationTests : TestWithServices
             .ToList();
 
         Assert.Empty(duplicateVersions);
+    }
+
+    [Fact]
+    public void LegacyStripeSuspensionMigration_IsRegisteredAsVersionedAndResumable()
+    {
+        var migration = GetService<IEnumerable<IMigration>>()
+            .DistinctBy(migration => migration.GetType())
+            .SingleOrDefault(migration => migration is MigrateLegacyStripeSuspensionUserId);
+
+        Assert.NotNull(migration);
+        Assert.Equal(MigrationType.VersionedAndResumable, migration.MigrationType);
+        Assert.Equal(7, migration.Version);
     }
 }
