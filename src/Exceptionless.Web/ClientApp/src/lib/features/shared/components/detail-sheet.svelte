@@ -1,9 +1,13 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
 
+    import { browser } from '$app/environment';
+    import { pushState } from '$app/navigation';
+    import { page } from '$app/state';
     import { Button } from '$comp/ui/button';
     import * as Sheet from '$comp/ui/sheet';
     import ExternalLink from '@lucide/svelte/icons/external-link';
+    import { onMount } from 'svelte';
 
     import { preserveDetailSheetForAssistant } from './detail-sheet-interaction';
 
@@ -17,12 +21,68 @@
     }
 
     let { actions, children, detailsHref, onClose, open, title }: Props = $props();
+    let historyEntryUrl: string | undefined;
+    let ownsHistoryEntry = false;
+    let wasOpen = false;
+
+    function getCurrentUrl(): string {
+        return `${page.url.pathname}${page.url.search}${page.url.hash}`;
+    }
+
+    function clearOwnedHistoryEntry(): void {
+        historyEntryUrl = undefined;
+        ownsHistoryEntry = false;
+    }
+
+    function consumeOwnedHistoryEntry(): void {
+        if (!browser || !ownsHistoryEntry) {
+            return;
+        }
+
+        const shouldTraverseBack = historyEntryUrl === getCurrentUrl();
+        clearOwnedHistoryEntry();
+        if (shouldTraverseBack) {
+            window.history.back();
+        }
+    }
 
     function handleOpenChange(nextOpen: boolean) {
         if (!nextOpen) {
             onClose();
         }
     }
+
+    onMount(() => {
+        function handlePopState(): void {
+            if (!open || !ownsHistoryEntry) {
+                return;
+            }
+
+            clearOwnedHistoryEntry();
+            onClose();
+        }
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    });
+
+    $effect(() => {
+        if (!browser) {
+            wasOpen = open;
+            return;
+        }
+
+        if (open && !wasOpen) {
+            const url = getCurrentUrl();
+            pushState(url, page.state);
+            historyEntryUrl = url;
+            ownsHistoryEntry = true;
+        } else if (!open && wasOpen) {
+            consumeOwnedHistoryEntry();
+        }
+
+        wasOpen = open;
+    });
 </script>
 
 <Sheet.Root onOpenChange={handleOpenChange} {open}>
