@@ -62,15 +62,6 @@
     });
 
     $effect(() => {
-        if (!open || !hasAccess || isStreaming || !promptRequest || promptRequest.id === handledPromptRequestId) {
-            return;
-        }
-
-        handledPromptRequestId = promptRequest.id;
-        void submitPrompt(promptRequest.prompt);
-    });
-
-    $effect(() => {
         const currentOrganizationId = organizationId;
         if (conversationOrganizationId !== currentOrganizationId) {
             stopStreaming();
@@ -80,6 +71,23 @@
             conversationId = crypto.randomUUID();
             conversationOrganizationId = currentOrganizationId;
         }
+    });
+
+    $effect(() => {
+        if (
+            !open ||
+            !hasAccess ||
+            isStreaming ||
+            !promptRequest ||
+            !organizationId ||
+            conversationOrganizationId !== organizationId ||
+            promptRequest.id === handledPromptRequestId
+        ) {
+            return;
+        }
+
+        handledPromptRequestId = promptRequest.id;
+        void submitPrompt(promptRequest.prompt);
     });
 
     async function submitPrompt(value = prompt, isSuggestedAction = false): Promise<void> {

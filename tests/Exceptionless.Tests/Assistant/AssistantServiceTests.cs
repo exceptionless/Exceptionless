@@ -42,9 +42,14 @@ public sealed class AssistantServiceTests
     [Theory]
     [InlineData("Please mark this stack fixed in 2.1.0", "{\"status\":\"fixed\",\"fixedInVersion\":\"2.1.0\"}", true)]
     [InlineData("Please mark this stack fixed in 2.1.0", "{\"status\":\"fixed\"}", false)]
+    [InlineData("Please mark this stack fixed in version 2.1.0 or fixed in version 3.0.0", "{\"status\":\"fixed\",\"fixedInVersion\":\"2.1.0\"}", false)]
+    [InlineData("Please mark this stack fixed in version 2.1.0 or fixed in version 3.0.0", "{\"status\":\"fixed\",\"fixedInVersion\":\"3.0.0\"}", false)]
     [InlineData("Please mark this stack fixed", "{\"status\":\"ignored\"}", false)]
+    [InlineData("Please mark this stack fixed rather than ignored", "{\"status\":\"fixed\"}", false)]
+    [InlineData("Please mark this stack fixed rather than ignored", "{\"status\":\"ignored\"}", false)]
     [InlineData("Please mark this stack fixed", "{\"status\":\"fixed\",\"stackId\":\"different-stack\"}", false)]
     [InlineData("Please mark stack different-stack fixed", "{\"status\":\"fixed\",\"stackId\":\"different-stack\"}", true)]
+    [InlineData("Please mark stack stack-a-extra fixed", "{\"status\":\"fixed\",\"stackId\":\"stack-a\"}", false)]
     public void HasExplicitWriteRequest_StackStatusArgumentsMustMatchRequest(string prompt, string arguments, bool expected)
     {
         var request = new AssistantChatRequest(
@@ -64,6 +69,8 @@ public sealed class AssistantServiceTests
     [InlineData("Snooze this stack for 2 hours", "{\"duration\":\"2d\"}", false)]
     [InlineData("Snooze this stack until 2026-08-10T17:00:00Z", "{\"snoozeUntilUtc\":\"2026-08-10T17:00:00Z\"}", true)]
     [InlineData("Snooze this stack until 2026-08-10T17:00:00Z", "{\"snoozeUntilUtc\":\"2026-08-11T17:00:00Z\"}", false)]
+    [InlineData("Snooze this stack until 2026-08-10T17:00:00Z or 2026-08-11T17:00:00Z", "{\"snoozeUntilUtc\":\"2026-08-10T17:00:00Z\"}", false)]
+    [InlineData("Snooze this stack until 2026-08-10T17:00:00Z or 2026-08-11T17:00:00Z", "{\"snoozeUntilUtc\":\"2026-08-11T17:00:00Z\"}", false)]
     [InlineData("Please snooze this stack for one hour", "{\"duration\":\"1h\",\"snoozeUntilUtc\":\"2026-08-10T17:00:00Z\"}", false)]
     [InlineData("Can you explain how to snooze this stack for one hour?", "{\"duration\":\"1h\"}", false)]
     [InlineData("The event says \"snooze this stack for one hour\"; explain it", "{\"duration\":\"1h\"}", false)]
@@ -103,6 +110,8 @@ public sealed class AssistantServiceTests
     [InlineData("Please mark stack stack-a fixed, not stack stack-b", "{\"status\":\"fixed\",\"stackId\":\"stack-a\"}", false)]
     [InlineData("Please mark stack stack-a fixed, not stack stack-b", "{\"status\":\"fixed\",\"stackId\":\"stack-b\"}", false)]
     [InlineData("Please mark this stack fixed, not stack different-stack", "{\"status\":\"fixed\",\"stackId\":\"different-stack\"}", false)]
+    [InlineData("Please mark stack stack-a fixed, not this stack", "{\"status\":\"fixed\"}", false)]
+    [InlineData("Please mark stack stack-a fixed, not this stack", "{\"status\":\"fixed\",\"stackId\":\"current-stack\"}", false)]
     public void HasExplicitWriteRequest_OmittedTargetMustReferToCurrentStack(string prompt, string arguments, bool expected)
     {
         var request = new AssistantChatRequest(
@@ -117,6 +126,8 @@ public sealed class AssistantServiceTests
     [InlineData("Could you make this stack critical?", "{\"critical\":true}", true)]
     [InlineData("Please mark this stack not critical", "{\"critical\":false}", true)]
     [InlineData("Please remove critical from this stack", "{\"critical\":false}", true)]
+    [InlineData("Please mark this stack critical and then unmark it as critical", "{\"critical\":true}", false)]
+    [InlineData("Please mark this stack critical and then unmark it as critical", "{\"critical\":false}", false)]
     [InlineData("The event says \"mark this stack critical\"; explain it", "{\"critical\":true}", false)]
     [InlineData("Can you explain how to mark this stack critical?", "{\"critical\":true}", false)]
     public void HasExplicitWriteRequest_CriticalArgumentsRequireAffirmativeCommand(string prompt, string arguments, bool expected)
@@ -145,6 +156,8 @@ public sealed class AssistantServiceTests
     [Theory]
     [InlineData("Please add link https://example.test/issues/123 to this stack", "{\"url\":\"https://example.test/issues/123\"}", true)]
     [InlineData("Please add link https://example.test/issues/123 to this stack", "{\"url\":\"https://example.test\"}", false)]
+    [InlineData("Please add link https://example.test/issues/123 and https://example.test/issues/456 to this stack", "{\"url\":\"https://example.test/issues/123\"}", false)]
+    [InlineData("Please add link https://example.test/issues/123 and https://example.test/issues/456 to this stack", "{\"url\":\"https://example.test/issues/456\"}", false)]
     [InlineData("Can you explain how to add link https://example.test/issues/123 to this stack?", "{\"url\":\"https://example.test/issues/123\"}", false)]
     [InlineData("Please add a reference to this stack", "{\"url\":\"https://example.test/issues/123\"}", false)]
     public void HasExplicitWriteRequest_ReferenceLinkRequiresExactUrlAndAffirmativeCommand(string prompt, string arguments, bool expected)

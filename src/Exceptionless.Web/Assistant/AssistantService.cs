@@ -465,15 +465,17 @@ public sealed class AssistantService(
             return false;
 
         string message = latestUserMessage.Content;
-        if (!HasAffirmativeWriteIntent(message))
+        if (!HasAffirmativeWriteIntent(message) || HasAlternativeWriteIntent(message))
             return false;
 
         using var document = ParseArguments(arguments);
         var root = document.RootElement;
         string? requestedStackId = GetString(root, "stackId", "stack_id");
         string? currentStackId = GetRouteValue(request.Path, "stack");
-        if (HasAmbiguousStackTargets(message)
-            || (!String.IsNullOrWhiteSpace(requestedStackId) && IsNegatedStackTarget(message, requestedStackId)))
+        if (HasAmbiguousStackTargets(message, currentStackId)
+            || (!String.IsNullOrWhiteSpace(requestedStackId) && IsExcludedStackTarget(message, requestedStackId))
+            || (!String.IsNullOrWhiteSpace(currentStackId)
+                && (IsExcludedStackTarget(message, currentStackId) || IsExcludedCurrentStackTarget(message))))
         {
             return false;
         }
@@ -483,7 +485,7 @@ public sealed class AssistantService(
             if (String.IsNullOrWhiteSpace(currentStackId) || !ReferencesCurrentStack(message, currentStackId))
                 return false;
         }
-        else if (!message.Contains(requestedStackId, StringComparison.Ordinal)
+        else if (!ContainsExactToken(message, requestedStackId)
             && (String.IsNullOrWhiteSpace(currentStackId)
                 || !String.Equals(requestedStackId, currentStackId, StringComparison.Ordinal)
                 || !ReferencesCurrentStack(message, currentStackId)))
@@ -495,13 +497,7 @@ public sealed class AssistantService(
         {
             UpdateStackStatusTool => HasExplicitStackStatusRequest(message, root),
             SnoozeStackTool => HasExplicitSnoozeRequest(message, root),
-            SetStackCriticalTool => GetBoolean(root, "critical") switch
-            {
-                true => MatchesAffirmativeCommand(message, @"(?:mark|set|make)\b[^\r\n.!?]*\bcritical")
-                    && !Regex.IsMatch(message, @"\bnot\s+critical\b", RegexOptions.IgnoreCase),
-                false => MatchesAffirmativeCommand(message, @"(?:(?:remove|unmark)\b[^\r\n.!?]*\bcritical|(?:mark|set|make)\b[^\r\n.!?]*\bnot\s+critical)"),
-                _ => false
-            },
+            SetStackCriticalTool => HasExplicitCriticalRequest(message, GetBoolean(root, "critical")),
             AddStackReferenceLinkTool => HasExplicitReferenceLinkRequest(message, root, remove: false),
             RemoveStackReferenceLinkTool => HasExplicitReferenceLinkRequest(message, root, remove: true),
             _ => false
@@ -524,28 +520,63 @@ public sealed class AssistantService(
             RegexOptions.IgnoreCase);
     }
 
-    private static bool ReferencesCurrentStack(string message, string currentStackId)
-        => message.Contains(currentStackId, StringComparison.Ordinal)
-            || ContainsAny(message, "this stack", "current stack", "this issue", "current issue");
+    private static bool HasAlternativeWriteIntent(string message)
+        => Regex.IsMatch(
+            message,
+            @"\b(?:rather\s+than|instead\s+of|except(?:\s+for)?|but\s+not)\b|[,;]\s*not\b",
+            RegexOptions.IgnoreCase);
 
-    private static bool HasAmbiguousStackTargets(string message)
-        => Regex.Matches(message, @"\b(?:stack|issue)\s+(?<target>[A-Za-z0-9][A-Za-z0-9_-]*)\b", RegexOptions.IgnoreCase)
+    private static bool ReferencesCurrentStack(string message, string currentStackId)
+        => ContainsExactToken(message, currentStackId)
+            || ReferencesCurrentStackByPhrase(message);
+
+    private static bool ReferencesCurrentStackByPhrase(string message)
+        => ContainsAny(message, "this stack", "current stack", "this issue", "current issue");
+
+    private static bool HasAmbiguousStackTargets(string message, string? currentStackId)
+    {
+        IEnumerable<string> targets = Regex.Matches(message, @"\b(?:stack|issue)\s+(?<target>[A-Za-z0-9][A-Za-z0-9_-]*)\b", RegexOptions.IgnoreCase)
             .Select(match => match.Groups["target"].Value.ToLowerInvariant())
-            .Where(target => target is not ("this" or "current" or "the" or "fixed" or "ignored" or "discarded" or "open" or "critical" or "not" or "as" or "to" or "with" or "for"))
+            .Where(target => target is not ("this" or "current" or "the" or "fixed" or "ignored" or "discarded" or "open" or "critical" or "not" or "as" or "to" or "with" or "for" or "until"));
+        if (ReferencesCurrentStackByPhrase(message))
+            targets = targets.Append(currentStackId?.ToLowerInvariant() ?? "__current_stack");
+
+        return targets
             .Distinct(StringComparer.Ordinal)
             .Skip(1)
             .Any();
+    }
 
-    private static bool IsNegatedStackTarget(string message, string stackId)
+    private static bool IsExcludedStackTarget(string message, string stackId)
         => Regex.IsMatch(
             message,
-            $@"\bnot\s+(?:the\s+)?(?:stack|issue)\s+{Regex.Escape(stackId)}\b",
+            $@"\b(?:not|except|rather\s+than|instead\s+of)\s+(?:the\s+)?(?:stack|issue)\s+{Regex.Escape(stackId)}\b",
+            RegexOptions.IgnoreCase);
+
+    private static bool IsExcludedCurrentStackTarget(string message)
+        => Regex.IsMatch(
+            message,
+            @"\b(?:not|except|rather\s+than|instead\s+of)\s+(?:the\s+)?(?:this|current)\s+(?:stack|issue)\b",
             RegexOptions.IgnoreCase);
 
     private static bool HasExplicitStackStatusRequest(string message, JsonElement arguments)
     {
         string? status = GetString(arguments, "status")?.Trim().ToLowerInvariant();
         if (status is null || Regex.IsMatch(message, $@"\bnot\s+{Regex.Escape(status)}\b", RegexOptions.IgnoreCase))
+            return false;
+
+        string[] requestedStatuses = Regex.Matches(message, @"\b(?:fixed|ignored|ignore|discarded|discard|open|reopen)\b", RegexOptions.IgnoreCase)
+            .Select(match => match.Value.ToLowerInvariant() switch
+            {
+                "ignore" => "ignored",
+                "discard" => "discarded",
+                "reopen" => "open",
+                var value => value
+            })
+            .Distinct(StringComparer.Ordinal)
+            .Take(2)
+            .ToArray();
+        if (requestedStatuses is not [var requestedStatus] || requestedStatus != status)
             return false;
 
         bool explicitlyRequested = status switch
@@ -559,18 +590,44 @@ public sealed class AssistantService(
         if (!explicitlyRequested)
             return false;
 
-        string? fixedInVersion = GetString(arguments, "fixedInVersion", "fixed_in_version");
-        var requestedVersionMatch = Regex.Match(
-            message,
-            @"\bfixed\s+(?:in|for)\s+(?:version\s+)?(?<version>[A-Za-z0-9][A-Za-z0-9._+\-]*)",
-            RegexOptions.IgnoreCase);
-        if (requestedVersionMatch.Success)
+        string? fixedInVersion = GetString(arguments, "fixedInVersion", "fixed_in_version")?.Trim();
+        string[] requestedVersions = Regex.Matches(
+                message,
+                @"\bfixed\s+(?:in|for)\s+(?:version\s+)?(?<version>[A-Za-z0-9][A-Za-z0-9._+\-]*)",
+                RegexOptions.IgnoreCase)
+            .Select(match => match.Groups["version"].Value)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(2)
+            .ToArray();
+        return requestedVersions switch
         {
-            string requestedVersion = requestedVersionMatch.Groups["version"].Value;
-            return String.Equals(fixedInVersion, requestedVersion, StringComparison.OrdinalIgnoreCase);
-        }
+            [] => String.IsNullOrWhiteSpace(fixedInVersion),
+            [var requestedVersion] => String.Equals(fixedInVersion, requestedVersion, StringComparison.OrdinalIgnoreCase),
+            _ => false
+        };
+    }
 
-        return String.IsNullOrWhiteSpace(fixedInVersion) || message.Contains(fixedInVersion, StringComparison.OrdinalIgnoreCase);
+    private static bool HasExplicitCriticalRequest(string message, bool? critical)
+    {
+        bool requestsCritical = MatchesAffirmativeCommand(message, @"(?:mark|set|make)\b[^\r\n.!?]*\bcritical")
+            && !Regex.IsMatch(message, @"\bnot\s+critical\b", RegexOptions.IgnoreCase);
+        bool requestsNotCritical = MatchesAffirmativeCommand(
+            message,
+            @"(?:(?:remove|unmark)\b[^\r\n.!?]*\bcritical|(?:mark|set|make)\b[^\r\n.!?]*\bnot\s+critical)");
+        bool mentionsRemovingCritical = Regex.IsMatch(
+            message,
+            @"\b(?:remove|unmark)\b[^\r\n.!?]*\bcritical|\bnot\s+critical\b",
+            RegexOptions.IgnoreCase);
+
+        if (requestsCritical && mentionsRemovingCritical)
+            return false;
+
+        return critical switch
+        {
+            true => requestsCritical,
+            false => requestsNotCritical,
+            _ => false
+        };
     }
 
     private static bool MatchesAffirmativeCommand(string message, string commandPattern)
@@ -655,9 +712,6 @@ public sealed class AssistantService(
 
     private static bool MessageContainsUtcDateTime(string message, string snoozeUntilUtc)
     {
-        if (message.Contains(snoozeUntilUtc, StringComparison.OrdinalIgnoreCase))
-            return true;
-
         if (!DateTimeOffset.TryParse(
                 snoozeUntilUtc,
                 CultureInfo.InvariantCulture,
@@ -667,14 +721,23 @@ public sealed class AssistantService(
             return false;
         }
 
-        string[] terms =
-        [
-            untilUtc.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture),
-            untilUtc.ToString("yyyy-MM-dd'T'HH:mm'Z'", CultureInfo.InvariantCulture),
-            untilUtc.ToString("yyyy-MM-dd HH:mm 'UTC'", CultureInfo.InvariantCulture),
-            untilUtc.ToString("yyyy-MM-dd h:mm tt 'UTC'", CultureInfo.InvariantCulture)
-        ];
-        return terms.Any(term => message.Contains(term, StringComparison.OrdinalIgnoreCase));
+        DateTimeOffset[] requestedDateTimes = Regex.Matches(
+                message,
+                @"\b\d{4}-\d{2}-\d{2}(?:T\d{1,2}:\d{2}(?::\d{2})?Z|\s+\d{1,2}:\d{2}(?:\s*[AP]M)?\s+UTC)\b",
+                RegexOptions.IgnoreCase)
+            .Select(match => DateTimeOffset.TryParse(
+                match.Value,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                out var requestedDateTime)
+                    ? requestedDateTime
+                    : DateTimeOffset.MinValue)
+            .Where(requestedDateTime => requestedDateTime != DateTimeOffset.MinValue)
+            .Distinct()
+            .Take(2)
+            .ToArray();
+
+        return requestedDateTimes is [var requestedDateTime] && requestedDateTime == untilUtc;
     }
 
     private static bool HasExplicitReferenceLinkRequest(string message, JsonElement arguments, bool remove)
@@ -694,11 +757,24 @@ public sealed class AssistantService(
         if (!Uri.TryCreate(requestedUrl, UriKind.Absolute, out var requestedUri))
             return false;
 
-        return Regex.Matches(message, """https?://[^\s<>"']+""", RegexOptions.IgnoreCase)
+        Uri[] requestedUris = Regex.Matches(message, """https?://[^\s<>"']+""", RegexOptions.IgnoreCase)
             .Select(match => match.Value.TrimEnd('.', ',', ';', ':', '!', '?', ')', ']', '}'))
-            .Any(candidate => Uri.TryCreate(candidate, UriKind.Absolute, out var candidateUri)
-                && String.Equals(candidateUri.AbsoluteUri, requestedUri.AbsoluteUri, StringComparison.Ordinal));
+            .Select(candidate => Uri.TryCreate(candidate, UriKind.Absolute, out var candidateUri) ? candidateUri : null)
+            .Where(candidateUri => candidateUri is not null)
+            .Select(candidateUri => candidateUri!)
+            .DistinctBy(candidateUri => candidateUri.AbsoluteUri, StringComparer.Ordinal)
+            .Take(2)
+            .ToArray();
+
+        return requestedUris is [var candidateUri]
+            && String.Equals(candidateUri.AbsoluteUri, requestedUri.AbsoluteUri, StringComparison.Ordinal);
     }
+
+    private static bool ContainsExactToken(string message, string value)
+        => Regex.IsMatch(
+            message,
+            $@"(?<![A-Za-z0-9_-]){Regex.Escape(value)}(?![A-Za-z0-9_-])",
+            RegexOptions.IgnoreCase);
 
     private static bool ContainsAny(string value, params string[] terms)
         => terms.Any(term => value.Contains(term, StringComparison.OrdinalIgnoreCase));
