@@ -3,36 +3,49 @@ import type { ConsoleMessage, Page, Request, Response } from '@playwright/test';
 import { expect, test } from '../fixtures/e2e-test';
 import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
 import { createRepresentativeEvent } from '../support/synthetic-event';
+import { dispatchWebSocketMessages, installWebSocketTestHarness } from '../support/web-socket';
+
+const STACK_NOTIFICATION_TRAILING_REFRESH_MS = 5_000;
 
 interface ActionSample {
+    countRequests: number;
     listRequests: number;
     name: string;
+    requestFailures: number;
     runtimeErrors: number;
 }
 
 interface RuntimeDiagnostics {
     actionSamples: ActionSample[];
     activeAction: string;
+    countRequests: number;
     listRequests: number;
     networkFailures: { action: string; status: number; url: string }[];
+    requestFailures: { action: string; error: null | string; method: string; url: string }[];
     runtimeErrors: { action: string; message: string }[];
+    savedViewRequests: number;
 }
 
 test('stack effects stay bounded through background, paging, and navigation chaos @signup', async ({ e2eApi, e2eScenario, page }, testInfo) => {
     test.slow();
+    await installWebSocketTestHarness(page);
 
     const journey = ExceptionlessE2EJourney.fromScenario(page, e2eApi, e2eScenario);
     const diagnostics: RuntimeDiagnostics = {
         actionSamples: [],
         activeAction: 'setup',
+        countRequests: 0,
         listRequests: 0,
         networkFailures: [],
-        runtimeErrors: []
+        requestFailures: [],
+        runtimeErrors: [],
+        savedViewRequests: 0
     };
 
     page.on('console', (message) => recordConsoleError(diagnostics, message));
     page.on('pageerror', (error) => diagnostics.runtimeErrors.push({ action: diagnostics.activeAction, message: error.stack ?? error.message }));
-    page.on('request', (request) => recordListRequest(diagnostics, request, e2eScenario.organizationId));
+    page.on('request', (request) => recordRequest(diagnostics, request, e2eScenario.organizationId));
+    page.on('requestfailed', (request) => recordRequestFailure(diagnostics, request));
     page.on('response', (response) => recordNetworkFailure(diagnostics, response));
 
     await test.step('seed enough independent stacks to exercise pagination', async () => {
@@ -49,6 +62,33 @@ test('stack effects stay bounded through background, paging, and navigation chao
         await expect(page.getByRole('heading', { name: 'Stacks' })).toBeVisible();
         await expect(page.locator('tbody tr:visible').first()).toBeVisible();
         await expect(page.getByRole('button', { name: 'Go to next page' })).toBeEnabled();
+    });
+
+    await test.step('open a stack route without aborting detail requests', async () => {
+        const failedDetailRequests: { failure: null | string; pageUrl: string; requestUrl: string }[] = [];
+        const recordFailedDetailRequest = (request: Request) => {
+            if (new URL(request.url()).pathname.startsWith('/api/v2/')) {
+                failedDetailRequests.push({
+                    failure: request.failure()?.errorText ?? null,
+                    pageUrl: page.url(),
+                    requestUrl: request.url()
+                });
+            }
+        };
+
+        page.on('requestfailed', recordFailedDetailRequest);
+
+        try {
+            await page.goto(`/next/stack/${journey.stackId}`);
+            await expect(page).toHaveURL(new RegExp(`/next/stack/${journey.stackId}$`));
+            await expect(page.getByRole('tab', { name: 'Overview' })).toBeVisible();
+        } finally {
+            page.off('requestfailed', recordFailedDetailRequest);
+        }
+
+        expect(failedDetailRequests).toEqual([]);
+        await page.goto('/next/stack?limit=5');
+        await expect(page.getByRole('heading', { name: 'Stacks' })).toBeVisible();
     });
 
     await measureAction(diagnostics, 'selected stack refresh', async () => {
@@ -101,27 +141,61 @@ test('stack effects stay bounded through background, paging, and navigation chao
         await setDocumentHidden(page, false);
         await page.waitForTimeout(2_000);
     });
-    expect(actionSample(diagnostics, 'background ingestion and resume').listRequests).toBeLessThanOrEqual(1);
+    expect(actionSample(diagnostics, 'background ingestion and resume').listRequests).toBeLessThanOrEqual(2);
 
-    await measureAction(diagnostics, 'bursty stack change notifications', async () => {
-        await page.evaluate((organizationId) => {
-            for (let index = 0; index < 30; index++) {
-                document.dispatchEvent(
-                    new CustomEvent('StackChanged', {
-                        detail: {
-                            change_type: 2,
-                            data: {},
-                            id: `chaos-missing-stack-${index}`,
-                            organization_id: organizationId,
-                            type: 'Stack'
-                        }
-                    })
-                );
+    await page.waitForTimeout(STACK_NOTIFICATION_TRAILING_REFRESH_MS);
+    await measureAction(diagnostics, 'removal notification leading window', async () => {
+        await dispatchWebSocketMessages(page, [
+            {
+                message: {
+                    change_type: 2,
+                    data: {},
+                    id: 'chaos-removed-stack',
+                    organization_id: e2eScenario.organizationId,
+                    project_id: e2eScenario.projectId,
+                    type: 'Stack'
+                },
+                type: 'StackChanged'
             }
-        }, e2eScenario.organizationId);
+        ]);
         await page.waitForTimeout(2_000);
     });
-    expect(actionSample(diagnostics, 'bursty stack change notifications').listRequests).toBe(1);
+    expect(actionSample(diagnostics, 'removal notification leading window').countRequests).toBe(0);
+    expect(actionSample(diagnostics, 'removal notification leading window').listRequests).toBe(0);
+
+    await measureAction(diagnostics, 'removal notification trailing reconciliation', async () => {
+        await page.waitForTimeout(STACK_NOTIFICATION_TRAILING_REFRESH_MS - 1_500);
+    });
+    expect(actionSample(diagnostics, 'removal notification trailing reconciliation').countRequests).toBe(1);
+    expect(actionSample(diagnostics, 'removal notification trailing reconciliation').listRequests).toBe(1);
+
+    await measureAction(diagnostics, 'sustained stack change notifications', async () => {
+        for (let wave = 0; wave < 4; wave++) {
+            await dispatchWebSocketMessages(
+                page,
+                Array.from({ length: 30 }, (_, index) => ({
+                    message: {
+                        change_type: 1,
+                        data: {},
+                        id: `chaos-missing-stack-${wave}-${index}`,
+                        organization_id: e2eScenario.organizationId,
+                        project_id: e2eScenario.projectId,
+                        type: 'Stack'
+                    },
+                    type: 'StackChanged'
+                }))
+            );
+            await page.waitForTimeout(1_600);
+        }
+
+        await page.waitForTimeout(2_000);
+    });
+    const sustainedNotificationSample = actionSample(diagnostics, 'sustained stack change notifications');
+    expect(sustainedNotificationSample.countRequests).toBeGreaterThanOrEqual(1);
+    expect(sustainedNotificationSample.countRequests).toBeLessThanOrEqual(2);
+    expect(sustainedNotificationSample.listRequests).toBeGreaterThanOrEqual(1);
+    expect(sustainedNotificationSample.listRequests).toBeLessThanOrEqual(2);
+    expect(sustainedNotificationSample.runtimeErrors).toBe(0);
 
     await measureAction(diagnostics, 'route remounts', async () => {
         for (let index = 0; index < 5; index++) {
@@ -140,6 +214,7 @@ test('stack effects stay bounded through background, paging, and navigation chao
 
     expect(diagnostics.runtimeErrors).toEqual([]);
     expect(diagnostics.networkFailures).toEqual([]);
+    expect(diagnostics.requestFailures).toEqual([]);
     await expect(page.getByRole('heading', { name: 'Stacks' })).toBeVisible();
 });
 
@@ -178,13 +253,17 @@ function isStackListResponse(response: Response, organizationId: string): boolea
 async function measureAction(diagnostics: RuntimeDiagnostics, name: string, action: () => Promise<void>): Promise<void> {
     diagnostics.activeAction = name;
     const initialListRequests = diagnostics.listRequests;
+    const initialCountRequests = diagnostics.countRequests;
+    const initialRequestFailures = diagnostics.requestFailures.length;
     const initialRuntimeErrors = diagnostics.runtimeErrors.length;
 
     await action();
 
     diagnostics.actionSamples.push({
+        countRequests: diagnostics.countRequests - initialCountRequests,
         listRequests: diagnostics.listRequests - initialListRequests,
         name,
+        requestFailures: diagnostics.requestFailures.length - initialRequestFailures,
         runtimeErrors: diagnostics.runtimeErrors.length - initialRuntimeErrors
     });
 }
@@ -196,12 +275,6 @@ function recordConsoleError(diagnostics: RuntimeDiagnostics, message: ConsoleMes
     }
 }
 
-function recordListRequest(diagnostics: RuntimeDiagnostics, request: Request, organizationId: string): void {
-    if (isStackListRequest(request, organizationId)) {
-        diagnostics.listRequests++;
-    }
-}
-
 function recordNetworkFailure(diagnostics: RuntimeDiagnostics, response: Response): void {
     if (response.status() >= 400) {
         diagnostics.networkFailures.push({
@@ -210,6 +283,36 @@ function recordNetworkFailure(diagnostics: RuntimeDiagnostics, response: Respons
             url: response.url()
         });
     }
+}
+
+function recordRequest(diagnostics: RuntimeDiagnostics, request: Request, organizationId: string): void {
+    if (new URL(request.url()).pathname.startsWith(`/api/v2/organizations/${organizationId}/saved-views`)) {
+        diagnostics.savedViewRequests++;
+        return;
+    }
+
+    if (isStackListRequest(request, organizationId)) {
+        diagnostics.listRequests++;
+        return;
+    }
+
+    const url = new URL(request.url());
+    if (url.pathname === `/api/v2/organizations/${organizationId}/events/count` && url.searchParams.get('mode') === 'stack_frequent') {
+        diagnostics.countRequests++;
+    }
+}
+
+function recordRequestFailure(diagnostics: RuntimeDiagnostics, request: Request): void {
+    if (!new URL(request.url()).pathname.startsWith('/api/v2/')) {
+        return;
+    }
+
+    diagnostics.requestFailures.push({
+        action: diagnostics.activeAction,
+        error: request.failure()?.errorText ?? null,
+        method: request.method(),
+        url: request.url()
+    });
 }
 
 async function setDocumentHidden(page: Page, hidden: boolean): Promise<void> {

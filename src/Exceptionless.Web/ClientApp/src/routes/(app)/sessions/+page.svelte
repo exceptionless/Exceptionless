@@ -37,9 +37,9 @@
     import { parseDateMathRange, toDateMathRange } from '$features/shared/utils/datemath';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_LIMIT, DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
+    import { createQueryParameters } from '$shared/query-params';
     import { type FetchClientResponse, useFetchClient } from '@foundatiofx/fetchclient';
     import { createTable } from '@tanstack/svelte-table';
-    import { queryParamsState } from 'kit-query-params';
     import { useEventListener, watch } from 'runed';
     import { onDestroy } from 'svelte';
     import { debounce } from 'throttle-debounce';
@@ -83,9 +83,9 @@
     }
 
     updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
-    const queryParams = queryParamsState({
-        default: DEFAULT_PARAMS,
-        pushHistory: true,
+    const queryParams = createQueryParameters({
+        defaults: DEFAULT_PARAMS,
+        history: 'push',
         schema: {
             filter: 'string',
             limit: 'number',
@@ -98,7 +98,7 @@
         () => {
             viewActive = false;
             updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
-            Object.assign(queryParams, DEFAULT_PARAMS);
+            queryParams.update(DEFAULT_PARAMS);
             reset();
         },
         { lazy: true }

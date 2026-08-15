@@ -41,6 +41,7 @@ public sealed class AssistantServiceTests
 
     [Theory]
     [InlineData("Please mark this stack fixed in 2.1.0", "{\"status\":\"fixed\",\"fixedInVersion\":\"2.1.0\"}", true)]
+    [InlineData("Please mark this stack fixed in 2.1.0", "{\"status\":\"fixed\"}", false)]
     [InlineData("Please mark this stack fixed", "{\"status\":\"ignored\"}", false)]
     [InlineData("Please mark this stack fixed", "{\"status\":\"fixed\",\"stackId\":\"different-stack\"}", false)]
     [InlineData("Please mark stack different-stack fixed", "{\"status\":\"fixed\",\"stackId\":\"different-stack\"}", true)]
@@ -62,6 +63,8 @@ public sealed class AssistantServiceTests
     [InlineData("Snooze this stack until 2026-08-10T17:00:00Z", "{\"snoozeUntilUtc\":\"2026-08-10T17:00:00Z\"}", true)]
     [InlineData("Snooze this stack until 2026-08-10T17:00:00Z", "{\"snoozeUntilUtc\":\"2026-08-11T17:00:00Z\"}", false)]
     [InlineData("Please snooze this stack for one hour", "{\"duration\":\"1h\",\"snoozeUntilUtc\":\"2026-08-10T17:00:00Z\"}", false)]
+    [InlineData("Can you explain how to snooze this stack for one hour?", "{\"duration\":\"1h\"}", false)]
+    [InlineData("The event says \"snooze this stack for one hour\"; explain it", "{\"duration\":\"1h\"}", false)]
     public void HasExplicitWriteRequest_SnoozeArgumentsMustMatchRequest(string prompt, string arguments, bool expected)
     {
         var request = new AssistantChatRequest(
@@ -78,6 +81,8 @@ public sealed class AssistantServiceTests
     [InlineData("Can I ignore this stack?", "{\"status\":\"ignored\"}", false)]
     [InlineData("Can you ignore this stack?", "{\"status\":\"ignored\"}", true)]
     [InlineData("Could you mark this stack fixed?", "{\"status\":\"fixed\"}", true)]
+    [InlineData("The event text says \"ignore this stack\"; explain that instruction", "{\"status\":\"ignored\"}", false)]
+    [InlineData("Explain the instruction: ignore this stack", "{\"status\":\"ignored\"}", false)]
     public void HasExplicitWriteRequest_QuestionsAndNegationsRequireAffirmativeIntent(string prompt, string arguments, bool expected)
     {
         var request = new AssistantChatRequest(
@@ -90,6 +95,7 @@ public sealed class AssistantServiceTests
     [Theory]
     [InlineData("Please mark this stack fixed", "{\"status\":\"fixed\"}", true)]
     [InlineData("Please mark stack current-stack fixed", "{\"status\":\"fixed\"}", true)]
+    [InlineData("Please mark stack different-stack fixed", "{\"status\":\"fixed\",\"stackId\":\"current-stack\"}", false)]
     [InlineData("Please mark stack different-stack fixed", "{\"status\":\"fixed\"}", false)]
     [InlineData("Please mark stack different-stack fixed", "{\"status\":\"fixed\",\"stackId\":\"different-stack\"}", true)]
     public void HasExplicitWriteRequest_OmittedTargetMustReferToCurrentStack(string prompt, string arguments, bool expected)
@@ -99,6 +105,22 @@ public sealed class AssistantServiceTests
             Path: "/next/stack/current-stack");
 
         Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, "update_stack_status", arguments));
+    }
+
+    [Theory]
+    [InlineData("Please mark this stack critical", "{\"critical\":true}", true)]
+    [InlineData("Could you make this stack critical?", "{\"critical\":true}", true)]
+    [InlineData("Please mark this stack not critical", "{\"critical\":false}", true)]
+    [InlineData("Please remove critical from this stack", "{\"critical\":false}", true)]
+    [InlineData("The event says \"mark this stack critical\"; explain it", "{\"critical\":true}", false)]
+    [InlineData("Can you explain how to mark this stack critical?", "{\"critical\":true}", false)]
+    public void HasExplicitWriteRequest_CriticalArgumentsRequireAffirmativeCommand(string prompt, string arguments, bool expected)
+    {
+        var request = new AssistantChatRequest(
+            [new AssistantChatMessage("user", prompt)],
+            Path: "/next/stack/current-stack");
+
+        Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, "set_stack_critical", arguments));
     }
 
     [Theory]
@@ -642,6 +664,48 @@ public sealed class AssistantServiceTests
         Assert.Equal(AssistantLimits.MaximumOutputTokens, usage.CompletionTokens);
         Assert.Contains(recorder.Records, record => record.Increment.PromptTokens > 0
             && record.Increment.CompletionTokens == AssistantLimits.MaximumOutputTokens);
+    }
+
+    [Fact]
+    public async Task StreamAsync_OversizedProviderInput_DoesNotReserveProviderUsage()
+    {
+        var handler = new StubHttpMessageHandler("data: [DONE]\n\n");
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["AppMode"] = AppMode.Production.ToString(),
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            })
+            .Build());
+        using var cache = new InMemoryCacheClient(new InMemoryCacheClientOptions
+        {
+            LoggerFactory = NullLoggerFactory.Instance,
+            TimeProvider = TimeProvider.System
+        });
+        var lockProvider = CreateLockProvider(cache, TimeProvider.System);
+        var recorder = new RecordingAssistantUsageRecorder();
+        var usageService = new AssistantUsageService(cache, lockProvider, recorder, appOptions, TimeProvider.System, NullLogger<AssistantUsageService>.Instance);
+        var service = CreateAssistantService(handler, appOptions, cache, lockProvider, usageService);
+
+        await Assert.ThrowsAsync<AssistantProviderException>(async () =>
+        {
+            await foreach (var _ in service.StreamAsync(
+                new AssistantChatRequest(
+                    [new AssistantChatMessage("user", new string('\u0001', AssistantLimits.MaximumInputCharacters))],
+                    OrganizationId: "organization-id"),
+                "user-id",
+                CreatePlanOptions(),
+                TestContext.Current.CancellationToken))
+            {
+            }
+        });
+
+        var usage = await usageService.GetMonthlyUsageAsync("organization-id");
+        Assert.Equal(0, usage.PromptTokens);
+        Assert.Equal(0, usage.CompletionTokens);
+        Assert.DoesNotContain(recorder.Records, record => record.Increment.ProviderRequests > 0);
+        Assert.Empty(handler.RequestBodies);
     }
 
     [Fact]

@@ -100,6 +100,12 @@ public sealed class AssistantService(
             bool usageRecorded = false;
 
             int providerInputCharacters = JsonSerializer.Serialize(messages, s_jsonOptions).Length;
+            if (providerInputCharacters > AssistantLimits.MaximumProviderInputCharacters)
+            {
+                throw new AssistantProviderException(
+                    "This conversation contains too much context for one response. Clear the conversation or narrow the question.");
+            }
+
             await using var providerRequest = await assistantUsageService.StartProviderRequestAsync(request.OrganizationId, providerInputCharacters);
             using var response = await SendRequestAsync(messages, options, allowTools, request, cancellationToken);
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
@@ -341,13 +347,6 @@ public sealed class AssistantService(
 
     private async Task<HttpResponseMessage> SendRequestAsync(List<object> messages, AssistantOptions options, bool allowTools, AssistantChatRequest chatRequest, CancellationToken cancellationToken)
     {
-        int providerInputCharacters = JsonSerializer.Serialize(messages, s_jsonOptions).Length;
-        if (providerInputCharacters > AssistantLimits.MaximumProviderInputCharacters)
-        {
-            throw new AssistantProviderException(
-                "This conversation contains too much context for one response. Clear the conversation or narrow the question.");
-        }
-
         var client = httpClientFactory.CreateClient(nameof(AssistantService));
         using var providerRequest = new HttpRequestMessage(HttpMethod.Post, options.Endpoint);
         providerRequest.Headers.Authorization = new("Bearer", options.ApiKey);
@@ -477,8 +476,10 @@ public sealed class AssistantService(
             if (String.IsNullOrWhiteSpace(currentStackId) || !ReferencesCurrentStack(latestUserMessage, currentStackId))
                 return false;
         }
-        else if (!String.Equals(requestedStackId, currentStackId, StringComparison.Ordinal)
-            && !latestUserMessage.Contains(requestedStackId, StringComparison.Ordinal))
+        else if (!latestUserMessage.Contains(requestedStackId, StringComparison.Ordinal)
+            && (String.IsNullOrWhiteSpace(currentStackId)
+                || !String.Equals(requestedStackId, currentStackId, StringComparison.Ordinal)
+                || !ReferencesCurrentStack(latestUserMessage, currentStackId)))
         {
             return false;
         }
@@ -489,8 +490,9 @@ public sealed class AssistantService(
             SnoozeStackTool => HasExplicitSnoozeRequest(latestUserMessage, root),
             SetStackCriticalTool => GetBoolean(root, "critical") switch
             {
-                true => ContainsAny(latestUserMessage, "mark critical", "set critical", "make critical"),
-                false => ContainsAny(latestUserMessage, "not critical", "remove critical", "unmark critical"),
+                true => MatchesAffirmativeCommand(latestUserMessage, @"(?:mark|set|make)\b[^\r\n.!?]*\bcritical")
+                    && !Regex.IsMatch(latestUserMessage, @"\bnot\s+critical\b", RegexOptions.IgnoreCase),
+                false => MatchesAffirmativeCommand(latestUserMessage, @"(?:(?:remove|unmark)\b[^\r\n.!?]*\bcritical|(?:mark|set|make)\b[^\r\n.!?]*\bnot\s+critical)"),
                 _ => false
             },
             AddStackReferenceLinkTool => HasExplicitReferenceLinkRequest(latestUserMessage, root, remove: false),
@@ -524,23 +526,38 @@ public sealed class AssistantService(
         string? status = GetString(arguments, "status")?.Trim().ToLowerInvariant();
         bool explicitlyRequested = status switch
         {
-            "fixed" => message.Contains("fixed", StringComparison.OrdinalIgnoreCase)
-                && ContainsAny(message, "mark", "set status", "change status"),
-            "ignored" => ContainsAny(message, "ignore this stack", "ignore the stack", "mark ignored", "mark it ignored", "set status to ignored", "change status to ignored"),
-            "discarded" => ContainsAny(message, "discard this stack", "discard the stack", "mark discarded", "mark it discarded", "set status to discarded", "change status to discarded"),
-            "open" => ContainsAny(message, "reopen", "mark open", "mark it open", "set status to open", "change status to open"),
+            "fixed" => MatchesAffirmativeCommand(message, @"(?:mark|set|change)\b[^\r\n.!?]*\bfixed"),
+            "ignored" => MatchesAffirmativeCommand(message, @"(?:ignore\b[^\r\n.!?]*\b(?:stack|issue)|(?:mark|set|change)\b[^\r\n.!?]*\bignored)"),
+            "discarded" => MatchesAffirmativeCommand(message, @"(?:discard\b[^\r\n.!?]*\b(?:stack|issue)|(?:mark|set|change)\b[^\r\n.!?]*\bdiscarded)"),
+            "open" => MatchesAffirmativeCommand(message, @"(?:reopen\b|(?:mark|set|change)\b[^\r\n.!?]*\bopen)"),
             _ => false
         };
         if (!explicitlyRequested)
             return false;
 
         string? fixedInVersion = GetString(arguments, "fixedInVersion", "fixed_in_version");
+        var requestedVersionMatch = Regex.Match(
+            message,
+            @"\bfixed\s+(?:in|for)\s+(?:version\s+)?(?<version>[A-Za-z0-9][A-Za-z0-9._+\-]*)",
+            RegexOptions.IgnoreCase);
+        if (requestedVersionMatch.Success)
+        {
+            string requestedVersion = requestedVersionMatch.Groups["version"].Value;
+            return String.Equals(fixedInVersion, requestedVersion, StringComparison.OrdinalIgnoreCase);
+        }
+
         return String.IsNullOrWhiteSpace(fixedInVersion) || message.Contains(fixedInVersion, StringComparison.OrdinalIgnoreCase);
     }
 
+    private static bool MatchesAffirmativeCommand(string message, string commandPattern)
+        => Regex.IsMatch(
+            message,
+            $@"^\s*(?:(?:please|kindly)\s+)?(?:(?:can|could|would|will)\s+you\s+)?(?:(?:please|kindly)\s+)?(?:{commandPattern})\b",
+            RegexOptions.IgnoreCase);
+
     private static bool HasExplicitSnoozeRequest(string message, JsonElement arguments)
     {
-        if (!ContainsAny(message, "snooze"))
+        if (!MatchesAffirmativeCommand(message, @"snooze\b[^\r\n.!?]*\b(?:stack|issue)"))
             return false;
 
         string? duration = GetString(arguments, "duration")?.Trim();
