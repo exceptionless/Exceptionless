@@ -12027,7 +12027,8 @@
           "token_endpoint_auth_methods_supported",
           "scopes_supported",
           "resource_documentation",
-          "client_id_metadata_document_supported"
+          "client_id_metadata_document_supported",
+          "authorization_response_iss_parameter_supported"
         ],
         "type": "object",
         "properties": {
@@ -12080,6 +12081,9 @@
             "type": "string"
           },
           "client_id_metadata_document_supported": {
+            "type": "boolean"
+          },
+          "authorization_response_iss_parameter_supported": {
             "type": "boolean"
           }
         }

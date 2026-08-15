@@ -121,6 +121,7 @@ Content-Type: application/json
   "resource": "{{apiResource}}"
 }
 ### Complete Authorize For REST API Resource
+# @name completeAuthorize
 POST {{apiUrl}}/oauth/authorize
 Authorization: Bearer {{login.response.body.token}}
 Content-Type: application/json
@@ -138,6 +139,13 @@ Content-Type: application/json
     "{{organizationId}}"
   ]
 }
+
+> {%
+client.test("Authorization redirect includes issuer", function () {
+  const redirect = new URL(response.body.redirect_uri);
+  client.assert(redirect.searchParams.get("iss") === "http://localhost:7110", "Expected redirect_uri to include the authorization server issuer");
+});
+%}
 
 ### Authorize
 # Open this URL in a browser or send it with an authenticated user session/token.

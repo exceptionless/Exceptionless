@@ -212,6 +212,7 @@ export interface OAuthAuthorizationServerMetadata {
   scopes_supported: string[];
   resource_documentation: string;
   client_id_metadata_document_supported: boolean;
+  authorization_response_iss_parameter_supported: boolean;
 }
 
 export interface OAuthAuthorizeConsentResponse {
