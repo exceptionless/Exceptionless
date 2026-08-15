@@ -91,6 +91,31 @@ test('stack effects stay bounded through background, paging, and navigation chao
         await expect(page.getByRole('heading', { name: 'Stacks' })).toBeVisible();
     });
 
+    await measureAction(diagnostics, 'stack timeline drag', async () => {
+        await page.locator('tbody tr:visible').first().click();
+        const dialog = page.getByRole('dialog');
+        await expect(dialog).toBeVisible();
+        const timeline = dialog.locator('[data-slot="chart"]');
+        await expect(timeline).toBeVisible();
+
+        const bounds = await timeline.boundingBox();
+        expect(bounds).not.toBeNull();
+        if (bounds) {
+            const y = bounds.y + bounds.height / 2;
+            await page.mouse.move(bounds.x + bounds.width * 0.2, y);
+            await page.waitForTimeout(250);
+            await page.mouse.move(bounds.x + bounds.width * 0.3, y);
+            await expect(page.locator('.lc-tooltip-root')).toHaveCSS('pointer-events', 'none');
+            await page.mouse.down();
+            await page.mouse.move(bounds.x + bounds.width * 0.8, y, { steps: 20 });
+            await page.mouse.up();
+        }
+
+        await page.waitForTimeout(500);
+        await page.getByRole('button', { name: 'Close' }).click();
+    });
+    expect(actionSample(diagnostics, 'stack timeline drag').runtimeErrors).toBe(0);
+
     await measureAction(diagnostics, 'selected stack refresh', async () => {
         const rowSelection = page.getByRole('checkbox', { name: 'Select row' }).first();
         await rowSelection.click();

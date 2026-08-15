@@ -69,6 +69,18 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.True(userDescriptionPath.TryGetProperty("post", out var userDescriptionPost));
         Assert.True(userDescriptionPost.TryGetProperty("requestBody", out _));
         AssertResponseCodes(userDescriptionPost, "202");
+
+        var changeStackStatusPost = paths.GetProperty("/api/v2/stacks/{ids}/change-status").GetProperty("post");
+        var statusParameter = changeStackStatusPost.GetProperty("parameters").EnumerateArray()
+            .Single(parameter => String.Equals(parameter.GetProperty("name").GetString(), "status", StringComparison.Ordinal));
+        Assert.Equal("#/components/schemas/StackStatus", statusParameter.GetProperty("schema").GetProperty("$ref").GetString());
+        AssertResponseCodes(changeStackStatusPost, "200", "404", "422");
+        var validationProblemSchema = changeStackStatusPost.GetProperty("responses")
+            .GetProperty("422")
+            .GetProperty("content")
+            .GetProperty("application/problem+json")
+            .GetProperty("schema");
+        Assert.Equal("#/components/schemas/HttpValidationProblemDetails", validationProblemSchema.GetProperty("$ref").GetString());
     }
 
     [Fact]

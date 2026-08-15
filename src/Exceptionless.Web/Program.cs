@@ -296,8 +296,18 @@ public partial class Program
                     .To("https://collector.exceptionless.io")
                     .To("https://config.exceptionless.io")
                     .To("https://heartbeat.exceptionless.io")
+                    .To("https://via.intercom.io")
+                    .To("https://api.intercom.io")
                     .To("https://api-iam.intercom.io/")
-                    .To("wss://nexus-websocket-a.intercom.io");
+                    .To("https://api-ping.intercom.io")
+                    .To("https://*.intercom-messenger.com")
+                    .To("wss://*.intercom-messenger.com")
+                    .To("https://nexus-websocket-a.intercom.io")
+                    .To("wss://nexus-websocket-a.intercom.io")
+                    .To("https://nexus-websocket-b.intercom.io")
+                    .To("wss://nexus-websocket-b.intercom.io")
+                    .To("https://uploads.intercomcdn.com")
+                    .To("https://uploads.intercomusercontent.com");
 
                 csp.OnSendingHeader = new Func<CspSendingHeaderContext, Task>(context =>
                 {
