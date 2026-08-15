@@ -1,13 +1,22 @@
 <script lang="ts">
     import DetailSheet from './detail-sheet.svelte';
 
-    let open = $state(false);
+    let historyValue = $state<string>();
 </script>
 
-<button onclick={() => (open = true)}>Open details</button>
-<button onclick={() => (open = false)}>Close details externally</button>
-<output data-testid="detail-sheet-state">{open ? 'open' : 'closed'}</output>
+<button onclick={() => (historyValue = 'abc123')}>Open details</button>
+<button onclick={() => (historyValue = undefined)}>Close details externally</button>
+<button onclick={() => (historyValue = 'def456')}>Navigate within details</button>
+<output data-testid="detail-sheet-state">{historyValue ? `open:${historyValue}` : 'closed'}</output>
 
-<DetailSheet detailsHref="/event/abc123" onClose={() => (open = false)} {open} title="Event">
+<DetailSheet
+    detailsHref="/event/abc123"
+    historyKey="event"
+    {historyValue}
+    onClose={() => (historyValue = undefined)}
+    onOpen={(value) => (historyValue = value)}
+    open={!!historyValue}
+    title="Event"
+>
     <p>Event details</p>
 </DetailSheet>

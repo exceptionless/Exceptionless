@@ -909,7 +909,7 @@
 </div>
 
 <StackDetailSheet
-    stackId={selectedStackId}
+    bind:stackId={selectedStackId}
     filterChanged={onFilterChanged}
     onClose={() => {
         selectedStackId = undefined;

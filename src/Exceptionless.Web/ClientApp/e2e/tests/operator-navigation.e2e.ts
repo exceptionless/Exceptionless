@@ -28,10 +28,26 @@ test('operator can navigate from event discovery to event and stack details thro
         await expect(eventSheet).toBeHidden();
         await expect(page).toHaveURL(eventListUrl);
 
+        await page.evaluate(() => history.forward());
+        await expect(eventSheet).toBeVisible();
+        await expect(page).toHaveURL(eventListUrl);
+
+        await page.evaluate(() => history.back());
+        await expect(eventSheet).toBeHidden();
+        await expect(page).toHaveURL(eventListUrl);
+
         await eventRow.click();
         await expect(eventSheet).toBeVisible();
         await eventSheet.getByRole('link', { name: 'Open details in new window' }).click();
 
+        await expect(page).toHaveURL(new RegExp(`/next/stack/${journey.stackId}/event/${journey.eventId}(?:[?#]|$)`));
+        await expect(getVisibleText(page, journey.message)).toBeVisible();
+
+        await page.goBack();
+        await expect(page).toHaveURL(eventListUrl);
+        await expect(eventSheet).toBeHidden();
+
+        await page.goForward();
         await expect(page).toHaveURL(new RegExp(`/next/stack/${journey.stackId}/event/${journey.eventId}(?:[?#]|$)`));
         await expect(getVisibleText(page, journey.message)).toBeVisible();
     });
@@ -46,6 +62,7 @@ test('operator can navigate from event discovery to event and stack details thro
     await test.step('open stack details from the Stacks table', async () => {
         await navigateToSidebarView(page, 'Stacks', 'Most Frequent Errors');
         await expect(page.getByRole('heading', { name: 'Stacks' })).toBeVisible();
+        const stackListUrl = page.url();
 
         const stackRow = getVisibleRow(page, journey.message);
         await expect(stackRow).toBeVisible({ timeout: 30_000 });
@@ -54,6 +71,21 @@ test('operator can navigate from event discovery to event and stack details thro
         const stackSheet = page.getByRole('dialog', { name: 'Stack' });
         await expect(stackSheet).toBeVisible();
         await expect(stackSheet.getByText(journey.message).filter({ visible: true }).first()).toBeVisible();
+
+        await page.evaluate(() => history.back());
+        await expect(stackSheet).toBeHidden();
+        await expect(page).toHaveURL(stackListUrl);
+
+        await page.evaluate(() => history.forward());
+        await expect(stackSheet).toBeVisible();
+        await expect(page).toHaveURL(stackListUrl);
+
+        await page.evaluate(() => history.back());
+        await expect(stackSheet).toBeHidden();
+        await expect(page).toHaveURL(stackListUrl);
+
+        await stackRow.click();
+        await expect(stackSheet).toBeVisible();
         await stackSheet.getByRole('link', { name: 'Open details in new window' }).click();
 
         await expect(page).toHaveURL(new RegExp(`/next/stack/${journey.stackId}(?:/event/${journey.eventId})?(?:[?#]|$)`));

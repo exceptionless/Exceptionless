@@ -74,7 +74,15 @@
     }
 </script>
 
-<DetailSheet detailsHref={resolvedHref} onClose={handleClose} open={!!eventId} title="Event">
+<DetailSheet
+    detailsHref={resolvedHref}
+    historyKey="event"
+    historyValue={eventId}
+    onClose={handleClose}
+    onOpen={(historyValue) => (eventId = historyValue)}
+    open={!!eventId}
+    title="Event"
+>
     {#snippet actions()}
         <AssistantFixButton prepareContext={prepareAssistantContext} resource="event" />
     {/snippet}

@@ -1001,7 +1001,7 @@
 </div>
 
 <EventDetailSheet
-    eventId={selectedEventId}
+    bind:eventId={selectedEventId}
     filterChanged={onFilterChanged}
     onClose={() => {
         selectedEventId = null;

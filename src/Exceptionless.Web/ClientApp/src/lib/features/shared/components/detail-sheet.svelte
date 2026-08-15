@@ -2,7 +2,7 @@
     import type { Snippet } from 'svelte';
 
     import { browser } from '$app/environment';
-    import { pushState } from '$app/navigation';
+    import { beforeNavigate, goto, pushState, replaceState } from '$app/navigation';
     import { page } from '$app/state';
     import { Button } from '$comp/ui/button';
     import * as Sheet from '$comp/ui/sheet';
@@ -15,14 +15,31 @@
         actions?: Snippet;
         children: Snippet;
         detailsHref: string;
+        historyKey: string;
+        historyValue: null | string | undefined;
         onClose: () => void;
+        onOpen: (historyValue: string) => void;
         open: boolean;
         title: string;
     }
 
-    let { actions, children, detailsHref, onClose, open, title }: Props = $props();
+    const detailSheetHistoryStateKey = '__exceptionlessDetailSheet';
+    const svelteKitPageStateKey = 'sveltekit:states';
+
+    interface DetailSheetHistoryEntry {
+        key: string;
+        value: string;
+    }
+
+    type DetailSheetPageState = Record<string, unknown> & { __exceptionlessDetailSheet?: DetailSheetHistoryEntry };
+
+    let { actions, children, detailsHref, historyKey, historyValue, onClose, onOpen, open, title }: Props = $props();
     let historyEntryUrl: string | undefined;
+    let historyEntryValue: string | undefined;
+    let historyReady = $state(false);
     let ownsHistoryEntry = false;
+    let pendingNavigationTimer: number | undefined;
+    let pendingNavigationUrl: undefined | URL;
     let wasOpen = false;
 
     function getCurrentUrl(): string {
@@ -31,7 +48,37 @@
 
     function clearOwnedHistoryEntry(): void {
         historyEntryUrl = undefined;
+        historyEntryValue = undefined;
         ownsHistoryEntry = false;
+    }
+
+    function createHistoryState(value?: string): Record<string, unknown> {
+        return {
+            ...page.state,
+            [detailSheetHistoryStateKey]: value ? { key: historyKey, value } : undefined
+        };
+    }
+
+    function getHistoryEntry(historyState: unknown): DetailSheetHistoryEntry | undefined {
+        if (!historyState || typeof historyState !== 'object') {
+            return undefined;
+        }
+
+        const rawHistoryState = historyState as Record<string, unknown>;
+        const pageState = (rawHistoryState[svelteKitPageStateKey] ?? rawHistoryState) as DetailSheetPageState;
+        const entry = pageState.__exceptionlessDetailSheet;
+        return entry?.key === historyKey && typeof entry.value === 'string' ? entry : undefined;
+    }
+
+    function restoreOwnedHistoryEntry(entry: DetailSheetHistoryEntry): void {
+        historyEntryUrl = getCurrentUrl();
+        historyEntryValue = entry.value;
+        ownsHistoryEntry = true;
+        wasOpen = true;
+
+        if (!open || historyValue !== entry.value) {
+            onOpen(entry.value);
+        }
     }
 
     function consumeOwnedHistoryEntry(): void {
@@ -53,35 +100,82 @@
         }
     }
 
+    beforeNavigate(({ cancel, to, type, willUnload }) => {
+        if (willUnload || !browser || type === 'popstate' || !open || !ownsHistoryEntry || !to || historyEntryUrl !== getCurrentUrl()) {
+            return;
+        }
+
+        pendingNavigationUrl = to.url;
+        cancel();
+        clearOwnedHistoryEntry();
+        window.history.back();
+    });
+
     onMount(() => {
-        function handlePopState(): void {
+        function handlePopState(event: PopStateEvent): void {
+            if (pendingNavigationUrl) {
+                const url = pendingNavigationUrl;
+                pendingNavigationUrl = undefined;
+                wasOpen = false;
+                onClose();
+                // Let SvelteKit finish accepting the shallow popstate before
+                // beginning the requested route navigation.
+                pendingNavigationTimer = window.setTimeout(() => void goto(url), 0);
+                return;
+            }
+
+            const entry = getHistoryEntry(event.state);
+            if (entry) {
+                restoreOwnedHistoryEntry(entry);
+                return;
+            }
+
             if (!open || !ownsHistoryEntry) {
                 return;
             }
 
             clearOwnedHistoryEntry();
+            wasOpen = false;
             onClose();
         }
 
         window.addEventListener('popstate', handlePopState);
-        return () => window.removeEventListener('popstate', handlePopState);
+
+        const entry = getHistoryEntry(window.history.state);
+        if (entry) {
+            restoreOwnedHistoryEntry(entry);
+        }
+
+        historyReady = true;
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+            window.clearTimeout(pendingNavigationTimer);
+        };
     });
 
     $effect(() => {
-        if (!browser) {
-            wasOpen = open;
+        if (!browser || !historyReady) {
             return;
         }
 
-        if (open && !wasOpen) {
+        if (open && historyValue && !wasOpen) {
             const url = getCurrentUrl();
-            pushState(url, page.state);
+            pushState(url, createHistoryState(historyValue));
             historyEntryUrl = url;
+            historyEntryValue = historyValue;
             ownsHistoryEntry = true;
+        } else if (open && historyValue && ownsHistoryEntry && historyEntryValue !== historyValue) {
+            replaceState(getCurrentUrl(), createHistoryState(historyValue));
+            historyEntryValue = historyValue;
         } else if (!open && wasOpen) {
             // Parent-driven closes can be followed immediately by a URL update (for
-            // example, applying a filter from the sheet). Leave the current entry in
-            // place so that update cannot race with a history traversal.
+            // example, applying a filter from the sheet). Clear the sheet marker from
+            // the current entry without replacing a newer browser URL with the URL
+            // still exposed by SvelteKit's reactive page state.
+            if (ownsHistoryEntry) {
+                replaceState('', createHistoryState());
+            }
+
             clearOwnedHistoryEntry();
         }
 
