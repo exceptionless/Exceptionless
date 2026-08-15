@@ -38,12 +38,17 @@
     let historyEntryValue: string | undefined;
     let historyReady = $state(false);
     let ownsHistoryEntry = false;
+    let parentCloseTimer: number | undefined;
     let pendingNavigationTimer: number | undefined;
     let pendingNavigationUrl: undefined | URL;
     let wasOpen = false;
 
     function getCurrentUrl(): string {
         return `${page.url.pathname}${page.url.search}${page.url.hash}`;
+    }
+
+    function getBrowserUrl(): string {
+        return `${window.location.pathname}${window.location.search}${window.location.hash}`;
     }
 
     function clearOwnedHistoryEntry(): void {
@@ -149,6 +154,7 @@
         historyReady = true;
         return () => {
             window.removeEventListener('popstate', handlePopState);
+            window.clearTimeout(parentCloseTimer);
             window.clearTimeout(pendingNavigationTimer);
         };
     });
@@ -159,6 +165,7 @@
         }
 
         if (open && historyValue && !wasOpen) {
+            window.clearTimeout(parentCloseTimer);
             const url = getCurrentUrl();
             pushState(url, createHistoryState(historyValue));
             historyEntryUrl = url;
@@ -169,14 +176,24 @@
             historyEntryValue = historyValue;
         } else if (!open && wasOpen) {
             // Parent-driven closes can be followed immediately by a URL update (for
-            // example, applying a filter from the sheet). Clear the sheet marker from
-            // the current entry without replacing a newer browser URL with the URL
-            // still exposed by SvelteKit's reactive page state.
-            if (ownsHistoryEntry) {
-                replaceState('', createHistoryState());
-            }
+            // example, applying a filter from the sheet). Wait for that update, then
+            // either consume an unchanged same-URL entry or clear the marker while
+            // preserving the newer browser URL.
+            parentCloseTimer = window.setTimeout(() => {
+                const currentEntry = getHistoryEntry(window.history.state);
+                const shouldTraverseBack = ownsHistoryEntry && currentEntry?.value === historyEntryValue && historyEntryUrl === getBrowserUrl();
 
-            clearOwnedHistoryEntry();
+                if (shouldTraverseBack) {
+                    clearOwnedHistoryEntry();
+                    window.history.back();
+                } else {
+                    if (ownsHistoryEntry && currentEntry?.value === historyEntryValue) {
+                        replaceState('', createHistoryState());
+                    }
+
+                    clearOwnedHistoryEntry();
+                }
+            }, 0);
         }
 
         wasOpen = open;

@@ -144,7 +144,7 @@ describe('DetailSheet history', () => {
         expect(screen.getByTestId('detail-sheet-state').textContent).toBe('closed');
     });
 
-    it('does not traverse history when details close externally', async () => {
+    it('consumes a same-page history entry when details close externally', async () => {
         const historyBack = vi.spyOn(window.history, 'back').mockImplementation(() => undefined);
         render(DetailSheetTestHarness);
         await fireEvent.click(screen.getByRole('button', { name: 'Open details' }));
@@ -153,8 +153,23 @@ describe('DetailSheet history', () => {
         await fireEvent.click(screen.getByRole('button', { name: 'Close details externally' }));
         await tick();
 
+        await waitFor(() => expect(historyBack).toHaveBeenCalledOnce());
+        expect(navigation.replaceState).not.toHaveBeenCalled();
+    });
+
+    it('preserves a newer URL when details close externally after a query update', async () => {
+        const historyBack = vi.spyOn(window.history, 'back').mockImplementation(() => undefined);
+        render(DetailSheetTestHarness);
+        await fireEvent.click(screen.getByRole('button', { name: 'Open details' }));
+        await tick();
+        window.history.replaceState(window.history.state, '', '/events?filter=updated');
+
+        await fireEvent.click(screen.getByRole('button', { name: 'Close details externally' }));
+        await tick();
+
+        await waitFor(() => expect(navigation.replaceState).toHaveBeenCalledOnce());
         expect(historyBack).not.toHaveBeenCalled();
-        expect(navigation.replaceState).toHaveBeenCalledOnce();
+        expect(window.location.pathname + window.location.search).toBe('/events?filter=updated');
         expect(window.history.state['sveltekit:states'].__exceptionlessDetailSheet).toBeUndefined();
     });
 
@@ -181,5 +196,6 @@ describe('DetailSheet history', () => {
         await tick();
 
         expect(historyBack).not.toHaveBeenCalled();
+        expect(navigation.replaceState).not.toHaveBeenCalled();
     });
 });
