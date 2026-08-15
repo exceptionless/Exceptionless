@@ -1,7 +1,12 @@
+using System.Reflection;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Web.Assistant;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Xunit;
 
@@ -143,6 +148,70 @@ public sealed class AssistantAccessServiceTests
         AssertPlan(billingPlans.UnlimitedPlan.Assistant, 20, 100, 500_000_000, 100m);
     }
 
+    [Fact]
+    public async Task GetAccessAsync_Development_StillRejectsOrganizationOutsideUserMembership()
+    {
+        var options = CreateOptions(new Dictionary<string, string?>
+        {
+            ["AppMode"] = AppMode.Development.ToString(),
+            ["Assistant:ApiKey"] = "test-key"
+        });
+        var repository = DispatchProxy.Create<IOrganizationRepository, OrganizationRepositoryProxy>();
+        var proxy = (OrganizationRepositoryProxy)(object)repository;
+        proxy.Organization = new Organization { Id = "organization-id", Name = "Test", PlanId = "EX_FREE" };
+        var service = new AssistantAccessService(options, new BillingPlans(options), repository);
+        var request = CreateRequest("different-organization-id");
+
+        var access = await service.GetAccessAsync(request, "organization-id");
+
+        Assert.False(access.HasAccess);
+        Assert.Equal(AssistantAccessReason.OrganizationNotAccessible, access.Reason);
+        Assert.Equal(0, proxy.GetByIdCallCount);
+    }
+
+    [Fact]
+    public async Task GetAccessAsync_Development_StillRejectsSuspendedOrganization()
+    {
+        var options = CreateOptions(new Dictionary<string, string?>
+        {
+            ["AppMode"] = AppMode.Development.ToString(),
+            ["Assistant:ApiKey"] = "test-key"
+        });
+        var repository = DispatchProxy.Create<IOrganizationRepository, OrganizationRepositoryProxy>();
+        var proxy = (OrganizationRepositoryProxy)(object)repository;
+        proxy.Organization = new Organization { Id = "organization-id", Name = "Test", PlanId = "EX_FREE", IsSuspended = true };
+        var service = new AssistantAccessService(options, new BillingPlans(options), repository);
+        var request = CreateRequest("organization-id");
+
+        var access = await service.GetAccessAsync(request, "organization-id");
+
+        Assert.False(access.HasAccess);
+        Assert.Equal(AssistantAccessReason.OrganizationNotAccessible, access.Reason);
+        Assert.Equal(1, proxy.GetByIdCallCount);
+    }
+
+    [Fact]
+    public async Task GetAccessAsync_Development_BypassesPlanOnlyAfterOrganizationValidation()
+    {
+        var options = CreateOptions(new Dictionary<string, string?>
+        {
+            ["AppMode"] = AppMode.Development.ToString(),
+            ["Assistant:ApiKey"] = "test-key"
+        });
+        var repository = DispatchProxy.Create<IOrganizationRepository, OrganizationRepositoryProxy>();
+        var proxy = (OrganizationRepositoryProxy)(object)repository;
+        proxy.Organization = new Organization { Id = "organization-id", Name = "Test", PlanId = "EX_FREE" };
+        var billingPlans = new BillingPlans(options);
+        var service = new AssistantAccessService(options, billingPlans, repository);
+        var request = CreateRequest("organization-id");
+
+        var access = await service.GetAccessAsync(request, "organization-id");
+
+        Assert.True(access.HasAccess);
+        Assert.Same(billingPlans.UnlimitedPlan.Assistant, access.PlanOptions);
+        Assert.Equal(1, proxy.GetByIdCallCount);
+    }
+
     private static void AssertPlan(AssistantPlanOptions? options, int concurrentTurns, int turnsPerMinute, long monthlyTokens, decimal monthlyCost)
     {
         Assert.NotNull(options);
@@ -169,5 +238,40 @@ public sealed class AssistantAccessServiceTests
         return AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
             .AddInMemoryCollection(configurationValues)
             .Build());
+    }
+
+    private static HttpRequest CreateRequest(params string[] organizationIds)
+    {
+        var user = new User
+        {
+            Id = "user-id",
+            EmailAddress = "test@example.com",
+            FullName = "Test User"
+        };
+        foreach (string organizationId in organizationIds)
+            user.OrganizationIds.Add(organizationId);
+
+        var context = new DefaultHttpContext
+        {
+            User = new System.Security.Claims.ClaimsPrincipal(user.ToIdentity())
+        };
+        return context.Request;
+    }
+
+    private class OrganizationRepositoryProxy : DispatchProxy
+    {
+        public int GetByIdCallCount { get; private set; }
+        public Organization? Organization { get; set; }
+
+        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
+        {
+            if (targetMethod?.Name == "GetByIdAsync")
+            {
+                GetByIdCallCount++;
+                return Task.FromResult(Organization);
+            }
+
+            throw new NotSupportedException(targetMethod?.Name);
+        }
     }
 }

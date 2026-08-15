@@ -108,6 +108,7 @@ public sealed class AssistantService(
 
             await using var providerRequest = await assistantUsageService.StartProviderRequestAsync(request.OrganizationId, providerInputCharacters);
             using var response = await SendRequestAsync(messages, options, allowTools, request, cancellationToken);
+            providerRequest.MarkAccepted();
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
             using var reader = new StreamReader(stream);
 
@@ -458,13 +459,13 @@ public sealed class AssistantService(
 
     internal static bool HasExplicitWriteRequest(AssistantChatRequest request, string toolName, string arguments = "{}")
     {
-        string? latestUserMessage = request.Messages
-            .LastOrDefault(message => message is not null && String.Equals(message.Role, "user", StringComparison.OrdinalIgnoreCase))
-            ?.Content;
-        if (String.IsNullOrWhiteSpace(latestUserMessage))
+        var latestUserMessage = request.Messages
+            .LastOrDefault(message => message is not null && String.Equals(message.Role, "user", StringComparison.OrdinalIgnoreCase));
+        if (latestUserMessage is null || latestUserMessage.IsSuggestedAction == true || String.IsNullOrWhiteSpace(latestUserMessage.Content))
             return false;
 
-        if (!HasAffirmativeWriteIntent(latestUserMessage))
+        string message = latestUserMessage.Content;
+        if (!HasAffirmativeWriteIntent(message))
             return false;
 
         using var document = ParseArguments(arguments);
@@ -473,30 +474,30 @@ public sealed class AssistantService(
         string? currentStackId = GetRouteValue(request.Path, "stack");
         if (String.IsNullOrWhiteSpace(requestedStackId))
         {
-            if (String.IsNullOrWhiteSpace(currentStackId) || !ReferencesCurrentStack(latestUserMessage, currentStackId))
+            if (String.IsNullOrWhiteSpace(currentStackId) || !ReferencesCurrentStack(message, currentStackId))
                 return false;
         }
-        else if (!latestUserMessage.Contains(requestedStackId, StringComparison.Ordinal)
+        else if (!message.Contains(requestedStackId, StringComparison.Ordinal)
             && (String.IsNullOrWhiteSpace(currentStackId)
                 || !String.Equals(requestedStackId, currentStackId, StringComparison.Ordinal)
-                || !ReferencesCurrentStack(latestUserMessage, currentStackId)))
+                || !ReferencesCurrentStack(message, currentStackId)))
         {
             return false;
         }
 
         return toolName switch
         {
-            UpdateStackStatusTool => HasExplicitStackStatusRequest(latestUserMessage, root),
-            SnoozeStackTool => HasExplicitSnoozeRequest(latestUserMessage, root),
+            UpdateStackStatusTool => HasExplicitStackStatusRequest(message, root),
+            SnoozeStackTool => HasExplicitSnoozeRequest(message, root),
             SetStackCriticalTool => GetBoolean(root, "critical") switch
             {
-                true => MatchesAffirmativeCommand(latestUserMessage, @"(?:mark|set|make)\b[^\r\n.!?]*\bcritical")
-                    && !Regex.IsMatch(latestUserMessage, @"\bnot\s+critical\b", RegexOptions.IgnoreCase),
-                false => MatchesAffirmativeCommand(latestUserMessage, @"(?:(?:remove|unmark)\b[^\r\n.!?]*\bcritical|(?:mark|set|make)\b[^\r\n.!?]*\bnot\s+critical)"),
+                true => MatchesAffirmativeCommand(message, @"(?:mark|set|make)\b[^\r\n.!?]*\bcritical")
+                    && !Regex.IsMatch(message, @"\bnot\s+critical\b", RegexOptions.IgnoreCase),
+                false => MatchesAffirmativeCommand(message, @"(?:(?:remove|unmark)\b[^\r\n.!?]*\bcritical|(?:mark|set|make)\b[^\r\n.!?]*\bnot\s+critical)"),
                 _ => false
             },
-            AddStackReferenceLinkTool => HasExplicitReferenceLinkRequest(latestUserMessage, root, remove: false),
-            RemoveStackReferenceLinkTool => HasExplicitReferenceLinkRequest(latestUserMessage, root, remove: true),
+            AddStackReferenceLinkTool => HasExplicitReferenceLinkRequest(message, root, remove: false),
+            RemoveStackReferenceLinkTool => HasExplicitReferenceLinkRequest(message, root, remove: true),
             _ => false
         };
     }
@@ -524,6 +525,9 @@ public sealed class AssistantService(
     private static bool HasExplicitStackStatusRequest(string message, JsonElement arguments)
     {
         string? status = GetString(arguments, "status")?.Trim().ToLowerInvariant();
+        if (status is null || Regex.IsMatch(message, $@"\bnot\s+{Regex.Escape(status)}\b", RegexOptions.IgnoreCase))
+            return false;
+
         bool explicitlyRequested = status switch
         {
             "fixed" => MatchesAffirmativeCommand(message, @"(?:mark|set|change)\b[^\r\n.!?]*\bfixed"),
@@ -650,13 +654,24 @@ public sealed class AssistantService(
     private static bool HasExplicitReferenceLinkRequest(string message, JsonElement arguments, bool remove)
     {
         bool explicitlyRequested = remove
-            ? ContainsAny(message, "remove link", "delete link", "remove reference", "delete reference")
-            : ContainsAny(message, "add link", "attach link", "add reference", "attach reference");
+            ? MatchesAffirmativeCommand(message, @"(?:remove|delete)\b[^\r\n.!?]*\b(?:link|reference)")
+            : MatchesAffirmativeCommand(message, @"(?:add|attach)\b[^\r\n.!?]*\b(?:link|reference)");
         if (!explicitlyRequested)
             return false;
 
         string? url = GetString(arguments, "url");
-        return String.IsNullOrWhiteSpace(url) || message.Contains(url, StringComparison.OrdinalIgnoreCase);
+        return !String.IsNullOrWhiteSpace(url) && MessageContainsExactUrl(message, url);
+    }
+
+    private static bool MessageContainsExactUrl(string message, string requestedUrl)
+    {
+        if (!Uri.TryCreate(requestedUrl, UriKind.Absolute, out var requestedUri))
+            return false;
+
+        return Regex.Matches(message, """https?://[^\s<>"']+""", RegexOptions.IgnoreCase)
+            .Select(match => match.Value.TrimEnd('.', ',', ';', ':', '!', '?', ')', ']', '}'))
+            .Any(candidate => Uri.TryCreate(candidate, UriKind.Absolute, out var candidateUri)
+                && String.Equals(candidateUri.AbsoluteUri, requestedUri.AbsoluteUri, StringComparison.Ordinal));
     }
 
     private static bool ContainsAny(string value, params string[] terms)

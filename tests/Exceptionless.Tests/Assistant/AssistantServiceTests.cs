@@ -124,6 +124,44 @@ public sealed class AssistantServiceTests
     }
 
     [Theory]
+    [InlineData("Please mark this stack not fixed", "{\"status\":\"fixed\"}")]
+    [InlineData("Please mark this stack not ignored", "{\"status\":\"ignored\"}")]
+    [InlineData("Please mark this stack not discarded", "{\"status\":\"discarded\"}")]
+    [InlineData("Please mark this stack not open", "{\"status\":\"open\"}")]
+    public void HasExplicitWriteRequest_NegatedStatusNeverAuthorizesOppositeChange(string prompt, string arguments)
+    {
+        var request = new AssistantChatRequest(
+            [new AssistantChatMessage("user", prompt)],
+            Path: "/next/stack/current-stack");
+
+        Assert.False(AssistantService.HasExplicitWriteRequest(request, "update_stack_status", arguments));
+    }
+
+    [Theory]
+    [InlineData("Please add link https://example.test/issues/123 to this stack", "{\"url\":\"https://example.test/issues/123\"}", true)]
+    [InlineData("Please add link https://example.test/issues/123 to this stack", "{\"url\":\"https://example.test\"}", false)]
+    [InlineData("Can you explain how to add link https://example.test/issues/123 to this stack?", "{\"url\":\"https://example.test/issues/123\"}", false)]
+    [InlineData("Please add a reference to this stack", "{\"url\":\"https://example.test/issues/123\"}", false)]
+    public void HasExplicitWriteRequest_ReferenceLinkRequiresExactUrlAndAffirmativeCommand(string prompt, string arguments, bool expected)
+    {
+        var request = new AssistantChatRequest(
+            [new AssistantChatMessage("user", prompt)],
+            Path: "/next/stack/current-stack");
+
+        Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, "add_stack_reference_link", arguments));
+    }
+
+    [Fact]
+    public void HasExplicitWriteRequest_SuggestedActionCannotAuthorizeWrite()
+    {
+        var request = new AssistantChatRequest(
+            [new AssistantChatMessage("user", "Please ignore this stack") { IsSuggestedAction = true }],
+            Path: "/next/stack/current-stack");
+
+        Assert.False(AssistantService.HasExplicitWriteRequest(request, "update_stack_status", "{\"status\":\"ignored\"}"));
+    }
+
+    [Theory]
     [InlineData(AuthorizationRoles.EventsRead, true)]
     [InlineData(AuthorizationRoles.ProjectsRead, true)]
     [InlineData(AuthorizationRoles.StacksRead, true)]
@@ -667,6 +705,49 @@ public sealed class AssistantServiceTests
     }
 
     [Fact]
+    public async Task StreamAsync_ProviderRejectsRequest_ReleasesReservationWithoutChargingUsage()
+    {
+        var handler = new RejectedHttpMessageHandler(HttpStatusCode.Unauthorized);
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["AppMode"] = AppMode.Production.ToString(),
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            })
+            .Build());
+        using var cache = new InMemoryCacheClient(new InMemoryCacheClientOptions
+        {
+            LoggerFactory = NullLoggerFactory.Instance,
+            TimeProvider = TimeProvider.System
+        });
+        var lockProvider = CreateLockProvider(cache, TimeProvider.System);
+        var recorder = new RecordingAssistantUsageRecorder();
+        var usageService = new AssistantUsageService(cache, lockProvider, recorder, appOptions, TimeProvider.System, NullLogger<AssistantUsageService>.Instance);
+        var service = CreateAssistantService(handler, appOptions, cache, lockProvider, usageService);
+
+        await Assert.ThrowsAsync<AssistantProviderException>(async () =>
+        {
+            await foreach (var _ in service.StreamAsync(
+                new AssistantChatRequest(
+                    [new AssistantChatMessage("user", "Investigate this")],
+                    OrganizationId: "organization-id"),
+                "user-id",
+                CreatePlanOptions(),
+                TestContext.Current.CancellationToken))
+            {
+            }
+        });
+
+        var usage = await usageService.GetMonthlyUsageAsync("organization-id");
+        Assert.Equal(0, usage.PromptTokens);
+        Assert.Equal(0, usage.CompletionTokens);
+        Assert.Equal(0, usage.CostInMicrodollars);
+        Assert.Contains(recorder.Records, record => record.Increment.ProviderRequests == 1);
+        Assert.DoesNotContain(recorder.Records, record => record.Increment.PromptTokens > 0 || record.Increment.CompletionTokens > 0);
+    }
+
+    [Fact]
     public async Task StreamAsync_OversizedProviderInput_DoesNotReserveProviderUsage()
     {
         var handler = new StubHttpMessageHandler("data: [DONE]\n\n");
@@ -920,7 +1001,7 @@ public sealed class AssistantServiceTests
         TimeProvider.System);
 
     private static AssistantService CreateAssistantService(
-        StubHttpMessageHandler handler,
+        HttpMessageHandler handler,
         AppOptions appOptions,
         ICacheClient? cache = null,
         ILockProvider? lockProvider = null,
@@ -989,5 +1070,14 @@ public sealed class AssistantServiceTests
                 Content = new StringContent(_responseContents.Dequeue(), Encoding.UTF8, "text/event-stream")
             };
         }
+    }
+
+    private sealed class RejectedHttpMessageHandler(HttpStatusCode statusCode) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            => Task.FromResult(new HttpResponseMessage(statusCode)
+            {
+                Content = new StringContent("{\"error\":{\"message\":\"Rejected\"}}", Encoding.UTF8, "application/json")
+            });
     }
 }

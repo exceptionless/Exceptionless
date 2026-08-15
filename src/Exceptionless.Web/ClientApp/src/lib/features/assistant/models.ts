@@ -9,6 +9,7 @@ export interface AssistantChatMessage {
     content: string;
     feedback?: AssistantFeedback;
     id: string;
+    isSuggestedAction?: boolean;
     role: 'assistant' | 'user';
     suggestedActions?: AssistantSuggestedAction[];
     tools: AssistantToolActivity[];

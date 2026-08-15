@@ -82,7 +82,7 @@
         }
     });
 
-    async function submitPrompt(value = prompt): Promise<void> {
+    async function submitPrompt(value = prompt, isSuggestedAction = false): Promise<void> {
         const content = value.trim();
         if (!content || isStreaming) {
             return;
@@ -90,7 +90,7 @@
 
         prompt = '';
         errorMessage = undefined;
-        const userMessage: AssistantChatMessage = { content, id: crypto.randomUUID(), role: 'user', tools: [] };
+        const userMessage: AssistantChatMessage = { content, id: crypto.randomUUID(), isSuggestedAction, role: 'user', tools: [] };
         const assistantMessage: AssistantChatMessage = { content: '', id: crypto.randomUUID(), role: 'assistant', tools: [] };
         const history = [...messages, userMessage];
         messages = [...history, assistantMessage];
@@ -337,7 +337,7 @@
                                     {message}
                                     onFeedback={(feedback) => setMessageFeedback(message.id, feedback)}
                                     onRegenerate={() => void regenerateResponse(message.id)}
-                                    onSuggestedAction={(suggestedPrompt) => void submitPrompt(suggestedPrompt)}
+                                    onSuggestedAction={(suggestedPrompt, isSuggestedAction) => void submitPrompt(suggestedPrompt, isSuggestedAction)}
                                     suggestionsDisabled={isStreaming}
                                 />
                             {/each}

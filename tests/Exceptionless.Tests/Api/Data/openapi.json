@@ -11270,6 +11270,12 @@
           },
           "content": {
             "type": "string"
+          },
+          "is_suggested_action": {
+            "type": [
+              "null",
+              "boolean"
+            ]
           }
         }
       },

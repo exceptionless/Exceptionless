@@ -61,7 +61,7 @@ describe('AssistantMessage', () => {
 
         expect(screen.getByLabelText('Suggested actions')).not.toBeNull();
         await fireEvent.click(screen.getByRole('button', { name: 'Inspect recent events' }));
-        expect(onSuggestedAction).toHaveBeenCalledWith('Inspect the most recent events in that timeout stack.');
+        expect(onSuggestedAction).toHaveBeenCalledWith('Inspect the most recent events in that timeout stack.', true);
     });
 
     it('does not show suggested actions while the response is streaming', () => {
