@@ -113,10 +113,18 @@ public sealed class OAuthClientMetadataService(HttpClient httpClient, OAuthServe
         if (cacheControl is { NoStore: true } or { NoCache: true } or { Private: true })
             return null;
 
+        if (response.Headers.Vary.Any(value => String.Equals(value, "*", StringComparison.Ordinal)))
+        {
+            return null;
+        }
+
         TimeSpan responseAge = response.Headers.Age ?? TimeSpan.Zero;
         TimeSpan? cacheLifetime = (cacheControl?.SharedMaxAge ?? cacheControl?.MaxAge) - responseAge;
         if (!cacheLifetime.HasValue && response.Content.Headers.Expires.HasValue)
-            cacheLifetime = response.Content.Headers.Expires.Value - timeProvider.GetUtcNow();
+        {
+            DateTimeOffset responseDate = response.Headers.Date ?? timeProvider.GetUtcNow();
+            cacheLifetime = response.Content.Headers.Expires.Value - responseDate - responseAge;
+        }
 
         cacheLifetime ??= options.ClientMetadataDocumentCacheLifetime - responseAge;
 

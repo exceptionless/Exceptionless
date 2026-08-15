@@ -4,6 +4,7 @@ using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Services;
 using Foundatio.Caching;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 
 namespace Exceptionless.Tests.Services;
@@ -81,6 +82,31 @@ public sealed class OAuthClientMetadataServiceTests
     }
 
     [Fact]
+    public async Task GetClientMetadataAsync_VaryWildcardResponse_DoesNotCacheDocument()
+    {
+        // Arrange
+        var handler = new StubHttpMessageHandler(CreateMetadataResponse);
+        using var service = CreateService(handler);
+
+        // Act
+        var firstResult = await service.ClientMetadataService.GetClientMetadataAsync("https://oauth.example/client.json");
+        var secondResult = await service.ClientMetadataService.GetClientMetadataAsync("https://oauth.example/client.json");
+
+        // Assert
+        Assert.NotNull(firstResult);
+        Assert.NotNull(secondResult);
+        Assert.Equal(2, handler.RequestCount);
+
+        static HttpResponseMessage CreateMetadataResponse()
+        {
+            var response = CreateSuccessfulMetadataResponse();
+            response.Headers.CacheControl = new CacheControlHeaderValue { MaxAge = TimeSpan.FromHours(1) };
+            response.Headers.Vary.Add("*");
+            return response;
+        }
+    }
+
+    [Fact]
     public async Task GetClientMetadataAsync_MaxAgeResponse_CachesDocument()
     {
         // Arrange
@@ -132,12 +158,41 @@ public sealed class OAuthClientMetadataServiceTests
         }
     }
 
-    private static OAuthClientMetadataServiceFixture CreateService(HttpMessageHandler handler)
+    [Fact]
+    public async Task GetClientMetadataAsync_ExpiresResponse_UsesResponseDateAndAge()
     {
+        // Arrange
+        var localTime = new FakeTimeProvider(new DateTimeOffset(2026, 8, 15, 10, 0, 0, TimeSpan.Zero));
+        var handler = new StubHttpMessageHandler(CreateMetadataResponse);
+        using var service = CreateService(handler, localTime);
+
+        // Act
+        var firstResult = await service.ClientMetadataService.GetClientMetadataAsync("https://oauth.example/client.json");
+        localTime.Advance(TimeSpan.FromMinutes(4) + TimeSpan.FromSeconds(1));
+        var secondResult = await service.ClientMetadataService.GetClientMetadataAsync("https://oauth.example/client.json");
+
+        // Assert
+        Assert.NotNull(firstResult);
+        Assert.NotNull(secondResult);
+        Assert.Equal(2, handler.RequestCount);
+
+        static HttpResponseMessage CreateMetadataResponse()
+        {
+            var response = CreateSuccessfulMetadataResponse();
+            response.Headers.Date = new DateTimeOffset(2026, 8, 15, 11, 0, 0, TimeSpan.Zero);
+            response.Headers.Age = TimeSpan.FromMinutes(1);
+            response.Content.Headers.Expires = new DateTimeOffset(2026, 8, 15, 11, 5, 0, TimeSpan.Zero);
+            return response;
+        }
+    }
+
+    private static OAuthClientMetadataServiceFixture CreateService(HttpMessageHandler handler, TimeProvider? timeProvider = null)
+    {
+        timeProvider ??= TimeProvider.System;
         var cache = new InMemoryCacheClient(new InMemoryCacheClientOptions
         {
             LoggerFactory = NullLoggerFactory.Instance,
-            TimeProvider = TimeProvider.System
+            TimeProvider = timeProvider
         });
         var httpClient = new HttpClient(handler);
         var service = new OAuthClientMetadataService(
@@ -145,7 +200,7 @@ public sealed class OAuthClientMetadataServiceTests
             new OAuthServerOptions(),
             cache,
             NullLogger<OAuthClientMetadataService>.Instance,
-            TimeProvider.System);
+            timeProvider);
 
         return new OAuthClientMetadataServiceFixture(service, httpClient, cache);
     }
