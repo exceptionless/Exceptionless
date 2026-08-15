@@ -62,15 +62,6 @@
     });
 
     $effect(() => {
-        if (!open || !hasAccess || isStreaming || !promptRequest || promptRequest.id === handledPromptRequestId) {
-            return;
-        }
-
-        handledPromptRequestId = promptRequest.id;
-        void submitPrompt(promptRequest.prompt);
-    });
-
-    $effect(() => {
         const currentOrganizationId = organizationId;
         if (conversationOrganizationId !== currentOrganizationId) {
             stopStreaming();
@@ -82,7 +73,24 @@
         }
     });
 
-    async function submitPrompt(value = prompt): Promise<void> {
+    $effect(() => {
+        if (
+            !open ||
+            !hasAccess ||
+            isStreaming ||
+            !promptRequest ||
+            !organizationId ||
+            conversationOrganizationId !== organizationId ||
+            promptRequest.id === handledPromptRequestId
+        ) {
+            return;
+        }
+
+        handledPromptRequestId = promptRequest.id;
+        void submitPrompt(promptRequest.prompt);
+    });
+
+    async function submitPrompt(value = prompt, isSuggestedAction = false): Promise<void> {
         const content = value.trim();
         if (!content || isStreaming) {
             return;
@@ -90,7 +98,7 @@
 
         prompt = '';
         errorMessage = undefined;
-        const userMessage: AssistantChatMessage = { content, id: crypto.randomUUID(), role: 'user', tools: [] };
+        const userMessage: AssistantChatMessage = { content, id: crypto.randomUUID(), isSuggestedAction, role: 'user', tools: [] };
         const assistantMessage: AssistantChatMessage = { content: '', id: crypto.randomUUID(), role: 'assistant', tools: [] };
         const history = [...messages, userMessage];
         messages = [...history, assistantMessage];
@@ -337,7 +345,7 @@
                                     {message}
                                     onFeedback={(feedback) => setMessageFeedback(message.id, feedback)}
                                     onRegenerate={() => void regenerateResponse(message.id)}
-                                    onSuggestedAction={(suggestedPrompt) => void submitPrompt(suggestedPrompt)}
+                                    onSuggestedAction={(suggestedPrompt, isSuggestedAction) => void submitPrompt(suggestedPrompt, isSuggestedAction)}
                                     suggestionsDisabled={isStreaming}
                                 />
                             {/each}

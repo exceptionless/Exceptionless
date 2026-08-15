@@ -200,8 +200,9 @@ public sealed class AssistantUsageServiceTests
         var recorder = new RecordingAssistantUsageRecorder();
         var service = CreateService(cache, CreateLockProvider(cache, timeProvider), CreateOptions(), timeProvider, recorder);
 
-        await using (await service.StartProviderRequestAsync("organization-id", providerInputCharacters: 1_000))
+        await using (var providerRequest = await service.StartProviderRequestAsync("organization-id", providerInputCharacters: 1_000))
         {
+            providerRequest.MarkAccepted();
         }
         var usage = await service.GetMonthlyUsageAsync("organization-id");
 
@@ -229,6 +230,52 @@ public sealed class AssistantUsageServiceTests
         Assert.Equal(usage.PromptTokens, rehydratedUsage.PromptTokens);
         Assert.Equal(usage.CompletionTokens, rehydratedUsage.CompletionTokens);
         Assert.Equal(usage.CostInMicrodollars, rehydratedUsage.CostInMicrodollars);
+    }
+
+    [Fact]
+    public async Task StartProviderRequestAsync_NotAccepted_ReleasesReservationWithoutUsageFallback()
+    {
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 8, 2, 12, 0, 0, TimeSpan.Zero));
+        using var cache = CreateCache(timeProvider);
+        var recorder = new RecordingAssistantUsageRecorder();
+        var service = CreateService(cache, CreateLockProvider(cache, timeProvider), CreateOptions(), timeProvider, recorder);
+
+        await using (await service.StartProviderRequestAsync("organization-id", providerInputCharacters: 1_000))
+        {
+        }
+        var usage = await service.GetMonthlyUsageAsync("organization-id");
+
+        Assert.Equal(0, usage.PromptTokens);
+        Assert.Equal(0, usage.CompletionTokens);
+        Assert.Equal(0, usage.CostInMicrodollars);
+        Assert.Contains(recorder.Records, record => record.Increment.ProviderRequests == 1);
+        Assert.DoesNotContain(recorder.Records, record => record.Increment.PromptTokens > 0 || record.Increment.CompletionTokens > 0);
+    }
+
+    [Fact]
+    public async Task StartProviderRequestAsync_ReconcileAfterCounterEviction_RestoresDurableBaseline()
+    {
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 8, 2, 12, 0, 0, TimeSpan.Zero));
+        using var cache = CreateCache(timeProvider);
+        var organization = new Organization { Id = "organization-id", Name = "Test" };
+        organization.AssistantUsage.Add(new AssistantUsageInfo
+        {
+            Date = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc),
+            PromptTokens = 900,
+            CompletionTokens = 50,
+            CostInMicrodollars = 900_000
+        });
+        var service = CreateService(cache, CreateOptions(), timeProvider, _ => Task.FromResult<Organization?>(organization));
+        var providerRequest = await service.StartProviderRequestAsync("organization-id", providerInputCharacters: 1_000);
+        using var scopedCache = new ScopedCacheClient(cache, "AssistantUsage");
+        await scopedCache.RemoveAsync("organization:organization-id:usage:202608:prompt-tokens");
+
+        await providerRequest.ReconcileAsync(new AssistantProviderUsage(100, 25, 0.10m));
+        var usage = await service.GetMonthlyUsageAsync("organization-id");
+
+        Assert.Equal(1_000, usage.PromptTokens);
+        Assert.Equal(75, usage.CompletionTokens);
+        Assert.Equal(1.00m, usage.CostUsd);
     }
 
     [Fact]
@@ -286,6 +333,7 @@ public sealed class AssistantUsageServiceTests
         var recorder = new RecordingAssistantUsageRecorder();
         var service = CreateService(cache, CreateLockProvider(cache, timeProvider), CreateOptions(), timeProvider, recorder);
         var providerRequest = await service.StartProviderRequestAsync("organization-id", providerInputCharacters: 1_000);
+        providerRequest.MarkAccepted();
         recorder.Exception = new InvalidOperationException("durable usage unavailable");
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => providerRequest.ReconcileAsync(new AssistantProviderUsage(250, 50, 0.001m)));

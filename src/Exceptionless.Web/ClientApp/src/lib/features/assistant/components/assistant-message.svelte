@@ -18,7 +18,7 @@
         message: AssistantChatMessage;
         onFeedback?: (feedback: AssistantFeedback | undefined) => void;
         onRegenerate?: () => void;
-        onSuggestedAction?: (prompt: string) => void;
+        onSuggestedAction?: (prompt: string, isSuggestedAction: boolean) => void;
         suggestionsDisabled?: boolean;
     }
 
@@ -63,7 +63,7 @@
                             <Button
                                 class="h-auto min-h-7 gap-1.5 px-2 py-1 text-left text-xs whitespace-normal"
                                 disabled={suggestionsDisabled}
-                                onclick={() => onSuggestedAction?.(action.prompt)}
+                                onclick={() => onSuggestedAction?.(action.prompt, true)}
                                 size="xs"
                                 variant="outline"
                             >

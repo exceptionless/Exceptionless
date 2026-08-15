@@ -410,8 +410,8 @@
     let filters = $state(getCurrentFilters());
     let isInternalFilterUpdate = false;
     watch(
-        [() => page.url.pathname, () => page.url.search, () => savedViewsState.activeSavedView],
-        ([pathname, , activeSavedView], [previousPathname, , previousSavedView]) => {
+        [() => page.url.pathname, () => getListFilterQueryParams(queryParams), () => savedViewsState.activeSavedView],
+        ([pathname, currentQueryParams, activeSavedView], [previousPathname, , previousSavedView]) => {
             const savedViewChanged = pathname !== previousPathname || activeSavedView?.id !== previousSavedView?.id;
             if (isInternalFilterUpdate && !savedViewChanged) {
                 isInternalFilterUpdate = false;
@@ -419,7 +419,7 @@
             }
 
             isInternalFilterUpdate = false;
-            filters = getCurrentFilters(getListFilterQueryParams(page.url.searchParams));
+            filters = getCurrentFilters(currentQueryParams);
         },
         { lazy: true }
     );
@@ -524,7 +524,7 @@
         }
 
         untrack(() => {
-            updateFilters(getCurrentFilters(getListFilterQueryParams(page.url.searchParams)), { clearPagination: false });
+            updateFilters(getCurrentFilters(getListFilterQueryParams(queryParams)), { clearPagination: false });
         });
         normalizedSavedViewId = activeSavedViewId;
     });

@@ -10,6 +10,7 @@ using Exceptionless.Web.Models;
 using Foundatio.Mediator;
 using HttpIResult = Microsoft.AspNetCore.Http.IResult;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.OpenApi;
 using Exceptionless.Web.Utility.OpenApi;
 
 namespace Exceptionless.Web.Api.Endpoints;
@@ -175,18 +176,32 @@ public static class StackEndpoints
         });
 
         // Change status
-        group.MapPost("stacks/{ids:objectids}/change-status", async (string ids, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, StackStatus? status = null)
-            => (await mediator.InvokeAsync<Result>(new ChangeStacksStatus(ids, status ?? StackStatus.Open, httpContext))).ToHttpResult(resultMapper))
+        group.MapPost("stacks/{ids:objectids}/change-status", async (string ids, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [AsParameters] ChangeStackStatusRequest request) =>
+        {
+            var status = Enum.Parse<StackStatus>(request.Status ?? Stack.KnownStatuses.Open, ignoreCase: true);
+            return (await mediator.InvokeAsync<Result>(new ChangeStacksStatus(ids, status, httpContext))).ToHttpResult(resultMapper);
+        })
         .RequireAuthorization(AuthorizationRoles.StacksWritePolicy)
         .Produces(StatusCodes.Status200OK)
+        .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Change stack status")
+        .AddOpenApiOperationTransformer((operation, context, _) =>
+        {
+            var statusParameter = operation.Parameters?.OfType<OpenApiParameter>().FirstOrDefault(parameter =>
+                String.Equals(parameter.Name, "status", StringComparison.Ordinal));
+            if (statusParameter is not null)
+                statusParameter.Schema = new OpenApiSchemaReference(nameof(StackStatus), context.Document);
+
+            return Task.CompletedTask;
+        })
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
                 ["ids"] = "A comma-delimited list of stack identifiers.",
                 ["status"] = "The status that the stack should be changed to.",
             },
             ResponseDescriptions = new() {
+                ["422"] = "The requested status is invalid.",
                 ["404"] = "One or more stacks could not be found.",
             }
         });

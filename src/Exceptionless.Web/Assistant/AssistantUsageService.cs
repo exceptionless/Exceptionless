@@ -213,6 +213,30 @@ public sealed class AssistantUsageService(
             reservation);
     }
 
+    internal async Task ReleaseProviderReservationAsync(
+        string? organizationId,
+        AssistantProviderReservation reservation)
+    {
+        if (String.IsNullOrWhiteSpace(organizationId) || !reservation.HasValue)
+            return;
+
+        var usageDate = reservation.UsageDateUtc is { } date
+            ? new DateTimeOffset(DateTime.SpecifyKind(date, DateTimeKind.Utc))
+            : timeProvider.GetUtcNow();
+        var month = reservation is { MonthId: not null, ExpiresAtUtc: not null }
+            ? new UsageWindow(reservation.MonthId, reservation.ExpiresAtUtc.Value)
+            : GetMonthWindow(usageDate);
+        await UpdateProviderUsageCacheWithInitializationAsync(
+            organizationId,
+            usageDate,
+            month,
+            promptTokens: 0,
+            completionTokens: 0,
+            costInMicrodollars: 0,
+            reservation,
+            reverse: false);
+    }
+
     private async Task RecordProviderUsageAsync(
         string organizationId,
         long promptTokens,
@@ -222,18 +246,22 @@ public sealed class AssistantUsageService(
         AssistantProviderReservation? reservation)
     {
         UsageWindow month;
+        DateTimeOffset usageDate;
         if (reservation is { MonthId: not null, ExpiresAtUtc: not null })
         {
             month = new UsageWindow(reservation.MonthId, reservation.ExpiresAtUtc.Value);
+            usageDate = reservation.UsageDateUtc is { } date
+                ? new DateTimeOffset(DateTime.SpecifyKind(date, DateTimeKind.Utc))
+                : timeProvider.GetUtcNow();
         }
         else
         {
-            var now = timeProvider.GetUtcNow();
-            await EnsureMonthlyUsageCacheAsync(organizationId, now);
-            month = GetMonthWindow(now);
+            usageDate = timeProvider.GetUtcNow();
+            month = GetMonthWindow(usageDate);
         }
-        await UpdateProviderUsageCacheAsync(
+        await UpdateProviderUsageCacheWithInitializationAsync(
             organizationId,
+            usageDate,
             month,
             promptTokens,
             completionTokens,
@@ -254,8 +282,9 @@ public sealed class AssistantUsageService(
         }
         catch
         {
-            await UpdateProviderUsageCacheAsync(
+            await UpdateProviderUsageCacheWithInitializationAsync(
                 organizationId,
+                usageDate,
                 month,
                 promptTokens,
                 completionTokens,
@@ -264,6 +293,31 @@ public sealed class AssistantUsageService(
                 reverse: true);
             throw;
         }
+    }
+
+    private async Task UpdateProviderUsageCacheWithInitializationAsync(
+        string organizationId,
+        DateTimeOffset usageDate,
+        UsageWindow month,
+        long promptTokens,
+        long completionTokens,
+        long costInMicrodollars,
+        AssistantProviderReservation? reservation,
+        bool reverse)
+    {
+        await using var initializationLock = await lockProvider.AcquireAsync(
+            GetMonthlyUsageInitializationLockKey(organizationId, month.Id),
+            TimeSpan.FromSeconds(15),
+            TimeSpan.FromSeconds(15));
+        await EnsureMonthlyUsageCacheUnderLockAsync(organizationId, usageDate, month);
+        await UpdateProviderUsageCacheAsync(
+            organizationId,
+            month,
+            promptTokens,
+            completionTokens,
+            costInMicrodollars,
+            reservation,
+            reverse);
     }
 
     private Task UpdateProviderUsageCacheAsync(
@@ -338,18 +392,25 @@ public sealed class AssistantUsageService(
             return;
 
         await using var initializationLock = await lockProvider.AcquireAsync(
-            $"assistant-usage-initialize:{organizationId}:{month.Id}",
+            GetMonthlyUsageInitializationLockKey(organizationId, month.Id),
             TimeSpan.FromSeconds(15),
             TimeSpan.FromSeconds(15));
-        cacheValues = await GetMonthlyUsageCacheValuesAsync(organizationId, month.Id);
+        await EnsureMonthlyUsageCacheUnderLockAsync(organizationId, now, month);
+    }
+
+    private async Task EnsureMonthlyUsageCacheUnderLockAsync(string organizationId, DateTimeOffset usageDate, UsageWindow month)
+    {
+        var cacheValues = await GetMonthlyUsageCacheValuesAsync(organizationId, month.Id);
         if (cacheValues.Values.All(value => value.HasValue))
             return;
 
         var durableUsage = _loadOrganizationAsync is null
             ? null
-            : (await _loadOrganizationAsync(organizationId))?.AssistantUsage.FirstOrDefault(usage => usage.Date.Year == now.Year && usage.Date.Month == now.Month);
+            : (await _loadOrganizationAsync(organizationId))?.AssistantUsage.FirstOrDefault(usage => usage.Date.Year == usageDate.Year && usage.Date.Month == usageDate.Month);
 
-        TimeSpan expiresIn = month.ResetAtUtc - now;
+        TimeSpan expiresIn = month.ResetAtUtc - timeProvider.GetUtcNow();
+        if (expiresIn <= TimeSpan.Zero)
+            expiresIn = TimeSpan.FromSeconds(1);
         var seedValues = new Dictionary<string, long>(StringComparer.Ordinal)
         {
             [GetTurnKey(organizationId, "month", month.Id)] = durableUsage?.Turns ?? 0,
@@ -364,6 +425,9 @@ public sealed class AssistantUsageService(
             .Where(pair => !cacheValues[pair.Key].HasValue)
             .Select(pair => _cache.SetAsync(pair.Key, pair.Value, expiresIn)));
     }
+
+    private static string GetMonthlyUsageInitializationLockKey(string organizationId, string monthId)
+        => $"assistant-usage-initialize:{organizationId}:{monthId}";
 
     private Task<IDictionary<string, CacheValue<long>>> GetMonthlyUsageCacheValuesAsync(string organizationId, string monthId)
         => _cache.GetAllAsync<long>(
@@ -478,6 +542,7 @@ public sealed class AssistantProviderUsageLifecycle : IAsyncDisposable
     private readonly AssistantUsageService _usageService;
     private readonly string? _organizationId;
     private readonly AssistantProviderReservation _reservation;
+    private int _accepted;
     private int _completionState;
 
     internal AssistantProviderUsageLifecycle(
@@ -489,6 +554,8 @@ public sealed class AssistantProviderUsageLifecycle : IAsyncDisposable
         _organizationId = organizationId;
         _reservation = reservation;
     }
+
+    public void MarkAccepted() => Volatile.Write(ref _accepted, 1);
 
     public async Task ReconcileAsync(AssistantProviderUsage usage)
     {
@@ -518,7 +585,10 @@ public sealed class AssistantProviderUsageLifecycle : IAsyncDisposable
 
         try
         {
-            await _usageService.RecordUnreconciledProviderReservationAsync(_organizationId, _reservation);
+            if (Volatile.Read(ref _accepted) == 1)
+                await _usageService.RecordUnreconciledProviderReservationAsync(_organizationId, _reservation);
+            else
+                await _usageService.ReleaseProviderReservationAsync(_organizationId, _reservation);
             Volatile.Write(ref _completionState, 2);
         }
         catch

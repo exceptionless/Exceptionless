@@ -7141,6 +7141,16 @@
           "200": {
             "description": "OK"
           },
+          "422": {
+            "description": "The requested status is invalid.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
           "404": {
             "description": "One or more stacks could not be found.",
             "content": {
@@ -11260,6 +11270,12 @@
           },
           "content": {
             "type": "string"
+          },
+          "is_suggested_action": {
+            "type": [
+              "null",
+              "boolean"
+            ]
           }
         }
       },
@@ -11511,6 +11527,54 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "HttpValidationProblemDetails": {
+        "required": [
+          "errors"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
           }
         }
       },

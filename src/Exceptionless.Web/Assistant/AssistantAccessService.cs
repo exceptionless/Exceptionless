@@ -21,9 +21,6 @@ public sealed class AssistantAccessService(
         if (configurationDecision is not null)
             return configurationDecision;
 
-        if (appOptions.AppMode == AppMode.Development)
-            return AssistantAccessDecision.Available(billingPlans.UnlimitedPlan.Assistant!);
-
         if (String.IsNullOrWhiteSpace(organizationId))
             return AssistantAccessDecision.Unavailable(AssistantAccessReason.OrganizationRequired, "Select an organization to use Exie.");
 
@@ -37,6 +34,9 @@ public sealed class AssistantAccessService(
 
         if (organization.IsSuspended)
             return AssistantAccessDecision.Unavailable(AssistantAccessReason.OrganizationNotAccessible, "The selected organization is suspended.");
+
+        if (appOptions.AppMode == AppMode.Development)
+            return AssistantAccessDecision.Available(billingPlans.UnlimitedPlan.Assistant!);
 
         return EvaluatePlan(billingPlans.GetPlan(organization.PlanId)?.Assistant);
     }

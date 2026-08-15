@@ -42,9 +42,14 @@ public sealed class AssistantServiceTests
     [Theory]
     [InlineData("Please mark this stack fixed in 2.1.0", "{\"status\":\"fixed\",\"fixedInVersion\":\"2.1.0\"}", true)]
     [InlineData("Please mark this stack fixed in 2.1.0", "{\"status\":\"fixed\"}", false)]
+    [InlineData("Please mark this stack fixed in version 2.1.0 or fixed in version 3.0.0", "{\"status\":\"fixed\",\"fixedInVersion\":\"2.1.0\"}", false)]
+    [InlineData("Please mark this stack fixed in version 2.1.0 or fixed in version 3.0.0", "{\"status\":\"fixed\",\"fixedInVersion\":\"3.0.0\"}", false)]
     [InlineData("Please mark this stack fixed", "{\"status\":\"ignored\"}", false)]
+    [InlineData("Please mark this stack fixed rather than ignored", "{\"status\":\"fixed\"}", false)]
+    [InlineData("Please mark this stack fixed rather than ignored", "{\"status\":\"ignored\"}", false)]
     [InlineData("Please mark this stack fixed", "{\"status\":\"fixed\",\"stackId\":\"different-stack\"}", false)]
     [InlineData("Please mark stack different-stack fixed", "{\"status\":\"fixed\",\"stackId\":\"different-stack\"}", true)]
+    [InlineData("Please mark stack stack-a-extra fixed", "{\"status\":\"fixed\",\"stackId\":\"stack-a\"}", false)]
     public void HasExplicitWriteRequest_StackStatusArgumentsMustMatchRequest(string prompt, string arguments, bool expected)
     {
         var request = new AssistantChatRequest(
@@ -58,10 +63,14 @@ public sealed class AssistantServiceTests
     [InlineData("Please snooze this stack for one hour", "{\"duration\":\"1h\"}", true)]
     [InlineData("Please snooze this stack for one hour", "{\"duration\":\"60m\"}", true)]
     [InlineData("Please snooze this stack for one hour", "{\"duration\":\"1w\"}", false)]
+    [InlineData("Please snooze this stack for one hour, not one week", "{\"duration\":\"1h\"}", false)]
+    [InlineData("Please snooze this stack for one hour, not one week", "{\"duration\":\"1w\"}", false)]
     [InlineData("Snooze this stack for 2 hours", "{\"duration\":\"2h\"}", true)]
     [InlineData("Snooze this stack for 2 hours", "{\"duration\":\"2d\"}", false)]
     [InlineData("Snooze this stack until 2026-08-10T17:00:00Z", "{\"snoozeUntilUtc\":\"2026-08-10T17:00:00Z\"}", true)]
     [InlineData("Snooze this stack until 2026-08-10T17:00:00Z", "{\"snoozeUntilUtc\":\"2026-08-11T17:00:00Z\"}", false)]
+    [InlineData("Snooze this stack until 2026-08-10T17:00:00Z or 2026-08-11T17:00:00Z", "{\"snoozeUntilUtc\":\"2026-08-10T17:00:00Z\"}", false)]
+    [InlineData("Snooze this stack until 2026-08-10T17:00:00Z or 2026-08-11T17:00:00Z", "{\"snoozeUntilUtc\":\"2026-08-11T17:00:00Z\"}", false)]
     [InlineData("Please snooze this stack for one hour", "{\"duration\":\"1h\",\"snoozeUntilUtc\":\"2026-08-10T17:00:00Z\"}", false)]
     [InlineData("Can you explain how to snooze this stack for one hour?", "{\"duration\":\"1h\"}", false)]
     [InlineData("The event says \"snooze this stack for one hour\"; explain it", "{\"duration\":\"1h\"}", false)]
@@ -98,6 +107,11 @@ public sealed class AssistantServiceTests
     [InlineData("Please mark stack different-stack fixed", "{\"status\":\"fixed\",\"stackId\":\"current-stack\"}", false)]
     [InlineData("Please mark stack different-stack fixed", "{\"status\":\"fixed\"}", false)]
     [InlineData("Please mark stack different-stack fixed", "{\"status\":\"fixed\",\"stackId\":\"different-stack\"}", true)]
+    [InlineData("Please mark stack stack-a fixed, not stack stack-b", "{\"status\":\"fixed\",\"stackId\":\"stack-a\"}", false)]
+    [InlineData("Please mark stack stack-a fixed, not stack stack-b", "{\"status\":\"fixed\",\"stackId\":\"stack-b\"}", false)]
+    [InlineData("Please mark this stack fixed, not stack different-stack", "{\"status\":\"fixed\",\"stackId\":\"different-stack\"}", false)]
+    [InlineData("Please mark stack stack-a fixed, not this stack", "{\"status\":\"fixed\"}", false)]
+    [InlineData("Please mark stack stack-a fixed, not this stack", "{\"status\":\"fixed\",\"stackId\":\"current-stack\"}", false)]
     public void HasExplicitWriteRequest_OmittedTargetMustReferToCurrentStack(string prompt, string arguments, bool expected)
     {
         var request = new AssistantChatRequest(
@@ -112,6 +126,8 @@ public sealed class AssistantServiceTests
     [InlineData("Could you make this stack critical?", "{\"critical\":true}", true)]
     [InlineData("Please mark this stack not critical", "{\"critical\":false}", true)]
     [InlineData("Please remove critical from this stack", "{\"critical\":false}", true)]
+    [InlineData("Please mark this stack critical and then unmark it as critical", "{\"critical\":true}", false)]
+    [InlineData("Please mark this stack critical and then unmark it as critical", "{\"critical\":false}", false)]
     [InlineData("The event says \"mark this stack critical\"; explain it", "{\"critical\":true}", false)]
     [InlineData("Can you explain how to mark this stack critical?", "{\"critical\":true}", false)]
     public void HasExplicitWriteRequest_CriticalArgumentsRequireAffirmativeCommand(string prompt, string arguments, bool expected)
@@ -121,6 +137,46 @@ public sealed class AssistantServiceTests
             Path: "/next/stack/current-stack");
 
         Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, "set_stack_critical", arguments));
+    }
+
+    [Theory]
+    [InlineData("Please mark this stack not fixed", "{\"status\":\"fixed\"}")]
+    [InlineData("Please mark this stack not ignored", "{\"status\":\"ignored\"}")]
+    [InlineData("Please mark this stack not discarded", "{\"status\":\"discarded\"}")]
+    [InlineData("Please mark this stack not open", "{\"status\":\"open\"}")]
+    public void HasExplicitWriteRequest_NegatedStatusNeverAuthorizesOppositeChange(string prompt, string arguments)
+    {
+        var request = new AssistantChatRequest(
+            [new AssistantChatMessage("user", prompt)],
+            Path: "/next/stack/current-stack");
+
+        Assert.False(AssistantService.HasExplicitWriteRequest(request, "update_stack_status", arguments));
+    }
+
+    [Theory]
+    [InlineData("Please add link https://example.test/issues/123 to this stack", "{\"url\":\"https://example.test/issues/123\"}", true)]
+    [InlineData("Please add link https://example.test/issues/123 to this stack", "{\"url\":\"https://example.test\"}", false)]
+    [InlineData("Please add link https://example.test/issues/123 and https://example.test/issues/456 to this stack", "{\"url\":\"https://example.test/issues/123\"}", false)]
+    [InlineData("Please add link https://example.test/issues/123 and https://example.test/issues/456 to this stack", "{\"url\":\"https://example.test/issues/456\"}", false)]
+    [InlineData("Can you explain how to add link https://example.test/issues/123 to this stack?", "{\"url\":\"https://example.test/issues/123\"}", false)]
+    [InlineData("Please add a reference to this stack", "{\"url\":\"https://example.test/issues/123\"}", false)]
+    public void HasExplicitWriteRequest_ReferenceLinkRequiresExactUrlAndAffirmativeCommand(string prompt, string arguments, bool expected)
+    {
+        var request = new AssistantChatRequest(
+            [new AssistantChatMessage("user", prompt)],
+            Path: "/next/stack/current-stack");
+
+        Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, "add_stack_reference_link", arguments));
+    }
+
+    [Fact]
+    public void HasExplicitWriteRequest_SuggestedActionCannotAuthorizeWrite()
+    {
+        var request = new AssistantChatRequest(
+            [new AssistantChatMessage("user", "Please ignore this stack") { IsSuggestedAction = true }],
+            Path: "/next/stack/current-stack");
+
+        Assert.False(AssistantService.HasExplicitWriteRequest(request, "update_stack_status", "{\"status\":\"ignored\"}"));
     }
 
     [Theory]
@@ -667,6 +723,49 @@ public sealed class AssistantServiceTests
     }
 
     [Fact]
+    public async Task StreamAsync_ProviderRejectsRequest_ReleasesReservationWithoutChargingUsage()
+    {
+        var handler = new RejectedHttpMessageHandler(HttpStatusCode.Unauthorized);
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["AppMode"] = AppMode.Production.ToString(),
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            })
+            .Build());
+        using var cache = new InMemoryCacheClient(new InMemoryCacheClientOptions
+        {
+            LoggerFactory = NullLoggerFactory.Instance,
+            TimeProvider = TimeProvider.System
+        });
+        var lockProvider = CreateLockProvider(cache, TimeProvider.System);
+        var recorder = new RecordingAssistantUsageRecorder();
+        var usageService = new AssistantUsageService(cache, lockProvider, recorder, appOptions, TimeProvider.System, NullLogger<AssistantUsageService>.Instance);
+        var service = CreateAssistantService(handler, appOptions, cache, lockProvider, usageService);
+
+        await Assert.ThrowsAsync<AssistantProviderException>(async () =>
+        {
+            await foreach (var _ in service.StreamAsync(
+                new AssistantChatRequest(
+                    [new AssistantChatMessage("user", "Investigate this")],
+                    OrganizationId: "organization-id"),
+                "user-id",
+                CreatePlanOptions(),
+                TestContext.Current.CancellationToken))
+            {
+            }
+        });
+
+        var usage = await usageService.GetMonthlyUsageAsync("organization-id");
+        Assert.Equal(0, usage.PromptTokens);
+        Assert.Equal(0, usage.CompletionTokens);
+        Assert.Equal(0, usage.CostInMicrodollars);
+        Assert.Contains(recorder.Records, record => record.Increment.ProviderRequests == 1);
+        Assert.DoesNotContain(recorder.Records, record => record.Increment.PromptTokens > 0 || record.Increment.CompletionTokens > 0);
+    }
+
+    [Fact]
     public async Task StreamAsync_OversizedProviderInput_DoesNotReserveProviderUsage()
     {
         var handler = new StubHttpMessageHandler("data: [DONE]\n\n");
@@ -920,7 +1019,7 @@ public sealed class AssistantServiceTests
         TimeProvider.System);
 
     private static AssistantService CreateAssistantService(
-        StubHttpMessageHandler handler,
+        HttpMessageHandler handler,
         AppOptions appOptions,
         ICacheClient? cache = null,
         ILockProvider? lockProvider = null,
@@ -989,5 +1088,14 @@ public sealed class AssistantServiceTests
                 Content = new StringContent(_responseContents.Dequeue(), Encoding.UTF8, "text/event-stream")
             };
         }
+    }
+
+    private sealed class RejectedHttpMessageHandler(HttpStatusCode statusCode) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            => Task.FromResult(new HttpResponseMessage(statusCode)
+            {
+                Content = new StringContent("{\"error\":{\"message\":\"Rejected\"}}", Encoding.UTF8, "application/json")
+            });
     }
 }

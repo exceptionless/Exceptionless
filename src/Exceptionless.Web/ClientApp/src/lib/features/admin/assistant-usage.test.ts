@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { AdminAssistantOrganizationUsage } from './models';
 
-import { getBlockedCount, getTotalTokens, getUsageRisk } from './assistant-usage';
+import { getBlockedCount, getTotalTokens, getUsageRisk, getUtcMonthKey } from './assistant-usage';
 
 function usage(overrides: Partial<AdminAssistantOrganizationUsage> = {}): AdminAssistantOrganizationUsage {
     return {
@@ -49,5 +49,10 @@ describe('assistant usage helpers', () => {
 
         expect(getTotalTokens(value)).toBe(1000);
         expect(getBlockedCount(value)).toBe(10);
+    });
+
+    it('uses the UTC calendar month for usage queries', () => {
+        expect(getUtcMonthKey(new Date('2026-08-01T00:30:00Z'))).toBe('2026-08');
+        expect(getUtcMonthKey(new Date('2027-01-01T00:00:00Z'))).toBe('2027-01');
     });
 });

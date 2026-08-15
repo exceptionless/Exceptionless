@@ -7,6 +7,8 @@
     import * as Sidebar from '$comp/ui/sidebar';
     import { Toaster } from '$comp/ui/sonner';
     import { accessToken } from '$features/auth/index.svelte';
+    import { handleUnexpectedUnauthorized } from '$features/auth/unauthorized';
+    import { buildServiceStatusUrl, createServiceStatusRedirector } from '$features/status/service-status-redirect';
     import { type FetchClientContext, ProblemDetails, setAccessTokenFunc, setBaseUrl, setRequestOptions, useMiddleware } from '@foundatiofx/fetchclient';
     import { error } from '@sveltejs/kit';
     import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
@@ -33,6 +35,24 @@
     });
     setAccessTokenFunc(() => accessToken.current);
 
+    const redirectToServiceStatus = createServiceStatusRedirector({
+        checkHealth: async () => {
+            const response = await fetch('/health', {
+                cache: 'no-store',
+                signal: AbortSignal.timeout(5000)
+            });
+            return response.ok;
+        },
+        navigate: async () => {
+            const url = page.url;
+            if (url.pathname.startsWith(resolve('/status'))) {
+                return;
+            }
+
+            await goto(buildServiceStatusUrl(resolve('/status'), url), { replaceState: true });
+        }
+    });
+
     useMiddleware(async (ctx: FetchClientContext, next: () => Promise<void>) => {
         await next();
 
@@ -41,19 +61,16 @@
             return;
         }
 
-        if (status === 401 && !ctx.options.expectedStatusCodes?.includes(401)) {
-            if (accessToken.current) {
-                accessToken.current = '';
-            }
+        if (handleUnexpectedUnauthorized(status, ctx.options.expectedStatusCodes)) {
+            return;
         } else if (status === 404 && !ctx.options.expectedStatusCodes?.includes(404)) {
             throw error(404, 'Not found');
         } else if ([0, 408, 503].includes(status) && !ctx.options.expectedStatusCodes?.includes(status)) {
-            const url = page.url;
-            if (url.pathname.startsWith('/next/status')) {
+            if (page.url.pathname.startsWith(resolve('/status'))) {
                 return;
             }
 
-            await goto(`${resolve('/status')}?redirect=${url.pathname}`, { replaceState: true });
+            await redirectToServiceStatus();
         }
     });
 

@@ -7,7 +7,10 @@ public sealed record AssistantChatRequest(
     string? Path = null,
     string? ConversationId = null);
 
-public sealed record AssistantChatMessage(string Role, string Content);
+public sealed record AssistantChatMessage(string Role, string Content)
+{
+    public bool? IsSuggestedAction { get; init; }
+}
 
 public sealed record AssistantConversationToolResult(
     string ToolCallId,
