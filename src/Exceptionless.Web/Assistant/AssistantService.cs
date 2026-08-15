@@ -472,6 +472,12 @@ public sealed class AssistantService(
         var root = document.RootElement;
         string? requestedStackId = GetString(root, "stackId", "stack_id");
         string? currentStackId = GetRouteValue(request.Path, "stack");
+        if (HasAmbiguousStackTargets(message)
+            || (!String.IsNullOrWhiteSpace(requestedStackId) && IsNegatedStackTarget(message, requestedStackId)))
+        {
+            return false;
+        }
+
         if (String.IsNullOrWhiteSpace(requestedStackId))
         {
             if (String.IsNullOrWhiteSpace(currentStackId) || !ReferencesCurrentStack(message, currentStackId))
@@ -521,6 +527,20 @@ public sealed class AssistantService(
     private static bool ReferencesCurrentStack(string message, string currentStackId)
         => message.Contains(currentStackId, StringComparison.Ordinal)
             || ContainsAny(message, "this stack", "current stack", "this issue", "current issue");
+
+    private static bool HasAmbiguousStackTargets(string message)
+        => Regex.Matches(message, @"\b(?:stack|issue)\s+(?<target>[A-Za-z0-9][A-Za-z0-9_-]*)\b", RegexOptions.IgnoreCase)
+            .Select(match => match.Groups["target"].Value.ToLowerInvariant())
+            .Where(target => target is not ("this" or "current" or "the" or "fixed" or "ignored" or "discarded" or "open" or "critical" or "not" or "as" or "to" or "with" or "for"))
+            .Distinct(StringComparer.Ordinal)
+            .Skip(1)
+            .Any();
+
+    private static bool IsNegatedStackTarget(string message, string stackId)
+        => Regex.IsMatch(
+            message,
+            $@"\bnot\s+(?:the\s+)?(?:stack|issue)\s+{Regex.Escape(stackId)}\b",
+            RegexOptions.IgnoreCase);
 
     private static bool HasExplicitStackStatusRequest(string message, JsonElement arguments)
     {

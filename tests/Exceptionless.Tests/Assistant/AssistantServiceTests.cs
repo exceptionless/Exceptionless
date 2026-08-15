@@ -98,6 +98,9 @@ public sealed class AssistantServiceTests
     [InlineData("Please mark stack different-stack fixed", "{\"status\":\"fixed\",\"stackId\":\"current-stack\"}", false)]
     [InlineData("Please mark stack different-stack fixed", "{\"status\":\"fixed\"}", false)]
     [InlineData("Please mark stack different-stack fixed", "{\"status\":\"fixed\",\"stackId\":\"different-stack\"}", true)]
+    [InlineData("Please mark stack stack-a fixed, not stack stack-b", "{\"status\":\"fixed\",\"stackId\":\"stack-a\"}", false)]
+    [InlineData("Please mark stack stack-a fixed, not stack stack-b", "{\"status\":\"fixed\",\"stackId\":\"stack-b\"}", false)]
+    [InlineData("Please mark this stack fixed, not stack different-stack", "{\"status\":\"fixed\",\"stackId\":\"different-stack\"}", false)]
     public void HasExplicitWriteRequest_OmittedTargetMustReferToCurrentStack(string prompt, string arguments, bool expected)
     {
         var request = new AssistantChatRequest(
