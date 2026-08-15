@@ -20,6 +20,116 @@
     }
   ],
   "paths": {
+    "/api/v2/assistant/access": {
+      "get": {
+        "tags": [
+          "AssistantEndpoints"
+        ],
+        "operationId": "GetAssistantAccess",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantAccessResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "426": {
+            "description": "Upgrade Required",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/assistant/chat": {
+      "post": {
+        "tags": [
+          "AssistantEndpoints"
+        ],
+        "operationId": "StreamAssistantChat",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssistantChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "426": {
+            "description": "Upgrade Required",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/project/config": {
       "get": {
         "tags": [
@@ -61,6 +171,60 @@
           }
         },
         "deprecated": true
+      }
+    },
+    "/api/v2/admin/assistant-usage": {
+      "get": {
+        "tags": [
+          "AdminEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminAssistantUsageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
       }
     },
     "/.well-known/oauth-authorization-server": {
@@ -10904,6 +11068,255 @@
   },
   "components": {
     "schemas": {
+      "AdminAssistantOrganizationUsage": {
+        "required": [
+          "organization_id",
+          "organization_name",
+          "plan_id",
+          "last_used_utc",
+          "turns",
+          "completed",
+          "failed",
+          "cancelled",
+          "provider_requests",
+          "tool_calls",
+          "prompt_tokens",
+          "completion_tokens",
+          "cost_usd",
+          "blocked_by_concurrency",
+          "blocked_by_rate_limit",
+          "blocked_by_token_limit",
+          "blocked_by_cost_limit",
+          "monthly_token_limit",
+          "monthly_cost_limit_usd",
+          "token_utilization",
+          "cost_utilization"
+        ],
+        "type": "object",
+        "properties": {
+          "organization_id": {
+            "type": "string"
+          },
+          "organization_name": {
+            "type": "string"
+          },
+          "plan_id": {
+            "type": "string"
+          },
+          "last_used_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "turns": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "completed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "failed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cancelled": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "provider_requests": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "tool_calls": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "prompt_tokens": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "completion_tokens": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cost_usd": {
+            "type": "number",
+            "format": "double"
+          },
+          "blocked_by_concurrency": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "blocked_by_rate_limit": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "blocked_by_token_limit": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "blocked_by_cost_limit": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "monthly_token_limit": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "monthly_cost_limit_usd": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "token_utilization": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "cost_utilization": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "AdminAssistantUsageResponse": {
+        "required": [
+          "month",
+          "active_organizations",
+          "turns",
+          "prompt_tokens",
+          "completion_tokens",
+          "cost_usd",
+          "organizations"
+        ],
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "active_organizations": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "turns": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "prompt_tokens": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "completion_tokens": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cost_usd": {
+            "type": "number",
+            "format": "double"
+          },
+          "organizations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminAssistantOrganizationUsage"
+            }
+          }
+        }
+      },
+      "AssistantAccessResponse": {
+        "required": [
+          "enabled",
+          "has_access",
+          "upgrade_required"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "has_access": {
+            "type": "boolean"
+          },
+          "upgrade_required": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "AssistantChatMessage": {
+        "required": [
+          "role",
+          "content"
+        ],
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "is_suggested_action": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        }
+      },
+      "AssistantChatRequest": {
+        "required": [
+          "messages"
+        ],
+        "type": "object",
+        "properties": {
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssistantChatMessage"
+            }
+          },
+          "organization_id": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "project_id": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "path": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "conversation_id": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "BillingPlan": {
         "required": [
           "id",
@@ -13789,7 +14202,13 @@
   },
   "tags": [
     {
+      "name": "AssistantEndpoints"
+    },
+    {
       "name": "Project"
+    },
+    {
+      "name": "AdminEndpoints"
     },
     {
       "name": "OAuth"

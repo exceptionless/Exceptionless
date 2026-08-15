@@ -1,4 +1,5 @@
 <script lang="ts">
+    import type { Stack } from '$features/stacks/models';
     import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
     import { type IFilter } from '$comp/faceted-filter';
@@ -40,10 +41,12 @@
         id: string | undefined;
         onDeleted?: () => void;
         onError?: (problem: ProblemDetails) => void;
+        onLoaded?: (stack: Stack) => void;
     }
 
-    let { filterChanged, id, onDeleted, onError }: Props = $props();
+    let { filterChanged, id, onDeleted, onError, onLoaded }: Props = $props();
     let handledErrorForStackId = $state<string>();
+    let notifiedStackId = $state<string>();
 
     const METRICS_TIME_RANGE = '[now-7d TO now]';
 
@@ -135,6 +138,13 @@
         }
 
         return recentBuckets;
+    });
+
+    $effect(() => {
+        if (stack && stack.id !== notifiedStackId) {
+            notifiedStackId = stack.id;
+            onLoaded?.(stack);
+        }
     });
 
     $effect(() => {

@@ -1,0 +1,34 @@
+@url = http://localhost:7110
+@apiUrl = {{url}}/api/v2
+@email = admin@exceptionless.test
+@password = tester
+@organizationId = 537650f3b77efe23a47914f3
+
+### Login to a test account
+# @name login
+POST {{apiUrl}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "{{email}}",
+    "password": "{{password}}"
+}
+
+### Check assistant access for the selected organization
+GET {{apiUrl}}/assistant/access?organization_id={{organizationId}}
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Stream an assistant response
+POST {{apiUrl}}/assistant/chat
+Authorization: Bearer {{login.response.body.$.token}}
+Content-Type: application/json
+
+{
+    "organization_id": "{{organizationId}}",
+    "messages": [
+        {
+            "role": "user",
+            "content": "What are my top errors in the last 24 hours?"
+        }
+    ]
+}

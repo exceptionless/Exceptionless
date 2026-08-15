@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { IFilter } from '$comp/faceted-filter';
     import type { PersistentEvent } from '$features/events/models';
+    import type { Stack } from '$features/stacks/models';
     import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
     import { Muted } from '$comp/typography';
@@ -16,10 +17,11 @@
         onDeleted?: () => void;
         onEventLoaded?: (event: PersistentEvent) => void;
         onNavigate?: (eventId: string) => void;
+        onStackLoaded?: (stack: Stack) => void;
         stackId: string;
     }
 
-    let { eventId: initialEventId, filterChanged, handleError, onDeleted, onEventLoaded, onNavigate, stackId }: Props = $props();
+    let { eventId: initialEventId, filterChanged, handleError, onDeleted, onEventLoaded, onNavigate, onStackLoaded, stackId }: Props = $props();
 
     let selectedEventId = $state<null | string>(null);
     let lastStackId = $state('');
@@ -80,7 +82,7 @@
 {:else if stackEventsQuery.isSuccess && !latestEvent?.id}
     <section>
         <h4 class="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">Stack</h4>
-        <StackCard {filterChanged} id={stackId} {onDeleted} onError={handleError} />
+        <StackCard {filterChanged} id={stackId} {onDeleted} onError={handleError} onLoaded={onStackLoaded} />
     </section>
     <Muted class="mt-4">No events available for this stack.</Muted>
 {/if}

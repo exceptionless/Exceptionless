@@ -1,4 +1,5 @@
 <script lang="ts">
+    import type { AssistantPromptRequest } from '$features/assistant/models';
     import type { SavedView } from '$features/saved-views/models';
     import type { Snippet } from 'svelte';
 
@@ -7,6 +8,9 @@
     import { page } from '$app/state';
     import { useSidebar } from '$comp/ui/sidebar';
     import { env } from '$env/dynamic/public';
+    import { getAssistantAccessQuery, invalidateAssistantAccessQueries } from '$features/assistant/api.svelte';
+    import { setAssistantControls } from '$features/assistant/controls.svelte';
+    import { assistantPageContext, type AssistantResourceContext } from '$features/assistant/page-context.svelte';
     import { getIntercomTokenQuery } from '$features/auth/api.svelte';
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
     import { UpgradeRequiredDialog } from '$features/billing';
@@ -69,6 +73,12 @@
     );
     const sidebar = useSidebar();
     let isCommandOpen = $state(false);
+    let isAssistantOpen = $state(false);
+    let AssistantPanel = $state<typeof import('$features/assistant/components/assistant-panel.svelte').default>();
+    let assistantPromptRequest = $state<AssistantPromptRequest>();
+    let assistantResourceContext = $derived(assistantPageContext.getContext(page.params.eventId, page.params.stackId));
+    let assistantProjectId = $derived(assistantResourceContext?.projectId ?? page.params.projectId);
+    let assistantPath = $derived(getAssistantPath(assistantResourceContext, `${page.url.pathname}${page.url.search}`));
     let commandResetKey = $state(0);
     let isKeyboardShortcutsOpen = $state(false);
     let isOrganizationSwitcherOpen = $state(false);
@@ -83,6 +93,27 @@
     function openCommandPalette(): void {
         commandResetKey += 1;
         isCommandOpen = true;
+    }
+
+    async function toggleAssistantPanel(): Promise<void> {
+        AssistantPanel ??= (await import('$features/assistant/components/assistant-panel.svelte')).default;
+        isAssistantOpen = !isAssistantOpen;
+    }
+
+    async function askAssistant(prompt: string): Promise<void> {
+        AssistantPanel ??= (await import('$features/assistant/components/assistant-panel.svelte')).default;
+        isAssistantOpen = true;
+        assistantPromptRequest = { id: crypto.randomUUID(), prompt };
+    }
+
+    function getAssistantPath(context: AssistantResourceContext | undefined, fallback: string): string {
+        if (context?.eventId) {
+            return context.stackId
+                ? `/next/stack/${encodeURIComponent(context.stackId)}/event/${encodeURIComponent(context.eventId)}`
+                : `/next/event/${encodeURIComponent(context.eventId)}`;
+        }
+
+        return context?.stackId ? `/next/stack/${encodeURIComponent(context.stackId)}` : fallback;
     }
 
     async function openOrganizationSwitcher(): Promise<void> {
@@ -147,6 +178,21 @@
     });
 
     const queryClient = useQueryClient();
+    const assistantAccessQuery = getAssistantAccessQuery({
+        route: {
+            get organizationId() {
+                return organization.current;
+            }
+        }
+    });
+    let assistantAccess = $derived(assistantAccessQuery.data);
+    let isAssistantEnabled = $derived(assistantAccess?.enabled === true);
+
+    setAssistantControls({
+        ask: (prompt) => void askAssistant(prompt),
+        enabled: () => isAssistantEnabled
+    });
+
     let organizationUsageMonth = getUtcMonthKey();
     useInterval(() => ORGANIZATION_USAGE_ROLLOVER_CHECK_INTERVAL_MS, {
         callback: () => {
@@ -178,6 +224,10 @@
                 detail: data.message
             })
         );
+
+        if (data.type === 'PlanChanged') {
+            await invalidateAssistantAccessQueries(queryClient);
+        }
 
         if (isPlanOverageType(data)) {
             await invalidatePlanOverageQueries(queryClient, data.message);
@@ -501,6 +551,12 @@
 
     const setupPath = resolve('/(app)/organization/add');
     const isSetupPage = $derived(page.url.pathname === setupPath);
+
+    $effect(() => {
+        if (assistantAccessQuery.isSuccess && !isAssistantEnabled) {
+            isAssistantOpen = false;
+        }
+    });
 </script>
 
 {#snippet setupShell()}
@@ -514,7 +570,19 @@
 {/snippet}
 
 {#snippet appShell(openChat: () => void)}
-    <Navbar openCommand={openCommandPalette}></Navbar>
+    <Navbar assistantEnabled={isAssistantEnabled} {isAssistantOpen} openCommand={openCommandPalette} toggleAssistant={() => void toggleAssistantPanel()} />
+    {#if AssistantPanel && isAssistantEnabled}
+        <AssistantPanel
+            accessMessage={assistantAccess?.message}
+            bind:open={isAssistantOpen}
+            hasAccess={assistantAccess?.has_access ?? false}
+            organizationId={organization.current}
+            path={assistantPath}
+            promptRequest={assistantPromptRequest}
+            projectId={assistantProjectId}
+            upgradeRequired={assistantAccess?.upgrade_required ?? false}
+        />
+    {/if}
     <Sidebar routes={filteredRoutes}>
         {#snippet header()}
             <SidebarOrganizationSwitcher
