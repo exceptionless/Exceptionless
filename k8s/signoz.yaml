@@ -97,7 +97,7 @@ otelAgent:
         error_mode: ignore
         traces:
           span:
-            - 'attributes["db.system"] == "redis" and status.code != STATUS_CODE_ERROR and (resource.attributes["service.name"] == "exceptionless-web" or resource.attributes["service.name"] == "job-event-posts")'
+            - '(attributes["db.system"] == "redis" or attributes["db.system.name"] == "redis") and status.code != STATUS_CODE_ERROR'
             - 'name == "Message: EntityChanged"'
     service:
       pipelines:
