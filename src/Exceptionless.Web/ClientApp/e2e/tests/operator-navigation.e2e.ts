@@ -15,6 +15,7 @@ test('operator can navigate from event discovery to event and stack details thro
         await expect(page).toHaveURL(/\/next\/event(?:\/errors)?(?:[?#]|$)/);
 
         await page.goto(`/next/event?reference=${encodeURIComponent(journey.referenceId)}&time=all`);
+        const eventListUrl = page.url();
         const eventRow = getVisibleRow(page, journey.message);
         await expect(eventRow).toBeVisible({ timeout: 30_000 });
         await eventRow.click();
@@ -22,6 +23,13 @@ test('operator can navigate from event discovery to event and stack details thro
         const eventSheet = page.getByRole('dialog', { name: 'Event' });
         await expect(eventSheet).toBeVisible();
         await expect(eventSheet.getByText(journey.message).filter({ visible: true }).first()).toBeVisible();
+
+        await page.evaluate(() => history.back());
+        await expect(eventSheet).toBeHidden();
+        await expect(page).toHaveURL(eventListUrl);
+
+        await eventRow.click();
+        await expect(eventSheet).toBeVisible();
         await eventSheet.getByRole('link', { name: 'Open details in new window' }).click();
 
         await expect(page).toHaveURL(new RegExp(`/next/stack/${journey.stackId}/event/${journey.eventId}(?:[?#]|$)`));

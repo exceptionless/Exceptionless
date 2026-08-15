@@ -55,7 +55,20 @@ describe('DetailSheet history', () => {
         expect(historyBack).not.toHaveBeenCalled();
     });
 
-    it('consumes its same-page history entry when details close', async () => {
+    it('consumes its same-page history entry when the sheet requests close', async () => {
+        const historyBack = vi.spyOn(window.history, 'back').mockImplementation(() => undefined);
+        render(DetailSheetTestHarness);
+        await fireEvent.click(screen.getByRole('button', { name: 'Open details' }));
+        await tick();
+
+        await fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+        await tick();
+
+        expect(historyBack).toHaveBeenCalledOnce();
+        expect(screen.getByTestId('detail-sheet-state').textContent).toBe('closed');
+    });
+
+    it('does not traverse history when details close externally', async () => {
         const historyBack = vi.spyOn(window.history, 'back').mockImplementation(() => undefined);
         render(DetailSheetTestHarness);
         await fireEvent.click(screen.getByRole('button', { name: 'Open details' }));
@@ -64,17 +77,17 @@ describe('DetailSheet history', () => {
         await fireEvent.click(screen.getByRole('button', { name: 'Close details externally' }));
         await tick();
 
-        expect(historyBack).toHaveBeenCalledOnce();
+        expect(historyBack).not.toHaveBeenCalled();
     });
 
-    it('preserves a newer query history entry when details close after the URL changes', async () => {
+    it('preserves a newer query history entry when the sheet requests close after the URL changes', async () => {
         const historyBack = vi.spyOn(window.history, 'back').mockImplementation(() => undefined);
         render(DetailSheetTestHarness);
         await fireEvent.click(screen.getByRole('button', { name: 'Open details' }));
         await tick();
         window.history.pushState({}, '', '/events?filter=regressed');
 
-        await fireEvent.click(screen.getByRole('button', { name: 'Close details externally' }));
+        await fireEvent.click(screen.getByRole('button', { name: 'Close' }));
         await tick();
 
         expect(historyBack).not.toHaveBeenCalled();

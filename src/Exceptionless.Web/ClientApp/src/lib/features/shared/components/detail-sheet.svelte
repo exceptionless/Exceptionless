@@ -48,6 +48,7 @@
 
     function handleOpenChange(nextOpen: boolean) {
         if (!nextOpen) {
+            consumeOwnedHistoryEntry();
             onClose();
         }
     }
@@ -78,7 +79,10 @@
             historyEntryUrl = url;
             ownsHistoryEntry = true;
         } else if (!open && wasOpen) {
-            consumeOwnedHistoryEntry();
+            // Parent-driven closes can be followed immediately by a URL update (for
+            // example, applying a filter from the sheet). Leave the current entry in
+            // place so that update cannot race with a history traversal.
+            clearOwnedHistoryEntry();
         }
 
         wasOpen = open;
