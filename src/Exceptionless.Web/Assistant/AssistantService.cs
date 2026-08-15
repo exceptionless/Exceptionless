@@ -599,8 +599,14 @@ public sealed class AssistantService(
         if (!TryParseDuration(duration, out var expectedDuration))
             return false;
 
-        return s_durationRegex.Matches(message)
-            .Any(match => TryParseDuration(match.Value, out var requestedDuration) && requestedDuration == expectedDuration);
+        TimeSpan[] requestedDurations = s_durationRegex.Matches(message)
+            .Select(match => TryParseDuration(match.Value, out var requestedDuration) ? requestedDuration : TimeSpan.Zero)
+            .Where(requestedDuration => requestedDuration > TimeSpan.Zero)
+            .Distinct()
+            .Take(2)
+            .ToArray();
+
+        return requestedDurations is [var requestedDuration] && requestedDuration == expectedDuration;
     }
 
     private static bool TryParseDuration(string value, out TimeSpan duration)

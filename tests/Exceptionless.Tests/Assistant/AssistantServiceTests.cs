@@ -58,6 +58,8 @@ public sealed class AssistantServiceTests
     [InlineData("Please snooze this stack for one hour", "{\"duration\":\"1h\"}", true)]
     [InlineData("Please snooze this stack for one hour", "{\"duration\":\"60m\"}", true)]
     [InlineData("Please snooze this stack for one hour", "{\"duration\":\"1w\"}", false)]
+    [InlineData("Please snooze this stack for one hour, not one week", "{\"duration\":\"1h\"}", false)]
+    [InlineData("Please snooze this stack for one hour, not one week", "{\"duration\":\"1w\"}", false)]
     [InlineData("Snooze this stack for 2 hours", "{\"duration\":\"2h\"}", true)]
     [InlineData("Snooze this stack for 2 hours", "{\"duration\":\"2d\"}", false)]
     [InlineData("Snooze this stack until 2026-08-10T17:00:00Z", "{\"snoozeUntilUtc\":\"2026-08-10T17:00:00Z\"}", true)]
