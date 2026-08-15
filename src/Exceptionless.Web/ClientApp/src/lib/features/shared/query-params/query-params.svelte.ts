@@ -249,5 +249,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
         }
     });
 
-    return createQueryParameterProxy(current, schema, { update });
+    return createQueryParameterProxy(current, schema, {
+        update
+    });
 }

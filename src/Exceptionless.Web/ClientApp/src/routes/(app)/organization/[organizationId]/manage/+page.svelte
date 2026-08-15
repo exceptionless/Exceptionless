@@ -104,7 +104,9 @@
                         return problemDetailsToFormErrors(error);
                     }
 
-                    return { form: 'An unexpected error occurred.' };
+                    return {
+                        form: 'An unexpected error occurred.'
+                    };
                 }
             }
         }
@@ -248,13 +250,22 @@
             <Button variant="secondary" href={resolve('/(app)/event')}>
                 <Events class="mr-2 size-4" /> View Events
             </Button>
-            <Button variant="secondary" href={resolve('/(app)/organization/[organizationId]/projects', { organizationId })}>
+            <Button
+                variant="secondary"
+                href={resolve('/(app)/organization/[organizationId]/projects', {
+                    organizationId
+                })}
+            >
                 <Projects class="mr-2 size-4" /> View Projects
             </Button>
         </div>
 
         <DropdownMenu.Root>
-            <DropdownMenu.Trigger class={buttonVariants({ variant: 'destructive' })}>
+            <DropdownMenu.Trigger
+                class={buttonVariants({
+                    variant: 'destructive'
+                })}
+            >
                 <X class="mr-2 size-4" />
                 <span>Delete</span>
             </DropdownMenu.Trigger>

@@ -182,7 +182,10 @@
             return;
         }
 
-        tabsListRef.scrollBy({ behavior: 'smooth', left: direction === 'left' ? -tabsListRef.clientWidth / 2 : tabsListRef.clientWidth / 2 });
+        tabsListRef.scrollBy({
+            behavior: 'smooth',
+            left: direction === 'left' ? -tabsListRef.clientWidth / 2 : tabsListRef.clientWidth / 2
+        });
     }
 
     function onPromoted(title: string): void {
@@ -247,7 +250,9 @@
         }
 
         try {
-            await updateProjectMutation.mutateAsync({ promoted_tabs: promotedTabs } as UpdateProject);
+            await updateProjectMutation.mutateAsync({
+                promoted_tabs: promotedTabs
+            } as UpdateProject);
         } catch {
             toast.error('An error occurred reordering tabs.');
         }
@@ -459,6 +464,7 @@
         <Skeleton class="mt-4 h-7.5 w-full rounded-full" />
         <Table.Root class="mt-4">
             <Table.Body>
+                <!-- eslint-disable-next-line @stylistic/object-curly-newline -->
                 {#each { length: 5 } as name, index (`${name}-${index}`)}
                     <Table.Row class="group">
                         <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-6 w-full rounded-full" /></Table.Head>

@@ -208,12 +208,16 @@
 
                     if (needsPayment && isPaidPlan) {
                         if (!stripe || !stripeElements) {
-                            return { form: 'Payment system not loaded. Please try again.' };
+                            return {
+                                form: 'Payment system not loaded. Please try again.'
+                            };
                         }
 
                         const { error: submitError } = await stripeElements.submit();
                         if (submitError) {
-                            return { form: submitError.message ?? 'Payment validation failed' };
+                            return {
+                                form: submitError.message ?? 'Payment validation failed'
+                            };
                         }
 
                         const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
@@ -221,7 +225,9 @@
                         });
 
                         if (pmError) {
-                            return { form: pmError.message ?? 'Failed to process payment method' };
+                            return {
+                                form: pmError.message ?? 'Failed to process payment method'
+                            };
                         }
 
                         stripeToken = paymentMethod.id;
@@ -247,13 +253,18 @@
                             couponError = message;
                             // Scroll coupon into view and focus the input after DOM updates
                             requestAnimationFrame(() => {
-                                couponSectionEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                couponSectionEl?.scrollIntoView({
+                                    behavior: 'smooth',
+                                    block: 'nearest'
+                                });
                                 couponInputEl?.focus();
                             });
                         }
 
                         toast.error(message);
-                        return { form: message };
+                        return {
+                            form: message
+                        };
                     }
 
                     toast.success(result.message ?? 'Your billing plan has been successfully changed.');
@@ -279,7 +290,9 @@
 
                     const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
                     toast.error(errorMessage);
-                    return { form: errorMessage };
+                    return {
+                        form: errorMessage
+                    };
                 }
             }
         }
@@ -336,7 +349,12 @@
 
     function onUseDifferentCard() {
         paymentExpanded = true;
-        requestAnimationFrame(() => paymentSectionEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+        requestAnimationFrame(() =>
+            paymentSectionEl?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest'
+            })
+        );
     }
 
     function onKeepCurrentCard() {
@@ -347,7 +365,10 @@
         couponOpen = true;
         couponError = null;
         requestAnimationFrame(() => {
-            couponSectionEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            couponSectionEl?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest'
+            });
             couponInputEl?.focus();
         });
     }
@@ -403,10 +424,20 @@
 
         const plan = tier.monthly ?? tier.yearly;
         if (!plan) {
-            return { amount: 0, period: '', subAmount: null, subPeriod: '' };
+            return {
+                amount: 0,
+                period: '',
+                subAmount: null,
+                subPeriod: ''
+            };
         }
 
-        return { amount: plan.price, period: '/mo', subAmount: null, subPeriod: '' };
+        return {
+            amount: plan.price,
+            period: '/mo',
+            subAmount: null,
+            subPeriod: ''
+        };
     }
 
     const yearlySavingsLabel = $derived.by(() => {
@@ -452,14 +483,25 @@
 
     const currentPlanInfo = $derived.by(() => {
         if (organization.plan_id === FREE_PLAN_ID) {
-            return { isFree: true as const, label: 'Free plan', period: '', price: 0 };
+            return {
+                isFree: true as const,
+                label: 'Free plan',
+                period: '',
+                price: 0
+            };
         }
 
         const plan = plansQuery.data?.find((p: BillingPlan) => p.id === organization.plan_id);
         const price = organization.billing_price > 0 ? organization.billing_price : (plan?.price ?? 0);
         const name = tiers.find((t) => t.id === currentTierId)?.name ?? organization.plan_name;
         const period = currentInterval === 'year' ? '/yr' : '/mo';
-        return { billedLabel: `billed ${intervalWord(currentInterval)}`, isFree: false as const, name, period, price };
+        return {
+            billedLabel: `billed ${intervalWord(currentInterval)}`,
+            isFree: false as const,
+            name,
+            period,
+            price
+        };
     });
 
     const ctaLabel = $derived.by(() => {
@@ -472,15 +514,21 @@
         }
 
         if (planDirty && organization.plan_id === FREE_PLAN_ID) {
-            return `Start ${planLabel(selectedPlanId, { includeInterval: true })}`;
+            return `Start ${planLabel(selectedPlanId, {
+                includeInterval: true
+            })}`;
         }
 
         if (planDirty) {
             const intervalChanged = intervalOf(organization.plan_id) !== intervalOf(selectedPlanId);
 
             return isDowngrade
-                ? `Downgrade to ${planLabel(selectedPlanId, { includeInterval: intervalChanged })}`
-                : `Switch to ${planLabel(selectedPlanId, { includeInterval: intervalChanged })}`;
+                ? `Downgrade to ${planLabel(selectedPlanId, {
+                      includeInterval: intervalChanged
+                  })}`
+                : `Switch to ${planLabel(selectedPlanId, {
+                      includeInterval: intervalChanged
+                  })}`;
         }
 
         if (paymentDirty && !couponDirty) {
@@ -788,17 +836,33 @@
                                 <Muted class="min-w-16 text-[10px] font-semibold tracking-wider uppercase">Plan</Muted>
                                 <Muted class="text-xs">
                                     {#if isFreeSelected}
-                                        <Small class="text-foreground text-xs">{planLabel(organization.plan_id, { includeInterval: true })}</Small>
+                                        <Small class="text-foreground text-xs"
+                                            >{planLabel(organization.plan_id, {
+                                                includeInterval: true
+                                            })}</Small
+                                        >
                                         <span class="text-muted-foreground/60 mx-1">→</span>
                                         <Small class="text-foreground text-xs">Free</Small>
                                         · immediate, prorated credit
                                     {:else if organization.plan_id === FREE_PLAN_ID}
-                                        Start <Small class="text-foreground text-xs">{planLabel(selectedPlanId, { includeInterval: true })}</Small>
+                                        Start <Small class="text-foreground text-xs"
+                                            >{planLabel(selectedPlanId, {
+                                                includeInterval: true
+                                            })}</Small
+                                        >
                                         {#if selectedPlan}· <Currency value={selectedPlan.price} />{interval === 'year' ? '/yr' : '/mo'}{/if}
                                     {:else}
-                                        <Small class="text-foreground text-xs">{planLabel(organization.plan_id, { includeInterval: includeInt })}</Small>
+                                        <Small class="text-foreground text-xs"
+                                            >{planLabel(organization.plan_id, {
+                                                includeInterval: includeInt
+                                            })}</Small
+                                        >
                                         <span class="text-muted-foreground/60 mx-1">→</span>
-                                        <Small class="text-foreground text-xs">{planLabel(selectedPlanId, { includeInterval: includeInt })}</Small>
+                                        <Small class="text-foreground text-xs"
+                                            >{planLabel(selectedPlanId, {
+                                                includeInterval: includeInt
+                                            })}</Small
+                                        >
                                         {#if selectedPlan}· <Currency value={selectedPlan.price} />{interval === 'year' ? '/yr' : '/mo'} · prorated today{/if}
                                     {/if}
                                 </Muted>

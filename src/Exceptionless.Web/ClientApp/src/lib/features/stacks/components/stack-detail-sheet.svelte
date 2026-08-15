@@ -30,7 +30,9 @@
         currentEventDetails
             ? buildEventDetailsHref(currentEventDetails.eventId, currentEventDetails.stackId)
             : stackId
-              ? resolve('/(app)/stack/[stackId=objectid]', { stackId })
+              ? resolve('/(app)/stack/[stackId=objectid]', {
+                    stackId
+                })
               : '#'
     );
 

@@ -24,7 +24,9 @@
         () => {
             goto(resolve('/(app)/stack'));
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     async function filterChanged(addedOrUpdated: IFilter) {

@@ -101,7 +101,10 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
         visibilityKey,
         configuration.defaultColumnVisibility ?? <ColumnVisibilityState>{}
     );
-    const columnVisibility = () => ({ ...configuration.defaultColumnVisibility, ...persistedColumnVisibility() });
+    const columnVisibility = () => ({
+        ...configuration.defaultColumnVisibility,
+        ...persistedColumnVisibility()
+    });
 
     const orderKey = configuration.columnPersistenceKey ? `${configuration.columnPersistenceKey}-column-order` : 'events-column-order';
     const [persistedColumnOrder, setPersistedColumnOrder] = createPersistedTableState(orderKey, configuration.defaultColumnOrder ?? <ColumnOrderState>[]);

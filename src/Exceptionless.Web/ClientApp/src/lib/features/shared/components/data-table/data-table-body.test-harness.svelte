@@ -70,7 +70,11 @@
                     id: 'select'
                 },
                 {
-                    cell: (props) => renderComponent(Summary, { showStatus: false, summary: props.row.original }),
+                    cell: (props) =>
+                        renderComponent(Summary, {
+                            showStatus: false,
+                            summary: props.row.original
+                        }),
                     header: 'Summary',
                     id: 'summary',
                     meta: {

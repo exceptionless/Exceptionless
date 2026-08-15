@@ -22,9 +22,13 @@
 
     const meQuery = getMeQuery();
     const queryParams = createQueryParameters({
-        defaults: { project: '' },
+        defaults: {
+            project: ''
+        },
         history: 'push',
-        schema: { project: 'string' }
+        schema: {
+            project: 'string'
+        }
     });
 
     const updateUser = patchUser({
@@ -76,7 +80,9 @@
         toast.dismiss(toastId);
 
         try {
-            await updateUser.mutateAsync({ email_notifications_enabled: checked });
+            await updateUser.mutateAsync({
+                email_notifications_enabled: checked
+            });
             toastId = toast.success('Email notification preference saved.');
         } catch {
             toastId = toast.error('An error occurred while saving your email notification preferences.');

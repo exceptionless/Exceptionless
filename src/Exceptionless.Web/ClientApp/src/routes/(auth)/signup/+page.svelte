@@ -129,7 +129,13 @@
                         </Field.Field>
                     {/snippet}
                 </form.Field>
-                <form.Field name="email" validators={{ onChangeAsync: ({ value }) => validateEmailAvailability(value), onChangeAsyncDebounceMs: 1000 }}>
+                <form.Field
+                    name="email"
+                    validators={{
+                        onChangeAsync: ({ value }) => validateEmailAvailability(value),
+                        onChangeAsyncDebounceMs: 1000
+                    }}
+                >
                     {#snippet children(field)}
                         <Field.Field data-invalid={ariaInvalid(field)}>
                             <Field.Label for={field.name}>Email</Field.Label>

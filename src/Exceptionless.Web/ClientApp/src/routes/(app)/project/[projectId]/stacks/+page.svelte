@@ -75,7 +75,9 @@
             queryParams.update(DEFAULT_PARAMS);
             reset();
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     function normalizeStackKeywordFilters(nextFilters: FacetedFilter.IFilter[]): FacetedFilter.IFilter[] {
@@ -125,7 +127,9 @@
         ([filter]) => {
             filters = sanitizeStackFilters(getFiltersFromCache(filterCacheKey(filter), filter), true);
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     $effect(() => {
@@ -211,7 +215,10 @@
     });
 
     function rowHref(row: Stack): string {
-        return resolve('/(app)/project/[projectId]/stacks/[stackId]', { projectId: projectId ?? '', stackId: row.id });
+        return resolve('/(app)/project/[projectId]/stacks/[stackId]', {
+            projectId: projectId ?? '',
+            stackId: row.id
+        });
     }
 
     function rowClick(row: Stack): void {

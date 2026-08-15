@@ -116,7 +116,11 @@
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             return client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, {
                 params: {
-                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                    ...(DEFAULT_OFFSET
+                        ? {
+                              offset: DEFAULT_OFFSET
+                          }
+                        : {}),
                     filter: debouncedSearchText,
                     limit: COMMAND_SEARCH_REQUEST_LIMIT,
                     mode: 'summary',
@@ -133,7 +137,11 @@
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             return client.getJSON<StackSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, {
                 params: {
-                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                    ...(DEFAULT_OFFSET
+                        ? {
+                              offset: DEFAULT_OFFSET
+                          }
+                        : {}),
                     filter: debouncedSearchText,
                     limit: COMMAND_SEARCH_REQUEST_LIMIT,
                     mode: 'stack_frequent',
@@ -224,7 +232,9 @@
     }
 
     function getStackHref(result: CommandSearchResult): string {
-        return resolve('/(app)/stack/[stackId=objectid]', { stackId: result.id });
+        return resolve('/(app)/stack/[stackId=objectid]', {
+            stackId: result.id
+        });
     }
 
     const eventSearchHref = $derived(buildSearchHref(resolve('/(app)/event'), debouncedSearchText));
@@ -357,10 +367,17 @@
     async function refreshCurrentView(): Promise<void> {
         closeCommandWindow();
         isRefreshing = true;
-        document.dispatchEvent(new CustomEvent('refresh', { bubbles: true, detail: 'Command Palette' }));
+        document.dispatchEvent(
+            new CustomEvent('refresh', {
+                bubbles: true,
+                detail: 'Command Palette'
+            })
+        );
 
         try {
-            await queryClient.refetchQueries({ type: 'active' });
+            await queryClient.refetchQueries({
+                type: 'active'
+            });
             toast.success('Refreshed the current view.');
         } finally {
             isRefreshing = false;
@@ -410,7 +427,9 @@
         const targetValue = visibleItems[targetIndex]?.getAttribute('data-value');
         if (targetValue) {
             commandValue = targetValue;
-            visibleItems[targetIndex]?.scrollIntoView({ block: 'nearest' });
+            visibleItems[targetIndex]?.scrollIntoView({
+                block: 'nearest'
+            });
         }
     }
 </script>

@@ -116,7 +116,12 @@ export function savedViewColumnsEqual(
     defaultColumnVisibility: ColumnVisibilityState = {}
 ): boolean {
     const normalize = (value: ColumnVisibilityState | null | undefined) =>
-        Object.fromEntries(Object.entries({ ...defaultColumnVisibility, ...(value ?? {}) }).filter(([, isVisible]) => !isVisible));
+        Object.fromEntries(
+            Object.entries({
+                ...defaultColumnVisibility,
+                ...(value ?? {})
+            }).filter(([, isVisible]) => !isVisible)
+        );
     const aEntries = Object.entries(normalize(a)).sort(([k1], [k2]) => k1.localeCompare(k2));
     const bEntries = Object.entries(normalize(b)).sort(([k1], [k2]) => k1.localeCompare(k2));
 

@@ -22,7 +22,9 @@
         () => {
             goto(resolve('/(app)/event'));
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     async function filterChanged(addedOrUpdated: FacetedFilter.IFilter) {

@@ -91,7 +91,9 @@
     }
 
     function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
-        return resolve('/(app)/stack/[stackId=objectid]', { stackId: row.id });
+        return resolve('/(app)/stack/[stackId=objectid]', {
+            stackId: row.id
+        });
     }
 
     const DEFAULT_TIME_RANGE = '[now-7d TO now]';
@@ -291,7 +293,9 @@
             queryParams.update(DEFAULT_PARAMS);
             reset();
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     function getCurrentFilters(params: ListFilterQueryParams = queryParams): FacetedFilter.IFilter[] {
@@ -413,7 +417,9 @@
                 filters = updatedFilters;
             }
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     function handleResetToSaved(): void {
@@ -516,7 +522,9 @@
         }
 
         untrack(() => {
-            updateFilters(getCurrentFilters(getListFilterQueryParams(queryParams)), { clearPagination: false });
+            updateFilters(getCurrentFilters(getListFilterQueryParams(queryParams)), {
+                clearPagination: false
+            });
         });
         normalizedSavedViewId = activeSavedViewId;
     });

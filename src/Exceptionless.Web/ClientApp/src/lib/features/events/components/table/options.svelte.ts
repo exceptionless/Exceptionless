@@ -47,7 +47,12 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                     class: 'translate-y-[2px]',
                     disabled: !props.row.getCanSelect(),
                     indeterminate: props.row.getIsSomeSelected(),
-                    onCheckedChange: (checked: 'indeterminate' | boolean) => props.row.getToggleSelectedHandler()({ target: { checked } })
+                    onCheckedChange: (checked: 'indeterminate' | boolean) =>
+                        props.row.getToggleSelectedHandler()({
+                            target: {
+                                checked
+                            }
+                        })
                 }),
             enableHiding: false,
             enableResizing: false,
@@ -56,7 +61,12 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                 renderComponent(Checkbox, {
                     checked: table.getIsAllRowsSelected(),
                     indeterminate: table.getIsSomeRowsSelected(),
-                    onCheckedChange: (checked: 'indeterminate' | boolean) => table.getToggleAllRowsSelectedHandler()({ target: { checked } })
+                    onCheckedChange: (checked: 'indeterminate' | boolean) =>
+                        table.getToggleAllRowsSelectedHandler()({
+                            target: {
+                                checked
+                            }
+                        })
                 }),
             id: 'select',
             meta: {
@@ -64,7 +74,12 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
             }
         },
         {
-            cell: (prop) => renderComponent(Summary, { showStatus: false, showType, summary: prop.row.original }),
+            cell: (prop) =>
+                renderComponent(Summary, {
+                    showStatus: false,
+                    showType,
+                    summary: prop.row.original
+                }),
             enableResizing: true,
             header: 'Summary',
             id: 'summary',
@@ -94,7 +109,10 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
     if (isEventSummary) {
         columns.push(
             {
-                cell: (prop) => renderComponent(EventsUserIdentitySummaryCell, { summary: prop.row.original }),
+                cell: (prop) =>
+                    renderComponent(EventsUserIdentitySummaryCell, {
+                        summary: prop.row.original
+                    }),
                 header: 'User',
                 id: 'user',
                 maxSize: 480,
@@ -106,7 +124,10 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
             },
             {
                 accessorKey: nameof<EventSummaryModel<SummaryTemplateKeys>>('date'),
-                cell: (prop) => renderComponent(TimeAgo, { value: prop.getValue<string>() }),
+                cell: (prop) =>
+                    renderComponent(TimeAgo, {
+                        value: prop.getValue<string>()
+                    }),
                 header: 'Date',
                 id: 'date',
                 maxSize: 480,
@@ -118,7 +139,11 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
             },
             {
                 accessorKey: nameof<EventSummaryModel<SummaryTemplateKeys>>('tags'),
-                cell: (prop) => renderComponent(EventTagsSummaryCell, { onTagClick: options?.onTagClick, tags: prop.getValue<string[]>() }),
+                cell: (prop) =>
+                    renderComponent(EventTagsSummaryCell, {
+                        onTagClick: options?.onTagClick,
+                        tags: prop.getValue<string[]>()
+                    }),
                 enableSorting: false,
                 header: 'Tags',
                 id: 'tags',
@@ -206,7 +231,10 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
             },
             {
                 accessorFn: (row) => getSummaryDataValue(row, 'Level'),
-                cell: (prop) => renderComponent(LogLevel, { level: prop.getValue<string | undefined>() }),
+                cell: (prop) =>
+                    renderComponent(LogLevel, {
+                        level: prop.getValue<string | undefined>()
+                    }),
                 header: 'Level',
                 id: 'level',
                 maxSize: 240,
@@ -221,7 +249,11 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
         columns.push(
             {
                 accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('tags'),
-                cell: (prop) => renderComponent(EventTagsSummaryCell, { onTagClick: options?.onTagClick, tags: prop.getValue<string[]>() }),
+                cell: (prop) =>
+                    renderComponent(EventTagsSummaryCell, {
+                        onTagClick: options?.onTagClick,
+                        tags: prop.getValue<string[]>()
+                    }),
                 enableSorting: false,
                 header: 'Tags',
                 id: 'tags',
@@ -234,7 +266,10 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
             },
             {
                 accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('status'),
-                cell: (prop) => renderComponent(StackStatusCell, { value: prop.getValue<StackStatus>() }),
+                cell: (prop) =>
+                    renderComponent(StackStatusCell, {
+                        value: prop.getValue<StackStatus>()
+                    }),
                 enableSorting: false,
                 header: 'Status',
                 id: 'status',
@@ -246,7 +281,10 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                 size: 144
             },
             {
-                cell: (prop) => renderComponent(StackUsersSummaryCell, { summary: prop.row.original }),
+                cell: (prop) =>
+                    renderComponent(StackUsersSummaryCell, {
+                        summary: prop.row.original
+                    }),
                 enableSorting: false,
                 header: 'Users',
                 id: 'users',
@@ -259,7 +297,10 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
             },
             {
                 accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('total'),
-                cell: (prop) => renderComponent(NumberFormatter, { value: prop.getValue<number>() }),
+                cell: (prop) =>
+                    renderComponent(NumberFormatter, {
+                        value: prop.getValue<number>()
+                    }),
                 enableSorting: false,
                 header: 'Events',
                 id: 'events',
@@ -272,7 +313,10 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
             },
             {
                 accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('first_occurrence'),
-                cell: (prop) => renderComponent(TimeAgo, { value: prop.getValue<string>() }),
+                cell: (prop) =>
+                    renderComponent(TimeAgo, {
+                        value: prop.getValue<string>()
+                    }),
                 enableSorting: false,
                 header: 'First',
                 id: 'first',
@@ -285,7 +329,10 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
             },
             {
                 accessorKey: nameof<StackSummaryModel<SummaryTemplateKeys>>('last_occurrence'),
-                cell: (prop) => renderComponent(TimeAgo, { value: prop.getValue<string>() }),
+                cell: (prop) =>
+                    renderComponent(TimeAgo, {
+                        value: prop.getValue<string>()
+                    }),
                 enableSorting: false,
                 header: 'Last',
                 id: 'last',

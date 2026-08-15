@@ -47,13 +47,34 @@
     let changePlanDialogOpen = $state(false);
 
     const chartConfig = {
-        blocked: { color: 'var(--chart-2)', label: 'Blocked' },
-        deleted: { color: 'var(--chart-7)', label: 'Deleted' },
-        discarded: { color: 'var(--chart-3)', label: 'Discarded' },
-        limit: { color: 'var(--chart-6)', label: 'Limit' },
-        org_total: { color: 'var(--chart-5)', label: 'Total in Organization' },
-        too_big: { color: 'var(--chart-4)', label: 'Too Big' },
-        total: { color: 'var(--chart-1)', label: 'Total' }
+        blocked: {
+            color: 'var(--chart-2)',
+            label: 'Blocked'
+        },
+        deleted: {
+            color: 'var(--chart-7)',
+            label: 'Deleted'
+        },
+        discarded: {
+            color: 'var(--chart-3)',
+            label: 'Discarded'
+        },
+        limit: {
+            color: 'var(--chart-6)',
+            label: 'Limit'
+        },
+        org_total: {
+            color: 'var(--chart-5)',
+            label: 'Total in Organization'
+        },
+        too_big: {
+            color: 'var(--chart-4)',
+            label: 'Too Big'
+        },
+        total: {
+            color: 'var(--chart-1)',
+            label: 'Total'
+        }
     } satisfies Chart.ChartConfig;
 
     const chartData = $derived.by(() => {
@@ -87,18 +108,38 @@
     });
 
     const series = [
-        { key: 'org_total', ...chartConfig.org_total },
-        { key: 'total', ...chartConfig.total },
-        { key: 'discarded', ...chartConfig.discarded },
-        { key: 'blocked', ...chartConfig.blocked },
-        { key: 'too_big', ...chartConfig.too_big },
-        { key: 'deleted', ...chartConfig.deleted },
+        {
+            key: 'org_total',
+            ...chartConfig.org_total
+        },
+        {
+            key: 'total',
+            ...chartConfig.total
+        },
+        {
+            key: 'discarded',
+            ...chartConfig.discarded
+        },
+        {
+            key: 'blocked',
+            ...chartConfig.blocked
+        },
+        {
+            key: 'too_big',
+            ...chartConfig.too_big
+        },
+        {
+            key: 'deleted',
+            ...chartConfig.deleted
+        },
         {
             key: 'limit',
             ...chartConfig.limit,
             props: {
                 class: 'fill-none',
-                line: { class: '[stroke-dasharray:4]' }
+                line: {
+                    class: '[stroke-dasharray:4]'
+                }
             }
         }
     ];
@@ -156,7 +197,9 @@
                         area: {
                             curve: curveNatural
                         },
-                        yAxis: { format: 'metric' }
+                        yAxis: {
+                            format: 'metric'
+                        }
                     }}
                 >
                     {#snippet tooltip()}

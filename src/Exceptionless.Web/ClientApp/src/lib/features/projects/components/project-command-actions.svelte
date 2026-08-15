@@ -39,12 +39,42 @@
     let { onReset, onSearchReset, onSelect, open, resetPending, selectedActionId = $bindable(), selectingProject = $bindable() }: Props = $props();
 
     const projectActions: ProjectAction[] = [
-        { icon: FolderOpen, id: 'open', keywords: ['edit', 'manage', 'settings'], label: 'Open Project' },
-        { icon: Stacks, id: 'stacks', keywords: ['errors', 'exceptions', 'issues'], label: 'Project Stacks' },
-        { icon: Bell, id: 'notifications', keywords: ['alerts', 'email'], label: 'Project Notifications' },
-        { icon: CloudDownload, id: 'client-setup', keywords: ['SDK', 'configure client', 'instrumentation'], label: 'Client Setup' },
-        { icon: Database, id: 'generate-sample-data', keywords: ['seed', 'demo events'], label: 'Generate Sample Data' },
-        { icon: AlertTriangle, id: 'reset-data', keywords: ['clear', 'delete events'], label: 'Reset Project Data' }
+        {
+            icon: FolderOpen,
+            id: 'open',
+            keywords: ['edit', 'manage', 'settings'],
+            label: 'Open Project'
+        },
+        {
+            icon: Stacks,
+            id: 'stacks',
+            keywords: ['errors', 'exceptions', 'issues'],
+            label: 'Project Stacks'
+        },
+        {
+            icon: Bell,
+            id: 'notifications',
+            keywords: ['alerts', 'email'],
+            label: 'Project Notifications'
+        },
+        {
+            icon: CloudDownload,
+            id: 'client-setup',
+            keywords: ['SDK', 'configure client', 'instrumentation'],
+            label: 'Client Setup'
+        },
+        {
+            icon: Database,
+            id: 'generate-sample-data',
+            keywords: ['seed', 'demo events'],
+            label: 'Generate Sample Data'
+        },
+        {
+            icon: AlertTriangle,
+            id: 'reset-data',
+            keywords: ['clear', 'delete events'],
+            label: 'Reset Project Data'
+        }
     ];
 
     const selectedAction = $derived(projectActions.find((action) => action.id === selectedActionId));
@@ -83,11 +113,15 @@
     function getProjectHref(action: ProjectActionId, project: ViewProject): string | undefined {
         switch (action) {
             case 'client-setup':
-                return resolve('/(app)/project/[projectId]/configure', { projectId: project.id });
+                return resolve('/(app)/project/[projectId]/configure', {
+                    projectId: project.id
+                });
             case 'notifications':
                 return `${resolve('/(app)/account/notifications')}?project=${project.id}`;
             case 'open':
-                return resolve('/(app)/project/[projectId]/manage', { projectId: project.id });
+                return resolve('/(app)/project/[projectId]/manage', {
+                    projectId: project.id
+                });
             case 'stacks':
                 return `${resolve('/(app)/stack')}?filter=project:${project.id}`;
             default:
