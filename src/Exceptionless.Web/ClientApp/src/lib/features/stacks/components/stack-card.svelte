@@ -290,17 +290,13 @@
                     {#if projectQuery.isSuccess || stack.project_id}
                         <Table.Row class="group">
                             {#if projectQuery.isSuccess}
-                                <Table.Head class="w-36 font-semibold whitespace-nowrap">Project</Table.Head>
-                                <Table.Cell class="relative w-4 pr-0">
-                                    <EventsFacetedFilter.ProjectTrigger
-                                        changed={filterChanged}
-                                        class="absolute top-1/2 left-0 -translate-y-1/2"
-                                        value={[projectQuery.data.id!]}
-                                    />
+                                <Table.Head class="w-40 font-semibold whitespace-nowrap">Project</Table.Head>
+                                <Table.Cell class="w-4 pr-0">
+                                    <EventsFacetedFilter.ProjectTrigger changed={filterChanged} value={[projectQuery.data.id!]} />
                                 </Table.Cell>
                                 <Table.Cell>{projectQuery.data.name}</Table.Cell>
                             {:else}
-                                <Table.Head class="w-36 font-semibold whitespace-nowrap"><Skeleton class="h-6 w-full rounded-full" /></Table.Head>
+                                <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-6 w-full rounded-full" /></Table.Head>
                                 <Table.Cell class="w-4 pr-0"></Table.Cell>
                                 <Table.Cell class="flex items-center"><Skeleton class="h-6 w-full rounded-full" /></Table.Cell>
                             {/if}
