@@ -568,8 +568,7 @@ public sealed class AssistantService(
 
         string[] namedTargets = GetNamedStackTargets(targetText).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         return namedTargets.Length > 0
-            ? namedTargets.All(target => String.Equals(target, expectedStackId, StringComparison.OrdinalIgnoreCase))
-            : !String.IsNullOrWhiteSpace(currentStackId) && ReferencesCurrentStackByPhrase(targetText);
+            && namedTargets.All(target => String.Equals(target, expectedStackId, StringComparison.OrdinalIgnoreCase));
     }
 
     private static bool HasAffirmativeWriteIntent(string message)
@@ -599,7 +598,10 @@ public sealed class AssistantService(
             || ReferencesCurrentStackByPhrase(message);
 
     private static bool ReferencesCurrentStackByPhrase(string message)
-        => ContainsAny(message, "this stack", "current stack", "this issue", "current issue");
+        => Regex.IsMatch(
+            message,
+            @"\b(?:this|current)\s+(?:stack|issue)\b(?!['’\-])",
+            RegexOptions.IgnoreCase);
 
     private static bool HasAmbiguousStackTargets(string message, string? currentStackId)
     {

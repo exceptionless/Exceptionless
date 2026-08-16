@@ -112,6 +112,8 @@ public sealed class AssistantServiceTests
     [InlineData("Please mark this stack fixed, not stack different-stack", "{\"status\":\"fixed\",\"stackId\":\"different-stack\"}", false)]
     [InlineData("Please mark stack stack-a fixed, not this stack", "{\"status\":\"fixed\"}", false)]
     [InlineData("Please mark stack stack-a fixed, not this stack", "{\"status\":\"fixed\",\"stackId\":\"current-stack\"}", false)]
+    [InlineData("Please discard this stack's duplicate", "{\"status\":\"discarded\"}", false)]
+    [InlineData("Please discard this stack-related duplicate", "{\"status\":\"discarded\"}", false)]
     public void HasExplicitWriteRequest_OmittedTargetMustReferToCurrentStack(string prompt, string arguments, bool expected)
     {
         var request = new AssistantChatRequest(
@@ -182,6 +184,8 @@ public sealed class AssistantServiceTests
     [InlineData("Please discard this stack", "Discard the other stack", "update_stack_status", "{\"status\":\"discarded\"}", false)]
     [InlineData("Please discard this stack", "Discard other-stack", "update_stack_status", "{\"status\":\"discarded\"}", false)]
     [InlineData("Please discard this stack", "Discard the other stack current-stack", "update_stack_status", "{\"stackId\":\"current-stack\",\"status\":\"discarded\"}", false)]
+    [InlineData("Please discard this stack", "Discard this stack's duplicate", "update_stack_status", "{\"status\":\"discarded\"}", false)]
+    [InlineData("Please discard this stack", "Discard this stack-related duplicate", "update_stack_status", "{\"status\":\"discarded\"}", false)]
     [InlineData("Please remove reference https://example.test/current-stack from this stack", "Remove reference https://example.test/current-stack", "remove_stack_reference_link", "{\"url\":\"https://example.test/current-stack\"}", true)]
     [InlineData("Please remove reference https://example.test/current-stack from this stack", "Remove reference https://example.test/current-stack from the other stack", "remove_stack_reference_link", "{\"url\":\"https://example.test/current-stack\"}", false)]
     public void HasExplicitWriteRequest_SuggestedActionStillRequiresExactWriteIntent(
