@@ -684,7 +684,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         // Act & Assert
         return SendRequestAsync(r => r
             .AsTestOrganizationUser()
-            .AppendPaths("organizations", "nonexistent-org-id")
+            .AppendPaths("organizations", "nonexistent-organization-id")
             .StatusCodeShouldBeNotFound()
         );
     }
