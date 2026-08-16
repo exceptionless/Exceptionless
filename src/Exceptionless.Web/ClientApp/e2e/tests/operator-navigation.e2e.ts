@@ -38,6 +38,24 @@ test('operator can navigate from event discovery to event and stack details thro
 
         await eventRow.click();
         await expect(eventSheet).toBeVisible();
+        await eventSheet.getByRole('button', { name: 'Show all events' }).click();
+        await expect(page).toHaveURL(new RegExp(`[?&]stack=${journey.stackId}(?:&|$)`));
+        await expect(eventSheet).toBeHidden();
+        const stackFilterUrl = page.url();
+
+        await page.goBack();
+        await expect(page).toHaveURL(eventListUrl);
+        await expect(eventSheet).toBeHidden();
+
+        await page.goForward();
+        await expect(page).toHaveURL(stackFilterUrl);
+        await expect(eventSheet).toBeHidden();
+
+        await page.goBack();
+        await expect(page).toHaveURL(eventListUrl);
+
+        await eventRow.click();
+        await expect(eventSheet).toBeVisible();
         await eventSheet.getByRole('link', { name: 'Open details in new window' }).click();
 
         await expect(page).toHaveURL(new RegExp(`/next/stack/${journey.stackId}/event/${journey.eventId}(?:[?#]|$)`));

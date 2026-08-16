@@ -135,7 +135,7 @@
     }
 
     beforeNavigate(({ cancel, to, type, willUnload }) => {
-        if (willUnload || !browser || type === 'popstate' || !open || !ownsHistoryEntry || !to || historyEntryUrl !== getCurrentUrl()) {
+        if (willUnload || !browser || type === 'popstate' || !ownsHistoryEntry || !to || historyEntryUrl !== getCurrentUrl()) {
             return;
         }
 

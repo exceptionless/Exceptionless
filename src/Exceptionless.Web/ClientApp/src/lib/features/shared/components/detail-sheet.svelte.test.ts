@@ -131,6 +131,31 @@ describe('DetailSheet history', () => {
         expect(screen.getByTestId('detail-sheet-state').textContent).toBe('closed');
     });
 
+    it('consumes the sheet entry when a parent close immediately starts navigation', async () => {
+        const historyBack = vi.spyOn(window.history, 'back').mockImplementation(() => undefined);
+        const cancel = vi.fn();
+        render(DetailSheetTestHarness);
+        const originalState = window.history.state;
+        await fireEvent.click(screen.getByRole('button', { name: 'Open details' }));
+        await tick();
+        const beforeNavigation = navigation.beforeNavigate.mock.calls[0]?.[0] as
+            ((navigation: { cancel: () => void; to: { url: URL }; type: string }) => void) | undefined;
+
+        await fireEvent.click(screen.getByRole('button', { name: 'Close details externally' }));
+        await tick();
+        const destination = new URL('/events?stack=def456', window.location.origin);
+        beforeNavigation?.({ cancel, to: { url: destination }, type: 'goto' });
+
+        expect(cancel).toHaveBeenCalledOnce();
+        expect(historyBack).toHaveBeenCalledOnce();
+
+        window.history.replaceState(originalState, '', '/events?filter=open');
+        window.dispatchEvent(new PopStateEvent('popstate', { state: originalState }));
+
+        await waitFor(() => expect(navigation.goto).toHaveBeenCalledWith(destination));
+        expect(screen.getByTestId('detail-sheet-state').textContent).toBe('closed');
+    });
+
     it('preserves SvelteKit navigation options without replaying link click handlers', async () => {
         const historyBack = vi.spyOn(window.history, 'back').mockImplementation(() => undefined);
         const cancel = vi.fn();
