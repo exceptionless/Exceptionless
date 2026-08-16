@@ -89,7 +89,7 @@ function escapeRegularExpression(value: string): string {
 
 function findFencedCodeRanges(content: string): Array<{ end: number; start: number }> {
     const ranges: Array<{ end: number; start: number }> = [];
-    const openingFence = /^ {0,3}(?<delimiter>`{3,}|~{3,})[^\r\n]*(?:\r?\n|$)/gm;
+    const openingFence = /^(?<container>(?: {0,3}>[\t ]?)* {0,3})(?<delimiter>`{3,}|~{3,})[^\r\n]*(?:\r?\n|$)/gm;
     let openingMatch: null | RegExpExecArray;
 
     while ((openingMatch = openingFence.exec(content)) !== null) {
@@ -98,7 +98,9 @@ function findFencedCodeRanges(content: string): Array<{ end: number; start: numb
             continue;
         }
 
-        const closingFence = new RegExp(`^ {0,3}${escapeRegularExpression(delimiter.charAt(0))}{${delimiter.length},}[\\t ]*(?:\\r?$)`, 'gm');
+        const blockquoteDepth = [...(openingMatch.groups?.container ?? '')].filter((character) => character === '>').length;
+        const containerPrefix = blockquoteDepth > 0 ? `(?: {0,3}>[\\t ]?){${blockquoteDepth}} {0,3}` : ' {0,3}';
+        const closingFence = new RegExp(`^${containerPrefix}${escapeRegularExpression(delimiter.charAt(0))}{${delimiter.length},}[\\t ]*(?:\\r?$)`, 'gm');
         closingFence.lastIndex = openingFence.lastIndex;
         const closingMatch = closingFence.exec(content);
         const end = closingMatch ? closingMatch.index + closingMatch[0].length : content.length;
