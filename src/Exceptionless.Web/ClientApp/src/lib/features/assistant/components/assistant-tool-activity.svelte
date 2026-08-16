@@ -20,8 +20,12 @@
     let { tool }: Props = $props();
     let open = $state(false);
 
-    const argumentsClipboard = new UseClipboard({ delay: 1500 });
-    const resultClipboard = new UseClipboard({ delay: 1500 });
+    const argumentsClipboard = new UseClipboard({
+        delay: 1500
+    });
+    const resultClipboard = new UseClipboard({
+        delay: 1500
+    });
 
     const toolLabels: Record<string, string> = {
         add_stack_reference_link: 'Added stack reference link',

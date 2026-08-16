@@ -103,7 +103,10 @@
     async function askAssistant(prompt: string): Promise<void> {
         AssistantPanel ??= (await import('$features/assistant/components/assistant-panel.svelte')).default;
         isAssistantOpen = true;
-        assistantPromptRequest = { id: crypto.randomUUID(), prompt };
+        assistantPromptRequest = {
+            id: crypto.randomUUID(),
+            prompt
+        };
     }
 
     function getAssistantPath(context: AssistantResourceContext | undefined, fallback: string): string {
@@ -122,7 +125,11 @@
         isKeyboardShortcutsOpen = false;
         isUserMenuOpen = false;
         if (singleOrganization?.id) {
-            await goto(resolve('/(app)/organization/[organizationId]/manage', { organizationId: singleOrganization.id }));
+            await goto(
+                resolve('/(app)/organization/[organizationId]/manage', {
+                    organizationId: singleOrganization.id
+                })
+            );
             return;
         }
 
@@ -261,7 +268,9 @@
                     await invalidateWebhookQueries(queryClient, data.message);
                     break;
                 default:
-                    await queryClient.invalidateQueries({ queryKey: [data.message.type] });
+                    await queryClient.invalidateQueries({
+                        queryKey: [data.message.type]
+                    });
                     break;
             }
         }
@@ -358,7 +367,9 @@
             return;
         }
 
-        document.addEventListener('keydown', handleKeydown, { capture: true });
+        document.addEventListener('keydown', handleKeydown, {
+            capture: true
+        });
 
         const organizationEventRefresher = createOrganizationEventNotificationRefresher(queryClient);
         const projectStackRefresher = createProjectStackNotificationRefresher(queryClient);
@@ -377,7 +388,9 @@
         };
 
         return () => {
-            document.removeEventListener('keydown', handleKeydown, { capture: true });
+            document.removeEventListener('keydown', handleKeydown, {
+                capture: true
+            });
             organizationEventRefresher.cancel();
             projectStackRefresher.cancel();
             ws?.close();
@@ -486,10 +499,16 @@
     }
 
     const filteredRoutes = $derived.by(() => {
-        const context: NavigationItemContext = { authenticated: isAuthenticated, impersonating: isImpersonating, user: meQuery.data };
+        const context: NavigationItemContext = {
+            authenticated: isAuthenticated,
+            impersonating: isImpersonating,
+            user: meQuery.data
+        };
         const allRoutes = routes().filter((route) => (route.show ? route.show(context) : true));
         const organizationSettingsHref = singleOrganization?.id
-            ? resolve('/(app)/organization/[organizationId]/manage', { organizationId: singleOrganization.id })
+            ? resolve('/(app)/organization/[organizationId]/manage', {
+                  organizationId: singleOrganization.id
+              })
             : undefined;
 
         const savedViews = (savedViewsQuery.data ?? []).filter((savedView) => !isSavedViewDeleted(savedView));
@@ -562,7 +581,15 @@
 {#snippet setupShell()}
     <div class="flex h-screen w-full items-center justify-center px-4">
         <main class="w-full">
-            <div in:fade={{ delay: 150, duration: 150 }} out:fade={{ duration: 150 }}>
+            <div
+                in:fade={{
+                    delay: 150,
+                    duration: 150
+                }}
+                out:fade={{
+                    duration: 150
+                }}
+            >
                 {@render children()}
             </div>
         </main>
@@ -636,7 +663,15 @@
                     <OrganizationNotifications {isChatEnabled} {openChat} {requiresPremium} premiumFeatureName={premiumPage.current} class="mb-4" />
                 {/if}
 
-                <div in:fade={{ delay: 150, duration: 150 }} out:fade={{ duration: 150 }}>
+                <div
+                    in:fade={{
+                        delay: 150,
+                        duration: 150
+                    }}
+                    out:fade={{
+                        duration: 150
+                    }}
+                >
                     {@render children()}
                 </div>
             </main>

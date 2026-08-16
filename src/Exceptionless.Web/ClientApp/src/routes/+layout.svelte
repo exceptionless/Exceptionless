@@ -49,7 +49,9 @@
                 return;
             }
 
-            await goto(buildServiceStatusUrl(resolve('/status'), url), { replaceState: true });
+            await goto(buildServiceStatusUrl(resolve('/status'), url), {
+                replaceState: true
+            });
         }
     });
 

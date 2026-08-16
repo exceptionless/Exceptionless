@@ -45,7 +45,14 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     const getCurrentHistoryEntryId = () => (window.history.state as null | SvelteKitHistoryState)?.[svelteKitPageStateKey]?.[queryHistoryEntryIdKey];
 
     const createHistoryState = (entryId: string | undefined, state: App.PageState = page.state) =>
-        ({ ...state, ...(entryId ? { [queryHistoryEntryIdKey]: entryId } : {}) }) as App.PageState;
+        ({
+            ...state,
+            ...(entryId
+                ? {
+                      [queryHistoryEntryIdKey]: entryId
+                  }
+                : {})
+        }) as App.PageState;
 
     const getPendingReplacementStorageKey = (entryId: string) => `${pendingReplacementStoragePrefix}${entryId}`;
     const getStoredPendingReplacement = (entryId: string) => {
@@ -249,5 +256,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
         }
     });
 
-    return createQueryParameterProxy(current, schema, { update });
+    return createQueryParameterProxy(current, schema, {
+        update
+    });
 }

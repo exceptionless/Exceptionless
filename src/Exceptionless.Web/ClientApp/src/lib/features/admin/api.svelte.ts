@@ -41,7 +41,9 @@ export function deleteOAuthApplicationMutation() {
             }
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.oauthApplications });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.oauthApplications
+            });
         }
     }));
 }
@@ -198,7 +200,9 @@ export function postOAuthApplicationMutation() {
             return response.data!;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.oauthApplications });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.oauthApplications
+            });
         }
     }));
 }
@@ -218,7 +222,9 @@ export function putOAuthApplicationMutation() {
             return response.data!;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.oauthApplications });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.oauthApplications
+            });
         }
     }));
 }

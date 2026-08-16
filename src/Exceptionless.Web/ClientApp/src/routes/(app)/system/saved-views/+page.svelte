@@ -154,7 +154,9 @@
         <AlertDialog.Footer>
             <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
             <AlertDialog.Action
-                class={buttonVariants({ variant: 'destructive' })}
+                class={buttonVariants({
+                    variant: 'destructive'
+                })}
                 disabled={forceUpdatePredefined.isPending}
                 onclick={handleForceUpdatePredefined}
             >

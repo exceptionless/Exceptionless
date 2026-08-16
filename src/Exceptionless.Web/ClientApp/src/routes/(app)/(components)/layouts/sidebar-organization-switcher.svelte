@@ -98,7 +98,12 @@
                 <Sidebar.MenuButton
                     size="lg"
                     class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                    onclick={() => void navigateTo(resolve('/(app)/organization/[organizationId]/manage', { organizationId: activeOrganization.id }))}
+                    onclick={() =>
+                        void navigateTo(
+                            resolve('/(app)/organization/[organizationId]/manage', {
+                                organizationId: activeOrganization.id
+                            })
+                        )}
                 >
                     <Avatar.Root class="size-8" shape="square" title="Organization Icon">
                         {#if activeOrganization.icon_url}
@@ -184,7 +189,11 @@
                         {#if activeOrganization?.id}
                             <DropdownMenu.Item
                                 onSelect={() =>
-                                    void navigateTo(resolve('/(app)/organization/[organizationId]/manage', { organizationId: activeOrganization.id }))}
+                                    void navigateTo(
+                                        resolve('/(app)/organization/[organizationId]/manage', {
+                                            organizationId: activeOrganization.id
+                                        })
+                                    )}
                             >
                                 <div class="bg-background flex size-6 items-center justify-center rounded-md border">
                                     <Settings class="size-4" aria-hidden="true" />

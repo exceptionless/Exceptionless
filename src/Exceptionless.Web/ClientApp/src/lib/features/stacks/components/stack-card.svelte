@@ -375,6 +375,7 @@
         </Card.Header>
         <Card.Content class="space-y-2">
             <div class="grid grid-cols-2 gap-2 lg:grid-cols-4">
+                <!-- eslint-disable-next-line @stylistic/object-curly-newline -->
                 {#each { length: 4 } as name, index (`${name}-${index}`)}
                     <Card.Root size="sm" class={metricCardClass}>
                         <Card.Header class={metricHeaderClass}>

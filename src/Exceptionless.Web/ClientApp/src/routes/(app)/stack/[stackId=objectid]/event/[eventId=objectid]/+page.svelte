@@ -24,7 +24,9 @@
         () => {
             goto(resolve('/(app)/stack'));
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     async function filterChanged(addedOrUpdated: IFilter) {
@@ -47,7 +49,9 @@
         assistantPageContext.setPageEvent(event);
 
         if (event.id !== eventId || event.stack_id !== stackId) {
-            await goto(buildEventDetailsHref(event.id, event.stack_id), { replaceState: true });
+            await goto(buildEventDetailsHref(event.id, event.stack_id), {
+                replaceState: true
+            });
         }
     }
 

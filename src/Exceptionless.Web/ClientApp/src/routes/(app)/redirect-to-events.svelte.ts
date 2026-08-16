@@ -90,7 +90,9 @@ export function deserializeTimeQueryParam(time: string): string {
  */
 export function getEventsNavigationOptionsForFilter(filter: IFilter): ListNavigationOptions | undefined {
     if (filter.type === 'string' && filter.key === 'string-stack') {
-        return { time: null };
+        return {
+            time: null
+        };
     }
 
     return undefined;

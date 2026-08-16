@@ -107,7 +107,12 @@
             suggestedActionPath,
             tools: []
         };
-        const assistantMessage: AssistantChatMessage = { content: '', id: crypto.randomUUID(), role: 'assistant', tools: [] };
+        const assistantMessage: AssistantChatMessage = {
+            content: '',
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            tools: []
+        };
         const history = [...messages, userMessage];
         messages = [...history, assistantMessage];
         await streamResponse(history, assistantMessage);
@@ -130,7 +135,12 @@
 
         errorMessage = undefined;
         const history = messages.slice(0, userMessageIndex + 1);
-        const replacement: AssistantChatMessage = { content: '', id: crypto.randomUUID(), role: 'assistant', tools: [] };
+        const replacement: AssistantChatMessage = {
+            content: '',
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            tools: []
+        };
         messages = [...history, replacement];
         conversationId = crypto.randomUUID();
         await streamResponse(history, replacement);
@@ -186,7 +196,10 @@
             }
 
             if (event.type === 'text_delta') {
-                return { ...message, content: message.content + (event.text ?? '') };
+                return {
+                    ...message,
+                    content: message.content + (event.text ?? '')
+                };
             }
 
             if (event.type === 'tool_call' && event.tool_call_id && event.tool_name) {
@@ -208,14 +221,25 @@
                 const status = assistantToolResultFailed(event.result) ? ('failed' as const) : ('complete' as const);
                 return {
                     ...message,
-                    tools: message.tools.map((tool) => (tool.id === event.tool_call_id ? { ...tool, result: event.result, status } : tool))
+                    tools: message.tools.map((tool) =>
+                        tool.id === event.tool_call_id
+                            ? {
+                                  ...tool,
+                                  result: event.result,
+                                  status
+                              }
+                            : tool
+                    )
                 };
             }
 
             if (event.type === 'suggested_actions') {
                 return {
                     ...message,
-                    suggestedActions: (event.suggested_actions ?? []).map((action) => ({ ...action, sourcePath: requestPath }))
+                    suggestedActions: (event.suggested_actions ?? []).map((action) => ({
+                        ...action,
+                        sourcePath: requestPath
+                    }))
                 };
             }
 
@@ -237,7 +261,14 @@
         abortController?.abort();
         messages = messages.map((message) => ({
             ...message,
-            tools: message.tools.map((tool) => (tool.status === 'running' ? { ...tool, status: 'cancelled' as const } : tool))
+            tools: message.tools.map((tool) =>
+                tool.status === 'running'
+                    ? {
+                          ...tool,
+                          status: 'cancelled' as const
+                      }
+                    : tool
+            )
         }));
     }
 
@@ -262,7 +293,14 @@
     }
 
     function setMessageFeedback(messageId: string, feedback: AssistantFeedback | undefined): void {
-        messages = messages.map((message) => (message.id === messageId ? { ...message, feedback } : message));
+        messages = messages.map((message) =>
+            message.id === messageId
+                ? {
+                      ...message,
+                      feedback
+                  }
+                : message
+        );
     }
 
     async function scrollToLatest(behavior: 'auto' | 'smooth' = 'smooth', force = false): Promise<void> {
@@ -272,7 +310,10 @@
         }
 
         await tick();
-        conversationElement?.scrollTo({ behavior, top: conversationElement.scrollHeight });
+        conversationElement?.scrollTo({
+            behavior,
+            top: conversationElement.scrollHeight
+        });
         isNearBottom = true;
         showScrollToBottom = false;
     }
@@ -283,7 +324,9 @@
         data-assistant-panel
         class="bg-background top-16! bottom-0! h-auto! w-full gap-0 sm:max-w-120!"
         onInteractOutside={handleInteractOutside}
-        overlayProps={{ class: 'top-16! bg-black/5 dark:bg-black/30 supports-backdrop-filter:backdrop-blur-[0.5px]' }}
+        overlayProps={{
+            class: 'top-16! bg-black/5 dark:bg-black/30 supports-backdrop-filter:backdrop-blur-[0.5px]'
+        }}
         preventScroll={false}
     >
         <Sheet.Header class="border-b pr-14">

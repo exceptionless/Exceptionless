@@ -30,12 +30,17 @@
         currentEventDetails
             ? buildEventDetailsHref(currentEventDetails.eventId, currentEventDetails.stackId)
             : stackId
-              ? resolve('/(app)/stack/[stackId=objectid]', { stackId })
+              ? resolve('/(app)/stack/[stackId=objectid]', {
+                    stackId
+                })
               : '#'
     );
 
     function handleEventLoaded(event: PersistentEvent): void {
-        currentEventDetails = { eventId: event.id, stackId: event.stack_id };
+        currentEventDetails = {
+            eventId: event.id,
+            stackId: event.stack_id
+        };
         assistantPageContext.setOverlayEvent(assistantContextOwner, event);
     }
 
@@ -48,7 +53,9 @@
         if (currentStack) {
             assistantPageContext.setOverlayStack(assistantContextOwner, currentStack);
         } else if (stackId) {
-            assistantPageContext.setOverlay(assistantContextOwner, { stackId });
+            assistantPageContext.setOverlay(assistantContextOwner, {
+                stackId
+            });
         }
     }
 
@@ -63,7 +70,9 @@
             currentEventDetails = undefined;
             currentStack = undefined;
             if (stackId) {
-                assistantPageContext.setOverlay(assistantContextOwner, { stackId });
+                assistantPageContext.setOverlay(assistantContextOwner, {
+                    stackId
+                });
             } else {
                 assistantPageContext.clearOverlay(assistantContextOwner);
             }

@@ -302,7 +302,9 @@
             queryParams.update(DEFAULT_PARAMS);
             reset();
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     function getCurrentFilters(params: ListFilterQueryParams = queryParams): FacetedFilter.IFilter[] {
@@ -421,7 +423,9 @@
             isInternalFilterUpdate = false;
             filters = getCurrentFilters(currentQueryParams);
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     function handleResetToSaved(): void {
@@ -524,7 +528,9 @@
         }
 
         untrack(() => {
-            updateFilters(getCurrentFilters(getListFilterQueryParams(queryParams)), { clearPagination: false });
+            updateFilters(getCurrentFilters(getListFilterQueryParams(queryParams)), {
+                clearPagination: false
+            });
         });
         normalizedSavedViewId = activeSavedViewId;
     });
@@ -738,7 +744,9 @@
         }
 
         const organizationId = organization.current;
-        const requestParameters = { ...eventsQueryParameters };
+        const requestParameters = {
+            ...eventsQueryParameters
+        };
         const requestIdentity = JSON.stringify([organizationId, requestParameters]);
         if (!requestParameters.after && !requestParameters.before) {
             return;
@@ -756,7 +764,15 @@
         const totalResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organizationId}/events`, {
             params: totalParams
         });
-        if (requestIdentity !== JSON.stringify([organization.current, { ...eventsQueryParameters }])) {
+        if (
+            requestIdentity !==
+            JSON.stringify([
+                organization.current,
+                {
+                    ...eventsQueryParameters
+                }
+            ])
+        ) {
             return;
         }
 

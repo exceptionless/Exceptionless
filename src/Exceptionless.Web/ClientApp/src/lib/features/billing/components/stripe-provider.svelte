@@ -39,7 +39,10 @@
 
                 stripeInstance = stripe;
                 elementsInstance = clientSecret
-                    ? stripe.elements({ appearance, clientSecret })
+                    ? stripe.elements({
+                          appearance,
+                          clientSecret
+                      })
                     : stripe.elements({
                           appearance,
                           currency: currency ?? 'usd',

@@ -23,7 +23,9 @@ export function getAssistantAccessQuery(request: GetAssistantAccessRequest) {
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<AssistantAccess>('assistant/access', {
-                params: { organization_id: request.route.organizationId },
+                params: {
+                    organization_id: request.route.organizationId
+                },
                 signal
             });
 
@@ -35,5 +37,7 @@ export function getAssistantAccessQuery(request: GetAssistantAccessRequest) {
 }
 
 export async function invalidateAssistantAccessQueries(queryClient: QueryClient): Promise<void> {
-    await queryClient.invalidateQueries({ queryKey: queryKeys.type });
+    await queryClient.invalidateQueries({
+        queryKey: queryKeys.type
+    });
 }

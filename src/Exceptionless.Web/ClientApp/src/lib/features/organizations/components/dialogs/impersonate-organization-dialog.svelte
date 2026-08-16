@@ -465,10 +465,22 @@
                                 <PaginationFirstButton {currentPage} />
                             </PaginationItem>
                             <PaginationItem>
-                                <PaginationPrevious page={{ type: 'page', value: Math.max(1, currentPage - 1) }} isActive={false} />
+                                <PaginationPrevious
+                                    page={{
+                                        type: 'page',
+                                        value: Math.max(1, currentPage - 1)
+                                    }}
+                                    isActive={false}
+                                />
                             </PaginationItem>
                             <PaginationItem>
-                                <PaginationNext page={{ type: 'page', value: Math.min(totalPages, currentPage + 1) }} isActive={false} />
+                                <PaginationNext
+                                    page={{
+                                        type: 'page',
+                                        value: Math.min(totalPages, currentPage + 1)
+                                    }}
+                                    isActive={false}
+                                />
                             </PaginationItem>
                         </PaginationContent>
                     </Pagination>

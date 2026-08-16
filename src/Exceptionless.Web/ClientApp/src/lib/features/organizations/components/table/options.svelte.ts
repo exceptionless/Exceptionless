@@ -36,7 +36,10 @@ export function getColumns<TOrganizations extends ViewOrganization>(mode: GetOrg
         },
         {
             accessorFn: (row) => row.is_over_monthly_limit,
-            cell: (info) => renderComponent(OrganizationOverLimitCell, { isOverLimit: info.getValue<boolean>() }),
+            cell: (info) =>
+                renderComponent(OrganizationOverLimitCell, {
+                    isOverLimit: info.getValue<boolean>()
+                }),
             enableSorting: false,
             header: 'Over Limit',
             id: 'is_over_monthly_limit',
@@ -47,7 +50,10 @@ export function getColumns<TOrganizations extends ViewOrganization>(mode: GetOrg
         },
         {
             accessorKey: 'retention_days',
-            cell: (info) => renderComponent(OrganizationRetentionDaysCell, { value: info.getValue<number>() }),
+            cell: (info) =>
+                renderComponent(OrganizationRetentionDaysCell, {
+                    value: info.getValue<number>()
+                }),
             enableSorting: false,
             header: 'Retention',
             meta: {
@@ -79,7 +85,10 @@ export function getColumns<TOrganizations extends ViewOrganization>(mode: GetOrg
         columns.push(
             {
                 accessorKey: 'project_count',
-                cell: (info) => renderComponent(NumberFormatter, { value: info.getValue<number>() }),
+                cell: (info) =>
+                    renderComponent(NumberFormatter, {
+                        value: info.getValue<number>()
+                    }),
                 enableSorting: false,
                 header: 'Projects',
                 meta: {
@@ -88,7 +97,10 @@ export function getColumns<TOrganizations extends ViewOrganization>(mode: GetOrg
             },
             {
                 accessorKey: 'stack_count',
-                cell: (info) => renderComponent(NumberFormatter, { value: info.getValue<number>() }),
+                cell: (info) =>
+                    renderComponent(NumberFormatter, {
+                        value: info.getValue<number>()
+                    }),
                 enableSorting: false,
                 header: 'Stacks',
                 meta: {
@@ -97,7 +109,10 @@ export function getColumns<TOrganizations extends ViewOrganization>(mode: GetOrg
             },
             {
                 accessorKey: 'event_count',
-                cell: (info) => renderComponent(NumberFormatter, { value: info.getValue<number>() }),
+                cell: (info) =>
+                    renderComponent(NumberFormatter, {
+                        value: info.getValue<number>()
+                    }),
                 enableSorting: false,
                 header: 'Events',
                 meta: {
@@ -108,7 +123,10 @@ export function getColumns<TOrganizations extends ViewOrganization>(mode: GetOrg
     }
 
     columns.push({
-        cell: (info) => renderComponent(OrganizationsActionsCell, { organization: info.row.original }),
+        cell: (info) =>
+            renderComponent(OrganizationsActionsCell, {
+                organization: info.row.original
+            }),
         enableHiding: false,
         enableSorting: false,
         header: '',

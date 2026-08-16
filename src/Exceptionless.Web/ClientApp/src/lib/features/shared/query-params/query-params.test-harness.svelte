@@ -9,7 +9,9 @@
     const queryParameters = createQueryParameters({
         debounceMilliseconds: 200,
         history: untrack(() => history),
-        schema: { filter: 'string' }
+        schema: {
+            filter: 'string'
+        }
     });
 </script>
 

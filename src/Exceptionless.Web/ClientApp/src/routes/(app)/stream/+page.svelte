@@ -108,7 +108,9 @@
             queryParams.update(DEFAULT_PARAMS);
             paused = false;
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     let filters = $state(getFiltersFromCache(filterCacheKey(queryParams.filter), queryParams.filter));
@@ -117,7 +119,9 @@
         ([filter]) => {
             filters = getFiltersFromCache(filterCacheKey(filter), filter);
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     async function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter) {
@@ -184,7 +188,10 @@
                     showType: !hasSingleTypeFilter(eventsQueryParameters.filter)
                 })
                     .filter((c) => c.id !== 'select')
-                    .map((c) => ({ ...c, enableSorting: false }));
+                    .map((c) => ({
+                        ...c,
+                        enableSorting: false
+                    }));
             },
             configureOptions: (options) => {
                 options.enableMultiRowSelection = false;

@@ -214,7 +214,10 @@
         }
 
         try {
-            const result = await updateMutation.mutateAsync({ name, slug });
+            const result = await updateMutation.mutateAsync({
+                name,
+                slug
+            });
             isRenameDialogOpen = false;
             toast.success(`View renamed to "${result.name}".`);
         } catch (error) {

@@ -47,7 +47,13 @@
         All future occurrences will be discarded and will not count against your event limit.
         <AlertDialog.Footer>
             <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-            <button type="button" class={buttonVariants({ variant: 'destructive' })} onclick={onSubmit}>
+            <button
+                type="button"
+                class={buttonVariants({
+                    variant: 'destructive'
+                })}
+                onclick={onSubmit}
+            >
                 Discard
                 {#if count === 1}
                     Stack

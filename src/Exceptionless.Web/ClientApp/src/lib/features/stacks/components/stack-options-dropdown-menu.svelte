@@ -91,7 +91,11 @@
     }
 
     async function navigateToProjectIntegrations() {
-        await goto(resolve('/(app)/project/[projectId]/manage', { projectId: stack.project_id }));
+        await goto(
+            resolve('/(app)/project/[projectId]/manage', {
+                projectId: stack.project_id
+            })
+        );
     }
 
     async function updateCritical() {
