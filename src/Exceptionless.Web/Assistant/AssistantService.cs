@@ -504,7 +504,8 @@ public sealed class AssistantService(
             return false;
         }
 
-        if (!HasValidStackTarget(label, requestedStackId, currentStackId, allowImplicitCurrentStack: true))
+        bool allowImplicitCurrentStack = HasCanonicalImplicitCurrentStackLabel(label, toolName, arguments);
+        if (!HasValidStackTarget(label, requestedStackId, currentStackId, allowImplicitCurrentStack))
         {
             return false;
         }
@@ -524,6 +525,31 @@ public sealed class AssistantService(
             RemoveStackReferenceLinkTool => HasExplicitReferenceLinkRequest(visibleRequest, arguments, remove: true),
             _ => false
         };
+    }
+
+    private static bool HasCanonicalImplicitCurrentStackLabel(string label, string toolName, JsonElement arguments)
+    {
+        const string prefix = @"^\s*(?:(?:please|kindly)\s+)?";
+        const string currentTarget = @"(?:(?:this|current)\s+(?:stack|issue)\s+)?";
+        string pattern = toolName switch
+        {
+            UpdateStackStatusTool => GetString(arguments, "status")?.Trim().ToLowerInvariant() switch
+            {
+                "fixed" => prefix + @"(?:mark|set|change)\s+" + currentTarget + @"(?:as\s+)?fixed(?:\s+(?:in|for)\s+(?:version\s+)?[A-Za-z0-9._+\-]+)?\s*$",
+                "ignored" => prefix + @"(?:ignore\s+" + currentTarget + @"|(?:mark|set|change)\s+" + currentTarget + @"(?:as\s+)?ignored)\s*$",
+                "discarded" => prefix + @"(?:discard\s+" + currentTarget + @"|(?:mark|set|change)\s+" + currentTarget + @"(?:as\s+)?discarded)\s*$",
+                "open" => prefix + @"(?:reopen\s+" + currentTarget + @"|(?:mark|set|change)\s+" + currentTarget + @"(?:as\s+)?open)\s*$",
+                _ => "(?!)"
+            },
+            SnoozeStackTool => prefix + @"snooze\s+" + currentTarget + @"(?:for\s+(?:a|an|one|two|three|four|five|six|seven|\d+)\s+(?:minutes?|hours?|days?|weeks?)|until\s+\d{4}-\d{2}-\d{2}(?:T\d{1,2}:\d{2}(?::\d{2})?Z|\s+\d{1,2}:\d{2}(?:\s*[AP]M)?\s+UTC))\s*$",
+            SetStackCriticalTool when GetBoolean(arguments, "critical") == true => prefix + @"(?:mark|set|make)\s+" + currentTarget + @"(?:as\s+)?critical\s*$",
+            SetStackCriticalTool when GetBoolean(arguments, "critical") == false => prefix + @"(?:(?:remove|unmark)\s+" + currentTarget + @"critical|(?:mark|set|make)\s+" + currentTarget + @"(?:as\s+)?not\s+critical)\s*$",
+            AddStackReferenceLinkTool => prefix + @"(?:add|attach)\s+(?:link|reference)\s+https?://\S+\s*$",
+            RemoveStackReferenceLinkTool => prefix + @"(?:remove|delete)\s+(?:link|reference)\s+https?://\S+\s*$",
+            _ => "(?!)"
+        };
+
+        return Regex.IsMatch(label, pattern, RegexOptions.IgnoreCase);
     }
 
     private static bool HasAffirmativeWriteIntent(string message)
