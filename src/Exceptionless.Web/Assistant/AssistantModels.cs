@@ -11,6 +11,7 @@ public sealed record AssistantChatMessage(string Role, string Content)
 {
     public bool? IsSuggestedAction { get; init; }
     public string? SuggestedActionLabel { get; init; }
+    public string? SuggestedActionPath { get; init; }
 }
 
 public sealed record AssistantConversationToolResult(

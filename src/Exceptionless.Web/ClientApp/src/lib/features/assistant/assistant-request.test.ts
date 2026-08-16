@@ -21,6 +21,7 @@ describe('createAssistantChatRequest', () => {
                 isSuggestedAction: true,
                 role: 'user',
                 suggestedActionLabel: 'Follow up',
+                suggestedActionPath: '/next/stack/source-stack',
                 tools: []
             }
         ];
@@ -30,7 +31,13 @@ describe('createAssistantChatRequest', () => {
             messages: [
                 { content: 'First question', role: 'user' },
                 { content: 'First answer', role: 'assistant' },
-                { content: 'Follow-up question', is_suggested_action: true, role: 'user', suggested_action_label: 'Follow up' }
+                {
+                    content: 'Follow-up question',
+                    is_suggested_action: true,
+                    role: 'user',
+                    suggested_action_label: 'Follow up',
+                    suggested_action_path: '/next/stack/source-stack'
+                }
             ],
             organization_id: 'organization-id',
             path: '/next/stack/stack-id',

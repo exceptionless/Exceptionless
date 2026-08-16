@@ -473,7 +473,8 @@ public sealed class AssistantService(
         string? requestedStackId = GetString(root, "stackId", "stack_id");
         string? currentStackId = GetRouteValue(request.Path, "stack");
         if (latestUserMessage.IsSuggestedAction == true
-            && !HasVisibleSuggestedActionWriteIntent(latestUserMessage.SuggestedActionLabel, toolName, root, requestedStackId, currentStackId))
+            && (!String.Equals(latestUserMessage.SuggestedActionPath, request.Path, StringComparison.Ordinal)
+                || !HasVisibleSuggestedActionWriteIntent(latestUserMessage.SuggestedActionLabel, toolName, root, requestedStackId, currentStackId)))
         {
             return false;
         }
@@ -616,7 +617,7 @@ public sealed class AssistantService(
     }
 
     private static IEnumerable<string> GetNamedStackTargets(string message)
-        => Regex.Matches(message, @"\b(?:stack|issue)\s+(?<target>[A-Za-z0-9][A-Za-z0-9_-]*)\b(?!['’])", RegexOptions.IgnoreCase)
+        => Regex.Matches(message, @"\b(?:stack|issue)\s+(?<target>[A-Za-z0-9][A-Za-z0-9_-]*)\b(?!['’/\\])", RegexOptions.IgnoreCase)
             .Select(match => match.Groups["target"].Value.ToLowerInvariant())
             .Where(target => target is not ("this" or "current" or "the" or "fixed" or "ignored" or "discarded" or "open" or "critical" or "not" or "as" or "to" or "with" or "for" or "until"));
 
@@ -880,7 +881,7 @@ public sealed class AssistantService(
     private static bool ContainsExactToken(string message, string value)
         => Regex.IsMatch(
             message,
-            $@"(?<![A-Za-z0-9_-]){Regex.Escape(value)}(?![A-Za-z0-9_'’-])",
+            $@"(?<![A-Za-z0-9_-]){Regex.Escape(value)}(?![A-Za-z0-9_'’/\\-])",
             RegexOptions.IgnoreCase);
 
     private static string RemoveAbsoluteUrls(string message)

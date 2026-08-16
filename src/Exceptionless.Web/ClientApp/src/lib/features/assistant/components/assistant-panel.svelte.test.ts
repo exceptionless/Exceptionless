@@ -1,4 +1,4 @@
-import { render, waitFor } from '@testing-library/svelte';
+import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('$features/auth/index.svelte', () => ({ accessToken: { current: 'access-token' } }));
@@ -37,5 +37,47 @@ describe('AssistantPanel', () => {
         expect(request).toBeDefined();
         expect(requestSignal?.aborted).toBe(false);
         expect(JSON.parse(request![1]?.body as string)).toMatchObject({ organization_id: 'organization-1' });
+    });
+
+    it('retains the page path where a suggested action was created', async () => {
+        const fetchMock = vi.fn(async (...args: [RequestInfo | URL, RequestInit?]) => {
+            void args;
+            if (fetchMock.mock.calls.length === 1) {
+                return new Response(
+                    '{"type":"suggested_actions","suggested_actions":[{"label":"Mark as fixed","prompt":"Please mark this stack fixed"}]}\n' +
+                        '{"type":"done"}\n'
+                );
+            }
+
+            return new Response('{"type":"done"}\n');
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        const view = render(AssistantPanel, {
+            props: {
+                open: true,
+                organizationId: 'organization-1',
+                path: '/next/stack/stack-a',
+                promptRequest: { id: 'request-1', prompt: 'Analyze this stack.' }
+            }
+        });
+
+        const action = await screen.findByRole('button', { name: 'Mark as fixed' });
+        await view.rerender({
+            open: true,
+            organizationId: 'organization-1',
+            path: '/next/stack/stack-b',
+            promptRequest: { id: 'request-1', prompt: 'Analyze this stack.' }
+        });
+        await fireEvent.click(action);
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+
+        const request = fetchMock.mock.calls[1];
+        const payload = JSON.parse(request![1]?.body as string) as {
+            messages: Array<{ suggested_action_path?: string }>;
+            path: string;
+        };
+        expect(payload.path).toBe('/next/stack/stack-b');
+        expect(payload.messages.at(-1)?.suggested_action_path).toBe('/next/stack/stack-a');
     });
 });

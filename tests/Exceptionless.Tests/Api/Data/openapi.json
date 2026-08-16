@@ -11282,6 +11282,12 @@
               "null",
               "string"
             ]
+          },
+          "suggested_action_path": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

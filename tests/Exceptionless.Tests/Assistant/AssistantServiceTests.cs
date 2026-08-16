@@ -196,21 +196,29 @@ public sealed class AssistantServiceTests
         bool expected)
     {
         var request = new AssistantChatRequest(
-            [new AssistantChatMessage("user", prompt) { IsSuggestedAction = true, SuggestedActionLabel = label }],
+            [new AssistantChatMessage("user", prompt)
+            {
+                IsSuggestedAction = true,
+                SuggestedActionLabel = label,
+                SuggestedActionPath = "/next/stack/current-stack"
+            }],
             Path: "/next/stack/current-stack");
 
         Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, toolName, arguments));
     }
 
-    [Fact]
-    public void HasExplicitWriteRequest_SuggestedActionRejectsPossessiveNamedStackId()
+    [Theory]
+    [InlineData("'s")]
+    [InlineData("/x")]
+    public void HasExplicitWriteRequest_SuggestedActionRejectsQualifiedNamedStackId(string suffix)
     {
         const string stackId = "0123456789abcdef01234567";
         var request = new AssistantChatRequest(
             [new AssistantChatMessage("user", "Please discard this stack")
             {
                 IsSuggestedAction = true,
-                SuggestedActionLabel = $"Discard stack {stackId}'s"
+                SuggestedActionLabel = $"Discard stack {stackId}{suffix}",
+                SuggestedActionPath = $"/next/stack/{stackId}"
             }],
             Path: $"/next/stack/{stackId}");
 
@@ -218,6 +226,21 @@ public sealed class AssistantServiceTests
             request,
             "update_stack_status",
             $$"""{"stackId":"{{stackId}}","status":"discarded"}"""));
+    }
+
+    [Fact]
+    public void HasExplicitWriteRequest_SuggestedActionRequiresCreationPath()
+    {
+        var request = new AssistantChatRequest(
+            [new AssistantChatMessage("user", "Please mark this stack fixed")
+            {
+                IsSuggestedAction = true,
+                SuggestedActionLabel = "Mark as fixed",
+                SuggestedActionPath = "/next/stack/stack-a"
+            }],
+            Path: "/next/stack/stack-b");
+
+        Assert.False(AssistantService.HasExplicitWriteRequest(request, "update_stack_status", "{\"status\":\"fixed\"}"));
     }
 
     [Theory]
