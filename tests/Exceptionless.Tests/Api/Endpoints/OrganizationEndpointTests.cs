@@ -359,27 +359,27 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     public async Task PostAsync_NewOrganization_MapsToOrganizationAndCreates()
     {
         // Arrange
-        var newOrg = new NewOrganization
+        var newOrganization = new NewOrganization
         {
             Name = "Test Organization"
         };
 
         // Act
-        var viewOrg = await SendRequestAsAsync<ViewOrganization>(r => r
+        var organizationView = await SendRequestAsAsync<ViewOrganization>(r => r
             .AsTestOrganizationUser()
             .Post()
             .AppendPath("organizations")
-            .Content(newOrg)
+            .Content(newOrganization)
             .StatusCodeShouldBeCreated()
         );
 
         // Assert
-        Assert.NotNull(viewOrg);
-        Assert.NotNull(viewOrg.Id);
-        Assert.Equal("Test Organization", viewOrg.Name);
-        Assert.True(viewOrg.CreatedUtc > DateTime.MinValue);
+        Assert.NotNull(organizationView);
+        Assert.NotNull(organizationView.Id);
+        Assert.Equal("Test Organization", organizationView.Name);
+        Assert.True(organizationView.CreatedUtc > DateTime.MinValue);
 
-        var organization = await _organizationRepository.GetByIdAsync(viewOrg.Id);
+        var organization = await _organizationRepository.GetByIdAsync(organizationView.Id);
         Assert.NotNull(organization);
         Assert.Equal("Test Organization", organization.Name);
     }
@@ -408,25 +408,25 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     public async Task GetAsync_ExistingOrganization_MapsToViewOrganization()
     {
         // Act
-        var viewOrg = await SendRequestAsAsync<ViewOrganization>(r => r
+        var organizationView = await SendRequestAsAsync<ViewOrganization>(r => r
             .AsTestOrganizationUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
             .StatusCodeShouldBeOk()
         );
 
         // Assert
-        Assert.NotNull(viewOrg);
-        Assert.Equal(SampleDataService.TEST_ORG_ID, viewOrg.Id);
-        Assert.False(String.IsNullOrEmpty(viewOrg.Name));
-        Assert.NotNull(viewOrg.PlanId);
-        Assert.NotNull(viewOrg.PlanName);
+        Assert.NotNull(organizationView);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, organizationView.Id);
+        Assert.False(String.IsNullOrEmpty(organizationView.Name));
+        Assert.NotNull(organizationView.PlanId);
+        Assert.NotNull(organizationView.PlanName);
     }
 
     [Fact]
     public async Task GetAsync_WithStatsMode_ReturnsPopulatedViewOrganization()
     {
         // Act
-        var viewOrg = await SendRequestAsAsync<ViewOrganization>(r => r
+        var organizationView = await SendRequestAsAsync<ViewOrganization>(r => r
             .AsTestOrganizationUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
             .QueryString("mode", "stats")
@@ -434,10 +434,10 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         );
 
         // Assert
-        Assert.NotNull(viewOrg);
-        Assert.Equal(SampleDataService.TEST_ORG_ID, viewOrg.Id);
-        Assert.NotNull(viewOrg.Usage);
-        Assert.NotNull(viewOrg.UsageHours);
+        Assert.NotNull(organizationView);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, organizationView.Id);
+        Assert.NotNull(organizationView.Usage);
+        Assert.NotNull(organizationView.UsageHours);
     }
 
     [Fact]
@@ -487,20 +487,20 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     public async Task GetAllAsync_ReturnsViewOrganizationCollection()
     {
         // Act
-        var viewOrgs = await SendRequestAsAsync<List<ViewOrganization>>(r => r
+        var organizationViews = await SendRequestAsAsync<List<ViewOrganization>>(r => r
             .AsTestOrganizationUser()
             .AppendPath("organizations")
             .StatusCodeShouldBeOk()
         );
 
         // Assert
-        Assert.NotNull(viewOrgs);
-        Assert.True(viewOrgs.Count > 0);
-        Assert.All(viewOrgs, vo =>
+        Assert.NotNull(organizationViews);
+        Assert.True(organizationViews.Count > 0);
+        Assert.All(organizationViews, organizationView =>
         {
-            Assert.NotNull(vo.Id);
-            Assert.NotNull(vo.Name);
-            Assert.NotNull(vo.PlanId);
+            Assert.NotNull(organizationView.Id);
+            Assert.NotNull(organizationView.Name);
+            Assert.NotNull(organizationView.PlanId);
         });
     }
 
@@ -508,7 +508,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     public async Task GetAllAsync_WithFilter_ReturnsMatchingViewOrganizations()
     {
         // Act
-        var viewOrgs = await SendRequestAsAsync<List<ViewOrganization>>(r => r
+        var organizationViews = await SendRequestAsAsync<List<ViewOrganization>>(r => r
             .AsTestOrganizationUser()
             .AppendPath("organizations")
             .QueryString("filter", "Acme")
@@ -516,16 +516,16 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         );
 
         // Assert
-        Assert.NotNull(viewOrgs);
-        var viewOrg = Assert.Single(viewOrgs);
-        Assert.Equal("Acme", viewOrg.Name);
+        Assert.NotNull(organizationViews);
+        var organizationView = Assert.Single(organizationViews);
+        Assert.Equal("Acme", organizationView.Name);
     }
 
     [Fact]
     public async Task GetAllAsync_WithFilter_ReturnsOnlyAssociatedOrganizations()
     {
         // Act
-        var viewOrgs = await SendRequestAsAsync<List<ViewOrganization>>(r => r
+        var organizationViews = await SendRequestAsAsync<List<ViewOrganization>>(r => r
             .AsTestOrganizationUser()
             .AppendPath("organizations")
             .QueryString("filter", "Free")
@@ -533,47 +533,47 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         );
 
         // Assert
-        Assert.NotNull(viewOrgs);
-        Assert.Empty(viewOrgs);
+        Assert.NotNull(organizationViews);
+        Assert.Empty(organizationViews);
     }
 
     [Fact]
     public async Task PostAsync_NewOrganization_AssignsDefaultPlan()
     {
         // Arrange
-        var newOrg = new NewOrganization
+        var newOrganization = new NewOrganization
         {
             Name = "Organization With Default Plan"
         };
 
         // Act
-        var viewOrg = await SendRequestAsAsync<ViewOrganization>(r => r
+        var organizationView = await SendRequestAsAsync<ViewOrganization>(r => r
             .AsTestOrganizationUser()
             .Post()
             .AppendPath("organizations")
-            .Content(newOrg)
+            .Content(newOrganization)
             .StatusCodeShouldBeCreated()
         );
 
         // Assert
-        Assert.NotNull(viewOrg);
-        Assert.NotNull(viewOrg.PlanId);
-        Assert.NotNull(viewOrg.PlanName);
+        Assert.NotNull(organizationView);
+        Assert.NotNull(organizationView.PlanId);
+        Assert.NotNull(organizationView.PlanName);
     }
 
     [Fact]
     public async Task GetAsync_ViewOrganization_IncludesIsOverMonthlyLimit()
     {
         // Act
-        var viewOrg = await SendRequestAsAsync<ViewOrganization>(r => r
+        var organizationView = await SendRequestAsAsync<ViewOrganization>(r => r
             .AsTestOrganizationUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
             .StatusCodeShouldBeOk()
         );
 
         // Assert
-        Assert.NotNull(viewOrg);
-        Assert.False(viewOrg.IsOverMonthlyLimit);
+        Assert.NotNull(organizationView);
+        Assert.False(organizationView.IsOverMonthlyLimit);
     }
 
     [Fact]
@@ -639,31 +639,31 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     public async Task PostAsync_NewOrganization_SetsCreatedAndUpdatedDates()
     {
         // Arrange
-        var newOrg = new NewOrganization
+        var newOrganization = new NewOrganization
         {
             Name = "Organization With Dates"
         };
 
         // Act
-        var viewOrg = await SendRequestAsAsync<ViewOrganization>(r => r
+        var organizationView = await SendRequestAsAsync<ViewOrganization>(r => r
             .AsTestOrganizationUser()
             .Post()
             .AppendPath("organizations")
-            .Content(newOrg)
+            .Content(newOrganization)
             .StatusCodeShouldBeCreated()
         );
 
         // Assert
-        Assert.NotNull(viewOrg);
-        Assert.True(viewOrg.CreatedUtc > DateTime.MinValue);
-        Assert.True(viewOrg.UpdatedUtc > DateTime.MinValue);
+        Assert.NotNull(organizationView);
+        Assert.True(organizationView.CreatedUtc > DateTime.MinValue);
+        Assert.True(organizationView.UpdatedUtc > DateTime.MinValue);
     }
 
     [Fact]
     public Task PostAsync_EmptyName_ReturnsValidationError()
     {
         // Arrange
-        var newOrg = new NewOrganization
+        var newOrganization = new NewOrganization
         {
             Name = String.Empty
         };
@@ -673,7 +673,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
             .AsTestOrganizationUser()
             .Post()
             .AppendPath("organizations")
-            .Content(newOrg)
+            .Content(newOrganization)
             .StatusCodeShouldBeUnprocessableEntity()
         );
     }
@@ -801,16 +801,16 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         );
 
         // Act
-        var viewOrg = await SendRequestAsAsync<ViewOrganization>(r => r
+        var organizationView = await SendRequestAsAsync<ViewOrganization>(r => r
             .AsTestOrganizationUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
             .StatusCodeShouldBeOk()
         );
 
         // Assert - Features is included in the ViewOrganization DTO
-        Assert.NotNull(viewOrg);
-        Assert.NotNull(viewOrg.Features);
-        Assert.Contains("feature-saved-views", viewOrg.Features);
+        Assert.NotNull(organizationView);
+        Assert.NotNull(organizationView.Features);
+        Assert.Contains("feature-saved-views", organizationView.Features);
     }
 
     [Fact]
@@ -841,33 +841,33 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     public async Task DeleteAsync_ExistingOrganization_RemovesOrganization()
     {
         // Arrange
-        var newOrg = new NewOrganization
+        var newOrganization = new NewOrganization
         {
             Name = "Organization To Delete"
         };
 
-        var viewOrg = await SendRequestAsAsync<ViewOrganization>(r => r
+        var organizationView = await SendRequestAsAsync<ViewOrganization>(r => r
             .AsTestOrganizationUser()
             .Post()
             .AppendPath("organizations")
-            .Content(newOrg)
+            .Content(newOrganization)
             .StatusCodeShouldBeCreated()
         );
 
-        Assert.NotNull(viewOrg);
+        Assert.NotNull(organizationView);
 
         // Act
         await SendRequestAsync(r => r
             .AsTestOrganizationUser()
             .Delete()
-            .AppendPaths("organizations", viewOrg.Id)
+            .AppendPaths("organizations", organizationView.Id)
             .StatusCodeShouldBeAccepted()
         );
 
         // Assert
         await SendRequestAsync(r => r
             .AsTestOrganizationUser()
-            .AppendPaths("organizations", viewOrg.Id)
+            .AppendPaths("organizations", organizationView.Id)
             .StatusCodeShouldBeNotFound()
         );
     }
@@ -881,7 +881,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
             Name = "Legacy Billing Organization"
         };
 
-        var viewOrg = await SendRequestAsAsync<ViewOrganization>(r => r
+        var organizationView = await SendRequestAsAsync<ViewOrganization>(r => r
             .AsTestOrganizationUser()
             .Post()
             .AppendPath("organizations")
@@ -889,7 +889,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
             .StatusCodeShouldBeCreated()
         );
 
-        var organization = await _organizationRepository.GetByIdAsync(viewOrg!.Id);
+        var organization = await _organizationRepository.GetByIdAsync(organizationView!.Id);
         Assert.NotNull(organization);
         organization.IsSuspended = true;
         organization.SuspensionCode = SuspensionCode.Billing;
@@ -902,18 +902,18 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         await SendRequestAsync(r => r
             .AsGlobalAdminUser()
             .Delete()
-            .AppendPaths("organizations", viewOrg.Id)
+            .AppendPaths("organizations", organizationView.Id)
             .StatusCodeShouldBeAccepted()
         );
 
         // Assert
         await SendRequestAsync(r => r
             .AsGlobalAdminUser()
-            .AppendPaths("organizations", viewOrg.Id)
+            .AppendPaths("organizations", organizationView.Id)
             .StatusCodeShouldBeNotFound()
         );
 
-        var deletedOrganization = await _organizationRepository.GetByIdAsync(viewOrg.Id, o => o.SoftDeleteMode(SoftDeleteQueryMode.All));
+        var deletedOrganization = await _organizationRepository.GetByIdAsync(organizationView.Id, o => o.SoftDeleteMode(SoftDeleteQueryMode.All));
         Assert.NotNull(deletedOrganization);
         Assert.True(deletedOrganization.IsDeleted);
         Assert.True(deletedOrganization.IsSuspended);
@@ -924,7 +924,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         deletedOrganization.IsDeleted = false;
         await _organizationRepository.SaveAsync(deletedOrganization, o => o.ImmediateConsistency());
 
-        var undeletedOrganization = await _organizationRepository.GetByIdAsync(viewOrg.Id);
+        var undeletedOrganization = await _organizationRepository.GetByIdAsync(organizationView.Id);
         Assert.NotNull(undeletedOrganization);
         Assert.True(undeletedOrganization.IsSuspended);
         Assert.Equal(SuspensionCode.Billing, undeletedOrganization.SuspensionCode);
@@ -1287,8 +1287,8 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     public async Task GetPlansAsync_CurrentPlanOverlay_ReflectsOrgValues()
     {
         // Arrange
-        var org = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
-        Assert.NotNull(org);
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
 
         // Act
         var plans = await SendRequestAsAsync<List<BillingPlan>>(r => r
@@ -1299,15 +1299,15 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(plans);
-        var currentPlan = plans.SingleOrDefault(p => String.Equals(p.Id, org.PlanId, StringComparison.Ordinal));
+        var currentPlan = plans.SingleOrDefault(p => String.Equals(p.Id, organization.PlanId, StringComparison.Ordinal));
         Assert.NotNull(currentPlan);
-        Assert.Equal(org.PlanName, currentPlan.Name);
-        Assert.Equal(org.BillingPrice, currentPlan.Price);
-        Assert.Equal(org.MaxProjects, currentPlan.MaxProjects);
-        Assert.Equal(org.MaxUsers, currentPlan.MaxUsers);
-        Assert.Equal(org.RetentionDays, currentPlan.RetentionDays);
-        Assert.Equal(org.MaxEventsPerMonth, currentPlan.MaxEventsPerMonth);
-        Assert.Equal(org.HasPremiumFeatures, currentPlan.HasPremiumFeatures);
+        Assert.Equal(organization.PlanName, currentPlan.Name);
+        Assert.Equal(organization.BillingPrice, currentPlan.Price);
+        Assert.Equal(organization.MaxProjects, currentPlan.MaxProjects);
+        Assert.Equal(organization.MaxUsers, currentPlan.MaxUsers);
+        Assert.Equal(organization.RetentionDays, currentPlan.RetentionDays);
+        Assert.Equal(organization.MaxEventsPerMonth, currentPlan.MaxEventsPerMonth);
+        Assert.Equal(organization.HasPremiumFeatures, currentPlan.HasPremiumFeatures);
     }
 
     [Fact]
@@ -1363,7 +1363,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     [Fact]
     public Task ChangePlanAsync_UnauthorizedOrg_ReturnsNotFound()
     {
-        // Act & Assert — free user should not be able to change plan for the test org they don't belong to
+        // Act & Assert — free user should not be able to change plan for the test organization they don't belong to
         return SendRequestAsync(r => r
             .AsFreeOrganizationUser()
             .Post()
@@ -2345,15 +2345,15 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     [Fact]
     public async Task CanDownGradeAsync_TooManyUsers_ReturnsFailure()
     {
-        // Arrange — test org has 2 users (global admin + org user); free plan allows max 1
-        var org = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
-        Assert.NotNull(org);
+        // Arrange — test organization has 2 users (global admin + organization user); free plan allows max 1
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
 
         var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
         Assert.NotNull(user);
 
         // Act
-        var result = await _billingManager.CanDownGradeAsync(org, _plans.FreePlan, user);
+        var result = await _billingManager.CanDownGradeAsync(organization, _plans.FreePlan, user);
 
         // Assert
         Assert.False(result.Success);
@@ -2364,14 +2364,14 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     [Fact]
     public async Task CanDownGradeAsync_TooManyProjects_ReturnsFailure()
     {
-        // Arrange — free org has 1 user and 1 project; add a second project so project check fails
-        var org = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
-        Assert.NotNull(org);
+        // Arrange — free organization has 1 user and 1 project; add a second project so project check fails
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
 
         var extraProject = new Project
         {
             Name = "Extra Project",
-            OrganizationId = org.Id,
+            OrganizationId = organization.Id,
             NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1).AddHours(1).Ticks
         };
         await _projectRepository.AddAsync(extraProject, o => o.ImmediateConsistency());
@@ -2380,7 +2380,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         Assert.NotNull(user);
 
         // Act
-        var result = await _billingManager.CanDownGradeAsync(org, _plans.FreePlan, user);
+        var result = await _billingManager.CanDownGradeAsync(organization, _plans.FreePlan, user);
 
         // Assert
         Assert.False(result.Success);
@@ -2391,22 +2391,22 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     [Fact]
     public async Task CanDownGradeAsync_AlreadyHasFreePlan_ReturnsFailure()
     {
-        // Arrange — create a second org for the free user, so they already have 1 free org
+        // Arrange — create a second organization for the free user, so they already have 1 free organization
         var freeUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.FREE_USER_EMAIL);
         Assert.NotNull(freeUser);
 
-        var secondOrg = new Organization { Name = "Second Org" };
-        _billingManager.ApplyBillingPlan(secondOrg, _plans.Plans.First(p => p.Id == "EX_SMALL"), freeUser);
-        secondOrg.StripeCustomerId = "cus_test";
-        secondOrg.CardLast4 = "4242";
-        secondOrg.SubscribeDate = TimeProvider.GetUtcNow().UtcDateTime;
-        secondOrg = await _organizationRepository.AddAsync(secondOrg, o => o.ImmediateConsistency());
+        var secondOrganization = new Organization { Name = "Second Organization" };
+        _billingManager.ApplyBillingPlan(secondOrganization, _plans.Plans.First(p => p.Id == "EX_SMALL"), freeUser);
+        secondOrganization.StripeCustomerId = "cus_test";
+        secondOrganization.CardLast4 = "4242";
+        secondOrganization.SubscribeDate = TimeProvider.GetUtcNow().UtcDateTime;
+        secondOrganization = await _organizationRepository.AddAsync(secondOrganization, o => o.ImmediateConsistency());
 
-        freeUser.OrganizationIds.Add(secondOrg.Id);
+        freeUser.OrganizationIds.Add(secondOrganization.Id);
         await _userRepository.SaveAsync(freeUser, o => o.ImmediateConsistency());
 
-        // Act — try to downgrade second org to free plan (user already has FREE_ORG on free plan)
-        var result = await _billingManager.CanDownGradeAsync(secondOrg, _plans.FreePlan, freeUser);
+        // Act — try to downgrade the second organization to free plan (user already has FREE_ORG on free plan)
+        var result = await _billingManager.CanDownGradeAsync(secondOrganization, _plans.FreePlan, freeUser);
 
         // Assert
         Assert.False(result.Success);
@@ -2416,9 +2416,9 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     [Fact]
     public async Task CanDownGradeAsync_ValidDowngrade_ReturnsSuccess()
     {
-        // Arrange — the free org (1 user, 1 project) should be able to "downgrade" to small plan
-        var org = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
-        Assert.NotNull(org);
+        // Arrange — the free organization (1 user, 1 project) should be able to "downgrade" to small plan
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
 
         var smallPlan = _plans.Plans.FirstOrDefault(p => p.Id == "EX_SMALL");
         Assert.NotNull(smallPlan);
@@ -2427,7 +2427,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         Assert.NotNull(user);
 
         // Act — "upgrading" from free to small, downgrade check should succeed
-        var result = await _billingManager.CanDownGradeAsync(org, smallPlan, user);
+        var result = await _billingManager.CanDownGradeAsync(organization, smallPlan, user);
 
         // Assert
         Assert.True(result.Success);
