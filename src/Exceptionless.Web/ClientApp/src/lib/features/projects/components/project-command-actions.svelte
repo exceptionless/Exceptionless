@@ -1,3 +1,7 @@
+<script module lang="ts">
+    export type ProjectActionId = 'client-setup' | 'generate-sample-data' | 'notifications' | 'open' | 'reset-data' | 'stacks';
+</script>
+
 <script lang="ts">
     import type { ViewProject } from '$features/projects/models';
     import type { Component } from 'svelte';
@@ -15,8 +19,6 @@
     import Stacks from '@lucide/svelte/icons/layers';
     import { toast } from 'svelte-sonner';
 
-    type ProjectActionId = 'client-setup' | 'generate-sample-data' | 'notifications' | 'open' | 'reset-data' | 'stacks';
-
     type ProjectAction = {
         icon: Component;
         id: ProjectActionId;
@@ -30,10 +32,11 @@
         onSelect: () => void;
         open: boolean;
         resetPending: boolean;
+        selectedActionId: ProjectActionId | undefined;
         selectingProject: boolean;
     }
 
-    let { onReset, onSearchReset, onSelect, open, resetPending, selectingProject = $bindable() }: Props = $props();
+    let { onReset, onSearchReset, onSelect, open, resetPending, selectedActionId = $bindable(), selectingProject = $bindable() }: Props = $props();
 
     const projectActions: ProjectAction[] = [
         { icon: FolderOpen, id: 'open', keywords: ['edit', 'manage', 'settings'], label: 'Open Project' },
@@ -44,7 +47,7 @@
         { icon: AlertTriangle, id: 'reset-data', keywords: ['clear', 'delete events'], label: 'Reset Project Data' }
     ];
 
-    let selectedAction = $state<ProjectAction>();
+    const selectedAction = $derived(projectActions.find((action) => action.id === selectedActionId));
 
     const projectsQuery = getOrganizationProjectsQuery({
         enabled: () => open,
@@ -66,13 +69,13 @@
     });
 
     function selectAction(action: ProjectAction): void {
-        selectedAction = action;
+        selectedActionId = action.id;
         selectingProject = true;
         onSearchReset();
     }
 
     function goBack(): void {
-        selectedAction = undefined;
+        selectedActionId = undefined;
         selectingProject = false;
         onSearchReset();
     }

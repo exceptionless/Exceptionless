@@ -8,6 +8,7 @@ const goto = vi.hoisted(() => vi.fn());
 const logout = vi.hoisted(() => vi.fn());
 const organizationState = vi.hoisted(() => ({ current: 'organization-id' as string | undefined }));
 const refetchQueries = vi.hoisted(() => vi.fn());
+const remoteSearchQueryState = vi.hoisted(() => ({ isPending: false }));
 const resetDataMutateAsync = vi.hoisted(() => vi.fn());
 const toast = vi.hoisted(() => ({ dismiss: vi.fn(), error: vi.fn(), success: vi.fn() }));
 const toggleMode = vi.hoisted(() => vi.fn());
@@ -29,7 +30,12 @@ vi.mock('$features/projects/api.svelte', () => ({
 }));
 vi.mock('@foundatiofx/fetchclient', () => ({ useFetchClient: () => ({ getJSON: vi.fn() }) }));
 vi.mock('@tanstack/svelte-query', () => ({
-    createQuery: () => ({ data: undefined, isPending: false }),
+    createQuery: () => ({
+        data: undefined,
+        get isPending() {
+            return remoteSearchQueryState.isPending;
+        }
+    }),
     useQueryClient: () => ({ refetchQueries })
 }));
 vi.mock('mode-watcher', () => ({ toggleMode }));
@@ -83,6 +89,7 @@ describe('NavigationCommand project actions', () => {
         logout.mockResolvedValue(undefined);
         organizationState.current = 'organization-id';
         refetchQueries.mockResolvedValue(undefined);
+        remoteSearchQueryState.isPending = false;
         resetDataMutateAsync.mockResolvedValue(undefined);
     });
 
@@ -118,6 +125,17 @@ describe('NavigationCommand project actions', () => {
         await waitFor(() => expect(aiToolsGroup?.hasAttribute('hidden')).toBe(false));
     });
 
+    it('does not mount remote result groups while a search is pending', async () => {
+        remoteSearchQueryState.isPending = true;
+        renderCommandPalette();
+
+        await fireEvent.input(screen.getByPlaceholderText('Search or jump to...'), { target: { value: 'no-local-match' } });
+
+        await waitFor(() => expect(screen.getByText('Searching...')).toBeTruthy());
+        expect(screen.queryByText('Searching events...')).toBeNull();
+        expect(screen.queryByText('Searching stacks...')).toBeNull();
+    });
+
     it('generates sample data for the selected project', async () => {
         renderCommandPalette();
 
@@ -126,6 +144,18 @@ describe('NavigationCommand project actions', () => {
 
         await waitFor(() => expect(generateSampleDataMutateAsync).toHaveBeenCalledOnce());
         expect(toast.success).toHaveBeenCalledWith(`Sample data generation has been queued for "${project.name}". Events will appear shortly.`);
+    });
+
+    it('opens the project picker when a filtered project action is selected with Enter', async () => {
+        renderCommandPalette();
+
+        const searchInput = screen.getByPlaceholderText('Search or jump to...');
+        await fireEvent.input(searchInput, { target: { value: 'generate' } });
+        await waitFor(() => expect(screen.getByText('Generate Sample Data').closest('[data-command-item]')?.hasAttribute('data-selected')).toBe(true));
+        await fireEvent.keyDown(searchInput, { key: 'Enter' });
+
+        expect(screen.getByPlaceholderText('Select a project...')).toBeTruthy();
+        await waitFor(() => expect(screen.getByText(project.name)).toBeTruthy());
     });
 
     it('confirms before resetting the selected project data', async () => {
