@@ -66,6 +66,24 @@ Timeout expired
         expect(addAssistantResourceLinks(content, [toolResult([{ name: 'API', webUrl: '/next/project/api' }])])).toBe(content);
     });
 
+    it('preserves resource labels inside indented code blocks', () => {
+        const content = `    API.connect()
+
+Use API.`;
+
+        expect(addAssistantResourceLinks(content, [toolResult([{ name: 'API', webUrl: '/next/project/api' }])])).toBe(`    API.connect()
+
+Use [API](/next/project/api).`);
+    });
+
+    it('preserves resource labels inside email addresses', () => {
+        const content = 'Contact API@example.com before opening API.';
+
+        expect(addAssistantResourceLinks(content, [toolResult([{ name: 'API', webUrl: '/next/project/api' }])])).toBe(
+            'Contact API@example.com before opening [API](/next/project/api).'
+        );
+    });
+
     it('preserves reference-style and shortcut links', () => {
         const content = `[Timeout expired][stack], [Timeout expired][], and [Timeout expired] are already linked.
 
