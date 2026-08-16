@@ -89,7 +89,12 @@
     function createHistoryState(value?: string): Record<string, unknown> {
         return {
             ...page.state,
-            [detailSheetHistoryStateKey]: value ? { key: historyKey, value } : undefined
+            [detailSheetHistoryStateKey]: value
+                ? {
+                      key: historyKey,
+                      value
+                  }
+                : undefined
         };
     }
 
@@ -139,7 +144,10 @@
             return;
         }
 
-        pendingNavigation = { options: type === 'link' ? selectedLinkNavigationOptions : undefined, url: to.url };
+        pendingNavigation = {
+            options: type === 'link' ? selectedLinkNavigationOptions : undefined,
+            url: to.url
+        };
         cancel();
         clearOwnedHistoryEntry();
         window.history.back();
@@ -247,7 +255,9 @@
     <Sheet.Content
         class="bg-background top-15.25! bottom-0! z-40 h-auto! w-full scrollbar-gutter-stable gap-0 overflow-y-auto rounded-l-lg border-l text-base shadow-2xl duration-150 ease-out will-change-transform sm:max-w-full! md:w-5/6!"
         onInteractOutside={preserveDetailSheetForAssistant}
-        overlayProps={{ class: 'top-15.25! z-40 bg-black/5 dark:bg-black/40 supports-backdrop-filter:backdrop-blur-[0.5px]' }}
+        overlayProps={{
+            class: 'top-15.25! z-40 bg-black/5 dark:bg-black/40 supports-backdrop-filter:backdrop-blur-[0.5px]'
+        }}
         preventScroll={false}
     >
         <div class="absolute top-3 right-12 z-10 flex items-center gap-1">

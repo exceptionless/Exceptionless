@@ -17,7 +17,9 @@
     let currentTheme = $derived(mode.current === 'dark' ? 'github-dark-default' : 'github-light-default');
 
     const assistantTheme = {
-        blockquote: { base: 'border-muted-foreground/30 text-muted-foreground my-3 border-l-3 pl-3' },
+        blockquote: {
+            base: 'border-muted-foreground/30 text-muted-foreground my-3 border-l-3 pl-3'
+        },
         code: {
             actions: 'pointer-events-none sticky top-2 z-10 -mt-9 flex h-7 items-center justify-end',
             base: 'my-3 flex w-full flex-col gap-1.5 rounded-lg border border-border bg-sidebar p-1.5',
@@ -29,17 +31,31 @@
         components: {
             button: 'disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer p-1 text-muted-foreground transition-colors hover:text-foreground rounded hover:bg-border flex items-center justify-center size-7'
         },
-        h1: { base: 'mt-5 mb-2 text-xl font-semibold text-foreground' },
-        h2: { base: 'mt-5 mb-2 text-lg font-semibold text-foreground' },
-        h3: { base: 'mt-4 mb-1.5 text-base font-semibold text-foreground' },
-        h4: { base: 'mt-3 mb-1 text-sm font-semibold text-foreground' },
-        li: { base: 'py-0.5' },
+        h1: {
+            base: 'mt-5 mb-2 text-xl font-semibold text-foreground'
+        },
+        h2: {
+            base: 'mt-5 mb-2 text-lg font-semibold text-foreground'
+        },
+        h3: {
+            base: 'mt-4 mb-1.5 text-base font-semibold text-foreground'
+        },
+        h4: {
+            base: 'mt-3 mb-1 text-sm font-semibold text-foreground'
+        },
+        li: {
+            base: 'py-0.5'
+        },
         link: {
             base: 'font-medium text-foreground underline decoration-muted-foreground/60 underline-offset-2 wrap-anywhere transition-colors hover:text-primary hover:decoration-primary',
             blocked: 'text-muted-foreground'
         },
-        ol: { base: 'my-2 ml-5 list-outside list-decimal whitespace-normal text-foreground' },
-        paragraph: { base: 'my-2 leading-relaxed text-foreground' },
+        ol: {
+            base: 'my-2 ml-5 list-outside list-decimal whitespace-normal text-foreground'
+        },
+        paragraph: {
+            base: 'my-2 leading-relaxed text-foreground'
+        },
         table: {
             container: 'max-w-full overflow-x-auto rounded-md border border-border bg-background',
             table: 'w-full table-auto border-collapse',
@@ -53,7 +69,9 @@
         th: {
             base: 'w-px min-w-0 px-2 py-1.5 text-left align-bottom text-[0.6875rem] leading-tight font-semibold text-foreground whitespace-normal'
         },
-        ul: { base: 'my-2 ml-5 list-outside list-disc whitespace-normal text-foreground' }
+        ul: {
+            base: 'my-2 ml-5 list-outside list-disc whitespace-normal text-foreground'
+        }
     } satisfies NonNullable<StreamdownProps['theme']>;
 </script>
 
@@ -62,7 +80,13 @@
         {content}
         {components}
         baseTheme="shadcn"
-        controls={{ code: { copy: true, download: false }, table: false }}
+        controls={{
+            code: {
+                copy: true,
+                download: false
+            },
+            table: false
+        }}
         mergeTheme={true}
         shikiTheme={currentTheme}
         shikiThemes={{

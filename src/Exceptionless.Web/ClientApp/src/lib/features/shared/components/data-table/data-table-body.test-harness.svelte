@@ -49,14 +49,24 @@
         users: 1
     };
     const summary: TestSummary = $derived(kind === 'event' ? eventSummary : stackSummary);
-    const queryParameters = { limit: 20, page: 1 };
+    const queryParameters = {
+        limit: 20,
+        page: 1
+    };
 
     function getDefaultColumnSizing(): ColumnSizingState | undefined {
         if (allColumnsSized) {
-            return { date: 130, summary: 140 };
+            return {
+                date: 130,
+                summary: 140
+            };
         }
 
-        return sizedFullWidthSummary ? { summary: 180 } : undefined;
+        return sizedFullWidthSummary
+            ? {
+                  summary: 180
+              }
+            : undefined;
     }
 
     const table = createTable(

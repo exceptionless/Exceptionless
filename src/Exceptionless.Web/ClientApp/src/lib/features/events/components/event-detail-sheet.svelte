@@ -30,7 +30,10 @@
     );
 
     function handleEventLoaded(event: PersistentEvent): void {
-        currentEventDetails = { eventId: event.id, stackId: event.stack_id };
+        currentEventDetails = {
+            eventId: event.id,
+            stackId: event.stack_id
+        };
         assistantPageContext.setOverlayEvent(assistantContextOwner, event);
     }
 
@@ -44,7 +47,9 @@
             lastEventId = eventId;
             currentEventDetails = undefined;
             if (eventId) {
-                assistantPageContext.setOverlay(assistantContextOwner, { eventId });
+                assistantPageContext.setOverlay(assistantContextOwner, {
+                    eventId
+                });
             } else {
                 assistantPageContext.clearOverlay(assistantContextOwner);
             }

@@ -40,12 +40,44 @@
     const tokensPerTurn = $derived(usage && usage.turns > 0 ? totalTokens / usage.turns : 0);
 
     const statCards = $derived([
-        { icon: Building2, label: 'Active Organizations', value: usage?.active_organizations, valueType: 'number' },
-        { icon: MessagesSquare, label: 'Turns', value: usage?.turns, valueType: 'number' },
-        { icon: Bot, label: 'Tokens', value: totalTokens, valueType: 'compact' },
-        { icon: Coins, label: 'Total Provider Cost', sub: 'across all organizations', value: usage?.cost_usd, valueType: 'currency' },
-        { icon: Gauge, label: 'Tokens per Turn', value: tokensPerTurn, valueType: 'number' },
-        { icon: Wrench, label: 'Average Cost', sub: 'per active organization', value: averageCost, valueType: 'currency' }
+        {
+            icon: Building2,
+            label: 'Active Organizations',
+            value: usage?.active_organizations,
+            valueType: 'number'
+        },
+        {
+            icon: MessagesSquare,
+            label: 'Turns',
+            value: usage?.turns,
+            valueType: 'number'
+        },
+        {
+            icon: Bot,
+            label: 'Tokens',
+            value: totalTokens,
+            valueType: 'compact'
+        },
+        {
+            icon: Coins,
+            label: 'Total Provider Cost',
+            sub: 'across all organizations',
+            value: usage?.cost_usd,
+            valueType: 'currency'
+        },
+        {
+            icon: Gauge,
+            label: 'Tokens per Turn',
+            value: tokensPerTurn,
+            valueType: 'number'
+        },
+        {
+            icon: Wrench,
+            label: 'Average Cost',
+            sub: 'per active organization',
+            value: averageCost,
+            valueType: 'currency'
+        }
     ]);
 </script>
 
@@ -136,7 +168,9 @@
                                     <Table.Cell class="max-w-64 pl-4 whitespace-normal">
                                         <a
                                             class="text-primary font-medium underline-offset-4 hover:underline"
-                                            href={resolve('/(app)/organization/[organizationId]/manage', { organizationId: organization.organization_id })}
+                                            href={resolve('/(app)/organization/[organizationId]/manage', {
+                                                organizationId: organization.organization_id
+                                            })}
                                         >
                                             {organization.organization_name}
                                         </a>

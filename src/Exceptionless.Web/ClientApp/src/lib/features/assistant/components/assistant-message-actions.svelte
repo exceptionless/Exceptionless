@@ -21,7 +21,9 @@
     }
 
     let { align = 'start', content, feedback, onFeedback, onRegenerate, showFeedback = false }: Props = $props();
-    const clipboard = new UseClipboard({ delay: 1500 });
+    const clipboard = new UseClipboard({
+        delay: 1500
+    });
 
     async function updateFeedback(value: AssistantFeedback): Promise<void> {
         const updatedFeedback = feedback === value ? undefined : value;

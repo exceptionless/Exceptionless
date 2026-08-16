@@ -103,7 +103,10 @@
     async function askAssistant(prompt: string): Promise<void> {
         AssistantPanel ??= (await import('$features/assistant/components/assistant-panel.svelte')).default;
         isAssistantOpen = true;
-        assistantPromptRequest = { id: crypto.randomUUID(), prompt };
+        assistantPromptRequest = {
+            id: crypto.randomUUID(),
+            prompt
+        };
     }
 
     function getAssistantPath(context: AssistantResourceContext | undefined, fallback: string): string {

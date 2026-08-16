@@ -42,7 +42,9 @@
 
     async function handleEventLoaded(event: PersistentEvent) {
         assistantPageContext.setPageEvent(event);
-        await goto(buildEventDetailsHref(event.id, event.stack_id), { replaceState: true });
+        await goto(buildEventDetailsHref(event.id, event.stack_id), {
+            replaceState: true
+        });
     }
 
     $effect(() => {
