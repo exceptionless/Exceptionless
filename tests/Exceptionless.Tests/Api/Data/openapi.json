@@ -11276,6 +11276,18 @@
               "null",
               "boolean"
             ]
+          },
+          "suggested_action_label": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "suggested_action_path": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

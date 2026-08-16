@@ -1,4 +1,5 @@
 <script lang="ts">
+    import type { AssistantFixResource } from '$features/assistant/controls.svelte';
     import type { Stack } from '$features/stacks/models';
     import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
@@ -14,6 +15,8 @@
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
     import * as Tooltip from '$comp/ui/tooltip';
+    import AssistantFixButton from '$features/assistant/components/assistant-fix-button.svelte';
+    import { assistantPageContext } from '$features/assistant/page-context.svelte';
     import { getProjectCountQuery, getStackCountQuery } from '$features/events/api.svelte';
     import EventsStackChart, { type EventsStackChartPoint } from '$features/events/components/events-stack-chart.svelte';
     import * as EventsFacetedFilter from '$features/events/components/filters';
@@ -37,14 +40,16 @@
     import StackStatusDropdownMenu from './stack-status-dropdown-menu.svelte';
 
     interface Props {
+        assistantResource?: AssistantFixResource;
         filterChanged: (filter: IFilter) => void;
         id: string | undefined;
         onDeleted?: () => void;
         onError?: (problem: ProblemDetails) => void;
         onLoaded?: (stack: Stack) => void;
+        prepareAssistantContext?: () => void;
     }
 
-    let { filterChanged, id, onDeleted, onError, onLoaded }: Props = $props();
+    let { assistantResource = 'stack', filterChanged, id, onDeleted, onError, onLoaded, prepareAssistantContext }: Props = $props();
     let handledErrorForStackId = $state<string>();
     let notifiedStackId = $state<string>();
 
@@ -155,6 +160,14 @@
         handledErrorForStackId = id;
         onError?.(stackQuery.error);
     });
+
+    function prepareContext(): void {
+        if (prepareAssistantContext) {
+            prepareAssistantContext();
+        } else if (stack) {
+            assistantPageContext.setPageStack(stack);
+        }
+    }
 </script>
 
 {#if stack}
@@ -170,6 +183,7 @@
                 </div>
                 <div class="ml-2 flex shrink-0 items-center gap-2">
                     <StackLogLevel {stack} />
+                    <AssistantFixButton {prepareContext} resource={assistantResource} />
                     <ButtonGroup.Root>
                         <StackStatusDropdownMenu {stack} />
                         <StackOptionsDropdownMenu {onDeleted} {stack} />
@@ -338,10 +352,9 @@
                             <Table.Cell><DateTime value={stack.snooze_until_utc} /></Table.Cell>
                         </Table.Row>
                     {/if}
+                    <StackReferences {stack} />
                 </Table.Body>
             </Table.Root>
-
-            <StackReferences {stack} />
         </Card.Content>
     </Card.Root>
 {:else}

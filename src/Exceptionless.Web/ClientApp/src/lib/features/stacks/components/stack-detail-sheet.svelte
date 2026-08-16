@@ -6,7 +6,6 @@
 
     import { resolve } from '$app/paths';
     import DetailSheet from '$comp/detail-sheet.svelte';
-    import AssistantFixButton from '$features/assistant/components/assistant-fix-button.svelte';
     import { assistantPageContext } from '$features/assistant/page-context.svelte';
     import { buildEventDetailsHref } from '$features/events/components/summary';
     import { onDestroy } from 'svelte';
@@ -91,10 +90,15 @@
     open={!!stackId}
     title="Stack"
 >
-    {#snippet actions()}
-        <AssistantFixButton prepareContext={prepareAssistantContext} resource="stack" />
-    {/snippet}
     {#if stackId}
-        <StackDetails {filterChanged} {handleError} onDeleted={handleClose} onEventLoaded={handleEventLoaded} onStackLoaded={handleStackLoaded} {stackId} />
+        <StackDetails
+            {filterChanged}
+            {handleError}
+            onDeleted={handleClose}
+            onEventLoaded={handleEventLoaded}
+            onStackLoaded={handleStackLoaded}
+            {prepareAssistantContext}
+            {stackId}
+        />
     {/if}
 </DetailSheet>

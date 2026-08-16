@@ -112,6 +112,8 @@ public sealed class AssistantServiceTests
     [InlineData("Please mark this stack fixed, not stack different-stack", "{\"status\":\"fixed\",\"stackId\":\"different-stack\"}", false)]
     [InlineData("Please mark stack stack-a fixed, not this stack", "{\"status\":\"fixed\"}", false)]
     [InlineData("Please mark stack stack-a fixed, not this stack", "{\"status\":\"fixed\",\"stackId\":\"current-stack\"}", false)]
+    [InlineData("Please discard this stack's duplicate", "{\"status\":\"discarded\"}", false)]
+    [InlineData("Please discard this stack-related duplicate", "{\"status\":\"discarded\"}", false)]
     public void HasExplicitWriteRequest_OmittedTargetMustReferToCurrentStack(string prompt, string arguments, bool expected)
     {
         var request = new AssistantChatRequest(
@@ -169,14 +171,79 @@ public sealed class AssistantServiceTests
         Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, "add_stack_reference_link", arguments));
     }
 
-    [Fact]
-    public void HasExplicitWriteRequest_SuggestedActionCannotAuthorizeWrite()
+    [Theory]
+    [InlineData("Snooze this stack for 7 days while I investigate", "Snooze for 7 days", "snooze_stack", "{\"duration\":\"7d\"}", true)]
+    [InlineData("Snooze this stack for 7 days while I investigate", "Inspect details", "snooze_stack", "{\"duration\":\"7d\"}", false)]
+    [InlineData("Snooze this stack for 7 days while I investigate", null, "snooze_stack", "{\"duration\":\"7d\"}", false)]
+    [InlineData("Inspect this stack before snoozing it for 7 days", "Snooze for 7 days", "snooze_stack", "{\"duration\":\"7d\"}", false)]
+    [InlineData("Please mark this stack fixed", "Mark as fixed", "update_stack_status", "{\"status\":\"fixed\"}", true)]
+    [InlineData("Please ignore this stack", "Mark as fixed", "update_stack_status", "{\"status\":\"fixed\"}", false)]
+    [InlineData("Please discard this stack", "Discard stack other-stack", "update_stack_status", "{\"status\":\"discarded\"}", false)]
+    [InlineData("Please discard this stack", "Discard stack current-stack", "update_stack_status", "{\"status\":\"discarded\"}", true)]
+    [InlineData("Please discard this stack", "Discard stack current-stack.", "update_stack_status", "{\"status\":\"discarded\"}", true)]
+    [InlineData("Please discard this stack", "Discard stack X current-stack", "update_stack_status", "{\"stackId\":\"current-stack\",\"status\":\"discarded\"}", false)]
+    [InlineData("Please discard this stack", "Discard the other stack", "update_stack_status", "{\"status\":\"discarded\"}", false)]
+    [InlineData("Please discard this stack", "Discard other-stack", "update_stack_status", "{\"status\":\"discarded\"}", false)]
+    [InlineData("Please discard this stack", "Discard the other stack current-stack", "update_stack_status", "{\"stackId\":\"current-stack\",\"status\":\"discarded\"}", false)]
+    [InlineData("Please discard this stack", "Discard this stack's duplicate", "update_stack_status", "{\"status\":\"discarded\"}", false)]
+    [InlineData("Please discard this stack", "Discard this stack-related duplicate", "update_stack_status", "{\"status\":\"discarded\"}", false)]
+    [InlineData("Please remove reference https://example.test/current-stack from this stack", "Remove reference https://example.test/current-stack", "remove_stack_reference_link", "{\"url\":\"https://example.test/current-stack\"}", true)]
+    [InlineData("Please remove reference https://example.test/current-stack from this stack", "Remove reference https://example.test/current-stack from the other stack", "remove_stack_reference_link", "{\"url\":\"https://example.test/current-stack\"}", false)]
+    public void HasExplicitWriteRequest_SuggestedActionStillRequiresExactWriteIntent(
+        string prompt,
+        string? label,
+        string toolName,
+        string arguments,
+        bool expected)
     {
         var request = new AssistantChatRequest(
-            [new AssistantChatMessage("user", "Please ignore this stack") { IsSuggestedAction = true }],
+            [new AssistantChatMessage("user", prompt)
+            {
+                IsSuggestedAction = true,
+                SuggestedActionLabel = label,
+                SuggestedActionPath = "/next/stack/current-stack"
+            }],
             Path: "/next/stack/current-stack");
 
-        Assert.False(AssistantService.HasExplicitWriteRequest(request, "update_stack_status", "{\"status\":\"ignored\"}"));
+        Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, toolName, arguments));
+    }
+
+    [Theory]
+    [InlineData("'s")]
+    [InlineData("/x")]
+    [InlineData("\\x")]
+    [InlineData(".x")]
+    public void HasExplicitWriteRequest_SuggestedActionRejectsQualifiedNamedStackId(string suffix)
+    {
+        const string stackId = "0123456789abcdef01234567";
+        var request = new AssistantChatRequest(
+            [new AssistantChatMessage("user", "Please discard this stack")
+            {
+                IsSuggestedAction = true,
+                SuggestedActionLabel = $"Discard stack {stackId}{suffix}",
+                SuggestedActionPath = $"/next/stack/{stackId}"
+            }],
+            Path: $"/next/stack/{stackId}");
+
+        Assert.False(AssistantService.HasExplicitWriteRequest(
+            request,
+            "update_stack_status",
+            $$"""{"stackId":"{{stackId}}","status":"discarded"}"""));
+    }
+
+    [Fact]
+    public void HasExplicitWriteRequest_SuggestedActionRequiresCreationPath()
+    {
+        var request = new AssistantChatRequest(
+            [new AssistantChatMessage("user", "Please mark this stack fixed")
+            {
+                IsSuggestedAction = true,
+                SuggestedActionLabel = "Mark as fixed",
+                SuggestedActionPath = "/next/stack/stack-a"
+            }],
+            Path: "/next/stack/stack-b");
+
+        Assert.False(AssistantService.HasExplicitWriteRequest(request, "update_stack_status", "{\"status\":\"fixed\"}"));
     }
 
     [Theory]
@@ -278,6 +345,7 @@ public sealed class AssistantServiceTests
         Assert.DoesNotContain("\"event_id\"", handler.RequestBody);
         Assert.Contains("Never end by merely saying what you will inspect or do next", handler.RequestBody);
         Assert.Contains("present useful results directly in the answer", handler.RequestBody);
+        Assert.Contains("use no more than three table columns", handler.RequestBody);
         Assert.Contains("webUrl beginning with / must remain relative", handler.RequestBody);
         Assert.Contains("suggest_followups", handler.RequestBody);
         Assert.Contains("Do not call it on every answer", handler.RequestBody);

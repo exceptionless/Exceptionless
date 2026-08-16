@@ -5,6 +5,8 @@ export interface AssistantControls {
     enabled: () => boolean;
 }
 
+export type AssistantFixResource = 'event' | 'stack';
+
 export const ASSISTANT_CONTROLS_CONTEXT_KEY = Symbol.for('exceptionless-assistant-controls');
 
 export function setAssistantControls(controls: AssistantControls): void {

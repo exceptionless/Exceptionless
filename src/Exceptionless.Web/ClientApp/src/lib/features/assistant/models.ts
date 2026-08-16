@@ -11,6 +11,8 @@ export interface AssistantChatMessage {
     id: string;
     isSuggestedAction?: boolean;
     role: 'assistant' | 'user';
+    suggestedActionLabel?: string;
+    suggestedActionPath?: string;
     suggestedActions?: AssistantSuggestedAction[];
     tools: AssistantToolActivity[];
 }
@@ -25,6 +27,7 @@ export interface AssistantPromptRequest {
 export interface AssistantSuggestedAction {
     label: string;
     prompt: string;
+    sourcePath?: string;
 }
 
 export interface AssistantToolActivity {

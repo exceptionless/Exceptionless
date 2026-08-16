@@ -1,5 +1,6 @@
 <script lang="ts">
     import type { IFilter } from '$comp/faceted-filter';
+    import type { AssistantFixResource } from '$features/assistant/controls.svelte';
     import type { UpdateProject, ViewProject } from '$features/projects/models';
     import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
@@ -11,6 +12,7 @@
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
     import * as Tabs from '$comp/ui/tabs';
+    import { assistantPageContext } from '$features/assistant/page-context.svelte';
     import { getEventWithNavigationQuery } from '$features/events/api.svelte';
     import * as EventsFacetedFilter from '$features/events/components/filters';
     import { getExtendedDataItems, hasErrorOrSimpleError } from '$features/events/persistent-event';
@@ -37,15 +39,26 @@
     import TraceLog from './views/trace-log.svelte';
 
     interface Props {
+        assistantResource?: AssistantFixResource;
         expectedStackId?: string;
         filterChanged: (filter: IFilter) => void;
         handleError: (problem: ProblemDetails) => void;
         id: string;
         onEventLoaded?: (event: PersistentEvent) => void;
         onNavigate?: (eventId: string) => void;
+        prepareStackAssistantContext?: () => void;
     }
 
-    let { expectedStackId, filterChanged, handleError, id, onEventLoaded, onNavigate }: Props = $props();
+    let {
+        assistantResource = 'event',
+        expectedStackId,
+        filterChanged,
+        handleError,
+        id,
+        onEventLoaded,
+        onNavigate,
+        prepareStackAssistantContext
+    }: Props = $props();
 
     function getTabs(event?: null | PersistentEvent, project?: ViewProject): TabType[] {
         if (!event) {
@@ -256,6 +269,12 @@
         }
     }
 
+    function prepareEventAssistantContext(): void {
+        if (event) {
+            assistantPageContext.setPageEvent(event);
+        }
+    }
+
     $effect(() => {
         if (projectQuery.isError) {
             handleError(projectQuery.error);
@@ -302,7 +321,12 @@
 <section>
     <h4 class="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">Stack</h4>
     {#if event?.stack_id}
-        <StackCard {filterChanged} id={event.stack_id}></StackCard>
+        <StackCard
+            {assistantResource}
+            {filterChanged}
+            id={event.stack_id}
+            prepareAssistantContext={assistantResource === 'event' ? prepareEventAssistantContext : prepareStackAssistantContext}
+        ></StackCard>
     {/if}
 </section>
 

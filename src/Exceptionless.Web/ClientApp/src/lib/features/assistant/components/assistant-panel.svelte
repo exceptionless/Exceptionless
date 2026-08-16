@@ -90,7 +90,7 @@
         void submitPrompt(promptRequest.prompt);
     });
 
-    async function submitPrompt(value = prompt, isSuggestedAction = false): Promise<void> {
+    async function submitPrompt(value = prompt, isSuggestedAction = false, suggestedActionLabel?: string, suggestedActionPath?: string): Promise<void> {
         const content = value.trim();
         if (!content || isStreaming) {
             return;
@@ -98,7 +98,15 @@
 
         prompt = '';
         errorMessage = undefined;
-        const userMessage: AssistantChatMessage = { content, id: crypto.randomUUID(), isSuggestedAction, role: 'user', tools: [] };
+        const userMessage: AssistantChatMessage = {
+            content,
+            id: crypto.randomUUID(),
+            isSuggestedAction,
+            role: 'user',
+            suggestedActionLabel,
+            suggestedActionPath,
+            tools: []
+        };
         const assistantMessage: AssistantChatMessage = { content: '', id: crypto.randomUUID(), role: 'assistant', tools: [] };
         const history = [...messages, userMessage];
         messages = [...history, assistantMessage];
@@ -132,12 +140,11 @@
         isStreaming = true;
         abortController = new AbortController();
         await scrollToLatest('smooth', true);
+        const requestPath = path ?? `${page.url.pathname}${page.url.search}`;
 
         try {
             const response = await fetch('/api/v2/assistant/chat', {
-                body: JSON.stringify(
-                    createAssistantChatRequest(history, conversationId, organizationId, path ?? `${page.url.pathname}${page.url.search}`, projectId)
-                ),
+                body: JSON.stringify(createAssistantChatRequest(history, conversationId, organizationId, requestPath, projectId)),
                 headers: {
                     Authorization: `Bearer ${accessToken.current}`,
                     'Content-Type': 'application/json'
@@ -156,7 +163,7 @@
             }
 
             await readAssistantStream(response.body, async (event) => {
-                applyStreamEvent(assistantMessage.id, event);
+                applyStreamEvent(assistantMessage.id, event, requestPath);
                 await scrollToLatest('auto');
             });
         } catch (error) {
@@ -172,7 +179,7 @@
         }
     }
 
-    function applyStreamEvent(assistantMessageId: string, event: AssistantStreamEvent): void {
+    function applyStreamEvent(assistantMessageId: string, event: AssistantStreamEvent, requestPath: string): void {
         messages = messages.map((message) => {
             if (message.id !== assistantMessageId) {
                 return message;
@@ -206,7 +213,10 @@
             }
 
             if (event.type === 'suggested_actions') {
-                return { ...message, suggestedActions: event.suggested_actions ?? [] };
+                return {
+                    ...message,
+                    suggestedActions: (event.suggested_actions ?? []).map((action) => ({ ...action, sourcePath: requestPath }))
+                };
             }
 
             return message;
@@ -345,7 +355,7 @@
                                     {message}
                                     onFeedback={(feedback) => setMessageFeedback(message.id, feedback)}
                                     onRegenerate={() => void regenerateResponse(message.id)}
-                                    onSuggestedAction={(suggestedPrompt, isSuggestedAction) => void submitPrompt(suggestedPrompt, isSuggestedAction)}
+                                    onSuggestedAction={(action) => void submitPrompt(action.prompt, true, action.label, action.sourcePath)}
                                     suggestionsDisabled={isStreaming}
                                 />
                             {/each}

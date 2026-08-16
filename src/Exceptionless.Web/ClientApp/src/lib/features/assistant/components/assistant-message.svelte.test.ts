@@ -8,9 +8,9 @@ import type { AssistantChatMessage } from '../models';
 import AssistantMessage from './assistant-message.svelte';
 
 describe('AssistantMessage', () => {
-    it('keeps tool research in activity details without attaching resource cards', () => {
+    it('links stack titles from completed tool research', () => {
         const message: AssistantChatMessage = {
-            content: 'The timeout stack is the best issue to investigate next.',
+            content: 'Timeout expired is the best issue to investigate next.',
             id: 'assistant-message',
             role: 'assistant',
             tools: [
@@ -23,7 +23,7 @@ describe('AssistantMessage', () => {
                             items: [
                                 {
                                     id: 'stack-1',
-                                    title: 'Timeout expired.',
+                                    title: 'Timeout expired',
                                     webUrl: '/next/stack/stack-1'
                                 }
                             ]
@@ -37,9 +37,13 @@ describe('AssistantMessage', () => {
 
         render(AssistantMessage, { props: { message } });
 
-        expect(screen.getByText('The timeout stack is the best issue to investigate next.')).not.toBeNull();
+        expect(screen.getByLabelText('Exie').textContent).toContain('Timeout expired is the best issue to investigate next.');
         expect(screen.getByText('Searched error stacks')).not.toBeNull();
-        expect(screen.queryByRole('link', { name: /Timeout expired/ })).toBeNull();
+        const stackLink = screen.getByRole('link', { name: 'Timeout expired' });
+        expect(stackLink.getAttribute('href')).toBe('/next/stack/stack-1');
+        const linkClasses = stackLink.className.split(/\s+/);
+        expect(linkClasses).toContain('text-foreground');
+        expect(linkClasses).not.toContain('text-primary');
     });
 
     it('shows completed suggested actions and submits their prompts', async () => {
@@ -61,7 +65,10 @@ describe('AssistantMessage', () => {
 
         expect(screen.getByLabelText('Suggested actions')).not.toBeNull();
         await fireEvent.click(screen.getByRole('button', { name: 'Inspect recent events' }));
-        expect(onSuggestedAction).toHaveBeenCalledWith('Inspect the most recent events in that timeout stack.', true);
+        expect(onSuggestedAction).toHaveBeenCalledWith({
+            label: 'Inspect recent events',
+            prompt: 'Inspect the most recent events in that timeout stack.'
+        });
     });
 
     it('does not show suggested actions while the response is streaming', () => {
