@@ -505,6 +505,11 @@ public sealed class AssistantService(
         }
 
         bool allowImplicitCurrentStack = HasCanonicalImplicitCurrentStackLabel(label, toolName, arguments);
+        if (!allowImplicitCurrentStack && !HasExplicitSuggestedActionStackTarget(label, requestedStackId, currentStackId))
+        {
+            return false;
+        }
+
         if (!HasValidStackTarget(label, requestedStackId, currentStackId, allowImplicitCurrentStack))
         {
             return false;
@@ -550,6 +555,21 @@ public sealed class AssistantService(
         };
 
         return Regex.IsMatch(label, pattern, RegexOptions.IgnoreCase);
+    }
+
+    private static bool HasExplicitSuggestedActionStackTarget(string label, string? requestedStackId, string? currentStackId)
+    {
+        string targetText = RemoveAbsoluteUrls(label);
+        string? expectedStackId = !String.IsNullOrWhiteSpace(requestedStackId) ? requestedStackId : currentStackId;
+        if (String.IsNullOrWhiteSpace(expectedStackId))
+        {
+            return false;
+        }
+
+        string[] namedTargets = GetNamedStackTargets(targetText).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        return namedTargets.Length > 0
+            ? namedTargets.All(target => String.Equals(target, expectedStackId, StringComparison.OrdinalIgnoreCase))
+            : !String.IsNullOrWhiteSpace(currentStackId) && ReferencesCurrentStackByPhrase(targetText);
     }
 
     private static bool HasAffirmativeWriteIntent(string message)
@@ -605,7 +625,12 @@ public sealed class AssistantService(
         bool allowImplicitCurrentStack)
     {
         string targetText = RemoveAbsoluteUrls(message);
+        string? expectedStackId = !String.IsNullOrWhiteSpace(requestedStackId) ? requestedStackId : currentStackId;
+        string[] namedTargets = GetNamedStackTargets(targetText).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         if (HasAmbiguousStackTargets(targetText, currentStackId)
+            || (namedTargets.Length > 0
+                && (String.IsNullOrWhiteSpace(expectedStackId)
+                    || namedTargets.Any(target => !String.Equals(target, expectedStackId, StringComparison.OrdinalIgnoreCase))))
             || (!String.IsNullOrWhiteSpace(requestedStackId) && IsExcludedStackTarget(targetText, requestedStackId))
             || (!String.IsNullOrWhiteSpace(currentStackId)
                 && (IsExcludedStackTarget(targetText, currentStackId) || IsExcludedCurrentStackTarget(targetText))))
@@ -613,7 +638,7 @@ public sealed class AssistantService(
             return false;
         }
 
-        bool namesStackTarget = GetNamedStackTargets(targetText).Any();
+        bool namesStackTarget = namedTargets.Length > 0;
         bool referencesCurrentStack = !String.IsNullOrWhiteSpace(currentStackId) && ReferencesCurrentStack(targetText, currentStackId);
         if (String.IsNullOrWhiteSpace(requestedStackId))
         {
@@ -636,7 +661,7 @@ public sealed class AssistantService(
     private static bool IsExcludedCurrentStackTarget(string message)
         => Regex.IsMatch(
             message,
-            @"\b(?:not|except|rather\s+than|instead\s+of)\s+(?:the\s+)?(?:this|current)\s+(?:stack|issue)\b",
+            @"\b(?:not|except|rather\s+than|instead\s+of)\s+(?:the\s+)?(?:this|current)\s+(?:stack|issue)\b|\b(?:the\s+)?(?:other|another|different)\s+(?:stack|issue)\b",
             RegexOptions.IgnoreCase);
 
     private static bool HasExplicitStackStatusRequest(string message, JsonElement arguments)
