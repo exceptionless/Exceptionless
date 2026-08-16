@@ -994,18 +994,18 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "string",
                 "examples": [
                   ""
-                ]
+                ],
+                "type": "string"
               }
             },
             "text/plain": {
               "schema": {
-                "type": "string",
                 "examples": [
                   ""
-                ]
+                ],
+                "type": "string"
               }
             }
           },
@@ -1061,18 +1061,18 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "string",
                 "examples": [
                   ""
-                ]
+                ],
+                "type": "string"
               }
             },
             "text/plain": {
               "schema": {
-                "type": "string",
                 "examples": [
                   ""
-                ]
+                ],
+                "type": "string"
               }
             }
           },
@@ -1137,18 +1137,18 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "string",
                 "examples": [
                   ""
-                ]
+                ],
+                "type": "string"
               }
             },
             "text/plain": {
               "schema": {
-                "type": "string",
                 "examples": [
                   ""
-                ]
+                ],
+                "type": "string"
               }
             }
           },
@@ -8457,18 +8457,18 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "string",
                 "examples": [
                   ""
-                ]
+                ],
+                "type": "string"
               }
             },
             "text/plain": {
               "schema": {
-                "type": "string",
                 "examples": [
                   ""
-                ]
+                ],
+                "type": "string"
               }
             }
           },
@@ -8829,18 +8829,18 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "string",
                 "examples": [
                   ""
-                ]
+                ],
+                "type": "string"
               }
             },
             "text/plain": {
               "schema": {
-                "type": "string",
                 "examples": [
                   ""
-                ]
+                ],
+                "type": "string"
               }
             }
           },
