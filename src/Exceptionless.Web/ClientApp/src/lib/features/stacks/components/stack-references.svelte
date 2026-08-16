@@ -38,7 +38,7 @@
 
 {#if stack.references?.length > 0}
     <Table.Row>
-        <Table.Head class="w-36 font-semibold whitespace-nowrap">Reference</Table.Head>
+        <Table.Head class="w-36 align-top font-semibold whitespace-nowrap">Reference</Table.Head>
         <Table.Cell class="w-4 pr-0"></Table.Cell>
         <Table.Cell>
             <ul class="space-y-1.5">
