@@ -1,5 +1,6 @@
 <script lang="ts">
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
+    import { CodeBlock } from '$comp/typography';
     import * as AlertDialog from '$comp/ui/alert-dialog';
     import { Button, buttonVariants } from '$comp/ui/button';
     import { Spinner } from '$comp/ui/spinner';
@@ -13,6 +14,7 @@
     } from '$features/admin/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
+    import Pencil from '@lucide/svelte/icons/pencil';
     import Save from '@lucide/svelte/icons/save';
     import { onMount } from 'svelte';
     import { toast } from 'svelte-sonner';
@@ -20,6 +22,7 @@
     let predefinedJson = $state('');
     let predefinedTab = $state('config');
     let savedPredefinedJson = $state('');
+    let isEditing = $state(false);
     let forceUpdateOpen = $state(false);
     let toastId = $state<number | string>();
 
@@ -65,6 +68,7 @@
         try {
             predefinedJson = await savePredefined.mutateAsync(predefinedJson);
             savedPredefinedJson = predefinedJson;
+            isEditing = false;
             toastId = toast.success('Predefined saved views updated successfully.');
         } catch (error: unknown) {
             toastId = toast.error(`An error occurred while saving predefined saved views: ${getErrorMessage(error, 'Please try again.')}`);
@@ -73,11 +77,17 @@
 
     function handleTabChange(value: string) {
         predefinedTab = value;
+        isEditing = false;
         if (value === 'config') {
             void loadPredefinedSavedViews();
         } else {
             void loadOrganizationViews();
         }
+    }
+
+    function handleCancelEdit() {
+        predefinedJson = savedPredefinedJson;
+        isEditing = false;
     }
 
     async function handleForceUpdatePredefined() {
@@ -108,10 +118,31 @@
             <Tabs.Content value="org" class="hidden"></Tabs.Content>
         </Tabs.Root>
 
-        <CopyToClipboardButton value={predefinedJson} variant="outline" />
+        <div class="flex gap-2">
+            {#if predefinedTab === 'config'}
+                {#if isEditing}
+                    <Button variant="outline" onclick={handleCancelEdit}>Cancel</Button>
+                {:else}
+                    <Button variant="outline" onclick={() => (isEditing = true)}>
+                        <Pencil class="size-4" aria-hidden="true" />
+                        Edit JSON
+                    </Button>
+                {/if}
+            {/if}
+            <CopyToClipboardButton value={predefinedJson} variant="outline" />
+        </div>
     </div>
 
-    <Textarea bind:value={predefinedJson} class="max-h-[60vh] min-h-96 overflow-auto font-mono text-xs" rows={24} spellcheck={false} />
+    {#if isEditing && predefinedTab === 'config'}
+        <Textarea
+            bind:value={predefinedJson}
+            aria-label="Predefined saved views JSON"
+            class="bg-muted field-sizing-fixed max-h-[60vh] min-h-96 resize-y overflow-auto rounded font-mono text-xs leading-4"
+            spellcheck="false"
+        />
+    {:else}
+        <CodeBlock code={predefinedJson} language="json" class="max-h-[60vh] min-h-96 overflow-auto text-xs" />
+    {/if}
 
     <div class="flex flex-col justify-end gap-2 sm:flex-row">
         <Button
@@ -123,20 +154,22 @@
         >
             Force Update
         </Button>
-        <Button
-            disabled={savePredefined.isPending || !predefinedJson.trim()}
-            onclick={() => {
-                void handleSavePredefined();
-            }}
-        >
-            {#if savePredefined.isPending}
-                <Spinner />
-                Saving...
-            {:else}
-                <Save class="size-4" aria-hidden="true" />
-                Save Predefined
-            {/if}
-        </Button>
+        {#if isEditing && predefinedTab === 'config'}
+            <Button
+                disabled={savePredefined.isPending || !predefinedJson.trim()}
+                onclick={() => {
+                    void handleSavePredefined();
+                }}
+            >
+                {#if savePredefined.isPending}
+                    <Spinner />
+                    Saving...
+                {:else}
+                    <Save class="size-4" aria-hidden="true" />
+                    Save Predefined
+                {/if}
+            </Button>
+        {/if}
     </div>
 </div>
 
