@@ -123,6 +123,14 @@ Use [API](/next/project/api).`);
         );
     });
 
+    it('preserves resource labels inside bare hostnames', () => {
+        const content = 'Connect to API.example.com before opening API.';
+
+        expect(addAssistantResourceLinks(content, [toolResult([{ name: 'API', webUrl: '/next/project/api' }])])).toBe(
+            'Connect to API.example.com before opening [API](/next/project/api).'
+        );
+    });
+
     it('preserves reference-style and shortcut links', () => {
         const content = `[Timeout expired][stack], [Timeout expired][], and [Timeout expired] are already linked.
 
