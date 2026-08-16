@@ -70,12 +70,52 @@ function collectAssistantResourceLinks(value: unknown, urlsByLabel: Map<string, 
     }
 }
 
+function countRun(content: string, start: number, character: string): number {
+    let end = start;
+    while (content[end] === character) {
+        end++;
+    }
+
+    return end - start;
+}
+
 function escapeMarkdownLabel(value: string): string {
     return value.replaceAll('\\', '\\\\').replaceAll('[', '\\[').replaceAll(']', '\\]');
 }
 
 function escapeRegularExpression(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function findInlineCodeRanges(content: string): Array<{ end: number; start: number }> {
+    const ranges: Array<{ end: number; start: number }> = [];
+
+    for (let index = 0; index < content.length; index++) {
+        if (content[index] !== '`') {
+            continue;
+        }
+
+        const delimiterLength = countRun(content, index, '`');
+        let cursor = index + delimiterLength;
+        while (cursor < content.length) {
+            if (content[cursor] !== '`') {
+                cursor++;
+                continue;
+            }
+
+            const candidateLength = countRun(content, cursor, '`');
+            if (candidateLength === delimiterLength) {
+                const end = cursor + candidateLength;
+                ranges.push({ end, start: index });
+                index = end - 1;
+                break;
+            }
+
+            cursor += candidateLength;
+        }
+    }
+
+    return ranges;
 }
 
 function findInlineLinkRanges(content: string): Array<{ end: number; start: number }> {
@@ -167,11 +207,12 @@ function readNonEmptyString(record: Record<string, unknown>, key: string): strin
 
 function replaceOutsideProtectedMarkdown(content: string, replace: (text: string) => string): string {
     const protectedMarkdown =
-        /(^(?:(?: {4}|\t)[^\r\n]*(?:\r?\n|$))+|```[^\n]*\n[\s\S]*?```|~~~[^\n]*\n[\s\S]*?~~~|`+[^`\n]*`+|!?\[[^\]\n]*\]\s*\[[^\]\n]*\]|!?\[[^\]\n]*\]|[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*|https?:\/\/[^\s<]+|\/next(?:\/[^\s<]*)?)/gm;
+        /(^(?:(?: {4}|\t)[^\r\n]*(?:\r?\n|$))+|```[^\n]*\n[\s\S]*?```|~~~[^\n]*\n[\s\S]*?~~~|!?\[[^\]\n]*\]\s*\[[^\]\n]*\]|!?\[[^\]\n]*\]|[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*|https?:\/\/[^\s<]+|\/next(?:\/[^\s<]*)?)/gm;
     const protectedRanges = [...content.matchAll(protectedMarkdown)].map((match) => ({
         end: match.index + match[0].length,
         start: match.index
     }));
+    protectedRanges.push(...findInlineCodeRanges(content));
     protectedRanges.push(...findInlineLinkRanges(content));
     protectedRanges.sort((left, right) => left.start - right.start || left.end - right.end);
 

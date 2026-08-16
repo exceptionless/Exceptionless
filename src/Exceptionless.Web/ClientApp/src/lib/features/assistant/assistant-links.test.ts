@@ -76,6 +76,14 @@ Use API.`;
 Use [API](/next/project/api).`);
     });
 
+    it('preserves multi-backtick code spans containing shorter backtick runs', () => {
+        const content = '``code ` API`` and API.';
+
+        expect(addAssistantResourceLinks(content, [toolResult([{ name: 'API', webUrl: '/next/project/api' }])])).toBe(
+            '``code ` API`` and [API](/next/project/api).'
+        );
+    });
+
     it('preserves resource labels inside email addresses', () => {
         const content = 'Contact API@example.com before opening API.';
 
