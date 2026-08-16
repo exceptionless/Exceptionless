@@ -78,6 +78,60 @@ function escapeRegularExpression(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function findInlineLinkRanges(content: string): Array<{ end: number; start: number }> {
+    const ranges: Array<{ end: number; start: number }> = [];
+
+    for (let index = 0; index < content.length; index++) {
+        const start = content[index] === '!' && content[index + 1] === '[' ? index : content[index] === '[' ? index : -1;
+        if (start < 0) {
+            continue;
+        }
+
+        let cursor = start + (content[start] === '!' ? 2 : 1);
+        let labelDepth = 1;
+        for (; cursor < content.length && labelDepth > 0; cursor++) {
+            if (content[cursor] === '\n' || content[cursor] === '\r') {
+                break;
+            }
+
+            if (content[cursor] === '\\') {
+                cursor++;
+            } else if (content[cursor] === '[') {
+                labelDepth++;
+            } else if (content[cursor] === ']') {
+                labelDepth--;
+            }
+        }
+
+        if (labelDepth !== 0 || content[cursor] !== '(') {
+            continue;
+        }
+
+        let destinationDepth = 1;
+        cursor++;
+        for (; cursor < content.length && destinationDepth > 0; cursor++) {
+            if (content[cursor] === '\n' || content[cursor] === '\r') {
+                break;
+            }
+
+            if (content[cursor] === '\\') {
+                cursor++;
+            } else if (content[cursor] === '(') {
+                destinationDepth++;
+            } else if (content[cursor] === ')') {
+                destinationDepth--;
+            }
+        }
+
+        if (destinationDepth === 0) {
+            ranges.push({ end: cursor, start });
+            index = cursor - 1;
+        }
+    }
+
+    return ranges;
+}
+
 function getAssistantResourceLinks(tools: AssistantToolActivity[]): AssistantResourceLink[] {
     const urlsByLabel = new Map<string, Set<string>>();
 
@@ -113,15 +167,29 @@ function readNonEmptyString(record: Record<string, unknown>, key: string): strin
 
 function replaceOutsideProtectedMarkdown(content: string, replace: (text: string) => string): string {
     const protectedMarkdown =
-        /(```[^\n]*\n[\s\S]*?```|~~~[^\n]*\n[\s\S]*?~~~|`+[^`\n]*`+|!?\[[^\]\n]*\]\([^\n)]*\)|!?\[[^\]\n]*\]\s*\[[^\]\n]*\]|!?\[[^\]\n]*\]|https?:\/\/[^\s<]+|\/next(?:\/[^\s<]*)?)/g;
+        /(```[^\n]*\n[\s\S]*?```|~~~[^\n]*\n[\s\S]*?~~~|`+[^`\n]*`+|!?\[[^\]\n]*\]\s*\[[^\]\n]*\]|!?\[[^\]\n]*\]|https?:\/\/[^\s<]+|\/next(?:\/[^\s<]*)?)/g;
+    const protectedRanges = [...content.matchAll(protectedMarkdown)].map((match) => ({
+        end: match.index + match[0].length,
+        start: match.index
+    }));
+    protectedRanges.push(...findInlineLinkRanges(content));
+    protectedRanges.sort((left, right) => left.start - right.start || left.end - right.end);
+
     let result = '';
     let previousIndex = 0;
 
-    for (const match of content.matchAll(protectedMarkdown)) {
-        const matchIndex = match.index;
-        result += replace(content.slice(previousIndex, matchIndex));
-        result += match[0];
-        previousIndex = matchIndex + match[0].length;
+    for (const range of protectedRanges) {
+        if (range.end <= previousIndex) {
+            continue;
+        }
+
+        if (range.start > previousIndex) {
+            result += replace(content.slice(previousIndex, range.start));
+        }
+
+        const protectedStart = Math.max(previousIndex, range.start);
+        result += content.slice(protectedStart, range.end);
+        previousIndex = range.end;
     }
 
     return result + replace(content.slice(previousIndex));

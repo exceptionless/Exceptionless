@@ -60,6 +60,12 @@ Timeout expired
         expect(addAssistantResourceLinks(content, [toolResult([{ title: 'Timeout expired', webUrl: '/next/stack/stack-1' }])])).toBe(content);
     });
 
+    it('preserves complete inline-link destinations with balanced parentheses', () => {
+        const content = '[docs](https://example.test/(guide)/API)';
+
+        expect(addAssistantResourceLinks(content, [toolResult([{ name: 'API', webUrl: '/next/project/api' }])])).toBe(content);
+    });
+
     it('preserves reference-style and shortcut links', () => {
         const content = `[Timeout expired][stack], [Timeout expired][], and [Timeout expired] are already linked.
 
