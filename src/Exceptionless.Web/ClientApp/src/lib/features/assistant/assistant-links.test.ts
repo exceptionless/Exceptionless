@@ -60,6 +60,14 @@ Timeout expired
         expect(addAssistantResourceLinks(content, [toolResult([{ title: 'Timeout expired', webUrl: '/next/stack/stack-1' }])])).toBe(content);
     });
 
+    it('preserves reference-style and shortcut links', () => {
+        const content = `[Timeout expired][stack], [Timeout expired][], and [Timeout expired] are already linked.
+
+[stack]: /next/stack/existing`;
+
+        expect(addAssistantResourceLinks(content, [toolResult([{ title: 'Timeout expired', webUrl: '/next/stack/stack-1' }])])).toBe(content);
+    });
+
     it('links only complete resource labels', () => {
         const content = 'APIClient uses the API project.';
 

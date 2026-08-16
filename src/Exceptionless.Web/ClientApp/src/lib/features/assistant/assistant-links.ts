@@ -112,7 +112,8 @@ function readNonEmptyString(record: Record<string, unknown>, key: string): strin
 }
 
 function replaceOutsideProtectedMarkdown(content: string, replace: (text: string) => string): string {
-    const protectedMarkdown = /(```[^\n]*\n[\s\S]*?```|~~~[^\n]*\n[\s\S]*?~~~|`+[^`\n]*`+|!?\[[^\]\n]*\]\([^\n)]*\)|https?:\/\/[^\s<]+|\/next(?:\/[^\s<]*)?)/g;
+    const protectedMarkdown =
+        /(```[^\n]*\n[\s\S]*?```|~~~[^\n]*\n[\s\S]*?~~~|`+[^`\n]*`+|!?\[[^\]\n]*\]\([^\n)]*\)|!?\[[^\]\n]*\]\s*\[[^\]\n]*\]|!?\[[^\]\n]*\]|https?:\/\/[^\s<]+|\/next(?:\/[^\s<]*)?)/g;
     let result = '';
     let previousIndex = 0;
 
