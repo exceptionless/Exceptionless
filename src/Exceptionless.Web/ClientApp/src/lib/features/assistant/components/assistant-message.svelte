@@ -8,7 +8,7 @@
 
     import type { AssistantChatMessage, AssistantFeedback } from '../models';
 
-    import { normalizeAssistantUrl } from '../assistant-links';
+    import { addAssistantResourceLinks, normalizeAssistantUrl } from '../assistant-links';
     import AssistantMessageActions from './assistant-message-actions.svelte';
     import AssistantToolActivity from './assistant-tool-activity.svelte';
 
@@ -23,6 +23,7 @@
     }
 
     let { isLast = false, isStreaming = false, message, onFeedback, onRegenerate, onSuggestedAction, suggestionsDisabled = false }: Props = $props();
+    let renderedContent = $derived(isStreaming ? message.content : addAssistantResourceLinks(message.content, message.tools));
 </script>
 
 {#if message.role === 'user'}
@@ -43,7 +44,7 @@
             {#if message.content}
                 <Response
                     class="text-sm"
-                    content={message.content}
+                    content={renderedContent}
                     isAnimating={isStreaming}
                     mode={isStreaming ? 'streaming' : 'static'}
                     urlTransform={normalizeAssistantUrl}

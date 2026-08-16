@@ -278,6 +278,7 @@ public sealed class AssistantServiceTests
         Assert.DoesNotContain("\"event_id\"", handler.RequestBody);
         Assert.Contains("Never end by merely saying what you will inspect or do next", handler.RequestBody);
         Assert.Contains("present useful results directly in the answer", handler.RequestBody);
+        Assert.Contains("use no more than three table columns", handler.RequestBody);
         Assert.Contains("webUrl beginning with / must remain relative", handler.RequestBody);
         Assert.Contains("suggest_followups", handler.RequestBody);
         Assert.Contains("Do not call it on every answer", handler.RequestBody);
