@@ -604,23 +604,24 @@ public sealed class AssistantService(
         string? currentStackId,
         bool allowImplicitCurrentStack)
     {
-        if (HasAmbiguousStackTargets(message, currentStackId)
-            || (!String.IsNullOrWhiteSpace(requestedStackId) && IsExcludedStackTarget(message, requestedStackId))
+        string targetText = RemoveAbsoluteUrls(message);
+        if (HasAmbiguousStackTargets(targetText, currentStackId)
+            || (!String.IsNullOrWhiteSpace(requestedStackId) && IsExcludedStackTarget(targetText, requestedStackId))
             || (!String.IsNullOrWhiteSpace(currentStackId)
-                && (IsExcludedStackTarget(message, currentStackId) || IsExcludedCurrentStackTarget(message))))
+                && (IsExcludedStackTarget(targetText, currentStackId) || IsExcludedCurrentStackTarget(targetText))))
         {
             return false;
         }
 
-        bool namesStackTarget = GetNamedStackTargets(message).Any();
-        bool referencesCurrentStack = !String.IsNullOrWhiteSpace(currentStackId) && ReferencesCurrentStack(message, currentStackId);
+        bool namesStackTarget = GetNamedStackTargets(targetText).Any();
+        bool referencesCurrentStack = !String.IsNullOrWhiteSpace(currentStackId) && ReferencesCurrentStack(targetText, currentStackId);
         if (String.IsNullOrWhiteSpace(requestedStackId))
         {
             return !String.IsNullOrWhiteSpace(currentStackId)
                 && (referencesCurrentStack || (allowImplicitCurrentStack && !namesStackTarget));
         }
 
-        return ContainsExactToken(message, requestedStackId)
+        return ContainsExactToken(targetText, requestedStackId)
             || (!String.IsNullOrWhiteSpace(currentStackId)
                 && String.Equals(requestedStackId, currentStackId, StringComparison.Ordinal)
                 && (referencesCurrentStack || (allowImplicitCurrentStack && !namesStackTarget)));
@@ -854,6 +855,9 @@ public sealed class AssistantService(
             message,
             $@"(?<![A-Za-z0-9_-]){Regex.Escape(value)}(?![A-Za-z0-9_-])",
             RegexOptions.IgnoreCase);
+
+    private static string RemoveAbsoluteUrls(string message)
+        => Regex.Replace(message, """https?://[^\s<>"']+""", " ", RegexOptions.IgnoreCase);
 
     private static bool ContainsAny(string value, params string[] terms)
         => terms.Any(term => value.Contains(term, StringComparison.OrdinalIgnoreCase));

@@ -180,6 +180,8 @@ public sealed class AssistantServiceTests
     [InlineData("Please discard this stack", "Discard stack current-stack", "update_stack_status", "{\"status\":\"discarded\"}", true)]
     [InlineData("Please discard this stack", "Discard the other stack", "update_stack_status", "{\"status\":\"discarded\"}", false)]
     [InlineData("Please discard this stack", "Discard other-stack", "update_stack_status", "{\"status\":\"discarded\"}", false)]
+    [InlineData("Please remove reference https://example.test/current-stack from this stack", "Remove reference https://example.test/current-stack", "remove_stack_reference_link", "{\"url\":\"https://example.test/current-stack\"}", true)]
+    [InlineData("Please remove reference https://example.test/current-stack from this stack", "Remove reference https://example.test/current-stack from the other stack", "remove_stack_reference_link", "{\"url\":\"https://example.test/current-stack\"}", false)]
     public void HasExplicitWriteRequest_SuggestedActionStillRequiresExactWriteIntent(
         string prompt,
         string? label,
