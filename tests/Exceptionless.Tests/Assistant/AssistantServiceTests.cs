@@ -180,6 +180,7 @@ public sealed class AssistantServiceTests
     [InlineData("Please ignore this stack", "Mark as fixed", "update_stack_status", "{\"status\":\"fixed\"}", false)]
     [InlineData("Please discard this stack", "Discard stack other-stack", "update_stack_status", "{\"status\":\"discarded\"}", false)]
     [InlineData("Please discard this stack", "Discard stack current-stack", "update_stack_status", "{\"status\":\"discarded\"}", true)]
+    [InlineData("Please discard this stack", "Discard stack current-stack.", "update_stack_status", "{\"status\":\"discarded\"}", true)]
     [InlineData("Please discard this stack", "Discard stack X current-stack", "update_stack_status", "{\"stackId\":\"current-stack\",\"status\":\"discarded\"}", false)]
     [InlineData("Please discard this stack", "Discard the other stack", "update_stack_status", "{\"status\":\"discarded\"}", false)]
     [InlineData("Please discard this stack", "Discard other-stack", "update_stack_status", "{\"status\":\"discarded\"}", false)]
@@ -210,6 +211,8 @@ public sealed class AssistantServiceTests
     [Theory]
     [InlineData("'s")]
     [InlineData("/x")]
+    [InlineData("\\x")]
+    [InlineData(".x")]
     public void HasExplicitWriteRequest_SuggestedActionRejectsQualifiedNamedStackId(string suffix)
     {
         const string stackId = "0123456789abcdef01234567";

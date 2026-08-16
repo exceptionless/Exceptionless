@@ -617,7 +617,10 @@ public sealed class AssistantService(
     }
 
     private static IEnumerable<string> GetNamedStackTargets(string message)
-        => Regex.Matches(message, @"\b(?:stack|issue)\s+(?<target>[A-Za-z0-9][A-Za-z0-9_-]*)\b(?!['’/\\])", RegexOptions.IgnoreCase)
+        => Regex.Matches(
+                message,
+                $@"\b(?:stack|issue)\s+(?<target>[A-Za-z0-9][A-Za-z0-9_-]*){StackTargetTerminatorPattern}",
+                RegexOptions.IgnoreCase)
             .Select(match => match.Groups["target"].Value.ToLowerInvariant())
             .Where(target => target is not ("this" or "current" or "the" or "fixed" or "ignored" or "discarded" or "open" or "critical" or "not" or "as" or "to" or "with" or "for" or "until"));
 
@@ -881,8 +884,10 @@ public sealed class AssistantService(
     private static bool ContainsExactToken(string message, string value)
         => Regex.IsMatch(
             message,
-            $@"(?<![A-Za-z0-9_-]){Regex.Escape(value)}(?![A-Za-z0-9_'’/\\-])",
+            $@"(?<![A-Za-z0-9_-]){Regex.Escape(value)}{StackTargetTerminatorPattern}",
             RegexOptions.IgnoreCase);
+
+    private const string StackTargetTerminatorPattern = @"(?=$|\s|[.,;:!?](?:\s|$)|[)\]}](?:\s|$))";
 
     private static string RemoveAbsoluteUrls(string message)
         => Regex.Replace(message, """https?://[^\s<>"']+""", " ", RegexOptions.IgnoreCase);
