@@ -1,6 +1,7 @@
 <script lang="ts">
     import { A, Small } from '$comp/typography';
     import Button from '$comp/ui/button/button.svelte';
+    import * as Table from '$comp/ui/table';
     import ExternalLink from '@lucide/svelte/icons/external-link';
     import Delete from '@lucide/svelte/icons/trash';
 
@@ -36,32 +37,38 @@
 </script>
 
 {#if stack.references?.length > 0}
-    <ul class="space-y-2">
-        {#each stack.references as reference (reference)}
-            <li class="flex items-center gap-1.5">
-                <A
-                    href={reference}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="flex min-w-0 flex-1 items-center gap-1.5"
-                    title={reference}
-                    variant="secondary"
-                >
-                    <Small class="min-w-0 truncate">{reference}</Small>
-                    <ExternalLink aria-hidden="true" class="size-3.5 shrink-0" />
-                </A>
-                <Button
-                    aria-label="Delete reference link"
-                    title="Delete reference link"
-                    variant="destructive"
-                    size="icon-xs"
-                    onclick={() => onOpenRemoveStackReferenceDialog(reference)}
-                >
-                    <Delete aria-hidden="true" />
-                </Button>
-            </li>
-        {/each}
-    </ul>
+    <Table.Row>
+        <Table.Head class="w-36 font-semibold whitespace-nowrap">Reference</Table.Head>
+        <Table.Cell class="w-4 pr-0"></Table.Cell>
+        <Table.Cell>
+            <ul class="space-y-1.5">
+                {#each stack.references as reference (reference)}
+                    <li class="flex min-w-0 items-center gap-1">
+                        <A
+                            href={reference}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="flex min-w-0 items-center gap-1.5"
+                            title={reference}
+                            variant="secondary"
+                        >
+                            <Small class="min-w-0 truncate">{reference}</Small>
+                            <ExternalLink aria-hidden="true" class="size-3.5 shrink-0" />
+                        </A>
+                        <Button
+                            aria-label="Delete reference link"
+                            title="Delete reference link"
+                            variant="destructive"
+                            size="icon-xs"
+                            onclick={() => onOpenRemoveStackReferenceDialog(reference)}
+                        >
+                            <Delete aria-hidden="true" />
+                        </Button>
+                    </li>
+                {/each}
+            </ul>
+        </Table.Cell>
+    </Table.Row>
 {/if}
 
 {#if openRemoveStackReferenceDialog}

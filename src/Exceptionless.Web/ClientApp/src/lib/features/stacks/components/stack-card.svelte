@@ -352,10 +352,9 @@
                             <Table.Cell><DateTime value={stack.snooze_until_utc} /></Table.Cell>
                         </Table.Row>
                     {/if}
+                    <StackReferences {stack} />
                 </Table.Body>
             </Table.Root>
-
-            <StackReferences {stack} />
         </Card.Content>
     </Card.Root>
 {:else}
