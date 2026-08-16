@@ -10,7 +10,6 @@ import {
     type PaginationState,
     type RowData,
     type RowSelectionState,
-    sortFns,
     stockFeatures,
     type StockFeatures,
     type Table,
@@ -443,8 +442,7 @@ export function resolvePaginationChange(previousPageInfo: PaginationState, curre
 export function withClientSortedRowModel<TData extends RowData>(options: TableOptions<StockFeatures, TData>): TableOptions<StockFeatures, TData> {
     const features = tableFeatures({
         ...options.features,
-        sortedRowModel: createSortedRowModel<StockFeatures, TData>(),
-        sortFns
+        sortedRowModel: createSortedRowModel<StockFeatures, TData>()
     });
 
     return {

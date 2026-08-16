@@ -25,7 +25,7 @@ export function getSessionColumns(): ColumnDef<StockFeatures, EventSummaryModel<
             header: ({ table }) =>
                 renderComponent(Checkbox, {
                     checked: table.getIsAllRowsSelected(),
-                    indeterminate: table.getIsSomeRowsSelected(),
+                    indeterminate: table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected(),
                     onCheckedChange: (checked: 'indeterminate' | boolean) => table.getToggleAllRowsSelectedHandler()({ target: { checked } })
                 }),
             id: 'select',

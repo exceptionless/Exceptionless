@@ -60,7 +60,7 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
             header: ({ table }) =>
                 renderComponent(Checkbox, {
                     checked: table.getIsAllRowsSelected(),
-                    indeterminate: table.getIsSomeRowsSelected(),
+                    indeterminate: table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected(),
                     onCheckedChange: (checked: 'indeterminate' | boolean) =>
                         table.getToggleAllRowsSelectedHandler()({
                             target: {

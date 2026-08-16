@@ -247,9 +247,9 @@
         defaultFilter: DEFAULT_FILTER,
         defaultTime: DEFAULT_TIME_RANGE,
         filterCacheKey,
-        getColumnOrder: () => table.state.columnOrder,
-        getColumnSizing: () => table.state.columnSizing,
-        getColumnVisibility: () => table.state.columnVisibility,
+        getColumnOrder: () => table.store.state.columnOrder,
+        getColumnSizing: () => table.store.state.columnSizing,
+        getColumnVisibility: () => table.store.state.columnVisibility,
         getFilter: getEffectiveFilter,
         getFilterDefinitions: () => serializeFilters(filters ?? []),
         getShowChart: () => showChart,
@@ -682,16 +682,10 @@
             get queryParameters() {
                 return eventsQueryParameters;
             }
-        }),
-        (state) => ({
-            columnOrder: state.columnOrder,
-            columnSizing: state.columnSizing,
-            columnVisibility: state.columnVisibility,
-            pagination: state.pagination
         })
     );
 
-    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.state.pagination.pageIndex === 0);
+    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.store.state.pagination.pageIndex === 0);
 
     function reset() {
         table.resetRowSelection();
@@ -699,7 +693,7 @@
     }
 
     async function handleRefresh() {
-        const isFirstPage = table.state.pagination.pageIndex === 0;
+        const isFirstPage = table.store.state.pagination.pageIndex === 0;
         if (!canRefresh) {
             reset();
             if (!isFirstPage) {
@@ -741,7 +735,7 @@
             eventsQuery.isPlaceholderData ||
             dataUpdatedAt === lastEmptyResponseAt ||
             eventsQuery.data?.data?.length !== 0 ||
-            table.state.pagination.pageIndex === 0
+            table.store.state.pagination.pageIndex === 0
         ) {
             return;
         }
@@ -853,9 +847,9 @@
             {#if savedViewsState.isEnabled}
                 <SavedViewPicker
                     activeSavedView={savedViewsState.activeSavedView}
-                    columnOrder={table.state.columnOrder}
-                    columnSizing={table.state.columnSizing}
-                    columnVisibility={table.state.columnVisibility}
+                    columnOrder={table.store.state.columnOrder}
+                    columnSizing={table.store.state.columnSizing}
+                    columnVisibility={table.store.state.columnVisibility}
                     filters={filters ?? []}
                     isModified={savedViewsState.isModified}
                     onLoadView={savedViewsState.handleLoadView}

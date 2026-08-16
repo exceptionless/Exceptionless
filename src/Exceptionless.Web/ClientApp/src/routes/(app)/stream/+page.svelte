@@ -84,9 +84,9 @@
         defaultColumnVisibility: defaultEventColumnVisibility,
         defaultFilter: DEFAULT_PARAMS.filter,
         filterCacheKey,
-        getColumnOrder: () => table.state.columnOrder,
-        getColumnSizing: () => table.state.columnSizing,
-        getColumnVisibility: () => table.state.columnVisibility,
+        getColumnOrder: () => table.store.state.columnOrder,
+        getColumnSizing: () => table.store.state.columnSizing,
+        getColumnVisibility: () => table.store.state.columnVisibility,
         getFilterDefinitions: () => serializeFilters(filters ?? []),
         queryParams,
         setColumnOrder: (v) => table.setColumnOrder(v),
@@ -211,11 +211,6 @@
             get queryParameters() {
                 return eventsQueryParameters;
             }
-        }),
-        (state) => ({
-            columnOrder: state.columnOrder,
-            columnSizing: state.columnSizing,
-            columnVisibility: state.columnVisibility
         })
     );
 
@@ -335,9 +330,9 @@
             {#if savedViewsState.isEnabled}
                 <SavedViewPicker
                     activeSavedView={savedViewsState.activeSavedView}
-                    columnOrder={table.state.columnOrder}
-                    columnSizing={table.state.columnSizing}
-                    columnVisibility={table.state.columnVisibility}
+                    columnOrder={table.store.state.columnOrder}
+                    columnSizing={table.store.state.columnSizing}
+                    columnVisibility={table.store.state.columnVisibility}
                     filters={filters ?? []}
                     isModified={savedViewsState.isModified}
                     onLoadView={savedViewsState.handleLoadView}
