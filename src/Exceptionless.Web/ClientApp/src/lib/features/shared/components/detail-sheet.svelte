@@ -31,6 +31,11 @@
         value: string;
     }
 
+    interface PendingNavigation {
+        link?: HTMLAnchorElement;
+        url: URL;
+    }
+
     type DetailSheetPageState = Record<string, unknown> & { __exceptionlessDetailSheet?: DetailSheetHistoryEntry };
 
     let { actions, children, detailsHref, historyKey, historyValue, onClose, onOpen, open, title }: Props = $props();
@@ -39,8 +44,9 @@
     let historyReady = $state(false);
     let ownsHistoryEntry = false;
     let parentCloseTimer: number | undefined;
+    let pendingNavigation: PendingNavigation | undefined;
     let pendingNavigationTimer: number | undefined;
-    let pendingNavigationUrl: undefined | URL;
+    let selectedNavigationLink: HTMLAnchorElement | undefined;
     let wasOpen = false;
 
     function getCurrentUrl(): string {
@@ -110,22 +116,33 @@
             return;
         }
 
-        pendingNavigationUrl = to.url;
+        pendingNavigation = { link: type === 'link' ? selectedNavigationLink : undefined, url: to.url };
         cancel();
         clearOwnedHistoryEntry();
         window.history.back();
     });
 
     onMount(() => {
+        function handleDocumentClick(event: MouseEvent): void {
+            selectedNavigationLink = event.composedPath().find((target): target is HTMLAnchorElement => target instanceof HTMLAnchorElement);
+        }
+
         function handlePopState(event: PopStateEvent): void {
-            if (pendingNavigationUrl) {
-                const url = pendingNavigationUrl;
-                pendingNavigationUrl = undefined;
+            if (pendingNavigation) {
+                const navigation = pendingNavigation;
+                pendingNavigation = undefined;
                 wasOpen = false;
-                onClose();
                 // Let SvelteKit finish accepting the shallow popstate before
                 // beginning the requested route navigation.
-                pendingNavigationTimer = window.setTimeout(() => void goto(url), 0);
+                pendingNavigationTimer = window.setTimeout(() => {
+                    if (navigation.link?.isConnected) {
+                        navigation.link.click();
+                    } else {
+                        void goto(navigation.url);
+                    }
+
+                    onClose();
+                }, 0);
                 return;
             }
 
@@ -144,6 +161,7 @@
             onClose();
         }
 
+        document.addEventListener('click', handleDocumentClick, true);
         window.addEventListener('popstate', handlePopState);
 
         const entry = getHistoryEntry(window.history.state);
@@ -153,6 +171,7 @@
 
         historyReady = true;
         return () => {
+            document.removeEventListener('click', handleDocumentClick, true);
             window.removeEventListener('popstate', handlePopState);
             window.clearTimeout(parentCloseTimer);
             window.clearTimeout(pendingNavigationTimer);

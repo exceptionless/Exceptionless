@@ -127,8 +127,37 @@ describe('DetailSheet history', () => {
         window.dispatchEvent(new PopStateEvent('popstate', { state: originalState }));
         await tick();
 
-        expect(screen.getByTestId('detail-sheet-state').textContent).toBe('closed');
         await waitFor(() => expect(navigation.goto).toHaveBeenCalledWith(destination));
+        expect(screen.getByTestId('detail-sheet-state').textContent).toBe('closed');
+    });
+
+    it('replays the original link so its SvelteKit navigation options are preserved', async () => {
+        const historyBack = vi.spyOn(window.history, 'back').mockImplementation(() => undefined);
+        const cancel = vi.fn();
+        render(DetailSheetTestHarness);
+        const originalState = window.history.state;
+        await fireEvent.click(screen.getByRole('button', { name: 'Open details' }));
+        await tick();
+        const link = screen.getByRole('link', { name: 'Navigate with link options' }) as HTMLAnchorElement;
+        const preventNavigation = (event: MouseEvent) => event.preventDefault();
+        link.addEventListener('click', preventNavigation);
+        link.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+        const linkClick = vi.spyOn(link, 'click');
+        const beforeNavigation = navigation.beforeNavigate.mock.calls[0]?.[0] as
+            ((navigation: { cancel: () => void; to: { url: URL }; type: string }) => void) | undefined;
+
+        const destination = new URL(link.href);
+        beforeNavigation?.({ cancel, to: { url: destination }, type: 'link' });
+        expect(cancel).toHaveBeenCalledOnce();
+        expect(historyBack).toHaveBeenCalledOnce();
+
+        window.history.replaceState(originalState, '', '/events?filter=open');
+        window.dispatchEvent(new PopStateEvent('popstate', { state: originalState }));
+
+        await waitFor(() => expect(linkClick).toHaveBeenCalledOnce());
+        expect(link.dataset.sveltekitNoscroll).toBe('');
+        expect(navigation.goto).not.toHaveBeenCalled();
+        link.removeEventListener('click', preventNavigation);
     });
 
     it('consumes its same-page history entry when the sheet requests close', async () => {

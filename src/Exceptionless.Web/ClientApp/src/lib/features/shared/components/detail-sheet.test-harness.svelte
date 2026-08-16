@@ -7,6 +7,7 @@
 <button onclick={() => (historyValue = 'abc123')}>Open details</button>
 <button onclick={() => (historyValue = undefined)}>Close details externally</button>
 <button onclick={() => (historyValue = 'def456')}>Navigate within details</button>
+<a data-sveltekit-noscroll href="/event/abc123">Navigate with link options</a>
 <output data-testid="detail-sheet-state">{historyValue ? `open:${historyValue}` : 'closed'}</output>
 
 <DetailSheet
