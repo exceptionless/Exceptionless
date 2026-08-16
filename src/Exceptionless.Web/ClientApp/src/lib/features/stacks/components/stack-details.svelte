@@ -1,5 +1,6 @@
 <script lang="ts">
     import type { IFilter } from '$comp/faceted-filter';
+    import type { AssistantFixResource } from '$features/assistant/controls.svelte';
     import type { PersistentEvent } from '$features/events/models';
     import type { Stack } from '$features/stacks/models';
     import type { ProblemDetails } from '@foundatiofx/fetchclient';
@@ -11,6 +12,7 @@
     import StackCard from './stack-card.svelte';
 
     interface Props {
+        assistantResource?: AssistantFixResource;
         eventId?: null | string;
         filterChanged: (filter: IFilter) => void;
         handleError: (problem: ProblemDetails) => void;
@@ -21,7 +23,18 @@
         stackId: string;
     }
 
-    let { eventId: initialEventId, filterChanged, handleError, onDeleted, onEventLoaded, onNavigate, onStackLoaded, stackId }: Props = $props();
+    let {
+        assistantResource,
+        eventId: initialEventId,
+        filterChanged,
+        handleError,
+        onDeleted,
+        onEventLoaded,
+        onNavigate,
+        onStackLoaded,
+        stackId
+    }: Props = $props();
+    let resolvedAssistantResource = $derived(assistantResource ?? (initialEventId ? 'event' : 'stack'));
 
     let selectedEventId = $state<null | string>(null);
     let lastStackId = $state('');
@@ -78,11 +91,19 @@
 </script>
 
 {#if selectedEventId}
-    <EventsOverview expectedStackId={stackId} {filterChanged} id={selectedEventId} {handleError} {onEventLoaded} onNavigate={handleNavigate} />
+    <EventsOverview
+        assistantResource={resolvedAssistantResource}
+        expectedStackId={stackId}
+        {filterChanged}
+        id={selectedEventId}
+        {handleError}
+        {onEventLoaded}
+        onNavigate={handleNavigate}
+    />
 {:else if stackEventsQuery.isSuccess && !latestEvent?.id}
     <section>
         <h4 class="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">Stack</h4>
-        <StackCard {filterChanged} id={stackId} {onDeleted} onError={handleError} onLoaded={onStackLoaded} />
+        <StackCard assistantResource={resolvedAssistantResource} {filterChanged} id={stackId} {onDeleted} onError={handleError} onLoaded={onStackLoaded} />
     </section>
     <Muted class="mt-4">No events available for this stack.</Muted>
 {/if}

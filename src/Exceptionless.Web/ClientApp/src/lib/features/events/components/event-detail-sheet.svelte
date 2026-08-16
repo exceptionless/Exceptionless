@@ -3,7 +3,6 @@
     import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
     import DetailSheet from '$comp/detail-sheet.svelte';
-    import AssistantFixButton from '$features/assistant/components/assistant-fix-button.svelte';
     import { assistantPageContext } from '$features/assistant/page-context.svelte';
     import { onDestroy } from 'svelte';
 
@@ -23,7 +22,6 @@
     let { detailsHref, eventId = $bindable(), filterChanged, onClose, onError }: Props = $props();
 
     let currentEventDetails = $state<{ eventId: string; stackId: string }>();
-    let currentEvent = $state<PersistentEvent>();
     let lastEventId = $state<null | string>(null);
     const assistantContextOwner = Symbol('event-detail-sheet');
 
@@ -32,17 +30,8 @@
     );
 
     function handleEventLoaded(event: PersistentEvent): void {
-        currentEvent = event;
         currentEventDetails = { eventId: event.id, stackId: event.stack_id };
         assistantPageContext.setOverlayEvent(assistantContextOwner, event);
-    }
-
-    function prepareAssistantContext(): void {
-        if (currentEvent) {
-            assistantPageContext.setOverlayEvent(assistantContextOwner, currentEvent);
-        } else if (eventId) {
-            assistantPageContext.setOverlay(assistantContextOwner, { eventId });
-        }
     }
 
     function handleClose(): void {
@@ -53,7 +42,6 @@
     $effect(() => {
         if (eventId !== lastEventId) {
             lastEventId = eventId;
-            currentEvent = undefined;
             currentEventDetails = undefined;
             if (eventId) {
                 assistantPageContext.setOverlay(assistantContextOwner, { eventId });
@@ -83,9 +71,6 @@
     open={!!eventId}
     title="Event"
 >
-    {#snippet actions()}
-        <AssistantFixButton prepareContext={prepareAssistantContext} resource="event" />
-    {/snippet}
     {#if eventId}
         <EventsOverview {filterChanged} id={eventId} {handleError} onEventLoaded={handleEventLoaded} onNavigate={(newId) => (eventId = newId)} />
     {/if}

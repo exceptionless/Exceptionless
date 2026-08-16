@@ -6,7 +6,6 @@
 
     import { resolve } from '$app/paths';
     import DetailSheet from '$comp/detail-sheet.svelte';
-    import AssistantFixButton from '$features/assistant/components/assistant-fix-button.svelte';
     import { assistantPageContext } from '$features/assistant/page-context.svelte';
     import { buildEventDetailsHref } from '$features/events/components/summary';
     import { onDestroy } from 'svelte';
@@ -23,7 +22,6 @@
     let { filterChanged, onClose, onError, stackId = $bindable() }: Props = $props();
 
     let currentEventDetails = $state<{ eventId: string; stackId: string }>();
-    let currentStack = $state<Stack>();
     let lastStackId = $state<null | string>(null);
     const assistantContextOwner = Symbol('stack-detail-sheet');
 
@@ -41,16 +39,7 @@
     }
 
     function handleStackLoaded(stack: Stack): void {
-        currentStack = stack;
         assistantPageContext.setOverlayStack(assistantContextOwner, stack);
-    }
-
-    function prepareAssistantContext(): void {
-        if (currentStack) {
-            assistantPageContext.setOverlayStack(assistantContextOwner, currentStack);
-        } else if (stackId) {
-            assistantPageContext.setOverlay(assistantContextOwner, { stackId });
-        }
     }
 
     function handleClose(): void {
@@ -62,7 +51,6 @@
         if (stackId !== lastStackId) {
             lastStackId = stackId ?? null;
             currentEventDetails = undefined;
-            currentStack = undefined;
             if (stackId) {
                 assistantPageContext.setOverlay(assistantContextOwner, { stackId });
             } else {
@@ -91,9 +79,6 @@
     open={!!stackId}
     title="Stack"
 >
-    {#snippet actions()}
-        <AssistantFixButton prepareContext={prepareAssistantContext} resource="stack" />
-    {/snippet}
     {#if stackId}
         <StackDetails {filterChanged} {handleError} onDeleted={handleClose} onEventLoaded={handleEventLoaded} onStackLoaded={handleStackLoaded} {stackId} />
     {/if}
