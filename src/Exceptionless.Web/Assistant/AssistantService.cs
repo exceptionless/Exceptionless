@@ -461,7 +461,7 @@ public sealed class AssistantService(
     {
         var latestUserMessage = request.Messages
             .LastOrDefault(message => message is not null && String.Equals(message.Role, "user", StringComparison.OrdinalIgnoreCase));
-        if (latestUserMessage is null || latestUserMessage.IsSuggestedAction == true || String.IsNullOrWhiteSpace(latestUserMessage.Content))
+        if (latestUserMessage is null || String.IsNullOrWhiteSpace(latestUserMessage.Content))
             return false;
 
         string message = latestUserMessage.Content;

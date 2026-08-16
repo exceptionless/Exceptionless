@@ -169,14 +169,21 @@ public sealed class AssistantServiceTests
         Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, "add_stack_reference_link", arguments));
     }
 
-    [Fact]
-    public void HasExplicitWriteRequest_SuggestedActionCannotAuthorizeWrite()
+    [Theory]
+    [InlineData("Snooze this stack for 7 days while I investigate", "snooze_stack", "{\"duration\":\"7d\"}", true)]
+    [InlineData("Inspect this stack before snoozing it for 7 days", "snooze_stack", "{\"duration\":\"7d\"}", false)]
+    [InlineData("Please ignore this stack", "update_stack_status", "{\"status\":\"fixed\"}", false)]
+    public void HasExplicitWriteRequest_SuggestedActionStillRequiresExactWriteIntent(
+        string prompt,
+        string toolName,
+        string arguments,
+        bool expected)
     {
         var request = new AssistantChatRequest(
-            [new AssistantChatMessage("user", "Please ignore this stack") { IsSuggestedAction = true }],
+            [new AssistantChatMessage("user", prompt) { IsSuggestedAction = true }],
             Path: "/next/stack/current-stack");
 
-        Assert.False(AssistantService.HasExplicitWriteRequest(request, "update_stack_status", "{\"status\":\"ignored\"}"));
+        Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, toolName, arguments));
     }
 
     [Theory]
