@@ -131,7 +131,7 @@ describe('DetailSheet history', () => {
         expect(screen.getByTestId('detail-sheet-state').textContent).toBe('closed');
     });
 
-    it('replays the original link so its SvelteKit navigation options are preserved', async () => {
+    it('preserves SvelteKit navigation options without replaying link click handlers', async () => {
         const historyBack = vi.spyOn(window.history, 'back').mockImplementation(() => undefined);
         const cancel = vi.fn();
         render(DetailSheetTestHarness);
@@ -154,9 +154,9 @@ describe('DetailSheet history', () => {
         window.history.replaceState(originalState, '', '/events?filter=open');
         window.dispatchEvent(new PopStateEvent('popstate', { state: originalState }));
 
-        await waitFor(() => expect(linkClick).toHaveBeenCalledOnce());
+        await waitFor(() => expect(navigation.goto).toHaveBeenCalledWith(destination, { keepFocus: undefined, noScroll: true, replaceState: undefined }));
         expect(link.dataset.sveltekitNoscroll).toBe('');
-        expect(navigation.goto).not.toHaveBeenCalled();
+        expect(linkClick).not.toHaveBeenCalled();
         link.removeEventListener('click', preventNavigation);
     });
 

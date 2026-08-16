@@ -32,8 +32,14 @@
     }
 
     interface PendingNavigation {
-        link?: HTMLAnchorElement;
+        options?: LinkNavigationOptions;
         url: URL;
+    }
+
+    interface LinkNavigationOptions {
+        keepFocus?: boolean;
+        noScroll?: boolean;
+        replaceState?: boolean;
     }
 
     type DetailSheetPageState = Record<string, unknown> & { __exceptionlessDetailSheet?: DetailSheetHistoryEntry };
@@ -46,7 +52,7 @@
     let parentCloseTimer: number | undefined;
     let pendingNavigation: PendingNavigation | undefined;
     let pendingNavigationTimer: number | undefined;
-    let selectedNavigationLink: HTMLAnchorElement | undefined;
+    let selectedLinkNavigationOptions: LinkNavigationOptions | undefined;
     let wasOpen = false;
 
     function getCurrentUrl(): string {
@@ -55,6 +61,30 @@
 
     function getBrowserUrl(): string {
         return `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    }
+
+    function getLinkNavigationOptions(link: HTMLAnchorElement): LinkNavigationOptions | undefined {
+        function getOption(name: string): boolean | undefined {
+            let element: Element | null = link;
+            while (element && element !== document.documentElement) {
+                const value = element.getAttribute(`data-sveltekit-${name}`);
+                if (value !== null) {
+                    return value === '' || value === 'true' ? true : value === 'off' || value === 'false' ? false : undefined;
+                }
+
+                element = element.parentElement;
+            }
+
+            return undefined;
+        }
+
+        const options: LinkNavigationOptions = {
+            keepFocus: getOption('keepfocus'),
+            noScroll: getOption('noscroll'),
+            replaceState: getOption('replacestate')
+        };
+
+        return Object.values(options).some((value) => value !== undefined) ? options : undefined;
     }
 
     function clearOwnedHistoryEntry(): void {
@@ -116,7 +146,7 @@
             return;
         }
 
-        pendingNavigation = { link: type === 'link' ? selectedNavigationLink : undefined, url: to.url };
+        pendingNavigation = { options: type === 'link' ? selectedLinkNavigationOptions : undefined, url: to.url };
         cancel();
         clearOwnedHistoryEntry();
         window.history.back();
@@ -124,7 +154,8 @@
 
     onMount(() => {
         function handleDocumentClick(event: MouseEvent): void {
-            selectedNavigationLink = event.composedPath().find((target): target is HTMLAnchorElement => target instanceof HTMLAnchorElement);
+            const link = event.composedPath().find((target): target is HTMLAnchorElement => target instanceof HTMLAnchorElement);
+            selectedLinkNavigationOptions = link ? getLinkNavigationOptions(link) : undefined;
         }
 
         function handlePopState(event: PopStateEvent): void {
@@ -135,8 +166,8 @@
                 // Let SvelteKit finish accepting the shallow popstate before
                 // beginning the requested route navigation.
                 pendingNavigationTimer = window.setTimeout(() => {
-                    if (navigation.link?.isConnected) {
-                        navigation.link.click();
+                    if (navigation.options) {
+                        void goto(navigation.url, navigation.options);
                     } else {
                         void goto(navigation.url);
                     }
