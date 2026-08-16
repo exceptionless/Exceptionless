@@ -995,13 +995,17 @@
             "application/json": {
               "schema": {
                 "type": "string",
-                "example": ""
+                "examples": [
+                  ""
+                ]
               }
             },
             "text/plain": {
               "schema": {
                 "type": "string",
-                "example": ""
+                "examples": [
+                  ""
+                ]
               }
             }
           },
@@ -1058,13 +1062,17 @@
             "application/json": {
               "schema": {
                 "type": "string",
-                "example": ""
+                "examples": [
+                  ""
+                ]
               }
             },
             "text/plain": {
               "schema": {
                 "type": "string",
-                "example": ""
+                "examples": [
+                  ""
+                ]
               }
             }
           },
@@ -1130,13 +1138,17 @@
             "application/json": {
               "schema": {
                 "type": "string",
-                "example": ""
+                "examples": [
+                  ""
+                ]
               }
             },
             "text/plain": {
               "schema": {
                 "type": "string",
-                "example": ""
+                "examples": [
+                  ""
+                ]
               }
             }
           },
@@ -8446,13 +8458,17 @@
             "application/json": {
               "schema": {
                 "type": "string",
-                "example": ""
+                "examples": [
+                  ""
+                ]
               }
             },
             "text/plain": {
               "schema": {
                 "type": "string",
-                "example": ""
+                "examples": [
+                  ""
+                ]
               }
             }
           },
@@ -8814,13 +8830,17 @@
             "application/json": {
               "schema": {
                 "type": "string",
-                "example": ""
+                "examples": [
+                  ""
+                ]
               }
             },
             "text/plain": {
               "schema": {
                 "type": "string",
-                "example": ""
+                "examples": [
+                  ""
+                ]
               }
             }
           },
