@@ -5,6 +5,7 @@
     import { Button, buttonVariants } from '$comp/ui/button';
     import { Spinner } from '$comp/ui/spinner';
     import * as Tabs from '$comp/ui/tabs';
+    import { Textarea } from '$comp/ui/textarea';
     import {
         getOrgSavedViewsExportMutation,
         getPredefinedSavedViewsMutation,
@@ -12,7 +13,6 @@
         putPredefinedSavedViewsMutation
     } from '$features/admin/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
-    import JsonCodeEditor from '$features/shared/components/json-code-editor.svelte';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
     import Pencil from '@lucide/svelte/icons/pencil';
     import Save from '@lucide/svelte/icons/save';
@@ -134,7 +134,12 @@
     </div>
 
     {#if isEditing && predefinedTab === 'config'}
-        <JsonCodeEditor bind:value={predefinedJson} aria-label="Predefined saved views JSON" />
+        <Textarea
+            bind:value={predefinedJson}
+            aria-label="Predefined saved views JSON"
+            class="bg-muted field-sizing-fixed max-h-[60vh] min-h-96 resize-y overflow-auto rounded font-mono text-xs leading-4"
+            spellcheck="false"
+        />
     {:else}
         <CodeBlock code={predefinedJson} language="json" class="max-h-[60vh] min-h-96 overflow-auto text-xs" />
     {/if}
