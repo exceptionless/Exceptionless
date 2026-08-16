@@ -10,7 +10,6 @@ namespace Exceptionless.Core.Billing;
 
 public class StripeEventHandler
 {
-    private const string STRIPE_USER_ID = "000000000000000000000000";
     private readonly ILogger _logger;
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IUserRepository _userRepository;
@@ -242,7 +241,7 @@ public class StripeEventHandler
         organization.SuspensionDate = utcNow;
         organization.SuspensionCode = SuspensionCode.Billing;
         organization.SuspensionNotes = "Stripe subscription deleted.";
-        organization.SuspendedByUserId = STRIPE_USER_ID;
+        organization.SuspendedByUserId = StripeConstants.SystemUserId;
 
         await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
     }
@@ -290,7 +289,7 @@ public class StripeEventHandler
             organization.SuspensionDate = utcNow;
             organization.SuspensionCode = SuspensionCode.Billing;
             organization.SuspensionNotes = $"Stripe subscription status changed to \"{status.Value}\".";
-            organization.SuspendedByUserId = STRIPE_USER_ID;
+            organization.SuspendedByUserId = StripeConstants.SystemUserId;
         }
         else if (status.Value == BillingStatus.Active || status.Value == BillingStatus.Trialing)
         {
