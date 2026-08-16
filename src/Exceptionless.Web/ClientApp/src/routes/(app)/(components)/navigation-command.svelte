@@ -12,7 +12,7 @@
     import { organization } from '$features/organizations/context.svelte';
     import { resetData } from '$features/projects/api.svelte';
     import ResetProjectDataDialog from '$features/projects/components/dialogs/reset-project-data-dialog.svelte';
-    import ProjectCommandActions from '$features/projects/components/project-command-actions.svelte';
+    import ProjectCommandActions, { type ProjectActionId } from '$features/projects/components/project-command-actions.svelte';
     import { appKeyboardShortcuts, formatKeyboardShortcut, type ShortcutKey } from '$features/shared/keyboard-shortcuts';
     import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
     import { useFetchClient } from '@foundatiofx/fetchclient';
@@ -87,6 +87,7 @@
     }: Props = $props();
     let searchText = $state('');
     let debouncedSearchText = $state('');
+    let selectedProjectActionId = $state<ProjectActionId>();
     let selectingProject = $state(false);
 
     const client = useFetchClient();
@@ -148,14 +149,16 @@
     const stackMatches = $derived((stackSearchQuery.data?.data ?? []).slice(0, COMMAND_SEARCH_RESULT_LIMIT));
     const hasMoreEventMatches = $derived((eventSearchQuery.data?.data?.length ?? 0) > COMMAND_SEARCH_RESULT_LIMIT);
     const hasMoreStackMatches = $derived((stackSearchQuery.data?.data?.length ?? 0) > COMMAND_SEARCH_RESULT_LIMIT);
-    const showEventSearchResults = $derived(eventSearchQuery.isPending || eventMatches.length > 0 || hasMoreEventMatches);
-    const showStackSearchResults = $derived(stackSearchQuery.isPending || stackMatches.length > 0 || hasMoreStackMatches);
+    const isRemoteSearchPending = $derived(eventSearchQuery.isPending || stackSearchQuery.isPending);
+    const showEventSearchResults = $derived(eventMatches.length > 0 || hasMoreEventMatches);
+    const showStackSearchResults = $derived(stackMatches.length > 0 || hasMoreStackMatches);
     const showRemoteSearchResults = $derived(showEventSearchResults || showStackSearchResults);
 
     $effect(() => {
         if (resetKey >= 0) {
             searchText = '';
             debouncedSearchText = '';
+            selectedProjectActionId = undefined;
             selectingProject = false;
         }
     });
@@ -416,34 +419,27 @@
     <Command.Dialog bind:open bind:value={commandValue} filter={filterCommandItem} onkeydown={handleKeydown}>
         <Command.Input bind:value={searchText} placeholder={selectingProject ? 'Select a project...' : 'Search or jump to...'} />
         <Command.List>
-            <Command.Empty>No results found.</Command.Empty>
+            <Command.Empty>{hasSearchText && isRemoteSearchPending ? 'Searching...' : 'No results found.'}</Command.Empty>
             {#if !selectingProject && hasSearchText && showRemoteSearchResults}
                 {#key debouncedSearchText}
                     {#if showEventSearchResults}
                         <Command.Group heading="Events" value="Search Events">
-                            {#if eventSearchQuery.isPending}
-                                <Command.Item disabled value={`Searching events ${debouncedSearchText}`}>
+                            {#each eventMatches as event (event.id)}
+                                <Command.LinkItem href={getEventHref(event)} onclick={closeCommandWindow} value={getResultValue('Event', event)}>
                                     <Activity />
-                                    <span>Searching events...</span>
-                                </Command.Item>
-                            {:else}
-                                {#each eventMatches as event (event.id)}
-                                    <Command.LinkItem href={getEventHref(event)} onclick={closeCommandWindow} value={getResultValue('Event', event)}>
-                                        <Activity />
-                                        <div class="flex min-w-0 flex-col">
-                                            <span class="truncate">{getResultTitle(event)}</span>
-                                            {#if getResultDescription(event)}
-                                                <span class="text-muted-foreground truncate text-xs">{getResultDescription(event)}</span>
-                                            {/if}
-                                        </div>
-                                    </Command.LinkItem>
-                                {/each}
-                                {#if hasMoreEventMatches}
-                                    <Command.LinkItem href={eventSearchHref} onclick={closeCommandWindow} value={`View all events ${debouncedSearchText}`}>
-                                        <Search />
-                                        <span>View all matching events</span>
-                                    </Command.LinkItem>
-                                {/if}
+                                    <div class="flex min-w-0 flex-col">
+                                        <span class="truncate">{getResultTitle(event)}</span>
+                                        {#if getResultDescription(event)}
+                                            <span class="text-muted-foreground truncate text-xs">{getResultDescription(event)}</span>
+                                        {/if}
+                                    </div>
+                                </Command.LinkItem>
+                            {/each}
+                            {#if hasMoreEventMatches}
+                                <Command.LinkItem href={eventSearchHref} onclick={closeCommandWindow} value={`View all events ${debouncedSearchText}`}>
+                                    <Search />
+                                    <span>View all matching events</span>
+                                </Command.LinkItem>
                             {/if}
                         </Command.Group>
                     {/if}
@@ -452,29 +448,22 @@
                     {/if}
                     {#if showStackSearchResults}
                         <Command.Group heading="Stacks" value="Search Stacks">
-                            {#if stackSearchQuery.isPending}
-                                <Command.Item disabled value={`Searching stacks ${debouncedSearchText}`}>
+                            {#each stackMatches as stack (stack.id)}
+                                <Command.LinkItem href={getStackHref(stack)} onclick={closeCommandWindow} value={getResultValue('Stack', stack)}>
                                     <Stacks />
-                                    <span>Searching stacks...</span>
-                                </Command.Item>
-                            {:else}
-                                {#each stackMatches as stack (stack.id)}
-                                    <Command.LinkItem href={getStackHref(stack)} onclick={closeCommandWindow} value={getResultValue('Stack', stack)}>
-                                        <Stacks />
-                                        <div class="flex min-w-0 flex-col">
-                                            <span class="truncate">{getResultTitle(stack)}</span>
-                                            {#if getResultDescription(stack)}
-                                                <span class="text-muted-foreground truncate text-xs">{getResultDescription(stack)}</span>
-                                            {/if}
-                                        </div>
-                                    </Command.LinkItem>
-                                {/each}
-                                {#if hasMoreStackMatches}
-                                    <Command.LinkItem href={stackSearchHref} onclick={closeCommandWindow} value={`View all stacks ${debouncedSearchText}`}>
-                                        <Search />
-                                        <span>View all matching stacks</span>
-                                    </Command.LinkItem>
-                                {/if}
+                                    <div class="flex min-w-0 flex-col">
+                                        <span class="truncate">{getResultTitle(stack)}</span>
+                                        {#if getResultDescription(stack)}
+                                            <span class="text-muted-foreground truncate text-xs">{getResultDescription(stack)}</span>
+                                        {/if}
+                                    </div>
+                                </Command.LinkItem>
+                            {/each}
+                            {#if hasMoreStackMatches}
+                                <Command.LinkItem href={stackSearchHref} onclick={closeCommandWindow} value={`View all stacks ${debouncedSearchText}`}>
+                                    <Search />
+                                    <span>View all matching stacks</span>
+                                </Command.LinkItem>
                             {/if}
                         </Command.Group>
                     {/if}
@@ -488,6 +477,7 @@
                 onSearchReset={resetCommandSearch}
                 onSelect={closeCommandWindow}
                 resetPending={resetProjectDataMutation.isPending}
+                bind:selectedActionId={selectedProjectActionId}
             />
             {#if !selectingProject}
                 {#each Object.entries(groupedRoutes) as [group, items], index (group)}
