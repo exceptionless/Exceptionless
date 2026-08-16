@@ -87,6 +87,28 @@ function escapeRegularExpression(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function findFencedCodeRanges(content: string): Array<{ end: number; start: number }> {
+    const ranges: Array<{ end: number; start: number }> = [];
+    const openingFence = /^ {0,3}(?<delimiter>`{3,}|~{3,})[^\r\n]*(?:\r?\n|$)/gm;
+    let openingMatch: null | RegExpExecArray;
+
+    while ((openingMatch = openingFence.exec(content)) !== null) {
+        const delimiter = openingMatch.groups?.delimiter;
+        if (!delimiter) {
+            continue;
+        }
+
+        const closingFence = new RegExp(`^ {0,3}${escapeRegularExpression(delimiter.charAt(0))}{${delimiter.length},}[\\t ]*(?:\\r?$)`, 'gm');
+        closingFence.lastIndex = openingFence.lastIndex;
+        const closingMatch = closingFence.exec(content);
+        const end = closingMatch ? closingMatch.index + closingMatch[0].length : content.length;
+        ranges.push({ end, start: openingMatch.index });
+        openingFence.lastIndex = end;
+    }
+
+    return ranges;
+}
+
 function findInlineCodeRanges(content: string): Array<{ end: number; start: number }> {
     const ranges: Array<{ end: number; start: number }> = [];
 
@@ -207,11 +229,12 @@ function readNonEmptyString(record: Record<string, unknown>, key: string): strin
 
 function replaceOutsideProtectedMarkdown(content: string, replace: (text: string) => string): string {
     const protectedMarkdown =
-        /(^(?:(?: {4}|\t)[^\r\n]*(?:\r?\n|$))+|```[^\n]*\n[\s\S]*?```|~~~[^\n]*\n[\s\S]*?~~~|!?\[[^\]\n]*\]\s*\[[^\]\n]*\]|!?\[[^\]\n]*\]|[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*|https?:\/\/[^\s<]+|\/next(?:\/[^\s<]*)?)/gm;
+        /(^(?:(?: {4}|\t)[^\r\n]*(?:\r?\n|$))+|!?\[[^\]\n]*\]\s*\[[^\]\n]*\]|!?\[[^\]\n]*\]|[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*|https?:\/\/[^\s<]+|\/next(?:\/[^\s<]*)?)/gm;
     const protectedRanges = [...content.matchAll(protectedMarkdown)].map((match) => ({
         end: match.index + match[0].length,
         start: match.index
     }));
+    protectedRanges.push(...findFencedCodeRanges(content));
     protectedRanges.push(...findInlineCodeRanges(content));
     protectedRanges.push(...findInlineLinkRanges(content));
     protectedRanges.sort((left, right) => left.start - right.start || left.end - right.end);

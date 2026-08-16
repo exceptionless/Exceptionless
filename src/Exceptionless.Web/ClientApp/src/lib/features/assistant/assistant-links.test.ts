@@ -84,6 +84,13 @@ Use [API](/next/project/api).`);
         );
     });
 
+    it('preserves fenced code when the delimiter occurs mid-line', () => {
+        const content = ['```ts', 'const marker = "```";', 'API.connect()', '```', '', 'Use API.'].join('\n');
+        const expected = ['```ts', 'const marker = "```";', 'API.connect()', '```', '', 'Use [API](/next/project/api).'].join('\n');
+
+        expect(addAssistantResourceLinks(content, [toolResult([{ name: 'API', webUrl: '/next/project/api' }])])).toBe(expected);
+    });
+
     it('preserves resource labels inside email addresses', () => {
         const content = 'Contact API@example.com before opening API.';
 
