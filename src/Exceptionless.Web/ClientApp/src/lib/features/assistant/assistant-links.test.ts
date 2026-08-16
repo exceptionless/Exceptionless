@@ -60,6 +60,22 @@ Timeout expired
         expect(addAssistantResourceLinks(content, [toolResult([{ title: 'Timeout expired', webUrl: '/next/stack/stack-1' }])])).toBe(content);
     });
 
+    it('links only complete resource labels', () => {
+        const content = 'APIClient uses the API project.';
+
+        expect(addAssistantResourceLinks(content, [toolResult([{ name: 'API', webUrl: '/next/project/api' }])])).toBe(
+            'APIClient uses the [API](/next/project/api) project.'
+        );
+    });
+
+    it('preserves labels inside bare absolute and relative URLs', () => {
+        const content = 'See https://example.test/API and /next/project/API before opening API.';
+
+        expect(addAssistantResourceLinks(content, [toolResult([{ name: 'API', webUrl: '/next/project/api' }])])).toBe(
+            'See https://example.test/API and /next/project/API before opening [API](/next/project/api).'
+        );
+    });
+
     it('does not guess when duplicate titles refer to different resources', () => {
         const content = 'Investigate Timeout expired.';
         const tools = [

@@ -46,9 +46,19 @@
         id: string;
         onEventLoaded?: (event: PersistentEvent) => void;
         onNavigate?: (eventId: string) => void;
+        prepareStackAssistantContext?: () => void;
     }
 
-    let { assistantResource = 'event', expectedStackId, filterChanged, handleError, id, onEventLoaded, onNavigate }: Props = $props();
+    let {
+        assistantResource = 'event',
+        expectedStackId,
+        filterChanged,
+        handleError,
+        id,
+        onEventLoaded,
+        onNavigate,
+        prepareStackAssistantContext
+    }: Props = $props();
 
     function getTabs(event?: null | PersistentEvent, project?: ViewProject): TabType[] {
         if (!event) {
@@ -259,7 +269,7 @@
         }
     }
 
-    function prepareAssistantContext(): void {
+    function prepareEventAssistantContext(): void {
         if (event) {
             assistantPageContext.setPageEvent(event);
         }
@@ -315,7 +325,7 @@
             {assistantResource}
             {filterChanged}
             id={event.stack_id}
-            prepareAssistantContext={assistantResource === 'event' ? prepareAssistantContext : undefined}
+            prepareAssistantContext={assistantResource === 'event' ? prepareEventAssistantContext : prepareStackAssistantContext}
         ></StackCard>
     {/if}
 </section>

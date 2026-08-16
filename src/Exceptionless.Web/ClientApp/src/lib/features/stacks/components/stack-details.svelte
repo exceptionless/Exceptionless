@@ -20,6 +20,7 @@
         onEventLoaded?: (event: PersistentEvent) => void;
         onNavigate?: (eventId: string) => void;
         onStackLoaded?: (stack: Stack) => void;
+        prepareAssistantContext?: () => void;
         stackId: string;
     }
 
@@ -32,6 +33,7 @@
         onEventLoaded,
         onNavigate,
         onStackLoaded,
+        prepareAssistantContext,
         stackId
     }: Props = $props();
     let resolvedAssistantResource = $derived(assistantResource ?? (initialEventId ? 'event' : 'stack'));
@@ -99,11 +101,20 @@
         {handleError}
         {onEventLoaded}
         onNavigate={handleNavigate}
+        prepareStackAssistantContext={prepareAssistantContext}
     />
 {:else if stackEventsQuery.isSuccess && !latestEvent?.id}
     <section>
         <h4 class="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">Stack</h4>
-        <StackCard assistantResource={resolvedAssistantResource} {filterChanged} id={stackId} {onDeleted} onError={handleError} onLoaded={onStackLoaded} />
+        <StackCard
+            assistantResource={resolvedAssistantResource}
+            {filterChanged}
+            id={stackId}
+            {onDeleted}
+            onError={handleError}
+            onLoaded={onStackLoaded}
+            {prepareAssistantContext}
+        />
     </section>
     <Muted class="mt-4">No events available for this stack.</Muted>
 {/if}

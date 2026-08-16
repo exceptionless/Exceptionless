@@ -22,6 +22,7 @@
     let { filterChanged, onClose, onError, stackId = $bindable() }: Props = $props();
 
     let currentEventDetails = $state<{ eventId: string; stackId: string }>();
+    let currentStack = $state<Stack>();
     let lastStackId = $state<null | string>(null);
     const assistantContextOwner = Symbol('stack-detail-sheet');
 
@@ -39,7 +40,16 @@
     }
 
     function handleStackLoaded(stack: Stack): void {
+        currentStack = stack;
         assistantPageContext.setOverlayStack(assistantContextOwner, stack);
+    }
+
+    function prepareAssistantContext(): void {
+        if (currentStack) {
+            assistantPageContext.setOverlayStack(assistantContextOwner, currentStack);
+        } else if (stackId) {
+            assistantPageContext.setOverlay(assistantContextOwner, { stackId });
+        }
     }
 
     function handleClose(): void {
@@ -51,6 +61,7 @@
         if (stackId !== lastStackId) {
             lastStackId = stackId ?? null;
             currentEventDetails = undefined;
+            currentStack = undefined;
             if (stackId) {
                 assistantPageContext.setOverlay(assistantContextOwner, { stackId });
             } else {
@@ -80,6 +91,14 @@
     title="Stack"
 >
     {#if stackId}
-        <StackDetails {filterChanged} {handleError} onDeleted={handleClose} onEventLoaded={handleEventLoaded} onStackLoaded={handleStackLoaded} {stackId} />
+        <StackDetails
+            {filterChanged}
+            {handleError}
+            onDeleted={handleClose}
+            onEventLoaded={handleEventLoaded}
+            onStackLoaded={handleStackLoaded}
+            {prepareAssistantContext}
+            {stackId}
+        />
     {/if}
 </DetailSheet>

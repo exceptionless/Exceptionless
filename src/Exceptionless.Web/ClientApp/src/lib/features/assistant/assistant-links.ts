@@ -13,7 +13,10 @@ export function addAssistantResourceLinks(content: string, tools: AssistantToolA
 
     return replaceOutsideProtectedMarkdown(content, (text) => {
         const linksByLabel = new Map(links.map((link) => [link.label, link]));
-        const linkPattern = new RegExp(links.map((link) => escapeRegularExpression(link.label)).join('|'), 'g');
+        const linkPattern = new RegExp(
+            `(?<![\\p{L}\\p{N}_])(?:${links.map((link) => escapeRegularExpression(link.label)).join('|')})(?![\\p{L}\\p{N}_])`,
+            'gu'
+        );
 
         return text.replace(linkPattern, (label) => {
             const link = linksByLabel.get(label);
@@ -109,7 +112,7 @@ function readNonEmptyString(record: Record<string, unknown>, key: string): strin
 }
 
 function replaceOutsideProtectedMarkdown(content: string, replace: (text: string) => string): string {
-    const protectedMarkdown = /(```[^\n]*\n[\s\S]*?```|~~~[^\n]*\n[\s\S]*?~~~|`+[^`\n]*`+|!?\[[^\]\n]*\]\([^\n)]*\))/g;
+    const protectedMarkdown = /(```[^\n]*\n[\s\S]*?```|~~~[^\n]*\n[\s\S]*?~~~|`+[^`\n]*`+|!?\[[^\]\n]*\]\([^\n)]*\)|https?:\/\/[^\s<]+|\/next(?:\/[^\s<]*)?)/g;
     let result = '';
     let previousIndex = 0;
 
