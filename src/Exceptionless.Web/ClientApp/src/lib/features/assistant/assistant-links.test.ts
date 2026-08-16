@@ -98,6 +98,13 @@ Use [API](/next/project/api).`);
         expect(addAssistantResourceLinks(content, [toolResult([{ name: 'API', webUrl: '/next/project/api' }])])).toBe(expected);
     });
 
+    it('preserves tilde-fenced code nested inside lists', () => {
+        const content = ['- ~~~ts', '  API.connect()', '  ~~~', '', 'Use API.'].join('\n');
+        const expected = ['- ~~~ts', '  API.connect()', '  ~~~', '', 'Use [API](/next/project/api).'].join('\n');
+
+        expect(addAssistantResourceLinks(content, [toolResult([{ name: 'API', webUrl: '/next/project/api' }])])).toBe(expected);
+    });
+
     it('preserves resource labels inside email addresses', () => {
         const content = 'Contact API@example.com before opening API.';
 
