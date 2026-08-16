@@ -2,7 +2,6 @@
     import { A, Small } from '$comp/typography';
     import Button from '$comp/ui/button/button.svelte';
     import ExternalLink from '@lucide/svelte/icons/external-link';
-    import Reference from '@lucide/svelte/icons/link';
     import Delete from '@lucide/svelte/icons/trash';
 
     import type { Stack } from '../models';
@@ -39,14 +38,26 @@
 {#if stack.references?.length > 0}
     <ul class="space-y-2">
         {#each stack.references as reference (reference)}
-            <li class="flex items-center gap-2">
-                <Reference />
-                <A href={reference} target="_blank" rel="noopener noreferrer" class="flex items-center gap-2" variant="secondary">
-                    <Small class="truncate">{reference}</Small>
-                    <ExternalLink />
+            <li class="flex items-center gap-1.5">
+                <A
+                    href={reference}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="flex min-w-0 flex-1 items-center gap-1.5"
+                    title={reference}
+                    variant="secondary"
+                >
+                    <Small class="min-w-0 truncate">{reference}</Small>
+                    <ExternalLink aria-hidden="true" class="size-3.5 shrink-0" />
                 </A>
-                <Button variant="destructive" size="xs" onclick={() => onOpenRemoveStackReferenceDialog(reference)}>
-                    <Delete />
+                <Button
+                    aria-label="Delete reference link"
+                    title="Delete reference link"
+                    variant="destructive"
+                    size="icon-xs"
+                    onclick={() => onOpenRemoveStackReferenceDialog(reference)}
+                >
+                    <Delete aria-hidden="true" />
                 </Button>
             </li>
         {/each}
