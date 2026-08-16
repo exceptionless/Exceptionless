@@ -2,7 +2,7 @@ import type { AssistantChatMessage } from './models';
 
 export interface AssistantChatRequestPayload {
     conversation_id: string;
-    messages: Array<Pick<AssistantChatMessage, 'content' | 'role'> & { is_suggested_action?: boolean }>;
+    messages: Array<Pick<AssistantChatMessage, 'content' | 'role'> & { is_suggested_action?: boolean; suggested_action_label?: string }>;
     organization_id?: string;
     path: string;
     project_id?: string;
@@ -20,7 +20,8 @@ export function createAssistantChatRequest(
         messages: messages.map((message) => ({
             content: message.content,
             ...(message.isSuggestedAction ? { is_suggested_action: true } : {}),
-            role: message.role
+            role: message.role,
+            ...(message.suggestedActionLabel ? { suggested_action_label: message.suggestedActionLabel } : {})
         })),
         organization_id: organizationId,
         path,

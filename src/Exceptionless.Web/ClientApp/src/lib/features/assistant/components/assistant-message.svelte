@@ -6,7 +6,7 @@
     import MessageCircle from '@lucide/svelte/icons/message-circle';
     import Sparkles from '@lucide/svelte/icons/sparkles';
 
-    import type { AssistantChatMessage, AssistantFeedback } from '../models';
+    import type { AssistantChatMessage, AssistantFeedback, AssistantSuggestedAction } from '../models';
 
     import { addAssistantResourceLinks, normalizeAssistantUrl } from '../assistant-links';
     import AssistantMessageActions from './assistant-message-actions.svelte';
@@ -18,7 +18,7 @@
         message: AssistantChatMessage;
         onFeedback?: (feedback: AssistantFeedback | undefined) => void;
         onRegenerate?: () => void;
-        onSuggestedAction?: (prompt: string, isSuggestedAction: boolean) => void;
+        onSuggestedAction?: (action: AssistantSuggestedAction) => void;
         suggestionsDisabled?: boolean;
     }
 
@@ -64,7 +64,7 @@
                             <Button
                                 class="h-auto min-h-7 gap-1.5 px-2 py-1 text-left text-xs whitespace-normal"
                                 disabled={suggestionsDisabled}
-                                onclick={() => onSuggestedAction?.(action.prompt, true)}
+                                onclick={() => onSuggestedAction?.(action)}
                                 size="xs"
                                 variant="outline"
                             >

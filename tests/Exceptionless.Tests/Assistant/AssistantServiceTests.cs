@@ -170,17 +170,20 @@ public sealed class AssistantServiceTests
     }
 
     [Theory]
-    [InlineData("Snooze this stack for 7 days while I investigate", "snooze_stack", "{\"duration\":\"7d\"}", true)]
-    [InlineData("Inspect this stack before snoozing it for 7 days", "snooze_stack", "{\"duration\":\"7d\"}", false)]
-    [InlineData("Please ignore this stack", "update_stack_status", "{\"status\":\"fixed\"}", false)]
+    [InlineData("Snooze this stack for 7 days while I investigate", "Snooze for 7 days", "snooze_stack", "{\"duration\":\"7d\"}", true)]
+    [InlineData("Snooze this stack for 7 days while I investigate", "Inspect details", "snooze_stack", "{\"duration\":\"7d\"}", false)]
+    [InlineData("Snooze this stack for 7 days while I investigate", null, "snooze_stack", "{\"duration\":\"7d\"}", false)]
+    [InlineData("Inspect this stack before snoozing it for 7 days", "Snooze for 7 days", "snooze_stack", "{\"duration\":\"7d\"}", false)]
+    [InlineData("Please ignore this stack", "Mark as fixed", "update_stack_status", "{\"status\":\"fixed\"}", false)]
     public void HasExplicitWriteRequest_SuggestedActionStillRequiresExactWriteIntent(
         string prompt,
+        string? label,
         string toolName,
         string arguments,
         bool expected)
     {
         var request = new AssistantChatRequest(
-            [new AssistantChatMessage("user", prompt) { IsSuggestedAction = true }],
+            [new AssistantChatMessage("user", prompt) { IsSuggestedAction = true, SuggestedActionLabel = label }],
             Path: "/next/stack/current-stack");
 
         Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, toolName, arguments));

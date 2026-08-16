@@ -11,6 +11,7 @@ export interface AssistantChatMessage {
     id: string;
     isSuggestedAction?: boolean;
     role: 'assistant' | 'user';
+    suggestedActionLabel?: string;
     suggestedActions?: AssistantSuggestedAction[];
     tools: AssistantToolActivity[];
 }

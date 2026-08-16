@@ -470,6 +470,12 @@ public sealed class AssistantService(
 
         using var document = ParseArguments(arguments);
         var root = document.RootElement;
+        if (latestUserMessage.IsSuggestedAction == true
+            && !HasVisibleSuggestedActionWriteIntent(latestUserMessage.SuggestedActionLabel, toolName, root))
+        {
+            return false;
+        }
+
         string? requestedStackId = GetString(root, "stackId", "stack_id");
         string? currentStackId = GetRouteValue(request.Path, "stack");
         if (HasAmbiguousStackTargets(message, currentStackId)
@@ -500,6 +506,30 @@ public sealed class AssistantService(
             SetStackCriticalTool => HasExplicitCriticalRequest(message, GetBoolean(root, "critical")),
             AddStackReferenceLinkTool => HasExplicitReferenceLinkRequest(message, root, remove: false),
             RemoveStackReferenceLinkTool => HasExplicitReferenceLinkRequest(message, root, remove: true),
+            _ => false
+        };
+    }
+
+    private static bool HasVisibleSuggestedActionWriteIntent(string? label, string toolName, JsonElement arguments)
+    {
+        if (String.IsNullOrWhiteSpace(label))
+        {
+            return false;
+        }
+
+        string visibleRequest = $"{label.Trim()} this stack";
+        if (!HasAffirmativeWriteIntent(visibleRequest) || HasAlternativeWriteIntent(visibleRequest))
+        {
+            return false;
+        }
+
+        return toolName switch
+        {
+            UpdateStackStatusTool => HasExplicitStackStatusRequest(visibleRequest, arguments),
+            SnoozeStackTool => HasExplicitSnoozeRequest(visibleRequest, arguments),
+            SetStackCriticalTool => HasExplicitCriticalRequest(visibleRequest, GetBoolean(arguments, "critical")),
+            AddStackReferenceLinkTool => HasExplicitReferenceLinkRequest(visibleRequest, arguments, remove: false),
+            RemoveStackReferenceLinkTool => HasExplicitReferenceLinkRequest(visibleRequest, arguments, remove: true),
             _ => false
         };
     }

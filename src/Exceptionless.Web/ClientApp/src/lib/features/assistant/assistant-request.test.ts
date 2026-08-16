@@ -15,7 +15,14 @@ describe('createAssistantChatRequest', () => {
                 role: 'assistant',
                 tools: [{ arguments: '{}', id: 'tool-1', name: 'search_stacks', result: '{}', status: 'complete' }]
             },
-            { content: 'Follow-up question', id: 'user-2', isSuggestedAction: true, role: 'user', tools: [] }
+            {
+                content: 'Follow-up question',
+                id: 'user-2',
+                isSuggestedAction: true,
+                role: 'user',
+                suggestedActionLabel: 'Follow up',
+                tools: []
+            }
         ];
 
         expect(createAssistantChatRequest(messages, 'conversation-id', 'organization-id', '/next/stack/stack-id', 'project-id')).toEqual({
@@ -23,7 +30,7 @@ describe('createAssistantChatRequest', () => {
             messages: [
                 { content: 'First question', role: 'user' },
                 { content: 'First answer', role: 'assistant' },
-                { content: 'Follow-up question', is_suggested_action: true, role: 'user' }
+                { content: 'Follow-up question', is_suggested_action: true, role: 'user', suggested_action_label: 'Follow up' }
             ],
             organization_id: 'organization-id',
             path: '/next/stack/stack-id',
