@@ -176,11 +176,11 @@
                 onclick={openIconPicker}
                 disabled={isIconSaving}
             >
-                <Avatar.Root class="h-full w-full rounded-lg" title="Organization Icon">
+                <Avatar.Root class="h-full w-full" shape="square" title="Organization Icon">
                     {#if organizationQuery.data?.icon_url}
                         <Avatar.Image alt={`${organizationQuery.data.name} icon`} src={organizationQuery.data.icon_url} />
                     {/if}
-                    <Avatar.Fallback class="rounded-lg">{getInitials(organizationQuery.data?.name ?? '?')}</Avatar.Fallback>
+                    <Avatar.Fallback>{getInitials(organizationQuery.data?.name ?? '?')}</Avatar.Fallback>
                 </Avatar.Root>
                 <span
                     class="absolute inset-0 flex items-center justify-center gap-1.5 bg-black/55 text-xs font-medium text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"

@@ -82,7 +82,15 @@
     }
 </script>
 
-<DetailSheet detailsHref={resolvedHref} onClose={handleClose} open={!!stackId} title="Stack">
+<DetailSheet
+    detailsHref={resolvedHref}
+    historyKey="stack"
+    historyValue={stackId}
+    onClose={handleClose}
+    onOpen={(historyValue) => (stackId = historyValue)}
+    open={!!stackId}
+    title="Stack"
+>
     {#snippet actions()}
         <AssistantFixButton prepareContext={prepareAssistantContext} resource="stack" />
     {/snippet}

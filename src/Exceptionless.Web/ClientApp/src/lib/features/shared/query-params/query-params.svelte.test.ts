@@ -11,6 +11,7 @@ const navigation = vi.hoisted(() => ({
     replaceState: vi.fn()
 }));
 const pageState = vi.hoisted(() => ({}));
+const detailSheetHistoryStateKey = '__exceptionlessDetailSheet';
 const queryHistoryEntryIdKey = '__exceptionlessQueryHistoryEntryId';
 const svelteKitPageStateKey = 'sveltekit:states';
 const queryHistoryState = () => expect.objectContaining({ [queryHistoryEntryIdKey]: expect.any(String) });
@@ -31,6 +32,7 @@ describe('createQueryParameters', () => {
     beforeEach(() => {
         vi.useFakeTimers();
         vi.clearAllMocks();
+        delete (pageState as Record<string, unknown>)[detailSheetHistoryStateKey];
         delete (pageState as Record<string, unknown>)[queryHistoryEntryIdKey];
         sessionStorage.clear();
         window.history.replaceState(createSvelteKitHistoryState(pageState), '', '/');
@@ -68,6 +70,38 @@ describe('createQueryParameters', () => {
         expect(navigation.replaceState).toHaveBeenCalledOnce();
         expect(navigation.replaceState).toHaveBeenCalledWith('/?filter=second', queryHistoryState());
         expect(window.location.search).toBe('?filter=second');
+    });
+
+    it('replaces a detail sheet entry when a filter adds push-history state', async () => {
+        // Arrange
+        const detailEntry = { key: 'event', value: 'abc123' };
+        Object.assign(pageState, { [detailSheetHistoryStateKey]: detailEntry });
+        window.history.replaceState(createSvelteKitHistoryState({}), '', '/events?filter=open');
+        window.history.pushState(createSvelteKitHistoryState(pageState), '', '/events?filter=open');
+        render(QueryParametersTestHarness);
+
+        // Act
+        await fireEvent.click(screen.getByRole('button', { name: 'First' }));
+
+        // Assert
+        expect(navigation.pushState).not.toHaveBeenCalled();
+        expect(navigation.replaceState).toHaveBeenCalledOnce();
+        expect(navigation.replaceState).toHaveBeenCalledWith('/events?filter=first', queryHistoryState());
+        expect(window.history.state[svelteKitPageStateKey][detailSheetHistoryStateKey]).toBeUndefined();
+        expect(window.location.pathname + window.location.search).toBe('/events?filter=first');
+    });
+
+    it('pushes query history when the detail sheet marker is cleared', async () => {
+        // Arrange
+        Object.assign(pageState, { [detailSheetHistoryStateKey]: undefined });
+        render(QueryParametersTestHarness);
+
+        // Act
+        await fireEvent.click(screen.getByRole('button', { name: 'First' }));
+
+        // Assert
+        expect(navigation.pushState).toHaveBeenCalledOnce();
+        expect(navigation.replaceState).not.toHaveBeenCalled();
     });
 
     it('cancels a pending replacement when state returns to the visible URL', async () => {

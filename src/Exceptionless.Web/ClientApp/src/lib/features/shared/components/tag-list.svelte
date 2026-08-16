@@ -97,7 +97,7 @@
 
 {#snippet tag(tag: string)}
     {#if onTagClick}
-        <Tooltip.Root>
+        <Tooltip.Root suppressWhenOverlayOpen>
             <Tooltip.Trigger>
                 {#snippet child({ props })}
                     <Button
@@ -124,7 +124,7 @@
             </Tooltip.Content>
         </Tooltip.Root>
     {:else}
-        <Tooltip.Root disabled={!truncatedTags.has(tag)}>
+        <Tooltip.Root disabled={!truncatedTags.has(tag)} suppressWhenOverlayOpen>
             <Tooltip.Trigger>
                 {#snippet child({ props })}
                     <span {...props} class="inline-flex min-w-0">
@@ -161,7 +161,7 @@
                 {@render tag(value)}
             {/each}
             {#if hiddenTags.length > 0}
-                <Tooltip.Root>
+                <Tooltip.Root suppressWhenOverlayOpen>
                     <Tooltip.Trigger>
                         {#snippet child({ props })}
                             <Badge
