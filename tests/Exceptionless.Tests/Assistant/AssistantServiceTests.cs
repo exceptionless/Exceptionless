@@ -175,6 +175,8 @@ public sealed class AssistantServiceTests
     [InlineData("Snooze this stack for 7 days while I investigate", null, "snooze_stack", "{\"duration\":\"7d\"}", false)]
     [InlineData("Inspect this stack before snoozing it for 7 days", "Snooze for 7 days", "snooze_stack", "{\"duration\":\"7d\"}", false)]
     [InlineData("Please ignore this stack", "Mark as fixed", "update_stack_status", "{\"status\":\"fixed\"}", false)]
+    [InlineData("Please discard this stack", "Discard stack other-stack", "update_stack_status", "{\"status\":\"discarded\"}", false)]
+    [InlineData("Please discard this stack", "Discard stack current-stack", "update_stack_status", "{\"status\":\"discarded\"}", true)]
     public void HasExplicitWriteRequest_SuggestedActionStillRequiresExactWriteIntent(
         string prompt,
         string? label,

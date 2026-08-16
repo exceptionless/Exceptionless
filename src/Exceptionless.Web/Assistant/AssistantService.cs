@@ -470,34 +470,16 @@ public sealed class AssistantService(
 
         using var document = ParseArguments(arguments);
         var root = document.RootElement;
-        if (latestUserMessage.IsSuggestedAction == true
-            && !HasVisibleSuggestedActionWriteIntent(latestUserMessage.SuggestedActionLabel, toolName, root))
-        {
-            return false;
-        }
-
         string? requestedStackId = GetString(root, "stackId", "stack_id");
         string? currentStackId = GetRouteValue(request.Path, "stack");
-        if (HasAmbiguousStackTargets(message, currentStackId)
-            || (!String.IsNullOrWhiteSpace(requestedStackId) && IsExcludedStackTarget(message, requestedStackId))
-            || (!String.IsNullOrWhiteSpace(currentStackId)
-                && (IsExcludedStackTarget(message, currentStackId) || IsExcludedCurrentStackTarget(message))))
+        if (latestUserMessage.IsSuggestedAction == true
+            && !HasVisibleSuggestedActionWriteIntent(latestUserMessage.SuggestedActionLabel, toolName, root, requestedStackId, currentStackId))
         {
             return false;
         }
 
-        if (String.IsNullOrWhiteSpace(requestedStackId))
-        {
-            if (String.IsNullOrWhiteSpace(currentStackId) || !ReferencesCurrentStack(message, currentStackId))
-                return false;
-        }
-        else if (!ContainsExactToken(message, requestedStackId)
-            && (String.IsNullOrWhiteSpace(currentStackId)
-                || !String.Equals(requestedStackId, currentStackId, StringComparison.Ordinal)
-                || !ReferencesCurrentStack(message, currentStackId)))
-        {
+        if (!HasValidStackTarget(message, requestedStackId, currentStackId, allowImplicitCurrentStack: false))
             return false;
-        }
 
         return toolName switch
         {
@@ -510,9 +492,19 @@ public sealed class AssistantService(
         };
     }
 
-    private static bool HasVisibleSuggestedActionWriteIntent(string? label, string toolName, JsonElement arguments)
+    private static bool HasVisibleSuggestedActionWriteIntent(
+        string? label,
+        string toolName,
+        JsonElement arguments,
+        string? requestedStackId,
+        string? currentStackId)
     {
         if (String.IsNullOrWhiteSpace(label))
+        {
+            return false;
+        }
+
+        if (!HasValidStackTarget(label, requestedStackId, currentStackId, allowImplicitCurrentStack: true))
         {
             return false;
         }
@@ -565,9 +557,7 @@ public sealed class AssistantService(
 
     private static bool HasAmbiguousStackTargets(string message, string? currentStackId)
     {
-        IEnumerable<string> targets = Regex.Matches(message, @"\b(?:stack|issue)\s+(?<target>[A-Za-z0-9][A-Za-z0-9_-]*)\b", RegexOptions.IgnoreCase)
-            .Select(match => match.Groups["target"].Value.ToLowerInvariant())
-            .Where(target => target is not ("this" or "current" or "the" or "fixed" or "ignored" or "discarded" or "open" or "critical" or "not" or "as" or "to" or "with" or "for" or "until"));
+        IEnumerable<string> targets = GetNamedStackTargets(message);
         if (ReferencesCurrentStackByPhrase(message))
             targets = targets.Append(currentStackId?.ToLowerInvariant() ?? "__current_stack");
 
@@ -575,6 +565,39 @@ public sealed class AssistantService(
             .Distinct(StringComparer.Ordinal)
             .Skip(1)
             .Any();
+    }
+
+    private static IEnumerable<string> GetNamedStackTargets(string message)
+        => Regex.Matches(message, @"\b(?:stack|issue)\s+(?<target>[A-Za-z0-9][A-Za-z0-9_-]*)\b", RegexOptions.IgnoreCase)
+            .Select(match => match.Groups["target"].Value.ToLowerInvariant())
+            .Where(target => target is not ("this" or "current" or "the" or "fixed" or "ignored" or "discarded" or "open" or "critical" or "not" or "as" or "to" or "with" or "for" or "until"));
+
+    private static bool HasValidStackTarget(
+        string message,
+        string? requestedStackId,
+        string? currentStackId,
+        bool allowImplicitCurrentStack)
+    {
+        if (HasAmbiguousStackTargets(message, currentStackId)
+            || (!String.IsNullOrWhiteSpace(requestedStackId) && IsExcludedStackTarget(message, requestedStackId))
+            || (!String.IsNullOrWhiteSpace(currentStackId)
+                && (IsExcludedStackTarget(message, currentStackId) || IsExcludedCurrentStackTarget(message))))
+        {
+            return false;
+        }
+
+        bool namesStackTarget = GetNamedStackTargets(message).Any();
+        bool referencesCurrentStack = !String.IsNullOrWhiteSpace(currentStackId) && ReferencesCurrentStack(message, currentStackId);
+        if (String.IsNullOrWhiteSpace(requestedStackId))
+        {
+            return !String.IsNullOrWhiteSpace(currentStackId)
+                && (referencesCurrentStack || (allowImplicitCurrentStack && !namesStackTarget));
+        }
+
+        return ContainsExactToken(message, requestedStackId)
+            || (!String.IsNullOrWhiteSpace(currentStackId)
+                && String.Equals(requestedStackId, currentStackId, StringComparison.Ordinal)
+                && (referencesCurrentStack || (allowImplicitCurrentStack && !namesStackTarget)));
     }
 
     private static bool IsExcludedStackTarget(string message, string stackId)
