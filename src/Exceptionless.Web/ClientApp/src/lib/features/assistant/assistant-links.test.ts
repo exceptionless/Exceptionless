@@ -76,6 +76,16 @@ Use API.`;
 Use [API](/next/project/api).`);
     });
 
+    it('preserves indented code nested inside blockquotes', () => {
+        const content = `>     API.connect()
+
+Use API.`;
+
+        expect(addAssistantResourceLinks(content, [toolResult([{ name: 'API', webUrl: '/next/project/api' }])])).toBe(`>     API.connect()
+
+Use [API](/next/project/api).`);
+    });
+
     it('preserves multi-backtick code spans containing shorter backtick runs', () => {
         const content = '``code ` API`` and API.';
 

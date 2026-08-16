@@ -237,7 +237,7 @@ function readNonEmptyString(record: Record<string, unknown>, key: string): strin
 
 function replaceOutsideProtectedMarkdown(content: string, replace: (text: string) => string): string {
     const protectedMarkdown =
-        /(^(?:(?: {4}|\t)[^\r\n]*(?:\r?\n|$))+|!?\[[^\]\n]*\]\s*\[[^\]\n]*\]|!?\[[^\]\n]*\]|[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*|https?:\/\/[^\s<]+|\/next(?:\/[^\s<]*)?)/gm;
+        /(^(?:(?: {0,3}>[\t ]?)*(?: {4}|\t)[^\r\n]*(?:\r?\n|$))+|!?\[[^\]\n]*\]\s*\[[^\]\n]*\]|!?\[[^\]\n]*\]|[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*|https?:\/\/[^\s<]+|\/next(?:\/[^\s<]*)?)/gm;
     const protectedRanges = [...content.matchAll(protectedMarkdown)].map((match) => ({
         end: match.index + match[0].length,
         start: match.index
