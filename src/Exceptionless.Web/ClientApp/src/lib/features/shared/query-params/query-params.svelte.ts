@@ -6,6 +6,7 @@ import { SvelteURL } from 'svelte/reactivity';
 
 import type { CreateQueryParametersOptions, QueryParameterSchema, QueryParameterState } from './types.js';
 
+import { hasDetailSheetHistoryEntry, withoutDetailSheetHistoryEntry } from '../history-state.js';
 import { createQueryParameterProxy } from './proxy.js';
 import { applyQueryParameterUpdates, createDebouncedFunction, createSearchParams, parseQueryParameters, searchParamsEqual } from './query-params.js';
 
@@ -43,7 +44,8 @@ export function createQueryParameters<T extends QueryParameterSchema>({
 
     const getCurrentHistoryEntryId = () => (window.history.state as null | SvelteKitHistoryState)?.[svelteKitPageStateKey]?.[queryHistoryEntryIdKey];
 
-    const createHistoryState = (entryId: string | undefined) => ({ ...page.state, ...(entryId ? { [queryHistoryEntryIdKey]: entryId } : {}) }) as App.PageState;
+    const createHistoryState = (entryId: string | undefined, state: App.PageState = page.state) =>
+        ({ ...state, ...(entryId ? { [queryHistoryEntryIdKey]: entryId } : {}) }) as App.PageState;
 
     const getPendingReplacementStorageKey = (entryId: string) => `${pendingReplacementStoragePrefix}${entryId}`;
     const getStoredPendingReplacement = (entryId: string) => {
@@ -133,7 +135,15 @@ export function createQueryParameters<T extends QueryParameterSchema>({
         } else if (!isCoalescingPushHistoryEntry) {
             coalescingStartUrl = getCurrentUrl();
             coalescingEntryId = crypto.randomUUID();
-            pushState(url, createHistoryState(coalescingEntryId));
+            if (hasDetailSheetHistoryEntry(page.state)) {
+                // The detail sheet already pushed a same-URL entry. Replace that
+                // transient entry so a filter applied from the sheet has the
+                // original list as its direct Back target.
+                replaceState(url, createHistoryState(coalescingEntryId, withoutDetailSheetHistoryEntry(page.state)));
+            } else {
+                pushState(url, createHistoryState(coalescingEntryId));
+            }
+
             isCoalescingPushHistoryEntry = true;
         } else if (normalizeUrl(url) === coalescingStartUrl) {
             // Keep the transient state as a meaningful Back target instead of

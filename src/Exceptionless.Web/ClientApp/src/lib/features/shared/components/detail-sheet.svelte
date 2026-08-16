@@ -9,6 +9,7 @@
     import ExternalLink from '@lucide/svelte/icons/external-link';
     import { onMount } from 'svelte';
 
+    import { type DetailSheetHistoryEntry, detailSheetHistoryStateKey, type DetailSheetPageState } from '../history-state';
     import { preserveDetailSheetForAssistant } from './detail-sheet-interaction';
 
     interface Props {
@@ -23,13 +24,7 @@
         title: string;
     }
 
-    const detailSheetHistoryStateKey = '__exceptionlessDetailSheet';
     const svelteKitPageStateKey = 'sveltekit:states';
-
-    interface DetailSheetHistoryEntry {
-        key: string;
-        value: string;
-    }
 
     interface PendingNavigation {
         options?: LinkNavigationOptions;
@@ -41,8 +36,6 @@
         noScroll?: boolean;
         replaceState?: boolean;
     }
-
-    type DetailSheetPageState = Record<string, unknown> & { __exceptionlessDetailSheet?: DetailSheetHistoryEntry };
 
     let { actions, children, detailsHref, historyKey, historyValue, onClose, onOpen, open, title }: Props = $props();
     let historyEntryUrl: string | undefined;
@@ -107,7 +100,7 @@
 
         const rawHistoryState = historyState as Record<string, unknown>;
         const pageState = (rawHistoryState[svelteKitPageStateKey] ?? rawHistoryState) as DetailSheetPageState;
-        const entry = pageState.__exceptionlessDetailSheet;
+        const entry = pageState[detailSheetHistoryStateKey];
         return entry?.key === historyKey && typeof entry.value === 'string' ? entry : undefined;
     }
 
