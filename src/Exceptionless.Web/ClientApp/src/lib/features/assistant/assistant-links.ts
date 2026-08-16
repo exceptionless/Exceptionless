@@ -94,7 +94,7 @@ function getAssistantResourceLinks(tools: AssistantToolActivity[]): AssistantRes
     }
 
     return [...urlsByLabel]
-        .filter(([, urls]) => urls.size === 1)
+        .filter(([label, urls]) => /[\p{L}\p{N}]/u.test(label) && urls.size === 1)
         .flatMap(([label, urls]) => {
             const url = urls.values().next().value;
             return url ? [{ label, url }] : [];

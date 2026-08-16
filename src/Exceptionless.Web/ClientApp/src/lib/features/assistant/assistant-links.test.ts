@@ -84,6 +84,15 @@ Timeout expired
         );
     });
 
+    it('ignores punctuation-only resource labels', () => {
+        const content = `- Keep this list item
+
+| Name | Count |
+| --- | --- |`;
+
+        expect(addAssistantResourceLinks(content, [toolResult([{ name: '-', webUrl: '/next/project/dash' }])])).toBe(content);
+    });
+
     it('does not guess when duplicate titles refer to different resources', () => {
         const content = 'Investigate Timeout expired.';
         const tools = [

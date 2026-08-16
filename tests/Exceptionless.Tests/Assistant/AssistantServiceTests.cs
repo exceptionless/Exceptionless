@@ -202,6 +202,24 @@ public sealed class AssistantServiceTests
         Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, toolName, arguments));
     }
 
+    [Fact]
+    public void HasExplicitWriteRequest_SuggestedActionRejectsPossessiveNamedStackId()
+    {
+        const string stackId = "0123456789abcdef01234567";
+        var request = new AssistantChatRequest(
+            [new AssistantChatMessage("user", "Please discard this stack")
+            {
+                IsSuggestedAction = true,
+                SuggestedActionLabel = $"Discard stack {stackId}'s"
+            }],
+            Path: $"/next/stack/{stackId}");
+
+        Assert.False(AssistantService.HasExplicitWriteRequest(
+            request,
+            "update_stack_status",
+            $$"""{"stackId":"{{stackId}}","status":"discarded"}"""));
+    }
+
     [Theory]
     [InlineData(AuthorizationRoles.EventsRead, true)]
     [InlineData(AuthorizationRoles.ProjectsRead, true)]
