@@ -13,6 +13,7 @@ namespace Exceptionless.Core.Migrations;
 public sealed class MigrateLegacyStripeSuspensionUserId : MigrationBase
 {
     private const int BatchSize = 100;
+    internal const string LegacySystemUserId = "Stripe";
     private readonly ExceptionlessElasticConfiguration _configuration;
     private readonly IOrganizationRepository _organizationRepository;
 
@@ -47,7 +48,7 @@ public sealed class MigrateLegacyStripeSuspensionUserId : MigrationBase
             // SuspendedByUserId is not mapped on OrganizationIndex, so the legacy marker must be
             // filtered after the typed repository query loads the current document source.
             var organizationsToMigrate = organizations.Documents
-                .Where(organization => String.Equals(organization.SuspendedByUserId, StripeConstants.LegacySystemUserId, StringComparison.Ordinal))
+                .Where(organization => String.Equals(organization.SuspendedByUserId, LegacySystemUserId, StringComparison.Ordinal))
                 .ToList();
             if (organizationsToMigrate.Count > 0)
             {

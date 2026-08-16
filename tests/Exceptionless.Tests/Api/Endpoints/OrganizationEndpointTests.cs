@@ -22,7 +22,6 @@ namespace Exceptionless.Tests.Api.Endpoints;
 
 public sealed class OrganizationEndpointTests : IntegrationTestsBase
 {
-    private const string ValidSuspendedByUserId = "660000000000000000000001";
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly IUserRepository _userRepository;
@@ -896,7 +895,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         organization.SuspensionCode = SuspensionCode.Billing;
         organization.SuspensionDate = DateTime.UtcNow;
         organization.SuspensionNotes = "Synthetic legacy billing suspension.";
-        organization.SuspendedByUserId = ValidSuspendedByUserId;
+        organization.SuspendedByUserId = StripeConstants.SystemUserId;
         await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
 
         // Act
@@ -919,7 +918,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         Assert.True(deletedOrganization.IsDeleted);
         Assert.True(deletedOrganization.IsSuspended);
         Assert.Equal(SuspensionCode.Billing, deletedOrganization.SuspensionCode);
-        Assert.Equal(ValidSuspendedByUserId, deletedOrganization.SuspendedByUserId);
+        Assert.Equal(StripeConstants.SystemUserId, deletedOrganization.SuspendedByUserId);
         Assert.Equal("Synthetic legacy billing suspension.", deletedOrganization.SuspensionNotes);
 
         deletedOrganization.IsDeleted = false;
@@ -929,7 +928,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         Assert.NotNull(undeletedOrganization);
         Assert.True(undeletedOrganization.IsSuspended);
         Assert.Equal(SuspensionCode.Billing, undeletedOrganization.SuspensionCode);
-        Assert.Equal(ValidSuspendedByUserId, undeletedOrganization.SuspendedByUserId);
+        Assert.Equal(StripeConstants.SystemUserId, undeletedOrganization.SuspendedByUserId);
         Assert.Equal("Synthetic legacy billing suspension.", undeletedOrganization.SuspensionNotes);
     }
 

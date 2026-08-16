@@ -9,15 +9,13 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
 using Foundatio.Repositories.Utility;
 using Foundatio.Utility;
+using Exceptionless.Tests.Utility;
 using Xunit;
 
 namespace Exceptionless.Tests.Migrations;
 
 public sealed class MigrateLegacyStripeSuspensionUserIdMigrationTests : IntegrationTestsBase
 {
-    // This is the exact value written by StripeEventHandler before the system user id was introduced.
-    private const string HistoricalStripeSuspensionUserId = "Stripe";
-    private const string ValidSuspendedByUserId = "660000000000000000000001";
     private readonly ExceptionlessElasticConfiguration _configuration;
     private readonly IOrganizationRepository _organizationRepository;
     private readonly BillingPlans _plans;
@@ -40,10 +38,10 @@ public sealed class MigrateLegacyStripeSuspensionUserIdMigrationTests : Integrat
     public async Task RunAsync_HistoricalStripeMarker_IsMigratedAndSuspensionStateIsPreserved()
     {
         // Arrange
-        var organization = await AddSuspendedOrganizationAsync(ValidSuspendedByUserId, "Legacy Stripe Suspension Organization");
+        var organization = await AddSuspendedOrganizationAsync(TestConstants.UserId, "Legacy Stripe Suspension Organization");
         await UpdateOrganizationDocumentAsync(organization.Id, new Dictionary<string, object>
         {
-            ["suspended_by_user_id"] = HistoricalStripeSuspensionUserId
+            ["suspended_by_user_id"] = MigrateLegacyStripeSuspensionUserId.LegacySystemUserId
         });
 
         // Act
@@ -66,7 +64,7 @@ public sealed class MigrateLegacyStripeSuspensionUserIdMigrationTests : Integrat
     public async Task RunAsync_SuspendedOrganizationWithNonLegacyMarker_AndUnsuspendedLegacyRecord_AreUnchanged()
     {
         // Arrange
-        var organizationWithCurrentUser = await AddSuspendedOrganizationAsync(ValidSuspendedByUserId, "Current Suspension Organization");
+        var organizationWithCurrentUser = await AddSuspendedOrganizationAsync(TestConstants.UserId, "Current Suspension Organization");
         var unsuspendedOrganization = await _organizationRepository.AddAsync(new Organization
         {
             Name = "Unsuspended Legacy Organization",
@@ -75,7 +73,7 @@ public sealed class MigrateLegacyStripeSuspensionUserIdMigrationTests : Integrat
         await UpdateOrganizationDocumentAsync(unsuspendedOrganization.Id, new Dictionary<string, object>
         {
             ["is_suspended"] = false,
-            ["suspended_by_user_id"] = HistoricalStripeSuspensionUserId
+            ["suspended_by_user_id"] = MigrateLegacyStripeSuspensionUserId.LegacySystemUserId
         });
 
         // Act
@@ -85,24 +83,24 @@ public sealed class MigrateLegacyStripeSuspensionUserIdMigrationTests : Integrat
         var unchangedSuspension = await GetOrganizationAsync(organizationWithCurrentUser.Id);
         Assert.NotNull(unchangedSuspension);
         Assert.True(unchangedSuspension.IsSuspended);
-        Assert.Equal(ValidSuspendedByUserId, unchangedSuspension.SuspendedByUserId);
+        Assert.Equal(TestConstants.UserId, unchangedSuspension.SuspendedByUserId);
 
         var unchangedUnsuspendedOrganization = await GetOrganizationAsync(unsuspendedOrganization.Id);
         Assert.NotNull(unchangedUnsuspendedOrganization);
         Assert.False(unchangedUnsuspendedOrganization.IsSuspended);
-        Assert.Equal(HistoricalStripeSuspensionUserId, unchangedUnsuspendedOrganization.SuspendedByUserId);
+        Assert.Equal(MigrateLegacyStripeSuspensionUserId.LegacySystemUserId, unchangedUnsuspendedOrganization.SuspendedByUserId);
     }
 
     [Fact]
     public async Task RunAsync_SoftDeletedSuspendedOrganization_MigratesAndRemainsDeleted()
     {
         // Arrange
-        var organization = await AddSuspendedOrganizationAsync(ValidSuspendedByUserId, "Deleted Legacy Stripe Organization");
+        var organization = await AddSuspendedOrganizationAsync(TestConstants.UserId, "Deleted Legacy Stripe Organization");
         organization.IsDeleted = true;
         await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
         await UpdateOrganizationDocumentAsync(organization.Id, new Dictionary<string, object>
         {
-            ["suspended_by_user_id"] = HistoricalStripeSuspensionUserId
+            ["suspended_by_user_id"] = MigrateLegacyStripeSuspensionUserId.LegacySystemUserId
         });
 
         // Act
@@ -120,10 +118,10 @@ public sealed class MigrateLegacyStripeSuspensionUserIdMigrationTests : Integrat
     public async Task RunAsync_WhenRerun_DoesNotChangeAlreadyMigratedRecord()
     {
         // Arrange
-        var organization = await AddSuspendedOrganizationAsync(ValidSuspendedByUserId, "Idempotent Legacy Stripe Organization");
+        var organization = await AddSuspendedOrganizationAsync(TestConstants.UserId, "Idempotent Legacy Stripe Organization");
         await UpdateOrganizationDocumentAsync(organization.Id, new Dictionary<string, object>
         {
-            ["suspended_by_user_id"] = HistoricalStripeSuspensionUserId
+            ["suspended_by_user_id"] = MigrateLegacyStripeSuspensionUserId.LegacySystemUserId
         });
 
         // Act
@@ -155,7 +153,7 @@ public sealed class MigrateLegacyStripeSuspensionUserIdMigrationTests : Integrat
                 SuspensionCode = SuspensionCode.Billing,
                 SuspensionDate = DateTime.UtcNow,
                 SuspensionNotes = "Stripe subscription deleted.",
-                SuspendedByUserId = ValidSuspendedByUserId
+                SuspendedByUserId = TestConstants.UserId
             })
             .ToList();
         await _organizationRepository.AddAsync(organizations, o => o.ImmediateConsistency());
@@ -219,7 +217,7 @@ public sealed class MigrateLegacyStripeSuspensionUserIdMigrationTests : Integrat
             .Indices(_configuration.Organizations.VersionedName)
             .Query(query => query.QueryString(queryString => queryString.Query("is_suspended:true")))
             .Script(script => script
-                .Source("ctx._source.suspended_by_user_id = 'Stripe';")
+                .Source($"ctx._source.suspended_by_user_id = '{MigrateLegacyStripeSuspensionUserId.LegacySystemUserId}';")
                 .Lang(ScriptLanguage.Painless))
             .Conflicts(Conflicts.Proceed),
             TestCancellationToken);
