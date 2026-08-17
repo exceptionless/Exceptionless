@@ -338,7 +338,8 @@ public sealed class AssistantServiceTests
         Assert.Contains("CLIENT SETUP RULE", handler.RequestBody);
         Assert.Contains("pass that exact projectName to get_project_setup", handler.RequestBody);
         Assert.Contains("Do not call get_stack or list_projects for setup", handler.RequestBody);
-        Assert.Contains("Never invent packages or advertise Python, Java, Ruby, PHP, Expo, or React Native clients", handler.RequestBody);
+        Assert.Contains("Never invent packages or advertise Python, Java, Ruby, or PHP clients", handler.RequestBody);
+        Assert.Contains("describe React Native and Expo as supported only when returned by the tool", handler.RequestBody);
         Assert.Contains("do not call list_projects, call each needed project-scoped tool only once", handler.RequestBody);
         Assert.Contains("Defaults to the current page project id when omitted", handler.RequestBody);
         Assert.Contains("This tool has no stack id filter", handler.RequestBody);

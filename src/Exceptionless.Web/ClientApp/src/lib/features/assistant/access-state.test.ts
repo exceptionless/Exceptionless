@@ -13,6 +13,7 @@ describe('resolveAssistantAccessState', () => {
         ['organization', undefined, false, true, false, 'error'],
         ['organization', undefined, false, true, true, 'loading'],
         ['organization', available, false, false, true, 'available'],
+        ['organization', available, false, true, false, 'available'],
         ['organization', { enabled: true, has_access: false, upgrade_required: true }, false, false, false, 'upgrade-required'],
         ['organization', { enabled: false, has_access: false, upgrade_required: false }, false, false, false, 'disabled']
     ] as const)('resolves an access-query state', (organizationId, access, isPending, isError, isFetching, expected) => {

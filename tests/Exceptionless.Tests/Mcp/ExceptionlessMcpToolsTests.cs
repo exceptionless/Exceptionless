@@ -367,10 +367,20 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
             },
             client =>
             {
+                Assert.Equal("React Native", client.Name);
+                Assert.Equal("current", client.Status);
+            },
+            client =>
+            {
+                Assert.Equal("Expo", client.Name);
+                Assert.Equal("current", client.Status);
+            },
+            client =>
+            {
                 Assert.Equal("JavaScript / Node.js", client.Name);
                 Assert.Equal("legacy", client.Status);
             });
-        Assert.DoesNotContain(setup.Clients, client => client.Name is "Python" or "Java" or "Ruby" or "PHP" or "Expo" or "React Native");
+        Assert.DoesNotContain(setup.Clients, client => client.Name is "Python" or "Java" or "Ruby" or "PHP");
     }
 
     [Fact]

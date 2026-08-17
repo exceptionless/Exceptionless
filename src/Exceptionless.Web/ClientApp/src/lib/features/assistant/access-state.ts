@@ -11,21 +11,21 @@ export function resolveAssistantAccessState(
         return 'disabled';
     }
 
+    if (access) {
+        if (access.enabled !== true) {
+            return 'disabled';
+        }
+
+        if (access.has_access) {
+            return 'available';
+        }
+
+        return access.upgrade_required ? 'upgrade-required' : 'disabled';
+    }
+
     if (isPending || (isError && isFetching)) {
         return 'loading';
     }
 
-    if (isError) {
-        return 'error';
-    }
-
-    if (access?.enabled !== true) {
-        return 'disabled';
-    }
-
-    if (access?.has_access) {
-        return 'available';
-    }
-
-    return access?.upgrade_required ? 'upgrade-required' : 'disabled';
+    return isError ? 'error' : 'disabled';
 }
