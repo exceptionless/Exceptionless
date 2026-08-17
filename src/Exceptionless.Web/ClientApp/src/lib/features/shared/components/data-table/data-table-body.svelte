@@ -167,9 +167,9 @@
 
         event.preventDefault();
         event.stopPropagation();
-        handleAutoFillColumnResize(header);
         const delta = event.key === 'ArrowLeft' ? -16 : 16;
         const currentSize = getResizeStartSize(event, header);
+        handleAutoFillColumnResize(header);
         table.setColumnSizing((current) => ({
             ...current,
             [header.column.id]: Math.min(
