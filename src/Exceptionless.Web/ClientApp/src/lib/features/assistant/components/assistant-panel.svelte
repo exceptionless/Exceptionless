@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { goto } from '$app/navigation';
     import { page } from '$app/state';
     import * as Alert from '$comp/ui/alert';
     import { Button } from '$comp/ui/button';
@@ -8,9 +9,9 @@
     import Bot from '@lucide/svelte/icons/bot';
     import CircleAlert from '@lucide/svelte/icons/circle-alert';
     import Eraser from '@lucide/svelte/icons/eraser';
-    import { tick } from 'svelte';
+    import { tick, untrack } from 'svelte';
 
-    import type { AssistantChatMessage, AssistantFeedback, AssistantPromptRequest } from '../models';
+    import type { AssistantAccessState, AssistantChatMessage, AssistantFeedback, AssistantPromptRequest } from '../models';
 
     import { createAssistantChatRequest } from '../assistant-request';
     import { type AssistantStreamEvent, readAssistantStream } from '../assistant-stream';
@@ -21,16 +22,29 @@
 
     interface Props {
         accessMessage?: string;
-        hasAccess?: boolean;
+        accessState?: AssistantAccessState;
+        minimumPlanId?: string;
+        onAccessChanged?: () => Promise<void> | void;
+        onRetryAccess?: () => Promise<void> | void;
         open?: boolean;
         organizationId?: string;
         path?: string;
         projectId?: string;
         promptRequest?: AssistantPromptRequest;
-        upgradeRequired?: boolean;
     }
 
-    let { accessMessage, hasAccess = true, open = $bindable(false), organizationId, path, projectId, promptRequest, upgradeRequired = false }: Props = $props();
+    let {
+        accessMessage,
+        accessState = 'available',
+        minimumPlanId,
+        onAccessChanged,
+        onRetryAccess,
+        open = $bindable(false),
+        organizationId,
+        path,
+        projectId,
+        promptRequest
+    }: Props = $props();
     let messages = $state<AssistantChatMessage[]>([]);
     let conversationId = $state(crypto.randomUUID());
     let conversationOrganizationId = $state<string>();
@@ -56,15 +70,15 @@
     });
 
     $effect(() => {
-        if (!hasAccess) {
-            stopStreaming();
+        if (accessState !== 'available') {
+            untrack(stopStreaming);
         }
     });
 
     $effect(() => {
         const currentOrganizationId = organizationId;
         if (conversationOrganizationId !== currentOrganizationId) {
-            stopStreaming();
+            untrack(stopStreaming);
             messages = [];
             errorMessage = undefined;
             prompt = '';
@@ -76,7 +90,7 @@
     $effect(() => {
         if (
             !open ||
-            !hasAccess ||
+            accessState !== 'available' ||
             isStreaming ||
             !promptRequest ||
             !organizationId ||
@@ -116,6 +130,19 @@
         const history = [...messages, userMessage];
         messages = [...history, assistantMessage];
         await streamResponse(history, assistantMessage);
+    }
+
+    async function handleSuggestedAction(action: import('../models').AssistantSuggestedAction): Promise<void> {
+        const configureHref = projectId ? `/next/project/${encodeURIComponent(projectId)}/configure` : undefined;
+        if (action.href && action.href === configureHref) {
+            open = false;
+            await goto(action.href);
+            return;
+        }
+
+        if (action.prompt) {
+            await submitPrompt(action.prompt, true, action.label, action.sourcePath);
+        }
     }
 
     async function regenerateResponse(assistantMessageId: string): Promise<void> {
@@ -259,6 +286,10 @@
 
     function stopStreaming(): void {
         abortController?.abort();
+        if (!messages.some((message) => message.tools.some((tool) => tool.status === 'running'))) {
+            return;
+        }
+
         messages = messages.map((message) => ({
             ...message,
             tools: message.tools.map((tool) =>
@@ -339,7 +370,7 @@
                     <Sheet.Description>Your Exceptionless assistant.</Sheet.Description>
                 </div>
             </div>
-            {#if hasAccess && messages.length > 0}
+            {#if accessState === 'available' && messages.length > 0}
                 <Button
                     aria-label="Clear conversation"
                     class="absolute top-3 right-12"
@@ -354,8 +385,8 @@
         </Sheet.Header>
 
         <div class="relative min-h-0 flex-1">
-            {#if !hasAccess}
-                <AssistantUpgradeRequired message={accessMessage} {organizationId} {upgradeRequired} />
+            {#if accessState !== 'available'}
+                <AssistantUpgradeRequired {accessState} message={accessMessage} {minimumPlanId} {onAccessChanged} onRetry={onRetryAccess} {organizationId} />
             {:else}
                 <div
                     bind:this={conversationElement}
@@ -397,8 +428,8 @@
                                     isStreaming={isStreaming && message === messages.at(-1)}
                                     {message}
                                     onFeedback={(feedback) => setMessageFeedback(message.id, feedback)}
-                                    onRegenerate={() => void regenerateResponse(message.id)}
-                                    onSuggestedAction={(action) => void submitPrompt(action.prompt, true, action.label, action.sourcePath)}
+                                    onRegenerate={() => regenerateResponse(message.id)}
+                                    onSuggestedAction={(action) => void handleSuggestedAction(action)}
                                     suggestionsDisabled={isStreaming}
                                 />
                             {/each}
@@ -406,7 +437,7 @@
                     {/if}
                 </div>
             {/if}
-            {#if hasAccess && showScrollToBottom}
+            {#if accessState === 'available' && showScrollToBottom}
                 <Button
                     aria-label="Scroll to latest message"
                     class="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full shadow-md"
@@ -419,7 +450,7 @@
             {/if}
         </div>
 
-        {#if hasAccess}
+        {#if accessState === 'available'}
             <Sheet.Footer class="bg-background gap-2 border-t p-3">
                 {#if errorMessage}
                     <Alert.Root variant="destructive">

@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('$features/auth/index.svelte', () => ({ accessToken: { current: 'access-token' } }));
 vi.mock('katex/dist/katex.min.css', () => ({}));
+const goto = vi.hoisted(() => vi.fn(() => Promise.resolve()));
+vi.mock('$app/navigation', () => ({ goto }));
 
 import AssistantPanel from './assistant-panel.svelte';
 
@@ -11,8 +13,23 @@ describe('AssistantPanel', () => {
         HTMLElement.prototype.scrollTo = vi.fn();
     });
 
+    it('renders unavailable access without recursively updating message state', () => {
+        expect(() =>
+            render(AssistantPanel, {
+                props: {
+                    accessState: 'upgrade-required',
+                    open: true,
+                    organizationId: 'organization-1'
+                }
+            })
+        ).not.toThrow();
+
+        expect(screen.getByText('Bring Exie onto your team')).toBeTruthy();
+    });
+
     afterEach(() => {
         vi.unstubAllGlobals();
+        goto.mockClear();
     });
 
     it('initializes organization context before consuming a queued prompt', async () => {
@@ -79,5 +96,30 @@ describe('AssistantPanel', () => {
         };
         expect(payload.path).toBe('/next/stack/stack-b');
         expect(payload.messages.at(-1)?.suggested_action_path).toBe('/next/stack/stack-a');
+    });
+
+    it('navigates a validated setup action without submitting another prompt', async () => {
+        const fetchMock = vi.fn(
+            async () =>
+                new Response(
+                    '{"type":"suggested_actions","suggested_actions":[{"label":"Open Client Setup","href":"/next/project/project-1/configure"}]}\n' +
+                        '{"type":"done"}\n'
+                )
+        );
+        vi.stubGlobal('fetch', fetchMock);
+
+        render(AssistantPanel, {
+            props: {
+                open: true,
+                organizationId: 'organization-1',
+                projectId: 'project-1',
+                promptRequest: { id: 'request-1', prompt: 'How do I configure this project?' }
+            }
+        });
+
+        await fireEvent.click(await screen.findByRole('button', { name: 'Open Client Setup' }));
+
+        await waitFor(() => expect(goto).toHaveBeenCalledWith('/next/project/project-1/configure'));
+        expect(fetchMock).toHaveBeenCalledOnce();
     });
 });

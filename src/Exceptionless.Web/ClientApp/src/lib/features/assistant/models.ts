@@ -2,8 +2,11 @@ export interface AssistantAccess {
     enabled: boolean;
     has_access: boolean;
     message?: string;
+    minimum_plan_id?: string;
     upgrade_required: boolean;
 }
+
+export type AssistantAccessState = 'available' | 'disabled' | 'error' | 'loading' | 'upgrade-required';
 
 export interface AssistantChatMessage {
     content: string;
@@ -24,11 +27,7 @@ export interface AssistantPromptRequest {
     prompt: string;
 }
 
-export interface AssistantSuggestedAction {
-    label: string;
-    prompt: string;
-    sourcePath?: string;
-}
+export type AssistantSuggestedAction = AssistantSuggestedActionBase & ({ href: string; prompt?: never } | { href?: never; prompt: string });
 
 export interface AssistantToolActivity {
     arguments: string;
@@ -36,4 +35,9 @@ export interface AssistantToolActivity {
     name: string;
     result?: string;
     status: 'cancelled' | 'complete' | 'failed' | 'running';
+}
+
+interface AssistantSuggestedActionBase {
+    label: string;
+    sourcePath?: string;
 }

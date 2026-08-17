@@ -8,6 +8,7 @@
     import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
     import ThumbsDown from '@lucide/svelte/icons/thumbs-down';
     import ThumbsUp from '@lucide/svelte/icons/thumbs-up';
+    import { toast } from 'svelte-sonner';
 
     import type { AssistantFeedback } from '../models';
 
@@ -16,7 +17,7 @@
         content: string;
         feedback?: AssistantFeedback;
         onFeedback?: (feedback: AssistantFeedback | undefined) => void;
-        onRegenerate?: () => void;
+        onRegenerate?: () => Promise<void> | void;
         showFeedback?: boolean;
     }
 
@@ -24,11 +25,35 @@
     const clipboard = new UseClipboard({
         delay: 1500
     });
+    let isRegenerating = $state(false);
+
+    async function copyMessage(): Promise<void> {
+        const status = await clipboard.copy(content);
+        if (status === 'success') {
+            toast.success('Message copied.');
+        } else {
+            toast.error('Couldn’t copy the message.');
+        }
+    }
+
+    async function regenerate(): Promise<void> {
+        if (!onRegenerate || isRegenerating) {
+            return;
+        }
+
+        isRegenerating = true;
+        try {
+            await onRegenerate();
+        } finally {
+            isRegenerating = false;
+        }
+    }
 
     async function updateFeedback(value: AssistantFeedback): Promise<void> {
         const updatedFeedback = feedback === value ? undefined : value;
         onFeedback?.(updatedFeedback);
         if (updatedFeedback) {
+            toast.success(updatedFeedback === 'helpful' ? 'Marked as helpful.' : 'Marked as not helpful.');
             await submitFeatureUsage(updatedFeedback === 'helpful' ? 'assistant.ResponseHelpful' : 'assistant.ResponseNotHelpful').catch(() => undefined);
         }
     }
@@ -45,7 +70,7 @@
         <Tooltip.Root>
             <Tooltip.Trigger>
                 {#snippet child({ props })}
-                    <Button {...props} aria-label="Copy message" onclick={() => void clipboard.copy(content)} size="icon-xs" variant="ghost">
+                    <Button {...props} aria-label="Copy message" onclick={() => void copyMessage()} size="icon-xs" variant="ghost">
                         {#if clipboard.copied}<Check aria-hidden="true" />{:else}<Clipboard aria-hidden="true" />{/if}
                     </Button>
                 {/snippet}
@@ -57,12 +82,19 @@
             <Tooltip.Root>
                 <Tooltip.Trigger>
                     {#snippet child({ props })}
-                        <Button {...props} aria-label="Regenerate response" onclick={onRegenerate} size="icon-xs" variant="ghost">
+                        <Button
+                            {...props}
+                            aria-label={isRegenerating ? 'Regenerating response' : 'Regenerate response'}
+                            disabled={isRegenerating}
+                            onclick={() => void regenerate()}
+                            size="icon-xs"
+                            variant="ghost"
+                        >
                             <RotateCcw aria-hidden="true" />
                         </Button>
                     {/snippet}
                 </Tooltip.Trigger>
-                <Tooltip.Content>Regenerate response</Tooltip.Content>
+                <Tooltip.Content>{isRegenerating ? 'Regenerating response…' : 'Regenerate response'}</Tooltip.Content>
             </Tooltip.Root>
         {/if}
 
