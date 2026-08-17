@@ -501,6 +501,31 @@ public sealed class AssistantServiceTests
     }
 
     [Fact]
+    public void GetProjectSetupHref_ResolvedProject_ReturnsCanonicalHref()
+    {
+        string configureHref = AssistantRoutes.ProjectConfigure("resolved-project");
+        string result = JsonSerializer.Serialize(new
+        {
+            ok = true,
+            data = new { id = "resolved-project", webUrl = configureHref }
+        });
+
+        Assert.Equal(configureHref, AssistantSuggestedActionParser.GetProjectSetupHref(result));
+    }
+
+    [Fact]
+    public void GetProjectSetupHref_MismatchedRoute_ReturnsNull()
+    {
+        string result = JsonSerializer.Serialize(new
+        {
+            ok = true,
+            data = new { id = "resolved-project", webUrl = AssistantRoutes.ProjectConfigure("other-project") }
+        });
+
+        Assert.Null(AssistantSuggestedActionParser.GetProjectSetupHref(result));
+    }
+
+    [Fact]
     public async Task StreamAsync_SuggestedActionsWithoutAnswer_RequestsFinalAnswerAndCapsActions()
     {
         string suggestionPayload = JsonSerializer.Serialize(new

@@ -62,6 +62,7 @@ public sealed class AssistantService(
         int remainingProjectSearches = AssistantLimits.MaximumProjectsPerTurn;
         int remainingToolContextCharacters = AssistantLimits.MaximumToolContextCharacters;
         IReadOnlyCollection<AssistantSuggestedAction> pendingSuggestedActions = [];
+        string? configureHref = String.IsNullOrWhiteSpace(request.ProjectId) ? null : AssistantRoutes.ProjectConfigure(request.ProjectId);
         bool requireFinalAnswer = false;
 
         while (true)
@@ -214,7 +215,7 @@ public sealed class AssistantService(
             {
                 var suggestedActions = AssistantSuggestedActionParser.Parse(
                     suggestedActionCalls.Select(call => call.Arguments.ToString()),
-                    request.ProjectId);
+                    configureHref);
                 if (assistantContent.Length > 0)
                 {
                     if (suggestedActions.Count > 0)
@@ -320,6 +321,9 @@ public sealed class AssistantService(
                         }, s_jsonOptions)
                         : await ExecuteToolAsync(toolCall.Name, arguments, request, cancellationToken);
                 }
+
+                if (toolCall.Name == GetProjectSetupTool)
+                    configureHref = AssistantSuggestedActionParser.GetProjectSetupHref(result) ?? configureHref;
 
                 result = LimitToolResult(result, ref remainingToolContextCharacters);
                 yield return AssistantStreamEvent.ToolResult(toolCall.Id, toolCall.Name, result);

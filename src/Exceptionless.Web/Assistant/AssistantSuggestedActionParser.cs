@@ -6,11 +6,10 @@ internal static class AssistantSuggestedActionParser
 {
     private const string ConfigureProjectFallbackPrompt = "How do I configure this project to start sending events?";
 
-    public static IReadOnlyCollection<AssistantSuggestedAction> Parse(IEnumerable<string> toolArguments, string? projectId)
+    public static IReadOnlyCollection<AssistantSuggestedAction> Parse(IEnumerable<string> toolArguments, string? configureHref)
     {
         var actions = new List<AssistantSuggestedAction>();
         var destinations = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        string? configureHref = String.IsNullOrWhiteSpace(projectId) ? null : AssistantRoutes.ProjectConfigure(projectId);
 
         foreach (string arguments in toolArguments)
         {
@@ -31,6 +30,32 @@ internal static class AssistantSuggestedActionParser
         }
 
         return actions;
+    }
+
+    public static string? GetProjectSetupHref(string result)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(result);
+            var root = document.RootElement;
+            if (!root.TryGetProperty("ok", out var ok) || ok.ValueKind != JsonValueKind.True
+                || !root.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Object)
+            {
+                return null;
+            }
+
+            string? projectId = GetString(data, "id")?.Trim();
+            string? webUrl = GetString(data, "webUrl")?.Trim();
+            if (String.IsNullOrWhiteSpace(projectId) || String.IsNullOrWhiteSpace(webUrl))
+                return null;
+
+            string expectedHref = AssistantRoutes.ProjectConfigure(projectId);
+            return String.Equals(webUrl, expectedHref, StringComparison.Ordinal) ? expectedHref : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     private static AssistantSuggestedAction? ParseAction(JsonElement item, string? configureHref)
