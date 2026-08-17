@@ -1,6 +1,7 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { page } from '$app/state';
+    import { H3, Muted } from '$comp/typography';
     import * as Alert from '$comp/ui/alert';
     import { Button } from '$comp/ui/button';
     import * as Sheet from '$comp/ui/sheet';
@@ -402,11 +403,11 @@
                                 <Bot aria-hidden="true" class="size-7" />
                             </div>
                             <div class="max-w-72">
-                                <h3 class="text-base font-semibold">Hi, I’m Exie. How can I help?</h3>
-                                <p class="text-muted-foreground mt-1 text-sm">
+                                <H3 class="text-base">Hi, I’m Exie. How can I help?</H3>
+                                <Muted class="mt-1">
                                     I can use tools to investigate your Exceptionless data and make the stack changes you request. I’ll automatically use the
                                     page or detail panel you’re viewing as context.
-                                </p>
+                                </Muted>
                             </div>
                             <div class="grid w-full gap-2">
                                 {#each suggestions as suggestion (suggestion)}
@@ -465,7 +466,7 @@
                     </Alert.Root>
                 {/if}
                 <AssistantComposer bind:value={prompt} {isStreaming} onStop={stopStreaming} onSubmit={() => void submitPrompt()} />
-                <p class="text-muted-foreground text-center text-xs">AI can make mistakes. Check important changes.</p>
+                <Muted class="text-center text-xs">AI can make mistakes. Check important changes.</Muted>
             </Sheet.Footer>
         {/if}
     </Sheet.Content>

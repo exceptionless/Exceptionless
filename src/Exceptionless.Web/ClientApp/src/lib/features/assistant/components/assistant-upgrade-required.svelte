@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { H3, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { Spinner } from '$comp/ui/spinner';
     import { showUpgradeDialog } from '$features/billing/upgrade-required.svelte';
@@ -34,17 +35,17 @@
     </div>
     <div class="max-w-80">
         {#if accessState === 'loading'}
-            <h3 class="text-base font-semibold">Checking Exie access</h3>
-            <p class="text-muted-foreground mt-1 text-sm">Loading this organization’s assistant access…</p>
+            <H3 class="text-base">Checking Exie access</H3>
+            <Muted class="mt-1">Loading this organization’s assistant access…</Muted>
         {:else if accessState === 'error'}
-            <h3 class="text-base font-semibold">Exie couldn’t check access</h3>
-            <p class="text-muted-foreground mt-1 text-sm">{message ?? 'We couldn’t load this organization’s assistant access.'}</p>
+            <H3 class="text-base">Exie couldn’t check access</H3>
+            <Muted class="mt-1">{message ?? 'We couldn’t load this organization’s assistant access.'}</Muted>
         {:else}
-            <h3 class="text-base font-semibold">Bring Exie onto your team</h3>
-            <p class="text-muted-foreground mt-1 text-sm">{message ?? 'Exie is not available for this organization.'}</p>
+            <H3 class="text-base">Bring Exie onto your team</H3>
+            <Muted class="mt-1">{message ?? 'Exie is not available for this organization.'}</Muted>
         {/if}
         {#if accessState === 'upgrade-required'}
-            <p class="text-muted-foreground mt-2 text-sm">Upgrade this organization to investigate errors and manage stacks with Exie.</p>
+            <Muted class="mt-2">Upgrade this organization to investigate errors and manage stacks with Exie.</Muted>
         {/if}
     </div>
     {#if accessState === 'loading'}

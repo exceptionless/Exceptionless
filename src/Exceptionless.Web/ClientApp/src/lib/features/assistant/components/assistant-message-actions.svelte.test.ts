@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const submitFeatureUsage = vi.hoisted(() => vi.fn(() => Promise.resolve()));
-const toast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
+const toast = vi.hoisted(() => ({ success: vi.fn() }));
 vi.mock('$features/auth/exceptionless-session', () => ({ submitFeatureUsage }));
 vi.mock('svelte-sonner', () => ({ toast }));
 
@@ -14,7 +14,6 @@ describe('AssistantMessageActions', () => {
     beforeEach(() => {
         writeText.mockClear();
         submitFeatureUsage.mockClear();
-        toast.error.mockClear();
         toast.success.mockClear();
         Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
     });
@@ -28,7 +27,6 @@ describe('AssistantMessageActions', () => {
 
         expect(writeText).toHaveBeenCalledWith('The answer');
         expect(onRegenerate).toHaveBeenCalledOnce();
-        expect(toast.success).toHaveBeenCalledWith('Message copied.');
     });
 
     it('records helpful feedback without including message contents', async () => {
@@ -41,16 +39,6 @@ describe('AssistantMessageActions', () => {
         await waitFor(() => expect(submitFeatureUsage).toHaveBeenCalledWith('assistant.ResponseHelpful'));
         expect(toast.success).toHaveBeenCalledWith('Marked as helpful.');
         expect(submitFeatureUsage).not.toHaveBeenCalledWith(expect.stringContaining('Sensitive answer'));
-    });
-
-    it('reports a clipboard failure', async () => {
-        writeText.mockRejectedValueOnce(new Error('denied'));
-        Object.defineProperty(document, 'execCommand', { configurable: true, value: vi.fn(() => false) });
-        render(AssistantMessageActions, { props: { content: 'The answer' } });
-
-        await fireEvent.click(screen.getByRole('button', { name: 'Copy message' }));
-
-        await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Couldn’t copy the message.'));
     });
 
     it('disables regenerate while the callback is pending', async () => {

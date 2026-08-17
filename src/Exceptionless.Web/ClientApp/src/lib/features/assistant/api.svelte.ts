@@ -20,16 +20,11 @@ interface GetAssistantAccessRequest {
 export function getAssistantAccessQuery(request: GetAssistantAccessRequest) {
     return createQuery<AssistantAccess, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.organizationId,
-        queryFn: async ({ queryKey, signal }: { queryKey: readonly unknown[]; signal: AbortSignal }) => {
-            const organizationId = queryKey[2];
-            if (typeof organizationId !== 'string' || !organizationId) {
-                throw new Error('An organization is required to check Exie access.');
-            }
-
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<AssistantAccess>('assistant/access', {
                 params: {
-                    organization_id: organizationId
+                    organization_id: request.route.organizationId
                 },
                 signal
             });

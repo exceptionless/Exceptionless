@@ -75,9 +75,7 @@ function copyUsingTextArea(text: string) {
     textArea.setSelectionRange(0, textArea.value.length);
 
     try {
-        return typeof document.execCommand === 'function' && document.execCommand('copy');
-    } catch {
-        return false;
+        return document.execCommand('copy');
     } finally {
         document.body.removeChild(textArea);
         activeElement?.focus();

@@ -27,15 +27,6 @@
     });
     let isRegenerating = $state(false);
 
-    async function copyMessage(): Promise<void> {
-        const status = await clipboard.copy(content);
-        if (status === 'success') {
-            toast.success('Message copied.');
-        } else {
-            toast.error('Couldn’t copy the message.');
-        }
-    }
-
     async function regenerate(): Promise<void> {
         if (!onRegenerate || isRegenerating) {
             return;
@@ -70,7 +61,7 @@
         <Tooltip.Root>
             <Tooltip.Trigger>
                 {#snippet child({ props })}
-                    <Button {...props} aria-label="Copy message" onclick={() => void copyMessage()} size="icon-xs" variant="ghost">
+                    <Button {...props} aria-label="Copy message" onclick={() => void clipboard.copy(content)} size="icon-xs" variant="ghost">
                         {#if clipboard.copied}<Check aria-hidden="true" />{:else}<Clipboard aria-hidden="true" />{/if}
                     </Button>
                 {/snippet}
