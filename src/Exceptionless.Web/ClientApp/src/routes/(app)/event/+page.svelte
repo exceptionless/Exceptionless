@@ -250,6 +250,7 @@
     let showChart = $state(true);
     const savedViewsState = useSavedViews({
         baseHref: resolve('/(app)/event'),
+        defaultAutoFillColumnId: 'summary',
         defaultColumnVisibility: defaultEventColumnVisibility,
         defaultFilter: DEFAULT_FILTER,
         defaultTime: DEFAULT_TIME_RANGE,
@@ -944,15 +945,18 @@
             {#if savedViewsState.isEnabled}
                 <SavedViewPicker
                     activeSavedView={savedViewsState.activeSavedView}
+                    autoFillColumnId={savedViewsState.autoFillColumnId}
                     columnOrder={table.store.state.columnOrder}
                     columnSizing={table.store.state.columnSizing}
                     columnVisibility={table.store.state.columnVisibility}
+                    defaultAutoFillColumnId="summary"
                     filters={filters ?? []}
                     isModified={savedViewsState.isModified}
                     onLoadView={savedViewsState.handleLoadView}
                     onClearSavedView={savedViewsState.handleClearSavedView}
                     onResetToSaved={handleResetToSaved}
                     savedViews={savedViewsState.savedViews}
+                    setAutoFillColumnId={savedViewsState.setAutoFillColumnId}
                     {showChart}
                     {showStats}
                     setShowChart={(v) => (showChart = v)}
@@ -991,7 +995,15 @@
             />
         {/if}
 
-        <EventsDataTable bind:limit={eventsQueryParameters.limit!} isLoading={isSavedViewRoutePending || eventsQuery.isFetching} {rowClick} {rowHref} {table}>
+        <EventsDataTable
+            autoFillColumnId={savedViewsState.autoFillColumnId}
+            bind:limit={eventsQueryParameters.limit!}
+            isLoading={isSavedViewRoutePending || eventsQuery.isFetching}
+            onAutoFillColumnResized={() => savedViewsState.setAutoFillColumnId(null)}
+            {rowClick}
+            {rowHref}
+            {table}
+        >
             {#snippet footerChildren()}
                 <div class="h-9 min-w-35">
                     {#if table.getSelectedRowModel().flatRows.length}

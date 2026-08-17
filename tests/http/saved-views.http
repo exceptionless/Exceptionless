@@ -57,6 +57,7 @@ Content-Type: application/json
     "view_type": "events",
     "columns": {
         "summary": {
+            "auto_fill": true,
             "visible": true,
             "position": 0
         },
@@ -88,6 +89,7 @@ Content-Type: application/json
     "view_type": "stream",
     "columns": {
         "summary": {
+            "auto_fill": true,
             "visible": true,
             "position": 0
         },
@@ -118,6 +120,7 @@ Content-Type: application/json
     "sort": "date",
     "columns": {
         "summary": {
+            "auto_fill": true,
             "visible": true,
             "position": 0
         },
