@@ -8,17 +8,30 @@
     import type { EventSummaryModel, SummaryTemplateKeys } from '../summary/index';
 
     interface Props {
+        autoFillColumnId?: null | string;
         bodyChildren?: Snippet;
         footerChildren?: Snippet;
         isLoading: boolean;
         limit: number;
+        onAutoFillColumnResized?: (columnId: string) => void;
         rowClick?: (row: EventSummaryModel<SummaryTemplateKeys>) => void;
         rowHref?: (row: EventSummaryModel<SummaryTemplateKeys>) => string;
         table: Table<StockFeatures, EventSummaryModel<SummaryTemplateKeys>>;
         toolbarChildren?: Snippet;
     }
 
-    let { bodyChildren, footerChildren, isLoading, limit = $bindable(), rowClick, rowHref, table, toolbarChildren }: Props = $props();
+    let {
+        autoFillColumnId,
+        bodyChildren,
+        footerChildren,
+        isLoading,
+        limit = $bindable(),
+        onAutoFillColumnResized,
+        rowClick,
+        rowHref,
+        table,
+        toolbarChildren
+    }: Props = $props();
 </script>
 
 <DataTable.Root>
@@ -27,7 +40,7 @@
             {@render toolbarChildren()}
         </DataTable.Toolbar>
     {/if}
-    <DataTable.Body {rowClick} {rowHref} {table}>
+    <DataTable.Body {autoFillColumnId} {onAutoFillColumnResized} {rowClick} {rowHref} {table}>
         {#if isLoading}
             <DelayedRender>
                 <DataTable.Loading {table} />

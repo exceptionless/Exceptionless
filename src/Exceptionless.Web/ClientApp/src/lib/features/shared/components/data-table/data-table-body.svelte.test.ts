@@ -38,6 +38,16 @@ describe('DataTableBody', () => {
         expect(dateHeader.style.cssText).toBe('width: 150px; min-width: 150px; max-width: 150px;');
     });
 
+    it('uses the saved view auto-fill column instead of the column-definition default', () => {
+        render(DataTableBodyTestHarness, { autoFillColumnId: 'date', fullWidthSummary: true, kind: 'event', onRowClick: vi.fn() });
+
+        const summaryHeader = screen.getByRole('columnheader', { name: 'Summary' });
+        const dateHeader = screen.getByRole('columnheader', { name: 'Date' });
+
+        expect(summaryHeader.style.cssText).toBe('width: 160px; min-width: 160px; max-width: 160px;');
+        expect(dateHeader.style.cssText).toBe('width: 100%;');
+    });
+
     it('does not transfer flexibility after the full-width column is sized', () => {
         render(DataTableBodyTestHarness, { fullWidthSummary: true, kind: 'event', onRowClick: vi.fn(), sizedFullWidthSummary: true });
 
@@ -48,6 +58,34 @@ describe('DataTableBody', () => {
         expect(table.style.cssText).toBe('width: 362px; min-width: 362px;');
         expect(summaryHeader.style.cssText).toBe('width: 180px; min-width: 180px; max-width: 180px;');
         expect(dateHeader.style.cssText).toBe('width: 150px; min-width: 150px; max-width: 150px;');
+    });
+
+    it('keeps every data column fixed when auto-fill is explicitly disabled', () => {
+        render(DataTableBodyTestHarness, { autoFillColumnId: null, fullWidthSummary: true, kind: 'event', onRowClick: vi.fn() });
+
+        const table = screen.getByRole('table');
+        const summaryHeader = screen.getByRole('columnheader', { name: 'Summary' });
+        const dateHeader = screen.getByRole('columnheader', { name: 'Date' });
+
+        expect(table.style.cssText).toBe('width: 342px; min-width: 342px;');
+        expect(summaryHeader.style.cssText).toBe('width: 160px; min-width: 160px; max-width: 160px;');
+        expect(dateHeader.style.cssText).toBe('width: 150px; min-width: 150px; max-width: 150px;');
+    });
+
+    it('reports when the selected auto-fill column is resized', async () => {
+        const onAutoFillColumnResized = vi.fn();
+        render(DataTableBodyTestHarness, {
+            autoFillColumnId: 'date',
+            fullWidthSummary: true,
+            kind: 'event',
+            onAutoFillColumnResized,
+            onRowClick: vi.fn()
+        });
+
+        await fireEvent.keyDown(screen.getByRole('button', { name: 'Resize date column' }), { key: 'ArrowRight' });
+
+        expect(onAutoFillColumnResized).toHaveBeenCalledOnce();
+        expect(onAutoFillColumnResized).toHaveBeenCalledWith('date');
     });
 
     it('resizes a flexible column from its rendered width', async () => {

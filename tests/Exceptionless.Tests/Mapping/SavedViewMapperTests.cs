@@ -29,7 +29,7 @@ public sealed class SavedViewMapperTests
             FilterDefinitions = "[{\"type\":\"status\",\"values\":[\"open\",\"regressed\"]}]",
             Columns = new Dictionary<string, SavedViewColumnSettings>
             {
-                ["summary"] = new() { Position = 0, Visible = true },
+                ["summary"] = new() { AutoFill = true, Position = 0, Visible = true },
                 ["status"] = new() { Position = 1, Visible = true, Width = 180 },
                 ["users"] = new() { Position = 2, Visible = false }
             }
@@ -51,6 +51,7 @@ public sealed class SavedViewMapperTests
         Assert.False(result.Columns["users"].Visible);
         Assert.Equal(1, result.Columns["status"].Position);
         Assert.Equal(180, result.Columns["status"].Width);
+        Assert.True(result.Columns["summary"].AutoFill);
     }
 
     [Fact]
@@ -112,7 +113,7 @@ public sealed class SavedViewMapperTests
             FilterDefinitions = "[{\"type\":\"status\",\"values\":[\"open\"]}]",
             Columns = new Dictionary<string, SavedViewColumnSettings>
             {
-                ["summary"] = new() { Position = 0, Visible = true },
+                ["summary"] = new() { AutoFill = true, Position = 0, Visible = true },
                 ["status"] = new() { Position = 1, Visible = true, Width = 180 }
             },
             Name = "My View",
@@ -139,6 +140,7 @@ public sealed class SavedViewMapperTests
         Assert.True(result.Columns["status"].Visible);
         Assert.Equal(1, result.Columns["status"].Position);
         Assert.Equal(180, result.Columns["status"].Width);
+        Assert.True(result.Columns["summary"].AutoFill);
         Assert.Equal("My View", result.Name);
         Assert.Equal("[now-30d TO now]", result.Time);
         Assert.Equal("-last", result.Sort);
