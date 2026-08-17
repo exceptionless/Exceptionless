@@ -27,7 +27,7 @@ using ModelContextProtocol.Server;
 namespace Exceptionless.Web.Mcp;
 
 [McpServerToolType]
-public sealed class ExceptionlessMcpTools
+public sealed partial class ExceptionlessMcpTools
 {
     private const int DefaultLimit = 10;
     private const int MaxSummaryLimit = 100;

@@ -15,6 +15,7 @@ Content-Type: application/json
 }
 
 ### Check assistant access for the selected organization
+# Free and Small plans include minimum_plan_id: EX_MEDIUM in this response.
 GET {{apiUrl}}/assistant/access?organization_id={{organizationId}}
 Authorization: Bearer {{login.response.body.$.token}}
 

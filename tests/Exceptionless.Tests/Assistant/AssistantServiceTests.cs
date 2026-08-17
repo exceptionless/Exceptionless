@@ -320,6 +320,7 @@ public sealed class AssistantServiceTests
         Assert.Contains($"\"max_tokens\":{AssistantLimits.MaximumOutputTokens}", handler.RequestBody);
         Assert.Contains("get_event", handler.RequestBody);
         Assert.Contains("get_stack", handler.RequestBody);
+        Assert.Contains("get_project_setup", handler.RequestBody);
         Assert.Contains("search_stacks", handler.RequestBody);
         Assert.Contains("update_stack_status", handler.RequestBody);
         Assert.Contains("snooze_stack", handler.RequestBody);
@@ -334,6 +335,9 @@ public sealed class AssistantServiceTests
         Assert.Contains("CURRENT PAGE RULE", handler.RequestBody);
         Assert.Contains("Never call list_projects or search_stacks to rediscover the current event or stack", handler.RequestBody);
         Assert.Contains("CURRENT PROJECT RULE", handler.RequestBody);
+        Assert.Contains("CLIENT SETUP RULE", handler.RequestBody);
+        Assert.Contains("Do not call get_stack or list_projects for setup", handler.RequestBody);
+        Assert.Contains("Never invent packages or advertise Python, Java, Ruby, PHP, Expo, or React Native clients", handler.RequestBody);
         Assert.Contains("do not call list_projects, call each needed project-scoped tool only once", handler.RequestBody);
         Assert.Contains("Defaults to the current page project id when omitted", handler.RequestBody);
         Assert.Contains("This tool has no stack id filter", handler.RequestBody);
@@ -423,6 +427,74 @@ public sealed class AssistantServiceTests
         Assert.Equal("done", events[2].Type);
         Assert.DoesNotContain(events, item => item.Type is "tool_call" or "tool_result");
         Assert.Single(handler.RequestBodies);
+    }
+
+    [Fact]
+    public async Task StreamAsync_ConfigureSuggestedAction_EmitsValidatedInternalHref()
+    {
+        string providerPayload = JsonSerializer.Serialize(new
+        {
+            choices = new[]
+            {
+                new
+                {
+                    delta = new
+                    {
+                        content = "Use Client Setup for the verified instructions.",
+                        tool_calls = new[]
+                        {
+                            new
+                            {
+                                index = 0,
+                                id = "suggestions-1",
+                                function = new
+                                {
+                                    name = "suggest_followups",
+                                    arguments = JsonSerializer.Serialize(new
+                                    {
+                                        actions = new object[]
+                                        {
+                                            new { label = "Open Client Setup", href = "/next/project/project-id/configure" },
+                                            new { label = "Unsafe link", href = "/next/project/another-project/configure" },
+                                            new
+                                            {
+                                                label = "Ambiguous action",
+                                                prompt = "Configure this project",
+                                                href = "/next/project/project-id/configure"
+                                            }
+                                        }
+                                    })
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        var handler = new StubHttpMessageHandler($"data: {providerPayload}\n\ndata: [DONE]\n");
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            })
+            .Build());
+        var service = CreateAssistantService(handler, appOptions);
+        var events = new List<AssistantStreamEvent>();
+
+        await foreach (var item in service.StreamAsync(
+            new AssistantChatRequest([new AssistantChatMessage("user", "How do I configure this project?")], ProjectId: "project-id"),
+            "user-id",
+            CreatePlanOptions(),
+            TestContext.Current.CancellationToken))
+        {
+            events.Add(item);
+        }
+
+        var action = Assert.Single(Assert.Single(events, item => item.Type == "suggested_actions").SuggestedActions!);
+        Assert.Equal("Open Client Setup", action.Label);
+        Assert.Equal("/next/project/project-id/configure", action.Href);
+        Assert.Null(action.Prompt);
     }
 
     [Fact]

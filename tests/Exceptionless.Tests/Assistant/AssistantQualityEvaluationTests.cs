@@ -81,6 +81,17 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
         Assert.Equal(1, organizationTopErrors.ToolCalls.Count(call => call == "list_projects"));
         Assert.InRange(organizationTopErrors.ToolCalls.Count(call => call == "search_stacks"), 1, AssistantLimits.MaximumProjectsPerTurn);
         Assert.Contains("/next/stack/", organizationTopErrors.Text, StringComparison.Ordinal);
+
+        var clientSetup = await SendAssistantTurnAsync(
+            "How do I configure this project to start sending events?",
+            $"/next/project/{SampleDataService.TEST_PROJECT_ID}/stacks",
+            SampleDataService.TEST_PROJECT_ID);
+        AssertSuccessfulAnswer(clientSetup);
+        Assert.Equal(["get_project_setup"], clientSetup.ToolCalls);
+        Assert.Contains($"/next/project/{SampleDataService.TEST_PROJECT_ID}/configure", clientSetup.Text, StringComparison.Ordinal);
+        Assert.DoesNotContain("exceptionless (pip)", clientSetup.Text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("exceptionless (gem)", clientSetup.Text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("exceptionless (Composer)", clientSetup.Text, StringComparison.OrdinalIgnoreCase);
     }
 
     private void RequireEvaluationConfiguration()

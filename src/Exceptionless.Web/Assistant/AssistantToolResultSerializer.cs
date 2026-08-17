@@ -38,6 +38,7 @@ internal static class AssistantToolResultSerializer
         {
             "get_event" when item["stack_id"]?.GetValue<string>() is { Length: > 0 } stackId => $"/next/stack/{Uri.EscapeDataString(stackId)}/event/{Uri.EscapeDataString(id)}",
             "get_stack" or "search_stacks" => $"/next/stack/{Uri.EscapeDataString(id)}",
+            "get_project_setup" => AssistantRoutes.ProjectConfigure(id),
             "list_projects" => $"/next/project/{Uri.EscapeDataString(id)}/stacks",
             _ => null
         };

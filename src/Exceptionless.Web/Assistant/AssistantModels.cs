@@ -28,9 +28,10 @@ public sealed record AssistantAccessResponse(
     bool Enabled,
     bool HasAccess,
     bool UpgradeRequired,
-    string? Message = null);
+    string? Message = null,
+    string? MinimumPlanId = null);
 
-public sealed record AssistantSuggestedAction(string Label, string Prompt);
+public sealed record AssistantSuggestedAction(string Label, string? Prompt = null, string? Href = null);
 
 public sealed record AssistantStreamEvent(
     string Type,

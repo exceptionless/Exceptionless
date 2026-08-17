@@ -11275,6 +11275,12 @@
               "null",
               "string"
             ]
+          },
+          "minimum_plan_id": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

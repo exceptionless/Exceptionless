@@ -349,6 +349,30 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetProjectSetupAsync_Project_ReturnsOnlyVerifiedClientSupport()
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead);
+
+        var result = await tools.GetProjectSetupAsync(TestConstants.ProjectId);
+
+        Assert.True(result.Ok);
+        var setup = Data(result);
+        Assert.Equal(TestConstants.ProjectId, setup.Id);
+        Assert.Collection(setup.Clients,
+            client =>
+            {
+                Assert.Equal(".NET", client.Name);
+                Assert.Equal("current", client.Status);
+            },
+            client =>
+            {
+                Assert.Equal("JavaScript / Node.js", client.Name);
+                Assert.Equal("legacy", client.Status);
+            });
+        Assert.DoesNotContain(setup.Clients, client => client.Name is "Python" or "Java" or "Ruby" or "PHP" or "Expo" or "React Native");
+    }
+
+    [Fact]
     public async Task GetClientSetupInstructionsAsync_InvalidPlatform_ReturnsInvalidClientPlatform()
     {
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead);
