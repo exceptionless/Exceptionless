@@ -220,6 +220,19 @@ describe('useSavedViews', () => {
             expect(hasSavedViewAutoFillChange('date', savedView, 'summary')).toBe(true);
         });
 
+        it('treats an explicit None selection as unchanged', () => {
+            const savedView = buildSavedView({
+                columns: {
+                    summary: { auto_fill: false, visible: true }
+                },
+                id: 'view-1',
+                name: 'Fixed Width View'
+            });
+
+            expect(hasSavedViewAutoFillChange(null, savedView, 'summary')).toBe(false);
+            expect(hasSavedViewAutoFillChange('summary', savedView, 'summary')).toBe(true);
+        });
+
         it('treats visibility missing default-hidden columns as unchanged', () => {
             // Arrange
             const current = { project: false, summary: true, tags: false };

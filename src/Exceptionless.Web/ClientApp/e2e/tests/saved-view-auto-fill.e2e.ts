@@ -48,9 +48,15 @@ test('saved views choose which event or stack column auto-fills', async ({ e2eAp
 
         const columnDialog = page.getByRole('dialog', { name: 'Column Picker' });
         const dateAutoFill = columnDialog.getByRole('radio', { name: 'Date auto fill' });
+        const noAutoFill = columnDialog.getByRole('radio', { name: 'No auto-fill column' });
         const summaryAutoFill = columnDialog.getByRole('radio', { name: 'Summary auto fill' });
         await expect(columnDialog).toBeVisible();
+        await expect(noAutoFill).toBeChecked();
         await expect(dateAutoFill).not.toBeChecked();
+        await dateAutoFill.click();
+        await expect(dateAutoFill).toBeChecked();
+        await noAutoFill.click();
+        await expect(noAutoFill).toBeChecked();
         await dateAutoFill.click();
         await expect(dateAutoFill).toBeChecked();
         await summaryAutoFill.click();
@@ -92,6 +98,29 @@ test('saved views choose which event or stack column auto-fills', async ({ e2eAp
 
         expect(widerSummaryWidth).toBeCloseTo(initialSummaryWidth, 1);
         expect(widerDateWidth - initialDateWidth).toBeCloseTo(widerTableWidth - initialTableWidth, 1);
+
+        await table.getByRole('button', { name: 'Resize date column' }).press('ArrowRight');
+        await page.getByRole('button', { name: /^View/ }).filter({ visible: true }).first().click();
+        await page.getByRole('menuitem', { name: 'Manage Columns...' }).click();
+        await expect(page.getByRole('dialog', { name: 'Column Picker' }).getByRole('radio', { name: 'No auto-fill column' })).toBeChecked();
+        await page.getByRole('dialog', { name: 'Column Picker' }).getByRole('button', { name: 'Done' }).click();
+
+        await page.getByRole('button', { name: /^View/ }).filter({ visible: true }).first().click();
+        const fixedWidthSaveResponse = page.waitForResponse(
+            (candidate) => candidate.request().method() === 'PATCH' && candidate.url().includes(`/api/v2/saved-views/`)
+        );
+        await page.getByRole('menuitem', { exact: true, name: 'Save' }).click();
+        const fixedWidthSavedResponse = await fixedWidthSaveResponse;
+        expect(fixedWidthSavedResponse.status()).toBe(200);
+        expect(fixedWidthSavedResponse.request().postDataJSON().columns.summary.auto_fill).toBe(false);
+        expect((await fixedWidthSavedResponse.json()).columns.summary.auto_fill).toBe(false);
+
+        await page.reload();
+        await expect(getVisibleText(page, journey.message)).toBeVisible({ timeout: 30_000 });
+        await page.getByRole('button', { name: /^View/ }).filter({ visible: true }).first().click();
+        await page.getByRole('menuitem', { name: 'Manage Columns...' }).click();
+        await expect(page.getByRole('dialog', { name: 'Column Picker' }).getByRole('radio', { name: 'No auto-fill column' })).toBeChecked();
+        await page.getByRole('dialog', { name: 'Column Picker' }).getByRole('button', { name: 'Done' }).click();
     });
 
     for (const route of ['/next/event/all', '/next/stack/all']) {

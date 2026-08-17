@@ -2,6 +2,8 @@ import type { ColumnOrderState, ColumnSizingState, ColumnVisibilityState } from 
 
 import type { SavedView, SavedViewColumnSettings } from './models';
 
+export type AutoFillColumnSelection = null | string;
+
 type SavedColumnState = Pick<SavedView, 'columns'>;
 
 export function buildColumnSettings(
@@ -9,7 +11,8 @@ export function buildColumnSettings(
     columnOrder: ColumnOrderState,
     columnVisibility: ColumnVisibilityState,
     columnSizing: ColumnSizingState,
-    autoFillColumnId?: string
+    autoFillColumnId?: AutoFillColumnSelection,
+    defaultAutoFillColumnId?: string
 ): Record<string, SavedViewColumnSettings> {
     const availableColumnIds = columnIds.filter((columnId) => columnId !== 'select');
     const availableColumnIdSet = new Set(availableColumnIds);
@@ -17,6 +20,8 @@ export function buildColumnSettings(
         ...columnOrder.filter((columnId, index) => columnId !== 'select' && availableColumnIdSet.has(columnId) && columnOrder.indexOf(columnId) === index),
         ...availableColumnIds.filter((columnId) => !columnOrder.includes(columnId))
     ];
+    const explicitNoneMarkerColumnId =
+        autoFillColumnId === null ? (availableColumnIdSet.has(defaultAutoFillColumnId ?? '') ? defaultAutoFillColumnId : availableColumnIds[0]) : undefined;
 
     return Object.fromEntries(
         orderedColumnIds.map((columnId, position) => [
@@ -25,6 +30,7 @@ export function buildColumnSettings(
                 position,
                 visible: columnVisibility[columnId] ?? true,
                 ...(columnId === autoFillColumnId && columnVisibility[columnId] !== false && columnSizing[columnId] === undefined ? { auto_fill: true } : {}),
+                ...(columnId === explicitNoneMarkerColumnId ? { auto_fill: false } : {}),
                 ...(columnSizing[columnId] !== undefined ? { width: Math.round(columnSizing[columnId]) } : {})
             }
         ])
@@ -33,6 +39,25 @@ export function buildColumnSettings(
 
 export function getSavedAutoFillColumnId(view: SavedColumnState | undefined): string | undefined {
     return Object.entries(view?.columns ?? {}).find(([, settings]) => settings.auto_fill === true)?.[0];
+}
+
+export function getSavedAutoFillColumnSelection(view: SavedColumnState | undefined, defaultAutoFillColumnId?: string): AutoFillColumnSelection {
+    const savedAutoFillColumnId = getSavedAutoFillColumnId(view);
+    if (savedAutoFillColumnId) {
+        return savedAutoFillColumnId;
+    }
+
+    const settings = Object.values(view?.columns ?? {});
+    if (settings.some((column) => column.auto_fill === false)) {
+        return null;
+    }
+
+    if (!defaultAutoFillColumnId) {
+        return null;
+    }
+
+    const defaultSettings = view?.columns?.[defaultAutoFillColumnId];
+    return defaultSettings?.visible === false || defaultSettings?.width != null ? null : defaultAutoFillColumnId;
 }
 
 export function getSavedColumnOrder(view: SavedColumnState | undefined): ColumnOrderState {

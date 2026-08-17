@@ -22,11 +22,13 @@
     import Search from '@lucide/svelte/icons/search';
     import X from '@lucide/svelte/icons/x';
 
+    import type { AutoFillColumnSelection } from '../column-settings';
+
     interface Props {
-        autoFillColumnId?: string;
+        autoFillColumnId: AutoFillColumnSelection;
         defaultAutoFillColumnId?: string;
         open: boolean;
-        setAutoFillColumnId: (columnId: string) => void;
+        setAutoFillColumnId: (columnId: AutoFillColumnSelection) => void;
         table: Table<StockFeatures, TData>;
     }
 
@@ -34,6 +36,8 @@
 
     let draggedColumnId = $state<null | string>(null);
     let search = $state('');
+
+    const AUTO_FILL_NONE_VALUE = '__none__';
 
     const allColumns = $derived(table.getAllLeafColumns().filter((column) => column.id !== 'select'));
     const visibleColumns = $derived(allColumns.filter((column) => column.getIsVisible()));
@@ -58,25 +62,28 @@
     function removeColumn(column: (typeof allColumns)[number]): void {
         if (visibleColumns.length > 1) {
             if (column.id === autoFillColumnId) {
-                const remainingColumns = visibleColumns.filter((visibleColumn) => visibleColumn.id !== column.id);
-                const replacement = remainingColumns.find((visibleColumn) => visibleColumn.id === defaultAutoFillColumnId) ?? remainingColumns[0];
-                if (replacement) {
-                    selectAutoFillColumn(replacement.id);
-                }
+                selectAutoFillColumn(null);
             }
 
             column.toggleVisibility(false);
         }
     }
 
-    function selectAutoFillColumn(columnId: string): void {
-        table.setColumnSizing((current) => {
-            const next = {
-                ...current
-            };
-            delete next[columnId];
-            return next;
-        });
+    function handleAutoFillValueChange(value: string): void {
+        selectAutoFillColumn(value === AUTO_FILL_NONE_VALUE ? null : value);
+    }
+
+    function selectAutoFillColumn(columnId: AutoFillColumnSelection): void {
+        if (columnId) {
+            table.setColumnSizing((current) => {
+                const next = {
+                    ...current
+                };
+                delete next[columnId];
+                return next;
+            });
+        }
+
         setAutoFillColumnId(columnId);
     }
 
@@ -121,6 +128,8 @@
         table.resetColumnSizing();
         if (defaultAutoFillColumnId) {
             setAutoFillColumnId(defaultAutoFillColumnId);
+        } else {
+            setAutoFillColumnId(null);
         }
         search = '';
     }
@@ -243,9 +252,17 @@
                     <RadioGroup.Root
                         aria-label="Auto-fill column"
                         class="flex max-h-[22.75rem] flex-col gap-1.5 overflow-y-auto pr-1"
-                        onValueChange={selectAutoFillColumn}
-                        value={autoFillColumnId ?? ''}
+                        onValueChange={handleAutoFillValueChange}
+                        value={autoFillColumnId ?? AUTO_FILL_NONE_VALUE}
                     >
+                        <Label
+                            class="bg-background hover:bg-muted/70 flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3 text-sm font-normal shadow-xs transition-colors"
+                            for="auto-fill-column-none"
+                        >
+                            <RadioGroup.Item aria-label="No auto-fill column" id="auto-fill-column-none" value={AUTO_FILL_NONE_VALUE} />
+                            <span class="font-medium">None</span>
+                            <span class="text-muted-foreground ml-auto text-xs">Keep every column fixed width</span>
+                        </Label>
                         {#each visibleColumns as column, index (column.id)}
                             <div
                                 class={[

@@ -5,6 +5,7 @@ import type { SavedView } from './models';
 import {
     buildColumnSettings,
     getSavedAutoFillColumnId,
+    getSavedAutoFillColumnSelection,
     getSavedColumnOrder,
     getSavedColumnSizing,
     getSavedColumnVisibility,
@@ -28,13 +29,33 @@ describe('saved view column settings', () => {
         });
     });
 
-    it('does not preserve auto-fill after that column is resized or hidden', () => {
-        expect(buildColumnSettings(['summary'], [], {}, { summary: 480 }, 'summary')).toEqual({
-            summary: { position: 0, visible: true, width: 480 }
+    it('persists an explicit choice to keep every column fixed width', () => {
+        expect(buildColumnSettings(['summary', 'date'], [], {}, { date: 480 }, null, 'summary')).toEqual({
+            date: { position: 1, visible: true, width: 480 },
+            summary: { auto_fill: false, position: 0, visible: true }
         });
-        expect(buildColumnSettings(['summary'], [], { summary: false }, {}, 'summary')).toEqual({
-            summary: { position: 0, visible: false }
-        });
+    });
+
+    it('distinguishes explicit None from legacy default auto-fill behavior', () => {
+        const explicitNone = {
+            columns: {
+                summary: { auto_fill: false }
+            }
+        } as Pick<SavedView, 'columns'>;
+        const legacyDefault = {
+            columns: {
+                summary: { visible: true }
+            }
+        } as Pick<SavedView, 'columns'>;
+        const legacyFixedDefault = {
+            columns: {
+                summary: { visible: true, width: 480 }
+            }
+        } as Pick<SavedView, 'columns'>;
+
+        expect(getSavedAutoFillColumnSelection(explicitNone, 'summary')).toBeNull();
+        expect(getSavedAutoFillColumnSelection(legacyDefault, 'summary')).toBe('summary');
+        expect(getSavedAutoFillColumnSelection(legacyFixedDefault, 'summary')).toBeNull();
     });
 
     it('reads order, visibility, and width from structured columns', () => {

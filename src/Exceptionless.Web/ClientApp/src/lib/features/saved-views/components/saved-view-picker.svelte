@@ -24,6 +24,7 @@
     import { tick } from 'svelte';
     import { toast } from 'svelte-sonner';
 
+    import type { AutoFillColumnSelection } from '../column-settings';
     import type { NewSavedView, SavedView, UpdateSavedView } from '../models';
 
     import { deleteSavedView, markSavedViewDeleted, patchSavedView, postSavedView, restoreDeletedSavedView } from '../api.svelte';
@@ -45,7 +46,7 @@
 
     interface Props {
         activeSavedView?: SavedView;
-        autoFillColumnId?: string;
+        autoFillColumnId: AutoFillColumnSelection;
         columnOrder?: string[];
         columnSizing?: Record<string, number>;
         columnVisibility?: Record<string, boolean>;
@@ -56,7 +57,7 @@
         onLoadView: (view: SavedView) => void;
         onResetToSaved: () => void;
         savedViews: SavedView[];
-        setAutoFillColumnId: (columnId: string) => void;
+        setAutoFillColumnId: (columnId: AutoFillColumnSelection) => void;
         setShowChart?: (show: boolean) => void;
         setShowStats?: (show: boolean) => void;
         showChart?: boolean;
@@ -123,8 +124,6 @@
     });
 
     const saving = $derived(createMutation.isPending || updateMutation.isPending || removeMutation.isPending);
-    const effectiveAutoFillColumnId = $derived(autoFillColumnId && columnSizing?.[autoFillColumnId] === undefined ? autoFillColumnId : undefined);
-
     const currentFilterString = $derived(toFilter(filters.filter((f) => f.type !== 'date')));
 
     // Auto-detect if current filters match an existing saved view for "load existing" hint
@@ -170,7 +169,8 @@
             columnOrder ?? [],
             columnVisibility ?? {},
             columnSizing ?? {},
-            effectiveAutoFillColumnId
+            autoFillColumnId,
+            defaultAutoFillColumnId
         );
     }
 
@@ -401,11 +401,5 @@
 {/if}
 
 {#if isColumnDialogOpen}
-    <ColumnManagementDialog
-        bind:open={isColumnDialogOpen}
-        autoFillColumnId={effectiveAutoFillColumnId}
-        {defaultAutoFillColumnId}
-        {setAutoFillColumnId}
-        {table}
-    />
+    <ColumnManagementDialog bind:open={isColumnDialogOpen} {autoFillColumnId} {defaultAutoFillColumnId} {setAutoFillColumnId} {table} />
 {/if}

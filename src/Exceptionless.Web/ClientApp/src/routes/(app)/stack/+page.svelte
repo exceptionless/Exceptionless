@@ -901,6 +901,7 @@
             autoFillColumnId={savedViewsState.autoFillColumnId}
             bind:limit={eventsQueryParameters.limit!}
             isLoading={isSavedViewRoutePending || eventsQuery.isFetching}
+            onAutoFillColumnResized={() => savedViewsState.setAutoFillColumnId(null)}
             {rowClick}
             {rowHref}
             {table}
