@@ -38,7 +38,7 @@ public sealed class AssistantAccessService(
         if (appOptions.AppMode == AppMode.Development)
             return AssistantAccessDecision.Available(billingPlans.UnlimitedPlan.Assistant!);
 
-        return EvaluatePlan(billingPlans.GetPlan(organization.PlanId)?.Assistant);
+        return EvaluatePlan(billingPlans.GetPlan(organization.PlanId)?.Assistant, billingPlans.MediumPlan.Id);
     }
 
     internal static AssistantAccessDecision? EvaluateConfiguration(AppOptions appOptions)
@@ -52,12 +52,13 @@ public sealed class AssistantAccessService(
         return null;
     }
 
-    internal static AssistantAccessDecision EvaluatePlan(AssistantPlanOptions? planOptions) => planOptions is not null
+    internal static AssistantAccessDecision EvaluatePlan(AssistantPlanOptions? planOptions, string minimumPlanId) => planOptions is not null
         ? AssistantAccessDecision.Available(planOptions)
         : AssistantAccessDecision.Unavailable(
             AssistantAccessReason.UpgradeRequired,
             "Exie is available on Medium plans and higher.",
-            upgradeRequired: true);
+            upgradeRequired: true,
+            minimumPlanId: minimumPlanId);
 }
 
 public enum AssistantAccessReason
@@ -76,15 +77,17 @@ public sealed record AssistantAccessDecision(
     bool UpgradeRequired,
     AssistantAccessReason Reason,
     string? Message,
-    AssistantPlanOptions? PlanOptions)
+    AssistantPlanOptions? PlanOptions,
+    string? MinimumPlanId)
 {
-    public static AssistantAccessDecision Available(AssistantPlanOptions? planOptions) => new(true, true, false, AssistantAccessReason.Available, null, planOptions);
+    public static AssistantAccessDecision Available(AssistantPlanOptions? planOptions) => new(true, true, false, AssistantAccessReason.Available, null, planOptions, null);
 
     public static AssistantAccessDecision Unavailable(
         AssistantAccessReason reason,
         string message,
         bool enabled = true,
-        bool upgradeRequired = false) => new(enabled, false, upgradeRequired, reason, message, null);
+        bool upgradeRequired = false,
+        string? minimumPlanId = null) => new(enabled, false, upgradeRequired, reason, message, null, minimumPlanId);
 
-    public AssistantAccessResponse ToResponse() => new(Enabled, HasAccess, UpgradeRequired, Message);
+    public AssistantAccessResponse ToResponse() => new(Enabled, HasAccess, UpgradeRequired, Message, MinimumPlanId);
 }

@@ -8,12 +8,13 @@
     import { page } from '$app/state';
     import { useSidebar } from '$comp/ui/sidebar';
     import { env } from '$env/dynamic/public';
+    import { resolveAssistantAccessState } from '$features/assistant/access-state';
     import { getAssistantAccessQuery, invalidateAssistantAccessQueries } from '$features/assistant/api.svelte';
     import { setAssistantControls } from '$features/assistant/controls.svelte';
     import { assistantPageContext, type AssistantResourceContext } from '$features/assistant/page-context.svelte';
     import { getIntercomTokenQuery } from '$features/auth/api.svelte';
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
-    import { UpgradeRequiredDialog } from '$features/billing';
+    import { ChangePlanDialogHost, UpgradeRequiredDialog } from '$features/billing';
     import {
         createOrganizationEventNotificationRefresher,
         invalidatePersistentEventQueries,
@@ -193,7 +194,16 @@
         }
     });
     let assistantAccess = $derived(assistantAccessQuery.data);
-    let isAssistantEnabled = $derived(assistantAccess?.enabled === true);
+    let assistantAccessState = $derived(
+        resolveAssistantAccessState(
+            organization.current,
+            assistantAccess,
+            assistantAccessQuery.isPending,
+            assistantAccessQuery.isError,
+            assistantAccessQuery.isFetching
+        )
+    );
+    let isAssistantEnabled = $derived(assistantAccessState !== 'disabled');
 
     setAssistantControls({
         ask: (prompt) => void askAssistant(prompt),
@@ -601,13 +611,17 @@
     {#if AssistantPanel && isAssistantEnabled}
         <AssistantPanel
             accessMessage={assistantAccess?.message}
+            accessState={assistantAccessState}
             bind:open={isAssistantOpen}
-            hasAccess={assistantAccess?.has_access ?? false}
+            minimumPlanId={assistantAccess?.minimum_plan_id}
+            onAccessChanged={() => invalidateAssistantAccessQueries(queryClient)}
+            onRetryAccess={async () => {
+                await assistantAccessQuery.refetch();
+            }}
             organizationId={organization.current}
             path={assistantPath}
             promptRequest={assistantPromptRequest}
             projectId={assistantProjectId}
-            upgradeRequired={assistantAccess?.upgrade_required ?? false}
         />
     {/if}
     <Sidebar routes={filteredRoutes}>
@@ -697,6 +711,7 @@
         {/snippet}
     </IntercomShell>
 
+    <ChangePlanDialogHost />
     <UpgradeRequiredDialog />
 {/if}
 

@@ -108,6 +108,17 @@ public sealed record McpClientSetupStep(
     string? Code = null,
     string? Language = null);
 
+public sealed record McpProjectSetupResult(
+    string Id,
+    string Name,
+    string WebUrl,
+    IReadOnlyCollection<McpProjectSetupClient> Clients,
+    IReadOnlyCollection<string> Notes);
+
+public sealed record McpProjectSetupClient(
+    string Name,
+    string Status);
+
 public sealed record McpStackResult(
     string Id,
     string OrganizationId,

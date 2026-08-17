@@ -17,7 +17,7 @@
         isStreaming?: boolean;
         message: AssistantChatMessage;
         onFeedback?: (feedback: AssistantFeedback | undefined) => void;
-        onRegenerate?: () => void;
+        onRegenerate?: () => Promise<void> | void;
         onSuggestedAction?: (action: AssistantSuggestedAction) => void;
         suggestionsDisabled?: boolean;
     }
@@ -60,7 +60,7 @@
                         Suggested actions
                     </div>
                     <div class="mt-1.5 flex flex-wrap gap-1.5">
-                        {#each message.suggestedActions as action (`${action.label}:${action.prompt}`)}
+                        {#each message.suggestedActions as action (`${action.label}:${action.prompt ?? action.href}`)}
                             <Button
                                 class="h-auto min-h-7 gap-1.5 px-2 py-1 text-left text-xs whitespace-normal"
                                 disabled={suggestionsDisabled}

@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { H4, Small } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Collapsible from '$comp/ui/collapsible';
     import * as Tooltip from '$comp/ui/tooltip';
@@ -103,14 +104,14 @@
                 {/snippet}
             </Collapsible.Trigger>
             {#if errorMessage}
-                <p class="text-destructive border-t px-3 py-2 leading-relaxed">{errorMessage}</p>
+                <Small class="text-destructive block border-t px-3 py-2 leading-relaxed">{errorMessage}</Small>
             {/if}
             <Collapsible.Content>
                 <div class="border-t px-3 py-3">
                     <div class="flex flex-col gap-3">
                         <section aria-label="Tool request">
                             <div class="mb-1.5 flex items-center justify-between gap-2">
-                                <h4 class="text-muted-foreground font-medium">Request</h4>
+                                <H4 class="text-muted-foreground text-sm font-medium">Request</H4>
                                 <Tooltip.Root>
                                     <Tooltip.Trigger>
                                         {#snippet child({ props })}
@@ -134,7 +135,7 @@
                         {#if tool.result}
                             <section aria-label="Tool response">
                                 <div class="mb-1.5 flex items-center justify-between gap-2">
-                                    <h4 class="text-muted-foreground font-medium">Response</h4>
+                                    <H4 class="text-muted-foreground text-sm font-medium">Response</H4>
                                     <Tooltip.Root>
                                         <Tooltip.Trigger>
                                             {#snippet child({ props })}

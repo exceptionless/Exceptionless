@@ -12,6 +12,7 @@ internal static class AssistantToolDefinitions
     private static readonly string[] s_methodNames =
     [
         nameof(ExceptionlessMcpTools.GetEventAsync),
+        nameof(ExceptionlessMcpTools.GetProjectSetupAsync),
         nameof(ExceptionlessMcpTools.GetStackAsync),
         nameof(ExceptionlessMcpTools.ListProjectsAsync),
         nameof(ExceptionlessMcpTools.SearchStacksAsync),
@@ -99,9 +100,20 @@ internal static class AssistantToolDefinitions
                                         type = "string",
                                         description = "The complete follow-up message to send when the button is selected.",
                                         maxLength = AssistantLimits.MaximumSuggestedActionPromptCharacters
+                                    },
+                                    href = new
+                                    {
+                                        type = "string",
+                                        description = "An internal Exceptionless path to open instead of sending a prompt. Only use the current project's Client Setup path supplied by get_project_setup.",
+                                        maxLength = 512
                                     }
                                 },
-                                required = new[] { "label", "prompt" },
+                                oneOf = new object[]
+                                {
+                                    new { required = new[] { "prompt" } },
+                                    new { required = new[] { "href" } }
+                                },
+                                required = new[] { "label" },
                                 additionalProperties = false
                             }
                         }
