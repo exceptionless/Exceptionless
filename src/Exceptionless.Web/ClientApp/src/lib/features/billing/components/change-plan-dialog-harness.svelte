@@ -14,12 +14,12 @@
         initialCouponCode?: string;
         initialCouponOpen?: boolean;
         initialFormError?: string;
-        initialTierId?: string;
+        initialPlanId?: string;
         organization: ViewOrganization;
         plans: BillingPlan[];
     }
 
-    let { initialCouponCode, initialCouponOpen, initialFormError, initialTierId, organization, plans }: Props = $props();
+    let { initialCouponCode, initialCouponOpen, initialFormError, initialPlanId, organization, plans }: Props = $props();
 
     accessToken.current = 'storybook-mock-token';
 
@@ -54,6 +54,6 @@
     <Button variant="outline" onclick={() => (open = true)}>Open dialog</Button>
 
     {#if open}
-        <ChangePlanDialog onclose={handleClose} {organization} {initialCouponCode} {initialCouponOpen} {initialFormError} {initialTierId} />
+        <ChangePlanDialog onclose={handleClose} {organization} {initialCouponCode} {initialCouponOpen} {initialFormError} {initialPlanId} />
     {/if}
 </QueryClientProvider>

@@ -1,38 +1,22 @@
 import { ProblemDetails } from '@foundatiofx/fetchclient';
 
-export interface ShowUpgradeDialogOptions {
-    directToPlanPicker?: boolean;
-    initialTierId?: string;
-    onSuccess?: () => Promise<void> | void;
-}
-
 interface UpgradeRequiredState {
-    initialTierId: string | undefined;
     message: string;
-    onSuccess: (() => Promise<void> | void) | undefined;
     open: boolean;
     organizationId: string | undefined;
-    step: 'confirmation' | 'plan-picker';
+    retryCallback: (() => Promise<void> | void) | undefined;
 }
 
 const state: UpgradeRequiredState = $state({
-    initialTierId: undefined,
     message: '',
-    onSuccess: undefined,
     open: false,
     organizationId: undefined,
-    step: 'confirmation'
+    retryCallback: undefined
 });
 
 export const upgradeRequiredDialog = {
-    get initialTierId() {
-        return state.initialTierId;
-    },
     get message() {
         return state.message;
-    },
-    get onSuccess() {
-        return state.onSuccess;
     },
     get open() {
         return state.open;
@@ -41,18 +25,13 @@ export const upgradeRequiredDialog = {
         return state.organizationId;
     },
     reset() {
-        state.open = false;
-        state.initialTierId = undefined;
         state.message = '';
-        state.onSuccess = undefined;
+        state.open = false;
         state.organizationId = undefined;
-        state.step = 'confirmation';
+        state.retryCallback = undefined;
     },
-    showPlanPicker() {
-        state.step = 'plan-picker';
-    },
-    get step() {
-        return state.step;
+    get retryCallback() {
+        return state.retryCallback;
     }
 };
 
@@ -65,37 +44,17 @@ export function showBillingDialogOnUpgradeProblem(error: unknown, organizationId
         return false;
     }
 
-    openUpgradeDialog({
-        message: error.title || 'Please upgrade your plan to continue.',
-        onSuccess: retryCallback,
-        organizationId,
-        step: 'confirmation'
-    });
+    state.message = error.title || 'Please upgrade your plan to continue.';
+    state.organizationId = organizationId;
+    state.retryCallback = retryCallback;
+    state.open = true;
 
     return true;
 }
 
-export function showUpgradeDialog(organizationId: string, message?: string, options: ShowUpgradeDialogOptions = {}): void {
-    openUpgradeDialog({
-        initialTierId: options.initialTierId,
-        message: message || 'Please upgrade your plan to enable this feature.',
-        onSuccess: options.onSuccess,
-        organizationId,
-        step: options.directToPlanPicker ? 'plan-picker' : 'confirmation'
-    });
-}
-
-function openUpgradeDialog(options: {
-    initialTierId?: string;
-    message: string;
-    onSuccess?: () => Promise<void> | void;
-    organizationId: string | undefined;
-    step: UpgradeRequiredState['step'];
-}): void {
-    state.initialTierId = options.initialTierId;
-    state.message = options.message;
-    state.onSuccess = options.onSuccess;
-    state.organizationId = options.organizationId;
-    state.step = options.step;
+export function showUpgradeDialog(organizationId: string, message?: string): void {
+    state.message = message || 'Please upgrade your plan to enable this feature.';
+    state.organizationId = organizationId;
+    state.retryCallback = undefined;
     state.open = true;
 }

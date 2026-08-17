@@ -35,9 +35,10 @@
         isRegenerating = true;
         try {
             await onRegenerate();
-        } finally {
-            isRegenerating = false;
+        } catch {
+            toast.error('Couldn’t regenerate the response. Please try again.');
         }
+        isRegenerating = false;
     }
 
     async function updateFeedback(value: AssistantFeedback): Promise<void> {
@@ -45,7 +46,11 @@
         onFeedback?.(updatedFeedback);
         if (updatedFeedback) {
             toast.success(updatedFeedback === 'helpful' ? 'Marked as helpful.' : 'Marked as not helpful.');
-            await submitFeatureUsage(updatedFeedback === 'helpful' ? 'assistant.ResponseHelpful' : 'assistant.ResponseNotHelpful').catch(() => undefined);
+            try {
+                await submitFeatureUsage(updatedFeedback === 'helpful' ? 'assistant.ResponseHelpful' : 'assistant.ResponseNotHelpful');
+            } catch {
+                toast.error('Your feedback is selected, but telemetry could not be sent.');
+            }
         }
     }
 </script>

@@ -432,6 +432,7 @@ public sealed class AssistantServiceTests
     [Fact]
     public async Task StreamAsync_ConfigureSuggestedAction_EmitsValidatedInternalHref()
     {
+        string configureHref = AssistantRoutes.ProjectConfigure("project-id");
         string providerPayload = JsonSerializer.Serialize(new
         {
             choices = new[]
@@ -454,13 +455,13 @@ public sealed class AssistantServiceTests
                                     {
                                         actions = new object[]
                                         {
-                                            new { label = "Open Client Setup", href = "/next/project/project-id/configure" },
-                                            new { label = "Unsafe link", href = "/next/project/another-project/configure" },
+                                            new { label = "Open Client Setup", href = configureHref },
+                                            new { label = "Unsafe link", href = AssistantRoutes.ProjectConfigure("another-project") },
                                             new
                                             {
                                                 label = "Ambiguous action",
                                                 prompt = "Configure this project",
-                                                href = "/next/project/project-id/configure"
+                                                href = configureHref
                                             }
                                         }
                                     })
@@ -493,7 +494,7 @@ public sealed class AssistantServiceTests
 
         var action = Assert.Single(Assert.Single(events, item => item.Type == "suggested_actions").SuggestedActions!);
         Assert.Equal("Open Client Setup", action.Label);
-        Assert.Equal("/next/project/project-id/configure", action.Href);
+        Assert.Equal(configureHref, action.Href);
         Assert.Null(action.Prompt);
     }
 
@@ -1002,10 +1003,10 @@ public sealed class AssistantServiceTests
             McpResponse<McpEventResult>.Success(ev),
             serializerOptions);
 
-        Assert.Contains("\"webUrl\":\"/next/project/project%20id/stacks\"", projects);
-        Assert.Contains("\"webUrl\":\"/next/stack/stack%20id\"", stacks);
-        Assert.Contains("\"webUrl\":\"/next/stack/stack%20id\"", stackDetails);
-        Assert.Contains("\"webUrl\":\"/next/stack/stack%20id/event/event%20id\"", eventDetails);
+        Assert.Contains($"\"webUrl\":\"{AssistantRoutes.ProjectStacks("project id")}\"", projects);
+        Assert.Contains($"\"webUrl\":\"{AssistantRoutes.Stack("stack id")}\"", stacks);
+        Assert.Contains($"\"webUrl\":\"{AssistantRoutes.Stack("stack id")}\"", stackDetails);
+        Assert.Contains($"\"webUrl\":\"{AssistantRoutes.Event("stack id", "event id")}\"", eventDetails);
         Assert.Contains("\"url\":\"/api/v2/projects/project-id\"", projects);
         Assert.Contains("\"url\":\"/api/v2/stacks/stack-id\"", stacks);
     }

@@ -14,7 +14,7 @@
     import { assistantPageContext, type AssistantResourceContext } from '$features/assistant/page-context.svelte';
     import { getIntercomTokenQuery } from '$features/auth/api.svelte';
     import { accessToken, gotoLogin } from '$features/auth/index.svelte';
-    import { UpgradeRequiredDialog } from '$features/billing';
+    import { ChangePlanDialogHost, UpgradeRequiredDialog } from '$features/billing';
     import {
         createOrganizationEventNotificationRefresher,
         invalidatePersistentEventQueries,
@@ -711,6 +711,7 @@
         {/snippet}
     </IntercomShell>
 
+    <ChangePlanDialogHost />
     <UpgradeRequiredDialog />
 {/if}
 

@@ -2,7 +2,7 @@
     import { H3, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { Spinner } from '$comp/ui/spinner';
-    import { showUpgradeDialog } from '$features/billing/upgrade-required.svelte';
+    import { showChangePlanDialog } from '$features/billing/change-plan.svelte';
     import Bot from '@lucide/svelte/icons/bot';
 
     import type { AssistantAccessState } from '../models';
@@ -20,9 +20,8 @@
 
     function openUpgradeOptions(): void {
         if (organizationId) {
-            showUpgradeDialog(organizationId, message, {
-                directToPlanPicker: true,
-                initialTierId: minimumPlanId,
+            showChangePlanDialog(organizationId, {
+                initialPlanId: minimumPlanId,
                 onSuccess: onAccessChanged
             });
         }

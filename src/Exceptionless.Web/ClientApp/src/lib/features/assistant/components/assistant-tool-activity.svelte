@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { H4, P } from '$comp/typography';
+    import { H4, Small } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Collapsible from '$comp/ui/collapsible';
     import * as Tooltip from '$comp/ui/tooltip';
@@ -104,7 +104,7 @@
                 {/snippet}
             </Collapsible.Trigger>
             {#if errorMessage}
-                <P class="text-destructive mt-0! border-t px-3 py-2 text-xs leading-relaxed">{errorMessage}</P>
+                <Small class="text-destructive block border-t px-3 py-2 leading-relaxed">{errorMessage}</Small>
             {/if}
             <Collapsible.Content>
                 <div class="border-t px-3 py-3">

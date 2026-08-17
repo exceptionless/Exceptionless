@@ -1,5 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import { H3, Muted } from '$comp/typography';
     import * as Alert from '$comp/ui/alert';
@@ -12,7 +13,7 @@
     import Eraser from '@lucide/svelte/icons/eraser';
     import { tick, untrack } from 'svelte';
 
-    import type { AssistantAccessState, AssistantChatMessage, AssistantFeedback, AssistantPromptRequest } from '../models';
+    import type { AssistantAccessState, AssistantChatMessage, AssistantFeedback, AssistantPromptRequest, AssistantSuggestedAction } from '../models';
 
     import { createAssistantChatRequest } from '../assistant-request';
     import { type AssistantStreamEvent, readAssistantStream } from '../assistant-stream';
@@ -133,8 +134,12 @@
         await streamResponse(history, assistantMessage);
     }
 
-    async function handleSuggestedAction(action: import('../models').AssistantSuggestedAction): Promise<void> {
-        const configureHref = projectId ? `/next/project/${encodeURIComponent(projectId)}/configure` : undefined;
+    async function handleSuggestedAction(action: AssistantSuggestedAction): Promise<void> {
+        const configureHref = projectId
+            ? resolve('/(app)/project/[projectId]/configure', {
+                  projectId
+              })
+            : undefined;
         if (action.href && action.href === configureHref) {
             open = false;
             await goto(action.href);
@@ -192,7 +197,9 @@
             });
 
             if (!response.ok) {
-                const problem = (await response.json().catch(() => undefined)) as undefined | { detail?: string; title?: string };
+                const problem = response.headers.get('content-type')?.includes('json')
+                    ? ((await response.json()) as { detail?: string; title?: string })
+                    : undefined;
                 throw new Error(problem?.detail ?? problem?.title ?? `The assistant returned status ${response.status}.`);
             }
 

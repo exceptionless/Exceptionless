@@ -1,38 +1,26 @@
 <script lang="ts">
     import { Muted } from '$comp/typography';
     import * as AlertDialog from '$comp/ui/alert-dialog';
-    import { ChangePlanDialog, isStripeEnabled } from '$features/billing';
-    import { getOrganizationQuery } from '$features/organizations/api.svelte';
+    import { isStripeEnabled } from '$features/billing';
     import { toast } from 'svelte-sonner';
 
+    import { showChangePlanDialog } from '../change-plan.svelte';
     import { upgradeRequiredDialog } from '../upgrade-required.svelte';
-
-    const organizationQuery = getOrganizationQuery({
-        route: {
-            get id() {
-                return upgradeRequiredDialog.open && upgradeRequiredDialog.step === 'plan-picker' ? upgradeRequiredDialog.organizationId : undefined;
-            }
-        }
-    });
 
     const canOpenBilling = $derived(isStripeEnabled() && !!upgradeRequiredDialog.organizationId);
 
     function onUpgrade() {
-        if (!canOpenBilling) {
+        const organizationId = upgradeRequiredDialog.organizationId;
+        if (!isStripeEnabled() || !organizationId) {
             toast.error('Billing is not configured in this environment. Contact your administrator.');
             return;
         }
 
-        upgradeRequiredDialog.showPlanPicker();
-    }
-
-    async function onChangePlanClose(success: boolean) {
-        const onSuccess = success ? upgradeRequiredDialog.onSuccess : undefined;
+        const onSuccess = upgradeRequiredDialog.retryCallback;
         upgradeRequiredDialog.reset();
-
-        if (onSuccess) {
-            await onSuccess();
-        }
+        showChangePlanDialog(organizationId, {
+            onSuccess
+        });
     }
 
     function onCancel() {
@@ -46,7 +34,7 @@
     }
 </script>
 
-<AlertDialog.Root open={upgradeRequiredDialog.open && upgradeRequiredDialog.step === 'confirmation'} onOpenChange={handleOpenChange}>
+<AlertDialog.Root open={upgradeRequiredDialog.open} onOpenChange={handleOpenChange}>
     <AlertDialog.Content>
         <AlertDialog.Header>
             <AlertDialog.Title>Upgrade Plan</AlertDialog.Title>
@@ -61,26 +49,3 @@
         </AlertDialog.Footer>
     </AlertDialog.Content>
 </AlertDialog.Root>
-
-{#if upgradeRequiredDialog.open && upgradeRequiredDialog.step === 'plan-picker' && organizationQuery.data}
-    <ChangePlanDialog initialTierId={upgradeRequiredDialog.initialTierId} onclose={onChangePlanClose} organization={organizationQuery.data} />
-{:else if upgradeRequiredDialog.open && upgradeRequiredDialog.step === 'plan-picker'}
-    <AlertDialog.Root open={true} onOpenChange={handleOpenChange}>
-        <AlertDialog.Content>
-            <AlertDialog.Header>
-                <AlertDialog.Title>Upgrade Plan</AlertDialog.Title>
-                <AlertDialog.Description>
-                    {#if organizationQuery.isFetching}Loading billing details…{:else}We couldn’t load this organization’s billing details.{/if}
-                </AlertDialog.Description>
-            </AlertDialog.Header>
-            <AlertDialog.Footer>
-                <AlertDialog.Cancel onclick={onCancel}>Cancel</AlertDialog.Cancel>
-                {#if organizationQuery.error}
-                    <AlertDialog.Action disabled={organizationQuery.isFetching} onclick={() => void organizationQuery.refetch()}>
-                        {organizationQuery.isFetching ? 'Retrying…' : 'Retry'}
-                    </AlertDialog.Action>
-                {/if}
-            </AlertDialog.Footer>
-        </AlertDialog.Content>
-    </AlertDialog.Root>
-{/if}

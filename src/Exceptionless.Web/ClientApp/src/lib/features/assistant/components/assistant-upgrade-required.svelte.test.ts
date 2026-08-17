@@ -1,8 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/svelte';
 import { describe, expect, it, vi } from 'vitest';
 
-const showUpgradeDialog = vi.hoisted(() => vi.fn());
-vi.mock('$features/billing/upgrade-required.svelte', () => ({ showUpgradeDialog }));
+const showChangePlanDialog = vi.hoisted(() => vi.fn());
+vi.mock('$features/billing/change-plan.svelte', () => ({ showChangePlanDialog }));
 
 import AssistantUpgradeRequired from './assistant-upgrade-required.svelte';
 
@@ -21,9 +21,8 @@ describe('AssistantUpgradeRequired', () => {
 
         await fireEvent.click(screen.getByRole('button', { name: 'Upgrade Plan' }));
 
-        expect(showUpgradeDialog).toHaveBeenCalledWith('organization-id', 'Exie is available on Medium plans and higher.', {
-            directToPlanPicker: true,
-            initialTierId: 'EX_MEDIUM',
+        expect(showChangePlanDialog).toHaveBeenCalledWith('organization-id', {
+            initialPlanId: 'EX_MEDIUM',
             onSuccess: undefined
         });
     });

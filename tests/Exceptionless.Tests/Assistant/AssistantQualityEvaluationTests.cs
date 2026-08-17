@@ -84,11 +84,11 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
 
         var clientSetup = await SendAssistantTurnAsync(
             "How do I configure this project to start sending events?",
-            $"/next/project/{SampleDataService.TEST_PROJECT_ID}/stacks",
+            AssistantRoutes.ProjectStacks(SampleDataService.TEST_PROJECT_ID),
             SampleDataService.TEST_PROJECT_ID);
         AssertSuccessfulAnswer(clientSetup);
         Assert.Equal(["get_project_setup"], clientSetup.ToolCalls);
-        Assert.Contains($"/next/project/{SampleDataService.TEST_PROJECT_ID}/configure", clientSetup.Text, StringComparison.Ordinal);
+        Assert.Contains(AssistantRoutes.ProjectConfigure(SampleDataService.TEST_PROJECT_ID), clientSetup.Text, StringComparison.Ordinal);
         Assert.DoesNotContain("exceptionless (pip)", clientSetup.Text, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("exceptionless (gem)", clientSetup.Text, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("exceptionless (Composer)", clientSetup.Text, StringComparison.OrdinalIgnoreCase);

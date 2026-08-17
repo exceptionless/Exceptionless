@@ -17,7 +17,7 @@
     import * as Tabs from '$comp/ui/tabs';
     import { submitFeatureUsage } from '$features/auth/exceptionless-session';
     import { FREE_PLAN_ID, isStripeEnabled, StripeProvider } from '$features/billing';
-    import { resolveInitialTierId } from '$features/billing/plan-selection';
+    import { resolveInitialPlanTierId } from '$features/billing/plan-selection';
     import { type ChangePlanFormData, ChangePlanSchema } from '$features/billing/schemas';
     import { changePlanMutation, getPlansQuery } from '$features/organizations/api.svelte';
     import { getFormErrorMessages, problemDetailsToFormErrors } from '$features/shared/validation';
@@ -35,12 +35,12 @@
         initialCouponCode?: string;
         initialCouponOpen?: boolean;
         initialFormError?: string;
-        initialTierId?: string;
+        initialPlanId?: string;
         onclose: (success: boolean) => void;
         organization: ViewOrganization;
     }
 
-    let { initialCouponCode, initialCouponOpen, initialFormError, initialTierId, onclose, organization }: Props = $props();
+    let { initialCouponCode, initialCouponOpen, initialFormError, initialPlanId, onclose, organization }: Props = $props();
 
     const plansQuery = getPlansQuery({
         route: {
@@ -318,9 +318,9 @@
     $effect(() => {
         if (plansQuery.data) {
             untrack(() => {
-                selectedTierId = resolveInitialTierId(
+                selectedTierId = resolveInitialPlanTierId(
                     tiers.map((tier) => tier.id),
-                    initialTierId,
+                    initialPlanId,
                     currentTierId,
                     isFreeCurrent
                 );

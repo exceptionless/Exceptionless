@@ -1,3 +1,4 @@
+import { resolve } from '$app/paths';
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -99,11 +100,16 @@ describe('AssistantPanel', () => {
     });
 
     it('navigates a validated setup action without submitting another prompt', async () => {
+        const configureHref = resolve('/(app)/project/[projectId]/configure', {
+            projectId: 'project-1'
+        });
         const fetchMock = vi.fn(
             async () =>
                 new Response(
-                    '{"type":"suggested_actions","suggested_actions":[{"label":"Open Client Setup","href":"/next/project/project-1/configure"}]}\n' +
-                        '{"type":"done"}\n'
+                    `${JSON.stringify({
+                        suggested_actions: [{ href: configureHref, label: 'Open Client Setup' }],
+                        type: 'suggested_actions'
+                    })}\n${JSON.stringify({ type: 'done' })}\n`
                 )
         );
         vi.stubGlobal('fetch', fetchMock);
@@ -119,7 +125,7 @@ describe('AssistantPanel', () => {
 
         await fireEvent.click(await screen.findByRole('button', { name: 'Open Client Setup' }));
 
-        await waitFor(() => expect(goto).toHaveBeenCalledWith('/next/project/project-1/configure'));
+        await waitFor(() => expect(goto).toHaveBeenCalledWith(configureHref));
         expect(fetchMock).toHaveBeenCalledOnce();
     });
 });
