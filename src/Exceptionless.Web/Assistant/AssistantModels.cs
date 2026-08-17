@@ -31,7 +31,7 @@ public sealed record AssistantAccessResponse(
     string? Message = null,
     string? MinimumPlanId = null);
 
-public sealed record AssistantSuggestedAction(string Label, string? Prompt = null, string? Href = null);
+public sealed record AssistantSuggestedAction(string Label, string Prompt, string? Href = null);
 
 public sealed record AssistantStreamEvent(
     string Type,

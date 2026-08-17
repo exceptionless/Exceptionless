@@ -27,7 +27,12 @@ export interface AssistantPromptRequest {
     prompt: string;
 }
 
-export type AssistantSuggestedAction = AssistantSuggestedActionBase & ({ href: string; prompt?: never } | { href?: never; prompt: string });
+export interface AssistantSuggestedAction {
+    href?: string;
+    label: string;
+    prompt: string;
+    sourcePath?: string;
+}
 
 export interface AssistantToolActivity {
     arguments: string;
@@ -35,9 +40,4 @@ export interface AssistantToolActivity {
     name: string;
     result?: string;
     status: 'cancelled' | 'complete' | 'failed' | 'running';
-}
-
-interface AssistantSuggestedActionBase {
-    label: string;
-    sourcePath?: string;
 }

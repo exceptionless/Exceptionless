@@ -495,7 +495,7 @@ public sealed class AssistantServiceTests
         var action = Assert.Single(Assert.Single(events, item => item.Type == "suggested_actions").SuggestedActions!);
         Assert.Equal("Open Client Setup", action.Label);
         Assert.Equal(configureHref, action.Href);
-        Assert.Null(action.Prompt);
+        Assert.Equal("How do I configure this project to start sending events?", action.Prompt);
     }
 
     [Fact]

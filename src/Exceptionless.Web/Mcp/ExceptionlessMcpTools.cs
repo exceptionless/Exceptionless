@@ -245,6 +245,7 @@ public sealed class ExceptionlessMcpTools
             return McpResponse<McpProjectSetupResult>.Success(new McpProjectSetupResult(
                 project.Id,
                 project.Name,
+                AssistantRoutes.ProjectConfigure(project.Id),
                 [
                     new McpProjectSetupClient(".NET", "current"),
                     new McpProjectSetupClient("JavaScript / Node.js", "legacy")

@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('$features/auth/index.svelte', () => ({ accessToken: { current: 'access-token' } }));
+vi.mock('$features/billing/stripe.svelte', () => ({ isStripeEnabled: () => true }));
 vi.mock('katex/dist/katex.min.css', () => ({}));
 const goto = vi.hoisted(() => vi.fn(() => Promise.resolve()));
 vi.mock('$app/navigation', () => ({ goto }));
@@ -107,14 +108,20 @@ describe('AssistantPanel', () => {
             async () =>
                 new Response(
                     `${JSON.stringify({
-                        suggested_actions: [{ href: configureHref, label: 'Open Client Setup' }],
+                        suggested_actions: [
+                            {
+                                href: configureHref,
+                                label: 'Open Client Setup',
+                                prompt: 'How do I configure this project to start sending events?'
+                            }
+                        ],
                         type: 'suggested_actions'
                     })}\n${JSON.stringify({ type: 'done' })}\n`
                 )
         );
         vi.stubGlobal('fetch', fetchMock);
 
-        render(AssistantPanel, {
+        const view = render(AssistantPanel, {
             props: {
                 open: true,
                 organizationId: 'organization-1',
@@ -123,7 +130,14 @@ describe('AssistantPanel', () => {
             }
         });
 
-        await fireEvent.click(await screen.findByRole('button', { name: 'Open Client Setup' }));
+        const action = await screen.findByRole('button', { name: 'Open Client Setup' });
+        await view.rerender({
+            open: true,
+            organizationId: 'organization-1',
+            projectId: 'project-2',
+            promptRequest: { id: 'request-1', prompt: 'How do I configure this project?' }
+        });
+        await fireEvent.click(action);
 
         await waitFor(() => expect(goto).toHaveBeenCalledWith(configureHref));
         expect(fetchMock).toHaveBeenCalledOnce();

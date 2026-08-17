@@ -358,6 +358,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         Assert.True(result.Ok);
         var setup = Data(result);
         Assert.Equal(TestConstants.ProjectId, setup.Id);
+        Assert.Equal(AssistantRoutes.ProjectConfigure(TestConstants.ProjectId), setup.WebUrl);
         Assert.Collection(setup.Clients,
             client =>
             {

@@ -4,6 +4,8 @@ namespace Exceptionless.Web.Assistant;
 
 internal static class AssistantSuggestedActionParser
 {
+    private const string ConfigureProjectFallbackPrompt = "How do I configure this project to start sending events?";
+
     public static IReadOnlyCollection<AssistantSuggestedAction> Parse(IEnumerable<string> toolArguments, string? projectId)
     {
         var actions = new List<AssistantSuggestedAction>();
@@ -46,9 +48,9 @@ internal static class AssistantSuggestedActionParser
 
         label = String.Join(' ', label.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
         label = Truncate(label, AssistantLimits.MaximumSuggestedActionLabelCharacters);
-        prompt = hasPrompt ? Truncate(prompt!, AssistantLimits.MaximumSuggestedActionPromptCharacters) : null;
+        string actionPrompt = hasPrompt ? Truncate(prompt!, AssistantLimits.MaximumSuggestedActionPromptCharacters) : ConfigureProjectFallbackPrompt;
 
-        return new AssistantSuggestedAction(label, prompt, hasHref ? href : null);
+        return new AssistantSuggestedAction(label, actionPrompt, hasHref ? href : null);
     }
 
     private static string GetDestination(AssistantSuggestedAction action)

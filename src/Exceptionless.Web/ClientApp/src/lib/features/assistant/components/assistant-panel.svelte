@@ -1,6 +1,5 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
-    import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import { H3, Muted } from '$comp/typography';
     import * as Alert from '$comp/ui/alert';
@@ -135,20 +134,13 @@
     }
 
     async function handleSuggestedAction(action: AssistantSuggestedAction): Promise<void> {
-        const configureHref = projectId
-            ? resolve('/(app)/project/[projectId]/configure', {
-                  projectId
-              })
-            : undefined;
-        if (action.href && action.href === configureHref) {
+        if (action.href) {
             open = false;
             await goto(action.href);
             return;
         }
 
-        if (action.prompt) {
-            await submitPrompt(action.prompt, true, action.label, action.sourcePath);
-        }
+        await submitPrompt(action.prompt, true, action.label, action.sourcePath);
     }
 
     async function regenerateResponse(assistantMessageId: string): Promise<void> {

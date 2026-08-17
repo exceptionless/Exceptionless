@@ -2,7 +2,9 @@ import { fireEvent, render, screen } from '@testing-library/svelte';
 import { describe, expect, it, vi } from 'vitest';
 
 const showChangePlanDialog = vi.hoisted(() => vi.fn());
+const isStripeEnabled = vi.hoisted(() => vi.fn(() => true));
 vi.mock('$features/billing/change-plan.svelte', () => ({ showChangePlanDialog }));
+vi.mock('$features/billing/stripe.svelte', () => ({ isStripeEnabled }));
 
 import AssistantUpgradeRequired from './assistant-upgrade-required.svelte';
 
@@ -31,6 +33,19 @@ describe('AssistantUpgradeRequired', () => {
         render(AssistantUpgradeRequired, { props: { message: 'Select an organization to use Exie.' } });
 
         expect(screen.queryByRole('button', { name: 'View upgrade options' })).toBeNull();
+    });
+
+    it('does not offer an unusable upgrade when billing is disabled', () => {
+        isStripeEnabled.mockReturnValueOnce(false);
+        render(AssistantUpgradeRequired, {
+            props: {
+                accessState: 'upgrade-required',
+                organizationId: 'organization-id'
+            }
+        });
+
+        expect(screen.queryByRole('button', { name: 'Upgrade Plan' })).toBeNull();
+        expect(screen.getByText('Billing checkout is unavailable in this environment.')).toBeTruthy();
     });
 
     it('shows a retry action when access loading fails', async () => {

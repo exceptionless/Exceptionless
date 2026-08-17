@@ -111,6 +111,7 @@ public sealed record McpClientSetupStep(
 public sealed record McpProjectSetupResult(
     string Id,
     string Name,
+    string WebUrl,
     IReadOnlyCollection<McpProjectSetupClient> Clients,
     IReadOnlyCollection<string> Notes);
 

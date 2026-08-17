@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Web.Assistant;
+using Exceptionless.Web.Mcp;
 using Xunit;
 
 namespace Exceptionless.Tests.Assistant;
@@ -8,13 +9,18 @@ namespace Exceptionless.Tests.Assistant;
 public sealed class AssistantToolResultSerializerTests
 {
     [Fact]
-    public void Serialize_ProjectSetupResult_AddsCanonicalConfigureUrl()
+    public void Serialize_ProjectSetupResult_PreservesCanonicalConfigureUrl()
     {
         var options = new JsonSerializerOptions(JsonSerializerDefaults.Web).ConfigureExceptionlessApiDefaults();
 
         string json = AssistantToolResultSerializer.Serialize(
             "get_project_setup",
-            new { data = new { id = "project id", name = "Project" }, ok = true },
+            McpResponse<McpProjectSetupResult>.Success(new McpProjectSetupResult(
+                "project id",
+                "Project",
+                AssistantRoutes.ProjectConfigure("project id"),
+                [],
+                [])),
             options);
 
         using var document = JsonDocument.Parse(json);

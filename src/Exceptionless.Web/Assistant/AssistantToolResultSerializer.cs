@@ -34,7 +34,7 @@ internal static class AssistantToolResultSerializer
             return;
         }
 
-        item["webUrl"] = toolName switch
+        string? webUrl = toolName switch
         {
             "get_event" when item["stack_id"]?.GetValue<string>() is { Length: > 0 } stackId => AssistantRoutes.Event(stackId, id),
             "get_stack" or "search_stacks" => AssistantRoutes.Stack(id),
@@ -42,5 +42,8 @@ internal static class AssistantToolResultSerializer
             "list_projects" => AssistantRoutes.ProjectStacks(id),
             _ => null
         };
+
+        if (webUrl is not null)
+            item["webUrl"] = webUrl;
     }
 }

@@ -3,6 +3,7 @@
     import { Button } from '$comp/ui/button';
     import { Spinner } from '$comp/ui/spinner';
     import { showChangePlanDialog } from '$features/billing/change-plan.svelte';
+    import { isStripeEnabled } from '$features/billing/stripe.svelte';
     import Bot from '@lucide/svelte/icons/bot';
 
     import type { AssistantAccessState } from '../models';
@@ -51,7 +52,9 @@
         <Spinner aria-label="Loading Exie access" />
     {:else if accessState === 'error' && onRetry}
         <Button onclick={() => void onRetry()} variant="outline">Retry</Button>
-    {:else if accessState === 'upgrade-required' && organizationId}
+    {:else if accessState === 'upgrade-required' && organizationId && isStripeEnabled()}
         <Button onclick={openUpgradeOptions}>Upgrade Plan</Button>
+    {:else if accessState === 'upgrade-required' && organizationId}
+        <Muted>Billing checkout is unavailable in this environment.</Muted>
     {/if}
 </div>
