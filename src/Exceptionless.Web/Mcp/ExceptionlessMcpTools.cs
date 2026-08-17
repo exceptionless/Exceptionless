@@ -229,7 +229,11 @@ public sealed class ExceptionlessMcpTools
     [Description("Gets the canonical Exceptionless Client Setup page and verified client support for a project. Use this for any question about configuring, installing, or connecting an Exceptionless client.")]
     public async Task<McpResponse<McpProjectSetupResult>> GetProjectSetupAsync(
         [Description("Optional Exceptionless project id to configure. May be omitted when a current project is available.")]
-        string? projectId = null)
+        string? projectId = null,
+        [Description("Optional exact project name to resolve when no project id or current project is available.")]
+        string? projectName = null,
+        [Description("Optional organization id used to resolve projectName. May be omitted when only one organization is accessible.")]
+        string? organizationId = null)
     {
         try
         {
@@ -237,11 +241,14 @@ public sealed class ExceptionlessMcpTools
             if (projectId is not null && !TryValidateId(projectId, "projectId", out var idError))
                 return McpResponse<McpProjectSetupResult>.Failed(idError);
 
-            var projectContext = await _mcpContextService.ResolveProjectAsync(projectId);
+            if (organizationId is not null && !TryValidateId(organizationId, "organizationId", out var organizationIdError))
+                return McpResponse<McpProjectSetupResult>.Failed(organizationIdError);
+
+            var projectContext = await _mcpContextService.ResolveProjectByIdOrNameAsync(projectId, projectName, organizationId);
             if (!projectContext.Succeeded)
                 return McpResponse<McpProjectSetupResult>.Failed(projectContext.Error!);
 
-            var project = projectContext.Project!;
+            var project = projectContext.ActiveProject!;
             return McpResponse<McpProjectSetupResult>.Success(new McpProjectSetupResult(
                 project.Id,
                 project.Name,
@@ -254,7 +261,7 @@ public sealed class ExceptionlessMcpTools
         }
         catch (Exception ex) when (IsLookupError(ex))
         {
-            return McpResponse<McpProjectSetupResult>.Failed(ToLookupError("Project", projectId ?? "current authorization", ex));
+            return McpResponse<McpProjectSetupResult>.Failed(ToLookupError("Project", projectId ?? projectName ?? organizationId ?? "current authorization", ex));
         }
     }
 

@@ -412,7 +412,9 @@ public sealed class AssistantService(
                 GetString(root, "stackId", "stack_id") ?? currentStackId ?? String.Empty,
                 GetString(root, "projectId", "project_id") ?? request.ProjectId),
             GetProjectSetupTool => await tools.GetProjectSetupAsync(
-                GetString(root, "projectId", "project_id") ?? request.ProjectId),
+                GetString(root, "projectId", "project_id") ?? request.ProjectId,
+                GetString(root, "projectName", "project_name"),
+                request.OrganizationId ?? GetString(root, "organizationId", "organization_id")),
             ListProjectsTool => await tools.ListProjectsAsync(
                 request.OrganizationId ?? GetString(root, "organizationId", "organization_id"),
                 GetString(root, "filter"),

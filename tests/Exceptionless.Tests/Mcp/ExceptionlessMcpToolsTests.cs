@@ -374,6 +374,18 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetProjectSetupAsync_ProjectName_ResolvesVerifiedSetup()
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead);
+
+        var result = await tools.GetProjectSetupAsync(projectName: "Disintegrating Pistol", organizationId: TestConstants.OrganizationId);
+
+        Assert.True(result.Ok);
+        Assert.Equal(TestConstants.ProjectId, Data(result).Id);
+        Assert.Equal(AssistantRoutes.ProjectConfigure(TestConstants.ProjectId), Data(result).WebUrl);
+    }
+
+    [Fact]
     public async Task GetClientSetupInstructionsAsync_InvalidPlatform_ReturnsInvalidClientPlatform()
     {
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead);

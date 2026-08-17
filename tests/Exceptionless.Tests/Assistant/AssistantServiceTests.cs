@@ -336,6 +336,7 @@ public sealed class AssistantServiceTests
         Assert.Contains("Never call list_projects or search_stacks to rediscover the current event or stack", handler.RequestBody);
         Assert.Contains("CURRENT PROJECT RULE", handler.RequestBody);
         Assert.Contains("CLIENT SETUP RULE", handler.RequestBody);
+        Assert.Contains("pass that exact projectName to get_project_setup", handler.RequestBody);
         Assert.Contains("Do not call get_stack or list_projects for setup", handler.RequestBody);
         Assert.Contains("Never invent packages or advertise Python, Java, Ruby, PHP, Expo, or React Native clients", handler.RequestBody);
         Assert.Contains("do not call list_projects, call each needed project-scoped tool only once", handler.RequestBody);
