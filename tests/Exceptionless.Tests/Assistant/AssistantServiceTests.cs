@@ -22,6 +22,21 @@ namespace Exceptionless.Tests.Assistant;
 public sealed class AssistantServiceTests
 {
     [Theory]
+    [InlineData("requested-project", "Named project", "current-project", "requested-project")]
+    [InlineData(null, "Named project", "current-project", null)]
+    [InlineData(null, null, "current-project", "current-project")]
+    public void GetProjectSetupProjectId_ExplicitTarget_UsesExpectedPrecedence(
+        string? requestedProjectId,
+        string? requestedProjectName,
+        string? currentProjectId,
+        string? expectedProjectId)
+    {
+        Assert.Equal(
+            expectedProjectId,
+            AssistantService.GetProjectSetupProjectId(requestedProjectId, requestedProjectName, currentProjectId));
+    }
+
+    [Theory]
     [InlineData("Please mark this stack fixed", "update_stack_status", "{\"status\":\"fixed\"}", true)]
     [InlineData("Fix with Exie: Analyze this stack and explain how to fix the underlying issue.", "update_stack_status", "{\"status\":\"fixed\"}", false)]
     [InlineData("Please fix the underlying issue", "update_stack_status", "{\"status\":\"fixed\"}", false)]

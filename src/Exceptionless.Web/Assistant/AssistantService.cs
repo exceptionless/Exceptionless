@@ -403,6 +403,8 @@ public sealed class AssistantService(
         var root = document.RootElement;
         string? currentEventId = GetRouteValue(request.Path, "event");
         string? currentStackId = GetRouteValue(request.Path, "stack");
+        string? setupProjectId = GetString(root, "projectId", "project_id");
+        string? setupProjectName = GetString(root, "projectName", "project_name");
         bool? critical = GetBoolean(root, "critical");
 
         object result = name switch
@@ -416,8 +418,8 @@ public sealed class AssistantService(
                 GetString(root, "stackId", "stack_id") ?? currentStackId ?? String.Empty,
                 GetString(root, "projectId", "project_id") ?? request.ProjectId),
             GetProjectSetupTool => await tools.GetProjectSetupAsync(
-                GetString(root, "projectId", "project_id") ?? request.ProjectId,
-                GetString(root, "projectName", "project_name"),
+                GetProjectSetupProjectId(setupProjectId, setupProjectName, request.ProjectId),
+                setupProjectName,
                 request.OrganizationId ?? GetString(root, "organizationId", "organization_id")),
             ListProjectsTool => await tools.ListProjectsAsync(
                 request.OrganizationId ?? GetString(root, "organizationId", "organization_id"),
@@ -463,6 +465,14 @@ public sealed class AssistantService(
         };
 
         return AssistantToolResultSerializer.Serialize(name, result, s_jsonOptions);
+    }
+
+    internal static string? GetProjectSetupProjectId(string? requestedProjectId, string? requestedProjectName, string? currentProjectId)
+    {
+        if (!String.IsNullOrWhiteSpace(requestedProjectId))
+            return requestedProjectId;
+
+        return String.IsNullOrWhiteSpace(requestedProjectName) ? currentProjectId : null;
     }
 
     private static bool IsWriteTool(string name)
