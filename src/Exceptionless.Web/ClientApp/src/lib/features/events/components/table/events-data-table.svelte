@@ -8,6 +8,7 @@
     import type { EventSummaryModel, SummaryTemplateKeys } from '../summary/index';
 
     interface Props {
+        autoFillColumnId?: string;
         bodyChildren?: Snippet;
         footerChildren?: Snippet;
         isLoading: boolean;
@@ -18,7 +19,7 @@
         toolbarChildren?: Snippet;
     }
 
-    let { bodyChildren, footerChildren, isLoading, limit = $bindable(), rowClick, rowHref, table, toolbarChildren }: Props = $props();
+    let { autoFillColumnId, bodyChildren, footerChildren, isLoading, limit = $bindable(), rowClick, rowHref, table, toolbarChildren }: Props = $props();
 </script>
 
 <DataTable.Root>
@@ -27,7 +28,7 @@
             {@render toolbarChildren()}
         </DataTable.Toolbar>
     {/if}
-    <DataTable.Body {rowClick} {rowHref} {table}>
+    <DataTable.Body {autoFillColumnId} {rowClick} {rowHref} {table}>
         {#if isLoading}
             <DelayedRender>
                 <DataTable.Loading {table} />

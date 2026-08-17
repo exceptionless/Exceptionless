@@ -8,7 +8,8 @@ export function buildColumnSettings(
     columnIds: string[],
     columnOrder: ColumnOrderState,
     columnVisibility: ColumnVisibilityState,
-    columnSizing: ColumnSizingState
+    columnSizing: ColumnSizingState,
+    autoFillColumnId?: string
 ): Record<string, SavedViewColumnSettings> {
     const availableColumnIds = columnIds.filter((columnId) => columnId !== 'select');
     const availableColumnIdSet = new Set(availableColumnIds);
@@ -23,10 +24,15 @@ export function buildColumnSettings(
             {
                 position,
                 visible: columnVisibility[columnId] ?? true,
+                ...(columnId === autoFillColumnId && columnVisibility[columnId] !== false && columnSizing[columnId] === undefined ? { auto_fill: true } : {}),
                 ...(columnSizing[columnId] !== undefined ? { width: Math.round(columnSizing[columnId]) } : {})
             }
         ])
     );
+}
+
+export function getSavedAutoFillColumnId(view: SavedColumnState | undefined): string | undefined {
+    return Object.entries(view?.columns ?? {}).find(([, settings]) => settings.auto_fill === true)?.[0];
 }
 
 export function getSavedColumnOrder(view: SavedColumnState | undefined): ColumnOrderState {

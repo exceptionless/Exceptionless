@@ -13,13 +13,14 @@
 
     interface Props {
         allColumnsSized?: boolean;
+        autoFillColumnId?: string;
         fullWidthSummary?: boolean;
         kind: 'event' | 'stack';
         onRowClick: (row: TestSummary) => void;
         sizedFullWidthSummary?: boolean;
     }
 
-    let { allColumnsSized = false, fullWidthSummary = false, kind, onRowClick, sizedFullWidthSummary = false }: Props = $props();
+    let { allColumnsSized = false, autoFillColumnId, fullWidthSummary = false, kind, onRowClick, sizedFullWidthSummary = false }: Props = $props();
 
     const summaryData = {
         Message: 'Unexpected end of Stream, the content may have already been read by another component.',
@@ -115,6 +116,7 @@
 </script>
 
 <DataTableBody
+    {autoFillColumnId}
     rowClick={onRowClick}
     rowHref={(row: SummaryModel<SummaryTemplateKeys>) => (kind === 'event' ? buildEventDetailsHref(row.id) : buildStackDetailsHref(row.id))}
     {table}

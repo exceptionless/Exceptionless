@@ -4,6 +4,7 @@ import type { SavedView } from './models';
 
 import {
     buildColumnSettings,
+    getSavedAutoFillColumnId,
     getSavedColumnOrder,
     getSavedColumnSizing,
     getSavedColumnVisibility,
@@ -17,12 +18,22 @@ describe('saved view column settings', () => {
             ['select', 'summary', 'project'],
             ['select', 'project', 'summary'],
             { project: true, summary: true },
-            { project: 360 }
+            { project: 360 },
+            'summary'
         );
 
         expect(result).toEqual({
             project: { position: 0, visible: true, width: 360 },
-            summary: { position: 1, visible: true }
+            summary: { auto_fill: true, position: 1, visible: true }
+        });
+    });
+
+    it('does not preserve auto-fill after that column is resized or hidden', () => {
+        expect(buildColumnSettings(['summary'], [], {}, { summary: 480 }, 'summary')).toEqual({
+            summary: { position: 0, visible: true, width: 480 }
+        });
+        expect(buildColumnSettings(['summary'], [], { summary: false }, {}, 'summary')).toEqual({
+            summary: { position: 0, visible: false }
         });
     });
 
@@ -30,13 +41,14 @@ describe('saved view column settings', () => {
         const view = {
             columns: {
                 project: { position: 0, visible: true, width: 360 },
-                summary: { position: 1, visible: false }
+                summary: { auto_fill: true, position: 1, visible: false }
             }
         } as Pick<SavedView, 'columns'>;
 
         expect(getSavedColumnOrder(view)).toEqual(['project', 'summary']);
         expect(getSavedColumnVisibility(view)).toEqual({ project: true, summary: false });
         expect(getSavedColumnSizing(view)).toEqual({ project: 360 });
+        expect(getSavedAutoFillColumnId(view)).toBe('summary');
     });
 
     it('detects changed and reset column widths', () => {

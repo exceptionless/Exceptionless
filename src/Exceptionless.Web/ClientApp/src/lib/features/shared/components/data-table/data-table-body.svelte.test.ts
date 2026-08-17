@@ -38,6 +38,16 @@ describe('DataTableBody', () => {
         expect(dateHeader.style.cssText).toBe('width: 150px; min-width: 150px; max-width: 150px;');
     });
 
+    it('uses the saved view auto-fill column instead of the column-definition default', () => {
+        render(DataTableBodyTestHarness, { autoFillColumnId: 'date', fullWidthSummary: true, kind: 'event', onRowClick: vi.fn() });
+
+        const summaryHeader = screen.getByRole('columnheader', { name: 'Summary' });
+        const dateHeader = screen.getByRole('columnheader', { name: 'Date' });
+
+        expect(summaryHeader.style.cssText).toBe('width: 160px; min-width: 160px; max-width: 160px;');
+        expect(dateHeader.style.cssText).toBe('width: 100%;');
+    });
+
     it('does not transfer flexibility after the full-width column is sized', () => {
         render(DataTableBodyTestHarness, { fullWidthSummary: true, kind: 'event', onRowClick: vi.fn(), sizedFullWidthSummary: true });
 

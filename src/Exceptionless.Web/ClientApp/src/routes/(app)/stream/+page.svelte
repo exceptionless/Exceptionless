@@ -81,6 +81,7 @@
 
     const VIEW = 'stream';
     const savedViewsState = useSavedViews({
+        defaultAutoFillColumnId: 'summary',
         defaultColumnVisibility: defaultEventColumnVisibility,
         defaultFilter: DEFAULT_PARAMS.filter,
         filterCacheKey,
@@ -330,15 +331,18 @@
             {#if savedViewsState.isEnabled}
                 <SavedViewPicker
                     activeSavedView={savedViewsState.activeSavedView}
+                    autoFillColumnId={savedViewsState.autoFillColumnId}
                     columnOrder={table.store.state.columnOrder}
                     columnSizing={table.store.state.columnSizing}
                     columnVisibility={table.store.state.columnVisibility}
+                    defaultAutoFillColumnId="summary"
                     filters={filters ?? []}
                     isModified={savedViewsState.isModified}
                     onLoadView={savedViewsState.handleLoadView}
                     onClearSavedView={savedViewsState.handleClearSavedView}
                     onResetToSaved={savedViewsState.handleResetToSaved}
                     savedViews={savedViewsState.savedViews}
+                    setAutoFillColumnId={savedViewsState.setAutoFillColumnId}
                     {table}
                     view={VIEW}
                 />
@@ -346,7 +350,7 @@
             <StreamingIndicatorButton onToggle={handleToggle} {paused} size="icon-lg" />
         </div>
     </div>
-    <DataTable.Body rowClick={rowclick} {rowHref} {table}>
+    <DataTable.Body autoFillColumnId={savedViewsState.autoFillColumnId} rowClick={rowclick} {rowHref} {table}>
         {#if clientStatus.isLoading}
             <DelayedRender>
                 <DataTable.Loading {table} />

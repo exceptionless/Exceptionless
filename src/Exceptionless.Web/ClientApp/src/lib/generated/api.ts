@@ -396,6 +396,8 @@ export interface ResetPasswordModel {
 export interface SavedViewColumnSettings {
   /** Whether the column is visible. Null means use the table default. */
   visible?: null | boolean;
+  /** Whether the column fills the table's remaining width. Null or false means use fixed-width behavior. */
+  auto_fill?: null | boolean;
   /**
    * Zero-based display position. Null means use the table default order.
    * @format int32

@@ -8,7 +8,14 @@ import { organization } from '$features/organizations/context.svelte';
 import type { SavedView } from './models';
 
 import { getSavedViewsByViewQuery } from './api.svelte';
-import { getSavedColumnOrder, getSavedColumnSizing, getSavedColumnVisibility, savedViewColumnOrderEqual, savedViewColumnSizingEqual } from './column-settings';
+import {
+    getSavedAutoFillColumnId,
+    getSavedColumnOrder,
+    getSavedColumnSizing,
+    getSavedColumnVisibility,
+    savedViewColumnOrderEqual,
+    savedViewColumnSizingEqual
+} from './column-settings';
 import { savedViewHref, savedViewResolvedSlug } from './slugs';
 
 export interface SavedViewQueryParams {
@@ -21,6 +28,7 @@ export interface SavedViewQueryParams {
 
 export interface UseSavedViewsOptions {
     baseHref?: string;
+    defaultAutoFillColumnId?: string;
     defaultColumnVisibility?: ColumnVisibilityState;
     defaultFilter?: null | string;
     defaultTime?: null | string;
@@ -47,6 +55,7 @@ export interface UseSavedViewsOptions {
 
 export interface UseSavedViewsReturn {
     activeSavedView: SavedView | undefined;
+    autoFillColumnId: string | undefined;
     handleClearSavedView: () => void;
     handleLoadView: (view: SavedView) => void;
     handleResetToSaved: () => void;
@@ -56,6 +65,7 @@ export interface UseSavedViewsReturn {
     isMissing: boolean;
     isModified: boolean;
     savedViews: SavedView[];
+    setAutoFillColumnId: (columnId: string) => void;
 }
 
 export function clearSavedViewQueryParams(queryParams: SavedViewQueryParams): void {
@@ -100,6 +110,10 @@ export function hasMissingSavedViewSlug(options: {
     slug: string | undefined;
 }): boolean {
     return !!options.slug && !options.activeSavedView && !!options.savedViews && !options.isLoading;
+}
+
+export function hasSavedViewAutoFillChange(current: string | undefined, view: Pick<SavedView, 'columns'>, defaultAutoFillColumnId?: string): boolean {
+    return current !== (getSavedAutoFillColumnId(view) ?? defaultAutoFillColumnId);
 }
 
 export function hasSavedViewColumnChanges(
@@ -157,6 +171,7 @@ export function supportsTimeQueryParam(queryParams: SavedViewQueryParams): query
 
 export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsReturn {
     const isEnabled = $derived(!!organization.current);
+    let autoFillColumnId = $state(options.defaultAutoFillColumnId);
 
     // Some routes, such as stream, do not declare every saved-view query parameter.
     const supportsSort = supportsSortQueryParam(options.queryParams);
@@ -191,6 +206,8 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     });
 
     function applyColumnState(view: Pick<SavedView, 'columns'> | undefined): void {
+        autoFillColumnId = getSavedAutoFillColumnId(view) ?? options.defaultAutoFillColumnId;
+
         if (options.setColumnVisibility) {
             options.setColumnVisibility(getSavedColumnVisibility(view));
         }
@@ -304,6 +321,10 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return true;
         }
 
+        if (hasSavedViewAutoFillChange(autoFillColumnId, view, options.defaultAutoFillColumnId)) {
+            return true;
+        }
+
         if (options.getShowStats && options.getShowStats() !== (view.show_stats ?? true)) {
             return true;
         }
@@ -370,6 +391,9 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         get activeSavedView() {
             return activeSavedView;
         },
+        get autoFillColumnId() {
+            return autoFillColumnId;
+        },
         handleClearSavedView,
         handleLoadView,
         handleResetToSaved,
@@ -390,6 +414,9 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         },
         get savedViews() {
             return savedViewsListQuery.data ?? [];
+        },
+        setAutoFillColumnId(columnId: string) {
+            autoFillColumnId = columnId;
         }
     };
 }

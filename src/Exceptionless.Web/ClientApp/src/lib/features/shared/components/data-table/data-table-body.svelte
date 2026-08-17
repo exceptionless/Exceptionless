@@ -12,13 +12,14 @@
     import DataTableColumnHeader from './data-table-column-header.svelte';
 
     interface Props {
+        autoFillColumnId?: string;
         children?: Snippet;
         rowClick?: (row: TData, event?: MouseEvent) => void;
         rowHref?: (row: TData) => string;
         table: SvelteTable<StockFeatures, TData>;
     }
 
-    let { children, rowClick, rowHref, table }: Props = $props();
+    let { autoFillColumnId, children, rowClick, rowHref, table }: Props = $props();
 
     const selectColumnClass = 'w-8 min-w-8 max-w-8';
     const selectColumnWidth = 32;
@@ -85,6 +86,11 @@
     function getFlexibleDataColumnId(): string | undefined {
         const columnSizing = table.atoms.columnSizing?.get() ?? {};
         const visibleDataColumns = getVisibleDataColumns();
+        if (autoFillColumnId !== undefined) {
+            const autoFillColumn = visibleDataColumns.find((column) => column.id === autoFillColumnId);
+            return autoFillColumn && columnSizing[autoFillColumn.id] === undefined ? autoFillColumn.id : undefined;
+        }
+
         const fullWidthColumns = visibleDataColumns.filter((column) => getMetaClass(column.columnDef.meta).split(' ').includes('w-full'));
         if (fullWidthColumns.length > 0) {
             return fullWidthColumns.find((column) => columnSizing[column.id] === undefined)?.id;

@@ -45,15 +45,18 @@
 
     interface Props {
         activeSavedView?: SavedView;
+        autoFillColumnId?: string;
         columnOrder?: string[];
         columnSizing?: Record<string, number>;
         columnVisibility?: Record<string, boolean>;
+        defaultAutoFillColumnId?: string;
         filters: IFilter[];
         isModified: boolean;
         onClearSavedView: () => void;
         onLoadView: (view: SavedView) => void;
         onResetToSaved: () => void;
         savedViews: SavedView[];
+        setAutoFillColumnId: (columnId: string) => void;
         setShowChart?: (show: boolean) => void;
         setShowStats?: (show: boolean) => void;
         showChart?: boolean;
@@ -66,15 +69,18 @@
 
     let {
         activeSavedView,
+        autoFillColumnId,
         columnOrder,
         columnSizing,
         columnVisibility,
+        defaultAutoFillColumnId,
         filters,
         isModified,
         onClearSavedView,
         onLoadView,
         onResetToSaved,
         savedViews,
+        setAutoFillColumnId,
         setShowChart,
         setShowStats,
         showChart = true,
@@ -117,6 +123,7 @@
     });
 
     const saving = $derived(createMutation.isPending || updateMutation.isPending || removeMutation.isPending);
+    const effectiveAutoFillColumnId = $derived(autoFillColumnId && columnSizing?.[autoFillColumnId] === undefined ? autoFillColumnId : undefined);
 
     const currentFilterString = $derived(toFilter(filters.filter((f) => f.type !== 'date')));
 
@@ -162,7 +169,8 @@
             table.getAllLeafColumns().map((column) => column.id),
             columnOrder ?? [],
             columnVisibility ?? {},
-            columnSizing ?? {}
+            columnSizing ?? {},
+            effectiveAutoFillColumnId
         );
     }
 
@@ -393,5 +401,11 @@
 {/if}
 
 {#if isColumnDialogOpen}
-    <ColumnManagementDialog bind:open={isColumnDialogOpen} {table} />
+    <ColumnManagementDialog
+        bind:open={isColumnDialogOpen}
+        autoFillColumnId={effectiveAutoFillColumnId}
+        {defaultAutoFillColumnId}
+        {setAutoFillColumnId}
+        {table}
+    />
 {/if}
