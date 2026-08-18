@@ -4,6 +4,22 @@ import { describe, expect, it } from 'vitest';
 import AssistantToolActivity from './assistant-tool-activity.svelte';
 
 describe('AssistantToolActivity', () => {
+    it('labels completed stack event requests', () => {
+        render(AssistantToolActivity, {
+            props: {
+                tool: {
+                    arguments: '{}',
+                    id: 'tool-1',
+                    name: 'get_stack_events',
+                    result: '{"ok":true,"data":{"items":[]}}',
+                    status: 'complete'
+                }
+            }
+        });
+
+        expect(screen.getByRole('button', { name: /Listed stack events/ })).toBeTruthy();
+    });
+
     it('shows a concise failure and keeps raw request and response available', async () => {
         render(AssistantToolActivity, {
             props: {

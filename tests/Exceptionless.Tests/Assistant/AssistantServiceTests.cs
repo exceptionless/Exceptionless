@@ -336,6 +336,7 @@ public sealed class AssistantServiceTests
         Assert.Contains("get_event", handler.RequestBody);
         Assert.Contains("get_stack", handler.RequestBody);
         Assert.Contains("get_project_setup", handler.RequestBody);
+        Assert.Contains("get_stack_events", handler.RequestBody);
         Assert.Contains("search_stacks", handler.RequestBody);
         Assert.Contains("update_stack_status", handler.RequestBody);
         Assert.Contains("snooze_stack", handler.RequestBody);
@@ -358,6 +359,7 @@ public sealed class AssistantServiceTests
         Assert.Contains("do not call list_projects, call each needed project-scoped tool only once", handler.RequestBody);
         Assert.Contains("Defaults to the current page project id when omitted", handler.RequestBody);
         Assert.Contains("This tool has no stack id filter", handler.RequestBody);
+        Assert.Contains("Never pass a stackId as eventId", handler.RequestBody);
         Assert.Contains("\"eventId\"", handler.RequestBody);
         Assert.Contains("\"startUtc\"", handler.RequestBody);
         Assert.Contains("\"after\"", handler.RequestBody);
@@ -373,6 +375,21 @@ public sealed class AssistantServiceTests
         Assert.Contains("MUST call suggest_followups when your answer asks what the user wants to investigate or do next", handler.RequestBody);
         Assert.Contains("Call this whenever the answer asks what the user wants to investigate or do next", handler.RequestBody);
         Assert.Contains("If there is no genuinely useful next step, end the answer directly and omit the tool", handler.RequestBody);
+
+        using var requestBody = JsonDocument.Parse(handler.RequestBody);
+        JsonElement getStackEvents = requestBody.RootElement.GetProperty("tools").EnumerateArray()
+            .Single(tool => tool.GetProperty("function").GetProperty("name").GetString() == "get_stack_events")
+            .GetProperty("function");
+        JsonElement getStackEventsParameters = getStackEvents.GetProperty("parameters");
+        Assert.DoesNotContain(
+            getStackEventsParameters.GetProperty("required").EnumerateArray(),
+            item => item.GetString() == "stackId");
+        Assert.Contains(
+            "Defaults to the current page stack id when omitted.",
+            getStackEventsParameters.GetProperty("properties").GetProperty("stackId").GetProperty("description").GetString());
+        Assert.Equal(
+            AssistantLimits.MaximumToolItemsPerCall,
+            getStackEventsParameters.GetProperty("properties").GetProperty("limit").GetProperty("maximum").GetInt32());
     }
 
     [Fact]
@@ -1044,11 +1061,16 @@ public sealed class AssistantServiceTests
             "get_event",
             McpResponse<McpEventResult>.Success(ev),
             serializerOptions);
+        string stackEvents = AssistantToolResultSerializer.Serialize(
+            "get_stack_events",
+            McpResponse<McpListData<McpEventResult>>.Success(new McpListData<McpEventResult>([ev])),
+            serializerOptions);
 
         Assert.Contains($"\"webUrl\":\"{AssistantRoutes.ProjectStacks("project id")}\"", projects);
         Assert.Contains($"\"webUrl\":\"{AssistantRoutes.Stack("stack id")}\"", stacks);
         Assert.Contains($"\"webUrl\":\"{AssistantRoutes.Stack("stack id")}\"", stackDetails);
         Assert.Contains($"\"webUrl\":\"{AssistantRoutes.Event("stack id", "event id")}\"", eventDetails);
+        Assert.Contains($"\"webUrl\":\"{AssistantRoutes.Event("stack id", "event id")}\"", stackEvents);
         Assert.Contains("\"url\":\"/api/v2/projects/project-id\"", projects);
         Assert.Contains("\"url\":\"/api/v2/stacks/stack-id\"", stacks);
     }
