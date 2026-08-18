@@ -7,6 +7,7 @@
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
     import DateTime from '$comp/formatters/date-time.svelte';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
+    import { CodeBlock } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Dialog from '$comp/ui/dialog';
     import { Skeleton } from '$comp/ui/skeleton';
@@ -484,7 +485,7 @@
             <Dialog.Description class="sr-only">Raw JSON representation of the event</Dialog.Description>
         </Dialog.Header>
         <div class="flex-1 overflow-y-auto rounded-md border p-4">
-            <pre class="text-xs break-all whitespace-pre-wrap">{JSON.stringify(event, null, 2)}</pre>
+            <CodeBlock code={JSON.stringify(event, null, 2)} language="json" class="text-xs break-all whitespace-pre-wrap" />
         </div>
         <Dialog.Footer>
             <CopyToClipboardButton size="sm" title="Copy JSON to Clipboard" value={JSON.stringify(event, null, 2)} variant="outline">
