@@ -18,7 +18,7 @@
     {@const durationValue = getSessionSummaryDuration(data, summary.date)}
     <Live live={isActive} liveTitle="Online" notLiveTitle="Ended" />
     {#if isActive || durationValue !== undefined}
-        <Duration value={durationValue} />
+        <Duration unitCount={2} value={durationValue} />
     {/if}
 {/snippet}
 

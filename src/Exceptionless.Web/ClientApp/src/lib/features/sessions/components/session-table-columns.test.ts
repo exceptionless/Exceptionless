@@ -13,4 +13,12 @@ describe('getSessionColumns', () => {
             }
         });
     });
+
+    it('allocates more width to User than the compact Duration column', () => {
+        const durationColumn = getSessionColumns().find((column) => column.id === 'duration');
+        const userColumn = getSessionColumns().find((column) => column.id === 'user');
+
+        expect(durationColumn?.meta).toMatchObject({ class: 'w-40' });
+        expect(userColumn?.meta).toMatchObject({ class: 'w-56' });
+    });
 });
