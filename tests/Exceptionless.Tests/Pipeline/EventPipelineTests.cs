@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using Exceptionless.Core.Billing;
@@ -1085,47 +1084,6 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.True(contexts.All(c => c.IsProcessed));
         Assert.True(contexts.All(c => !c.IsCancelled));
         Assert.True(contexts.All(c => !c.HasError));
-    }
-
-    [Fact]
-    public async Task PipelinePerformanceAsync()
-    {
-        var parserPluginManager = GetService<EventParserPluginManager>();
-        var pipeline = GetService<EventPipeline>();
-        var startDate = DateTimeOffset.Now.SubtractHours(1);
-        int totalBatches = 0;
-        int totalEvents = 0;
-
-        var sw = new Stopwatch();
-
-        string path = Path.Combine("..", "..", "..", "Pipeline", "Data");
-        foreach (string file in Directory.GetFiles(path, "*.json", SearchOption.AllDirectories))
-        {
-            var events = parserPluginManager.ParseEvents(await File.ReadAllTextAsync(file, TestCancellationToken), 2, "exceptionless/2.0.0.0");
-            Assert.NotNull(events);
-            Assert.True(events.Count > 0);
-
-            foreach (var ev in events)
-            {
-                ev.Date = startDate;
-                ev.ProjectId = TestConstants.ProjectId;
-                ev.OrganizationId = TestConstants.OrganizationId;
-            }
-
-            sw.Start();
-            var contexts = await pipeline.RunAsync(events, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject());
-            sw.Stop();
-
-            Assert.True(contexts.All(c => c.IsProcessed));
-            Assert.True(contexts.All(c => !c.IsCancelled));
-            Assert.True(contexts.All(c => !c.HasError));
-
-            startDate = startDate.AddSeconds(5);
-            totalBatches++;
-            totalEvents += events.Count;
-        }
-
-        _logger.LogInformation("Took {Duration:g} to process {EventCount} with an average post size of {AveragePostSize}", sw.Elapsed, totalEvents, Math.Round(totalEvents * 1.0 / totalBatches, 4));
     }
 
     [Fact(Skip = "Used to create performance data from the queue directory")]
