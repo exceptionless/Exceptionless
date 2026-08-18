@@ -273,6 +273,10 @@ jobs:
         working-directory: src/Exceptionless.Web/ClientApp.angular
         run: npm ci
 
+      - name: Install Playwright FFmpeg
+        working-directory: src/Exceptionless.Web/ClientApp
+        run: npx playwright install ffmpeg
+
       - name: Start AppHost
         run: |
           aspire run --non-interactive --nologo -- --ci-e2e > aspire-run.log 2>&1 &
