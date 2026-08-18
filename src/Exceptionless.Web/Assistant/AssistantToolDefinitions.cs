@@ -14,6 +14,7 @@ internal static class AssistantToolDefinitions
         nameof(ExceptionlessMcpTools.GetEventAsync),
         nameof(ExceptionlessMcpTools.GetProjectSetupAsync),
         nameof(ExceptionlessMcpTools.GetStackAsync),
+        nameof(ExceptionlessMcpTools.GetStackEventsAsync),
         nameof(ExceptionlessMcpTools.ListProjectsAsync),
         nameof(ExceptionlessMcpTools.SearchStacksAsync),
         nameof(ExceptionlessMcpTools.UpdateStackStatusAsync),
@@ -39,7 +40,7 @@ internal static class AssistantToolDefinitions
             if (protocolTool.Name == "get_event" && currentEventId is not null)
                 ApplyCurrentPageDefault(schema, "eventId", "Defaults to the current page event id when omitted.");
 
-            if (protocolTool.Name is "get_stack" or "update_stack_status" or "snooze_stack" or "set_stack_critical" or "add_stack_reference_link" or "remove_stack_reference_link"
+            if (protocolTool.Name is "get_stack" or "get_stack_events" or "update_stack_status" or "snooze_stack" or "set_stack_critical" or "add_stack_reference_link" or "remove_stack_reference_link"
                 && currentStackId is not null)
             {
                 ApplyCurrentPageDefault(schema, "stackId", "Defaults to the current page stack id when omitted.");
@@ -48,7 +49,7 @@ internal static class AssistantToolDefinitions
             if (request.ProjectId is not null)
                 ApplyCurrentPageDefault(schema, "projectId", "Defaults to the current page project id when omitted. Only specify another project when the user explicitly requests a broader or different scope.");
 
-            if (protocolTool.Name is "list_projects" or "search_stacks")
+            if (protocolTool.Name is "get_stack_events" or "list_projects" or "search_stacks")
                 ApplyMaximum(schema, "limit", AssistantLimits.MaximumToolItemsPerCall);
 
             if (protocolTool.Name == "get_event")

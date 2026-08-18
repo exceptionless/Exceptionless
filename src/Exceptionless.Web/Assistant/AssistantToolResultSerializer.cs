@@ -36,7 +36,7 @@ internal static class AssistantToolResultSerializer
 
         string? webUrl = toolName switch
         {
-            "get_event" when item["stack_id"]?.GetValue<string>() is { Length: > 0 } stackId => AssistantRoutes.Event(stackId, id),
+            "get_event" or "get_stack_events" when item["stack_id"]?.GetValue<string>() is { Length: > 0 } stackId => AssistantRoutes.Event(stackId, id),
             "get_stack" or "search_stacks" => AssistantRoutes.Stack(id),
             "get_project_setup" => AssistantRoutes.ProjectConfigure(id),
             "list_projects" => AssistantRoutes.ProjectStacks(id),
