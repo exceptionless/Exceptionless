@@ -109,12 +109,11 @@
             return;
         }
 
-        if (isAssistantOpen) {
-            isAssistantOpen = false;
-            return;
+        if (!isAssistantOpen) {
+            await loadAssistantPanel();
         }
 
-        await openAssistantPanel();
+        isAssistantOpen = !isAssistantOpen;
     }
 
     async function openAssistantPanel(): Promise<void> {
