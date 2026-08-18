@@ -5,7 +5,7 @@ namespace Exceptionless.Core.Configuration;
 public sealed class AssistantOptions
 {
     public const string DefaultEndpoint = "https://openrouter.ai/api/v1/chat/completions";
-    public const string DefaultModel = "deepseek/deepseek-v4-flash";
+    public const string DefaultModel = "~deepseek/deepseek-v4-flash-latest";
 
     public bool Enabled { get; internal set; }
     public bool IsConfigured => !String.IsNullOrWhiteSpace(ApiKey);

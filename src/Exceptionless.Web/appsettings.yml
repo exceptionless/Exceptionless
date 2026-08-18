@@ -31,7 +31,7 @@ Serilog:
 
 Assistant:
   Endpoint: https://openrouter.ai/api/v1/chat/completions
-  Model: deepseek/deepseek-v4-flash
+  Model: "~deepseek/deepseek-v4-flash-latest"
   ApiKey:
 
 Apm:
