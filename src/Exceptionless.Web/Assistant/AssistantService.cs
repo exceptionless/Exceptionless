@@ -26,6 +26,7 @@ public sealed class AssistantService(
     private const string GetEventTool = "get_event";
     private const string GetProjectSetupTool = "get_project_setup";
     private const string GetStackTool = "get_stack";
+    private const string GetStackEventsTool = "get_stack_events";
     private const string ListProjectsTool = "list_projects";
     private const string RemoveStackReferenceLinkTool = "remove_stack_reference_link";
     private const string SearchStacksTool = "search_stacks";
@@ -421,6 +422,17 @@ public sealed class AssistantService(
                 GetProjectSetupProjectId(setupProjectId, setupProjectName, request.ProjectId),
                 setupProjectName,
                 request.OrganizationId ?? GetString(root, "organizationId", "organization_id")),
+            GetStackEventsTool => await tools.GetStackEventsAsync(
+                GetString(root, "stackId", "stack_id") ?? currentStackId ?? String.Empty,
+                GetString(root, "projectId", "project_id") ?? request.ProjectId,
+                GetString(root, "filter"),
+                GetString(root, "sort") ?? "-date",
+                GetBoundedInt32(root, AssistantLimits.MaximumToolItemsPerCall, AssistantLimits.MaximumToolItemsPerCall, "limit"),
+                GetString(root, "last"),
+                GetString(root, "startUtc", "start_utc"),
+                GetString(root, "endUtc", "end_utc"),
+                GetString(root, "after"),
+                GetString(root, "before")),
             ListProjectsTool => await tools.ListProjectsAsync(
                 request.OrganizationId ?? GetString(root, "organizationId", "organization_id"),
                 GetString(root, "filter"),
