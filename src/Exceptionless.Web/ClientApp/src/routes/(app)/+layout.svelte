@@ -109,8 +109,17 @@
             return;
         }
 
+        if (isAssistantOpen) {
+            isAssistantOpen = false;
+            return;
+        }
+
+        await openAssistantPanel();
+    }
+
+    async function openAssistantPanel(): Promise<void> {
         await loadAssistantPanel();
-        isAssistantOpen = !isAssistantOpen;
+        isAssistantOpen = true;
     }
 
     async function askAssistant(prompt: string): Promise<void> {
@@ -710,11 +719,14 @@
         >
             <main class={isAssistantPage ? 'flex min-h-0 flex-1 flex-col' : 'flex-1 px-4 pt-4'}>
                 <NavigationCommand
+                    askExie={askAssistant}
                     bind:open={isCommandOpen}
                     {isChatEnabled}
+                    isExieEnabled={isAssistantEnabled}
                     {isGlobalAdmin}
                     {isImpersonating}
                     {openChat}
+                    openExie={openAssistantPanel}
                     {openImpersonateOrganization}
                     {openKeyboardShortcuts}
                     {openOrganizationSwitcher}

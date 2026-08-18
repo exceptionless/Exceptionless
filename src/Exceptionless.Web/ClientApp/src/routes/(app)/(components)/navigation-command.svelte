@@ -1,22 +1,26 @@
 <script lang="ts">
     import type { ViewOrganization } from '$features/organizations/models';
     import type { ViewProject } from '$features/projects/models';
-    import type { FetchClientResponse, ProblemDetails } from '@foundatiofx/fetchclient';
+    import type { FetchClientResponse } from '@foundatiofx/fetchclient';
 
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import * as Command from '$comp/ui/command';
     import { logout } from '$features/auth/api.svelte';
     import { accessToken } from '$features/auth/index.svelte';
+    import { showBillingDialogOnUpgradeProblem } from '$features/billing';
     import { buildEventDetailsHref, type EventSummaryModel, type StackSummaryModel, type SummaryTemplateKeys } from '$features/events/components/summary/index';
+    import { addOrganizationUser } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { resetData } from '$features/projects/api.svelte';
     import ResetProjectDataDialog from '$features/projects/components/dialogs/reset-project-data-dialog.svelte';
     import ProjectCommandActions, { type ProjectActionId } from '$features/projects/components/project-command-actions.svelte';
     import { appKeyboardShortcuts, formatKeyboardShortcut, type ShortcutKey } from '$features/shared/keyboard-shortcuts';
+    import InviteUserDialog from '$features/users/components/invite-user-dialog.svelte';
     import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
-    import { useFetchClient } from '@foundatiofx/fetchclient';
+    import { ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
     import Activity from '@lucide/svelte/icons/activity';
+    import Bot from '@lucide/svelte/icons/bot';
     import Building2 from '@lucide/svelte/icons/building-2';
     import CircleHelp from '@lucide/svelte/icons/circle-help';
     import CircleUserRound from '@lucide/svelte/icons/circle-user-round';
@@ -29,8 +33,11 @@
     import RefreshCw from '@lucide/svelte/icons/refresh-cw';
     import Search from '@lucide/svelte/icons/search';
     import SunMoon from '@lucide/svelte/icons/sun-moon';
+    import UserPlus from '@lucide/svelte/icons/user-plus';
+    import Users from '@lucide/svelte/icons/users';
     import { createQuery, useQueryClient } from '@tanstack/svelte-query';
     import { toggleMode } from 'mode-watcher';
+    import { tick } from 'svelte';
     import { toast } from 'svelte-sonner';
 
     import type { NavigationItem } from '../../routes.svelte';
@@ -48,11 +55,14 @@
     };
 
     type Props = {
+        askExie: (prompt: string) => Promise<void> | void;
         isChatEnabled: boolean;
+        isExieEnabled: boolean;
         isGlobalAdmin: boolean;
         isImpersonating: boolean;
         open: boolean;
         openChat: () => void;
+        openExie: () => Promise<void> | void;
         openImpersonateOrganization: () => Promise<void> | void;
         openKeyboardShortcuts: () => Promise<void> | void;
         openOrganizationSwitcher: () => Promise<void> | void;
@@ -65,17 +75,24 @@
 
     type CommandSearchResult = EventSummaryModel<SummaryTemplateKeys> | StackSummaryModel<SummaryTemplateKeys>;
 
+    const EXIE_ERROR_TRENDS_PROMPT =
+        'Analyze error trends in the current context over the last 7 days. Highlight spikes, regressions, and the issues that deserve attention first.';
+    const EXIE_TRIAGE_PROMPT =
+        'Triage the most important recent errors in the current context. Summarize their impact, likely causes, and the next investigation steps.';
     const COMMAND_SEARCH_RESULT_LIMIT = 3;
     const COMMAND_SEARCH_REQUEST_LIMIT = COMMAND_SEARCH_RESULT_LIMIT + 1;
     const COMMAND_SEARCH_MIN_LENGTH = 2;
     const COMMAND_SEARCH_TIME_RANGE = '[now-7d TO now]';
 
     let {
+        askExie,
         isChatEnabled,
+        isExieEnabled,
         isGlobalAdmin,
         isImpersonating,
         open = $bindable(),
         openChat,
+        openExie,
         openImpersonateOrganization,
         openKeyboardShortcuts,
         openOrganizationSwitcher,
@@ -327,6 +344,46 @@
         await openOrganizationSwitcher();
     }
 
+    async function openExieAssistant(): Promise<void> {
+        closeCommandWindow();
+        await openExie();
+    }
+
+    async function askExieAssistant(prompt: string): Promise<void> {
+        closeCommandWindow();
+        await askExie(prompt);
+    }
+
+    let showInviteUserDialog = $state(false);
+    const addOrganizationUserMutation = addOrganizationUser({
+        route: {
+            get organizationId() {
+                return organization.current ?? '';
+            }
+        }
+    });
+
+    async function openInviteUserDialog(): Promise<void> {
+        closeCommandWindow();
+        await tick();
+        showInviteUserDialog = true;
+    }
+
+    async function inviteUser(email: string): Promise<void> {
+        try {
+            await addOrganizationUserMutation.mutateAsync(email);
+            toast.success('User invited successfully');
+        } catch (error: unknown) {
+            if (showBillingDialogOnUpgradeProblem(error, organization.current, () => inviteUser(email))) {
+                return;
+            }
+
+            const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
+            toast.error(`An error occurred while trying to invite the user: ${message}`);
+            throw error;
+        }
+    }
+
     async function openCurrentUserMenu(): Promise<void> {
         closeCommandWindow();
         await openUserMenu();
@@ -499,6 +556,26 @@
                 bind:selectedActionId={selectedProjectActionId}
             />
             {#if !selectingProject}
+                {#if isExieEnabled}
+                    <Command.Group heading="Exie" value="Exie Assistant">
+                        <Command.Item value="Ask Exie open assistant AI chat" onSelect={() => void openExieAssistant()}>
+                            <Bot />
+                            <span>Ask Exie</span>
+                        </Command.Item>
+                        <Command.Item value="Exie Triage Recent Errors investigate issues stacks" onSelect={() => void askExieAssistant(EXIE_TRIAGE_PROMPT)}>
+                            <Activity />
+                            <span>Triage Recent Errors</span>
+                        </Command.Item>
+                        <Command.Item
+                            value="Exie Analyze Error Trends seven days spikes regressions"
+                            onSelect={() => void askExieAssistant(EXIE_ERROR_TRENDS_PROMPT)}
+                        >
+                            <Stacks />
+                            <span>Analyze Error Trends</span>
+                        </Command.Item>
+                    </Command.Group>
+                    <Command.Separator />
+                {/if}
                 {#each Object.entries(groupedRoutes) as [group, items], index (group)}
                     <Command.Group heading={group}>
                         {#each items as route (route.href)}
@@ -543,6 +620,22 @@
                                 <span>Switch Organization</span>
                                 <Command.Shortcut>{formatKeyboardShortcut(appKeyboardShortcuts.switchOrganization.keys)}</Command.Shortcut>
                             </Command.Item>
+                            {#if organization.current}
+                                <Command.LinkItem
+                                    href={resolve('/(app)/organization/[organizationId]/users', {
+                                        organizationId: organization.current
+                                    })}
+                                    onclick={closeCommandWindow}
+                                    value="View Organization Users manage members team user list"
+                                >
+                                    <Users />
+                                    <span>View Organization Users</span>
+                                </Command.LinkItem>
+                                <Command.Item value="Invite User add member organization team" onSelect={() => void openInviteUserDialog()}>
+                                    <UserPlus />
+                                    <span>Invite User</span>
+                                </Command.Item>
+                            {/if}
                             <Command.LinkItem
                                 href={resolve('/(app)/organization/add')}
                                 onclick={closeCommandWindow}
@@ -609,3 +702,5 @@
 {#if resetProjectTarget}
     <ResetProjectDataDialog bind:open={showResetProjectDataDialog} name={resetProjectTarget.name} reset={resetProjectData} />
 {/if}
+
+<InviteUserDialog bind:open={showInviteUserDialog} {inviteUser} />
