@@ -52,6 +52,7 @@
     import { useQueryClient } from '@tanstack/svelte-query';
     import { useInterval } from 'runed';
     import { tick } from 'svelte';
+    import { SvelteURLSearchParams } from 'svelte/reactivity';
     import { fade } from 'svelte/transition';
 
     import { type NavigationItemContext, routes } from '../routes.svelte';
@@ -68,6 +69,7 @@
     }
 
     let { children }: Props = $props();
+    const assistantPageHref = resolve('/(app)/exie');
     let isAuthenticated = $derived(!!accessToken.current);
     let requiresPremium = $derived(
         premiumPage.requiresPremium || filterUsesPremiumFeatures(page.url.searchParams.get('filter'), getSearchResourceForPathname(page.url.pathname))
@@ -77,9 +79,14 @@
     let isAssistantOpen = $state(false);
     let AssistantPanel = $state<typeof import('$features/assistant/components/assistant-panel.svelte').default>();
     let assistantPromptRequest = $state<AssistantPromptRequest>();
-    let assistantResourceContext = $derived(assistantPageContext.getContext(page.params.eventId, page.params.stackId));
-    let assistantProjectId = $derived(assistantResourceContext?.projectId ?? page.params.projectId);
-    let assistantPath = $derived(getAssistantPath(assistantResourceContext, `${page.url.pathname}${page.url.search}`));
+    let isAssistantPage = $derived(page.url.pathname === assistantPageHref);
+    let assistantResourceContext = $derived(isAssistantPage ? undefined : assistantPageContext.getContext(page.params.eventId, page.params.stackId));
+    let assistantProjectId = $derived(
+        isAssistantPage ? (page.url.searchParams.get('project') ?? undefined) : (assistantResourceContext?.projectId ?? page.params.projectId)
+    );
+    let assistantPath = $derived(getAssistantPath(assistantResourceContext, getAssistantSourcePath()));
+    let assistantExpandHref = $derived(buildAssistantPageHref(`${page.url.pathname}${page.url.search}`, assistantPath, assistantProjectId));
+    let assistantReturnHref = $derived(getAssistantReturnHref());
     let commandResetKey = $state(0);
     let isKeyboardShortcutsOpen = $state(false);
     let isOrganizationSwitcherOpen = $state(false);
@@ -97,17 +104,65 @@
     }
 
     async function toggleAssistantPanel(): Promise<void> {
-        AssistantPanel ??= (await import('$features/assistant/components/assistant-panel.svelte')).default;
+        if (isAssistantPage) {
+            await goto(assistantReturnHref);
+            return;
+        }
+
+        await loadAssistantPanel();
         isAssistantOpen = !isAssistantOpen;
     }
 
     async function askAssistant(prompt: string): Promise<void> {
-        AssistantPanel ??= (await import('$features/assistant/components/assistant-panel.svelte')).default;
+        await loadAssistantPanel();
         isAssistantOpen = true;
         assistantPromptRequest = {
             id: crypto.randomUUID(),
             prompt
         };
+    }
+
+    async function loadAssistantPanel(): Promise<void> {
+        AssistantPanel ??= (await import('$features/assistant/components/assistant-panel.svelte')).default;
+    }
+
+    function buildAssistantPageHref(returnHref: string, contextPath: string, projectId: string | undefined): string {
+        const queryParameters = new SvelteURLSearchParams();
+        queryParameters.set('from', returnHref);
+        if (contextPath !== returnHref) {
+            queryParameters.set('context', contextPath);
+        }
+
+        if (projectId) {
+            queryParameters.set('project', projectId);
+        }
+
+        return `${assistantPageHref}?${queryParameters}`;
+    }
+
+    function getAssistantSourcePath(): string {
+        if (!isAssistantPage) {
+            return `${page.url.pathname}${page.url.search}`;
+        }
+
+        return normalizeAssistantHref(page.url.searchParams.get('context')) ?? normalizeAssistantHref(page.url.searchParams.get('from')) ?? assistantPageHref;
+    }
+
+    function getAssistantReturnHref(): string {
+        return normalizeAssistantHref(page.url.searchParams.get('from')) ?? resolve('/(app)/stack');
+    }
+
+    function normalizeAssistantHref(value: null | string): string | undefined {
+        if (!value?.startsWith('/')) {
+            return undefined;
+        }
+
+        const url = new URL(value, page.url.origin);
+        if (url.origin !== page.url.origin || url.pathname === assistantPageHref || !url.pathname.startsWith('/next/')) {
+            return undefined;
+        }
+
+        return `${url.pathname}${url.search}${url.hash}`;
     }
 
     function getAssistantPath(context: AssistantResourceContext | undefined, fallback: string): string {
@@ -586,6 +641,12 @@
             isAssistantOpen = false;
         }
     });
+
+    $effect(() => {
+        if (isAssistantPage) {
+            void loadAssistantPanel();
+        }
+    });
 </script>
 
 {#snippet setupShell()}
@@ -607,23 +668,12 @@
 {/snippet}
 
 {#snippet appShell(openChat: () => void)}
-    <Navbar assistantEnabled={isAssistantEnabled} {isAssistantOpen} openCommand={openCommandPalette} toggleAssistant={() => void toggleAssistantPanel()} />
-    {#if AssistantPanel && isAssistantEnabled}
-        <AssistantPanel
-            accessMessage={assistantAccess?.message}
-            accessState={assistantAccessState}
-            bind:open={isAssistantOpen}
-            minimumPlanId={assistantAccess?.minimum_plan_id}
-            onAccessChanged={() => invalidateAssistantAccessQueries(queryClient)}
-            onRetryAccess={async () => {
-                await assistantAccessQuery.refetch();
-            }}
-            organizationId={organization.current}
-            path={assistantPath}
-            promptRequest={assistantPromptRequest}
-            projectId={assistantProjectId}
-        />
-    {/if}
+    <Navbar
+        assistantEnabled={isAssistantEnabled}
+        isAssistantOpen={isAssistantOpen || isAssistantPage}
+        openCommand={openCommandPalette}
+        toggleAssistant={() => void toggleAssistantPanel()}
+    />
     <Sidebar routes={filteredRoutes}>
         {#snippet header()}
             <SidebarOrganizationSwitcher
@@ -652,8 +702,13 @@
         {/snippet}
     </Sidebar>
     <div class="flex h-screen min-w-0 flex-1 flex-col overflow-hidden pt-16">
-        <div class="text-secondary-foreground flex min-h-0 min-w-0 flex-1 scrollbar-gutter-stable flex-col overflow-x-hidden overflow-y-auto">
-            <main class="flex-1 px-4 pt-4">
+        <div
+            class={[
+                'text-secondary-foreground flex min-h-0 min-w-0 flex-1 flex-col',
+                isAssistantPage ? 'overflow-hidden' : 'scrollbar-gutter-stable overflow-x-hidden overflow-y-auto'
+            ]}
+        >
+            <main class={isAssistantPage ? 'flex min-h-0 flex-1 flex-col' : 'flex-1 px-4 pt-4'}>
                 <NavigationCommand
                     bind:open={isCommandOpen}
                     {isChatEnabled}
@@ -673,24 +728,49 @@
 
                 <Notifications />
 
-                {#if showOrganizationNotifications.current}
-                    <OrganizationNotifications {isChatEnabled} {openChat} {requiresPremium} premiumFeatureName={premiumPage.current} class="mb-4" />
+                {#if AssistantPanel && (isAssistantEnabled || isAssistantPage)}
+                    <AssistantPanel
+                        accessMessage={assistantAccess?.message}
+                        accessState={assistantAccessState}
+                        collapseHref={isAssistantPage ? assistantReturnHref : undefined}
+                        expandHref={!isAssistantPage ? assistantExpandHref : undefined}
+                        bind:open={isAssistantOpen}
+                        minimumPlanId={assistantAccess?.minimum_plan_id}
+                        mode={isAssistantPage ? 'page' : 'sheet'}
+                        onAccessChanged={() => invalidateAssistantAccessQueries(queryClient)}
+                        onCollapse={() => (isAssistantOpen = true)}
+                        onRetryAccess={async () => {
+                            await assistantAccessQuery.refetch();
+                        }}
+                        organizationId={organization.current}
+                        path={assistantPath}
+                        promptRequest={assistantPromptRequest}
+                        projectId={assistantProjectId}
+                    />
                 {/if}
 
-                <div
-                    in:fade={{
-                        delay: 150,
-                        duration: 150
-                    }}
-                    out:fade={{
-                        duration: 150
-                    }}
-                >
-                    {@render children()}
-                </div>
+                {#if !isAssistantPage}
+                    {#if showOrganizationNotifications.current}
+                        <OrganizationNotifications {isChatEnabled} {openChat} {requiresPremium} premiumFeatureName={premiumPage.current} class="mb-4" />
+                    {/if}
+
+                    <div
+                        in:fade={{
+                            delay: 150,
+                            duration: 150
+                        }}
+                        out:fade={{
+                            duration: isAssistantPage ? 0 : 150
+                        }}
+                    >
+                        {@render children()}
+                    </div>
+                {/if}
             </main>
 
-            <Footer></Footer>
+            {#if !isAssistantPage}
+                <Footer></Footer>
+            {/if}
         </div>
     </div>
 {/snippet}
