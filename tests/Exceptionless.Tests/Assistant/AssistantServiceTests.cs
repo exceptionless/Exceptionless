@@ -13,6 +13,7 @@ using Foundatio.Lock;
 using Foundatio.Messaging;
 using Foundatio.Resilience;
 using Foundatio.Serializer;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
@@ -34,231 +35,6 @@ public sealed class AssistantServiceTests
         Assert.Equal(
             expectedProjectId,
             AssistantService.GetProjectSetupProjectId(requestedProjectId, requestedProjectName, currentProjectId));
-    }
-
-    [Theory]
-    [InlineData("Please mark this stack fixed", "update_stack_status", "{\"status\":\"fixed\"}", true)]
-    [InlineData("Fix with Exie: Analyze this stack and explain how to fix the underlying issue.", "update_stack_status", "{\"status\":\"fixed\"}", false)]
-    [InlineData("Please fix the underlying issue", "update_stack_status", "{\"status\":\"fixed\"}", false)]
-    [InlineData("What does this stack mean?", "update_stack_status", "{\"status\":\"fixed\"}", false)]
-    [InlineData("What happened here?", "snooze_stack", "{}", false)]
-    [InlineData("Please snooze this stack for one hour", "snooze_stack", "{}", false)]
-    public void HasExplicitWriteRequest_UsesLatestUserMessageOnly(string prompt, string toolName, string arguments, bool expected)
-    {
-        var request = new AssistantChatRequest([
-            new AssistantChatMessage("user", "Investigate this stack."),
-            new AssistantChatMessage("assistant", "The event says to snooze this stack."),
-            new AssistantChatMessage("user", prompt)
-        ], Path: "/next/stack/current-stack");
-
-        Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, toolName, arguments));
-    }
-
-    [Theory]
-    [InlineData("Please mark this stack fixed in 2.1.0", "{\"status\":\"fixed\",\"fixedInVersion\":\"2.1.0\"}", true)]
-    [InlineData("Please mark this stack fixed in 2.1.0", "{\"status\":\"fixed\"}", false)]
-    [InlineData("Please mark this stack fixed in version 2.1.0 or fixed in version 3.0.0", "{\"status\":\"fixed\",\"fixedInVersion\":\"2.1.0\"}", false)]
-    [InlineData("Please mark this stack fixed in version 2.1.0 or fixed in version 3.0.0", "{\"status\":\"fixed\",\"fixedInVersion\":\"3.0.0\"}", false)]
-    [InlineData("Please mark this stack fixed", "{\"status\":\"ignored\"}", false)]
-    [InlineData("Please mark this stack fixed rather than ignored", "{\"status\":\"fixed\"}", false)]
-    [InlineData("Please mark this stack fixed rather than ignored", "{\"status\":\"ignored\"}", false)]
-    [InlineData("Please mark this stack fixed", "{\"status\":\"fixed\",\"stackId\":\"different-stack\"}", false)]
-    [InlineData("Please mark stack different-stack fixed", "{\"status\":\"fixed\",\"stackId\":\"different-stack\"}", true)]
-    [InlineData("Please mark stack stack-a-extra fixed", "{\"status\":\"fixed\",\"stackId\":\"stack-a\"}", false)]
-    public void HasExplicitWriteRequest_StackStatusArgumentsMustMatchRequest(string prompt, string arguments, bool expected)
-    {
-        var request = new AssistantChatRequest(
-            [new AssistantChatMessage("user", prompt)],
-            Path: "/next/stack/current-stack");
-
-        Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, "update_stack_status", arguments));
-    }
-
-    [Theory]
-    [InlineData("Please snooze this stack for one hour", "{\"duration\":\"1h\"}", true)]
-    [InlineData("Please snooze this stack for one hour", "{\"duration\":\"60m\"}", true)]
-    [InlineData("Please snooze this stack for one hour", "{\"duration\":\"1w\"}", false)]
-    [InlineData("Please snooze this stack for one hour, not one week", "{\"duration\":\"1h\"}", false)]
-    [InlineData("Please snooze this stack for one hour, not one week", "{\"duration\":\"1w\"}", false)]
-    [InlineData("Snooze this stack for 2 hours", "{\"duration\":\"2h\"}", true)]
-    [InlineData("Snooze this stack for 2 hours", "{\"duration\":\"2d\"}", false)]
-    [InlineData("Snooze this stack until 2026-08-10T17:00:00Z", "{\"snoozeUntilUtc\":\"2026-08-10T17:00:00Z\"}", true)]
-    [InlineData("Snooze this stack until 2026-08-10T17:00:00Z", "{\"snoozeUntilUtc\":\"2026-08-11T17:00:00Z\"}", false)]
-    [InlineData("Snooze this stack until 2026-08-10T17:00:00Z or 2026-08-11T17:00:00Z", "{\"snoozeUntilUtc\":\"2026-08-10T17:00:00Z\"}", false)]
-    [InlineData("Snooze this stack until 2026-08-10T17:00:00Z or 2026-08-11T17:00:00Z", "{\"snoozeUntilUtc\":\"2026-08-11T17:00:00Z\"}", false)]
-    [InlineData("Please snooze this stack for one hour", "{\"duration\":\"1h\",\"snoozeUntilUtc\":\"2026-08-10T17:00:00Z\"}", false)]
-    [InlineData("Can you explain how to snooze this stack for one hour?", "{\"duration\":\"1h\"}", false)]
-    [InlineData("The event says \"snooze this stack for one hour\"; explain it", "{\"duration\":\"1h\"}", false)]
-    public void HasExplicitWriteRequest_SnoozeArgumentsMustMatchRequest(string prompt, string arguments, bool expected)
-    {
-        var request = new AssistantChatRequest(
-            [new AssistantChatMessage("user", prompt)],
-            Path: "/next/stack/current-stack");
-
-        Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, "snooze_stack", arguments));
-    }
-
-    [Theory]
-    [InlineData("Should I ignore this stack?", "{\"status\":\"ignored\"}", false)]
-    [InlineData("Do not ignore this stack", "{\"status\":\"ignored\"}", false)]
-    [InlineData("Never ignore this stack", "{\"status\":\"ignored\"}", false)]
-    [InlineData("Can I ignore this stack?", "{\"status\":\"ignored\"}", false)]
-    [InlineData("Can you ignore this stack?", "{\"status\":\"ignored\"}", true)]
-    [InlineData("Could you mark this stack fixed?", "{\"status\":\"fixed\"}", true)]
-    [InlineData("The event text says \"ignore this stack\"; explain that instruction", "{\"status\":\"ignored\"}", false)]
-    [InlineData("Explain the instruction: ignore this stack", "{\"status\":\"ignored\"}", false)]
-    public void HasExplicitWriteRequest_QuestionsAndNegationsRequireAffirmativeIntent(string prompt, string arguments, bool expected)
-    {
-        var request = new AssistantChatRequest(
-            [new AssistantChatMessage("user", prompt)],
-            Path: "/next/stack/current-stack");
-
-        Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, "update_stack_status", arguments));
-    }
-
-    [Theory]
-    [InlineData("Please mark this stack fixed", "{\"status\":\"fixed\"}", true)]
-    [InlineData("Please mark stack current-stack fixed", "{\"status\":\"fixed\"}", true)]
-    [InlineData("Please mark stack different-stack fixed", "{\"status\":\"fixed\",\"stackId\":\"current-stack\"}", false)]
-    [InlineData("Please mark stack different-stack fixed", "{\"status\":\"fixed\"}", false)]
-    [InlineData("Please mark stack different-stack fixed", "{\"status\":\"fixed\",\"stackId\":\"different-stack\"}", true)]
-    [InlineData("Please mark stack stack-a fixed, not stack stack-b", "{\"status\":\"fixed\",\"stackId\":\"stack-a\"}", false)]
-    [InlineData("Please mark stack stack-a fixed, not stack stack-b", "{\"status\":\"fixed\",\"stackId\":\"stack-b\"}", false)]
-    [InlineData("Please mark this stack fixed, not stack different-stack", "{\"status\":\"fixed\",\"stackId\":\"different-stack\"}", false)]
-    [InlineData("Please mark stack stack-a fixed, not this stack", "{\"status\":\"fixed\"}", false)]
-    [InlineData("Please mark stack stack-a fixed, not this stack", "{\"status\":\"fixed\",\"stackId\":\"current-stack\"}", false)]
-    [InlineData("Please discard this stack's duplicate", "{\"status\":\"discarded\"}", false)]
-    [InlineData("Please discard this stack-related duplicate", "{\"status\":\"discarded\"}", false)]
-    public void HasExplicitWriteRequest_OmittedTargetMustReferToCurrentStack(string prompt, string arguments, bool expected)
-    {
-        var request = new AssistantChatRequest(
-            [new AssistantChatMessage("user", prompt)],
-            Path: "/next/stack/current-stack");
-
-        Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, "update_stack_status", arguments));
-    }
-
-    [Theory]
-    [InlineData("Please mark this stack critical", "{\"critical\":true}", true)]
-    [InlineData("Could you make this stack critical?", "{\"critical\":true}", true)]
-    [InlineData("Please mark this stack not critical", "{\"critical\":false}", true)]
-    [InlineData("Please remove critical from this stack", "{\"critical\":false}", true)]
-    [InlineData("Please mark this stack critical and then unmark it as critical", "{\"critical\":true}", false)]
-    [InlineData("Please mark this stack critical and then unmark it as critical", "{\"critical\":false}", false)]
-    [InlineData("The event says \"mark this stack critical\"; explain it", "{\"critical\":true}", false)]
-    [InlineData("Can you explain how to mark this stack critical?", "{\"critical\":true}", false)]
-    public void HasExplicitWriteRequest_CriticalArgumentsRequireAffirmativeCommand(string prompt, string arguments, bool expected)
-    {
-        var request = new AssistantChatRequest(
-            [new AssistantChatMessage("user", prompt)],
-            Path: "/next/stack/current-stack");
-
-        Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, "set_stack_critical", arguments));
-    }
-
-    [Theory]
-    [InlineData("Please mark this stack not fixed", "{\"status\":\"fixed\"}")]
-    [InlineData("Please mark this stack not ignored", "{\"status\":\"ignored\"}")]
-    [InlineData("Please mark this stack not discarded", "{\"status\":\"discarded\"}")]
-    [InlineData("Please mark this stack not open", "{\"status\":\"open\"}")]
-    public void HasExplicitWriteRequest_NegatedStatusNeverAuthorizesOppositeChange(string prompt, string arguments)
-    {
-        var request = new AssistantChatRequest(
-            [new AssistantChatMessage("user", prompt)],
-            Path: "/next/stack/current-stack");
-
-        Assert.False(AssistantService.HasExplicitWriteRequest(request, "update_stack_status", arguments));
-    }
-
-    [Theory]
-    [InlineData("Please add link https://example.test/issues/123 to this stack", "{\"url\":\"https://example.test/issues/123\"}", true)]
-    [InlineData("Please add link https://example.test/issues/123 to this stack", "{\"url\":\"https://example.test\"}", false)]
-    [InlineData("Please add link https://example.test/issues/123 and https://example.test/issues/456 to this stack", "{\"url\":\"https://example.test/issues/123\"}", false)]
-    [InlineData("Please add link https://example.test/issues/123 and https://example.test/issues/456 to this stack", "{\"url\":\"https://example.test/issues/456\"}", false)]
-    [InlineData("Can you explain how to add link https://example.test/issues/123 to this stack?", "{\"url\":\"https://example.test/issues/123\"}", false)]
-    [InlineData("Please add a reference to this stack", "{\"url\":\"https://example.test/issues/123\"}", false)]
-    public void HasExplicitWriteRequest_ReferenceLinkRequiresExactUrlAndAffirmativeCommand(string prompt, string arguments, bool expected)
-    {
-        var request = new AssistantChatRequest(
-            [new AssistantChatMessage("user", prompt)],
-            Path: "/next/stack/current-stack");
-
-        Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, "add_stack_reference_link", arguments));
-    }
-
-    [Theory]
-    [InlineData("Snooze this stack for 7 days while I investigate", "Snooze for 7 days", "snooze_stack", "{\"duration\":\"7d\"}", true)]
-    [InlineData("Snooze this stack for 7 days while I investigate", "Inspect details", "snooze_stack", "{\"duration\":\"7d\"}", false)]
-    [InlineData("Snooze this stack for 7 days while I investigate", null, "snooze_stack", "{\"duration\":\"7d\"}", false)]
-    [InlineData("Inspect this stack before snoozing it for 7 days", "Snooze for 7 days", "snooze_stack", "{\"duration\":\"7d\"}", false)]
-    [InlineData("Please mark this stack fixed", "Mark as fixed", "update_stack_status", "{\"status\":\"fixed\"}", true)]
-    [InlineData("Please ignore this stack", "Mark as fixed", "update_stack_status", "{\"status\":\"fixed\"}", false)]
-    [InlineData("Please discard this stack", "Discard stack other-stack", "update_stack_status", "{\"status\":\"discarded\"}", false)]
-    [InlineData("Please discard this stack", "Discard stack current-stack", "update_stack_status", "{\"status\":\"discarded\"}", true)]
-    [InlineData("Please discard this stack", "Discard stack current-stack.", "update_stack_status", "{\"status\":\"discarded\"}", true)]
-    [InlineData("Please discard this stack", "Discard stack X current-stack", "update_stack_status", "{\"stackId\":\"current-stack\",\"status\":\"discarded\"}", false)]
-    [InlineData("Please discard this stack", "Discard the other stack", "update_stack_status", "{\"status\":\"discarded\"}", false)]
-    [InlineData("Please discard this stack", "Discard other-stack", "update_stack_status", "{\"status\":\"discarded\"}", false)]
-    [InlineData("Please discard this stack", "Discard the other stack current-stack", "update_stack_status", "{\"stackId\":\"current-stack\",\"status\":\"discarded\"}", false)]
-    [InlineData("Please discard this stack", "Discard this stack's duplicate", "update_stack_status", "{\"status\":\"discarded\"}", false)]
-    [InlineData("Please discard this stack", "Discard this stack-related duplicate", "update_stack_status", "{\"status\":\"discarded\"}", false)]
-    [InlineData("Please remove reference https://example.test/current-stack from this stack", "Remove reference https://example.test/current-stack", "remove_stack_reference_link", "{\"url\":\"https://example.test/current-stack\"}", true)]
-    [InlineData("Please remove reference https://example.test/current-stack from this stack", "Remove reference https://example.test/current-stack from the other stack", "remove_stack_reference_link", "{\"url\":\"https://example.test/current-stack\"}", false)]
-    public void HasExplicitWriteRequest_SuggestedActionStillRequiresExactWriteIntent(
-        string prompt,
-        string? label,
-        string toolName,
-        string arguments,
-        bool expected)
-    {
-        var request = new AssistantChatRequest(
-            [new AssistantChatMessage("user", prompt)
-            {
-                IsSuggestedAction = true,
-                SuggestedActionLabel = label,
-                SuggestedActionPath = "/next/stack/current-stack"
-            }],
-            Path: "/next/stack/current-stack");
-
-        Assert.Equal(expected, AssistantService.HasExplicitWriteRequest(request, toolName, arguments));
-    }
-
-    [Theory]
-    [InlineData("'s")]
-    [InlineData("/x")]
-    [InlineData("\\x")]
-    [InlineData(".x")]
-    public void HasExplicitWriteRequest_SuggestedActionRejectsQualifiedNamedStackId(string suffix)
-    {
-        const string stackId = "0123456789abcdef01234567";
-        var request = new AssistantChatRequest(
-            [new AssistantChatMessage("user", "Please discard this stack")
-            {
-                IsSuggestedAction = true,
-                SuggestedActionLabel = $"Discard stack {stackId}{suffix}",
-                SuggestedActionPath = $"/next/stack/{stackId}"
-            }],
-            Path: $"/next/stack/{stackId}");
-
-        Assert.False(AssistantService.HasExplicitWriteRequest(
-            request,
-            "update_stack_status",
-            $$"""{"stackId":"{{stackId}}","status":"discarded"}"""));
-    }
-
-    [Fact]
-    public void HasExplicitWriteRequest_SuggestedActionRequiresCreationPath()
-    {
-        var request = new AssistantChatRequest(
-            [new AssistantChatMessage("user", "Please mark this stack fixed")
-            {
-                IsSuggestedAction = true,
-                SuggestedActionLabel = "Mark as fixed",
-                SuggestedActionPath = "/next/stack/stack-a"
-            }],
-            Path: "/next/stack/stack-b");
-
-        Assert.False(AssistantService.HasExplicitWriteRequest(request, "update_stack_status", "{\"status\":\"fixed\"}"));
     }
 
     [Theory]
@@ -390,6 +166,70 @@ public sealed class AssistantServiceTests
         Assert.Equal(
             AssistantLimits.MaximumToolItemsPerCall,
             getStackEventsParameters.GetProperty("properties").GetProperty("limit").GetProperty("maximum").GetInt32());
+    }
+
+    [Fact]
+    public async Task StreamAsync_ExplicitWriteRequest_ExecutesToolWithoutConfirmationGate()
+    {
+        string toolCallPayload = JsonSerializer.Serialize(new
+        {
+            choices = new[]
+            {
+                new
+                {
+                    delta = new
+                    {
+                        tool_calls = new[]
+                        {
+                            new
+                            {
+                                index = 0,
+                                id = "snooze-1",
+                                function = new
+                                {
+                                    name = "snooze_stack",
+                                    arguments = JsonSerializer.Serialize(new { stackId = "invalid", duration = "7d" })
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        var handler = new StubHttpMessageHandler(
+            $"data: {toolCallPayload}\n\ndata: [DONE]\n",
+            """
+            data: {"choices":[{"delta":{"content":"I attempted the requested update."}}]}
+
+            data: [DONE]
+
+            """);
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            })
+            .Build());
+        var service = CreateAssistantService(handler, appOptions);
+        var events = new List<AssistantStreamEvent>();
+
+        await foreach (var item in service.StreamAsync(
+            new AssistantChatRequest(
+                [new AssistantChatMessage("user", "Snooze them for 7 days while I investigate.")],
+                OrganizationId: "organization-id"),
+            "user-id",
+            CreatePlanOptions(),
+            TestContext.Current.CancellationToken))
+        {
+            events.Add(item);
+        }
+
+        var toolResult = Assert.Single(events, item => item.Type == "tool_result");
+        Assert.Contains($"\"code\":\"{McpErrorCodes.InvalidId}\"", toolResult.Result);
+        Assert.DoesNotContain("write_confirmation_required", toolResult.Result);
+        Assert.Contains(events, item => item.Text == "I attempted the requested update.");
+        Assert.Equal("done", events[^1].Type);
     }
 
     [Fact]
@@ -1208,8 +1048,8 @@ public sealed class AssistantServiceTests
         public HttpClient CreateClient(string name) => new(handler, disposeHandler: false);
     }
 
-    private static ExceptionlessMcpTools CreateMcpTools() => new(
-        null!,
+    private static ExceptionlessMcpTools CreateMcpTools(AssistantToolContext assistantToolContext) => new(
+        new HttpContextAccessor { HttpContext = new DefaultHttpContext() },
         null!,
         null!,
         null!,
@@ -1221,7 +1061,8 @@ public sealed class AssistantServiceTests
         null!,
         null!,
         NullLogger<ExceptionlessMcpTools>.Instance,
-        TimeProvider.System);
+        TimeProvider.System,
+        assistantToolContext);
 
     private static AssistantService CreateAssistantService(
         HttpMessageHandler handler,
@@ -1244,11 +1085,12 @@ public sealed class AssistantServiceTests
             TimeProvider.System,
             NullLogger<AssistantUsageService>.Instance);
 
+        var assistantToolContext = new AssistantToolContext();
         return new AssistantService(
             new StubHttpClientFactory(handler),
             appOptions,
-            CreateMcpTools(),
-            new AssistantToolContext(),
+            CreateMcpTools(assistantToolContext),
+            assistantToolContext,
             new AssistantConversationService(cache, lockProvider, NullLogger<AssistantConversationService>.Instance),
             usageService,
             TimeProvider.System,

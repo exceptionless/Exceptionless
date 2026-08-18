@@ -3,6 +3,7 @@ import GitHubIcon from '$comp/icons/GitHubIcon.svelte';
 import { apiReferenceHref, documentationHref, githubRepositoryHref, supportIssuesHref } from '$features/shared/help-links';
 import { appKeyboardShortcuts } from '$features/shared/keyboard-shortcuts';
 import Documentation from '@lucide/svelte/icons/book-open';
+import Exie from '@lucide/svelte/icons/bot';
 import ApiDocumentations from '@lucide/svelte/icons/braces';
 import Events from '@lucide/svelte/icons/calendar-days';
 import Support from '@lucide/svelte/icons/circle-help';
@@ -38,6 +39,13 @@ export function routes(): NavigationItem[] {
             href: resolve('/(app)/sessions'),
             icon: Sessions,
             title: 'Sessions'
+        },
+        {
+            group: 'Dashboards',
+            href: resolve('/(app)/exie'),
+            icon: Exie,
+            keywords: ['AI', 'assistant', 'chat'],
+            title: 'Exie'
         },
         {
             group: 'Help',
