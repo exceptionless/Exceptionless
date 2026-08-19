@@ -67,6 +67,28 @@ describe('AssistantMessage', () => {
         expect(screen.queryByText('Searched error stacks')).toBeNull();
     });
 
+    it('keeps showing thinking while a hidden tool runs after streamed text', () => {
+        const message: AssistantChatMessage = {
+            content: 'I will check the recent error stacks.',
+            id: 'assistant-message',
+            role: 'assistant',
+            tools: [
+                {
+                    arguments: '{"sort":"-total_occurrences"}',
+                    id: 'tool-call',
+                    name: 'search_stacks',
+                    status: 'running'
+                }
+            ]
+        };
+
+        render(AssistantMessage, { props: { isStreaming: true, message } });
+
+        expect(screen.getByText('I will check the recent error stacks.')).toBeTruthy();
+        expect(screen.getByText('Exie is thinking…')).toBeTruthy();
+        expect(screen.queryByText('Searched error stacks')).toBeNull();
+    });
+
     it('shows completed suggested actions and submits their prompts', async () => {
         const onSuggestedAction = vi.fn();
         const message: AssistantChatMessage = {

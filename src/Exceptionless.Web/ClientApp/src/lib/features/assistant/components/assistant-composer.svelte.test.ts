@@ -41,4 +41,25 @@ describe('AssistantComposer', () => {
 
         expect(onSubmit).toHaveBeenCalledWith('/tools');
     });
+
+    it('accepts the visible tools command with Enter', async () => {
+        const onSubmit = vi.fn();
+        render(AssistantComposer, { props: { onStop: vi.fn(), onSubmit, value: '/' } });
+
+        await fireEvent.keyDown(screen.getByRole('textbox', { name: 'Message Exie' }), { key: 'Enter' });
+
+        expect(onSubmit).toHaveBeenCalledOnce();
+        expect(onSubmit).toHaveBeenCalledWith('/tools');
+    });
+
+    it('submits unmatched slash text as a regular prompt', async () => {
+        const onSubmit = vi.fn();
+        render(AssistantComposer, { props: { onStop: vi.fn(), onSubmit, value: '/unknown' } });
+
+        expect(screen.queryByLabelText('Exie commands')).toBeNull();
+        await fireEvent.keyDown(screen.getByRole('textbox', { name: 'Message Exie' }), { key: 'Enter' });
+
+        expect(onSubmit).toHaveBeenCalledOnce();
+        expect(onSubmit).toHaveBeenCalledWith('/unknown');
+    });
 });

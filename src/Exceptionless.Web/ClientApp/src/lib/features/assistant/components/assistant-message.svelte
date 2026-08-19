@@ -33,6 +33,7 @@
         showToolCalls = false,
         suggestionsDisabled = false
     }: Props = $props();
+    let hasHiddenRunningTool = $derived(!showToolCalls && message.tools.some((tool) => tool.status === 'running'));
     let renderedContent = $derived(isStreaming ? message.content : addAssistantResourceLinks(message.content, message.tools));
 </script>
 
@@ -61,7 +62,9 @@
                     mode={isStreaming ? 'streaming' : 'static'}
                     urlTransform={normalizeAssistantUrl}
                 />
-            {:else if isStreaming}
+            {/if}
+
+            {#if isStreaming && (!message.content || hasHiddenRunningTool)}
                 <div class="text-muted-foreground flex items-center gap-2 py-1 text-sm"><Spinner /> Exie is thinking…</div>
             {/if}
 

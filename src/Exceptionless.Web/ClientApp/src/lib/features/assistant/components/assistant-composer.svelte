@@ -15,7 +15,8 @@
 
     let { isStreaming = false, onStop, onSubmit, showToolCalls = false, value = $bindable('') }: Props = $props();
     let textareaElement = $state<HTMLTextAreaElement | null>(null);
-    let showSlashCommands = $derived(!isStreaming && value.trimStart().startsWith('/'));
+    let slashCommandQuery = $derived(value.trim().toLowerCase());
+    let showSlashCommands = $derived(!isStreaming && slashCommandQuery.startsWith('/') && '/tools'.startsWith(slashCommandQuery));
 
     $effect(() => {
         void value;
@@ -31,6 +32,11 @@
 
         if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
             event.preventDefault();
+            if (showSlashCommands) {
+                selectToolsCommand();
+                return;
+            }
+
             if (!isStreaming && value.trim()) {
                 onSubmit(value);
             }
