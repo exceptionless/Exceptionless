@@ -371,8 +371,11 @@ public sealed partial class UsageServiceTests : IntegrationTestsBase
             repository,
             _projectRepository,
             GetService<ICacheClient>(),
+            GetService<Foundatio.Lock.ILockProvider>(),
+            GetService<IAtomicCacheBatch>(),
             GetService<IMessagePublisher>(),
             _notificationService,
+            GetService<Exceptionless.Core.AppOptions>(),
             TimeProvider,
             GetService<ILoggerFactory>());
         await usageService.RecordAssistantUsageAsync(organization.Id, new AssistantUsageIncrement

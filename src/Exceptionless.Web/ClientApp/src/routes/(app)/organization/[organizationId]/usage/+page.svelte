@@ -8,10 +8,10 @@
     import * as Chart from '$comp/ui/chart/index';
     import { Skeleton } from '$comp/ui/skeleton';
     import { env } from '$env/dynamic/public';
-import { ChangePlanDialog } from '$features/billing';
-import { getOrganizationQuery } from '$features/organizations/api.svelte';
-import OrganizationBudgetAlertCard from '$features/organizations/components/organization-budget-alert-card.svelte';
-import { getNextBillingDateUtc, getRemainingEventLimit, ORGANIZATION_USAGE_REFETCH_INTERVAL_MS } from '$features/organizations/utils';
+    import { ChangePlanDialog } from '$features/billing';
+    import { getOrganizationQuery } from '$features/organizations/api.svelte';
+    import OrganizationBudgetAlertCard from '$features/organizations/components/organization-budget-alert-card.svelte';
+    import { getNextBillingDateUtc, getRemainingEventLimit, ORGANIZATION_USAGE_REFETCH_INTERVAL_MS } from '$features/organizations/utils';
     import { formatDateLabel, formatLongDate } from '$shared/dates';
     import { scaleUtc } from 'd3-scale';
     import { curveMonotoneX } from 'd3-shape';

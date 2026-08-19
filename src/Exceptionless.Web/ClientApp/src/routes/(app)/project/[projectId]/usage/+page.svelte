@@ -8,10 +8,15 @@
     import * as Chart from '$comp/ui/chart/index';
     import { Skeleton } from '$comp/ui/skeleton';
     import { env } from '$env/dynamic/public';
-import { ChangePlanDialog } from '$features/billing';
-import { getOrganizationQuery } from '$features/organizations/api.svelte';
-import { organization } from '$features/organizations/context.svelte';
-import { getEffectiveEventLimit, getNextBillingDateUtc, getRemainingEventLimit, ORGANIZATION_USAGE_REFETCH_INTERVAL_MS } from '$features/organizations/utils';
+    import { ChangePlanDialog } from '$features/billing';
+    import { getOrganizationQuery } from '$features/organizations/api.svelte';
+    import { organization } from '$features/organizations/context.svelte';
+    import {
+        getEffectiveEventLimit,
+        getNextBillingDateUtc,
+        getRemainingEventLimit,
+        ORGANIZATION_USAGE_REFETCH_INTERVAL_MS
+    } from '$features/organizations/utils';
     import { getProjectQuery } from '$features/projects/api.svelte';
     import ProjectIngestLimitCard from '$features/projects/components/project-ingest-limit-card.svelte';
     import { formatDateLabel, formatLongDate } from '$shared/dates';
@@ -49,13 +54,34 @@ import { getEffectiveEventLimit, getNextBillingDateUtc, getRemainingEventLimit, 
     let changePlanDialogOpen = $state(false);
 
     const chartConfig = $derived({
-        blocked: { color: 'var(--chart-2)', label: 'Blocked' },
-        deleted: { color: 'var(--chart-7)', label: 'Deleted' },
-        discarded: { color: 'var(--chart-3)', label: 'Discarded' },
-        limit: { color: 'var(--chart-6)', label: projectQuery.data?.effective_ingest_limit == null ? 'Organization limit' : 'Project limit' },
-        org_total: { color: 'var(--chart-5)', label: 'Total in Organization' },
-        too_big: { color: 'var(--chart-4)', label: 'Too Big' },
-        total: { color: 'var(--chart-1)', label: 'Total' }
+        blocked: {
+            color: 'var(--chart-2)',
+            label: 'Blocked'
+        },
+        deleted: {
+            color: 'var(--chart-7)',
+            label: 'Deleted'
+        },
+        discarded: {
+            color: 'var(--chart-3)',
+            label: 'Discarded'
+        },
+        limit: {
+            color: 'var(--chart-6)',
+            label: projectQuery.data?.effective_ingest_limit == null ? 'Organization limit' : 'Project limit'
+        },
+        org_total: {
+            color: 'var(--chart-5)',
+            label: 'Total in Organization'
+        },
+        too_big: {
+            color: 'var(--chart-4)',
+            label: 'Too Big'
+        },
+        total: {
+            color: 'var(--chart-1)',
+            label: 'Total'
+        }
     } satisfies Chart.ChartConfig);
 
     const chartData = $derived.by(() => {
@@ -89,12 +115,30 @@ import { getEffectiveEventLimit, getNextBillingDateUtc, getRemainingEventLimit, 
     });
 
     const series = $derived([
-        { key: 'org_total', ...chartConfig.org_total },
-        { key: 'total', ...chartConfig.total },
-        { key: 'discarded', ...chartConfig.discarded },
-        { key: 'blocked', ...chartConfig.blocked },
-        { key: 'too_big', ...chartConfig.too_big },
-        { key: 'deleted', ...chartConfig.deleted },
+        {
+            key: 'org_total',
+            ...chartConfig.org_total
+        },
+        {
+            key: 'total',
+            ...chartConfig.total
+        },
+        {
+            key: 'discarded',
+            ...chartConfig.discarded
+        },
+        {
+            key: 'blocked',
+            ...chartConfig.blocked
+        },
+        {
+            key: 'too_big',
+            ...chartConfig.too_big
+        },
+        {
+            key: 'deleted',
+            ...chartConfig.deleted
+        },
         {
             key: 'limit',
             ...chartConfig.limit,
