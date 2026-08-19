@@ -856,7 +856,13 @@
         }
     }
 
-    onMount(() => productTourHost.subscribe(onHostEvent));
+    onMount(() => {
+        const unsubscribe = productTourHost.subscribe(onHostEvent);
+        return () => {
+            unsubscribe();
+            stopActiveTour(true);
+        };
+    });
 </script>
 
 <ProductTourWelcome

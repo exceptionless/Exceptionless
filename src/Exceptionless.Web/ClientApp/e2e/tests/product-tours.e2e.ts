@@ -41,6 +41,25 @@ test('Explore the new UI opens its navigation target on mobile', async ({ e2eSce
     await tour.getByRole('button', { name: 'Close' }).click();
 });
 
+test('an active tour is cleared when the authenticated app unmounts', async ({ e2eScenario: _e2eScenario, page }) => {
+    void _e2eScenario;
+    await page.goto('/next/stack');
+
+    await startTourFromCommand(page, 'Explore the new UI');
+    const tour = page.locator('.driver-popover');
+    await expect(tour.getByText('Your workspace navigation')).toBeVisible();
+    await expect.poll(() => page.evaluate(() => sessionStorage.getItem('exceptionless.product-tour'))).not.toBeNull();
+
+    await page.evaluate(async () => {
+        await fetch('/api/v2/auth/logout', { credentials: 'include' });
+    });
+    await page.goto('/next/login');
+
+    await expect(page.getByRole('button', { exact: true, name: 'Login' })).toBeVisible();
+    await expect(tour).toBeHidden();
+    await expect.poll(() => page.evaluate(() => sessionStorage.getItem('exceptionless.product-tour'))).toBeNull();
+});
+
 test('Configure a project resumes through its first event', async ({ e2eApi, e2eScenario, page }, testInfo) => {
     await page.setViewportSize({ height: 900, width: 1440 });
     await page.goto('/next/stack');

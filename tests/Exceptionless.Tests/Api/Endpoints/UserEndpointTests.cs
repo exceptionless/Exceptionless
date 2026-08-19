@@ -212,6 +212,17 @@ public sealed class UserEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public Task UpdateCurrentUserProductTourAsync_UndefinedStatus_ReturnsUnprocessableEntity()
+    {
+        return SendRequestAsync(r => r
+            .Put()
+            .AsTestOrganizationUser()
+            .AppendPaths("users", "me", "product-tours", "invalid-status")
+            .Content(new { Version = 1, Status = 999 })
+            .StatusCodeShouldBeUnprocessableEntity());
+    }
+
+    [Fact]
     public async Task AddAdminRoleAsync_AnonymousUser_ReturnsUnauthorized()
     {
         // Arrange

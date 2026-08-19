@@ -9,5 +9,6 @@ public record UpdateProductTourProgress
     public int Version { get; init; }
 
     [Required]
+    [EnumDataType(typeof(ProductTourStatus))]
     public ProductTourStatus? Status { get; init; }
 }
