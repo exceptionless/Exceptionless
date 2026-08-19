@@ -50,6 +50,10 @@ Authorization: Bearer {{token}}
 GET {{apiUrl}}/admin/organizations/stats
 Authorization: Bearer {{token}}
 
+### Exie Usage
+GET {{apiUrl}}/admin/assistant-usage
+Authorization: Bearer {{token}}
+
 ### Suspend
 POST {{apiUrl}}/organizations/{{organizationId}}/suspend?code=1
 Authorization: Bearer {{token}}
@@ -108,4 +112,3 @@ Authorization: Bearer {{token}}
 ### Elasticsearch Snapshots
 GET {{apiUrl}}/admin/elasticsearch/snapshots
 Authorization: Bearer {{token}}
-

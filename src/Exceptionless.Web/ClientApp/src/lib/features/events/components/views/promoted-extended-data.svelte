@@ -26,7 +26,9 @@
     });
 
     async function onDemote(title: string): Promise<void> {
-        const wasDemoted = await demoteTab.mutateAsync({ name: title });
+        const wasDemoted = await demoteTab.mutateAsync({
+            name: title
+        });
         if (wasDemoted) {
             demoted(title);
         } else {

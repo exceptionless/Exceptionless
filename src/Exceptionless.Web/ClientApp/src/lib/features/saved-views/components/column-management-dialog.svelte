@@ -11,6 +11,8 @@
     import { Button } from '$comp/ui/button';
     import * as Dialog from '$comp/ui/dialog';
     import * as InputGroup from '$comp/ui/input-group';
+    import { Label } from '$comp/ui/label';
+    import * as RadioGroup from '$comp/ui/radio-group';
     import { Separator } from '$comp/ui/separator';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
     import ChevronUp from '@lucide/svelte/icons/chevron-up';
@@ -20,15 +22,22 @@
     import Search from '@lucide/svelte/icons/search';
     import X from '@lucide/svelte/icons/x';
 
+    import type { AutoFillColumnSelection } from '../column-settings';
+
     interface Props {
+        autoFillColumnId: AutoFillColumnSelection;
+        defaultAutoFillColumnId?: string;
         open: boolean;
+        setAutoFillColumnId: (columnId: AutoFillColumnSelection) => void;
         table: Table<StockFeatures, TData>;
     }
 
-    let { open = $bindable(), table }: Props = $props();
+    let { autoFillColumnId, defaultAutoFillColumnId, open = $bindable(), setAutoFillColumnId, table }: Props = $props();
 
     let draggedColumnId = $state<null | string>(null);
     let search = $state('');
+
+    const AUTO_FILL_NONE_VALUE = '__none__';
 
     const allColumns = $derived(table.getAllLeafColumns().filter((column) => column.id !== 'select'));
     const visibleColumns = $derived(allColumns.filter((column) => column.getIsVisible()));
@@ -52,8 +61,30 @@
 
     function removeColumn(column: (typeof allColumns)[number]): void {
         if (visibleColumns.length > 1) {
+            if (column.id === autoFillColumnId) {
+                selectAutoFillColumn(null);
+            }
+
             column.toggleVisibility(false);
         }
+    }
+
+    function handleAutoFillValueChange(value: string): void {
+        selectAutoFillColumn(value === AUTO_FILL_NONE_VALUE ? null : value);
+    }
+
+    function selectAutoFillColumn(columnId: AutoFillColumnSelection): void {
+        if (columnId) {
+            table.setColumnSizing((current) => {
+                const next = {
+                    ...current
+                };
+                delete next[columnId];
+                return next;
+            });
+        }
+
+        setAutoFillColumnId(columnId);
     }
 
     function canRemoveColumn(column: (typeof allColumns)[number]): boolean {
@@ -95,6 +126,11 @@
         table.resetColumnVisibility();
         table.resetColumnOrder();
         table.resetColumnSizing();
+        if (defaultAutoFillColumnId) {
+            setAutoFillColumnId(defaultAutoFillColumnId);
+        } else {
+            setAutoFillColumnId(null);
+        }
         search = '';
     }
 
@@ -141,7 +177,7 @@
     >
         <Dialog.Header class="border-b px-6 py-5 pr-14">
             <Dialog.Title>Column Picker</Dialog.Title>
-            <Dialog.Description>Select and reorder the columns displayed in this table.</Dialog.Description>
+            <Dialog.Description>Select, reorder, and choose which column fills the available table width.</Dialog.Description>
         </Dialog.Header>
 
         <div class="grid min-h-0 gap-0 lg:grid-cols-[minmax(0,1fr)_5rem_minmax(0,1fr)]">
@@ -208,12 +244,25 @@
                             <h3 id="selected-columns-heading" class="text-sm font-semibold">Selected Columns</h3>
                             <Badge variant="secondary">{visibleColumns.length}</Badge>
                         </div>
-                        <p class="text-muted-foreground text-sm">Drag to reorder. The first item appears on the far left.</p>
+                        <p class="text-muted-foreground text-sm">Drag to reorder, or mark one column to auto fill the available width.</p>
                     </div>
                 </div>
 
                 <div class="border-input bg-muted/20 rounded-lg border p-2">
-                    <div class="flex max-h-[22.75rem] flex-col gap-1.5 overflow-y-auto pr-1" role="list" aria-label="Selected columns">
+                    <RadioGroup.Root
+                        aria-label="Auto-fill column"
+                        class="flex max-h-[22.75rem] flex-col gap-1.5 overflow-y-auto pr-1"
+                        onValueChange={handleAutoFillValueChange}
+                        value={autoFillColumnId ?? AUTO_FILL_NONE_VALUE}
+                    >
+                        <Label
+                            class="bg-background hover:bg-muted/70 flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3 text-sm font-normal shadow-xs transition-colors"
+                            for="auto-fill-column-none"
+                        >
+                            <RadioGroup.Item aria-label="No auto-fill column" id="auto-fill-column-none" value={AUTO_FILL_NONE_VALUE} />
+                            <span class="font-medium">None</span>
+                            <span class="text-muted-foreground ml-auto text-xs">Keep every column fixed width</span>
+                        </Label>
                         {#each visibleColumns as column, index (column.id)}
                             <div
                                 class={[
@@ -228,16 +277,26 @@
                             >
                                 <Button
                                     variant="ghost"
-                                    class="hover:bg-muted/70 h-auto min-w-0 flex-1 justify-start gap-3 rounded-l-lg rounded-r-none px-3 font-normal"
+                                    size="icon-sm"
+                                    class="hover:bg-muted/70 my-1 ml-1 shrink-0"
                                     disabled={!canRemoveColumn(column)}
                                     onclick={() => removeColumn(column)}
                                     aria-label={`Remove ${getColumnLabel(column)} column`}
                                 >
-                                    <span class="min-w-0 flex-1 truncate text-left font-medium">{getColumnLabel(column)}</span>
-                                    {#if canRemoveColumn(column)}
-                                        <X class="shrink-0" aria-hidden="true" />
-                                    {/if}
+                                    <X class="shrink-0" aria-hidden="true" />
                                 </Button>
+                                <span class="min-w-0 flex-1 self-center truncate px-2 text-left font-medium">{getColumnLabel(column)}</span>
+                                <Label
+                                    class="hover:bg-muted/70 mr-1 flex shrink-0 cursor-pointer items-center gap-2 rounded-md px-2 text-xs font-normal"
+                                    for={`auto-fill-column-${column.id}`}
+                                >
+                                    <RadioGroup.Item
+                                        aria-label={`${getColumnLabel(column)} auto fill`}
+                                        id={`auto-fill-column-${column.id}`}
+                                        value={column.id}
+                                    />
+                                    Auto fill
+                                </Label>
                                 <div class="flex shrink-0 items-center gap-1">
                                     <Button variant="ghost" size="icon-sm" onclick={() => moveColumnUp(column.id)} disabled={index === 0} title="Move up">
                                         <ChevronUp />
@@ -257,7 +316,7 @@
                                 </div>
                             </div>
                         {/each}
-                    </div>
+                    </RadioGroup.Root>
                 </div>
             </section>
         </div>

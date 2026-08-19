@@ -40,7 +40,8 @@ public static class McpErrors
             ["activeOrganizationId"] = activeOrganizationId,
             ["requestedOrganizationId"] = requestedOrganizationId,
             ["activeProjectId"] = activeProjectId,
-            ["requestedProjectId"] = requestedProjectId
+            ["requestedProjectId"] = requestedProjectId,
+            ["recovery"] = "Use the active resource scope shown here, or omit optional projectId for a direct-id lookup."
         });
     }
 
@@ -54,7 +55,10 @@ public static class McpErrors
         {
             ["selection"] = selection,
             ["organizations"] = organizations,
-            ["projects"] = projects
+            ["projects"] = projects,
+            ["recovery"] = selection == "organization"
+                ? "Choose an organizationId from organizations, then retry the original tool call."
+                : "Choose a projectId from projects or call resolve_project, then retry the original tool call."
         });
     }
 

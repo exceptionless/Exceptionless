@@ -142,7 +142,9 @@ export function quoteIfSpecialCharacters(value?: null | string): null | string |
 
 export function serializeFilters(filters: IFilter[]): string {
     const serialized: SerializedFilter[] = filters.map((filter) => {
-        const entry: SerializedFilter = { type: filter.type };
+        const entry: SerializedFilter = {
+            type: filter.type
+        };
 
         if ('term' in filter && (filter as { term?: string }).term !== undefined) {
             entry.term = (filter as { term?: string }).term;

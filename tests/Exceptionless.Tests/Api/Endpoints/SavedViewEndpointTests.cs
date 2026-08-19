@@ -125,6 +125,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         Assert.DoesNotContain("\"filter_definitions\"", json);
         Assert.NotNull(definitions);
         Assert.Equal(await GetDefaultPredefinedSavedViewCountAsync(), definitions.Count);
+        Assert.All(definitions, definition => Assert.True(definition.Columns?["summary"].AutoFill));
 
         var logs = definitions.FirstOrDefault(view => String.Equals(view.Key, "events:logs", StringComparison.OrdinalIgnoreCase));
         Assert.NotNull(logs);
@@ -409,7 +410,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         // Arrange
         var columnSettings = new Dictionary<string, SavedViewColumnSettings>
         {
-            ["summary"] = new() { Position = 0, Visible = true, Width = 420 },
+            ["summary"] = new() { AutoFill = true, Position = 0, Visible = true },
             ["project"] = new() { Position = 1, Visible = true, Width = 240 }
         };
 
@@ -433,12 +434,14 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         Assert.Equal(240, result.Columns?["project"].Width);
         Assert.True(result.Columns?["project"].Visible);
         Assert.Equal(1, result.Columns?["project"].Position);
+        Assert.True(result.Columns?["summary"].AutoFill);
 
         var savedView = await _savedViewRepository.GetByIdAsync(result.Id);
         Assert.NotNull(savedView);
         Assert.Equal(240, savedView.Columns?["project"].Width);
         Assert.True(savedView.Columns?["project"].Visible);
         Assert.Equal(1, savedView.Columns?["project"].Position);
+        Assert.True(savedView.Columns?["summary"].AutoFill);
     }
 
     [Fact]
@@ -2343,6 +2346,53 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
                 {
                     ["summary"] = new() { Position = 0 },
                     ["project"] = new() { Position = 0 }
+                }
+            })
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+    }
+
+    [Fact]
+    public Task PostAsync_MultipleAutoFillColumns_ReturnsUnprocessableEntity()
+    {
+        // Arrange & Act & Assert
+        return SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .Content(new NewSavedView
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                Name = "Multiple Auto-Fill Columns",
+                ViewType = "events",
+                Columns = new Dictionary<string, SavedViewColumnSettings>
+                {
+                    ["summary"] = new() { AutoFill = true },
+                    ["project"] = new() { AutoFill = true }
+                }
+            })
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+    }
+
+    [Theory]
+    [InlineData(false, null)]
+    [InlineData(true, 240)]
+    public Task PostAsync_AutoFillColumnWithConflictingSetting_ReturnsUnprocessableEntity(bool visible, int? width)
+    {
+        // Arrange & Act & Assert
+        return SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .Content(new NewSavedView
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                Name = "Invalid Auto-Fill Column",
+                ViewType = "events",
+                Columns = new Dictionary<string, SavedViewColumnSettings>
+                {
+                    ["summary"] = new() { AutoFill = true, Visible = visible, Width = width }
                 }
             })
             .StatusCodeShouldBeUnprocessableEntity()

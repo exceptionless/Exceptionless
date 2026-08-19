@@ -39,7 +39,8 @@ public sealed class OAuthHandler(
             TokenEndpointAuthMethodsSupported = ["none"],
             ScopesSupported = OAuthService.SupportedScopes,
             ResourceDocumentation = $"{origin}/mcp",
-            ClientIdMetadataDocumentSupported = oauthService.ClientIdMetadataDocumentSupported
+            ClientIdMetadataDocumentSupported = oauthService.ClientIdMetadataDocumentSupported,
+            AuthorizationResponseIssParameterSupported = true
         }));
     }
 
@@ -193,7 +194,7 @@ public sealed class OAuthHandler(
             return OAuthError("invalid_request", organizationValidation.ErrorDescription);
 
         string code = await oauthService.CreateAuthorizationCodeAsync(request, HttpContext.Request.GetUser().Id, organizationValidation.OrganizationIds);
-        string redirectUri = BuildRedirectUri(request.RedirectUri, code, request.State);
+        string redirectUri = BuildRedirectUri(request.RedirectUri, code, request.State, GetOrigin());
         return HttpResults.Ok(new OAuthAuthorizeResponse { RedirectUri = redirectUri });
     }
 
@@ -210,12 +211,13 @@ public sealed class OAuthHandler(
         return OrganizationValidationResult.Valid(organizationIds);
     }
 
-    private static string BuildRedirectUri(string redirectUri, string code, string? state)
+    private static string BuildRedirectUri(string redirectUri, string code, string? state, string issuer)
     {
         var redirect = new UriBuilder(redirectUri);
         var query = QueryHelpers.ParseQuery(redirect.Query);
         var parameters = query.ToDictionary(kvp => kvp.Key, kvp => (string?)kvp.Value.ToString());
         parameters["code"] = code;
+        parameters["iss"] = issuer;
         if (!String.IsNullOrEmpty(state))
             parameters["state"] = state;
 

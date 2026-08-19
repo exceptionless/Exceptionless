@@ -12,6 +12,7 @@ import {
     getComparableSavedViewFilter,
     getComparableSavedViewTime,
     hasMissingSavedViewSlug,
+    hasSavedViewAutoFillChange,
     hasSavedViewColumnChanges,
     savedViewColumnsEqual,
     type SavedViewQueryParams,
@@ -198,6 +199,40 @@ describe('useSavedViews', () => {
     });
 
     describe('column comparison', () => {
+        it('detects a changed auto-fill column', () => {
+            const savedView = buildSavedView({
+                columns: {
+                    date: { visible: true },
+                    summary: { auto_fill: true, visible: true }
+                },
+                id: 'view-1',
+                name: 'Summary View'
+            });
+
+            expect(hasSavedViewAutoFillChange('date', savedView, 'summary')).toBe(true);
+            expect(hasSavedViewAutoFillChange('summary', savedView, 'summary')).toBe(false);
+        });
+
+        it('uses the default auto-fill column for legacy saved views', () => {
+            const savedView = buildSavedView({ id: 'view-1', name: 'Legacy View' });
+
+            expect(hasSavedViewAutoFillChange('summary', savedView, 'summary')).toBe(false);
+            expect(hasSavedViewAutoFillChange('date', savedView, 'summary')).toBe(true);
+        });
+
+        it('treats an explicit None selection as unchanged', () => {
+            const savedView = buildSavedView({
+                columns: {
+                    summary: { auto_fill: false, visible: true }
+                },
+                id: 'view-1',
+                name: 'Fixed Width View'
+            });
+
+            expect(hasSavedViewAutoFillChange(null, savedView, 'summary')).toBe(false);
+            expect(hasSavedViewAutoFillChange('summary', savedView, 'summary')).toBe(true);
+        });
+
         it('treats visibility missing default-hidden columns as unchanged', () => {
             // Arrange
             const current = { project: false, summary: true, tags: false };
