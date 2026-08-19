@@ -11,18 +11,24 @@
     }
 
     let { onDiscard, onSave, onStay, open = $bindable(), saving }: Props = $props();
+
+    function handleOpenChange(nextOpen: boolean): void {
+        if (!nextOpen) {
+            onStay();
+        }
+    }
 </script>
 
-<AlertDialog.Root bind:open>
-    <AlertDialog.Content class="sm:w-[28rem] data-[size=default]:sm:max-w-none">
+<AlertDialog.Root bind:open onOpenChange={handleOpenChange}>
+    <AlertDialog.Content>
         <AlertDialog.Header>
-            <AlertDialog.Title>Save view changes?</AlertDialog.Title>
-            <AlertDialog.Description>You changed this view's settings. Save the changes before leaving, or discard them and continue?</AlertDialog.Description>
+            <AlertDialog.Title>Save changes to this view?</AlertDialog.Title>
+            <AlertDialog.Description>Your changes will be lost if you leave without saving.</AlertDialog.Description>
         </AlertDialog.Header>
-        <AlertDialog.Footer class="sm:flex-wrap">
-            <AlertDialog.Cancel onclick={onStay} disabled={saving}>Stay here</AlertDialog.Cancel>
-            <Button variant="outline" onclick={onDiscard} disabled={saving}>Discard changes</Button>
-            <Button onclick={() => void onSave()} disabled={saving}>Save and continue</Button>
+        <AlertDialog.Footer>
+            <AlertDialog.Cancel disabled={saving}>Cancel</AlertDialog.Cancel>
+            <Button variant="outline" onclick={onDiscard} disabled={saving}>Don't save</Button>
+            <Button onclick={() => void onSave()} disabled={saving}>Save</Button>
         </AlertDialog.Footer>
     </AlertDialog.Content>
 </AlertDialog.Root>
