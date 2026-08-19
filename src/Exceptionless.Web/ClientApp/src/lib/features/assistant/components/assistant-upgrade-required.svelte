@@ -1,19 +1,30 @@
 <script lang="ts">
+    import { H3, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
-    import { showUpgradeDialog } from '$features/billing/upgrade-required.svelte';
+    import { Spinner } from '$comp/ui/spinner';
+    import { showChangePlanDialog } from '$features/billing/change-plan.svelte';
+    import { isStripeEnabled } from '$features/billing/stripe.svelte';
     import Bot from '@lucide/svelte/icons/bot';
 
+    import type { AssistantAccessState } from '../models';
+
     interface Props {
+        accessState?: AssistantAccessState;
         message?: string;
+        minimumPlanId?: string;
+        onAccessChanged?: () => Promise<void> | void;
+        onRetry?: () => Promise<void> | void;
         organizationId?: string;
-        upgradeRequired?: boolean;
     }
 
-    let { message, organizationId, upgradeRequired = false }: Props = $props();
+    let { accessState = 'disabled', message, minimumPlanId, onAccessChanged, onRetry, organizationId }: Props = $props();
 
     function openUpgradeOptions(): void {
         if (organizationId) {
-            showUpgradeDialog(organizationId, message);
+            showChangePlanDialog(organizationId, {
+                initialPlanId: minimumPlanId,
+                onSuccess: onAccessChanged
+            });
         }
     }
 </script>
@@ -23,13 +34,27 @@
         <Bot aria-hidden="true" class="size-7" />
     </div>
     <div class="max-w-80">
-        <h3 class="text-base font-semibold">Bring Exie onto your team</h3>
-        <p class="text-muted-foreground mt-1 text-sm">{message ?? 'Exie is not available for this organization.'}</p>
-        {#if upgradeRequired}
-            <p class="text-muted-foreground mt-2 text-sm">Upgrade this organization to investigate errors and manage stacks with Exie.</p>
+        {#if accessState === 'loading'}
+            <H3 class="text-base">Checking Exie access</H3>
+            <Muted class="mt-1">Loading this organization’s assistant access…</Muted>
+        {:else if accessState === 'error'}
+            <H3 class="text-base">Exie couldn’t check access</H3>
+            <Muted class="mt-1">{message ?? 'We couldn’t load this organization’s assistant access.'}</Muted>
+        {:else}
+            <H3 class="text-base">Bring Exie onto your team</H3>
+            <Muted class="mt-1">{message ?? 'Exie is not available for this organization.'}</Muted>
+        {/if}
+        {#if accessState === 'upgrade-required'}
+            <Muted class="mt-2">Upgrade this organization to investigate errors and manage stacks with Exie.</Muted>
         {/if}
     </div>
-    {#if upgradeRequired && organizationId}
-        <Button onclick={openUpgradeOptions}>View upgrade options</Button>
+    {#if accessState === 'loading'}
+        <Spinner aria-label="Loading Exie access" />
+    {:else if accessState === 'error' && onRetry}
+        <Button onclick={() => void onRetry()} variant="outline">Retry</Button>
+    {:else if accessState === 'upgrade-required' && organizationId && isStripeEnabled()}
+        <Button onclick={openUpgradeOptions}>Upgrade Plan</Button>
+    {:else if accessState === 'upgrade-required' && organizationId}
+        <Muted>Billing checkout is unavailable in this environment.</Muted>
     {/if}
 </div>

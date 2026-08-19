@@ -15,7 +15,7 @@
     import { getProjectQuery } from '$features/projects/api.svelte';
     import { formatDateLabel, formatLongDate } from '$shared/dates';
     import { scaleUtc } from 'd3-scale';
-    import { curveNatural } from 'd3-shape';
+    import { curveMonotoneX } from 'd3-shape';
     import { AreaChart } from 'layerchart';
 
     const organizationQuery = getOrganizationQuery({
@@ -195,7 +195,7 @@
                     {series}
                     props={{
                         area: {
-                            curve: curveNatural
+                            curve: curveMonotoneX
                         },
                         yAxis: {
                             format: 'metric'

@@ -225,6 +225,48 @@ public sealed class ExceptionlessMcpTools
         }
     }
 
+    [McpServerTool(Name = "get_project_setup", Title = "Get project setup", ReadOnly = true, OpenWorld = false, UseStructuredContent = true)]
+    [Description("Gets the canonical Exceptionless Client Setup page and verified client support for a project. Use this for any question about configuring, installing, or connecting an Exceptionless client.")]
+    public async Task<McpResponse<McpProjectSetupResult>> GetProjectSetupAsync(
+        [Description("Optional Exceptionless project id to configure. May be omitted when a current project is available.")]
+        string? projectId = null,
+        [Description("Optional exact project name to resolve when no project id or current project is available.")]
+        string? projectName = null,
+        [Description("Optional organization id used to resolve projectName. May be omitted when only one organization is accessible.")]
+        string? organizationId = null)
+    {
+        try
+        {
+            EnsureScope(AuthorizationRoles.ProjectsRead);
+            if (projectId is not null && !TryValidateId(projectId, "projectId", out var idError))
+                return McpResponse<McpProjectSetupResult>.Failed(idError);
+
+            if (organizationId is not null && !TryValidateId(organizationId, "organizationId", out var organizationIdError))
+                return McpResponse<McpProjectSetupResult>.Failed(organizationIdError);
+
+            var projectContext = await _mcpContextService.ResolveProjectByIdOrNameAsync(projectId, projectName, organizationId);
+            if (!projectContext.Succeeded)
+                return McpResponse<McpProjectSetupResult>.Failed(projectContext.Error!);
+
+            var project = projectContext.ActiveProject!;
+            return McpResponse<McpProjectSetupResult>.Success(new McpProjectSetupResult(
+                project.Id,
+                project.Name,
+                AssistantRoutes.ProjectConfigure(project.Id),
+                [
+                    new McpProjectSetupClient(".NET", "current"),
+                    new McpProjectSetupClient("React Native", "current"),
+                    new McpProjectSetupClient("Expo", "current"),
+                    new McpProjectSetupClient("JavaScript / Node.js", "legacy")
+                ],
+                ["Use the project's Client Setup page for the server URL, API key, and current installation instructions."]));
+        }
+        catch (Exception ex) when (IsLookupError(ex))
+        {
+            return McpResponse<McpProjectSetupResult>.Failed(ToLookupError("Project", projectId ?? projectName ?? organizationId ?? "current authorization", ex));
+        }
+    }
+
     [McpServerTool(Name = "get_client_setup_instructions", Title = "Get client setup instructions", ReadOnly = true, OpenWorld = false, UseStructuredContent = true)]
     [Description("Gets project-specific Exceptionless client setup instructions for sending events from an app. Use this for setup questions such as Expo or React Native apps.")]
     public async Task<McpResponse<McpClientSetupInstructionsResult>> GetClientSetupInstructionsAsync(

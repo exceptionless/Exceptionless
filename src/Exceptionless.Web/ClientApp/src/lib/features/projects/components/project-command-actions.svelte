@@ -1,5 +1,6 @@
 <script module lang="ts">
-    export type ProjectActionId = 'client-setup' | 'generate-sample-data' | 'notifications' | 'open' | 'reset-data' | 'stacks';
+    export type ProjectActionId =
+        'api-keys' | 'client-setup' | 'events' | 'generate-sample-data' | 'integrations' | 'notifications' | 'open' | 'reset-data' | 'source-maps' | 'stacks';
 </script>
 
 <script lang="ts">
@@ -13,10 +14,14 @@
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
     import ArrowLeft from '@lucide/svelte/icons/arrow-left';
     import Bell from '@lucide/svelte/icons/bell';
+    import Events from '@lucide/svelte/icons/calendar-days';
     import CloudDownload from '@lucide/svelte/icons/cloud-download';
     import Database from '@lucide/svelte/icons/database';
+    import SourceMaps from '@lucide/svelte/icons/file-code-2';
     import FolderOpen from '@lucide/svelte/icons/folder-open';
+    import ApiKey from '@lucide/svelte/icons/key';
     import Stacks from '@lucide/svelte/icons/layers';
+    import Integration from '@lucide/svelte/icons/plug-2';
     import { toast } from 'svelte-sonner';
 
     type ProjectAction = {
@@ -50,6 +55,30 @@
             id: 'stacks',
             keywords: ['errors', 'exceptions', 'issues'],
             label: 'Project Stacks'
+        },
+        {
+            icon: Events,
+            id: 'events',
+            keywords: ['errors', 'logs', 'sessions', 'events'],
+            label: 'Project Events'
+        },
+        {
+            icon: ApiKey,
+            id: 'api-keys',
+            keywords: ['tokens', 'access keys', 'client keys'],
+            label: 'Project API Keys'
+        },
+        {
+            icon: Integration,
+            id: 'integrations',
+            keywords: ['webhooks', 'Slack', 'Zapier'],
+            label: 'Project Webhooks & Integrations'
+        },
+        {
+            icon: SourceMaps,
+            id: 'source-maps',
+            keywords: ['JavaScript', 'minified', 'symbols'],
+            label: 'Project Source Maps'
         },
         {
             icon: Bell,
@@ -112,14 +141,28 @@
 
     function getProjectHref(action: ProjectActionId, project: ViewProject): string | undefined {
         switch (action) {
+            case 'api-keys':
+                return resolve('/(app)/project/[projectId]/api-keys', {
+                    projectId: project.id
+                });
             case 'client-setup':
                 return resolve('/(app)/project/[projectId]/configure', {
+                    projectId: project.id
+                });
+            case 'events':
+                return `${resolve('/(app)/event')}?project=${project.id}`;
+            case 'integrations':
+                return resolve('/(app)/project/[projectId]/integrations', {
                     projectId: project.id
                 });
             case 'notifications':
                 return `${resolve('/(app)/account/notifications')}?project=${project.id}`;
             case 'open':
                 return resolve('/(app)/project/[projectId]/manage', {
+                    projectId: project.id
+                });
+            case 'source-maps':
+                return resolve('/(app)/project/[projectId]/source-maps', {
                     projectId: project.id
                 });
             case 'stacks':

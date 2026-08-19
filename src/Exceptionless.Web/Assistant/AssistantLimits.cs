@@ -5,6 +5,7 @@ internal static class AssistantLimits
     public const int MaximumInputMessages = 20;
     public const int MaximumInputCharacters = 48_000;
     public const int MaximumOutputTokens = 2048;
+    public const int MaximumMalformedResponseRetries = 1;
     public const int MaximumToolRounds = 3;
     public const int MaximumToolCallsPerTurn = 12;
     public const int MaximumProjectsPerTurn = 5;

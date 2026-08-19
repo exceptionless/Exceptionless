@@ -19,7 +19,7 @@ interface GetAssistantAccessRequest {
 
 export function getAssistantAccessQuery(request: GetAssistantAccessRequest) {
     return createQuery<AssistantAccess, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.current,
+        enabled: () => !!accessToken.current && !!request.route.organizationId,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<AssistantAccess>('assistant/access', {

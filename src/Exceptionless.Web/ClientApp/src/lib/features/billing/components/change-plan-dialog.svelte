@@ -17,6 +17,7 @@
     import * as Tabs from '$comp/ui/tabs';
     import { submitFeatureUsage } from '$features/auth/exceptionless-session';
     import { FREE_PLAN_ID, isStripeEnabled, StripeProvider } from '$features/billing';
+    import { resolveInitialPlanTierId } from '$features/billing/plan-selection';
     import { type ChangePlanFormData, ChangePlanSchema } from '$features/billing/schemas';
     import { changePlanMutation, getPlansQuery } from '$features/organizations/api.svelte';
     import { getFormErrorMessages, problemDetailsToFormErrors } from '$features/shared/validation';
@@ -34,11 +35,12 @@
         initialCouponCode?: string;
         initialCouponOpen?: boolean;
         initialFormError?: string;
+        initialPlanId?: string;
         onclose: (success: boolean) => void;
         organization: ViewOrganization;
     }
 
-    let { initialCouponCode, initialCouponOpen, initialFormError, onclose, organization }: Props = $props();
+    let { initialCouponCode, initialCouponOpen, initialFormError, initialPlanId, onclose, organization }: Props = $props();
 
     const plansQuery = getPlansQuery({
         route: {
@@ -316,16 +318,12 @@
     $effect(() => {
         if (plansQuery.data) {
             untrack(() => {
-                const nextTierIndex = currentTierIndex + 1;
-                const upsellTier = nextTierIndex < tiers.length ? tiers[nextTierIndex] : null;
-
-                if (isFreeCurrent && tiers.length > 0) {
-                    selectedTierId = tiers[0]!.id;
-                } else if (upsellTier) {
-                    selectedTierId = upsellTier.id;
-                } else {
-                    selectedTierId = currentTierId === FREE_PLAN_ID ? '' : currentTierId;
-                }
+                selectedTierId = resolveInitialPlanTierId(
+                    tiers.map((tier) => tier.id),
+                    initialPlanId,
+                    currentTierId,
+                    isFreeCurrent
+                );
 
                 // Always default to yearly to promote savings (especially for free→paid upgrades)
                 interval = isFreeCurrent ? 'year' : currentInterval;
@@ -578,8 +576,11 @@
                 <Skeleton class="h-40 w-full" />
             </div>
         {:else if plansQuery.error}
-            <div class="py-4">
+            <div class="space-y-3 py-4">
                 <ErrorMessage message="Failed to load available plans. Please try again." />
+                <Button type="button" variant="outline" disabled={plansQuery.isFetching} onclick={() => void plansQuery.refetch()}>
+                    {plansQuery.isFetching ? 'Retrying…' : 'Retry'}
+                </Button>
             </div>
         {:else if plansQuery.data}
             <form
@@ -614,6 +615,7 @@
                                 {@const isCurrent = tier.id === currentTierId && (interval === currentInterval || !tier.yearly)}
                                 {@const isSelected = tier.id === selectedTierId}
                                 <Button
+                                    aria-pressed={isSelected}
                                     type="button"
                                     variant="ghost"
                                     onclick={() => selectTier(tier.id)}

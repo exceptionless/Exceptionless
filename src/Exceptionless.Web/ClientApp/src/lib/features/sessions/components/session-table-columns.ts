@@ -48,7 +48,7 @@ export function getSessionColumns(): ColumnDef<StockFeatures, EventSummaryModel<
             header: 'Duration',
             id: 'duration',
             meta: {
-                class: 'w-36'
+                class: 'w-40'
             }
         },
         {
@@ -57,7 +57,7 @@ export function getSessionColumns(): ColumnDef<StockFeatures, EventSummaryModel<
             header: 'User',
             id: 'user',
             meta: {
-                class: 'w-28'
+                class: 'w-56'
             }
         },
         {

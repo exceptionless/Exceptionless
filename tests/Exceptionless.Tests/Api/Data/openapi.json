@@ -11275,6 +11275,12 @@
               "null",
               "string"
             ]
+          },
+          "minimum_plan_id": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -12753,6 +12759,13 @@
               "boolean"
             ],
             "description": "Whether the column is visible. Null means use the table default."
+          },
+          "auto_fill": {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "description": "Whether the column fills the table\u0027s remaining width. Null or false means use fixed-width behavior."
           },
           "position": {
             "maximum": 49,

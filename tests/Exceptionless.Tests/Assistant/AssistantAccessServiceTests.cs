@@ -81,7 +81,7 @@ public sealed class AssistantAccessServiceTests
     {
         var billingPlans = new BillingPlans(CreateOptions());
 
-        var access = AssistantAccessService.EvaluatePlan(billingPlans.UnlimitedPlan.Assistant);
+        var access = AssistantAccessService.EvaluatePlan(billingPlans.UnlimitedPlan.Assistant, billingPlans.MediumPlan.Id);
 
         Assert.True(access.HasAccess);
         Assert.False(access.UpgradeRequired);
@@ -90,11 +90,13 @@ public sealed class AssistantAccessServiceTests
     [Fact]
     public void EvaluatePlan_MissingPlanOptionsRequiresUpgrade()
     {
-        var access = AssistantAccessService.EvaluatePlan(planOptions: null);
+        var billingPlans = new BillingPlans(CreateOptions());
+        var access = AssistantAccessService.EvaluatePlan(planOptions: null, billingPlans.MediumPlan.Id);
 
         Assert.False(access.HasAccess);
         Assert.True(access.UpgradeRequired);
         Assert.Equal(AssistantAccessReason.UpgradeRequired, access.Reason);
+        Assert.Equal("EX_MEDIUM", access.MinimumPlanId);
     }
 
     [Fact]
@@ -102,10 +104,11 @@ public sealed class AssistantAccessServiceTests
     {
         var billingPlans = new BillingPlans(CreateOptions());
 
-        var access = AssistantAccessService.EvaluatePlan(billingPlans.MediumPlan.Assistant);
+        var access = AssistantAccessService.EvaluatePlan(billingPlans.MediumPlan.Assistant, billingPlans.MediumPlan.Id);
 
         Assert.True(access.HasAccess);
         Assert.False(access.UpgradeRequired);
+        Assert.Null(access.MinimumPlanId);
         Assert.Same(billingPlans.MediumPlan.Assistant, access.PlanOptions);
     }
 

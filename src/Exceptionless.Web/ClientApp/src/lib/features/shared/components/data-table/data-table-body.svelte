@@ -12,13 +12,15 @@
     import DataTableColumnHeader from './data-table-column-header.svelte';
 
     interface Props {
+        autoFillColumnId?: null | string;
         children?: Snippet;
+        onAutoFillColumnResized?: (columnId: string) => void;
         rowClick?: (row: TData, event?: MouseEvent) => void;
         rowHref?: (row: TData) => string;
         table: SvelteTable<StockFeatures, TData>;
     }
 
-    let { children, rowClick, rowHref, table }: Props = $props();
+    let { autoFillColumnId, children, onAutoFillColumnResized, rowClick, rowHref, table }: Props = $props();
 
     const selectColumnClass = 'w-8 min-w-8 max-w-8';
     const selectColumnWidth = 32;
@@ -85,6 +87,15 @@
     function getFlexibleDataColumnId(): string | undefined {
         const columnSizing = table.atoms.columnSizing?.get() ?? {};
         const visibleDataColumns = getVisibleDataColumns();
+        if (autoFillColumnId !== undefined) {
+            if (autoFillColumnId === null) {
+                return undefined;
+            }
+
+            const autoFillColumn = visibleDataColumns.find((column) => column.id === autoFillColumnId);
+            return autoFillColumn && columnSizing[autoFillColumn.id] === undefined ? autoFillColumn.id : undefined;
+        }
+
         const fullWidthColumns = visibleDataColumns.filter((column) => getMetaClass(column.columnDef.meta).split(' ').includes('w-full'));
         if (fullWidthColumns.length > 0) {
             return fullWidthColumns.find((column) => columnSizing[column.id] === undefined)?.id;
@@ -158,6 +169,7 @@
         event.stopPropagation();
         const delta = event.key === 'ArrowLeft' ? -16 : 16;
         const currentSize = getResizeStartSize(event, header);
+        handleAutoFillColumnResize(header);
         table.setColumnSizing((current) => ({
             ...current,
             [header.column.id]: Math.min(
@@ -196,6 +208,7 @@
             }
 
             removePendingListeners();
+            handleAutoFillColumnResize(header);
             table.setColumnSizing((current) => ({
                 ...current,
                 [header.column.id]: currentSize
@@ -222,6 +235,12 @@
         } else {
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseEnd);
+        }
+    }
+
+    function handleAutoFillColumnResize(header: Header<StockFeatures, TData, unknown>): void {
+        if (header.column.id === autoFillColumnId) {
+            onAutoFillColumnResized?.(header.column.id);
         }
     }
 
