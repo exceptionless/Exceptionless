@@ -165,7 +165,13 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
     private static bool RequiresNullableWrapper(Type type)
     {
         type = Nullable.GetUnderlyingType(type) ?? type;
-        return type != typeof(string) && !type.IsValueType;
+        return type != typeof(string) && !type.IsValueType && !IsDictionaryType(type);
+    }
+
+    private static bool IsDictionaryType(Type type)
+    {
+        return type.IsGenericType
+            && type.GetInterfaces().Concat([type]).Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IDictionary<,>));
     }
 
     private static void ApplyArrayAnnotations(OpenApiSchema schema, PropertyInfo property)
