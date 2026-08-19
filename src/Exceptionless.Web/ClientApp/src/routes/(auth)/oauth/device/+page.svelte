@@ -48,7 +48,11 @@
     const selectedScopes = new SvelteSet<string>();
 
     const meQuery = getMeQuery();
-    const organizationsQuery = getOrganizationsQuery({ params: { mode: null } });
+    const organizationsQuery = getOrganizationsQuery({
+        params: {
+            mode: null
+        }
+    });
 
     const accountDisplayName = $derived(meQuery.data?.full_name || meQuery.data?.email_address || 'Unknown account');
     const applicationClientId = $derived(consentDetails?.client_id ?? 'Unknown application');
@@ -71,7 +75,9 @@
 
         const returnUrl = `${page.url.pathname}${page.url.search}`;
         const loginUrl = `${resolve('/(auth)/login')}?redirect=${encodeURIComponent(returnUrl)}`;
-        void goto(loginUrl, { replaceState: true });
+        void goto(loginUrl, {
+            replaceState: true
+        });
     });
 
     $effect(() => {
@@ -130,8 +136,12 @@
         const client = useFetchClient();
         const response = await client.postJSON<OAuthDeviceConsentResponse>(
             'oauth/device/consent',
-            { user_code: trimmedUserCode },
-            { expectedStatusCodes: [400, 401] }
+            {
+                user_code: trimmedUserCode
+            },
+            {
+                expectedStatusCodes: [400, 401]
+            }
         );
 
         isLoadingConsent = false;
@@ -187,7 +197,9 @@
                 scope: selectedScopeValues.join(' '),
                 user_code: consentDetails.user_code
             },
-            { expectedStatusCodes: [400, 401] }
+            {
+                expectedStatusCodes: [400, 401]
+            }
         );
 
         isApproving = false;
@@ -215,8 +227,12 @@
         const client = useFetchClient();
         const response = await client.postJSON<OAuthErrorResponse>(
             'oauth/device/deny',
-            { user_code: consentDetails.user_code },
-            { expectedStatusCodes: [400, 401] }
+            {
+                user_code: consentDetails.user_code
+            },
+            {
+                expectedStatusCodes: [400, 401]
+            }
         );
 
         isDenying = false;
@@ -242,7 +258,9 @@
         accessToken.current = null;
         const returnUrl = `${page.url.pathname}${page.url.search}`;
         const loginUrl = `${resolve('/(auth)/login')}?redirect=${encodeURIComponent(returnUrl)}`;
-        await goto(loginUrl, { replaceState: true });
+        await goto(loginUrl, {
+            replaceState: true
+        });
     }
 
     function toggleOrganization(organizationId: string | undefined, checked: 'indeterminate' | boolean): void {
