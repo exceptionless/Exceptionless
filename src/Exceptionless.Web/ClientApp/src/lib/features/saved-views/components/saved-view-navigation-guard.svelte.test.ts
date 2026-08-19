@@ -12,6 +12,7 @@ const pageState = vi.hoisted(() => ({
 }));
 
 vi.mock('$app/navigation', () => navigation);
+vi.mock('$app/paths', () => ({ resolve: (path: string) => path }));
 vi.mock('$app/state', () => ({
     page: {
         get url() {
@@ -182,6 +183,21 @@ describe('SavedViewNavigationGuard', () => {
         const replayCancel = vi.fn();
         getBeforeNavigation()({ cancel: replayCancel, delta: -1, to: { url: destination }, type: 'popstate', willUnload: false });
         expect(replayCancel).not.toHaveBeenCalled();
+    });
+
+    it('preserves replacement when continuing to service status', async () => {
+        const destination = new URL('http://localhost/status?redirect=%2Fnext%2Fevent');
+        render(SavedViewNavigationGuard, {
+            isModified: true,
+            onDiscard: vi.fn(),
+            onSave: vi.fn(),
+            saving: false
+        });
+
+        getBeforeNavigation()({ cancel: vi.fn(), to: { url: destination }, type: 'goto', willUnload: false });
+        await fireEvent.click(await screen.findByRole('button', { name: "Don't save" }));
+
+        expect(navigation.goto).toHaveBeenCalledWith(destination, { replaceState: true });
     });
 
     it('continues only after the view saves successfully', async () => {

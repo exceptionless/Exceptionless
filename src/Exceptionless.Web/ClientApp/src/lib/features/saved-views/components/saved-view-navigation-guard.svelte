@@ -1,5 +1,6 @@
 <script lang="ts">
     import { beforeNavigate, goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { page } from '$app/state';
 
     import SavedViewNavigationDialog from './saved-view-navigation-dialog.svelte';
@@ -13,6 +14,7 @@
 
     interface PendingNavigation {
         delta: number | undefined;
+        replaceState: boolean;
         url: URL;
     }
 
@@ -34,7 +36,13 @@
         }
 
         try {
-            await goto(navigation.url);
+            if (navigation.replaceState) {
+                await goto(navigation.url, {
+                    replaceState: true
+                });
+            } else {
+                await goto(navigation.url);
+            }
         } catch (error) {
             isResumingNavigation = false;
             throw error;
@@ -82,6 +90,7 @@
         cancel();
         pendingNavigation = {
             delta: type === 'popstate' ? delta : undefined,
+            replaceState: type === 'goto' && to.url.pathname === resolve('/status'),
             url: to.url
         };
     });
