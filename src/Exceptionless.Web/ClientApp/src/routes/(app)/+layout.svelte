@@ -45,7 +45,14 @@
     import { getMeQuery, invalidateUserQueries } from '$features/users/api.svelte';
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
     import { invalidateWebhookQueries } from '$features/webhooks/api.svelte';
-    import { ChangeType, isPlanOverageType, type EntityChanged, type UserMembershipChanged, isEntityChangedType, type WebSocketMessageType } from '$features/websockets/models';
+    import {
+        ChangeType,
+        type EntityChanged,
+        isEntityChangedType,
+        isPlanOverageType,
+        type UserMembershipChanged,
+        type WebSocketMessageType
+    } from '$features/websockets/models';
     import { SseClient } from '$features/websockets/sse-client.svelte';
     import { Telemetry } from '$lib/telemetry';
     import { useMiddleware } from '@foundatiofx/fetchclient';
@@ -481,7 +488,9 @@
         };
 
         return () => {
-            document.removeEventListener('keydown', handleKeydown, { capture: true });
+            document.removeEventListener('keydown', handleKeydown, {
+                capture: true
+            });
             organizationEventRefresher.cancel();
             projectStackRefresher.cancel();
             sse?.close();
