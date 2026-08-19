@@ -47,7 +47,9 @@ export function deleteRateNotificationRule() {
     return createMutation<void, ProblemDetails, RuleMutationVariables>(() => ({
         mutationFn: async (variables) => {
             const client = useFetchClient();
-            await client.delete(ruleRoute(variables, variables.ruleId), { expectedStatusCodes: [204] });
+            await client.delete(ruleRoute(variables, variables.ruleId), {
+                expectedStatusCodes: [204]
+            });
         },
         onSuccess: (_, variables) => {
             updateRulesCache(queryClient, variables, (rules) => rules.filter((rule) => rule.id !== variables.ruleId));
@@ -62,11 +64,19 @@ export function getRateNotificationRulesQuery(request: { params?: { limit?: numb
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             return client.getJSON<ViewRateNotificationRule[]>(ruleRoute(request.route), {
-                params: { limit: 50, ...request.params },
+                params: {
+                    limit: 50,
+                    ...request.params
+                },
                 signal
             });
         },
-        queryKey: [...queryKeys.list(request.route.userId, request.route.projectId), { params: request.params }]
+        queryKey: [
+            ...queryKeys.list(request.route.userId, request.route.projectId),
+            {
+                params: request.params
+            }
+        ]
     }));
 }
 
@@ -143,12 +153,18 @@ export function putRateNotificationRule() {
             },
             onMutate: async (variables) => {
                 const queryKey = queryKeys.list(variables.userId, variables.projectId);
-                await queryClient.cancelQueries({ queryKey });
-                const previousRules = queryClient.getQueriesData<FetchClientResponse<ViewRateNotificationRule[]>>({ queryKey });
+                await queryClient.cancelQueries({
+                    queryKey
+                });
+                const previousRules = queryClient.getQueriesData<FetchClientResponse<ViewRateNotificationRule[]>>({
+                    queryKey
+                });
                 updateRulesCache(queryClient, variables, (rules) =>
                     rules.map((rule) => (rule.id === variables.ruleId ? applyOptimisticUpdate(rule, variables.body) : rule))
                 );
-                return { previousRules };
+                return {
+                    previousRules
+                };
             },
             onSettled: (_data, _error, variables) => {
                 scheduleConsistencyRefresh(queryClient, variables);
@@ -161,7 +177,9 @@ export function putRateNotificationRule() {
 }
 
 function applyOptimisticUpdate(rule: ViewRateNotificationRule, body: UpdateRateNotificationRule): ViewRateNotificationRule {
-    const updated = { ...rule };
+    const updated = {
+        ...rule
+    };
 
     if (body.name != null) {
         updated.name = body.name;
@@ -209,18 +227,29 @@ function ruleRoute(route: RateNotificationRoute, ruleId?: string): string {
 
 function scheduleConsistencyRefresh(queryClient: QueryClient, route: RateNotificationRoute): void {
     const queryKey = queryKeys.list(route.userId, route.projectId);
-    setTimeout(() => void queryClient.invalidateQueries({ queryKey }), CONSISTENCY_REFRESH_DELAY_MS);
+    setTimeout(
+        () =>
+            void queryClient.invalidateQueries({
+                queryKey
+            }),
+        CONSISTENCY_REFRESH_DELAY_MS
+    );
 }
 
 function updateRulesCache(queryClient: QueryClient, route: RateNotificationRoute, update: (rules: ViewRateNotificationRule[]) => ViewRateNotificationRule[]) {
     queryClient.setQueriesData<FetchClientResponse<ViewRateNotificationRule[]> | undefined>(
-        { queryKey: queryKeys.list(route.userId, route.projectId) },
+        {
+            queryKey: queryKeys.list(route.userId, route.projectId)
+        },
         (response) => {
             if (!Array.isArray(response?.data)) {
                 return response;
             }
 
-            return { ...response, data: update(response.data) };
+            return {
+                ...response,
+                data: update(response.data)
+            };
         }
     );
 }

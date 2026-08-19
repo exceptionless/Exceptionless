@@ -44,7 +44,10 @@
     const createMutation = postRateNotificationRule();
     const updateMutation = putRateNotificationRule();
     const stacksQuery = getProjectStacksQuery({
-        params: { limit: 100, sort: 'last_occurrence:desc' },
+        params: {
+            limit: 100,
+            sort: 'last_occurrence:desc'
+        },
         route: {
             get projectId() {
                 return projectId;
@@ -72,19 +75,33 @@
             onSubmit: RateNotificationRuleSchema,
             onSubmitAsync: async ({ value }) => {
                 if (!hasPremiumFeatures) {
-                    return { form: 'A premium plan is required to enable rate notifications.' };
+                    return {
+                        form: 'A premium plan is required to enable rate notifications.'
+                    };
                 }
 
                 if (!projectId || !userId) {
-                    return { form: 'The selected project or user is unavailable. Please try again.' };
+                    return {
+                        form: 'The selected project or user is unavailable. Please try again.'
+                    };
                 }
 
                 try {
                     const request = toRateNotificationRuleRequest(value, hasPremiumFeatures);
-                    const route = { projectId, userId };
+                    const route = {
+                        projectId,
+                        userId
+                    };
                     const saved = activeRule
-                        ? await updateMutation.mutateAsync({ ...route, body: request, ruleId: activeRule.id })
-                        : await createMutation.mutateAsync({ ...route, body: request });
+                        ? await updateMutation.mutateAsync({
+                              ...route,
+                              body: request,
+                              ruleId: activeRule.id
+                          })
+                        : await createMutation.mutateAsync({
+                              ...route,
+                              body: request
+                          });
                     toast.success(activeRule ? 'Rule updated.' : 'Rule created.');
                     onSaved?.(saved);
                     return null;
@@ -93,7 +110,9 @@
                         return problemDetailsToFormErrors(error);
                     }
 
-                    return { form: 'Failed to save rule. Please try again.' };
+                    return {
+                        form: 'Failed to save rule. Please try again.'
+                    };
                 }
             }
         }

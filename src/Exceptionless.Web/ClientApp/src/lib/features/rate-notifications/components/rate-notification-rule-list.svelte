@@ -44,7 +44,9 @@
         }
     };
     const deleteMutation = deleteRateNotificationRule();
-    const listQuery = getRateNotificationRulesQuery({ route });
+    const listQuery = getRateNotificationRulesQuery({
+        route
+    });
     const snoozeMutation = postSnoozeRateNotificationRule();
     const unsnoozeMutation = postUnsnoozeRateNotificationRule();
     const updateMutation = putRateNotificationRule();
@@ -67,7 +69,11 @@
 
         errorMessage = undefined;
         try {
-            await deleteMutation.mutateAsync({ projectId, ruleId: confirmDeleteRuleId, userId });
+            await deleteMutation.mutateAsync({
+                projectId,
+                ruleId: confirmDeleteRuleId,
+                userId
+            });
             confirmDeleteRuleId = undefined;
         } catch {
             errorMessage = 'Failed to delete rule. Please try again.';
@@ -83,10 +89,21 @@
         errorMessage = undefined;
         try {
             if (rule.is_snoozed) {
-                await unsnoozeMutation.mutateAsync({ projectId, ruleId: rule.id, userId });
+                await unsnoozeMutation.mutateAsync({
+                    projectId,
+                    ruleId: rule.id,
+                    userId
+                });
                 toast.success('Rule resumed.');
             } else {
-                await snoozeMutation.mutateAsync({ body: { duration_seconds: 3600 }, projectId, ruleId: rule.id, userId });
+                await snoozeMutation.mutateAsync({
+                    body: {
+                        duration_seconds: 3600
+                    },
+                    projectId,
+                    ruleId: rule.id,
+                    userId
+                });
                 toast.success('Rule snoozed for 1 hour.');
             }
         } catch {
@@ -102,7 +119,14 @@
 
         errorMessage = undefined;
         try {
-            await updateMutation.mutateAsync({ body: { is_enabled: enabled }, projectId, ruleId: rule.id, userId });
+            await updateMutation.mutateAsync({
+                body: {
+                    is_enabled: enabled
+                },
+                projectId,
+                ruleId: rule.id,
+                userId
+            });
         } catch {
             errorMessage = 'Failed to update rule. Please try again.';
             toast.error(errorMessage);
@@ -219,7 +243,12 @@
         </AlertDialog.Header>
         <AlertDialog.Footer>
             <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-            <AlertDialog.Action class={buttonVariants({ variant: 'destructive' })} onclick={confirmDelete}>Delete</AlertDialog.Action>
+            <AlertDialog.Action
+                class={buttonVariants({
+                    variant: 'destructive'
+                })}
+                onclick={confirmDelete}>Delete</AlertDialog.Action
+            >
         </AlertDialog.Footer>
     </AlertDialog.Content>
 </AlertDialog.Root>
