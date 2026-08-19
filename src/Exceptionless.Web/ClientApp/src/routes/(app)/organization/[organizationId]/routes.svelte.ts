@@ -39,9 +39,6 @@ export function routes(): NavigationItem[] {
             href: resolve('/(app)/organization/[organizationId]/users', {
                 organizationId
             }),
-            href: resolve('/(app)/organization/[organizationId]/users', {
-                organizationId
-            }),
             icon: Users,
             keywords: ['members', 'team', 'invite'],
             title: 'Users'
