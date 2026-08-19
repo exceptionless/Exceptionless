@@ -128,6 +128,7 @@
             </div>
 
             {#if organizationQuery.isLoading}
+                <!-- eslint-disable-next-line @stylistic/object-curly-newline -->
                 {#each Array.from({ length: KNOWN_FEATURES.length }, (_, index) => index) as i (`skeleton-${i}`)}
                     <div class="rounded-lg border p-4">
                         <div class="flex items-center justify-between">

@@ -29,7 +29,10 @@
     });
 
     const filteredRoutes = $derived.by(() => {
-        const context: NavigationItemContext = { authenticated: isAuthenticated, user: meQuery.data };
+        const context: NavigationItemContext = {
+            authenticated: isAuthenticated,
+            user: meQuery.data
+        };
         return routes().filter((route) => route.group === 'Organization Settings' && (route.show ? route.show(context) : true));
     });
     const currentPath = $derived(page.url.pathname);

@@ -31,6 +31,7 @@ const LIST_FILTER_QUERY_PARAM_NAMES = [
 
 export type ListFilterQueryParams = Partial<Record<ListFilterQueryParamName, null | string | undefined>>;
 type ListFilterQueryParamName = (typeof LIST_FILTER_QUERY_PARAM_NAMES)[number];
+type ListFilterQueryParamSnapshot = Record<ListFilterQueryParamName, null | string>;
 
 const DATE_RANGE_PATTERN = /^\[?(?<start>.+?)\s+TO\s+(?<end>.+?)\]?$/i;
 const RELATIVE_TO_NOW_PATTERN = /^now-(?<duration>\d+[Mdhmswy])$/;
@@ -89,14 +90,30 @@ export function deserializeTimeQueryParam(time: string): string {
  */
 export function getEventsNavigationOptionsForFilter(filter: IFilter): ListNavigationOptions | undefined {
     if (filter.type === 'string' && filter.key === 'string-stack') {
-        return { time: null };
+        return {
+            time: null
+        };
     }
 
     return undefined;
 }
 
-export function getListFilterQueryParams(searchParams: URLSearchParams): ListFilterQueryParams {
-    return Object.fromEntries(LIST_FILTER_QUERY_PARAM_NAMES.map((name) => [name, searchParams.get(name)])) as ListFilterQueryParams;
+export function getListFilterQueryParams(source: ListFilterQueryParams): ListFilterQueryParamSnapshot {
+    return {
+        bot: source.bot ?? null,
+        filter: source.filter ?? null,
+        first: source.first ?? null,
+        level: source.level ?? null,
+        project: source.project ?? null,
+        reference: source.reference ?? null,
+        session: source.session ?? null,
+        stack: source.stack ?? null,
+        status: source.status ?? null,
+        tag: source.tag ?? null,
+        time: source.time ?? null,
+        type: source.type ?? null,
+        version: source.version ?? null
+    };
 }
 
 export async function navigateToListPage(page: ListPage, organizationId: string | undefined, filters: IFilter[], options: ListNavigationOptions = {}) {

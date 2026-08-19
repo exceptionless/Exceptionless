@@ -57,7 +57,9 @@ export function createProjectStackNotificationRefresher(queryClient: QueryClient
 export async function invalidateStackQueries(queryClient: QueryClient, message: WebSocketMessageValue<'StackChanged'>) {
     const { id } = message;
     if (id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.id(id) });
+        await queryClient.invalidateQueries({
+            queryKey: queryKeys.id(id)
+        });
     } else {
         await queryClient.invalidateQueries({
             predicate: (query) => !isProjectStacksQueryKey(query.queryKey),
@@ -81,7 +83,13 @@ export const queryKeys = {
     postMarkSnoozed: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'mark-snoozed'] as const,
     postPromote: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'promote'] as const,
     postRemoveLink: (id: string | undefined) => [...queryKeys.id(id), 'remove-link'] as const,
-    project: (projectId: string | undefined, params?: GetProjectStacksParams) => [...queryKeys.projects(projectId), { params }] as const,
+    project: (projectId: string | undefined, params?: GetProjectStacksParams) =>
+        [
+            ...queryKeys.projects(projectId),
+            {
+                params
+            }
+        ] as const,
     projects: (projectId: string | undefined) => [...queryKeys.type, 'project', projectId] as const,
     type: ['Stack'] as const
 };
@@ -164,10 +172,18 @@ export function deleteMarkCritical(request: PostMarkCriticalRequest) {
         },
         mutationKey: queryKeys.deleteMarkCritical(request.route.ids),
         onError: () => {
-            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+            request.route.ids?.forEach((id) =>
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.id(id)
+                })
+            );
         },
         onSuccess: () => {
-            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+            request.route.ids?.forEach((id) =>
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.id(id)
+                })
+            );
         }
     }));
 }
@@ -184,10 +200,18 @@ export function deleteStack(request: DeleteStackRequest) {
         },
         mutationKey: queryKeys.deleteStack(request.route.ids),
         onError: () => {
-            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+            request.route.ids?.forEach((id) =>
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.id(id)
+                })
+            );
         },
         onSuccess: () => {
-            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+            request.route.ids?.forEach((id) =>
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.id(id)
+                })
+            );
         }
     }));
 }
@@ -236,14 +260,20 @@ export function postAddLink(request: PostAddLinkRequest) {
         enabled: () => !!accessToken.current && !!request.route.id,
         mutationFn: async (url: string) => {
             const client = useFetchClient();
-            await client.post(`stacks/${request.route.id}/add-link`, { value: url });
+            await client.post(`stacks/${request.route.id}/add-link`, {
+                value: url
+            });
         },
         mutationKey: queryKeys.postAddLink(request.route.id),
         onError: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(request.route.id)
+            });
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(request.route.id)
+            });
         }
     }));
 }
@@ -254,14 +284,26 @@ export function postChangeStatus(request: PostChangeStatusRequest) {
         enabled: () => !!accessToken.current && !!request.route.ids?.length,
         mutationFn: async (status: StackStatus) => {
             const client = useFetchClient();
-            await client.post(`stacks/${request.route.ids?.join(',')}/change-status`, undefined, { params: { status } });
+            await client.post(`stacks/${request.route.ids?.join(',')}/change-status`, undefined, {
+                params: {
+                    status
+                }
+            });
         },
         mutationKey: queryKeys.postChangeStatus(request.route.ids),
         onError: () => {
-            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+            request.route.ids?.forEach((id) =>
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.id(id)
+                })
+            );
         },
         onSuccess: () => {
-            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+            request.route.ids?.forEach((id) =>
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.id(id)
+                })
+            );
         }
     }));
 }
@@ -276,10 +318,18 @@ export function postMarkCritical(request: PostMarkCriticalRequest) {
         },
         mutationKey: queryKeys.postMarkCritical(request.route.ids),
         onError: () => {
-            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+            request.route.ids?.forEach((id) =>
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.id(id)
+                })
+            );
         },
         onSuccess: () => {
-            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+            request.route.ids?.forEach((id) =>
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.id(id)
+                })
+            );
         }
     }));
 }
@@ -290,14 +340,26 @@ export function postMarkFixed(request: PostMarkFixedRequest) {
         enabled: () => !!accessToken.current && !!request.route.ids?.length,
         mutationFn: async (version?: string) => {
             const client = useFetchClient();
-            await client.post(`stacks/${request.route.ids?.join(',')}/mark-fixed`, undefined, { params: { version } });
+            await client.post(`stacks/${request.route.ids?.join(',')}/mark-fixed`, undefined, {
+                params: {
+                    version
+                }
+            });
         },
         mutationKey: queryKeys.postMarkFixed(request.route.ids),
         onError: () => {
-            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+            request.route.ids?.forEach((id) =>
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.id(id)
+                })
+            );
         },
         onSuccess: () => {
-            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+            request.route.ids?.forEach((id) =>
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.id(id)
+                })
+            );
         }
     }));
 }
@@ -308,14 +370,26 @@ export function postMarkSnoozed(request: PostMarkSnoozedRequest) {
         enabled: () => !!accessToken.current && !!request.route.ids?.length,
         mutationFn: async (snoozeUntilUtc: Date) => {
             const client = useFetchClient();
-            await client.post(`stacks/${request.route.ids?.join(',')}/mark-snoozed`, undefined, { params: { snoozeUntilUtc: snoozeUntilUtc.toISOString() } });
+            await client.post(`stacks/${request.route.ids?.join(',')}/mark-snoozed`, undefined, {
+                params: {
+                    snoozeUntilUtc: snoozeUntilUtc.toISOString()
+                }
+            });
         },
         mutationKey: queryKeys.postMarkSnoozed(request.route.ids),
         onError: () => {
-            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+            request.route.ids?.forEach((id) =>
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.id(id)
+                })
+            );
         },
         onSuccess: () => {
-            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+            request.route.ids?.forEach((id) =>
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.id(id)
+                })
+            );
         }
     }));
 }
@@ -334,10 +408,18 @@ export function postPromote(request: PostPromoteRequest) {
         },
         mutationKey: queryKeys.postPromote(request.route.ids),
         onError: () => {
-            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+            request.route.ids?.forEach((id) =>
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.id(id)
+                })
+            );
         },
         onSuccess: () => {
-            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+            request.route.ids?.forEach((id) =>
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.id(id)
+                })
+            );
         }
     }));
 }
@@ -348,14 +430,20 @@ export function postRemoveLink(request: PostRemoveLinkRequest) {
         enabled: () => !!accessToken.current && !!request.route.id,
         mutationFn: async (url: string) => {
             const client = useFetchClient();
-            await client.post(`stacks/${request.route.id}/remove-link`, { value: url });
+            await client.post(`stacks/${request.route.id}/remove-link`, {
+                value: url
+            });
         },
         mutationKey: queryKeys.postRemoveLink(request.route.id),
         onError: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(request.route.id)
+            });
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(request.route.id)
+            });
         }
     }));
 }

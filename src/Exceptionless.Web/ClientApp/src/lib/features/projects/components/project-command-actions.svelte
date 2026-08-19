@@ -1,3 +1,8 @@
+<script module lang="ts">
+    export type ProjectActionId =
+        'api-keys' | 'client-setup' | 'events' | 'generate-sample-data' | 'integrations' | 'notifications' | 'open' | 'reset-data' | 'source-maps' | 'stacks';
+</script>
+
 <script lang="ts">
     import type { ViewProject } from '$features/projects/models';
     import type { Component } from 'svelte';
@@ -9,13 +14,15 @@
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
     import ArrowLeft from '@lucide/svelte/icons/arrow-left';
     import Bell from '@lucide/svelte/icons/bell';
+    import Events from '@lucide/svelte/icons/calendar-days';
     import CloudDownload from '@lucide/svelte/icons/cloud-download';
     import Database from '@lucide/svelte/icons/database';
+    import SourceMaps from '@lucide/svelte/icons/file-code-2';
     import FolderOpen from '@lucide/svelte/icons/folder-open';
+    import ApiKey from '@lucide/svelte/icons/key';
     import Stacks from '@lucide/svelte/icons/layers';
+    import Integration from '@lucide/svelte/icons/plug-2';
     import { toast } from 'svelte-sonner';
-
-    type ProjectActionId = 'client-setup' | 'generate-sample-data' | 'notifications' | 'open' | 'reset-data' | 'stacks';
 
     type ProjectAction = {
         icon: Component;
@@ -30,21 +37,76 @@
         onSelect: () => void;
         open: boolean;
         resetPending: boolean;
+        selectedActionId: ProjectActionId | undefined;
         selectingProject: boolean;
     }
 
-    let { onReset, onSearchReset, onSelect, open, resetPending, selectingProject = $bindable() }: Props = $props();
+    let { onReset, onSearchReset, onSelect, open, resetPending, selectedActionId = $bindable(), selectingProject = $bindable() }: Props = $props();
 
     const projectActions: ProjectAction[] = [
-        { icon: FolderOpen, id: 'open', keywords: ['edit', 'manage', 'settings'], label: 'Open Project' },
-        { icon: Stacks, id: 'stacks', keywords: ['errors', 'exceptions', 'issues'], label: 'Project Stacks' },
-        { icon: Bell, id: 'notifications', keywords: ['alerts', 'email'], label: 'Project Notifications' },
-        { icon: CloudDownload, id: 'client-setup', keywords: ['SDK', 'configure client', 'instrumentation'], label: 'Client Setup' },
-        { icon: Database, id: 'generate-sample-data', keywords: ['seed', 'demo events'], label: 'Generate Sample Data' },
-        { icon: AlertTriangle, id: 'reset-data', keywords: ['clear', 'delete events'], label: 'Reset Project Data' }
+        {
+            icon: FolderOpen,
+            id: 'open',
+            keywords: ['edit', 'manage', 'settings'],
+            label: 'Open Project'
+        },
+        {
+            icon: Stacks,
+            id: 'stacks',
+            keywords: ['errors', 'exceptions', 'issues'],
+            label: 'Project Stacks'
+        },
+        {
+            icon: Events,
+            id: 'events',
+            keywords: ['errors', 'logs', 'sessions', 'events'],
+            label: 'Project Events'
+        },
+        {
+            icon: ApiKey,
+            id: 'api-keys',
+            keywords: ['tokens', 'access keys', 'client keys'],
+            label: 'Project API Keys'
+        },
+        {
+            icon: Integration,
+            id: 'integrations',
+            keywords: ['webhooks', 'Slack', 'Zapier'],
+            label: 'Project Webhooks & Integrations'
+        },
+        {
+            icon: SourceMaps,
+            id: 'source-maps',
+            keywords: ['JavaScript', 'minified', 'symbols'],
+            label: 'Project Source Maps'
+        },
+        {
+            icon: Bell,
+            id: 'notifications',
+            keywords: ['alerts', 'email'],
+            label: 'Project Notifications'
+        },
+        {
+            icon: CloudDownload,
+            id: 'client-setup',
+            keywords: ['SDK', 'configure client', 'instrumentation'],
+            label: 'Client Setup'
+        },
+        {
+            icon: Database,
+            id: 'generate-sample-data',
+            keywords: ['seed', 'demo events'],
+            label: 'Generate Sample Data'
+        },
+        {
+            icon: AlertTriangle,
+            id: 'reset-data',
+            keywords: ['clear', 'delete events'],
+            label: 'Reset Project Data'
+        }
     ];
 
-    let selectedAction = $state<ProjectAction>();
+    const selectedAction = $derived(projectActions.find((action) => action.id === selectedActionId));
 
     const projectsQuery = getOrganizationProjectsQuery({
         enabled: () => open,
@@ -66,25 +128,43 @@
     });
 
     function selectAction(action: ProjectAction): void {
-        selectedAction = action;
+        selectedActionId = action.id;
         selectingProject = true;
         onSearchReset();
     }
 
     function goBack(): void {
-        selectedAction = undefined;
+        selectedActionId = undefined;
         selectingProject = false;
         onSearchReset();
     }
 
     function getProjectHref(action: ProjectActionId, project: ViewProject): string | undefined {
         switch (action) {
+            case 'api-keys':
+                return resolve('/(app)/project/[projectId]/api-keys', {
+                    projectId: project.id
+                });
             case 'client-setup':
-                return resolve('/(app)/project/[projectId]/configure', { projectId: project.id });
+                return resolve('/(app)/project/[projectId]/configure', {
+                    projectId: project.id
+                });
+            case 'events':
+                return `${resolve('/(app)/event')}?project=${project.id}`;
+            case 'integrations':
+                return resolve('/(app)/project/[projectId]/integrations', {
+                    projectId: project.id
+                });
             case 'notifications':
                 return `${resolve('/(app)/account/notifications')}?project=${project.id}`;
             case 'open':
-                return resolve('/(app)/project/[projectId]/manage', { projectId: project.id });
+                return resolve('/(app)/project/[projectId]/manage', {
+                    projectId: project.id
+                });
+            case 'source-maps':
+                return resolve('/(app)/project/[projectId]/source-maps', {
+                    projectId: project.id
+                });
             case 'stacks':
                 return `${resolve('/(app)/stack')}?filter=project:${project.id}`;
             default:

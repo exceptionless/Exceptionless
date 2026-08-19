@@ -18,49 +18,65 @@ export function routes(): NavigationItem[] {
     return [
         {
             group: 'Project Settings',
-            href: resolve('/(app)/project/[projectId]/manage', { projectId: page.params.projectId }),
+            href: resolve('/(app)/project/[projectId]/manage', {
+                projectId: page.params.projectId
+            }),
             icon: Settings,
             title: 'General'
         },
         {
             group: 'Project Settings',
-            href: resolve('/(app)/project/[projectId]/api-keys', { projectId: page.params.projectId }),
+            href: resolve('/(app)/project/[projectId]/api-keys', {
+                projectId: page.params.projectId
+            }),
             icon: ApiKey,
             title: 'API Keys'
         },
         {
             group: 'Project Settings',
-            href: resolve('/(app)/project/[projectId]/settings', { projectId: page.params.projectId }),
+            href: resolve('/(app)/project/[projectId]/settings', {
+                projectId: page.params.projectId
+            }),
             icon: Settings,
             title: 'Settings'
         },
         {
             group: 'Project Settings',
-            href: resolve('/(app)/project/[projectId]/configuration-values', { projectId: page.params.projectId }),
+            href: resolve('/(app)/project/[projectId]/configuration-values', {
+                projectId: page.params.projectId
+            }),
             icon: ClientConfig,
             title: 'Configuration'
         },
         {
             group: 'Project Settings',
-            href: resolve('/(app)/project/[projectId]/source-maps', { projectId: page.params.projectId }),
+            href: resolve('/(app)/project/[projectId]/source-maps', {
+                projectId: page.params.projectId
+            }),
             icon: SourceMaps,
             title: 'Source Maps'
         },
         {
             group: 'Project Settings',
-            href: resolve('/(app)/project/[projectId]/integrations', { projectId: page.params.projectId }),
+            href: resolve('/(app)/project/[projectId]/integrations', {
+                projectId: page.params.projectId
+            }),
             icon: Integration,
             title: 'Integrations'
         },
         {
             group: 'Project Settings',
-            href: resolve('/(app)/project/[projectId]/stacks', { projectId: page.params.projectId }),
+            href: resolve('/(app)/project/[projectId]/stacks', {
+                projectId: page.params.projectId
+            }),
             icon: Stacks,
             title: 'Stack Management'
         },
         {
             group: 'Project Settings',
-            href: resolve('/(app)/project/[projectId]/usage', { projectId: page.params.projectId }),
+            href: resolve('/(app)/project/[projectId]/usage', {
+                projectId: page.params.projectId
+            }),
             icon: Usage,
             title: 'Usage'
         }

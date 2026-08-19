@@ -21,6 +21,7 @@ public sealed record WorktreePorts(
     public string ApiHttpUrl => $"http://localhost:{ApiHttp}";
     public string ApiHttpsUrl => $"https://localhost:{ApiHttps}";
     public string OldAppHttpsUrl => $"https://angular-ex.dev.localhost:{OldAppHttps}";
+    public string AppHttpsUrl => $"https://web-ex.dev.localhost:{AppHttps}";
 }
 
 public static class WorktreeScope

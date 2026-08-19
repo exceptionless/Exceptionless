@@ -1,4 +1,5 @@
 using System.Reflection;
+using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.JavaScript;
 using Microsoft.Extensions.Hosting;
 
@@ -6,6 +7,9 @@ string? scope = WorktreeScope.Resolve();
 bool isScoped = !String.IsNullOrWhiteSpace(scope);
 var worktreePorts = isScoped ? WorktreeScope.AssignFreePorts() : null;
 var builder = DistributedApplication.CreateBuilder(args);
+IResourceBuilder<ParameterResource>? assistantApiKey = !String.IsNullOrWhiteSpace(builder.Configuration["Parameters:assistant-api-key"])
+    ? builder.AddParameter("assistant-api-key", secret: true)
+    : null;
 bool servicesOnly = HasArgument("--services-only");
 bool ciE2E = HasArgument("--ci-e2e");
 bool includeDevTools = !ciE2E;
@@ -14,6 +18,7 @@ int oldAppPort = worktreePorts?.OldAppHttps ?? 7121;
 int oldAppLiveReloadPort = worktreePorts?.OldAppLiveReload ?? 35729;
 string oldAppAspNetCoreUrls = String.Concat("http://localhost:", oldAppHttpPort);
 int appPort = worktreePorts?.AppHttps ?? 7131;
+string appOrigin = worktreePorts?.AppHttpsUrl ?? $"https://web-ex.dev.localhost:{appPort}";
 int docsPort = worktreePorts?.DocsHttp ?? 7141;
 int storybookPort = worktreePorts?.Storybook ?? 6006;
 int emailStorybookPort = worktreePorts?.EmailStorybook ?? 6008;
@@ -106,6 +111,7 @@ if (!servicesOnly)
         .WithReference(storageBlobs, "AzureStorage")
         .WithReference(storageQueues, "AzureQueues")
         .WithEnvironment("ConnectionStrings:Email", SharedEmailConnectionString)
+        .WithEnvironment("Mcp:AllowedOrigins:0", appOrigin)
         .WithEnvironment("RunJobsInProcess", "false")
         .WaitFor(elastic)
         .WaitFor(cache)
@@ -114,6 +120,11 @@ if (!servicesOnly)
         .WithUrlForEndpoint("https", u => { u.DisplayText = "Open API"; u.DisplayOrder = 100; })
         .WithUrlForEndpoint("http", u => u.DisplayLocation = UrlDisplayLocation.DetailsOnly)
         .WithHttpHealthCheck("/health");
+
+    if (assistantApiKey is not null)
+    {
+        api.WithEnvironment("EX_Assistant__ApiKey", assistantApiKey);
+    }
 
     if (worktreePorts is not null)
     {

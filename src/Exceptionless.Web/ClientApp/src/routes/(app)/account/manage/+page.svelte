@@ -99,7 +99,9 @@
                         return problemDetailsToFormErrors(error);
                     }
 
-                    return { form: 'An unexpected error occurred, please try again.' };
+                    return {
+                        form: 'An unexpected error occurred, please try again.'
+                    };
                 }
             }
         }
@@ -123,7 +125,9 @@
                         return problemDetailsToFormErrors(error);
                     }
 
-                    return { form: 'An unexpected error occurred, please try again.' };
+                    return {
+                        form: 'An unexpected error occurred, please try again.'
+                    };
                 }
             }
         }
@@ -187,7 +191,9 @@
             await deleteAccountMutation.mutateAsync();
             toastId = toast.success('Successfully queued your account for deletion.');
             await logout(queryClient, client);
-            await goto(resolve('/(auth)/login'), { replaceState: true });
+            await goto(resolve('/(auth)/login'), {
+                replaceState: true
+            });
         } catch (error: unknown) {
             const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
             toastId = toast.error(`An error occurred while trying to delete your account: ${message}`);
@@ -308,7 +314,10 @@
             </updateEmailAddressForm.Subscribe>
             <updateEmailAddressForm.Field
                 name="email_address"
-                validators={{ onChangeAsync: ({ value }) => validateEmailAvailability(value ?? ''), onChangeAsyncDebounceMs: 1000 }}
+                validators={{
+                    onChangeAsync: ({ value }) => validateEmailAvailability(value ?? ''),
+                    onChangeAsyncDebounceMs: 1000
+                }}
             >
                 {#snippet children(field)}
                     <Field.Field data-invalid={ariaInvalid(field)}>

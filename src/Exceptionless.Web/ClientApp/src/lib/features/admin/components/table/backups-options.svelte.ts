@@ -27,13 +27,19 @@ export function getColumns(): ColumnDef<StockFeatures, ElasticsearchSnapshot, un
         },
         {
             accessorKey: 'status',
-            cell: (info) => renderComponent(SnapshotStatusCell, { value: info.getValue() as string | undefined }),
+            cell: (info) =>
+                renderComponent(SnapshotStatusCell, {
+                    value: info.getValue() as string | undefined
+                }),
             enableSorting: true,
             header: 'Status'
         },
         {
             accessorKey: 'start_time',
-            cell: (info) => renderComponent(DateTime, { value: (info.getValue() as null | string) ?? undefined }),
+            cell: (info) =>
+                renderComponent(DateTime, {
+                    value: (info.getValue() as null | string) ?? undefined
+                }),
             enableSorting: true,
             header: 'Started'
         },
@@ -48,7 +54,10 @@ export function getColumns(): ColumnDef<StockFeatures, ElasticsearchSnapshot, un
         },
         {
             accessorKey: 'indices_count',
-            cell: (info) => renderComponent(Number, { value: info.getValue() as null | number }),
+            cell: (info) =>
+                renderComponent(Number, {
+                    value: info.getValue() as null | number
+                }),
             enableSorting: true,
             header: 'Indices',
             meta: {
@@ -82,7 +91,14 @@ export function getTableOptions(queryParameters: TableMemoryPagingParameters, ge
             return {
                 ...withClientSortedRowModel(options),
                 getRowId: (row) => row.repository + '/' + row.name,
-                initialState: { sorting: [{ desc: true, id: 'start_time' }] },
+                initialState: {
+                    sorting: [
+                        {
+                            desc: true,
+                            id: 'start_time'
+                        }
+                    ]
+                },
                 manualSorting: false
             };
         },

@@ -58,7 +58,9 @@
                         return problemDetailsToFormErrors(error);
                     }
 
-                    return { form: 'An unexpected error occurred, please try again.' };
+                    return {
+                        form: 'An unexpected error occurred, please try again.'
+                    };
                 }
             }
         }
@@ -199,7 +201,9 @@
 
                 <form.Field
                     name="confirmText"
-                    validators={{ onChange: ({ value }) => (value === action.name ? undefined : `Type "${action.name}" to confirm`) }}
+                    validators={{
+                        onChange: ({ value }) => (value === action.name ? undefined : `Type "${action.name}" to confirm`)
+                    }}
                 >
                     {#snippet children(field)}
                         <Field.Field data-invalid={ariaInvalid(field)}>
@@ -227,7 +231,9 @@
                     {#snippet children(isDisabled)}
                         <AlertDialog.Action
                             type="submit"
-                            class={buttonVariants({ variant: action.dangerous ? 'destructive' : 'default' })}
+                            class={buttonVariants({
+                                variant: action.dangerous ? 'destructive' : 'default'
+                            })}
                             disabled={isDisabled}
                         >
                             {isDisabled && form.state.isSubmitting ? 'Running...' : 'Run Job'}
