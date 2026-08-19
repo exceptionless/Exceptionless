@@ -93,7 +93,11 @@
         <Muted>Create and manage client API keys and project-scoped deployment tokens.</Muted>
         <Muted>
             To install an SDK and start sending events, open
-            <A href={resolve('/(app)/project/[projectId]/configure', { projectId })}>Client setup</A>.
+            <A
+                href={resolve('/(app)/project/[projectId]/configure', {
+                    projectId
+                })}>Client setup</A
+            >.
         </Muted>
     </div>
 

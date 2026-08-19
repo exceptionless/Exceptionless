@@ -26,15 +26,33 @@
     const shardMetrics = $derived<ShardMetric[]>(
         data
             ? [
-                  { id: 'active_primary', label: 'Active Primary Shards', value: data.health.active_primary_shards },
-                  { id: 'active_total', label: 'Active Shards (Total)', value: data.health.active_shards },
-                  { id: 'relocating', label: 'Relocating Shards', value: data.health.relocating_shards },
-                  { id: 'unassigned', label: 'Unassigned Shards', value: data.health.unassigned_shards }
+                  {
+                      id: 'active_primary',
+                      label: 'Active Primary Shards',
+                      value: data.health.active_primary_shards
+                  },
+                  {
+                      id: 'active_total',
+                      label: 'Active Shards (Total)',
+                      value: data.health.active_shards
+                  },
+                  {
+                      id: 'relocating',
+                      label: 'Relocating Shards',
+                      value: data.health.relocating_shards
+                  },
+                  {
+                      id: 'unassigned',
+                      label: 'Unassigned Shards',
+                      value: data.health.unassigned_shards
+                  }
               ]
             : []
     );
 
-    const queryParameters: TableMemoryPagingParameters = $state({ limit: 10 });
+    const queryParameters: TableMemoryPagingParameters = $state({
+        limit: 10
+    });
     const shardTable = createTable(getTableOptions(queryParameters, () => shardMetrics));
 
     function shardRowClick(metric: ShardMetric) {

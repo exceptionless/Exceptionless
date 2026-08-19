@@ -12,6 +12,7 @@ public sealed class ExceptionlessMcpToolMetadataTests
     [InlineData(nameof(ExceptionlessMcpTools.ResolveProjectAsync))]
     [InlineData(nameof(ExceptionlessMcpTools.ListProjectsAsync))]
     [InlineData(nameof(ExceptionlessMcpTools.GetProjectAsync))]
+    [InlineData(nameof(ExceptionlessMcpTools.GetProjectSetupAsync))]
     [InlineData(nameof(ExceptionlessMcpTools.GetClientSetupInstructionsAsync))]
     [InlineData(nameof(ExceptionlessMcpTools.SearchStacksAsync))]
     [InlineData(nameof(ExceptionlessMcpTools.GetStackAsync))]

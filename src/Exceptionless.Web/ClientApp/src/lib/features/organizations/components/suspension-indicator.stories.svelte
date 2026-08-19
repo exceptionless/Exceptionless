@@ -6,11 +6,15 @@
     const { Story } = defineMeta({
         argTypes: {
             code: {
-                control: { type: 'select' },
+                control: {
+                    type: 'select'
+                },
                 options: ['Billing', 'Overage', 'Abuse', 'Other', undefined]
             },
             notes: {
-                control: { type: 'text' }
+                control: {
+                    type: 'text'
+                }
             }
         },
         component: SuspensionIndicator,
@@ -19,9 +23,40 @@
     });
 </script>
 
-<Story name="Billing" args={{ code: 'Billing' }} />
-<Story name="Overage" args={{ code: 'Overage' }} />
-<Story name="Abuse" args={{ code: 'Abuse' }} />
-<Story name="Other" args={{ code: 'Other' }} />
-<Story name="Unknown" args={{ code: undefined }} />
-<Story name="With Notes" args={{ code: 'Billing', notes: 'Account payment failed on 2024-01-15. Customer contacted.' }} />
+<Story
+    name="Billing"
+    args={{
+        code: 'Billing'
+    }}
+/>
+<Story
+    name="Overage"
+    args={{
+        code: 'Overage'
+    }}
+/>
+<Story
+    name="Abuse"
+    args={{
+        code: 'Abuse'
+    }}
+/>
+<Story
+    name="Other"
+    args={{
+        code: 'Other'
+    }}
+/>
+<Story
+    name="Unknown"
+    args={{
+        code: undefined
+    }}
+/>
+<Story
+    name="With Notes"
+    args={{
+        code: 'Billing',
+        notes: 'Account payment failed on 2024-01-15. Customer contacted.'
+    }}
+/>

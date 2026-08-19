@@ -33,7 +33,11 @@ export function getColumns<TClientConfigurationSetting extends ClientConfigurati
             }
         },
         {
-            cell: (info) => renderComponent(ProjectConfigActionsCell, { projectId: params.projectId, setting: info.row.original }),
+            cell: (info) =>
+                renderComponent(ProjectConfigActionsCell, {
+                    projectId: params.projectId,
+                    setting: info.row.original
+                }),
             enableHiding: false,
             enableSorting: false,
             header: '',
@@ -56,7 +60,10 @@ export function getTableOptions<TClientConfigurationSetting extends ClientConfig
     const queryData = $derived(
         Object.entries(queryResponse.data?.settings ?? {})
             .map(([key, value]) => {
-                return { key, value } as TClientConfigurationSetting;
+                return {
+                    key,
+                    value
+                } as TClientConfigurationSetting;
             })
             .filter((setting) => !knownSettingsToHide.includes(setting.key))
     );

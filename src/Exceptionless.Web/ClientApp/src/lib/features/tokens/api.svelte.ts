@@ -9,7 +9,9 @@ import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanst
 export async function invalidateTokenQueries(queryClient: QueryClient, message: WebSocketMessageValue<'TokenChanged'>) {
     const { id, organization_id, project_id } = message;
     if (id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.id(id) });
+        await queryClient.invalidateQueries({
+            queryKey: queryKeys.id(id)
+        });
     }
 
     //     if (organization_id) {
@@ -17,11 +19,15 @@ export async function invalidateTokenQueries(queryClient: QueryClient, message: 
     //     }
 
     if (project_id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.project(project_id) });
+        await queryClient.invalidateQueries({
+            queryKey: queryKeys.project(project_id)
+        });
     }
 
     if (!id && !organization_id && !project_id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.type });
+        await queryClient.invalidateQueries({
+            queryKey: queryKeys.type
+        });
     }
 }
 
@@ -87,10 +93,18 @@ export function deleteToken(request: DeleteTokenRequest) {
         },
         mutationKey: queryKeys.deleteToken(request.route.ids),
         onError: () => {
-            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+            request.route.ids?.forEach((id) =>
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.id(id)
+                })
+            );
         },
         onSuccess: () => {
-            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+            request.route.ids?.forEach((id) =>
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.id(id)
+                })
+            );
         }
     }));
 }
@@ -139,7 +153,12 @@ export function getProjectTokensQuery(request: GetProjectTokensRequest) {
 
             return response;
         },
-        queryKey: [...queryKeys.project(request.route.projectId), { params: request.params }]
+        queryKey: [
+            ...queryKeys.project(request.route.projectId),
+            {
+                params: request.params
+            }
+        ]
     }));
 }
 
@@ -154,7 +173,9 @@ export function patchToken(request: PatchTokenRequest) {
         },
         mutationKey: queryKeys.id(request.route.id),
         onError: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(request.route.id)
+            });
         },
         onSuccess: (token: ViewToken) => {
             queryClient.setQueryData(queryKeys.id(request.route.id), token);
@@ -174,7 +195,9 @@ export function postProjectToken(request: PostProjectTokenRequest) {
         },
         mutationKey: queryKeys.postProjectToken(request.route.projectId),
         onSuccess: (token: ViewToken) => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.type });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.type
+            });
             queryClient.setQueryData(queryKeys.id(token.id), token);
         }
     }));

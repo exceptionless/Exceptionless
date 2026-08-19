@@ -3,6 +3,8 @@
     import prettyMilliseconds from 'pretty-ms';
 
     interface Props {
+        /** Limits the time units shown, such as `1 hour 32 minutes` instead of `1 hour 32 minutes 17 seconds`. */
+        unitCount?: number;
         /**
          * If the value is a number, it should represent the time difference in milliseconds.
          * If the value is a string or a Date object, it will be parsed to a date and compared to the current time.
@@ -10,7 +12,7 @@
         value: Date | number | string | undefined;
     }
 
-    let { value }: Props = $props();
+    let { unitCount, value }: Props = $props();
 
     let durationText = $state('');
 
@@ -18,6 +20,7 @@
         function setDurationText() {
             const options = {
                 secondsDecimalDigits: 0,
+                unitCount,
                 verbose: true
             };
 

@@ -3,7 +3,9 @@
 
     import Button from '$comp/ui/button/button.svelte';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
+    import { getProblemMessage } from '$shared/validation';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
+    import { toast } from 'svelte-sonner';
     import { SvelteDate } from 'svelte/reactivity';
 
     import type { Stack } from '../models';
@@ -55,7 +57,11 @@
             return;
         }
 
-        await changeStatus.mutateAsync(StackStatus.Open);
+        try {
+            await changeStatus.mutateAsync(StackStatus.Open);
+        } catch (error) {
+            toast.error(getProblemMessage(error, 'Unable to change stack status.'));
+        }
     }
 
     async function markFixed(version?: string) {
@@ -80,7 +86,11 @@
                 break;
         }
 
-        await updateMarkSnoozed.mutateAsync(snoozeUntilUtc);
+        try {
+            await updateMarkSnoozed.mutateAsync(snoozeUntilUtc);
+        } catch (error) {
+            toast.error(getProblemMessage(error, 'Unable to snooze this stack.'));
+        }
     }
 
     async function markIgnored() {
@@ -88,7 +98,11 @@
             return;
         }
 
-        await changeStatus.mutateAsync(StackStatus.Ignored);
+        try {
+            await changeStatus.mutateAsync(StackStatus.Ignored);
+        } catch (error) {
+            toast.error(getProblemMessage(error, 'Unable to change stack status.'));
+        }
     }
 
     async function markDiscarded() {

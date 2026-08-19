@@ -81,12 +81,13 @@
 
     const VIEW = 'stream';
     const savedViewsState = useSavedViews({
+        defaultAutoFillColumnId: 'summary',
         defaultColumnVisibility: defaultEventColumnVisibility,
         defaultFilter: DEFAULT_PARAMS.filter,
         filterCacheKey,
-        getColumnOrder: () => table.state.columnOrder,
-        getColumnSizing: () => table.state.columnSizing,
-        getColumnVisibility: () => table.state.columnVisibility,
+        getColumnOrder: () => table.store.state.columnOrder,
+        getColumnSizing: () => table.store.state.columnSizing,
+        getColumnVisibility: () => table.store.state.columnVisibility,
         getFilterDefinitions: () => serializeFilters(filters ?? []),
         queryParams,
         setColumnOrder: (v) => table.setColumnOrder(v),
@@ -108,7 +109,9 @@
             queryParams.update(DEFAULT_PARAMS);
             paused = false;
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     let filters = $state(getFiltersFromCache(filterCacheKey(queryParams.filter), queryParams.filter));
@@ -117,7 +120,9 @@
         ([filter]) => {
             filters = getFiltersFromCache(filterCacheKey(filter), filter);
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     async function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter) {
@@ -184,7 +189,10 @@
                     showType: !hasSingleTypeFilter(eventsQueryParameters.filter)
                 })
                     .filter((c) => c.id !== 'select')
-                    .map((c) => ({ ...c, enableSorting: false }));
+                    .map((c) => ({
+                        ...c,
+                        enableSorting: false
+                    }));
             },
             configureOptions: (options) => {
                 options.enableMultiRowSelection = false;
@@ -204,11 +212,6 @@
             get queryParameters() {
                 return eventsQueryParameters;
             }
-        }),
-        (state) => ({
-            columnOrder: state.columnOrder,
-            columnSizing: state.columnSizing,
-            columnVisibility: state.columnVisibility
         })
     );
 
@@ -328,15 +331,18 @@
             {#if savedViewsState.isEnabled}
                 <SavedViewPicker
                     activeSavedView={savedViewsState.activeSavedView}
-                    columnOrder={table.state.columnOrder}
-                    columnSizing={table.state.columnSizing}
-                    columnVisibility={table.state.columnVisibility}
+                    autoFillColumnId={savedViewsState.autoFillColumnId}
+                    columnOrder={table.store.state.columnOrder}
+                    columnSizing={table.store.state.columnSizing}
+                    columnVisibility={table.store.state.columnVisibility}
+                    defaultAutoFillColumnId="summary"
                     filters={filters ?? []}
                     isModified={savedViewsState.isModified}
                     onLoadView={savedViewsState.handleLoadView}
                     onClearSavedView={savedViewsState.handleClearSavedView}
                     onResetToSaved={savedViewsState.handleResetToSaved}
                     savedViews={savedViewsState.savedViews}
+                    setAutoFillColumnId={savedViewsState.setAutoFillColumnId}
                     {table}
                     view={VIEW}
                 />
@@ -344,7 +350,7 @@
             <StreamingIndicatorButton onToggle={handleToggle} {paused} size="icon-lg" />
         </div>
     </div>
-    <DataTable.Body rowClick={rowclick} {rowHref} {table}>
+    <DataTable.Body autoFillColumnId={savedViewsState.autoFillColumnId} rowClick={rowclick} {rowHref} {table}>
         {#if clientStatus.isLoading}
             <DelayedRender>
                 <DataTable.Loading {table} />
@@ -363,4 +369,4 @@
     </DataTable.Footer>
 </DataTable.Root>
 
-<EventDetailSheet eventId={selectedEventId} filterChanged={onFilterChanged} onClose={() => (selectedEventId = null)} onError={handleEventError} />
+<EventDetailSheet bind:eventId={selectedEventId} filterChanged={onFilterChanged} onClose={() => (selectedEventId = null)} onError={handleEventError} />
