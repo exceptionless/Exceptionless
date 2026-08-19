@@ -329,7 +329,9 @@ export function deleteOrganizationDataMutation() {
         },
         mutationKey: queryKeys.data(undefined),
         onError: (_, { organizationId }) => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(organizationId, undefined) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(organizationId, undefined)
+            });
         },
         onMutate: ({ organizationId }) => cancelOrganizationDataRead(queryClient, organizationId),
         onSuccess: (_, { key, organizationId }) => {
@@ -338,10 +340,15 @@ export function deleteOrganizationDataMutation() {
                     return organization;
                 }
 
-                const data = { ...organization.data };
+                const data = {
+                    ...organization.data
+                };
                 delete data[key];
 
-                return { ...organization, data };
+                return {
+                    ...organization,
+                    data
+                };
             });
         }
     }));
@@ -639,7 +646,9 @@ export function postOrganizationDataMutation() {
         },
         mutationKey: queryKeys.data(undefined),
         onError: (_, { organizationId }) => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(organizationId, undefined) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(organizationId, undefined)
+            });
         },
         onMutate: ({ organizationId }) => cancelOrganizationDataRead(queryClient, organizationId),
         onSuccess: (_, { key, organizationId, value }) => {
@@ -799,7 +808,9 @@ export function uploadOrganizationIcon(request: OrganizationIconRequest) {
 }
 
 async function cancelOrganizationDataRead(queryClient: QueryClient, organizationId: string) {
-    await queryClient.cancelQueries({ queryKey: queryKeys.id(organizationId, undefined) });
+    await queryClient.cancelQueries({
+        queryKey: queryKeys.id(organizationId, undefined)
+    });
 }
 
 function updateOrganizationCache(queryClient: QueryClient, id: string | undefined, organization: ViewOrganization) {
@@ -811,16 +822,21 @@ function updateOrganizationQueryData(queryClient: QueryClient, id: string | unde
         queryClient.setQueryData<undefined | ViewOrganization>(queryKeys.id(id, mode), (organization) => (organization ? updater(organization) : organization));
     }
 
-    queryClient.setQueriesData<FetchClientResponse<ViewOrganization[]> | undefined>({ queryKey: queryKeys.type }, (response) => {
-        if (!Array.isArray(response?.data) || !response.data.some((organization) => organization.id === id)) {
-            return response;
-        }
+    queryClient.setQueriesData<FetchClientResponse<ViewOrganization[]> | undefined>(
+        {
+            queryKey: queryKeys.type
+        },
+        (response) => {
+            if (!Array.isArray(response?.data) || !response.data.some((organization) => organization.id === id)) {
+                return response;
+            }
 
-        return {
-            ...response,
-            data: response.data.map((organization) => {
-                return organization.id === id ? updater(organization) : organization;
-            })
-        };
-    });
+            return {
+                ...response,
+                data: response.data.map((organization) => {
+                    return organization.id === id ? updater(organization) : organization;
+                })
+            };
+        }
+    );
 }

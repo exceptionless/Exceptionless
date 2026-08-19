@@ -25,10 +25,7 @@
     import GlobalUser from '$features/users/components/global-user.svelte';
     import { createQueryParameters } from '$shared/query-params';
     import CreditCard from '@lucide/svelte/icons/credit-card';
-    import File from '@lucide/svelte/icons/file';
-    import MoreHorizontal from '@lucide/svelte/icons/more-horizontal';
     import { createForm } from '@tanstack/svelte-form';
-    import { queryParamsState } from 'kit-query-params';
     import { onDestroy } from 'svelte';
     import { toast } from 'svelte-sonner';
     import { debounce } from 'throttle-debounce';
