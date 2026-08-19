@@ -19,10 +19,20 @@
         onFeedback?: (feedback: AssistantFeedback | undefined) => void;
         onRegenerate?: () => Promise<void> | void;
         onSuggestedAction?: (action: AssistantSuggestedAction) => void;
+        showToolCalls?: boolean;
         suggestionsDisabled?: boolean;
     }
 
-    let { isLast = false, isStreaming = false, message, onFeedback, onRegenerate, onSuggestedAction, suggestionsDisabled = false }: Props = $props();
+    let {
+        isLast = false,
+        isStreaming = false,
+        message,
+        onFeedback,
+        onRegenerate,
+        onSuggestedAction,
+        showToolCalls = false,
+        suggestionsDisabled = false
+    }: Props = $props();
     let renderedContent = $derived(isStreaming ? message.content : addAssistantResourceLinks(message.content, message.tools));
 </script>
 
@@ -37,9 +47,11 @@
             <Bot aria-hidden="true" class="size-4" />
         </div>
         <div class="min-w-0 flex-1">
-            {#each message.tools as tool (tool.id)}
-                <AssistantToolActivity {tool} />
-            {/each}
+            {#if showToolCalls}
+                {#each message.tools as tool (tool.id)}
+                    <AssistantToolActivity {tool} />
+                {/each}
+            {/if}
 
             {#if message.content}
                 <Response
