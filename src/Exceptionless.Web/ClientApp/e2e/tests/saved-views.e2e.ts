@@ -97,7 +97,7 @@ test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2
     expect(failedApiRequests).toEqual([]);
 });
 
-test('switching saved views discards temporary filter overrides', async ({ e2eApi, e2eScenario, page }) => {
+test('switching saved views confirms before discarding temporary filter overrides', async ({ e2eApi, e2eScenario, page }) => {
     const failedApiRequests = captureFailedApiRequests(page);
     const journey = ExceptionlessE2EJourney.fromScenario(page, e2eApi, e2eScenario);
     const suffix = journey.run.slice(-28);
@@ -117,6 +117,11 @@ test('switching saved views discards temporary filter overrides', async ({ e2eAp
     await expect(page).toHaveURL(/[?&]time=90d(?:&|$)/);
 
     await page.getByRole('link', { exact: true, name: secondViewName }).first().click();
+    const navigationDialog = page.getByRole('alertdialog', { name: 'Save changes to this view?' });
+    await expect(navigationDialog).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(firstViewSlug)}\\?time=90d$`));
+    await navigationDialog.getByRole('button', { name: "Don't save" }).click();
+
     await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(secondViewSlug)}(?:[?#]|$)`));
     await expect(page.getByRole('heading', { name: secondViewName })).toBeVisible();
     await expect(
