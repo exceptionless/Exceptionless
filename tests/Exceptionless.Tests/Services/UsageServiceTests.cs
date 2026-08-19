@@ -373,8 +373,11 @@ public sealed partial class UsageServiceTests : IntegrationTestsBase
             repository,
             _projectRepository,
             GetService<ICacheClient>(),
+            GetService<IIngestionQuotaStore>(),
             GetService<IMessagePublisher>(),
             _notificationService,
+            GetService<ILockProvider>(),
+            GetService<AppOptions>(),
             TimeProvider,
             GetService<ILoggerFactory>());
         await usageService.RecordAssistantUsageAsync(organization.Id, new AssistantUsageIncrement
