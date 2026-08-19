@@ -88,6 +88,7 @@ public class SseMiddleware
                 // Disable response buffering
                 var bufferingFeature = context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpResponseBodyFeature>();
                 bufferingFeature?.DisableBuffering();
+                await context.Response.StartAsync(connectionLifetime.Token).ConfigureAwait(false);
 
                 _logger.LogTrace("SSE connected {ConnectionId}", connectionId);
 
