@@ -209,7 +209,7 @@ public sealed class MailerTests : TestWithServices
                 }
         });
 
-        Assert.Contains("mailto:victim%40example.com?body=hello%26bcc%3Dattacker%40example.com", body, StringComparison.Ordinal);
+        Assert.Contains("mailto:victim%40example.com?body&#x3D;hello%26bcc%3Dattacker%40example.com", body, StringComparison.Ordinal);
         Assert.DoesNotContain("&bcc=", body, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("&lt;img", body, StringComparison.Ordinal);
         Assert.DoesNotContain("<img src=x onerror=alert(1)>", body, StringComparison.Ordinal);
