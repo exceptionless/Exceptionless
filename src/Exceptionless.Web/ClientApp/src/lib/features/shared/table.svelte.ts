@@ -10,7 +10,6 @@ import {
     type PaginationState,
     type RowData,
     type RowSelectionState,
-    sortFns,
     stockFeatures,
     type StockFeatures,
     type Table,
@@ -101,7 +100,10 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
         visibilityKey,
         configuration.defaultColumnVisibility ?? <ColumnVisibilityState>{}
     );
-    const columnVisibility = () => ({ ...configuration.defaultColumnVisibility, ...persistedColumnVisibility() });
+    const columnVisibility = () => ({
+        ...configuration.defaultColumnVisibility,
+        ...persistedColumnVisibility()
+    });
 
     const orderKey = configuration.columnPersistenceKey ? `${configuration.columnPersistenceKey}-column-order` : 'events-column-order';
     const [persistedColumnOrder, setPersistedColumnOrder] = createPersistedTableState(orderKey, configuration.defaultColumnOrder ?? <ColumnOrderState>[]);
@@ -440,8 +442,7 @@ export function resolvePaginationChange(previousPageInfo: PaginationState, curre
 export function withClientSortedRowModel<TData extends RowData>(options: TableOptions<StockFeatures, TData>): TableOptions<StockFeatures, TData> {
     const features = tableFeatures({
         ...options.features,
-        sortedRowModel: createSortedRowModel<StockFeatures, TData>(),
-        sortFns
+        sortedRowModel: createSortedRowModel<StockFeatures, TData>()
     });
 
     return {

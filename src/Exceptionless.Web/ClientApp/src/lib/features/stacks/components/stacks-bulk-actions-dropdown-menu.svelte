@@ -5,6 +5,7 @@
 <script generics="TData extends RowData" lang="ts">
     import Button from '$comp/ui/button/button.svelte';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
+    import { getProblemMessage } from '$shared/validation';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
     import { type RowData, type StockFeatures, type Table } from '@tanstack/svelte-table';
     import { toast } from 'svelte-sonner';
@@ -60,7 +61,12 @@
     });
 
     async function markOpen() {
-        await changeStatus.mutateAsync(StackStatus.Open);
+        try {
+            await changeStatus.mutateAsync(StackStatus.Open);
+        } catch (error) {
+            toast.error(getProblemMessage(error, 'Unable to change stack status.'));
+            return;
+        }
 
         if (ids.length === 1) {
             toast.success('Successfully marked stack as open.');
@@ -101,7 +107,12 @@
                 break;
         }
 
-        await updateMarkSnoozed.mutateAsync(snoozeUntilUtc);
+        try {
+            await updateMarkSnoozed.mutateAsync(snoozeUntilUtc);
+        } catch (error) {
+            toast.error(getProblemMessage(error, 'Unable to snooze selected stacks.'));
+            return;
+        }
 
         if (ids.length === 1) {
             toast.success('Successfully marked stack as snoozed.');
@@ -113,7 +124,12 @@
     }
 
     async function markIgnored() {
-        await changeStatus.mutateAsync(StackStatus.Ignored);
+        try {
+            await changeStatus.mutateAsync(StackStatus.Ignored);
+        } catch (error) {
+            toast.error(getProblemMessage(error, 'Unable to change stack status.'));
+            return;
+        }
 
         if (ids.length === 1) {
             toast.success('Successfully marked stack as ignored.');

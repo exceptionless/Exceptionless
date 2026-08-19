@@ -33,7 +33,10 @@ export function getColumns<TUser extends ViewUser>(organizationId: string): Colu
         },
         {
             accessorKey: 'is_invite',
-            cell: (info) => renderComponent(BooleanFormatter, { value: info.getValue() as boolean }),
+            cell: (info) =>
+                renderComponent(BooleanFormatter, {
+                    value: info.getValue() as boolean
+                }),
             enableHiding: true,
             enableSorting: false,
             header: 'Invited',
@@ -44,7 +47,11 @@ export function getColumns<TUser extends ViewUser>(organizationId: string): Colu
     ];
 
     columns.push({
-        cell: (info) => renderComponent(UserActionsCell, { organizationId, user: info.row.original }),
+        cell: (info) =>
+            renderComponent(UserActionsCell, {
+                organizationId,
+                user: info.row.original
+            }),
         enableHiding: false,
         enableSorting: false,
         header: '',

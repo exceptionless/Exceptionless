@@ -1,5 +1,6 @@
 import { includeIgnoreFile } from '@eslint/compat';
 import js from '@eslint/js';
+import stylistic from '@stylistic/eslint-plugin';
 import pluginQuery from '@tanstack/eslint-plugin-query';
 import prettier from 'eslint-config-prettier';
 import perfectionist from 'eslint-plugin-perfectionist';
@@ -44,9 +45,15 @@ export default ts.config(
         }
     },
     {
+        files: ['**/*.svelte', '**/*.svelte.ts'],
+        plugins: {
+            '@stylistic': stylistic
+        },
         rules: {
+            '@stylistic/brace-style': ['error', '1tbs', { allowSingleLine: false }],
+            '@stylistic/object-curly-newline': ['error', { ObjectExpression: { minProperties: 1 } }],
             curly: ['error', 'all'],
-            'padding-line-between-statements': ['error', { blankLine: 'always', next: '*', prev: 'block-like' }]
+            'padding-line-between-statements': ['error', { blankLine: 'always', next: ['if', 'while', 'for', 'do'], prev: 'block-like' }]
         }
     },
     {

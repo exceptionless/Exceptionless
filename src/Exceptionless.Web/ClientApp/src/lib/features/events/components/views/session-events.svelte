@@ -37,7 +37,10 @@
             return undefined;
         }
 
-        const query = new URLSearchParams({ filter: filter.toFilter(), time: 'all' });
+        const query = new URLSearchParams({
+            filter: filter.toFilter(),
+            time: 'all'
+        });
         return `${eventsPath}?${query.toString()}`;
     });
 
@@ -48,7 +51,11 @@
     const queryParams = $derived({
         filter: '-type:heartbeat' as const,
         limit: 10 as const,
-        ...(time ? { time } : {})
+        ...(time
+            ? {
+                  time
+              }
+            : {})
     });
 
     const sessionEventsQuery = getSessionEventsQuery({
@@ -142,6 +149,7 @@
 
     {#if sessionEventsQuery.isPending}
         <div class="space-y-2">
+            <!-- eslint-disable-next-line @stylistic/object-curly-newline -->
             {#each Array.from({ length: 5 }, (_, i) => i) as i (i)}
                 <Skeleton class="h-10 w-full" />
             {/each}

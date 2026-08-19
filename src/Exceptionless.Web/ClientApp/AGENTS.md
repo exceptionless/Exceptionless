@@ -24,7 +24,7 @@ Use focused verification while iterating. Do not run broad Svelte validation aft
 - Organize code by feature under `src/lib/features`; match the nearest existing feature before adding files.
 - Use generated API types and feature-local `api.svelte.ts`, `models.ts`, `schemas.ts`, and `validators.ts` patterns.
 - Use TanStack Query for server state and TanStack Form with Zod for forms.
-- Use `kit-query-params` for route query parameters instead of ad-hoc URL parsing.
+- Use `createQueryParameters` from `$shared/query-params` for route query parameters instead of ad-hoc URL parsing.
 - Prefer shared components and formatters from `$comp`, `$shared`, and `$lib` before creating new primitives.
 - Use installed shadcn-svelte components from `$comp/ui/*`; check `components.json` and the `src/lib/features/shared/components/ui` directory before importing a component.
 - Do not copy structure, state patterns, or styling patterns from `../ClientApp.angular`.

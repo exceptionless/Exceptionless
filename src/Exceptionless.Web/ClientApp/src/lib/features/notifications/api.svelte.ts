@@ -15,7 +15,9 @@ export function clearSystemNotificationMutation() {
             await client.delete('notifications/system');
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.current });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.current
+            });
         }
     }));
 }
@@ -24,7 +26,9 @@ export function getCurrentSystemNotificationQuery() {
     return createQuery<null | SystemNotification, ProblemDetails>(() => ({
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
-            const response = await client.getJSON<SystemNotification>('notifications/system', { signal });
+            const response = await client.getJSON<SystemNotification>('notifications/system', {
+                signal
+            });
 
             return response.data ?? null;
         },
@@ -48,7 +52,9 @@ export function setSystemNotificationMutation() {
                 return response.data!;
             },
             onSuccess: () => {
-                queryClient.invalidateQueries({ queryKey: queryKeys.current });
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.current
+                });
             }
         })
     );

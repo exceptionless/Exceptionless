@@ -17,6 +17,7 @@ export type NavigationItem = {
     group: string;
     href: ResolvedPathname | string;
     icon: Component | typeof Icon;
+    keywords?: string[];
     openInNewTab?: boolean;
     shortcut?: readonly ShortcutKey[];
     show?: (context: NavigationItemContext) => boolean;

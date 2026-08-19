@@ -14,18 +14,18 @@
     import { getTableOptions } from '$features/projects/components/table/options.svelte';
     import ProjectsDataTable from '$features/projects/components/table/projects-data-table.svelte';
     import { DEFAULT_LIMIT } from '$shared/api/api.svelte';
+    import { createQueryParameters } from '$shared/query-params';
     import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
-    import { queryParamsState } from 'kit-query-params';
 
     const DEFAULT_PARAMS = {
         filter: '',
         limit: DEFAULT_LIMIT
     };
 
-    const queryParams = queryParamsState({
-        default: DEFAULT_PARAMS,
-        pushHistory: true,
+    const queryParams = createQueryParameters({
+        defaults: DEFAULT_PARAMS,
+        history: 'push',
         schema: {
             filter: 'string',
             limit: 'number'
@@ -55,17 +55,27 @@
         refetchInterval: ORGANIZATION_USAGE_REFETCH_INTERVAL_MS
     });
 
-    const table = createTable(getTableOptions<ViewProject>(projectsQueryParameters, projectsQuery, { includeOrganizationColumn: true }));
+    const table = createTable(
+        getTableOptions<ViewProject>(projectsQueryParameters, projectsQuery, {
+            includeOrganizationColumn: true
+        })
+    );
 
     async function rowClick(project: ViewProject) {
         if (project.id) {
             organization.current = project.organization_id;
-            await goto(resolve('/(app)/project/[projectId]/manage', { projectId: project.id }));
+            await goto(
+                resolve('/(app)/project/[projectId]/manage', {
+                    projectId: project.id
+                })
+            );
         }
     }
 
     function rowHref(project: ViewProject): string {
-        return resolve('/(app)/project/[projectId]/manage', { projectId: project.id });
+        return resolve('/(app)/project/[projectId]/manage', {
+            projectId: project.id
+        });
     }
 
     async function addProject() {
