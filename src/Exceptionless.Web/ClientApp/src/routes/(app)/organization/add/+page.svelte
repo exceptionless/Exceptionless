@@ -46,7 +46,9 @@
             onSubmitAsync: async ({ value }) => {
                 toast.dismiss(toastId);
                 try {
-                    const createdOrganization = await createOrganization.mutateAsync({ name: value.organization_name });
+                    const createdOrganization = await createOrganization.mutateAsync({
+                        name: value.organization_name
+                    });
                     organization.current = createdOrganization.id;
 
                     const createdProject = await createProject.mutateAsync({
@@ -56,7 +58,11 @@
                     } as NewProject);
 
                     toastId = toast.success('Project added successfully');
-                    await goto(resolve('/(app)/project/[projectId]/configure', { projectId: createdProject.id }) + '?redirect=true');
+                    await goto(
+                        resolve('/(app)/project/[projectId]/configure', {
+                            projectId: createdProject.id
+                        }) + '?redirect=true'
+                    );
                     return null;
                 } catch (error: unknown) {
                     if (showBillingDialogOnUpgradeProblem(error, organization.current, () => form.handleSubmit())) {
@@ -69,7 +75,9 @@
                     }
 
                     toastId = toast.error(CREATE_ERROR_MESSAGE);
-                    return { form: 'An unexpected error occurred, please try again.' };
+                    return {
+                        form: 'An unexpected error occurred, please try again.'
+                    };
                 }
             }
         }

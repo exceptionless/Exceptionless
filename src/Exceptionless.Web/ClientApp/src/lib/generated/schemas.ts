@@ -301,6 +301,7 @@ export const OAuthAuthorizationServerMetadataSchema = object({
   scopes_supported: array(string()),
   resource_documentation: string().min(1, "Resource documentation is required"),
   client_id_metadata_document_supported: boolean(),
+  authorization_response_iss_parameter_supported: boolean(),
 });
 export type OAuthAuthorizationServerMetadataFormData = Infer<
   typeof OAuthAuthorizationServerMetadataSchema
@@ -516,6 +517,7 @@ export type ResetPasswordModelFormData = Infer<typeof ResetPasswordModelSchema>;
 
 export const SavedViewColumnSettingsSchema = object({
   visible: boolean().nullable().optional(),
+  auto_fill: boolean().nullable().optional(),
   position: int32()
     .min(0, "Position must be at least 0")
     .max(49, "Position must be at most 49")

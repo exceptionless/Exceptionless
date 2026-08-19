@@ -32,6 +32,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
     private const string RedirectUri = "http://localhost/callback";
     private const string MetadataClientId = "https://oauth.example/client.json";
     private const string MetadataNoScopeClientId = "https://oauth.example/no-scope-client.json";
+    private const string MetadataMissingNameClientId = "https://oauth.example/missing-name-client.json";
     private const string MetadataRedirectUri = "https://oauth.example/callback";
     private const string ClaudeMetadataClientId = "https://claude.ai/oauth/claude-code-client-metadata";
     private const string ClaudeLoopbackRedirectUri = "http://localhost:48272/callback";
@@ -88,6 +89,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         Assert.Contains(AuthorizationRoles.McpRead, metadata.ScopesSupported);
         Assert.Contains(AuthorizationRoles.StacksWrite, metadata.ScopesSupported);
         Assert.True(metadata.ClientIdMetadataDocumentSupported);
+        Assert.True(metadata.AuthorizationResponseIssParameterSupported);
     }
 
     [Fact]
@@ -342,7 +344,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         var challenge = Assert.Single(response.Headers.WwwAuthenticate);
         Assert.Equal("Bearer", challenge.Scheme);
-        Assert.Equal("resource_metadata=\"http://localhost:7110/.well-known/oauth-protected-resource/mcp\"", challenge.Parameter);
+        Assert.Equal("resource_metadata=\"http://localhost:7110/.well-known/oauth-protected-resource/mcp\", scope=\"mcp:read\"", challenge.Parameter);
     }
 
     [Fact]
@@ -357,7 +359,43 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         var challenge = Assert.Single(response.Headers.WwwAuthenticate);
         Assert.Equal("Bearer", challenge.Scheme);
-        Assert.Equal("resource_metadata=\"http://localhost:7110/.well-known/oauth-protected-resource/mcp\"", challenge.Parameter);
+        Assert.Equal("resource_metadata=\"http://localhost:7110/.well-known/oauth-protected-resource/mcp\", scope=\"mcp:read\"", challenge.Parameter);
+    }
+
+    [Fact]
+    public async Task McpAsync_UntrustedOrigin_ReturnsForbidden()
+    {
+        // Arrange
+        using var client = _server.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/mcp")
+        {
+            Content = new StringContent("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"server/discover\"}", Encoding.UTF8, "application/json")
+        };
+        request.Headers.Add("Origin", "https://attacker.example");
+
+        // Act
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task McpAsync_CanonicalOrigin_ContinuesToAuthorization()
+    {
+        // Arrange
+        using var client = _server.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/mcp")
+        {
+            Content = new StringContent("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"server/discover\"}", Encoding.UTF8, "application/json")
+        };
+        request.Headers.Add("Origin", "http://localhost:7110");
+
+        // Act
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
@@ -468,6 +506,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         Assert.True(query.TryGetValue("code", out var code));
         Assert.False(String.IsNullOrEmpty(code.ToString()));
         Assert.Equal("state-value", query["state"].ToString());
+        Assert.Equal("http://localhost:7110", query["iss"].ToString());
     }
 
     [Fact]
@@ -723,6 +762,26 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task CompleteAuthorizeAsync_ClientMetadataDocumentMissingName_ReturnsBadRequest()
+    {
+        // Arrange
+        using var client = CreateHttpClient();
+        using var request = CreateAuthorizeJsonRequest(PkceVerifier, MetadataRedirectUri, clientId: MetadataMissingNameClientId);
+
+        // Act
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
+        Assert.NotNull(error);
+        Assert.Equal("invalid_client", error.Error);
+
+        var application = await _oauthApplicationRepository.GetByClientIdAsync(MetadataMissingNameClientId, o => o.ImmediateConsistency());
+        Assert.Null(application);
+    }
+
+    [Fact]
     public async Task DeviceAuthorizationAsync_ValidRequest_ReturnsDeviceAuthorizationResponse()
     {
         var authorization = await StartDeviceAuthorizationAsync();
@@ -775,7 +834,6 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         using var client = CreateHttpClient();
 
         var response = await client.PostAsync("oauth/device_authorization", CreateDeviceAuthorizationContent(clientId: "unknown-device-client"), TestContext.Current.CancellationToken);
-
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var error = await response.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
         Assert.NotNull(error);
@@ -1258,6 +1316,13 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
                 ["projectId"] = TestConstants.ProjectId
             },
             cancellationToken: TestContext.Current.CancellationToken);
+        var missingProject = await client.CallToolAsync(
+            "get_project",
+            new Dictionary<string, object?>
+            {
+                ["projectId"] = ObjectId.GenerateNewId().ToString()
+            },
+            cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(nativeProtocolVersion, client.NegotiatedProtocolVersion);
         Assert.Null(client.SessionId);
@@ -1271,6 +1336,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         Assert.NotEqual(true, project.IsError);
         Assert.NotNull(project.StructuredContent);
         Assert.Contains(TestConstants.ProjectId, project.StructuredContent.ToString(), StringComparison.Ordinal);
+        Assert.True(missingProject.IsError);
     }
 
     [Theory]
@@ -1326,6 +1392,30 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
             .BearerToken(token.AccessToken)
             .AppendPath("events")
             .StatusCodeShouldBeForbidden());
+    }
+
+    [Fact]
+    public async Task OAuthBearer_McpResourceMissingRequiredScope_ReturnsInsufficientScopeChallenge()
+    {
+        // Arrange
+        var token = await IssueTokenAsync();
+        var storedToken = await GetStoredOAuthTokenAsync(token.AccessToken);
+        Assert.NotNull(storedToken);
+        storedToken.Scopes = [AuthorizationRoles.ProjectsRead, AuthorizationRoles.OfflineAccess];
+        await _oauthTokenRepository.SaveAsync(storedToken, o => o.ImmediateConsistency());
+
+        using var client = _server.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/mcp");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
+
+        // Act
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        var challenge = Assert.Single(response.Headers.WwwAuthenticate);
+        Assert.Equal("Bearer", challenge.Scheme);
+        Assert.Equal("error=\"insufficient_scope\", scope=\"mcp:read\", resource_metadata=\"http://localhost:7110/.well-known/oauth-protected-resource/mcp\"", challenge.Parameter);
     }
 
     [Fact]
@@ -2110,6 +2200,15 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
                     ClientName = "Example AI Client",
                     RedirectUris = [MetadataRedirectUri],
                     GrantTypes = [OAuthGrantTypes.AuthorizationCode, OAuthGrantTypes.RefreshToken],
+                    ResponseTypes = ["code"],
+                    Scope = String.Join(' ', OAuthService.SupportedScopes),
+                    TokenEndpointAuthMethod = "none"
+                },
+                MetadataMissingNameClientId => new OAuthClientMetadataDocument
+                {
+                    ClientId = MetadataMissingNameClientId,
+                    RedirectUris = [MetadataRedirectUri],
+                    GrantTypes = [OAuthGrantTypes.AuthorizationCode],
                     ResponseTypes = ["code"],
                     Scope = String.Join(' ', OAuthService.SupportedScopes),
                     TokenEndpointAuthMethod = "none"

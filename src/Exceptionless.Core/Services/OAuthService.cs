@@ -32,8 +32,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         AuthorizationRoles.OfflineAccess
     ],
     [
-        AuthorizationRoles.McpRead,
-        AuthorizationRoles.OfflineAccess
+        AuthorizationRoles.McpRead
     ]);
 
     public static readonly OAuthResourceDefinition RestApiResource = new("/api/v2",
@@ -251,6 +250,9 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (!String.Equals(metadata.ClientId, clientId, StringComparison.Ordinal))
             return false;
 
+        if (String.IsNullOrWhiteSpace(metadata.ClientName))
+            return false;
+
         var grantTypes = NormalizeGrantTypes(metadata.GrantTypes);
         if (!ValidateGrantTypeShape(grantTypes, out _))
             return false;
@@ -265,11 +267,11 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (!String.IsNullOrWhiteSpace(metadata.TokenEndpointAuthMethod) && !String.Equals(metadata.TokenEndpointAuthMethod, "none", StringComparison.Ordinal))
             return false;
 
-        string[] redirectUris = metadata.RedirectUris?
-            .Where(OAuthApplication.IsValidRedirectUri)
-            .Distinct(StringComparer.Ordinal)
-            .Take(20)
-            .ToArray() ?? [];
+        if (metadata.RedirectUris is not { Length: > 0 and <= 20 }
+            || metadata.RedirectUris.Any(uri => !OAuthApplication.IsValidRedirectUri(uri)))
+            return false;
+
+        string[] redirectUris = metadata.RedirectUris.Distinct(StringComparer.Ordinal).ToArray();
 
         if (supportsAuthorizationCode && redirectUris.Length == 0)
             return false;

@@ -8,12 +8,13 @@
         appId?: string;
         bootOptions?: BootOptions;
         onMountProbe?: () => void;
+        routeKey?: string;
     }
 
-    let { appId = undefined, bootOptions = undefined, onMountProbe = () => {} }: Props = $props();
+    let { appId = undefined, bootOptions = undefined, onMountProbe = () => {}, routeKey = undefined }: Props = $props();
 </script>
 
-<IntercomShell {appId} {bootOptions}>
+<IntercomShell {appId} {bootOptions} {routeKey}>
     {#snippet children(openChat)}
         <IntercomShellTestProbe {onMountProbe} />
         <button data-testid="open-chat" onclick={openChat}>Open chat</button>

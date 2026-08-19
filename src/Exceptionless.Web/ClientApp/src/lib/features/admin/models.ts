@@ -6,6 +6,40 @@ export enum MigrationType {
     Repeatable = 2
 }
 
+export type AdminAssistantOrganizationUsage = {
+    blocked_by_concurrency: number;
+    blocked_by_cost_limit: number;
+    blocked_by_rate_limit: number;
+    blocked_by_token_limit: number;
+    cancelled: number;
+    completed: number;
+    completion_tokens: number;
+    cost_usd: number;
+    cost_utilization?: null | number;
+    failed: number;
+    last_used_utc: string;
+    monthly_cost_limit_usd?: null | number;
+    monthly_token_limit?: null | number;
+    organization_id: string;
+    organization_name: string;
+    plan_id: string;
+    prompt_tokens: number;
+    provider_requests: number;
+    token_utilization?: null | number;
+    tool_calls: number;
+    turns: number;
+};
+
+export type AdminAssistantUsage = {
+    active_organizations: number;
+    completion_tokens: number;
+    cost_usd: number;
+    month: string;
+    organizations: AdminAssistantOrganizationUsage[];
+    prompt_tokens: number;
+    turns: number;
+};
+
 export type AdminStats = {
     events: CountResult;
     organizations: CountResult;

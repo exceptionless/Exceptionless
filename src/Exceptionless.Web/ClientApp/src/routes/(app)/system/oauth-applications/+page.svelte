@@ -33,12 +33,36 @@
     import { toast } from 'svelte-sonner';
 
     const supportedScopes = [
-        { description: 'Allows connecting to the MCP endpoint.', label: 'MCP', value: 'mcp:read' },
-        { description: 'Allows reading project metadata.', label: 'Projects', value: 'projects:read' },
-        { description: 'Allows reading stack data.', label: 'Stacks', value: 'stacks:read' },
-        { description: 'Allows changing stack status, snooze, and critical settings.', label: 'Stacks Write', value: 'stacks:write' },
-        { description: 'Allows reading event details.', label: 'Events', value: 'events:read' },
-        { description: 'Allows refresh token issuance.', label: 'Offline Access', value: 'offline_access' }
+        {
+            description: 'Allows connecting to the MCP endpoint.',
+            label: 'MCP',
+            value: 'mcp:read'
+        },
+        {
+            description: 'Allows reading project metadata.',
+            label: 'Projects',
+            value: 'projects:read'
+        },
+        {
+            description: 'Allows reading stack data.',
+            label: 'Stacks',
+            value: 'stacks:read'
+        },
+        {
+            description: 'Allows changing stack status, snooze, and critical settings.',
+            label: 'Stacks Write',
+            value: 'stacks:write'
+        },
+        {
+            description: 'Allows reading event details.',
+            label: 'Events',
+            value: 'events:read'
+        },
+        {
+            description: 'Allows refresh token issuance.',
+            label: 'Offline Access',
+            value: 'offline_access'
+        }
     ] as const;
 
     const supportedGrantTypes = [
@@ -71,7 +95,10 @@
 
                 try {
                     const saved = selectedApplication
-                        ? await updateApplication.mutateAsync({ id: selectedApplication.id, request })
+                        ? await updateApplication.mutateAsync({
+                              id: selectedApplication.id,
+                              request
+                          })
                         : await createApplication.mutateAsync(request);
 
                     selectedApplication = saved;
@@ -84,7 +111,9 @@
                         return problemDetailsToFormErrors(error);
                     }
 
-                    return { form: 'An unexpected error occurred, please try again.' };
+                    return {
+                        form: 'An unexpected error occurred, please try again.'
+                    };
                 }
             }
         }

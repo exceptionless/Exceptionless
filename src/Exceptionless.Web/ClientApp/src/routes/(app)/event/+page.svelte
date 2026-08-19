@@ -37,7 +37,6 @@
         getFiltersFromCache,
         hasSingleTypeFilter,
         serializeFilters,
-        shouldRefreshPersistentEventChanged,
         shouldRefreshPersistentEventRemoval,
         toFilter,
         updateFilterCache
@@ -53,27 +52,27 @@
     import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
     import { useSavedViews } from '$features/saved-views/use-saved-views.svelte';
     import * as agg from '$features/shared/api/aggregations';
-    import { createPageSizePreference, getSharedTableOptions, isTableEmpty, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
+    import { createPageSizePreference, getSharedTableOptions, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
     import { fillDateSeries } from '$features/shared/utils/charts.js';
     import { toDateMathRange } from '$features/shared/utils/datemath';
     import { parseDateMathRange } from '$features/shared/utils/datemath.js';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
+    import { createQueryParameters } from '$shared/query-params';
     import { type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
     import { error } from '@sveltejs/kit';
     import { createTable } from '@tanstack/svelte-table';
-    import { queryParamsState } from 'kit-query-params';
     import { useEventListener, watch } from 'runed';
     import { onDestroy, untrack } from 'svelte';
     import { debounce } from 'throttle-debounce';
 
     import {
         ALL_TIME_QUERY_VALUE,
-        clearListFilterQueryParams,
         deserializeTimeQueryParam,
         getEventsNavigationOptionsForFilter,
         getListFilterQueryParams,
+        LIST_FILTER_QUERY_PARAM_RESET,
         type ListFilterQueryParams,
         redirectToEventsWithFilter,
         serializeTimeQueryParam
@@ -221,9 +220,9 @@
     }
 
     updateFilterCache(filterCacheKey(DEFAULT_FILTER), DEFAULT_FILTERS);
-    const queryParams = queryParamsState({
-        default: DEFAULT_PARAMS,
-        pushHistory: true,
+    const queryParams = createQueryParameters({
+        defaults: DEFAULT_PARAMS,
+        history: 'push',
         schema: {
             after: 'string',
             before: 'string',
@@ -251,13 +250,14 @@
     let showChart = $state(true);
     const savedViewsState = useSavedViews({
         baseHref: resolve('/(app)/event'),
+        defaultAutoFillColumnId: 'summary',
         defaultColumnVisibility: defaultEventColumnVisibility,
         defaultFilter: DEFAULT_FILTER,
         defaultTime: DEFAULT_TIME_RANGE,
         filterCacheKey,
-        getColumnOrder: () => table.state.columnOrder,
-        getColumnSizing: () => table.state.columnSizing,
-        getColumnVisibility: () => table.state.columnVisibility,
+        getColumnOrder: () => table.store.state.columnOrder,
+        getColumnSizing: () => table.store.state.columnSizing,
+        getColumnVisibility: () => table.store.state.columnVisibility,
         getFilter: getEffectiveFilter,
         getFilterDefinitions: () => serializeFilters(filters ?? []),
         getShowChart: () => showChart,
@@ -277,7 +277,11 @@
         view: VIEW
     });
     const pageTitle = $derived(savedViewsState.activeSavedView?.name ?? 'Events');
-    const isSavedViewRoutePending = $derived(!!page.params.slug && !savedViewsState.activeSavedView);
+    // Keep queries disabled until saved-view state and its URL overrides have both settled.
+    let normalizedSavedViewId = $state<string>();
+    const isSavedViewRoutePending = $derived(
+        !!page.params.slug && (!savedViewsState.activeSavedView || savedViewsState.activeSavedView.id !== normalizedSavedViewId)
+    );
 
     $effect(() => {
         document.title = `${pageTitle} - Exceptionless`;
@@ -296,11 +300,12 @@
             }
 
             updateFilterCache(filterCacheKey(DEFAULT_FILTER), DEFAULT_FILTERS);
-            //params.$reset(); // Work around for https://github.com/beynar/kit-query-params/issues/7
-            Object.assign(queryParams, DEFAULT_PARAMS);
+            queryParams.update(DEFAULT_PARAMS);
             reset();
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     function getCurrentFilters(params: ListFilterQueryParams = queryParams): FacetedFilter.IFilter[] {
@@ -408,8 +413,8 @@
     let filters = $state(getCurrentFilters());
     let isInternalFilterUpdate = false;
     watch(
-        [() => page.url.pathname, () => page.url.search, () => savedViewsState.activeSavedView],
-        ([pathname, , activeSavedView], [previousPathname, , previousSavedView]) => {
+        [() => page.url.pathname, () => getListFilterQueryParams(queryParams), () => savedViewsState.activeSavedView],
+        ([pathname, currentQueryParams, activeSavedView], [previousPathname, , previousSavedView]) => {
             const savedViewChanged = pathname !== previousPathname || activeSavedView?.id !== previousSavedView?.id;
             if (isInternalFilterUpdate && !savedViewChanged) {
                 isInternalFilterUpdate = false;
@@ -417,14 +422,16 @@
             }
 
             isInternalFilterUpdate = false;
-            filters = getCurrentFilters(getListFilterQueryParams(page.url.searchParams));
+            filters = getCurrentFilters(currentQueryParams);
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     function handleResetToSaved(): void {
         isInternalFilterUpdate = false;
-        clearListFilterQueryParams(queryParams);
+        queryParams.update(LIST_FILTER_QUERY_PARAM_RESET);
         savedViewsState.handleResetToSaved();
         filters = getCurrentFilters();
     }
@@ -487,9 +494,6 @@
         const paginationWillChange = shouldClearPaginationForFilter && (queryParams.after != null || queryParams.before != null || queryParams.page != null);
 
         updateFilterCache(filterCacheKey(filter), updatedFilters);
-        if (shouldClearPaginationForFilter) {
-            clearPaginationQueryParams();
-        }
 
         // Only skip the watch when the URL will actually change from our update.
         // If the URL doesn't change, the watch won't fire and the flag would stay stale.
@@ -497,36 +501,39 @@
             isInternalFilterUpdate = true;
         }
 
-        queryParams.bot = queryFilterParams.bot;
-        queryParams.first = queryFilterParams.first;
-        queryParams.level = queryFilterParams.level;
-        queryParams.project = queryFilterParams.project;
-        queryParams.reference = queryFilterParams.reference;
-        queryParams.session = queryFilterParams.session;
-        queryParams.stack = queryFilterParams.stack;
-        queryParams.status = queryFilterParams.status;
-        queryParams.tag = queryFilterParams.tag;
-        queryParams.type = queryFilterParams.type;
-        queryParams.version = queryFilterParams.version;
-        queryParams.time = newTimeParam;
-        queryParams.filter = newFilterParam;
-    }
-
-    function clearPaginationQueryParams(): void {
-        queryParams.after = null;
-        queryParams.before = null;
-        queryParams.page = null;
+        queryParams.update({
+            after: shouldClearPaginationForFilter ? null : queryParams.after,
+            before: shouldClearPaginationForFilter ? null : queryParams.before,
+            bot: queryFilterParams.bot,
+            filter: newFilterParam,
+            first: queryFilterParams.first,
+            level: queryFilterParams.level,
+            page: shouldClearPaginationForFilter ? null : queryParams.page,
+            project: queryFilterParams.project,
+            reference: queryFilterParams.reference,
+            session: queryFilterParams.session,
+            stack: queryFilterParams.stack,
+            status: queryFilterParams.status,
+            tag: queryFilterParams.tag,
+            time: newTimeParam,
+            type: queryFilterParams.type,
+            version: queryFilterParams.version
+        });
     }
 
     $effect(() => {
         const activeSavedViewId = savedViewsState.activeSavedView?.id;
-        if (!activeSavedViewId) {
+        if (!activeSavedViewId || activeSavedViewId !== savedViewsState.hydratedSavedViewId) {
+            normalizedSavedViewId = undefined;
             return;
         }
 
         untrack(() => {
-            updateFilters(getCurrentFilters(getListFilterQueryParams(page.url.searchParams)), { clearPagination: false });
+            updateFilters(getCurrentFilters(getListFilterQueryParams(queryParams)), {
+                clearPagination: false
+            });
         });
+        normalizedSavedViewId = activeSavedViewId;
     });
 
     function getQueryFilterParams(filters: FacetedFilter.IFilter[]) {
@@ -704,16 +711,10 @@
             get queryParameters() {
                 return eventsQueryParameters;
             }
-        }),
-        (state) => ({
-            columnOrder: state.columnOrder,
-            columnSizing: state.columnSizing,
-            columnVisibility: state.columnVisibility,
-            pagination: state.pagination
         })
     );
 
-    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.state.pagination.pageIndex === 0);
+    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.store.state.pagination.pageIndex === 0);
 
     function reset() {
         table.resetRowSelection();
@@ -721,7 +722,7 @@
     }
 
     async function handleRefresh() {
-        const isFirstPage = table.state.pagination.pageIndex === 0;
+        const isFirstPage = table.store.state.pagination.pageIndex === 0;
         if (!canRefresh) {
             reset();
             if (!isFirstPage) {
@@ -738,7 +739,9 @@
         }
 
         const organizationId = organization.current;
-        const requestParameters = { ...eventsQueryParameters };
+        const requestParameters = {
+            ...eventsQueryParameters
+        };
         const requestIdentity = JSON.stringify([organizationId, requestParameters]);
         if (!requestParameters.after && !requestParameters.before) {
             return;
@@ -756,13 +759,21 @@
         const totalResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organizationId}/events`, {
             params: totalParams
         });
-        if (requestIdentity !== JSON.stringify([organization.current, { ...eventsQueryParameters }])) {
+        if (
+            requestIdentity !==
+            JSON.stringify([
+                organization.current,
+                {
+                    ...eventsQueryParameters
+                }
+            ])
+        ) {
             return;
         }
 
         const total = totalResponse.meta.total as number | undefined;
         const totalPages = total == null ? undefined : Math.ceil(total / (requestParameters.limit ?? 20));
-        if (totalPages != null && table.state.pagination.pageIndex >= totalPages) {
+        if (totalPages != null && table.store.state.pagination.pageIndex >= totalPages) {
             table.firstPage();
         }
     }
@@ -814,11 +825,8 @@
             return;
         }
 
-        if (!shouldRefreshPersistentEventChanged(filters, queryParams.filter, message.organization_id, message.project_id, message.stack_id, message.id)) {
-            return;
-        }
-
-        scheduleRefetch();
+        // Added and saved events are refreshed by the bounded active-query interval. Refetching here would bypass
+        // staleTime and make sustained production notifications drive an unbounded request/render loop.
     }
 
     useEventListener(document, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT, () => scheduleRefetch(true));
@@ -831,7 +839,7 @@
             eventsQuery.isPlaceholderData ||
             dataUpdatedAt === lastEmptyResponseAt ||
             eventsQuery.data?.data?.length !== 0 ||
-            table.state.pagination.pageIndex === 0
+            table.store.state.pagination.pageIndex === 0
         ) {
             return;
         }
@@ -916,19 +924,6 @@
         };
     });
 
-    let lastStatsRefreshKey = $state<string>();
-
-    $effect(() => {
-        const refreshKey = `${organization.current}:${page.url.search}:${stats.totalEvents}`;
-
-        if (!eventsQuery.data?.ok || stats.totalEvents <= 0 || !isTableEmpty(table) || lastStatsRefreshKey === refreshKey) {
-            return;
-        }
-
-        lastStatsRefreshKey = refreshKey;
-        void eventsQuery.refetch();
-    });
-
     function onRangeSelect(start: Date, end: Date) {
         onFilterChanged(new DateFilter('date', toDateMathRange(start, end)));
     }
@@ -950,15 +945,18 @@
             {#if savedViewsState.isEnabled}
                 <SavedViewPicker
                     activeSavedView={savedViewsState.activeSavedView}
-                    columnOrder={table.state.columnOrder}
-                    columnSizing={table.state.columnSizing}
-                    columnVisibility={table.state.columnVisibility}
+                    autoFillColumnId={savedViewsState.autoFillColumnId}
+                    columnOrder={table.store.state.columnOrder}
+                    columnSizing={table.store.state.columnSizing}
+                    columnVisibility={table.store.state.columnVisibility}
+                    defaultAutoFillColumnId="summary"
                     filters={filters ?? []}
                     isModified={savedViewsState.isModified}
                     onLoadView={savedViewsState.handleLoadView}
                     onClearSavedView={savedViewsState.handleClearSavedView}
                     onResetToSaved={handleResetToSaved}
                     savedViews={savedViewsState.savedViews}
+                    setAutoFillColumnId={savedViewsState.setAutoFillColumnId}
                     {showChart}
                     {showStats}
                     setShowChart={(v) => (showChart = v)}
@@ -997,7 +995,15 @@
             />
         {/if}
 
-        <EventsDataTable bind:limit={eventsQueryParameters.limit!} isLoading={isSavedViewRoutePending || eventsQuery.isFetching} {rowClick} {rowHref} {table}>
+        <EventsDataTable
+            autoFillColumnId={savedViewsState.autoFillColumnId}
+            bind:limit={eventsQueryParameters.limit!}
+            isLoading={isSavedViewRoutePending || eventsQuery.isFetching}
+            onAutoFillColumnResized={() => savedViewsState.setAutoFillColumnId(null)}
+            {rowClick}
+            {rowHref}
+            {table}
+        >
             {#snippet footerChildren()}
                 <div class="h-9 min-w-35">
                     {#if table.getSelectedRowModel().flatRows.length}
@@ -1017,7 +1023,7 @@
 </div>
 
 <EventDetailSheet
-    eventId={selectedEventId}
+    bind:eventId={selectedEventId}
     filterChanged={onFilterChanged}
     onClose={() => {
         selectedEventId = null;

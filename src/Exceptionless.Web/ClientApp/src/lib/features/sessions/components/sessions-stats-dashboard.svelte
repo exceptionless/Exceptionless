@@ -28,8 +28,22 @@
     const metricIconClass = 'size-3.5 shrink-0 text-[var(--chart-2)]';
     const metricValueClass = 'truncate text-lg leading-none font-bold text-[var(--chart-2)] tabular-nums sm:text-xl';
 
-    const compactAverageDuration = $derived(avgDuration > 0 ? prettyMilliseconds(avgDuration * 1000, { compact: true, secondsDecimalDigits: 0 }) : '—');
-    const preciseAverageDuration = $derived(avgDuration > 0 ? prettyMilliseconds(avgDuration * 1000, { secondsDecimalDigits: 0, unitCount: 2 }) : '—');
+    const compactAverageDuration = $derived(
+        avgDuration > 0
+            ? prettyMilliseconds(avgDuration * 1000, {
+                  compact: true,
+                  secondsDecimalDigits: 0
+              })
+            : '—'
+    );
+    const preciseAverageDuration = $derived(
+        avgDuration > 0
+            ? prettyMilliseconds(avgDuration * 1000, {
+                  secondsDecimalDigits: 0,
+                  unitCount: 2
+              })
+            : '—'
+    );
 </script>
 
 <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -81,7 +95,12 @@
                 <Skeleton class="h-6 w-16" />
             {:else}
                 <div class={metricValueClass}>
-                    <Number value={avgPerHour} formatOptions={{ maximumFractionDigits: 1 }} />
+                    <Number
+                        value={avgPerHour}
+                        formatOptions={{
+                            maximumFractionDigits: 1
+                        }}
+                    />
                 </div>
             {/if}
         </Card.Content>

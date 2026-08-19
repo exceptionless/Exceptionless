@@ -1,7 +1,13 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@source '../node_modules/streamdown-svelte/dist/**/*.{js,svelte,ts}';
 
 @custom-variant dark (&:is(.dark *));
+
+/* Keep the development query inspector from covering Exie's composer. */
+body:has([data-assistant-panel]) .tsqd-open-btn-container {
+    display: none;
+}
 
 :root {
     --background: hsl(0 0% 100%);

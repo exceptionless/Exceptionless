@@ -7,14 +7,18 @@
     import * as Kbd from '$comp/ui/kbd';
     import * as Sidebar from '$comp/ui/sidebar';
     import logoSmall from '$lib/assets/exceptionless-48.png';
+    import Bot from '@lucide/svelte/icons/bot';
     import Search from '@lucide/svelte/icons/search';
     import { MediaQuery } from 'svelte/reactivity';
 
     interface Props {
+        assistantEnabled: boolean;
+        isAssistantOpen: boolean;
         openCommand: () => void;
+        toggleAssistant: () => void;
     }
 
-    let { openCommand }: Props = $props();
+    let { assistantEnabled, isAssistantOpen, openCommand, toggleAssistant }: Props = $props();
 
     const isMediumScreenQuery = new MediaQuery('(min-width: 768px)');
 </script>
@@ -34,10 +38,31 @@
                 </A>
             </div>
             <div class="flex items-center gap-2">
-                <Button class="w-44 justify-start sm:w-56 md:w-72" onclick={openCommand} size="default" variant="outline">
+                <Button
+                    aria-label="Search Exceptionless"
+                    class="w-9 justify-center sm:w-56 sm:justify-start md:w-72"
+                    onclick={openCommand}
+                    size="default"
+                    variant="outline"
+                >
                     <Search />
-                    <span class="text-muted-foreground flex items-center gap-1.5">Type <Kbd.Root>/</Kbd.Root> to search</span>
+                    <span class="text-muted-foreground hidden items-center gap-1.5 sm:flex">Type <Kbd.Root>/</Kbd.Root> to search</span>
                 </Button>
+
+                {#if assistantEnabled}
+                    <Button
+                        aria-expanded={isAssistantOpen}
+                        aria-label={isAssistantOpen ? 'Close Exie' : 'Open Exie'}
+                        class="px-2"
+                        data-assistant-trigger
+                        onclick={toggleAssistant}
+                        title="Ask Exie"
+                        variant="outline"
+                    >
+                        <Bot aria-hidden="true" class="size-6" data-icon="inline-start" />
+                        <span class="hidden lg:inline">Ask Exie</span>
+                    </Button>
+                {/if}
 
                 <DarkModeButton></DarkModeButton>
             </div>

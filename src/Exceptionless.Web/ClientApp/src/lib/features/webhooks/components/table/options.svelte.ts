@@ -31,7 +31,10 @@ export function getColumns<TWebhook extends Webhook>(): ColumnDef<StockFeatures,
             }
         },
         {
-            cell: (info) => renderComponent(WebhookActionsCell, { webhook: info.row.original }),
+            cell: (info) =>
+                renderComponent(WebhookActionsCell, {
+                    webhook: info.row.original
+                }),
             enableHiding: false,
             enableSorting: false,
             header: '',

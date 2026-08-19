@@ -19,32 +19,43 @@ export function routes(): NavigationItem[] {
     return [
         {
             group: 'Organization Settings',
-            href: resolve('/(app)/organization/[organizationId]/manage', { organizationId }),
+            href: resolve('/(app)/organization/[organizationId]/manage', {
+                organizationId
+            }),
             icon: Settings,
             title: 'General'
         },
         {
             group: 'Organization Settings',
-            href: resolve('/(app)/organization/[organizationId]/users', { organizationId }),
+            href: resolve('/(app)/organization/[organizationId]/users', {
+                organizationId
+            }),
             icon: Users,
+            keywords: ['members', 'team', 'invite'],
             title: 'Users'
         },
         {
             group: 'Organization Settings',
-            href: resolve('/(app)/organization/[organizationId]/billing', { organizationId }),
+            href: resolve('/(app)/organization/[organizationId]/billing', {
+                organizationId
+            }),
             icon: Billing,
             title: 'Billing'
         },
         {
             group: 'Organization Settings',
-            href: resolve('/(app)/organization/[organizationId]/features', { organizationId }),
+            href: resolve('/(app)/organization/[organizationId]/features', {
+                organizationId
+            }),
             icon: Zap,
             show: (ctx) => !!ctx.user?.roles?.includes('global'),
             title: 'Features'
         },
         {
             group: 'Organization Settings',
-            href: resolve('/(app)/organization/[organizationId]/usage', { organizationId }),
+            href: resolve('/(app)/organization/[organizationId]/usage', {
+                organizationId
+            }),
             icon: Usage,
             title: 'Usage'
         }

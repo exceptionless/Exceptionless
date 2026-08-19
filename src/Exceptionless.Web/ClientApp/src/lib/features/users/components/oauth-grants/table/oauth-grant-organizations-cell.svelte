@@ -11,7 +11,12 @@
 
     let { grant, organizationNamesById }: Props = $props();
 
-    const organizations = $derived(grant.organization_ids.map((id) => ({ id, name: formatOrganization(id) })));
+    const organizations = $derived(
+        grant.organization_ids.map((id) => ({
+            id,
+            name: formatOrganization(id)
+        }))
+    );
 
     function formatOrganization(id: string) {
         return organizationNamesById.get(id) ?? id;

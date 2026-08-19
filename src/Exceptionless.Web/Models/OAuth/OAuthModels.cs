@@ -117,6 +117,9 @@ public sealed record OAuthAuthorizationServerMetadata
 
     [JsonPropertyName("client_id_metadata_document_supported")]
     public bool ClientIdMetadataDocumentSupported { get; init; }
+
+    [JsonPropertyName("authorization_response_iss_parameter_supported")]
+    public bool AuthorizationResponseIssParameterSupported { get; init; }
 }
 
 public sealed record OAuthProtectedResourceMetadata
