@@ -230,6 +230,7 @@ public class Bootstrapper
         services.AddSingleton<ProjectNotificationThrottleService>();
         services.AddSingleton<RateNotificationRuleCache>();
         services.AddStartupAction<RateNotificationRuleCache>();
+        services.AddSingleton<IAssistantUsageRecorder>(provider => provider.GetRequiredService<UsageService>());
         services.AddSingleton<SlackService>();
         services.AddSingleton<StackService>();
 

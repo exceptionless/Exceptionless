@@ -9,6 +9,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Utility;
+using Exceptionless.Web.Assistant;
 using Exceptionless.Web.Mcp;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Extensions;
@@ -138,6 +139,45 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task SearchStacksAsync_ProjectOutsideAssistantOrganization_ReturnsNotAccessible()
+    {
+        var assistantContext = new AssistantToolContext();
+        var tools = await CreateToolsAsync(
+            includeUserRole: false,
+            grantId: Guid.NewGuid().ToString("N"),
+            organizationIds: [TestConstants.OrganizationId, SampleDataService.FREE_ORG_ID],
+            assistantToolContext: assistantContext,
+            scopes: [AuthorizationRoles.McpRead, AuthorizationRoles.StacksRead]);
+
+        using (assistantContext.BeginTools(TestConstants.OrganizationId))
+        {
+            var result = await tools.SearchStacksAsync(SampleDataService.FREE_PROJECT_ID);
+
+            Assert.False(result.Ok);
+            Assert.Equal(McpErrorCodes.NotAccessible, result.Error?.Code);
+        }
+    }
+
+    [Fact]
+    public async Task SearchStacksAsync_BoundAssistantOrganizationWithoutMembership_UsesSelectedOrganization()
+    {
+        var assistantContext = new AssistantToolContext();
+        var tools = await CreateToolsAsync(
+            includeUserRole: false,
+            grantId: Guid.NewGuid().ToString("N"),
+            organizationIds: [],
+            assistantToolContext: assistantContext,
+            scopes: [AuthorizationRoles.McpRead, AuthorizationRoles.StacksRead]);
+
+        using (assistantContext.BeginTools(TestConstants.OrganizationId))
+        {
+            var result = await tools.SearchStacksAsync(TestConstants.ProjectId);
+
+            Assert.True(result.Ok);
+        }
+    }
+
+    [Fact]
     public async Task SearchStacksAsync_EmptyProjectId_ReturnsInvalidId()
     {
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksRead);
@@ -191,6 +231,33 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
 
         Assert.True(result.Ok);
         Assert.Equal(stacks[0].Id, Data(result).Id);
+    }
+
+    [Fact]
+    public async Task GetStackAsync_MultipleAccessibleProjectsWithoutProjectId_ReturnsStack()
+    {
+        var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP direct stack lookup"));
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksRead);
+
+        var result = await tools.GetStackAsync(stacks[0].Id);
+
+        Assert.True(result.Ok);
+        Assert.Equal(stacks[0].Id, Data(result).Id);
+        Assert.Equal(TestConstants.ProjectId, Data(result).ProjectId);
+    }
+
+    [Fact]
+    public async Task GetEventAsync_MultipleAccessibleProjectsWithoutProjectId_ReturnsEvent()
+    {
+        var (_, events) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP direct event lookup"));
+        await RefreshDataAsync();
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        var result = await tools.GetEventAsync(events[0].Id);
+
+        Assert.True(result.Ok);
+        Assert.Equal(events[0].Id, Data(result).Id);
+        Assert.Equal(TestConstants.ProjectId, Data(result).ProjectId);
     }
 
     [Fact]
@@ -279,6 +346,53 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         Assert.Contains(setup.Steps, step => step.Code?.Contains(SampleDataService.TEST_API_KEY, StringComparison.OrdinalIgnoreCase) == true);
         Assert.DoesNotContain(setup.Steps, step => step.Code?.Contains("Hello from Expo", StringComparison.OrdinalIgnoreCase) == true);
         Assert.Contains(setup.Notes, note => note.Contains("Expo", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task GetProjectSetupAsync_Project_ReturnsOnlyVerifiedClientSupport()
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead);
+
+        var result = await tools.GetProjectSetupAsync(TestConstants.ProjectId);
+
+        Assert.True(result.Ok);
+        var setup = Data(result);
+        Assert.Equal(TestConstants.ProjectId, setup.Id);
+        Assert.Equal(AssistantRoutes.ProjectConfigure(TestConstants.ProjectId), setup.WebUrl);
+        Assert.Collection(setup.Clients,
+            client =>
+            {
+                Assert.Equal(".NET", client.Name);
+                Assert.Equal("current", client.Status);
+            },
+            client =>
+            {
+                Assert.Equal("React Native", client.Name);
+                Assert.Equal("current", client.Status);
+            },
+            client =>
+            {
+                Assert.Equal("Expo", client.Name);
+                Assert.Equal("current", client.Status);
+            },
+            client =>
+            {
+                Assert.Equal("JavaScript / Node.js", client.Name);
+                Assert.Equal("legacy", client.Status);
+            });
+        Assert.DoesNotContain(setup.Clients, client => client.Name is "Python" or "Java" or "Ruby" or "PHP");
+    }
+
+    [Fact]
+    public async Task GetProjectSetupAsync_ProjectName_ResolvesVerifiedSetup()
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead);
+
+        var result = await tools.GetProjectSetupAsync(projectName: "Disintegrating Pistol", organizationId: TestConstants.OrganizationId);
+
+        Assert.True(result.Ok);
+        Assert.Equal(TestConstants.ProjectId, Data(result).Id);
+        Assert.Equal(AssistantRoutes.ProjectConfigure(TestConstants.ProjectId), Data(result).WebUrl);
     }
 
     [Fact]
@@ -889,6 +1003,19 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task SetStackCriticalAsync_MultipleAccessibleProjectsWithoutProjectId_UpdatesStack()
+    {
+        var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP direct stack write"));
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksWrite);
+
+        var result = await tools.SetStackCriticalAsync(stacks[0].Id, critical: true);
+
+        Assert.True(result.Ok);
+        Assert.True(Data(result).Changed);
+        Assert.True(Data(result).Stack.OccurrencesAreCritical);
+    }
+
+    [Fact]
     public async Task UpdateStackStatusAsync_MissingStacksWriteScope_ReturnsError()
     {
         var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP write missing scope"));
@@ -951,6 +1078,36 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
             Assert.NotNull(stack);
             Assert.Equal(StackStatus.Snoozed, stack.Status);
             Assert.Equal(new DateTime(2026, 6, 25, 14, 0, 0, DateTimeKind.Utc), stack.SnoozeUntilUtc);
+        }
+        finally
+        {
+            TimeProvider.Restore();
+        }
+    }
+
+    [Fact]
+    public async Task SnoozeStackAsync_SameSnoozeWithFixedMetadata_ClearsFixedMetadata()
+    {
+        try
+        {
+            TimeProvider.SetUtcNow(new DateTimeOffset(2026, 6, 25, 12, 0, 0, TimeSpan.Zero));
+            var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP repair snooze metadata"));
+            var stack = stacks[0];
+            stack.Status = StackStatus.Snoozed;
+            stack.SnoozeUntilUtc = new DateTime(2026, 6, 25, 14, 0, 0, DateTimeKind.Utc);
+            stack.DateFixed = new DateTime(2026, 6, 24, 12, 0, 0, DateTimeKind.Utc);
+            stack.FixedInVersion = "1.2.3";
+            await _stackRepository.SaveAsync(stack, o => o.ImmediateConsistency());
+            var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksWrite);
+
+            var result = await tools.SnoozeStackAsync(stack.Id, TestConstants.ProjectId, duration: "2h");
+
+            Assert.True(result.Ok);
+            Assert.True(Data(result).Changed);
+            var savedStack = await _stackRepository.GetByIdAsync(stack.Id, o => o.ImmediateConsistency());
+            Assert.NotNull(savedStack);
+            Assert.Null(savedStack.DateFixed);
+            Assert.Null(savedStack.FixedInVersion);
         }
         finally
         {
@@ -1367,6 +1524,23 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         }
     }
 
+    [Theory]
+    [InlineData(nameof(ExceptionlessMcpTools.GetEventAsync))]
+    [InlineData(nameof(ExceptionlessMcpTools.GetStackAsync))]
+    [InlineData(nameof(ExceptionlessMcpTools.SearchStacksAsync))]
+    [InlineData(nameof(ExceptionlessMcpTools.UpdateStackStatusAsync))]
+    [InlineData(nameof(ExceptionlessMcpTools.SetStackCriticalAsync))]
+    public async Task McpTools_AdvertiseClientFriendlyAnnotations(string methodName)
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.StacksRead, AuthorizationRoles.EventsRead, AuthorizationRoles.StacksWrite);
+        var method = typeof(ExceptionlessMcpTools).GetMethod(methodName) ?? throw new InvalidOperationException($"Could not find {methodName}.");
+        var protocolTool = McpServerTool.Create(method, tools, new McpServerToolCreateOptions()).ProtocolTool;
+        var annotations = Assert.IsType<ModelContextProtocol.Protocol.ToolAnnotations>(protocolTool.Annotations);
+
+        Assert.False(String.IsNullOrWhiteSpace(annotations.Title));
+        Assert.False(annotations.OpenWorldHint);
+    }
+
 
     private Task<ExceptionlessMcpTools> CreateToolsAsync(params string[] scopes)
     {
@@ -1384,6 +1558,14 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     }
 
     private Task<ExceptionlessMcpTools> CreateToolsAsync(bool includeUserRole, string grantId, IReadOnlyCollection<string>? organizationIds, params string[] scopes)
+        => CreateToolsAsync(includeUserRole, grantId, organizationIds, assistantToolContext: null, scopes);
+
+    private Task<ExceptionlessMcpTools> CreateToolsAsync(
+        bool includeUserRole,
+        string grantId,
+        IReadOnlyCollection<string>? organizationIds,
+        AssistantToolContext? assistantToolContext,
+        params string[] scopes)
     {
         organizationIds ??= [TestConstants.OrganizationId];
 
@@ -1427,7 +1609,8 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         var contextService = new McpContextService(
             accessor,
             _organizationRepository,
-            _projectRepository);
+            _projectRepository,
+            assistantToolContext);
 
         return Task.FromResult(new ExceptionlessMcpTools(
             accessor,
@@ -1442,7 +1625,8 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
             GetService<SemanticVersionParser>(),
             GetService<ITextSerializer>(),
             GetService<ILogger<ExceptionlessMcpTools>>(),
-            TimeProvider));
+            TimeProvider,
+            assistantToolContext));
     }
 
 

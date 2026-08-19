@@ -75,9 +75,14 @@
 
         try {
             if (value) {
-                await updateProjectConfig.mutateAsync({ key, value });
+                await updateProjectConfig.mutateAsync({
+                    key,
+                    value
+                });
             } else {
-                await removeProjectConfig.mutateAsync({ key });
+                await removeProjectConfig.mutateAsync({
+                    key
+                });
             }
 
             toastId = toast.success(`Successfully updated ${displayName} setting.`);
@@ -223,7 +228,12 @@
                     Exceptionless automatically discovers public source maps. Upload and manage maps when they are private or are not published with your
                     generated JavaScript.
                 </Muted>
-                <Button href={resolve('/(app)/project/[projectId]/source-maps', { projectId })} variant="outline">Manage source maps</Button>
+                <Button
+                    href={resolve('/(app)/project/[projectId]/source-maps', {
+                        projectId
+                    })}
+                    variant="outline">Manage source maps</Button
+                >
             </div>
         </div>
     </section>

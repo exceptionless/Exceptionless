@@ -4,6 +4,8 @@
     import { onMount } from 'svelte';
 
     onMount(() => {
-        goto(resolve('/(app)/system/elasticsearch/overview'), { replaceState: true });
+        goto(resolve('/(app)/system/elasticsearch/overview'), {
+            replaceState: true
+        });
     });
 </script>

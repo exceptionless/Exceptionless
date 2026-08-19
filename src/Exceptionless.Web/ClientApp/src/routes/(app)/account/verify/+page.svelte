@@ -11,7 +11,11 @@
     async function verifyAccount() {
         if (token) {
             try {
-                await client.getJSON<void>(`users/verify-email-address/${encodeURIComponent(token)}`);
+                await client.post('/users/verify-email-address', undefined, {
+                    params: {
+                        token
+                    }
+                });
                 toast.success('Your account has been successfully verified.');
             } catch {
                 toast.error('An error occurred while verifying your account.');

@@ -119,6 +119,10 @@ public static class OrganizationExtensions
         var utcNow = timeProvider.GetUtcNow().UtcDateTime;
 
         // keep 1 year of usage
+        organization.AssistantUsage = organization.AssistantUsage.Except(organization.AssistantUsage
+            .Where(u => utcNow.Subtract(u.Date) > TimeSpan.FromDays(366)))
+            .ToList();
+
         organization.Usage = organization.Usage.Except(organization.Usage
             .Where(u => utcNow.Subtract(u.Date) > TimeSpan.FromDays(366)))
             .ToList();
@@ -127,6 +131,18 @@ public static class OrganizationExtensions
         organization.UsageHours = organization.UsageHours.Except(organization.UsageHours
             .Where(u => utcNow.Subtract(u.Date) > TimeSpan.FromDays(u.Blocked > 0 ? 30 : 7)))
             .ToList();
+    }
+
+    public static AssistantUsageInfo GetAssistantUsage(this Organization organization, DateTime date)
+    {
+        var startOfMonth = date.ToUniversalTime().StartOfMonth();
+        var usage = organization.AssistantUsage.FirstOrDefault(o => o.Date.Year == startOfMonth.Year && o.Date.Month == startOfMonth.Month);
+        if (usage is not null)
+            return usage;
+
+        usage = new AssistantUsageInfo { Date = startOfMonth };
+        organization.AssistantUsage.Add(usage);
+        return usage;
     }
 
     public static UsageInfo GetCurrentUsage(this Organization organization, TimeProvider timeProvider)

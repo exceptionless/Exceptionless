@@ -40,7 +40,12 @@
         return 'Pending';
     }
 
-    const allStates = $derived((data?.states ?? []).map((s) => ({ ...s, status: getStatus(s) })));
+    const allStates = $derived(
+        (data?.states ?? []).map((s) => ({
+            ...s,
+            status: getStatus(s)
+        }))
+    );
     const failedCount = $derived(allStates.filter((s) => s.status === 'Failed').length);
     const runningCount = $derived(allStates.filter((s) => s.status === 'Running').length);
 
@@ -57,7 +62,9 @@
         })
     );
 
-    const queryParameters: TableMemoryPagingParameters = $state({ limit: DEFAULT_LIMIT });
+    const queryParameters: TableMemoryPagingParameters = $state({
+        limit: DEFAULT_LIMIT
+    });
     const table = createTable(getTableOptions(queryParameters, () => filteredStates));
 </script>
 

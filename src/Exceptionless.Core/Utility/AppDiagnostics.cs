@@ -89,6 +89,13 @@ public static class AppDiagnostics
     }
 
     internal static readonly Counter<int> EventsSubmitted = Meter.CreateCounter<int>("ex.events.submitted", description: "Events submitted to the pipeline to be processed");
+    internal static readonly Counter<long> AssistantTurns = Meter.CreateCounter<long>("ex.assistant.turns", description: "Assistant turns accepted");
+    internal static readonly Counter<long> AssistantTurnOutcomes = Meter.CreateCounter<long>("ex.assistant.turn.outcomes", description: "Assistant turn outcomes");
+    internal static readonly Counter<long> AssistantTurnsBlocked = Meter.CreateCounter<long>("ex.assistant.turns.blocked", description: "Assistant turns blocked by a usage limit");
+    internal static readonly Counter<long> AssistantProviderRequests = Meter.CreateCounter<long>("ex.assistant.provider.requests", description: "Assistant provider requests");
+    internal static readonly Counter<long> AssistantToolCalls = Meter.CreateCounter<long>("ex.assistant.tool.calls", description: "Assistant tool calls");
+    internal static readonly Counter<long> AssistantTokens = Meter.CreateCounter<long>("ex.assistant.tokens", description: "Assistant provider tokens");
+    internal static readonly Counter<long> AssistantCostInMicrodollars = Meter.CreateCounter<long>("ex.assistant.cost", unit: "microdollars", description: "Assistant provider cost");
     internal static readonly Counter<int> EventsProcessed = Meter.CreateCounter<int>("ex.events.all.processed", description: "Events successfully processed by the pipeline");
     internal static readonly Histogram<double> EventsProcessingTime = Meter.CreateHistogram<double>("ex.events.processingtime", description: "Time to process an event", unit: "ms");
     internal static readonly Counter<int> EventsPaidProcessed = Meter.CreateCounter<int>("ex.events.paid.processed", description: "Paid events processed");

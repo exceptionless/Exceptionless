@@ -22,7 +22,10 @@
     let previousRange: CustomDateRange | null | undefined;
 
     const form = createForm(() => ({
-        defaultValues: structuredCloneState(range) ?? { end: '', start: '' },
+        defaultValues: structuredCloneState(range) ?? {
+            end: '',
+            start: ''
+        },
         validators: {
             onSubmit: CustomDateRangeSchema,
             onSubmitAsync: async ({ value }) => {
@@ -40,7 +43,10 @@
     // Initialize values on mount and reset when range prop changes
     $effect(() => {
         if (range !== previousRange) {
-            const clonedRange = structuredCloneState(range) ?? { end: '', start: '' };
+            const clonedRange = structuredCloneState(range) ?? {
+                end: '',
+                start: ''
+            };
             form.reset();
             form.setFieldValue('start', clonedRange.start ?? '');
             form.setFieldValue('end', clonedRange.end ?? '');
@@ -63,7 +69,10 @@
 
         const endTime = validateAndResolveTime(endValue);
         if (startResolved && endTime && startResolved > endTime) {
-            return { error: 'End date must be after start date', valid: false };
+            return {
+                error: 'End date must be after start date',
+                valid: false
+            };
         }
 
         return basicValidation;
