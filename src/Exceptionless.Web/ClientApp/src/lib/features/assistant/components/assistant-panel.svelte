@@ -63,6 +63,7 @@
     let errorMessage = $state<string>();
     let isStreaming = $state(false);
     let isNearBottom = $state(true);
+    let showToolCalls = $state(false);
     let showScrollToBottom = $state(false);
     let conversationElement = $state<HTMLDivElement>();
     let abortController: AbortController | undefined;
@@ -122,6 +123,11 @@
         }
 
         prompt = '';
+        if (content.toLowerCase() === '/tools') {
+            showToolCalls = !showToolCalls;
+            return;
+        }
+
         errorMessage = undefined;
         const userMessage: AssistantChatMessage = {
             content,
@@ -411,6 +417,7 @@
                                 onFeedback={(feedback) => setMessageFeedback(message.id, feedback)}
                                 onRegenerate={() => regenerateResponse(message.id)}
                                 onSuggestedAction={(action) => void handleSuggestedAction(action)}
+                                {showToolCalls}
                                 suggestionsDisabled={isStreaming}
                             />
                         {/each}
@@ -448,7 +455,7 @@
                         {/if}
                     </Alert.Root>
                 {/if}
-                <AssistantComposer bind:value={prompt} {isStreaming} onStop={stopStreaming} onSubmit={() => void submitPrompt()} />
+                <AssistantComposer bind:value={prompt} {isStreaming} onStop={stopStreaming} onSubmit={(value) => void submitPrompt(value)} {showToolCalls} />
                 <Muted class="text-center text-xs">AI can make mistakes. Check important changes.</Muted>
             </div>
         </div>

@@ -107,7 +107,8 @@ public sealed class AssistantServiceTests
             item => Assert.Equal(" world", item.Text),
             item => Assert.Equal("done", item.Type));
         Assert.Equal("Bearer", handler.AuthorizationScheme);
-        Assert.Contains("deepseek/deepseek-v4-flash", handler.RequestBody);
+        using var providerRequest = JsonDocument.Parse(handler.RequestBody);
+        Assert.Equal("~deepseek/deepseek-v4-flash-latest", providerRequest.RootElement.GetProperty("model").GetString());
         Assert.Contains($"\"max_tokens\":{AssistantLimits.MaximumOutputTokens}", handler.RequestBody);
         Assert.Contains("get_event", handler.RequestBody);
         Assert.Contains("get_stack", handler.RequestBody);
@@ -152,8 +153,7 @@ public sealed class AssistantServiceTests
         Assert.Contains("Call this whenever the answer asks what the user wants to investigate or do next", handler.RequestBody);
         Assert.Contains("If there is no genuinely useful next step, end the answer directly and omit the tool", handler.RequestBody);
 
-        using var requestBody = JsonDocument.Parse(handler.RequestBody);
-        JsonElement getStackEvents = requestBody.RootElement.GetProperty("tools").EnumerateArray()
+        JsonElement getStackEvents = providerRequest.RootElement.GetProperty("tools").EnumerateArray()
             .Single(tool => tool.GetProperty("function").GetProperty("name").GetString() == "get_stack_events")
             .GetProperty("function");
         JsonElement getStackEventsParameters = getStackEvents.GetProperty("parameters");
@@ -945,6 +945,126 @@ public sealed class AssistantServiceTests
                 Assert.Equal("Exie stopped before providing an answer. Please try again.", item.Message);
             },
             item => Assert.Equal("done", item.Type));
+    }
+
+    [Fact]
+    public async Task StreamAsync_RawDsmlResponse_RetriesWithoutEmittingMarkup()
+    {
+        string recoveredPayload = JsonSerializer.Serialize(new
+        {
+            choices = new[]
+            {
+                new
+                {
+                    delta = new
+                    {
+                        content = "I found no errors in the selected time range.",
+                        tool_calls = new[]
+                        {
+                            new
+                            {
+                                index = 0,
+                                id = "suggestions-1",
+                                function = new
+                                {
+                                    name = "suggest_followups",
+                                    arguments = JsonSerializer.Serialize(new
+                                    {
+                                        actions = new[]
+                                        {
+                                            new { label = "Search seven days", prompt = "Search for errors in the last 7 days." }
+                                        }
+                                    })
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        var handler = new StubHttpMessageHandler(
+            """
+            data: {"choices":[{"delta":{"content":"I found no errors. "}}]}
+
+            data: {"choices":[{"delta":{"content":"<｜DS"}}]}
+
+            data: {"choices":[{"delta":{"content":"ML｜tool_calls><｜DSML｜invoke name=\"suggest_followups\">"}}]}
+
+            data: [DONE]
+
+            """,
+            $"data: {recoveredPayload}\n\ndata: [DONE]\n");
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            })
+            .Build());
+        var service = CreateAssistantService(handler, appOptions);
+        var events = new List<AssistantStreamEvent>();
+
+        await foreach (var item in service.StreamAsync(
+            new AssistantChatRequest([new AssistantChatMessage("user", "Find recent errors")]),
+            "user-id",
+            CreatePlanOptions(),
+            TestContext.Current.CancellationToken))
+        {
+            events.Add(item);
+        }
+
+        Assert.Equal(2, handler.RequestBodies.Count);
+        Assert.Contains("The previous provider response exposed internal DSML tool-call markup as text", handler.RequestBodies[1]);
+        Assert.Collection(events,
+            item => Assert.Equal("I found no errors in the selected time range.", item.Text),
+            item =>
+            {
+                Assert.Equal("suggested_actions", item.Type);
+                Assert.Equal("Search seven days", Assert.Single(item.SuggestedActions!).Label);
+            },
+            item => Assert.Equal("done", item.Type));
+        Assert.DoesNotContain("DSML", String.Concat(events.Select(item => item.Text)), StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("I found no errors. ", String.Concat(events.Select(item => item.Text)), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task StreamAsync_RepeatedRawDsmlResponse_EmitsClearErrorAndCompletion()
+    {
+        const string malformedResponse = """
+            data: {"choices":[{"delta":{"content":"<|DSML|tool_calls>"}}]}
+
+            data: [DONE]
+
+            """;
+        var handler = new StubHttpMessageHandler(malformedResponse, malformedResponse);
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            })
+            .Build());
+        var service = CreateAssistantService(handler, appOptions);
+        var events = new List<AssistantStreamEvent>();
+
+        await foreach (var item in service.StreamAsync(
+            new AssistantChatRequest([new AssistantChatMessage("user", "Find recent errors")]),
+            "user-id",
+            CreatePlanOptions(),
+            TestContext.Current.CancellationToken))
+        {
+            events.Add(item);
+        }
+
+        Assert.Equal(2, handler.RequestBodies.Count);
+        Assert.Collection(events,
+            item =>
+            {
+                Assert.Equal("error", item.Type);
+                Assert.Equal("Exie received a malformed response from the AI provider. Please try again.", item.Message);
+            },
+            item => Assert.Equal("done", item.Type));
+        Assert.DoesNotContain(events, item => item.Type == "text_delta");
     }
 
     [Fact]
