@@ -7,7 +7,12 @@ public sealed record AssistantChatRequest(
     string? Path = null,
     string? ConversationId = null);
 
-public sealed record AssistantChatMessage(string Role, string Content);
+public sealed record AssistantChatMessage(string Role, string Content)
+{
+    public bool? IsSuggestedAction { get; init; }
+    public string? SuggestedActionLabel { get; init; }
+    public string? SuggestedActionPath { get; init; }
+}
 
 public sealed record AssistantConversationToolResult(
     string ToolCallId,
@@ -23,9 +28,10 @@ public sealed record AssistantAccessResponse(
     bool Enabled,
     bool HasAccess,
     bool UpgradeRequired,
-    string? Message = null);
+    string? Message = null,
+    string? MinimumPlanId = null);
 
-public sealed record AssistantSuggestedAction(string Label, string Prompt);
+public sealed record AssistantSuggestedAction(string Label, string Prompt, string? Href = null);
 
 public sealed record AssistantStreamEvent(
     string Type,

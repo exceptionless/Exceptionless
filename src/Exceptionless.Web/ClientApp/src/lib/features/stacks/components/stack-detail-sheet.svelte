@@ -6,7 +6,6 @@
 
     import { resolve } from '$app/paths';
     import DetailSheet from '$comp/detail-sheet.svelte';
-    import AssistantFixButton from '$features/assistant/components/assistant-fix-button.svelte';
     import { assistantPageContext } from '$features/assistant/page-context.svelte';
     import { buildEventDetailsHref } from '$features/events/components/summary';
     import { onDestroy } from 'svelte';
@@ -31,12 +30,17 @@
         currentEventDetails
             ? buildEventDetailsHref(currentEventDetails.eventId, currentEventDetails.stackId)
             : stackId
-              ? resolve('/(app)/stack/[stackId=objectid]', { stackId })
+              ? resolve('/(app)/stack/[stackId=objectid]', {
+                    stackId
+                })
               : '#'
     );
 
     function handleEventLoaded(event: PersistentEvent): void {
-        currentEventDetails = { eventId: event.id, stackId: event.stack_id };
+        currentEventDetails = {
+            eventId: event.id,
+            stackId: event.stack_id
+        };
         assistantPageContext.setOverlayEvent(assistantContextOwner, event);
     }
 
@@ -49,7 +53,9 @@
         if (currentStack) {
             assistantPageContext.setOverlayStack(assistantContextOwner, currentStack);
         } else if (stackId) {
-            assistantPageContext.setOverlay(assistantContextOwner, { stackId });
+            assistantPageContext.setOverlay(assistantContextOwner, {
+                stackId
+            });
         }
     }
 
@@ -64,7 +70,9 @@
             currentEventDetails = undefined;
             currentStack = undefined;
             if (stackId) {
-                assistantPageContext.setOverlay(assistantContextOwner, { stackId });
+                assistantPageContext.setOverlay(assistantContextOwner, {
+                    stackId
+                });
             } else {
                 assistantPageContext.clearOverlay(assistantContextOwner);
             }
@@ -82,11 +90,24 @@
     }
 </script>
 
-<DetailSheet detailsHref={resolvedHref} onClose={handleClose} open={!!stackId} title="Stack">
-    {#snippet actions()}
-        <AssistantFixButton prepareContext={prepareAssistantContext} resource="stack" />
-    {/snippet}
+<DetailSheet
+    detailsHref={resolvedHref}
+    historyKey="stack"
+    historyValue={stackId}
+    onClose={handleClose}
+    onOpen={(historyValue) => (stackId = historyValue)}
+    open={!!stackId}
+    title="Stack"
+>
     {#if stackId}
-        <StackDetails {filterChanged} {handleError} onDeleted={handleClose} onEventLoaded={handleEventLoaded} onStackLoaded={handleStackLoaded} {stackId} />
+        <StackDetails
+            {filterChanged}
+            {handleError}
+            onDeleted={handleClose}
+            onEventLoaded={handleEventLoaded}
+            onStackLoaded={handleStackLoaded}
+            {prepareAssistantContext}
+            {stackId}
+        />
     {/if}
 </DetailSheet>

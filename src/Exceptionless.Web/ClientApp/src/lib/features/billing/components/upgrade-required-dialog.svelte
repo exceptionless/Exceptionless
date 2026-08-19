@@ -1,47 +1,30 @@
 <script lang="ts">
     import { Muted } from '$comp/typography';
     import * as AlertDialog from '$comp/ui/alert-dialog';
-    import { ChangePlanDialog, isStripeEnabled } from '$features/billing';
-    import { getOrganizationQuery } from '$features/organizations/api.svelte';
+    import { isStripeEnabled } from '$features/billing';
     import { toast } from 'svelte-sonner';
 
+    import { showChangePlanDialog } from '../change-plan.svelte';
     import { upgradeRequiredDialog } from '../upgrade-required.svelte';
-
-    let showChangePlan = $state(false);
-
-    const organizationQuery = getOrganizationQuery({
-        route: {
-            get id() {
-                return showChangePlan ? upgradeRequiredDialog.organizationId : undefined;
-            }
-        }
-    });
 
     const canOpenBilling = $derived(isStripeEnabled() && !!upgradeRequiredDialog.organizationId);
 
     function onUpgrade() {
-        if (!canOpenBilling) {
+        const organizationId = upgradeRequiredDialog.organizationId;
+        if (!isStripeEnabled() || !organizationId) {
             toast.error('Billing is not configured in this environment. Contact your administrator.');
             return;
         }
 
-        upgradeRequiredDialog.open = false;
-        showChangePlan = true;
-    }
-
-    async function onChangePlanClose(success: boolean) {
-        const retry = success ? upgradeRequiredDialog.retryCallback : undefined;
-        showChangePlan = false;
+        const onSuccess = upgradeRequiredDialog.retryCallback;
         upgradeRequiredDialog.reset();
-
-        if (retry) {
-            await retry();
-        }
+        showChangePlanDialog(organizationId, {
+            onSuccess
+        });
     }
 
     function onCancel() {
         upgradeRequiredDialog.reset();
-        showChangePlan = false;
     }
 
     function handleOpenChange(open: boolean) {
@@ -66,7 +49,3 @@
         </AlertDialog.Footer>
     </AlertDialog.Content>
 </AlertDialog.Root>
-
-{#if showChangePlan && organizationQuery.data}
-    <ChangePlanDialog onclose={onChangePlanClose} organization={organizationQuery.data} />
-{/if}

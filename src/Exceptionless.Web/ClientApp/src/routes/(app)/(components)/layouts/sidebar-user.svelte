@@ -205,13 +205,23 @@
                         </DropdownMenu.Item>
                         {#if currentOrganizationId}
                             <DropdownMenu.Item
-                                onSelect={() => navigateTo(resolve('/(app)/organization/[organizationId]/manage', { organizationId: currentOrganizationId }))}
+                                onSelect={() =>
+                                    navigateTo(
+                                        resolve('/(app)/organization/[organizationId]/manage', {
+                                            organizationId: currentOrganizationId
+                                        })
+                                    )}
                             >
                                 <Settings />
                                 <span class="w-full">Manage Organization</span>
                             </DropdownMenu.Item>
                             <DropdownMenu.Item
-                                onSelect={() => navigateTo(resolve('/(app)/organization/[organizationId]/billing', { organizationId: currentOrganizationId }))}
+                                onSelect={() =>
+                                    navigateTo(
+                                        resolve('/(app)/organization/[organizationId]/billing', {
+                                            organizationId: currentOrganizationId
+                                        })
+                                    )}
                             >
                                 <CreditCard />
                                 <span class="w-full">Billing</span>

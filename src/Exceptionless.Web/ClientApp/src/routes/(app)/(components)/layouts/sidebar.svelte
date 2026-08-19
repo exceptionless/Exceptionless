@@ -190,7 +190,9 @@
             }
 
             if (!hasExpandedRouteChanges) {
-                nextExpandedRouteHrefs = { ...nextExpandedRouteHrefs };
+                nextExpandedRouteHrefs = {
+                    ...nextExpandedRouteHrefs
+                };
                 hasExpandedRouteChanges = true;
             }
 

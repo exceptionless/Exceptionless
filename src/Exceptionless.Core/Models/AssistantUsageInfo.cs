@@ -22,6 +22,7 @@ public record AssistantUsageInfo
 
 public sealed record AssistantUsageIncrement
 {
+    public DateTime? ProviderUsageDateUtc { get; init; }
     public long Turns { get; init; }
     public long Completed { get; init; }
     public long Failed { get; init; }

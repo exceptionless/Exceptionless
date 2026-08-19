@@ -83,7 +83,11 @@
 
     async function handleSetSystemNotification() {
         try {
-            await setSystemNotification.mutateAsync({ level: systemLevel, message: systemMessage, target: systemTarget });
+            await setSystemNotification.mutateAsync({
+                level: systemLevel,
+                message: systemMessage,
+                target: systemTarget
+            });
             toast.success('System notification set successfully.');
         } catch {
             toast.error('Failed to set system notification.');

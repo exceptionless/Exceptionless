@@ -37,7 +37,11 @@
                 url.searchParams.delete('q');
             }
 
-            goto(url.pathname + url.search, { keepFocus: true, noScroll: true, replaceState: true });
+            goto(url.pathname + url.search, {
+                keepFocus: true,
+                noScroll: true,
+                replaceState: true
+            });
         }
     });
 
@@ -47,11 +51,15 @@
         const base = category === 'All' ? actionsBase : `${actionsBase}/${category}`;
 
         if (query) {
-            goto(`${base}?q=${encodeURIComponent(query)}`, { noScroll: true });
+            goto(`${base}?q=${encodeURIComponent(query)}`, {
+                noScroll: true
+            });
             return;
         }
 
-        goto(base, { noScroll: true });
+        goto(base, {
+            noScroll: true
+        });
     }
 
     const filteredActions = $derived(

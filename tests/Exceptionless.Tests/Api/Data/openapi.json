@@ -994,14 +994,18 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "string",
-                "example": ""
+                "examples": [
+                  ""
+                ],
+                "type": "string"
               }
             },
             "text/plain": {
               "schema": {
-                "type": "string",
-                "example": ""
+                "examples": [
+                  ""
+                ],
+                "type": "string"
               }
             }
           },
@@ -1057,14 +1061,18 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "string",
-                "example": ""
+                "examples": [
+                  ""
+                ],
+                "type": "string"
               }
             },
             "text/plain": {
               "schema": {
-                "type": "string",
-                "example": ""
+                "examples": [
+                  ""
+                ],
+                "type": "string"
               }
             }
           },
@@ -1129,14 +1137,18 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "string",
-                "example": ""
+                "examples": [
+                  ""
+                ],
+                "type": "string"
               }
             },
             "text/plain": {
               "schema": {
-                "type": "string",
-                "example": ""
+                "examples": [
+                  ""
+                ],
+                "type": "string"
               }
             }
           },
@@ -7210,6 +7222,16 @@
           "200": {
             "description": "OK"
           },
+          "422": {
+            "description": "The requested status is invalid.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
           "404": {
             "description": "One or more stacks could not be found.",
             "content": {
@@ -8504,14 +8526,18 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "string",
-                "example": ""
+                "examples": [
+                  ""
+                ],
+                "type": "string"
               }
             },
             "text/plain": {
               "schema": {
-                "type": "string",
-                "example": ""
+                "examples": [
+                  ""
+                ],
+                "type": "string"
               }
             }
           },
@@ -8872,14 +8898,18 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "string",
-                "example": ""
+                "examples": [
+                  ""
+                ],
+                "type": "string"
               }
             },
             "text/plain": {
               "schema": {
-                "type": "string",
-                "example": ""
+                "examples": [
+                  ""
+                ],
+                "type": "string"
               }
             }
           },
@@ -11314,6 +11344,12 @@
               "null",
               "string"
             ]
+          },
+          "minimum_plan_id": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -11329,6 +11365,24 @@
           },
           "content": {
             "type": "string"
+          },
+          "is_suggested_action": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "suggested_action_label": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "suggested_action_path": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -11580,6 +11634,54 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "HttpValidationProblemDetails": {
+        "required": [
+          "errors"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
           }
         }
       },
@@ -12032,7 +12134,8 @@
           "token_endpoint_auth_methods_supported",
           "scopes_supported",
           "resource_documentation",
-          "client_id_metadata_document_supported"
+          "client_id_metadata_document_supported",
+          "authorization_response_iss_parameter_supported"
         ],
         "type": "object",
         "properties": {
@@ -12085,6 +12188,9 @@
             "type": "string"
           },
           "client_id_metadata_document_supported": {
+            "type": "boolean"
+          },
+          "authorization_response_iss_parameter_supported": {
             "type": "boolean"
           }
         }
@@ -12753,6 +12859,13 @@
               "boolean"
             ],
             "description": "Whether the column is visible. Null means use the table default."
+          },
+          "auto_fill": {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "description": "Whether the column fills the table\u0027s remaining width. Null or false means use fixed-width behavior."
           },
           "position": {
             "maximum": 49,

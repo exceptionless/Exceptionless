@@ -2,11 +2,11 @@
     import { Button } from '$comp/ui/button';
     import Bot from '@lucide/svelte/icons/bot';
 
-    import { tryUseAssistantControls } from '../controls.svelte';
+    import { type AssistantFixResource, tryUseAssistantControls } from '../controls.svelte';
 
     interface Props {
         prepareContext: () => void;
-        resource: 'event' | 'stack';
+        resource: AssistantFixResource;
     }
 
     let { prepareContext, resource }: Props = $props();
@@ -25,15 +25,8 @@
 </script>
 
 {#if assistant?.enabled()}
-    <Button
-        aria-label={`Fix this ${resource} with Exie`}
-        data-assistant-trigger
-        onclick={askExie}
-        size="sm"
-        title={`Fix this ${resource} with Exie`}
-        variant="outline"
-    >
+    <Button aria-label="Fix with Exie" data-assistant-trigger onclick={askExie} title="Fix with Exie" variant="outline">
         <Bot aria-hidden="true" />
-        <span>Fix with Exie</span>
+        <span>Fix</span>
     </Button>
 {/if}

@@ -52,12 +52,18 @@
     async function rowClick(org: ViewOrganization) {
         if (org.id) {
             organization.current = org.id;
-            await goto(resolve('/(app)/organization/[organizationId]/manage', { organizationId: org.id }));
+            await goto(
+                resolve('/(app)/organization/[organizationId]/manage', {
+                    organizationId: org.id
+                })
+            );
         }
     }
 
     function rowHref(org: ViewOrganization): string {
-        return resolve('/(app)/organization/[organizationId]/manage', { organizationId: org.id });
+        return resolve('/(app)/organization/[organizationId]/manage', {
+            organizationId: org.id
+        });
     }
 
     async function addOrganization() {

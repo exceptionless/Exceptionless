@@ -155,12 +155,18 @@ public sealed class AssistantUsageService(
         long costInMicrodollars = ToMicrodollars(
             promptTokens * AssistantLimits.MaximumProviderPromptPricePerMillionTokens / 1_000_000m
             + completionTokens * AssistantLimits.MaximumProviderCompletionPricePerMillionTokens / 1_000_000m);
+        var reservationExpiresAtUtc = month.ResetAtUtc.AddSeconds(AssistantLimits.MaximumTurnDurationSeconds + 30);
         await Task.WhenAll(
-            _cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "reserved-prompt-tokens"), promptTokens, month.ResetAtUtc.UtcDateTime),
-            _cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "reserved-completion-tokens"), completionTokens, month.ResetAtUtc.UtcDateTime),
-            _cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "reserved-cost-microdollars"), costInMicrodollars, month.ResetAtUtc.UtcDateTime));
+            _cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "reserved-prompt-tokens"), promptTokens, reservationExpiresAtUtc.UtcDateTime),
+            _cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "reserved-completion-tokens"), completionTokens, reservationExpiresAtUtc.UtcDateTime),
+            _cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "reserved-cost-microdollars"), costInMicrodollars, reservationExpiresAtUtc.UtcDateTime));
 
-        return new AssistantProviderReservation(promptTokens, completionTokens, costInMicrodollars);
+        return new AssistantProviderReservation(promptTokens, completionTokens, costInMicrodollars)
+        {
+            MonthId = month.Id,
+            ExpiresAtUtc = reservationExpiresAtUtc,
+            UsageDateUtc = now.UtcDateTime
+        };
     }
 
     public async Task<AssistantProviderUsageLifecycle> StartProviderRequestAsync(string? organizationId, int providerInputCharacters = 0)
@@ -207,6 +213,30 @@ public sealed class AssistantUsageService(
             reservation);
     }
 
+    internal async Task ReleaseProviderReservationAsync(
+        string? organizationId,
+        AssistantProviderReservation reservation)
+    {
+        if (String.IsNullOrWhiteSpace(organizationId) || !reservation.HasValue)
+            return;
+
+        var usageDate = reservation.UsageDateUtc is { } date
+            ? new DateTimeOffset(DateTime.SpecifyKind(date, DateTimeKind.Utc))
+            : timeProvider.GetUtcNow();
+        var month = reservation is { MonthId: not null, ExpiresAtUtc: not null }
+            ? new UsageWindow(reservation.MonthId, reservation.ExpiresAtUtc.Value)
+            : GetMonthWindow(usageDate);
+        await UpdateProviderUsageCacheWithInitializationAsync(
+            organizationId,
+            usageDate,
+            month,
+            promptTokens: 0,
+            completionTokens: 0,
+            costInMicrodollars: 0,
+            reservation,
+            reverse: false);
+    }
+
     private async Task RecordProviderUsageAsync(
         string organizationId,
         long promptTokens,
@@ -215,32 +245,107 @@ public sealed class AssistantUsageService(
         bool providerRequestAlreadyRecorded,
         AssistantProviderReservation? reservation)
     {
-        var now = timeProvider.GetUtcNow();
-        await EnsureMonthlyUsageCacheAsync(organizationId, now);
-        var month = GetMonthWindow(now);
+        UsageWindow month;
+        DateTimeOffset usageDate;
+        if (reservation is { MonthId: not null, ExpiresAtUtc: not null })
+        {
+            month = new UsageWindow(reservation.MonthId, reservation.ExpiresAtUtc.Value);
+            usageDate = reservation.UsageDateUtc is { } date
+                ? new DateTimeOffset(DateTime.SpecifyKind(date, DateTimeKind.Utc))
+                : timeProvider.GetUtcNow();
+        }
+        else
+        {
+            usageDate = timeProvider.GetUtcNow();
+            month = GetMonthWindow(usageDate);
+        }
+        await UpdateProviderUsageCacheWithInitializationAsync(
+            organizationId,
+            usageDate,
+            month,
+            promptTokens,
+            completionTokens,
+            costInMicrodollars,
+            reservation,
+            reverse: false);
+
+        try
+        {
+            await RecordUsageAsync(organizationId, new AssistantUsageIncrement
+            {
+                ProviderRequests = providerRequestAlreadyRecorded ? 0 : 1,
+                PromptTokens = promptTokens,
+                CompletionTokens = completionTokens,
+                CostInMicrodollars = costInMicrodollars,
+                ProviderUsageDateUtc = reservation?.UsageDateUtc
+            });
+        }
+        catch
+        {
+            await UpdateProviderUsageCacheWithInitializationAsync(
+                organizationId,
+                usageDate,
+                month,
+                promptTokens,
+                completionTokens,
+                costInMicrodollars,
+                reservation,
+                reverse: true);
+            throw;
+        }
+    }
+
+    private async Task UpdateProviderUsageCacheWithInitializationAsync(
+        string organizationId,
+        DateTimeOffset usageDate,
+        UsageWindow month,
+        long promptTokens,
+        long completionTokens,
+        long costInMicrodollars,
+        AssistantProviderReservation? reservation,
+        bool reverse)
+    {
+        await using var initializationLock = await lockProvider.AcquireAsync(
+            GetMonthlyUsageInitializationLockKey(organizationId, month.Id),
+            TimeSpan.FromSeconds(15),
+            TimeSpan.FromSeconds(15));
+        await EnsureMonthlyUsageCacheUnderLockAsync(organizationId, usageDate, month);
+        await UpdateProviderUsageCacheAsync(
+            organizationId,
+            month,
+            promptTokens,
+            completionTokens,
+            costInMicrodollars,
+            reservation,
+            reverse);
+    }
+
+    private Task UpdateProviderUsageCacheAsync(
+        string organizationId,
+        UsageWindow month,
+        long promptTokens,
+        long completionTokens,
+        long costInMicrodollars,
+        AssistantProviderReservation? reservation,
+        bool reverse)
+    {
+        int direction = reverse ? -1 : 1;
         var tasks = new List<Task>
         {
-            _cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "prompt-tokens"), promptTokens, month.ResetAtUtc.UtcDateTime),
-            _cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "completion-tokens"), completionTokens, month.ResetAtUtc.UtcDateTime)
+            _cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "prompt-tokens"), direction * promptTokens, month.ResetAtUtc.UtcDateTime),
+            _cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "completion-tokens"), direction * completionTokens, month.ResetAtUtc.UtcDateTime)
         };
 
         if (costInMicrodollars > 0)
-            tasks.Add(_cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "cost-microdollars"), costInMicrodollars, month.ResetAtUtc.UtcDateTime));
+            tasks.Add(_cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "cost-microdollars"), direction * costInMicrodollars, month.ResetAtUtc.UtcDateTime));
         if (reservation is { HasValue: true })
         {
-            tasks.Add(_cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "reserved-prompt-tokens"), -reservation.PromptTokens, month.ResetAtUtc.UtcDateTime));
-            tasks.Add(_cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "reserved-completion-tokens"), -reservation.CompletionTokens, month.ResetAtUtc.UtcDateTime));
-            tasks.Add(_cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "reserved-cost-microdollars"), -reservation.CostInMicrodollars, month.ResetAtUtc.UtcDateTime));
+            tasks.Add(_cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "reserved-prompt-tokens"), -direction * reservation.PromptTokens, month.ResetAtUtc.UtcDateTime));
+            tasks.Add(_cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "reserved-completion-tokens"), -direction * reservation.CompletionTokens, month.ResetAtUtc.UtcDateTime));
+            tasks.Add(_cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "reserved-cost-microdollars"), -direction * reservation.CostInMicrodollars, month.ResetAtUtc.UtcDateTime));
         }
 
-        await Task.WhenAll(tasks);
-        await TryRecordUsageAsync(organizationId, new AssistantUsageIncrement
-        {
-            ProviderRequests = providerRequestAlreadyRecorded ? 0 : 1,
-            PromptTokens = promptTokens,
-            CompletionTokens = completionTokens,
-            CostInMicrodollars = costInMicrodollars
-        });
+        return Task.WhenAll(tasks);
     }
 
     public Task RecordToolCallsAsync(string? organizationId, int count)
@@ -287,18 +392,25 @@ public sealed class AssistantUsageService(
             return;
 
         await using var initializationLock = await lockProvider.AcquireAsync(
-            $"assistant-usage-initialize:{organizationId}:{month.Id}",
+            GetMonthlyUsageInitializationLockKey(organizationId, month.Id),
             TimeSpan.FromSeconds(15),
             TimeSpan.FromSeconds(15));
-        cacheValues = await GetMonthlyUsageCacheValuesAsync(organizationId, month.Id);
+        await EnsureMonthlyUsageCacheUnderLockAsync(organizationId, now, month);
+    }
+
+    private async Task EnsureMonthlyUsageCacheUnderLockAsync(string organizationId, DateTimeOffset usageDate, UsageWindow month)
+    {
+        var cacheValues = await GetMonthlyUsageCacheValuesAsync(organizationId, month.Id);
         if (cacheValues.Values.All(value => value.HasValue))
             return;
 
         var durableUsage = _loadOrganizationAsync is null
             ? null
-            : (await _loadOrganizationAsync(organizationId))?.AssistantUsage.FirstOrDefault(usage => usage.Date.Year == now.Year && usage.Date.Month == now.Month);
+            : (await _loadOrganizationAsync(organizationId))?.AssistantUsage.FirstOrDefault(usage => usage.Date.Year == usageDate.Year && usage.Date.Month == usageDate.Month);
 
-        TimeSpan expiresIn = month.ResetAtUtc - now;
+        TimeSpan expiresIn = month.ResetAtUtc - timeProvider.GetUtcNow();
+        if (expiresIn <= TimeSpan.Zero)
+            expiresIn = TimeSpan.FromSeconds(1);
         var seedValues = new Dictionary<string, long>(StringComparer.Ordinal)
         {
             [GetTurnKey(organizationId, "month", month.Id)] = durableUsage?.Turns ?? 0,
@@ -313,6 +425,9 @@ public sealed class AssistantUsageService(
             .Where(pair => !cacheValues[pair.Key].HasValue)
             .Select(pair => _cache.SetAsync(pair.Key, pair.Value, expiresIn)));
     }
+
+    private static string GetMonthlyUsageInitializationLockKey(string organizationId, string monthId)
+        => $"assistant-usage-initialize:{organizationId}:{monthId}";
 
     private Task<IDictionary<string, CacheValue<long>>> GetMonthlyUsageCacheValuesAsync(string organizationId, string monthId)
         => _cache.GetAllAsync<long>(
@@ -373,18 +488,20 @@ public sealed class AssistantUsageService(
 
     private async Task TryRecordUsageAsync(string? organizationId, AssistantUsageIncrement increment)
     {
-        if (String.IsNullOrWhiteSpace(organizationId) || !increment.HasValue)
-            return;
-
         try
         {
-            await usageRecorder.RecordAssistantUsageAsync(organizationId, increment);
+            await RecordUsageAsync(organizationId, increment);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Unable to record durable assistant usage for organization {OrganizationId}", organizationId);
         }
     }
+
+    private Task RecordUsageAsync(string? organizationId, AssistantUsageIncrement increment)
+        => String.IsNullOrWhiteSpace(organizationId) || !increment.HasValue
+            ? Task.CompletedTask
+            : usageRecorder.RecordAssistantUsageAsync(organizationId, increment);
 
     private sealed record UsageWindow(string Id, DateTimeOffset ResetAtUtc);
 }
@@ -415,6 +532,9 @@ public sealed record AssistantProviderReservation(long PromptTokens, long Comple
 {
     public static AssistantProviderReservation Empty { get; } = new(0, 0, 0);
     public bool HasValue => PromptTokens > 0 || CompletionTokens > 0 || CostInMicrodollars > 0;
+    internal string? MonthId { get; init; }
+    internal DateTimeOffset? ExpiresAtUtc { get; init; }
+    internal DateTime? UsageDateUtc { get; init; }
 }
 
 public sealed class AssistantProviderUsageLifecycle : IAsyncDisposable
@@ -422,6 +542,7 @@ public sealed class AssistantProviderUsageLifecycle : IAsyncDisposable
     private readonly AssistantUsageService _usageService;
     private readonly string? _organizationId;
     private readonly AssistantProviderReservation _reservation;
+    private int _accepted;
     private int _completionState;
 
     internal AssistantProviderUsageLifecycle(
@@ -433,6 +554,8 @@ public sealed class AssistantProviderUsageLifecycle : IAsyncDisposable
         _organizationId = organizationId;
         _reservation = reservation;
     }
+
+    public void MarkAccepted() => Volatile.Write(ref _accepted, 1);
 
     public async Task ReconcileAsync(AssistantProviderUsage usage)
     {
@@ -462,7 +585,10 @@ public sealed class AssistantProviderUsageLifecycle : IAsyncDisposable
 
         try
         {
-            await _usageService.RecordUnreconciledProviderReservationAsync(_organizationId, _reservation);
+            if (Volatile.Read(ref _accepted) == 1)
+                await _usageService.RecordUnreconciledProviderReservationAsync(_organizationId, _reservation);
+            else
+                await _usageService.ReleaseProviderReservationAsync(_organizationId, _reservation);
             Volatile.Write(ref _completionState, 2);
         }
         catch

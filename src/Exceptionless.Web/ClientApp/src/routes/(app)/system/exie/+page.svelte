@@ -11,18 +11,13 @@
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
     import { getAdminAssistantUsageQuery } from '$features/admin/api.svelte';
-    import { getBlockedCount, getTotalTokens, getUsageRisk, type UsageRisk } from '$features/admin/assistant-usage';
+    import { getBlockedCount, getTotalTokens, getUsageRisk, getUtcMonthKey, type UsageRisk } from '$features/admin/assistant-usage';
     import Bot from '@lucide/svelte/icons/bot';
     import Building2 from '@lucide/svelte/icons/building-2';
     import Coins from '@lucide/svelte/icons/coins';
     import Gauge from '@lucide/svelte/icons/gauge';
     import MessagesSquare from '@lucide/svelte/icons/messages-square';
     import Wrench from '@lucide/svelte/icons/wrench';
-
-    function getCurrentMonth(): string {
-        const now = new Date();
-        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    }
 
     function riskBadgeVariant(risk: UsageRisk): 'destructive' | 'outline' | 'yellow' {
         if (risk === 'critical') {
@@ -36,7 +31,7 @@
         return utilization === null || utilization === undefined ? 'No limit' : `${Math.round(utilization * 100)}%`;
     }
 
-    const currentMonth = getCurrentMonth();
+    const currentMonth = getUtcMonthKey();
     let selectedMonth = $state(currentMonth);
     const usageQuery = getAdminAssistantUsageQuery(() => selectedMonth);
     const usage = $derived(usageQuery.data);
@@ -45,12 +40,44 @@
     const tokensPerTurn = $derived(usage && usage.turns > 0 ? totalTokens / usage.turns : 0);
 
     const statCards = $derived([
-        { icon: Building2, label: 'Active Organizations', value: usage?.active_organizations, valueType: 'number' },
-        { icon: MessagesSquare, label: 'Turns', value: usage?.turns, valueType: 'number' },
-        { icon: Bot, label: 'Tokens', value: totalTokens, valueType: 'compact' },
-        { icon: Coins, label: 'Total Provider Cost', sub: 'across all organizations', value: usage?.cost_usd, valueType: 'currency' },
-        { icon: Gauge, label: 'Tokens per Turn', value: tokensPerTurn, valueType: 'number' },
-        { icon: Wrench, label: 'Average Cost', sub: 'per active organization', value: averageCost, valueType: 'currency' }
+        {
+            icon: Building2,
+            label: 'Active Organizations',
+            value: usage?.active_organizations,
+            valueType: 'number'
+        },
+        {
+            icon: MessagesSquare,
+            label: 'Turns',
+            value: usage?.turns,
+            valueType: 'number'
+        },
+        {
+            icon: Bot,
+            label: 'Tokens',
+            value: totalTokens,
+            valueType: 'compact'
+        },
+        {
+            icon: Coins,
+            label: 'Total Provider Cost',
+            sub: 'across all organizations',
+            value: usage?.cost_usd,
+            valueType: 'currency'
+        },
+        {
+            icon: Gauge,
+            label: 'Tokens per Turn',
+            value: tokensPerTurn,
+            valueType: 'number'
+        },
+        {
+            icon: Wrench,
+            label: 'Average Cost',
+            sub: 'per active organization',
+            value: averageCost,
+            valueType: 'currency'
+        }
     ]);
 </script>
 
@@ -141,7 +168,9 @@
                                     <Table.Cell class="max-w-64 pl-4 whitespace-normal">
                                         <a
                                             class="text-primary font-medium underline-offset-4 hover:underline"
-                                            href={resolve('/(app)/organization/[organizationId]/manage', { organizationId: organization.organization_id })}
+                                            href={resolve('/(app)/organization/[organizationId]/manage', {
+                                                organizationId: organization.organization_id
+                                            })}
                                         >
                                             {organization.organization_name}
                                         </a>

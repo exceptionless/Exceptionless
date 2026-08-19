@@ -17,7 +17,9 @@
     let currentTheme = $derived(mode.current === 'dark' ? 'github-dark-default' : 'github-light-default');
 
     const assistantTheme = {
-        blockquote: { base: 'border-muted-foreground/30 text-muted-foreground my-3 border-l-3 pl-3' },
+        blockquote: {
+            base: 'border-muted-foreground/30 text-muted-foreground my-3 border-l-3 pl-3'
+        },
         code: {
             actions: 'pointer-events-none sticky top-2 z-10 -mt-9 flex h-7 items-center justify-end',
             base: 'my-3 flex w-full flex-col gap-1.5 rounded-lg border border-border bg-sidebar p-1.5',
@@ -29,27 +31,47 @@
         components: {
             button: 'disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer p-1 text-muted-foreground transition-colors hover:text-foreground rounded hover:bg-border flex items-center justify-center size-7'
         },
-        h1: { base: 'mt-5 mb-2 text-xl font-semibold text-foreground' },
-        h2: { base: 'mt-5 mb-2 text-lg font-semibold text-foreground' },
-        h3: { base: 'mt-4 mb-1.5 text-base font-semibold text-foreground' },
-        h4: { base: 'mt-3 mb-1 text-sm font-semibold text-foreground' },
-        li: { base: 'py-0.5' },
-        ol: { base: 'my-2 ml-5 list-outside list-decimal whitespace-normal text-foreground' },
-        paragraph: { base: 'my-2 leading-relaxed text-foreground' },
+        h1: {
+            base: 'mt-5 mb-2 text-xl font-semibold text-foreground'
+        },
+        h2: {
+            base: 'mt-5 mb-2 text-lg font-semibold text-foreground'
+        },
+        h3: {
+            base: 'mt-4 mb-1.5 text-base font-semibold text-foreground'
+        },
+        h4: {
+            base: 'mt-3 mb-1 text-sm font-semibold text-foreground'
+        },
+        li: {
+            base: 'py-0.5'
+        },
+        link: {
+            base: 'font-medium text-foreground underline decoration-muted-foreground/60 underline-offset-2 wrap-anywhere transition-colors hover:text-primary hover:decoration-primary',
+            blocked: 'text-muted-foreground'
+        },
+        ol: {
+            base: 'my-2 ml-5 list-outside list-decimal whitespace-normal text-foreground'
+        },
+        paragraph: {
+            base: 'my-2 leading-relaxed text-foreground'
+        },
         table: {
-            container: 'max-w-full overflow-x-auto rounded-lg border border-border bg-background',
-            table: 'w-full min-w-[28rem] border-collapse',
+            container: 'max-w-full overflow-x-auto rounded-md border border-border bg-background',
+            table: 'w-full table-auto border-collapse',
             toolbar:
                 'ml-auto flex w-fit items-center justify-end gap-0.5 rounded-md border border-sidebar bg-sidebar/90 p-0.5 supports-[backdrop-filter]:bg-sidebar/75 supports-[backdrop-filter]:backdrop-blur',
-            wrapper: 'my-3 flex flex-col gap-1.5 rounded-xl border border-border bg-sidebar p-1.5'
+            wrapper: 'my-2 flex flex-col gap-0 border-0 p-0 shadow-none'
         },
         td: {
-            base: 'min-w-0 max-w-none px-3 py-2.5 align-top text-sm text-foreground first:min-w-56 [&:not(:first-child)]:w-px [&:not(:first-child)]:whitespace-nowrap'
+            base: 'w-px min-w-0 px-2 py-1.5 align-top text-xs leading-snug text-foreground whitespace-normal [&:has(a)]:w-auto [&:has(a)]:min-w-40 [&:has(a)]:wrap-anywhere'
         },
         th: {
-            base: 'min-w-0 max-w-none px-3 py-2 text-left align-bottom text-xs font-semibold text-foreground first:min-w-56 [&:not(:first-child)]:w-px [&:not(:first-child)]:whitespace-nowrap'
+            base: 'w-px min-w-0 px-2 py-1.5 text-left align-bottom text-[0.6875rem] leading-tight font-semibold text-foreground whitespace-normal'
         },
-        ul: { base: 'my-2 ml-5 list-outside list-disc whitespace-normal text-foreground' }
+        ul: {
+            base: 'my-2 ml-5 list-outside list-disc whitespace-normal text-foreground'
+        }
     } satisfies NonNullable<StreamdownProps['theme']>;
 </script>
 
@@ -58,7 +80,13 @@
         {content}
         {components}
         baseTheme="shadcn"
-        controls={{ code: { copy: true, download: false }, table: { copy: true, download: false, fullscreen: true } }}
+        controls={{
+            code: {
+                copy: true,
+                download: false
+            },
+            table: false
+        }}
         mergeTheme={true}
         shikiTheme={currentTheme}
         shikiThemes={{

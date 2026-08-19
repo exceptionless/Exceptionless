@@ -24,7 +24,9 @@
         () => {
             goto(resolve('/(app)/stack'));
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     async function filterChanged(addedOrUpdated: IFilter) {
@@ -45,7 +47,9 @@
 
     async function handleEventLoaded(event: PersistentEvent) {
         assistantPageContext.setPageEvent(event);
-        await goto(buildEventDetailsHref(event.id, event.stack_id), { replaceState: true });
+        await goto(buildEventDetailsHref(event.id, event.stack_id), {
+            replaceState: true
+        });
     }
 
     function handleStackLoaded(stack: Stack) {

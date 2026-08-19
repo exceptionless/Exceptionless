@@ -7,9 +7,11 @@ import type { NavigationItem } from '../../routes.svelte';
 
 const generateSampleDataMutateAsync = vi.hoisted(() => vi.fn());
 const goto = vi.hoisted(() => vi.fn());
+const inviteUserMutateAsync = vi.hoisted(() => vi.fn());
 const logout = vi.hoisted(() => vi.fn());
 const organizationState = vi.hoisted(() => ({ current: 'organization-id' as string | undefined }));
 const refetchQueries = vi.hoisted(() => vi.fn());
+const remoteSearchQueryState = vi.hoisted(() => ({ isPending: false }));
 const resetDataMutateAsync = vi.hoisted(() => vi.fn());
 const toast = vi.hoisted(() => ({ dismiss: vi.fn(), error: vi.fn(), success: vi.fn() }));
 const toggleMode = vi.hoisted(() => vi.fn());
@@ -23,15 +25,27 @@ vi.mock('$app/navigation', () => ({ goto }));
 vi.mock('$features/auth/api.svelte', () => ({ logout }));
 vi.mock('$features/auth/index.svelte', () => ({ accessToken: { current: 'access-token' } }));
 vi.mock('$features/events/components/summary/index', () => ({ buildEventDetailsHref: vi.fn() }));
+vi.mock('$features/billing', () => ({ showBillingDialogOnUpgradeProblem: vi.fn(() => false) }));
+vi.mock('$features/organizations/api.svelte', () => ({
+    addOrganizationUser: () => ({ isPending: false, mutateAsync: inviteUserMutateAsync })
+}));
 vi.mock('$features/organizations/context.svelte', () => ({ organization: organizationState }));
 vi.mock('$features/projects/api.svelte', () => ({
     generateSampleData: () => ({ isPending: false, mutateAsync: generateSampleDataMutateAsync }),
     getOrganizationProjectsQuery: () => ({ data: { data: [project] }, isError: false, isLoading: false }),
     resetData: () => ({ isPending: false, mutateAsync: resetDataMutateAsync })
 }));
-vi.mock('@foundatiofx/fetchclient', () => ({ useFetchClient: () => ({ getJSON: vi.fn() }) }));
+vi.mock('@foundatiofx/fetchclient', () => ({
+    ProblemDetails: class ProblemDetails extends Error {},
+    useFetchClient: () => ({ getJSON: vi.fn() })
+}));
 vi.mock('@tanstack/svelte-query', () => ({
-    createQuery: () => ({ data: undefined, isPending: false }),
+    createQuery: () => ({
+        data: undefined,
+        get isPending() {
+            return remoteSearchQueryState.isPending;
+        }
+    }),
     useQueryClient: () => ({ refetchQueries })
 }));
 vi.mock('mode-watcher', () => ({ toggleMode }));
@@ -40,11 +54,14 @@ vi.mock('svelte-sonner', () => ({ toast }));
 import NavigationCommand from './navigation-command.svelte';
 
 type RenderOptions = {
+    askExie?: (prompt: string) => Promise<void> | void;
     guidedTours?: ProductTourListItem[];
     isChatEnabled?: boolean;
+    isExieEnabled?: boolean;
     isGlobalAdmin?: boolean;
     isImpersonating?: boolean;
     openChat?: () => void;
+    openExie?: () => Promise<void> | void;
     openGuidedTours?: () => void;
     openImpersonateOrganization?: () => Promise<void> | void;
     organizations?: Array<{ id: string; name: string }>;
@@ -61,12 +78,15 @@ const sessionsRoute: NavigationItem = {
 
 function renderCommandPalette(routes: NavigationItem[] = [], options: RenderOptions = {}) {
     return render(NavigationCommand, {
+        askExie: options.askExie ?? vi.fn(),
         guidedTours: options.guidedTours ?? [],
         isChatEnabled: options.isChatEnabled ?? false,
+        isExieEnabled: options.isExieEnabled ?? true,
         isGlobalAdmin: options.isGlobalAdmin ?? false,
         isImpersonating: options.isImpersonating ?? false,
         open: true,
         openChat: options.openChat ?? vi.fn(),
+        openExie: options.openExie ?? vi.fn(),
         openGuidedTours: options.openGuidedTours ?? vi.fn(),
         openImpersonateOrganization: options.openImpersonateOrganization ?? vi.fn(),
         openKeyboardShortcuts: vi.fn(),
@@ -88,15 +108,21 @@ describe('NavigationCommand project actions', () => {
     beforeEach(() => {
         generateSampleDataMutateAsync.mockResolvedValue(undefined);
         goto.mockResolvedValue(undefined);
+        inviteUserMutateAsync.mockResolvedValue(undefined);
         logout.mockResolvedValue(undefined);
         organizationState.current = 'organization-id';
         refetchQueries.mockResolvedValue(undefined);
+        remoteSearchQueryState.isPending = false;
         resetDataMutateAsync.mockResolvedValue(undefined);
     });
 
     it.each([
         ['Open Project', `/next/project/${project.id}/manage`],
         ['Project Stacks', `/next/stack?filter=project:${project.id}`],
+        ['Project Events', `/next/event?project=${project.id}`],
+        ['Project API Keys', `/next/project/${project.id}/api-keys`],
+        ['Project Webhooks & Integrations', `/next/project/${project.id}/integrations`],
+        ['Project Source Maps', `/next/project/${project.id}/source-maps`],
         ['Project Notifications', `/next/account/notifications?project=${project.id}`],
         ['Client Setup', `/next/project/${project.id}/configure`]
     ])('links %s to the selected project', async (action, expectedHref) => {
@@ -126,6 +152,26 @@ describe('NavigationCommand project actions', () => {
         await waitFor(() => expect(aiToolsGroup?.hasAttribute('hidden')).toBe(false));
     });
 
+    it('finds project integrations by the webhook keyword', async () => {
+        renderCommandPalette();
+
+        await fireEvent.input(screen.getByPlaceholderText('Search or jump to...'), { target: { value: 'webhook' } });
+
+        const integrationsCommand = screen.getByText('Project Webhooks & Integrations').closest('[data-command-item]');
+        await waitFor(() => expect(integrationsCommand?.hasAttribute('data-selected')).toBe(true));
+    });
+
+    it('does not mount remote result groups while a search is pending', async () => {
+        remoteSearchQueryState.isPending = true;
+        renderCommandPalette();
+
+        await fireEvent.input(screen.getByPlaceholderText('Search or jump to...'), { target: { value: 'no-local-match' } });
+
+        await waitFor(() => expect(screen.getByText('Searching...')).toBeTruthy());
+        expect(screen.queryByText('Searching events...')).toBeNull();
+        expect(screen.queryByText('Searching stacks...')).toBeNull();
+    });
+
     it('generates sample data for the selected project', async () => {
         renderCommandPalette();
 
@@ -134,6 +180,18 @@ describe('NavigationCommand project actions', () => {
 
         await waitFor(() => expect(generateSampleDataMutateAsync).toHaveBeenCalledOnce());
         expect(toast.success).toHaveBeenCalledWith(`Sample data generation has been queued for "${project.name}". Events will appear shortly.`);
+    });
+
+    it('opens the project picker when a filtered project action is selected with Enter', async () => {
+        renderCommandPalette();
+
+        const searchInput = screen.getByPlaceholderText('Search or jump to...');
+        await fireEvent.input(searchInput, { target: { value: 'generate' } });
+        await waitFor(() => expect(screen.getByText('Generate Sample Data').closest('[data-command-item]')?.hasAttribute('data-selected')).toBe(true));
+        await fireEvent.keyDown(searchInput, { key: 'Enter' });
+
+        expect(screen.getByPlaceholderText('Select a project...')).toBeTruthy();
+        await waitFor(() => expect(screen.getByText(project.name)).toBeTruthy());
     });
 
     it('confirms before resetting the selected project data', async () => {
@@ -152,9 +210,70 @@ describe('NavigationCommand project actions', () => {
     it('offers the approved app actions', () => {
         renderCommandPalette([], { isChatEnabled: true, isGlobalAdmin: true });
 
-        for (const action of ['Add Organization', 'Chat with Support', 'Toggle Theme', 'Refresh Current View', 'Impersonate Organization', 'Log Out']) {
+        for (const action of [
+            'Add Organization',
+            'View Organization Users',
+            'Invite User',
+            'Ask Exie',
+            'Triage Recent Errors',
+            'Analyze Error Trends',
+            'Chat with Support',
+            'Toggle Theme',
+            'Refresh Current View',
+            'Impersonate Organization',
+            'Log Out'
+        ]) {
             expect(screen.getByText(action)).toBeTruthy();
         }
+    });
+
+    it('links to the current organization users list', () => {
+        renderCommandPalette();
+
+        const usersLink = screen.getByText('View Organization Users').closest('a');
+
+        expect(usersLink?.getAttribute('href')).toBe('/next/organization/organization-id/users');
+    });
+
+    it('opens Exie from the command palette', async () => {
+        const openExie = vi.fn();
+        renderCommandPalette([], { openExie });
+
+        await fireEvent.click(screen.getByText('Ask Exie'));
+
+        expect(openExie).toHaveBeenCalledOnce();
+    });
+
+    it.each([
+        ['Triage Recent Errors', 'Triage the most important recent errors'],
+        ['Analyze Error Trends', 'Analyze error trends in the current context over the last 7 days']
+    ])('sends the %s prompt to Exie', async (command, expectedPrompt) => {
+        const askExie = vi.fn();
+        renderCommandPalette([], { askExie });
+
+        await fireEvent.click(screen.getByText(command));
+
+        expect(askExie).toHaveBeenCalledWith(expect.stringContaining(expectedPrompt));
+    });
+
+    it('hides Exie commands when Exie is disabled', () => {
+        renderCommandPalette([], { isExieEnabled: false });
+
+        expect(screen.queryByText('Ask Exie')).toBeNull();
+        expect(screen.queryByText('Triage Recent Errors')).toBeNull();
+        expect(screen.queryByText('Analyze Error Trends')).toBeNull();
+    });
+
+    it('invites a user to the current organization', async () => {
+        renderCommandPalette();
+
+        await fireEvent.click(screen.getByText('Invite User'));
+        const emailInput = await screen.findByLabelText('Email Address');
+        await fireEvent.input(emailInput, { target: { value: 'new.user@example.com' } });
+        await fireEvent.click(screen.getByRole('button', { name: 'Invite User' }));
+
+        await waitFor(() => expect(inviteUserMutateAsync).toHaveBeenCalledWith('new.user@example.com'));
+        expect(toast.success).toHaveBeenCalledWith('User invited successfully');
     });
 
     it('switches directly to a named organization', async () => {

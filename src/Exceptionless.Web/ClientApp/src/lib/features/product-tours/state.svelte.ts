@@ -33,7 +33,11 @@ class ProductTourHost {
     }>();
 
     advance(tourId: ProductTourId, stepId: string): void {
-        this.publish({ stepId, tourId, type: 'advance' });
+        this.publish({
+            stepId,
+            tourId,
+            type: 'advance'
+        });
     }
 
     clear(): void {
@@ -41,15 +45,24 @@ class ProductTourHost {
     }
 
     complete(tourId: ProductTourId): void {
-        this.publish({ tourId, type: 'completed' });
+        this.publish({
+            tourId,
+            type: 'completed'
+        });
     }
 
     dismiss(tourId: ProductTourId): void {
-        this.publish({ tourId, type: 'dismissed' });
+        this.publish({
+            tourId,
+            type: 'dismissed'
+        });
     }
 
     eventOpened(eventType?: string): void {
-        this.publish({ eventType, type: 'event-opened' });
+        this.publish({
+            eventType,
+            type: 'event-opened'
+        });
     }
 
     isActive(tourId: ProductTourId): boolean {
@@ -62,7 +75,12 @@ class ProductTourHost {
             throw new Error('A product tour session requires a launch source.');
         }
 
-        this.session = { organizationId: organizationId ?? this.session?.organizationId, source: activeSource, stepId, tourId };
+        this.session = {
+            organizationId: organizationId ?? this.session?.organizationId,
+            source: activeSource,
+            stepId,
+            tourId
+        };
     }
 
     subscribe(listener: ProductTourHostListener): () => void {

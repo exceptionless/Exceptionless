@@ -93,7 +93,14 @@
     let overlayRevision = $state(0);
 
     const progressMutation = putCurrentUserProductTour();
-    const context = $derived<ProductTourContext>({ assistantAccess, errorEventAvailability, isSetupPage, organizationId, pathname, projects });
+    const context = $derived<ProductTourContext>({
+        assistantAccess,
+        errorEventAvailability,
+        isSetupPage,
+        organizationId,
+        pathname,
+        projects
+    });
     const items = $derived(getProductTourItems(context, currentUser?.product_tours));
     const recommended = $derived.by(() => {
         const id = getRecommendedProductTourId(context);
@@ -159,7 +166,11 @@
 
     $effect(() => {
         const observer = new MutationObserver(() => (overlayRevision += 1));
-        observer.observe(document.body, { attributes: true, childList: true, subtree: true });
+        observer.observe(document.body, {
+            attributes: true,
+            childList: true,
+            subtree: true
+        });
         return () => observer.disconnect();
     });
 
@@ -286,7 +297,12 @@
         welcomeOpen = false;
         exieAnnouncementOpen = false;
         closeOverlays();
-        const startAction = item.getStartAction?.({ ...context, openEventType: getVisibleEventType() }) ?? { type: 'launch' };
+        const startAction = item.getStartAction?.({
+            ...context,
+            openEventType: getVisibleEventType()
+        }) ?? {
+            type: 'launch'
+        };
         const canLaunchInsideOverlay = startAction.type === 'launch' && startAction.stepId === 'stack-summary';
         if (!(await waitForCompetingOverlaysToClose()) && !canLaunchInsideOverlay) {
             toast.info('Close the open dialog or panel before starting a guided tour.');
@@ -310,12 +326,20 @@
 
     async function executeStartAction(id: ProductTourId, source: ProductTourLaunchSource, action: ProductTourStartAction): Promise<void> {
         if (action.type === 'confirm-navigation') {
-            pendingConfirmation = { action, id, source };
+            pendingConfirmation = {
+                action,
+                id,
+                source
+            };
             return;
         }
 
         if (action.type === 'navigate' && action.destination !== routeKey) {
-            writeProductTourSession({ source, tourId: id, version: getProductTour(id).version });
+            writeProductTourSession({
+                source,
+                tourId: id,
+                version: getProductTour(id).version
+            });
             await goto(action.destination);
             return;
         }
@@ -326,7 +350,12 @@
     async function launch(id: ProductTourId, source: ProductTourLaunchSource, resumeStepId?: string, emitStarted = true): Promise<void> {
         const definition = getProductTour(id);
         if (id === 'new-ui-overview' && isMobileViewport()) {
-            await ensureTarget({ anchor: PRODUCT_TOUR_ANCHORS.appNavigation, description: '', id: 'mobile-navigation', title: '' });
+            await ensureTarget({
+                anchor: PRODUCT_TOUR_ANCHORS.appNavigation,
+                description: '',
+                id: 'mobile-navigation',
+                title: ''
+            });
         }
 
         const allSteps = await getAvailableSteps(id, definition.getSteps(context));
@@ -343,7 +372,12 @@
 
         if (firstStep.presentation === 'inline') {
             productTourHost.set(id, firstStep.id, source, organizationId);
-            writeProductTourSession({ source, stepId: firstStep.id, tourId: id, version: definition.version });
+            writeProductTourSession({
+                source,
+                stepId: firstStep.id,
+                tourId: id,
+                version: definition.version
+            });
             void track(emitStarted ? 'started' : 'step', id, definition.version, source, firstStep.id);
             return;
         }
@@ -383,7 +417,12 @@
                 }
 
                 productTourHost.set(id, step.id, source, organizationId);
-                writeProductTourSession({ source, stepId: step.resumeStepId ?? step.id, tourId: id, version: definition.version });
+                writeProductTourSession({
+                    source,
+                    stepId: step.resumeStepId ?? step.id,
+                    tourId: id,
+                    version: definition.version
+                });
                 void track('step', id, definition.version, source, step.id);
             },
             overlayClickBehavior: 'close',
@@ -404,7 +443,12 @@
         });
         driverRoute = routeKey;
         productTourHost.set(id, firstStep.id, source, organizationId);
-        writeProductTourSession({ source, stepId: firstStep.resumeStepId ?? firstStep.id, tourId: id, version: definition.version });
+        writeProductTourSession({
+            source,
+            stepId: firstStep.resumeStepId ?? firstStep.id,
+            tourId: id,
+            version: definition.version
+        });
 
         if (emitStarted) {
             void track('started', id, definition.version, source);
@@ -450,7 +494,12 @@
         if (!next) {
             if (step.advanceOnClick && step.resumeStepId) {
                 driverTransition = 'finishing';
-                writeProductTourSession({ source, stepId: step.resumeStepId, tourId: id, version });
+                writeProductTourSession({
+                    source,
+                    stepId: step.resumeStepId,
+                    tourId: id,
+                    version
+                });
                 driverInstance?.destroy();
                 driverInstance = undefined;
                 productTourHost.clear();
@@ -478,7 +527,12 @@
 
         if (next.presentation === 'inline') {
             driverTransition = 'inline';
-            writeProductTourSession({ source, stepId: next.id, tourId: id, version });
+            writeProductTourSession({
+                source,
+                stepId: next.id,
+                tourId: id,
+                version
+            });
             driverInstance?.destroy();
             driverTransition = 'active';
             productTourHost.set(id, next.id, source, organizationId);
@@ -526,7 +580,11 @@
                 observer.disconnect();
                 resolvePromise(false);
             }, timeout);
-            observer.observe(document.body, { attributes: true, childList: true, subtree: true });
+            observer.observe(document.body, {
+                attributes: true,
+                childList: true,
+                subtree: true
+            });
         });
     }
 
@@ -638,7 +696,10 @@
         const confirmation = pendingConfirmation;
         pendingConfirmation = undefined;
         if (confirmation) {
-            await executeStartAction(confirmation.id, confirmation.source, { destination: confirmation.action.destination, type: 'navigate' });
+            await executeStartAction(confirmation.id, confirmation.source, {
+                destination: confirmation.action.destination,
+                type: 'navigate'
+            });
         }
     }
 
@@ -691,7 +752,13 @@
     }
 
     async function recordProgress(key: string, version: number, status: 'completed' | 'dismissed'): Promise<void> {
-        await progressMutation.mutateAsync({ progress: { status, version }, tourId: key });
+        await progressMutation.mutateAsync({
+            progress: {
+                status,
+                version
+            },
+            tourId: key
+        });
     }
 
     async function track(
@@ -762,7 +829,12 @@
         const index = steps.findIndex((step) => step.id === 'choose-error');
         if (index >= 0) {
             productTourHost.set('investigate-error', 'stack-summary', source, organizationId);
-            writeProductTourSession({ source, stepId: 'stack-summary', tourId: 'investigate-error', version: definition.version });
+            writeProductTourSession({
+                source,
+                stepId: 'stack-summary',
+                tourId: 'investigate-error',
+                version: definition.version
+            });
             void advance('investigate-error', definition.version, source, steps, index);
         }
     }

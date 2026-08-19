@@ -1,4 +1,5 @@
 import type { PersistentEvent } from '$features/events/models';
+import type { Stack } from '$features/stacks/models';
 
 import { describe, expect, it } from 'vitest';
 
@@ -37,6 +38,15 @@ describe('assistantPageContext', () => {
 
         assistantPageContext.clearOverlay(Symbol('different-overlay'));
         expect(assistantPageContext.getContext(pageEvent.id, pageEvent.stack_id)?.eventId).toBe('overlay-event');
+
+        assistantPageContext.setOverlayStack(overlayOwner, {
+            id: 'overlay-stack',
+            project_id: 'overlay-project'
+        } as Stack);
+        expect(assistantPageContext.getContext(pageEvent.id, pageEvent.stack_id)).toEqual({
+            projectId: 'overlay-project',
+            stackId: 'overlay-stack'
+        });
 
         assistantPageContext.clearOverlay(overlayOwner);
         expect(assistantPageContext.getContext(pageEvent.id, pageEvent.stack_id)?.eventId).toBe('page-event');

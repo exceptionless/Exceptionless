@@ -68,5 +68,6 @@ public sealed class AssistantEndpointTests : IntegrationTestsBase
         Assert.False(access.RootElement.GetProperty("enabled").GetBoolean());
         Assert.False(access.RootElement.GetProperty("has_access").GetBoolean());
         Assert.False(access.RootElement.GetProperty("upgrade_required").GetBoolean());
+        Assert.False(access.RootElement.TryGetProperty("minimum_plan_id", out _));
     }
 }

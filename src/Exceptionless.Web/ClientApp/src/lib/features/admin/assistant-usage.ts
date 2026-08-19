@@ -21,3 +21,7 @@ export function getUsageRisk(utilization: null | number | undefined, blockedCoun
 
     return utilization >= 0.75 ? 'warning' : 'normal';
 }
+
+export function getUtcMonthKey(date = new Date()): string {
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+}

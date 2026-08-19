@@ -349,6 +349,53 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetProjectSetupAsync_Project_ReturnsOnlyVerifiedClientSupport()
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead);
+
+        var result = await tools.GetProjectSetupAsync(TestConstants.ProjectId);
+
+        Assert.True(result.Ok);
+        var setup = Data(result);
+        Assert.Equal(TestConstants.ProjectId, setup.Id);
+        Assert.Equal(AssistantRoutes.ProjectConfigure(TestConstants.ProjectId), setup.WebUrl);
+        Assert.Collection(setup.Clients,
+            client =>
+            {
+                Assert.Equal(".NET", client.Name);
+                Assert.Equal("current", client.Status);
+            },
+            client =>
+            {
+                Assert.Equal("React Native", client.Name);
+                Assert.Equal("current", client.Status);
+            },
+            client =>
+            {
+                Assert.Equal("Expo", client.Name);
+                Assert.Equal("current", client.Status);
+            },
+            client =>
+            {
+                Assert.Equal("JavaScript / Node.js", client.Name);
+                Assert.Equal("legacy", client.Status);
+            });
+        Assert.DoesNotContain(setup.Clients, client => client.Name is "Python" or "Java" or "Ruby" or "PHP");
+    }
+
+    [Fact]
+    public async Task GetProjectSetupAsync_ProjectName_ResolvesVerifiedSetup()
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead);
+
+        var result = await tools.GetProjectSetupAsync(projectName: "Disintegrating Pistol", organizationId: TestConstants.OrganizationId);
+
+        Assert.True(result.Ok);
+        Assert.Equal(TestConstants.ProjectId, Data(result).Id);
+        Assert.Equal(AssistantRoutes.ProjectConfigure(TestConstants.ProjectId), Data(result).WebUrl);
+    }
+
+    [Fact]
     public async Task GetClientSetupInstructionsAsync_InvalidPlatform_ReturnsInvalidClientPlatform()
     {
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead);

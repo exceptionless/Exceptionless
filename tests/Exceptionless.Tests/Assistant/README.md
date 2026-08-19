@@ -5,7 +5,7 @@ The assistant quality gate is an opt-in integration test that calls the configur
 - a current event is fetched directly without rediscovering its project or stack;
 - a project-scoped top-errors question uses one stack search and returns navigable links;
 - an organization-wide question lists projects once, stays within the server's project-search limit, and returns navigable links;
-- every scenario finishes with non-empty answer text and no streamed error.
+- every scenario finishes with non-empty answer text, no streamed error, and no raw DSML tool markup.
 
 The gate makes billable provider requests, so it is skipped by default. Run it before changing the assistant model, system prompt, tool schemas, or tool-selection behavior:
 

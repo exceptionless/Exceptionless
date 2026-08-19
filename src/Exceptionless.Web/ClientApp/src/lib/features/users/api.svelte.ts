@@ -12,14 +12,20 @@ import type { OAuthGrant, UpdateEmailAddressResult, UpdateProductTourProgress, U
 export async function invalidateUserQueries(queryClient: QueryClient, message: WebSocketMessageValue<'UserChanged'>) {
     const { id } = message;
     if (id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.id(id) });
+        await queryClient.invalidateQueries({
+            queryKey: queryKeys.id(id)
+        });
 
         const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
         if (currentUser?.id === id) {
-            queryClient.invalidateQueries({ queryKey: queryKeys.me() });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.me()
+            });
         }
     } else {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.type });
+        await queryClient.invalidateQueries({
+            queryKey: queryKeys.type
+        });
     }
 }
 
@@ -97,7 +103,9 @@ export function deleteOAuthGrantMutation() {
         },
         mutationKey: queryKeys.deleteOAuthGrant(undefined),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.oauthGrants() });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.oauthGrants()
+            });
         }
     }));
 }
@@ -183,7 +191,12 @@ export function getOrganizationUsersQuery(request: GetOrganizationUsersRequest) 
 
             return response;
         },
-        queryKey: [...queryKeys.organization(request.route.organizationId), { params: request.params }]
+        queryKey: [
+            ...queryKeys.organization(request.route.organizationId),
+            {
+                params: request.params
+            }
+        ]
     }));
 }
 
@@ -198,7 +211,9 @@ export function patchUser(request: PatchUserRequest) {
         },
         mutationKey: queryKeys.patchUser(request.route.id),
         onError: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(request.route.id)
+            });
         },
         onSuccess: (data) => {
             queryClient.setQueryData(queryKeys.id(request.route.id), data);
@@ -222,16 +237,25 @@ export function postEmailAddress(request: PostEmailAddressRequest) {
         },
         mutationKey: queryKeys.postEmailAddress(request.route.id),
         onSuccess: (data, variables) => {
-            const partialUserData: Partial<ViewCurrentUser> = { email_address: variables.email_address, is_email_address_verified: data.is_verified };
+            const partialUserData: Partial<ViewCurrentUser> = {
+                email_address: variables.email_address,
+                is_email_address_verified: data.is_verified
+            };
 
             const user = queryClient.getQueryData<ViewCurrentUser>(queryKeys.id(request.route.id));
             if (user) {
-                queryClient.setQueryData(queryKeys.id(request.route.id), <ViewCurrentUser>{ ...user, ...partialUserData });
+                queryClient.setQueryData(queryKeys.id(request.route.id), <ViewCurrentUser>{
+                    ...user,
+                    ...partialUserData
+                });
             }
 
             const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
             if (currentUser?.id === request.route.id) {
-                queryClient.setQueryData(queryKeys.me(), <ViewCurrentUser>{ ...currentUser, ...partialUserData });
+                queryClient.setQueryData(queryKeys.me(), <ViewCurrentUser>{
+                    ...currentUser,
+                    ...partialUserData
+                });
             }
         }
     }));
@@ -248,7 +272,9 @@ export function putCurrentUserProductTour() {
         },
         mutationKey: queryKeys.productTour(),
         onError: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.me() });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.me()
+            });
         },
         onSuccess: (data) => {
             queryClient.setQueryData(queryKeys.me(), data);

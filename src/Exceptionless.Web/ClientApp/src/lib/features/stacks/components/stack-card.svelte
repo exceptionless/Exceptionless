@@ -1,4 +1,5 @@
 <script lang="ts">
+    import type { AssistantFixResource } from '$features/assistant/controls.svelte';
     import type { Stack } from '$features/stacks/models';
     import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
@@ -14,6 +15,8 @@
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
     import * as Tooltip from '$comp/ui/tooltip';
+    import AssistantFixButton from '$features/assistant/components/assistant-fix-button.svelte';
+    import { assistantPageContext } from '$features/assistant/page-context.svelte';
     import { getProjectCountQuery, getStackCountQuery } from '$features/events/api.svelte';
     import EventsStackChart, { type EventsStackChartPoint } from '$features/events/components/events-stack-chart.svelte';
     import * as EventsFacetedFilter from '$features/events/components/filters';
@@ -37,14 +40,16 @@
     import StackStatusDropdownMenu from './stack-status-dropdown-menu.svelte';
 
     interface Props {
+        assistantResource?: AssistantFixResource;
         filterChanged: (filter: IFilter) => void;
         id: string | undefined;
         onDeleted?: () => void;
         onError?: (problem: ProblemDetails) => void;
         onLoaded?: (stack: Stack) => void;
+        prepareAssistantContext?: () => void;
     }
 
-    let { filterChanged, id, onDeleted, onError, onLoaded }: Props = $props();
+    let { assistantResource = 'stack', filterChanged, id, onDeleted, onError, onLoaded, prepareAssistantContext }: Props = $props();
     let handledErrorForStackId = $state<string>();
     let notifiedStackId = $state<string>();
 
@@ -155,6 +160,14 @@
         handledErrorForStackId = id;
         onError?.(stackQuery.error);
     });
+
+    function prepareContext(): void {
+        if (prepareAssistantContext) {
+            prepareAssistantContext();
+        } else if (stack) {
+            assistantPageContext.setPageStack(stack);
+        }
+    }
 </script>
 
 {#if stack}
@@ -170,6 +183,7 @@
                 </div>
                 <div class="ml-2 flex shrink-0 items-center gap-2">
                     <StackLogLevel {stack} />
+                    <AssistantFixButton {prepareContext} resource={assistantResource} />
                     <div data-tour="event-stack-triage">
                         <ButtonGroup.Root>
                             <StackStatusDropdownMenu {stack} />
@@ -302,17 +316,13 @@
                     {#if projectQuery.isSuccess || stack.project_id}
                         <Table.Row class="group">
                             {#if projectQuery.isSuccess}
-                                <Table.Head class="w-36 font-semibold whitespace-nowrap">Project</Table.Head>
-                                <Table.Cell class="relative w-4 pr-0">
-                                    <EventsFacetedFilter.ProjectTrigger
-                                        changed={filterChanged}
-                                        class="absolute top-1/2 left-0 -translate-y-1/2"
-                                        value={[projectQuery.data.id!]}
-                                    />
+                                <Table.Head class="w-40 font-semibold whitespace-nowrap">Project</Table.Head>
+                                <Table.Cell class="w-4 pr-0">
+                                    <EventsFacetedFilter.ProjectTrigger changed={filterChanged} value={[projectQuery.data.id!]} />
                                 </Table.Cell>
                                 <Table.Cell>{projectQuery.data.name}</Table.Cell>
                             {:else}
-                                <Table.Head class="w-36 font-semibold whitespace-nowrap"><Skeleton class="h-6 w-full rounded-full" /></Table.Head>
+                                <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-6 w-full rounded-full" /></Table.Head>
                                 <Table.Cell class="w-4 pr-0"></Table.Cell>
                                 <Table.Cell class="flex items-center"><Skeleton class="h-6 w-full rounded-full" /></Table.Cell>
                             {/if}
@@ -344,10 +354,9 @@
                             <Table.Cell><DateTime value={stack.snooze_until_utc} /></Table.Cell>
                         </Table.Row>
                     {/if}
+                    <StackReferences {stack} />
                 </Table.Body>
             </Table.Root>
-
-            <StackReferences {stack} />
         </Card.Content>
     </Card.Root>
 {:else}
@@ -368,6 +377,7 @@
         </Card.Header>
         <Card.Content class="space-y-2">
             <div class="grid grid-cols-2 gap-2 lg:grid-cols-4">
+                <!-- eslint-disable-next-line @stylistic/object-curly-newline -->
                 {#each { length: 4 } as name, index (`${name}-${index}`)}
                     <Card.Root size="sm" class={metricCardClass}>
                         <Card.Header class={metricHeaderClass}>

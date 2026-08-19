@@ -8,6 +8,7 @@
     import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
     import ThumbsDown from '@lucide/svelte/icons/thumbs-down';
     import ThumbsUp from '@lucide/svelte/icons/thumbs-up';
+    import { toast } from 'svelte-sonner';
 
     import type { AssistantFeedback } from '../models';
 
@@ -16,18 +17,40 @@
         content: string;
         feedback?: AssistantFeedback;
         onFeedback?: (feedback: AssistantFeedback | undefined) => void;
-        onRegenerate?: () => void;
+        onRegenerate?: () => Promise<void> | void;
         showFeedback?: boolean;
     }
 
     let { align = 'start', content, feedback, onFeedback, onRegenerate, showFeedback = false }: Props = $props();
-    const clipboard = new UseClipboard({ delay: 1500 });
+    const clipboard = new UseClipboard({
+        delay: 1500
+    });
+    let isRegenerating = $state(false);
+
+    async function regenerate(): Promise<void> {
+        if (!onRegenerate || isRegenerating) {
+            return;
+        }
+
+        isRegenerating = true;
+        try {
+            await onRegenerate();
+        } catch {
+            toast.error('Couldn’t regenerate the response. Please try again.');
+        }
+        isRegenerating = false;
+    }
 
     async function updateFeedback(value: AssistantFeedback): Promise<void> {
         const updatedFeedback = feedback === value ? undefined : value;
         onFeedback?.(updatedFeedback);
         if (updatedFeedback) {
-            await submitFeatureUsage(updatedFeedback === 'helpful' ? 'assistant.ResponseHelpful' : 'assistant.ResponseNotHelpful').catch(() => undefined);
+            toast.success(updatedFeedback === 'helpful' ? 'Marked as helpful.' : 'Marked as not helpful.');
+            try {
+                await submitFeatureUsage(updatedFeedback === 'helpful' ? 'assistant.ResponseHelpful' : 'assistant.ResponseNotHelpful');
+            } catch {
+                toast.error('Your feedback is selected, but telemetry could not be sent.');
+            }
         }
     }
 </script>
@@ -55,12 +78,19 @@
             <Tooltip.Root>
                 <Tooltip.Trigger>
                     {#snippet child({ props })}
-                        <Button {...props} aria-label="Regenerate response" onclick={onRegenerate} size="icon-xs" variant="ghost">
+                        <Button
+                            {...props}
+                            aria-label={isRegenerating ? 'Regenerating response' : 'Regenerate response'}
+                            disabled={isRegenerating}
+                            onclick={() => void regenerate()}
+                            size="icon-xs"
+                            variant="ghost"
+                        >
                             <RotateCcw aria-hidden="true" />
                         </Button>
                     {/snippet}
                 </Tooltip.Trigger>
-                <Tooltip.Content>Regenerate response</Tooltip.Content>
+                <Tooltip.Content>{isRegenerating ? 'Regenerating response…' : 'Regenerate response'}</Tooltip.Content>
             </Tooltip.Root>
         {/if}
 

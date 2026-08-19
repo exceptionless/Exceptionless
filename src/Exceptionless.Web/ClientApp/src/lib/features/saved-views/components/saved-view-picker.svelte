@@ -25,6 +25,7 @@
     import { tick } from 'svelte';
     import { toast } from 'svelte-sonner';
 
+    import type { AutoFillColumnSelection } from '../column-settings';
     import type { NewSavedView, SavedView, UpdateSavedView } from '../models';
 
     import { deleteSavedView, markSavedViewDeleted, patchSavedView, postSavedView, restoreDeletedSavedView } from '../api.svelte';
@@ -46,9 +47,11 @@
 
     interface Props {
         activeSavedView?: SavedView;
+        autoFillColumnId: AutoFillColumnSelection;
         columnOrder?: string[];
         columnSizing?: Record<string, number>;
         columnVisibility?: Record<string, boolean>;
+        defaultAutoFillColumnId?: string;
         filters: IFilter[];
         isModified: boolean;
         onClearSavedView: () => void;
@@ -56,6 +59,7 @@
         onResetToSaved: () => void;
         onSavedViewCreated?: (view: SavedView) => Promise<void> | void;
         savedViews: SavedView[];
+        setAutoFillColumnId: (columnId: AutoFillColumnSelection) => void;
         setShowChart?: (show: boolean) => void;
         setShowStats?: (show: boolean) => void;
         showChart?: boolean;
@@ -68,9 +72,11 @@
 
     let {
         activeSavedView,
+        autoFillColumnId,
         columnOrder,
         columnSizing,
         columnVisibility,
+        defaultAutoFillColumnId,
         filters,
         isModified,
         onClearSavedView,
@@ -78,6 +84,7 @@
         onResetToSaved,
         onSavedViewCreated,
         savedViews,
+        setAutoFillColumnId,
         setShowChart,
         setShowStats,
         showChart = true,
@@ -120,7 +127,6 @@
     });
 
     const saving = $derived(createMutation.isPending || updateMutation.isPending || removeMutation.isPending);
-
     const currentFilterString = $derived(toFilter(filters.filter((f) => f.type !== 'date')));
 
     // Auto-detect if current filters match an existing saved view for "load existing" hint
@@ -165,7 +171,9 @@
             table.getAllLeafColumns().map((column) => column.id),
             columnOrder ?? [],
             columnVisibility ?? {},
-            columnSizing ?? {}
+            columnSizing ?? {},
+            autoFillColumnId,
+            defaultAutoFillColumnId
         );
     }
 
@@ -219,7 +227,10 @@
         }
 
         try {
-            const result = await updateMutation.mutateAsync({ name, slug });
+            const result = await updateMutation.mutateAsync({
+                name,
+                slug
+            });
             isRenameDialogOpen = false;
             toast.success(`View renamed to "${result.name}".`);
         } catch (error) {
@@ -401,5 +412,5 @@
 {/if}
 
 {#if isColumnDialogOpen}
-    <ColumnManagementDialog bind:open={isColumnDialogOpen} {table} />
+    <ColumnManagementDialog bind:open={isColumnDialogOpen} {autoFillColumnId} {defaultAutoFillColumnId} {setAutoFillColumnId} {table} />
 {/if}

@@ -71,7 +71,9 @@
         toast.dismiss(toastId);
 
         try {
-            await enableTokenMutation.mutateAsync({ is_disabled: false });
+            await enableTokenMutation.mutateAsync({
+                is_disabled: false
+            });
             toastId = toast.success(`Successfully enabled API key`);
         } catch (error) {
             toastId = toast.error('Failed to enable API key. Please try again.');
@@ -105,25 +107,110 @@
     }
 
     const projectTypes: ProjectType[] = [
-        { id: 'bash', label: 'Bash Shell', platform: 'Command Line' },
-        { id: 'powershell', label: 'PowerShell', platform: 'Command Line' },
+        {
+            id: 'bash',
+            label: 'Bash Shell',
+            platform: 'Command Line'
+        },
+        {
+            id: 'powershell',
+            label: 'PowerShell',
+            platform: 'Command Line'
+        },
 
-        { id: 'dotnet-console', label: 'Console and Service applications', package: 'Exceptionless', platform: '.NET' },
-        { id: 'dotnet-aspnetcore', label: 'ASP.NET Core', package: 'Exceptionless.AspNetCore', platform: '.NET' },
-        { config: 'app.config', id: 'dotnet-wpf', label: 'Windows Presentation Foundation (WPF)', package: 'Exceptionless.Wpf', platform: '.NET' },
-        { config: 'app.config', id: 'dotnet-winforms', label: 'Windows Forms', package: 'Exceptionless.Windows', platform: '.NET' },
+        {
+            id: 'dotnet-console',
+            label: 'Console and Service applications',
+            package: 'Exceptionless',
+            platform: '.NET'
+        },
+        {
+            id: 'dotnet-aspnetcore',
+            label: 'ASP.NET Core',
+            package: 'Exceptionless.AspNetCore',
+            platform: '.NET'
+        },
+        {
+            config: 'app.config',
+            id: 'dotnet-wpf',
+            label: 'Windows Presentation Foundation (WPF)',
+            package: 'Exceptionless.Wpf',
+            platform: '.NET'
+        },
+        {
+            config: 'app.config',
+            id: 'dotnet-winforms',
+            label: 'Windows Forms',
+            package: 'Exceptionless.Windows',
+            platform: '.NET'
+        },
 
-        { id: 'javascript-browser', label: 'Browser applications', package: 'Exceptionless.JavaScript', platform: 'JavaScript' },
-        { id: 'javascript-nodejs', label: 'Node.js', package: 'Exceptionless.Node', platform: 'JavaScript' },
-        { id: 'javascript-react-native', label: 'React Native', package: '@exceptionless/react-native', platform: 'JavaScript' },
-        { id: 'javascript-expo', label: 'Expo', package: '@exceptionless/react-native', platform: 'JavaScript' },
+        {
+            id: 'javascript-browser',
+            label: 'Browser applications',
+            package: 'Exceptionless.JavaScript',
+            platform: 'JavaScript'
+        },
+        {
+            id: 'javascript-nodejs',
+            label: 'Node.js',
+            package: 'Exceptionless.Node',
+            platform: 'JavaScript'
+        },
+        {
+            id: 'javascript-react-native',
+            label: 'React Native',
+            package: '@exceptionless/react-native',
+            platform: 'JavaScript'
+        },
+        {
+            id: 'javascript-expo',
+            label: 'Expo',
+            package: '@exceptionless/react-native',
+            platform: 'JavaScript'
+        },
 
-        { id: 'dotnet-legacy-console', label: 'Console and Service applications', package: 'Exceptionless', platform: '.NET Legacy' },
-        { config: 'web.config', id: 'dotnet-legacy-mvc', label: 'ASP.NET MVC', package: 'Exceptionless.Mvc', platform: '.NET Legacy' },
-        { config: 'web.config', id: 'dotnet-legacy-webapi', label: 'ASP.NET Web API', package: 'Exceptionless.WebApi', platform: '.NET Legacy' },
-        { config: 'web.config', id: 'dotnet-legacy-webforms', label: 'ASP.NET Web Forms', package: 'Exceptionless.Web', platform: '.NET Legacy' },
-        { config: 'app.config', id: 'dotnet-legacy-winforms', label: 'Windows Forms', package: 'Exceptionless.Windows', platform: '.NET Legacy' },
-        { config: 'app.config', id: 'dotnet-legacy-wpf', label: 'Windows Presentation Foundation (WPF)', package: 'Exceptionless.Wpf', platform: '.NET Legacy' }
+        {
+            id: 'dotnet-legacy-console',
+            label: 'Console and Service applications',
+            package: 'Exceptionless',
+            platform: '.NET Legacy'
+        },
+        {
+            config: 'web.config',
+            id: 'dotnet-legacy-mvc',
+            label: 'ASP.NET MVC',
+            package: 'Exceptionless.Mvc',
+            platform: '.NET Legacy'
+        },
+        {
+            config: 'web.config',
+            id: 'dotnet-legacy-webapi',
+            label: 'ASP.NET Web API',
+            package: 'Exceptionless.WebApi',
+            platform: '.NET Legacy'
+        },
+        {
+            config: 'web.config',
+            id: 'dotnet-legacy-webforms',
+            label: 'ASP.NET Web Forms',
+            package: 'Exceptionless.Web',
+            platform: '.NET Legacy'
+        },
+        {
+            config: 'app.config',
+            id: 'dotnet-legacy-winforms',
+            label: 'Windows Forms',
+            package: 'Exceptionless.Windows',
+            platform: '.NET Legacy'
+        },
+        {
+            config: 'app.config',
+            id: 'dotnet-legacy-wpf',
+            label: 'Windows Presentation Foundation (WPF)',
+            package: 'Exceptionless.Wpf',
+            platform: '.NET Legacy'
+        }
     ];
 
     const projectTypesGroupedByPlatform = Object.groupBy(projectTypes, (p) => p.platform);
@@ -756,8 +843,11 @@ public partial class App : Application {
                 <NotificationDescription>
                     <P>
                         Exceptionless automatically discovers public source maps. If your source maps are private or are not published with your generated
-                        JavaScript, <A href={resolve('/(app)/project/[projectId]/source-maps', { projectId })}>upload and manage them</A> to restore the original
-                        function names and source locations.
+                        JavaScript, <A
+                            href={resolve('/(app)/project/[projectId]/source-maps', {
+                                projectId
+                            })}>upload and manage them</A
+                        > to restore the original function names and source locations.
                     </P>
                 </NotificationDescription>
             </Notification>
@@ -789,7 +879,12 @@ public partial class App : Application {
     {/if}
 
     <div class="border-border flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end">
-        <Button variant="secondary" href={resolve('/(app)/project/[projectId]/manage', { projectId })}>
+        <Button
+            variant="secondary"
+            href={resolve('/(app)/project/[projectId]/manage', {
+                projectId
+            })}
+        >
             <ArrowLeft class="mr-2 size-4" aria-hidden="true" /> Back to Project Settings
         </Button>
         <Button variant="secondary" href={`${resolve('/(app)/account/notifications')}?project=${projectId}`}>

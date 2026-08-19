@@ -16,7 +16,9 @@
         const project = projects[0];
 
         if (projects.length === 1 && project) {
-            return resolve('/(app)/project/[projectId]/configure', { projectId: project.id });
+            return resolve('/(app)/project/[projectId]/configure', {
+                projectId: project.id
+            });
         }
 
         return resolve('/(app)/project/list');

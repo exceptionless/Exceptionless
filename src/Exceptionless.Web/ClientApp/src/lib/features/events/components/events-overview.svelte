@@ -1,16 +1,19 @@
 <script lang="ts">
     import type { IFilter } from '$comp/faceted-filter';
+    import type { AssistantFixResource } from '$features/assistant/controls.svelte';
     import type { UpdateProject, ViewProject } from '$features/projects/models';
     import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
     import DateTime from '$comp/formatters/date-time.svelte';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
+    import { CodeBlock } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Dialog from '$comp/ui/dialog';
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
     import * as Tabs from '$comp/ui/tabs';
+    import { assistantPageContext } from '$features/assistant/page-context.svelte';
     import { getEventWithNavigationQuery } from '$features/events/api.svelte';
     import * as EventsFacetedFilter from '$features/events/components/filters';
     import { getExtendedDataItems, hasErrorOrSimpleError } from '$features/events/persistent-event';
@@ -41,15 +44,26 @@
     import TraceLog from './views/trace-log.svelte';
 
     interface Props {
+        assistantResource?: AssistantFixResource;
         expectedStackId?: string;
         filterChanged: (filter: IFilter) => void;
         handleError: (problem: ProblemDetails) => void;
         id: string;
         onEventLoaded?: (event: PersistentEvent) => void;
         onNavigate?: (eventId: string) => void;
+        prepareStackAssistantContext?: () => void;
     }
 
-    let { expectedStackId, filterChanged, handleError, id, onEventLoaded, onNavigate }: Props = $props();
+    let {
+        assistantResource = 'event',
+        expectedStackId,
+        filterChanged,
+        handleError,
+        id,
+        onEventLoaded,
+        onNavigate,
+        prepareStackAssistantContext
+    }: Props = $props();
 
     function getTabs(event?: null | PersistentEvent, project?: ViewProject): TabType[] {
         if (!event) {
@@ -221,7 +235,10 @@
             return;
         }
 
-        tabsListRef.scrollBy({ behavior: 'smooth', left: direction === 'left' ? -tabsListRef.clientWidth / 2 : tabsListRef.clientWidth / 2 });
+        tabsListRef.scrollBy({
+            behavior: 'smooth',
+            left: direction === 'left' ? -tabsListRef.clientWidth / 2 : tabsListRef.clientWidth / 2
+        });
     }
 
     function onPromoted(title: string): void {
@@ -286,7 +303,9 @@
         }
 
         try {
-            await updateProjectMutation.mutateAsync({ promoted_tabs: promotedTabs } as UpdateProject);
+            await updateProjectMutation.mutateAsync({
+                promoted_tabs: promotedTabs
+            } as UpdateProject);
         } catch {
             toast.error('An error occurred reordering tabs.');
         }
@@ -323,6 +342,12 @@
 
     function dismissInvestigationTour(): void {
         productTourHost.dismiss('investigate-error');
+    }
+
+    function prepareEventAssistantContext(): void {
+        if (event) {
+            assistantPageContext.setPageEvent(event);
+        }
     }
 
     $effect(() => {
@@ -369,7 +394,10 @@
                 return;
             }
 
-            document.querySelector<HTMLElement>(productTourSelector(step.anchor))?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            document.querySelector<HTMLElement>(productTourSelector(step.anchor))?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
         });
     });
 
@@ -407,7 +435,12 @@
     <h4 class="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">Stack</h4>
     {#if event?.stack_id}
         <div data-tour={PRODUCT_TOUR_ANCHORS.eventStack}>
-            <StackCard {filterChanged} id={event.stack_id}></StackCard>
+            <StackCard
+                {assistantResource}
+                {filterChanged}
+                id={event.stack_id}
+                prepareAssistantContext={assistantResource === 'event' ? prepareEventAssistantContext : prepareStackAssistantContext}
+            ></StackCard>
         </div>
     {/if}
 </section>
@@ -563,6 +596,7 @@
         <Skeleton class="mt-4 h-7.5 w-full rounded-full" />
         <Table.Root class="mt-4">
             <Table.Body>
+                <!-- eslint-disable-next-line @stylistic/object-curly-newline -->
                 {#each { length: 5 } as name, index (`${name}-${index}`)}
                     <Table.Row class="group">
                         <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-6 w-full rounded-full" /></Table.Head>
@@ -582,7 +616,7 @@
             <Dialog.Description class="sr-only">Raw JSON representation of the event</Dialog.Description>
         </Dialog.Header>
         <div class="flex-1 overflow-y-auto rounded-md border p-4">
-            <pre class="text-xs break-all whitespace-pre-wrap">{JSON.stringify(event, null, 2)}</pre>
+            <CodeBlock code={JSON.stringify(event, null, 2)} language="json" class="text-xs break-all whitespace-pre-wrap" />
         </div>
         <Dialog.Footer>
             <CopyToClipboardButton size="sm" title="Copy JSON to Clipboard" value={JSON.stringify(event, null, 2)} variant="outline">
