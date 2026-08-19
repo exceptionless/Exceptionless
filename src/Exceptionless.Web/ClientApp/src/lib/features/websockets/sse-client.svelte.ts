@@ -211,7 +211,9 @@ export class SseClient {
             if (!response.ok) {
                 // Auth failures - don't reconnect
                 if (response.status === 401 || response.status === 403) {
-                    console.warn('[SseClient] Auth failure, not reconnecting', { status: response.status });
+                    console.warn('[SseClient] Auth failure, not reconnecting', {
+                        status: response.status
+                    });
                     this.authFailed = true;
                     if (response.status === 401 && accessToken.current) {
                         accessToken.current = '';
@@ -273,7 +275,9 @@ export class SseClient {
                     return;
                 }
 
-                buffer += decoder.decode(value, { stream: true });
+                buffer += decoder.decode(value, {
+                    stream: true
+                });
 
                 // Process complete SSE messages (separated by double newline)
                 const messages = buffer.split(/\r?\n\r?\n/);
@@ -302,7 +306,9 @@ export class SseClient {
                     if (dataLines.length > 0) {
                         const data = dataLines.join('\n');
                         // Create a MessageEvent-like object for compatibility
-                        const event = new MessageEvent('message', { data });
+                        const event = new MessageEvent('message', {
+                            data
+                        });
                         this.onMessage(event);
                     }
                 }
