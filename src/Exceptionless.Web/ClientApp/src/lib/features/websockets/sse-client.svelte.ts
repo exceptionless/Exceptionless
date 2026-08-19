@@ -27,6 +27,7 @@ export interface SseClientOptions {
 export const SSE_CONNECTING = 0;
 export const SSE_OPEN = 1;
 export const SSE_CLOSED = 2;
+const VISIBILITY_RECONNECT_DELAY = 100;
 
 // EventSource does not support custom Authorization headers, so the app uses fetch +
 // ReadableStream to keep bearer tokens out of the query string.
@@ -85,7 +86,16 @@ export class SseClient {
                 this.pausedForVisibility = true;
                 this.close(false);
             } else {
+                const wasPausedForVisibility = this.pausedForVisibility;
                 this.pausedForVisibility = false;
+                if (wasPausedForVisibility && this.reconnectTimeoutId === null) {
+                    this.reconnectTimeoutId = setTimeout(() => {
+                        this.reconnectTimeoutId = null;
+                        if (visibility.visible && this.accessToken && this.readyState === SSE_CLOSED && !this.authFailed && !this.forcedClose) {
+                            this.connect();
+                        }
+                    }, VISIBILITY_RECONNECT_DELAY);
+                }
             }
 
             if (
