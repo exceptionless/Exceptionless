@@ -240,9 +240,9 @@ jobs:
         run: |
           export PATH="$HOME/.dotnet/tools:$PATH"
           if dotnet tool list --global | grep -Eiq '^aspire\.cli[[:space:]]'; then
-            dotnet tool update --global Aspire.Cli --version 13.4.6
+            dotnet tool update --global Aspire.Cli --version 13.5.0
           else
-            dotnet tool install --global Aspire.Cli --version 13.4.6
+            dotnet tool install --global Aspire.Cli --version 13.5.0
           fi
           echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
           aspire --version
