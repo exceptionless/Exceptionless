@@ -9,6 +9,12 @@ data:
     {{- end }}
     EX_BaseUrl: https://{{.Values.app.defaultDomain}}
     EX_ExceptionlessServerUrl: https://{{.Values.api.defaultDomain}}
+    {{- range $index, $domain := .Values.app.domains }}
+    EX_Mcp__AllowedOrigins__App{{ $index }}: https://{{ $domain }}
+    {{- end }}
+    {{- range $index, $domain := .Values.api.domains }}
+    EX_Mcp__AllowedOrigins__Api{{ $index }}: https://{{ $domain }}
+    {{- end }}
     EX_DisabledPlugins: GeoPlugin,LocationPlugin
     EX_EnableSsl: "true"
     EX_Html5Mode: "true"

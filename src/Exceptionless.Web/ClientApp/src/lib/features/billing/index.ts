@@ -1,3 +1,5 @@
+export { showChangePlanDialog } from './change-plan.svelte';
+export { default as ChangePlanDialogHost } from './components/change-plan-dialog-host.svelte';
 export { default as ChangePlanDialog } from './components/change-plan-dialog.svelte';
 export { default as StripeProvider } from './components/stripe-provider.svelte';
 export { default as UpgradeRequiredDialog } from './components/upgrade-required-dialog.svelte';

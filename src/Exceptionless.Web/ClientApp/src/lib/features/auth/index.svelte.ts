@@ -2,10 +2,11 @@ import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 import { page } from '$app/state';
 import { env } from '$env/dynamic/public';
-import { CachedPersistedState } from '$features/shared/utils/cached-persisted-state.svelte';
 import { useFetchClient } from '@foundatiofx/fetchclient';
 
 import type { TokenResult } from './models';
+
+import { accessToken } from './state.svelte';
 
 // Re-export all API functions for backward compatibility
 export {
@@ -21,6 +22,7 @@ export {
     unlinkOAuthAccount
 } from './api.svelte';
 
+export { accessToken } from './state.svelte';
 // Re-export validators
 export { validateEmailAvailability } from './validators';
 
@@ -43,17 +45,6 @@ export interface OAuthResponseData {
 }
 
 export type SupportedOAuthProviders = 'facebook' | 'github' | 'google' | 'live' | 'slack';
-
-const authSerializer = {
-    deserialize: (value: null | string): null | string => {
-        return value === '' ? null : value;
-    },
-    serialize: (value: null | string): string => {
-        return value === null ? '' : value;
-    }
-};
-
-export const accessToken = new CachedPersistedState<null | string>('satellizer_token', null, { serializer: authSerializer });
 
 export const enableAccountCreation = env.PUBLIC_ENABLE_ACCOUNT_CREATION === 'true';
 export const facebookClientId = env.PUBLIC_FACEBOOK_APPID;
@@ -87,7 +78,10 @@ export async function githubLogin(redirectUrl?: string) {
     await oauthLogin({
         authUrl: 'https://github.com/login/oauth/authorize',
         clientId: gitHubClientId,
-        popupOptions: { height: 618, width: 1020 },
+        popupOptions: {
+            height: 618,
+            width: 1020
+        },
         provider: 'github',
         redirectUrl,
         scope: 'user:email'
@@ -119,7 +113,9 @@ export async function gotoLogin() {
     const url = page.url;
     const isAuthPath = url.pathname.startsWith('/next/login');
     const redirect = url.pathname === resolve('/') || isAuthPath ? resolve('/(auth)/login') : `${resolve('/(auth)/login')}?redirect=${url.pathname}`;
-    await goto(redirect, { replaceState: true });
+    await goto(redirect, {
+        replaceState: true
+    });
 }
 
 export async function liveLogin(redirectUrl?: string) {
@@ -150,7 +146,10 @@ export async function slackOAuthLogin(): Promise<string> {
         extraParams: {
             state: encodeURIComponent(Math.random().toString(36).substring(2))
         },
-        popupOptions: { height: 630, width: 580 },
+        popupOptions: {
+            height: 630,
+            width: 580
+        },
         provider: 'slack',
         scope: 'incoming-webhook'
     });

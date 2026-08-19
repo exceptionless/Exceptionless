@@ -5,7 +5,7 @@
     import Summary from '$features/events/components/summary/summary.svelte';
     import { getSharedTableOptions } from '$features/shared/table.svelte';
     import { StackStatus } from '$features/stacks/models';
-    import { createTable, renderComponent } from '@tanstack/svelte-table';
+    import { type ColumnSizingState, createTable, renderComponent } from '@tanstack/svelte-table';
 
     import DataTableBody from './data-table-body.svelte';
 
@@ -13,11 +13,23 @@
 
     interface Props {
         allColumnsSized?: boolean;
+        autoFillColumnId?: null | string;
+        fullWidthSummary?: boolean;
         kind: 'event' | 'stack';
+        onAutoFillColumnResized?: (columnId: string) => void;
         onRowClick: (row: TestSummary) => void;
+        sizedFullWidthSummary?: boolean;
     }
 
-    let { allColumnsSized = false, kind, onRowClick }: Props = $props();
+    let {
+        allColumnsSized = false,
+        autoFillColumnId,
+        fullWidthSummary = false,
+        kind,
+        onAutoFillColumnResized,
+        onRowClick,
+        sizedFullWidthSummary = false
+    }: Props = $props();
 
     const summaryData = {
         Message: 'Unexpected end of Stream, the content may have already been read by another component.',
@@ -47,7 +59,26 @@
         users: 1
     };
     const summary: TestSummary = $derived(kind === 'event' ? eventSummary : stackSummary);
-    const queryParameters = { limit: 20, page: 1 };
+    const queryParameters = {
+        limit: 20,
+        page: 1
+    };
+
+    function getDefaultColumnSizing(): ColumnSizingState | undefined {
+        if (allColumnsSized) {
+            return {
+                date: 130,
+                summary: 140
+            };
+        }
+
+        return sizedFullWidthSummary
+            ? {
+                  summary: 180
+              }
+            : undefined;
+    }
+
     const table = createTable(
         getSharedTableOptions<TestSummary, 'memory'>({
             columnPersistenceKey: 'row-navigation-test',
@@ -59,10 +90,18 @@
                     id: 'select'
                 },
                 {
-                    cell: (props) => renderComponent(Summary, { showStatus: false, summary: props.row.original }),
+                    cell: (props) =>
+                        renderComponent(Summary, {
+                            showStatus: false,
+                            summary: props.row.original
+                        }),
                     header: 'Summary',
                     id: 'summary',
-                    meta: { class: 'w-60 min-w-60 max-w-60' },
+                    meta: {
+                        get class() {
+                            return fullWidthSummary ? 'w-full' : 'w-60 min-w-60 max-w-60';
+                        }
+                    },
                     minSize: 120,
                     size: 160
                 },
@@ -73,7 +112,7 @@
                 }
             ],
             get defaultColumnSizing() {
-                return allColumnsSized ? { date: 130, summary: 140 } : undefined;
+                return getDefaultColumnSizing();
             },
             enableColumnResizing: true,
             paginationStrategy: 'memory',
@@ -86,6 +125,8 @@
 </script>
 
 <DataTableBody
+    {autoFillColumnId}
+    {onAutoFillColumnResized}
     rowClick={onRowClick}
     rowHref={(row: SummaryModel<SummaryTemplateKeys>) => (kind === 'event' ? buildEventDetailsHref(row.id) : buildStackDetailsHref(row.id))}
     {table}

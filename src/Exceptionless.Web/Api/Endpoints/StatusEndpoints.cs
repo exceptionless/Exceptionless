@@ -36,7 +36,7 @@ public static class StatusEndpoints
         group.MapGet("notifications/system", async (IMediator mediator) =>
         {
             var result = await mediator.InvokeAsync<SystemNotification>(new GetSystemNotification());
-            return result.Date == DateTime.MinValue ? HttpResults.Ok() : HttpResults.Ok(result);
+            return result.Date == DateTime.MinValue ? HttpResults.NoContent() : HttpResults.Ok(result);
         });
 
         group.MapPost("notifications/system", async (IMediator mediator, [FromBody] SetSystemNotificationRequest request, bool publish = true) =>

@@ -138,6 +138,17 @@ public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program
                     ["AppScope"] = AppScope,
                     ["ConnectionStrings:Elasticsearch"] = SharedElasticsearchUrl
                 });
+
+            if (String.Equals(Environment.GetEnvironmentVariable("RUN_ASSISTANT_EVALS"), "true", StringComparison.OrdinalIgnoreCase))
+            {
+                config.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Assistant:Enabled"] = "true",
+                    ["Assistant:ApiKey"] = Environment.GetEnvironmentVariable("EX_Assistant__ApiKey"),
+                    ["Assistant:Endpoint"] = Environment.GetEnvironmentVariable("EX_Assistant__Endpoint"),
+                    ["Assistant:Model"] = Environment.GetEnvironmentVariable("EX_Assistant__Model")
+                }.Where(pair => !String.IsNullOrWhiteSpace(pair.Value)));
+            }
         });
 
         // In the minimal hosting model, Program.Main reads AppOptions BEFORE Build() applies

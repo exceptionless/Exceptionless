@@ -67,12 +67,21 @@ test('row selection column stays fixed at desktop and narrow widths', async ({ e
     expect(selectionWidths[0]).toBeCloseTo(selectionWidths[1]!, 1);
 
     await page.setViewportSize({ height: 900, width: 1440 });
-    for (const columnId of ['summary', 'user', 'date']) {
+    const resizableColumnIds = ['summary', 'user', 'date'];
+    const columnWidthsBeforeResize = await Promise.all(
+        resizableColumnIds.map(async (columnId) => {
+            const resizeHandle = table.getByRole('button', { name: `Resize ${columnId} column` });
+            return (await resizeHandle.locator('xpath=ancestor::th[1]').boundingBox())!.width;
+        })
+    );
+
+    for (const columnId of resizableColumnIds) {
         await table.getByRole('button', { name: `Resize ${columnId} column` }).press('ArrowRight');
     }
 
     const explicitlySizedTableBox = await table.boundingBox();
     const explicitlySizedSelectionBox = await table.locator('thead th').first().boundingBox();
-    expect(explicitlySizedTableBox!.width).toBeCloseTo(816, 1);
+    const expectedTableWidth = explicitlySizedSelectionBox!.width + columnWidthsBeforeResize.reduce((total, width) => total + width + 16, 0);
+    expect(explicitlySizedTableBox!.width).toBeCloseTo(expectedTableWidth, 1);
     expect(explicitlySizedSelectionBox!.width).toBeCloseTo(32, 1);
 });
