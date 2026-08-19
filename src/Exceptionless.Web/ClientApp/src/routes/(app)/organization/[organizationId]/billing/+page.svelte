@@ -68,13 +68,17 @@
     let toastId = $state<number | string>();
 
     const form = createForm(() => ({
-        defaultValues: { ...billingInformation } as OrganizationBillingInformationFormData,
+        defaultValues: {
+            ...billingInformation
+        } as OrganizationBillingInformationFormData,
         validators: {
             onSubmit: OrganizationBillingInformationSchema,
             onSubmitAsync: async ({ value }) => {
                 const targetOrganizationId = organizationId;
                 if (!targetOrganizationId) {
-                    return { form: 'Organization ID is required.' };
+                    return {
+                        form: 'Organization ID is required.'
+                    };
                 }
 
                 const changes = getOrganizationBillingInformationChanges(getOrganizationBillingInformation(organizationQuery.data), value);
@@ -86,8 +90,17 @@
 
                 try {
                     await saveOrganizationBillingInformationChanges(changes, {
-                        remove: (key) => removeOrganizationData.mutateAsync({ key, organizationId: targetOrganizationId }),
-                        set: (key, value) => updateOrganizationData.mutateAsync({ key, organizationId: targetOrganizationId, value })
+                        remove: (key) =>
+                            removeOrganizationData.mutateAsync({
+                                key,
+                                organizationId: targetOrganizationId
+                            }),
+                        set: (key, value) =>
+                            updateOrganizationData.mutateAsync({
+                                key,
+                                organizationId: targetOrganizationId,
+                                value
+                            })
                     });
 
                     if (targetOrganizationId === organizationId) {
@@ -101,7 +114,11 @@
                         toastId = toast.error(`Error saving billing information. ${message}`);
                     }
 
-                    return targetOrganizationId === organizationId ? { form: `Error saving billing information. ${message}` } : null;
+                    return targetOrganizationId === organizationId
+                        ? {
+                              form: `Error saving billing information. ${message}`
+                          }
+                        : null;
                 }
             }
         }
@@ -120,7 +137,9 @@
 
     $effect(() => {
         if (organizationQuery.isSuccess && initializedOrganizationId !== organizationId) {
-            debouncedFormSubmit.cancel({ upcomingOnly: true });
+            debouncedFormSubmit.cancel({
+                upcomingOnly: true
+            });
             form.reset(getOrganizationBillingInformation(organizationQuery.data));
             initializedOrganizationId = organizationId;
         }
