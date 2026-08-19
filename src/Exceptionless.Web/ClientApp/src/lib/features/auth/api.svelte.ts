@@ -81,7 +81,11 @@ export async function isEmailAddressTaken(email: string) {
 }
 
 export async function login(email: string, password: string, inviteToken?: null | string, client = useFetchClient()) {
-    const data: Login = { email, invite_token: inviteToken, password };
+    const data: Login = {
+        email,
+        invite_token: inviteToken,
+        password
+    };
     const response = await client.postJSON<TokenResult>('auth/login', data, {
         expectedStatusCodes: [401, 422]
     });
