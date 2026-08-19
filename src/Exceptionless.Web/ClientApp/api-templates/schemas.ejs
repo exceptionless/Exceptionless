@@ -344,7 +344,7 @@ const buildZodField = (field) => {
     }
 
     // Handle nullable (adds .nullable())
-    if (isNullableUnion && !zodType.includes('.nullable()')) {
+    if ((isNullableUnion || field.nullable) && !zodType.includes('.nullable()')) {
         zodType = zodType + '.nullable()';
     }
 

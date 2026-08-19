@@ -1,14 +1,18 @@
 <script lang="ts">
     import type { NotificationSettings } from '$features/projects/models';
+    import type { ViewRateNotificationRule } from '$features/rate-notifications/types';
 
     import { A, H3, Muted } from '$comp/typography';
     import { Badge } from '$comp/ui/badge';
+    import * as Dialog from '$comp/ui/dialog';
     import * as Select from '$comp/ui/select';
     import { Skeleton } from '$comp/ui/skeleton';
     import { Switch } from '$comp/ui/switch';
     import { showUpgradeDialog } from '$features/billing/upgrade-required.svelte';
     import { getProjectsQuery, getProjectUserNotificationSettings, postProjectUserNotificationSettings } from '$features/projects/api.svelte';
     import UserNotificationSettingsForm from '$features/projects/components/user-notification-settings-form.svelte';
+    import RateNotificationRuleForm from '$features/rate-notifications/components/rate-notification-rule-form.svelte';
+    import RateNotificationRuleList from '$features/rate-notifications/components/rate-notification-rule-list.svelte';
     import AlertDescription from '$features/shared/components/ui/alert/alert-description.svelte';
     import AlertTitle from '$features/shared/components/ui/alert/alert-title.svelte';
     import Alert from '$features/shared/components/ui/alert/alert.svelte';
@@ -19,6 +23,10 @@
     import { debounce } from 'throttle-debounce';
 
     let toastId = $state<number | string>();
+
+    // Rate notification dialog state
+    let rateRuleDialogOpen = $state(false);
+    let editingRateRule = $state<undefined | ViewRateNotificationRule>(undefined);
 
     const meQuery = getMeQuery();
     const queryParams = createQueryParameters({
@@ -53,6 +61,7 @@
     });
 
     const selectedProject = $derived(allProjects.find((p) => p.id === queryParams.project) ?? allProjects[0]);
+    const rateNotificationsEnabled = $derived(selectedProject?.has_rate_notifications ?? false);
     const selectedProjectNotificationSettings = getProjectUserNotificationSettings({
         route: {
             get id() {
@@ -129,6 +138,33 @@
             showUpgradeDialog(selectedProject.organization_id, 'Please upgrade your plan to enable occurrence level notifications.');
         }
     }
+
+    function handleRateRuleUpgrade() {
+        if (selectedProject?.organization_id) {
+            showUpgradeDialog(selectedProject.organization_id, 'Please upgrade your plan to enable personal rate notification rules.');
+        }
+    }
+
+    function openCreateRateRule() {
+        editingRateRule = undefined;
+        rateRuleDialogOpen = true;
+    }
+
+    function openEditRateRule(rule: ViewRateNotificationRule) {
+        editingRateRule = rule;
+        rateRuleDialogOpen = true;
+    }
+
+    function closeRateRuleDialog() {
+        rateRuleDialogOpen = false;
+        editingRateRule = undefined;
+    }
+
+    $effect(() => {
+        if (rateRuleDialogOpen && editingRateRule && editingRateRule.project_id !== selectedProject?.id) {
+            closeRateRuleDialog();
+        }
+    });
 </script>
 
 <div class="space-y-6">
@@ -207,5 +243,45 @@
             {emailNotificationsEnabled}
             hasPremiumFeatures={selectedProject.has_premium_features}
         />
+
+        {#if rateNotificationsEnabled}
+            <div class="space-y-2">
+                <H3>Rate Notifications</H3>
+                <Muted>Catch error storms early so you can fix noisy failures before they consume your event quota.</Muted>
+            </div>
+
+            <RateNotificationRuleList
+                hasPremiumFeatures={selectedProject.has_premium_features}
+                projectId={selectedProject.id}
+                userId={meQuery.data?.id}
+                upgrade={handleRateRuleUpgrade}
+                onCreateClick={openCreateRateRule}
+                onEditClick={openEditRateRule}
+            />
+        {/if}
     {/if}
 </div>
+
+{#if rateNotificationsEnabled}
+    <Dialog.Root bind:open={rateRuleDialogOpen} onOpenChange={(open) => !open && closeRateRuleDialog()}>
+        <Dialog.Content class="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
+            <Dialog.Header class="px-4 pt-4">
+                <Dialog.Title>{editingRateRule ? 'Edit Rate Notification Rule' : 'Create Rate Notification Rule'}</Dialog.Title>
+                <Dialog.Description>
+                    {editingRateRule ? 'Update the rule settings below.' : 'Configure when you want to receive an email notification based on event rates.'}
+                </Dialog.Description>
+            </Dialog.Header>
+            {#if selectedProject}
+                <RateNotificationRuleForm
+                    hasPremiumFeatures={selectedProject.has_premium_features}
+                    projectId={selectedProject.id}
+                    rule={editingRateRule}
+                    userId={meQuery.data?.id}
+                    upgrade={handleRateRuleUpgrade}
+                    onSaved={closeRateRuleDialog}
+                    onCancel={closeRateRuleDialog}
+                />
+            {/if}
+        </Dialog.Content>
+    </Dialog.Root>
+{/if}

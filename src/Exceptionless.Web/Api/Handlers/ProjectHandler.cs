@@ -37,6 +37,7 @@ public class ProjectHandler(
     SlackService slackService,
     IOAuthProviderClient oauthProviderClient,
     SampleDataService sampleDataService,
+    OrganizationService organizationService,
     ApiMapper mapper,
     ITextSerializer serializer,
     AppOptions options,
@@ -511,6 +512,7 @@ public class ProjectHandler(
 
             viewProject.OrganizationName = organization.Name;
             viewProject.HasPremiumFeatures = organization.HasPremiumFeatures;
+            viewProject.HasRateNotifications = organization.HasRateNotifications();
 
             var realTimeUsage = await usageService.GetUsageAsync(organization.Id, viewProject.Id);
             viewProject.EnsureUsage(organization.GetMaxEventsPerMonthWithBonus(timeProvider), timeProvider);
@@ -592,6 +594,7 @@ public class ProjectHandler(
             using var _ = _logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id).Tag("Delete").Identity(user.EmailAddress).Property("User", user).SetHttpContext(httpContext));
             _logger.UserDeletingProject(user.Id, project.Name);
             await tokenRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id);
+            await organizationService.RemoveProjectRateNotificationRulesAsync(project.OrganizationId, project.Id);
         }
 
         foreach (var project in projects.OfType<ISupportSoftDeletes>())
