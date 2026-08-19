@@ -7,11 +7,26 @@
 
     const parsedValue = $derived(typeof value === 'number' ? value : parseFloat(value ?? ''));
     const byteUnits: { divisor: number; unit: Intl.NumberFormatOptions['unit'] }[] = [
-        { divisor: 1e12, unit: 'terabyte' },
-        { divisor: 1e9, unit: 'gigabyte' },
-        { divisor: 1e6, unit: 'megabyte' },
-        { divisor: 1e3, unit: 'kilobyte' },
-        { divisor: 1, unit: 'byte' }
+        {
+            divisor: 1e12,
+            unit: 'terabyte'
+        },
+        {
+            divisor: 1e9,
+            unit: 'gigabyte'
+        },
+        {
+            divisor: 1e6,
+            unit: 'megabyte'
+        },
+        {
+            divisor: 1e3,
+            unit: 'kilobyte'
+        },
+        {
+            divisor: 1,
+            unit: 'byte'
+        }
     ];
     const byteUnit = $derived(byteUnits.find(({ divisor }) => Math.abs(parsedValue) >= divisor) ?? byteUnits.at(-1)!);
     const byteValueNumberFormatter = $derived(

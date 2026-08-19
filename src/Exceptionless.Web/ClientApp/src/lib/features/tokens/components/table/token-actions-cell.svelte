@@ -48,7 +48,10 @@
     });
 
     async function updateDisabled(is_disabled: boolean) {
-        await updateToken.mutateAsync({ is_disabled, notes: token.notes });
+        await updateToken.mutateAsync({
+            is_disabled,
+            notes: token.notes
+        });
         toast.success(`Successfully ${is_disabled ? 'disabled' : 'enabled'} token`);
     }
 
@@ -61,7 +64,10 @@
     }
 
     async function updateNotes(notes?: string) {
-        await updateToken.mutateAsync({ is_disabled: token.is_disabled, notes });
+        await updateToken.mutateAsync({
+            is_disabled: token.is_disabled,
+            notes
+        });
         toast.success('Successfully updated notes');
     }
 

@@ -13,21 +13,43 @@ import type { Invoice, InvoiceGridModel, NewOrganization, SuspensionCode, ViewOr
 export async function invalidateOrganizationQueries(queryClient: QueryClient, message: WebSocketMessageValue<'OrganizationChanged'>) {
     const { id } = message;
     if (id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.id(id, undefined) });
-        await queryClient.invalidateQueries({ queryKey: queryKeys.id(id, 'stats') });
+        await queryClient.invalidateQueries({
+            queryKey: queryKeys.id(id, undefined)
+        });
+        await queryClient.invalidateQueries({
+            queryKey: queryKeys.id(id, 'stats')
+        });
 
         // Invalidate regardless of mode
-        await queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) });
+        await queryClient.invalidateQueries({
+            queryKey: queryKeys.list(undefined)
+        });
     } else {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.type });
+        await queryClient.invalidateQueries({
+            queryKey: queryKeys.type
+        });
     }
 }
 
 export async function invalidateOrganizationUsageQueries(queryClient: QueryClient, organizationId?: string) {
-    const invalidations = [queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) })];
+    const invalidations = [
+        queryClient.invalidateQueries({
+            queryKey: queryKeys.list(undefined)
+        })
+    ];
     if (organizationId) {
-        invalidations.push(queryClient.invalidateQueries({ exact: true, queryKey: queryKeys.id(organizationId, undefined) }));
-        invalidations.push(queryClient.invalidateQueries({ exact: true, queryKey: queryKeys.id(organizationId, 'stats') }));
+        invalidations.push(
+            queryClient.invalidateQueries({
+                exact: true,
+                queryKey: queryKeys.id(organizationId, undefined)
+            })
+        );
+        invalidations.push(
+            queryClient.invalidateQueries({
+                exact: true,
+                queryKey: queryKeys.id(organizationId, 'stats')
+            })
+        );
     }
 
     await Promise.all(invalidations);
@@ -38,15 +60,40 @@ export async function invalidatePlanOverageQueries(queryClient: QueryClient, mes
 }
 
 export const queryKeys = {
-    adminSearch: (params: GetAdminSearchOrganizationsParams) => [...queryKeys.list(params.mode), 'admin', { ...params }] as const,
+    adminSearch: (params: GetAdminSearchOrganizationsParams) =>
+        [
+            ...queryKeys.list(params.mode),
+            'admin',
+            {
+                ...params
+            }
+        ] as const,
     changePlan: (id: string | undefined) => [...queryKeys.type, id, 'change-plan'] as const,
     deleteOrganization: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'delete'] as const,
     icon: (id: string | undefined) => [...queryKeys.id(id, undefined), 'icon'] as const,
-    id: (id: string | undefined, mode: 'stats' | undefined) => (mode ? ([...queryKeys.type, id, { mode }] as const) : ([...queryKeys.type, id] as const)),
+    id: (id: string | undefined, mode: 'stats' | undefined) =>
+        mode
+            ? ([
+                  ...queryKeys.type,
+                  id,
+                  {
+                      mode
+                  }
+              ] as const)
+            : ([...queryKeys.type, id] as const),
     ids: (ids: string[] | undefined) => [...queryKeys.type, ...(ids ?? [])] as const,
     invoice: (id: string | undefined) => [...queryKeys.type, 'invoice', id] as const,
     invoices: (id: string | undefined) => [...queryKeys.type, id, 'invoices'] as const,
-    list: (mode: 'stats' | undefined) => (mode ? ([...queryKeys.type, 'list', { mode }] as const) : ([...queryKeys.type, 'list'] as const)),
+    list: (mode: 'stats' | undefined) =>
+        mode
+            ? ([
+                  ...queryKeys.type,
+                  'list',
+                  {
+                      mode
+                  }
+              ] as const)
+            : ([...queryKeys.type, 'list'] as const),
     plans: (id: string | undefined) => [...queryKeys.type, id, 'plans'] as const,
     postOrganization: () => [...queryKeys.type, 'post-organization'] as const,
     setBonusOrganization: (id: string | undefined) => [...queryKeys.type, id, 'set-bonus'] as const,
@@ -193,9 +240,13 @@ export function addOrganizationUser(request: AddOrganizationUserRequest) {
             return response.data!;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.organizationId, undefined) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(request.route.organizationId, undefined)
+            });
             // Also invalidate the user list for this org (different query namespace from Organization)
-            queryClient.invalidateQueries({ queryKey: ['User', 'organization', request.route.organizationId] });
+            queryClient.invalidateQueries({
+                queryKey: ['User', 'organization', request.route.organizationId]
+            });
         }
     }));
 }
@@ -211,9 +262,15 @@ export function changePlanMutation(request: ChangePlanMutationRequest) {
         },
         mutationKey: queryKeys.changePlan(request.route.organizationId),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.organizationId, undefined) });
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.organizationId, 'stats') });
-            queryClient.invalidateQueries({ queryKey: queryKeys.plans(request.route.organizationId) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(request.route.organizationId, undefined)
+            });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(request.route.organizationId, 'stats')
+            });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.plans(request.route.organizationId)
+            });
         }
     }));
 }
@@ -233,10 +290,18 @@ export function deleteOrganization(request: DeleteOrganizationRequest) {
         },
         mutationKey: queryKeys.deleteOrganization(request.route.ids),
         onError: () => {
-            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id, undefined) }));
+            request.route.ids?.forEach((id) =>
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.id(id, undefined)
+                })
+            );
         },
         onSuccess: () => {
-            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id, undefined) }));
+            request.route.ids?.forEach((id) =>
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.id(id, undefined)
+                })
+            );
         }
     }));
 }
@@ -265,9 +330,13 @@ export function deleteOrganizationUser(request: DeleteOrganizationUserRequest) {
             await client.deleteJSON<void>(`organizations/${request.route.organizationId}/users/${encodeURIComponent(request.route.email)}`);
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.organizationId, undefined) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(request.route.organizationId, undefined)
+            });
             // Also invalidate the user list for this org (different query namespace from Organization)
-            queryClient.invalidateQueries({ queryKey: ['User', 'organization', request.route.organizationId] });
+            queryClient.invalidateQueries({
+                queryKey: ['User', 'organization', request.route.organizationId]
+            });
         }
     }));
 }
@@ -284,12 +353,20 @@ export function deleteSuspendOrganization(request: DeleteSuspendOrganizationRequ
         },
         mutationKey: queryKeys.unsuspendOrganization(request.route.id),
         onError: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(request.route.id, undefined)
+            });
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, 'stats') });
-            queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(request.route.id, undefined)
+            });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(request.route.id, 'stats')
+            });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.list(undefined)
+            });
         }
     }));
 }
@@ -345,7 +422,9 @@ export function getInvoicesQuery(request: GetInvoicesRequest) {
             const client = useFetchClient();
             const response = await client.getJSON<InvoiceGridModel[]>(`organizations/${request.route.organizationId}/invoices`, {
                 expectedStatusCodes: [200, 404],
-                params: { ...request.params },
+                params: {
+                    ...request.params
+                },
                 signal
             });
 
@@ -358,27 +437,32 @@ export function getInvoicesQuery(request: GetInvoicesRequest) {
 export function getOrganizationQuery(request: GetOrganizationRequest) {
     const queryClient = useQueryClient();
 
-    return createQuery<ViewOrganization, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.id,
-        onSuccess: (data: ViewOrganization) => {
-            if (request.params?.mode) {
-                queryClient.setQueryData(queryKeys.id(request.route.id, request.params.mode), data);
-            }
+    return createQuery<ViewOrganization, ProblemDetails>(() => {
+        const id = request.route.id;
+        const mode = request.params?.mode;
 
-            queryClient.setQueryData(queryKeys.id(request.route.id!, undefined), data);
-        },
-        queryClient,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
-            const client = useFetchClient();
-            const response = await client.getJSON<ViewOrganization>(`organizations/${request.route.id}`, {
-                signal
-            });
+        return {
+            enabled: () => !!accessToken.current && !!id,
+            onSuccess: (data: ViewOrganization) => {
+                if (mode) {
+                    queryClient.setQueryData(queryKeys.id(id, mode), data);
+                }
 
-            return response.data!;
-        },
-        queryKey: queryKeys.id(request.route.id, request.params?.mode),
-        refetchInterval: request.refetchInterval
-    }));
+                queryClient.setQueryData(queryKeys.id(id!, undefined), data);
+            },
+            queryClient,
+            queryFn: async ({ signal }: { signal: AbortSignal }) => {
+                const client = useFetchClient();
+                const response = await client.getJSON<ViewOrganization>(`organizations/${id}`, {
+                    signal
+                });
+
+                return response.data!;
+            },
+            queryKey: queryKeys.id(id, mode),
+            refetchInterval: request.refetchInterval
+        };
+    });
 }
 
 export function getOrganizationsQuery(request: GetOrganizationsRequest) {
@@ -399,13 +483,22 @@ export function getOrganizationsQuery(request: GetOrganizationsRequest) {
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<ViewOrganization[]>('organizations', {
-                params: { ...request.params },
+                params: {
+                    ...request.params
+                },
                 signal
             });
 
             return response;
         },
-        queryKey: [...queryKeys.list(request.params?.mode ?? undefined), { params: { ...request.params } }],
+        queryKey: [
+            ...queryKeys.list(request.params?.mode ?? undefined),
+            {
+                params: {
+                    ...request.params
+                }
+            }
+        ],
         refetchInterval: request.refetchInterval
     }));
 }
@@ -439,7 +532,9 @@ export function patchOrganization(request: PatchOrganizationRequest) {
             return response.data!;
         },
         onError: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(request.route.id, undefined)
+            });
         },
         onSuccess: (organization: ViewOrganization) => updateOrganizationCache(queryClient, request.route.id, organization)
     }));
@@ -447,7 +542,12 @@ export function patchOrganization(request: PatchOrganizationRequest) {
 
 export function postOrganization() {
     const queryClient = useQueryClient();
-    const defaultOrganizationsQueryKey = [...queryKeys.list(undefined), { params: {} }] as const;
+    const defaultOrganizationsQueryKey = [
+        ...queryKeys.list(undefined),
+        {
+            params: {}
+        }
+    ] as const;
 
     return createMutation<ViewOrganization, ProblemDetails, NewOrganization>(() => ({
         enabled: () => !!accessToken.current,
@@ -473,8 +573,12 @@ export function postOrganization() {
             });
 
             await Promise.all([
-                queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) }),
-                queryClient.invalidateQueries({ queryKey: userQueryKeys.me() })
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.list(undefined)
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: userQueryKeys.me()
+                })
             ]);
         }
     }));
@@ -498,13 +602,21 @@ export function postSetBonusOrganization() {
         },
         mutationKey: queryKeys.setBonusOrganization(undefined),
         onError: (error, params) => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(params.organizationId, undefined) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(params.organizationId, undefined)
+            });
         },
         onSuccess: (data, params) => {
             // TODO: Normalize all this invalidation.
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(params.organizationId, undefined) });
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(params.organizationId, 'stats') });
-            queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(params.organizationId, undefined)
+            });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(params.organizationId, 'stats')
+            });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.list(undefined)
+            });
         }
     }));
 }
@@ -521,13 +633,21 @@ export function postSuspendOrganization(request: PostSuspendOrganizationRequest)
         },
         mutationKey: queryKeys.suspendOrganization(request.route.id),
         onError: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(request.route.id, undefined)
+            });
         },
         onSuccess: () => {
             // TODO: Normalize all this invalidation.
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, 'stats') });
-            queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(request.route.id, undefined)
+            });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(request.route.id, 'stats')
+            });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.list(undefined)
+            });
         }
     }));
 }
@@ -546,11 +666,17 @@ export function removeOrganizationFeature(request: SetOrganizationFeatureRequest
         },
         mutationKey: queryKeys.setFeature(request.route.id),
         onError: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(request.route.id, undefined)
+            });
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
-            queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(request.route.id, undefined)
+            });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.list(undefined)
+            });
         }
     }));
 }
@@ -569,11 +695,17 @@ export function setOrganizationFeature(request: SetOrganizationFeatureRequest) {
         },
         mutationKey: queryKeys.setFeature(request.route.id),
         onError: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(request.route.id, undefined)
+            });
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id, undefined) });
-            queryClient.invalidateQueries({ queryKey: queryKeys.list(undefined) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(request.route.id, undefined)
+            });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.list(undefined)
+            });
         }
     }));
 }
@@ -599,16 +731,21 @@ export function uploadOrganizationIcon(request: OrganizationIconRequest) {
 function updateOrganizationCache(queryClient: QueryClient, id: string | undefined, organization: ViewOrganization) {
     queryClient.setQueryData(queryKeys.id(id, 'stats'), organization);
     queryClient.setQueryData(queryKeys.id(id, undefined), organization);
-    queryClient.setQueriesData<FetchClientResponse<ViewOrganization[]> | undefined>({ queryKey: queryKeys.type }, (response) => {
-        if (!Array.isArray(response?.data) || !response.data.some((existingOrganization) => existingOrganization.id === organization.id)) {
-            return response;
-        }
+    queryClient.setQueriesData<FetchClientResponse<ViewOrganization[]> | undefined>(
+        {
+            queryKey: queryKeys.type
+        },
+        (response) => {
+            if (!Array.isArray(response?.data) || !response.data.some((existingOrganization) => existingOrganization.id === organization.id)) {
+                return response;
+            }
 
-        return {
-            ...response,
-            data: response.data.map((existingOrganization) => {
-                return existingOrganization.id === organization.id ? organization : existingOrganization;
-            })
-        };
-    });
+            return {
+                ...response,
+                data: response.data.map((existingOrganization) => {
+                    return existingOrganization.id === organization.id ? organization : existingOrganization;
+                })
+            };
+        }
+    );
 }

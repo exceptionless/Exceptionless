@@ -68,7 +68,7 @@ public class RequestBodyContentOperationTransformer : IOpenApiOperationTransform
         {
             operation.RequestBody.Content!.Add(contentType, new OpenApiMediaType
             {
-                Schema = new OpenApiSchema { Type = JsonSchemaType.String, Example = JsonValue.Create(String.Empty) }
+                Schema = new OpenApiSchema { Type = JsonSchemaType.String, Examples = [JsonValue.Create(String.Empty)] }
             });
         }
 

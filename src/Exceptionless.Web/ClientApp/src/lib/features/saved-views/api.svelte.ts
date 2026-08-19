@@ -9,6 +9,9 @@ import { createMutation, createQuery, type QueryClient, useQueryClient } from '@
 import type { NewSavedView, SavedView, UpdateSavedView } from './models';
 
 export const SAVED_VIEW_REFRESH_DELAY_MS = 1500;
+export const SAVED_VIEW_QUERY_STALE_TIME_MS = 60 * 1000;
+
+const savedViewInvalidationTimers = new WeakMap<QueryClient, Record<string, ReturnType<typeof setTimeout>>>();
 
 export async function invalidateSavedViewQueries(queryClient: QueryClient, message: WebSocketMessageValue<'SavedViewChanged'>) {
     const { change_type, id, organization_id } = message;
@@ -30,23 +33,49 @@ export async function invalidateSavedViewQueries(queryClient: QueryClient, messa
 
     // Added/Saved websocket events can arrive before Elasticsearch refresh exposes the
     // saved view to list queries. Mutations already seed the cache, so keep that optimistic
-    // item visible and refetch after the refresh window.
+    // item visible and coalesce refetches until the refresh window after the latest event.
     if (change_type === ChangeType.Added || change_type === ChangeType.Saved) {
-        setTimeout(() => {
-            void invalidateSavedViewCache(queryClient, organization_id);
-        }, SAVED_VIEW_REFRESH_DELAY_MS);
+        scheduleSavedViewInvalidation(queryClient, organization_id);
         return;
     }
 
+    cancelScheduledSavedViewInvalidation(queryClient, organization_id);
     await invalidateSavedViewCache(queryClient, organization_id);
+}
+
+function cancelScheduledSavedViewInvalidation(queryClient: QueryClient, organizationId: string | undefined) {
+    const timers = savedViewInvalidationTimers.get(queryClient);
+    const key = organizationId ?? '';
+    const timer = timers?.[key];
+    if (timers && timer !== undefined) {
+        clearTimeout(timer);
+        delete timers[key];
+    }
 }
 
 async function invalidateSavedViewCache(queryClient: QueryClient, organizationId: string | undefined) {
     if (organizationId) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.organization(organizationId) });
+        await queryClient.invalidateQueries({
+            queryKey: queryKeys.organization(organizationId)
+        });
     } else {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.type });
+        await queryClient.invalidateQueries({
+            queryKey: queryKeys.type
+        });
     }
+}
+
+function scheduleSavedViewInvalidation(queryClient: QueryClient, organizationId: string | undefined) {
+    cancelScheduledSavedViewInvalidation(queryClient, organizationId);
+
+    const timers = savedViewInvalidationTimers.get(queryClient) ?? {};
+    savedViewInvalidationTimers.set(queryClient, timers);
+
+    const key = organizationId ?? '';
+    timers[key] = setTimeout(() => {
+        delete timers[key];
+        void invalidateSavedViewCache(queryClient, organizationId);
+    }, SAVED_VIEW_REFRESH_DELAY_MS);
 }
 
 export const queryKeys = {
@@ -90,7 +119,9 @@ export function deleteSavedView(request: { route: { organizationId: string | und
             removeSavedViewFromCaches(queryClient, savedView, request.route.organizationId);
         },
         onSettled: () => {
-            void queryClient.invalidateQueries({ queryKey: queryKeys.type });
+            void queryClient.invalidateQueries({
+                queryKey: queryKeys.type
+            });
         },
         onSuccess: (_data: WorkInProgressResult, savedView: SavedView) => {
             removeSavedViewFromCaches(queryClient, savedView, request.route.organizationId);
@@ -98,29 +129,30 @@ export function deleteSavedView(request: { route: { organizationId: string | und
     }));
 }
 
+// Cacheable reads intentionally finish after their observer unmounts so navigation can reuse the result instead of aborting and restarting the request.
 export function getSavedViewsByViewQuery(request: { route: { organizationId: string | undefined; view: string | undefined } }) {
     return createQuery<SavedView[], ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.organizationId && !!request.route.view,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+        queryFn: async () => {
             const client = useFetchClient();
-            const response = await client.getJSON<SavedView[]>(`organizations/${request.route.organizationId}/saved-views/${request.route.view}`, { signal });
+            const response = await client.getJSON<SavedView[]>(`organizations/${request.route.organizationId}/saved-views/${request.route.view}`);
             return response.data!;
         },
-        queryKey: queryKeys.view(request.route.organizationId, request.route.view)
+        queryKey: queryKeys.view(request.route.organizationId, request.route.view),
+        staleTime: SAVED_VIEW_QUERY_STALE_TIME_MS
     }));
 }
 
 export function getSavedViewsQuery(request: { route: { organizationId: string | undefined } }) {
     return createQuery<SavedView[], ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.organizationId,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+        queryFn: async () => {
             const client = useFetchClient();
-            const response = await client.getJSON<SavedView[]>(`organizations/${request.route.organizationId}/saved-views`, {
-                signal
-            });
+            const response = await client.getJSON<SavedView[]>(`organizations/${request.route.organizationId}/saved-views`);
             return response.data!;
         },
-        queryKey: queryKeys.organization(request.route.organizationId)
+        queryKey: queryKeys.organization(request.route.organizationId),
+        staleTime: SAVED_VIEW_QUERY_STALE_TIME_MS
     }));
 }
 
@@ -178,10 +210,14 @@ export function postPredefinedSavedViews(request: { route: { organizationId: str
                 syncSavedViewCaches(queryClient, savedView, request.route.organizationId);
             }
 
-            void queryClient.invalidateQueries({ queryKey: queryKeys.organization(request.route.organizationId) });
+            void queryClient.invalidateQueries({
+                queryKey: queryKeys.organization(request.route.organizationId)
+            });
             const viewTypes = savedViews.map((savedView) => savedView.view_type).filter((view, index, views) => views.indexOf(view) === index);
             for (const view of viewTypes) {
-                void queryClient.invalidateQueries({ queryKey: queryKeys.view(request.route.organizationId, view) });
+                void queryClient.invalidateQueries({
+                    queryKey: queryKeys.view(request.route.organizationId, view)
+                });
             }
         }
     }));
@@ -207,7 +243,12 @@ export function removeSavedViewFromCaches(queryClient: QueryClient, savedView: S
     const evict = (cachedViews: SavedView[] | undefined) => cachedViews?.filter((v) => v.id !== savedView.id);
     queryClient.setQueryData(queryKeys.view(organizationId, savedView.view_type), evict);
     queryClient.setQueryData(queryKeys.organization(organizationId), evict);
-    queryClient.setQueriesData<SavedView[]>({ queryKey: queryKeys.type }, evict);
+    queryClient.setQueriesData<SavedView[]>(
+        {
+            queryKey: queryKeys.type
+        },
+        evict
+    );
 }
 
 export function restoreDeletedSavedView(savedView: SavedView): void {

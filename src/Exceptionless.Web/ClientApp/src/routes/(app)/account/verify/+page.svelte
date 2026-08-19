@@ -12,7 +12,9 @@
         if (token) {
             try {
                 await client.post('/users/verify-email-address', undefined, {
-                    params: { token }
+                    params: {
+                        token
+                    }
                 });
                 toast.success('Your account has been successfully verified.');
             } catch {

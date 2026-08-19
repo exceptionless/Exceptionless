@@ -26,7 +26,9 @@ export function getAboutQuery() {
 export function getHealthQuery() {
     return createQuery<string, ProblemDetails>(() => ({
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
-            const client = useFetchClient({ baseUrl: '' });
+            const client = useFetchClient({
+                baseUrl: ''
+            });
             const response = await client.get('health', {
                 signal
             });

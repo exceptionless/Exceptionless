@@ -13,18 +13,22 @@
     import AlertTitle from '$features/shared/components/ui/alert/alert-title.svelte';
     import Alert from '$features/shared/components/ui/alert/alert.svelte';
     import { getMeQuery, patchUser, resendVerificationEmail } from '$features/users/api.svelte';
+    import { createQueryParameters } from '$shared/query-params';
     import AlertCircleIcon from '@lucide/svelte/icons/alert-circle';
-    import { queryParamsState } from 'kit-query-params';
     import { toast } from 'svelte-sonner';
     import { debounce } from 'throttle-debounce';
 
     let toastId = $state<number | string>();
 
     const meQuery = getMeQuery();
-    const queryParams = queryParamsState({
-        default: { project: '' },
-        pushHistory: true,
-        schema: { project: 'string' }
+    const queryParams = createQueryParameters({
+        defaults: {
+            project: ''
+        },
+        history: 'push',
+        schema: {
+            project: 'string'
+        }
     });
 
     const updateUser = patchUser({
@@ -76,7 +80,9 @@
         toast.dismiss(toastId);
 
         try {
-            await updateUser.mutateAsync({ email_notifications_enabled: checked });
+            await updateUser.mutateAsync({
+                email_notifications_enabled: checked
+            });
             toastId = toast.success('Email notification preference saved.');
         } catch {
             toastId = toast.error('An error occurred while saving your email notification preferences.');

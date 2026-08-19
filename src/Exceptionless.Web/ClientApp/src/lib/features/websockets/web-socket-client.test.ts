@@ -167,6 +167,21 @@ describe('WebSocketClient', () => {
 
             expect(client.readyState).toBe(WebSocket.CLOSED);
         });
+
+        it('should not report an error when a connecting socket is intentionally closed', async () => {
+            const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+            const onError = vi.fn();
+            const client = createClient();
+            client.onError = onError;
+
+            client.connect();
+            client.close();
+            await new Promise((resolve) => setTimeout(resolve, 10));
+
+            expect(consoleError).not.toHaveBeenCalledWith('[WebSocketClient] onerror triggered', expect.anything());
+            expect(onError).not.toHaveBeenCalled();
+            consoleError.mockRestore();
+        });
     });
 
     describe('Reconnection Logic', () => {
