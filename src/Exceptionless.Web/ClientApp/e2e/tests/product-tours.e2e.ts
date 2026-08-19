@@ -3,6 +3,8 @@ import { seedRepresentativeEvent } from '../support/event-data';
 
 test.use({ e2eUseGeneratedUser: true });
 
+const seededUserTest = test.extend({ e2eUseGeneratedUser: false });
+
 test('Explore the new UI is replayable from command search', async ({ e2eScenario: _e2eScenario, page }, testInfo) => {
     void _e2eScenario;
     await page.setViewportSize({ height: 900, width: 1440 });
@@ -121,7 +123,7 @@ test('Create a saved view retains a private hydrated view', async ({ e2eScenario
     await expect(page.getByText('Create the saved view')).toBeHidden();
 });
 
-test('Investigate an error resumes after navigation and advances only after an error opens', async ({ e2eApi, e2eScenario, page }, testInfo) => {
+seededUserTest('Investigate an error resumes after navigation and advances only after an error opens', async ({ e2eApi, e2eScenario, page }, testInfo) => {
     const event = await seedRepresentativeEvent(e2eApi, e2eScenario.userToken, {
         message: e2eScenario.message,
         projectId: e2eScenario.projectId,
