@@ -33,9 +33,9 @@
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_LIMIT, DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
+    import { createQueryParameters } from '$shared/query-params';
     import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
     import { createTable } from '@tanstack/svelte-table';
-    import { queryParamsState } from 'kit-query-params';
     import { useEventListener, watch } from 'runed';
     import { onDestroy } from 'svelte';
     import { debounce } from 'throttle-debounce';
@@ -69,9 +69,9 @@
     }
 
     updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
-    const queryParams = queryParamsState({
-        default: DEFAULT_PARAMS,
-        pushHistory: true,
+    const queryParams = createQueryParameters({
+        defaults: DEFAULT_PARAMS,
+        history: 'push',
         schema: {
             filter: 'string',
             limit: 'number',
@@ -81,12 +81,13 @@
 
     const VIEW = 'stream';
     const savedViewsState = useSavedViews({
+        defaultAutoFillColumnId: 'summary',
         defaultColumnVisibility: defaultEventColumnVisibility,
         defaultFilter: DEFAULT_PARAMS.filter,
         filterCacheKey,
-        getColumnOrder: () => table.state.columnOrder,
-        getColumnSizing: () => table.state.columnSizing,
-        getColumnVisibility: () => table.state.columnVisibility,
+        getColumnOrder: () => table.store.state.columnOrder,
+        getColumnSizing: () => table.store.state.columnSizing,
+        getColumnVisibility: () => table.store.state.columnVisibility,
         getFilterDefinitions: () => serializeFilters(filters ?? []),
         queryParams,
         setColumnOrder: (v) => table.setColumnOrder(v),
@@ -105,11 +106,12 @@
         () => organization.current,
         () => {
             updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
-            //params.$reset(); // Work around for https://github.com/beynar/kit-query-params/issues/7
-            Object.assign(queryParams, DEFAULT_PARAMS);
+            queryParams.update(DEFAULT_PARAMS);
             paused = false;
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     let filters = $state(getFiltersFromCache(filterCacheKey(queryParams.filter), queryParams.filter));
@@ -118,7 +120,9 @@
         ([filter]) => {
             filters = getFiltersFromCache(filterCacheKey(filter), filter);
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     async function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter) {
@@ -185,7 +189,10 @@
                     showType: !hasSingleTypeFilter(eventsQueryParameters.filter)
                 })
                     .filter((c) => c.id !== 'select')
-                    .map((c) => ({ ...c, enableSorting: false }));
+                    .map((c) => ({
+                        ...c,
+                        enableSorting: false
+                    }));
             },
             configureOptions: (options) => {
                 options.enableMultiRowSelection = false;
@@ -205,11 +212,6 @@
             get queryParameters() {
                 return eventsQueryParameters;
             }
-        }),
-        (state) => ({
-            columnOrder: state.columnOrder,
-            columnSizing: state.columnSizing,
-            columnVisibility: state.columnVisibility
         })
     );
 
@@ -329,15 +331,18 @@
             {#if savedViewsState.isEnabled}
                 <SavedViewPicker
                     activeSavedView={savedViewsState.activeSavedView}
-                    columnOrder={table.state.columnOrder}
-                    columnSizing={table.state.columnSizing}
-                    columnVisibility={table.state.columnVisibility}
+                    autoFillColumnId={savedViewsState.autoFillColumnId}
+                    columnOrder={table.store.state.columnOrder}
+                    columnSizing={table.store.state.columnSizing}
+                    columnVisibility={table.store.state.columnVisibility}
+                    defaultAutoFillColumnId="summary"
                     filters={filters ?? []}
                     isModified={savedViewsState.isModified}
                     onLoadView={savedViewsState.handleLoadView}
                     onClearSavedView={savedViewsState.handleClearSavedView}
                     onResetToSaved={savedViewsState.handleResetToSaved}
                     savedViews={savedViewsState.savedViews}
+                    setAutoFillColumnId={savedViewsState.setAutoFillColumnId}
                     {table}
                     view={VIEW}
                 />
@@ -345,7 +350,7 @@
             <StreamingIndicatorButton onToggle={handleToggle} {paused} size="icon-lg" />
         </div>
     </div>
-    <DataTable.Body rowClick={rowclick} {rowHref} {table}>
+    <DataTable.Body autoFillColumnId={savedViewsState.autoFillColumnId} rowClick={rowclick} {rowHref} {table}>
         {#if clientStatus.isLoading}
             <DelayedRender>
                 <DataTable.Loading {table} />
@@ -364,4 +369,4 @@
     </DataTable.Footer>
 </DataTable.Root>
 
-<EventDetailSheet eventId={selectedEventId} filterChanged={onFilterChanged} onClose={() => (selectedEventId = null)} onError={handleEventError} />
+<EventDetailSheet bind:eventId={selectedEventId} filterChanged={onFilterChanged} onClose={() => (selectedEventId = null)} onError={handleEventError} />

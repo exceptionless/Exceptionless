@@ -16,7 +16,7 @@ import { getEffectiveEventLimit, getNextBillingDateUtc, getRemainingEventLimit, 
     import ProjectIngestLimitCard from '$features/projects/components/project-ingest-limit-card.svelte';
     import { formatDateLabel, formatLongDate } from '$shared/dates';
     import { scaleUtc } from 'd3-scale';
-    import { curveNatural } from 'd3-shape';
+    import { curveMonotoneX } from 'd3-shape';
     import { AreaChart } from 'layerchart';
 
     const organizationQuery = getOrganizationQuery({
@@ -100,7 +100,9 @@ import { getEffectiveEventLimit, getNextBillingDateUtc, getRemainingEventLimit, 
             ...chartConfig.limit,
             props: {
                 class: 'fill-none',
-                line: { class: '[stroke-dasharray:4]' }
+                line: {
+                    class: '[stroke-dasharray:4]'
+                }
             }
         }
     ]);
@@ -156,9 +158,11 @@ import { getEffectiveEventLimit, getNextBillingDateUtc, getRemainingEventLimit, 
                     {series}
                     props={{
                         area: {
-                            curve: curveNatural
+                            curve: curveMonotoneX
                         },
-                        yAxis: { format: 'metric' }
+                        yAxis: {
+                            format: 'metric'
+                        }
                     }}
                 >
                     {#snippet tooltip()}

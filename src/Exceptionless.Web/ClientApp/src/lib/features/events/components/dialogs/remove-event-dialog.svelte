@@ -39,7 +39,12 @@
         </AlertDialog.Header>
         <AlertDialog.Footer>
             <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-            <AlertDialog.Action class={buttonVariants({ variant: 'destructive' })} onclick={onSubmit}>
+            <AlertDialog.Action
+                class={buttonVariants({
+                    variant: 'destructive'
+                })}
+                onclick={onSubmit}
+            >
                 Delete
                 {#if count === 1}
                     Event

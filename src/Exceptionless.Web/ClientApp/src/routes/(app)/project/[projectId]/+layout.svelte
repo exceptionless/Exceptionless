@@ -31,9 +31,21 @@
         }
     });
     const currentPath = $derived(page.url.pathname);
-    const configurePath = $derived(resolve('/(app)/project/[projectId]/configure', { projectId }));
-    const settingsPath = $derived(resolve('/(app)/project/[projectId]/settings', { projectId }));
-    const sourceMapsPath = $derived(resolve('/(app)/project/[projectId]/source-maps', { projectId }));
+    const configurePath = $derived(
+        resolve('/(app)/project/[projectId]/configure', {
+            projectId
+        })
+    );
+    const settingsPath = $derived(
+        resolve('/(app)/project/[projectId]/settings', {
+            projectId
+        })
+    );
+    const sourceMapsPath = $derived(
+        resolve('/(app)/project/[projectId]/source-maps', {
+            projectId
+        })
+    );
     const isConfigurePage = $derived(currentPath === configurePath || currentPath.startsWith(configurePath + '/'));
     const navigationRoutes = $derived(routes().filter((route) => route.href !== sourceMapsPath));
 

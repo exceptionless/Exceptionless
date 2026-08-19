@@ -104,7 +104,9 @@
                         return problemDetailsToFormErrors(error);
                     }
 
-                    return { form: 'An unexpected error occurred.' };
+                    return {
+                        form: 'An unexpected error occurred.'
+                    };
                 }
             }
         }
@@ -176,11 +178,11 @@
                 onclick={openIconPicker}
                 disabled={isIconSaving}
             >
-                <Avatar.Root class="h-full w-full rounded-lg" title="Organization Icon">
+                <Avatar.Root class="h-full w-full" shape="square" title="Organization Icon">
                     {#if organizationQuery.data?.icon_url}
                         <Avatar.Image alt={`${organizationQuery.data.name} icon`} src={organizationQuery.data.icon_url} />
                     {/if}
-                    <Avatar.Fallback class="rounded-lg">{getInitials(organizationQuery.data?.name ?? '?')}</Avatar.Fallback>
+                    <Avatar.Fallback>{getInitials(organizationQuery.data?.name ?? '?')}</Avatar.Fallback>
                 </Avatar.Root>
                 <span
                     class="absolute inset-0 flex items-center justify-center gap-1.5 bg-black/55 text-xs font-medium text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
@@ -248,13 +250,22 @@
             <Button variant="secondary" href={resolve('/(app)/event')}>
                 <Events class="mr-2 size-4" /> View Events
             </Button>
-            <Button variant="secondary" href={resolve('/(app)/organization/[organizationId]/projects', { organizationId })}>
+            <Button
+                variant="secondary"
+                href={resolve('/(app)/organization/[organizationId]/projects', {
+                    organizationId
+                })}
+            >
                 <Projects class="mr-2 size-4" /> View Projects
             </Button>
         </div>
 
         <DropdownMenu.Root>
-            <DropdownMenu.Trigger class={buttonVariants({ variant: 'destructive' })}>
+            <DropdownMenu.Trigger
+                class={buttonVariants({
+                    variant: 'destructive'
+                })}
+            >
                 <X class="mr-2 size-4" />
                 <span>Delete</span>
             </DropdownMenu.Trigger>

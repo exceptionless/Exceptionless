@@ -156,10 +156,10 @@
             {#if enableOAuthLogin}
                 <div class="my-4 flex w-full items-center">
                     <hr class="w-full" />
-                    <P class="px-3">OR</P>
+                    <P class="mt-0! px-3">OR</P>
                     <hr class="w-full" />
                 </div>
-                <div class="grid auto-cols-2 grid-flow-col grid-rows-2 gap-4">
+                <div class="grid grid-flow-col grid-cols-2 grid-rows-2 gap-4">
                     {#if microsoftClientId}
                         <Button aria-label="Login with Microsoft" tabindex={4} onclick={() => liveLogin(redirectUrl)}>
                             <MicrosoftIcon class="size-4" /> Microsoft

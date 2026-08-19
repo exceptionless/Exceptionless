@@ -2,13 +2,13 @@ import { env } from '$env/dynamic/public';
 import { getIntercomTokenSessionKey, intercomTokenRefreshIntervalMs } from '$features/intercom/config';
 import { organization } from '$features/organizations/context.svelte';
 import { ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
-import { hide as hideIntercom, shutdown as shutdownIntercom } from '@intercom/messenger-js-sdk';
 import { createQuery, type QueryClient } from '@tanstack/svelte-query';
 
 import type { Login, TokenResult } from './models';
 
 import { endSession } from './exceptionless-session';
-import { accessToken } from './index.svelte';
+import { clearAuthenticationSession } from './session.svelte';
+import { accessToken } from './state.svelte';
 
 const queryKeys = {
     intercom: (accessToken: null | string) => ['Auth', 'intercom', getIntercomTokenSessionKey(accessToken)] as const
@@ -81,7 +81,10 @@ export async function isEmailAddressTaken(email: string) {
 }
 
 export async function login(email: string, password: string) {
-    const data: Login = { email, password };
+    const data: Login = {
+        email,
+        password
+    };
     const client = useFetchClient();
     const response = await client.postJSON<TokenResult>('auth/login', data, {
         expectedStatusCodes: [401, 422]
@@ -97,23 +100,20 @@ export async function login(email: string, password: string) {
 }
 
 export async function logout(queryClient?: QueryClient, client = useFetchClient()) {
-    await client.get('auth/logout', { expectedStatusCodes: [200, 401, 403] });
+    await client.get('auth/logout', {
+        expectedStatusCodes: [200, 401, 403]
+    });
     await endSession();
 
     await queryClient?.cancelQueries();
     queryClient?.clear();
 
-    if (typeof window !== 'undefined' && 'Intercom' in window && typeof window.Intercom === 'function') {
-        hideIntercom();
-        shutdownIntercom();
-    }
+    clearAuthenticationSession();
 
     organization.current = undefined;
     if (typeof localStorage !== 'undefined') {
         localStorage.removeItem('organization');
     }
-
-    accessToken.current = null;
 }
 
 export async function resetPassword(passwordResetToken: string, password: string) {

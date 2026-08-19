@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Reflection;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
@@ -276,6 +277,122 @@ public sealed partial class UsageServiceTests : IntegrationTestsBase
         Assert.Equal(0, usage.Blocked);
         Assert.Equal(0, usage.TooBig);
         Assert.Equal(0, usage.Deleted);
+    }
+
+    [Fact]
+    public async Task AssistantUsage_IsPersistedByOrganizationAndMonth()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization
+        {
+            Name = "Assistant Usage",
+            MaxEventsPerMonth = 75_000,
+            PlanId = _plans.MediumPlan.Id
+        }, options => options.ImmediateConsistency().Cache());
+
+        await _usageService.RecordAssistantUsageAsync(organization.Id, new AssistantUsageIncrement
+        {
+            Turns = 2,
+            Completed = 1,
+            Failed = 1,
+            ProviderRequests = 3,
+            ToolCalls = 4,
+            PromptTokens = 12_000,
+            CompletionTokens = 750,
+            CostInMicrodollars = 2345,
+            BlockedByRateLimit = 1
+        });
+        TimeProvider.Advance(TimeSpan.FromMinutes(10));
+
+        await _usageService.SavePendingUsageAsync();
+
+        organization = await _organizationRepository.GetByIdAsync(organization.Id);
+        Assert.NotNull(organization);
+        Assert.Empty(organization.Usage);
+        Assert.Empty(organization.UsageHours);
+        var usage = Assert.Single(organization.AssistantUsage);
+        Assert.Equal(_plans.MediumPlan.Id, usage.PlanId);
+        Assert.Equal(2, usage.Turns);
+        Assert.Equal(1, usage.Completed);
+        Assert.Equal(1, usage.Failed);
+        Assert.Equal(3, usage.ProviderRequests);
+        Assert.Equal(4, usage.ToolCalls);
+        Assert.Equal(12_000, usage.PromptTokens);
+        Assert.Equal(750, usage.CompletionTokens);
+        Assert.Equal(2345, usage.CostInMicrodollars);
+        Assert.Equal(1, usage.BlockedByRateLimit);
+        Assert.Equal(new DateTime(2015, 2, 13, 0, 5, 0, DateTimeKind.Utc), usage.LastUsedUtc);
+
+    }
+
+    [Fact]
+    public async Task AssistantUsage_ProviderUsageDateUtc_PersistsInOriginalMonth()
+    {
+        TimeProvider.SetUtcNow(new DateTime(2026, 3, 1, 0, 1, 0, DateTimeKind.Utc));
+        var organization = await _organizationRepository.AddAsync(new Organization
+        {
+            Name = "Cross-Month Assistant Usage",
+            MaxEventsPerMonth = 75_000,
+            PlanId = _plans.MediumPlan.Id
+        }, options => options.ImmediateConsistency().Cache());
+
+        await _usageService.RecordAssistantUsageAsync(organization.Id, new AssistantUsageIncrement
+        {
+            ProviderUsageDateUtc = new DateTime(2026, 2, 28, 23, 59, 0, DateTimeKind.Utc),
+            PromptTokens = 2_000,
+            CompletionTokens = 500,
+            CostInMicrodollars = 10_000
+        });
+        TimeProvider.Advance(TimeSpan.FromMinutes(10));
+
+        await _usageService.SavePendingUsageAsync();
+
+        organization = await _organizationRepository.GetByIdAsync(organization.Id);
+        Assert.NotNull(organization);
+        var usage = Assert.Single(organization.AssistantUsage);
+        Assert.Equal(new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc), usage.Date);
+        Assert.Equal(2_000, usage.PromptTokens);
+        Assert.Equal(500, usage.CompletionTokens);
+        Assert.Equal(10_000, usage.CostInMicrodollars);
+    }
+
+    [Fact]
+    public async Task SavePendingUsageAsync_AssistantSaveFails_RetainsUsageForRetry()
+    {
+        var organization = await _organizationRepository.AddAsync(new Organization
+        {
+            Name = "Assistant Usage Retry",
+            MaxEventsPerMonth = 75_000,
+            PlanId = _plans.MediumPlan.Id
+        }, options => options.ImmediateConsistency().Cache());
+        var repository = DispatchProxy.Create<IOrganizationRepository, FailOnceOrganizationSaveProxy>();
+        var repositoryProxy = (FailOnceOrganizationSaveProxy)(object)repository;
+        repositoryProxy.Inner = _organizationRepository;
+        var usageService = new UsageService(
+            repository,
+            _projectRepository,
+            GetService<ICacheClient>(),
+            GetService<IMessagePublisher>(),
+            _notificationService,
+            TimeProvider,
+            GetService<ILoggerFactory>());
+        await usageService.RecordAssistantUsageAsync(organization.Id, new AssistantUsageIncrement
+        {
+            Turns = 2,
+            PromptTokens = 1_000,
+            CostInMicrodollars = 2_500
+        });
+        TimeProvider.Advance(TimeSpan.FromMinutes(10));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => usageService.SavePendingUsageAsync());
+        await usageService.SavePendingUsageAsync();
+
+        organization = await _organizationRepository.GetByIdAsync(organization.Id);
+        Assert.NotNull(organization);
+        var usage = Assert.Single(organization.AssistantUsage);
+        Assert.Equal(2, usage.Turns);
+        Assert.Equal(1_000, usage.PromptTokens);
+        Assert.Equal(2_500, usage.CostInMicrodollars);
+        Assert.Equal(2, repositoryProxy.SaveAttempts);
     }
 
     [Fact]
@@ -871,6 +988,23 @@ public sealed partial class UsageServiceTests : IntegrationTestsBase
                 return Task.FromException(new InvalidOperationException("Simulated hourly overage publication failure."));
 
             return inner.PublishAsync(messageType, message, options, cancellationToken);
+        }
+    }
+
+    private class FailOnceOrganizationSaveProxy : DispatchProxy
+    {
+        private int _saveAttempts;
+
+        public IOrganizationRepository Inner { get; set; } = null!;
+        public int SaveAttempts => _saveAttempts;
+
+        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
+        {
+            ArgumentNullException.ThrowIfNull(targetMethod);
+            if (targetMethod.Name == "SaveAsync" && Interlocked.Increment(ref _saveAttempts) == 1)
+                throw new InvalidOperationException("Simulated organization usage save failure.");
+
+            return targetMethod.Invoke(Inner, args);
         }
     }
 }
