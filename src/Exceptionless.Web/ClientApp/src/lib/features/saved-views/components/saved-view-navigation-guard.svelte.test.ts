@@ -61,6 +61,61 @@ describe('SavedViewNavigationGuard', () => {
         expect(screen.queryByRole('alertdialog')).toBeNull();
     });
 
+    it('allows query changes within the active saved view', () => {
+        const cancel = vi.fn();
+        pageState.url = 'http://localhost/next/stream?saved=first&filter=old';
+        render(SavedViewNavigationGuard, {
+            isModified: true,
+            onDiscard: vi.fn(),
+            onSave: vi.fn(),
+            saving: false
+        });
+
+        getBeforeNavigation()({
+            cancel,
+            to: { url: new URL('http://localhost/next/stream?saved=first&filter=new') },
+            willUnload: false
+        });
+
+        expect(cancel).not.toHaveBeenCalled();
+        expect(screen.queryByRole('alertdialog')).toBeNull();
+    });
+
+    it('confirms before switching query-based saved views', async () => {
+        const cancel = vi.fn();
+        pageState.url = 'http://localhost/next/stream?saved=first';
+        render(SavedViewNavigationGuard, {
+            isModified: true,
+            onDiscard: vi.fn(),
+            onSave: vi.fn(),
+            saving: false
+        });
+
+        getBeforeNavigation()({
+            cancel,
+            to: { url: new URL('http://localhost/next/stream?saved=second') },
+            willUnload: false
+        });
+
+        expect(cancel).toHaveBeenCalledOnce();
+        expect(await screen.findByRole('alertdialog')).not.toBeNull();
+    });
+
+    it('requests native confirmation before unloading a modified view', () => {
+        const cancel = vi.fn();
+        render(SavedViewNavigationGuard, {
+            isModified: true,
+            onDiscard: vi.fn(),
+            onSave: vi.fn(),
+            saving: false
+        });
+
+        getBeforeNavigation()({ cancel, to: null, willUnload: true });
+
+        expect(cancel).toHaveBeenCalledOnce();
+        expect(screen.queryByRole('alertdialog')).toBeNull();
+    });
+
     it('stays on the page when the user cancels navigation', async () => {
         const cancel = vi.fn();
         render(SavedViewNavigationGuard, {

@@ -49,7 +49,16 @@
     }
 
     beforeNavigate(({ cancel, to, willUnload }) => {
-        if (willUnload || !to || !isModified || isResumingNavigation || to.url.pathname === page.url.pathname) {
+        if (!isModified || isResumingNavigation) {
+            return;
+        }
+
+        if (willUnload) {
+            cancel();
+            return;
+        }
+
+        if (!to || (to.url.pathname === page.url.pathname && to.url.searchParams.get('saved') === page.url.searchParams.get('saved'))) {
             return;
         }
 
