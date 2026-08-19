@@ -10,6 +10,8 @@
     import Bot from '@lucide/svelte/icons/bot';
     import CircleAlert from '@lucide/svelte/icons/circle-alert';
     import Eraser from '@lucide/svelte/icons/eraser';
+    import Maximize2 from '@lucide/svelte/icons/maximize-2';
+    import Minimize2 from '@lucide/svelte/icons/minimize-2';
     import { tick, untrack } from 'svelte';
 
     import type { AssistantAccessState, AssistantChatMessage, AssistantFeedback, AssistantPromptRequest, AssistantSuggestedAction } from '../models';
@@ -24,8 +26,12 @@
     interface Props {
         accessMessage?: string;
         accessState?: AssistantAccessState;
+        collapseHref?: string;
+        expandHref?: string;
         minimumPlanId?: string;
+        mode?: 'page' | 'sheet';
         onAccessChanged?: () => Promise<void> | void;
+        onCollapse?: () => void;
         onRetryAccess?: () => Promise<void> | void;
         open?: boolean;
         organizationId?: string;
@@ -37,8 +43,12 @@
     let {
         accessMessage,
         accessState = 'available',
+        collapseHref,
+        expandHref,
         minimumPlanId,
+        mode = 'sheet',
         onAccessChanged,
+        onCollapse,
         onRetryAccess,
         open = $bindable(false),
         organizationId,
@@ -53,6 +63,7 @@
     let errorMessage = $state<string>();
     let isStreaming = $state(false);
     let isNearBottom = $state(true);
+    let showToolCalls = $state(false);
     let showScrollToBottom = $state(false);
     let conversationElement = $state<HTMLDivElement>();
     let abortController: AbortController | undefined;
@@ -112,6 +123,11 @@
         }
 
         prompt = '';
+        if (content.toLowerCase() === '/tools') {
+            showToolCalls = !showToolCalls;
+            return;
+        }
+
         errorMessage = undefined;
         const userMessage: AssistantChatMessage = {
             content,
@@ -313,6 +329,10 @@
         showScrollToBottom = false;
     }
 
+    function collapseToSidePanel(): void {
+        onCollapse?.();
+    }
+
     function handleConversationScroll(): void {
         if (!conversationElement) {
             return;
@@ -350,108 +370,79 @@
     }
 </script>
 
-<Sheet.Root bind:open>
-    <Sheet.Content
-        data-assistant-panel
-        class="bg-background top-16! bottom-0! h-auto! w-full gap-0 sm:max-w-120!"
-        onInteractOutside={handleInteractOutside}
-        overlayProps={{
-            class: 'top-16! bg-black/5 dark:bg-black/30 supports-backdrop-filter:backdrop-blur-[0.5px]'
-        }}
-        preventScroll={false}
-    >
-        <Sheet.Header class="border-b pr-14">
-            <div class="flex items-center gap-2">
-                <div class="bg-primary/10 text-primary flex size-8 items-center justify-center rounded-lg">
-                    <Bot aria-hidden="true" />
-                </div>
-                <div>
-                    <Sheet.Title level={2}>Exie</Sheet.Title>
-                    <Sheet.Description>Your Exceptionless assistant.</Sheet.Description>
-                </div>
-            </div>
-            {#if accessState === 'available' && messages.length > 0}
-                <Button
-                    aria-label="Clear conversation"
-                    class="absolute top-3 right-12"
-                    onclick={clearConversation}
-                    size="icon-sm"
-                    title="Clear conversation"
-                    variant="ghost"
-                >
-                    <Eraser aria-hidden="true" />
-                </Button>
-            {/if}
-        </Sheet.Header>
-
-        <div class="relative min-h-0 flex-1">
-            {#if accessState !== 'available'}
-                <AssistantUpgradeRequired {accessState} message={accessMessage} {minimumPlanId} {onAccessChanged} onRetry={onRetryAccess} {organizationId} />
-            {:else}
-                <div
-                    bind:this={conversationElement}
-                    class="h-full overflow-y-auto px-4 py-5"
-                    onscroll={handleConversationScroll}
-                    role="log"
-                    aria-live="polite"
-                    aria-label="Conversation with Exie"
-                >
-                    {#if messages.length === 0}
-                        <div class="flex h-full flex-col items-center justify-center gap-6 text-center">
-                            <div class="bg-primary/10 text-primary flex size-12 items-center justify-center rounded-xl">
-                                <Bot aria-hidden="true" class="size-7" />
-                            </div>
-                            <div class="max-w-72">
-                                <H3 class="text-base">Hi, I’m Exie. How can I help?</H3>
-                                <Muted class="mt-1">
-                                    I can use tools to investigate your Exceptionless data and make the stack changes you request. I’ll automatically use the
-                                    page or detail panel you’re viewing as context.
-                                </Muted>
-                            </div>
-                            <div class="grid w-full gap-2">
-                                {#each suggestions as suggestion (suggestion)}
-                                    <Button
-                                        class="h-auto justify-start px-3 py-2 text-left whitespace-normal"
-                                        onclick={() => void submitPrompt(suggestion)}
-                                        variant="outline"
-                                    >
-                                        {suggestion}
-                                    </Button>
-                                {/each}
-                            </div>
+{#snippet conversation()}
+    <div class="relative min-h-0 flex-1">
+        {#if accessState !== 'available'}
+            <AssistantUpgradeRequired {accessState} message={accessMessage} {minimumPlanId} {onAccessChanged} onRetry={onRetryAccess} {organizationId} />
+        {:else}
+            <div
+                bind:this={conversationElement}
+                class="h-full overflow-y-auto px-4 py-5"
+                onscroll={handleConversationScroll}
+                role="log"
+                aria-live="polite"
+                aria-label="Conversation with Exie"
+            >
+                {#if messages.length === 0}
+                    <div class="flex h-full flex-col items-center justify-center gap-6 text-center">
+                        <div class="bg-primary/10 text-primary flex size-12 items-center justify-center rounded-xl">
+                            <Bot aria-hidden="true" class="size-7" />
                         </div>
-                    {:else}
-                        <div class="flex flex-col gap-5">
-                            {#each messages as message (message.id)}
-                                <AssistantMessage
-                                    isLast={message === messages.at(-1)}
-                                    isStreaming={isStreaming && message === messages.at(-1)}
-                                    {message}
-                                    onFeedback={(feedback) => setMessageFeedback(message.id, feedback)}
-                                    onRegenerate={() => regenerateResponse(message.id)}
-                                    onSuggestedAction={(action) => void handleSuggestedAction(action)}
-                                    suggestionsDisabled={isStreaming}
-                                />
+                        <div class="max-w-72">
+                            <H3 class="text-base">Hi, I’m Exie. How can I help?</H3>
+                            <Muted class="mt-1">
+                                I can use tools to investigate your Exceptionless data and make the stack changes you request. I’ll automatically use the page
+                                or detail panel you’re viewing as context.
+                            </Muted>
+                        </div>
+                        <div class="grid w-full max-w-2xl gap-2">
+                            {#each suggestions as suggestion (suggestion)}
+                                <Button
+                                    class="h-auto justify-start px-3 py-2 text-left whitespace-normal"
+                                    onclick={() => void submitPrompt(suggestion)}
+                                    variant="outline"
+                                >
+                                    {suggestion}
+                                </Button>
                             {/each}
                         </div>
-                    {/if}
-                </div>
-            {/if}
-            {#if accessState === 'available' && showScrollToBottom}
-                <Button
-                    aria-label="Scroll to latest message"
-                    class="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full shadow-md"
-                    onclick={() => void scrollToLatest('smooth', true)}
-                    size="icon-sm"
-                    variant="secondary"
-                >
-                    <ArrowDown aria-hidden="true" />
-                </Button>
-            {/if}
-        </div>
+                    </div>
+                {:else}
+                    <div class="mx-auto flex w-full max-w-4xl flex-col gap-5">
+                        {#each messages as message (message.id)}
+                            <AssistantMessage
+                                isLast={message === messages.at(-1)}
+                                isStreaming={isStreaming && message === messages.at(-1)}
+                                {message}
+                                onFeedback={(feedback) => setMessageFeedback(message.id, feedback)}
+                                onRegenerate={() => regenerateResponse(message.id)}
+                                onSuggestedAction={(action) => void handleSuggestedAction(action)}
+                                {showToolCalls}
+                                suggestionsDisabled={isStreaming}
+                            />
+                        {/each}
+                    </div>
+                {/if}
+            </div>
+        {/if}
+        {#if accessState === 'available' && showScrollToBottom}
+            <Button
+                aria-label="Scroll to latest message"
+                class="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full shadow-md"
+                onclick={() => void scrollToLatest('smooth', true)}
+                size="icon-sm"
+                variant="secondary"
+            >
+                <ArrowDown aria-hidden="true" />
+            </Button>
+        {/if}
+    </div>
+{/snippet}
 
-        {#if accessState === 'available'}
-            <Sheet.Footer class="bg-background gap-2 border-t p-3">
+{#snippet composer()}
+    {#if accessState === 'available'}
+        <div class="bg-background flex flex-col gap-2 border-t p-3">
+            <div class="mx-auto flex w-full max-w-4xl flex-col gap-2">
                 {#if errorMessage}
                     <Alert.Root variant="destructive">
                         <CircleAlert aria-hidden="true" />
@@ -464,9 +455,91 @@
                         {/if}
                     </Alert.Root>
                 {/if}
-                <AssistantComposer bind:value={prompt} {isStreaming} onStop={stopStreaming} onSubmit={() => void submitPrompt()} />
+                <AssistantComposer bind:value={prompt} {isStreaming} onStop={stopStreaming} onSubmit={(value) => void submitPrompt(value)} {showToolCalls} />
                 <Muted class="text-center text-xs">AI can make mistakes. Check important changes.</Muted>
-            </Sheet.Footer>
-        {/if}
-    </Sheet.Content>
-</Sheet.Root>
+            </div>
+        </div>
+    {/if}
+{/snippet}
+
+{#if mode === 'page'}
+    <section class="bg-background flex min-h-0 flex-1 flex-col overflow-hidden" data-assistant-page>
+        <header class="flex items-center justify-between gap-3 border-b p-4">
+            <div class="flex items-center gap-2">
+                <div class="bg-primary/10 text-primary flex size-8 items-center justify-center rounded-lg">
+                    <Bot aria-hidden="true" />
+                </div>
+                <div>
+                    <H3 class="text-base">Exie</H3>
+                    <Muted class="text-sm">Your Exceptionless assistant.</Muted>
+                </div>
+            </div>
+            <div class="flex items-center gap-1">
+                {#if accessState === 'available'}
+                    <Button
+                        aria-label="Clear conversation"
+                        disabled={messages.length === 0}
+                        onclick={clearConversation}
+                        size="icon-sm"
+                        title="Clear conversation"
+                        variant="ghost"
+                    >
+                        <Eraser aria-hidden="true" />
+                    </Button>
+                {/if}
+                {#if collapseHref}
+                    <Button
+                        aria-label="Collapse Exie to side panel"
+                        href={collapseHref}
+                        onclick={collapseToSidePanel}
+                        size="icon-sm"
+                        title="Collapse to side panel"
+                        variant="ghost"
+                    >
+                        <Minimize2 aria-hidden="true" />
+                    </Button>
+                {/if}
+            </div>
+        </header>
+        {@render conversation()}
+        {@render composer()}
+    </section>
+{:else}
+    <Sheet.Root bind:open>
+        <Sheet.Content
+            data-assistant-panel
+            class="bg-background top-16! bottom-0! h-auto! w-full gap-0 sm:max-w-120!"
+            onInteractOutside={handleInteractOutside}
+            overlayProps={{
+                class: 'top-16! bg-black/5 dark:bg-black/30 supports-backdrop-filter:backdrop-blur-[0.5px]'
+            }}
+            preventScroll={false}
+        >
+            <Sheet.Header class="border-b pr-24">
+                <div class="flex items-center gap-2">
+                    <div class="bg-primary/10 text-primary flex size-8 items-center justify-center rounded-lg">
+                        <Bot aria-hidden="true" />
+                    </div>
+                    <div>
+                        <Sheet.Title level={2}>Exie</Sheet.Title>
+                        <Sheet.Description>Your Exceptionless assistant.</Sheet.Description>
+                    </div>
+                </div>
+                <div class="absolute top-3 right-12 flex items-center gap-1">
+                    {#if accessState === 'available' && messages.length > 0}
+                        <Button aria-label="Clear conversation" onclick={clearConversation} size="icon-sm" title="Clear conversation" variant="ghost">
+                            <Eraser aria-hidden="true" />
+                        </Button>
+                    {/if}
+                    {#if expandHref}
+                        <Button aria-label="Expand Exie to full page" href={expandHref} size="icon-sm" title="Expand to full page" variant="ghost">
+                            <Maximize2 aria-hidden="true" />
+                        </Button>
+                    {/if}
+                </div>
+            </Sheet.Header>
+            {@render conversation()}
+            {@render composer()}
+        </Sheet.Content>
+    </Sheet.Root>
+{/if}

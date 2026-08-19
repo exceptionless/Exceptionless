@@ -12,6 +12,7 @@ import AssistantPanel from './assistant-panel.svelte';
 
 describe('AssistantPanel', () => {
     beforeEach(() => {
+        HTMLElement.prototype.scrollIntoView = vi.fn();
         HTMLElement.prototype.scrollTo = vi.fn();
     });
 
@@ -27,6 +28,61 @@ describe('AssistantPanel', () => {
         ).not.toThrow();
 
         expect(screen.getByText('Bring Exie onto your team')).toBeTruthy();
+    });
+
+    it('renders as a full-page chat and opens the side panel when collapsed', async () => {
+        const onCollapse = vi.fn();
+        render(AssistantPanel, {
+            props: {
+                collapseHref: '/next/stack',
+                mode: 'page',
+                onCollapse,
+                open: false,
+                organizationId: 'organization-1'
+            }
+        });
+
+        expect(screen.getByRole('log', { name: 'Conversation with Exie' })).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Clear conversation' }).hasAttribute('disabled')).toBe(true);
+        const collapseLink = screen.getByRole('link', { name: 'Collapse Exie to side panel' });
+        expect(collapseLink.getAttribute('href')).toBe('/next/stack');
+
+        collapseLink.addEventListener('click', (event) => event.preventDefault());
+        await fireEvent.click(collapseLink);
+
+        expect(onCollapse).toHaveBeenCalledOnce();
+    });
+
+    it('keeps the conversation when expanding the side panel to the full page', async () => {
+        const fetchMock = vi.fn(
+            async () =>
+                new Response(`${JSON.stringify({ text: 'The conversation is still here.', type: 'text_delta' })}\n${JSON.stringify({ type: 'done' })}\n`)
+        );
+        vi.stubGlobal('fetch', fetchMock);
+
+        const view = render(AssistantPanel, {
+            props: {
+                expandHref: '/next/exie?from=%2Fnext%2Fstack',
+                open: true,
+                organizationId: 'organization-1',
+                promptRequest: { id: 'request-1', prompt: 'Keep this conversation.' }
+            }
+        });
+
+        expect(screen.getByRole('link', { name: 'Expand Exie to full page' }).getAttribute('href')).toBe('/next/exie?from=%2Fnext%2Fstack');
+        expect(await screen.findByText('The conversation is still here.')).toBeTruthy();
+
+        await view.rerender({
+            collapseHref: '/next/stack',
+            mode: 'page',
+            open: true,
+            organizationId: 'organization-1',
+            promptRequest: { id: 'request-1', prompt: 'Keep this conversation.' }
+        });
+
+        expect(screen.getByText('The conversation is still here.')).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Clear conversation' }).hasAttribute('disabled')).toBe(false);
+        expect(fetchMock).toHaveBeenCalledOnce();
     });
 
     afterEach(() => {
@@ -98,6 +154,43 @@ describe('AssistantPanel', () => {
         };
         expect(payload.path).toBe('/next/stack/stack-b');
         expect(payload.messages.at(-1)?.suggested_action_path).toBe('/next/stack/stack-a');
+    });
+
+    it('hides tool calls by default and toggles them locally with /tools', async () => {
+        const fetchMock = vi.fn(
+            async () =>
+                new Response(
+                    `${JSON.stringify({ arguments: '{}', tool_call_id: 'tool-1', tool_name: 'search_stacks', type: 'tool_call' })}\n${JSON.stringify({ result: '{"ok":true,"data":{"items":[]}}', tool_call_id: 'tool-1', type: 'tool_result' })}\n${JSON.stringify({ text: 'No matching stacks were found.', type: 'text_delta' })}\n${JSON.stringify({ type: 'done' })}\n`
+                )
+        );
+        vi.stubGlobal('fetch', fetchMock);
+
+        render(AssistantPanel, {
+            props: {
+                open: true,
+                organizationId: 'organization-1',
+                promptRequest: { id: 'request-1', prompt: 'Find matching stacks.' }
+            }
+        });
+
+        expect(await screen.findByText('No matching stacks were found.')).toBeTruthy();
+        expect(screen.queryByText('Searched error stacks')).toBeNull();
+        expect(screen.getByText(/\/ for commands/)).toBeTruthy();
+        await screen.findByRole('button', { name: 'Send message' });
+
+        const composer = screen.getByRole('textbox', { name: 'Message Exie' });
+        await fireEvent.input(composer, { target: { value: '/' } });
+        expect(screen.getByLabelText('Exie commands').textContent).toContain('/tools');
+        await fireEvent.click(screen.getByText('/tools'));
+
+        await waitFor(() => expect(screen.getByText('Searched error stacks')).toBeTruthy());
+        expect(fetchMock).toHaveBeenCalledOnce();
+
+        await fireEvent.input(composer, { target: { value: '/tools' } });
+        await fireEvent.keyDown(composer, { key: 'Enter' });
+
+        await waitFor(() => expect(screen.queryByText('Searched error stacks')).toBeNull());
+        expect(fetchMock).toHaveBeenCalledOnce();
     });
 
     it('navigates a validated setup action without submitting another prompt', async () => {
