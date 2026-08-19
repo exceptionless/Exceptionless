@@ -14,7 +14,10 @@ export function getColumns<TToken extends ViewToken>(): ColumnDef<StockFeatures,
     const columns: ColumnDef<StockFeatures, TToken, unknown>[] = [
         {
             accessorKey: 'id',
-            cell: (info) => renderComponent(TokenIdCell, { token: info.row.original }),
+            cell: (info) =>
+                renderComponent(TokenIdCell, {
+                    token: info.row.original
+                }),
             enableHiding: false,
             enableSorting: false,
             header: 'Token',
@@ -24,7 +27,10 @@ export function getColumns<TToken extends ViewToken>(): ColumnDef<StockFeatures,
         },
         {
             accessorKey: 'scopes',
-            cell: (info) => renderComponent(TokenScopesCell, { scopes: info.getValue<string[]>() }),
+            cell: (info) =>
+                renderComponent(TokenScopesCell, {
+                    scopes: info.getValue<string[]>()
+                }),
             enableHiding: true,
             enableSorting: false,
             header: 'Scope',
@@ -43,7 +49,10 @@ export function getColumns<TToken extends ViewToken>(): ColumnDef<StockFeatures,
             }
         },
         {
-            cell: (info) => renderComponent(TokenActionsCell, { token: info.row.original }),
+            cell: (info) =>
+                renderComponent(TokenActionsCell, {
+                    token: info.row.original
+                }),
             enableHiding: false,
             enableSorting: false,
             header: '',

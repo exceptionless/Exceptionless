@@ -21,7 +21,10 @@ export function getColumns(): ColumnDef<StockFeatures, ElasticsearchIndexDetail,
         },
         {
             accessorKey: 'health',
-            cell: (info) => renderComponent(HealthBadgeCell, { value: info.getValue() as null | string | undefined }),
+            cell: (info) =>
+                renderComponent(HealthBadgeCell, {
+                    value: info.getValue() as null | string | undefined
+                }),
             enableSorting: true,
             header: 'Health'
         },
@@ -33,7 +36,10 @@ export function getColumns(): ColumnDef<StockFeatures, ElasticsearchIndexDetail,
         },
         {
             accessorKey: 'primary',
-            cell: (info) => renderComponent(Number, { value: info.getValue() as null | number }),
+            cell: (info) =>
+                renderComponent(Number, {
+                    value: info.getValue() as null | number
+                }),
             enableSorting: true,
             header: 'Primary',
             meta: {
@@ -42,7 +48,10 @@ export function getColumns(): ColumnDef<StockFeatures, ElasticsearchIndexDetail,
         },
         {
             accessorKey: 'replica',
-            cell: (info) => renderComponent(Number, { value: info.getValue() as null | number }),
+            cell: (info) =>
+                renderComponent(Number, {
+                    value: info.getValue() as null | number
+                }),
             enableSorting: true,
             header: 'Replica',
             meta: {
@@ -51,7 +60,10 @@ export function getColumns(): ColumnDef<StockFeatures, ElasticsearchIndexDetail,
         },
         {
             accessorKey: 'unassigned_shards',
-            cell: (info) => renderComponent(UnassignedShardsCell, { value: info.getValue() as number }),
+            cell: (info) =>
+                renderComponent(UnassignedShardsCell, {
+                    value: info.getValue() as number
+                }),
             enableSorting: true,
             header: 'Unassigned',
             meta: {
@@ -60,7 +72,10 @@ export function getColumns(): ColumnDef<StockFeatures, ElasticsearchIndexDetail,
         },
         {
             accessorKey: 'docs_count',
-            cell: (info) => renderComponent(Number, { value: info.getValue() as null | number }),
+            cell: (info) =>
+                renderComponent(Number, {
+                    value: info.getValue() as null | number
+                }),
             enableSorting: true,
             header: 'Documents',
             meta: {
@@ -69,7 +84,10 @@ export function getColumns(): ColumnDef<StockFeatures, ElasticsearchIndexDetail,
         },
         {
             accessorKey: 'store_size_in_bytes',
-            cell: (info) => renderComponent(Bytes, { value: info.getValue() as null | number }),
+            cell: (info) =>
+                renderComponent(Bytes, {
+                    value: info.getValue() as null | number
+                }),
             enableSorting: true,
             header: 'Size',
             meta: {
@@ -88,7 +106,14 @@ export function getTableOptions(queryParameters: TableMemoryPagingParameters, ge
         configureOptions: (options) => {
             return {
                 ...withClientSortedRowModel(options),
-                initialState: { sorting: [{ desc: true, id: 'store_size_in_bytes' }] },
+                initialState: {
+                    sorting: [
+                        {
+                            desc: true,
+                            id: 'store_size_in_bytes'
+                        }
+                    ]
+                },
                 manualSorting: false
             };
         },

@@ -9,6 +9,7 @@ using Exceptionless.Core.Validation;
 using Exceptionless.Insulation.Configuration;
 using Exceptionless.Insulation.Security;
 using Exceptionless.Web.Api;
+using Exceptionless.Web.Assistant;
 using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Hubs;
@@ -189,12 +190,21 @@ public partial class Program
                     .MapStatus(ResultStatus.CriticalError, ApiResultMapper.MapCriticalError)
                     .MapStatus(ResultStatus.Unavailable, ApiResultMapper.MapUnavailable));
             Bootstrapper.RegisterServices(builder.Services, options, Log.Logger.ToLoggerFactory());
+            builder.Services.AddHttpClient(nameof(AssistantService), client => client.Timeout = TimeSpan.FromMinutes(2));
+            builder.Services.AddScoped<AssistantToolContext>();
+            builder.Services.AddScoped<AssistantAccessService>();
+            builder.Services.AddScoped<AssistantConversationService>();
+            builder.Services.AddScoped<AssistantUsageService>();
+            builder.Services.AddScoped<ExceptionlessMcpTools>();
+            builder.Services.AddScoped<AssistantService>();
             builder.Services.AddScoped<McpContextService>();
             // Leave the protocol version unset so native v2 and down-level MCP clients can negotiate a supported version.
             builder.Services.AddMcpServer(options =>
-                options.ServerInstructions = "Exceptionless MCP tools are stateless. Scoped ids may be omitted when the current OAuth grant exposes exactly one matching organization or project; otherwise use list_organizations, list_projects, or resolve_project and pass the required id explicitly. Previous tool calls never change the scope of later calls.")
+                options.ServerInstructions = "Exceptionless MCP tools are stateless. Direct get and stack-update tools accept a globally unique eventId or stackId without projectId; an explicitly supplied projectId is validated against that resource. Search and other scoped tools may omit scope only when the current OAuth grant exposes exactly one matching organization or project; otherwise use list_organizations, list_projects, or resolve_project and pass the required id explicitly. Previous tool calls never change the scope of later calls.")
                 .WithHttpTransport()
-                .WithTools<ExceptionlessMcpTools>();
+                .WithTools<ExceptionlessMcpTools>()
+                .WithRequestFilters(filters => filters.AddCallToolFilter(next => async (context, cancellationToken) =>
+                    McpToolResultFilter.MarkStructuredErrors(await next(context, cancellationToken))));
             builder.Services.AddSingleton(_ => new ThrottlingOptions
             {
                 MaxRequestsForUserIdentifierFunc = _ => options.ApiThrottleLimit,
@@ -333,6 +343,7 @@ public partial class Program
             app.UseDefaultFiles();
             app.UseFileServer();
             app.UseRouting();
+            app.UseMiddleware<McpOriginValidationMiddleware>();
             app.UseCors("AllowAny");
             app.UseHttpMethodOverride();
             app.UseForwardedHeaders();

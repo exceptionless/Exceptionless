@@ -36,6 +36,16 @@ test('operator can scope Events to a project and clear the project filter', asyn
         await expect(page).toHaveURL(new RegExp(`[?&]project=${e2eScenario.projectId}(?:&|$)`));
         await expect(getVisibleText(page, e2eScenario.message)).toBeVisible({ timeout: 30_000 });
         await expect(getVisibleText(page, e2eSecondaryProject.message)).toBeHidden({ timeout: 30_000 });
+
+        await page.goBack();
+        await expect(page).not.toHaveURL(/[?&]project=/);
+        await expect(eventSheet).toBeHidden();
+        await expect(getVisibleText(page, e2eSecondaryProject.message)).toBeVisible({ timeout: 30_000 });
+
+        await page.goForward();
+        await expect(page).toHaveURL(new RegExp(`[?&]project=${e2eScenario.projectId}(?:&|$)`));
+        await expect(eventSheet).toBeHidden();
+        await expect(getVisibleText(page, e2eSecondaryProject.message)).toBeHidden({ timeout: 30_000 });
     });
 
     await test.step('persist project scope through reload, then clear it', async () => {

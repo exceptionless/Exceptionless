@@ -25,7 +25,12 @@
         </AlertDialog.Header>
         <AlertDialog.Footer>
             <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-            <AlertDialog.Action class={buttonVariants({ variant: 'destructive' })} onclick={onSubmit}>Delete Account</AlertDialog.Action>
+            <AlertDialog.Action
+                class={buttonVariants({
+                    variant: 'destructive'
+                })}
+                onclick={onSubmit}>Delete Account</AlertDialog.Action
+            >
         </AlertDialog.Footer>
     </AlertDialog.Content>
 </AlertDialog.Root>

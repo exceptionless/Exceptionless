@@ -118,7 +118,9 @@
                         return problemDetailsToFormErrors(error);
                     }
 
-                    return { form: 'An unexpected error occurred.' };
+                    return {
+                        form: 'An unexpected error occurred.'
+                    };
                 }
             }
         }
@@ -172,7 +174,12 @@
             <Button variant="secondary" href={`${resolve('/(app)/stack')}?filter=project:${projectId}`}>
                 <Stacks class="mr-2 size-4" /> Go To Stacks
             </Button>
-            <Button variant="secondary" href={resolve('/(app)/project/[projectId]/configure', { projectId })}>
+            <Button
+                variant="secondary"
+                href={resolve('/(app)/project/[projectId]/configure', {
+                    projectId
+                })}
+            >
                 <CloudDownload class="mr-2 size-4" /> Client Setup
             </Button>
             <Button variant="secondary" href={`${resolve('/(app)/account/notifications')}?project=${projectId}`}>

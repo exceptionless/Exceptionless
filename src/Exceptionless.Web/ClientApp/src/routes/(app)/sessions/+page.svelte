@@ -101,7 +101,9 @@
             queryParams.update(DEFAULT_PARAMS);
             reset();
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     let filters = $state(applyTimeFilter(getFiltersFromCache(filterCacheKey(queryParams.filter), queryParams.filter), queryParams.time));
@@ -110,7 +112,9 @@
         ([filter, time]) => {
             filters = applyTimeFilter(getFiltersFromCache(filterCacheKey(filter), filter), time);
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     $effect(() => {
@@ -398,4 +402,4 @@
     </div>
 </div>
 
-<EventDetailSheet eventId={selectedEventId} filterChanged={onFilterChanged} onClose={() => (selectedEventId = null)} />
+<EventDetailSheet bind:eventId={selectedEventId} filterChanged={onFilterChanged} onClose={() => (selectedEventId = null)} />

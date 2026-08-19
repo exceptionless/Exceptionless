@@ -40,7 +40,18 @@
     let { action, children, class: className, icon, ref = $bindable(null), variant = 'default', ...restProps }: NotificationProps = $props();
 </script>
 
-<div bind:this={ref} data-slot="notification" class={[notificationVariants({ variant }), className]} {...restProps} role="alert">
+<div
+    bind:this={ref}
+    data-slot="notification"
+    class={[
+        notificationVariants({
+            variant
+        }),
+        className
+    ]}
+    {...restProps}
+    role="alert"
+>
     {#if icon || action}
         <div class="flex w-full flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div class="flex items-center gap-3">

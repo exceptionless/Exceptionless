@@ -15,6 +15,9 @@ public sealed record SavedViewColumnSettings
     /// <summary>Whether the column is visible. Null means use the table default.</summary>
     public bool? Visible { get; set; }
 
+    /// <summary>Whether the column fills the table's remaining width. Null or false means use fixed-width behavior.</summary>
+    public bool? AutoFill { get; set; }
+
     /// <summary>Zero-based display position. Null means use the table default order.</summary>
     [Range(0, MaxPosition)]
     public int? Position { get; set; }

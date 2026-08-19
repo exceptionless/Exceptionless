@@ -27,7 +27,12 @@
         </AlertDialog.Header>
         <AlertDialog.Footer>
             <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-            <AlertDialog.Action class={buttonVariants({ variant: 'destructive' })} onclick={onSubmit}>Disable Token</AlertDialog.Action>
+            <AlertDialog.Action
+                class={buttonVariants({
+                    variant: 'destructive'
+                })}
+                onclick={onSubmit}>Disable Token</AlertDialog.Action
+            >
         </AlertDialog.Footer>
     </AlertDialog.Content>
 </AlertDialog.Root>

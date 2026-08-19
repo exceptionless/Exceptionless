@@ -91,7 +91,9 @@
     }
 
     function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
-        return resolve('/(app)/stack/[stackId=objectid]', { stackId: row.id });
+        return resolve('/(app)/stack/[stackId=objectid]', {
+            stackId: row.id
+        });
     }
 
     const DEFAULT_TIME_RANGE = '[now-7d TO now]';
@@ -241,13 +243,14 @@
     let showChart = $state(true);
     const savedViewsState = useSavedViews({
         baseHref: resolve('/(app)/stack'),
+        defaultAutoFillColumnId: 'summary',
         defaultColumnVisibility: defaultStackColumnVisibility,
         defaultFilter: DEFAULT_FILTER,
         defaultTime: DEFAULT_TIME_RANGE,
         filterCacheKey,
-        getColumnOrder: () => table.state.columnOrder,
-        getColumnSizing: () => table.state.columnSizing,
-        getColumnVisibility: () => table.state.columnVisibility,
+        getColumnOrder: () => table.store.state.columnOrder,
+        getColumnSizing: () => table.store.state.columnSizing,
+        getColumnVisibility: () => table.store.state.columnVisibility,
         getFilter: getEffectiveFilter,
         getFilterDefinitions: () => serializeFilters(filters ?? []),
         getShowChart: () => showChart,
@@ -291,7 +294,9 @@
             queryParams.update(DEFAULT_PARAMS);
             reset();
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     function getCurrentFilters(params: ListFilterQueryParams = queryParams): FacetedFilter.IFilter[] {
@@ -413,7 +418,9 @@
                 filters = updatedFilters;
             }
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     function handleResetToSaved(): void {
@@ -516,7 +523,9 @@
         }
 
         untrack(() => {
-            updateFilters(getCurrentFilters(getListFilterQueryParams(queryParams)), { clearPagination: false });
+            updateFilters(getCurrentFilters(getListFilterQueryParams(queryParams)), {
+                clearPagination: false
+            });
         });
         normalizedSavedViewId = activeSavedViewId;
     });
@@ -674,16 +683,10 @@
             get queryParameters() {
                 return eventsQueryParameters;
             }
-        }),
-        (state) => ({
-            columnOrder: state.columnOrder,
-            columnSizing: state.columnSizing,
-            columnVisibility: state.columnVisibility,
-            pagination: state.pagination
         })
     );
 
-    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.state.pagination.pageIndex === 0);
+    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.store.state.pagination.pageIndex === 0);
 
     function reset() {
         table.resetRowSelection();
@@ -691,7 +694,7 @@
     }
 
     async function handleRefresh() {
-        const isFirstPage = table.state.pagination.pageIndex === 0;
+        const isFirstPage = table.store.state.pagination.pageIndex === 0;
         if (!canRefresh) {
             reset();
             if (!isFirstPage) {
@@ -733,7 +736,7 @@
             eventsQuery.isPlaceholderData ||
             dataUpdatedAt === lastEmptyResponseAt ||
             eventsQuery.data?.data?.length !== 0 ||
-            table.state.pagination.pageIndex === 0
+            table.store.state.pagination.pageIndex === 0
         ) {
             return;
         }
@@ -845,15 +848,18 @@
             {#if savedViewsState.isEnabled}
                 <SavedViewPicker
                     activeSavedView={savedViewsState.activeSavedView}
-                    columnOrder={table.state.columnOrder}
-                    columnSizing={table.state.columnSizing}
-                    columnVisibility={table.state.columnVisibility}
+                    autoFillColumnId={savedViewsState.autoFillColumnId}
+                    columnOrder={table.store.state.columnOrder}
+                    columnSizing={table.store.state.columnSizing}
+                    columnVisibility={table.store.state.columnVisibility}
+                    defaultAutoFillColumnId="summary"
                     filters={filters ?? []}
                     isModified={savedViewsState.isModified}
                     onLoadView={savedViewsState.handleLoadView}
                     onClearSavedView={savedViewsState.handleClearSavedView}
                     onResetToSaved={handleResetToSaved}
                     savedViews={savedViewsState.savedViews}
+                    setAutoFillColumnId={savedViewsState.setAutoFillColumnId}
                     {showChart}
                     {showStats}
                     setShowChart={(v) => (showChart = v)}
@@ -891,7 +897,15 @@
             />
         {/if}
 
-        <EventsDataTable bind:limit={eventsQueryParameters.limit!} isLoading={isSavedViewRoutePending || eventsQuery.isFetching} {rowClick} {rowHref} {table}>
+        <EventsDataTable
+            autoFillColumnId={savedViewsState.autoFillColumnId}
+            bind:limit={eventsQueryParameters.limit!}
+            isLoading={isSavedViewRoutePending || eventsQuery.isFetching}
+            onAutoFillColumnResized={() => savedViewsState.setAutoFillColumnId(null)}
+            {rowClick}
+            {rowHref}
+            {table}
+        >
             {#snippet footerChildren()}
                 <div class="h-9 min-w-35">
                     <TableStacksBulkActionsDropdownMenu {table} />
@@ -909,7 +923,7 @@
 </div>
 
 <StackDetailSheet
-    stackId={selectedStackId}
+    bind:stackId={selectedStackId}
     filterChanged={onFilterChanged}
     onClose={() => {
         selectedStackId = undefined;

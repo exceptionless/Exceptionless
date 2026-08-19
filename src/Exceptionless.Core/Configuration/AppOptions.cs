@@ -81,6 +81,7 @@ public class AppOptions
     public AuthOptions AuthOptions { get; internal set; } = null!;
     public OAuthServerOptions OAuthServerOptions { get; internal set; } = null!;
     public SourceMapOptions SourceMapOptions { get; internal set; } = null!;
+    public AssistantOptions AssistantOptions { get; internal set; } = null!;
 
     internal bool UsesRedis() =>
         String.Equals(CacheOptions.Provider, "redis", StringComparison.OrdinalIgnoreCase)
@@ -140,6 +141,7 @@ public class AppOptions
         options.AuthOptions = AuthOptions.ReadFromConfiguration(config);
         options.OAuthServerOptions = OAuthServerOptions.ReadFromConfiguration(config);
         options.SourceMapOptions = SourceMapOptions.ReadFromConfiguration(config);
+        options.AssistantOptions = AssistantOptions.ReadFromConfiguration(config);
 
         return options;
     }

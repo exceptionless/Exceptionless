@@ -18,9 +18,15 @@
     watch(
         () => organization.current,
         () => {
-            goto(resolve('/(app)/project/[projectId]/stacks', { projectId: page.params.projectId || '' }));
+            goto(
+                resolve('/(app)/project/[projectId]/stacks', {
+                    projectId: page.params.projectId || ''
+                })
+            );
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     async function filterChanged(addedOrUpdated: IFilter) {
@@ -36,7 +42,11 @@
     }
 
     async function handleDeleted() {
-        await goto(resolve('/(app)/project/[projectId]/stacks', { projectId: page.params.projectId || '' }));
+        await goto(
+            resolve('/(app)/project/[projectId]/stacks', {
+                projectId: page.params.projectId || ''
+            })
+        );
     }
 
     $effect(() => {

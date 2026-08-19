@@ -55,9 +55,13 @@ function cancelScheduledSavedViewInvalidation(queryClient: QueryClient, organiza
 
 async function invalidateSavedViewCache(queryClient: QueryClient, organizationId: string | undefined) {
     if (organizationId) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.organization(organizationId) });
+        await queryClient.invalidateQueries({
+            queryKey: queryKeys.organization(organizationId)
+        });
     } else {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.type });
+        await queryClient.invalidateQueries({
+            queryKey: queryKeys.type
+        });
     }
 }
 
@@ -115,7 +119,9 @@ export function deleteSavedView(request: { route: { organizationId: string | und
             removeSavedViewFromCaches(queryClient, savedView, request.route.organizationId);
         },
         onSettled: () => {
-            void queryClient.invalidateQueries({ queryKey: queryKeys.type });
+            void queryClient.invalidateQueries({
+                queryKey: queryKeys.type
+            });
         },
         onSuccess: (_data: WorkInProgressResult, savedView: SavedView) => {
             removeSavedViewFromCaches(queryClient, savedView, request.route.organizationId);
@@ -204,10 +210,14 @@ export function postPredefinedSavedViews(request: { route: { organizationId: str
                 syncSavedViewCaches(queryClient, savedView, request.route.organizationId);
             }
 
-            void queryClient.invalidateQueries({ queryKey: queryKeys.organization(request.route.organizationId) });
+            void queryClient.invalidateQueries({
+                queryKey: queryKeys.organization(request.route.organizationId)
+            });
             const viewTypes = savedViews.map((savedView) => savedView.view_type).filter((view, index, views) => views.indexOf(view) === index);
             for (const view of viewTypes) {
-                void queryClient.invalidateQueries({ queryKey: queryKeys.view(request.route.organizationId, view) });
+                void queryClient.invalidateQueries({
+                    queryKey: queryKeys.view(request.route.organizationId, view)
+                });
             }
         }
     }));
@@ -233,7 +243,12 @@ export function removeSavedViewFromCaches(queryClient: QueryClient, savedView: S
     const evict = (cachedViews: SavedView[] | undefined) => cachedViews?.filter((v) => v.id !== savedView.id);
     queryClient.setQueryData(queryKeys.view(organizationId, savedView.view_type), evict);
     queryClient.setQueryData(queryKeys.organization(organizationId), evict);
-    queryClient.setQueriesData<SavedView[]>({ queryKey: queryKeys.type }, evict);
+    queryClient.setQueriesData<SavedView[]>(
+        {
+            queryKey: queryKeys.type
+        },
+        evict
+    );
 }
 
 export function restoreDeletedSavedView(savedView: SavedView): void {
