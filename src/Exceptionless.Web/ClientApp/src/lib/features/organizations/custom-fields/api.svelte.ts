@@ -57,7 +57,9 @@ export function createCustomFieldMutation(request: CreateCustomFieldRequest) {
             return mapApiDefinition(response.data!);
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.customFields(request.route.organizationId) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.customFields(request.route.organizationId)
+            });
         }
     }));
 }
@@ -86,7 +88,9 @@ export function deleteCustomFieldMutation(request: DeleteCustomFieldRequest) {
             await client.delete(`organizations/${request.route.organizationId}/event-custom-fields/${request.route.fieldId}`);
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.customFields(request.route.organizationId) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.customFields(request.route.organizationId)
+            });
         }
     }));
 }
@@ -108,7 +112,9 @@ export function updateCustomFieldMutation(request: UpdateCustomFieldRequest) {
             return mapApiDefinition(response.data!);
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.customFields(request.route.organizationId) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.customFields(request.route.organizationId)
+            });
         }
     }));
 }

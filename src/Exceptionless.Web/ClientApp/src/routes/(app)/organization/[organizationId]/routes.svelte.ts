@@ -28,14 +28,20 @@ export function routes(): NavigationItem[] {
         },
         {
             group: 'Organization Settings',
-            href: resolve('/(app)/organization/[organizationId]/custom-fields', { organizationId }),
+            href: resolve('/(app)/organization/[organizationId]/custom-fields', {
+                organizationId
+            }),
             icon: Columns,
             title: 'Custom Fields'
         },
         {
             group: 'Organization Settings',
-            href: resolve('/(app)/organization/[organizationId]/users', { organizationId }),
-            href: resolve('/(app)/organization/[organizationId]/users', { organizationId }),
+            href: resolve('/(app)/organization/[organizationId]/users', {
+                organizationId
+            }),
+            href: resolve('/(app)/organization/[organizationId]/users', {
+                organizationId
+            }),
             icon: Users,
             keywords: ['members', 'team', 'invite'],
             title: 'Users'

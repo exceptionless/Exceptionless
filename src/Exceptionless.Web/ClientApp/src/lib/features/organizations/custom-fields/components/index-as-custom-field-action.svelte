@@ -45,12 +45,17 @@
     });
 
     const form = createForm(() => ({
-        defaultValues: { indexType: 'keyword' } as QuickCreateCustomFieldFormData,
+        defaultValues: {
+            indexType: 'keyword'
+        } as QuickCreateCustomFieldFormData,
         validators: {
             onSubmit: QuickCreateCustomFieldSchema,
             onSubmitAsync: async ({ value }) => {
                 try {
-                    await createField.mutateAsync({ indexType: value.indexType, name: fieldName });
+                    await createField.mutateAsync({
+                        indexType: value.indexType,
+                        name: fieldName
+                    });
                     toast.success(`"${fieldName}" is now indexed as a custom field. Future events will include it in search.`);
                     open = false;
                     return null;
@@ -63,7 +68,9 @@
                         return problemDetailsToFormErrors(error);
                     }
 
-                    return { form: 'An unexpected error occurred.' };
+                    return {
+                        form: 'An unexpected error occurred.'
+                    };
                 }
             }
         }

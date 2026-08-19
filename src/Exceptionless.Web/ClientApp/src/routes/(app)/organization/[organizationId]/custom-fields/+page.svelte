@@ -97,7 +97,11 @@
     }
 
     const createFormState = createForm(() => ({
-        defaultValues: { description: '', indexType: 'keyword', name: '' } as CreateCustomFieldFormData,
+        defaultValues: {
+            description: '',
+            indexType: 'keyword',
+            name: ''
+        } as CreateCustomFieldFormData,
         validators: {
             onSubmit: CreateCustomFieldSchema,
             onSubmitAsync: async ({ value }) => {
@@ -119,7 +123,9 @@
                         return problemDetailsToFormErrors(error);
                     }
 
-                    return { form: 'An unexpected error occurred.' };
+                    return {
+                        form: 'An unexpected error occurred.'
+                    };
                 }
             }
         }
@@ -137,16 +143,22 @@
     }
 
     const editFormState = createForm(() => ({
-        defaultValues: { description: '' } as UpdateCustomFieldFormData,
+        defaultValues: {
+            description: ''
+        } as UpdateCustomFieldFormData,
         validators: {
             onSubmit: UpdateCustomFieldSchema,
             onSubmitAsync: async ({ value }) => {
                 if (!editTarget) {
-                    return { form: 'Custom field is unavailable.' };
+                    return {
+                        form: 'Custom field is unavailable.'
+                    };
                 }
 
                 try {
-                    await updateField.mutateAsync({ description: value.description.trim() });
+                    await updateField.mutateAsync({
+                        description: value.description.trim()
+                    });
                     toast.success(`Custom field "${editTarget.name}" updated.`);
                     showEditDialog = false;
                     editTarget = null;
@@ -160,7 +172,9 @@
                         return problemDetailsToFormErrors(error);
                     }
 
-                    return { form: 'An unexpected error occurred.' };
+                    return {
+                        form: 'An unexpected error occurred.'
+                    };
                 }
             }
         }
