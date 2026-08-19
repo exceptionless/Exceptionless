@@ -881,7 +881,7 @@
         stateSettled={meQuery.isSuccess &&
             organizationsQuery.isSuccess &&
             projectsQuery.isSuccess &&
-            (assistantAccessQuery.isSuccess || assistantAccessQuery.isError)}
+            (!organization.current || assistantAccessQuery.isSuccess || assistantAccessQuery.isError)}
     />
     <IntercomShell
         appId={intercomAppId || undefined}
