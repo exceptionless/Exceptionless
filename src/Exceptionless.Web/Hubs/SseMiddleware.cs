@@ -105,6 +105,12 @@ public class SseMiddleware
             finally
             {
                 _logger.LogTrace("SSE disconnected {ConnectionId}", connectionId);
+
+                // Release the distributed lease before waiting for response cleanup. A
+                // stalled response writer must not keep renewing the lease and block the
+                // client's reconnects until the lease naturally expires.
+                await lease.DisposeAsync().ConfigureAwait(false);
+
                 if (connection is not null)
                     await _connectionManager.RemoveConnectionAsync(connectionId).ConfigureAwait(false);
                 _connectionRegistry.Unregister(connectionId);
