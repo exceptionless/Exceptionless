@@ -31,6 +31,10 @@ export function getIntercomRouteKey(routeId: null | string | undefined, pathname
 }
 
 function addIntercomIdentity(update: Record<string, unknown>, bootOptions: BootOptions) {
+    if (bootOptions.intercomUserJwt) {
+        update.intercomUserJwt = bootOptions.intercomUserJwt;
+    }
+
     if (bootOptions.email) {
         update.email = bootOptions.email;
     }

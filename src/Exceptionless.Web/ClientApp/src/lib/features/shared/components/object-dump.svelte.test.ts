@@ -5,13 +5,11 @@ import ObjectDump from './object-dump.svelte';
 
 describe('ObjectDump', () => {
     it('preserves line breaks in string values', () => {
-        const sessionContents = 'ApplicationName = ZZZZ\r\nGL_StatusFilter_D = Active\r\nSessionID = abc123';
-
-        const { container } = render(ObjectDump, { value: sessionContents });
+        const { container } = render(ObjectDump, { value: 'First line\r\nSecond line\r\nThird line' });
 
         const value = container.firstElementChild;
 
-        expect(value?.textContent).toBe(sessionContents);
+        expect(value?.textContent).toBe('First line\r\nSecond line\r\nThird line');
         expect(value?.classList.contains('whitespace-pre-wrap')).toBe(true);
     });
 });

@@ -51,11 +51,25 @@
             <Stacks />
             Stacks
         </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={() => goto(resolve('/(app)/project/[projectId]/manage', { projectId: project.id }))}>
+        <DropdownMenu.Item
+            onclick={() =>
+                goto(
+                    resolve('/(app)/project/[projectId]/manage', {
+                        projectId: project.id
+                    })
+                )}
+        >
             <Edit />
             Edit
         </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={() => goto(resolve('/(app)/project/[projectId]/configure', { projectId: project.id }))}>
+        <DropdownMenu.Item
+            onclick={() =>
+                goto(
+                    resolve('/(app)/project/[projectId]/configure', {
+                        projectId: project.id
+                    })
+                )}
+        >
             <Configure />
             Client Setup
         </DropdownMenu.Item>
@@ -64,7 +78,14 @@
             Delete
         </DropdownMenu.Item>
         <DropdownMenu.Separator />
-        <DropdownMenu.Item onclick={() => goto(resolve('/(app)/organization/[organizationId]/manage', { organizationId: project.organization_id }))}>
+        <DropdownMenu.Item
+            onclick={() =>
+                goto(
+                    resolve('/(app)/organization/[organizationId]/manage', {
+                        organizationId: project.organization_id
+                    })
+                )}
+        >
             <Organization />
             View Organization
         </DropdownMenu.Item>

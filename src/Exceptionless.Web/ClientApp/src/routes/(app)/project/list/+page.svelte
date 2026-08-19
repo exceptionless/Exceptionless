@@ -55,17 +55,27 @@
         refetchInterval: ORGANIZATION_USAGE_REFETCH_INTERVAL_MS
     });
 
-    const table = createTable(getTableOptions<ViewProject>(projectsQueryParameters, projectsQuery, { includeOrganizationColumn: true }));
+    const table = createTable(
+        getTableOptions<ViewProject>(projectsQueryParameters, projectsQuery, {
+            includeOrganizationColumn: true
+        })
+    );
 
     async function rowClick(project: ViewProject) {
         if (project.id) {
             organization.current = project.organization_id;
-            await goto(resolve('/(app)/project/[projectId]/manage', { projectId: project.id }));
+            await goto(
+                resolve('/(app)/project/[projectId]/manage', {
+                    projectId: project.id
+                })
+            );
         }
     }
 
     function rowHref(project: ViewProject): string {
-        return resolve('/(app)/project/[projectId]/manage', { projectId: project.id });
+        return resolve('/(app)/project/[projectId]/manage', {
+            projectId: project.id
+        });
     }
 
     async function addProject() {

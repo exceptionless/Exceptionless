@@ -25,7 +25,7 @@ export function getSessionColumns(): ColumnDef<StockFeatures, EventSummaryModel<
             header: ({ table }) =>
                 renderComponent(Checkbox, {
                     checked: table.getIsAllRowsSelected(),
-                    indeterminate: table.getIsSomeRowsSelected(),
+                    indeterminate: table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected(),
                     onCheckedChange: (checked: 'indeterminate' | boolean) => table.getToggleAllRowsSelectedHandler()({ target: { checked } })
                 }),
             id: 'select',
@@ -36,7 +36,11 @@ export function getSessionColumns(): ColumnDef<StockFeatures, EventSummaryModel<
         {
             cell: (prop) => renderComponent(Summary, { showStatus: false, showType: false, summary: prop.row.original }),
             enableHiding: false,
-            header: 'Summary'
+            header: 'Summary',
+            id: 'summary',
+            meta: {
+                class: 'w-full'
+            }
         },
         {
             cell: (prop) => renderComponent(SessionDurationCell, { summary: prop.row.original }),
@@ -44,7 +48,7 @@ export function getSessionColumns(): ColumnDef<StockFeatures, EventSummaryModel<
             header: 'Duration',
             id: 'duration',
             meta: {
-                class: 'w-36'
+                class: 'w-40'
             }
         },
         {
@@ -53,7 +57,7 @@ export function getSessionColumns(): ColumnDef<StockFeatures, EventSummaryModel<
             header: 'User',
             id: 'user',
             meta: {
-                class: 'w-28'
+                class: 'w-56'
             }
         },
         {

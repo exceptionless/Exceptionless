@@ -27,7 +27,9 @@
     });
 
     async function onPromote(title: string): Promise<void> {
-        const wasPromoted = await promoteTab.mutateAsync({ name: title });
+        const wasPromoted = await promoteTab.mutateAsync({
+            name: title
+        });
         if (wasPromoted) {
             promoted(title);
         } else {

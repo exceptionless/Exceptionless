@@ -46,7 +46,10 @@ export function getColumns<TProject extends ViewProject>(
         columns.push(
             {
                 accessorKey: 'stack_count',
-                cell: (info) => renderComponent(NumberFormatter, { value: info.getValue<number>() }),
+                cell: (info) =>
+                    renderComponent(NumberFormatter, {
+                        value: info.getValue<number>()
+                    }),
                 enableSorting: false,
                 header: 'Stacks',
                 meta: {
@@ -55,7 +58,10 @@ export function getColumns<TProject extends ViewProject>(
             },
             {
                 accessorKey: 'event_count',
-                cell: (info) => renderComponent(NumberFormatter, { value: info.getValue<number>() }),
+                cell: (info) =>
+                    renderComponent(NumberFormatter, {
+                        value: info.getValue<number>()
+                    }),
                 enableSorting: false,
                 header: 'Events',
                 meta: {
@@ -66,7 +72,10 @@ export function getColumns<TProject extends ViewProject>(
     }
 
     columns.push({
-        cell: (info) => renderComponent(ProjectActionsCell, { project: info.row.original }),
+        cell: (info) =>
+            renderComponent(ProjectActionsCell, {
+                project: info.row.original
+            }),
         enableHiding: false,
         enableSorting: false,
         header: '',

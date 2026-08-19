@@ -6,6 +6,42 @@ public class BillingPlans
 {
     public BillingPlans(AppOptions options)
     {
+        var mediumAssistantOptions = new AssistantPlanOptions
+        {
+            MaximumConcurrentTurns = 2,
+            MaximumTurnsPerMinute = 10,
+            MaximumMonthlyTokens = 25_000_000,
+            MaximumMonthlyCostUsd = 5m
+        };
+        var largeAssistantOptions = new AssistantPlanOptions
+        {
+            MaximumConcurrentTurns = 3,
+            MaximumTurnsPerMinute = 15,
+            MaximumMonthlyTokens = 50_000_000,
+            MaximumMonthlyCostUsd = 10m
+        };
+        var extraLargeAssistantOptions = new AssistantPlanOptions
+        {
+            MaximumConcurrentTurns = 5,
+            MaximumTurnsPerMinute = 25,
+            MaximumMonthlyTokens = 100_000_000,
+            MaximumMonthlyCostUsd = 20m
+        };
+        var enterpriseAssistantOptions = new AssistantPlanOptions
+        {
+            MaximumConcurrentTurns = 10,
+            MaximumTurnsPerMinute = 50,
+            MaximumMonthlyTokens = 250_000_000,
+            MaximumMonthlyCostUsd = 50m
+        };
+        var unlimitedAssistantOptions = new AssistantPlanOptions
+        {
+            MaximumConcurrentTurns = 20,
+            MaximumTurnsPerMinute = 100,
+            MaximumMonthlyTokens = 500_000_000,
+            MaximumMonthlyCostUsd = 100m
+        };
+
         FreePlan = new BillingPlan
         {
             Id = "EX_FREE",
@@ -55,7 +91,8 @@ public class BillingPlans
             MaxUsers = 25,
             RetentionDays = 90,
             MaxEventsPerMonth = 75000,
-            HasPremiumFeatures = true
+            HasPremiumFeatures = true,
+            Assistant = mediumAssistantOptions
         };
 
         MediumYearlyPlan = new BillingPlan
@@ -68,7 +105,8 @@ public class BillingPlans
             MaxUsers = 25,
             RetentionDays = 90,
             MaxEventsPerMonth = 75000,
-            HasPremiumFeatures = true
+            HasPremiumFeatures = true,
+            Assistant = mediumAssistantOptions
         };
 
         LargePlan = new BillingPlan
@@ -81,7 +119,8 @@ public class BillingPlans
             MaxUsers = -1,
             RetentionDays = 180,
             MaxEventsPerMonth = 250000,
-            HasPremiumFeatures = true
+            HasPremiumFeatures = true,
+            Assistant = largeAssistantOptions
         };
 
         LargeYearlyPlan = new BillingPlan
@@ -94,7 +133,8 @@ public class BillingPlans
             MaxUsers = -1,
             RetentionDays = 180,
             MaxEventsPerMonth = 250000,
-            HasPremiumFeatures = true
+            HasPremiumFeatures = true,
+            Assistant = largeAssistantOptions
         };
 
         ExtraLargePlan = new BillingPlan
@@ -107,7 +147,8 @@ public class BillingPlans
             MaxUsers = -1,
             RetentionDays = 180,
             MaxEventsPerMonth = 1000000,
-            HasPremiumFeatures = true
+            HasPremiumFeatures = true,
+            Assistant = extraLargeAssistantOptions
         };
 
         ExtraLargeYearlyPlan = new BillingPlan
@@ -120,7 +161,8 @@ public class BillingPlans
             MaxUsers = -1,
             RetentionDays = 180,
             MaxEventsPerMonth = 1000000,
-            HasPremiumFeatures = true
+            HasPremiumFeatures = true,
+            Assistant = extraLargeAssistantOptions
         };
 
         EnterprisePlan = new BillingPlan
@@ -133,7 +175,8 @@ public class BillingPlans
             MaxUsers = -1,
             RetentionDays = 180,
             MaxEventsPerMonth = 3000000,
-            HasPremiumFeatures = true
+            HasPremiumFeatures = true,
+            Assistant = enterpriseAssistantOptions
         };
 
         EnterpriseYearlyPlan = new BillingPlan
@@ -146,7 +189,8 @@ public class BillingPlans
             MaxUsers = -1,
             RetentionDays = 180,
             MaxEventsPerMonth = 3000000,
-            HasPremiumFeatures = true
+            HasPremiumFeatures = true,
+            Assistant = enterpriseAssistantOptions
         };
 
         UnlimitedPlan = new BillingPlan
@@ -160,7 +204,8 @@ public class BillingPlans
             MaxUsers = -1,
             RetentionDays = options.MaximumRetentionDays,
             MaxEventsPerMonth = -1,
-            HasPremiumFeatures = true
+            HasPremiumFeatures = true,
+            Assistant = unlimitedAssistantOptions
         };
 
         Plans = new List<BillingPlan> { FreePlan, SmallYearlyPlan, MediumYearlyPlan, LargeYearlyPlan, ExtraLargeYearlyPlan, EnterpriseYearlyPlan, SmallPlan, MediumPlan, LargePlan, ExtraLargePlan, EnterprisePlan, UnlimitedPlan };
@@ -191,4 +236,8 @@ public class BillingPlans
     public BillingPlan UnlimitedPlan { get; }
 
     public List<BillingPlan> Plans { get; }
+
+    public BillingPlan? GetPlan(string? planId) => planId is null
+        ? null
+        : Plans.FirstOrDefault(plan => String.Equals(plan.Id, planId, StringComparison.OrdinalIgnoreCase));
 }

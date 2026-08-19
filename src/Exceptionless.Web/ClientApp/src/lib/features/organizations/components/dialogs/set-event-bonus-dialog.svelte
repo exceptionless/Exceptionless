@@ -79,7 +79,9 @@
                         return problemDetailsToFormErrors(error);
                     }
 
-                    return { form: 'An unexpected error occurred, please try again.' };
+                    return {
+                        form: 'An unexpected error occurred, please try again.'
+                    };
                 }
             }
         }
@@ -189,7 +191,12 @@
 
             <AlertDialog.Footer>
                 <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-                <AlertDialog.Action type="submit" class={buttonVariants({ variant: 'default' })}>Set Bonus</AlertDialog.Action>
+                <AlertDialog.Action
+                    type="submit"
+                    class={buttonVariants({
+                        variant: 'default'
+                    })}>Set Bonus</AlertDialog.Action
+                >
             </AlertDialog.Footer>
         </form>
     </AlertDialog.Content>

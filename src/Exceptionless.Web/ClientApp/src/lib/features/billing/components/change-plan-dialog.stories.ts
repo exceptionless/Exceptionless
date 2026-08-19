@@ -211,6 +211,16 @@ export const Default: Story = {
     }
 };
 
+/** Exie opens billing directly with the lowest eligible tier selected. */
+export const ExieUpgrade: Story = {
+    args: {
+        initialPlanId: 'EX_MEDIUM_YEARLY',
+        organization: makeOrg(),
+        plans: MOCK_PLANS
+    },
+    name: 'Exie upgrade to Medium'
+};
+
 /** Paid Small monthly org selects a different paid plan (Large monthly). */
 export const ChangePlan: Story = {
     args: {

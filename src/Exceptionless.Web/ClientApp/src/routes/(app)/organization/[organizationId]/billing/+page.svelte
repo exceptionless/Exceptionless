@@ -38,9 +38,13 @@
     const canChangePlan = $derived(organizationQuery.isSuccess && !!env.PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
     const params = createQueryParameters({
-        defaults: { changePlan: false },
+        defaults: {
+            changePlan: false
+        },
         history: 'push',
-        schema: { changePlan: 'boolean' }
+        schema: {
+            changePlan: 'boolean'
+        }
     });
 
     let changePlanDialogOpen = $state(!!params.changePlan);
@@ -56,7 +60,12 @@
     }
 
     function handleOpenInvoice(invoiceId: string) {
-        window.open(resolve('/(app)/payment/[id]', { id: invoiceId }), '_blank');
+        window.open(
+            resolve('/(app)/payment/[id]', {
+                id: invoiceId
+            }),
+            '_blank'
+        );
     }
 
     function handleViewStripeInvoice(invoiceId: string) {
