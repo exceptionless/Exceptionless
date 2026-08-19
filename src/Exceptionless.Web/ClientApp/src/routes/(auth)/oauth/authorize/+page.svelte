@@ -61,7 +61,11 @@
     const selectedScopes = new SvelteSet<string>();
 
     const meQuery = getMeQuery();
-    const organizationsQuery = getOrganizationsQuery({ params: { mode: null } });
+    const organizationsQuery = getOrganizationsQuery({
+        params: {
+            mode: null
+        }
+    });
 
     const clientId = $derived(page.url.searchParams.get('client_id') ?? 'Unknown application');
     const redirectUri = $derived(page.url.searchParams.get('redirect_uri') ?? 'Unknown redirect URI');
@@ -90,7 +94,9 @@
 
         const returnUrl = `${page.url.pathname}${page.url.search}`;
         const loginUrl = `${resolve('/(auth)/login')}?redirect=${encodeURIComponent(returnUrl)}`;
-        void goto(loginUrl, { replaceState: true });
+        void goto(loginUrl, {
+            replaceState: true
+        });
     });
 
     $effect(() => {
@@ -153,7 +159,9 @@
         const response = await client.postJSON<OAuthAuthorizeConsentResponse>(
             'oauth/authorize/consent',
             getAuthorizationRequestBody([], page.url.searchParams.get('scope')),
-            { expectedStatusCodes: [400, 401] }
+            {
+                expectedStatusCodes: [400, 401]
+            }
         );
 
         isLoadingConsent = false;
@@ -202,7 +210,9 @@
         const response = await client.postJSON<OAuthAuthorizeResponse>(
             'oauth/authorize',
             getAuthorizationRequestBody([...selectedOrganizationIds], selectedScopeValues.join(' ')),
-            { expectedStatusCodes: [400, 401] }
+            {
+                expectedStatusCodes: [400, 401]
+            }
         );
 
         if (response.ok && response.data?.redirect_uri) {
@@ -228,7 +238,9 @@
         clearAuthenticationSession();
         const returnUrl = `${page.url.pathname}${page.url.search}`;
         const loginUrl = `${resolve('/(auth)/login')}?redirect=${encodeURIComponent(returnUrl)}`;
-        await goto(loginUrl, { replaceState: true });
+        await goto(loginUrl, {
+            replaceState: true
+        });
     }
 
     function getAuthorizationRequestBody(organizationIds: string[], scope: null | string): OAuthAuthorizeRequestBody {

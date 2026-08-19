@@ -160,7 +160,25 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         if (!TryGetOAuthResourceForRequest(out var resourceDefinition, out _))
             return;
 
-        Response.Headers.WWWAuthenticate = $"Bearer resource_metadata=\"{GetCanonicalOrigin()}/.well-known/oauth-protected-resource{resourceDefinition.Path}\"";
+        string challenge = $"Bearer resource_metadata=\"{GetResourceMetadataUri(resourceDefinition)}\"";
+        if (resourceDefinition.RequiredScopes.Count > 0)
+            challenge += $", scope=\"{String.Join(' ', resourceDefinition.RequiredScopes)}\"";
+
+        Response.Headers.WWWAuthenticate = challenge;
+    }
+
+    protected override async Task HandleForbiddenAsync(AuthenticationProperties properties)
+    {
+        await base.HandleForbiddenAsync(properties);
+
+        if (!IsOAuthBearerRequest()
+            || !TryGetOAuthResourceForRequest(out var resourceDefinition, out _)
+            || resourceDefinition.RequiredScopes.Count == 0)
+        {
+            return;
+        }
+
+        Response.Headers.WWWAuthenticate = $"Bearer error=\"insufficient_scope\", scope=\"{String.Join(' ', resourceDefinition.RequiredScopes)}\", resource_metadata=\"{GetResourceMetadataUri(resourceDefinition)}\"";
     }
 
     private async Task<AuthenticateResult> AuthenticateOAuthBearerAsync(string token)
@@ -329,6 +347,19 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
     private bool IsMcpRequest()
     {
         return Request.Path.StartsWithSegments(new PathString(OAuthService.McpResource.Path), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool IsOAuthBearerRequest()
+    {
+        string? authHeaderValue = Request.Headers.TryGetAndReturn("Authorization").FirstOrDefault();
+        return AuthenticationHeaderValue.TryParse(authHeaderValue, out var authHeader)
+            && String.Equals(authHeader.Scheme, BearerScheme, StringComparison.OrdinalIgnoreCase)
+            && OAuthService.IsOAuthTokenFormat(authHeader.Parameter);
+    }
+
+    private string GetResourceMetadataUri(OAuthResourceDefinition resourceDefinition)
+    {
+        return $"{GetCanonicalOrigin()}/.well-known/oauth-protected-resource{resourceDefinition.Path}";
     }
 
     private string GetCanonicalOrigin()

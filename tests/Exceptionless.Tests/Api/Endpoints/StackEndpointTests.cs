@@ -202,6 +202,82 @@ public class StackEndpointTests : IntegrationTestsBase
         Assert.NotNull(stack.DateFixed);
     }
 
+    [Theory]
+    [InlineData("ignored", StackStatus.Ignored)]
+    [InlineData("DISCARDED", StackStatus.Discarded)]
+    [InlineData("OpEn", StackStatus.Open)]
+    [InlineData("FiXeD", StackStatus.Fixed)]
+    public async Task ChangeStatusAsync_WithCaseInsensitiveStatus_UpdatesStack(string status, StackStatus expectedStatus)
+    {
+        // Arrange
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/change-status")
+            .QueryString("status", status)
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        var stack = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stack);
+        Assert.Equal(expectedStatus, stack.Status);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("0")]
+    [InlineData("4")]
+    [InlineData("unknown")]
+    public async Task ChangeStatusAsync_WithUnsupportedStatus_ReturnsUnprocessableEntity(string status)
+    {
+        // Arrange
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+
+        // Act
+        var problemDetails = await SendRequestAsAsync<ValidationProblemDetails>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/change-status")
+            .QueryString("status", status)
+            .StatusCodeShouldBeUnprocessableEntity());
+
+        // Assert
+        Assert.NotNull(problemDetails);
+        Assert.Equal(StatusCodes.Status422UnprocessableEntity, problemDetails.Status);
+        Assert.Equal(["The status is invalid."], problemDetails.Errors["status"]);
+    }
+
+    [Fact]
+    public async Task ChangeStatusAsync_WithoutStatus_DefaultsToOpen()
+    {
+        // Arrange
+        var ev = await SubmitErrorEventAsync();
+        Assert.NotNull(ev.StackId);
+
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/mark-fixed")
+            .StatusCodeShouldBeOk());
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath($"stacks/{ev.StackId}/change-status")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        var stack = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stack);
+        Assert.Equal(StackStatus.Open, stack.Status);
+    }
+
     [Fact]
     public async Task ChangeStatusAsync_ToOpen_ClearsFixedFields()
     {
@@ -232,7 +308,7 @@ public class StackEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task ChangeStatusAsync_ToRegressed_ReturnsBadRequest()
+    public async Task ChangeStatusAsync_ToRegressed_ReturnsUnprocessableEntity()
     {
         // Arrange
         var ev = await SubmitErrorEventAsync();
@@ -244,11 +320,11 @@ public class StackEndpointTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath($"stacks/{ev.StackId}/change-status")
             .QueryString("status", "Regressed")
-            .StatusCodeShouldBeBadRequest());
+            .StatusCodeShouldBeUnprocessableEntity());
     }
 
     [Fact]
-    public async Task ChangeStatusAsync_ToSnoozed_ReturnsBadRequest()
+    public async Task ChangeStatusAsync_ToSnoozed_ReturnsUnprocessableEntity()
     {
         // Arrange
         var ev = await SubmitErrorEventAsync();
@@ -262,7 +338,7 @@ public class StackEndpointTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath($"stacks/{ev.StackId}/change-status")
             .QueryString("status", "Snoozed")
-            .StatusCodeShouldBeBadRequest());
+            .StatusCodeShouldBeUnprocessableEntity());
 
         // Assert — status must not have changed
         var stackAfter = await _stackRepository.GetByIdAsync(ev.StackId);

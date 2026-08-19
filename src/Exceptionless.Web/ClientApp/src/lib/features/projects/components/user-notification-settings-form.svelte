@@ -180,6 +180,7 @@
         <div class="space-y-4">
             <Skeleton class="h-6 w-40 rounded" />
             <div class="space-y-3">
+                <!-- eslint-disable-next-line @stylistic/object-curly-newline -->
                 {#each { length: 5 } as name, index (`${name}-${index}`)}
                     <div class="rounded-lg border p-4 opacity-60">
                         <div class="flex items-center justify-between">

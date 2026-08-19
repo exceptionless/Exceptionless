@@ -81,7 +81,10 @@ export async function isEmailAddressTaken(email: string) {
 }
 
 export async function login(email: string, password: string) {
-    const data: Login = { email, password };
+    const data: Login = {
+        email,
+        password
+    };
     const client = useFetchClient();
     const response = await client.postJSON<TokenResult>('auth/login', data, {
         expectedStatusCodes: [401, 422]
@@ -97,7 +100,9 @@ export async function login(email: string, password: string) {
 }
 
 export async function logout(queryClient?: QueryClient, client = useFetchClient()) {
-    await client.get('auth/logout', { expectedStatusCodes: [200, 401, 403] });
+    await client.get('auth/logout', {
+        expectedStatusCodes: [200, 401, 403]
+    });
     await endSession();
 
     await queryClient?.cancelQueries();

@@ -13,7 +13,10 @@ export function getColumns(organizationNamesById: ReadonlyMap<string, string>): 
     const columns: ColumnDef<StockFeatures, OAuthGrant, unknown>[] = [
         {
             accessorKey: 'application_name',
-            cell: (info) => renderComponent(OAuthGrantApplicationCell, { grant: info.row.original }),
+            cell: (info) =>
+                renderComponent(OAuthGrantApplicationCell, {
+                    grant: info.row.original
+                }),
             enableHiding: false,
             enableSorting: false,
             header: 'Application',
@@ -23,7 +26,10 @@ export function getColumns(organizationNamesById: ReadonlyMap<string, string>): 
         },
         {
             accessorKey: 'resources',
-            cell: (info) => renderComponent(OAuthGrantAccessCell, { grant: info.row.original }),
+            cell: (info) =>
+                renderComponent(OAuthGrantAccessCell, {
+                    grant: info.row.original
+                }),
             enableHiding: false,
             enableSorting: false,
             header: 'Access',
@@ -33,7 +39,11 @@ export function getColumns(organizationNamesById: ReadonlyMap<string, string>): 
         },
         {
             accessorKey: 'organization_ids',
-            cell: (info) => renderComponent(OAuthGrantOrganizationsCell, { grant: info.row.original, organizationNamesById }),
+            cell: (info) =>
+                renderComponent(OAuthGrantOrganizationsCell, {
+                    grant: info.row.original,
+                    organizationNamesById
+                }),
             enableHiding: false,
             enableSorting: false,
             header: 'Organizations',
@@ -42,7 +52,10 @@ export function getColumns(organizationNamesById: ReadonlyMap<string, string>): 
             }
         },
         {
-            cell: (info) => renderComponent(OAuthGrantActionsCell, { grant: info.row.original }),
+            cell: (info) =>
+                renderComponent(OAuthGrantActionsCell, {
+                    grant: info.row.original
+                }),
             enableHiding: false,
             enableSorting: false,
             header: '',

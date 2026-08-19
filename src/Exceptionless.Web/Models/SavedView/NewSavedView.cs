@@ -145,6 +145,30 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
                     [nameof(Columns)]
                 );
             }
+
+            if (settings.AutoFill == true && settings.Width is not null)
+            {
+                yield return new ValidationResult(
+                    $"Auto-fill column '{key}' cannot also have a fixed width.",
+                    [nameof(Columns)]
+                );
+            }
+
+            if (settings.AutoFill == true && settings.Visible == false)
+            {
+                yield return new ValidationResult(
+                    $"Auto-fill column '{key}' cannot be hidden.",
+                    [nameof(Columns)]
+                );
+            }
+        }
+
+        if (columns.Count(entry => entry.Value?.AutoFill == true) > 1)
+        {
+            yield return new ValidationResult(
+                "Only one column can auto-fill the remaining table width.",
+                [nameof(Columns)]
+            );
         }
 
         foreach (var duplicatePosition in columns

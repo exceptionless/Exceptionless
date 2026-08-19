@@ -442,6 +442,21 @@
     };
 </script>
 
-<Story name="Default" args={{ error: error }} />
-<Story name="Nested Errors" args={{ error: nestedErrors }} />
-<Story name="Empty" args={{ error: undefined }} />
+<Story
+    name="Default"
+    args={{
+        error: error
+    }}
+/>
+<Story
+    name="Nested Errors"
+    args={{
+        error: nestedErrors
+    }}
+/>
+<Story
+    name="Empty"
+    args={{
+        error: undefined
+    }}
+/>

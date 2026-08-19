@@ -23,32 +23,65 @@
     const shortcutSections: ShortcutSection[] = [
         {
             rows: [
-                { action: 'Go to Stacks', shortcuts: [appKeyboardShortcuts.stacks.keys] },
-                { action: 'Go to All Events', shortcuts: [appKeyboardShortcuts.allEvents.keys] },
-                { action: 'Show Keyboard Shortcuts', shortcuts: [appKeyboardShortcuts.keyboardShortcuts.keys] }
+                {
+                    action: 'Go to Stacks',
+                    shortcuts: [appKeyboardShortcuts.stacks.keys]
+                },
+                {
+                    action: 'Go to All Events',
+                    shortcuts: [appKeyboardShortcuts.allEvents.keys]
+                },
+                {
+                    action: 'Show Keyboard Shortcuts',
+                    shortcuts: [appKeyboardShortcuts.keyboardShortcuts.keys]
+                }
             ],
             title: 'Navigation'
         },
         {
             rows: [
-                { action: 'Open Organization Switcher', shortcuts: [appKeyboardShortcuts.switchOrganization.keys] },
-                { action: 'Open User Menu', shortcuts: [appKeyboardShortcuts.userMenu.keys] }
+                {
+                    action: 'Open Organization Switcher',
+                    shortcuts: [appKeyboardShortcuts.switchOrganization.keys]
+                },
+                {
+                    action: 'Open User Menu',
+                    shortcuts: [appKeyboardShortcuts.userMenu.keys]
+                }
             ],
             title: 'Menus'
         },
         {
             rows: [
-                { action: 'Open Command Palette', shortcuts: [appKeyboardShortcuts.commandPalette.keys] },
-                { action: 'Open Selected Command', shortcuts: [['Enter']] },
-                { action: 'Close Command Palette', shortcuts: [['Esc']] }
+                {
+                    action: 'Open Command Palette',
+                    shortcuts: [appKeyboardShortcuts.commandPalette.keys]
+                },
+                {
+                    action: 'Open Selected Command',
+                    shortcuts: [['Enter']]
+                },
+                {
+                    action: 'Close Command Palette',
+                    shortcuts: [['Esc']]
+                }
             ],
             title: 'Command Palette'
         },
         {
             rows: [
-                { action: 'Open Selected Row', shortcuts: [['Enter']] },
-                { action: 'Toggle Selected Row', shortcuts: [['Space']] },
-                { action: 'Close Menus and Popovers', shortcuts: [['Esc']] }
+                {
+                    action: 'Open Selected Row',
+                    shortcuts: [['Enter']]
+                },
+                {
+                    action: 'Toggle Selected Row',
+                    shortcuts: [['Space']]
+                },
+                {
+                    action: 'Close Menus and Popovers',
+                    shortcuts: [['Esc']]
+                }
             ],
             title: 'Lists and Tables'
         }

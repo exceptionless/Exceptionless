@@ -250,13 +250,14 @@
     let showChart = $state(true);
     const savedViewsState = useSavedViews({
         baseHref: resolve('/(app)/event'),
+        defaultAutoFillColumnId: 'summary',
         defaultColumnVisibility: defaultEventColumnVisibility,
         defaultFilter: DEFAULT_FILTER,
         defaultTime: DEFAULT_TIME_RANGE,
         filterCacheKey,
-        getColumnOrder: () => table.state.columnOrder,
-        getColumnSizing: () => table.state.columnSizing,
-        getColumnVisibility: () => table.state.columnVisibility,
+        getColumnOrder: () => table.store.state.columnOrder,
+        getColumnSizing: () => table.store.state.columnSizing,
+        getColumnVisibility: () => table.store.state.columnVisibility,
         getFilter: getEffectiveFilter,
         getFilterDefinitions: () => serializeFilters(filters ?? []),
         getShowChart: () => showChart,
@@ -302,7 +303,9 @@
             queryParams.update(DEFAULT_PARAMS);
             reset();
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     function getCurrentFilters(params: ListFilterQueryParams = queryParams): FacetedFilter.IFilter[] {
@@ -410,8 +413,8 @@
     let filters = $state(getCurrentFilters());
     let isInternalFilterUpdate = false;
     watch(
-        [() => page.url.pathname, () => page.url.search, () => savedViewsState.activeSavedView],
-        ([pathname, , activeSavedView], [previousPathname, , previousSavedView]) => {
+        [() => page.url.pathname, () => getListFilterQueryParams(queryParams), () => savedViewsState.activeSavedView],
+        ([pathname, currentQueryParams, activeSavedView], [previousPathname, , previousSavedView]) => {
             const savedViewChanged = pathname !== previousPathname || activeSavedView?.id !== previousSavedView?.id;
             if (isInternalFilterUpdate && !savedViewChanged) {
                 isInternalFilterUpdate = false;
@@ -419,9 +422,11 @@
             }
 
             isInternalFilterUpdate = false;
-            filters = getCurrentFilters(getListFilterQueryParams(page.url.searchParams));
+            filters = getCurrentFilters(currentQueryParams);
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     function handleResetToSaved(): void {
@@ -524,7 +529,9 @@
         }
 
         untrack(() => {
-            updateFilters(getCurrentFilters(getListFilterQueryParams(page.url.searchParams)), { clearPagination: false });
+            updateFilters(getCurrentFilters(getListFilterQueryParams(queryParams)), {
+                clearPagination: false
+            });
         });
         normalizedSavedViewId = activeSavedViewId;
     });
@@ -704,16 +711,10 @@
             get queryParameters() {
                 return eventsQueryParameters;
             }
-        }),
-        (state) => ({
-            columnOrder: state.columnOrder,
-            columnSizing: state.columnSizing,
-            columnVisibility: state.columnVisibility,
-            pagination: state.pagination
         })
     );
 
-    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.state.pagination.pageIndex === 0);
+    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.store.state.pagination.pageIndex === 0);
 
     function reset() {
         table.resetRowSelection();
@@ -721,7 +722,7 @@
     }
 
     async function handleRefresh() {
-        const isFirstPage = table.state.pagination.pageIndex === 0;
+        const isFirstPage = table.store.state.pagination.pageIndex === 0;
         if (!canRefresh) {
             reset();
             if (!isFirstPage) {
@@ -738,7 +739,9 @@
         }
 
         const organizationId = organization.current;
-        const requestParameters = { ...eventsQueryParameters };
+        const requestParameters = {
+            ...eventsQueryParameters
+        };
         const requestIdentity = JSON.stringify([organizationId, requestParameters]);
         if (!requestParameters.after && !requestParameters.before) {
             return;
@@ -756,13 +759,21 @@
         const totalResponse = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organizationId}/events`, {
             params: totalParams
         });
-        if (requestIdentity !== JSON.stringify([organization.current, { ...eventsQueryParameters }])) {
+        if (
+            requestIdentity !==
+            JSON.stringify([
+                organization.current,
+                {
+                    ...eventsQueryParameters
+                }
+            ])
+        ) {
             return;
         }
 
         const total = totalResponse.meta.total as number | undefined;
         const totalPages = total == null ? undefined : Math.ceil(total / (requestParameters.limit ?? 20));
-        if (totalPages != null && table.state.pagination.pageIndex >= totalPages) {
+        if (totalPages != null && table.store.state.pagination.pageIndex >= totalPages) {
             table.firstPage();
         }
     }
@@ -828,7 +839,7 @@
             eventsQuery.isPlaceholderData ||
             dataUpdatedAt === lastEmptyResponseAt ||
             eventsQuery.data?.data?.length !== 0 ||
-            table.state.pagination.pageIndex === 0
+            table.store.state.pagination.pageIndex === 0
         ) {
             return;
         }
@@ -934,15 +945,18 @@
             {#if savedViewsState.isEnabled}
                 <SavedViewPicker
                     activeSavedView={savedViewsState.activeSavedView}
-                    columnOrder={table.state.columnOrder}
-                    columnSizing={table.state.columnSizing}
-                    columnVisibility={table.state.columnVisibility}
+                    autoFillColumnId={savedViewsState.autoFillColumnId}
+                    columnOrder={table.store.state.columnOrder}
+                    columnSizing={table.store.state.columnSizing}
+                    columnVisibility={table.store.state.columnVisibility}
+                    defaultAutoFillColumnId="summary"
                     filters={filters ?? []}
                     isModified={savedViewsState.isModified}
                     onLoadView={savedViewsState.handleLoadView}
                     onClearSavedView={savedViewsState.handleClearSavedView}
                     onResetToSaved={handleResetToSaved}
                     savedViews={savedViewsState.savedViews}
+                    setAutoFillColumnId={savedViewsState.setAutoFillColumnId}
                     {showChart}
                     {showStats}
                     setShowChart={(v) => (showChart = v)}
@@ -981,7 +995,15 @@
             />
         {/if}
 
-        <EventsDataTable bind:limit={eventsQueryParameters.limit!} isLoading={isSavedViewRoutePending || eventsQuery.isFetching} {rowClick} {rowHref} {table}>
+        <EventsDataTable
+            autoFillColumnId={savedViewsState.autoFillColumnId}
+            bind:limit={eventsQueryParameters.limit!}
+            isLoading={isSavedViewRoutePending || eventsQuery.isFetching}
+            onAutoFillColumnResized={() => savedViewsState.setAutoFillColumnId(null)}
+            {rowClick}
+            {rowHref}
+            {table}
+        >
             {#snippet footerChildren()}
                 <div class="h-9 min-w-35">
                     {#if table.getSelectedRowModel().flatRows.length}
@@ -1001,7 +1023,7 @@
 </div>
 
 <EventDetailSheet
-    eventId={selectedEventId}
+    bind:eventId={selectedEventId}
     filterChanged={onFilterChanged}
     onClose={() => {
         selectedEventId = null;

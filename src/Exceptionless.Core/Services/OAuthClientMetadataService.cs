@@ -14,7 +14,7 @@ public interface IOAuthClientMetadataService
     Task<OAuthClientMetadataDocument?> GetClientMetadataAsync(string clientId);
 }
 
-public sealed class OAuthClientMetadataService(HttpClient httpClient, OAuthServerOptions options, ICacheClient cacheClient, ILogger<OAuthClientMetadataService> logger) : IOAuthClientMetadataService
+public sealed class OAuthClientMetadataService(HttpClient httpClient, OAuthServerOptions options, ICacheClient cacheClient, ILogger<OAuthClientMetadataService> logger, TimeProvider timeProvider) : IOAuthClientMetadataService
 {
     private const string CachePrefix = "oauth:cimd:";
     private const string FailureCachePrefix = "oauth:cimd-failure:";
@@ -54,7 +54,10 @@ public sealed class OAuthClientMetadataService(HttpClient httpClient, OAuthServe
             if (metadata is null)
                 return await CacheFailureAsync(failureCacheKey);
 
-            await cacheClient.SetAsync(cacheKey, metadata, options.ClientMetadataDocumentCacheLifetime);
+            var cacheLifetime = GetCacheLifetime(response);
+            if (cacheLifetime.HasValue)
+                await cacheClient.SetAsync(cacheKey, metadata, cacheLifetime.Value);
+
             return metadata;
         }
         catch (OperationCanceledException)
@@ -97,8 +100,40 @@ public sealed class OAuthClientMetadataService(HttpClient httpClient, OAuthServe
         if (!String.IsNullOrEmpty(parsedUri.Fragment) || !String.IsNullOrEmpty(parsedUri.UserInfo))
             return false;
 
+        if (String.IsNullOrWhiteSpace(parsedUri.AbsolutePath.Trim('/')))
+            return false;
+
         uri = parsedUri;
         return true;
+    }
+
+    private TimeSpan? GetCacheLifetime(HttpResponseMessage response)
+    {
+        var cacheControl = response.Headers.CacheControl;
+        if (cacheControl is { NoStore: true } or { NoCache: true } or { Private: true })
+            return null;
+
+        if (response.Headers.Vary.Any(value => String.Equals(value, "*", StringComparison.Ordinal)))
+        {
+            return null;
+        }
+
+        TimeSpan responseAge = response.Headers.Age ?? TimeSpan.Zero;
+        TimeSpan? cacheLifetime = (cacheControl?.SharedMaxAge ?? cacheControl?.MaxAge) - responseAge;
+        if (!cacheLifetime.HasValue && response.Content.Headers.Expires.HasValue)
+        {
+            DateTimeOffset responseDate = response.Headers.Date ?? timeProvider.GetUtcNow();
+            cacheLifetime = response.Content.Headers.Expires.Value - responseDate - responseAge;
+        }
+
+        cacheLifetime ??= options.ClientMetadataDocumentCacheLifetime - responseAge;
+
+        if (cacheLifetime <= TimeSpan.Zero || options.ClientMetadataDocumentCacheLifetime <= TimeSpan.Zero)
+            return null;
+
+        return cacheLifetime < options.ClientMetadataDocumentCacheLifetime
+            ? cacheLifetime
+            : options.ClientMetadataDocumentCacheLifetime;
     }
 
     private static async Task<MemoryStream> ReadLimitedAsync(Stream stream, int maxBytes, CancellationToken cancellationToken)
