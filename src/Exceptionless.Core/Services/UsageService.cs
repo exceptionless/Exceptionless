@@ -178,25 +178,29 @@ public class UsageService : IAssistantUsageRecorder
                     organization.LastEventDateUtc = _timeProvider.GetUtcNow().UtcDateTime;
                 }
 
+                bool hasEventUsage = hasIngestion || (bucketDeleted?.Value ?? 0) > 0;
                 int bucketLimit = GetBucketEventLimit(organization.GetMaxEventsPerMonthWithBonus(_timeProvider), pendingBucketUtc);
                 bool hourlyThrottleCleared = hourlyThrottleTransition is { HasValue: true } transition
                     ? transition.Value
                     : bucketLimit >= 0 && bucketTotal >= bucketLimit;
 
-                var usage = organization.GetUsage(pendingBucketUtc, _timeProvider);
-                usage.Limit = organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
-                usage.Total += bucketTotal;
-                usage.Blocked += bucketBlocked?.Value ?? 0;
-                usage.Discarded += bucketDiscarded?.Value ?? 0;
-                usage.TooBig += bucketTooBig?.Value ?? 0;
-                usage.Deleted += bucketDeleted?.Value ?? 0;
+                if (hasEventUsage)
+                {
+                    var usage = organization.GetUsage(pendingBucketUtc, _timeProvider);
+                    usage.Limit = organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
+                    usage.Total += bucketTotal;
+                    usage.Blocked += bucketBlocked?.Value ?? 0;
+                    usage.Discarded += bucketDiscarded?.Value ?? 0;
+                    usage.TooBig += bucketTooBig?.Value ?? 0;
+                    usage.Deleted += bucketDeleted?.Value ?? 0;
 
-                var hourlyUsage = organization.GetHourlyUsage(pendingBucketUtc);
-                hourlyUsage.Total += bucketTotal;
-                hourlyUsage.Blocked += bucketBlocked?.Value ?? 0;
-                hourlyUsage.Discarded += bucketDiscarded?.Value ?? 0;
-                hourlyUsage.TooBig += bucketTooBig?.Value ?? 0;
-                hourlyUsage.Deleted += bucketDeleted?.Value ?? 0;
+                    var hourlyUsage = organization.GetHourlyUsage(pendingBucketUtc);
+                    hourlyUsage.Total += bucketTotal;
+                    hourlyUsage.Blocked += bucketBlocked?.Value ?? 0;
+                    hourlyUsage.Discarded += bucketDiscarded?.Value ?? 0;
+                    hourlyUsage.TooBig += bucketTooBig?.Value ?? 0;
+                    hourlyUsage.Deleted += bucketDeleted?.Value ?? 0;
+                }
 
                 bool hasAssistantUsage = assistantTurns > 0 || assistantCompleted > 0 || assistantFailed > 0 || assistantCancelled > 0
                     || assistantProviderRequests > 0 || assistantToolCalls > 0 || assistantPromptTokens > 0 || assistantCompletionTokens > 0
@@ -420,7 +424,9 @@ public class UsageService : IAssistantUsageRecorder
 
     private Task CompleteOrganizationUsageBucketAsync(Organization organization, DateTime bucketUtc, DateTime utcNow)
     {
-        var usage = organization.GetUsage(bucketUtc, _timeProvider);
+        long usageTotal = organization.Usage
+            .FirstOrDefault(usage => usage.Date.Year == bucketUtc.Year && usage.Date.Month == bucketUtc.Month)
+            ?.Total ?? 0;
         return Task.WhenAll(
             _cache.RemoveAllAsync(new[] {
                 GetBucketTotalCacheKey(bucketUtc, organization.Id),
@@ -431,7 +437,7 @@ public class UsageService : IAssistantUsageRecorder
                 GetThrottledKey(bucketUtc, organization.Id),
                 GetHourlyThrottleTransitionKey(bucketUtc, organization.Id)
             }),
-            _cache.SetAsync(GetTotalCacheKey(utcNow, organization.Id), usage.Total, TimeSpan.FromHours(8)));
+            _cache.SetAsync(GetTotalCacheKey(utcNow, organization.Id), usageTotal, TimeSpan.FromHours(8)));
     }
 
     private Task CompleteProjectUsageBucketAsync(Project project, DateTime bucketUtc, DateTime utcNow)
