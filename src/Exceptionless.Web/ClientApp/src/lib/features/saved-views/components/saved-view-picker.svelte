@@ -6,6 +6,7 @@
 
 <script generics="TData extends RowData" lang="ts">
     import type { IFilter } from '$comp/faceted-filter';
+    import type { QueryParameterHistory } from '$features/shared/query-params/types.js';
     import type { ProblemDetails } from '@foundatiofx/fetchclient';
     import type { StockFeatures, Table } from '@tanstack/svelte-table';
 
@@ -56,7 +57,7 @@
         isModified: boolean;
         onClearSavedView: () => void;
         onLoadView: (view: SavedView) => void;
-        onResetToSaved: () => void;
+        onResetToSaved: (history?: QueryParameterHistory) => void;
         savedViews: SavedView[];
         setAutoFillColumnId: (columnId: AutoFillColumnSelection) => void;
         setShowChart?: (show: boolean) => void;
@@ -97,6 +98,7 @@
     let isRenameDialogOpen = $state(false);
     let isDeleteDialogOpen = $state(false);
     let isColumnDialogOpen = $state(false);
+    let isDeletingActiveView = $state(false);
     let isMenuOpen = $state(false);
     let viewToDelete = $state<null | SavedView>(null);
 
@@ -268,6 +270,11 @@
 
         const target = viewToDelete;
         const wasActiveView = activeSavedView?.id === target.id;
+        isDeletingActiveView = wasActiveView;
+        if (wasActiveView) {
+            await tick();
+        }
+
         markSavedViewDeleted(target);
         if (wasActiveView) {
             onClearSavedView();
@@ -285,6 +292,7 @@
 
             toast.error('Failed to delete view. Please try again.');
         } finally {
+            isDeletingActiveView = false;
             isDeleteDialogOpen = false;
             viewToDelete = null;
         }
@@ -407,4 +415,4 @@
     <ColumnManagementDialog bind:open={isColumnDialogOpen} {autoFillColumnId} {defaultAutoFillColumnId} {setAutoFillColumnId} {table} />
 {/if}
 
-<SavedViewNavigationGuard {isModified} onDiscard={onResetToSaved} onSave={handleUpdate} {saving} />
+<SavedViewNavigationGuard isModified={isModified && !isDeletingActiveView} onDiscard={onResetToSaved} onSave={handleUpdate} {saving} />

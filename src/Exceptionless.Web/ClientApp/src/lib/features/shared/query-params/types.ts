@@ -5,12 +5,14 @@ export interface CreateQueryParametersOptions<T extends QueryParameterSchema> {
     schema: T;
 }
 
+export type QueryParameterHistory = 'push' | 'replace';
+
 export type QueryParameterInput<T extends QueryParameterSchema> = {
     [K in keyof T]: QueryParameterTypeOutput<T[K]> | undefined;
 };
 
 export type QueryParameters<T extends QueryParameterSchema> = QueryParameterState<T> & {
-    update: (values: Partial<QueryParameterInput<T>>) => void;
+    update: (values: Partial<QueryParameterInput<T>>, history?: QueryParameterHistory) => void;
 };
 
 export type QueryParameterSchema = Record<string, QueryParameterType>;

@@ -154,6 +154,22 @@ describe('createQueryParameters', () => {
         expect(window.location.search).toBe('?filter=second');
     });
 
+    it('allows a push-history query to replace its current entry explicitly', async () => {
+        // Arrange
+        render(QueryParametersTestHarness);
+        await fireEvent.click(screen.getByRole('button', { name: 'First' }));
+
+        // Act
+        await fireEvent.click(screen.getByRole('button', { name: 'Replace' }));
+        await vi.advanceTimersByTimeAsync(200);
+
+        // Assert
+        expect(navigation.pushState).toHaveBeenCalledOnce();
+        expect(navigation.replaceState).toHaveBeenCalledOnce();
+        expect(navigation.replaceState).toHaveBeenCalledWith('/?filter=replacement', pageState);
+        expect(window.location.search).toBe('?filter=replacement');
+    });
+
     it('keeps a meaningful Back target when a burst returns to its starting URL', async () => {
         // Arrange
         window.history.replaceState({}, '', '/events#details');

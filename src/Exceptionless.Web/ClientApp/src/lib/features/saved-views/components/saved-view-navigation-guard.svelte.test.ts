@@ -161,15 +161,17 @@ describe('SavedViewNavigationGuard', () => {
         await fireEvent.click(await screen.findByRole('button', { name: "Don't save" }));
 
         expect(onDiscard).toHaveBeenCalledOnce();
+        expect(onDiscard).toHaveBeenCalledWith('replace');
         expect(navigation.goto).toHaveBeenCalledWith(destination);
     });
 
     it('preserves browser history traversal after discarding changes', async () => {
         const historyGo = vi.spyOn(history, 'go').mockImplementation(() => undefined);
         const destination = new URL('http://localhost/next/event/previous');
+        const onDiscard = vi.fn();
         render(SavedViewNavigationGuard, {
             isModified: true,
-            onDiscard: vi.fn(),
+            onDiscard,
             onSave: vi.fn(),
             saving: false
         });
@@ -177,6 +179,7 @@ describe('SavedViewNavigationGuard', () => {
         getBeforeNavigation()({ cancel: vi.fn(), delta: -1, to: { url: destination }, type: 'popstate', willUnload: false });
         await fireEvent.click(await screen.findByRole('button', { name: "Don't save" }));
 
+        expect(onDiscard).toHaveBeenCalledWith('replace');
         expect(historyGo).toHaveBeenCalledWith(-1);
         expect(navigation.goto).not.toHaveBeenCalled();
 

@@ -1,4 +1,6 @@
 <script lang="ts">
+    import type { QueryParameterHistory } from '$features/shared/query-params/types.js';
+
     import { beforeNavigate, goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
@@ -7,7 +9,7 @@
 
     interface Props {
         isModified: boolean;
-        onDiscard: () => void;
+        onDiscard: (history?: QueryParameterHistory) => void;
         onSave: () => Promise<boolean>;
         saving: boolean;
     }
@@ -64,7 +66,7 @@
             return;
         }
 
-        onDiscard();
+        onDiscard('replace');
         void resumeNavigation(navigation);
     }
 
