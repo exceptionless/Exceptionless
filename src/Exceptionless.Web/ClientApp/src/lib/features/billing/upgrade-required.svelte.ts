@@ -21,15 +21,12 @@ export const upgradeRequiredDialog = {
     get open() {
         return state.open;
     },
-    set open(value: boolean) {
-        state.open = value;
-    },
     get organizationId() {
         return state.organizationId;
     },
     reset() {
-        state.open = false;
         state.message = '';
+        state.open = false;
         state.organizationId = undefined;
         state.retryCallback = undefined;
     },

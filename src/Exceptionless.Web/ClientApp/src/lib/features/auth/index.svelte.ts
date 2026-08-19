@@ -78,7 +78,10 @@ export async function githubLogin(redirectUrl?: string) {
     await oauthLogin({
         authUrl: 'https://github.com/login/oauth/authorize',
         clientId: gitHubClientId,
-        popupOptions: { height: 618, width: 1020 },
+        popupOptions: {
+            height: 618,
+            width: 1020
+        },
         provider: 'github',
         redirectUrl,
         scope: 'user:email'
@@ -110,7 +113,9 @@ export async function gotoLogin() {
     const url = page.url;
     const isAuthPath = url.pathname.startsWith('/next/login');
     const redirect = url.pathname === resolve('/') || isAuthPath ? resolve('/(auth)/login') : `${resolve('/(auth)/login')}?redirect=${url.pathname}`;
-    await goto(redirect, { replaceState: true });
+    await goto(redirect, {
+        replaceState: true
+    });
 }
 
 export async function liveLogin(redirectUrl?: string) {
@@ -141,7 +146,10 @@ export async function slackOAuthLogin(): Promise<string> {
         extraParams: {
             state: encodeURIComponent(Math.random().toString(36).substring(2))
         },
-        popupOptions: { height: 630, width: 580 },
+        popupOptions: {
+            height: 630,
+            width: 580
+        },
         provider: 'slack',
         scope: 'incoming-webhook'
     });

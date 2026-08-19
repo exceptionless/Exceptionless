@@ -46,7 +46,10 @@
         let refs: { id: string; name: string }[] = [];
         Object.entries(event.data || {}).forEach(([key, value]) => {
             if (key.startsWith(referencePrefix)) {
-                refs.push({ id: value as string, name: key.slice(5) });
+                refs.push({
+                    id: value as string,
+                    name: key.slice(5)
+                });
             }
         });
         return refs;
@@ -91,7 +94,13 @@
                     <Table.Head class="w-40 font-semibold whitespace-nowrap">Reference</Table.Head>
                     <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.ReferenceTrigger changed={filterChanged} value={event.reference_id} /></Table.Cell>
                 {/if}
-                <Table.Cell><A href={resolve('/(app)/event/by-ref/[referenceId]', { referenceId: event.reference_id })}>{event.reference_id}</A></Table.Cell>
+                <Table.Cell
+                    ><A
+                        href={resolve('/(app)/event/by-ref/[referenceId]', {
+                            referenceId: event.reference_id
+                        })}>{event.reference_id}</A
+                    ></Table.Cell
+                >
             </Table.Row>
         {/if}
         {#each references as reference (reference.id)}
@@ -111,7 +120,13 @@
                     <Table.Head class="w-40 font-semibold whitespace-nowrap">{reference.name}</Table.Head>
                     <Table.Cell class="w-4 pr-0"></Table.Cell>
                 {/if}
-                <Table.Cell><A href={resolve('/(app)/event/by-ref/[referenceId]', { referenceId: reference.id })}>{reference.id}</A></Table.Cell>
+                <Table.Cell
+                    ><A
+                        href={resolve('/(app)/event/by-ref/[referenceId]', {
+                            referenceId: reference.id
+                        })}>{reference.id}</A
+                    ></Table.Cell
+                >
             </Table.Row>
         {/each}
         {#if level}

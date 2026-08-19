@@ -6,7 +6,9 @@
     const { Story } = defineMeta({
         argTypes: {
             isOverLimit: {
-                control: { type: 'boolean' },
+                control: {
+                    type: 'boolean'
+                },
                 defaultValue: true
             }
         },
@@ -16,5 +18,15 @@
     });
 </script>
 
-<Story name="Over Limit" args={{ isOverLimit: true }} />
-<Story name="Not Over Limit" args={{ isOverLimit: false }} />
+<Story
+    name="Over Limit"
+    args={{
+        isOverLimit: true
+    }}
+/>
+<Story
+    name="Not Over Limit"
+    args={{
+        isOverLimit: false
+    }}
+/>

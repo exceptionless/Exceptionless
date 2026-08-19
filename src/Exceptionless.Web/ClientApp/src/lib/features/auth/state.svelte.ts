@@ -9,4 +9,6 @@ const authSerializer = {
     }
 };
 
-export const accessToken = new CachedPersistedState<null | string>('satellizer_token', null, { serializer: authSerializer });
+export const accessToken = new CachedPersistedState<null | string>('satellizer_token', null, {
+    serializer: authSerializer
+});

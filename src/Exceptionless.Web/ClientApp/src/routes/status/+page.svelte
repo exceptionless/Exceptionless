@@ -14,7 +14,9 @@
     const healthQuery = getHealthQuery();
     $effect(() => {
         if (healthQuery.isSuccess && redirect) {
-            goto(redirect, { replaceState: true });
+            goto(redirect, {
+                replaceState: true
+            });
         }
     });
 </script>

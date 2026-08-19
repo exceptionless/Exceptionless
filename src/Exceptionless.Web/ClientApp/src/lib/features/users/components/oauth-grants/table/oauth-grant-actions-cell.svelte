@@ -59,7 +59,13 @@
         </AlertDialog.Header>
         <AlertDialog.Footer>
             <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-            <AlertDialog.Action class={buttonVariants({ variant: 'destructive' })} disabled={revokeGrant.isPending} onclick={() => void revokeAccess()}>
+            <AlertDialog.Action
+                class={buttonVariants({
+                    variant: 'destructive'
+                })}
+                disabled={revokeGrant.isPending}
+                onclick={() => void revokeAccess()}
+            >
                 Revoke Access
             </AlertDialog.Action>
         </AlertDialog.Footer>

@@ -29,6 +29,18 @@ public sealed class MigrationRegistrationTests : TestWithServices
     }
 
     [Fact]
+    public void MigrationRegistration_LegacyStripeSuspensionMigration_IsRegisteredAsVersionedAndResumable()
+    {
+        var migration = GetService<IEnumerable<IMigration>>()
+            .DistinctBy(migration => migration.GetType())
+            .SingleOrDefault(migration => migration is MigrateLegacyStripeSuspensionUserId);
+
+        Assert.NotNull(migration);
+        Assert.Equal(MigrationType.VersionedAndResumable, migration.MigrationType);
+        Assert.Equal(7, migration.Version);
+    }
+
+    [Fact]
     public void BackfillParentReferences_UsesNextUnusedVersion()
     {
         var migration = GetService<BackfillParentReferences>();

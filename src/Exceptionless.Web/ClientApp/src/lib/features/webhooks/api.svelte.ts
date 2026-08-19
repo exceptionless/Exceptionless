@@ -9,7 +9,9 @@ import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanst
 export async function invalidateWebhookQueries(queryClient: QueryClient, message: WebSocketMessageValue<'WebhookChanged'>) {
     const { id, organization_id, project_id } = message;
     if (id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.id(id) });
+        await queryClient.invalidateQueries({
+            queryKey: queryKeys.id(id)
+        });
     }
 
     //     if (organization_id) {
@@ -17,11 +19,15 @@ export async function invalidateWebhookQueries(queryClient: QueryClient, message
     //     }
 
     if (project_id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.project(project_id) });
+        await queryClient.invalidateQueries({
+            queryKey: queryKeys.project(project_id)
+        });
     }
 
     if (!id && !organization_id && !project_id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.type });
+        await queryClient.invalidateQueries({
+            queryKey: queryKeys.type
+        });
     }
 }
 
@@ -68,10 +74,18 @@ export function deleteWebhook(request: DeleteWebhookRequest) {
         },
         mutationKey: queryKeys.deleteWebhook(request.route.ids),
         onError: () => {
-            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+            request.route.ids?.forEach((id) =>
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.id(id)
+                })
+            );
         },
         onSuccess: () => {
-            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+            request.route.ids?.forEach((id) =>
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.id(id)
+                })
+            );
         }
     }));
 }
@@ -99,7 +113,12 @@ export function getProjectWebhooksQuery(request: GetProjectWebhooksRequest) {
 
             return response;
         },
-        queryKey: [...queryKeys.project(request.route.projectId), { params: request.params }]
+        queryKey: [
+            ...queryKeys.project(request.route.projectId),
+            {
+                params: request.params
+            }
+        ]
     }));
 }
 
@@ -115,7 +134,9 @@ export function postWebhook() {
         },
         mutationKey: queryKeys.postWebhook(),
         onSuccess: (webhook: Webhook) => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.type });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.type
+            });
             queryClient.setQueryData(queryKeys.id(webhook.id), webhook);
         }
     }));

@@ -33,7 +33,9 @@
         const event = total === 1 ? events[0] : undefined;
         if (event?.id && event.id !== redirectedEventId) {
             redirectedEventId = event.id;
-            void goto(buildEventDetailsHref(event.id), { replaceState: true });
+            void goto(buildEventDetailsHref(event.id), {
+                replaceState: true
+            });
         }
     });
 

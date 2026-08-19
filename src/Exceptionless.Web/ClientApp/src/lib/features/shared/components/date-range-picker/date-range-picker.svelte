@@ -17,13 +17,34 @@
 
     // Simplified quick ranges — just the most commonly used
     const commonRanges = [
-        { label: 'Last 15 minutes', value: '[now-15m TO now]' },
-        { label: 'Last 1 hour', value: '[now-1h TO now]' },
-        { label: 'Last 4 hours', value: '[now-4h TO now]' },
-        { label: 'Last 24 hours', value: '[now-1d TO now]' },
-        { label: 'Last 7 days', value: '[now-7d TO now]' },
-        { label: 'Last 30 days', value: '[now-30d TO now]' },
-        { label: 'Last 90 days', value: '[now-90d TO now]' }
+        {
+            label: 'Last 15 minutes',
+            value: '[now-15m TO now]'
+        },
+        {
+            label: 'Last 1 hour',
+            value: '[now-1h TO now]'
+        },
+        {
+            label: 'Last 4 hours',
+            value: '[now-4h TO now]'
+        },
+        {
+            label: 'Last 24 hours',
+            value: '[now-1d TO now]'
+        },
+        {
+            label: 'Last 7 days',
+            value: '[now-7d TO now]'
+        },
+        {
+            label: 'Last 30 days',
+            value: '[now-30d TO now]'
+        },
+        {
+            label: 'Last 90 days',
+            value: '[now-90d TO now]'
+        }
     ];
 
     let showCustom = $state(false);

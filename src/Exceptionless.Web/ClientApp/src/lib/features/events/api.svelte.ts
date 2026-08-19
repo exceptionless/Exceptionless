@@ -61,19 +61,30 @@ export function createOrganizationEventNotificationRefresher(queryClient: QueryC
 export async function invalidatePersistentEventQueries(queryClient: QueryClient, message: WebSocketMessageValue<'PersistentEventChanged'>) {
     const { id, organization_id, project_id, stack_id } = message;
     if (id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.id(id) });
+        await queryClient.invalidateQueries({
+            queryKey: queryKeys.id(id)
+        });
     }
 
     if (stack_id) {
-        await queryClient.invalidateQueries({ exact: true, queryKey: queryKeys.stacks(stack_id) });
+        await queryClient.invalidateQueries({
+            exact: true,
+            queryKey: queryKeys.stacks(stack_id)
+        });
     }
 
     if (project_id) {
-        await queryClient.invalidateQueries({ exact: true, queryKey: queryKeys.projects(project_id) });
+        await queryClient.invalidateQueries({
+            exact: true,
+            queryKey: queryKeys.projects(project_id)
+        });
     }
 
     if (organization_id) {
-        await queryClient.invalidateQueries({ exact: true, queryKey: queryKeys.organizations(organization_id) });
+        await queryClient.invalidateQueries({
+            exact: true,
+            queryKey: queryKeys.organizations(organization_id)
+        });
     }
 
     if (!id && !stack_id) {
@@ -263,7 +274,11 @@ export interface GetStackEventsRequest {
 
 export function createEventWithNavigationQueryOptions(request: GetEventRequest, queryClient: QueryClient) {
     const eventId = request.route.id;
-    const params = request.params ? { ...request.params } : undefined;
+    const params = request.params
+        ? {
+              ...request.params
+          }
+        : undefined;
 
     return {
         enabled: () => !!accessToken.current && !!eventId,
@@ -272,7 +287,11 @@ export function createEventWithNavigationQueryOptions(request: GetEventRequest, 
             const client = useFetchClient();
             const response = await client.getJSON<PersistentEvent>(`events/${eventId}`, {
                 params: {
-                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                    ...(DEFAULT_OFFSET
+                        ? {
+                              offset: DEFAULT_OFFSET
+                          }
+                        : {}),
                     ...params
                 }
             });
@@ -307,10 +326,18 @@ export function deleteEvent(request: DeleteEventsRequest) {
         },
         mutationKey: queryKeys.deleteEvent(request.route.ids),
         onError: () => {
-            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+            request.route.ids?.forEach((id) =>
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.id(id)
+                })
+            );
         },
         onSuccess: () => {
-            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+            request.route.ids?.forEach((id) =>
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.id(id)
+                })
+            );
             schedulePersistentEventDeleteReconciliation(queryClient);
         }
     }));
@@ -324,7 +351,11 @@ export function getEventQuery(request: GetEventRequest) {
             const client = useFetchClient();
             const response = await client.getJSON<PersistentEvent>(`events/${request.route.id}`, {
                 params: {
-                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                    ...(DEFAULT_OFFSET
+                        ? {
+                              offset: DEFAULT_OFFSET
+                          }
+                        : {}),
                     ...request.params
                 }
             });
@@ -345,7 +376,11 @@ export function getEventsByReferenceQuery(request: GetEventsByReferenceRequest) 
                 : `events/by-ref/${encodeURIComponent(request.route.referenceId ?? '')}`;
             const response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(path, {
                 params: {
-                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                    ...(DEFAULT_OFFSET
+                        ? {
+                              offset: DEFAULT_OFFSET
+                          }
+                        : {}),
                     limit: 20,
                     mode: 'summary',
                     page: 1,
@@ -370,7 +405,11 @@ export function getOrganizationCountQuery(request: GetOrganizationCountRequest) 
 
     return createQuery<CountResult, ProblemDetails>(() => {
         const organizationId = request.route.organizationId;
-        const params = request.params ? { ...request.params } : undefined;
+        const params = request.params
+            ? {
+                  ...request.params
+              }
+            : undefined;
 
         return {
             enabled: () => !!accessToken.current && !!organizationId && (request.enabled?.() ?? true),
@@ -379,7 +418,11 @@ export function getOrganizationCountQuery(request: GetOrganizationCountRequest) 
                 const client = useFetchClient();
                 const response = await client.getJSON<CountResult>(`/organizations/${organizationId}/events/count`, {
                     params: {
-                        ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                        ...(DEFAULT_OFFSET
+                            ? {
+                                  offset: DEFAULT_OFFSET
+                              }
+                            : {}),
                         ...params
                     }
                 });
@@ -395,7 +438,11 @@ export function getOrganizationCountQuery(request: GetOrganizationCountRequest) 
 export function getOrganizationEventsQuery(request: GetOrganizationEventsRequest) {
     return createQuery<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>, ProblemDetails>(() => {
         const organizationId = request.route.organizationId;
-        const params = request.params ? { ...request.params } : undefined;
+        const params = request.params
+            ? {
+                  ...request.params
+              }
+            : undefined;
 
         return {
             enabled: () => !!accessToken.current && !!organizationId && (request.enabled?.() ?? true),
@@ -426,7 +473,11 @@ export function getOrganizationSessionsCountQuery(request: GetOrganizationSessio
             const client = useFetchClient();
             const response = await client.getJSON<CountResult>(`/organizations/${request.route.organizationId}/events/count`, {
                 params: {
-                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                    ...(DEFAULT_OFFSET
+                        ? {
+                              offset: DEFAULT_OFFSET
+                          }
+                        : {}),
                     ...request.params
                 }
             });
@@ -442,7 +493,11 @@ export function getProjectCountQuery(request: GetProjectCountRequest) {
 
     return createQuery<CountResult, ProblemDetails>(() => {
         const projectId = request.route.projectId;
-        const params = request.params ? { ...request.params } : undefined;
+        const params = request.params
+            ? {
+                  ...request.params
+              }
+            : undefined;
 
         return {
             enabled: () => !!accessToken.current && !!projectId,
@@ -451,7 +506,11 @@ export function getProjectCountQuery(request: GetProjectCountRequest) {
                 const client = useFetchClient();
                 const response = await client.getJSON<CountResult>(`/projects/${projectId}/events/count`, {
                     params: {
-                        ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                        ...(DEFAULT_OFFSET
+                            ? {
+                                  offset: DEFAULT_OFFSET
+                              }
+                            : {}),
                         ...params
                     }
                 });
@@ -477,7 +536,11 @@ export function getSessionEventsQuery(request: GetSessionEventsRequest) {
                 : `events/sessions/${request.route.sessionId}`;
             const response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(path, {
                 params: {
-                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                    ...(DEFAULT_OFFSET
+                        ? {
+                              offset: DEFAULT_OFFSET
+                          }
+                        : {}),
                     mode: 'summary',
                     ...request.params
                 }
@@ -499,7 +562,11 @@ export function getStackCountQuery(request: GetStackCountRequest) {
             const client = useFetchClient();
             const response = await client.getJSON<CountResult>('events/count', {
                 params: {
-                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                    ...(DEFAULT_OFFSET
+                        ? {
+                              offset: DEFAULT_OFFSET
+                          }
+                        : {}),
                     ...request.params,
                     filter: request.params?.filter?.includes(`stack:${request.route.stackId}`)
                         ? request.params.filter
@@ -528,7 +595,11 @@ export function getStackEventsQuery(request: GetStackEventsRequest) {
             const client = useFetchClient();
             const response = await client.getJSON<PersistentEvent[]>(`stacks/${request.route.stackId}/events`, {
                 params: {
-                    ...(DEFAULT_OFFSET ? { offset: DEFAULT_OFFSET } : {}),
+                    ...(DEFAULT_OFFSET
+                        ? {
+                              offset: DEFAULT_OFFSET
+                          }
+                        : {}),
                     ...request.params
                 }
             });
@@ -547,15 +618,21 @@ export function schedulePersistentEventDeleteReconciliation(queryClient: QueryCl
         });
 
     eventTarget.dispatchEvent(new Event(PERSISTENT_EVENT_DELETE_RECONCILE_EVENT));
-    void queryClient.invalidateQueries({ queryKey: stackQueryKeys.type });
+    void queryClient.invalidateQueries({
+        queryKey: stackQueryKeys.type
+    });
     setTimeout(() => {
         void invalidateQueryBackedDetails();
-        void queryClient.invalidateQueries({ queryKey: stackQueryKeys.type });
+        void queryClient.invalidateQueries({
+            queryKey: stackQueryKeys.type
+        });
     }, PERSISTENT_EVENT_DELETE_RECONCILE_DELAY);
     setTimeout(() => {
         eventTarget.dispatchEvent(new Event(PERSISTENT_EVENT_DELETE_RECONCILE_EVENT));
         void invalidateQueryBackedDetails();
-        void queryClient.invalidateQueries({ queryKey: stackQueryKeys.type });
+        void queryClient.invalidateQueries({
+            queryKey: stackQueryKeys.type
+        });
     }, PERSISTENT_EVENT_DELETE_RECONCILE_RETRY_DELAY);
 }
 
