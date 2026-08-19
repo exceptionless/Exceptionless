@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Text.Json.Serialization;
 
 namespace Exceptionless.Core.Models.Billing;
 
@@ -15,4 +16,15 @@ public record BillingPlan
     public int MaxEventsPerMonth { get; init; }
     public bool HasPremiumFeatures { get; init; }
     public bool IsHidden { get; init; }
+
+    [JsonIgnore]
+    public AssistantPlanOptions? Assistant { get; init; }
+}
+
+public sealed record AssistantPlanOptions
+{
+    public int MaximumConcurrentTurns { get; init; }
+    public int MaximumTurnsPerMinute { get; init; }
+    public long MaximumMonthlyTokens { get; init; }
+    public decimal MaximumMonthlyCostUsd { get; init; }
 }

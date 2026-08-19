@@ -78,6 +78,10 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.True(projectsPost.TryGetProperty("requestBody", out _));
         AssertResponseCodes(projectsPost, "201");
 
+        Assert.True(paths.TryGetProperty("/api/v2/assistant/chat", out var assistantChatPath));
+        Assert.True(assistantChatPath.TryGetProperty("post", out var assistantChatPost));
+        AssertResponseCodes(assistantChatPost, "200", "400", "401", "403", "404", "426", "429", "503");
+
         Assert.True(paths.TryGetProperty("/api/v2/events/by-ref/{referenceId}/user-description", out var userDescriptionPath));
         Assert.True(userDescriptionPath.TryGetProperty("post", out var userDescriptionPost));
         Assert.True(userDescriptionPost.TryGetProperty("requestBody", out _));
@@ -109,6 +113,17 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         var requirement = Assert.Single(security.EnumerateArray());
         Assert.True(requirement.TryGetProperty("Bearer", out var scopes));
         Assert.Empty(scopes.EnumerateArray());
+        var changeStackStatusPost = paths.GetProperty("/api/v2/stacks/{ids}/change-status").GetProperty("post");
+        var statusParameter = changeStackStatusPost.GetProperty("parameters").EnumerateArray()
+            .Single(parameter => String.Equals(parameter.GetProperty("name").GetString(), "status", StringComparison.Ordinal));
+        Assert.Equal("#/components/schemas/StackStatus", statusParameter.GetProperty("schema").GetProperty("$ref").GetString());
+        AssertResponseCodes(changeStackStatusPost, "200", "404", "422");
+        var validationProblemSchema = changeStackStatusPost.GetProperty("responses")
+            .GetProperty("422")
+            .GetProperty("content")
+            .GetProperty("application/problem+json")
+            .GetProperty("schema");
+        Assert.Equal("#/components/schemas/HttpValidationProblemDetails", validationProblemSchema.GetProperty("$ref").GetString());
     }
 
     [Fact]
@@ -131,6 +146,7 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.True(schemas.TryGetProperty("ViewOrganization", out _));
 
         var savedViewColumnProperties = savedViewColumnSettings.GetProperty("properties");
+        Assert.Equal("boolean", savedViewColumnProperties.GetProperty("auto_fill").GetProperty("type")[1].GetString());
         var position = savedViewColumnProperties.GetProperty("position");
         Assert.Equal(0, position.GetProperty("minimum").GetInt32());
         Assert.Equal(SavedViewColumnSettings.MaxPosition, position.GetProperty("maximum").GetInt32());

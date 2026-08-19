@@ -38,15 +38,25 @@ export function getColumns(onTagClick?: (tag: string) => void): ColumnDef<StockF
                     class: 'translate-y-[2px]',
                     disabled: !props.row.getCanSelect(),
                     indeterminate: props.row.getIsSomeSelected(),
-                    onCheckedChange: (checked: 'indeterminate' | boolean) => props.row.getToggleSelectedHandler()({ target: { checked } })
+                    onCheckedChange: (checked: 'indeterminate' | boolean) =>
+                        props.row.getToggleSelectedHandler()({
+                            target: {
+                                checked
+                            }
+                        })
                 }),
             enableHiding: false,
             enableSorting: false,
             header: ({ table }) =>
                 renderComponent(Checkbox, {
                     checked: table.getIsAllRowsSelected(),
-                    indeterminate: table.getIsSomeRowsSelected(),
-                    onCheckedChange: (checked: 'indeterminate' | boolean) => table.getToggleAllRowsSelectedHandler()({ target: { checked } })
+                    indeterminate: table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected(),
+                    onCheckedChange: (checked: 'indeterminate' | boolean) =>
+                        table.getToggleAllRowsSelectedHandler()({
+                            target: {
+                                checked
+                            }
+                        })
                 }),
             id: 'select',
             meta: {
@@ -61,7 +71,10 @@ export function getColumns(onTagClick?: (tag: string) => void): ColumnDef<StockF
         },
         {
             accessorKey: nameof<Stack>('status'),
-            cell: (prop) => renderComponent(StackStatusCell, { value: prop.getValue<Stack['status']>() }),
+            cell: (prop) =>
+                renderComponent(StackStatusCell, {
+                    value: prop.getValue<Stack['status']>()
+                }),
             header: 'Status',
             id: 'status',
             meta: {
@@ -70,7 +83,10 @@ export function getColumns(onTagClick?: (tag: string) => void): ColumnDef<StockF
         },
         {
             accessorKey: nameof<Stack>('type'),
-            cell: (prop) => renderComponent(StackTypeBadge, { value: prop.getValue<string>() }),
+            cell: (prop) =>
+                renderComponent(StackTypeBadge, {
+                    value: prop.getValue<string>()
+                }),
             header: 'Type',
             id: 'type',
             meta: {
@@ -79,7 +95,10 @@ export function getColumns(onTagClick?: (tag: string) => void): ColumnDef<StockF
         },
         {
             accessorKey: nameof<Stack>('occurrences_are_critical'),
-            cell: (prop) => renderComponent(StackCriticalCell, { isCritical: prop.getValue<boolean>() }),
+            cell: (prop) =>
+                renderComponent(StackCriticalCell, {
+                    isCritical: prop.getValue<boolean>()
+                }),
             header: 'Critical',
             id: 'critical',
             meta: {
@@ -88,7 +107,11 @@ export function getColumns(onTagClick?: (tag: string) => void): ColumnDef<StockF
         },
         {
             accessorKey: nameof<Stack>('tags'),
-            cell: (prop) => renderComponent(StackTagsCell, { onTagClick, tags: prop.getValue<string[]>() }),
+            cell: (prop) =>
+                renderComponent(StackTagsCell, {
+                    onTagClick,
+                    tags: prop.getValue<string[]>()
+                }),
             header: 'Tags',
             id: 'tags',
             meta: {
@@ -97,7 +120,10 @@ export function getColumns(onTagClick?: (tag: string) => void): ColumnDef<StockF
         },
         {
             accessorKey: nameof<Stack>('total_occurrences'),
-            cell: (prop) => renderComponent(NumberFormatter, { value: prop.getValue<number>() }),
+            cell: (prop) =>
+                renderComponent(NumberFormatter, {
+                    value: prop.getValue<number>()
+                }),
             header: 'Events',
             id: 'events',
             meta: {
@@ -106,7 +132,10 @@ export function getColumns(onTagClick?: (tag: string) => void): ColumnDef<StockF
         },
         {
             accessorKey: nameof<Stack>('first_occurrence'),
-            cell: (prop) => renderComponent(TimeAgo, { value: prop.getValue<string>() }),
+            cell: (prop) =>
+                renderComponent(TimeAgo, {
+                    value: prop.getValue<string>()
+                }),
             header: 'First',
             id: 'first',
             meta: {
@@ -115,7 +144,10 @@ export function getColumns(onTagClick?: (tag: string) => void): ColumnDef<StockF
         },
         {
             accessorKey: nameof<Stack>('last_occurrence'),
-            cell: (prop) => renderComponent(TimeAgo, { value: prop.getValue<string>() }),
+            cell: (prop) =>
+                renderComponent(TimeAgo, {
+                    value: prop.getValue<string>()
+                }),
             header: 'Last',
             id: 'last',
             meta: {

@@ -1,4 +1,5 @@
-﻿using Elastic.Clients.Elasticsearch.IndexManagement;
+﻿using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.IndexManagement;
 using Elastic.Clients.Elasticsearch.Mapping;
 using Exceptionless.Core.Models;
 using Foundatio.Parsers.ElasticQueries.Extensions;
@@ -12,7 +13,7 @@ public sealed class OrganizationIndex : VersionedIndex<Organization>
     private const string KEYWORD_LOWERCASE_ANALYZER = "keyword_lowercase";
     private readonly ExceptionlessElasticConfiguration _configuration;
 
-    public OrganizationIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "organizations", 2)
+    public OrganizationIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "organizations", 3)
     {
         _configuration = configuration;
     }
@@ -39,6 +40,25 @@ public sealed class OrganizationIndex : VersionedIndex<Organization>
                     .Text("email_address", t => t.Analyzer(KEYWORD_LOWERCASE_ANALYZER))))
                 .Date(e => e.LastEventDateUtc)
                 .Date(e => e.LastAppliedUsageBucketUtc)
+                .Object(e => e.AssistantUsage, usage => usage.Properties(new Properties
+                {
+                    [new PropertyName((AssistantUsageInfo e) => e.Date)] = new DateProperty(),
+                    [new PropertyName((AssistantUsageInfo e) => e.PlanId!)] = new KeywordProperty(),
+                    [new PropertyName((AssistantUsageInfo e) => e.Turns)] = new LongNumberProperty(),
+                    [new PropertyName((AssistantUsageInfo e) => e.Completed)] = new LongNumberProperty(),
+                    [new PropertyName((AssistantUsageInfo e) => e.Failed)] = new LongNumberProperty(),
+                    [new PropertyName((AssistantUsageInfo e) => e.Cancelled)] = new LongNumberProperty(),
+                    [new PropertyName((AssistantUsageInfo e) => e.ProviderRequests)] = new LongNumberProperty(),
+                    [new PropertyName((AssistantUsageInfo e) => e.ToolCalls)] = new LongNumberProperty(),
+                    [new PropertyName((AssistantUsageInfo e) => e.PromptTokens)] = new LongNumberProperty(),
+                    [new PropertyName((AssistantUsageInfo e) => e.CompletionTokens)] = new LongNumberProperty(),
+                    [new PropertyName((AssistantUsageInfo e) => e.CostInMicrodollars)] = new LongNumberProperty(),
+                    [new PropertyName((AssistantUsageInfo e) => e.BlockedByConcurrency)] = new LongNumberProperty(),
+                    [new PropertyName((AssistantUsageInfo e) => e.BlockedByRateLimit)] = new LongNumberProperty(),
+                    [new PropertyName((AssistantUsageInfo e) => e.BlockedByTokenLimit)] = new LongNumberProperty(),
+                    [new PropertyName((AssistantUsageInfo e) => e.BlockedByCostLimit)] = new LongNumberProperty(),
+                    [new PropertyName((AssistantUsageInfo e) => e.LastUsedUtc)] = new DateProperty()
+                 }))
                 .AddUsageMappings());
     }
 

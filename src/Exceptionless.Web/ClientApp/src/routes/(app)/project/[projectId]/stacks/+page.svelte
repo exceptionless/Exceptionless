@@ -32,16 +32,14 @@
     import { describeStackFilter, isStackFilterSupported, splitSupportedStackFilters } from '$features/stacks/stack-filter-support';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_LIMIT } from '$shared/api/api.svelte';
-    import { useQueryClient } from '@tanstack/svelte-query';
+    import { createQueryParameters } from '$shared/query-params';
     import { createTable } from '@tanstack/svelte-table';
-    import { queryParamsState } from 'kit-query-params';
     import { useEventListener, watch } from 'runed';
     import { toast } from 'svelte-sonner';
 
     import { getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../../../redirect-to-events.svelte';
 
     const projectId = $derived(page.params.projectId);
-    const queryClient = useQueryClient();
     let selectedStackId = $state<string>();
 
     const DEFAULT_PARAMS = {
@@ -58,9 +56,9 @@
     }
 
     updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
-    const queryParams = queryParamsState({
-        default: DEFAULT_PARAMS,
-        pushHistory: true,
+    const queryParams = createQueryParameters({
+        defaults: DEFAULT_PARAMS,
+        history: 'push',
         schema: {
             filter: 'string',
             limit: 'number',
@@ -74,10 +72,12 @@
         () => {
             selectedStackId = undefined;
             updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
-            Object.assign(queryParams, DEFAULT_PARAMS);
+            queryParams.update(DEFAULT_PARAMS);
             reset();
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     function normalizeStackKeywordFilters(nextFilters: FacetedFilter.IFilter[]): FacetedFilter.IFilter[] {
@@ -127,7 +127,9 @@
         ([filter]) => {
             filters = sanitizeStackFilters(getFiltersFromCache(filterCacheKey(filter), filter), true);
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     $effect(() => {
@@ -213,7 +215,10 @@
     });
 
     function rowHref(row: Stack): string {
-        return resolve('/(app)/project/[projectId]/stacks/[stackId]', { projectId: projectId ?? '', stackId: row.id });
+        return resolve('/(app)/project/[projectId]/stacks/[stackId]', {
+            projectId: projectId ?? '',
+            stackId: row.id
+        });
     }
 
     function rowClick(row: Stack): void {
@@ -248,7 +253,11 @@
         await stacksQuery.refetch();
     }
 
-    async function onStackChanged(message: WebSocketMessageValue<'StackChanged'>) {
+    function onStackChanged(message: WebSocketMessageValue<'StackChanged'>) {
+        if ((message.organization_id && message.organization_id !== organization.current) || (message.project_id && message.project_id !== projectId)) {
+            return;
+        }
+
         if (message.id && message.change_type === ChangeType.Removed) {
             if (message.id === selectedStackId) {
                 selectedStackId = undefined;
@@ -256,11 +265,9 @@
 
             removeTableSelection(table, message.id);
         }
-
-        await queryClient.invalidateQueries({ queryKey: ['Stack', 'project', projectId] });
     }
 
-    useEventListener(document, 'StackChanged', async (event) => await onStackChanged((event as CustomEvent).detail));
+    useEventListener(document, 'StackChanged', (event) => onStackChanged((event as CustomEvent).detail));
 </script>
 
 <div class="flex flex-col">
@@ -299,7 +306,7 @@
 </div>
 
 <StackDetailSheet
-    stackId={selectedStackId}
+    bind:stackId={selectedStackId}
     filterChanged={handleStackFilterChanged}
     onClose={() => {
         selectedStackId = undefined;

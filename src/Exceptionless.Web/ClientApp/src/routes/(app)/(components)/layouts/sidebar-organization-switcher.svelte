@@ -24,6 +24,7 @@
 
     type Props = HTMLAttributes<HTMLUListElement> & {
         currentOrganizationId: string | undefined;
+        impersonateDialogOpen?: boolean;
         impersonatedOrganization: undefined | ViewOrganization;
         isGlobalAdmin: boolean;
         isLoading: boolean;
@@ -34,6 +35,7 @@
     let {
         class: className,
         currentOrganizationId = $bindable(),
+        impersonateDialogOpen = $bindable(false),
         impersonatedOrganization,
         isGlobalAdmin,
         isLoading,
@@ -46,7 +48,6 @@
     const isImpersonating = $derived(!!impersonatedOrganization);
     const useSingleOrganizationShortcut = $derived(!isGlobalAdmin && !isImpersonating && organizations.length === 1 && !!activeOrganization?.id);
     let menuContentElement = $state<HTMLElement | null>(null);
-    let openImpersonateDialog = $state(false);
 
     $effect(() => {
         if (open) {
@@ -97,13 +98,18 @@
                 <Sidebar.MenuButton
                     size="lg"
                     class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                    onclick={() => void navigateTo(resolve('/(app)/organization/[organizationId]/manage', { organizationId: activeOrganization.id }))}
+                    onclick={() =>
+                        void navigateTo(
+                            resolve('/(app)/organization/[organizationId]/manage', {
+                                organizationId: activeOrganization.id
+                            })
+                        )}
                 >
-                    <Avatar.Root class="size-8 rounded-lg border" title="Organization Icon">
+                    <Avatar.Root class="size-8" shape="square" title="Organization Icon">
                         {#if activeOrganization.icon_url}
                             <Avatar.Image alt={`${activeOrganization.name} icon`} src={activeOrganization.icon_url} />
                         {/if}
-                        <Avatar.Fallback class="rounded-lg">{getInitials(activeOrganization.name)}</Avatar.Fallback>
+                        <Avatar.Fallback>{getInitials(activeOrganization.name)}</Avatar.Fallback>
                     </Avatar.Root>
                     <div class="grid flex-1 text-left text-sm leading-tight">
                         <span class="truncate font-semibold">Organization</span>
@@ -123,13 +129,11 @@
                                     isImpersonating && 'bg-violet-100 dark:bg-violet-900/30'
                                 ]}
                             >
-                                <Avatar.Root class={['size-8 rounded-lg border', isImpersonating && 'border-violet-500']} title="Organization Avatar">
+                                <Avatar.Root class={['size-8', isImpersonating && 'after:border-violet-500']} shape="square" title="Organization Avatar">
                                     {#if activeOrganization?.icon_url}
                                         <Avatar.Image alt={`${activeOrganization.name} icon`} src={activeOrganization.icon_url} />
                                     {/if}
-                                    <Avatar.Fallback
-                                        class={['rounded-lg', isImpersonating && 'bg-violet-200 text-violet-900 dark:bg-violet-800 dark:text-violet-100']}
-                                    >
+                                    <Avatar.Fallback class={[isImpersonating && 'bg-violet-200 text-violet-900 dark:bg-violet-800 dark:text-violet-100']}>
                                         {getInitials(activeOrganization?.name ?? '?')}
                                     </Avatar.Fallback>
                                 </Avatar.Root>
@@ -164,11 +168,11 @@
                                     data-current-organization={organization.id === currentOrganizationId && !isImpersonating ? 'true' : undefined}
                                     class="gap-2 p-2"
                                 >
-                                    <Avatar.Root class="size-6 rounded-lg border" title={organization.name}>
+                                    <Avatar.Root class="size-6" shape="square" title={organization.name}>
                                         {#if organization.icon_url}
                                             <Avatar.Image alt={`${organization.name} icon`} src={organization.icon_url} />
                                         {/if}
-                                        <Avatar.Fallback class="rounded-lg">{getInitials(organization.name)}</Avatar.Fallback>
+                                        <Avatar.Fallback>{getInitials(organization.name)}</Avatar.Fallback>
                                     </Avatar.Root>
                                     {organization.name}
                                 </DropdownMenu.Item>
@@ -185,7 +189,11 @@
                         {#if activeOrganization?.id}
                             <DropdownMenu.Item
                                 onSelect={() =>
-                                    void navigateTo(resolve('/(app)/organization/[organizationId]/manage', { organizationId: activeOrganization.id }))}
+                                    void navigateTo(
+                                        resolve('/(app)/organization/[organizationId]/manage', {
+                                            organizationId: activeOrganization.id
+                                        })
+                                    )}
                             >
                                 <div class="bg-background flex size-6 items-center justify-center rounded-md border">
                                     <Settings class="size-4" aria-hidden="true" />
@@ -218,7 +226,7 @@
                                     <span class="font-medium">Stop Impersonating</span>
                                 </DropdownMenu.Item>
                             {:else}
-                                <DropdownMenu.Item onSelect={() => (openImpersonateDialog = true)} class="gap-2 p-2">
+                                <DropdownMenu.Item onSelect={() => (impersonateDialogOpen = true)} class="gap-2 p-2">
                                     <div class="bg-background flex size-6 items-center justify-center rounded-md border">
                                         <Eye class="size-4" aria-hidden="true" />
                                     </div>
@@ -247,9 +255,9 @@
     </DelayedRender>
 {/if}
 
-{#if openImpersonateDialog}
+{#if impersonateDialogOpen}
     <ImpersonateOrganizationDialog
-        bind:open={openImpersonateDialog}
+        bind:open={impersonateDialogOpen}
         impersonateOrganization={handleImpersonate}
         userOrganizationIds={organizations.map((o) => o.id)}
     />

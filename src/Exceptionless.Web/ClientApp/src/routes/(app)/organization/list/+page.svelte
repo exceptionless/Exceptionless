@@ -14,17 +14,17 @@
     import { organization } from '$features/organizations/context.svelte';
     import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
     import { ORGANIZATION_USAGE_REFETCH_INTERVAL_MS } from '$features/organizations/utils';
+    import { createQueryParameters } from '$shared/query-params';
     import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
-    import { queryParamsState } from 'kit-query-params';
 
     const DEFAULT_PARAMS = {
         filter: ''
     };
 
-    const queryParams = queryParamsState({
-        default: DEFAULT_PARAMS,
-        pushHistory: true,
+    const queryParams = createQueryParameters({
+        defaults: DEFAULT_PARAMS,
+        history: 'push',
         schema: {
             filter: 'string'
         }
@@ -52,12 +52,18 @@
     async function rowClick(org: ViewOrganization) {
         if (org.id) {
             organization.current = org.id;
-            await goto(resolve('/(app)/organization/[organizationId]/manage', { organizationId: org.id }));
+            await goto(
+                resolve('/(app)/organization/[organizationId]/manage', {
+                    organizationId: org.id
+                })
+            );
         }
     }
 
     function rowHref(org: ViewOrganization): string {
-        return resolve('/(app)/organization/[organizationId]/manage', { organizationId: org.id });
+        return resolve('/(app)/organization/[organizationId]/manage', {
+            organizationId: org.id
+        });
     }
 
     async function addOrganization() {

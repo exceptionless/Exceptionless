@@ -219,6 +219,7 @@ public class Bootstrapper
         services.AddSingleton<SourceMapService>();
         services.AddSingleton<OAuthService>();
         services.AddSingleton<UsageService>();
+        services.AddSingleton<IAssistantUsageRecorder>(provider => provider.GetRequiredService<UsageService>());
         services.AddSingleton<SlackService>();
         services.AddSingleton<StackService>();
         services.AddSingleton<IngestionSideEffectExecutor>();

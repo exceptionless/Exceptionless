@@ -33,25 +33,37 @@ export function getColumns(): ColumnDef<StockFeatures, MigrationStateRow, unknow
         },
         {
             accessorKey: 'migration_type',
-            cell: (info) => renderComponent(MigrationTypeCell, { value: info.getValue() as number }),
+            cell: (info) =>
+                renderComponent(MigrationTypeCell, {
+                    value: info.getValue() as number
+                }),
             enableSorting: true,
             header: 'Type'
         },
         {
             accessorKey: 'status',
-            cell: (info) => renderComponent(MigrationStatusCell, { status: info.getValue() as MigrationStatus }),
+            cell: (info) =>
+                renderComponent(MigrationStatusCell, {
+                    status: info.getValue() as MigrationStatus
+                }),
             enableSorting: true,
             header: 'Status'
         },
         {
             accessorKey: 'started_utc',
-            cell: (info) => renderComponent(DateTime, { value: (info.getValue() as null | string) ?? undefined }),
+            cell: (info) =>
+                renderComponent(DateTime, {
+                    value: (info.getValue() as null | string) ?? undefined
+                }),
             enableSorting: true,
             header: 'Started'
         },
         {
             accessorKey: 'completed_utc',
-            cell: (info) => renderComponent(DateTime, { value: (info.getValue() as null | string) ?? undefined }),
+            cell: (info) =>
+                renderComponent(DateTime, {
+                    value: (info.getValue() as null | string) ?? undefined
+                }),
             enableSorting: true,
             header: 'Completed'
         },
@@ -67,7 +79,10 @@ export function getColumns(): ColumnDef<StockFeatures, MigrationStateRow, unknow
         },
         {
             accessorKey: 'error_message',
-            cell: (info) => renderComponent(MigrationErrorCell, { value: info.getValue() as null | string | undefined }),
+            cell: (info) =>
+                renderComponent(MigrationErrorCell, {
+                    value: info.getValue() as null | string | undefined
+                }),
             enableSorting: false,
             header: 'Error',
             meta: {
@@ -88,7 +103,12 @@ export function getTableOptions(queryParameters: TableMemoryPagingParameters, ge
                 ...withClientSortedRowModel(options),
                 getRowId: (row) => row.id,
                 initialState: {
-                    sorting: [{ desc: true, id: 'version' }]
+                    sorting: [
+                        {
+                            desc: true,
+                            id: 'version'
+                        }
+                    ]
                 },
                 manualSorting: false
             };

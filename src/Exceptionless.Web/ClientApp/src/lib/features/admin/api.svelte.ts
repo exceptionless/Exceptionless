@@ -2,6 +2,7 @@ import { type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 
 import type {
+    AdminAssistantUsage,
     AdminStats,
     ElasticsearchInfo,
     ElasticsearchSnapshotsResponse,
@@ -19,6 +20,7 @@ export type RunMaintenanceJobParams = {
 };
 
 export const queryKeys = {
+    assistantUsage: (month: string) => ['admin', 'assistant-usage', month] as const,
     elasticsearch: ['admin', 'elasticsearch'] as const,
     migrations: ['admin', 'migrations'] as const,
     oauthApplications: ['admin', 'oauth-applications'] as const,
@@ -39,8 +41,33 @@ export function deleteOAuthApplicationMutation() {
             }
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.oauthApplications });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.oauthApplications
+            });
         }
+    }));
+}
+
+export function getAdminAssistantUsageQuery(month: () => string) {
+    return createQuery<AdminAssistantUsage, ProblemDetails>(() => ({
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<AdminAssistantUsage>('admin/assistant-usage', {
+                params: {
+                    limit: 500,
+                    month: `${month()}-01`
+                },
+                signal
+            });
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+
+            return response.data!;
+        },
+        queryKey: queryKeys.assistantUsage(month()),
+        staleTime: 60 * 1000
     }));
 }
 
@@ -173,7 +200,9 @@ export function postOAuthApplicationMutation() {
             return response.data!;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.oauthApplications });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.oauthApplications
+            });
         }
     }));
 }
@@ -193,7 +222,9 @@ export function putOAuthApplicationMutation() {
             return response.data!;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.oauthApplications });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.oauthApplications
+            });
         }
     }));
 }

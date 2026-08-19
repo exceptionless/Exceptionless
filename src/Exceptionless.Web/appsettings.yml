@@ -29,6 +29,11 @@ Serilog:
   - WithMachineName
   - WithThreadId
 
+Assistant:
+  Endpoint: https://openrouter.ai/api/v1/chat/completions
+  Model: "~deepseek/deepseek-v4-flash-latest"
+  ApiKey:
+
 Apm:
   ServiceName: exceptionless
   EnableLogs: true
