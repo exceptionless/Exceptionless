@@ -1,6 +1,6 @@
-import type { ViewOrganization } from './models';
-
 import { isSameUtcMonth } from '$features/shared/dates';
+
+import type { ViewOrganization } from './models';
 
 export function getEffectiveEventLimit(organization?: ViewOrganization): number {
     if (organization?.max_events_per_month == null || organization.max_events_per_month <= 0) {

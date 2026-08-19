@@ -44,23 +44,34 @@
     });
 
     const form = createForm(() => ({
-        defaultValues: { type: initialType, value: initialValue } as ProjectBudgetCardFormData,
+        defaultValues: {
+            type: initialType,
+            value: initialValue
+        } as ProjectBudgetCardFormData,
         validators: {
             onSubmit: ProjectBudgetCardSchema,
             onSubmitAsync: async ({ value }) => {
                 if (value.type === 'percent' && organizationLimit < 0) {
-                    return { form: 'Percentage limits require a finite organization allowance.' };
+                    return {
+                        form: 'Percentage limits require a finite organization allowance.'
+                    };
                 }
 
                 const ingestLimit = createProjectIngestLimit(value.type, value.value);
 
                 try {
-                    await update.mutateAsync({ ingest_limit: ingestLimit });
+                    await update.mutateAsync({
+                        ingest_limit: ingestLimit
+                    });
                     toast.success('Project event budget saved.');
                     return null;
                 } catch (error: unknown) {
                     toast.error('Unable to save the project event budget.');
-                    return error instanceof ProblemDetails ? problemDetailsToFormErrors(error) : { form: 'An unexpected error occurred.' };
+                    return error instanceof ProblemDetails
+                        ? problemDetailsToFormErrors(error)
+                        : {
+                              form: 'An unexpected error occurred.'
+                          };
                 }
             }
         }

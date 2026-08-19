@@ -39,18 +39,29 @@
             onSubmit: BudgetAlertCardSchema,
             onSubmitAsync: async ({ value }) => {
                 if (value.enabled && isUnlimited) {
-                    return { form: 'Budget alerts require a finite monthly event allowance.' };
+                    return {
+                        form: 'Budget alerts require a finite monthly event allowance.'
+                    };
                 }
 
                 const thresholds = parseBudgetThresholds(value.thresholds);
 
                 try {
-                    await update.mutateAsync({ budget_alert_settings: { enabled: value.enabled, thresholds } });
+                    await update.mutateAsync({
+                        budget_alert_settings: {
+                            enabled: value.enabled,
+                            thresholds
+                        }
+                    });
                     toast.success('Budget alert settings saved.');
                     return null;
                 } catch (error: unknown) {
                     toast.error('Unable to save budget alert settings.');
-                    return error instanceof ProblemDetails ? problemDetailsToFormErrors(error) : { form: 'An unexpected error occurred.' };
+                    return error instanceof ProblemDetails
+                        ? problemDetailsToFormErrors(error)
+                        : {
+                              form: 'An unexpected error occurred.'
+                          };
                 }
             }
         }
@@ -58,7 +69,9 @@
 
     async function clearSettings() {
         try {
-            await update.mutateAsync({ budget_alert_settings: null });
+            await update.mutateAsync({
+                budget_alert_settings: null
+            });
             form.setFieldValue('enabled', false);
             form.setFieldValue('thresholds', '50, 80');
             toast.success('Budget alert settings cleared.');
