@@ -21,7 +21,11 @@ test('operator can manage project API keys and follow first-event redirect', asy
     });
 
     await test.step('redirect to project Events when the first event arrives', async () => {
+        const pushConnection = page.waitForResponse(
+            (response) => response.request().method() === 'GET' && response.url().includes('/api/v2/push') && response.status() === 200
+        );
         await page.goto(`/next/project/${e2eScenario.projectId}/configure?redirect=true&type=bash`);
+        await pushConnection;
         await expect(page.getByText('Waiting for your first event')).toBeVisible();
         await expect(page.getByText(e2eScenario.projectToken, { exact: false }).first()).toBeVisible();
 
