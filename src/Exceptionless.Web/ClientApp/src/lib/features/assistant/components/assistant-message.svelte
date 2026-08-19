@@ -19,10 +19,21 @@
         onFeedback?: (feedback: AssistantFeedback | undefined) => void;
         onRegenerate?: () => Promise<void> | void;
         onSuggestedAction?: (action: AssistantSuggestedAction) => void;
+        showToolCalls?: boolean;
         suggestionsDisabled?: boolean;
     }
 
-    let { isLast = false, isStreaming = false, message, onFeedback, onRegenerate, onSuggestedAction, suggestionsDisabled = false }: Props = $props();
+    let {
+        isLast = false,
+        isStreaming = false,
+        message,
+        onFeedback,
+        onRegenerate,
+        onSuggestedAction,
+        showToolCalls = false,
+        suggestionsDisabled = false
+    }: Props = $props();
+    let hasHiddenRunningTool = $derived(!showToolCalls && message.tools.some((tool) => tool.status === 'running'));
     let renderedContent = $derived(isStreaming ? message.content : addAssistantResourceLinks(message.content, message.tools));
 </script>
 
@@ -37,9 +48,11 @@
             <Bot aria-hidden="true" class="size-4" />
         </div>
         <div class="min-w-0 flex-1">
-            {#each message.tools as tool (tool.id)}
-                <AssistantToolActivity {tool} />
-            {/each}
+            {#if showToolCalls}
+                {#each message.tools as tool (tool.id)}
+                    <AssistantToolActivity {tool} />
+                {/each}
+            {/if}
 
             {#if message.content}
                 <Response
@@ -49,7 +62,9 @@
                     mode={isStreaming ? 'streaming' : 'static'}
                     urlTransform={normalizeAssistantUrl}
                 />
-            {:else if isStreaming}
+            {/if}
+
+            {#if isStreaming && (!message.content || hasHiddenRunningTool)}
                 <div class="text-muted-foreground flex items-center gap-2 py-1 text-sm"><Spinner /> Exie is thinking…</div>
             {/if}
 
