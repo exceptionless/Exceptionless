@@ -46,6 +46,7 @@ public static class ElasticsearchBuilderExtensions
               tags: null,
               timeout: null));
 
+#pragma warning disable CS0618 // Preserve the manifest connection-string representation until Aspire provides a compatible replacement for custom container resources.
         return builder.AddResource(elasticsearch)
             .WithImage(ElasticsearchContainerImageTags.Image, ElasticsearchContainerImageTags.Tag)
             .WithImageRegistry(ElasticsearchContainerImageTags.ElasticsearchRegistry)
@@ -58,6 +59,7 @@ public static class ElasticsearchBuilderExtensions
             .WithEnvironment("ES_JAVA_OPTS", "-Xms1g -Xmx1g")
             .WithHealthCheck(healthCheckKey)
             .PublishAsConnectionString();
+#pragma warning restore CS0618
     }
 
     public static IResourceBuilder<ElasticsearchResource> WithKibana(this IResourceBuilder<ElasticsearchResource> builder, Action<IResourceBuilder<KibanaResource>>? configureContainer = null, string? containerName = null)

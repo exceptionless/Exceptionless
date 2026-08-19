@@ -62,7 +62,7 @@ var mail = builder.AddContainer("Mail", "axllent/mailpit")
     .WithImageTag("v1.27.10")
     .WithEndpointProxySupport(false)
     .WithHttpEndpoint(port: 8026, targetPort: 8025, name: "http")
-    .WithUrlForEndpoint("http", u => { u.DisplayText = "Mail"; u.DisplayOrder = 100; })
+    .WithUrlForEndpoint("http", u => { u.DisplayText = "Mail"; SetDisplayOrder(u, 100); })
     .WithHttpHealthCheck("/readyz")
     .WithEndpoint(targetPort: 1025, port: 1026)
     .WithUrlForEndpoint("tcp", u => u.DisplayLocation = UrlDisplayLocation.DetailsOnly);
@@ -115,7 +115,7 @@ if (!servicesOnly)
         .WaitFor(cache)
         .WaitFor(mail)
         .WithExternalHttpEndpoints()
-        .WithUrlForEndpoint("https", u => { u.DisplayText = "Open API"; u.DisplayOrder = 100; })
+        .WithUrlForEndpoint("https", u => { u.DisplayText = "Open API"; SetDisplayOrder(u, 100); })
         .WithUrlForEndpoint("http", u => u.DisplayLocation = UrlDisplayLocation.DetailsOnly)
         .WithHttpHealthCheck("/health");
 
@@ -178,7 +178,7 @@ if (!servicesOnly)
         .WithUrlForEndpoint("https", u =>
         {
             u.DisplayText = "Open App (Old)";
-            u.DisplayOrder = 100;
+            SetDisplayOrder(u, 100);
         })
         .WithParentRelationship(api);
 
@@ -206,7 +206,7 @@ if (!servicesOnly)
         .WithUrlForEndpoint("http", u =>
         {
             u.DisplayText = "Open App";
-            u.DisplayOrder = 100;
+            SetDisplayOrder(u, 100);
             u.Url = $"{u.Url.TrimEnd('/')}/next/";
         })
         .WithParentRelationship(api);
@@ -232,7 +232,7 @@ if (!servicesOnly)
             .WithUrlForEndpoint("http", u =>
             {
                 u.DisplayText = "Open Docs";
-                u.DisplayOrder = 100;
+                SetDisplayOrder(u, 100);
             })
             .WithParentRelationship(api);
     }
@@ -242,3 +242,10 @@ if (!servicesOnly)
 await builder.Build().RunAsync();
 
 bool HasArgument(string name) => args.Any(arg => StringComparer.OrdinalIgnoreCase.Equals(arg, name) || StringComparer.OrdinalIgnoreCase.Equals(arg, name.TrimStart('-')));
+
+static void SetDisplayOrder(ResourceUrlAnnotation annotation, int displayOrder)
+{
+#pragma warning disable CS0618 // Aspire 13.5 temporarily obsoletes this field and plans to restore it as a property.
+    annotation.DisplayOrder = displayOrder;
+#pragma warning restore CS0618
+}
