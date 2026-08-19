@@ -13,10 +13,22 @@
     let { status }: Props = $props();
 
     const styles = {
-        Completed: { colorClass: 'text-muted-foreground', icon: CheckCircle2 },
-        Failed: { colorClass: 'text-destructive', icon: XCircle },
-        Pending: { colorClass: 'text-amber-500', icon: Clock },
-        Running: { colorClass: 'text-blue-500', icon: Loader }
+        Completed: {
+            colorClass: 'text-muted-foreground',
+            icon: CheckCircle2
+        },
+        Failed: {
+            colorClass: 'text-destructive',
+            icon: XCircle
+        },
+        Pending: {
+            colorClass: 'text-amber-500',
+            icon: Clock
+        },
+        Running: {
+            colorClass: 'text-blue-500',
+            icon: Loader
+        }
     } as const;
 
     const style = $derived(styles[status]);

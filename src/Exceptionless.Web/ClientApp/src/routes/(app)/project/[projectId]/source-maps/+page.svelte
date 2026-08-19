@@ -49,7 +49,10 @@
             onSubmit: SourceMapUploadSchema,
             onSubmitAsync: async ({ value }) => {
                 try {
-                    await uploadSourceMap.mutateAsync({ file: value.file!, generated_file_url: value.generated_file_url });
+                    await uploadSourceMap.mutateAsync({
+                        file: value.file!,
+                        generated_file_url: value.generated_file_url
+                    });
                     toast.success('Source map uploaded. New events will be symbolicated before stacking.');
                     form.reset();
                     if (fileInput) {
@@ -63,7 +66,9 @@
                         return problemDetailsToFormErrors(error);
                     }
 
-                    return { form: 'An unexpected error occurred.' };
+                    return {
+                        form: 'An unexpected error occurred.'
+                    };
                 }
             }
         }
@@ -108,7 +113,11 @@
         <H4>Upload Source Map</H4>
         <Muted>
             Automating uploads from CI/CD? Create a project-scoped
-            <A href={resolve('/(app)/project/[projectId]/api-keys', { projectId })}>source map upload token</A> and use it with the source map API.
+            <A
+                href={resolve('/(app)/project/[projectId]/api-keys', {
+                    projectId
+                })}>source map upload token</A
+            > and use it with the source map API.
         </Muted>
         <form
             class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.5fr)_auto] lg:items-end"
@@ -240,7 +249,12 @@
     </section>
 
     <div class="border-border flex border-t pt-4 sm:justify-end">
-        <Button variant="secondary" href={resolve('/(app)/project/[projectId]/settings', { projectId })}>
+        <Button
+            variant="secondary"
+            href={resolve('/(app)/project/[projectId]/settings', {
+                projectId
+            })}
+        >
             <ArrowLeft class="mr-2 size-4" aria-hidden="true" /> Back to Settings
         </Button>
     </div>
@@ -257,7 +271,12 @@
         </AlertDialog.Header>
         <AlertDialog.Footer>
             <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-            <AlertDialog.Action class={buttonVariants({ variant: 'destructive' })} onclick={removeSourceMap}>Delete Source Map</AlertDialog.Action>
+            <AlertDialog.Action
+                class={buttonVariants({
+                    variant: 'destructive'
+                })}
+                onclick={removeSourceMap}>Delete Source Map</AlertDialog.Action
+            >
         </AlertDialog.Footer>
     </AlertDialog.Content>
 </AlertDialog.Root>

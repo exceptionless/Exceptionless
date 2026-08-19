@@ -92,11 +92,12 @@ public sealed class MigrateSavedViewColumnsIntegrationTests : IntegrationTestsBa
     public async Task DataSeedStartupAction_OnlyRepeatableMigrationsPending_SeedsData()
     {
         // Arrange
+        // Mark all current versioned migrations complete so this test isolates repeatable data seeding.
         var migrationStateRepository = GetService<IMigrationStateRepository>();
         await migrationStateRepository.AddAsync(new MigrationState
         {
-            Id = "5",
-            Version = 5,
+            Id = "7",
+            Version = 7,
             MigrationType = MigrationType.VersionedAndResumable,
             StartedUtc = DateTime.UtcNow,
             CompletedUtc = DateTime.UtcNow

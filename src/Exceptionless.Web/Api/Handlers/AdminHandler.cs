@@ -75,6 +75,65 @@ public class AdminHandler(
         );
     }
 
+    public async Task<Result<object>> Handle(GetAdminAssistantUsage message)
+    {
+        var requestedMonth = message.Month ?? timeProvider.GetUtcNow().UtcDateTime;
+        var month = new DateTime(requestedMonth.Year, requestedMonth.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var results = await organizationRepository.FindAsync(
+            query => query.FieldEquals(organization => organization.AssistantUsage.First().Date, month),
+            options => options.SearchAfterPaging().PageLimit(500));
+        var organizations = new List<Organization>();
+        do
+        {
+            organizations.AddRange(results.Documents);
+        } while (!message.Context.RequestAborted.IsCancellationRequested && await results.NextPageAsync());
+
+        var rows = organizations
+            .Select(organization =>
+            {
+                var usage = organization.AssistantUsage.First(item => item.Date.Year == month.Year && item.Date.Month == month.Month);
+                var planOptions = plans.GetPlan(usage.PlanId)?.Assistant;
+                long totalTokens = usage.PromptTokens + usage.CompletionTokens;
+                decimal costUsd = usage.CostInMicrodollars / 1_000_000m;
+                return new AdminAssistantOrganizationUsage(
+                    organization.Id,
+                    organization.Name,
+                    usage.PlanId ?? organization.PlanId,
+                    usage.LastUsedUtc,
+                    usage.Turns,
+                    usage.Completed,
+                    usage.Failed,
+                    usage.Cancelled,
+                    usage.ProviderRequests,
+                    usage.ToolCalls,
+                    usage.PromptTokens,
+                    usage.CompletionTokens,
+                    costUsd,
+                    usage.BlockedByConcurrency,
+                    usage.BlockedByRateLimit,
+                    usage.BlockedByTokenLimit,
+                    usage.BlockedByCostLimit,
+                    planOptions?.MaximumMonthlyTokens,
+                    planOptions?.MaximumMonthlyCostUsd,
+                    planOptions is not null && planOptions.MaximumMonthlyTokens > 0 ? Decimal.Round(totalTokens / (decimal)planOptions.MaximumMonthlyTokens, 4) : null,
+                    planOptions is not null && planOptions.MaximumMonthlyCostUsd > 0 ? Decimal.Round(costUsd / planOptions.MaximumMonthlyCostUsd, 4) : null);
+            })
+            .OrderByDescending(row => row.CostUsd)
+            .ThenByDescending(row => row.PromptTokens + row.CompletionTokens)
+            .ThenByDescending(row => row.Turns)
+            .ToArray();
+
+        int limit = Math.Clamp(message.Limit, 1, 500);
+        return new AdminAssistantUsageResponse(
+            month,
+            rows.LongLength,
+            rows.Sum(row => row.Turns),
+            rows.Sum(row => row.PromptTokens),
+            rows.Sum(row => row.CompletionTokens),
+            rows.Sum(row => row.CostUsd),
+            rows.Take(limit).ToArray());
+    }
+
     [HandlerEndpoint(HandlerMethod.Get, "migrations", Group = "Admin")]
     public async Task<Result<object>> Handle(GetAdminMigrations message)
     {

@@ -15,6 +15,7 @@ test('operator can navigate from event discovery to event and stack details thro
         await expect(page).toHaveURL(/\/next\/event(?:\/errors)?(?:[?#]|$)/);
 
         await page.goto(`/next/event?reference=${encodeURIComponent(journey.referenceId)}&time=all`);
+        const eventListUrl = page.url();
         const eventRow = getVisibleRow(page, journey.message);
         await expect(eventRow).toBeVisible({ timeout: 30_000 });
         await eventRow.click();
@@ -22,8 +23,49 @@ test('operator can navigate from event discovery to event and stack details thro
         const eventSheet = page.getByRole('dialog', { name: 'Event' });
         await expect(eventSheet).toBeVisible();
         await expect(eventSheet.getByText(journey.message).filter({ visible: true }).first()).toBeVisible();
+
+        await page.evaluate(() => history.back());
+        await expect(eventSheet).toBeHidden();
+        await expect(page).toHaveURL(eventListUrl);
+
+        await page.evaluate(() => history.forward());
+        await expect(eventSheet).toBeVisible();
+        await expect(page).toHaveURL(eventListUrl);
+
+        await page.evaluate(() => history.back());
+        await expect(eventSheet).toBeHidden();
+        await expect(page).toHaveURL(eventListUrl);
+
+        await eventRow.click();
+        await expect(eventSheet).toBeVisible();
+        await eventSheet.getByRole('button', { name: 'Show all events' }).click();
+        await expect(page).toHaveURL(new RegExp(`[?&]stack=${journey.stackId}(?:&|$)`));
+        await expect(eventSheet).toBeHidden();
+        const stackFilterUrl = page.url();
+
+        await page.goBack();
+        await expect(page).toHaveURL(eventListUrl);
+        await expect(eventSheet).toBeHidden();
+
+        await page.goForward();
+        await expect(page).toHaveURL(stackFilterUrl);
+        await expect(eventSheet).toBeHidden();
+
+        await page.goBack();
+        await expect(page).toHaveURL(eventListUrl);
+
+        await eventRow.click();
+        await expect(eventSheet).toBeVisible();
         await eventSheet.getByRole('link', { name: 'Open details in new window' }).click();
 
+        await expect(page).toHaveURL(new RegExp(`/next/stack/${journey.stackId}/event/${journey.eventId}(?:[?#]|$)`));
+        await expect(getVisibleText(page, journey.message)).toBeVisible();
+
+        await page.goBack();
+        await expect(page).toHaveURL(eventListUrl);
+        await expect(eventSheet).toBeHidden();
+
+        await page.goForward();
         await expect(page).toHaveURL(new RegExp(`/next/stack/${journey.stackId}/event/${journey.eventId}(?:[?#]|$)`));
         await expect(getVisibleText(page, journey.message)).toBeVisible();
     });
@@ -38,6 +80,7 @@ test('operator can navigate from event discovery to event and stack details thro
     await test.step('open stack details from the Stacks table', async () => {
         await navigateToSidebarView(page, 'Stacks', 'Most Frequent Errors');
         await expect(page.getByRole('heading', { name: 'Stacks' })).toBeVisible();
+        const stackListUrl = page.url();
 
         const stackRow = getVisibleRow(page, journey.message);
         await expect(stackRow).toBeVisible({ timeout: 30_000 });
@@ -46,9 +89,50 @@ test('operator can navigate from event discovery to event and stack details thro
         const stackSheet = page.getByRole('dialog', { name: 'Stack' });
         await expect(stackSheet).toBeVisible();
         await expect(stackSheet.getByText(journey.message).filter({ visible: true }).first()).toBeVisible();
+
+        await page.evaluate(() => history.back());
+        await expect(stackSheet).toBeHidden();
+        await expect(page).toHaveURL(stackListUrl);
+
+        await page.evaluate(() => history.forward());
+        await expect(stackSheet).toBeVisible();
+        await expect(page).toHaveURL(stackListUrl);
+
+        await page.evaluate(() => history.back());
+        await expect(stackSheet).toBeHidden();
+        await expect(page).toHaveURL(stackListUrl);
+
+        await stackRow.click();
+        await expect(stackSheet).toBeVisible();
         await stackSheet.getByRole('link', { name: 'Open details in new window' }).click();
 
         await expect(page).toHaveURL(new RegExp(`/next/stack/${journey.stackId}(?:/event/${journey.eventId})?(?:[?#]|$)`));
         await expect(getVisibleText(page, journey.message)).toBeVisible();
     });
+});
+
+test('a failed detail request closes the sheet without leaving a duplicate history entry', async ({ e2eApi, e2eScenario, page }) => {
+    const journey = ExceptionlessE2EJourney.fromScenario(page, e2eApi, e2eScenario);
+    await journey.submitRepresentativeEvent();
+
+    await page.goto('/next/stack');
+    await page.goto(`/next/event?reference=${encodeURIComponent(journey.referenceId)}&time=all`);
+    const eventRow = getVisibleRow(page, journey.message);
+    await expect(eventRow).toBeVisible({ timeout: 30_000 });
+
+    await page.route(`**/api/v2/events/${journey.eventId}*`, async (route) => {
+        await route.fulfill({
+            body: JSON.stringify({ detail: 'The requested event was not found.', status: 404, title: 'Not Found' }),
+            contentType: 'application/problem+json',
+            status: 404
+        });
+    });
+
+    const failedDetailRequest = page.waitForResponse((response) => response.url().includes(`/api/v2/events/${journey.eventId}`) && response.status() === 404);
+    await eventRow.click();
+    await failedDetailRequest;
+    await expect(page.getByRole('dialog', { name: 'Event' })).toBeHidden();
+
+    await page.goBack();
+    await expect(page).toHaveURL(/\/next\/stack(?:[?#]|$)/);
 });

@@ -6,6 +6,7 @@
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import * as FacetedFilter from '$comp/faceted-filter';
+    import { assistantPageContext } from '$features/assistant/page-context.svelte';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing';
     import EventsOverview from '$features/events/components/events-overview.svelte';
     import { buildEventDetailsHref } from '$features/events/components/summary';
@@ -21,7 +22,9 @@
         () => {
             goto(resolve('/(app)/event'));
         },
-        { lazy: true }
+        {
+            lazy: true
+        }
     );
 
     async function filterChanged(addedOrUpdated: FacetedFilter.IFilter) {
@@ -38,7 +41,10 @@
     }
 
     async function handleEventLoaded(event: PersistentEvent) {
-        await goto(buildEventDetailsHref(event.id, event.stack_id), { replaceState: true });
+        assistantPageContext.setPageEvent(event);
+        await goto(buildEventDetailsHref(event.id, event.stack_id), {
+            replaceState: true
+        });
     }
 
     $effect(() => {

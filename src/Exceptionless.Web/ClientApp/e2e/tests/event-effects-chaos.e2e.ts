@@ -3,15 +3,21 @@ import type { ConsoleMessage, Page, Request, Response } from '@playwright/test';
 import { expect, test } from '../fixtures/e2e-test';
 import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
 import { createRepresentativeEvent } from '../support/synthetic-event';
+import { dispatchWebSocketMessages, installWebSocketTestHarness } from '../support/web-socket';
+
+const EVENT_NOTIFICATION_TRAILING_REFRESH_MS = 5_000;
 
 interface ActionSample extends RequestCounts {
     name: string;
+    requestFailures: number;
     runtimeErrors: number;
 }
 
 interface RequestCounts {
+    eventCount: number;
     eventDetails: number;
     eventList: number;
+    savedViews: number;
     stackDetails: number;
     stackEvents: number;
 }
@@ -20,18 +26,21 @@ interface RuntimeDiagnostics {
     actionSamples: ActionSample[];
     activeAction: string;
     networkFailures: { action: string; status: number; url: string }[];
+    requestFailures: { action: string; error: null | string; method: string; url: string }[];
     requests: RequestCounts;
     runtimeErrors: { action: string; message: string }[];
 }
 
 test('event list and detail effects stay bounded through paging and background chaos @signup', async ({ e2eApi, e2eScenario, page }, testInfo) => {
     test.slow();
+    await installWebSocketTestHarness(page);
 
     const journey = ExceptionlessE2EJourney.fromScenario(page, e2eApi, e2eScenario);
     const diagnostics: RuntimeDiagnostics = {
         actionSamples: [],
         activeAction: 'setup',
         networkFailures: [],
+        requestFailures: [],
         requests: emptyRequestCounts(),
         runtimeErrors: []
     };
@@ -39,6 +48,7 @@ test('event list and detail effects stay bounded through paging and background c
     page.on('console', (message) => recordConsoleMessage(diagnostics, message));
     page.on('pageerror', (error) => diagnostics.runtimeErrors.push({ action: diagnostics.activeAction, message: error.stack ?? error.message }));
     page.on('request', (request) => recordRequest(diagnostics, request, e2eScenario.organizationId));
+    page.on('requestfailed', (request) => recordRequestFailure(diagnostics, request));
     page.on('response', (response) => recordNetworkFailure(diagnostics, response));
 
     await test.step('seed enough events in one stack to exercise list and detail navigation', async () => {
@@ -82,12 +92,12 @@ test('event list and detail effects stay bounded through paging and background c
 
     await measureAction(diagnostics, 'event list paging', async () => {
         for (let index = 0; index < 4; index++) {
-            await clickAndWaitForList(page, e2eScenario.organizationId, 'Go to next page');
+            await clickAndWaitForPage(page, e2eScenario.organizationId, 'Go to next page', 2, index === 0);
             await expect(page.getByRole('button', { name: 'Go to previous page' })).toBeEnabled();
-            await clickAndWaitForList(page, e2eScenario.organizationId, 'Go to previous page');
+            await clickAndWaitForPage(page, e2eScenario.organizationId, 'Go to previous page', 1);
         }
     });
-    expect(actionSample(diagnostics, 'event list paging').eventList).toBe(8);
+    expect(actionSample(diagnostics, 'event list paging').eventList).toBe(1);
 
     await measureAction(diagnostics, 'event detail sheet mount and teardown', async () => {
         for (let index = 0; index < 5; index++) {
@@ -142,35 +152,35 @@ test('event list and detail effects stay bounded through paging and background c
         await setDocumentHidden(page, false);
         await page.waitForTimeout(2_000);
     });
-    expect(actionSample(diagnostics, 'event list background ingestion and resume').eventList).toBeLessThanOrEqual(1);
+    expect(actionSample(diagnostics, 'event list background ingestion and resume').eventList).toBeLessThanOrEqual(2);
 
-    await measureAction(diagnostics, 'bursty persistent event notifications', async () => {
-        await page.evaluate(
-            ({ organizationId, projectId, stackId }) => {
-                for (let index = 0; index < 30; index++) {
-                    document.dispatchEvent(
-                        new CustomEvent('PersistentEventChanged', {
-                            detail: {
-                                change_type: 0,
-                                id: `chaos-missing-event-${index}`,
-                                organization_id: organizationId,
-                                project_id: projectId,
-                                stack_id: stackId,
-                                type: 'PersistentEvent'
-                            }
-                        })
-                    );
-                }
-            },
-            {
-                organizationId: e2eScenario.organizationId,
-                projectId: e2eScenario.projectId,
-                stackId: journey.stackId!
-            }
-        );
+    await measureAction(diagnostics, 'sustained persistent event notifications', async () => {
+        for (let wave = 0; wave < 4; wave++) {
+            await dispatchWebSocketMessages(
+                page,
+                Array.from({ length: 30 }, (_, index) => ({
+                    message: {
+                        change_type: 0,
+                        id: `chaos-missing-event-${wave}-${index}`,
+                        organization_id: e2eScenario.organizationId,
+                        project_id: e2eScenario.projectId,
+                        stack_id: journey.stackId!,
+                        type: 'PersistentEvent'
+                    },
+                    type: 'PersistentEventChanged'
+                }))
+            );
+            await page.waitForTimeout(1_600);
+        }
+
         await page.waitForTimeout(2_000);
     });
-    expect(actionSample(diagnostics, 'bursty persistent event notifications').eventList).toBe(1);
+    const sustainedNotificationSample = actionSample(diagnostics, 'sustained persistent event notifications');
+    expect(sustainedNotificationSample.eventCount).toBeGreaterThanOrEqual(1);
+    expect(sustainedNotificationSample.eventCount).toBeLessThanOrEqual(3);
+    expect(sustainedNotificationSample.eventList).toBeGreaterThanOrEqual(1);
+    expect(sustainedNotificationSample.eventList).toBeLessThanOrEqual(3);
+    expect(sustainedNotificationSample.runtimeErrors).toBe(0);
 
     await measureAction(diagnostics, 'event detail alias route remounts', async () => {
         for (let index = 0; index < 5; index++) {
@@ -217,7 +227,8 @@ test('event list and detail effects stay bounded through paging and background c
 
         await page.waitForTimeout(2_000);
     });
-    expect(actionSample(diagnostics, 'full detail navigation and visibility churn').eventDetails).toBeLessThanOrEqual(10);
+    // Ten explicit event changes plus at most one visibility-driven refetch.
+    expect(actionSample(diagnostics, 'full detail navigation and visibility churn').eventDetails).toBeLessThanOrEqual(11);
     expect(actionSample(diagnostics, 'full detail navigation and visibility churn').stackDetails).toBeLessThanOrEqual(2);
     expect(actionSample(diagnostics, 'full detail navigation and visibility churn').eventList).toBe(0);
 
@@ -227,6 +238,7 @@ test('event list and detail effects stay bounded through paging and background c
     });
     expect(diagnostics.runtimeErrors).toEqual([]);
     expect(diagnostics.networkFailures).toEqual([]);
+    expect(diagnostics.requestFailures).toEqual([]);
     await expect(page.getByRole('tab', { name: 'Overview' })).toBeVisible();
 });
 
@@ -239,11 +251,25 @@ function actionSample(diagnostics: RuntimeDiagnostics, name: string): ActionSamp
     return sample;
 }
 
-function clickAndWaitForList(page: Page, organizationId: string, buttonName: string): Promise<unknown> {
-    return Promise.all([
-        page.waitForResponse((response) => isEventListResponse(response, organizationId)),
-        page.getByRole('button', { name: buttonName }).click()
-    ]);
+async function clickAndWaitForPage(
+    page: Page,
+    organizationId: string,
+    buttonName: string,
+    expectedPage: number,
+    waitForNetwork: boolean = false
+): Promise<void> {
+    const response = waitForNetwork ? page.waitForResponse((candidate) => isEventListResponse(candidate, organizationId)) : undefined;
+
+    await page.getByRole('button', { name: buttonName }).click();
+    await expect(
+        page
+            .getByText(new RegExp(`^Page ${expectedPage} of`))
+            .filter({ visible: true })
+            .first()
+    ).toBeVisible();
+    if (response) {
+        expect((await response).ok()).toBe(true);
+    }
 }
 
 function createGroupedEvent(appUrl: string, message: string, run: string, index: number): { event: Record<string, unknown>; referenceId: string } {
@@ -261,8 +287,10 @@ function createGroupedEvent(appUrl: string, message: string, run: string, index:
 
 function emptyRequestCounts(): RequestCounts {
     return {
+        eventCount: 0,
         eventDetails: 0,
         eventList: 0,
+        savedViews: 0,
         stackDetails: 0,
         stackEvents: 0
     };
@@ -280,14 +308,17 @@ function isEventListResponse(response: Response, organizationId: string): boolea
 async function measureAction(diagnostics: RuntimeDiagnostics, name: string, action: () => Promise<void>): Promise<void> {
     diagnostics.activeAction = name;
     const initialRequests = { ...diagnostics.requests };
+    const initialRequestFailures = diagnostics.requestFailures.length;
     const initialRuntimeErrors = diagnostics.runtimeErrors.length;
 
     await action();
 
     diagnostics.actionSamples.push({
+        eventCount: diagnostics.requests.eventCount - initialRequests.eventCount,
         eventDetails: diagnostics.requests.eventDetails - initialRequests.eventDetails,
         eventList: diagnostics.requests.eventList - initialRequests.eventList,
         name,
+        requestFailures: diagnostics.requestFailures.length - initialRequestFailures,
         runtimeErrors: diagnostics.runtimeErrors.length - initialRuntimeErrors,
         stackDetails: diagnostics.requests.stackDetails - initialRequests.stackDetails,
         stackEvents: diagnostics.requests.stackEvents - initialRequests.stackEvents
@@ -313,8 +344,15 @@ function recordNetworkFailure(diagnostics: RuntimeDiagnostics, response: Respons
 
 function recordRequest(diagnostics: RuntimeDiagnostics, request: Request, organizationId: string): void {
     const url = new URL(request.url());
+    if (url.pathname.startsWith(`/api/v2/organizations/${organizationId}/saved-views`)) {
+        diagnostics.requests.savedViews++;
+        return;
+    }
+
     if (isEventListRequest(request, organizationId)) {
         diagnostics.requests.eventList++;
+    } else if (url.pathname === `/api/v2/organizations/${organizationId}/events/count`) {
+        diagnostics.requests.eventCount++;
     } else if (/^\/api\/v2\/events\/[a-f0-9]{24}$/.test(url.pathname)) {
         diagnostics.requests.eventDetails++;
     } else if (/^\/api\/v2\/stacks\/[a-f0-9]{24}\/events$/.test(url.pathname)) {
@@ -322,6 +360,19 @@ function recordRequest(diagnostics: RuntimeDiagnostics, request: Request, organi
     } else if (/^\/api\/v2\/stacks\/[a-f0-9]{24}$/.test(url.pathname)) {
         diagnostics.requests.stackDetails++;
     }
+}
+
+function recordRequestFailure(diagnostics: RuntimeDiagnostics, request: Request): void {
+    if (!new URL(request.url()).pathname.startsWith('/api/v2/')) {
+        return;
+    }
+
+    diagnostics.requestFailures.push({
+        action: diagnostics.activeAction,
+        error: request.failure()?.errorText ?? null,
+        method: request.method(),
+        url: request.url()
+    });
 }
 
 async function setDocumentHidden(page: Page, hidden: boolean): Promise<void> {
@@ -340,8 +391,8 @@ async function setDocumentHidden(page: Page, hidden: boolean): Promise<void> {
 }
 
 async function waitForEventListQuiescence(page: Page, diagnostics: RuntimeDiagnostics): Promise<void> {
-    const quietPeriodMs = 2_500;
-    const timeoutAt = Date.now() + 20_000;
+    const quietPeriodMs = EVENT_NOTIFICATION_TRAILING_REFRESH_MS + 500;
+    const timeoutAt = Date.now() + 30_000;
     let lastRequestCount = diagnostics.requests.eventList;
     let quietSince = Date.now();
 

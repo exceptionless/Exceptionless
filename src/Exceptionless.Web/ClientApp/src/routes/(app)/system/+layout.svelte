@@ -14,7 +14,10 @@
     const meQuery = getMeQuery();
     let isAuthenticated = $derived(accessToken.current !== null);
     const filteredRoutes = $derived.by(() => {
-        const context: NavigationItemContext = { authenticated: isAuthenticated, user: meQuery.data };
+        const context: NavigationItemContext = {
+            authenticated: isAuthenticated,
+            user: meQuery.data
+        };
         return routes().filter((route) => (route.show ? route.show(context) : true));
     });
     const currentPath = $derived(page.url.pathname);

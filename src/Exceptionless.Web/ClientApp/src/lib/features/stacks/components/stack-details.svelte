@@ -1,6 +1,8 @@
 <script lang="ts">
     import type { IFilter } from '$comp/faceted-filter';
+    import type { AssistantFixResource } from '$features/assistant/controls.svelte';
     import type { PersistentEvent } from '$features/events/models';
+    import type { Stack } from '$features/stacks/models';
     import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
     import { Muted } from '$comp/typography';
@@ -10,16 +12,31 @@
     import StackCard from './stack-card.svelte';
 
     interface Props {
+        assistantResource?: AssistantFixResource;
         eventId?: null | string;
         filterChanged: (filter: IFilter) => void;
         handleError: (problem: ProblemDetails) => void;
         onDeleted?: () => void;
         onEventLoaded?: (event: PersistentEvent) => void;
         onNavigate?: (eventId: string) => void;
+        onStackLoaded?: (stack: Stack) => void;
+        prepareAssistantContext?: () => void;
         stackId: string;
     }
 
-    let { eventId: initialEventId, filterChanged, handleError, onDeleted, onEventLoaded, onNavigate, stackId }: Props = $props();
+    let {
+        assistantResource,
+        eventId: initialEventId,
+        filterChanged,
+        handleError,
+        onDeleted,
+        onEventLoaded,
+        onNavigate,
+        onStackLoaded,
+        prepareAssistantContext,
+        stackId
+    }: Props = $props();
+    let resolvedAssistantResource = $derived(assistantResource ?? (initialEventId ? 'event' : 'stack'));
 
     let selectedEventId = $state<null | string>(null);
     let lastStackId = $state('');
@@ -38,6 +55,8 @@
         }
     });
 
+    const latestEvent = $derived(stackEventsQuery.data?.[0]);
+
     $effect(() => {
         if (initialEventId) {
             selectedEventId = initialEventId;
@@ -49,9 +68,12 @@
     });
 
     $effect(() => {
-        if (!initialEventId && stackEventsQuery.isSuccess) {
-            selectedEventId = stackEventsQuery.data?.[0]?.id ?? null;
+        if (initialEventId || !latestEvent?.id) {
+            return;
         }
+
+        selectedEventId = latestEvent.id;
+        onEventLoaded?.(latestEvent);
     });
 
     $effect(() => {
@@ -71,11 +93,28 @@
 </script>
 
 {#if selectedEventId}
-    <EventsOverview expectedStackId={stackId} {filterChanged} id={selectedEventId} {handleError} {onEventLoaded} onNavigate={handleNavigate} />
-{:else if stackEventsQuery.isSuccess}
+    <EventsOverview
+        assistantResource={resolvedAssistantResource}
+        expectedStackId={stackId}
+        {filterChanged}
+        id={selectedEventId}
+        {handleError}
+        {onEventLoaded}
+        onNavigate={handleNavigate}
+        prepareStackAssistantContext={prepareAssistantContext}
+    />
+{:else if stackEventsQuery.isSuccess && !latestEvent?.id}
     <section>
         <h4 class="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">Stack</h4>
-        <StackCard {filterChanged} id={stackId} {onDeleted} onError={handleError} />
+        <StackCard
+            assistantResource={resolvedAssistantResource}
+            {filterChanged}
+            id={stackId}
+            {onDeleted}
+            onError={handleError}
+            onLoaded={onStackLoaded}
+            {prepareAssistantContext}
+        />
     </section>
     <Muted class="mt-4">No events available for this stack.</Muted>
 {/if}
