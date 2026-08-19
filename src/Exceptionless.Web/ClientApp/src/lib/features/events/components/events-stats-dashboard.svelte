@@ -130,7 +130,12 @@
                 <Skeleton class="h-5 w-16" />
             {:else}
                 <div class={metricValueClass}>
-                    <Number value={eventsPerHour} formatOptions={{ maximumFractionDigits: 1 }} />
+                    <Number
+                        value={eventsPerHour}
+                        formatOptions={{
+                            maximumFractionDigits: 1
+                        }}
+                    />
                 </div>
             {/if}
         </Card.Content>

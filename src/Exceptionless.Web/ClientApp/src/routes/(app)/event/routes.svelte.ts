@@ -12,7 +12,9 @@ export function routes(): NavigationItem[] {
     return [
         {
             group: 'Event',
-            href: resolve('/(app)/event/[eventId=objectid]', { eventId: page.params.eventId }),
+            href: resolve('/(app)/event/[eventId=objectid]', {
+                eventId: page.params.eventId
+            }),
             icon: Events,
             show: () => false,
             title: 'Event Details'

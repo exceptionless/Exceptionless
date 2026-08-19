@@ -112,6 +112,7 @@
     </div>
 {:else}
     <div class="space-y-3">
+        <!-- eslint-disable-next-line @stylistic/object-curly-newline -->
         {#each { length: 5 } as name, index (`${name}-${index}`)}
             <div class="rounded-lg border p-4">
                 <div class="flex items-center justify-between">

@@ -280,8 +280,8 @@
                                         onclick={() => handleSelect(organization)}
                                         class="hover:bg-accent hover:text-accent-foreground flex w-full items-center gap-2.5 rounded-md p-2 text-left transition-colors"
                                     >
-                                        <Avatar.Root class="size-9 shrink-0 rounded-lg border">
-                                            <Avatar.Fallback class="rounded-lg text-xs">
+                                        <Avatar.Root class="size-9 shrink-0" shape="square">
+                                            <Avatar.Fallback class="text-xs">
                                                 {getInitials(organization.name)}
                                             </Avatar.Fallback>
                                         </Avatar.Root>
@@ -465,10 +465,22 @@
                                 <PaginationFirstButton {currentPage} />
                             </PaginationItem>
                             <PaginationItem>
-                                <PaginationPrevious page={{ type: 'page', value: Math.max(1, currentPage - 1) }} isActive={false} />
+                                <PaginationPrevious
+                                    page={{
+                                        type: 'page',
+                                        value: Math.max(1, currentPage - 1)
+                                    }}
+                                    isActive={false}
+                                />
                             </PaginationItem>
                             <PaginationItem>
-                                <PaginationNext page={{ type: 'page', value: Math.min(totalPages, currentPage + 1) }} isActive={false} />
+                                <PaginationNext
+                                    page={{
+                                        type: 'page',
+                                        value: Math.min(totalPages, currentPage + 1)
+                                    }}
+                                    isActive={false}
+                                />
                             </PaginationItem>
                         </PaginationContent>
                     </Pagination>
