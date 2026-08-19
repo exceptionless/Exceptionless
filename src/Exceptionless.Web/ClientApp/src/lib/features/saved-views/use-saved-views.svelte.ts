@@ -1,5 +1,4 @@
 import type { IFilter } from '$comp/faceted-filter';
-import type { QueryParameterHistory } from '$features/shared/query-params/types.js';
 import type { ColumnOrderState, ColumnSizingState, ColumnVisibilityState } from '@tanstack/svelte-table';
 
 import { goto } from '$app/navigation';
@@ -26,7 +25,6 @@ export interface SavedViewQueryParams {
     saved?: null | string | undefined;
     sort?: null | string;
     time?: null | string;
-    update?: (values: Partial<Omit<SavedViewQueryParams, 'update'>>, history?: QueryParameterHistory) => void;
 }
 
 export interface UseSavedViewsOptions {
@@ -61,7 +59,7 @@ export interface UseSavedViewsReturn {
     autoFillColumnId: AutoFillColumnSelection;
     handleClearSavedView: () => void;
     handleLoadView: (view: SavedView) => void;
-    handleResetToSaved: (history?: QueryParameterHistory) => void;
+    handleResetToSaved: () => void;
     hydratedSavedViewId: string | undefined;
     isEnabled: boolean;
     isLoading: boolean;
@@ -356,7 +354,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         options.queryParams.saved = view.id;
     }
 
-    function handleResetToSaved(history?: QueryParameterHistory) {
+    function handleResetToSaved() {
         const view = activeSavedView;
         if (!view) {
             return;
@@ -371,27 +369,10 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             }
         }
 
-        const queryParameterUpdates: Partial<Omit<SavedViewQueryParams, 'update'>> = {
-            filter: null
-        };
-        if (supportsFiltersQueryParam(options.queryParams)) {
-            queryParameterUpdates.filters = null;
-        }
-
-        if (supportsSortQueryParam(options.queryParams)) {
-            queryParameterUpdates.sort = null;
-        }
-
-        if (supportsTimeQueryParam(options.queryParams)) {
-            queryParameterUpdates.time = null;
-        }
-
-        if (options.queryParams.update) {
-            options.queryParams.update(queryParameterUpdates, history);
-        } else {
-            Object.assign(options.queryParams, queryParameterUpdates);
-        }
-
+        options.queryParams.filter = null;
+        options.queryParams.filters = null;
+        setSortQueryParam(options.queryParams, null);
+        setTimeQueryParam(options.queryParams, null);
         applyColumnState(view);
         applyDisplayState(view);
     }

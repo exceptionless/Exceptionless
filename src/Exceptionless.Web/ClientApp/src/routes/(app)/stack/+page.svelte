@@ -423,10 +423,10 @@
         }
     );
 
-    function handleResetToSaved(options?: Parameters<typeof queryParams.update>[1]): void {
+    function handleResetToSaved(): void {
         isInternalFilterUpdate = false;
-        queryParams.update(LIST_FILTER_QUERY_PARAM_RESET, options);
-        savedViewsState.handleResetToSaved(options);
+        queryParams.update(LIST_FILTER_QUERY_PARAM_RESET);
+        savedViewsState.handleResetToSaved();
         filters = getCurrentFilters();
     }
 

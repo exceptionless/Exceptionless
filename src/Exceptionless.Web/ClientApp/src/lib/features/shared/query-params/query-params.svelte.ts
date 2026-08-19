@@ -4,7 +4,7 @@ import { page } from '$app/state';
 import { onDestroy } from 'svelte';
 import { SvelteURL } from 'svelte/reactivity';
 
-import type { CreateQueryParametersOptions, QueryParameterHistory, QueryParameterSchema, QueryParameterState } from './types.js';
+import type { CreateQueryParametersOptions, QueryParameterSchema, QueryParameterState } from './types.js';
 
 import { hasDetailSheetHistoryEntry, withoutDetailSheetHistoryEntry } from '../history-state.js';
 import { createQueryParameterProxy } from './proxy.js';
@@ -120,7 +120,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
 
     const schedulePushHistoryEntryFinalization = createDebouncedFunction(finalizePushHistoryEntry, debounceMilliseconds);
 
-    const synchronizeURL = (historyMode = history) => {
+    const synchronizeURL = () => {
         if (searchParamsEqual(searchParams, window.location.search)) {
             discardPendingReplacement();
             return;
@@ -137,10 +137,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
 
         const query = searchParams.toString();
         const url = `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`;
-        if (historyMode === 'replace') {
-            schedulePushHistoryEntryFinalization.cancel();
-            discardPendingReplacement();
-            settlePushHistoryEntry();
+        if (history === 'replace') {
             replaceState(url, page.state);
         } else if (!isCoalescingPushHistoryEntry) {
             coalescingStartUrl = getCurrentUrl();
@@ -207,19 +204,19 @@ export function createQueryParameters<T extends QueryParameterSchema>({
 
     onDestroy(finalizePushHistoryEntry);
 
-    const commit = (result: ReturnType<typeof applyQueryParameterUpdates<T>>, historyMode?: QueryParameterHistory) => {
+    const commit = (result: ReturnType<typeof applyQueryParameterUpdates<T>>) => {
         searchParams = result.searchParams;
         if (result.stateChanged) {
             Object.assign(current, result.state);
         }
 
         if (result.urlChanged) {
-            synchronizeURL(historyMode);
+            synchronizeURL();
         }
     };
 
-    const update = (values: Parameters<typeof applyQueryParameterUpdates<T>>[2], historyMode?: QueryParameterHistory) => {
-        commit(applyQueryParameterUpdates(current, searchParams, values, schema), historyMode);
+    const update = (values: Parameters<typeof applyQueryParameterUpdates<T>>[2]) => {
+        commit(applyQueryParameterUpdates(current, searchParams, values, schema));
     };
 
     const synchronizeState = (search: string) => {

@@ -6,7 +6,6 @@
 
 <script generics="TData extends RowData" lang="ts">
     import type { IFilter } from '$comp/faceted-filter';
-    import type { QueryParameterHistory } from '$features/shared/query-params/types.js';
     import type { ProblemDetails } from '@foundatiofx/fetchclient';
     import type { StockFeatures, Table } from '@tanstack/svelte-table';
 
@@ -34,7 +33,6 @@
     import DeleteViewDialog from './delete-view-dialog.svelte';
     import RenameViewDialog from './rename-view-dialog.svelte';
     import SaveViewDialog from './save-view-dialog.svelte';
-    import SavedViewNavigationGuard from './saved-view-navigation-guard.svelte';
 
     function getErrorMessage(error: unknown, fallback: string): string {
         const problem = error as ProblemDetails;
@@ -57,7 +55,7 @@
         isModified: boolean;
         onClearSavedView: () => void;
         onLoadView: (view: SavedView) => void;
-        onResetToSaved: (history?: QueryParameterHistory) => void;
+        onResetToSaved: () => void;
         savedViews: SavedView[];
         setAutoFillColumnId: (columnId: AutoFillColumnSelection) => void;
         setShowChart?: (show: boolean) => void;
@@ -98,7 +96,6 @@
     let isRenameDialogOpen = $state(false);
     let isDeleteDialogOpen = $state(false);
     let isColumnDialogOpen = $state(false);
-    let isDeletingActiveView = $state(false);
     let isMenuOpen = $state(false);
     let viewToDelete = $state<null | SavedView>(null);
 
@@ -248,18 +245,16 @@
         };
     }
 
-    async function handleUpdate(): Promise<boolean> {
+    async function handleUpdate() {
         if (!activeView || !organizationId) {
-            return false;
+            return;
         }
 
         try {
             await updateMutation.mutateAsync(getUpdateBody());
             toast.success(`View "${activeView.name}" saved.`);
-            return true;
         } catch (error) {
             toast.error(getErrorMessage(error, 'Failed to save view. Please try again.'));
-            return false;
         }
     }
 
@@ -270,11 +265,6 @@
 
         const target = viewToDelete;
         const wasActiveView = activeSavedView?.id === target.id;
-        isDeletingActiveView = wasActiveView;
-        if (wasActiveView) {
-            await tick();
-        }
-
         markSavedViewDeleted(target);
         if (wasActiveView) {
             onClearSavedView();
@@ -292,7 +282,6 @@
 
             toast.error('Failed to delete view. Please try again.');
         } finally {
-            isDeletingActiveView = false;
             isDeleteDialogOpen = false;
             viewToDelete = null;
         }
@@ -414,5 +403,3 @@
 {#if isColumnDialogOpen}
     <ColumnManagementDialog bind:open={isColumnDialogOpen} {autoFillColumnId} {defaultAutoFillColumnId} {setAutoFillColumnId} {table} />
 {/if}
-
-<SavedViewNavigationGuard isModified={isModified && !isDeletingActiveView} onDiscard={onResetToSaved} onSave={handleUpdate} {saving} />

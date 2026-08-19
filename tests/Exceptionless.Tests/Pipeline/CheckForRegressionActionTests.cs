@@ -5,7 +5,6 @@ using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -14,13 +13,14 @@ namespace Exceptionless.Tests.Pipeline;
 public sealed class CheckForRegressionActionTests
 {
     [Fact]
-    public async Task ProcessBatchAsync_ContinuesAfterStackWithoutRegression()
+    public async Task ProcessBatchAsync_StackWithoutRegression_ContinuesProcessingRemainingStacks()
     {
+        // Arrange
         var repository = DispatchProxy.Create<IStackRepository, StackRepositoryProxy>();
         var action = new CheckForRegressionAction(
             repository,
             new SemanticVersionParser(NullLoggerFactory.Instance),
-            CreateOptions(),
+            new AppOptions { DisabledPipelineActions = [] },
             NullLoggerFactory.Instance
         );
         var fixedAt = new DateTime(2026, 8, 18, 12, 0, 0, DateTimeKind.Utc);
@@ -30,24 +30,14 @@ public sealed class CheckForRegressionActionTests
         var firstContext = CreateContext(firstStack, fixedAt.AddMinutes(-1));
         var secondContext = CreateContext(secondStack, fixedAt.AddMinutes(1));
 
+        // Act
         await action.ProcessBatchAsync([firstContext, secondContext]);
 
+        // Assert
         Assert.False(firstContext.IsRegression);
         Assert.Equal(StackStatus.Fixed, firstStack.Status);
         Assert.True(secondContext.IsRegression);
         Assert.Equal(StackStatus.Regressed, secondStack.Status);
-    }
-
-    private static AppOptions CreateOptions()
-    {
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                [nameof(AppOptions.BaseURL)] = "http://localhost"
-            })
-            .Build();
-
-        return AppOptions.ReadFromConfiguration(configuration);
     }
 
     private static Stack CreateFixedStack(string id, DateTime fixedAt)
