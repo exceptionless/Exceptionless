@@ -47,8 +47,9 @@ export class WebSocketClient {
     private _url: null | string = null;
     private accessToken: null | string = null;
     private connectionTimeoutId: null | ReturnType<typeof setTimeout> = null;
-    private forcedClose: boolean = false;
     private hasConnectedBefore: boolean = false;
+    private intentionallyClosedSockets = new WeakSet<WebSocket>();
+    private reconnectAfterClose: boolean = false;
     private reconnectAttempts: number = 0;
     private reconnectTimeoutId: null | ReturnType<typeof setTimeout> = null;
     private terminalAuthFailure: boolean = false;
@@ -90,13 +91,14 @@ export class WebSocketClient {
     }
 
     public close(): boolean {
+        this.reconnectAfterClose = false;
         clearTimeout(this.reconnectTimeoutId!);
         this.reconnectTimeoutId = null;
         clearTimeout(this.connectionTimeoutId!);
         this.connectionTimeoutId = null;
 
         if (this.ws) {
-            this.forcedClose = true;
+            this.intentionallyClosedSockets.add(this.ws);
             this.ws.close();
             return true;
         }
@@ -106,17 +108,32 @@ export class WebSocketClient {
     }
 
     public connect() {
+        if (this.ws) {
+            if (this.intentionallyClosedSockets.has(this.ws)) {
+                this.reconnectAfterClose = true;
+            }
+
+            return;
+        }
+
+        if (this.readyState === WebSocket.CONNECTING || this.readyState === WebSocket.OPEN) {
+            return;
+        }
+
         // isReconnect means: have we successfully connected before?
         const isReconnect: boolean = this.hasConnectedBefore;
 
         // Reset state
         this.readyState = WebSocket.CONNECTING;
-        this.forcedClose = false;
+
+        let socket: WebSocket;
 
         try {
-            this.ws = new WebSocket(`${this.url}?access_token=${this.accessToken}`);
+            socket = new WebSocket(`${this.url}?access_token=${this.accessToken}`);
+            this.ws = socket;
             this.onConnecting(isReconnect);
         } catch (error) {
+            this.readyState = WebSocket.CLOSED;
             console.error('[WebSocketClient] Failed to create WebSocket', error);
             throw error;
         }
@@ -126,13 +143,17 @@ export class WebSocketClient {
         const timeout = this._options.connectionTimeout ?? 10000;
         this.connectionTimeoutId = setTimeout(() => {
             this.connectionTimeoutId = null;
-            if (this.ws && this.readyState === WebSocket.CONNECTING) {
+            if (this.ws === socket && this.readyState === WebSocket.CONNECTING) {
                 console.warn(`[WebSocketClient] Connection timeout after ${timeout}ms`);
-                this.ws.close();
+                socket.close();
             }
         }, timeout);
 
-        this.ws.onopen = (event: Event) => {
+        socket.onopen = (event: Event) => {
+            if (this.ws !== socket || this.intentionallyClosedSockets.has(socket)) {
+                return;
+            }
+
             clearTimeout(this.connectionTimeoutId!);
             this.connectionTimeoutId = null;
             this.readyState = WebSocket.OPEN;
@@ -141,14 +162,24 @@ export class WebSocketClient {
             this.onOpen(event, isReconnect);
         };
 
-        this.ws.onclose = (event: CloseEvent) => {
+        socket.onclose = (event: CloseEvent) => {
+            const wasIntentionallyClosed = this.intentionallyClosedSockets.delete(socket);
+            if (this.ws !== socket) {
+                return;
+            }
+
             clearTimeout(this.connectionTimeoutId!);
             this.connectionTimeoutId = null;
             this.ws = null;
 
-            if (this.forcedClose) {
+            if (wasIntentionallyClosed) {
                 this.readyState = WebSocket.CLOSED;
                 this.onClose(event);
+                if (this.reconnectAfterClose) {
+                    this.reconnectAfterClose = false;
+                    this.connect();
+                }
+
                 return;
             }
 
@@ -167,6 +198,7 @@ export class WebSocketClient {
             }
 
             // Calculate reconnection delay with exponential backoff
+            this.readyState = WebSocket.CLOSED;
             this.reconnectAttempts++;
             const delay = this.getReconnectDelay(this.reconnectAttempts);
 
@@ -181,11 +213,19 @@ export class WebSocketClient {
             }, delay);
         };
 
-        this.ws.onmessage = (event) => {
+        socket.onmessage = (event) => {
+            if (this.ws !== socket || this.intentionallyClosedSockets.has(socket)) {
+                return;
+            }
+
             this.onMessage(event);
         };
 
-        this.ws.onerror = (event) => {
+        socket.onerror = (event) => {
+            if (this.ws !== socket || this.intentionallyClosedSockets.has(socket)) {
+                return;
+            }
+
             console.error('[WebSocketClient] onerror triggered', {
                 event,
                 readyState: this.readyState,

@@ -1,6 +1,7 @@
 import { resolve } from '$app/paths';
 import Bell from '@lucide/svelte/icons/bell';
 import Bookmark from '@lucide/svelte/icons/bookmark';
+import Bot from '@lucide/svelte/icons/bot';
 import Database from '@lucide/svelte/icons/database';
 import DatabaseZap from '@lucide/svelte/icons/database-zap';
 import KeyRound from '@lucide/svelte/icons/key-round';
@@ -24,6 +25,13 @@ export function routes(): NavigationItem[] {
             icon: Database,
             show: (context) => context.user?.roles?.includes('global') ?? false,
             title: 'Elasticsearch'
+        },
+        {
+            group: 'System',
+            href: resolve('/(app)/system/exie'),
+            icon: Bot,
+            show: (context) => context.user?.roles?.includes('global') ?? false,
+            title: 'Exie'
         },
         {
             group: 'System',

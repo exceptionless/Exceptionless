@@ -23,7 +23,10 @@
     import { type OrganizationBillingInformationFormData, OrganizationBillingInformationSchema } from '$features/organizations/schemas';
     import { ariaInvalid, getFormErrorMessages, getProblemMessage, mapFieldErrors } from '$features/shared/validation';
     import GlobalUser from '$features/users/components/global-user.svelte';
+    import { createQueryParameters } from '$shared/query-params';
     import CreditCard from '@lucide/svelte/icons/credit-card';
+    import File from '@lucide/svelte/icons/file';
+    import MoreHorizontal from '@lucide/svelte/icons/more-horizontal';
     import { createForm } from '@tanstack/svelte-form';
     import { queryParamsState } from 'kit-query-params';
     import { onDestroy } from 'svelte';
@@ -53,10 +56,14 @@
     const canChangePlan = $derived(organizationQuery.isSuccess && !!env.PUBLIC_STRIPE_PUBLISHABLE_KEY);
     const billingInformation = $derived(getOrganizationBillingInformation(organizationQuery.data));
 
-    const params = queryParamsState({
-        default: { changePlan: false },
-        pushHistory: true,
-        schema: { changePlan: 'boolean' }
+    const params = createQueryParameters({
+        defaults: {
+            changePlan: false
+        },
+        history: 'push',
+        schema: {
+            changePlan: 'boolean'
+        }
     });
 
     let changePlanDialogOpen = $state(!!params.changePlan);
@@ -138,7 +145,12 @@
     }
 
     function handleOpenInvoice(invoiceId: string) {
-        window.open(resolve('/(app)/payment/[id]', { id: invoiceId }), '_blank');
+        window.open(
+            resolve('/(app)/payment/[id]', {
+                id: invoiceId
+            }),
+            '_blank'
+        );
     }
 
     function handleViewStripeInvoice(invoiceId: string) {

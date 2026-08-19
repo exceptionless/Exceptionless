@@ -10,17 +10,25 @@ import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanst
 export async function invalidateProjectQueries(queryClient: QueryClient, message: WebSocketMessageValue<'ProjectChanged'>) {
     const { id, organization_id } = message;
     if (id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.id(id) });
+        await queryClient.invalidateQueries({
+            queryKey: queryKeys.id(id)
+        });
     }
 
     if (organization_id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.organization(organization_id) });
+        await queryClient.invalidateQueries({
+            queryKey: queryKeys.organization(organization_id)
+        });
     }
 
     if (!id && !organization_id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.type });
+        await queryClient.invalidateQueries({
+            queryKey: queryKeys.type
+        });
     } else {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.projects() });
+        await queryClient.invalidateQueries({
+            queryKey: queryKeys.projects()
+        });
     }
 }
 
@@ -224,10 +232,18 @@ export function deleteProject(request: DeleteProjectRequest) {
         },
         mutationKey: queryKeys.deleteProject(request.route.ids),
         onError: () => {
-            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+            request.route.ids?.forEach((id) =>
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.id(id)
+                })
+            );
         },
         onSuccess: () => {
-            request.route.ids?.forEach((id) => queryClient.invalidateQueries({ queryKey: queryKeys.id(id) }));
+            request.route.ids?.forEach((id) =>
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.id(id)
+                })
+            );
         }
     }));
 }
@@ -240,14 +256,18 @@ export function deleteProjectConfig(request: DeleteConfigRequest) {
         mutationFn: async (params: DeleteConfigParams) => {
             const client = useFetchClient();
             const response = await client.delete(`projects/${request.route.id}/config`, {
-                params: { key: params.key }
+                params: {
+                    key: params.key
+                }
             });
 
             return response.ok;
         },
         mutationKey: queryKeys.deleteConfig(request.route.id),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.config(request.route.id) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.config(request.route.id)
+            });
         }
     }));
 }
@@ -258,14 +278,18 @@ export function deletePromotedTab(request: DeletePromotedTabRequest) {
         mutationFn: async (params: DeletePromotedTabParams) => {
             const client = useFetchClient();
             const response = await client.delete(`projects/${request.route.id}/promotedtabs`, {
-                params: { ...params }
+                params: {
+                    ...params
+                }
             });
 
             return response.ok;
         },
         mutationKey: queryKeys.deletePromotedTab(request.route.id),
         onError: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(request.route.id)
+            });
         },
         onSuccess: (_: boolean, variables: { name: string }) => {
             // Update the project to reflect the demoted tab until it's updated from the server
@@ -293,7 +317,9 @@ export function deleteSlack(request: DeleteSlackRequest) {
         },
         mutationKey: queryKeys.deleteSlack(request.route.id),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(request.route.id)
+            });
         }
     }));
 }
@@ -310,7 +336,9 @@ export function deleteSourceMapMutation(request: SourceMapRequest) {
         },
         mutationKey: [...queryKeys.sourceMaps(request.route.id), 'delete'],
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.sourceMaps(request.route.id) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.sourceMaps(request.route.id)
+            });
         }
     }));
 }
@@ -353,7 +381,12 @@ export function getOrganizationProjectsQuery(request: GetOrganizationProjectsReq
 
             return response;
         },
-        queryKey: [...queryKeys.organization(request.route.organizationId), { params: request.params }]
+        queryKey: [
+            ...queryKeys.organization(request.route.organizationId),
+            {
+                params: request.params
+            }
+        ]
     }));
 }
 
@@ -388,19 +421,23 @@ export function getProjectIntegrationNotificationSettings(request: GetProjectInt
 }
 
 export function getProjectQuery(request: GetProjectRequest) {
-    return createQuery<ViewProject, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.id,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
-            const client = useFetchClient();
-            const response = await client.getJSON<ViewProject>(`projects/${request.route.id}`, {
-                signal
-            });
+    return createQuery<ViewProject, ProblemDetails>(() => {
+        const id = request.route.id;
 
-            return response.data!;
-        },
-        queryKey: queryKeys.id(request.route.id),
-        refetchInterval: request.refetchInterval
-    }));
+        return {
+            enabled: () => !!accessToken.current && !!id,
+            queryFn: async ({ signal }: { signal: AbortSignal }) => {
+                const client = useFetchClient();
+                const response = await client.getJSON<ViewProject>(`projects/${id}`, {
+                    signal
+                });
+
+                return response.data!;
+            },
+            queryKey: queryKeys.id(id),
+            refetchInterval: request.refetchInterval
+        };
+    });
 }
 
 export function getProjectsQuery(request: GetProjectsRequest) {
@@ -426,7 +463,12 @@ export function getProjectsQuery(request: GetProjectsRequest) {
 
             return response;
         },
-        queryKey: [queryKeys.projects(), { params: request.params }],
+        queryKey: [
+            queryKeys.projects(),
+            {
+                params: request.params
+            }
+        ],
         refetchInterval: request.refetchInterval
     }));
 }
@@ -451,7 +493,9 @@ export function getSourceMapsQuery(request: SourceMapRequest) {
         enabled: () => !!accessToken.current && !!request.route.id,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
-            const response = await client.getJSON<SourceMapArtifact[]>(`projects/${request.route.id}/source-maps`, { signal });
+            const response = await client.getJSON<SourceMapArtifact[]>(`projects/${request.route.id}/source-maps`, {
+                signal
+            });
             return response.data!;
         },
         queryKey: queryKeys.sourceMaps(request.route.id)
@@ -472,7 +516,12 @@ export function postProject() {
         onSuccess: async (project: ViewProject) => {
             queryClient.setQueryData(queryKeys.id(project.id), project);
 
-            const organizationProjectsQueryKey = [...queryKeys.organization(project.organization_id), { params: undefined }] as const;
+            const organizationProjectsQueryKey = [
+                ...queryKeys.organization(project.organization_id),
+                {
+                    params: undefined
+                }
+            ] as const;
             queryClient.setQueryData<FetchClientResponse<ViewProject[]> | undefined>(organizationProjectsQueryKey, (response) => {
                 if (!response || response.data?.some((existingProject) => existingProject.id === project.id)) {
                     return response;
@@ -484,7 +533,9 @@ export function postProject() {
                 };
             });
 
-            await queryClient.invalidateQueries({ queryKey: queryKeys.type });
+            await queryClient.invalidateQueries({
+                queryKey: queryKeys.type
+            });
         }
     }));
 }
@@ -496,15 +547,25 @@ export function postProjectConfig(request: PostConfigRequest) {
         enabled: () => !!accessToken.current,
         mutationFn: async (params: PostConfigParams) => {
             const client = useFetchClient();
-            const response = await client.post(`projects/${request.route.id}/config`, <StringValueFromBody>{ value: params.value }, {
-                params: { key: params.key }
-            });
+            const response = await client.post(
+                `projects/${request.route.id}/config`,
+                <StringValueFromBody>{
+                    value: params.value
+                },
+                {
+                    params: {
+                        key: params.key
+                    }
+                }
+            );
 
             return response.ok;
         },
         mutationKey: queryKeys.postConfig(request.route.id),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.config(request.route.id) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.config(request.route.id)
+            });
         }
     }));
 }
@@ -535,7 +596,9 @@ export function postPromotedTab(request: PostPromotedTabRequest) {
                 `projects/${request.route.id}/promotedtabs`,
                 {},
                 {
-                    params: { ...params }
+                    params: {
+                        ...params
+                    }
                 }
             );
 
@@ -543,7 +606,9 @@ export function postPromotedTab(request: PostPromotedTabRequest) {
         },
         mutationKey: queryKeys.postPromotedTab(request.route.id),
         onError: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(request.route.id)
+            });
         },
         onSuccess: (_: boolean, variables: { name: string }) => {
             // Update the project to reflect the new promoted tab until it's updated from the server
@@ -565,13 +630,19 @@ export function postSlack(request: PostSlackRequest) {
         enabled: () => !!accessToken.current && !!request.route.id,
         mutationFn: async (code: string) => {
             const client = useFetchClient();
-            const response = await client.post(`projects/${request.route.id}/slack`, undefined, { params: { code } });
+            const response = await client.post(`projects/${request.route.id}/slack`, undefined, {
+                params: {
+                    code
+                }
+            });
 
             return response.ok;
         },
         mutationKey: queryKeys.postSlack(request.route.id),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.integrationNotificationSettings(request.route.id, 'slack') });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.integrationNotificationSettings(request.route.id, 'slack')
+            });
         }
     }));
 }
@@ -592,7 +663,9 @@ export function postSourceMapMutation(request: SourceMapRequest) {
         },
         mutationKey: [...queryKeys.sourceMaps(request.route.id), 'post'],
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.sourceMaps(request.route.id) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.sourceMaps(request.route.id)
+            });
         }
     }));
 }
@@ -640,7 +713,9 @@ export function updateProject(request: UpdateProjectRequest) {
             return response.data!;
         },
         onError: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.id(request.route.id) });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(request.route.id)
+            });
         },
         onSuccess: (project: ViewProject) => {
             queryClient.setQueryData(queryKeys.id(request.route.id), project);

@@ -12,6 +12,9 @@ ConnectionStrings:
 # Base url for the ui used to build links in emails and other places.
 BaseURL: 'http://localhost:9001/#!'
 
+Assistant:
+  Enabled: true
+
 # Whether to run the jobs in process. Requires Redis to be configured when running jobs out of process.
 RunJobsInProcess: true
 #AppScope: dev
