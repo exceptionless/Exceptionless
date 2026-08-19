@@ -75,10 +75,19 @@
     ]);
 
     const eventsAllTimeChartConfig = {
-        count: { color: 'var(--chart-1)', label: 'Events' }
+        count: {
+            color: 'var(--chart-1)',
+            label: 'Events'
+        }
     } satisfies Chart.ChartConfig;
 
-    const eventsAllTimeChartSeries = [{ color: eventsAllTimeChartConfig.count.color, key: 'count', label: 'Events' }];
+    const eventsAllTimeChartSeries = [
+        {
+            color: eventsAllTimeChartConfig.count.color,
+            key: 'count',
+            label: 'Events'
+        }
+    ];
 
     const eventsAllTimeChartData = $derived(
         (dateHistogram(stats?.events.aggregations, 'date_date')?.buckets ?? []).map((b) => ({
@@ -88,10 +97,19 @@
     );
 
     const organizationGrowthChartConfig = {
-        count: { color: 'var(--chart-2)', label: 'New Organizations' }
+        count: {
+            color: 'var(--chart-2)',
+            label: 'New Organizations'
+        }
     } satisfies Chart.ChartConfig;
 
-    const organizationGrowthChartSeries = [{ color: organizationGrowthChartConfig.count.color, key: 'count', label: 'New Organizations' }];
+    const organizationGrowthChartSeries = [
+        {
+            color: organizationGrowthChartConfig.count.color,
+            key: 'count',
+            label: 'New Organizations'
+        }
+    ];
 
     const organizationGrowthChartData = $derived(
         (dateHistogram(stats?.organizations.aggregations, 'date_created_utc')?.buckets ?? []).map((b) => ({
@@ -102,7 +120,10 @@
 
     function formatMonthLabel(v: unknown): string {
         if (v instanceof Date) {
-            return v.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+            return v.toLocaleDateString(undefined, {
+                month: 'short',
+                year: 'numeric'
+            });
         }
 
         return String(v);
@@ -120,7 +141,9 @@
     const typeStatusChartData = $derived(
         stackTypeStatusBuckets.map((typeBucket) => {
             const statusBuckets = terms(typeBucket.aggregations, 'terms_status')?.buckets ?? [];
-            const row: Record<string, number | string> = { type: (typeBucket.key as string) || '(none)' };
+            const row: Record<string, number | string> = {
+                type: (typeBucket.key as string) || '(none)'
+            };
             for (const s of statusBuckets) {
                 row[s.key as string] = s.total ?? 0;
             }
@@ -145,14 +168,23 @@
     });
 
     const typeStatusChartConfig = $derived(
-        Object.fromEntries(allStatuses.map((status: string) => [status, { color: statusColorMap[status] ?? 'var(--chart-1)', label: status }])) as Record<
-            string,
-            { color: string; label: string }
-        >
+        Object.fromEntries(
+            allStatuses.map((status: string) => [
+                status,
+                {
+                    color: statusColorMap[status] ?? 'var(--chart-1)',
+                    label: status
+                }
+            ])
+        ) as Record<string, { color: string; label: string }>
     );
 
     const typeStatusChartSeries = $derived(
-        allStatuses.map((status: string) => ({ color: statusColorMap[status] ?? 'var(--chart-1)', key: status, label: status }))
+        allStatuses.map((status: string) => ({
+            color: statusColorMap[status] ?? 'var(--chart-1)',
+            key: status,
+            label: status
+        }))
     );
 </script>
 
@@ -213,7 +245,11 @@
                                 xScale={scaleUtc()}
                                 yDomain={[0, Math.max(1, ...eventsAllTimeChartData.map((d) => d.count))]}
                                 series={eventsAllTimeChartSeries}
-                                props={{ area: { curve: curveLinear } }}
+                                props={{
+                                    area: {
+                                        curve: curveLinear
+                                    }
+                                }}
                             >
                                 {#snippet tooltip()}
                                     <Chart.Tooltip indicator="line" labelFormatter={(v) => formatMonthLabel(v)} />
@@ -242,7 +278,11 @@
                                 xScale={scaleUtc()}
                                 yDomain={[0, Math.max(1, ...organizationGrowthChartData.map((d) => d.count))]}
                                 series={organizationGrowthChartSeries}
-                                props={{ area: { curve: curveLinear } }}
+                                props={{
+                                    area: {
+                                        curve: curveLinear
+                                    }
+                                }}
                             >
                                 {#snippet tooltip()}
                                     <Chart.Tooltip indicator="line" labelFormatter={(v) => formatMonthLabel(v)} />

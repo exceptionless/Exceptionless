@@ -64,5 +64,5 @@
 {:else if isNull}
     (Null)
 {:else}
-    {value}
+    <span class="whitespace-pre-wrap">{value}</span>
 {/if}

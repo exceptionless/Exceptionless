@@ -6,9 +6,18 @@
     let { children } = $props();
 
     const tabs = [
-        { href: resolve('/(app)/system/elasticsearch/overview'), label: 'Overview' },
-        { href: resolve('/(app)/system/elasticsearch/indices'), label: 'Indices' },
-        { href: resolve('/(app)/system/elasticsearch/backups'), label: 'Backups' }
+        {
+            href: resolve('/(app)/system/elasticsearch/overview'),
+            label: 'Overview'
+        },
+        {
+            href: resolve('/(app)/system/elasticsearch/indices'),
+            label: 'Indices'
+        },
+        {
+            href: resolve('/(app)/system/elasticsearch/backups'),
+            label: 'Backups'
+        }
     ];
 
     const currentPath = $derived(page.url.pathname);

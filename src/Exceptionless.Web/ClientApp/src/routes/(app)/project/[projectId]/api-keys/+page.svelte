@@ -13,11 +13,11 @@
     import { getTableOptions } from '$features/tokens/components/table/options.svelte';
     import TokensDataTable from '$features/tokens/components/table/tokens-data-table.svelte';
     import { createProjectToken, type ProjectTokenScope } from '$features/tokens/project-token';
+    import { createQueryParameters } from '$shared/query-params';
     import FileCode from '@lucide/svelte/icons/file-code-2';
     import KeyRound from '@lucide/svelte/icons/key-round';
     import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
-    import { queryParamsState } from 'kit-query-params';
     import { toast } from 'svelte-sonner';
 
     const projectId = $derived(page.params.projectId || '');
@@ -50,9 +50,9 @@
         limit: DEFAULT_LIMIT
     };
 
-    const queryParams = queryParamsState({
-        default: DEFAULT_PARAMS,
-        pushHistory: true,
+    const queryParams = createQueryParameters({
+        defaults: DEFAULT_PARAMS,
+        history: 'push',
         schema: {
             limit: 'number'
         }
@@ -93,7 +93,11 @@
         <Muted>Create and manage client API keys and project-scoped deployment tokens.</Muted>
         <Muted>
             To install an SDK and start sending events, open
-            <A href={resolve('/(app)/project/[projectId]/configure', { projectId })}>Client setup</A>.
+            <A
+                href={resolve('/(app)/project/[projectId]/configure', {
+                    projectId
+                })}>Client setup</A
+            >.
         </Muted>
     </div>
 

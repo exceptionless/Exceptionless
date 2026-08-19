@@ -156,6 +156,22 @@ spec:
   {{- end }}
 
 ---
+apiVersion: alb.networking.azure.io/v1
+kind: IngressExtension
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-app-backend-settings
+spec:
+  backendSettings:
+    - service: {{ template "exceptionless.fullname" . }}-app
+      ports:
+        - port: 80
+          protocol: HTTP
+      timeouts:
+        # Exie streams multiple provider and tool rounds over one response. Disable the
+        # strict route deadline while the gateway's idle timeout still protects dead streams.
+        requestTimeout: 0s
+
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -164,6 +180,7 @@ metadata:
     alb.networking.azure.io/alb-name: {{ .Values.ingress.albName }}
     alb.networking.azure.io/alb-namespace: {{ .Values.ingress.albNamespace }}
     alb.networking.azure.io/alb-frontend: {{ template "exceptionless.fullname" . }}-fe
+    alb.networking.azure.io/alb-ingress-extension: {{ template "exceptionless.fullname" . }}-app-backend-settings
     cert-manager.io/cluster-issuer: {{ .Values.ingress.clusterIssuer }}
 spec:
   ingressClassName: azure-alb-external

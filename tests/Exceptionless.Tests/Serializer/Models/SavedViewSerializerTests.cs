@@ -29,7 +29,7 @@ public class SavedViewSerializerTests : TestWithServices
             FilterDefinitions = """[{"field":"status","operator":"in","values":["open","regressed"]}]""",
             Columns = new Dictionary<string, SavedViewColumnSettings>
             {
-                ["title"] = new() { Position = 0, Visible = true, Width = 420 },
+                ["title"] = new() { AutoFill = true, Position = 0, Visible = true },
                 ["date"] = new() { Position = 1, Visible = true },
                 ["status"] = new() { Position = 2, Visible = false, Width = 180 }
             },
@@ -61,7 +61,7 @@ public class SavedViewSerializerTests : TestWithServices
         Assert.Equal(3, result.Columns.Count);
         Assert.True(result.Columns["title"].Visible);
         Assert.False(result.Columns["status"].Visible);
-        Assert.Equal(420, result.Columns["title"].Width);
+        Assert.True(result.Columns["title"].AutoFill);
     }
 
     [Fact]
