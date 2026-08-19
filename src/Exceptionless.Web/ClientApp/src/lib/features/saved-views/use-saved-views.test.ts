@@ -18,6 +18,7 @@ import {
     type SavedViewQueryParams,
     setSortQueryParam,
     setTimeQueryParam,
+    shouldPromptForSavedViewNavigation,
     supportsSortQueryParam,
     supportsTimeQueryParam
 } from './use-saved-views.svelte';
@@ -63,6 +64,60 @@ function buildSavedView({ id, name, ...overrides }: Partial<SavedView> & Pick<Sa
 }
 
 describe('useSavedViews', () => {
+    describe('saved view navigation prompts', () => {
+        it.each([
+            {
+                currentPathname: '/next/event',
+                isModified: true,
+                isNavigatingAfterSave: false,
+                targetPathname: '/next/stack',
+                willUnload: false
+            },
+            {
+                currentPathname: '/next/event',
+                isModified: true,
+                isNavigatingAfterSave: false,
+                targetPathname: '/next/event/production-errors',
+                willUnload: false
+            }
+        ])('prompts before leaving a modified saved view', (options) => {
+            expect(shouldPromptForSavedViewNavigation(options)).toBe(true);
+        });
+
+        it.each([
+            {
+                currentPathname: '/next/event',
+                isModified: false,
+                isNavigatingAfterSave: false,
+                targetPathname: '/next/stack',
+                willUnload: false
+            },
+            {
+                currentPathname: '/next/event',
+                isModified: true,
+                isNavigatingAfterSave: false,
+                targetPathname: '/next/event',
+                willUnload: false
+            },
+            {
+                currentPathname: '/next/event',
+                isModified: true,
+                isNavigatingAfterSave: true,
+                targetPathname: '/next/stack',
+                willUnload: false
+            },
+            {
+                currentPathname: '/next/event',
+                isModified: true,
+                isNavigatingAfterSave: false,
+                targetPathname: null,
+                willUnload: true
+            }
+        ])('does not prompt for same-page or already-approved navigation', (options) => {
+            expect(shouldPromptForSavedViewNavigation(options)).toBe(false);
+        });
+    });
+
     describe('saved view slugs', () => {
         it('falls back to the normalized name for views created before slugs were stored', () => {
             // Arrange

@@ -162,6 +162,22 @@ export function setTimeQueryParam(queryParams: SavedViewQueryParams, value: null
     }
 }
 
+export function shouldPromptForSavedViewNavigation(options: {
+    currentPathname: string;
+    isModified: boolean;
+    isNavigatingAfterSave: boolean;
+    targetPathname: null | string;
+    willUnload: boolean;
+}): boolean {
+    return (
+        !options.willUnload &&
+        options.targetPathname !== null &&
+        options.isModified &&
+        !options.isNavigatingAfterSave &&
+        options.targetPathname !== options.currentPathname
+    );
+}
+
 export function supportsSortQueryParam(queryParams: SavedViewQueryParams): queryParams is SavedViewQueryParams & { sort: null | string | undefined } {
     return Object.prototype.hasOwnProperty.call(queryParams, 'sort');
 }

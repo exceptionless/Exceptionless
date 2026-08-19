@@ -42,3 +42,7 @@ export function createServiceStatusRedirector(options: ServiceStatusRedirectorOp
         return redirectPromise;
     };
 }
+
+export function isServiceUnavailableStatus(status: number): boolean {
+    return status === 0 || status === 408 || (status >= 500 && status < 600);
+}

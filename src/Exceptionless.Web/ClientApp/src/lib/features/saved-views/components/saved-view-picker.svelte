@@ -9,6 +9,8 @@
     import type { ProblemDetails } from '@foundatiofx/fetchclient';
     import type { StockFeatures, Table } from '@tanstack/svelte-table';
 
+    import { beforeNavigate, goto } from '$app/navigation';
+    import { page } from '$app/state';
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { toFilter } from '$features/events/components/filters/helpers.svelte';
@@ -29,10 +31,12 @@
 
     import { deleteSavedView, markSavedViewDeleted, patchSavedView, postSavedView, restoreDeletedSavedView } from '../api.svelte';
     import { buildColumnSettings } from '../column-settings';
+    import { shouldPromptForSavedViewNavigation } from '../use-saved-views.svelte';
     import ColumnManagementDialog from './column-management-dialog.svelte';
     import DeleteViewDialog from './delete-view-dialog.svelte';
     import RenameViewDialog from './rename-view-dialog.svelte';
     import SaveViewDialog from './save-view-dialog.svelte';
+    import SavedViewNavigationDialog from './saved-view-navigation-dialog.svelte';
 
     function getErrorMessage(error: unknown, fallback: string): string {
         const problem = error as ProblemDetails;
@@ -96,7 +100,10 @@
     let isRenameDialogOpen = $state(false);
     let isDeleteDialogOpen = $state(false);
     let isColumnDialogOpen = $state(false);
+    let isNavigationDialogOpen = $state(false);
     let isMenuOpen = $state(false);
+    let isNavigatingAfterSave = $state(false);
+    let pendingNavigation = $state<URL>();
     let viewToDelete = $state<null | SavedView>(null);
 
     const organizationId = $derived(organization.current);
@@ -245,18 +252,74 @@
         };
     }
 
-    async function handleUpdate() {
+    async function handleUpdate(): Promise<boolean> {
         if (!activeView || !organizationId) {
-            return;
+            return false;
         }
 
         try {
             await updateMutation.mutateAsync(getUpdateBody());
             toast.success(`View "${activeView.name}" saved.`);
+            return true;
         } catch (error) {
             toast.error(getErrorMessage(error, 'Failed to save view. Please try again.'));
+            return false;
         }
     }
+
+    function clearPendingNavigation(): void {
+        isNavigationDialogOpen = false;
+        pendingNavigation = undefined;
+    }
+
+    async function continueNavigation(url: URL): Promise<void> {
+        isNavigatingAfterSave = true;
+        clearPendingNavigation();
+        try {
+            await goto(url);
+        } finally {
+            isNavigatingAfterSave = false;
+        }
+    }
+
+    async function saveAndContinueNavigation(): Promise<void> {
+        const url = pendingNavigation;
+        if (!url || saving || !(await handleUpdate())) {
+            return;
+        }
+
+        await continueNavigation(url);
+    }
+
+    function discardAndContinueNavigation(): void {
+        const url = pendingNavigation;
+        if (!url) {
+            return;
+        }
+
+        onResetToSaved();
+        void continueNavigation(url);
+    }
+
+    beforeNavigate(({ cancel, to, willUnload }) => {
+        const targetUrl = to?.url;
+        if (
+            !targetUrl ||
+            !shouldPromptForSavedViewNavigation({
+                currentPathname: page.url.pathname,
+                isModified,
+                isNavigatingAfterSave,
+                targetPathname: targetUrl?.pathname ?? null,
+                willUnload
+            })
+        ) {
+            return;
+        }
+
+        cancel();
+        pendingNavigation = targetUrl;
+        isNavigationDialogOpen = true;
+    });
 
     async function handleDelete() {
         if (!viewToDelete || !organizationId) {
@@ -403,3 +466,11 @@
 {#if isColumnDialogOpen}
     <ColumnManagementDialog bind:open={isColumnDialogOpen} {autoFillColumnId} {defaultAutoFillColumnId} {setAutoFillColumnId} {table} />
 {/if}
+
+<SavedViewNavigationDialog
+    bind:open={isNavigationDialogOpen}
+    onDiscard={discardAndContinueNavigation}
+    onSave={() => void saveAndContinueNavigation()}
+    onStay={clearPendingNavigation}
+    {saving}
+/>
