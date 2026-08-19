@@ -11,45 +11,62 @@
         saving: boolean;
     }
 
+    interface PendingNavigation {
+        delta: number | undefined;
+        url: URL;
+    }
+
     let { isModified, onDiscard, onSave, saving }: Props = $props();
     let isResumingNavigation = false;
-    let pendingNavigation = $state<URL>();
+    let pendingNavigation = $state<PendingNavigation>();
 
     function stayOnPage(): void {
         pendingNavigation = undefined;
     }
 
-    async function resumeNavigation(url: URL): Promise<void> {
+    async function resumeNavigation(navigation: PendingNavigation): Promise<void> {
         isResumingNavigation = true;
         pendingNavigation = undefined;
+
+        if (navigation.delta !== undefined) {
+            history.go(navigation.delta);
+            return;
+        }
+
         try {
-            await goto(url);
-        } finally {
+            await goto(navigation.url);
+        } catch (error) {
             isResumingNavigation = false;
+            throw error;
         }
     }
 
     async function saveAndContinue(): Promise<void> {
-        const url = pendingNavigation;
-        if (!url || saving || !(await onSave())) {
+        const navigation = pendingNavigation;
+        if (!navigation || saving || !(await onSave())) {
             return;
         }
 
-        await resumeNavigation(url);
+        await resumeNavigation(navigation);
     }
 
     function discardAndContinue(): void {
-        const url = pendingNavigation;
-        if (!url) {
+        const navigation = pendingNavigation;
+        if (!navigation) {
             return;
         }
 
         onDiscard();
-        void resumeNavigation(url);
+        void resumeNavigation(navigation);
     }
 
-    beforeNavigate(({ cancel, to, willUnload }) => {
-        if (!isModified || isResumingNavigation) {
+    beforeNavigate(({ cancel, delta, to, type, willUnload }) => {
+        if (isResumingNavigation) {
+            isResumingNavigation = false;
+            return;
+        }
+
+        if (!isModified) {
             return;
         }
 
@@ -63,7 +80,10 @@
         }
 
         cancel();
-        pendingNavigation = to.url;
+        pendingNavigation = {
+            delta: type === 'popstate' ? delta : undefined,
+            url: to.url
+        };
     });
 </script>
 

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import SavedViewNavigationGuard from './saved-view-navigation-guard.svelte';
 
@@ -22,7 +22,9 @@ vi.mock('$app/state', () => ({
 
 interface NavigationAttempt {
     cancel: () => void;
+    delta?: number;
     to: null | { url: URL };
+    type?: 'goto' | 'popstate';
     willUnload: boolean;
 }
 
@@ -40,6 +42,10 @@ describe('SavedViewNavigationGuard', () => {
         vi.clearAllMocks();
         pageState.url = 'http://localhost/next/event';
         navigation.goto.mockResolvedValue(undefined);
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
     });
 
     it('allows navigation when the view is unchanged', () => {
@@ -155,6 +161,27 @@ describe('SavedViewNavigationGuard', () => {
 
         expect(onDiscard).toHaveBeenCalledOnce();
         expect(navigation.goto).toHaveBeenCalledWith(destination);
+    });
+
+    it('preserves browser history traversal after discarding changes', async () => {
+        const historyGo = vi.spyOn(history, 'go').mockImplementation(() => undefined);
+        const destination = new URL('http://localhost/next/event/previous');
+        render(SavedViewNavigationGuard, {
+            isModified: true,
+            onDiscard: vi.fn(),
+            onSave: vi.fn(),
+            saving: false
+        });
+
+        getBeforeNavigation()({ cancel: vi.fn(), delta: -1, to: { url: destination }, type: 'popstate', willUnload: false });
+        await fireEvent.click(await screen.findByRole('button', { name: "Don't save" }));
+
+        expect(historyGo).toHaveBeenCalledWith(-1);
+        expect(navigation.goto).not.toHaveBeenCalled();
+
+        const replayCancel = vi.fn();
+        getBeforeNavigation()({ cancel: replayCancel, delta: -1, to: { url: destination }, type: 'popstate', willUnload: false });
+        expect(replayCancel).not.toHaveBeenCalled();
     });
 
     it('continues only after the view saves successfully', async () => {
