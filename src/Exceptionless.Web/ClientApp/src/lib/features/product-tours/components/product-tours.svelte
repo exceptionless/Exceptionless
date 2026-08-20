@@ -196,6 +196,10 @@
             return;
         }
 
+        if (productTourHost.activeTourId === stored.tourId && productTourHost.activeStepId === stored.stepId) {
+            return;
+        }
+
         let storedVersion: number;
         try {
             storedVersion = getProductTour(stored.tourId).version;
