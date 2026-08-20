@@ -5,7 +5,7 @@ export type ProductTourHostEvent =
     | { stepId: string; tourId: ProductTourId; type: 'advance' }
     | { tourId: ProductTourId; type: 'completed' | 'dismissed' };
 
-type ProductTourHostListener = (event: ProductTourHostEvent) => void;
+type ProductTourHostListener = (event: ProductTourHostEvent) => Promise<void> | void;
 
 class ProductTourHost {
     get activeStepId(): string | undefined {
@@ -44,11 +44,12 @@ class ProductTourHost {
         this.session = undefined;
     }
 
-    complete(tourId: ProductTourId): void {
-        this.publish({
+    async complete(tourId: ProductTourId): Promise<void> {
+        const event: ProductTourHostEvent = {
             tourId,
             type: 'completed'
-        });
+        };
+        await Promise.all([...this.listeners].map((listener) => listener(event)));
     }
 
     dismiss(tourId: ProductTourId): void {
@@ -90,7 +91,7 @@ class ProductTourHost {
 
     private publish(event: ProductTourHostEvent): void {
         for (const listener of this.listeners) {
-            listener(event);
+            void listener(event);
         }
     }
 }

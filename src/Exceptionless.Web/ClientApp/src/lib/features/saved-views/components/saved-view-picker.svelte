@@ -214,7 +214,7 @@
             isSaveDialogOpen = false;
             await onLoadView(result);
             await onSavedViewCreated?.(result);
-            productTourHost.complete('create-saved-view');
+            await productTourHost.complete('create-saved-view');
             toast.success(`Saved view "${result.name}" created.`);
         } catch (error) {
             toast.error(getErrorMessage(error, 'Failed to save view. Please try again.'));

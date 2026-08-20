@@ -771,13 +771,13 @@
         await submitFeatureUsage(buildProductTourTelemetryEvent(event, id, version, source, stepId)).catch(() => undefined);
     }
 
-    function onDomainComplete(id: ProductTourId): void {
+    async function onDomainComplete(id: ProductTourId): Promise<void> {
         if (productTourHost.activeTourId !== id || !productTourHost.source) {
             return;
         }
 
         const definition = getProductTour(id);
-        void completeTour(id, definition.version, productTourHost.source);
+        await completeTour(id, definition.version, productTourHost.source);
     }
 
     function onDomainDismiss(id: ProductTourId): void {
@@ -839,14 +839,13 @@
         }
     }
 
-    function onHostEvent(event: ProductTourHostEvent): void {
+    function onHostEvent(event: ProductTourHostEvent): Promise<void> | void {
         switch (event.type) {
             case 'advance':
                 onInlineAdvance(event.tourId, event.stepId);
                 break;
             case 'completed':
-                onDomainComplete(event.tourId);
-                break;
+                return onDomainComplete(event.tourId);
             case 'dismissed':
                 onDomainDismiss(event.tourId);
                 break;

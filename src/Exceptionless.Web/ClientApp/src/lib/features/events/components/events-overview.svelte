@@ -333,7 +333,7 @@
         }
 
         if (activeInvestigationStep.id === 'filter-stack-events') {
-            productTourHost.complete('investigate-error');
+            void productTourHost.complete('investigate-error');
             return;
         }
 
