@@ -3,7 +3,6 @@ using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Api.Infrastructure;
@@ -15,10 +14,8 @@ using Exceptionless.Web.Models;
 using Exceptionless.Web.Models.OAuth;
 using Exceptionless.Web.Utility;
 using Foundatio.Caching;
-using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Mediator;
-using System.Text.RegularExpressions;
 
 namespace Exceptionless.Web.Api.Handlers;
 
@@ -29,7 +26,6 @@ public class UserHandler(
     IOAuthTokenRepository oauthTokenRepository,
     IOAuthApplicationRepository oauthApplicationRepository,
     ICacheClient cacheClient,
-    ILockProvider lockProvider,
     IMailer mailer,
     ApiMapper mapper,
     IntercomOptions intercomOptions,
@@ -37,8 +33,6 @@ public class UserHandler(
     IHttpContextAccessor httpContextAccessor,
     ILoggerFactory loggerFactory)
 {
-    private const int MaximumProductTours = 32;
-    private static readonly Regex ProductTourIdRegex = new("^[a-z0-9]+(?:-[a-z0-9]+)*$", RegexOptions.CultureInvariant);
     private readonly ICacheClient _cache = new ScopedCacheClient(cacheClient, "User");
     private readonly ILogger _logger = loggerFactory.CreateLogger<UserHandler>();
     private HttpContext HttpContext => httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is unavailable.");
@@ -48,54 +42,6 @@ public class UserHandler(
         var currentUser = await GetModelAsync(GetCurrentUserId());
         if (currentUser is null)
             return Result.NotFound("User not found.");
-
-        return new ViewCurrentUser(currentUser, intercomOptions)
-        {
-            AvatarUrl = GetUserAvatarUrl(currentUser.Id, currentUser.AvatarFileName)
-        };
-    }
-
-    public async Task<Result<ViewCurrentUser>> Handle(UpdateCurrentUserProductTour message)
-    {
-        if (!ProductTourIdRegex.IsMatch(message.TourId))
-            return Result.Invalid(ValidationError.Create("tour_id", "Tour id can only contain lowercase letters, numbers, and single dashes."));
-
-        string currentUserId = GetCurrentUserId();
-        Result<ViewCurrentUser>? result = null;
-        bool lockAcquired = await lockProvider.TryUsingAsync($"product-tours:{currentUserId}", async () =>
-        {
-            result = await UpdateCurrentUserProductTourAsync(currentUserId, message);
-        }, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10));
-
-        return lockAcquired && result is not null ? result : Result.Error("Unable to update product tour progress.");
-    }
-
-    private async Task<Result<ViewCurrentUser>> UpdateCurrentUserProductTourAsync(string currentUserId, UpdateCurrentUserProductTour message)
-    {
-        var currentUser = await GetModelAsync(currentUserId, useCache: false);
-        if (currentUser is null)
-            return Result.NotFound("User not found.");
-
-        bool isNewTour = !currentUser.ProductTours.TryGetValue(message.TourId, out var existingProgress);
-        if (isNewTour && currentUser.ProductTours.Count >= MaximumProductTours)
-            return Result.Invalid(ValidationError.Create("tour_id", $"A user cannot track more than {MaximumProductTours} product tours."));
-
-        var requestedStatus = message.Progress.Status!.Value;
-        if (existingProgress is null
-            || message.Progress.Version > existingProgress.Version
-            || (message.Progress.Version == existingProgress.Version
-                && existingProgress.Status == ProductTourStatus.Dismissed
-                && requestedStatus == ProductTourStatus.Completed))
-        {
-            currentUser.ProductTours[message.TourId] = new ProductTourProgress
-            {
-                Version = message.Progress.Version,
-                Status = requestedStatus,
-                UpdatedUtc = timeProvider.GetUtcNow().UtcDateTime
-            };
-
-            await repository.SaveAsync(currentUser, o => o.Cache());
-        }
 
         return new ViewCurrentUser(currentUser, intercomOptions)
         {

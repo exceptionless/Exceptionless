@@ -26,16 +26,6 @@ Authorization: Bearer {{token}}
 @avatarFile = ./avatar.png
 @oauthGrantId = replace-with-oauth-grant-id
 
-### Record Product Tour Progress
-PUT {{apiUrl}}/users/me/product-tours/new-ui-overview
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-    "version": 1,
-    "status": "completed"
-}
-
 ### Get OAuth Grants
 GET {{apiUrl}}/users/me/oauth-grants
 Authorization: Bearer {{token}}

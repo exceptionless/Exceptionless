@@ -363,18 +363,13 @@ function recordRequest(diagnostics: RuntimeDiagnostics, request: Request, organi
 }
 
 function recordRequestFailure(diagnostics: RuntimeDiagnostics, request: Request): void {
-    const path = new URL(request.url()).pathname;
-    const error = request.failure()?.errorText ?? null;
-    const isDeliberateRemount = diagnostics.activeAction.endsWith('route remounts');
-    const isCanceledProjectRead = request.method() === 'GET' && /^\/api\/v2\/projects\/[a-f0-9]{24}$/.test(path) && error === 'net::ERR_ABORTED';
-    // Repeated page.goto calls intentionally tear down detail observers; Chromium reports their superseded project reads as aborted.
-    if (!path.startsWith('/api/v2/') || (isDeliberateRemount && isCanceledProjectRead)) {
+    if (!new URL(request.url()).pathname.startsWith('/api/v2/')) {
         return;
     }
 
     diagnostics.requestFailures.push({
         action: diagnostics.activeAction,
-        error,
+        error: request.failure()?.errorText ?? null,
         method: request.method(),
         url: request.url()
     });

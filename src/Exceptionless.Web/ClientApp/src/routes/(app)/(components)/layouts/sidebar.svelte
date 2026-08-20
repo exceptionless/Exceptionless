@@ -215,14 +215,14 @@
     });
 </script>
 
-<Sidebar.Root collapsible="icon" data-tour="app-navigation" {...props}>
+<Sidebar.Root collapsible="icon" {...props}>
     <Sidebar.Header class={!sidebar.isMobile ? 'mt-16' : ''}>
         {#if header}
             {@render header()}
         {/if}
     </Sidebar.Header>
     <Sidebar.Content>
-        <Sidebar.Group class="pt-0" data-tour="saved-view-navigation">
+        <Sidebar.Group class="pt-0">
             <Sidebar.Menu>
                 {#each dashboardRoutes as route (route.href)}
                     {@const Icon = route.icon}

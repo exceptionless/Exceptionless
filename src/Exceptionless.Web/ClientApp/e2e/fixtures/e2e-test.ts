@@ -85,7 +85,6 @@ export const test = base.extend<E2EFixtures>({
             const project = await e2eApi.createProject(userToken, organization.id, projectName);
             projectId = project.id;
             const projectToken = await e2eApi.getProjectDefaultToken(userToken, project.id);
-            await e2eApi.updateProductTour(userToken, 'welcome', 1, 'dismissed');
 
             await page.addInitScript(
                 ({ organizationId, token }) => {

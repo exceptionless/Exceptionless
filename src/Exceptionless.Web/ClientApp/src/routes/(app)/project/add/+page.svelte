@@ -91,7 +91,6 @@
                 <Field.Field data-invalid={ariaInvalid(field)}>
                     <Field.Label for={field.name}>Project Name</Field.Label>
                     <Input
-                        data-tour="project-name"
                         id={field.name}
                         name={field.name}
                         placeholder="Enter project name"
@@ -106,7 +105,7 @@
         </form.Field>
         <form.Subscribe selector={(state) => state.isSubmitting}>
             {#snippet children(isSubmitting)}
-                <Button data-tour="project-setup-submit" type="submit" class="mt-4" disabled={isSubmitting}>
+                <Button type="submit" class="mt-4" disabled={isSubmitting}>
                     {#if isSubmitting}
                         <Spinner /> Adding Project...
                     {:else}

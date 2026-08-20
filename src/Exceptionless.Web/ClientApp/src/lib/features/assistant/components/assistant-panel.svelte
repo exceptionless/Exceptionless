@@ -508,7 +508,6 @@
     <Sheet.Root bind:open>
         <Sheet.Content
             data-assistant-panel
-            data-tour="exie-panel"
             class="bg-background top-16! bottom-0! h-auto! w-full gap-0 sm:max-w-120!"
             onInteractOutside={handleInteractOutside}
             overlayProps={{

@@ -1,7 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using Exceptionless.Core.Attributes;
-using Exceptionless.Core.Models.Data;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models;
@@ -24,7 +23,6 @@ public record User : IIdentity, IHaveDates, IValidatableObject
     public string? PasswordResetToken { get; set; }
     public DateTime PasswordResetTokenExpiration { get; set; }
     public ICollection<OAuthAccount> OAuthAccounts { get; init; } = new Collection<OAuthAccount>();
-    public IDictionary<string, ProductTourProgress> ProductTours { get; init; } = new Dictionary<string, ProductTourProgress>(StringComparer.Ordinal);
 
     /// <summary>
     /// Gets or sets the users Full Name.

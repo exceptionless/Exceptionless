@@ -27,7 +27,6 @@ export const StackStatusSchema = zodEnum([
   "ignored",
   "discarded",
 ]);
-export const ProductTourStatusSchema = zodEnum(["dismissed", "completed"]);
 export const BillingStatusSchema = union([
   literal(0),
   literal(1),
@@ -35,81 +34,6 @@ export const BillingStatusSchema = union([
   literal(3),
   literal(4),
 ]);
-
-export const AdminAssistantOrganizationUsageSchema = object({
-  organization_id: string().min(1, "Organization id is required"),
-  organization_name: string().min(1, "Organization name is required"),
-  plan_id: string().min(1, "Plan id is required"),
-  last_used_utc: iso.datetime(),
-  turns: int(),
-  completed: int(),
-  failed: int(),
-  cancelled: int(),
-  provider_requests: int(),
-  tool_calls: int(),
-  prompt_tokens: int(),
-  completion_tokens: int(),
-  cost_usd: number(),
-  blocked_by_concurrency: int(),
-  blocked_by_rate_limit: int(),
-  blocked_by_token_limit: int(),
-  blocked_by_cost_limit: int(),
-  monthly_token_limit: int().nullable(),
-  monthly_cost_limit_usd: number().nullable(),
-  token_utilization: number().nullable(),
-  cost_utilization: number().nullable(),
-});
-export type AdminAssistantOrganizationUsageFormData = Infer<
-  typeof AdminAssistantOrganizationUsageSchema
->;
-
-export const AdminAssistantUsageResponseSchema = object({
-  month: iso.datetime(),
-  active_organizations: int(),
-  turns: int(),
-  prompt_tokens: int(),
-  completion_tokens: int(),
-  cost_usd: number(),
-  organizations: array(lazy(() => AdminAssistantOrganizationUsageSchema)),
-});
-export type AdminAssistantUsageResponseFormData = Infer<
-  typeof AdminAssistantUsageResponseSchema
->;
-
-export const AssistantAccessResponseSchema = object({
-  enabled: boolean(),
-  has_access: boolean(),
-  upgrade_required: boolean(),
-  message: string().min(1, "Message is required").nullable().optional(),
-});
-export type AssistantAccessResponseFormData = Infer<
-  typeof AssistantAccessResponseSchema
->;
-
-export const AssistantChatMessageSchema = object({
-  role: string().min(1, "Role is required"),
-  content: string().min(1, "Content is required"),
-});
-export type AssistantChatMessageFormData = Infer<
-  typeof AssistantChatMessageSchema
->;
-
-export const AssistantChatRequestSchema = object({
-  messages: array(lazy(() => AssistantChatMessageSchema)),
-  organization_id: string()
-    .min(1, "Organization id is required")
-    .nullable()
-    .optional(),
-  project_id: string().min(1, "Project id is required").nullable().optional(),
-  path: string().min(1, "Path is required").nullable().optional(),
-  conversation_id: string()
-    .min(1, "Conversation id is required")
-    .nullable()
-    .optional(),
-});
-export type AssistantChatRequestFormData = Infer<
-  typeof AssistantChatRequestSchema
->;
 
 export const BillingPlanSchema = object({
   id: string().min(1, "Id is required"),
@@ -580,15 +504,6 @@ export const ProblemDetailsSchema = object({
 });
 export type ProblemDetailsFormData = Infer<typeof ProblemDetailsSchema>;
 
-export const ProductTourProgressSchema = object({
-  version: int32(),
-  status: ProductTourStatusSchema,
-  updated_utc: iso.datetime(),
-});
-export type ProductTourProgressFormData = Infer<
-  typeof ProductTourProgressSchema
->;
-
 export const ResetPasswordModelSchema = object({
   password_reset_token: string().length(
     40,
@@ -705,16 +620,6 @@ export const UpdateEventSchema = object({
 });
 export type UpdateEventFormData = Infer<typeof UpdateEventSchema>;
 
-export const UpdateProductTourProgressSchema = object({
-  version: int32()
-    .min(1, "Version must be at least 1")
-    .max(2147483647, "Version must be at most 2147483647"),
-  status: ProductTourStatusSchema,
-});
-export type UpdateProductTourProgressFormData = Infer<
-  typeof UpdateProductTourProgressSchema
->;
-
 export const UpdateProjectSchema = object({
   name: string().min(1, "Name is required").optional(),
   delete_bot_data_enabled: boolean().optional(),
@@ -789,10 +694,6 @@ export const UserSchema = object({
     .optional(),
   password_reset_token_expiration: iso.datetime(),
   o_auth_accounts: array(lazy(() => OAuthAccountSchema)),
-  product_tours: record(
-    string(),
-    lazy(() => ProductTourProgressSchema),
-  ),
   full_name: string().min(1, "Full name is required"),
   email_address: email(),
   avatar_file_name: string()
@@ -825,10 +726,6 @@ export const ViewCurrentUserSchema = object({
   hash: string().min(1, "Hash is required").nullable().optional(),
   has_local_account: boolean(),
   o_auth_accounts: array(lazy(() => OAuthAccountSchema)),
-  product_tours: record(
-    string(),
-    lazy(() => ProductTourProgressSchema),
-  ),
   id: string()
     .length(24, "Id must be exactly 24 characters")
     .regex(/^[a-fA-F0-9]{24}$/, "Id has invalid format"),

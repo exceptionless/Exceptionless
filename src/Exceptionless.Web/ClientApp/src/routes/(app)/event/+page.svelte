@@ -936,7 +936,7 @@
 <div class="flex flex-col">
     <div class="mb-4 flex flex-wrap items-start gap-2">
         <H3 class="my-0 shrink-0">{pageTitle}</H3>
-        <div class="flex min-w-0 flex-1 flex-wrap items-start gap-2" data-tour="event-filters">
+        <div class="flex min-w-0 flex-1 flex-wrap items-start gap-2">
             <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
                 <OrganizationDefaultsFacetedFilterBuilder />
             </FacetedFilter.Root>
@@ -995,32 +995,30 @@
             />
         {/if}
 
-        <div data-tour="event-list">
-            <EventsDataTable
-                autoFillColumnId={savedViewsState.autoFillColumnId}
-                bind:limit={eventsQueryParameters.limit!}
-                isLoading={isSavedViewRoutePending || eventsQuery.isFetching}
-                onAutoFillColumnResized={() => savedViewsState.setAutoFillColumnId(null)}
-                {rowClick}
-                {rowHref}
-                {table}
-            >
-                {#snippet footerChildren()}
-                    <div class="h-9 min-w-35">
-                        {#if table.getSelectedRowModel().flatRows.length}
-                            <EventsBulkActionsDropdownMenu {table} />
-                        {/if}
-                    </div>
+        <EventsDataTable
+            autoFillColumnId={savedViewsState.autoFillColumnId}
+            bind:limit={eventsQueryParameters.limit!}
+            isLoading={isSavedViewRoutePending || eventsQuery.isFetching}
+            onAutoFillColumnResized={() => savedViewsState.setAutoFillColumnId(null)}
+            {rowClick}
+            {rowHref}
+            {table}
+        >
+            {#snippet footerChildren()}
+                <div class="h-9 min-w-35">
+                    {#if table.getSelectedRowModel().flatRows.length}
+                        <EventsBulkActionsDropdownMenu {table} />
+                    {/if}
+                </div>
 
-                    <DataTable.Selection {table} />
-                    <DataTable.PageSize bind:value={eventsQueryParameters.limit!} {table}></DataTable.PageSize>
-                    <div class="flex items-center space-x-6 lg:space-x-8">
-                        <DataTable.PageCount {table} />
-                        <DataTable.Pagination {table} />
-                    </div>
-                {/snippet}
-            </EventsDataTable>
-        </div>
+                <DataTable.Selection {table} />
+                <DataTable.PageSize bind:value={eventsQueryParameters.limit!} {table}></DataTable.PageSize>
+                <div class="flex items-center space-x-6 lg:space-x-8">
+                    <DataTable.PageCount {table} />
+                    <DataTable.Pagination {table} />
+                </div>
+            {/snippet}
+        </EventsDataTable>
     </div>
 </div>
 

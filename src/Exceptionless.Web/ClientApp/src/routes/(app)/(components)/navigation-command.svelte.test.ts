@@ -1,5 +1,3 @@
-import type { ProductTourListItem } from '$features/product-tours/types';
-
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -55,17 +53,14 @@ import NavigationCommand from './navigation-command.svelte';
 
 type RenderOptions = {
     askExie?: (prompt: string) => Promise<void> | void;
-    guidedTours?: ProductTourListItem[];
     isChatEnabled?: boolean;
     isExieEnabled?: boolean;
     isGlobalAdmin?: boolean;
     isImpersonating?: boolean;
     openChat?: () => void;
     openExie?: () => Promise<void> | void;
-    openGuidedTours?: () => void;
     openImpersonateOrganization?: () => Promise<void> | void;
     organizations?: Array<{ id: string; name: string }>;
-    startGuidedTour?: (id: ProductTourListItem['id']) => void;
     stopImpersonating?: () => Promise<void> | void;
 };
 
@@ -79,7 +74,6 @@ const sessionsRoute: NavigationItem = {
 function renderCommandPalette(routes: NavigationItem[] = [], options: RenderOptions = {}) {
     return render(NavigationCommand, {
         askExie: options.askExie ?? vi.fn(),
-        guidedTours: options.guidedTours ?? [],
         isChatEnabled: options.isChatEnabled ?? false,
         isExieEnabled: options.isExieEnabled ?? true,
         isGlobalAdmin: options.isGlobalAdmin ?? false,
@@ -87,7 +81,6 @@ function renderCommandPalette(routes: NavigationItem[] = [], options: RenderOpti
         open: true,
         openChat: options.openChat ?? vi.fn(),
         openExie: options.openExie ?? vi.fn(),
-        openGuidedTours: options.openGuidedTours ?? vi.fn(),
         openImpersonateOrganization: options.openImpersonateOrganization ?? vi.fn(),
         openKeyboardShortcuts: vi.fn(),
         openOrganizationSwitcher: vi.fn(),
@@ -95,7 +88,6 @@ function renderCommandPalette(routes: NavigationItem[] = [], options: RenderOpti
         organizations: (options.organizations ?? []) as never,
         resetKey: 0,
         routes: [sessionsRoute, ...routes],
-        startGuidedTour: options.startGuidedTour ?? vi.fn(),
         stopImpersonating: options.stopImpersonating ?? vi.fn()
     });
 }
@@ -325,35 +317,5 @@ describe('NavigationCommand project actions', () => {
         await fireEvent.click(screen.getByText('Log Out'));
         await waitFor(() => expect(logout).toHaveBeenCalledOnce());
         expect(goto).toHaveBeenCalledWith('/next/login');
-    });
-});
-
-describe('NavigationCommand guided tours', () => {
-    it('launches available tours directly and opens the full catalog', async () => {
-        const openGuidedTours = vi.fn();
-        const startGuidedTour = vi.fn();
-        renderCommandPalette([], {
-            guidedTours: [
-                {
-                    availability: { available: true },
-                    description: 'Learn the UI.',
-                    getAvailability: vi.fn(),
-                    getSteps: vi.fn(),
-                    id: 'new-ui-overview',
-                    keywords: ['tour'],
-                    title: 'Explore the new UI',
-                    version: 1
-                }
-            ],
-            openGuidedTours,
-            startGuidedTour
-        });
-
-        await fireEvent.click(screen.getByText('Explore the new UI'));
-        expect(startGuidedTour).toHaveBeenCalledWith('new-ui-overview');
-
-        renderCommandPalette([], { openGuidedTours });
-        await fireEvent.click(screen.getAllByText('Browse Guided Tours…').at(-1)!);
-        expect(openGuidedTours).toHaveBeenCalled();
     });
 });

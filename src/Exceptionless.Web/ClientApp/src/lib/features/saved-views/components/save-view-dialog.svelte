@@ -5,8 +5,6 @@
     import { Input } from '$comp/ui/input';
     import { Label } from '$comp/ui/label';
     import { Switch } from '$comp/ui/switch';
-    import ProductTourInlineCallout from '$features/product-tours/components/product-tour-inline-callout.svelte';
-    import { productTourHost } from '$features/product-tours/state.svelte';
 
     import type { SavedView } from '../models';
 
@@ -21,30 +19,16 @@
     } from '../slugs';
 
     interface Props {
-        defaultPrivate?: boolean;
         duplicateView?: SavedView;
-        onCancel?: () => void;
         onClose: () => void;
-        onLoadView: (view: SavedView) => Promise<void> | void;
+        onLoadView: (view: SavedView) => void;
         onSave: (name: string, slug: string, isPrivate: boolean) => Promise<void>;
         open: boolean;
-        pendingCompletion?: boolean;
         savedViews: SavedView[];
         saving: boolean;
     }
 
-    let {
-        defaultPrivate = false,
-        duplicateView,
-        onCancel,
-        onClose,
-        onLoadView,
-        onSave,
-        open = $bindable(),
-        pendingCompletion = false,
-        savedViews,
-        saving
-    }: Props = $props();
+    let { duplicateView, onClose, onLoadView, onSave, open = $bindable(), savedViews, saving }: Props = $props();
 
     let saveName = $state('');
     let saveSlug = $state('');
@@ -96,14 +80,14 @@
     });
     const visibleNameError = $derived(attemptedSubmit || saveName.length > 0 ? nameError : undefined);
     const visibleSlugError = $derived(attemptedSubmit || saveName.length > 0 || saveSlug.length > 0 ? slugError : undefined);
-    const canSave = $derived((pendingCompletion || (!nameError && !slugError)) && !saving);
+    const canSave = $derived(!nameError && !slugError && !saving);
 
     $effect(() => {
         if (open) {
             saveName = '';
             saveSlug = '';
             isSlugDirty = false;
-            isPrivate = defaultPrivate;
+            isPrivate = false;
             attemptedSubmit = false;
         }
     });
@@ -129,71 +113,24 @@
 
         await onSave(trimmedName, normalizedSlug, isPrivate);
     }
-
-    function dismissTour(): void {
-        onClose();
-        onCancel?.();
-    }
 </script>
 
-<Dialog.Root
-    {open}
-    onOpenChange={(nextOpen) => {
-        if (nextOpen || !saving) {
-            open = nextOpen;
-            if (!nextOpen) {
-                onCancel?.();
-            }
-        }
-    }}
->
-    <Dialog.Content
-        class="sm:max-w-100"
-        data-tour="saved-view-dialog"
-        onEscapeKeydown={(event) => saving && event.preventDefault()}
-        onInteractOutside={(event) => saving && event.preventDefault()}
-    >
+<Dialog.Root bind:open>
+    <Dialog.Content class="sm:max-w-100">
         <Dialog.Header>
             <Dialog.Title>Save View</Dialog.Title>
             <Dialog.Description>Save the current view configuration for quick access.</Dialog.Description>
         </Dialog.Header>
-        {#if defaultPrivate && productTourHost.activeStepId === 'name-view'}
-            <ProductTourInlineCallout
-                description="Review the current filters, time, display options, and columns. Choose a meaningful name, then continue."
-                onContinue={() => productTourHost.advance('create-saved-view', 'name-view')}
-                onDismiss={dismissTour}
-                title="Review and name your view"
-                tourId="create-saved-view"
-            />
-        {:else if defaultPrivate && productTourHost.activeStepId === 'private-view'}
-            <ProductTourInlineCallout
-                description="Private is enabled for this guide so the practice view is visible only to you. Continue when you are ready to save it."
-                onContinue={() => productTourHost.advance('create-saved-view', 'private-view')}
-                onDismiss={dismissTour}
-                title="Keep it private"
-                tourId="create-saved-view"
-            />
-        {:else if defaultPrivate && productTourHost.activeStepId === 'save-view'}
-            <ProductTourInlineCallout
-                description={pendingCompletion
-                    ? 'The view was created, but the guide could not save its progress. Retry to finish without creating another view.'
-                    : 'Click Save when ready. The guide completes only after the private view is successfully created and loaded.'}
-                onDismiss={dismissTour}
-                title="Create the saved view"
-                tourId="create-saved-view"
-            />
-        {/if}
-        {#if duplicateView && !pendingCompletion}
+        {#if duplicateView}
             <div class="bg-muted rounded-md p-3">
                 <Muted>
                     Current filters match <strong>"{duplicateView.name}"</strong>. You can
                     <Button
                         variant="link"
                         class="h-auto p-0 text-sm"
-                        onclick={async () => {
+                        onclick={() => {
                             open = false;
-                            await onLoadView(duplicateView);
-                            onCancel?.();
+                            onLoadView(duplicateView);
                         }}>load it</Button
                     > instead, or save with a different name.
                 </Muted>
@@ -209,7 +146,6 @@
             <div class="flex flex-col gap-2">
                 <Label for="view-name">Name</Label>
                 <Input
-                    data-tour="saved-view-name"
                     id="view-name"
                     bind:value={saveName}
                     placeholder="e.g., Production Errors"
@@ -218,7 +154,6 @@
                     aria-describedby={visibleNameError ? 'view-name-error' : undefined}
                     required
                     autofocus
-                    disabled={pendingCompletion}
                 />
                 {#if visibleNameError}
                     <p id="view-name-error" class="text-destructive text-sm">{visibleNameError}</p>
@@ -234,7 +169,6 @@
                     aria-invalid={!!visibleSlugError}
                     aria-describedby={visibleSlugError ? 'view-slug-error' : undefined}
                     required
-                    disabled={pendingCompletion}
                     oninput={() => {
                         isSlugDirty = true;
                     }}
@@ -243,24 +177,17 @@
                     <p id="view-slug-error" class="text-destructive text-sm">{visibleSlugError}</p>
                 {/if}
             </div>
-            <div class="flex items-center justify-between" data-tour="saved-view-private">
+            <div class="flex items-center justify-between">
                 <div>
                     <Label for="view-private" class="text-sm">Private</Label>
-                    <Muted>{defaultPrivate ? 'Required for this guided practice view' : 'Only visible to you'}</Muted>
+                    <Muted>Only visible to you</Muted>
                 </div>
-                <Switch disabled={defaultPrivate || pendingCompletion} id="view-private" bind:checked={isPrivate} />
+                <Switch id="view-private" bind:checked={isPrivate} />
             </div>
             <Dialog.Footer>
-                <Button
-                    variant="outline"
-                    disabled={saving}
-                    onclick={() => {
-                        onClose();
-                        onCancel?.();
-                    }}>Cancel</Button
-                >
-                <Button data-tour="saved-view-submit" type="submit" disabled={!canSave}>
-                    {saving ? 'Saving...' : pendingCompletion ? 'Retry guide completion' : 'Save'}
+                <Button variant="outline" onclick={onClose}>Cancel</Button>
+                <Button type="submit" disabled={!canSave}>
+                    {saving ? 'Saving...' : 'Save'}
                 </Button>
             </Dialog.Footer>
         </form>
