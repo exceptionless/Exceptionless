@@ -212,9 +212,12 @@
         try {
             const result = await createMutation.mutateAsync(body);
             isSaveDialogOpen = false;
-            await onLoadView(result);
             await onSavedViewCreated?.(result);
-            await productTourHost.complete('create-saved-view');
+            if (!(await productTourHost.complete('create-saved-view'))) {
+                return;
+            }
+
+            await onLoadView(result);
             toast.success(`Saved view "${result.name}" created.`);
         } catch (error) {
             toast.error(getErrorMessage(error, 'Failed to save view. Please try again.'));

@@ -429,7 +429,10 @@ public partial class App : Application {
         const message = (event as CustomEvent<WebSocketMessageValue<'PersistentEventChanged'>>).detail;
 
         if (queryParams.redirect && message.project_id === projectId && message.change_type !== ChangeType.Removed) {
-            await productTourHost.complete('configure-project');
+            if (!(await productTourHost.complete('configure-project'))) {
+                return;
+            }
+
             toast.success('First event received. Opening Events...');
             await redirectToEventsWithFilter(organization.current, new ProjectFilter([projectId]));
         }
@@ -445,7 +448,10 @@ public partial class App : Application {
             return;
         }
 
-        await productTourHost.complete('configure-project');
+        if (!(await productTourHost.complete('configure-project'))) {
+            return;
+        }
+
         toast.success('First event received. Opening Events...');
         await redirectToEventsWithFilter(organization.current, new ProjectFilter([projectId]));
     }

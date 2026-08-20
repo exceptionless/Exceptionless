@@ -196,10 +196,6 @@
             return;
         }
 
-        if (productTourHost.activeTourId === stored.tourId && productTourHost.activeStepId === stored.stepId) {
-            return;
-        }
-
         let storedVersion: number;
         try {
             storedVersion = getProductTour(stored.tourId).version;
@@ -707,14 +703,14 @@
         }
     }
 
-    async function completeTour(id: ProductTourId, version: number, source: ProductTourLaunchSource): Promise<void> {
+    async function completeTour(id: ProductTourId, version: number, source: ProductTourLaunchSource): Promise<boolean> {
         driverTransition = 'finishing';
         try {
             await recordProgress(id, version, 'completed');
         } catch {
             driverTransition = 'active';
             toast.error('We could not save your guided-tour progress. Please try again.');
-            return;
+            return false;
         }
 
         clearProductTourSession();
@@ -722,6 +718,7 @@
         driverInstance?.destroy();
         productTourHost.clear();
         driverTransition = 'active';
+        return true;
     }
 
     async function dismissTour(id: ProductTourId, version: number, source: ProductTourLaunchSource): Promise<void> {
@@ -775,13 +772,13 @@
         await submitFeatureUsage(buildProductTourTelemetryEvent(event, id, version, source, stepId)).catch(() => undefined);
     }
 
-    async function onDomainComplete(id: ProductTourId): Promise<void> {
+    async function onDomainComplete(id: ProductTourId): Promise<boolean> {
         if (productTourHost.activeTourId !== id || !productTourHost.source) {
-            return;
+            return true;
         }
 
         const definition = getProductTour(id);
-        await completeTour(id, definition.version, productTourHost.source);
+        return completeTour(id, definition.version, productTourHost.source);
     }
 
     function onDomainDismiss(id: ProductTourId): void {
@@ -843,7 +840,7 @@
         }
     }
 
-    function onHostEvent(event: ProductTourHostEvent): Promise<void> | void {
+    function onHostEvent(event: ProductTourHostEvent): boolean | Promise<boolean | void> | void {
         switch (event.type) {
             case 'advance':
                 onInlineAdvance(event.tourId, event.stepId);

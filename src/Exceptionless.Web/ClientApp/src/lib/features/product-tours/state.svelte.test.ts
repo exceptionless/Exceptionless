@@ -18,8 +18,18 @@ describe('product tour host', () => {
             expect(persisted).toBe(false);
 
             finishPersistence();
-            await completion;
+            expect(await completion).toBe(true);
             expect(persisted).toBe(true);
+        } finally {
+            unsubscribe();
+        }
+    });
+
+    it('propagates completion listener failures', async () => {
+        const unsubscribe = productTourHost.subscribe(() => false);
+
+        try {
+            await expect(productTourHost.complete('configure-project')).resolves.toBe(false);
         } finally {
             unsubscribe();
         }
