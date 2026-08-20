@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" role="img" aria-labelledby="title desc">
+  <title id="title">Exceptionless configuration precedence and role resolution</title>
+  <desc id="desc">Base YAML is overridden by environment YAML, ordinary and Aspire environment variables, EX-prefixed environment variables, and command-line arguments. After the effective configuration is built, a nonblank explicit role selector wins; otherwise the fixed technology priority is evaluated and falls back to local memory.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#475569"/>
+    </marker>
+    <style>
+      .heading { font: 700 25px system-ui, sans-serif; fill: #0f172a; }
+      .label { font: 650 17px system-ui, sans-serif; fill: #0f172a; }
+      .small { font: 14px system-ui, sans-serif; fill: #475569; }
+      .box { fill: #ffffff; stroke: #94a3b8; stroke-width: 2; rx: 10; }
+      .effective { fill: #eff6ff; stroke: #2563eb; stroke-width: 2.5; rx: 10; }
+      .explicit { fill: #ecfdf5; stroke: #0f766e; stroke-width: 2.5; rx: 10; }
+      .automatic { fill: #fff7ed; stroke: #c2410c; stroke-width: 2.5; rx: 10; }
+      .arrow { fill: none; stroke: #475569; stroke-width: 2.25; marker-end: url(#arrow); }
+    </style>
+  </defs>
+  <rect width="1200" height="520" fill="#f8fafc" rx="16"/>
+  <text x="40" y="44" class="heading">Configuration is layered first, then each role is resolved</text>
+  <text x="40" y="69" class="small">Sources farther to the right override earlier sources after keys are normalized.</text>
+
+  <rect x="35" y="100" width="190" height="70" class="box"/>
+  <text x="130" y="130" text-anchor="middle" class="label">Base YAML</text>
+  <text x="130" y="153" text-anchor="middle" class="small">lowest precedence</text>
+
+  <rect x="270" y="100" width="190" height="70" class="box"/>
+  <text x="365" y="130" text-anchor="middle" class="label">Environment YAML</text>
+  <text x="365" y="153" text-anchor="middle" class="small">local or environment</text>
+
+  <rect x="505" y="100" width="205" height="70" class="box"/>
+  <text x="607.5" y="129" text-anchor="middle" class="label">Ordinary variables</text>
+  <text x="607.5" y="153" text-anchor="middle" class="small">including Aspire</text>
+
+  <rect x="755" y="100" width="190" height="70" class="box"/>
+  <text x="850" y="130" text-anchor="middle" class="label">EX_ variables</text>
+  <text x="850" y="153" text-anchor="middle" class="small">wins over Aspire</text>
+
+  <rect x="990" y="100" width="175" height="70" class="box"/>
+  <text x="1077.5" y="130" text-anchor="middle" class="label">Command line</text>
+  <text x="1077.5" y="153" text-anchor="middle" class="small">highest precedence</text>
+
+  <path d="M225 135 H270" class="arrow"/>
+  <path d="M460 135 H505" class="arrow"/>
+  <path d="M710 135 H755" class="arrow"/>
+  <path d="M945 135 H990" class="arrow"/>
+
+  <rect x="450" y="220" width="300" height="66" class="effective"/>
+  <text x="600" y="250" text-anchor="middle" class="label">Effective configuration</text>
+  <text x="600" y="273" text-anchor="middle" class="small">blank role values count as absent</text>
+  <path d="M1077.5 170 V193 H600 V220" class="arrow"/>
+
+  <polygon points="600,326 770,386 600,446 430,386" fill="#ffffff" stroke="#64748b" stroke-width="2.5"/>
+  <text x="600" y="380" text-anchor="middle" class="label">Nonblank explicit</text>
+  <text x="600" y="403" text-anchor="middle" class="label">role value?</text>
+  <path d="M600 286 V326" class="arrow"/>
+
+  <rect x="45" y="350" width="310" height="74" class="explicit"/>
+  <text x="200" y="380" text-anchor="middle" class="label">Yes: validate and use it</text>
+  <text x="200" y="404" text-anchor="middle" class="small">explicit selector or local wins</text>
+  <path d="M430 386 H355" class="arrow"/>
+  <text x="388" y="376" text-anchor="middle" class="small">yes</text>
+
+  <rect x="845" y="328" width="310" height="74" class="automatic"/>
+  <text x="1000" y="358" text-anchor="middle" class="label">No: fixed provider priority</text>
+  <text x="1000" y="382" text-anchor="middle" class="small">first configured compatible technology</text>
+  <path d="M770 386 H810 V365 H845" class="arrow"/>
+  <text x="805" y="376" text-anchor="middle" class="small">no</text>
+
+  <rect x="845" y="435" width="310" height="54" class="box"/>
+  <text x="1000" y="468" text-anchor="middle" class="label">None configured: local memory</text>
+  <path d="M1000 402 V435" class="arrow"/>
+</svg>
