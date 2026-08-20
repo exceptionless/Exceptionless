@@ -219,18 +219,6 @@ export class ExceptionlessE2EJourney {
 
         await expect(setupHeading).toBeVisible({ timeout: 30_000 });
 
-        const welcomeDialog = this.page.getByRole('dialog', { name: 'Welcome to the new Exceptionless UI' });
-        await expect(welcomeDialog).toBeVisible({ timeout: 30_000 });
-        const skippedResponse = this.page.waitForResponse(
-            (response) => response.request().method() === 'PUT' && response.url().includes('/api/v2/users/me/product-tours/welcome')
-        );
-        await welcomeDialog.getByRole('button', { name: 'Skip' }).click();
-        expect((await skippedResponse).ok()).toBe(true);
-        await expect(welcomeDialog).toBeHidden();
-        await this.page.reload();
-        await expect(setupHeading).toBeVisible();
-        await expect(welcomeDialog).toBeHidden();
-
         await this.page.getByLabel('Organization Name', { exact: true }).fill(this.organizationName);
         await this.page.getByLabel('Project Name', { exact: true }).fill(this.projectName);
         await this.page.getByRole('button', { name: 'Continue' }).click();

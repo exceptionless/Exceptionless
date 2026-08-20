@@ -27,7 +27,7 @@
     <div class="px-4 py-3">
         <div class="flex items-center justify-between">
             <div class="flex items-center justify-start">
-                <Sidebar.Trigger data-tour="mobile-navigation-trigger" variant="outline" class="size-9" />
+                <Sidebar.Trigger variant="outline" class="size-9" />
 
                 <A variant="ghost" class="mr-14 ml-2 flex md:min-w-62.5 lg:ml-3 dark:text-white" href={resolve('/(app)/stack')}>
                     {#if isMediumScreenQuery.current}
@@ -41,7 +41,6 @@
                 <Button
                     aria-label="Search Exceptionless"
                     class="w-9 justify-center sm:w-56 sm:justify-start md:w-72"
-                    data-tour="command-search"
                     onclick={openCommand}
                     size="default"
                     variant="outline"
@@ -56,7 +55,6 @@
                         aria-label={isAssistantOpen ? 'Close Exie' : 'Open Exie'}
                         class="px-2"
                         data-assistant-trigger
-                        data-tour="exie-trigger"
                         onclick={toggleAssistant}
                         title="Ask Exie"
                         variant="outline"

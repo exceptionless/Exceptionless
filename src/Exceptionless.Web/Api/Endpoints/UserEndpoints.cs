@@ -37,25 +37,6 @@ public static class UserEndpoints
             }
         });
 
-        group.MapPut("users/me/product-tours/{tourId:minlength(1):maxlength(64)}", async (string tourId, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] UpdateProductTourProgress? progress)
-            => progress is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result<ViewCurrentUser>>(new UserMessages.UpdateCurrentUserProductTour(tourId, progress))).ToHttpResult(resultMapper))
-        .Accepts<UpdateProductTourProgress>(false, "application/json", "application/*+json")
-        .Produces<ViewCurrentUser>()
-        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
-        .ProducesProblem(StatusCodes.Status404NotFound)
-        .WithSummary("Update current user product tour progress")
-        .WithMetadata(new EndpointDocumentation {
-            RequestBodyDescription = "The versioned product tour outcome.",
-            RequestBodyRequired = true,
-            ParameterDescriptions = new() {
-                ["tourId"] = "The stable product tour identifier.",
-            },
-            ResponseDescriptions = new() {
-                ["422"] = "The product tour progress is invalid.",
-                ["404"] = "The current user could not be found.",
-            }
-        });
-
         group.MapGet("users/me/oauth-grants", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result<IReadOnlyCollection<ViewOAuthGrant>>>(new UserMessages.GetCurrentUserOAuthGrants())).ToHttpResult(resultMapper))
         .Produces<IReadOnlyCollection<ViewOAuthGrant>>()

@@ -7,7 +7,7 @@ import { fetchApiJson } from '$features/shared/api/api.svelte';
 import { type FetchClientResponse, ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
-import type { OAuthGrant, UpdateEmailAddressResult, UpdateProductTourProgress, UpdateUser, UpdateUserEmailAddress, ViewCurrentUser, ViewUser } from './models';
+import type { OAuthGrant, UpdateEmailAddressResult, UpdateUser, UpdateUserEmailAddress, ViewCurrentUser, ViewUser } from './models';
 
 export async function invalidateUserQueries(queryClient: QueryClient, message: WebSocketMessageValue<'UserChanged'>) {
     const { id } = message;
@@ -41,7 +41,6 @@ export const queryKeys = {
     organization: (id: string | undefined) => [...queryKeys.type, 'organization', id] as const,
     patchUser: (id: string | undefined) => [...queryKeys.id(id), 'patch'] as const,
     postEmailAddress: (id: string | undefined) => [...queryKeys.idEmailAddress(id), 'update'] as const,
-    productTour: () => [...queryKeys.me(), 'product-tour'] as const,
     type: ['User'] as const
 };
 
@@ -257,28 +256,6 @@ export function postEmailAddress(request: PostEmailAddressRequest) {
                     ...partialUserData
                 });
             }
-        }
-    }));
-}
-
-export function putCurrentUserProductTour() {
-    const queryClient = useQueryClient();
-    return createMutation<ViewCurrentUser, ProblemDetails, { progress: UpdateProductTourProgress; tourId: string }>(() => ({
-        enabled: () => !!accessToken.current,
-        mutationFn: async ({ progress, tourId }) => {
-            const client = useFetchClient();
-            const response = await client.putJSON<ViewCurrentUser>(`users/me/product-tours/${tourId}`, progress);
-            return response.data!;
-        },
-        mutationKey: queryKeys.productTour(),
-        onError: () => {
-            queryClient.invalidateQueries({
-                queryKey: queryKeys.me()
-            });
-        },
-        onSuccess: (data) => {
-            queryClient.setQueryData(queryKeys.me(), data);
-            queryClient.setQueryData(queryKeys.id(data.id), data);
         }
     }));
 }
