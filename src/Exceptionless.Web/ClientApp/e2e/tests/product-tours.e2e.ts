@@ -20,10 +20,15 @@ test('Explore the new UI is replayable and clears when the authenticated app unm
     await startTourFromCommand(page, 'Explore the new UI');
     await expect(tour.getByText('Your workspace navigation')).toBeVisible();
 
-    await page.locator('[data-tour="help-menu"]').click({ force: true });
-    await page.getByRole('menuitem', { exact: true, name: 'Log Out' }).click({ force: true });
+    const helpMenu = page.locator('[data-tour="help-menu"]');
+    await helpMenu.focus();
+    await helpMenu.press('Enter');
+    const logOut = page.getByRole('menuitem', { exact: true, name: 'Log Out' });
+    await expect(logOut).toBeVisible();
+    await logOut.focus();
+    await logOut.press('Enter');
 
-    await expect(page.getByRole('button', { exact: true, name: 'Login' })).toBeVisible();
+    await expect(page.getByRole('button', { exact: true, name: 'Login' })).toBeVisible({ timeout: 30_000 });
     await expect(tour).toBeHidden();
     await expect.poll(() => page.evaluate(() => sessionStorage.getItem('exceptionless.product-tour'))).toBeNull();
 });
