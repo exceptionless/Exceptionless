@@ -1,0 +1,10 @@
+[
+    "event-notice",
+    "organization-added",
+    "organization-invited",
+    "organization-notice",
+    "organization-payment-failed",
+    "project-daily-summary",
+    "user-email-verify",
+    "user-password-reset"
+]

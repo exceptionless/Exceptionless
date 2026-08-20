@@ -1,7 +1,5 @@
+node_modules/
+dist/
+storybook-static/
+parity-artifacts/
 .DS_Store
-node_modules
-npm-debug.log
-dist
-.sass-cache
-.awspublish*
-config.json

@@ -1,0 +1,220 @@
+<script module lang="ts">
+    import { Button, Text, Heading, Section, Row, Column, Link } from '@better-svelte-email/components';
+    import EmailLayout from '../components/EmailLayout.svelte';
+    import { buildEmailMetadata } from '../lib/email-metadata';
+    import ActionsFooter from '../components/ActionsFooter.svelte';
+
+    const jsonLd = buildEmailMetadata(`
+{
+  "@type": "ViewAction",
+  {{#if HasSubmittedEvents}}
+  "target": "{{BaseUrl}}/event?project={{ProjectId}}&type=error",
+  "url": "{{BaseUrl}}/event?project={{ProjectId}}&type=error",
+  "name": "View Timeline"
+  {{else}}
+  "target": "{{BaseUrl}}/project/{{ProjectId}}/configure",
+  "url": "{{BaseUrl}}/project/{{ProjectId}}/configure",
+  "name": "Configure Project"
+  {{/if}}
+}
+`);
+</script>
+
+<EmailLayout>
+    {#snippet content()}
+        <Section data-email-content data-summary-blocked={'{{Blocked}}'} class="py-2 px-4">
+            <Heading as="h1" class="text-[34px] font-normal text-dark leading-[1.3] mt-0 mb-[5px]"
+                >{@html 'Summary for {{StartDate}}'}</Heading
+            >
+
+            {@html '{{#if HasSubmittedEvents}}{{#if Blocked}}'}
+            <Section data-email-summary-metrics data-summary-count="4" class="my-4">
+                <Row>
+                    <Column data-summary-column width="25%" style="padding:4px;vertical-align:top">
+                        <div
+                            data-email-summary-stat
+                            style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center"
+                        >
+                            <b>Count</b>
+                            <div
+                                style="font-size:34px;font-weight:400;line-height:1.3;margin-top:3px;text-align:center"
+                            >
+                                {@html '{{Count}}'}
+                            </div>
+                        </div>
+                    </Column>
+                    <Column data-summary-column width="25%" style="padding:4px;vertical-align:top">
+                        <div
+                            data-email-summary-stat
+                            style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center"
+                        >
+                            <b>Unique</b>
+                            <div
+                                style="font-size:34px;font-weight:400;line-height:1.3;margin-top:3px;text-align:center"
+                            >
+                                {@html '{{Unique}}'}
+                            </div>
+                        </div>
+                    </Column>
+                    <Column data-summary-column width="25%" style="padding:4px;vertical-align:top">
+                        <div
+                            data-email-summary-stat
+                            style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center"
+                        >
+                            <b>New</b>
+                            <div
+                                style="font-size:34px;font-weight:400;line-height:1.3;margin-top:3px;text-align:center"
+                            >
+                                {@html '{{New}}'}
+                            </div>
+                        </div>
+                    </Column>
+                    <Column data-summary-column width="25%" style="padding:4px;vertical-align:top">
+                        <div
+                            data-email-summary-stat
+                            style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center"
+                        >
+                            <b>Discarded</b>
+                            <div
+                                style="font-size:34px;font-weight:400;line-height:1.3;margin-top:3px;text-align:center"
+                            >
+                                {@html '{{Blocked}}'}
+                            </div>
+                        </div>
+                    </Column>
+                </Row>
+            </Section>
+            {@html '{{else}}'}
+            <Section data-email-summary-metrics data-summary-count="3" class="my-4">
+                <Row>
+                    <Column data-summary-column width="33%" style="padding:4px;vertical-align:top">
+                        <div
+                            data-email-summary-stat
+                            style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center"
+                        >
+                            <b>Count</b>
+                            <div
+                                style="font-size:34px;font-weight:400;line-height:1.3;margin-top:3px;text-align:center"
+                            >
+                                {@html '{{Count}}'}
+                            </div>
+                        </div>
+                    </Column>
+                    <Column data-summary-column width="33%" style="padding:4px;vertical-align:top">
+                        <div
+                            data-email-summary-stat
+                            style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center"
+                        >
+                            <b>Unique</b>
+                            <div
+                                style="font-size:34px;font-weight:400;line-height:1.3;margin-top:3px;text-align:center"
+                            >
+                                {@html '{{Unique}}'}
+                            </div>
+                        </div>
+                    </Column>
+                    <Column data-summary-column width="34%" style="padding:4px;vertical-align:top">
+                        <div
+                            data-email-summary-stat
+                            style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center"
+                        >
+                            <b>New</b>
+                            <div
+                                style="font-size:34px;font-weight:400;line-height:1.3;margin-top:3px;text-align:center"
+                            >
+                                {@html '{{New}}'}
+                            </div>
+                        </div>
+                    </Column>
+                </Row>
+            </Section>
+            {@html '{{/if}}{{/if}}'}
+
+            {@html '{{#if HasSubmittedEvents}}'}
+            <Text class="text-base text-dark leading-[1.3]"
+                >{@html '{{#if Count}}The "{{ProjectName}}" project had <strong>{{Count}} total</strong>, <strong>{{Unique}} unique</strong>, and <strong>{{New}} new</strong> errors.{{else}}Congrats! The "{{ProjectName}}" project was exceptionless!{{/if}}{{#if Fixed}} Additionally, <strong>{{Fixed}} errors</strong> that have been marked as fixed occurred in outdated instances of your application.{{/if}}'}</Text
+            >
+
+            <Section data-email-button-row data-email-timeline-button class="text-center">
+                <Button
+                    href="{'{{BaseUrl}}'}/event?project={'{{ProjectId}}'}&type=error"
+                    class="bg-primary text-white font-bold text-base rounded-[3px] px-4 py-2 no-underline inline-block"
+                    >View Timeline</Button
+                >
+            </Section>
+
+            {@html '{{#if Blocked}}'}
+            <Section data-email-summary-alert class="border border-alert bg-alert-bg p-[10px] my-4 rounded-[3px]">
+                <Text class="text-base text-dark leading-[1.3]"
+                    >{@html '<strong>{{Blocked}} events</strong> were discarded due to throttling. <a href="{{BaseUrl}}/organization/{{OrganizationId}}/billing?changePlan=true" target="_blank" style="color:#5E9A00;text-decoration:none">Upgrade now</a> to increase your limits. <a href="https://github.com/exceptionless/Exceptionless/wiki/Frequently-Asked-Questions#q-why-is-my-organization-throttled" target="_blank" style="color:#5E9A00;text-decoration:none">Click here to learn more about throttling.</a>'}</Text
+                >
+                <Section data-email-button-row class="text-center">
+                    <Button
+                        href="{'{{BaseUrl}}'}/organization/{'{{OrganizationId}}'}/billing?changePlan=true"
+                        class="bg-alert text-white font-bold text-base rounded-[3px] px-4 py-2 no-underline inline-block"
+                        >Upgrade Plan</Button
+                    >
+                </Section>
+            </Section>
+            {@html '{{/if}}'}
+
+            {@html '{{#if MostFrequent}}'}
+            <Heading as="h5" class="text-[20px] font-normal text-dark leading-[1.3] mt-0 mb-[5px]"
+                >Most Frequent</Heading
+            >
+            {@html '<ul style="margin-top:0">'}
+            {@html '{{#each MostFrequent}}<li style="margin-top:5px;margin-left:5px"><a href="{{../BaseUrl}}/project/{{../ProjectId}}/stacks/{{StackId}}" style="color:#5E9A00;text-decoration:none">{{#if IsRegressed}}<strong>[REGRESSED]</strong> {{/if}}{{#if TypeName}}<strong>{{TypeName}}:</strong> {{/if}}{{Title}}</a></li>{{/each}}'}
+            {@html '<li style="margin-top:5px;margin-left:5px"><a href="{{BaseUrl}}/project/{{ProjectId}}/stacks?sort=-total" style="color:#5E9A00;text-decoration:none">View more...</a></li></ul>'}
+            {@html '{{/if}}'}
+
+            {@html '{{#if Newest}}'}
+            <Heading as="h5" class="text-[20px] font-normal text-dark leading-[1.3] mt-0 mb-[5px]">Newest</Heading>
+            {@html '<ul style="margin-top:0">'}
+            {@html '{{#each Newest}}<li style="margin-top:5px;margin-left:5px"><a href="{{../BaseUrl}}/project/{{../ProjectId}}/stacks/{{StackId}}" style="color:#5E9A00;text-decoration:none">{{#if IsRegressed}}<strong>[REGRESSED]</strong> {{/if}}{{#if TypeName}}<strong>{{TypeName}}:</strong> {{/if}}{{Title}}</a></li>{{/each}}'}
+            {@html '<li style="margin-top:5px;margin-left:5px"><a href="{{BaseUrl}}/project/{{ProjectId}}/stacks?sort=-first" style="color:#5E9A00;text-decoration:none">View more...</a></li></ul>'}
+            {@html '{{/if}}'}
+
+            {@html '{{#if IsFreePlan}}'}
+            <Text data-email-free-plan class="text-base text-dark leading-[1.3]"
+                >You are currently on a free plan. If you would like to receive notifications for errors as they happen, <Link
+                    href="{'{{BaseUrl}}'}/organization/{'{{OrganizationId}}'}/billing?changePlan=true"
+                    class="text-primary no-underline">upgrade to a paid plan</Link
+                >.</Text
+            >
+            {@html '{{/if}}'}
+
+            {@html '{{else}}'}
+            <Text data-email-unconfigured class="text-[20px] leading-[1.6] text-dark"
+                >{@html 'Unfortunately, it appears that your "{{ProjectName}}" project has not yet been configured to send errors to'}
+                <Link href="https://exceptionless.com" class="text-primary no-underline">Exceptionless</Link>.</Text
+            >
+            <Section data-email-button-row data-email-configure-button class="text-center">
+                <Button
+                    href="{'{{BaseUrl}}'}/project/{'{{ProjectId}}'}/configure"
+                    class="bg-primary text-white font-bold text-base rounded-[3px] px-4 py-2 no-underline inline-block"
+                    >Configure Project</Button
+                >
+            </Section>
+            <Text class="text-base text-dark leading-[1.3]"
+                >Send us an email at <Link href="mailto:support@exceptionless.io" class="text-primary no-underline"
+                    >support@exceptionless.io</Link
+                > if you have any questions or need help getting started.</Text
+            >
+            {@html '{{/if}}'}
+        </Section>
+
+        <ActionsFooter summaryBlocked={'{{Blocked}}'}>
+            {#snippet actions()}
+                <li class="mt-[5px] ml-[5px]">
+                    <Link
+                        href="{'{{BaseUrl}}'}/account/notifications?project={'{{ProjectId}}'}"
+                        class="text-primary-action no-underline"
+                        >Change your notification settings for this project</Link
+                    >
+                </li>
+            {/snippet}
+        </ActionsFooter>
+    {/snippet}
+</EmailLayout>
+
+{@html jsonLd}
