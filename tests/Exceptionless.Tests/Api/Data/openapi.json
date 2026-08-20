@@ -3510,6 +3510,75 @@
         }
       }
     },
+    "/api/v2/users/me/product-tours/{tourId}": {
+      "put": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Update current user product tour progress",
+        "parameters": [
+          {
+            "name": "tourId",
+            "in": "path",
+            "description": "The stable product tour identifier.",
+            "required": true,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "The versioned product tour outcome.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProductTourProgress"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProductTourProgress"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewCurrentUser"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The product tour progress is invalid.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The current user could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/users/me/oauth-grants": {
       "get": {
         "tags": [
@@ -12731,6 +12800,37 @@
           }
         }
       },
+      "ProductTourProgress": {
+        "required": [
+          "version",
+          "status",
+          "updated_utc"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProductTourStatus"
+          },
+          "updated_utc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ProductTourStatus": {
+        "enum": [
+          "dismissed",
+          "completed"
+        ],
+        "x-enumNames": [
+          "Dismissed",
+          "Completed"
+        ]
+      },
       "ResetPasswordModel": {
         "required": [
           "password_reset_token",
@@ -13098,6 +13198,31 @@
         },
         "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
       },
+      "UpdateProductTourProgress": {
+        "required": [
+          "status",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProductTourStatus"
+              }
+            ]
+          }
+        }
+      },
       "UpdateProject": {
         "type": "object",
         "properties": {
@@ -13296,6 +13421,7 @@
           "organization_ids",
           "password_reset_token_expiration",
           "o_auth_accounts",
+          "product_tours",
           "email_notifications_enabled",
           "is_email_address_verified",
           "verify_email_address_token_expiration",
@@ -13347,6 +13473,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/OAuthAccount"
+            }
+          },
+          "product_tours": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ProductTourProgress"
             }
           },
           "full_name": {
@@ -13432,6 +13564,7 @@
         "required": [
           "has_local_account",
           "o_auth_accounts",
+          "product_tours",
           "id",
           "organization_ids",
           "full_name",
@@ -13457,6 +13590,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/OAuthAccount"
+            }
+          },
+          "product_tours": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ProductTourProgress"
             }
           },
           "id": {
