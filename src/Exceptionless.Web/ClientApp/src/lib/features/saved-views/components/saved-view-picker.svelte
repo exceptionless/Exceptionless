@@ -14,6 +14,7 @@
     import { toFilter } from '$features/events/components/filters/helpers.svelte';
     import { serializeFilters } from '$features/events/components/filters/helpers.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import { productTourHost } from '$features/product-tours/state.svelte';
     import Columns3 from '@lucide/svelte/icons/columns-3';
     import Pencil from '@lucide/svelte/icons/pencil';
     import Plus from '@lucide/svelte/icons/plus';
@@ -54,8 +55,9 @@
         filters: IFilter[];
         isModified: boolean;
         onClearSavedView: () => void;
-        onLoadView: (view: SavedView) => void;
+        onLoadView: (view: SavedView) => Promise<void> | void;
         onResetToSaved: () => void;
+        onSavedViewCreated?: (view: SavedView) => Promise<void> | void;
         savedViews: SavedView[];
         setAutoFillColumnId: (columnId: AutoFillColumnSelection) => void;
         setShowChart?: (show: boolean) => void;
@@ -80,6 +82,7 @@
         onClearSavedView,
         onLoadView,
         onResetToSaved,
+        onSavedViewCreated,
         savedViews,
         setAutoFillColumnId,
         setShowChart,
@@ -97,6 +100,8 @@
     let isDeleteDialogOpen = $state(false);
     let isColumnDialogOpen = $state(false);
     let isMenuOpen = $state(false);
+    let isCompletingTour = $state(false);
+    let pendingCreatedView = $state<SavedView>();
     let viewToDelete = $state<null | SavedView>(null);
 
     const organizationId = $derived(organization.current);
@@ -123,7 +128,7 @@
         }
     });
 
-    const saving = $derived(createMutation.isPending || updateMutation.isPending || removeMutation.isPending);
+    const saving = $derived(createMutation.isPending || updateMutation.isPending || removeMutation.isPending || isCompletingTour);
     const currentFilterString = $derived(toFilter(filters.filter((f) => f.type !== 'date')));
 
     // Auto-detect if current filters match an existing saved view for "load existing" hint
@@ -195,7 +200,7 @@
             columns: getSavedColumnSettings(),
             filter: currentFilterString || undefined,
             filter_definitions: filterDefinitions,
-            is_private: isPrivate || undefined,
+            is_private: productTourHost.isActive('create-saved-view') || isPrivate ? true : undefined,
             name,
             organization_id: organizationId,
             show_chart: showChart,
@@ -207,11 +212,25 @@
         };
 
         try {
-            const result = await createMutation.mutateAsync(body);
+            const result = pendingCreatedView ?? (await createMutation.mutateAsync(body));
+            if (!pendingCreatedView) {
+                await onSavedViewCreated?.(result);
+            }
+
+            isCompletingTour = true;
+            const completed = await productTourHost.complete('create-saved-view');
+            isCompletingTour = false;
+            if (!completed) {
+                pendingCreatedView = result;
+                return;
+            }
+
+            pendingCreatedView = undefined;
             isSaveDialogOpen = false;
-            onLoadView(result);
+            await onLoadView(result);
             toast.success(`Saved view "${result.name}" created.`);
         } catch (error) {
+            isCompletingTour = false;
             toast.error(getErrorMessage(error, 'Failed to save view. Please try again.'));
         }
     }
@@ -291,7 +310,7 @@
 <DropdownMenu.Root bind:open={isMenuOpen}>
     <DropdownMenu.Trigger>
         {#snippet child({ props })}
-            <Button {...props} class="relative gap-x-1.5 px-3" size="lg" variant="outline" title="Manage View Settings">
+            <Button {...props} class="relative gap-x-1.5 px-3" data-tour="saved-view-trigger" size="lg" variant="outline" title="Manage View Settings">
                 <SlidersHorizontal class="size-4" aria-hidden="true" />
                 <span>View</span>
                 {#if isModified}
@@ -300,7 +319,7 @@
             </Button>
         {/snippet}
     </DropdownMenu.Trigger>
-    <DropdownMenu.Content align="end" class="w-64">
+    <DropdownMenu.Content align="end" class="w-64" data-tour="saved-view-settings">
         <DropdownMenu.Group>
             <DropdownMenu.Label>Saved View</DropdownMenu.Label>
             {#if activeView}
@@ -309,7 +328,7 @@
                     Save
                 </DropdownMenu.Item>
             {/if}
-            <DropdownMenu.Item disabled={saving} onclick={openSaveDialog}>
+            <DropdownMenu.Item data-tour="saved-view-save-as" disabled={saving} onclick={openSaveDialog}>
                 <Plus class="mr-2 size-4" aria-hidden="true" />
                 Save As...
             </DropdownMenu.Item>
@@ -377,8 +396,16 @@
         {duplicateView}
         {savedViews}
         {saving}
+        defaultPrivate={productTourHost.isActive('create-saved-view')}
+        pendingCompletion={!!pendingCreatedView}
         onSave={handleSave}
         onClose={() => (isSaveDialogOpen = false)}
+        onCancel={() => {
+            pendingCreatedView = undefined;
+            if (productTourHost.isActive('create-saved-view')) {
+                productTourHost.dismiss('create-saved-view');
+            }
+        }}
         {onLoadView}
     />
 {/if}

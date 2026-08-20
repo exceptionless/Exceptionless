@@ -184,10 +184,12 @@
                 <div class="ml-2 flex shrink-0 items-center gap-2">
                     <StackLogLevel {stack} />
                     <AssistantFixButton {prepareContext} resource={assistantResource} />
-                    <ButtonGroup.Root>
-                        <StackStatusDropdownMenu {stack} />
-                        <StackOptionsDropdownMenu {onDeleted} {stack} />
-                    </ButtonGroup.Root>
+                    <div data-tour="event-stack-triage">
+                        <ButtonGroup.Root>
+                            <StackStatusDropdownMenu {stack} />
+                            <StackOptionsDropdownMenu {onDeleted} {stack} />
+                        </ButtonGroup.Root>
+                    </div>
                 </div>
             </Card.Title>
         </Card.Header>
