@@ -1473,7 +1473,7 @@ public partial class EventEndpointTests : IntegrationTestsBase
         Assert.NotNull(viewOrganization);
         Assert.False(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
-        Assert.Equal(12, viewOrganization.Usage.Count);
+        Assert.Single(viewOrganization.Usage);
         Assert.Single(viewOrganization.UsageHours);
 
         // submit bach of events one over limit
@@ -1497,7 +1497,7 @@ public partial class EventEndpointTests : IntegrationTestsBase
         Assert.NotNull(viewOrganization);
         Assert.False(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
-        Assert.Equal(12, viewOrganization.Usage.Count);
+        Assert.Single(viewOrganization.Usage);
         Assert.Single(viewOrganization.UsageHours);
 
         // process events
@@ -1596,7 +1596,7 @@ public partial class EventEndpointTests : IntegrationTestsBase
         organization = await _organizationRepository.GetByIdAsync(organizationId);
         Assert.NotNull(organization);
 
-        organizationUsage = organization.Usage.Single();
+        organizationUsage = organization.GetCurrentUsage(TimeProvider);
         Assert.Equal(total, organizationUsage.Total);
         Assert.Equal(blocked, organizationUsage.Blocked);
         Assert.Equal(0, organizationUsage.TooBig);
@@ -1725,7 +1725,7 @@ public partial class EventEndpointTests : IntegrationTestsBase
         Assert.NotNull(viewOrganization);
         Assert.False(viewOrganization.IsThrottled);
         Assert.False(viewOrganization.IsOverMonthlyLimit);
-        Assert.Equal(12, viewOrganization.Usage.Count);
+        Assert.Single(viewOrganization.Usage);
         Assert.Single(viewOrganization.UsageHours);
 
         // submit bach of events one over limit
@@ -1857,7 +1857,7 @@ public partial class EventEndpointTests : IntegrationTestsBase
         organization = await _organizationRepository.GetByIdAsync(organizationId);
         Assert.NotNull(organization);
 
-        organizationUsage = organization.Usage.Single();
+        organizationUsage = organization.GetCurrentUsage(TimeProvider);
         Assert.Equal(total, organizationUsage.Total);
         Assert.Equal(blocked, organizationUsage.Blocked);
         Assert.Equal(0, organizationUsage.TooBig);
