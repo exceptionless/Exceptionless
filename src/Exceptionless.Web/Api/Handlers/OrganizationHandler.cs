@@ -9,6 +9,7 @@ using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Validation;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Api.Results;
@@ -131,13 +132,49 @@ public class OrganizationHandler(
         if (!message.Changes.GetChangedPropertyNames().Any())
             return await MapToViewAsync(original);
 
-        var error = CanUpdate(message.Changes);
+        var error = await CanUpdateAsync(original, message.Changes, message.Context);
         if (error is not null)
             return error;
 
+        var changed = message.Changes.GetEntity();
+        bool budgetSettingsChanged = message.Changes.ContainsChangedProperty(p => p.BudgetAlertSettings!);
+        bool wereAlertsEnabled = original.BudgetAlertSettings is { Enabled: true };
+        var previousThresholds = original.BudgetAlertSettings?.Thresholds?.ToHashSet() ?? [];
+
         message.Changes.Patch(original);
-        await repository.SaveAsync(original, o => o.Cache());
-        return await MapToViewAsync(original);
+        if (budgetSettingsChanged)
+            original.BudgetAlertSettings = changed.BudgetAlertSettings;
+
+        Organization saved;
+        try
+        {
+            saved = await repository.SaveAsync(original, o => o.Cache());
+        }
+        catch (MiniValidatorException ex)
+        {
+            return ex.ToValidationResult<ViewOrganization>();
+        }
+
+        if (budgetSettingsChanged && saved.BudgetAlertSettings is { Enabled: true, Thresholds: not null })
+        {
+            int[] thresholdsToEvaluate = wereAlertsEnabled
+                ? saved.BudgetAlertSettings.Thresholds.Except(previousThresholds).ToArray()
+                : saved.BudgetAlertSettings.Thresholds.ToArray();
+
+            if (thresholdsToEvaluate.Length > 0)
+            {
+                try
+                {
+                    await usageService.EvaluateBudgetAlertsAfterSettingsChangeAsync(saved, thresholdsToEvaluate);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to evaluate newly enabled budget alerts for organization {OrganizationId}", saved.Id);
+                }
+            }
+        }
+
+        return await MapToViewAsync(saved);
     }
 
     public async Task<Result<ProfileImageUpdate<ViewOrganization>>> Handle(SetOrganizationIcon message)
@@ -847,10 +884,19 @@ public class OrganizationHandler(
         return organization;
     }
 
-    private static Result<ViewOrganization>? CanUpdate(Delta<NewOrganization> changes)
+    private async Task<Result<ViewOrganization>?> CanUpdateAsync(Organization original, Delta<UpdateOrganization> changes, HttpContext httpContext)
     {
-        if (changes.ContainsChangedProperty(p => p.Name) && String.IsNullOrEmpty(changes.GetEntity().Name))
+        var changed = changes.GetEntity();
+        if (changes.ContainsChangedProperty(p => p.Name) && String.IsNullOrEmpty(changed.Name))
             return Result.BadRequest("Organization name is required.");
+
+        if (changes.ContainsChangedProperty(p => p.Name) && !await IsOrganizationNameAvailableInternalAsync(changed.Name, httpContext, original.Id))
+            return Result.BadRequest("A organization with this name already exists.");
+
+        if (changes.ContainsChangedProperty(p => p.BudgetAlertSettings!) &&
+            changed.BudgetAlertSettings is { Enabled: true } &&
+            original.GetMaxEventsPerMonthWithBonus(timeProvider) < 0)
+            return Result.BadRequest("Budget alerts cannot be enabled for an organization with an unlimited event allowance.");
 
         if (changes.GetChangedPropertyNames().Contains("OrganizationId"))
             return Result.BadRequest("OrganizationId cannot be modified.");
@@ -1018,6 +1064,16 @@ public class OrganizationHandler(
         return viewOrganizations;
     }
 
+    private async Task<bool> IsOrganizationNameAvailableInternalAsync(string? name, HttpContext httpContext, string? excludeOrganizationId = null)
+    {
+        if (String.IsNullOrWhiteSpace(name))
+            return false;
+
+        string decodedName = Uri.UnescapeDataString(name).Trim().ToLowerInvariant();
+        var results = await repository.GetByIdsAsync(httpContext.Request.GetAssociatedOrganizationIds().ToArray(), o => o.Cache());
+        return !results.Any(o => o.Id != excludeOrganizationId && String.Equals(o.Name.Trim().ToLowerInvariant(), decodedName, StringComparison.OrdinalIgnoreCase));
+    }
+
     private static Result PermissionToResult(PermissionResult permission)
     {
         if (permission.StatusCode == StatusCodes.Status404NotFound)
@@ -1031,7 +1087,6 @@ public class OrganizationHandler(
 
         return Result.Forbidden(permission.Message ?? "Access denied.");
     }
-
     private static User GetCurrentUser(HttpContext httpContext) => httpContext.Request.GetUser();
     private static bool IsStatsMode(string? mode) => !String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.OrdinalIgnoreCase);
     private static bool messageIsGlobalAdmin(HttpContext httpContext) => httpContext.Request.IsGlobalAdmin();

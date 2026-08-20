@@ -1,4 +1,6 @@
-export type { Invoice, InvoiceGridModel, NewOrganization, ViewOrganization } from '$generated/api';
+import type { UpdateOrganization as GeneratedUpdateOrganization } from '$generated/api';
+
+export type { Invoice, InvoiceGridModel, NewOrganization, OrganizationBudgetAlertSettings, ViewOrganization } from '$generated/api';
 
 // TODO: This should be generated from the backend enum - investigate why it wasn't included in the generated API
 export enum SuspensionCode {
@@ -7,3 +9,5 @@ export enum SuspensionCode {
     Abuse = 2,
     Other = 100
 }
+
+export type UpdateOrganization = Partial<GeneratedUpdateOrganization>;

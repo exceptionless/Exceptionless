@@ -5907,12 +5907,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NewOrganization"
+                "$ref": "#/components/schemas/UpdateOrganization"
               }
             },
             "application/*\u002Bjson": {
               "schema": {
-                "$ref": "#/components/schemas/NewOrganization"
+                "$ref": "#/components/schemas/UpdateOrganization"
               }
             }
           },
@@ -5983,12 +5983,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NewOrganization"
+                "$ref": "#/components/schemas/UpdateOrganization"
               }
             },
             "application/*\u002Bjson": {
               "schema": {
-                "$ref": "#/components/schemas/NewOrganization"
+                "$ref": "#/components/schemas/UpdateOrganization"
               }
             }
           },
@@ -11804,6 +11804,16 @@
           "delete_bot_data_enabled": {
             "type": "boolean"
           },
+          "ingest_limit": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProjectIngestLimit"
+              }
+            ]
+          },
           "promoted_tabs": {
             "type": [
               "null",
@@ -12482,6 +12492,27 @@
           }
         }
       },
+      "OrganizationBudgetAlertSettings": {
+        "required": [
+          "enabled",
+          "thresholds"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "thresholds": {
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "description": "Percentage thresholds of the organization\u0027s effective monthly event allowance.\nExample: [50, 80, 90]."
+          }
+        }
+      },
       "PersistentEvent": {
         "required": [
           "organization_id",
@@ -12730,6 +12761,42 @@
             ]
           }
         }
+      },
+      "ProjectIngestLimit": {
+        "required": [
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/ProjectIngestLimitType"
+          },
+          "fixed_limit": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "percent_of_organization_limit": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "ProjectIngestLimitType": {
+        "enum": [
+          0,
+          1
+        ],
+        "type": "integer",
+        "x-enumNames": [
+          "Fixed",
+          "PercentOfOrganizationLimit"
+        ]
       },
       "ResetPasswordModel": {
         "required": [
@@ -13098,6 +13165,25 @@
         },
         "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
       },
+      "UpdateOrganization": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "budget_alert_settings": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OrganizationBudgetAlertSettings"
+              }
+            ]
+          }
+        },
+        "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
+      },
       "UpdateProject": {
         "type": "object",
         "properties": {
@@ -13107,14 +13193,28 @@
           "delete_bot_data_enabled": {
             "type": "boolean"
           },
+          "ingest_limit": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProjectIngestLimit"
+              }
+            ]
+          },
           "promoted_tabs": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "type": "string"
-            }
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
           }
         },
         "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
@@ -13802,6 +13902,16 @@
           },
           "is_over_request_limit": {
             "type": "boolean"
+          },
+          "budget_alert_settings": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OrganizationBudgetAlertSettings"
+              }
+            ]
           }
         }
       },
@@ -13818,6 +13928,7 @@
           "event_count",
           "has_premium_features",
           "has_slack_integration",
+          "is_smart_throttled",
           "usage_hours",
           "usage"
         ],
@@ -13880,6 +13991,33 @@
           },
           "has_slack_integration": {
             "type": "boolean"
+          },
+          "ingest_limit": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProjectIngestLimit"
+              }
+            ]
+          },
+          "effective_ingest_limit": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "is_smart_throttled": {
+            "type": "boolean"
+          },
+          "smart_throttle_sample_rate": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
           },
           "usage_hours": {
             "type": "array",

@@ -6,16 +6,20 @@ namespace Exceptionless.Tests.Mail;
 public class CountingMailer : IMailer
 {
     private int _organizationNoticeCount;
+    private int _organizationBudgetAlertAttemptCount;
 
     public int OrganizationNoticeCount => _organizationNoticeCount;
 
     public List<OrganizationNoticeCall> OrganizationNoticeCalls { get; } = [];
+    public List<OrganizationBudgetAlertCall> OrganizationBudgetAlertCalls { get; } = [];
+    public List<ProjectThrottleCall> ProjectThrottleCalls { get; } = [];
 
     /// <summary>
     /// When true, <see cref="SendOrganizationNoticeAsync"/> throws instead of recording a call.
     /// Reset by <see cref="Reset"/>.
     /// </summary>
     public bool ShouldThrow { get; set; }
+    public int? ThrowOnOrganizationBudgetAlertAttempt { get; set; }
 
     public Task<bool> SendContactRequestAsync(string name, string emailAddress, string? company, string? subject, string message, string? clientIpAddress, string? userAgent, string? referrer)
     {
@@ -55,6 +59,28 @@ public class CountingMailer : IMailer
         return Task.CompletedTask;
     }
 
+    public Task SendOrganizationBudgetAlertAsync(User user, Organization organization, int threshold, int thresholdEventCount, int currentEventCount, int eventLimit)
+    {
+        int attempt = Interlocked.Increment(ref _organizationBudgetAlertAttemptCount);
+        if (ThrowOnOrganizationBudgetAlertAttempt == attempt)
+            throw new InvalidOperationException("Simulated budget alert mailer failure.");
+
+        lock (OrganizationBudgetAlertCalls)
+        {
+            OrganizationBudgetAlertCalls.Add(new OrganizationBudgetAlertCall(user.Id, organization.Id, threshold, thresholdEventCount, currentEventCount, eventLimit));
+        }
+        return Task.CompletedTask;
+    }
+
+    public Task SendProjectThrottledNoticeAsync(User user, Organization organization, Project project, double sampleRate, int currentEventCount, int eventLimit)
+    {
+        lock (ProjectThrottleCalls)
+        {
+            ProjectThrottleCalls.Add(new ProjectThrottleCall(user.Id, organization.Id, project.Id, sampleRate, currentEventCount, eventLimit));
+        }
+        return Task.CompletedTask;
+    }
+
     public Task SendProjectDailySummaryAsync(User user, Project project, IEnumerable<Stack>? mostFrequent, IEnumerable<Stack>? newest, DateTime startDate, bool hasSubmittedEvents, double count, double uniqueCount, double newCount, double fixedCount, int blockedCount, int tooBigCount, bool isFreePlan)
     {
         return Task.CompletedTask;
@@ -73,12 +99,24 @@ public class CountingMailer : IMailer
     public void Reset()
     {
         Interlocked.Exchange(ref _organizationNoticeCount, 0);
+        Interlocked.Exchange(ref _organizationBudgetAlertAttemptCount, 0);
         lock (OrganizationNoticeCalls)
         {
             OrganizationNoticeCalls.Clear();
         }
+        lock (OrganizationBudgetAlertCalls)
+        {
+            OrganizationBudgetAlertCalls.Clear();
+        }
+        lock (ProjectThrottleCalls)
+        {
+            ProjectThrottleCalls.Clear();
+        }
         ShouldThrow = false;
+        ThrowOnOrganizationBudgetAlertAttempt = null;
     }
 }
 
 public record OrganizationNoticeCall(string UserId, string OrganizationId, bool IsOverMonthlyLimit, bool IsOverHourlyLimit);
+public record OrganizationBudgetAlertCall(string UserId, string OrganizationId, int Threshold, int ThresholdEventCount, int CurrentEventCount, int EventLimit);
+public record ProjectThrottleCall(string UserId, string OrganizationId, string ProjectId, double SampleRate, int CurrentEventCount, int EventLimit);

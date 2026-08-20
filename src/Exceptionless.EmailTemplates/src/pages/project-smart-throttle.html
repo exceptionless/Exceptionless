@@ -1,0 +1,23 @@
+<container>
+  <spacer size="5"></spacer>
+  <row>
+    <columns small="12">
+      <p class="lead">
+        Smart throttling is active for <strong>\{{ProjectName}}</strong> in <strong>\{{OrganizationName}}</strong>.
+      </p>
+      <p>
+        This project has accepted \{{CurrentEventCount}} events this month, above its current fair-share limit of
+        \{{EventLimit}} events. To protect the organization's remaining allowance, Exceptionless is accepting a
+        stable \{{SamplePercent}}% sample from this project. Events outside that sample are counted as blocked.
+      </p>
+      <p>
+        Other projects are unaffected unless they independently meet the same smart-throttling criteria.
+      </p>
+      <center>
+        <button class="button radius" href="\{{BaseUrl}}/next/project/\{{ProjectId}}/usage">
+          View Project Usage
+        </button>
+      </center>
+    </columns>
+  </row>
+</container>

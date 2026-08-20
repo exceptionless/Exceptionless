@@ -23,6 +23,10 @@ public class ViewProject : IIdentity, IData, IHaveCreatedDate
     public long EventCount { get; set; }
     public bool HasPremiumFeatures { get; set; }
     public bool HasSlackIntegration { get; set; }
+    public ProjectIngestLimit? IngestLimit { get; set; }
+    public int? EffectiveIngestLimit { get; set; }
+    public bool IsSmartThrottled { get; set; }
+    public double? SmartThrottleSampleRate { get; set; }
     public ICollection<UsageHourInfo> UsageHours { get; set; } = new SortedSet<UsageHourInfo>(Comparer<UsageHourInfo>.Create((a, b) => a.Date.CompareTo(b.Date)));
     public ICollection<UsageInfo> Usage { get; set; } = new SortedSet<UsageInfo>(Comparer<UsageInfo>.Create((a, b) => a.Date.CompareTo(b.Date)));
 }
