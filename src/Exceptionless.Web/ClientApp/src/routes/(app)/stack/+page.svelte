@@ -44,7 +44,7 @@
     } from '$features/events/components/filters/helpers.svelte';
     import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
     import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
-    import { defaultStackColumnVisibility, getColumns } from '$features/events/components/table/options.svelte';
+    import { defaultStackColumnVisibility, getColumns, getStackSortMode, type StackSortMode } from '$features/events/components/table/options.svelte';
     import { filterUsesPremiumFeatures } from '$features/events/premium-filter';
     import { organization } from '$features/organizations/context.svelte';
     import { premiumPage } from '$features/organizations/premium-page.svelte';
@@ -115,6 +115,7 @@
         project: undefined as string | undefined,
         reference: undefined as string | undefined,
         session: undefined as string | undefined,
+        sort: undefined as string | undefined,
         stack: undefined as string | undefined,
         status: undefined as string | undefined,
         tag: undefined as string | undefined,
@@ -215,6 +216,24 @@
             .filter((item) => item);
     }
 
+    function getPersistedStackSort(): string | undefined {
+        if (queryParams.sort != null) {
+            return getStackSortMode(queryParams.sort) ?? 'stack_frequent';
+        }
+
+        return savedViewsState.activeSavedView?.sort ?? undefined;
+    }
+
+    function getEffectiveStackSort(): StackSortMode {
+        return getStackSortMode(getPersistedStackSort()) ?? 'stack_frequent';
+    }
+
+    function setStackSort(mode: StackSortMode): void {
+        const savedViewSort = getStackSortMode(savedViewsState.activeSavedView?.sort) ?? 'stack_frequent';
+        queryParams.sort = mode === savedViewSort ? null : mode;
+        table.setPageIndex(0);
+    }
+
     updateFilterCache(filterCacheKey(DEFAULT_FILTER), DEFAULT_FILTERS);
     const queryParams = createQueryParameters({
         defaults: DEFAULT_PARAMS,
@@ -229,6 +248,7 @@
             project: 'string',
             reference: 'string',
             session: 'string',
+            sort: 'string',
             stack: 'string',
             status: 'string',
             tag: 'string',
@@ -255,6 +275,7 @@
         getFilterDefinitions: () => serializeFilters(filters ?? []),
         getShowChart: () => showChart,
         getShowStats: () => showStats,
+        getSort: getPersistedStackSort,
         getTime: getQueryTime,
         queryParams,
         setColumnOrder: (v) => table.setColumnOrder(v),
@@ -626,7 +647,9 @@
         set limit(value) {
             setPageSize(value);
         },
-        mode: 'stack_frequent',
+        get mode() {
+            return getEffectiveStackSort();
+        },
         offset: DEFAULT_OFFSET,
         get page() {
             return queryParams.page ?? undefined;
@@ -667,6 +690,7 @@
             columnPersistenceKey: 'stacks-column-visibility',
             get columns() {
                 return getColumns<EventSummaryModel<SummaryTemplateKeys>>(eventsQueryParameters.mode, {
+                    onStackSort: setStackSort,
                     onTagClick: (tag) => onFilterChanged(new TagFilter([tag])),
                     showType: !hasSingleTypeFilter(eventsQueryParameters.filter)
                 });
@@ -864,6 +888,7 @@
                     {showStats}
                     setShowChart={(v) => (showChart = v)}
                     setShowStats={(v) => (showStats = v)}
+                    sort={getStackSortMode(getPersistedStackSort())}
                     {table}
                     time={getQueryTime() ?? undefined}
                     view={VIEW}

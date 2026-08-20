@@ -2,9 +2,38 @@ import { describe, expect, it } from 'vitest';
 
 import type { EventSummaryModel, StackSummaryModel, SummaryTemplateKeys } from '../summary';
 
-import { defaultEventColumnVisibility, defaultStackColumnVisibility, getColumns } from './options.svelte';
+import { defaultEventColumnVisibility, defaultStackColumnVisibility, getColumns, getStackSortMode } from './options.svelte';
 
 describe('event table columns', () => {
+    it('accepts only supported stack sort modes', () => {
+        expect(getStackSortMode('stack_frequent')).toBe('stack_frequent');
+        expect(getStackSortMode('stack_recent')).toBe('stack_recent');
+        expect(getStackSortMode('-events')).toBe('stack_frequent');
+        expect(getStackSortMode('-last')).toBe('stack_recent');
+        expect(getStackSortMode('stack_new')).toBeUndefined();
+        expect(getStackSortMode('-last_occurrence')).toBeUndefined();
+        expect(getStackSortMode(undefined)).toBeUndefined();
+    });
+
+    it('uses dedicated stack-mode controls instead of API sort parameters', () => {
+        const result = getColumns<StackSummaryModel<SummaryTemplateKeys>>('stack_frequent');
+        const columnsById = Object.fromEntries(result.map((column) => [column.id, column]));
+
+        expect(columnsById.events?.enableSorting).toBe(false);
+        expect(columnsById.first?.enableSorting).toBe(false);
+        expect(columnsById.last?.enableSorting).toBe(false);
+        expect(columnsById.events?.header).toBeTypeOf('function');
+        expect(columnsById.first?.header).toBe('First');
+        expect(columnsById.last?.header).toBeTypeOf('function');
+    });
+
+    it('keeps summary message column unsortable', () => {
+        const result = getColumns<EventSummaryModel<SummaryTemplateKeys>>('summary');
+        const columnsById = Object.fromEntries(result.map((column) => [column.id, column]));
+
+        expect(columnsById.message?.enableSorting).toBe(false);
+    });
+
     it('offers project and tags as hidden optional columns', () => {
         const columns = getColumns<EventSummaryModel<SummaryTemplateKeys>>();
         const columnIds = columns.map((column) => column.id);
