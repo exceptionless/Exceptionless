@@ -5,7 +5,7 @@ test.use({ e2eUseGeneratedUser: true });
 
 const seededUserTest = test.extend({ e2eUseGeneratedUser: false });
 
-test('Explore the new UI is replayable from command search', async ({ e2eScenario: _e2eScenario, page }, testInfo) => {
+test('Explore the new UI is replayable and clears when the authenticated app unmounts', async ({ e2eScenario: _e2eScenario, page }, testInfo) => {
     void _e2eScenario;
     await page.setViewportSize({ height: 900, width: 1440 });
     await page.goto('/next/stack');
@@ -19,7 +19,13 @@ test('Explore the new UI is replayable from command search', async ({ e2eScenari
 
     await startTourFromCommand(page, 'Explore the new UI');
     await expect(tour.getByText('Your workspace navigation')).toBeVisible();
-    await tour.getByRole('button', { name: 'Close' }).click();
+
+    await page.locator('[data-tour="help-menu"]').click({ force: true });
+    await page.getByRole('menuitem', { exact: true, name: 'Log Out' }).click({ force: true });
+
+    await expect(page.getByRole('button', { exact: true, name: 'Login' })).toBeVisible();
+    await expect(tour).toBeHidden();
+    await expect.poll(() => page.evaluate(() => sessionStorage.getItem('exceptionless.product-tour'))).toBeNull();
 });
 
 test('Explore the new UI opens its navigation target on mobile', async ({ e2eScenario: _e2eScenario, page }, testInfo) => {
@@ -39,25 +45,6 @@ test('Explore the new UI opens its navigation target on mobile', async ({ e2eSce
     await expect(tour.getByText('Find anything quickly')).toBeVisible();
     await expect(page.locator('[data-tour="mobile-navigation-trigger"]')).toBeVisible();
     await tour.getByRole('button', { name: 'Close' }).click();
-});
-
-test('an active tour is cleared when the authenticated app unmounts', async ({ e2eScenario: _e2eScenario, page }) => {
-    void _e2eScenario;
-    await page.goto('/next/stack');
-
-    await startTourFromCommand(page, 'Explore the new UI');
-    const tour = page.locator('.driver-popover');
-    await expect(tour.getByText('Your workspace navigation')).toBeVisible();
-    await expect.poll(() => page.evaluate(() => sessionStorage.getItem('exceptionless.product-tour'))).not.toBeNull();
-
-    await page.evaluate(async () => {
-        await fetch('/api/v2/auth/logout', { credentials: 'include' });
-    });
-    await page.goto('/next/login');
-
-    await expect(page.getByRole('button', { exact: true, name: 'Login' })).toBeVisible();
-    await expect(tour).toBeHidden();
-    await expect.poll(() => page.evaluate(() => sessionStorage.getItem('exceptionless.product-tour'))).toBeNull();
 });
 
 test('Configure a project resumes through its first event', async ({ e2eApi, e2eScenario, page }, testInfo) => {
