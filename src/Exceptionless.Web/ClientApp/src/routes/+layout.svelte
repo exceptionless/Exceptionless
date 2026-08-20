@@ -8,7 +8,7 @@
     import { Toaster } from '$comp/ui/sonner';
     import { accessToken } from '$features/auth/index.svelte';
     import { handleUnexpectedUnauthorized } from '$features/auth/unauthorized';
-    import { buildServiceStatusUrl, createServiceStatusRedirector, isServiceUnavailableStatus } from '$features/status/service-status-redirect';
+    import { buildServiceStatusUrl, createServiceStatusRedirector } from '$features/status/service-status-redirect';
     import { type FetchClientContext, ProblemDetails, setAccessTokenFunc, setBaseUrl, setRequestOptions, useMiddleware } from '@foundatiofx/fetchclient';
     import { error } from '@sveltejs/kit';
     import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
@@ -67,7 +67,7 @@
             return;
         } else if (status === 404 && !ctx.options.expectedStatusCodes?.includes(404)) {
             throw error(404, 'Not found');
-        } else if (isServiceUnavailableStatus(status) && !ctx.options.expectedStatusCodes?.includes(status)) {
+        } else if ([0, 408, 503].includes(status) && !ctx.options.expectedStatusCodes?.includes(status)) {
             if (page.url.pathname.startsWith(resolve('/status'))) {
                 return;
             }

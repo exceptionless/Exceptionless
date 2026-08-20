@@ -1,16 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { buildServiceStatusUrl, createServiceStatusRedirector, isServiceUnavailableStatus } from './service-status-redirect';
-
-describe('isServiceUnavailableStatus', () => {
-    it.each([0, 408, 500, 503, 599])('treats %s as service unavailable', (status) => {
-        expect(isServiceUnavailableStatus(status)).toBe(true);
-    });
-
-    it.each([200, 400, 404, 429])('does not treat %s as service unavailable', (status) => {
-        expect(isServiceUnavailableStatus(status)).toBe(false);
-    });
-});
+import { buildServiceStatusUrl, createServiceStatusRedirector } from './service-status-redirect';
 
 describe('buildServiceStatusUrl', () => {
     it('preserves the current path, query, and hash as an encoded redirect', () => {
