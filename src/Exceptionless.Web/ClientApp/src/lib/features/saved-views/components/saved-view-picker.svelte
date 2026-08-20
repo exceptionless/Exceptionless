@@ -100,6 +100,8 @@
     let isDeleteDialogOpen = $state(false);
     let isColumnDialogOpen = $state(false);
     let isMenuOpen = $state(false);
+    let isCompletingTour = $state(false);
+    let pendingCreatedView = $state<SavedView>();
     let viewToDelete = $state<null | SavedView>(null);
 
     const organizationId = $derived(organization.current);
@@ -126,7 +128,7 @@
         }
     });
 
-    const saving = $derived(createMutation.isPending || updateMutation.isPending || removeMutation.isPending);
+    const saving = $derived(createMutation.isPending || updateMutation.isPending || removeMutation.isPending || isCompletingTour);
     const currentFilterString = $derived(toFilter(filters.filter((f) => f.type !== 'date')));
 
     // Auto-detect if current filters match an existing saved view for "load existing" hint
@@ -210,16 +212,25 @@
         };
 
         try {
-            const result = await createMutation.mutateAsync(body);
-            isSaveDialogOpen = false;
-            await onSavedViewCreated?.(result);
-            if (!(await productTourHost.complete('create-saved-view'))) {
+            const result = pendingCreatedView ?? (await createMutation.mutateAsync(body));
+            if (!pendingCreatedView) {
+                await onSavedViewCreated?.(result);
+            }
+
+            isCompletingTour = true;
+            const completed = await productTourHost.complete('create-saved-view');
+            isCompletingTour = false;
+            if (!completed) {
+                pendingCreatedView = result;
                 return;
             }
 
+            pendingCreatedView = undefined;
+            isSaveDialogOpen = false;
             await onLoadView(result);
             toast.success(`Saved view "${result.name}" created.`);
         } catch (error) {
+            isCompletingTour = false;
             toast.error(getErrorMessage(error, 'Failed to save view. Please try again.'));
         }
     }
@@ -386,9 +397,11 @@
         {savedViews}
         {saving}
         defaultPrivate={productTourHost.isActive('create-saved-view')}
+        pendingCompletion={!!pendingCreatedView}
         onSave={handleSave}
         onClose={() => (isSaveDialogOpen = false)}
         onCancel={() => {
+            pendingCreatedView = undefined;
             if (productTourHost.isActive('create-saved-view')) {
                 productTourHost.dismiss('create-saved-view');
             }

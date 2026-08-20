@@ -28,11 +28,23 @@
         onLoadView: (view: SavedView) => Promise<void> | void;
         onSave: (name: string, slug: string, isPrivate: boolean) => Promise<void>;
         open: boolean;
+        pendingCompletion?: boolean;
         savedViews: SavedView[];
         saving: boolean;
     }
 
-    let { defaultPrivate = false, duplicateView, onCancel, onClose, onLoadView, onSave, open = $bindable(), savedViews, saving }: Props = $props();
+    let {
+        defaultPrivate = false,
+        duplicateView,
+        onCancel,
+        onClose,
+        onLoadView,
+        onSave,
+        open = $bindable(),
+        pendingCompletion = false,
+        savedViews,
+        saving
+    }: Props = $props();
 
     let saveName = $state('');
     let saveSlug = $state('');
@@ -84,7 +96,7 @@
     });
     const visibleNameError = $derived(attemptedSubmit || saveName.length > 0 ? nameError : undefined);
     const visibleSlugError = $derived(attemptedSubmit || saveName.length > 0 || saveSlug.length > 0 ? slugError : undefined);
-    const canSave = $derived(!nameError && !slugError && !saving);
+    const canSave = $derived((pendingCompletion || (!nameError && !slugError)) && !saving);
 
     $effect(() => {
         if (open) {
@@ -163,13 +175,15 @@
             />
         {:else if defaultPrivate && productTourHost.activeStepId === 'save-view'}
             <ProductTourInlineCallout
-                description="Click Save when ready. The guide completes only after the private view is successfully created and loaded."
+                description={pendingCompletion
+                    ? 'The view was created, but the guide could not save its progress. Retry to finish without creating another view.'
+                    : 'Click Save when ready. The guide completes only after the private view is successfully created and loaded.'}
                 onDismiss={dismissTour}
                 title="Create the saved view"
                 tourId="create-saved-view"
             />
         {/if}
-        {#if duplicateView}
+        {#if duplicateView && !pendingCompletion}
             <div class="bg-muted rounded-md p-3">
                 <Muted>
                     Current filters match <strong>"{duplicateView.name}"</strong>. You can
@@ -204,6 +218,7 @@
                     aria-describedby={visibleNameError ? 'view-name-error' : undefined}
                     required
                     autofocus
+                    disabled={pendingCompletion}
                 />
                 {#if visibleNameError}
                     <p id="view-name-error" class="text-destructive text-sm">{visibleNameError}</p>
@@ -219,6 +234,7 @@
                     aria-invalid={!!visibleSlugError}
                     aria-describedby={visibleSlugError ? 'view-slug-error' : undefined}
                     required
+                    disabled={pendingCompletion}
                     oninput={() => {
                         isSlugDirty = true;
                     }}
@@ -232,7 +248,7 @@
                     <Label for="view-private" class="text-sm">Private</Label>
                     <Muted>{defaultPrivate ? 'Required for this guided practice view' : 'Only visible to you'}</Muted>
                 </div>
-                <Switch disabled={defaultPrivate} id="view-private" bind:checked={isPrivate} />
+                <Switch disabled={defaultPrivate || pendingCompletion} id="view-private" bind:checked={isPrivate} />
             </div>
             <Dialog.Footer>
                 <Button
@@ -244,7 +260,7 @@
                     }}>Cancel</Button
                 >
                 <Button data-tour="saved-view-submit" type="submit" disabled={!canSave}>
-                    {saving ? 'Saving...' : 'Save'}
+                    {saving ? 'Saving...' : pendingCompletion ? 'Retry guide completion' : 'Save'}
                 </Button>
             </Dialog.Footer>
         </form>
