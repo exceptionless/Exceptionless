@@ -24,9 +24,32 @@ const int DefaultApiHttpsPort = 7111;
 string exceptionlessServerUrl = worktreePorts?.ApiHttpsUrl ?? $"https://api-ex.dev.localhost:{DefaultApiHttpsPort}";
 const string SharedEmailConnectionString = "smtp://localhost:1026";
 
-var elastic = builder.AddElasticsearch("Elasticsearch", port: 9200)
-    .WithDataVolume("exceptionless.data.v1")
-    .WithEndpointProxySupport(false);
+IResourceBuilder<IResourceWithConnectionString> elastic;
+if (builder.ExecutionContext.IsRunMode)
+{
+    var ownedElastic = builder.AddElasticsearch("Elasticsearch", port: 9200)
+        .WithDataVolume("exceptionless.data.v1")
+        .WithEndpointProxySupport(false);
+
+    var localElastic = ownedElastic
+        .WithLifetime(ContainerLifetime.Persistent)
+        .WithContainerName("Exceptionless-Elasticsearch");
+
+    if (!servicesOnly && includeDevTools)
+    {
+        localElastic.WithKibana(b => b
+            .WithLifetime(ContainerLifetime.Persistent)
+            .WithEndpointProxySupport(false)
+            .WithContainerName("Exceptionless-Kibana")
+            .WithParentRelationship(ownedElastic));
+    }
+
+    elastic = localElastic;
+}
+else
+{
+    elastic = builder.AddConnectionString("Elasticsearch");
+}
 
 var storage = builder.AddAzureStorage("Storage")
     .RunAsEmulator(c =>
@@ -62,24 +85,10 @@ var mail = builder.AddContainer("Mail", "axllent/mailpit")
     .WithImageTag("v1.27.10")
     .WithEndpointProxySupport(false)
     .WithHttpEndpoint(port: 8026, targetPort: 8025, name: "http")
-    .WithUrlForEndpoint("http", u => { u.DisplayText = "Mail"; u.DisplayOrder = 100; })
+    .WithUrlForEndpoint("http", u => { u.DisplayText = "Mail"; SetDisplayOrder(u, 100); })
     .WithHttpHealthCheck("/readyz")
     .WithEndpoint(targetPort: 1025, port: 1026)
     .WithUrlForEndpoint("tcp", u => u.DisplayLocation = UrlDisplayLocation.DetailsOnly);
-
-var ownedElastic = elastic;
-elastic = ownedElastic
-    .WithLifetime(ContainerLifetime.Persistent)
-    .WithContainerName("Exceptionless-Elasticsearch");
-
-if (!servicesOnly && includeDevTools)
-{
-    elastic = elastic.WithKibana(b => b
-        .WithLifetime(ContainerLifetime.Persistent)
-        .WithEndpointProxySupport(false)
-        .WithContainerName("Exceptionless-Kibana")
-        .WithParentRelationship(ownedElastic));
-}
 
 var ownedCache = cache;
 cache = ownedCache
@@ -115,7 +124,7 @@ if (!servicesOnly)
         .WaitFor(cache)
         .WaitFor(mail)
         .WithExternalHttpEndpoints()
-        .WithUrlForEndpoint("https", u => { u.DisplayText = "Open API"; u.DisplayOrder = 100; })
+        .WithUrlForEndpoint("https", u => { u.DisplayText = "Open API"; SetDisplayOrder(u, 100); })
         .WithUrlForEndpoint("http", u => u.DisplayLocation = UrlDisplayLocation.DetailsOnly)
         .WithHttpHealthCheck("/health");
 
@@ -161,84 +170,94 @@ if (!servicesOnly)
             .WithEndpoint("http", e => e.Port = worktreePorts.JobsHttp);
     }
 
+    if (builder.ExecutionContext.IsRunMode)
+    {
 #pragma warning disable ASPIREBROWSERLOGS001
-    var oldApp = builder.AddJavaScriptApp("OldApp", "../../src/Exceptionless.Web/ClientApp.angular", "serve")
-        .WithBrowserLogs()
-        .WithReference(api)
-        .WithEnvironment("ASPNETCORE_URLS", oldAppAspNetCoreUrls)
-        .WithEnvironment("USE_HTTPS", "true")
-        .WithEnvironment("LIVERELOAD_PORT", oldAppLiveReloadPort.ToString())
-        .WithHttpEndpoint(port: oldAppPort, targetPort: oldAppPort, name: "https", env: "PORT", isProxied: false)
-        .WithEndpoint("https", e =>
-        {
-            e.TargetHost = "angular-ex.dev.localhost";
-            e.UriScheme = "https";
-        })
-        .WithHttpsDeveloperCertificate()
-        .WithUrlForEndpoint("https", u =>
-        {
-            u.DisplayText = "Open App (Old)";
-            u.DisplayOrder = 100;
-        })
-        .WithParentRelationship(api);
-
-    if (worktreePorts is not null)
-    {
-        oldApp.WithEnvironment("API_HTTP", worktreePorts.ApiHttpUrl)
-            .WithEnvironment("API_HTTPS", worktreePorts.ApiHttpsUrl);
-    }
-
-    var app = builder.AddViteApp("App", "../Exceptionless.Web/ClientApp")
-        .WithBrowserLogs()
-        .WithReference(api)
-        .WithReference(oldApp)
-        .WithEnvironment("PUBLIC_EXCEPTIONLESS_SERVER_URL", exceptionlessServerUrl)
-        .WithEnvironment("PORT", appPort.ToString())
-        .WithEndpoint("http", e =>
-        {
-            // 7131 (HTTPS via Aspire dev cert) instead of Vite's default 5173 to avoid clashing with other local Vite projects.
-            e.Port = appPort;
-            e.TargetPort = appPort;
-            e.TargetHost = "web-ex.dev.localhost";
-            e.IsProxied = false;
-        })
-        .WithHttpsDeveloperCertificate()
-        .WithUrlForEndpoint("http", u =>
-        {
-            u.DisplayText = "Open App";
-            u.DisplayOrder = 100;
-            u.Url = $"{u.Url.TrimEnd('/')}/next/";
-        })
-        .WithParentRelationship(api);
-
-    if (worktreePorts is not null)
-    {
-        app.WithEnvironment("API_HTTP", worktreePorts.ApiHttpUrl)
-            .WithEnvironment("API_HTTPS", worktreePorts.ApiHttpsUrl)
-            .WithEnvironment("OLDAPP_HTTP", worktreePorts.OldAppHttpsUrl)
-            .WithEnvironment("OLDAPP_HTTPS", worktreePorts.OldAppHttpsUrl);
-    }
-
-    if (includeDevTools)
-    {
-        builder.AddDenoTask("Docs", "../../docs", "serve")
+        var oldApp = builder.AddJavaScriptApp("OldApp", "../../src/Exceptionless.Web/ClientApp.angular", "serve")
             .WithBrowserLogs()
-            .WithHttpEndpoint(port: docsPort, targetPort: docsPort, name: "http", env: "PORT", isProxied: false)
-            .WithEndpoint("http", e =>
+            .WithReference(api)
+            .WithEnvironment("ASPNETCORE_URLS", oldAppAspNetCoreUrls)
+            .WithEnvironment("USE_HTTPS", "true")
+            .WithEnvironment("LIVERELOAD_PORT", oldAppLiveReloadPort.ToString())
+            .WithHttpEndpoint(port: oldAppPort, targetPort: oldAppPort, name: "https", env: "PORT", isProxied: false)
+            .WithEndpoint("https", e =>
             {
-                e.TargetHost = "localhost";
-                e.UriScheme = "http";
+                e.TargetHost = "angular-ex.dev.localhost";
+                e.UriScheme = "https";
             })
-            .WithUrlForEndpoint("http", u =>
+            .WithHttpsDeveloperCertificate()
+            .WithUrlForEndpoint("https", u =>
             {
-                u.DisplayText = "Open Docs";
-                u.DisplayOrder = 100;
+                u.DisplayText = "Open App (Old)";
+                SetDisplayOrder(u, 100);
             })
             .WithParentRelationship(api);
-    }
+
+        if (worktreePorts is not null)
+        {
+            oldApp.WithEnvironment("API_HTTP", worktreePorts.ApiHttpUrl)
+                .WithEnvironment("API_HTTPS", worktreePorts.ApiHttpsUrl);
+        }
+
+        var app = builder.AddViteApp("App", "../Exceptionless.Web/ClientApp")
+            .WithBrowserLogs()
+            .WithReference(api)
+            .WithReference(oldApp)
+            .WithEnvironment("PUBLIC_EXCEPTIONLESS_SERVER_URL", exceptionlessServerUrl)
+            .WithEnvironment("PORT", appPort.ToString())
+            .WithEndpoint("http", e =>
+            {
+                // 7131 (HTTPS via Aspire dev cert) instead of Vite's default 5173 to avoid clashing with other local Vite projects.
+                e.Port = appPort;
+                e.TargetPort = appPort;
+                e.TargetHost = "web-ex.dev.localhost";
+                e.IsProxied = false;
+            })
+            .WithHttpsDeveloperCertificate()
+            .WithUrlForEndpoint("http", u =>
+            {
+                u.DisplayText = "Open App";
+                SetDisplayOrder(u, 100);
+                u.Url = $"{u.Url.TrimEnd('/')}/next/";
+            })
+            .WithParentRelationship(api);
+
+        if (worktreePorts is not null)
+        {
+            app.WithEnvironment("API_HTTP", worktreePorts.ApiHttpUrl)
+                .WithEnvironment("API_HTTPS", worktreePorts.ApiHttpsUrl)
+                .WithEnvironment("OLDAPP_HTTP", worktreePorts.OldAppHttpsUrl)
+                .WithEnvironment("OLDAPP_HTTPS", worktreePorts.OldAppHttpsUrl);
+        }
+
+        if (includeDevTools)
+        {
+            builder.AddDenoTask("Docs", "../../docs", "serve")
+                .WithBrowserLogs()
+                .WithHttpEndpoint(port: docsPort, targetPort: docsPort, name: "http", env: "PORT", isProxied: false)
+                .WithEndpoint("http", e =>
+                {
+                    e.TargetHost = "localhost";
+                    e.UriScheme = "http";
+                })
+                .WithUrlForEndpoint("http", u =>
+                {
+                    u.DisplayText = "Open Docs";
+                    SetDisplayOrder(u, 100);
+                })
+                .WithParentRelationship(api);
+        }
 #pragma warning restore ASPIREBROWSERLOGS001
+    }
 }
 
 await builder.Build().RunAsync();
 
 bool HasArgument(string name) => args.Any(arg => StringComparer.OrdinalIgnoreCase.Equals(arg, name) || StringComparer.OrdinalIgnoreCase.Equals(arg, name.TrimStart('-')));
+
+static void SetDisplayOrder(ResourceUrlAnnotation annotation, int displayOrder)
+{
+#pragma warning disable CS0618 // Aspire 13.5 temporarily obsoletes this field and plans to restore it as a property.
+    annotation.DisplayOrder = displayOrder;
+#pragma warning restore CS0618
+}
