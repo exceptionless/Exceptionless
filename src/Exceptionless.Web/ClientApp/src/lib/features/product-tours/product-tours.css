@@ -1,0 +1,44 @@
+.driver-popover.product-tour-popover {
+    background: var(--popover);
+    color: var(--popover-foreground);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 10px 25px color-mix(in srgb, var(--foreground) 12%, transparent);
+    font-family: var(--font-sans);
+    max-width: 22rem;
+}
+
+.product-tour-popover .driver-popover-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.product-tour-popover .driver-popover-description,
+.product-tour-popover .driver-popover-progress-text {
+    color: var(--muted-foreground);
+}
+
+.product-tour-popover .driver-popover-footer button {
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) - 2px);
+    box-shadow: none;
+    text-shadow: none;
+}
+
+/* Driver disables pointer events outside the active spotlight. Select menus are portaled
+   to the document body, so keep an open menu interactive while a tour is running. */
+.driver-active [data-slot='select-content'],
+.driver-active [data-slot='select-content'] * {
+    pointer-events: auto;
+}
+
+.driver-active [data-slot='select-content'] {
+    z-index: 10001 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .driver-overlay,
+    .driver-popover {
+        transition: none !important;
+    }
+}

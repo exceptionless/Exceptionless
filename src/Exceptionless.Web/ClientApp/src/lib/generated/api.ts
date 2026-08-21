@@ -7,12 +7,95 @@ export enum StackStatus {
   Discarded = "discarded",
 }
 
+export enum ProductTourStatus {
+  Dismissed = "dismissed",
+  Completed = "completed",
+}
+
 export enum BillingStatus {
   Trialing = 0,
   Active = 1,
   PastDue = 2,
   Canceled = 3,
   Unpaid = 4,
+}
+
+export interface AdminAssistantOrganizationUsage {
+  organization_id: string;
+  organization_name: string;
+  plan_id: string;
+  /** @format date-time */
+  last_used_utc: string;
+  /** @format int64 */
+  turns: number;
+  /** @format int64 */
+  completed: number;
+  /** @format int64 */
+  failed: number;
+  /** @format int64 */
+  cancelled: number;
+  /** @format int64 */
+  provider_requests: number;
+  /** @format int64 */
+  tool_calls: number;
+  /** @format int64 */
+  prompt_tokens: number;
+  /** @format int64 */
+  completion_tokens: number;
+  /** @format double */
+  cost_usd: number;
+  /** @format int64 */
+  blocked_by_concurrency: number;
+  /** @format int64 */
+  blocked_by_rate_limit: number;
+  /** @format int64 */
+  blocked_by_token_limit: number;
+  /** @format int64 */
+  blocked_by_cost_limit: number;
+  /** @format int64 */
+  monthly_token_limit?: null | number;
+  /** @format double */
+  monthly_cost_limit_usd?: null | number;
+  /** @format double */
+  token_utilization?: null | number;
+  /** @format double */
+  cost_utilization?: null | number;
+}
+
+export interface AdminAssistantUsageResponse {
+  /** @format date-time */
+  month: string;
+  /** @format int64 */
+  active_organizations: number;
+  /** @format int64 */
+  turns: number;
+  /** @format int64 */
+  prompt_tokens: number;
+  /** @format int64 */
+  completion_tokens: number;
+  /** @format double */
+  cost_usd: number;
+  organizations: AdminAssistantOrganizationUsage[];
+}
+
+export interface AssistantAccessResponse {
+  enabled: boolean;
+  has_access: boolean;
+  upgrade_required: boolean;
+  message?: null | string;
+}
+
+export interface AssistantChatMessage {
+  role: string;
+  content: string;
+}
+
+export interface AssistantChatRequest {
+  messages: AssistantChatMessage[];
+  organization_id?: null | string;
+  project_id?: null | string;
+  path?: null | string;
+  conversation_id?: null | string;
 }
 
 export interface BillingPlan {
@@ -386,6 +469,14 @@ export interface ProblemDetails {
   instance?: null | string;
 }
 
+export interface ProductTourProgress {
+  /** @format int32 */
+  version: number;
+  status: ProductTourStatus;
+  /** @format date-time */
+  updated_utc: string;
+}
+
 export interface ResetPasswordModel {
   password_reset_token: string;
   password: string;
@@ -526,6 +617,16 @@ export interface UpdateEvent {
   description?: null | string;
 }
 
+export interface UpdateProductTourProgress {
+  /**
+   * @format int32
+   * @min 1
+   * @max 2147483647
+   */
+  version: number;
+  status: ProductTourStatus;
+}
+
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
 export interface UpdateProject {
   name: string;
@@ -604,6 +705,7 @@ export interface User {
   /** @format date-time */
   password_reset_token_expiration: string;
   o_auth_accounts: OAuthAccount[];
+  product_tours: Record<string, ProductTourProgress>;
   /** Gets or sets the users Full Name. */
   full_name: string;
   /** @format email */
@@ -635,6 +737,7 @@ export interface ViewCurrentUser {
   hash?: null | string;
   has_local_account: boolean;
   o_auth_accounts: OAuthAccount[];
+  product_tours: Record<string, ProductTourProgress>;
   /** @pattern ^[a-fA-F0-9]{24}$ */
   id: string;
   organization_ids: string[];
