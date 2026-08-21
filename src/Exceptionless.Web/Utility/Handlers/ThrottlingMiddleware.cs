@@ -21,7 +21,7 @@ public class ThrottlingMiddleware
     private static readonly PathString _v1ProjectConfigPath = new("/api/v1/project/config");
     private static readonly PathString _v2ProjectConfigPath = new("/api/v2/projects/config");
     private static readonly PathString _heartbeatPath = new("/api/v2/events/session/heartbeat");
-    private static readonly PathString _webSocketPath = new("/api/v2/push");
+    private static readonly PathString _ssePath = new("/api/v2/push");
 
 
     public ThrottlingMiddleware(RequestDelegate next, ICacheClient cacheClient, ThrottlingOptions options, TimeProvider timeProvider)
@@ -111,7 +111,7 @@ public class ThrottlingMiddleware
 
         return context.Request.Path.StartsWithSegments(_v2ProjectConfigPath, StringComparison.Ordinal)
            || context.Request.Path.StartsWithSegments(_heartbeatPath, StringComparison.Ordinal)
-           || context.Request.Path.StartsWithSegments(_webSocketPath, StringComparison.Ordinal)
+           || context.Request.Path.StartsWithSegments(_ssePath, StringComparison.Ordinal)
            || context.Request.Path.StartsWithSegments(_v1ProjectConfigPath, StringComparison.Ordinal);
     }
 }
