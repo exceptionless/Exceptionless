@@ -10,6 +10,7 @@ import { routes as authRoutes } from './(auth)/routes.svelte';
 export type NavigationChild = {
     href: string;
     title: string;
+    usesPremiumFeatures?: boolean;
 };
 
 export type NavigationItem = {

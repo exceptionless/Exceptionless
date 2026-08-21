@@ -303,7 +303,7 @@ function reconstructFilter(data: SerializedFilter): IFilter | null {
             filter = new LevelFilter(data.value as LogLevel[] | undefined);
             break;
         case 'number':
-            filter = new NumberFilter(data.term, data.value as number | undefined);
+            filter = new NumberFilter(data.term, data.value as number | string | undefined);
             break;
         case 'project':
             filter = new ProjectFilter(data.value as string[] | undefined);

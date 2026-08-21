@@ -203,7 +203,15 @@ describe('serializeFilters', () => {
         const filters = [new NumberFilter('value', 42)];
         const result = JSON.parse(serializeFilters(filters));
 
-        expect(result[0]).toEqual({ term: 'value', type: 'number', value: 42 });
+        expect(result[0]).toEqual({ term: 'value', type: 'number', value: '42' });
+    });
+
+    it('preserves a 64-bit integer literal exactly', () => {
+        const filters = [new NumberFilter('idx.order_id', '9223372036854775807')];
+        const result = deserializeFilters(serializeFilters(filters));
+
+        expect((result[0] as NumberFilter).value).toBe('9223372036854775807');
+        expect(result[0]?.toFilter()).toBe('idx.order_id:9223372036854775807');
     });
 
     it('serializes a ProjectFilter with multiple values', () => {
@@ -357,7 +365,7 @@ describe('deserializeFilters', () => {
         expect(filters).toHaveLength(1);
         expect(filters[0]).toBeInstanceOf(NumberFilter);
         expect((filters[0] as NumberFilter).term).toBe('value');
-        expect((filters[0] as NumberFilter).value).toBe(42);
+        expect((filters[0] as NumberFilter).value).toBe('42');
     });
 
     it('deserializes a ProjectFilter', () => {
@@ -497,7 +505,7 @@ describe('round-trip serialization', () => {
 
         expect(result).toHaveLength(1);
         expect((result[0] as NumberFilter).term).toBe('count');
-        expect((result[0] as NumberFilter).value).toBe(99);
+        expect((result[0] as NumberFilter).value).toBe('99');
     });
 
     it('round-trips a ProjectFilter', () => {

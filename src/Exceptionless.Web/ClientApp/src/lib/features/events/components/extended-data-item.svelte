@@ -3,11 +3,14 @@
     import { Code, CodeBlock, H4 } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
+    import { type CustomFieldDefinition, CustomFieldNameSchema } from '$features/organizations/custom-fields';
+    import IndexAsCustomFieldAction from '$features/organizations/custom-fields/components/index-as-custom-field-action.svelte';
     import { isJSONString, isObject, isString, isXmlString } from '$features/shared/typing';
     import { UseClipboard } from '$lib/hooks/use-clipboard.svelte';
     import ArrowDown from '@lucide/svelte/icons/arrow-down';
     import ArrowUp from '@lucide/svelte/icons/arrow-up';
     import Copy from '@lucide/svelte/icons/copy';
+    import Database from '@lucide/svelte/icons/database';
     import MoreVertical from '@lucide/svelte/icons/more-vertical';
     import ToggleLeft from '@lucide/svelte/icons/toggle-left';
     import { toast } from 'svelte-sonner';
@@ -15,10 +18,12 @@
     interface Props {
         canPromote?: boolean;
         class?: string;
+        customFields?: CustomFieldDefinition[];
         data: unknown;
         demote?: (title: string) => Promise<void>;
         excludedKeys?: string[];
         isPromoted?: boolean;
+        organizationId?: string;
         promote?: (title: string) => Promise<void>;
         showTitle?: boolean;
         title: string;
@@ -27,14 +32,35 @@
     let {
         canPromote = true,
         class: className,
+        customFields,
         data,
         demote = async () => {},
         excludedKeys = [],
         isPromoted = false,
+        organizationId,
         promote = async () => {},
         showTitle = true,
         title
     }: Props = $props();
+
+    function isPrimitiveData(value: unknown): boolean {
+        if (value === null || value === undefined) {
+            return false;
+        }
+
+        const type = typeof value;
+        return type === 'string' || type === 'number' || type === 'boolean';
+    }
+
+    const canIndex = $derived(
+        !!organizationId &&
+            !!customFields &&
+            isPrimitiveData(data) &&
+            CustomFieldNameSchema.safeParse(title).success &&
+            !['haserror', 'sessionend'].includes(title.toLowerCase()) &&
+            !customFields.some((field) => field.name.toLowerCase() === title.toLowerCase())
+    );
+    let showIndexDialog = $state(false);
 
     function transformData(data: unknown): unknown {
         if (isJSONString(data)) {
@@ -153,9 +179,18 @@
                                 </DropdownMenu.Item>
                             {/if}
                         {/if}
+                        {#if canIndex}
+                            <DropdownMenu.Item onclick={() => (showIndexDialog = true)} title="Index this field for filtering">
+                                <Database data-icon="inline-start" />
+                                Index as Custom Field
+                            </DropdownMenu.Item>
+                        {/if}
                     </DropdownMenu.Group>
                 </DropdownMenu.Content>
             </DropdownMenu.Root>
+            {#if canIndex}
+                <IndexAsCustomFieldAction bind:open={showIndexDialog} customFields={customFields!} fieldName={title} organizationId={organizationId!} />
+            {/if}
         </div>
 
         <div class={['grow overflow-auto text-xs', !showTitle && 'pr-10']}>

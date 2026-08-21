@@ -8,6 +8,18 @@ title: "Upgrading"
 
 **If you are upgrading from v1 or [v2](https://github.com/exceptionless/Exceptionless/releases/tag/v2.0.0) you will need to upgrade to [v3.0](https://github.com/exceptionless/Exceptionless/releases/tag/v3.0.0) before upgrading to the latest release.**
 
+## Custom event field indexing cutover
+
+The custom event field release replaces automatic indexing of every primitive extended-data property with explicit, organization-scoped definitions. Before upgrading, inventory saved views and integrations that rely on arbitrary `data.*` filters.
+
+After upgrading:
+
+1. Create definitions for the extended-data fields that must remain searchable.
+2. If uninterrupted forward indexing matters, create those definitions before resuming event ingestion.
+3. Plan for forward-only indexing. V1 has no built-in historical backfill, and Elasticsearch reindexing alone does not populate pooled slots. Replaying original payloads is operator-owned and requires a deduplication strategy because it can create duplicate events.
+
+Existing legacy index values remain in Elasticsearch until their events age out, but new custom-field queries use pooled slots and do not search those legacy values. Exceptionless-owned session fields retain dual-read compatibility during this transition.
+
 ## Upgrading from v7.1 to v8
 
 We simplified the self hosting process by integrating the UI into the existing app images. As such `exceptionless/ui` docker images are deprecated and we recommend using `exceptionless/app`.

@@ -2,12 +2,13 @@ using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using Exceptionless.Core.Attributes;
 using Exceptionless.Core.Extensions;
+using Foundatio.Repositories.Elasticsearch.CustomFields;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models;
 
 [DebuggerDisplay("Id: {Id}, Type: {Type}, Date: {Date}, Message: {Message}, Value: {Value}, Count: {Count}")]
-public class PersistentEvent : Event, IOwnedByOrganizationAndProjectAndStackWithIdentity, IHaveCreatedDate, IValidatableObject
+public class PersistentEvent : Event, IOwnedByOrganizationAndProjectAndStackWithIdentity, IHaveCreatedDate, IValidatableObject, IHaveVirtualCustomFields
 {
     /// <summary>
     /// Unique id that identifies an event.
@@ -51,6 +52,28 @@ public class PersistentEvent : Event, IOwnedByOrganizationAndProjectAndStackWith
     /// </summary>
     [MiniValidation.SkipRecursion]
     public DataDictionary? Idx { get; set; }
+
+    // IHaveVirtualCustomFields explicit implementation
+    IDictionary<string, object> IHaveVirtualCustomFields.Idx => (IDictionary<string, object>)(Idx ??= new DataDictionary());
+
+    public string GetTenantKey() => OrganizationId;
+
+    public IDictionary<string, object?> GetCustomFields()
+    {
+        if (Data is null) return new DataDictionary();
+        var result = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var kvp in Data.Where(kvp => !String.IsNullOrEmpty(kvp.Key)
+            && (!kvp.Key.StartsWith('@') || kvp.Key.StartsWith("@ref:", StringComparison.OrdinalIgnoreCase))
+            && kvp.Value is string or bool or int or long or float or double or decimal or DateTime or DateTimeOffset))
+        {
+            result[kvp.Key] = kvp.Value;
+        }
+        return result;
+    }
+
+    public object GetCustomField(string name) => Data is not null && Data.TryGetValue(name, out var v) && v is not null ? v : null!;
+    public void SetCustomField(string name, object value) { Data ??= new DataDictionary(); Data[name] = value; }
+    public void RemoveCustomField(string name) => Data?.Remove(name);
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {

@@ -2,6 +2,8 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
+using Exceptionless;
+using Elastic.Clients.Elasticsearch.Fluent;
 using Elastic.Clients.Elasticsearch.IndexManagement;
 using Elastic.Clients.Elasticsearch.Mapping;
 using Exceptionless.Core.Configuration;
@@ -9,6 +11,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories.Queries;
+using Exceptionless.Core.Repositories.Queries.Visitors;
 using Exceptionless.Core.Serialization;
 using Foundatio.Caching;
 using Foundatio.Parsers.ElasticQueries;
@@ -23,13 +26,44 @@ namespace Exceptionless.Core.Repositories.Configuration;
 
 public sealed class EventIndex : DailyIndex<PersistentEvent>
 {
+    private const int CustomFieldMappersPerSlot = 9;
+    private const double MaximumCustomFieldMappingBudgetRatio = 0.8;
+
+    private static readonly IReadOnlyDictionary<string, string> _customFieldElasticsearchTypes = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["bool"] = "boolean",
+        ["date"] = "date",
+        ["double"] = "double",
+        ["float"] = "float",
+        ["int"] = "integer",
+        ["keyword"] = "keyword",
+        ["long"] = "long",
+        ["string"] = "text"
+    };
+
     private readonly ExceptionlessElasticConfiguration _configuration;
     private readonly IServiceProvider _serviceProvider;
+    private readonly int _maxCustomFieldSlot;
 
     public EventIndex(ExceptionlessElasticConfiguration configuration, IServiceProvider serviceProvider, AppOptions appOptions) : base(configuration, configuration.Options.ScopePrefix + "events", 1, doc => ((PersistentEvent)doc).Date.UtcDateTime)
     {
+        AddStandardCustomFieldTypes();
+
         _configuration = configuration;
         _serviceProvider = serviceProvider;
+        // System definitions reserve slot 1 for several types. A tenant can then consume the
+        // configured lifetime budget in that same type, so predeclare one additional slot.
+        // Keeping these mappings in the code model makes exact string resolution independent of
+        // which daily partition most recently received a value for a sparse pooled slot.
+        _maxCustomFieldSlot = appOptions.CustomFieldOptions.MaxLifetimeFieldsPerOrganization + 1;
+        int customFieldMapperBudget = checked(_maxCustomFieldSlot * CustomFieldMappersPerSlot);
+        int maximumCustomFieldMapperBudget = (int)Math.Floor(configuration.Options.FieldsLimit * MaximumCustomFieldMappingBudgetRatio);
+        if (customFieldMapperBudget > maximumCustomFieldMapperBudget)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(appOptions.CustomFieldOptions.MaxLifetimeFieldsPerOrganization),
+                $"The custom field lifetime limit requires {customFieldMapperBudget} pooled field mappers, which exceeds the reserved 80% mapping budget of {maximumCustomFieldMapperBudget} for Elasticsearch FieldsLimit {configuration.Options.FieldsLimit}. Reduce MaxLifetimeFieldsPerOrganization or increase FieldsLimit.");
+        }
 
         if (appOptions.MaximumRetentionDays > 0)
             MaxIndexAge = TimeSpan.FromDays(appOptions.MaximumRetentionDays);
@@ -53,12 +87,7 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
     {
         map
             .Dynamic(DynamicMapping.False)
-            .DynamicTemplates(dt => dt
-                .Add("idx_bool", t => t.Match("*-b").Mapping(m => m.Boolean(s => { })))
-                .Add("idx_date", t => t.Match("*-d").Mapping(m => m.Date(s => { })))
-                .Add("idx_number", t => t.Match("*-n").Mapping(m => m.DoubleNumber(s => { })))
-                .Add("idx_reference", t => t.Match("*-r").Mapping(m => m.Keyword(s => s.IgnoreAbove(256))))
-                .Add("idx_string", t => t.Match("*-s").Mapping(m => m.Keyword(s => s.IgnoreAbove(1024)))))
+            .DynamicTemplates(templates => ConfigureCustomFieldDynamicTemplates(templates))
             .Properties(p => p
                 .SetupDefaults()
                 .Keyword(e => e.OrganizationId)
@@ -80,7 +109,9 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
                 .IntegerNumber(e => e.Count)
                 .Boolean(e => e.IsFirstOccurrence)
                     .FieldAlias(Alias.IsFirstOccurrence, a => a.Path(f => f.IsFirstOccurrence))
-                .Object(e => e.Idx, o => o.Dynamic(DynamicMapping.True))
+                .Object(e => e.Idx, o => o
+                    .Dynamic(DynamicMapping.True)
+                    .Properties(ConfigureCustomFieldSlotProperties))
                 .Object(e => e.Data, o => o.Properties(p2 => p2
                     .AddVersionMapping<PersistentEvent>()
                     .AddLevelMapping<PersistentEvent>()
@@ -133,6 +164,119 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
         await base.ConfigureAsync();
     }
 
+    public async Task EnsureCustomFieldMappingsAsync(Func<Task>? renewLock = null)
+    {
+        var logger = Configuration.LoggerFactory.CreateLogger<EventIndex>();
+        DateTime utcNow = Configuration.TimeProvider.GetUtcNow().UtcDateTime;
+        var indexes = (await GetIndexesAsync(Version))
+            .Where(index => index.CurrentVersion == Version)
+            .Where(index => !MaxIndexAge.HasValue || utcNow <= GetIndexExpirationDate(index.DateUtc))
+            .ToList();
+
+        foreach (var index in indexes)
+        {
+            if (renewLock is not null)
+                await renewLock();
+
+            await ValidateExistingCustomFieldMappingsAsync(index.Index, logger);
+
+            var response = await Configuration.Client.Indices.PutMappingAsync<PersistentEvent>(mapping =>
+            {
+                mapping.Indices(index.Index);
+                mapping.DynamicTemplates(templates => ConfigureCustomFieldDynamicTemplates(templates));
+                mapping.Properties(properties => properties.Object(e => e.Idx, o => o
+                    .Dynamic(DynamicMapping.True)
+                    .Properties(ConfigureCustomFieldSlotProperties)));
+            });
+
+            logger.LogRequest(response);
+            if (response.IsValidResponse)
+                continue;
+
+            AppDiagnostics.CustomFieldMappingFailures.Add(1);
+            string errorMessage = response.DebugInformation;
+            logger.LogError(response.ApiCallDetails.OriginalException, "Error updating typed custom field mappings on event index {Index}: {Message}", index.Index, errorMessage);
+            throw new ApplicationException($"Error updating typed custom field mappings on event index {index.Index}: {errorMessage}", response.ApiCallDetails.OriginalException);
+        }
+    }
+
+    private async Task ValidateExistingCustomFieldMappingsAsync(string indexName, ILogger logger)
+    {
+        var response = await Configuration.Client.FieldCapsAsync(indexName, request => request
+            .Fields("*")
+            .IncludeEmptyFields());
+        logger.LogRequest(response);
+        if (!response.IsValidResponse)
+        {
+            AppDiagnostics.CustomFieldMappingFailures.Add(1);
+            throw new ApplicationException($"Error reading custom field mappings from event index {indexName}: {response.DebugInformation}", response.ApiCallDetails.OriginalException);
+        }
+
+        AppDiagnostics.CustomFieldMappedFieldCount.Record(response.Fields.Count);
+        if (response.Fields.Count >= _configuration.Options.FieldsLimit * 0.8)
+            logger.LogWarning("Event index {Index} has {FieldCount} mapped fields against a total field limit of {FieldLimit}", indexName, response.Fields.Count, _configuration.Options.FieldsLimit);
+
+        foreach (var (fieldName, capabilities) in response.Fields)
+        {
+            if (!fieldName.StartsWith("idx.", StringComparison.Ordinal))
+                continue;
+
+            string slotName = fieldName["idx.".Length..];
+            int separatorIndex = slotName.LastIndexOf('-');
+            if (separatorIndex <= 0 || !Int32.TryParse(slotName.AsSpan(separatorIndex + 1), out _))
+                continue;
+
+            string slotType = slotName[..separatorIndex];
+            if (!_customFieldElasticsearchTypes.TryGetValue(slotType, out string? expectedType))
+                continue;
+
+            if (capabilities.ContainsKey(expectedType))
+                continue;
+
+            AppDiagnostics.CustomFieldMappingFailures.Add(1);
+            string actualTypes = String.Join(", ", capabilities.Keys.Order(StringComparer.Ordinal));
+            throw new InvalidOperationException(
+                $"Event index '{indexName}' has incompatible mapping for '{fieldName}'. Expected '{expectedType}', found '{actualTypes}'. An explicit migration is required before rollout.");
+        }
+    }
+
+    private void ConfigureCustomFieldDynamicTemplates(FluentCollectionOfKeyValuePairOfStringDynamicTemplate<PersistentEvent> templates)
+    {
+        // Retain legacy suffix templates while older ingestion nodes may still write them.
+        templates
+            .Add("idx_legacy_bool", template => template.PathMatch("idx.*").Match("*-b").Mapping(mapping => mapping.Boolean()))
+            .Add("idx_legacy_date", template => template.PathMatch("idx.*").Match("*-d").Mapping(mapping => mapping.Date()))
+            .Add("idx_legacy_number", template => template.PathMatch("idx.*").Match("*-n").Mapping(mapping => mapping.DoubleNumber()))
+            .Add("idx_legacy_reference", template => template.PathMatch("idx.*").Match("*-r").Mapping(mapping => mapping.Keyword(keyword => keyword.IgnoreAbove(256))))
+            .Add("idx_legacy_string", template => template.PathMatch("idx.*").Match("*-s").Mapping(mapping => mapping.Keyword(keyword => keyword.IgnoreAbove(1024))));
+
+        foreach (var customFieldType in CustomFieldTypes.Values)
+        {
+            templates.Add(
+                $"idx_{customFieldType.Type}",
+                template => template
+                    .PathMatch("idx.*")
+                    .Match($"{customFieldType.Type}-*")
+                    .Mapping(customFieldType.ConfigureMapping<PersistentEvent>()));
+        }
+    }
+
+    private void ConfigureCustomFieldSlotProperties(PropertiesDescriptor<PersistentEvent> properties)
+    {
+        for (int slot = 1; slot <= _maxCustomFieldSlot; slot++)
+        {
+            properties
+                .Boolean($"bool-{slot}")
+                .Date($"date-{slot}")
+                .DoubleNumber($"double-{slot}")
+                .FloatNumber($"float-{slot}")
+                .IntegerNumber($"int-{slot}")
+                .Keyword($"keyword-{slot}")
+                .LongNumber($"long-{slot}")
+                .Text($"string-{slot}", text => text.AddKeywordField());
+        }
+    }
+
     protected override void ConfigureQueryParser(ElasticQueryParserConfiguration config)
     {
         config
@@ -153,7 +297,7 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
                 EventIndexExtensions.DataPath<UserInfo>(Event.KnownDataKeys.UserInfo, u => u.Identity),
                 EventIndexExtensions.DataPath<UserInfo>(Event.KnownDataKeys.UserInfo, u => u.Name)
             ])
-            .AddQueryVisitor(new EventFieldsQueryVisitor())
+            .AddQueryVisitor(new EventSystemFieldCompatibilityQueryVisitor())
             .UseFieldMap(new Dictionary<string, string> {
                     { Alias.BrowserVersion, EventIndexExtensions.DataDictionaryPath<RequestInfo>(Event.KnownDataKeys.RequestInfo, r => r.Data, RequestInfo.KnownDataKeys.BrowserVersion) },
                     { Alias.BrowserMajorVersion, EventIndexExtensions.DataDictionaryPath<RequestInfo>(Event.KnownDataKeys.RequestInfo, r => r.Data, RequestInfo.KnownDataKeys.BrowserMajorVersion) },

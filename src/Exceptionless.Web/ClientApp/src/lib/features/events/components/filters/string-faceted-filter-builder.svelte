@@ -24,6 +24,13 @@
     };
 
     $effect(() => {
-        builderContext.set(`string-${term}`, builder as unknown as FacetFilterBuilder<IFilter>);
+        const key = `string-${term}`;
+        const registeredBuilder = builder as unknown as FacetFilterBuilder<IFilter>;
+        builderContext.set(key, registeredBuilder);
+        return () => {
+            if (builderContext.get(key) === registeredBuilder) {
+                builderContext.delete(key);
+            }
+        };
     });
 </script>

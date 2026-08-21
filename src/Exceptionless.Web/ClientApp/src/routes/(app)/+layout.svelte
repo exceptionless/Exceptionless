@@ -618,7 +618,8 @@
             const children = [
                 ...sortedViews.map((savedView) => ({
                     href: buildSavedViewHref(savedView),
-                    title: savedView.name
+                    title: savedView.name,
+                    usesPremiumFeatures: filterUsesPremiumFeatures(savedView.filter, getSearchResourceForPathname(route.href))
                 })),
                 ...(route.children ?? [])
             ];

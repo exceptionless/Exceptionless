@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mutateAsync = vi.hoisted(() => vi.fn());
 const deleteEvent = vi.hoisted(() => vi.fn(() => ({ mutateAsync })));
@@ -15,6 +15,13 @@ describe('EventsBulkActionsDropdownMenu', () => {
         mutateAsync.mockResolvedValue(undefined);
         deleteEvent.mockClear();
         toast.success.mockClear();
+    });
+
+    afterEach(async () => {
+        cleanup();
+        // Bits UI restores the body scroll lock on a short timer after overlays unmount.
+        // Let that cleanup finish while jsdom's document is still available.
+        await new Promise((resolve) => window.setTimeout(resolve, 30));
     });
 
     it('deletes the selected events and clears the selection', async () => {

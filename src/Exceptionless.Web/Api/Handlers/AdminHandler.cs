@@ -243,6 +243,9 @@ public class AdminHandler(
     {
         switch (message.Name.ToLowerInvariant())
         {
+            case "ensure-system-custom-fields":
+                await workItemQueue.EnqueueAsync(new OrganizationMaintenanceWorkItem { EnsureSystemCustomFields = true });
+                break;
             case "fix-stack-stats":
                 var effectiveUtcStart = message.UtcStart ?? timeProvider.GetUtcNow().UtcDateTime.AddDays(-90);
 

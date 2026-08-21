@@ -7,7 +7,7 @@
     type Props = Omit<ButtonProps, 'value'> & {
         changed: (filter: NumberFilter) => void;
         term: string;
-        value?: number;
+        value?: number | string;
     };
     let { changed, children, class: className, term, value, ...props }: Props = $props();
 </script>

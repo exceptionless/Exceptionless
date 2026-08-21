@@ -1,7 +1,9 @@
 using System.Diagnostics;
+using Elastic.Clients.Elasticsearch;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Helpers;
 using Exceptionless.Tests.Utility;
@@ -22,6 +24,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     private readonly StackData _stackData;
     private readonly IStackRepository _stackRepository;
     private readonly ITextSerializer _serializer;
+    private readonly ExceptionlessElasticConfiguration _elasticConfiguration;
 
     public EventRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
@@ -31,6 +34,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         _stackData = GetService<StackData>();
         _stackRepository = GetService<IStackRepository>();
         _serializer = GetService<ITextSerializer>();
+        _elasticConfiguration = GetService<ExceptionlessElasticConfiguration>();
     }
 
     [Fact]
@@ -218,6 +222,41 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
 
         var results = await _repository.GetOpenSessionsAsync(DateTime.UtcNow.SubtractMinutes(30));
         Assert.Equal(3, results.Total);
+    }
+
+    [Fact]
+    public async Task GetOpenSessionsAsync_LegacySessionEndIdxField_ExcludesClosedSession()
+    {
+        var firstEvent = DateTimeOffset.Now.Subtract(TimeSpan.FromMinutes(35));
+
+        var openSession = _eventData.GenerateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2,
+            occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "legacy-open-session", generateData: false);
+
+        var legacyClosedSession = _eventData.GenerateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, TestConstants.StackId2,
+            occurrenceDate: firstEvent, type: Event.KnownTypes.Session, sessionId: "legacy-closed-session", generateData: false);
+        legacyClosedSession.Id = ObjectId.GenerateNewId().ToString();
+        legacyClosedSession.Idx = new DataDictionary {
+            { "sessionend-d", firstEvent.UtcDateTime.AddMinutes(5) }
+        };
+
+        await _repository.AddAsync(openSession, o => o.ImmediateConsistency());
+        await _elasticConfiguration.Events.EnsureIndexAsync(legacyClosedSession);
+        var indexResponse = await _elasticConfiguration.Client.IndexAsync(legacyClosedSession, request => request
+            .Index(_elasticConfiguration.Events.GetIndex(legacyClosedSession))
+            .Id(legacyClosedSession.Id)
+            .Refresh(Refresh.WaitFor), TestContext.Current.CancellationToken);
+        Assert.True(indexResponse.IsValidResponse, indexResponse.DebugInformation);
+
+        var storedLegacySession = await _elasticConfiguration.Client.GetAsync<PersistentEvent>(legacyClosedSession.Id, request => request
+            .Index(_elasticConfiguration.Events.GetIndex(legacyClosedSession)), TestContext.Current.CancellationToken);
+        Assert.True(storedLegacySession.IsValidResponse, storedLegacySession.DebugInformation);
+        var storedSessionEnd = Assert.IsType<DateTimeOffset>(storedLegacySession.Source?.Idx?["sessionend-d"]);
+        Assert.Equal(firstEvent.UtcDateTime.AddMinutes(5), storedSessionEnd.UtcDateTime);
+
+        var results = await _repository.GetOpenSessionsAsync(DateTime.UtcNow.SubtractMinutes(30));
+
+        Assert.Single(results.Documents);
+        Assert.Equal(openSession.Id, results.Documents.Single().Id);
     }
 
     [Fact]
