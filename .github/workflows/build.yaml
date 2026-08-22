@@ -83,6 +83,8 @@ jobs:
     timeout-minutes: 30
     outputs:
       version: ${{ steps.version.outputs.version }}
+      elasticsearch_image_tag: ${{ steps.elasticsearch_image.outputs.tag }}
+      build_elasticsearch_image: ${{ steps.elasticsearch_image.outputs.build_locally }}
       should_publish: ${{ (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'dev-preview')) && secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != '' }}
       is_prod_deploy: ${{ startsWith(github.ref, 'refs/tags/v') && github.event_name != 'pull_request' }}
       is_dev_deploy: ${{ (github.event_name == 'repository_dispatch' && github.event.action == 'preview') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'dev-preview')) }}
@@ -129,15 +131,76 @@ jobs:
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "### $version" >> $GITHUB_STEP_SUMMARY
 
+      - name: Resolve Elasticsearch image
+        id: elasticsearch_image
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          PREVIEW_BASE_SHA: ${{ github.event.client_payload.base_sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          version=$(sed -n 's/.*elasticsearch:\([^ ]*\).*/\1/p' build/docker/elasticsearch/9.x/Dockerfile)
+          tag=$version
+          image_changed=false
+          build_locally=false
+
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]] &&
+            ! git diff --quiet "$PR_BASE_SHA"...HEAD -- build/docker/elasticsearch/9.x .github/workflows/elasticsearch-docker-9.yml; then
+            image_changed=true
+          elif [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/main" ]] &&
+            ! git diff --quiet "$PUSH_BEFORE_SHA"..HEAD -- build/docker/elasticsearch/9.x .github/workflows/elasticsearch-docker-9.yml; then
+            image_changed=true
+          elif [[ "$GITHUB_EVENT_NAME" == "repository_dispatch" ]] &&
+            ! git diff --quiet "${PREVIEW_BASE_SHA:-origin/main}"...HEAD -- build/docker/elasticsearch/9.x .github/workflows/elasticsearch-docker-9.yml; then
+            image_changed=true
+          elif [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]] &&
+            ! git diff --quiet origin/main...HEAD -- build/docker/elasticsearch/9.x .github/workflows/elasticsearch-docker-9.yml; then
+            image_changed=true
+          fi
+
+          if [[ "$image_changed" == "true" ]]; then
+            image_sha=$(git ls-files -- build/docker/elasticsearch/9.x .github/workflows/elasticsearch-docker-9.yml | sort | xargs sha256sum | sha256sum | cut -d " " -f 1)
+            tag="$version-sha256-$image_sha"
+            image="exceptionless/elasticsearch:$tag"
+
+            if [[ "$GITHUB_EVENT_NAME" == "pull_request" && "$PR_HEAD_REPOSITORY" != "$GITHUB_REPOSITORY" ]]; then
+              build_locally=true
+            else
+              for attempt in {1..150}; do
+                if docker manifest inspect "$image" > /dev/null 2>&1; then
+                  break
+                fi
+
+                if [[ "$attempt" -eq 150 ]]; then
+                  echo "::error::Timed out waiting for $image to be published."
+                  exit 1
+                fi
+
+                sleep 10
+              done
+            fi
+          fi
+
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "build_locally=$build_locally" >> "$GITHUB_OUTPUT"
+          echo "### Elasticsearch image: exceptionless/elasticsearch:$tag" >> "$GITHUB_STEP_SUMMARY"
+
   test-api:
+    needs: version
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      Elasticsearch__ImageTag: ${{ needs.version.outputs.elasticsearch_image_tag }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           ref: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.head_sha) || github.event.pull_request.head.sha || github.sha }}
+
+      - name: Build fork Elasticsearch candidate locally
+        if: ${{ needs.version.outputs.build_elasticsearch_image == 'true' }}
+        run: docker build --tag "exceptionless/elasticsearch:${{ needs.version.outputs.elasticsearch_image_tag }}" --file build/docker/elasticsearch/9.x/Dockerfile build/docker/elasticsearch/9.x
 
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v6
@@ -223,12 +286,21 @@ jobs:
         run: echo "npm run test:integration"
 
   test-e2e:
+    needs: version
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      Elasticsearch__ImageTag: ${{ needs.version.outputs.elasticsearch_image_tag }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          ref: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.head_sha) || github.event.pull_request.head.sha || github.sha }}
+
+      - name: Build fork Elasticsearch candidate locally
+        if: ${{ needs.version.outputs.build_elasticsearch_image == 'true' }}
+        run: docker build --tag "exceptionless/elasticsearch:${{ needs.version.outputs.elasticsearch_image_tag }}" --file build/docker/elasticsearch/9.x/Dockerfile build/docker/elasticsearch/9.x
 
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v6
