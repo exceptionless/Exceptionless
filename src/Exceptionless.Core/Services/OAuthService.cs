@@ -86,33 +86,39 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (!String.Equals(tokenEndpointAuthMethod, "none", StringComparison.Ordinal))
             return OAuthClientRegistrationResult.Invalid("invalid_client_metadata", "Only public OAuth clients using token_endpoint_auth_method 'none' are supported.");
 
-        if (request.GrantTypes is { Length: > 0 } && !request.GrantTypes.All(g => g is OAuthGrantTypes.AuthorizationCode or OAuthGrantTypes.RefreshToken))
-            return OAuthClientRegistrationResult.Invalid("invalid_client_metadata", "Only authorization_code and refresh_token grant types are supported.");
+        var grantTypes = NormalizeGrantTypes(request.GrantTypes);
+        if (!ValidateGrantTypeShape(grantTypes, out string? grantTypesError))
+            return OAuthClientRegistrationResult.Invalid("invalid_client_metadata", grantTypesError);
 
-        if (request.GrantTypes is { Length: > 0 } && !request.GrantTypes.Contains(OAuthGrantTypes.AuthorizationCode, StringComparer.Ordinal))
-            return OAuthClientRegistrationResult.Invalid("invalid_client_metadata", "The authorization_code grant type is required.");
+        bool supportsAuthorizationCode = grantTypes.Contains(OAuthGrantTypes.AuthorizationCode, StringComparer.Ordinal);
 
         if (request.ResponseTypes is { Length: > 0 } && !request.ResponseTypes.SequenceEqual(["code"]))
             return OAuthClientRegistrationResult.Invalid("invalid_client_metadata", "Only the code response type is supported.");
 
-        if (request.RedirectUris is null || request.RedirectUris.Length == 0)
-            return OAuthClientRegistrationResult.Invalid("invalid_redirect_uri", "At least one redirect_uri is required.");
+        if (!supportsAuthorizationCode && request.ResponseTypes is { Length: > 0 })
+            return OAuthClientRegistrationResult.Invalid("invalid_client_metadata", "The code response type requires the authorization_code grant type.");
 
-        string[] redirectUris = request.RedirectUris
+        string[] redirectUris = (request.RedirectUris ?? [])
             .Where(uri => !String.IsNullOrWhiteSpace(uri))
             .Select(uri => uri.Trim())
             .Distinct(StringComparer.Ordinal)
             .ToArray();
 
-        if (redirectUris.Length == 0 || redirectUris.Length > 20 || redirectUris.Any(uri => !OAuthApplication.IsValidRedirectUri(uri)))
+        if (supportsAuthorizationCode && redirectUris.Length == 0)
+            return OAuthClientRegistrationResult.Invalid("invalid_redirect_uri", "At least one redirect_uri is required for authorization_code clients.");
+
+        if (redirectUris.Length > 20 || redirectUris.Any(uri => !OAuthApplication.IsValidRedirectUri(uri)))
             return OAuthClientRegistrationResult.Invalid("invalid_redirect_uri", "Redirect URIs must be absolute HTTPS URIs or loopback HTTP URIs without fragments.");
 
         var scopes = NormalizeScopes(request.Scope);
         if (scopes.Count == 0)
-            scopes = DefaultScopes;
+            scopes = GetDefaultScopes(grantTypes);
 
         if (scopes.Any(s => !SupportedScopes.Contains(s, StringComparer.Ordinal)))
             return OAuthClientRegistrationResult.Invalid("invalid_client_metadata", "One or more scopes are not supported.");
+
+        if (scopes.Contains(AuthorizationRoles.OfflineAccess, StringComparer.Ordinal) && !grantTypes.Contains(OAuthGrantTypes.RefreshToken, StringComparer.Ordinal))
+            return OAuthClientRegistrationResult.Invalid("invalid_client_metadata", $"The {AuthorizationRoles.OfflineAccess} scope requires the {OAuthGrantTypes.RefreshToken} grant type.");
 
         var utcNow = timeProvider.GetUtcNow().UtcDateTime;
         string clientId = await CreateUniqueClientIdAsync();
@@ -123,6 +129,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             Name = NormalizeClientName(request.ClientName, clientId),
             RedirectUris = redirectUris,
             Scopes = scopes.ToArray(),
+            GrantTypes = grantTypes.ToArray(),
             Notes = DynamicClientRegistrationNotes,
             CreatedByUserId = OAuthApplication.SystemUserId,
             UpdatedByUserId = OAuthApplication.SystemUserId,
@@ -137,8 +144,8 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             ClientId = application.ClientId,
             ClientName = application.Name,
             RedirectUris = application.RedirectUris,
-            GrantTypes = [OAuthGrantTypes.AuthorizationCode, OAuthGrantTypes.RefreshToken],
-            ResponseTypes = ["code"],
+            GrantTypes = application.GrantTypes,
+            ResponseTypes = supportsAuthorizationCode ? ["code"] : [],
             Scope = String.Join(' ', application.Scopes),
             TokenEndpointAuthMethod = "none",
             ClientIdIssuedAt = new DateTimeOffset(application.CreatedUtc).ToUnixTimeSeconds()
@@ -218,7 +225,8 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
         bool changed = !String.Equals(application.Name, observedApplication.Name, StringComparison.Ordinal)
             || !HasSameValues(application.RedirectUris, observedApplication.RedirectUris)
-            || !HasSameValues(application.Scopes, observedApplication.Scopes);
+            || !HasSameValues(application.Scopes, observedApplication.Scopes)
+            || !HasSameValues(application.GrantTypes, observedApplication.GrantTypes);
 
         if (!changed)
             return application;
@@ -226,6 +234,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         application.Name = observedApplication.Name;
         application.RedirectUris = observedApplication.RedirectUris;
         application.Scopes = observedApplication.Scopes;
+        application.GrantTypes = observedApplication.GrantTypes;
         application.UpdatedByUserId = OAuthApplication.SystemUserId;
         application.UpdatedUtc = timeProvider.GetUtcNow().UtcDateTime;
 
@@ -244,10 +253,15 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (String.IsNullOrWhiteSpace(metadata.ClientName))
             return false;
 
-        if (metadata.GrantTypes is { Length: > 0 } && !metadata.GrantTypes.Contains(OAuthGrantTypes.AuthorizationCode, StringComparer.Ordinal))
+        var grantTypes = NormalizeGrantTypes(metadata.GrantTypes);
+        if (!ValidateGrantTypeShape(grantTypes, out _))
             return false;
 
+        bool supportsAuthorizationCode = grantTypes.Contains(OAuthGrantTypes.AuthorizationCode, StringComparer.Ordinal);
         if (metadata.ResponseTypes is { Length: > 0 } && !metadata.ResponseTypes.Contains("code", StringComparer.Ordinal))
+            return false;
+
+        if (!supportsAuthorizationCode && metadata.ResponseTypes is { Length: > 0 })
             return false;
 
         if (!String.IsNullOrWhiteSpace(metadata.TokenEndpointAuthMethod) && !String.Equals(metadata.TokenEndpointAuthMethod, "none", StringComparison.Ordinal))
@@ -259,12 +273,18 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
         string[] redirectUris = metadata.RedirectUris.Distinct(StringComparer.Ordinal).ToArray();
 
+        if (supportsAuthorizationCode && redirectUris.Length == 0)
+            return false;
+
         var metadataScopes = NormalizeScopes(metadata.Scope);
         string[] scopes = metadataScopes.Count > 0
             ? metadataScopes.Where(s => SupportedScopes.Contains(s, StringComparer.Ordinal)).Distinct(StringComparer.Ordinal).ToArray()
-            : DefaultScopes.ToArray();
+            : GetDefaultScopes(grantTypes).ToArray();
 
         if (scopes.Length == 0)
+            return false;
+
+        if (scopes.Contains(AuthorizationRoles.OfflineAccess, StringComparer.Ordinal) && !grantTypes.Contains(OAuthGrantTypes.RefreshToken, StringComparer.Ordinal))
             return false;
 
         var utcNow = timeProvider.GetUtcNow().UtcDateTime;
@@ -275,6 +295,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             Name = NormalizeClientName(metadata.ClientName, clientId),
             RedirectUris = redirectUris,
             Scopes = scopes,
+            GrantTypes = grantTypes.ToArray(),
             Notes = ClientMetadataNotes,
             CreatedByUserId = OAuthApplication.SystemUserId,
             UpdatedByUserId = OAuthApplication.SystemUserId,
@@ -293,6 +314,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             Name = application.Name,
             RedirectUris = application.RedirectUris,
             Scopes = application.Scopes,
+            GrantTypes = application.GrantTypes,
             IsDisabled = application.IsDisabled
         }.Normalize();
     }
@@ -323,6 +345,34 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         return client.Scopes;
     }
 
+    private static IReadOnlyCollection<string> GetDefaultScopes(IReadOnlyCollection<string> grantTypes)
+    {
+        return grantTypes.Contains(OAuthGrantTypes.RefreshToken, StringComparer.Ordinal)
+            ? DefaultScopes
+            : DefaultScopes.Where(s => !String.Equals(s, AuthorizationRoles.OfflineAccess, StringComparison.Ordinal)).ToArray();
+    }
+
+    internal IReadOnlyCollection<string> GetDefaultScopes(OAuthClientOptions client, OAuthResourceDefinition resourceDefinition)
+    {
+        var allowedScopes = GetAllowedScopes(client);
+        return GetDefaultScopes(client.GrantTypes)
+            .Where(s => allowedScopes.Contains(s, StringComparer.Ordinal))
+            .Where(s => resourceDefinition.Scopes.Contains(s, StringComparer.Ordinal))
+            .ToArray();
+    }
+
+    public static IReadOnlyCollection<string> NormalizeGrantTypes(IReadOnlyCollection<string>? grantTypes)
+    {
+        if (grantTypes is null || grantTypes.Count == 0)
+            return [OAuthGrantTypes.AuthorizationCode, OAuthGrantTypes.RefreshToken];
+
+        return grantTypes
+            .Where(g => !String.IsNullOrWhiteSpace(g))
+            .Select(g => g.Trim())
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+    }
+
     public IReadOnlyCollection<string> NormalizeScopes(string? scopes)
     {
         if (String.IsNullOrWhiteSpace(scopes))
@@ -343,6 +393,9 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (client is null)
             return OAuthValidationResult.Invalid("invalid_client", "Unknown OAuth client.");
 
+        if (!client.GrantTypes.Contains(OAuthGrantTypes.AuthorizationCode, StringComparer.Ordinal))
+            return OAuthValidationResult.Invalid("unauthorized_client", "The client is not allowed to use the authorization_code grant type.");
+
         if (!String.Equals(request.ResponseType, "code", StringComparison.Ordinal))
             return OAuthValidationResult.Invalid("unsupported_response_type", "Only the code response type is supported.");
 
@@ -355,13 +408,21 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (!IsExpectedResource(request.Resource, expectedResource))
             return OAuthValidationResult.Invalid("invalid_target", "The requested resource is not supported.");
 
-        var requestedScopes = NormalizeScopes(request.Scope);
+        return ValidateRequestedScopes(client, request.Scope, resourceDefinition);
+    }
+
+    internal OAuthValidationResult ValidateRequestedScopes(OAuthClientOptions client, string? scope, OAuthResourceDefinition resourceDefinition)
+    {
+        var requestedScopes = NormalizeScopes(scope);
         if (requestedScopes.Count == 0)
             return OAuthValidationResult.Invalid("invalid_scope", "At least one scope is required.");
 
         var allowedScopes = GetAllowedScopes(client);
         if (requestedScopes.Any(s => !allowedScopes.Contains(s, StringComparer.Ordinal)))
             return OAuthValidationResult.Invalid("invalid_scope", "One or more scopes are not allowed for this client.");
+
+        if (requestedScopes.Contains(AuthorizationRoles.OfflineAccess, StringComparer.Ordinal) && !client.GrantTypes.Contains(OAuthGrantTypes.RefreshToken, StringComparer.Ordinal))
+            return OAuthValidationResult.Invalid("invalid_scope", $"The {AuthorizationRoles.OfflineAccess} scope requires the {OAuthGrantTypes.RefreshToken} grant type.");
 
         if (resourceDefinition.RequiredScopes.Any(s => !requestedScopes.Contains(s, StringComparer.Ordinal)))
             return OAuthValidationResult.Invalid("invalid_scope", "One or more required resource scopes are missing.");
@@ -402,8 +463,12 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (String.IsNullOrWhiteSpace(request.Code) || String.IsNullOrWhiteSpace(request.CodeVerifier) || String.IsNullOrWhiteSpace(request.RedirectUri) || String.IsNullOrWhiteSpace(request.ClientId) || String.IsNullOrWhiteSpace(request.Resource))
             return OAuthTokenIssueResult.Invalid("invalid_request", "Missing required token request fields.");
 
-        if (await GetClientAsync(request.ClientId) is null)
+        var client = await GetClientAsync(request.ClientId);
+        if (client is null)
             return OAuthTokenIssueResult.Invalid("invalid_client", "Unknown OAuth client.");
+
+        if (!client.GrantTypes.Contains(OAuthGrantTypes.AuthorizationCode, StringComparer.Ordinal))
+            return OAuthTokenIssueResult.Invalid("unauthorized_client", "The client is not allowed to use the authorization_code grant type.");
 
         if (!IsValidCodeVerifier(request.CodeVerifier))
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Invalid PKCE verifier.");
@@ -432,6 +497,9 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         var client = await GetClientAsync(request.ClientId);
         if (client is null)
             return OAuthTokenIssueResult.Invalid("invalid_client", "Unknown OAuth client.");
+
+        if (!client.GrantTypes.Contains(OAuthGrantTypes.RefreshToken, StringComparer.Ordinal))
+            return OAuthTokenIssueResult.Invalid("unauthorized_client", "The client is not allowed to use the refresh_token grant type.");
 
         await using var refreshTokenLock = await lockProvider.TryAcquireAsync(GetRefreshTokenLockKey(request.RefreshToken), TimeSpan.FromSeconds(30), CancellationToken.None);
         if (refreshTokenLock is null)
@@ -579,7 +647,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         return oauthTokenRepository.SaveAsync(token, o => o.ImmediateConsistency());
     }
 
-    private async Task<OAuthTokenResponse> CreateTokenAsync(string userId, string clientId, string resource, IReadOnlyCollection<string> scopes, IReadOnlyCollection<string> organizationIds, string? grantId = null)
+    internal async Task<OAuthTokenResponse> CreateTokenAsync(string userId, string clientId, string resource, IReadOnlyCollection<string> scopes, IReadOnlyCollection<string> organizationIds, string? grantId = null)
     {
         var utcNow = timeProvider.GetUtcNow().UtcDateTime;
         var accessToken = CreateOAuthToken();
@@ -612,6 +680,25 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             Resource = resource
         };
     }
+
+    private static bool ValidateGrantTypeShape(IReadOnlyCollection<string> grantTypes, out string error)
+    {
+        error = String.Empty;
+        if (grantTypes.Any(g => !OAuthGrantTypes.SupportedGrantTypes.Contains(g, StringComparer.Ordinal)))
+        {
+            error = "Only authorization_code, refresh_token, and device_code grant types are supported.";
+            return false;
+        }
+
+        if (!grantTypes.Contains(OAuthGrantTypes.AuthorizationCode, StringComparer.Ordinal) && !grantTypes.Contains(OAuthGrantTypes.DeviceCode, StringComparer.Ordinal))
+        {
+            error = "The authorization_code or device_code grant type is required.";
+            return false;
+        }
+
+        return true;
+    }
+
     private static bool ValidateCodeVerifier(string challenge, string verifier)
     {
         return String.Equals(challenge, CreateCodeChallenge(verifier), StringComparison.Ordinal);
@@ -650,7 +737,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         return false;
     }
 
-    private static bool TryGetProtectedResourceByResourceUri(string? resource, out OAuthResourceDefinition resourceDefinition)
+    internal static bool TryGetProtectedResourceByResourceUri(string? resource, out OAuthResourceDefinition resourceDefinition)
     {
         if (!String.IsNullOrWhiteSpace(resource) && Uri.TryCreate(resource, UriKind.Absolute, out var resourceUri) && String.IsNullOrEmpty(resourceUri.Query) && String.IsNullOrEmpty(resourceUri.Fragment))
         {
@@ -754,7 +841,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         return Base64UrlEncode(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
     }
 
-    private static string CreateOAuthToken() => StringExtensions.GetRandomString(OAuthTokenLength);
+    internal static string CreateOAuthToken() => StringExtensions.GetRandomString(OAuthTokenLength);
 
     private static string Base64UrlEncode(byte[] bytes)
     {
@@ -769,7 +856,15 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 public static class OAuthGrantTypes
 {
     public const string AuthorizationCode = "authorization_code";
+    public const string DeviceCode = "urn:ietf:params:oauth:grant-type:device_code";
     public const string RefreshToken = "refresh_token";
+
+    public static readonly IReadOnlyCollection<string> SupportedGrantTypes =
+    [
+        AuthorizationCode,
+        DeviceCode,
+        RefreshToken
+    ];
 }
 
 public record OAuthAuthorizeRequest
@@ -793,6 +888,7 @@ public record OAuthTokenRequest
     public string? ClientId { get; init; }
     public string? CodeVerifier { get; init; }
     public string? RefreshToken { get; init; }
+    public string? DeviceCode { get; init; }
     public string? Resource { get; init; }
 }
 
@@ -861,7 +957,6 @@ public record OAuthAuthorizationCode
     public DateTime CreatedUtc { get; init; }
     public IReadOnlyCollection<string> OrganizationIds { get; init; } = [];
 }
-
 
 public sealed record OAuthResourceDefinition(string Path, IReadOnlyCollection<string> Scopes, IReadOnlyCollection<string> RequiredScopes);
 

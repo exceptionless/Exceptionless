@@ -1,7 +1,7 @@
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Validation;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Extensions;
@@ -38,6 +38,7 @@ public class OAuthApplicationHandler(
             Name = model.Name.Trim(),
             RedirectUris = NormalizeValues(model.RedirectUris, StringComparer.Ordinal),
             Scopes = NormalizeScopes(model.Scopes),
+            GrantTypes = OAuthService.NormalizeGrantTypes(model.GrantTypes).ToArray(),
             Notes = model.Notes?.Trim(),
             IsDisabled = model.IsDisabled,
             CreatedByUserId = currentUser.Id,
@@ -74,6 +75,7 @@ public class OAuthApplicationHandler(
         application.Name = model.Name.Trim();
         application.RedirectUris = NormalizeValues(model.RedirectUris, StringComparer.Ordinal);
         application.Scopes = NormalizeScopes(model.Scopes);
+        application.GrantTypes = OAuthService.NormalizeGrantTypes(model.GrantTypes).ToArray();
         application.Notes = model.Notes?.Trim();
         application.IsDisabled = model.IsDisabled;
         application.UpdatedByUserId = message.Context.Request.GetUser().Id;
@@ -110,9 +112,9 @@ public class OAuthApplicationHandler(
         return existing is null;
     }
 
-    private static string[] NormalizeValues(IEnumerable<string> values, IEqualityComparer<string> comparer)
+    private static string[] NormalizeValues(IEnumerable<string>? values, IEqualityComparer<string> comparer)
     {
-        return values
+        return (values ?? [])
             .Where(v => !String.IsNullOrWhiteSpace(v))
             .Select(v => v.Trim())
             .Distinct(comparer)

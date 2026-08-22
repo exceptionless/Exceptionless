@@ -3,8 +3,8 @@ using Exceptionless.Core.Services;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Models.OAuth;
 using Foundatio.Mediator;
-using HttpIResult = Microsoft.AspNetCore.Http.IResult;
 using Microsoft.AspNetCore.Mvc;
+using HttpIResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Exceptionless.Web.Api.Endpoints;
 
@@ -69,6 +69,40 @@ public static class OAuthEndpoints
             .Produces<OAuthErrorResponse>(StatusCodes.Status400BadRequest)
             .Produces<OAuthErrorResponse>(StatusCodes.Status429TooManyRequests);
 
+        group.MapPost("device_authorization", CreateDeviceAuthorizationAsync)
+            .AllowAnonymous()
+            .Accepts<OAuthDeviceAuthorizationForm>("application/x-www-form-urlencoded")
+            .Produces<OAuthDeviceAuthorizationResponse>()
+            .Produces<OAuthErrorResponse>(StatusCodes.Status400BadRequest)
+            .Produces<OAuthErrorResponse>(StatusCodes.Status429TooManyRequests)
+            .DisableAntiforgery();
+
+        group.MapGet("device", async (IMediator mediator, [FromQuery(Name = "user_code")] string? userCode = null)
+            => await mediator.InvokeAsync<HttpIResult>(new RedirectToDeviceBridge(userCode)))
+            .AllowAnonymous()
+            .Produces(StatusCodes.Status302Found);
+
+        group.MapPost("device/consent", async (IMediator mediator, [FromBody] OAuthDeviceConsentForm form)
+            => await mediator.InvokeAsync<HttpIResult>(new GetDeviceConsent(form)))
+            .RequireAuthorization(AuthorizationRoles.UserPolicy)
+            .Accepts<OAuthDeviceConsentForm>("application/json", "application/*+json", "application/octet-stream", "text/json", "text/plain")
+            .Produces<OAuthDeviceConsentResponse>()
+            .Produces<OAuthErrorResponse>(StatusCodes.Status400BadRequest);
+
+        group.MapPost("device/authorize", async (IMediator mediator, [FromBody] OAuthDeviceAuthorizeForm form)
+            => await mediator.InvokeAsync<HttpIResult>(new ApproveDeviceAuthorization(form)))
+            .RequireAuthorization(AuthorizationRoles.UserPolicy)
+            .Accepts<OAuthDeviceAuthorizeForm>("application/json", "application/*+json", "application/octet-stream", "text/json", "text/plain")
+            .Produces(StatusCodes.Status200OK)
+            .Produces<OAuthErrorResponse>(StatusCodes.Status400BadRequest);
+
+        group.MapPost("device/deny", async (IMediator mediator, [FromBody] OAuthDeviceConsentForm form)
+            => await mediator.InvokeAsync<HttpIResult>(new DenyDeviceAuthorization(form)))
+            .RequireAuthorization(AuthorizationRoles.UserPolicy)
+            .Accepts<OAuthDeviceConsentForm>("application/json", "application/*+json", "application/octet-stream", "text/json", "text/plain")
+            .Produces(StatusCodes.Status200OK)
+            .Produces<OAuthErrorResponse>(StatusCodes.Status400BadRequest);
+
         group.MapPost("token", IssueTokenAsync)
             .AllowAnonymous()
             .Accepts<OAuthTokenForm>("application/x-www-form-urlencoded")
@@ -96,10 +130,24 @@ public static class OAuthEndpoints
             ClientId = GetFormValue(form, "client_id"),
             CodeVerifier = GetFormValue(form, "code_verifier"),
             RefreshToken = GetFormValue(form, "refresh_token"),
+            DeviceCode = GetFormValue(form, "device_code"),
             Resource = GetFormValue(form, "resource")
         };
 
         return await mediator.InvokeAsync<HttpIResult>(new IssueOAuthToken(tokenForm));
+    }
+
+    private static async Task<HttpIResult> CreateDeviceAuthorizationAsync(IMediator mediator, HttpRequest request, CancellationToken cancellationToken)
+    {
+        var form = await request.ReadFormAsync(cancellationToken);
+        var authorizationForm = new OAuthDeviceAuthorizationForm
+        {
+            ClientId = GetFormValue(form, "client_id"),
+            Scope = GetFormValue(form, "scope"),
+            Resource = GetFormValue(form, "resource")
+        };
+
+        return await mediator.InvokeAsync<HttpIResult>(new CreateDeviceAuthorization(authorizationForm));
     }
 
     private static async Task<HttpIResult> RevokeTokenAsync(IMediator mediator, HttpRequest request, CancellationToken cancellationToken)
