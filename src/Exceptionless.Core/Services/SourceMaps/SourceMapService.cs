@@ -174,8 +174,10 @@ public sealed class SourceMapService : IDisposable
             return default;
 
         bool symbolicated = false;
+        bool hasSymbolicatedFrames = false;
         int framesProcessed = 0;
         bool failureDetailsTruncated = false;
+        string? activeGeneratedFileUrl = null;
         var failures = new List<SourceMapFailure>();
         InnerError rootError = error;
         using var processingCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -191,16 +193,18 @@ public sealed class SourceMapService : IDisposable
                         if (++framesProcessed > _options.MaximumFramesPerError)
                             break;
 
+                        if (frame.Data?.ContainsKey(StackFrame.KnownDataKeys.SourceMap) == true)
+                            hasSymbolicatedFrames = true;
+                        activeGeneratedFileUrl = frame.FileName;
                         var result = await SymbolicateFrameAsync(request, frame, processingCancellationTokenSource.Token);
                         if (result.Symbolicated)
-                            symbolicated = true;
-                        if (result.Failure is not null && !failures.Any(f => String.Equals(f.GeneratedFileUrl, result.Failure.GeneratedFileUrl, StringComparison.Ordinal)))
                         {
-                            if (failures.Count < MaximumFailureDetails)
-                                failures.Add(result.Failure);
-                            else
-                                failureDetailsTruncated = true;
+                            symbolicated = true;
+                            hasSymbolicatedFrames = true;
                         }
+                        if (result.Failure is not null)
+                            AddFailure(failures, result.Failure, ref failureDetailsTruncated);
+                        activeGeneratedFileUrl = null;
                     }
                 }
 
@@ -210,6 +214,8 @@ public sealed class SourceMapService : IDisposable
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             _logger.LogDebug("Source map processing exceeded its time budget for project {ProjectId}.", request.ProjectId);
+            if (TryNormalizeGeneratedFileUrl(activeGeneratedFileUrl, requireHttps: false, out var generatedFileUri))
+                AddFailure(failures, new SourceMapFailure(generatedFileUri.AbsoluteUri, SourceMapFailureReasons.Timeout), ref failureDetailsTruncated);
         }
 
         bool sourceMapStatusModified;
@@ -218,7 +224,7 @@ public sealed class SourceMapService : IDisposable
             rootError.Data ??= new DataDictionary();
             rootError.Data[Error.KnownDataKeys.SourceMap] = new DataDictionary
             {
-                ["status"] = symbolicated ? "partial" : "failed",
+                ["status"] = hasSymbolicatedFrames ? "partial" : "failed",
                 ["failures"] = failures.Select(f => new DataDictionary
                 {
                     ["generated_file_name"] = f.GeneratedFileUrl,
@@ -280,6 +286,17 @@ public sealed class SourceMapService : IDisposable
         frame.Name = String.IsNullOrWhiteSpace(original.Name) ? null : original.Name;
 
         return new SourceMapFrameResult(true, null);
+    }
+
+    private static void AddFailure(List<SourceMapFailure> failures, SourceMapFailure failure, ref bool failureDetailsTruncated)
+    {
+        if (failures.Any(f => String.Equals(f.GeneratedFileUrl, failure.GeneratedFileUrl, StringComparison.Ordinal)))
+            return;
+
+        if (failures.Count < MaximumFailureDetails)
+            failures.Add(failure);
+        else
+            failureDetailsTruncated = true;
     }
 
     private async Task<SourceMapLookupResult> GetSourceMapAsync(SourceMapRequest request, Uri generatedFileUri, CancellationToken cancellationToken)

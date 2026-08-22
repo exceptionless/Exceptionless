@@ -531,6 +531,76 @@ public sealed class SourceMapServiceTests : TestWithServices
     }
 
     [Fact]
+    public async Task SymbolicateAsync_WithExistingMappedFrameAndFailure_PreservesPartialStatus()
+    {
+        using var httpClient = new HttpClient(new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound)));
+        using var service = CreateService(httpClient);
+        string suffix = Guid.NewGuid().ToString("N");
+        string missingFileUrl = $"https://cdn.example.com/{suffix}/missing.js";
+        var error = CreateError();
+        var mappedFrame = Assert.Single(error.StackTrace!);
+        mappedFrame.FileName = "src/app.ts";
+        mappedFrame.Data = new DataDictionary
+        {
+            [StackFrame.KnownDataKeys.SourceMap] = new DataDictionary()
+        };
+        error.StackTrace!.Add(new StackFrame
+        {
+            FileName = missingFileUrl,
+            LineNumber = 1,
+            Column = 1,
+            Name = "b"
+        });
+        error.Data = new DataDictionary
+        {
+            [Error.KnownDataKeys.SourceMap] = new DataDictionary { ["status"] = "partial" }
+        };
+
+        Assert.False(await service.SymbolicateAsync($"project-{suffix}", error, TestContext.Current.CancellationToken));
+
+        var sourceMapStatus = Assert.IsType<DataDictionary>(error.Data[Error.KnownDataKeys.SourceMap]);
+        Assert.Equal("partial", sourceMapStatus["status"]);
+        Assert.Equal(missingFileUrl, Assert.Single(Assert.IsType<DataDictionary[]>(sourceMapStatus["failures"]))["generated_file_name"]);
+    }
+
+    [Fact]
+    public async Task SymbolicateAsync_WhenProcessingBudgetExpires_RecordsTimeoutFailure()
+    {
+        var options = GetService<AppOptions>();
+        options.SourceMapOptions.MaximumProcessingTimeMilliseconds = 1000;
+        var requestStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseRequest = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var handler = new AsyncDelegateHandler(async _ =>
+        {
+            requestStarted.TrySetResult();
+            await releaseRequest.Task;
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
+        });
+        using var httpClient = new HttpClient(handler);
+        using var service = CreateService(httpClient);
+        string suffix = Guid.NewGuid().ToString("N");
+        string generatedFileUrl = $"https://cdn.example.com/{suffix}/app.min.js";
+        var error = CreateError(generatedFileUrl);
+
+        Task<bool> symbolication = service.SymbolicateAsync($"project-{suffix}", error, TestContext.Current.CancellationToken);
+        await requestStarted.Task.WaitAsync(TestContext.Current.CancellationToken);
+
+        try
+        {
+            Assert.False(await symbolication);
+            var sourceMapStatus = Assert.IsType<DataDictionary>(error.Data![Error.KnownDataKeys.SourceMap]);
+            var failure = Assert.Single(Assert.IsType<DataDictionary[]>(sourceMapStatus["failures"]));
+            Assert.Equal(generatedFileUrl, failure["generated_file_name"]);
+            Assert.Equal(SourceMapFailureReasons.Timeout, failure["reason"]);
+        }
+        finally
+        {
+            releaseRequest.TrySetResult();
+            await service.DeleteProjectArtifactsAsync($"project-{suffix}", TestContext.Current.CancellationToken);
+        }
+    }
+
+    [Fact]
     public async Task EventProcessingAsync_WhenSourceMapDownloadFails_PersistsFailureDiagnostics()
     {
         var handler = new DelegateHandler(request =>
