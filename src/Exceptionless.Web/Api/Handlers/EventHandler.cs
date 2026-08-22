@@ -48,6 +48,7 @@ public class EventHandler(
     EventStackQueryValidator stackModeValidator,
     AppOptions appOptions,
     UsageService usageService,
+    IStackRollupSearchService stackRollupSearchService,
     TimeProvider timeProvider,
     LinkGenerator linkGenerator,
     ILoggerFactory loggerFactory)
@@ -166,7 +167,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organizations.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
-        return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, includeTotal: ShouldIncludeTotal(message.Include));
+        return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, includeTotal: ShouldIncludeTotal(message.Include), timeExpression: message.Time);
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetEventsByOrganization message)
@@ -181,7 +182,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organization);
-        return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, includeTotal: ShouldIncludeTotal(message.Include));
+        return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, includeTotal: ShouldIncludeTotal(message.Include), timeExpression: message.Time);
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetEventsByProject message)
@@ -200,7 +201,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(project, appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(project, organization);
-        return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, includeTotal: ShouldIncludeTotal(message.Include));
+        return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, includeTotal: ShouldIncludeTotal(message.Include), timeExpression: message.Time);
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetEventsByStack message)
@@ -219,7 +220,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(stack, appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(stack, organization);
-        return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, includeTotal: ShouldIncludeTotal(message.Include));
+        return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, includeTotal: ShouldIncludeTotal(message.Include), timeExpression: message.Time);
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetEventsByReferenceId message)
@@ -262,7 +263,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organizations.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
-        return await GetInternalAsync(sf, ti, httpContext, $"(reference:{message.SessionId} OR ref.session:{message.SessionId}) {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, premiumFeatureUpgradeMessage: ApiFilterPolicy.PremiumSessionUpgradeMessage, includeTotal: ShouldIncludeTotal(message.Include));
+        return await GetInternalAsync(sf, ti, httpContext, $"(reference:{message.SessionId} OR ref.session:{message.SessionId}) {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, premiumFeatureUpgradeMessage: ApiFilterPolicy.PremiumSessionUpgradeMessage, includeTotal: ShouldIncludeTotal(message.Include), timeExpression: message.Time);
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetEventsBySessionIdAndProject message)
@@ -281,7 +282,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(project, appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(project, organization);
-        return await GetInternalAsync(sf, ti, httpContext, $"(reference:{message.SessionId} OR ref.session:{message.SessionId}) {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, premiumFeatureUpgradeMessage: ApiFilterPolicy.PremiumSessionUpgradeMessage, includeTotal: ShouldIncludeTotal(message.Include));
+        return await GetInternalAsync(sf, ti, httpContext, $"(reference:{message.SessionId} OR ref.session:{message.SessionId}) {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, premiumFeatureUpgradeMessage: ApiFilterPolicy.PremiumSessionUpgradeMessage, includeTotal: ShouldIncludeTotal(message.Include), timeExpression: message.Time);
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetSessions message)
@@ -293,7 +294,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organizations.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
-        return await GetInternalAsync(sf, ti, httpContext, $"type:{Event.KnownTypes.Session} {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, premiumFeatureUpgradeMessage: ApiFilterPolicy.PremiumSessionUpgradeMessage, includeTotal: ShouldIncludeTotal(message.Include));
+        return await GetInternalAsync(sf, ti, httpContext, $"type:{Event.KnownTypes.Session} {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, premiumFeatureUpgradeMessage: ApiFilterPolicy.PremiumSessionUpgradeMessage, includeTotal: ShouldIncludeTotal(message.Include), timeExpression: message.Time);
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetSessionsByOrganization message)
@@ -308,7 +309,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organization);
-        return await GetInternalAsync(sf, ti, httpContext, $"type:{Event.KnownTypes.Session} {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, premiumFeatureUpgradeMessage: ApiFilterPolicy.PremiumSessionUpgradeMessage, includeTotal: ShouldIncludeTotal(message.Include));
+        return await GetInternalAsync(sf, ti, httpContext, $"type:{Event.KnownTypes.Session} {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, premiumFeatureUpgradeMessage: ApiFilterPolicy.PremiumSessionUpgradeMessage, includeTotal: ShouldIncludeTotal(message.Include), timeExpression: message.Time);
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetSessionsByProject message)
@@ -327,7 +328,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(project, appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(project, organization);
-        return await GetInternalAsync(sf, ti, httpContext, $"type:{Event.KnownTypes.Session} {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, premiumFeatureUpgradeMessage: ApiFilterPolicy.PremiumSessionUpgradeMessage, includeTotal: ShouldIncludeTotal(message.Include));
+        return await GetInternalAsync(sf, ti, httpContext, $"type:{Event.KnownTypes.Session} {message.Filter}", message.Sort, message.Mode, message.Page, message.Limit, message.Before, message.After, premiumFeatureUpgradeMessage: ApiFilterPolicy.PremiumSessionUpgradeMessage, includeTotal: ShouldIncludeTotal(message.Include), timeExpression: message.Time);
     }
 
     public async Task<Result> Handle(SetEventUserDescription message)
@@ -728,7 +729,7 @@ public class EventHandler(
         return result;
     }
 
-    private async Task<Result<PagedResult<object>>> GetInternalAsync(AppFilter sf, TimeInfo ti, HttpContext httpContext, string? filter = null, string? sort = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, string? premiumFeatureUpgradeMessage = null, bool includeTotal = false)
+    private async Task<Result<PagedResult<object>>> GetInternalAsync(AppFilter sf, TimeInfo ti, HttpContext httpContext, string? filter = null, string? sort = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, string? premiumFeatureUpgradeMessage = null, bool includeTotal = false, string? timeExpression = null)
     {
         var currentUser = httpContext.Request.GetUser();
         using var _ = _logger.BeginScope(new ExceptionlessState()
@@ -754,6 +755,12 @@ public class EventHandler(
         int skip = Pagination.GetSkip(resolvedPage, limit);
         if (skip > Pagination.MaximumSkip)
             return new PagedResult<object>(Array.Empty<PersistentEvent>(), false);
+
+        if (IsStackMode(mode) && before is not null && after is not null)
+            return Result.BadRequest("The before and after parameters cannot be used together.");
+
+        if (IsStackMode(mode) && page.HasValue && (before is not null || after is not null))
+            return Result.BadRequest("The page parameter cannot be combined with before or after.");
 
         var pr = await GetQueryValidator(mode).ValidateQueryAsync(filter);
         if (!pr.IsValid)
@@ -796,6 +803,42 @@ public class EventHandler(
                 case "stack_users":
                     if (!String.IsNullOrEmpty(sort))
                         return Result.BadRequest("Sort is not supported in stack mode.");
+
+                    if (!page.HasValue)
+                    {
+                        var lookupResult = await stackRollupSearchService.SearchAsync(new StackRollupSearchRequest(
+                            appliedAppFilter,
+                            ti.Range.UtcStart,
+                            ti.Range.UtcEnd,
+                            ti.Offset,
+                            timeExpression,
+                            filter,
+                            mode,
+                            limit,
+                            before,
+                            after,
+                            includeTotal), httpContext.RequestAborted);
+
+                        if (lookupResult is not null)
+                        {
+                            string[] lookupStackIds = lookupResult.Rows.Select(row => row.StackId).ToArray();
+                            var lookupStacks = (await stackRepository.GetByIdsAsync(lookupStackIds))
+                                .Select(stack => stack.ApplyOffset(ti.Offset))
+                                .ToList();
+                            var lookupSummaries = await GetStackSummariesAsync(lookupStacks, lookupResult.Rows, sf, ti);
+
+                            return new PagedResult<object>(
+                                lookupSummaries.Cast<object>().ToList(),
+                                lookupResult.HasMore,
+                                Page: null,
+                                lookupResult.Total,
+                                lookupResult.Before,
+                                lookupResult.After);
+                        }
+
+                        if (before is not null || after is not null)
+                            return Result.BadRequest("Stack cursor paging is not available for the current Elasticsearch index.");
+                    }
 
                     var systemFilter = new RepositoryQuery<PersistentEvent>()
                         .AppFilter(appliedAppFilter)
@@ -842,6 +885,10 @@ public class EventHandler(
                     events = await GetEventsInternalAsync(appliedAppFilter, ti, filter, sort, page, limit, before, after, includeTotal);
                     return new PagedResult<object>(events.Documents.Cast<object>().ToList(), events.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, includeTotal ? events.Total : null, events.Hits.FirstOrDefault()?.GetSortToken(serializer), events.Hits.LastOrDefault()?.GetSortToken(serializer));
             }
+        }
+        catch (InvalidStackRollupCursorException ex)
+        {
+            return Result.BadRequest(ex.Message);
         }
         catch (ApplicationException ex)
         {
@@ -946,6 +993,44 @@ public class EventHandler(
 
             return summary;
         }).ToList();
+    }
+
+    private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(List<Stack> stacks, IReadOnlyCollection<StackRollupRow> rows, AppFilter sf, TimeInfo ti)
+    {
+        if (stacks.Count == 0)
+            return [];
+
+        var stacksById = stacks.ToDictionary(stack => stack.Id, StringComparer.Ordinal);
+        var projects = await projectRepository.GetByIdsAsync(stacks.Select(stack => stack.ProjectId).Distinct().ToArray(), options => options.Cache());
+        var projectNames = projects.ToDictionary(project => project.Id, project => project.Name);
+        var totalUsers = await GetUserCountByProjectIdsAsync(stacks, sf, ti.Range.UtcStart, ti.Range.UtcEnd);
+        var summaries = new List<StackSummaryModel>(rows.Count);
+
+        foreach (var row in rows)
+        {
+            if (!stacksById.TryGetValue(row.StackId, out var stack))
+                continue;
+
+            var data = formattingPluginManager.GetStackSummaryData(stack);
+            summaries.Add(new StackSummaryModel
+            {
+                Id = data.Id,
+                TemplateKey = data.TemplateKey,
+                Data = data.Data,
+                ProjectId = stack.ProjectId,
+                ProjectName = projectNames.GetValueOrDefault(stack.ProjectId),
+                Tags = stack.Tags?.OfType<string>().Order(StringComparer.OrdinalIgnoreCase).ToArray() ?? [],
+                Title = stack.Title,
+                Status = stack.Status,
+                FirstOccurrence = row.FirstOccurrence,
+                LastOccurrence = row.LastOccurrence,
+                Total = row.Total,
+                Users = row.Users,
+                TotalUsers = totalUsers.GetOrDefault(stack.ProjectId)
+            });
+        }
+
+        return summaries;
     }
 
     private async Task<Dictionary<string, double>> GetUserCountByProjectIdsAsync(ICollection<Stack> stacks, AppFilter sf, DateTime utcStart, DateTime utcEnd)

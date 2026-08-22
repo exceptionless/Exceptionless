@@ -106,6 +106,8 @@
     const PAGE_SIZE_PREFERENCE_KEY = 'event-stack-list-page-size';
     const pageSizePreference = createPageSizePreference(PAGE_SIZE_PREFERENCE_KEY);
     const DEFAULT_PARAMS = {
+        after: undefined as string | undefined,
+        before: undefined as string | undefined,
         bot: undefined as string | undefined,
         filter: undefined as string | undefined,
         first: undefined as string | undefined,
@@ -220,6 +222,8 @@
         defaults: DEFAULT_PARAMS,
         history: 'push',
         schema: {
+            after: 'string',
+            before: 'string',
             bot: 'string',
             filter: 'string',
             first: 'string',
@@ -487,7 +491,7 @@
             queryFilterParams.version !== queryParams.version;
         const effectiveQueryWillChange = (filter || null) !== getEffectiveFilter() || time !== getQueryTime();
         const shouldClearPaginationForFilter = shouldClearPagination && effectiveQueryWillChange;
-        const paginationWillChange = shouldClearPaginationForFilter && queryParams.page != null;
+        const paginationWillChange = shouldClearPaginationForFilter && (queryParams.after != null || queryParams.before != null || queryParams.page != null);
 
         updateFilterCache(filterCacheKey(filter), updatedFilters);
 
@@ -498,6 +502,8 @@
         }
 
         queryParams.update({
+            after: shouldClearPaginationForFilter ? null : queryParams.after,
+            before: shouldClearPaginationForFilter ? null : queryParams.before,
             bot: queryFilterParams.bot,
             filter: newFilterParam,
             first: queryFilterParams.first,
@@ -614,6 +620,18 @@
     });
 
     const eventsQueryParameters: GetEventsParams = $state({
+        get after() {
+            return queryParams.after ?? undefined;
+        },
+        set after(value) {
+            queryParams.after = value ?? null;
+        },
+        get before() {
+            return queryParams.before ?? undefined;
+        },
+        set before(value) {
+            queryParams.before = value ?? null;
+        },
         get filter() {
             return getEffectiveFilter()!;
         },
@@ -650,10 +668,19 @@
     const eventsQuery = getOrganizationEventsQuery({
         enabled: () => !isSavedViewRoutePending,
         get params() {
-            return {
+            const params = {
                 ...eventsQueryParameters,
-                include: 'total' as const
+                include: !eventsQueryParameters.after && !eventsQueryParameters.before ? ('total' as const) : undefined
             };
+
+            if (!eventsQueryParameters.after && !eventsQueryParameters.before) {
+                return params;
+            }
+
+            const { page: ignoredPage, ...cursorParams } = params;
+            void ignoredPage;
+
+            return cursorParams;
         },
         route: {
             get organizationId() {
@@ -673,7 +700,7 @@
             },
             defaultColumnVisibility: defaultStackColumnVisibility,
             enableColumnResizing: true,
-            paginationStrategy: 'offset',
+            paginationStrategy: 'cursor',
             get queryData() {
                 return eventsQuery.data?.data ?? [];
             },

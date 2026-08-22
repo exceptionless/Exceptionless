@@ -817,6 +817,95 @@ public partial class EventEndpointTests : IntegrationTestsBase
         Assert.Equal(2, results.Count);
     }
 
+    [Theory]
+    [InlineData("stack_recent")]
+    [InlineData("stack_frequent")]
+    [InlineData("stack_new")]
+    [InlineData("stack_users")]
+    public async Task CanPageStackModesWithCursors(string mode)
+    {
+        await CreateStacksAndEventsAsync();
+        Log.SetLogLevel<StackRollupSearchService>(LogLevel.Debug);
+
+        var response = await SendRequestAsync(request => request
+            .AsGlobalAdminUser()
+            .AppendPath("events")
+            .QueryString("filter", $"project:{SampleDataService.FREE_PROJECT_ID} (status:open OR status:regressed)")
+            .QueryString("mode", mode)
+            .QueryString("limit", 1)
+            .QueryString("include", "total")
+            .StatusCodeShouldBeOk());
+
+        Assert.Equal("2", response.Headers.GetValues(Headers.ResultCount).Single());
+        var firstPageLinks = ParseLinkHeaderValue(response.Headers.GetValues(HeaderNames.Link).ToArray());
+        Assert.False(firstPageLinks.ContainsKey("previous"));
+        string? after = GetQueryStringValue(firstPageLinks["next"], "after");
+        Assert.NotNull(after);
+
+        var firstPage = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<StackSummaryModel>>(_jsonSerializerOptions, TestCancellationToken);
+        Assert.NotNull(firstPage);
+        string firstStackId = Assert.Single(firstPage).Id;
+
+        response = await SendRequestAsync(request => request
+            .AsGlobalAdminUser()
+            .AppendPath("events")
+            .QueryString("filter", $"project:{SampleDataService.FREE_PROJECT_ID} (status:open OR status:regressed)")
+            .QueryString("mode", mode)
+            .QueryString("limit", 1)
+            .QueryString("include", "total")
+            .QueryString("after", after)
+            .StatusCodeShouldBeOk());
+
+        Assert.Equal("2", response.Headers.GetValues(Headers.ResultCount).Single());
+        var secondPageLinks = ParseLinkHeaderValue(response.Headers.GetValues(HeaderNames.Link).ToArray());
+        Assert.True(secondPageLinks.TryGetValue("previous", out string? previousLink));
+        Assert.False(secondPageLinks.ContainsKey("next"));
+        string? before = GetQueryStringValue(previousLink, "before");
+        Assert.NotNull(before);
+
+        var secondPage = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<StackSummaryModel>>(_jsonSerializerOptions, TestCancellationToken);
+        Assert.NotNull(secondPage);
+        string secondStackId = Assert.Single(secondPage).Id;
+        Assert.NotEqual(firstStackId, secondStackId);
+
+        response = await SendRequestAsync(request => request
+            .AsGlobalAdminUser()
+            .AppendPath("events")
+            .QueryString("filter", $"project:{SampleDataService.FREE_PROJECT_ID} (status:open OR status:regressed)")
+            .QueryString("mode", mode)
+            .QueryString("limit", 1)
+            .QueryString("before", before)
+            .StatusCodeShouldBeOk());
+
+        var previousPage = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<StackSummaryModel>>(_jsonSerializerOptions, TestCancellationToken);
+        Assert.NotNull(previousPage);
+        Assert.Equal(firstStackId, Assert.Single(previousPage).Id);
+    }
+
+    [Theory]
+    [InlineData("before", "malformed", null, null)]
+    [InlineData("after", "malformed", null, null)]
+    [InlineData("before", "malformed", "after", "malformed")]
+    [InlineData("after", "malformed", "page", "1")]
+    public async Task RejectsInvalidStackCursorRequests(string firstName, string firstValue, string? secondName, string? secondValue)
+    {
+        await CreateStacksAndEventsAsync();
+
+        await SendRequestAsync(request =>
+        {
+            request
+                .AsGlobalAdminUser()
+                .AppendPath("events")
+                .QueryString("mode", "stack_frequent")
+                .QueryString(firstName, firstValue);
+
+            if (secondName is not null)
+                request.QueryString(secondName, secondValue);
+
+            request.StatusCodeShouldBeBadRequest();
+        });
+    }
+
     [Fact]
     public async Task CanGetProjectLevelMostFrequentStackMode()
     {

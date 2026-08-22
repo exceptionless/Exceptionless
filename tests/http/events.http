@@ -30,6 +30,12 @@ GET {{apiUrl}}/events?mode=stack_frequent&limit=10
 Authorization: Bearer {{token}}
 
 ###
+
+### Stack summaries with cursor paging (copy the after value from the Link response header)
+GET {{apiUrl}}/events?mode=stack_frequent&limit=10&after={{after}}
+Authorization: Bearer {{token}}
+
+###
 @eventId = {{allEvents.response.body.$[0].id}}
 @stackId = {{allEvents.response.body.$[0].stack_id}}
 

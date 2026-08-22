@@ -1,0 +1,24 @@
+schema: spec-driven
+
+context: |
+  Project: exceptionless/Exceptionless.
+  Exceptionless is a real-time error monitoring platform on ASP.NET Core 10, Aspire, Foundatio.Repositories, Elasticsearch, and Svelte 5.
+  Event documents are stored in date-partitioned daily indices; stack documents are stored in a versioned index.
+  Preserve public API routes, response bodies, pagination headers, filter syntax, authorization, configuration keys, and persisted data unless an explicit compatibility decision says otherwise.
+  Use Foundatio.Repositories for ordinary repository work. A narrowly isolated Elasticsearch client call is acceptable when ES|QL cannot be expressed by Foundatio.Repositories.
+  Local verification must use Aspire/localhost and must not target production or staging.
+
+rules:
+  proposal:
+    - State the user-visible behavior, classification, affected areas, compatibility risks, non-goals, and rollback plan.
+    - Explain why OpenSpec is justified.
+  specs:
+    - Use ADDED, MODIFIED, and REMOVED requirements.
+    - Use Given/When/Then scenarios for observable behavior.
+    - Include negative, authorization, compatibility, and Elasticsearch failure scenarios where relevant.
+  design:
+    - Reference existing code paths before introducing abstractions.
+    - For Elasticsearch changes, cover index/schema impact, query behavior, migration/reindex strategy, performance, operations, and failure handling.
+  tasks:
+    - Make tasks independently reviewable and include a verification command or test for each task.
+    - Finish with strict OpenSpec validation and the smallest sufficient targeted tests.

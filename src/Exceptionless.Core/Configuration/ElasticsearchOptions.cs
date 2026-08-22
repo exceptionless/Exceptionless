@@ -11,6 +11,7 @@ public class ElasticsearchOptions
     public int NumberOfReplicas { get; internal set; }
     public int FieldsLimit { get; internal set; } = 1500;
     public bool EnableMapperSizePlugin { get; internal set; }
+    public bool EnableStackRollupLookupJoin { get; internal set; }
 
     public string Scope { get; internal set; } = null!;
     public string ScopePrefix { get; internal set; } = null!;
@@ -30,6 +31,7 @@ public class ElasticsearchOptions
 
         options.DisableIndexConfiguration = config.GetValue(nameof(options.DisableIndexConfiguration), false);
         options.EnableSnapshotJobs = config.GetValue(nameof(options.EnableSnapshotJobs), String.IsNullOrEmpty(options.ScopePrefix) && appOptions.AppMode == AppMode.Production);
+        options.EnableStackRollupLookupJoin = config.GetValue(nameof(options.EnableStackRollupLookupJoin), appOptions.AppMode == AppMode.Development);
         options.ReindexCutOffDate = config.GetValue(nameof(options.ReindexCutOffDate), DateTime.MinValue);
 
         string? connectionString = config.GetConnectionString("Elasticsearch");

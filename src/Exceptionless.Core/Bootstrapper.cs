@@ -77,6 +77,7 @@ public class Bootstrapper
 
         services.AddSingleton<ExceptionlessElasticConfiguration>();
         services.AddSingleton<ElasticsearchClient>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>().Client);
+        services.AddSingleton<IStackRollupSearchService, StackRollupSearchService>();
         services.AddSingleton<IElasticConfiguration>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>());
         services.AddStartupAction<ExceptionlessElasticConfiguration>();
 
