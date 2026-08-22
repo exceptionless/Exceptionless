@@ -37,4 +37,21 @@ describe('SourceMapStatus', () => {
 
         expect(screen.queryByRole('alert')).toBeNull();
     });
+
+    it('renders when source map processing reaches the frame limit', () => {
+        const error: ErrorInfo = {
+            data: {
+                '@source_map': {
+                    failures: [],
+                    processing_truncated: true,
+                    status: 'failed'
+                }
+            }
+        };
+
+        render(SourceMapStatus, { error, projectId });
+
+        expect(screen.getByRole('alert')).toBeTruthy();
+        expect(screen.getByText(/stack-frame processing limit/i)).toBeTruthy();
+    });
 });

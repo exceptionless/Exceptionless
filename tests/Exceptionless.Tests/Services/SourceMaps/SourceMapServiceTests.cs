@@ -601,6 +601,80 @@ public sealed class SourceMapServiceTests : TestWithServices
     }
 
     [Fact]
+    public async Task SymbolicateAsync_WhenFrameLimitIsReached_RecordsProcessingTruncation()
+    {
+        var options = GetService<AppOptions>();
+        options.SourceMapOptions.MaximumFramesPerError = 1;
+        var service = GetService<SourceMapService>();
+        var error = CreateError("native");
+        error.StackTrace!.Add(new StackFrame
+        {
+            FileName = GeneratedFileUrl,
+            LineNumber = 1,
+            Column = 1,
+            Name = "b"
+        });
+
+        Assert.False(await service.SymbolicateAsync(ProjectId, error, TestContext.Current.CancellationToken));
+
+        var sourceMapStatus = Assert.IsType<DataDictionary>(error.Data![Error.KnownDataKeys.SourceMap]);
+        Assert.True(Assert.IsType<bool>(sourceMapStatus["processing_truncated"]));
+        Assert.Empty(Assert.IsType<DataDictionary[]>(sourceMapStatus["failures"]));
+    }
+
+    [Fact]
+    public async Task SymbolicateAsync_WhenAutoDownloadIsDisabled_RecordsMissingSourceMap()
+    {
+        var options = GetService<AppOptions>();
+        options.SourceMapOptions.EnableAutoDownload = false;
+        int requestCount = 0;
+        using var httpClient = new HttpClient(new DelegateHandler(_ =>
+        {
+            requestCount++;
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
+        }));
+        using var service = CreateService(httpClient);
+        string suffix = Guid.NewGuid().ToString("N");
+        var error = CreateError($"https://cdn.example.com/{suffix}/app.min.js");
+
+        Assert.False(await service.SymbolicateAsync($"project-{suffix}", error, TestContext.Current.CancellationToken));
+
+        var sourceMapStatus = Assert.IsType<DataDictionary>(error.Data![Error.KnownDataKeys.SourceMap]);
+        var failure = Assert.Single(Assert.IsType<DataDictionary[]>(sourceMapStatus["failures"]));
+        Assert.Equal(SourceMapFailureReasons.NotFound, failure["reason"]);
+        Assert.Equal(0, requestCount);
+    }
+
+    [Fact]
+    public async Task SymbolicateAsync_WhenDownloadedMapCannotBePersisted_LogsOperatorWarning()
+    {
+        var logger = new CollectingLogger();
+        var handler = new DelegateHandler(request =>
+        {
+            if (request.RequestUri == new Uri(GeneratedFileUrl))
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("minified") };
+                response.Headers.TryAddWithoutValidation("SourceMap", "app.min.js.map");
+                return response;
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(SourceMap) };
+        });
+        using var httpClient = new HttpClient(handler);
+        using var service = CreateService(httpClient, new SaveFailingFileStorage(GetService<IFileStorage>()), logger);
+        var error = CreateError();
+
+        Assert.False(await service.SymbolicateAsync(ProjectId, error, TestContext.Current.CancellationToken));
+
+        var sourceMapStatus = Assert.IsType<DataDictionary>(error.Data![Error.KnownDataKeys.SourceMap]);
+        Assert.Equal(SourceMapFailureReasons.Unavailable, Assert.Single(Assert.IsType<DataDictionary[]>(sourceMapStatus["failures"]))["reason"]);
+        var entry = Assert.Single(logger.Entries);
+        Assert.Equal(LogLevel.Warning, entry.Level);
+        Assert.IsType<IOException>(entry.Exception);
+        Assert.Contains("Unable to persist a source map", entry.Message);
+    }
+
+    [Fact]
     public async Task EventProcessingAsync_WhenSourceMapDownloadFails_PersistsFailureDiagnostics()
     {
         var handler = new DelegateHandler(request =>
@@ -1531,6 +1605,40 @@ public sealed class SourceMapServiceTests : TestWithServices
 
             return Task.FromResult(false);
         }
+
+        public Task<int> DeleteFilesAsync(string? searchPattern = null, CancellationToken cancellation = default)
+            => inner.DeleteFilesAsync(searchPattern, cancellation);
+
+        public Task<PagedFileListResult> GetPagedFileListAsync(int pageSize = 100, string? searchPattern = null, CancellationToken cancellationToken = default)
+            => inner.GetPagedFileListAsync(pageSize, searchPattern, cancellationToken);
+
+        public void Dispose()
+        {
+        }
+    }
+
+    private sealed class SaveFailingFileStorage(IFileStorage inner) : IFileStorage
+    {
+        public ISerializer Serializer => inner.Serializer;
+
+        public Task<Stream?> GetFileStreamAsync(string path, StreamMode streamMode, CancellationToken cancellationToken = default)
+            => inner.GetFileStreamAsync(path, streamMode, cancellationToken);
+
+        public Task<FileSpec?> GetFileInfoAsync(string path) => inner.GetFileInfoAsync(path);
+
+        public Task<bool> ExistsAsync(string path) => inner.ExistsAsync(path);
+
+        public Task<bool> SaveFileAsync(string path, Stream stream, CancellationToken cancellationToken = default)
+            => throw new IOException("Unable to save the intercepted file.");
+
+        public Task<bool> RenameFileAsync(string path, string newPath, CancellationToken cancellationToken = default)
+            => inner.RenameFileAsync(path, newPath, cancellationToken);
+
+        public Task<bool> CopyFileAsync(string path, string targetPath, CancellationToken cancellationToken = default)
+            => inner.CopyFileAsync(path, targetPath, cancellationToken);
+
+        public Task<bool> DeleteFileAsync(string path, CancellationToken cancellationToken = default)
+            => inner.DeleteFileAsync(path, cancellationToken);
 
         public Task<int> DeleteFilesAsync(string? searchPattern = null, CancellationToken cancellation = default)
             => inner.DeleteFilesAsync(searchPattern, cancellation);

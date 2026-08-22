@@ -124,6 +124,7 @@ export interface SourceMapFailureInfo {
 
 export interface SourceMapStatusInfo {
     failures: SourceMapFailureInfo[];
+    processing_truncated?: boolean;
     status: 'failed' | 'partial' | string;
     truncated?: boolean;
 }

@@ -15,6 +15,7 @@
 
     const sourceMapStatus = $derived(error.data?.['@source_map']);
     const failures = $derived(sourceMapStatus?.failures ?? []);
+    const processingTruncated = $derived(sourceMapStatus?.processing_truncated === true);
     const title = $derived(sourceMapStatus?.status === 'partial' ? 'Stack trace partially symbolicated' : 'Source map unavailable');
 
     function getFailureDescription(failure: SourceMapFailureInfo): string {
@@ -33,7 +34,7 @@
     }
 </script>
 
-{#if failures.length > 0}
+{#if failures.length > 0 || processingTruncated}
     <Notification variant="warning" class="text-xs">
         {#snippet icon()}<TriangleAlert />{/snippet}
         {#snippet action()}
@@ -47,17 +48,24 @@
         {/snippet}
         <NotificationTitle>{title}</NotificationTitle>
         <NotificationDescription class="text-xs">
-            Exceptionless couldn't map {failures.length === 1 ? 'a JavaScript file' : `${failures.length} JavaScript files`} to original source. The stack trace below
-            may be minified. Uploading a source map will improve new events.
-            <ul class="mt-1.5 space-y-1">
-                {#each failures as failure (failure.generated_file_name)}
-                    <li>
-                        <span class="font-mono break-all">{failure.generated_file_name}</span>
-                        <span> — {getFailureDescription(failure)}</span>
-                    </li>
-                {/each}
-                {#if sourceMapStatus?.truncated}<li>Additional generated files were omitted.</li>{/if}
-            </ul>
+            {#if failures.length > 0}
+                Exceptionless couldn't map {failures.length === 1 ? 'a JavaScript file' : `${failures.length} JavaScript files`} to original source. The stack trace
+                below may be minified. Uploading a source map will improve new events.
+                <ul class="mt-1.5 space-y-1">
+                    {#each failures as failure (failure.generated_file_name)}
+                        <li>
+                            <span class="font-mono break-all">{failure.generated_file_name}</span>
+                            <span> — {getFailureDescription(failure)}</span>
+                        </li>
+                    {/each}
+                    {#if sourceMapStatus?.truncated}<li>Additional generated files were omitted.</li>{/if}
+                </ul>
+            {/if}
+            {#if processingTruncated}
+                <p class:mt-1.5={failures.length > 0}>
+                    Exceptionless stopped checking source maps after reaching the stack-frame processing limit. Some frames below may remain minified.
+                </p>
+            {/if}
         </NotificationDescription>
     </Notification>
 {/if}

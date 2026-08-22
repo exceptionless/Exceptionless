@@ -177,6 +177,7 @@ public sealed class SourceMapService : IDisposable
         bool hasSymbolicatedFrames = false;
         int framesProcessed = 0;
         bool failureDetailsTruncated = false;
+        bool processingTruncated = false;
         string? activeGeneratedFileUrl = null;
         var failures = new List<SourceMapFailure>();
         InnerError rootError = error;
@@ -184,14 +185,17 @@ public sealed class SourceMapService : IDisposable
         processingCancellationTokenSource.CancelAfter(_options.MaximumProcessingTime);
         try
         {
-            while (error is not null)
+            while (error is not null && !processingTruncated)
             {
                 if (error.StackTrace is not null)
                 {
                     foreach (var frame in error.StackTrace)
                     {
                         if (++framesProcessed > _options.MaximumFramesPerError)
+                        {
+                            processingTruncated = true;
                             break;
+                        }
 
                         if (frame.Data?.ContainsKey(StackFrame.KnownDataKeys.SourceMap) == true)
                             hasSymbolicatedFrames = true;
@@ -219,7 +223,7 @@ public sealed class SourceMapService : IDisposable
         }
 
         bool sourceMapStatusModified;
-        if (failures.Count > 0)
+        if (failures.Count > 0 || processingTruncated)
         {
             rootError.Data ??= new DataDictionary();
             rootError.Data[Error.KnownDataKeys.SourceMap] = new DataDictionary
@@ -230,6 +234,7 @@ public sealed class SourceMapService : IDisposable
                     ["generated_file_name"] = f.GeneratedFileUrl,
                     ["reason"] = f.Reason
                 }).ToArray(),
+                ["processing_truncated"] = processingTruncated,
                 ["truncated"] = failureDetailsTruncated
             };
             sourceMapStatusModified = true;
@@ -434,7 +439,7 @@ public sealed class SourceMapService : IDisposable
             return Resolve(stored.Artifact, stored.Content, cacheVersion);
 
         if (!_options.EnableAutoDownload || !String.Equals(generatedFileUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
-            return default;
+            return SourceMapLookupResult.Failed(SourceMapFailureReasons.NotFound);
 
         string failureCacheKey = GetFailureCacheKey(projectId, generatedFileUrl);
         var cachedFailure = await _cache.GetAsync<string>(failureCacheKey);
@@ -467,7 +472,14 @@ public sealed class SourceMapService : IDisposable
                 if (globalDownloadSlot is null)
                     return default;
 
-                downloaded = await _downloader.DownloadAsync(generatedFileUri, stored is not null, timeoutCancellationTokenSource.Token);
+                try
+                {
+                    downloaded = await _downloader.DownloadAsync(generatedFileUri, stored is not null, timeoutCancellationTokenSource.Token);
+                }
+                catch (Exception ex) when (ex is HttpRequestException or IOException or JsonException or InvalidOperationException or FormatException)
+                {
+                    return await CacheExpectedFailureAsync(failureCacheKey, generatedFileUrl, ex, GetFailureReason(ex));
+                }
                 if (downloaded is null)
                     return await CacheFailureAsync(failureCacheKey, SourceMapFailureReasons.NotFound);
             }
@@ -486,7 +498,15 @@ public sealed class SourceMapService : IDisposable
                 IsAutoDownloaded = true,
                 CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime
             };
-            var document = downloaded.Document ?? SourceMapDocument.Parse(downloaded.Content, _options.MaximumMappingSegments);
+            SourceMapDocument document;
+            try
+            {
+                document = downloaded.Document ?? SourceMapDocument.Parse(downloaded.Content, _options.MaximumMappingSegments);
+            }
+            catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
+            {
+                return await CacheExpectedFailureAsync(failureCacheKey, generatedFileUrl, ex, SourceMapFailureReasons.Invalid);
+            }
             await using var projectLock = await TryAcquireProjectStorageLockAsync(projectId, timeoutCancellationTokenSource.Token);
             if (projectLock is null)
                 return await CacheFailureAsync(failureCacheKey, SourceMapFailureReasons.Unavailable);
@@ -509,12 +529,8 @@ public sealed class SourceMapService : IDisposable
         }
         catch (Exception ex) when (ex is HttpRequestException or IOException or JsonException or InvalidOperationException or FormatException)
         {
-            _logger.LogDebug(
-                "Unable to download a source map for {GeneratedFileUrl}: {FailureType}: {FailureMessage}",
-                generatedFileUrl,
-                ex.GetType().Name,
-                ex.Message);
-            return await CacheFailureAsync(failureCacheKey, GetFailureReason(ex));
+            _logger.LogWarning(ex, "Unable to persist a source map for {GeneratedFileUrl}.", generatedFileUrl);
+            return await CacheFailureAsync(failureCacheKey, SourceMapFailureReasons.Unavailable);
         }
     }
 
@@ -525,6 +541,16 @@ public sealed class SourceMapService : IDisposable
         => exception is JsonException or FormatException
             ? SourceMapFailureReasons.Invalid
             : SourceMapFailureReasons.Unavailable;
+
+    private Task<SourceMapLookupResult> CacheExpectedFailureAsync(string failureCacheKey, string generatedFileUrl, Exception exception, string reason)
+    {
+        _logger.LogDebug(
+            "Unable to download a source map for {GeneratedFileUrl}: {FailureType}: {FailureMessage}",
+            generatedFileUrl,
+            exception.GetType().Name,
+            exception.Message);
+        return CacheFailureAsync(failureCacheKey, reason);
+    }
 
     private bool ShouldRefresh(SourceMapArtifact artifact, Uri generatedFileUri)
         => artifact.IsAutoDownloaded
