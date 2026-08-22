@@ -70,7 +70,7 @@ public class CheckForRegressionAction : EventPipelineActionBase
                 }
 
                 if (regressedContext is null)
-                    return;
+                    continue;
 
                 _logger.LogDebug("Marking stack and events as regressed in version: {Version}", regressedVersion);
                 stack.Status = StackStatus.Regressed;
