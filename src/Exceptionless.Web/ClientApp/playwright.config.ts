@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 const isCi = !!process.env.CI;
 const appUrl = process.env.E2E_URL || 'https://web-ex.dev.localhost:7131';
+const browserChannel = process.env.E2E_BROWSER_CHANNEL;
 
 export default defineConfig({
     expect: {
@@ -14,7 +15,8 @@ export default defineConfig({
         {
             name: 'chromium',
             use: {
-                ...devices['Desktop Chrome']
+                ...devices['Desktop Chrome'],
+                ...(browserChannel ? { channel: browserChannel } : {})
             }
         }
     ],
