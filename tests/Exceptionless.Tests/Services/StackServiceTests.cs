@@ -146,4 +146,31 @@ public class StackServiceTests : IntegrationTestsBase
         Assert.Equal(minOccurrenceDate, stack.FirstOccurrence);
         Assert.Equal(maxOccurrenceDate, stack.LastOccurrence);
     }
+
+    [Fact]
+    public async Task SaveStackUsagesAsync_RetriedIngestionUsage_IncrementsStackOnce()
+    {
+        var stack = await _stackRepository.AddAsync(_stackData.GenerateStack(
+            id: TestConstants.StackId,
+            projectId: TestConstants.ProjectId,
+            organizationId: TestConstants.OrganizationId));
+        DateTime occurrenceDateUtc = DateTime.UtcNow.Floor(TimeSpan.FromMilliseconds(1));
+        var usage = new IngestionStackUsage(
+            Guid.NewGuid().ToString("N"),
+            TestConstants.OrganizationId,
+            TestConstants.ProjectId,
+            stack.Id,
+            occurrenceDateUtc);
+        var store = GetService<IIngestionStackUsageStore>();
+
+        await store.SettleAsync([usage], TestCancellationToken);
+        await store.SettleAsync([usage], TestCancellationToken);
+        await _stackService.SaveStackUsagesAsync(false, TestCancellationToken);
+
+        stack = await _stackRepository.GetByIdAsync(TestConstants.StackId);
+        Assert.NotNull(stack);
+        Assert.Equal(1, stack.TotalOccurrences);
+        Assert.Equal(occurrenceDateUtc, stack.FirstOccurrence);
+        Assert.Equal(occurrenceDateUtc, stack.LastOccurrence);
+    }
 }

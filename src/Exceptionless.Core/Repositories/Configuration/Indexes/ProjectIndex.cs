@@ -27,6 +27,7 @@ public sealed class ProjectIndex : VersionedIndex<Project>
                 .Text(e => e.Name, t => t.AddKeywordField())
                 .LongNumber(e => e.NextSummaryEndOfDayTicks)
                 .Date(e => e.LastEventDateUtc)
+                .Date(e => e.LastAppliedUsageBucketUtc)
                 .AddUsageMappings()
             );
     }
