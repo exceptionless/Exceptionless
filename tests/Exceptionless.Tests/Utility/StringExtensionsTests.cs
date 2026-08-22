@@ -310,6 +310,16 @@ public class StringExtensionsTests : TestWithLoggingBase
     }
 
     [Fact]
+    public void IsValidFieldName_EmptyInput_ReturnsFalse()
+    {
+        // Act
+        bool result = String.Empty.IsValidFieldName();
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
     public void IsValidFieldName_Over25Characters_ReturnsFalse()
     {
         // Act

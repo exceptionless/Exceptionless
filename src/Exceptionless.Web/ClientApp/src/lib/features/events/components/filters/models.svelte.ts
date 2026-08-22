@@ -245,7 +245,8 @@ export class ReferenceFilter implements IFilter {
             return '';
         }
 
-        return `reference:${quoteIfSpecialCharacters(this.value)}`;
+        const reference = quoteIfSpecialCharacters(this.value);
+        return `(reference:${reference} OR ref.parent:${reference})`;
     }
 }
 
