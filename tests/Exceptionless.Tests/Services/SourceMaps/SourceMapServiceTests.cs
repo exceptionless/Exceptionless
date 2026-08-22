@@ -675,6 +675,40 @@ public sealed class SourceMapServiceTests : TestWithServices
     }
 
     [Fact]
+    public async Task SymbolicateAsync_WhenDiscoveryIsDeferred_PreservesExistingDiagnostics()
+    {
+        var options = GetService<AppOptions>();
+        options.SourceMapOptions.MaximumAutoDiscoveriesPerProject = 0;
+        int requestCount = 0;
+        using var httpClient = new HttpClient(new DelegateHandler(_ =>
+        {
+            requestCount++;
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
+        }));
+        using var service = CreateService(httpClient);
+        string suffix = Guid.NewGuid().ToString("N");
+        var existingStatus = new DataDictionary
+        {
+            ["failures"] = new[]
+            {
+                new DataDictionary
+                {
+                    ["generated_file_name"] = GeneratedFileUrl,
+                    ["reason"] = SourceMapFailureReasons.NotFound
+                }
+            },
+            ["status"] = "failed"
+        };
+        var error = CreateError($"https://cdn.example.com/{suffix}/app.min.js");
+        error.Data = new DataDictionary { [Error.KnownDataKeys.SourceMap] = existingStatus };
+
+        Assert.False(await service.SymbolicateAsync($"project-{suffix}", error, TestContext.Current.CancellationToken));
+
+        Assert.Same(existingStatus, error.Data[Error.KnownDataKeys.SourceMap]);
+        Assert.Equal(0, requestCount);
+    }
+
+    [Fact]
     public async Task EventProcessingAsync_WhenSourceMapDownloadFails_PersistsFailureDiagnostics()
     {
         var handler = new DelegateHandler(request =>

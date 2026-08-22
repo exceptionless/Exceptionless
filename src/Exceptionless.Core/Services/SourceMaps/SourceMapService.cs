@@ -178,9 +178,11 @@ public sealed class SourceMapService : IDisposable
         int framesProcessed = 0;
         bool failureDetailsTruncated = false;
         bool processingTruncated = false;
+        bool processingDeferred = false;
         string? activeGeneratedFileUrl = null;
         var failures = new List<SourceMapFailure>();
         InnerError rootError = error;
+        bool hasExistingSourceMapStatus = rootError.Data?.ContainsKey(Error.KnownDataKeys.SourceMap) == true;
         using var processingCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         processingCancellationTokenSource.CancelAfter(_options.MaximumProcessingTime);
         try
@@ -208,6 +210,8 @@ public sealed class SourceMapService : IDisposable
                         }
                         if (result.Failure is not null)
                             AddFailure(failures, result.Failure, ref failureDetailsTruncated);
+                        if (result.IsDeferred)
+                            processingDeferred = true;
                         activeGeneratedFileUrl = null;
                     }
                 }
@@ -223,7 +227,9 @@ public sealed class SourceMapService : IDisposable
         }
 
         bool sourceMapStatusModified;
-        if (failures.Count > 0 || processingTruncated)
+        if (processingDeferred && hasExistingSourceMapStatus)
+            sourceMapStatusModified = false;
+        else if (failures.Count > 0 || processingTruncated)
         {
             rootError.Data ??= new DataDictionary();
             rootError.Data[Error.KnownDataKeys.SourceMap] = new DataDictionary
@@ -240,7 +246,7 @@ public sealed class SourceMapService : IDisposable
             sourceMapStatusModified = true;
         }
         else
-            sourceMapStatusModified = rootError.Data?.Remove(Error.KnownDataKeys.SourceMap) == true;
+            sourceMapStatusModified = !processingDeferred && rootError.Data?.Remove(Error.KnownDataKeys.SourceMap) == true;
 
         return new SourceMapProcessingResult(symbolicated, symbolicated || sourceMapStatusModified);
     }
@@ -263,9 +269,9 @@ public sealed class SourceMapService : IDisposable
         var lookup = await GetSourceMapAsync(request, generatedFileUri, cancellationToken);
         if (lookup.SourceMap is null)
         {
-            return lookup.FailureReason is null
-                ? default
-                : new SourceMapFrameResult(false, new SourceMapFailure(generatedFileUri.AbsoluteUri, lookup.FailureReason));
+            if (lookup.FailureReason is not null)
+                return new SourceMapFrameResult(false, new SourceMapFailure(generatedFileUri.AbsoluteUri, lookup.FailureReason));
+            return lookup.IsDeferred ? new SourceMapFrameResult(false, null, true) : default;
         }
 
         int generatedColumn = frame.Column.Value - 1;
@@ -274,7 +280,7 @@ public sealed class SourceMapService : IDisposable
         if (original is null)
             return new SourceMapFrameResult(false, new SourceMapFailure(generatedFileUri.AbsoluteUri, SourceMapFailureReasons.NoMatchingMapping));
         if (!await TrackUsageAsync(request.ProjectId, lookup.SourceMap.Artifact.Id, cancellationToken))
-            return default;
+            return new SourceMapFrameResult(false, null, true);
 
         frame.Data ??= new DataDictionary();
         frame.Data[StackFrame.KnownDataKeys.SourceMap] = new DataDictionary
@@ -461,16 +467,16 @@ public sealed class SourceMapService : IDisposable
                 return Resolve(stored.Artifact, stored.Content, await GetProjectCacheVersionAsync(projectId));
 
             if (stored is null && !await _throttle.TryReserveDiscoveryAsync(request))
-                return default;
+                return SourceMapLookupResult.Deferred;
 
             if (!await _downloadSemaphore.WaitAsync(TimeSpan.Zero, timeoutCancellationTokenSource.Token))
-                return default;
+                return SourceMapLookupResult.Deferred;
             SourceMapDownloader.DownloadedSourceMap? downloaded;
             try
             {
                 await using var globalDownloadSlot = await TryAcquireGlobalDownloadSlotAsync(artifactId, timeoutCancellationTokenSource.Token);
                 if (globalDownloadSlot is null)
-                    return default;
+                    return SourceMapLookupResult.Deferred;
 
                 try
                 {
@@ -525,7 +531,7 @@ public sealed class SourceMapService : IDisposable
         }
         catch (SourceMapRequestThrottledException)
         {
-            return default;
+            return SourceMapLookupResult.Deferred;
         }
         catch (Exception ex) when (ex is HttpRequestException or IOException or JsonException or InvalidOperationException or FormatException)
         {
@@ -799,9 +805,10 @@ public sealed class SourceMapService : IDisposable
 
     private sealed record ResolvedSourceMap(SourceMapArtifact Artifact, SourceMapDocument Document, long CacheVersion);
     private sealed record SourceMapFailure(string GeneratedFileUrl, string Reason);
-    private readonly record struct SourceMapFrameResult(bool Symbolicated, SourceMapFailure? Failure);
-    private readonly record struct SourceMapLookupResult(ResolvedSourceMap? SourceMap, string? FailureReason)
+    private readonly record struct SourceMapFrameResult(bool Symbolicated, SourceMapFailure? Failure, bool IsDeferred = false);
+    private readonly record struct SourceMapLookupResult(ResolvedSourceMap? SourceMap, string? FailureReason, bool IsDeferred = false)
     {
+        public static SourceMapLookupResult Deferred => new(null, null, true);
         public static SourceMapLookupResult Failed(string reason) => new(null, reason);
         public static SourceMapLookupResult Resolved(ResolvedSourceMap sourceMap) => new(sourceMap, null);
     }
