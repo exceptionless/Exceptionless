@@ -243,7 +243,7 @@
     </div>
     <div class="mt-2 max-h-75 grow overflow-auto text-xs">
         {#if event.data?.['@error']}
-            <StackTrace error={event.data['@error']} />
+            <StackTrace error={event.data['@error']} projectId={event.project_id} />
         {:else if event.data?.['@simple_error']}
             <SimpleStackTrace error={event.data?.['@simple_error']} />
         {/if}

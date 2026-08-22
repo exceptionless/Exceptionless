@@ -440,23 +440,48 @@
         ],
         type: 'System.NullReferenceException'
     };
+
+    const sourceMapError: ErrorInfo = {
+        ...error,
+        data: {
+            '@source_map': {
+                failures: [
+                    {
+                        generated_file_name: 'https://cdn.example.com/assets/app.min.js',
+                        reason: 'invalid'
+                    }
+                ],
+                status: 'failed'
+            }
+        }
+    };
 </script>
 
 <Story
     name="Default"
     args={{
-        error: error
+        error: error,
+        projectId: '507f1f77bcf86cd799439011'
     }}
 />
 <Story
     name="Nested Errors"
     args={{
-        error: nestedErrors
+        error: nestedErrors,
+        projectId: '507f1f77bcf86cd799439011'
+    }}
+/>
+<Story
+    name="Source Map Unavailable"
+    args={{
+        error: sourceMapError,
+        projectId: '507f1f77bcf86cd799439011'
     }}
 />
 <Story
     name="Empty"
     args={{
-        error: undefined
+        error: undefined,
+        projectId: '507f1f77bcf86cd799439011'
     }}
 />

@@ -466,6 +466,7 @@ public sealed class SourceMapServiceTests : TestWithServices
     public async Task SymbolicateAsync_WhenDownloadedSourceMapIsInvalid_DoesNotPersistArtifact()
     {
         int requestCount = 0;
+        var logger = new CollectingLogger();
         var handler = new DelegateHandler(request =>
         {
             requestCount++;
@@ -479,12 +480,104 @@ public sealed class SourceMapServiceTests : TestWithServices
             return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("not a source map") };
         });
         using var httpClient = new HttpClient(handler);
-        using var service = CreateService(httpClient);
+        using var service = CreateService(httpClient, logger: logger);
+        var error = CreateError();
 
-        Assert.False(await service.SymbolicateAsync(ProjectId, CreateError(), TestContext.Current.CancellationToken));
+        Assert.False(await service.SymbolicateAsync(ProjectId, error, TestContext.Current.CancellationToken));
         Assert.Empty(await service.GetArtifactsAsync(ProjectId, TestContext.Current.CancellationToken));
-        Assert.False(await service.SymbolicateAsync(ProjectId, CreateError(), TestContext.Current.CancellationToken));
+        var sourceMapStatus = Assert.IsType<DataDictionary>(error.Data![Error.KnownDataKeys.SourceMap]);
+        Assert.Equal("failed", sourceMapStatus["status"]);
+        var failure = Assert.Single(Assert.IsType<DataDictionary[]>(sourceMapStatus["failures"]));
+        Assert.Equal(GeneratedFileUrl, failure["generated_file_name"]);
+        Assert.Equal(SourceMapFailureReasons.Invalid, failure["reason"]);
+
+        var cachedFailureError = CreateError();
+        Assert.False(await service.SymbolicateAsync(ProjectId, cachedFailureError, TestContext.Current.CancellationToken));
+        var cachedSourceMapStatus = Assert.IsType<DataDictionary>(cachedFailureError.Data![Error.KnownDataKeys.SourceMap]);
+        Assert.Equal(SourceMapFailureReasons.Invalid, Assert.Single(Assert.IsType<DataDictionary[]>(cachedSourceMapStatus["failures"]))["reason"]);
         Assert.Equal(2, requestCount);
+        var entry = Assert.Single(logger.Entries);
+        Assert.Equal(LogLevel.Debug, entry.Level);
+        Assert.Null(entry.Exception);
+        Assert.Contains("Unable to download a source map", entry.Message);
+    }
+
+    [Fact]
+    public async Task EventProcessingAsync_WhenSourceMapDownloadFails_PersistsFailureDiagnostics()
+    {
+        var handler = new DelegateHandler(request =>
+        {
+            if (request.RequestUri == new Uri(GeneratedFileUrl))
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("minified") };
+                response.Headers.TryAddWithoutValidation("SourceMap", "app.min.js.map");
+                return response;
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("not a source map") };
+        });
+        using var httpClient = new HttpClient(handler);
+        using var service = CreateService(httpClient);
+        var serializer = GetService<ITextSerializer>();
+        var options = GetService<AppOptions>();
+        var sourceMapPlugin = new SourceMapPlugin(service, serializer, GetService<BillingPlans>(), options, GetService<ILoggerFactory>());
+        var errorPlugin = new ErrorPlugin(serializer, options, GetService<ILoggerFactory>());
+        var persistentEvent = new PersistentEvent { Type = Event.KnownTypes.Error };
+        persistentEvent.SetError(CreateError());
+        var context = new EventContext(
+            persistentEvent,
+            new Organization { Id = "507f1f77bcf86cd799439012" },
+            new Project { Id = ProjectId, OrganizationId = "507f1f77bcf86cd799439012" });
+
+        await sourceMapPlugin.EventProcessingAsync(context);
+        await errorPlugin.EventProcessingAsync(context);
+
+        Assert.Equal("a()", context.StackSignatureData["Method"]);
+        var processedError = Assert.IsType<Error>(context.Event.Data![Event.KnownDataKeys.Error]);
+        var sourceMapStatus = Assert.IsType<DataDictionary>(processedError.Data![Error.KnownDataKeys.SourceMap]);
+        Assert.Equal("failed", sourceMapStatus["status"]);
+        var failure = Assert.Single(Assert.IsType<DataDictionary[]>(sourceMapStatus["failures"]));
+        Assert.Equal(GeneratedFileUrl, failure["generated_file_name"]);
+        Assert.Equal(SourceMapFailureReasons.Invalid, failure["reason"]);
+    }
+
+    [Fact]
+    public async Task SymbolicateAsync_WithManyFailedGeneratedFiles_BoundsFailureDiagnostics()
+    {
+        int requestCount = 0;
+        var handler = new DelegateHandler(_ =>
+        {
+            requestCount++;
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
+        });
+        using var httpClient = new HttpClient(handler);
+        using var service = CreateService(httpClient);
+        string suffix = Guid.NewGuid().ToString("N");
+        var error = CreateError($"https://cdn.example.com/{suffix}/0.js");
+        for (int index = 1; index < 7; index++)
+        {
+            error.StackTrace!.Add(new StackFrame
+            {
+                FileName = $"https://cdn.example.com/{suffix}/{index}.js",
+                LineNumber = 1,
+                Column = 1,
+                Name = "a"
+            });
+        }
+        error.StackTrace!.Add(new StackFrame
+        {
+            FileName = $"https://cdn.example.com/{suffix}/0.js",
+            LineNumber = 2,
+            Column = 1,
+            Name = "b"
+        });
+
+        Assert.False(await service.SymbolicateAsync($"project-{suffix}", error, TestContext.Current.CancellationToken));
+
+        var sourceMapStatus = Assert.IsType<DataDictionary>(error.Data![Error.KnownDataKeys.SourceMap]);
+        Assert.Equal(5, Assert.IsType<DataDictionary[]>(sourceMapStatus["failures"]).Length);
+        Assert.True(Assert.IsType<bool>(sourceMapStatus["truncated"]));
+        Assert.Equal(7, requestCount);
     }
 
     [Fact]
@@ -1273,7 +1366,7 @@ public sealed class SourceMapServiceTests : TestWithServices
         };
     }
 
-    private SourceMapService CreateService(HttpClient httpClient, IFileStorage? storage = null)
+    private SourceMapService CreateService(HttpClient httpClient, IFileStorage? storage = null, ILogger<SourceMapService>? logger = null)
     {
         return new SourceMapService(
             new TestHttpClientFactory(httpClient),
@@ -1284,8 +1377,27 @@ public sealed class SourceMapServiceTests : TestWithServices
             GetService<JsonSerializerOptions>(),
             GetService<AppOptions>(),
             GetService<TimeProvider>(),
-            GetService<ILogger<SourceMapService>>());
+            logger ?? GetService<ILogger<SourceMapService>>());
     }
+
+    private sealed class CollectingLogger : ILogger<SourceMapService>
+    {
+        public List<LogEntry> Entries { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter)
+            => Entries.Add(new LogEntry(logLevel, formatter(state, exception), exception));
+    }
+
+    private sealed record LogEntry(LogLevel Level, string Message, Exception? Exception);
 
     private sealed class DeleteInterceptingFileStorage(IFileStorage inner, string failingPath, bool throwOnDelete = false) : IFileStorage
     {
