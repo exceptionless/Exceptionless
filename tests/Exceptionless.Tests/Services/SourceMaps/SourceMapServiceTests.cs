@@ -709,6 +709,77 @@ public sealed class SourceMapServiceTests : TestWithServices
     }
 
     [Fact]
+    public async Task SymbolicateAsync_WithMixedRetryOutcomes_MergesDeferredAndDefinitiveDiagnostics()
+    {
+        var options = GetService<AppOptions>();
+        options.SourceMapOptions.MaximumAutoDiscoveriesPerProject = 1;
+        string suffix = Guid.NewGuid().ToString("N");
+        string mappedFileUrl = $"https://cdn.example.com/{suffix}/mapped.js";
+        string invalidFileUrl = $"https://cdn.example.com/{suffix}/invalid.js";
+        string deferredFileUrl = $"https://cdn.example.com/{suffix}/deferred.js";
+        var handler = new DelegateHandler(request =>
+        {
+            if (request.RequestUri == new Uri(invalidFileUrl))
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("minified") };
+                response.Headers.TryAddWithoutValidation("SourceMap", "invalid.js.map");
+                return response;
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("not a source map") };
+        });
+        using var httpClient = new HttpClient(handler);
+        using var service = CreateService(httpClient);
+        string projectId = $"project-{suffix}";
+        await using (var sourceMapStream = new MemoryStream(SourceMap))
+            await service.SaveUploadedAsync(projectId, mappedFileUrl, "mapped.js.map", sourceMapStream, TestContext.Current.CancellationToken);
+
+        var error = CreateError(mappedFileUrl);
+        error.StackTrace!.Add(new StackFrame { FileName = invalidFileUrl, LineNumber = 1, Column = 1, Name = "b" });
+        error.StackTrace.Add(new StackFrame { FileName = deferredFileUrl, LineNumber = 1, Column = 1, Name = "c" });
+        error.Data = new DataDictionary
+        {
+            [Error.KnownDataKeys.SourceMap] = new DataDictionary
+            {
+                ["status"] = "failed",
+                ["failures"] = new[]
+                {
+                    new DataDictionary
+                    {
+                        ["generated_file_name"] = mappedFileUrl,
+                        ["reason"] = SourceMapFailureReasons.NotFound
+                    },
+                    new DataDictionary
+                    {
+                        ["generated_file_name"] = deferredFileUrl,
+                        ["reason"] = SourceMapFailureReasons.Unavailable
+                    }
+                }
+            }
+        };
+        var serializer = GetService<ITextSerializer>();
+        error = serializer.Deserialize<Error>(serializer.SerializeToString(error))!;
+
+        Assert.True(await service.SymbolicateAsync(projectId, error, TestContext.Current.CancellationToken));
+
+        var sourceMapStatus = Assert.IsType<DataDictionary>(error.Data![Error.KnownDataKeys.SourceMap]);
+        Assert.Equal("partial", sourceMapStatus["status"]);
+        var failures = Assert.IsType<DataDictionary[]>(sourceMapStatus["failures"]);
+        Assert.Collection(
+            failures,
+            failure =>
+            {
+                Assert.Equal(invalidFileUrl, failure["generated_file_name"]);
+                Assert.Equal(SourceMapFailureReasons.Invalid, failure["reason"]);
+            },
+            failure =>
+            {
+                Assert.Equal(deferredFileUrl, failure["generated_file_name"]);
+                Assert.Equal(SourceMapFailureReasons.Unavailable, failure["reason"]);
+            });
+    }
+
+    [Fact]
     public async Task EventProcessingAsync_WhenSourceMapDownloadFails_PersistsFailureDiagnostics()
     {
         var handler = new DelegateHandler(request =>

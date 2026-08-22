@@ -31,6 +31,7 @@ public sealed class SourceMapService : IDisposable
     private readonly ICacheClient _cache;
     private readonly ILockProvider _lockProvider;
     private readonly SourceMapOptions _options;
+    private readonly JsonSerializerOptions _serializerOptions;
     private readonly TimeSpan _usageCacheLifetime;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<SourceMapService> _logger;
@@ -52,6 +53,7 @@ public sealed class SourceMapService : IDisposable
         _cache = cache;
         _lockProvider = lockProvider;
         _options = options.SourceMapOptions;
+        _serializerOptions = serializerOptions;
         _usageCacheLifetime = TimeSpan.FromDays(Math.Max(_options.FreeArtifactRetentionDays, _options.ArtifactRetentionDays) + 1L);
         _downloadSemaphore = new SemaphoreSlim(_options.MaximumConcurrentDownloads);
         _parsedSourceMaps = new MemoryCache(new MemoryCacheOptions { SizeLimit = _options.MaximumParsedSourceMapCacheSize });
@@ -179,10 +181,10 @@ public sealed class SourceMapService : IDisposable
         bool failureDetailsTruncated = false;
         bool processingTruncated = false;
         bool processingDeferred = false;
+        var deferredGeneratedFileUrls = new HashSet<string>(StringComparer.Ordinal);
         string? activeGeneratedFileUrl = null;
         var failures = new List<SourceMapFailure>();
         InnerError rootError = error;
-        bool hasExistingSourceMapStatus = rootError.Data?.ContainsKey(Error.KnownDataKeys.SourceMap) == true;
         using var processingCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         processingCancellationTokenSource.CancelAfter(_options.MaximumProcessingTime);
         try
@@ -211,7 +213,11 @@ public sealed class SourceMapService : IDisposable
                         if (result.Failure is not null)
                             AddFailure(failures, result.Failure, ref failureDetailsTruncated);
                         if (result.IsDeferred)
+                        {
                             processingDeferred = true;
+                            if (TryNormalizeGeneratedFileUrl(activeGeneratedFileUrl, requireHttps: false, out var deferredGeneratedFileUri))
+                                deferredGeneratedFileUrls.Add(deferredGeneratedFileUri.AbsoluteUri);
+                        }
                         activeGeneratedFileUrl = null;
                     }
                 }
@@ -226,10 +232,17 @@ public sealed class SourceMapService : IDisposable
                 AddFailure(failures, new SourceMapFailure(generatedFileUri.AbsoluteUri, SourceMapFailureReasons.Timeout), ref failureDetailsTruncated);
         }
 
+        if (processingDeferred
+            && rootError.Data is not null
+            && rootError.Data.ContainsKey(Error.KnownDataKeys.SourceMap))
+        {
+            var existingStatus = rootError.Data.GetValue<DataDictionary>(Error.KnownDataKeys.SourceMap, _serializerOptions);
+            if (existingStatus is not null)
+                MergeDeferredFailures(existingStatus, deferredGeneratedFileUrls, failures, ref failureDetailsTruncated);
+        }
+
         bool sourceMapStatusModified;
-        if (processingDeferred && hasExistingSourceMapStatus)
-            sourceMapStatusModified = false;
-        else if (failures.Count > 0 || processingTruncated)
+        if (failures.Count > 0 || processingTruncated)
         {
             rootError.Data ??= new DataDictionary();
             rootError.Data[Error.KnownDataKeys.SourceMap] = new DataDictionary
@@ -307,6 +320,35 @@ public sealed class SourceMapService : IDisposable
         if (failures.Count < MaximumFailureDetails)
             failures.Add(failure);
         else
+            failureDetailsTruncated = true;
+    }
+
+    private void MergeDeferredFailures(
+        DataDictionary existingStatus,
+        HashSet<string> deferredGeneratedFileUrls,
+        List<SourceMapFailure> failures,
+        ref bool failureDetailsTruncated)
+    {
+        if (!existingStatus.ContainsKey("failures"))
+            return;
+
+        var existingFailures = existingStatus.GetValue<DataDictionary[]>("failures", _serializerOptions);
+        if (existingFailures is null)
+            return;
+
+        foreach (var existingFailure in existingFailures)
+        {
+            string? generatedFileUrl = existingFailure.GetString("generated_file_name");
+            string? reason = existingFailure.GetString("reason");
+            if (generatedFileUrl is null || reason is null || !deferredGeneratedFileUrls.Contains(generatedFileUrl))
+                continue;
+
+            AddFailure(failures, new SourceMapFailure(generatedFileUrl, reason), ref failureDetailsTruncated);
+        }
+
+        if (deferredGeneratedFileUrls.Count > 0
+            && existingStatus.ContainsKey("truncated")
+            && existingStatus.GetValue<bool>("truncated", _serializerOptions))
             failureDetailsTruncated = true;
     }
 
