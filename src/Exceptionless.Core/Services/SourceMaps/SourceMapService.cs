@@ -212,6 +212,7 @@ public sealed class SourceMapService : IDisposable
             _logger.LogDebug("Source map processing exceeded its time budget for project {ProjectId}.", request.ProjectId);
         }
 
+        bool sourceMapStatusModified;
         if (failures.Count > 0)
         {
             rootError.Data ??= new DataDictionary();
@@ -225,9 +226,12 @@ public sealed class SourceMapService : IDisposable
                 }).ToArray(),
                 ["truncated"] = failureDetailsTruncated
             };
+            sourceMapStatusModified = true;
         }
+        else
+            sourceMapStatusModified = rootError.Data?.Remove(Error.KnownDataKeys.SourceMap) == true;
 
-        return new SourceMapProcessingResult(symbolicated, failures.Count > 0);
+        return new SourceMapProcessingResult(symbolicated, symbolicated || sourceMapStatusModified);
     }
 
     public void Dispose()
@@ -761,10 +765,7 @@ public sealed class SourceMapService : IDisposable
     private sealed record ParsedSourceMapCacheRegistration(SourceMapService Service, ResolvedSourceMap SourceMap);
 }
 
-internal readonly record struct SourceMapProcessingResult(bool Symbolicated, bool HasFailures)
-{
-    public bool Modified => Symbolicated || HasFailures;
-}
+internal readonly record struct SourceMapProcessingResult(bool Symbolicated, bool Modified);
 
 internal static class SourceMapFailureReasons
 {

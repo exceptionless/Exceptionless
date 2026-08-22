@@ -503,6 +503,34 @@ public sealed class SourceMapServiceTests : TestWithServices
     }
 
     [Fact]
+    public async Task SymbolicateAsync_WhenSourceMapBecomesAvailable_ClearsFailureDiagnostics()
+    {
+        var handler = new DelegateHandler(request =>
+        {
+            if (request.RequestUri == new Uri(GeneratedFileUrl))
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("minified") };
+                response.Headers.TryAddWithoutValidation("SourceMap", "app.min.js.map");
+                return response;
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("not a source map") };
+        });
+        using var httpClient = new HttpClient(handler);
+        using var service = CreateService(httpClient);
+        var error = CreateError();
+
+        Assert.False(await service.SymbolicateAsync(ProjectId, error, TestContext.Current.CancellationToken));
+        Assert.True(error.Data?.ContainsKey(Error.KnownDataKeys.SourceMap));
+
+        await using (var sourceMapStream = new MemoryStream(SourceMap))
+            await service.SaveUploadedAsync(ProjectId, GeneratedFileUrl, "app.min.js.map", sourceMapStream, TestContext.Current.CancellationToken);
+
+        Assert.True(await service.SymbolicateAsync(ProjectId, error, TestContext.Current.CancellationToken));
+        Assert.False(error.Data?.ContainsKey(Error.KnownDataKeys.SourceMap));
+    }
+
+    [Fact]
     public async Task EventProcessingAsync_WhenSourceMapDownloadFails_PersistsFailureDiagnostics()
     {
         var handler = new DelegateHandler(request =>
