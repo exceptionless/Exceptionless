@@ -4,13 +4,13 @@ import type { SavedView } from './models';
 
 import {
     buildColumnSettings,
+    columnOrdersEqual,
     getSavedAutoFillColumnId,
     getSavedAutoFillColumnSelection,
     getSavedColumnOrder,
     getSavedColumnSizing,
     getSavedColumnVisibility,
     getSavedWrappedColumnIds,
-    savedViewColumnOrderEqual,
     savedViewColumnSizingEqual,
     savedViewColumnWrappingEqual
 } from './column-settings';
@@ -89,27 +89,11 @@ describe('saved view column settings', () => {
         expect(savedViewColumnSizingEqual({}, view)).toBe(false);
     });
 
-    it('compares only columns with explicitly saved positions', () => {
-        const view = {
-            columns: {
-                date: { visible: true },
-                project: { position: 0 },
-                summary: { position: 1 }
-            }
-        } as Pick<SavedView, 'columns'>;
+    it('compares complete resolved orders including columns added after the saved view', () => {
+        const hydratedOrder = ['select', 'project', 'summary', 'new-column'];
 
-        expect(savedViewColumnOrderEqual(['select', 'project', 'date', 'summary', 'tags'], view)).toBe(true);
-        expect(savedViewColumnOrderEqual(['select', 'summary', 'date', 'project', 'tags'], view)).toBe(false);
-    });
-
-    it('treats views without saved positions as unchanged', () => {
-        const view = {
-            columns: {
-                project: { visible: true }
-            }
-        } as Pick<SavedView, 'columns'>;
-
-        expect(savedViewColumnOrderEqual(['select', 'date', 'project'], view)).toBe(true);
+        expect(columnOrdersEqual(['project', 'summary', 'new-column'], hydratedOrder)).toBe(true);
+        expect(columnOrdersEqual(['select', 'new-column', 'project', 'summary'], hydratedOrder)).toBe(false);
     });
 
     it('treats missing wrap settings as the legacy single-line behavior', () => {

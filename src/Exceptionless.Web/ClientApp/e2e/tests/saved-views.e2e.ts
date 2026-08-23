@@ -115,6 +115,10 @@ test('switching saved views preserves each view temporary filter overrides acros
 
     const firstSavedViewResponse = await request.post(`/api/v2/organizations/${e2eScenario.organizationId}/saved-views`, {
         data: {
+            columns: {
+                date: { position: 1, visible: true },
+                summary: { position: 0, visible: true }
+            },
             filter: '(status:open OR status:regressed)',
             filter_definitions: filterDefinitions('15m'),
             name: firstViewName,
@@ -173,7 +177,11 @@ test('switching saved views preserves each view temporary filter overrides acros
     const summaryWrap = columnDialog.getByRole('checkbox', { name: 'Summary wrap text' });
     await expect(summaryWrap).not.toBeChecked();
     await summaryWrap.click();
+    const moveUserUp = columnDialog.getByRole('button', { name: 'Move User up' });
+    await moveUserUp.click();
+    await moveUserUp.click();
     await columnDialog.getByRole('button', { name: 'Done' }).click();
+    await expectColumnBefore(page, 'User', 'Summary');
 
     const firstViewLink = page.getByRole('link', { exact: true, name: firstViewName }).first();
     const secondViewLink = page.getByRole('link', { exact: true, name: secondViewName }).first();
@@ -192,6 +200,7 @@ test('switching saved views preserves each view temporary filter overrides acros
     await page.getByRole('button', { name: 'Last 90 days' }).click();
     await expect(page).toHaveURL(/[?&]time=90d(?:&|$)/);
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
+    await expectColumnBefore(page, 'Summary', 'User');
 
     await firstViewLink.click();
     await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(firstViewSlug)}(?:[?#]|$)`));
@@ -203,6 +212,7 @@ test('switching saved views preserves each view temporary filter overrides acros
             .first()
     ).toBeVisible();
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
+    await expectColumnBefore(page, 'User', 'Summary');
     await openViewMenu(page);
     await page.getByRole('menuitem', { name: 'Manage Columns...' }).click();
     await expect(summaryWrap).toBeChecked();
@@ -253,6 +263,7 @@ test('switching saved views preserves each view temporary filter overrides acros
             .first()
     ).toBeVisible();
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
+    await expectColumnBefore(page, 'User', 'Summary');
     await openViewMenu(page);
     await expect(page.getByRole('menuitemcheckbox', { name: 'Chart' })).not.toBeChecked();
     await page.getByRole('menuitem', { name: 'Manage Columns...' }).click();
@@ -280,6 +291,7 @@ test('switching saved views preserves each view temporary filter overrides acros
             .first()
     ).toBeVisible();
     await expect(page.getByLabel('Unsaved view changes')).toHaveCount(0);
+    await expectColumnBefore(page, 'Summary', 'User');
     expect(failedApiRequests).toEqual([]);
 });
 
@@ -300,6 +312,17 @@ function captureFailedApiRequests(page: Page): { error: null | string; method: s
 
 function escapeRegExp(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+async function expectColumnBefore(page: Page, firstColumn: string, secondColumn: string): Promise<void> {
+    await expect
+        .poll(async () => {
+            const headings = await page.getByRole('columnheader').allTextContents();
+            const firstIndex = headings.findIndex((heading) => heading.trim().startsWith(firstColumn));
+            const secondIndex = headings.findIndex((heading) => heading.trim().startsWith(secondColumn));
+            return firstIndex >= 0 && secondIndex >= 0 && firstIndex < secondIndex;
+        })
+        .toBe(true);
 }
 
 async function openViewMenu(page: Page): Promise<void> {

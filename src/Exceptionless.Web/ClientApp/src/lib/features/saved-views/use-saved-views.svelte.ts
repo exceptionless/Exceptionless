@@ -19,12 +19,12 @@ import type { SavedView } from './models';
 
 import { getSavedViewsByViewQuery } from './api.svelte';
 import {
+    columnOrdersEqual,
     getSavedAutoFillColumnSelection,
     getSavedColumnOrder,
     getSavedColumnSizing,
     getSavedColumnVisibility,
     getSavedWrappedColumnIds,
-    savedViewColumnOrderEqual,
     savedViewColumnSizingEqual,
     savedViewColumnWrappingEqual
 } from './column-settings';
@@ -376,7 +376,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             draft.columnVisibilityChanges = buildRecordChanges(serverVisibility, currentVisibility);
         }
 
-        if (options.getColumnOrder && !savedViewColumnOrderEqual(options.getColumnOrder(), view)) {
+        if (options.getColumnOrder && hydratedColumnOrder && !columnOrdersEqual(options.getColumnOrder(), hydratedColumnOrder)) {
             draft.columnOrder = [...options.getColumnOrder()];
         }
 
@@ -408,11 +408,22 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         return Object.entries(draft).some(([key, value]) => key !== 'version' && value !== undefined) ? draft : undefined;
     }
 
+    async function captureHydratedColumnOrderAfterStateSettles(viewId: string): Promise<void> {
+        await tick();
+
+        if (activeSavedView?.id !== viewId || hydratedSavedViewId !== viewId) {
+            return;
+        }
+
+        hydratedColumnOrder = options.getColumnOrder ? [...options.getColumnOrder()] : undefined;
+    }
+
     // Hydrate saved view state when a saved view loads. Query params remain URL overrides.
     // lastLoadedViewId prevents re-hydration on background refetches (which would stomp user edits).
     let lastLoadedViewId = '';
     let appliedDraftKey = $state('');
     let pendingDraftKey = '';
+    let hydratedColumnOrder = $state<ColumnOrderState>();
     let hydratedSavedView = $state<SavedView>();
     let hydratedSavedViewSignature = '';
     let hydratedSavedViewId = $state<string>();
@@ -432,6 +443,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
                 lastLoadedViewId = '';
                 appliedDraftKey = '';
+                hydratedColumnOrder = undefined;
                 hydratedSavedView = undefined;
                 hydratedSavedViewSignature = '';
             }
@@ -458,6 +470,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         // remote changes cannot be persisted back as local reverse edits.
         if (view.id === lastLoadedViewId) {
             if (viewSignature !== hydratedSavedViewSignature && untrack(() => buildSavedViewDraft(view) === undefined)) {
+                hydratedColumnOrder = options.getColumnOrder ? [...options.getColumnOrder()] : undefined;
                 hydratedSavedView = view;
                 hydratedSavedViewSignature = viewSignature;
             }
@@ -467,6 +480,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         lastLoadedViewId = view.id;
+        hydratedColumnOrder = undefined;
         hydratedSavedView = view;
         hydratedSavedViewSignature = viewSignature;
 
@@ -482,6 +496,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         applyColumnState(view);
         applyDisplayState(view);
         hydratedSavedViewId = view.id;
+        void captureHydratedColumnOrderAfterStateSettles(view.id);
     });
 
     async function applyDraftAfterViewHydrates(viewId: string, identity: SavedViewDraftIdentity, draftKey: string): Promise<void> {
@@ -565,7 +580,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return true;
         }
 
-        if (options.getColumnOrder && !savedViewColumnOrderEqual(options.getColumnOrder(), view)) {
+        if (options.getColumnOrder && hydratedColumnOrder && !columnOrdersEqual(options.getColumnOrder(), hydratedColumnOrder)) {
             return true;
         }
 
@@ -659,6 +674,10 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
         hydratedSavedView = view;
         hydratedSavedViewSignature = getSavedViewStateSignature(view);
+        const identity = getDraftIdentity(view);
+        if (identity) {
+            clearSavedViewDraft(identity);
+        }
 
         if (view.filter_definitions) {
             try {
@@ -673,8 +692,10 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         options.queryParams.filters = null;
         setSortQueryParam(options.queryParams, null);
         setTimeQueryParam(options.queryParams, null);
+        hydratedColumnOrder = undefined;
         applyColumnState(view);
         applyDisplayState(view);
+        void captureHydratedColumnOrderAfterStateSettles(view.id);
     }
 
     function handleClearSavedView() {
