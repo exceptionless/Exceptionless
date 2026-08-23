@@ -398,6 +398,8 @@ export interface SavedViewColumnSettings {
   visible?: null | boolean;
   /** Whether the column fills the table's remaining width. Null or false means use fixed-width behavior. */
   auto_fill?: null | boolean;
+  /** Whether cell content wraps onto multiple lines. Null or false means keep content on one line. */
+  wrap?: null | boolean;
   /**
    * Zero-based display position. Null means use the table default order.
    * @format int32

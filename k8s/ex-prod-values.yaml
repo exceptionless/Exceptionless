@@ -46,3 +46,4 @@ ingress:
   clusterIssuer: cert-manager-webhook-dnsimple-production
   albName: public-alb
   albNamespace: kube-system
+  appRequestTimeout: 3m

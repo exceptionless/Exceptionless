@@ -3,6 +3,7 @@ import type { ColumnOrderState, ColumnSizingState, ColumnVisibilityState } from 
 import type { SavedView, SavedViewColumnSettings } from './models';
 
 export type AutoFillColumnSelection = null | string;
+export type WrappedColumnIds = string[];
 
 type SavedColumnState = Pick<SavedView, 'columns'>;
 
@@ -12,7 +13,8 @@ export function buildColumnSettings(
     columnVisibility: ColumnVisibilityState,
     columnSizing: ColumnSizingState,
     autoFillColumnId?: AutoFillColumnSelection,
-    defaultAutoFillColumnId?: string
+    defaultAutoFillColumnId?: string,
+    wrappedColumnIds: readonly string[] = []
 ): Record<string, SavedViewColumnSettings> {
     const availableColumnIds = columnIds.filter((columnId) => columnId !== 'select');
     const availableColumnIdSet = new Set(availableColumnIds);
@@ -31,6 +33,7 @@ export function buildColumnSettings(
                 visible: columnVisibility[columnId] ?? true,
                 ...(columnId === autoFillColumnId && columnVisibility[columnId] !== false && columnSizing[columnId] === undefined ? { auto_fill: true } : {}),
                 ...(columnId === explicitNoneMarkerColumnId ? { auto_fill: false } : {}),
+                ...(wrappedColumnIds.includes(columnId) ? { wrap: true } : {}),
                 ...(columnSizing[columnId] !== undefined ? { width: Math.round(columnSizing[columnId]) } : {})
             }
         ])
@@ -85,6 +88,12 @@ export function getSavedColumnVisibility(view: SavedColumnState | undefined): Co
     );
 }
 
+export function getSavedWrappedColumnIds(view: SavedColumnState | undefined): WrappedColumnIds {
+    return Object.entries(view?.columns ?? {})
+        .filter(([, settings]) => settings.wrap === true)
+        .map(([columnId]) => columnId);
+}
+
 export function savedViewColumnOrderEqual(current: ColumnOrderState | undefined, view: SavedColumnState): boolean {
     const savedOrder = getSavedColumnOrder(view);
     const savedColumnIds = new Set(savedOrder);
@@ -99,4 +108,11 @@ export function savedViewColumnSizingEqual(current: ColumnSizingState | undefine
     const savedEntries = Object.entries(saved);
 
     return currentEntries.length === savedEntries.length && currentEntries.every(([columnId, width]) => saved[columnId] === Math.round(width));
+}
+
+export function savedViewColumnWrappingEqual(current: readonly string[] | undefined, view: SavedColumnState): boolean {
+    const saved = getSavedWrappedColumnIds(view);
+    const currentIds = [...new Set(current ?? [])];
+
+    return currentIds.length === saved.length && currentIds.every((columnId) => saved.includes(columnId));
 }

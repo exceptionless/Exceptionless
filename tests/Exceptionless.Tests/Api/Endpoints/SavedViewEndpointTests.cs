@@ -408,7 +408,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         // Arrange
         var columnSettings = new Dictionary<string, SavedViewColumnSettings>
         {
-            ["summary"] = new() { AutoFill = true, Position = 0, Visible = true },
+            ["summary"] = new() { AutoFill = true, Position = 0, Visible = true, Wrap = true },
             ["project"] = new() { Position = 1, Visible = true, Width = 240 }
         };
 
@@ -433,6 +433,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         Assert.True(result.Columns?["project"].Visible);
         Assert.Equal(1, result.Columns?["project"].Position);
         Assert.True(result.Columns?["summary"].AutoFill);
+        Assert.True(result.Columns?["summary"].Wrap);
 
         var savedView = await _savedViewRepository.GetByIdAsync(result.Id);
         Assert.NotNull(savedView);
@@ -440,6 +441,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         Assert.True(savedView.Columns?["project"].Visible);
         Assert.Equal(1, savedView.Columns?["project"].Position);
         Assert.True(savedView.Columns?["summary"].AutoFill);
+        Assert.True(savedView.Columns?["summary"].Wrap);
     }
 
     [Fact]

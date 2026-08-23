@@ -68,6 +68,27 @@ describe('TagList', () => {
         }
     });
 
+    it('shows more tags before overflow when the surrounding column wraps', () => {
+        const { container } = render(TagList, {
+            maxVisible: 2,
+            tags: ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'],
+            wrappedMaxVisible: 6
+        });
+
+        const thirdTagTrigger = screen.getByText('three').closest<HTMLElement>('[data-slot="tooltip-trigger"]');
+        expect(thirdTagTrigger?.classList).toContain('hidden');
+        expect(thirdTagTrigger?.classList).toContain('group-data-[wrap=true]/wrapped:inline-flex');
+        expect(screen.queryByText('seven')).toBeNull();
+
+        const compactOverflow = screen.getByText('+6').closest<HTMLElement>('[data-slot="tooltip-trigger"]');
+        expect(compactOverflow?.classList).toContain('group-data-[wrap=true]/wrapped:hidden');
+
+        const wrappedOverflow = screen.getByText('+2').closest<HTMLElement>('[data-slot="tooltip-trigger"]');
+        expect(wrappedOverflow?.classList).toContain('hidden');
+        expect(wrappedOverflow?.classList).toContain('group-data-[wrap=true]/wrapped:inline-flex');
+        expect(container.querySelectorAll('[data-slot="badge"]')).toHaveLength(6);
+    });
+
     it('shows full hidden tags and preserves filter actions in the overflow tooltip', async () => {
         const hiddenTag = 'customer-facing-api-that-is-unusually-long';
         const onTagClick = vi.fn();

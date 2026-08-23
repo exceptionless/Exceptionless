@@ -122,7 +122,7 @@ test('stack effects stay bounded through background, paging, and navigation chao
         await expect(rowSelection).toBeChecked();
 
         const response = page.waitForResponse((candidate) => isStackListResponse(candidate, e2eScenario.organizationId));
-        await page.getByTitle('Return to the first page to refresh results').click();
+        await page.getByTitle('Refresh results').click();
         expect((await response).ok()).toBe(true);
         await expect(rowSelection).not.toBeChecked();
     });

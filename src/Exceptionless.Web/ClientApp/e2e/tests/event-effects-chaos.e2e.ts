@@ -84,7 +84,7 @@ test('event list and detail effects stay bounded through paging and background c
         await expect(rowSelection).toBeChecked();
 
         const response = page.waitForResponse((candidate) => isEventListResponse(candidate, e2eScenario.organizationId));
-        await page.getByTitle('Return to the first page to refresh results').click();
+        await page.getByTitle('Refresh results').click();
         expect((await response).ok()).toBe(true);
         await expect(rowSelection).not.toBeChecked();
     });
@@ -263,7 +263,7 @@ async function clickAndWaitForPage(
     await page.getByRole('button', { name: buttonName }).click();
     await expect(
         page
-            .getByText(new RegExp(`^Page ${expectedPage} of`))
+            .getByLabel(new RegExp(`^Page ${expectedPage} of`))
             .filter({ visible: true })
             .first()
     ).toBeVisible();

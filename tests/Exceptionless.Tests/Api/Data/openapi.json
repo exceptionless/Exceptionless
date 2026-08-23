@@ -12767,6 +12767,13 @@
             ],
             "description": "Whether the column fills the table\u0027s remaining width. Null or false means use fixed-width behavior."
           },
+          "wrap": {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "description": "Whether cell content wraps onto multiple lines. Null or false means keep content on one line."
+          },
           "position": {
             "maximum": 49,
             "minimum": 0,

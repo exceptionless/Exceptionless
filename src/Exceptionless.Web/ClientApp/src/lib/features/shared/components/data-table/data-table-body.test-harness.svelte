@@ -19,6 +19,7 @@
         onAutoFillColumnResized?: (columnId: string) => void;
         onRowClick: (row: TestSummary) => void;
         sizedFullWidthSummary?: boolean;
+        wrappedColumnIds?: readonly string[];
     }
 
     let {
@@ -28,7 +29,8 @@
         kind,
         onAutoFillColumnResized,
         onRowClick,
-        sizedFullWidthSummary = false
+        sizedFullWidthSummary = false,
+        wrappedColumnIds = []
     }: Props = $props();
 
     const summaryData = {
@@ -100,7 +102,8 @@
                     meta: {
                         get class() {
                             return fullWidthSummary ? 'w-full' : 'w-60 min-w-60 max-w-60';
-                        }
+                        },
+                        enableWrapping: true
                     },
                     minSize: 120,
                     size: 160
@@ -128,6 +131,7 @@
     {autoFillColumnId}
     {onAutoFillColumnResized}
     rowClick={onRowClick}
+    {wrappedColumnIds}
     rowHref={(row: SummaryModel<SummaryTemplateKeys>) => (kind === 'event' ? buildEventDetailsHref(row.id) : buildStackDetailsHref(row.id))}
     {table}
 />

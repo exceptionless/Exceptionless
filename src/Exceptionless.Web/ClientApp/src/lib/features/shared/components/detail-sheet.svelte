@@ -6,8 +6,11 @@
     import { page } from '$app/state';
     import { Button } from '$comp/ui/button';
     import * as Sheet from '$comp/ui/sheet';
+    import { UseClipboard } from '$lib/hooks/use-clipboard.svelte';
+    import Copy from '@lucide/svelte/icons/copy';
     import ExternalLink from '@lucide/svelte/icons/external-link';
     import { onMount } from 'svelte';
+    import { toast } from 'svelte-sonner';
 
     import { type DetailSheetHistoryEntry, detailSheetHistoryStateKey, type DetailSheetPageState } from '../history-state';
     import { preserveDetailSheetForAssistant } from './detail-sheet-interaction';
@@ -47,6 +50,16 @@
     let pendingNavigationTimer: number | undefined;
     let selectedLinkNavigationOptions: LinkNavigationOptions | undefined;
     let wasOpen = false;
+    const clipboard = new UseClipboard();
+
+    async function copyDetailsLink(): Promise<void> {
+        await clipboard.copy(new URL(detailsHref, window.location.href).href);
+        if (clipboard.copied) {
+            toast.success(`${title} link copied`);
+        } else {
+            toast.error(`Unable to copy ${title.toLowerCase()} link`);
+        }
+    }
 
     function getCurrentUrl(): string {
         return `${page.url.pathname}${page.url.search}${page.url.hash}`;
@@ -262,6 +275,15 @@
     >
         <div class="absolute top-3 right-12 z-10 flex items-center gap-1">
             {@render actions?.()}
+            <Button
+                aria-label={`Copy ${title.toLowerCase()} link`}
+                onclick={copyDetailsLink}
+                size="icon-sm"
+                title={`Copy ${title.toLowerCase()} link`}
+                variant="ghost"
+            >
+                <Copy aria-hidden="true" />
+            </Button>
             <Button aria-label="Open details in new window" href={detailsHref} size="icon-sm" title="Open in new window" variant="ghost">
                 <ExternalLink aria-hidden="true" />
             </Button>

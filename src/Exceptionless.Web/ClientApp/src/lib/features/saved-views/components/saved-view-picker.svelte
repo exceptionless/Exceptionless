@@ -14,6 +14,7 @@
     import { toFilter } from '$features/events/components/filters/helpers.svelte';
     import { serializeFilters } from '$features/events/components/filters/helpers.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import { supportsColumnWrapping } from '$features/shared/components/data-table/column-meta';
     import Columns3 from '@lucide/svelte/icons/columns-3';
     import Pencil from '@lucide/svelte/icons/pencil';
     import Plus from '@lucide/svelte/icons/plus';
@@ -24,7 +25,7 @@
     import { tick } from 'svelte';
     import { toast } from 'svelte-sonner';
 
-    import type { AutoFillColumnSelection } from '../column-settings';
+    import type { AutoFillColumnSelection, WrappedColumnIds } from '../column-settings';
     import type { NewSavedView, SavedView, UpdateSavedView } from '../models';
 
     import { deleteSavedView, markSavedViewDeleted, patchSavedView, postSavedView, restoreDeletedSavedView } from '../api.svelte';
@@ -60,12 +61,14 @@
         setAutoFillColumnId: (columnId: AutoFillColumnSelection) => void;
         setShowChart?: (show: boolean) => void;
         setShowStats?: (show: boolean) => void;
+        setWrappedColumnIds: (columnIds: WrappedColumnIds) => void;
         showChart?: boolean;
         showStats?: boolean;
         sort?: string;
         table: Table<StockFeatures, TData>;
         time?: string;
         view: string;
+        wrappedColumnIds: WrappedColumnIds;
     }
 
     let {
@@ -84,12 +87,14 @@
         setAutoFillColumnId,
         setShowChart,
         setShowStats,
+        setWrappedColumnIds,
         showChart = true,
         showStats = true,
         sort,
         table,
         time,
-        view
+        view,
+        wrappedColumnIds
     }: Props = $props();
 
     let isSaveDialogOpen = $state(false);
@@ -164,13 +169,15 @@
     }
 
     function getSavedColumnSettings() {
+        const supportedWrappedColumnIds = wrappedColumnIds.filter((columnId) => supportsColumnWrapping(table.getColumn(columnId)?.columnDef.meta));
         return buildColumnSettings(
             table.getAllLeafColumns().map((column) => column.id),
             columnOrder ?? [],
             columnVisibility ?? {},
             columnSizing ?? {},
             autoFillColumnId,
-            defaultAutoFillColumnId
+            defaultAutoFillColumnId,
+            supportedWrappedColumnIds
         );
     }
 
@@ -401,5 +408,13 @@
 {/if}
 
 {#if isColumnDialogOpen}
-    <ColumnManagementDialog bind:open={isColumnDialogOpen} {autoFillColumnId} {defaultAutoFillColumnId} {setAutoFillColumnId} {table} />
+    <ColumnManagementDialog
+        bind:open={isColumnDialogOpen}
+        {autoFillColumnId}
+        {defaultAutoFillColumnId}
+        {setAutoFillColumnId}
+        {setWrappedColumnIds}
+        {table}
+        {wrappedColumnIds}
+    />
 {/if}
