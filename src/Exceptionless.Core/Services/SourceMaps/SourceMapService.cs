@@ -232,13 +232,17 @@ public sealed class SourceMapService : IDisposable
                 AddFailure(failures, new SourceMapFailure(generatedFileUri.AbsoluteUri, SourceMapFailureReasons.Timeout), ref failureDetailsTruncated);
         }
 
+        bool existingSourceMapStatusMerged = false;
         if (processingDeferred
             && rootError.Data is not null
             && rootError.Data.ContainsKey(Error.KnownDataKeys.SourceMap))
         {
             var existingStatus = rootError.Data.GetValue<DataDictionary>(Error.KnownDataKeys.SourceMap, _serializerOptions);
             if (existingStatus is not null)
+            {
                 MergeDeferredFailures(existingStatus, deferredGeneratedFileUrls, failures, ref failureDetailsTruncated);
+                existingSourceMapStatusMerged = true;
+            }
         }
 
         bool sourceMapStatusModified;
@@ -259,7 +263,8 @@ public sealed class SourceMapService : IDisposable
             sourceMapStatusModified = true;
         }
         else
-            sourceMapStatusModified = !processingDeferred && rootError.Data?.Remove(Error.KnownDataKeys.SourceMap) == true;
+            sourceMapStatusModified = (!processingDeferred || existingSourceMapStatusMerged)
+                && rootError.Data?.Remove(Error.KnownDataKeys.SourceMap) == true;
 
         return new SourceMapProcessingResult(symbolicated, symbolicated || sourceMapStatusModified);
     }

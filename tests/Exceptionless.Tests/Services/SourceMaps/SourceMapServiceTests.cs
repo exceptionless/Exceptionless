@@ -687,24 +687,29 @@ public sealed class SourceMapServiceTests : TestWithServices
         }));
         using var service = CreateService(httpClient);
         string suffix = Guid.NewGuid().ToString("N");
+        string generatedFileUrl = $"https://cdn.example.com/{suffix}/app.min.js";
         var existingStatus = new DataDictionary
         {
             ["failures"] = new[]
             {
                 new DataDictionary
                 {
-                    ["generated_file_name"] = GeneratedFileUrl,
+                    ["generated_file_name"] = generatedFileUrl,
                     ["reason"] = SourceMapFailureReasons.NotFound
                 }
             },
             ["status"] = "failed"
         };
-        var error = CreateError($"https://cdn.example.com/{suffix}/app.min.js");
+        var error = CreateError(generatedFileUrl);
         error.Data = new DataDictionary { [Error.KnownDataKeys.SourceMap] = existingStatus };
 
         Assert.False(await service.SymbolicateAsync($"project-{suffix}", error, TestContext.Current.CancellationToken));
 
-        Assert.Same(existingStatus, error.Data[Error.KnownDataKeys.SourceMap]);
+        var sourceMapStatus = Assert.IsType<DataDictionary>(error.Data[Error.KnownDataKeys.SourceMap]);
+        Assert.Equal("failed", sourceMapStatus["status"]);
+        var failure = Assert.Single(Assert.IsType<DataDictionary[]>(sourceMapStatus["failures"]));
+        Assert.Equal(generatedFileUrl, failure["generated_file_name"]);
+        Assert.Equal(SourceMapFailureReasons.NotFound, failure["reason"]);
         Assert.Equal(0, requestCount);
     }
 
@@ -777,6 +782,44 @@ public sealed class SourceMapServiceTests : TestWithServices
                 Assert.Equal(deferredFileUrl, failure["generated_file_name"]);
                 Assert.Equal(SourceMapFailureReasons.Unavailable, failure["reason"]);
             });
+    }
+
+    [Fact]
+    public async Task SymbolicateAsync_WhenFailedFileRecoversAndAnotherLookupDefers_ClearsRecoveredDiagnostic()
+    {
+        var options = GetService<AppOptions>();
+        options.SourceMapOptions.MaximumAutoDiscoveriesPerProject = 0;
+        string suffix = Guid.NewGuid().ToString("N");
+        string mappedFileUrl = $"https://cdn.example.com/{suffix}/mapped.js";
+        string deferredFileUrl = $"https://cdn.example.com/{suffix}/deferred.js";
+        using var httpClient = new HttpClient(new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound)));
+        using var service = CreateService(httpClient);
+        string projectId = $"project-{suffix}";
+        await using (var sourceMapStream = new MemoryStream(SourceMap))
+            await service.SaveUploadedAsync(projectId, mappedFileUrl, "mapped.js.map", sourceMapStream, TestContext.Current.CancellationToken);
+
+        var error = CreateError(mappedFileUrl);
+        error.StackTrace!.Add(new StackFrame { FileName = deferredFileUrl, LineNumber = 1, Column = 1, Name = "b" });
+        error.Data = new DataDictionary
+        {
+            [Error.KnownDataKeys.SourceMap] = new DataDictionary
+            {
+                ["status"] = "failed",
+                ["failures"] = new[]
+                {
+                    new DataDictionary
+                    {
+                        ["generated_file_name"] = mappedFileUrl,
+                        ["reason"] = SourceMapFailureReasons.NotFound
+                    }
+                }
+            }
+        };
+        var serializer = GetService<ITextSerializer>();
+        error = serializer.Deserialize<Error>(serializer.SerializeToString(error))!;
+
+        Assert.True(await service.SymbolicateAsync(projectId, error, TestContext.Current.CancellationToken));
+        Assert.False(error.Data?.ContainsKey(Error.KnownDataKeys.SourceMap));
     }
 
     [Fact]
