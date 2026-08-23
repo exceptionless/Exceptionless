@@ -183,10 +183,45 @@ public class OrganizationService : IStartupAction
         return _webHookRepository.RemoveAllByOrganizationIdAsync(organization.Id);
     }
 
-    public Task<long> RemoveSavedViewsAsync(Organization organization)
+    public async Task<long> RemoveSavedViewsAsync(Organization organization)
     {
         _logger.LogDebug("Removing saved views for {OrganizationName} ({OrganizationId})", organization.Name, organization.Id);
-        return _savedViewRepository.RemoveAllByOrganizationIdAsync(organization.Id);
+
+        var savedViewIds = new HashSet<string>(StringComparer.Ordinal);
+        var savedViewResults = await _savedViewRepository.GetByOrganizationIdAsync(organization.Id, o => o.SearchAfterPaging().PageLimit(BATCH_SIZE));
+        do
+        {
+            savedViewIds.UnionWith(savedViewResults.Documents.Select(savedView => savedView.Id));
+        } while (await savedViewResults.NextPageAsync());
+
+        long removed = await _savedViewRepository.RemoveAllByOrganizationIdAsync(organization.Id);
+        if (savedViewIds.Count == 0)
+            return removed;
+
+        if (organization.DefaultSavedViewId is not null && savedViewIds.Contains(organization.DefaultSavedViewId))
+            organization.DefaultSavedViewId = null;
+
+        var usersById = new Dictionary<string, User>(StringComparer.Ordinal);
+        foreach (string savedViewId in savedViewIds)
+        {
+            var userResults = await _userRepository.GetByDefaultSavedViewIdAsync(savedViewId, o => o.SearchAfterPaging().PageLimit(BATCH_SIZE));
+            do
+            {
+                foreach (var user in userResults.Documents)
+                    usersById.TryAdd(user.Id, user);
+            } while (await userResults.NextPageAsync());
+        }
+
+        foreach (var user in usersById.Values)
+        {
+            foreach (var preference in user.OrganizationPreferences.Where(preference => savedViewIds.Contains(preference.DefaultSavedViewId)).ToList())
+                user.OrganizationPreferences.Remove(preference);
+        }
+
+        if (usersById.Count > 0)
+            await _userRepository.SaveAsync(usersById.Values, o => o.Cache());
+
+        return removed;
     }
 
     public Task<long> RemoveUserSavedViewsAsync(string organizationId, string userId)

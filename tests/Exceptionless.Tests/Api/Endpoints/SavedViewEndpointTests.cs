@@ -1835,6 +1835,43 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task SoftDeleteOrganization_NonmemberSavedViewDefault_RemovesPreference()
+    {
+        var globalAdministrator = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        var freeOrganizationUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.FREE_USER_EMAIL);
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(globalAdministrator);
+        Assert.NotNull(freeOrganizationUser);
+        Assert.NotNull(organization);
+        Assert.DoesNotContain(SampleDataService.FREE_ORG_ID, globalAdministrator.OrganizationIds);
+
+        var savedView = await _savedViewRepository.AddAsync(new SavedView
+        {
+            OrganizationId = organization.Id,
+            Name = "Global Administrator Home",
+            Filter = "status:open",
+            Slug = "global-administrator-home",
+            ViewType = "stacks",
+            CreatedByUserId = freeOrganizationUser.Id
+        });
+        globalAdministrator.OrganizationPreferences.Add(new UserOrganizationPreference
+        {
+            OrganizationId = organization.Id,
+            DefaultSavedViewId = savedView.Id
+        });
+        await _userRepository.SaveAsync(globalAdministrator, o => o.Cache());
+        await RefreshDataAsync();
+
+        await _organizationService.SoftDeleteOrganizationAsync(organization, freeOrganizationUser.Id);
+        await RefreshDataAsync();
+
+        var persistedGlobalAdministrator = await _userRepository.GetByIdAsync(globalAdministrator.Id);
+        Assert.NotNull(persistedGlobalAdministrator);
+        Assert.DoesNotContain(persistedGlobalAdministrator.OrganizationPreferences, preference => preference.DefaultSavedViewId == savedView.Id);
+        Assert.Null(await _savedViewRepository.GetByIdAsync(savedView.Id));
+    }
+
+    [Fact]
     public async Task RemoveUserSavedViews_WithMixedVisibility_OnlyDeletesPrivateViews()
     {
         // Arrange
