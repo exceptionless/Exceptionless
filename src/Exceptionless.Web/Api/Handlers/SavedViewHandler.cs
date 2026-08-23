@@ -88,12 +88,20 @@ public partial class SavedViewHandler(
         if (!HttpContext.Request.CanAccessOrganization(message.OrganizationId))
             return Result.NotFound("Organization not found.");
 
-        return await GetSavedViewDefaultsAsync(message.OrganizationId);
+        var organization = await organizationRepository.GetByIdAsync(message.OrganizationId);
+        if (organization is null)
+            return Result.NotFound("Organization not found.");
+
+        return await GetSavedViewDefaultsAsync(organization);
     }
 
     public async Task<Result<ViewSavedViewDefaults>> Handle(UpdateUserSavedViewDefault message)
     {
         if (!HttpContext.Request.CanAccessOrganization(message.OrganizationId))
+            return Result.NotFound("Organization not found.");
+
+        var organization = await organizationRepository.GetByIdAsync(message.OrganizationId);
+        if (organization is null)
             return Result.NotFound("Organization not found.");
 
         if (message.Default.SavedViewId is not null)
@@ -122,12 +130,16 @@ public partial class SavedViewHandler(
         }
 
         await userRepository.SaveAsync(user, o => o.Cache());
-        return await GetSavedViewDefaultsAsync(message.OrganizationId);
+        return await GetSavedViewDefaultsAsync(organization);
     }
 
     public async Task<Result<ViewSavedViewDefaults>> Handle(UpdateOrganizationSavedViewDefault message)
     {
         if (!HttpContext.Request.CanAccessOrganization(message.OrganizationId))
+            return Result.NotFound("Organization not found.");
+
+        var organization = await organizationRepository.GetByIdAsync(message.OrganizationId, o => o.Cache(false));
+        if (organization is null)
             return Result.NotFound("Organization not found.");
 
         if (message.Default.SavedViewId is not null)
@@ -141,13 +153,9 @@ public partial class SavedViewHandler(
             }
         }
 
-        var organization = await organizationRepository.GetByIdAsync(message.OrganizationId, o => o.Cache(false));
-        if (organization is null)
-            return Result.NotFound("Organization not found.");
-
         organization.DefaultSavedViewId = message.Default.SavedViewId;
         await organizationRepository.SaveAsync(organization, o => o.Cache().Consistency(Consistency.Immediate));
-        return await GetSavedViewDefaultsAsync(message.OrganizationId);
+        return await GetSavedViewDefaultsAsync(organization);
     }
 
     public async Task<Result<ViewSavedView>> Handle(CreateSavedView message)
@@ -326,8 +334,8 @@ public partial class SavedViewHandler(
         if (deletableItems.Count == 0)
             return results.Failure.Count == 1 ? Result<ModelActionResults>.FromResult(PermissionToResult(results.Failure.First())) : results;
 
-        await repository.RemoveAsync(deletableItems);
         await ClearDefaultReferencesAsync(deletableItems);
+        await repository.RemoveAsync(deletableItems);
 
         if (results.Failure.Count == 0)
             return new ModelActionResults();
@@ -523,10 +531,10 @@ public partial class SavedViewHandler(
 
     private List<ViewSavedView> MapToViewModels(IEnumerable<SavedView> models) => models.Select(MapToViewModel).ToList();
 
-    private async Task<ViewSavedViewDefaults> GetSavedViewDefaultsAsync(string organizationId)
+    private async Task<ViewSavedViewDefaults> GetSavedViewDefaultsAsync(Organization organization)
     {
         var user = await userRepository.GetByIdAsync(GetCurrentUserId());
-        var organization = await organizationRepository.GetByIdAsync(organizationId);
+        string organizationId = organization.Id;
 
         ViewSavedView? userDefault = null;
         string? userDefaultId = user?.OrganizationPreferences
@@ -544,7 +552,7 @@ public partial class SavedViewHandler(
         }
 
         ViewSavedView? organizationDefault = null;
-        if (organization?.DefaultSavedViewId is not null)
+        if (organization.DefaultSavedViewId is not null)
         {
             var savedView = await repository.GetByIdAsync(organization.DefaultSavedViewId);
             if (savedView is not null

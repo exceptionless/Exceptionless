@@ -1441,6 +1441,28 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public Task GetSavedViewDefaults_NonExistentOrganizationAsGlobalAdministrator_ReturnsNotFound()
+    {
+        return SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", "000000000000000000000000", "saved-view-defaults")
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
+    public Task PutUserSavedViewDefault_NonExistentOrganizationAsGlobalAdministrator_ReturnsNotFound()
+    {
+        return SendRequestAsync(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", "000000000000000000000000", "saved-view-defaults", "user")
+            .Content(new UpdateSavedViewDefault())
+            .StatusCodeShouldBeNotFound()
+        );
+    }
+
+    [Fact]
     public async Task PutOrganizationSavedViewDefault_PrivateView_ReturnsUnprocessableEntity()
     {
         var privateView = await CreateSavedViewAsync("Private Organization Home", "status:open", "events", isPrivate: true);

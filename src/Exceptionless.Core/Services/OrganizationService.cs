@@ -194,9 +194,8 @@ public class OrganizationService : IStartupAction
             savedViewIds.UnionWith(savedViewResults.Documents.Select(savedView => savedView.Id));
         } while (await savedViewResults.NextPageAsync());
 
-        long removed = await _savedViewRepository.RemoveAllByOrganizationIdAsync(organization.Id);
         if (savedViewIds.Count == 0)
-            return removed;
+            return 0;
 
         if (organization.DefaultSavedViewId is not null && savedViewIds.Contains(organization.DefaultSavedViewId))
             organization.DefaultSavedViewId = null;
@@ -221,7 +220,7 @@ public class OrganizationService : IStartupAction
         if (usersById.Count > 0)
             await _userRepository.SaveAsync(usersById.Values, o => o.Cache());
 
-        return removed;
+        return await _savedViewRepository.RemoveAllByOrganizationIdAsync(organization.Id);
     }
 
     public Task<long> RemoveUserSavedViewsAsync(string organizationId, string userId)
