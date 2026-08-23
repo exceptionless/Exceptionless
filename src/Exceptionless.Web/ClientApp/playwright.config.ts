@@ -37,5 +37,5 @@ export default defineConfig({
         video: 'retain-on-failure'
     },
 
-    workers: isCi ? 2 : undefined
+    workers: isCi ? 1 : undefined
 });
