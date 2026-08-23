@@ -98,8 +98,10 @@ public partial class SavedViewHandler(
 
         if (message.Default.SavedViewId is not null)
         {
-            var savedView = await GetModelAsync(message.Default.SavedViewId, useCache: false);
-            if (savedView is null || !String.Equals(savedView.OrganizationId, message.OrganizationId, StringComparison.Ordinal))
+            var savedView = await repository.GetByIdAsync(message.Default.SavedViewId, o => o.Cache(false));
+            if (savedView is null
+                || !String.Equals(savedView.OrganizationId, message.OrganizationId, StringComparison.Ordinal)
+                || (savedView.UserId is not null && !String.Equals(savedView.UserId, GetCurrentUserId(), StringComparison.Ordinal)))
                 return Result.Invalid(ValidationError.Create("saved_view_id", "The saved view is not accessible in this organization."));
         }
 
