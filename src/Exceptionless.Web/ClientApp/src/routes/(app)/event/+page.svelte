@@ -720,6 +720,7 @@
     }
 
     async function handleRefresh() {
+        table.resetRowSelection();
         await eventsQuery.refetch();
     }
 

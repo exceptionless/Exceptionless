@@ -210,6 +210,7 @@
     }
 
     async function handleRefresh() {
+        table.resetRowSelection();
         await loadData();
     }
 
