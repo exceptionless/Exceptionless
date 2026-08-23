@@ -2,22 +2,22 @@ import { ChangeType } from '$features/websockets/models';
 import { QueryClient } from '@tanstack/svelte-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { createProjectStackNotificationRefresher, invalidateStackQueries, queryKeys, STACK_NOTIFICATION_THROTTLE_MS } from './api.svelte';
+import { createStackNotificationRefresher, invalidateStackQueries, queryKeys, STACK_NOTIFICATION_THROTTLE_MS } from './api.svelte';
 
 afterEach(() => {
     vi.useRealTimers();
 });
 
-describe('createProjectStackNotificationRefresher', () => {
+describe('createStackNotificationRefresher', () => {
     it('defers removal reconciliation without a leading refetch', async () => {
         // Arrange
         vi.useFakeTimers();
         const queryClient = new QueryClient();
         const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries').mockImplementation(async () => {});
-        const refresher = createProjectStackNotificationRefresher(queryClient);
+        const refresher = createStackNotificationRefresher(queryClient);
 
         // Act
-        refresher.schedule('project-id', false);
+        refresher.schedule('organization-id', 'project-id', false);
 
         // Assert
         expect(invalidateSpy).not.toHaveBeenCalled();
@@ -30,10 +30,10 @@ describe('createProjectStackNotificationRefresher', () => {
         vi.useFakeTimers();
         const queryClient = new QueryClient();
         const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries').mockImplementation(async () => {});
-        const refresher = createProjectStackNotificationRefresher(queryClient);
+        const refresher = createStackNotificationRefresher(queryClient);
 
         // Act
-        refresher.schedule('project-id');
+        refresher.schedule('organization-id', 'project-id');
 
         // Assert
         expect(invalidateSpy).toHaveBeenCalledOnce();
@@ -44,6 +44,8 @@ describe('createProjectStackNotificationRefresher', () => {
         expect(invalidateSpy).toHaveBeenCalledTimes(2);
         const reconciliation = invalidateSpy.mock.calls[1]?.[0];
         expect(reconciliation?.predicate?.({ queryKey: queryKeys.project('project-id') } as never)).toBe(true);
+        expect(reconciliation?.predicate?.({ queryKey: queryKeys.organizationRollups('organization-id') } as never)).toBe(true);
+        expect(reconciliation?.predicate?.({ queryKey: queryKeys.organizationRollupsStats('organization-id') } as never)).toBe(true);
     });
 
     it('refreshes matching active project lists immediately and at most once per throttle window', async () => {
@@ -52,12 +54,12 @@ describe('createProjectStackNotificationRefresher', () => {
         vi.setSystemTime(new Date('2026-08-09T20:00:00Z'));
         const queryClient = new QueryClient();
         const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries').mockImplementation(async () => {});
-        const refresher = createProjectStackNotificationRefresher(queryClient);
+        const refresher = createStackNotificationRefresher(queryClient);
 
         // Act
-        refresher.schedule('project-id');
+        refresher.schedule('organization-id', 'project-id');
         for (let index = 0; index < 30; index++) {
-            refresher.schedule(index % 2 === 0 ? 'project-id' : 'other-project-id');
+            refresher.schedule(index % 2 === 0 ? 'organization-id' : 'other-organization-id', index % 2 === 0 ? 'project-id' : 'other-project-id');
         }
 
         // Assert
@@ -66,6 +68,8 @@ describe('createProjectStackNotificationRefresher', () => {
         expect(firstInvalidation?.refetchType).toBe('active');
         expect(firstInvalidation?.predicate?.({ queryKey: queryKeys.project('project-id') } as never)).toBe(true);
         expect(firstInvalidation?.predicate?.({ queryKey: queryKeys.project('other-project-id') } as never)).toBe(false);
+        expect(firstInvalidation?.predicate?.({ queryKey: queryKeys.organizationRollups('organization-id') } as never)).toBe(true);
+        expect(firstInvalidation?.predicate?.({ queryKey: queryKeys.organizationRollups('other-organization-id') } as never)).toBe(false);
         expect(firstInvalidation?.predicate?.({ queryKey: queryKeys.id('stack-id') } as never)).toBe(false);
 
         await vi.advanceTimersByTimeAsync(STACK_NOTIFICATION_THROTTLE_MS - 1);
@@ -76,8 +80,10 @@ describe('createProjectStackNotificationRefresher', () => {
         const trailingInvalidation = invalidateSpy.mock.calls[1]?.[0];
         expect(trailingInvalidation?.predicate?.({ queryKey: queryKeys.project('project-id') } as never)).toBe(true);
         expect(trailingInvalidation?.predicate?.({ queryKey: queryKeys.project('other-project-id') } as never)).toBe(true);
+        expect(trailingInvalidation?.predicate?.({ queryKey: queryKeys.organizationRollups('organization-id') } as never)).toBe(true);
+        expect(trailingInvalidation?.predicate?.({ queryKey: queryKeys.organizationRollups('other-organization-id') } as never)).toBe(true);
 
-        refresher.schedule('project-id');
+        refresher.schedule('organization-id', 'project-id');
         expect(invalidateSpy).toHaveBeenCalledTimes(3);
         refresher.cancel();
         await vi.advanceTimersByTimeAsync(STACK_NOTIFICATION_THROTTLE_MS);

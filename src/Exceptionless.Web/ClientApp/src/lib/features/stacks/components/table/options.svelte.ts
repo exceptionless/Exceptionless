@@ -176,7 +176,7 @@ export function getTableOptions(
             return getColumns(onTagClick);
         },
         defaultColumnVisibility,
-        paginationStrategy: 'offset',
+        paginationStrategy: 'cursor',
         get queryData() {
             return queryResponse.data?.data ?? [];
         },

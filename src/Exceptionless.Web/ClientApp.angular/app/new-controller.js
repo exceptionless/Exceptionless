@@ -108,6 +108,23 @@
                     return organizationService.getAll().then(onSuccess);
                 }
 
+                function getNewStacks(options) {
+                    return stackService.getRollups(options, function (mergedOptions) {
+                        var range = filterService.getTimeRange();
+                        if (!range.start && !range.end) {
+                            return mergedOptions;
+                        }
+
+                        var start = (range.start || moment(filterService.getOldestPossibleEventDate())).utc().format();
+                        var end = (range.end || moment()).utc().format();
+                        var firstOccurrenceFilter = 'first_occurrence:["' + start + '" TO "' + end + '"]';
+                        mergedOptions.filter = mergedOptions.filter
+                            ? firstOccurrenceFilter + " (" + mergedOptions.filter + ")"
+                            : firstOccurrenceFilter;
+                        return mergedOptions;
+                    });
+                }
+
                 this.$onInit = function $onInit() {
                     vm._organizations = [];
                     vm._source = "app.New";
@@ -212,10 +229,10 @@
 
                     vm.newest = {
                         header: "New Stacks",
-                        get: eventService.getAll,
+                        get: getNewStacks,
                         options: {
                             limit: 15,
-                            mode: "stack_new",
+                            sort: "-first_occurrence",
                         },
                         source: vm._source + ".Events",
                     };

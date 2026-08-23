@@ -1,11 +1,11 @@
-<script lang="ts">
+<script generics="TSummary extends SummaryModel<SummaryTemplateKeys>" lang="ts">
     import type { Snippet } from 'svelte';
 
     import * as DataTable from '$comp/data-table';
     import DelayedRender from '$comp/delayed-render.svelte';
     import { type StockFeatures, type Table } from '@tanstack/svelte-table';
 
-    import type { EventSummaryModel, SummaryTemplateKeys } from '../summary/index';
+    import type { SummaryModel, SummaryTemplateKeys } from '../summary/index';
 
     interface Props {
         autoFillColumnId?: null | string;
@@ -14,9 +14,9 @@
         isLoading: boolean;
         limit: number;
         onAutoFillColumnResized?: (columnId: string) => void;
-        rowClick?: (row: EventSummaryModel<SummaryTemplateKeys>) => void;
-        rowHref?: (row: EventSummaryModel<SummaryTemplateKeys>) => string;
-        table: Table<StockFeatures, EventSummaryModel<SummaryTemplateKeys>>;
+        rowClick?: (row: TSummary) => void;
+        rowHref?: (row: TSummary) => string;
+        table: Table<StockFeatures, TSummary>;
         toolbarChildren?: Snippet;
     }
 

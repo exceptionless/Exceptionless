@@ -45,10 +45,8 @@ public class EventHandler(
     ICacheClient cacheClient,
     ITextSerializer serializer,
     PersistentEventQueryValidator validator,
-    EventStackQueryValidator stackModeValidator,
     AppOptions appOptions,
     UsageService usageService,
-    IStackRollupSearchService stackRollupSearchService,
     TimeProvider timeProvider,
     LinkGenerator linkGenerator,
     ILoggerFactory loggerFactory)
@@ -79,7 +77,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organizations.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
-        return await CountInternalAsync(sf, ti, httpContext, message.Filter, message.Aggregations, message.Mode);
+        return await CountInternalAsync(sf, ti, httpContext, message.Filter, message.Aggregations);
     }
 
     public async Task<Result<CountResult>> Handle(GetEventCountByOrganization message)
@@ -94,7 +92,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organization);
-        return await CountInternalAsync(sf, ti, httpContext, message.Filter, message.Aggregations, message.Mode);
+        return await CountInternalAsync(sf, ti, httpContext, message.Filter, message.Aggregations);
     }
 
     public async Task<Result<CountResult>> Handle(GetEventCountByProject message)
@@ -113,7 +111,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(project, appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(project, organization);
-        return await CountInternalAsync(sf, ti, httpContext, message.Filter, message.Aggregations, message.Mode);
+        return await CountInternalAsync(sf, ti, httpContext, message.Filter, message.Aggregations);
     }
 
     public async Task<Result<PersistentEvent>> Handle(GetEventById message)
@@ -689,9 +687,9 @@ public class EventHandler(
 
     #region Private Helpers
 
-    private async Task<Result<CountResult>> CountInternalAsync(AppFilter sf, TimeInfo ti, HttpContext httpContext, string? filter = null, string? aggregations = null, string? mode = null)
+    private async Task<Result<CountResult>> CountInternalAsync(AppFilter sf, TimeInfo ti, HttpContext httpContext, string? filter = null, string? aggregations = null)
     {
-        var pr = await GetQueryValidator(mode).ValidateQueryAsync(filter);
+        var pr = await validator.ValidateQueryAsync(filter);
         if (!pr.IsValid)
             return Result.BadRequest(pr.Message ?? "Invalid filter.");
 
@@ -703,9 +701,6 @@ public class EventHandler(
         AppFilter? systemFilter = ApiFilterPolicy.ShouldApplySystemFilter(sf, filter, httpContext.Request) ? sf : null;
         if (systemFilter is not null && ApiFilterPolicy.IsPremiumFeatureQueryBlocked(systemFilter))
             return PlanLimitResult<CountResult>(ApiFilterPolicy.PremiumSearchUpgradeMessage);
-
-        if (mode == "stack_new")
-            filter = AddFirstOccurrenceFilter(ti.Range, filter);
 
         var query = new RepositoryQuery<PersistentEvent>()
             .AppFilter(systemFilter)
@@ -731,6 +726,9 @@ public class EventHandler(
 
     private async Task<Result<PagedResult<object>>> GetInternalAsync(AppFilter sf, TimeInfo ti, HttpContext httpContext, string? filter = null, string? sort = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, string? premiumFeatureUpgradeMessage = null, bool includeTotal = false, string? timeExpression = null)
     {
+        if (mode is not null && !String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase))
+            return Result.BadRequest("Mode must be 'summary' when specified.");
+
         var currentUser = httpContext.Request.GetUser();
         using var _ = _logger.BeginScope(new ExceptionlessState()
             .Property("Search Filter", new
@@ -750,20 +748,13 @@ public class EventHandler(
             .SetHttpContext(httpContext)
         );
 
-        bool isStackMode = IsStackMode(mode);
-        if (isStackMode && before is not null && after is not null)
-            return Result.BadRequest("The before and after parameters cannot be used together.");
-
-        if (isStackMode && page.HasValue)
-            return Result.BadRequest("The page parameter is not supported in stack mode. Use before or after cursor pagination.");
-
         int resolvedPage = Pagination.GetPage(page.GetValueOrDefault(1));
         limit = Pagination.GetLimit(limit);
         int skip = Pagination.GetSkip(resolvedPage, limit);
         if (skip > Pagination.MaximumSkip)
             return new PagedResult<object>(Array.Empty<PersistentEvent>(), false);
 
-        var pr = await GetQueryValidator(mode).ValidateQueryAsync(filter);
+        var pr = await validator.ValidateQueryAsync(filter);
         if (!pr.IsValid)
             return Result.BadRequest(pr.Message ?? "Invalid filter.");
 
@@ -798,47 +789,10 @@ public class EventHandler(
                         };
                     }).ToList();
                     return new PagedResult<object>(summaries.Cast<object>().ToList(), events.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, includeTotal ? events.Total : null, events.Hits.FirstOrDefault()?.GetSortToken(serializer), events.Hits.LastOrDefault()?.GetSortToken(serializer));
-                case "stack_recent":
-                case "stack_frequent":
-                case "stack_new":
-                case "stack_users":
-                    if (!String.IsNullOrEmpty(sort))
-                        return Result.BadRequest("Sort is not supported in stack mode.");
-
-                    var lookupResult = await stackRollupSearchService.SearchAsync(new StackRollupSearchRequest(
-                        appliedAppFilter,
-                        ti.Range.UtcStart,
-                        ti.Range.UtcEnd,
-                        ti.Offset,
-                        timeExpression,
-                        filter,
-                        mode,
-                        limit,
-                        before,
-                        after,
-                        includeTotal), httpContext.RequestAborted);
-
-                    string[] lookupStackIds = lookupResult.Rows.Select(row => row.StackId).ToArray();
-                    var lookupStacks = (await stackRepository.GetByIdsAsync(lookupStackIds))
-                        .Select(stack => stack.ApplyOffset(ti.Offset))
-                        .ToList();
-                    var lookupSummaries = await GetStackSummariesAsync(lookupStacks, lookupResult.Rows, sf, ti);
-
-                    return new PagedResult<object>(
-                        lookupSummaries.Cast<object>().ToList(),
-                        lookupResult.HasMore,
-                        Page: null,
-                        lookupResult.Total,
-                        lookupResult.Before,
-                        lookupResult.After);
                 default:
                     events = await GetEventsInternalAsync(appliedAppFilter, ti, filter, sort, page, limit, before, after, includeTotal);
                     return new PagedResult<object>(events.Documents.Cast<object>().ToList(), events.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, includeTotal ? events.Total : null, events.Hits.FirstOrDefault()?.GetSortToken(serializer), events.Hits.LastOrDefault()?.GetSortToken(serializer));
             }
-        }
-        catch (InvalidStackRollupCursorException ex)
-        {
-            return Result.BadRequest(ex.Message);
         }
         catch (ApplicationException ex)
         {
@@ -849,50 +803,6 @@ public class EventHandler(
             _logger.LogError(ex, message);
             throw;
         }
-    }
-
-    private static string AddFirstOccurrenceFilter(DateTimeRange timeRange, string? filter)
-    {
-        bool inverted = false;
-        if (filter is not null && filter.StartsWith("@!"))
-        {
-            inverted = true;
-            filter = filter.Substring(2);
-        }
-
-        var sb = new StringBuilder();
-        if (inverted)
-            sb.Append("@!");
-
-        sb.Append("first_occurrence:[\"");
-        sb.Append(timeRange.UtcStart.ToString("O"));
-        sb.Append("\" TO \"");
-        sb.Append(timeRange.UtcEnd.ToString("O"));
-        sb.Append("\"]");
-
-        if (String.IsNullOrEmpty(filter))
-            return sb.ToString();
-
-        sb.Append(' ');
-
-        bool isGrouped = filter.StartsWith('(') && filter.EndsWith(')');
-
-        if (isGrouped)
-            sb.Append(filter);
-        else
-            sb.Append('(').Append(filter).Append(')');
-
-        return sb.ToString();
-    }
-
-    private static bool IsStackMode(string? mode)
-    {
-        return mode is "stack_recent" or "stack_frequent" or "stack_new" or "stack_users";
-    }
-
-    private IAppQueryValidator GetQueryValidator(string? mode)
-    {
-        return IsStackMode(mode) ? stackModeValidator : validator;
     }
 
     private Task<FindResults<PersistentEvent>> GetEventsInternalAsync(AppFilter? systemFilter, TimeInfo ti, string? filter, string? sort, int? page, int limit, string? before, string? after, bool includeTotal)
@@ -910,69 +820,6 @@ public class EventHandler(
             o => page.HasValue
                 ? o.PageNumber(page).PageLimit(limit).TrackTotalHits(includeTotal)
                 : o.SearchBeforeToken(before, serializer).SearchAfterToken(after, serializer).PageLimit(limit).TrackTotalHits(includeTotal));
-    }
-
-    private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(List<Stack> stacks, IReadOnlyCollection<StackRollupRow> rows, AppFilter sf, TimeInfo ti)
-    {
-        if (stacks.Count == 0)
-            return [];
-
-        var stacksById = stacks.ToDictionary(stack => stack.Id, StringComparer.Ordinal);
-        var projects = await projectRepository.GetByIdsAsync(stacks.Select(stack => stack.ProjectId).Distinct().ToArray(), options => options.Cache());
-        var projectNames = projects.ToDictionary(project => project.Id, project => project.Name);
-        var totalUsers = await GetUserCountByProjectIdsAsync(stacks, sf, ti.Range.UtcStart, ti.Range.UtcEnd);
-        var summaries = new List<StackSummaryModel>(rows.Count);
-
-        foreach (var row in rows)
-        {
-            if (!stacksById.TryGetValue(row.StackId, out var stack))
-                continue;
-
-            var data = formattingPluginManager.GetStackSummaryData(stack);
-            summaries.Add(new StackSummaryModel
-            {
-                Id = data.Id,
-                TemplateKey = data.TemplateKey,
-                Data = data.Data,
-                ProjectId = stack.ProjectId,
-                ProjectName = projectNames.GetValueOrDefault(stack.ProjectId),
-                Tags = stack.Tags?.OfType<string>().Order(StringComparer.OrdinalIgnoreCase).ToArray() ?? [],
-                Title = stack.Title,
-                Status = stack.Status,
-                FirstOccurrence = row.FirstOccurrence,
-                LastOccurrence = row.LastOccurrence,
-                Total = row.Total,
-                Users = row.Users,
-                TotalUsers = totalUsers.GetOrDefault(stack.ProjectId)
-            });
-        }
-
-        return summaries;
-    }
-
-    private async Task<Dictionary<string, double>> GetUserCountByProjectIdsAsync(ICollection<Stack> stacks, AppFilter sf, DateTime utcStart, DateTime utcEnd)
-    {
-        using var scopedCacheClient = new ScopedCacheClient(cacheClient, $"Project:user-count:{utcStart.Floor(TimeSpan.FromMinutes(15)).Ticks}-{utcEnd.Floor(TimeSpan.FromMinutes(15)).Ticks}");
-        var projectIds = stacks.Select(s => s.ProjectId).Distinct().ToList();
-        var cachedTotals = await scopedCacheClient.GetAllAsync<double>(projectIds);
-
-        var totals = cachedTotals.Where(kvp => kvp.Value.HasValue).ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Value);
-        if (totals.Count == projectIds.Count)
-            return totals;
-
-        var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(utcStart, utcEnd, (PersistentEvent e) => e.Date).Index(utcStart, utcEnd);
-        var projects = cachedTotals
-            .Where(kvp => !kvp.Value.HasValue && stacks.Contains(s => s.ProjectId == kvp.Key))
-            .Select(kvp => new Project { Id = kvp.Key, OrganizationId = stacks.First(s => s.ProjectId == kvp.Key).OrganizationId })
-            .ToList();
-        var countResult = await eventRepository.CountAsync(q => q.SystemFilter(systemFilter).FilterExpression(projects.BuildFilter()).EnforceEventStackFilter().AggregationsExpression("terms:(project_id cardinality:user)"));
-
-        var projectTerms = countResult.Aggregations.Terms<string>("terms_project_id")?.Buckets ?? [];
-        var aggregations = projectTerms.ToDictionary(t => t.Key, t => t.Aggregations.Cardinality("cardinality_user")?.Value.GetValueOrDefault() ?? 0);
-        await scopedCacheClient.SetAllAsync(aggregations.Where(t => t.Value >= 10).ToDictionary(k => k.Key, v => v.Value), TimeSpan.FromMinutes(5));
-        totals.AddRange(aggregations);
-
-        return totals;
     }
 
     private async Task<PersistentEvent?> GetModelAsync(string id, HttpContext httpContext, bool useCache = true)

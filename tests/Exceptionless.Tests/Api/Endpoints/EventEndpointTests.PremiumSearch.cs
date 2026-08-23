@@ -1,4 +1,5 @@
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
@@ -45,17 +46,16 @@ public partial class EventEndpointTests
     [Theory]
     [InlineData("critical:false")]
     [InlineData("first_occurrence:[now-1d TO now]")]
-    public async Task Handle_GetEventCountByOrganizationInStackModeWithFreeStackFilter_ReturnsOk(string filter)
+    public async Task Handle_GetStackRollupStatsByOrganizationWithFreeStackFilter_ReturnsOk(string filter)
     {
         // Arrange
         await CreateDataAsync(d => d.Event().FreeProject());
 
         // Act
-        var result = await SendRequestAsAsync<CountResult>(r => r
+        var result = await SendRequestAsAsync<StackRollupStatsResult>(r => r
             .AsFreeOrganizationUser()
-            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "events", "count")
+            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "stack-rollups", "stats")
             .QueryString("filter", filter)
-            .QueryString("mode", "stack_frequent")
             .StatusCodeShouldBeOk());
 
         // Assert
@@ -97,7 +97,7 @@ public partial class EventEndpointTests
     }
 
     [Fact]
-    public async Task Handle_GetEventsByProjectInStackModeWithFreeStackFilter_ReturnsOk()
+    public async Task Handle_GetStackRollupsByProjectWithFreeStackFilter_ReturnsOk()
     {
         // Arrange
         await CreateDataAsync(d => d.Event().FreeProject());
@@ -105,9 +105,8 @@ public partial class EventEndpointTests
         // Act
         var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
             .AsFreeOrganizationUser()
-            .AppendPaths("projects", SampleDataService.FREE_PROJECT_ID, "events")
+            .AppendPaths("projects", SampleDataService.FREE_PROJECT_ID, "stack-rollups")
             .QueryString("filter", "critical:false")
-            .QueryString("mode", "stack_frequent")
             .StatusCodeShouldBeOk());
 
         // Assert
@@ -149,30 +148,28 @@ public partial class EventEndpointTests
     }
 
     [Fact]
-    public async Task Handle_StackModeWithFreeEventFilters_ReturnsOk()
+    public async Task Handle_StackRollupsWithFreeEventFilters_ReturnsOk()
     {
         // Arrange
         var (stacks, _) = await CreateDataAsync(d => d.Event().FreeProject().ReferenceId("free-reference"));
         var stack = Assert.Single(stacks);
 
         // Act
-        var count = await SendRequestAsAsync<CountResult>(r => r
+        var stats = await SendRequestAsAsync<StackRollupStatsResult>(r => r
             .AsFreeOrganizationUser()
-            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "events", "count")
+            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "stack-rollups", "stats")
             .QueryString("filter", "reference:free-reference first:true")
-            .QueryString("mode", "stack_frequent")
             .StatusCodeShouldBeOk());
 
         var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
             .AsFreeOrganizationUser()
-            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "events")
+            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "stack-rollups")
             .QueryString("filter", $"stack:{stack.Id} first:true")
-            .QueryString("mode", "stack_frequent")
             .StatusCodeShouldBeOk());
 
         // Assert
-        Assert.NotNull(count);
-        Assert.Equal(1, count.Total);
+        Assert.NotNull(stats);
+        Assert.Equal(1, stats.TotalEvents);
         Assert.NotNull(results);
         Assert.Single(results);
     }

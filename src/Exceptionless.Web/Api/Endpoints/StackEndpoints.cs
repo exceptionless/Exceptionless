@@ -2,6 +2,7 @@ using System.Text.Json;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Services;
 using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
@@ -248,8 +249,8 @@ public static class StackEndpoints
         });
 
         // Get all
-        group.MapGet("stacks", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int page = 1, int limit = 10)
-            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetAllStacks(filter, sort, time, offset, mode, page, limit, httpContext))).ToHttpResult(resultMapper))
+        group.MapGet("stacks", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, int limit = 10, string? before = null, string? after = null)
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetAllStacks(filter, sort, time, offset, limit, before, after, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.StacksReadPolicy)
         .Produces<IReadOnlyCollection<Stack>>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -261,9 +262,9 @@ public static class StackEndpoints
                 ["sort"] = "Controls the sort order that the data is returned in. In this example -date returns the results descending by date.",
                 ["time"] = "The time filter that limits the data being returned to a specific date range.",
                 ["offset"] = "The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.",
-                ["mode"] = "If no mode is set then the whole stack object will be returned. If the mode is set to summary than a lightweight object will be returned.",
-                ["page"] = "The page parameter is used for pagination. This value must be greater than 0.",
                 ["limit"] = "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
+                ["before"] = "A cursor that returns the previous page for this exact filter and sort.",
+                ["after"] = "A cursor that returns the next page for this exact filter and sort.",
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
@@ -272,8 +273,8 @@ public static class StackEndpoints
         });
 
         // Get by organization
-        group.MapGet("organizations/{organizationId:objectid}/stacks", async (string organizationId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int page = 1, int limit = 10)
-            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetStacksByOrganization(organizationId, filter, sort, time, offset, mode, page, limit, httpContext))).ToHttpResult(resultMapper))
+        group.MapGet("organizations/{organizationId:objectid}/stacks", async (string organizationId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, int limit = 10, string? before = null, string? after = null)
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetStacksByOrganization(organizationId, filter, sort, time, offset, limit, before, after, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.StacksReadPolicy)
         .Produces<IReadOnlyCollection<Stack>>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -287,9 +288,9 @@ public static class StackEndpoints
                 ["sort"] = "Controls the sort order that the data is returned in. In this example -date returns the results descending by date.",
                 ["time"] = "The time filter that limits the data being returned to a specific date range.",
                 ["offset"] = "The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.",
-                ["mode"] = "If no mode is set then the whole stack object will be returned. If the mode is set to summary than a lightweight object will be returned.",
-                ["page"] = "The page parameter is used for pagination. This value must be greater than 0.",
                 ["limit"] = "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
+                ["before"] = "A cursor that returns the previous page for this exact filter and sort.",
+                ["after"] = "A cursor that returns the next page for this exact filter and sort.",
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
@@ -299,8 +300,8 @@ public static class StackEndpoints
         });
 
         // Get by project
-        group.MapGet("projects/{projectId:objectid}/stacks", async (string projectId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, string? mode = null, int page = 1, int limit = 10)
-            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetStacksByProject(projectId, filter, sort, time, offset, mode, page, limit, httpContext))).ToHttpResult(resultMapper))
+        group.MapGet("projects/{projectId:objectid}/stacks", async (string projectId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, int limit = 10, string? before = null, string? after = null)
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetStacksByProject(projectId, filter, sort, time, offset, limit, before, after, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.StacksReadPolicy)
         .Produces<IReadOnlyCollection<Stack>>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -314,9 +315,9 @@ public static class StackEndpoints
                 ["sort"] = "Controls the sort order that the data is returned in. In this example -date returns the results descending by date.",
                 ["time"] = "The time filter that limits the data being returned to a specific date range.",
                 ["offset"] = "The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.",
-                ["mode"] = "If no mode is set then the whole stack object will be returned. If the mode is set to summary than a lightweight object will be returned.",
-                ["page"] = "The page parameter is used for pagination. This value must be greater than 0.",
                 ["limit"] = "A limit on the number of objects to be returned. Limit can range between 1 and 100 items.",
+                ["before"] = "A cursor that returns the previous page for this exact filter and sort.",
+                ["after"] = "A cursor that returns the next page for this exact filter and sort.",
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
@@ -325,6 +326,62 @@ public static class StackEndpoints
             }
         });
 
+        MapStackRollupEndpoints(group);
         return endpoints;
+    }
+
+    private static void MapStackRollupEndpoints(RouteGroupBuilder group)
+    {
+        group.MapGet("stack-rollups/stats", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? filter = null, string? time = null, string? offset = null)
+            => (await mediator.InvokeAsync<Result<StackRollupStatsResult>>(new GetStackRollupStats(filter, time, offset, httpContext))).ToHttpResult(resultMapper))
+        .RequireAuthorization(AuthorizationRoles.StacksReadPolicy)
+        .Produces<StackRollupStatsResult>()
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
+        .WithSummary("Get stack rollup statistics");
+
+        group.MapGet("organizations/{organizationId:objectid}/stack-rollups/stats", async (string organizationId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? filter = null, string? time = null, string? offset = null)
+            => (await mediator.InvokeAsync<Result<StackRollupStatsResult>>(new GetStackRollupStatsByOrganization(organizationId, filter, time, offset, httpContext))).ToHttpResult(resultMapper))
+        .RequireAuthorization(AuthorizationRoles.StacksReadPolicy)
+        .Produces<StackRollupStatsResult>()
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
+        .WithSummary("Get stack rollup statistics by organization");
+
+        group.MapGet("projects/{projectId:objectid}/stack-rollups/stats", async (string projectId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? filter = null, string? time = null, string? offset = null)
+            => (await mediator.InvokeAsync<Result<StackRollupStatsResult>>(new GetStackRollupStatsByProject(projectId, filter, time, offset, httpContext))).ToHttpResult(resultMapper))
+        .RequireAuthorization(AuthorizationRoles.StacksReadPolicy)
+        .Produces<StackRollupStatsResult>()
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
+        .WithSummary("Get stack rollup statistics by project");
+
+        group.MapGet("stack-rollups", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, int limit = 10, string? before = null, string? after = null, string? include = null)
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetAllStackRollups(filter, sort, time, offset, limit, before, after, include, httpContext))).ToHttpResult(resultMapper))
+        .RequireAuthorization(AuthorizationRoles.StacksReadPolicy)
+        .Produces<IReadOnlyCollection<StackSummaryModel>>()
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
+        .WithSummary("Get stack rollups");
+
+        group.MapGet("organizations/{organizationId:objectid}/stack-rollups", async (string organizationId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, int limit = 10, string? before = null, string? after = null, string? include = null)
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetStackRollupsByOrganization(organizationId, filter, sort, time, offset, limit, before, after, include, httpContext))).ToHttpResult(resultMapper))
+        .RequireAuthorization(AuthorizationRoles.StacksReadPolicy)
+        .Produces<IReadOnlyCollection<StackSummaryModel>>()
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
+        .WithSummary("Get stack rollups by organization");
+
+        group.MapGet("projects/{projectId:objectid}/stack-rollups", async (string projectId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, int limit = 10, string? before = null, string? after = null, string? include = null)
+            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetStackRollupsByProject(projectId, filter, sort, time, offset, limit, before, after, include, httpContext))).ToHttpResult(resultMapper))
+        .RequireAuthorization(AuthorizationRoles.StacksReadPolicy)
+        .Produces<IReadOnlyCollection<StackSummaryModel>>()
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
+        .WithSummary("Get stack rollups by project");
     }
 }

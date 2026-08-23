@@ -131,9 +131,11 @@ test('stack effects stay bounded through background, paging, and navigation chao
     await measureAction(diagnostics, 'paging', async () => {
         for (let index = 0; index < 4; index++) {
             await page.getByRole('button', { name: 'Go to next page' }).click();
-            await expect(page).toHaveURL(/(?:\?|&)page=2(?:&|$)/);
+            await expect(page).toHaveURL(/(?:\?|&)after=[^&]+(?:&|$)/);
+            await expect(page).not.toHaveURL(/(?:\?|&)page=/);
             await page.getByRole('button', { name: 'Go to previous page' }).click();
-            await expect(page).not.toHaveURL(/(?:\?|&)page=2(?:&|$)/);
+            await expect(page).not.toHaveURL(/(?:\?|&)(?:before|after)=/);
+            await expect(page).not.toHaveURL(/(?:\?|&)page=/);
         }
     });
     expect(actionSample(diagnostics, 'paging').listRequests).toBe(1);
@@ -268,7 +270,7 @@ function createChaosEvent(appUrl: string, run: string, index: number): { event: 
 
 function isStackListRequest(request: Request, organizationId: string): boolean {
     const url = new URL(request.url());
-    return url.pathname === `/api/v2/organizations/${organizationId}/events` && url.searchParams.get('mode') === 'stack_frequent';
+    return url.pathname === `/api/v2/organizations/${organizationId}/stack-rollups`;
 }
 
 function isStackListResponse(response: Response, organizationId: string): boolean {
@@ -322,7 +324,7 @@ function recordRequest(diagnostics: RuntimeDiagnostics, request: Request, organi
     }
 
     const url = new URL(request.url());
-    if (url.pathname === `/api/v2/organizations/${organizationId}/events/count` && url.searchParams.get('mode') === 'stack_frequent') {
+    if (url.pathname === `/api/v2/organizations/${organizationId}/stack-rollups/stats`) {
         diagnostics.countRequests++;
     }
 }

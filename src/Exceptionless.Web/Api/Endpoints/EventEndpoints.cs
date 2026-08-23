@@ -26,8 +26,8 @@ public static class EventEndpoints
             .WithTags("Event");
 
         // Count
-        group.MapGet("events/count", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? filter = null, string? aggregations = null, string? time = null, string? offset = null, string? mode = null)
-            => (await mediator.InvokeAsync<Result<CountResult>>(new GetEventCount(filter, aggregations, time, offset, mode, httpContext))).ToHttpResult(resultMapper))
+        group.MapGet("events/count", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? filter = null, string? aggregations = null, string? time = null, string? offset = null)
+            => (await mediator.InvokeAsync<Result<CountResult>>(new GetEventCount(filter, aggregations, time, offset, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.EventsReadPolicy)
         .Produces<CountResult>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -39,7 +39,6 @@ public static class EventEndpoints
                 ["aggregations"] = "A list of values you want returned. Example: avg:value cardinality:value sum:users max:value min:value",
                 ["time"] = "The time filter that limits the data being returned to a specific date range.",
                 ["offset"] = "The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.",
-                ["mode"] = "If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.",
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
@@ -47,8 +46,8 @@ public static class EventEndpoints
             }
         });
 
-        group.MapGet("organizations/{organizationId:objectid}/events/count", async (string organizationId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? filter = null, string? aggregations = null, string? time = null, string? offset = null, string? mode = null)
-            => (await mediator.InvokeAsync<Result<CountResult>>(new GetEventCountByOrganization(organizationId, filter, aggregations, time, offset, mode, httpContext))).ToHttpResult(resultMapper))
+        group.MapGet("organizations/{organizationId:objectid}/events/count", async (string organizationId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? filter = null, string? aggregations = null, string? time = null, string? offset = null)
+            => (await mediator.InvokeAsync<Result<CountResult>>(new GetEventCountByOrganization(organizationId, filter, aggregations, time, offset, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.EventsReadPolicy)
         .Produces<CountResult>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -61,7 +60,6 @@ public static class EventEndpoints
                 ["aggregations"] = "A list of values you want returned. Example: avg:value cardinality:value sum:users max:value min:value",
                 ["time"] = "The time filter that limits the data being returned to a specific date range.",
                 ["offset"] = "The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.",
-                ["mode"] = "If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.",
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",
@@ -69,8 +67,8 @@ public static class EventEndpoints
             }
         });
 
-        group.MapGet("projects/{projectId:objectid}/events/count", async (string projectId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? filter = null, string? aggregations = null, string? time = null, string? offset = null, string? mode = null)
-            => (await mediator.InvokeAsync<Result<CountResult>>(new GetEventCountByProject(projectId, filter, aggregations, time, offset, mode, httpContext))).ToHttpResult(resultMapper))
+        group.MapGet("projects/{projectId:objectid}/events/count", async (string projectId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? filter = null, string? aggregations = null, string? time = null, string? offset = null)
+            => (await mediator.InvokeAsync<Result<CountResult>>(new GetEventCountByProject(projectId, filter, aggregations, time, offset, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.EventsReadPolicy)
         .Produces<CountResult>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -83,7 +81,6 @@ public static class EventEndpoints
                 ["aggregations"] = "A list of values you want returned. Example: avg:value cardinality:value sum:users max:value min:value",
                 ["time"] = "The time filter that limits the data being returned to a specific date range.",
                 ["offset"] = "The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.",
-                ["mode"] = "If mode is set to stack_new, then additional filters will be added.",
             },
             ResponseDescriptions = new() {
                 ["400"] = "Invalid filter.",

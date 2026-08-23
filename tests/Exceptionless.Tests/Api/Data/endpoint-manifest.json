@@ -1471,6 +1471,34 @@
   },
   {
     "method": "GET",
+    "route": "/api/v2/organizations/{organizationId:objectid}/stack-rollups",
+    "displayName": "HTTP: GET api/v2/organizations/{organizationId:objectid}/stack-rollups",
+    "tags": [
+      "Stack"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "StacksReadPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
+    "route": "/api/v2/organizations/{organizationId:objectid}/stack-rollups/stats",
+    "displayName": "HTTP: GET api/v2/organizations/{organizationId:objectid}/stack-rollups/stats",
+    "tags": [
+      "Stack"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "StacksReadPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
     "route": "/api/v2/organizations/{organizationId:objectid}/stacks",
     "displayName": "HTTP: GET api/v2/organizations/{organizationId:objectid}/stacks",
     "tags": [
@@ -2031,6 +2059,34 @@
   },
   {
     "method": "GET",
+    "route": "/api/v2/projects/{projectId:objectid}/stack-rollups",
+    "displayName": "HTTP: GET api/v2/projects/{projectId:objectid}/stack-rollups",
+    "tags": [
+      "Stack"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "StacksReadPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
+    "route": "/api/v2/projects/{projectId:objectid}/stack-rollups/stats",
+    "displayName": "HTTP: GET api/v2/projects/{projectId:objectid}/stack-rollups/stats",
+    "tags": [
+      "Stack"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "StacksReadPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
     "route": "/api/v2/projects/{projectId:objectid}/stacks",
     "displayName": "HTTP: GET api/v2/projects/{projectId:objectid}/stacks",
     "tags": [
@@ -2252,6 +2308,34 @@
     "allowAnonymous": false,
     "authorizationPolicies": [
       "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
+    "route": "/api/v2/stack-rollups",
+    "displayName": "HTTP: GET api/v2/stack-rollups",
+    "tags": [
+      "Stack"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "StacksReadPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
+    "route": "/api/v2/stack-rollups/stats",
+    "displayName": "HTTP: GET api/v2/stack-rollups/stats",
+    "tags": [
+      "Stack"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "StacksReadPolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []

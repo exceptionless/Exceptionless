@@ -799,15 +799,15 @@ public partial class EventEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task CanGetMostFrequentStackMode()
+    public async Task CanGetMostFrequentStackRollups()
     {
         await CreateStacksAndEventsAsync();
 
         var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
             .AsGlobalAdminUser()
-            .AppendPath("events")
+            .AppendPath("stack-rollups")
             .QueryString("filter", $"project:{SampleDataService.TEST_PROJECT_ID} (status:open OR status:regressed)")
-            .QueryString("mode", "stack_frequent")
+            .QueryString("sort", "-total")
             .QueryString("offset", "-300m")
             .QueryString("limit", 20)
             .StatusCodeShouldBeOk()
@@ -822,16 +822,32 @@ public partial class EventEndpointTests : IntegrationTestsBase
     [InlineData("stack_frequent")]
     [InlineData("stack_new")]
     [InlineData("stack_users")]
-    public async Task CanPageStackModesWithCursors(string mode)
+    public Task GetEvents_LegacyStackModes_ReturnBadRequest(string mode)
+        => SendRequestAsync(request => request
+            .AsGlobalAdminUser()
+            .AppendPath("events")
+            .QueryString("mode", mode)
+            .StatusCodeShouldBeBadRequest());
+
+    [Theory]
+    [InlineData("-last_occurrence")]
+    [InlineData("-total")]
+    [InlineData("-first_occurrence")]
+    [InlineData("-users")]
+    [InlineData("last_occurrence")]
+    [InlineData("total")]
+    [InlineData("first_occurrence")]
+    [InlineData("users")]
+    public async Task CanPageStackRollupsWithCursors(string sort)
     {
         await CreateStacksAndEventsAsync();
         Log.SetLogLevel<StackRollupSearchService>(LogLevel.Debug);
 
         var response = await SendRequestAsync(request => request
             .AsGlobalAdminUser()
-            .AppendPath("events")
+            .AppendPath("stack-rollups")
             .QueryString("filter", $"project:{SampleDataService.FREE_PROJECT_ID} (status:open OR status:regressed)")
-            .QueryString("mode", mode)
+            .QueryString("sort", sort)
             .QueryString("limit", 1)
             .QueryString("include", "total")
             .StatusCodeShouldBeOk());
@@ -848,9 +864,9 @@ public partial class EventEndpointTests : IntegrationTestsBase
 
         response = await SendRequestAsync(request => request
             .AsGlobalAdminUser()
-            .AppendPath("events")
+            .AppendPath("stack-rollups")
             .QueryString("filter", $"project:{SampleDataService.FREE_PROJECT_ID} (status:open OR status:regressed)")
-            .QueryString("mode", mode)
+            .QueryString("sort", sort)
             .QueryString("limit", 1)
             .QueryString("include", "total")
             .QueryString("after", after)
@@ -870,9 +886,9 @@ public partial class EventEndpointTests : IntegrationTestsBase
 
         response = await SendRequestAsync(request => request
             .AsGlobalAdminUser()
-            .AppendPath("events")
+            .AppendPath("stack-rollups")
             .QueryString("filter", $"project:{SampleDataService.FREE_PROJECT_ID} (status:open OR status:regressed)")
-            .QueryString("mode", mode)
+            .QueryString("sort", sort)
             .QueryString("limit", 1)
             .QueryString("before", before)
             .StatusCodeShouldBeOk());
@@ -883,11 +899,58 @@ public partial class EventEndpointTests : IntegrationTestsBase
     }
 
     [Theory]
+    [InlineData("-total", "cab")]
+    [InlineData("total", "bac")]
+    [InlineData("-users", "abc")]
+    [InlineData("users", "bca")]
+    [InlineData("-first_occurrence", "bac")]
+    [InlineData("first_occurrence", "cab")]
+    [InlineData("-last_occurrence", "bac")]
+    [InlineData("last_occurrence", "cab")]
+    public async Task StackRollups_ReturnExactMetricsAndDeterministicOrder(string sort, string expectedOrder)
+    {
+        const string stackA = "111111111111111111111111";
+        const string stackB = "222222222222222222222222";
+        const string stackC = "333333333333333333333333";
+        DateTimeOffset now = TimeProvider.GetUtcNow();
+
+        await CreateDataAsync(data =>
+        {
+            var a = data.Event().TestProject().StackId(stackA).Source("rollup-parity").Date(now.AddHours(-3)).UserIdentity("user-a1").Mutate(e => e.Count = 5);
+            data.Event().Stack(a).Source("rollup-parity").Date(now.AddHours(-1)).UserIdentity("user-a2").Mutate(e => e.Count = 1);
+
+            var b = data.Event().TestProject().StackId(stackB).Source("rollup-parity").Date(now.AddHours(-2)).UserIdentity("user-b").Mutate(e => e.Count = 1);
+            data.Event().Stack(b).Source("rollup-parity").Date(now.AddHours(-1)).UserIdentity("user-b").Mutate(e => e.Count = 1);
+            data.Event().Stack(b).Source("rollup-parity").Date(now).UserIdentity("user-b").Mutate(e => e.Count = 1);
+
+            data.Event().TestProject().StackId(stackC).Source("rollup-parity").Date(now.AddHours(-4)).UserIdentity("user-c").Mutate(e => e.Count = 10);
+        });
+        await RefreshDataAsync();
+
+        var results = await SendRequestAsAsync<List<StackSummaryModel>>(request => request
+            .AsGlobalAdminUser()
+            .AppendPath("stack-rollups")
+            .QueryString("filter", "source:rollup-parity")
+            .QueryString("sort", sort)
+            .QueryString("time", "last 24 hours")
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(results);
+        var ids = new Dictionary<char, string> { ['a'] = stackA, ['b'] = stackB, ['c'] = stackC };
+        Assert.Equal(expectedOrder.Select(key => ids[key]), results.Select(result => result.Id));
+
+        var byId = results.ToDictionary(result => result.Id);
+        Assert.Equal((6L, 2L), (byId[stackA].Total, byId[stackA].Users));
+        Assert.Equal((3L, 1L), (byId[stackB].Total, byId[stackB].Users));
+        Assert.Equal((10L, 1L), (byId[stackC].Total, byId[stackC].Users));
+    }
+
+    [Theory]
     [InlineData("before", "malformed", null, null)]
     [InlineData("after", "malformed", null, null)]
     [InlineData("before", "malformed", "after", "malformed")]
-    [InlineData("page", "1", null, null)]
-    public async Task GetEvents_StackPaginationIsInvalid_ReturnsBadRequest(string firstName, string firstValue, string? secondName, string? secondValue)
+    [InlineData("sort", "unsupported", null, null)]
+    public async Task GetStackRollups_PaginationOrSortIsInvalid_ReturnsBadRequest(string firstName, string firstValue, string? secondName, string? secondValue)
     {
         await CreateStacksAndEventsAsync();
 
@@ -895,8 +958,7 @@ public partial class EventEndpointTests : IntegrationTestsBase
         {
             request
                 .AsGlobalAdminUser()
-                .AppendPath("events")
-                .QueryString("mode", "stack_frequent")
+                .AppendPath("stack-rollups")
                 .QueryString(firstName, firstValue);
 
             if (secondName is not null)
@@ -906,8 +968,39 @@ public partial class EventEndpointTests : IntegrationTestsBase
         });
     }
 
+    [Theory]
+    [InlineData("sort", "-users")]
+    [InlineData("filter", "status:fixed")]
+    [InlineData("time", "last 30 days")]
+    public async Task GetStackRollups_CursorQueryChanges_ReturnBadRequest(string changedParameter, string changedValue)
+    {
+        await CreateStacksAndEventsAsync();
+        string filter = $"project:{SampleDataService.FREE_PROJECT_ID} (status:open OR status:regressed)";
+
+        using var firstResponse = await SendRequestAsync(request => request
+            .AsGlobalAdminUser()
+            .AppendPath("stack-rollups")
+            .QueryString("filter", filter)
+            .QueryString("sort", "-total")
+            .QueryString("time", "last week")
+            .QueryString("limit", 1)
+            .StatusCodeShouldBeOk());
+        var links = ParseLinkHeaderValue(firstResponse.Headers.GetValues(HeaderNames.Link).ToArray());
+        string after = Assert.IsType<string>(GetQueryStringValue(links["next"], "after"));
+
+        await SendRequestAsync(request => request
+            .AsGlobalAdminUser()
+            .AppendPath("stack-rollups")
+            .QueryString("filter", changedParameter == "filter" ? changedValue : filter)
+            .QueryString("sort", changedParameter == "sort" ? changedValue : "-total")
+            .QueryString("time", changedParameter == "time" ? changedValue : "last week")
+            .QueryString("limit", 1)
+            .QueryString("after", after)
+            .StatusCodeShouldBeBadRequest());
+    }
+
     [Fact]
-    public async Task CanGetProjectLevelMostFrequentStackMode()
+    public async Task CanGetProjectLevelMostFrequentStackRollups()
     {
         await CreateStacksAndEventsAsync();
 
@@ -915,9 +1008,9 @@ public partial class EventEndpointTests : IntegrationTestsBase
 
         var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
             .AsTestOrganizationUser()
-            .AppendPaths("projects", projectId, "events")
+            .AppendPaths("projects", projectId, "stack-rollups")
             .QueryString("filter", $"project:{projectId} (status:open OR status:regressed)")
-            .QueryString("mode", "stack_frequent")
+            .QueryString("sort", "-total")
             .QueryString("offset", "-300m")
             .QueryString("limit", 20)
             .StatusCodeShouldBeOk()
@@ -928,7 +1021,7 @@ public partial class EventEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task CanGetFreeProjectLevelMostFrequentStackMode()
+    public async Task CanGetFreeProjectLevelMostFrequentStackRollups()
     {
         await CreateStacksAndEventsAsync();
 
@@ -939,9 +1032,9 @@ public partial class EventEndpointTests : IntegrationTestsBase
         string projectId = SampleDataService.FREE_PROJECT_ID;
         var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
             .AsFreeOrganizationUser()
-            .AppendPaths("projects", projectId, "events")
+            .AppendPaths("projects", projectId, "stack-rollups")
             .QueryString("filter", $"project:{projectId} (status:open OR status:regressed)")
-            .QueryString("mode", "stack_frequent")
+            .QueryString("sort", "-total")
             .QueryString("offset", "-300m")
             .QueryString("limit", 20)
             .StatusCodeShouldBeOk()
@@ -952,7 +1045,7 @@ public partial class EventEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task CanGetNewStackMode()
+    public async Task CanGetNewestStackRollups()
     {
         await CreateStacksAndEventsAsync();
 
@@ -962,9 +1055,9 @@ public partial class EventEndpointTests : IntegrationTestsBase
 
         var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
             .AsGlobalAdminUser()
-            .AppendPath("events")
+            .AppendPath("stack-rollups")
             .QueryString("filter", $"project:{SampleDataService.FREE_PROJECT_ID} (status:open OR status:regressed)")
-            .QueryString("mode", "stack_new")
+            .QueryString("sort", "-first_occurrence")
             //.QueryString("time", "last 12 hours")
             .StatusCodeShouldBeOk()
         );
@@ -974,15 +1067,15 @@ public partial class EventEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetRecentStackMode()
+    public async Task GetRecentStackRollups()
     {
         await CreateStacksAndEventsAsync();
 
         var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
             .AsGlobalAdminUser()
-            .AppendPath("events")
+            .AppendPath("stack-rollups")
             .QueryString("filter", $"project:{SampleDataService.TEST_PROJECT_ID} (status:open OR status:regressed)")
-            .QueryString("mode", "stack_recent")
+            .QueryString("sort", "-last_occurrence")
             .StatusCodeShouldBeOk()
         );
 
@@ -991,15 +1084,15 @@ public partial class EventEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetUsersStackMode()
+    public async Task GetMostUsersStackRollups()
     {
         await CreateStacksAndEventsAsync();
 
         var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
             .AsGlobalAdminUser()
-            .AppendPath("events")
+            .AppendPath("stack-rollups")
             .QueryString("filter", $"project:{SampleDataService.TEST_PROJECT_ID} type:error (status:open OR status:regressed)")
-            .QueryString("mode", "stack_users")
+            .QueryString("sort", "-users")
             .QueryString("offset", "-300m")
             .StatusCodeShouldBeOk()
         );
@@ -1171,18 +1264,18 @@ public partial class EventEndpointTests : IntegrationTestsBase
     [InlineData("type:log status:fixed version_fixed:1.2.3", 1)]
     [InlineData("1ecd0826e447a44e78877ab1", 0)] // Stack Id
     [InlineData("type:error", 1)]
-    public async Task CheckStackModeCounts(string filter, int expected)
+    public async Task CheckStackRollupCounts(string filter, int expected)
     {
         await CreateStacksAndEventsAsync();
 
-        string[] modes = ["stack_recent", "stack_frequent", "stack_new", "stack_users"];
-        foreach (string mode in modes)
+        string[] sorts = ["-last_occurrence", "-total", "-first_occurrence", "-users"];
+        foreach (string sort in sorts)
         {
             var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
                 .AsGlobalAdminUser()
-                .AppendPath("events")
+                .AppendPath("stack-rollups")
                 .QueryString("filter", filter)
-                .QueryString("mode", mode)
+                .QueryString("sort", sort)
                 .StatusCodeShouldBeOk()
             );
 
@@ -1192,9 +1285,9 @@ public partial class EventEndpointTests : IntegrationTestsBase
             // @! forces use of opposite of default filter inversion
             results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
                 .AsGlobalAdminUser()
-                .AppendPath("events")
+                .AppendPath("stack-rollups")
                 .QueryString("filter", $"@!{filter}")
-                .QueryString("mode", mode)
+                .QueryString("sort", sort)
                 .StatusCodeShouldBeOk()
             );
 
@@ -1316,7 +1409,7 @@ public partial class EventEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetEvents_StackFrequentMode_DeserializesStackSummaryModelWithRequiredFields()
+    public async Task GetStackRollups_DeserializesStackSummaryModelWithRequiredFields()
     {
         // Arrange
         await CreateStacksAndEventsAsync();
@@ -1324,9 +1417,9 @@ public partial class EventEndpointTests : IntegrationTestsBase
         // Act
         var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
             .AsGlobalAdminUser()
-            .AppendPath("events")
+            .AppendPath("stack-rollups")
             .QueryString("filter", "status:open")
-            .QueryString("mode", "stack_frequent")
+            .QueryString("sort", "-total")
             .StatusCodeShouldBeOk()
         );
 
@@ -1378,9 +1471,9 @@ public partial class EventEndpointTests : IntegrationTestsBase
 
         var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
             .AsGlobalAdminUser()
-            .AppendPath("events")
+            .AppendPath("stack-rollups")
             .QueryStringIf(() => !String.IsNullOrEmpty(filter), "filter", filter)
-            .QueryString("mode", "stack_new")
+            .QueryString("sort", "-first_occurrence")
             .StatusCodeShouldBeOk()
         );
 
@@ -1414,7 +1507,7 @@ public partial class EventEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task WillExcludeOldStacksForStackNewMode()
+    public async Task StackRollups_ExplicitFirstOccurrenceFilter_ExcludesOldStacks()
     {
         var utcNow = DateTime.UtcNow;
 
@@ -1480,49 +1573,37 @@ public partial class EventEndpointTests : IntegrationTestsBase
         Log.SetLogLevel<EventEndpointTests>(LogLevel.Trace);
         Log.SetLogLevel<EventStackFilterQueryBuilder>(LogLevel.Trace);
 
-        const string filter = "(status:open OR status:regressed)";
+        string filter = $"first_occurrence:[\"{utcNow.SubtractDays(7):O}\" TO \"{utcNow.AddMinutes(1):O}\"] (status:open OR status:regressed)";
         const string time = "last week";
 
         _logger.LogInformation("Running inverted query");
         var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
             .AsGlobalAdminUser()
-            .AppendPath("events")
+            .AppendPath("stack-rollups")
             .QueryString("filter", filter)
             .QueryString("time", time)
-            .QueryString("mode", "stack_new")
+            .QueryString("sort", "-first_occurrence")
             .StatusCodeShouldBeOk()
         );
 
         Assert.NotNull(results);
         Assert.Equal(2, results.Count);
 
-        _logger.LogInformation("Running normal count");
-        var countResult = await SendRequestAsAsync<CountResult>(r => r
+        _logger.LogInformation("Running stack rollup stats");
+        var statsResult = await SendRequestAsAsync<StackRollupStatsResult>(r => r
             .AsGlobalAdminUser()
-            .AppendPaths("events", "count")
+            .AppendPaths("stack-rollups", "stats")
             .QueryString("filter", filter)
             .QueryString("time", time)
-            .QueryString("mode", "stack_new")
-            .QueryString("aggregations", "date:(date cardinality:stack sum:count~1) cardinality:stack terms:(first @include:true) sum:count~1")
             .StatusCodeShouldBeOk()
         );
 
-        Assert.NotNull(countResult);
-        var dateAgg = countResult.Aggregations.DateHistogram("date_date");
-        Assert.NotNull(dateAgg);
-        Assert.NotNull(dateAgg.Buckets);
-        double dateAggStackCount = dateAgg.Buckets.Sum(t => t.Aggregations.Cardinality("cardinality_stack")?.Value.GetValueOrDefault() ?? 0);
-        double dateAggEventCount = dateAgg.Buckets.Sum(t => t.Aggregations.Cardinality("sum_count")?.Value.GetValueOrDefault() ?? 0);
-        Assert.Equal(2, dateAggStackCount);
-        Assert.Equal(2, dateAggEventCount);
-
-        double? total = countResult.Aggregations.Sum("sum_count")?.Value;
-        double newTotal = countResult.Aggregations.Terms<double>("terms_first")?.Buckets.FirstOrDefault()?.Total ?? 0;
-        double uniqueTotal = countResult.Aggregations.Cardinality("cardinality_stack")?.Value ?? 0;
-
-        Assert.Equal(2, total);
-        Assert.Equal(1, newTotal);
-        Assert.Equal(2, uniqueTotal);
+        Assert.NotNull(statsResult);
+        Assert.Equal(2, statsResult.Buckets.Sum(bucket => bucket.Stacks));
+        Assert.Equal(2, statsResult.Buckets.Sum(bucket => bucket.Events));
+        Assert.Equal(2, statsResult.TotalEvents);
+        Assert.Equal(1, statsResult.NewStacks);
+        Assert.Equal(2, statsResult.TotalStacks);
     }
 
     [Fact]

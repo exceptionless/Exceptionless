@@ -40,7 +40,7 @@
     import { getSavedViewsQuery, invalidateSavedViewQueries, isSavedViewDeleted } from '$features/saved-views/api.svelte';
     import { savedViewHref } from '$features/saved-views/slugs';
     import { appKeyboardShortcuts, isKeyboardShortcut } from '$features/shared/keyboard-shortcuts';
-    import { createProjectStackNotificationRefresher, invalidateStackQueries, type ProjectStackNotificationRefresher } from '$features/stacks/api.svelte';
+    import { createStackNotificationRefresher, invalidateStackQueries, type StackNotificationRefresher } from '$features/stacks/api.svelte';
     import { invalidateTokenQueries } from '$features/tokens/api.svelte';
     import { getMeQuery, invalidateUserQueries } from '$features/users/api.svelte';
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
@@ -290,7 +290,7 @@
     async function onMessage(
         message: MessageEvent,
         organizationEventRefresher: OrganizationEventNotificationRefresher,
-        projectStackRefresher: ProjectStackNotificationRefresher
+        stackRefresher: StackNotificationRefresher
     ) {
         const data: { message: unknown; type: WebSocketMessageType } = message.data ? JSON.parse(message.data) : null;
 
@@ -328,7 +328,7 @@
                     break;
                 case 'StackChanged':
                     organizationEventRefresher.schedule(data.message.organization_id, data.message.change_type !== ChangeType.Removed);
-                    projectStackRefresher.schedule(data.message.project_id, data.message.change_type !== ChangeType.Removed);
+                    stackRefresher.schedule(data.message.organization_id, data.message.project_id, data.message.change_type !== ChangeType.Removed);
                     await invalidateStackQueries(queryClient, data.message);
                     break;
                 case 'TokenChanged':
@@ -445,9 +445,9 @@
         });
 
         const organizationEventRefresher = createOrganizationEventNotificationRefresher(queryClient);
-        const projectStackRefresher = createProjectStackNotificationRefresher(queryClient);
+        const stackRefresher = createStackNotificationRefresher(queryClient);
         const ws = new WebSocketClient();
-        ws.onMessage = (message) => void onMessage(message, organizationEventRefresher, projectStackRefresher);
+        ws.onMessage = (message) => void onMessage(message, organizationEventRefresher, stackRefresher);
         ws.onOpen = (_, isReconnect) => {
             if (isReconnect) {
                 queryClient.invalidateQueries();
@@ -465,7 +465,7 @@
                 capture: true
             });
             organizationEventRefresher.cancel();
-            projectStackRefresher.cancel();
+            stackRefresher.cancel();
             ws?.close();
         };
     });

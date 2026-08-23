@@ -212,10 +212,10 @@
 
                     vm.mostFrequent = {
                         header: "Most Frequent",
-                        get: eventService.getAll,
+                        get: stackService.getRollups,
                         options: {
                             limit: 15,
-                            mode: "stack_frequent",
+                            sort: "-total",
                         },
                         source: vm._source + ".Events",
                     };
