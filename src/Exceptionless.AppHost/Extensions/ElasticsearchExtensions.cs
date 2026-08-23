@@ -56,7 +56,8 @@ public static class ElasticsearchBuilderExtensions
             .WithEnvironment("xpack.security.enabled", "false")
             .WithEnvironment("action.destructive_requires_name", "false")
             .WithEnvironment("ES_JAVA_OPTS", "-Xms1g -Xmx1g")
-            .WithHealthCheck(healthCheckKey);
+            .WithHealthCheck(healthCheckKey)
+            .PublishAsConnectionString();
     }
 
     public static IResourceBuilder<ElasticsearchResource> WithKibana(this IResourceBuilder<ElasticsearchResource> builder, Action<IResourceBuilder<KibanaResource>>? configureContainer = null, string? containerName = null)
