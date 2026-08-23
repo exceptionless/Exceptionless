@@ -11,6 +11,8 @@
 
     import { getDataTableColumnMeta, supportsColumnWrapping } from './column-meta';
     import DataTableColumnHeader from './data-table-column-header.svelte';
+    import { setDataTableLayoutContext } from './data-table-layout-context.svelte';
+    import DataTableScrollContainer from './data-table-scroll-container.svelte';
 
     interface Props {
         autoFillColumnId?: null | string;
@@ -26,6 +28,14 @@
 
     const selectColumnClass = 'w-8 min-w-8 max-w-8';
     const selectColumnWidth = 32;
+
+    setDataTableLayoutContext({
+        getFillerColumnCount
+    });
+
+    function getFillerColumnCount(): number {
+        return hasSelectColumn() && !getFlexibleDataColumnId() ? 1 : 0;
+    }
 
     function getHeaderColumnClass(header: Header<StockFeatures, TData, unknown>) {
         if (header.column.id === 'select') {
@@ -127,7 +137,7 @@
         }
 
         const minimumWidth = selectColumnWidth + getVisibleDataColumns().reduce((total, column) => total + column.getSize(), 0);
-        return getFlexibleDataColumnId() ? `min-width: ${minimumWidth}px;` : `width: ${minimumWidth}px; min-width: ${minimumWidth}px;`;
+        return getFlexibleDataColumnId() ? `min-width: ${minimumWidth}px;` : `width: 100%; min-width: ${minimumWidth}px;`;
     }
 
     function hasSelectColumn(): boolean {
@@ -281,7 +291,7 @@
     }
 </script>
 
-<div class="rounded-md border">
+<DataTableScrollContainer>
     <Table.Root class={hasSelectColumn() ? 'table-fixed' : undefined} style={getTableStyle()}>
         <Table.Header class="bg-card">
             {#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
@@ -310,6 +320,9 @@
                             {/if}
                         </Table.Head>
                     {/each}
+                    {#if getFillerColumnCount() > 0}
+                        <Table.Head aria-hidden="true" class="w-full p-0"></Table.Head>
+                    {/if}
                 </Table.Row>
             {/each}
         </Table.Header>
@@ -355,8 +368,11 @@
                             </Table.Cell>
                         {/if}
                     {/each}
+                    {#if getFillerColumnCount() > 0}
+                        <Table.Cell aria-hidden="true" class="w-full p-0"></Table.Cell>
+                    {/if}
                 </Table.Row>
             {/each}
         </Table.Body>
     </Table.Root>
-</div>
+</DataTableScrollContainer>

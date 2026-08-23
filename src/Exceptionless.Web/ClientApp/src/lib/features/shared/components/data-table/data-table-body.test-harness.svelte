@@ -8,12 +8,14 @@
     import { type ColumnSizingState, createTable, renderComponent } from '@tanstack/svelte-table';
 
     import DataTableBody from './data-table-body.svelte';
+    import DataTableEmpty from './data-table-empty.svelte';
 
     type TestSummary = EventSummaryModel<'event-error-summary'> | StackSummaryModel<'stack-error-summary'>;
 
     interface Props {
         allColumnsSized?: boolean;
         autoFillColumnId?: null | string;
+        empty?: boolean;
         fullWidthSummary?: boolean;
         kind: 'event' | 'stack';
         onAutoFillColumnResized?: (columnId: string) => void;
@@ -25,6 +27,7 @@
     let {
         allColumnsSized = false,
         autoFillColumnId,
+        empty = false,
         fullWidthSummary = false,
         kind,
         onAutoFillColumnResized,
@@ -120,7 +123,7 @@
             enableColumnResizing: true,
             paginationStrategy: 'memory',
             get queryData() {
-                return [summary];
+                return empty ? [] : [summary];
             },
             queryParameters
         })
@@ -134,4 +137,8 @@
     {wrappedColumnIds}
     rowHref={(row: SummaryModel<SummaryTemplateKeys>) => (kind === 'event' ? buildEventDetailsHref(row.id) : buildStackDetailsHref(row.id))}
     {table}
-/>
+>
+    {#if empty}
+        <DataTableEmpty {table} />
+    {/if}
+</DataTableBody>
