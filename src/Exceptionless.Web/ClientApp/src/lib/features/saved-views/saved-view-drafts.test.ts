@@ -13,6 +13,7 @@ import {
     buildWrappedColumnChanges,
     clearSavedViewDraft,
     getSavedViewDraft,
+    mergeFilterOverrides,
     saveSavedViewDraft
 } from './saved-view-drafts';
 
@@ -96,6 +97,16 @@ describe('saved view drafts', () => {
 
         expect(changes?.duplicateKeys).toEqual(['keyword']);
         expect(mergedFilters.map((filter) => (filter as KeywordFilter).value)).toEqual(['foo', 'remote', 'baz']);
+    });
+
+    it('lets explicit filter keys override a draft without dropping unrelated draft filters', () => {
+        const draftFilters = [new ProjectFilter(['saved-project']), new StatusFilter([StackStatus.Regressed])];
+        const currentUrlFilters = [new ProjectFilter(['url-project']), new StatusFilter([StackStatus.Open])];
+
+        const mergedFilters = mergeFilterOverrides(draftFilters, currentUrlFilters, ['project']);
+
+        expect((mergedFilters.find((filter) => filter.key === 'project') as ProjectFilter).value).toEqual(['url-project']);
+        expect((mergedFilters.find((filter) => filter.key === 'status') as StatusFilter).value).toEqual([StackStatus.Regressed]);
     });
 
     it('applies per-column changes over the latest server configuration', () => {

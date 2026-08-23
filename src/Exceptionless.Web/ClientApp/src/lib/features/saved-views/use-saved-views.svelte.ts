@@ -39,6 +39,7 @@ import {
     buildWrappedColumnChanges,
     clearSavedViewDraft,
     getSavedViewDraft,
+    mergeFilterOverrides,
     type SavedViewDraft,
     type SavedViewDraftIdentity,
     saveSavedViewDraft
@@ -305,30 +306,72 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         return applyTimeFilter(filters, getComparableSavedViewTime(view.time, options.defaultTime));
     }
 
-    function hasExplicitFilterOverrides(): boolean {
-        const filterParameterNames = [
-            'bot',
-            'filter',
-            'filters',
-            'first',
-            'level',
-            'project',
-            'reference',
-            'session',
-            'stack',
-            'status',
-            'tag',
-            'time',
-            'type',
-            'version'
-        ];
+    function getExplicitFilterOverrideKeys(serverFilters: IFilter[]): string[] {
+        const keys: string[] = [];
+        const queryParameterKeys = [
+            ['bot', 'boolean-bot'],
+            ['first', 'boolean-first'],
+            ['level', 'level'],
+            ['project', 'project'],
+            ['reference', 'reference'],
+            ['session', 'session'],
+            ['stack', 'string-stack'],
+            ['status', 'status'],
+            ['tag', 'tag'],
+            ['time', 'date-date'],
+            ['type', 'type'],
+            ['version', 'version-version']
+        ] as const;
+        const dedicatedQueryFilterKeys: string[] = queryParameterKeys.map(([, key]) => key);
+        const addKey = (key: string) => {
+            if (!keys.includes(key)) {
+                keys.push(key);
+            }
+        };
 
-        return filterParameterNames.some((name) => page.url.searchParams.has(name));
+        for (const [parameter, key] of queryParameterKeys) {
+            if (page.url.searchParams.has(parameter)) {
+                addKey(key);
+            }
+        }
+
+        if (page.url.searchParams.has('filter')) {
+            const filter = page.url.searchParams.get('filter') ?? '';
+            if (filter) {
+                for (const override of getFiltersFromCache(options.filterCacheKey(filter), filter)) {
+                    addKey(override.key);
+                }
+            } else {
+                for (const serverFilter of serverFilters) {
+                    if (serverFilter.type !== 'date' && !dedicatedQueryFilterKeys.includes(serverFilter.key)) {
+                        addKey(serverFilter.key);
+                    }
+                }
+            }
+        }
+
+        if (page.url.searchParams.has('filters')) {
+            const definitions = page.url.searchParams.get('filters');
+            if (definitions) {
+                try {
+                    for (const override of deserializeFilters(definitions)) {
+                        addKey(override.key);
+                    }
+                } catch {
+                    // Ignore malformed URL state and let the route's normal parsing handle it.
+                }
+            }
+        }
+
+        return keys;
     }
 
-    function applyDraftState(view: SavedView, draft: SavedViewDraft): void {
-        if (draft.filterChanges && options.applyFilters && !hasExplicitFilterOverrides()) {
-            options.applyFilters(applyFilterChanges(getServerFilters(view), draft.filterChanges));
+    function applyDraftState(view: SavedView, draft: SavedViewDraft, overrideKeys: string[]): void {
+        if (draft.filterChanges && options.applyFilters) {
+            const serverFilters = getServerFilters(view);
+            const draftFilters = applyFilterChanges(serverFilters, draft.filterChanges);
+            const currentFilters = options.getFilterDefinitions ? deserializeFilters(options.getFilterDefinitions()) : [];
+            options.applyFilters(mergeFilterOverrides(draftFilters, currentFilters, overrideKeys));
         }
 
         if (options.setColumnVisibility) {
@@ -356,14 +399,27 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
     }
 
-    function buildSavedViewDraft(view: SavedView, columnOrderBaseline: ColumnOrderState | undefined = hydratedColumnOrder): SavedViewDraft | undefined {
+    function buildSavedViewDraft(
+        view: SavedView,
+        columnOrderBaseline: ColumnOrderState | undefined = hydratedColumnOrder,
+        preserveExplicitFilterOverrides = false
+    ): SavedViewDraft | undefined {
         const draft: SavedViewDraft = {
             version: 1
         };
 
         if (options.getFilterDefinitions) {
-            const currentFilters = deserializeFilters(options.getFilterDefinitions());
-            draft.filterChanges = buildFilterChanges(getServerFilters(view), currentFilters);
+            const serverFilters = getServerFilters(view);
+            let currentFilters = deserializeFilters(options.getFilterDefinitions());
+            const currentFilterChanges = buildFilterChanges(serverFilters, currentFilters);
+            if (preserveExplicitFilterOverrides && currentFilterChanges) {
+                const identity = getDraftIdentity(view);
+                const storedDraft = identity ? getSavedViewDraft(identity) : undefined;
+                const storedDraftFilters = applyFilterChanges(serverFilters, storedDraft?.filterChanges);
+                currentFilters = mergeFilterOverrides(currentFilters, storedDraftFilters, activeFilterOverrideKeys);
+            }
+
+            draft.filterChanges = buildFilterChanges(serverFilters, currentFilters);
         }
 
         if (options.getColumnVisibility) {
@@ -423,6 +479,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     // Hydrate saved view state when a saved view loads. Query params remain URL overrides.
     // lastLoadedViewId prevents re-hydration on background refetches (which would stomp user edits).
     let lastLoadedViewId = '';
+    let activeFilterOverrideKeys = $state<string[]>([]);
     let appliedDraftKey = $state('');
     let pendingDraftKey = '';
     let hydratedColumnOrder = $state<ColumnOrderState>();
@@ -444,6 +501,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
                 }
 
                 lastLoadedViewId = '';
+                activeFilterOverrideKeys = [];
                 appliedDraftKey = '';
                 hydratedColumnOrder = undefined;
                 hydratedSavedView = undefined;
@@ -483,6 +541,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         lastLoadedViewId = view.id;
+        activeFilterOverrideKeys = [];
         hydratedColumnOrder = undefined;
         hydratedSavedView = view;
         hydratedSavedViewSignature = viewSignature;
@@ -521,13 +580,14 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         const draft = getSavedViewDraft(identity);
+        activeFilterOverrideKeys = getExplicitFilterOverrideKeys(getServerFilters(view));
         appliedDraftKey = draftKey;
         if (pendingDraftKey === draftKey) {
             pendingDraftKey = '';
         }
 
         if (draft) {
-            applyDraftState(view, draft);
+            applyDraftState(view, draft, activeFilterOverrideKeys);
         }
     }
 
@@ -612,7 +672,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
     const currentDraft = $derived.by(() => {
         const view = hydratedSavedView;
-        return view && activeSavedView?.id === view.id ? buildSavedViewDraft(view) : undefined;
+        return view && activeSavedView?.id === view.id ? buildSavedViewDraft(view, hydratedColumnOrder, true) : undefined;
     });
 
     async function persistDraftAfterStateSettles(
@@ -695,6 +755,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         options.queryParams.filters = null;
         setSortQueryParam(options.queryParams, null);
         setTimeQueryParam(options.queryParams, null);
+        activeFilterOverrideKeys = [];
         hydratedColumnOrder = undefined;
         applyColumnState(view);
         applyDisplayState(view);

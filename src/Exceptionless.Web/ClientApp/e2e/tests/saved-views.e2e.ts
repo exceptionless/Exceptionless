@@ -202,6 +202,25 @@ test('switching saved views preserves each view temporary filter overrides acros
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
     await expectColumnBefore(page, 'Summary', 'User');
 
+    await page.goto(`/next/event/${firstViewSlug}?project=${e2eScenario.projectId}`);
+    await expect(page.getByRole('heading', { name: firstViewName })).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`[?&]project=${escapeRegExp(e2eScenario.projectId)}(?:&|$)`));
+    await expect(
+        page
+            .getByRole('button', { name: /Date\s+Last 90 days/ })
+            .filter({ visible: true })
+            .first()
+    ).toBeVisible();
+    await page.reload();
+    await expect(
+        page
+            .getByRole('button', { name: /Date\s+Last 90 days/ })
+            .filter({ visible: true })
+            .first()
+    ).toBeVisible();
+    await secondViewLink.click();
+    await expect(page.getByRole('heading', { name: secondViewName })).toBeVisible();
+
     await firstViewLink.click();
     await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(firstViewSlug)}(?:[?#]|$)`));
     await expect(page.getByRole('heading', { name: firstViewName })).toBeVisible();

@@ -195,6 +195,18 @@ export function getSavedViewDraftStorageKey(identity: SavedViewDraftIdentity): s
     return `${STORAGE_PREFIX}${identity.userId}:${identity.organizationId}:${identity.savedViewId}`;
 }
 
+export function mergeFilterOverrides(baseFilters: IFilter[], overrideFilters: IFilter[], overrideKeys: Iterable<string>): IFilter[] {
+    const keys = new Set(overrideKeys);
+    if (keys.size === 0) {
+        return baseFilters.map((filter) => filter.clone());
+    }
+
+    return [
+        ...baseFilters.filter((filter) => !keys.has(filter.key)).map((filter) => filter.clone()),
+        ...overrideFilters.filter((filter) => keys.has(filter.key)).map((filter) => filter.clone())
+    ];
+}
+
 export function saveSavedViewDraft(identity: SavedViewDraftIdentity, draft: SavedViewDraft, storage: DraftStorage | undefined = getLocalStorage()): void {
     try {
         storage?.setItem(getSavedViewDraftStorageKey(identity), JSON.stringify(draft));
