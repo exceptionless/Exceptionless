@@ -58,7 +58,11 @@
 <nav bind:this={pagerElement} aria-label="Table pagination" class="ml-auto shrink-0">
     <ButtonGroup.Root aria-label="Pagination controls">
         <DataTablePageSize bind:value onPageSizeChange={scrollTableIntoView} {table} />
-        <ButtonGroup.Text aria-label={`Page ${currentPage} of ${totalPages}`} class="min-w-14 justify-center" title={`Page ${currentPage} of ${totalPages}`}>
+        <ButtonGroup.Text
+            aria-label={`Page ${currentPage} of ${totalPages}`}
+            class="min-w-14 justify-center select-none"
+            title={`Page ${currentPage} of ${totalPages}`}
+        >
             <Number value={currentPage} /> / <Number value={totalPages} />
         </ButtonGroup.Text>
         <Button

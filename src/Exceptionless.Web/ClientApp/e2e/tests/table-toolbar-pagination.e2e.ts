@@ -19,7 +19,9 @@ test('table toolbar remains accessible while moving between different-height res
     const toolbar = page.locator('[data-slot="data-table-footer"]');
     const pager = toolbar.getByRole('navigation', { name: 'Table pagination' });
     const grid = page.locator('[data-slot="data-table-body"]');
-    await expect(pager.getByLabel('Page 1 of 2')).toBeVisible({ timeout: 30_000 });
+    const pageIndicator = pager.getByLabel('Page 1 of 2');
+    await expect(pageIndicator).toBeVisible({ timeout: 30_000 });
+    expect(await pageIndicator.evaluate((element) => getComputedStyle(element).userSelect)).toBe('none');
 
     await expect(toolbar.getByRole('button', { name: /Bulk Actions/ })).toBeDisabled();
     await expect(toolbar.getByRole('button', { name: /Bulk Actions/ })).toHaveAttribute('title', 'Select one or more events to use bulk actions');

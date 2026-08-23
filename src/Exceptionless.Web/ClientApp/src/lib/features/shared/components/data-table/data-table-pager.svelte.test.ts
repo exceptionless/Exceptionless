@@ -32,6 +32,7 @@ describe('DataTablePager', () => {
         expect(toolbar?.classList.contains('p-2')).toBe(false);
         expect(toolbar?.contains(screen.getByRole('button', { name: 'Bulk Actions' }))).toBe(true);
         expect(toolbar?.contains(pager)).toBe(true);
+        expect(screen.getByLabelText('Page 1 of 3').classList.contains('select-none')).toBe(true);
     });
 
     it('keeps focus and scrolls the table to the start when changing pages', async () => {
