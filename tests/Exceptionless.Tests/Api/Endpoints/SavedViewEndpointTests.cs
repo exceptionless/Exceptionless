@@ -11,6 +11,7 @@ using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Models;
 using FluentRest;
 using Foundatio.Jobs;
+using Foundatio.Lock;
 using Foundatio.Repositories;
 using Xunit;
 
@@ -1538,6 +1539,60 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
 
         Assert.NotNull(persistedDefaults);
         Assert.Equal(sharedView.Id, persistedDefaults.UserDefault?.Id);
+    }
+
+    [Fact]
+    public async Task SavedViewDefaultUpdateAndDeletion_WaitForOrganizationDefaultLock()
+    {
+        var savedView = await CreateSavedViewAsync("Serialized Home", "status:open", "stacks");
+        Assert.NotNull(savedView);
+
+        var lockProvider = GetService<ILockProvider>();
+        string lockKey = $"saved-view-defaults:{SampleDataService.TEST_ORG_ID}";
+
+        var heldUpdateLock = await lockProvider.AcquireAsync(lockKey, TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(1));
+        var updateTask = SendRequestAsAsync<ViewSavedViewDefaults>(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-defaults", "user")
+            .Content(new UpdateSavedViewDefault { SavedViewId = savedView.Id })
+            .StatusCodeShouldBeOk()
+        );
+        try
+        {
+            await Task.Delay(100, TestCancellationToken);
+            Assert.False(updateTask.IsCompleted);
+        }
+        finally
+        {
+            await heldUpdateLock.DisposeAsync();
+        }
+
+        var defaults = await updateTask;
+        Assert.NotNull(defaults);
+        Assert.Equal(savedView.Id, defaults.UserDefault?.Id);
+
+        var heldDeleteLock = await lockProvider.AcquireAsync(lockKey, TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(1));
+        var deleteTask = SendRequestAsync(r => r
+            .Delete()
+            .AsGlobalAdminUser()
+            .AppendPaths("saved-views", savedView.Id)
+            .StatusCodeShouldBeAccepted()
+        );
+        try
+        {
+            await Task.Delay(100, TestCancellationToken);
+            Assert.False(deleteTask.IsCompleted);
+        }
+        finally
+        {
+            await heldDeleteLock.DisposeAsync();
+        }
+
+        await deleteTask;
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(user);
+        Assert.DoesNotContain(user.OrganizationPreferences, preference => preference.DefaultSavedViewId == savedView.Id);
     }
 
     [Fact]

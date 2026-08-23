@@ -2,6 +2,7 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Foundatio.Extensions.Hosting.Startup;
+using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Microsoft.Extensions.Logging;
@@ -18,11 +19,12 @@ public class OrganizationService : IStartupAction
     private readonly ITokenRepository _tokenRepository;
     private readonly IUserRepository _userRepository;
     private readonly IWebHookRepository _webHookRepository;
+    private readonly ILockProvider _lockProvider;
     private readonly IStripeBillingClient _stripeBillingClient;
     private readonly UsageService _usageService;
     private readonly ILogger _logger;
 
-    public OrganizationService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ISavedViewRepository savedViewRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, IStripeBillingClient stripeBillingClient, UsageService usageService, ILoggerFactory loggerFactory)
+    public OrganizationService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ISavedViewRepository savedViewRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, ILockProvider lockProvider, IStripeBillingClient stripeBillingClient, UsageService usageService, ILoggerFactory loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
@@ -30,6 +32,7 @@ public class OrganizationService : IStartupAction
         _tokenRepository = tokenRepository;
         _userRepository = userRepository;
         _webHookRepository = webHookRepository;
+        _lockProvider = lockProvider;
         _stripeBillingClient = stripeBillingClient;
         _usageService = usageService;
         _logger = loggerFactory.CreateLogger<OrganizationService>();
@@ -197,6 +200,8 @@ public class OrganizationService : IStartupAction
         if (savedViewIds.Count == 0)
             return 0;
 
+        await using var defaultsLock = await _lockProvider.AcquireAsync(GetSavedViewDefaultLockKey(organization.Id), TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30));
+
         if (organization.DefaultSavedViewId is not null && savedViewIds.Contains(organization.DefaultSavedViewId))
             organization.DefaultSavedViewId = null;
 
@@ -222,6 +227,8 @@ public class OrganizationService : IStartupAction
 
         return await _savedViewRepository.RemoveAllByOrganizationIdAsync(organization.Id);
     }
+
+    private static string GetSavedViewDefaultLockKey(string organizationId) => $"saved-view-defaults:{organizationId}";
 
     public Task<long> RemoveUserSavedViewsAsync(string organizationId, string userId)
     {
