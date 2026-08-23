@@ -93,6 +93,8 @@ public class OrganizationService : IStartupAction
                 {
                     _logger.LogInformation("Removing user {User} from organization: {OrganizationName} ({Organization})", user.Id, organization.Name, organization.Id);
                     user.OrganizationIds.Remove(organization.Id);
+                    foreach (var preference in user.OrganizationPreferences.Where(preference => String.Equals(preference.OrganizationId, organization.Id, StringComparison.Ordinal)).ToList())
+                        user.OrganizationPreferences.Remove(preference);
                     usersToUpdate.Add(user);
                 }
             }

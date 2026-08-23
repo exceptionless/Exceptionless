@@ -13,7 +13,7 @@ public sealed class OrganizationIndex : VersionedIndex<Organization>
     private const string KEYWORD_LOWERCASE_ANALYZER = "keyword_lowercase";
     private readonly ExceptionlessElasticConfiguration _configuration;
 
-    public OrganizationIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "organizations", 3)
+    public OrganizationIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "organizations", 4)
     {
         _configuration = configuration;
     }
@@ -25,6 +25,7 @@ public sealed class OrganizationIndex : VersionedIndex<Organization>
             .Properties(p => p
                 .SetupDefaults()
                 .Text(e => e.Name, t => t.AddKeywordField())
+                .Keyword(e => e.DefaultSavedViewId)
                 .Keyword(e => e.StripeCustomerId)
                 .Boolean(e => e.HasPremiumFeatures)
                 .Keyword(e => e.Features)

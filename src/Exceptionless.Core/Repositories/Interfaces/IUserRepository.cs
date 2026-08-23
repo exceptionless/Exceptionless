@@ -11,4 +11,5 @@ public interface IUserRepository : ISearchableRepository<User>
     Task<User?> GetUserByOAuthProviderAsync(string provider, string providerUserId);
     Task<User?> GetByVerifyEmailAddressTokenAsync(string token);
     Task<FindResults<User>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<User>? options = null);
+    Task<FindResults<User>> GetByDefaultSavedViewIdAsync(string savedViewId, CommandOptionsDescriptor<User>? options = null);
 }

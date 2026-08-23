@@ -71,6 +71,63 @@ public static class SavedViewEndpoints
             }
         });
 
+        group.MapGet("organizations/{organizationId:objectid}/saved-view-defaults", async (string organizationId, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
+            => (await mediator.InvokeAsync<Result<ViewSavedViewDefaults>>(new SavedViewMessages.GetSavedViewDefaults(organizationId))).ToHttpResult(resultMapper))
+        .Produces<ViewSavedViewDefaults>()
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .WithSummary("Get saved view defaults")
+        .WithMetadata(new EndpointDocumentation {
+            ParameterDescriptions = new() {
+                ["organizationId"] = "The identifier of the organization.",
+            },
+            ResponseDescriptions = new() {
+                ["200"] = "The current user's and organization's accessible saved view defaults.",
+                ["404"] = "The organization could not be found.",
+            }
+        });
+
+        group.MapPut("organizations/{organizationId:objectid}/saved-view-defaults/user", async (string organizationId, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper,
+            [FromBody] UpdateSavedViewDefault savedViewDefault)
+            => (await mediator.InvokeAsync<Result<ViewSavedViewDefaults>>(new SavedViewMessages.UpdateUserSavedViewDefault(organizationId, savedViewDefault))).ToHttpResult(resultMapper))
+        .Accepts<UpdateSavedViewDefault>("application/json", "application/*+json")
+        .Produces<ViewSavedViewDefaults>()
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .WithSummary("Update the current user's saved view default")
+        .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The personal saved view default. A null saved view identifier clears the preference.",
+            RequestBodyRequired = true,
+            ParameterDescriptions = new() {
+                ["organizationId"] = "The identifier of the organization.",
+            },
+            ResponseDescriptions = new() {
+                ["200"] = "The personal saved view default was updated.",
+                ["404"] = "The organization could not be found.",
+                ["422"] = "The saved view is not accessible in this organization.",
+            }
+        });
+
+        group.MapPut("organizations/{organizationId:objectid}/saved-view-defaults/organization", async (string organizationId, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper,
+            [FromBody] UpdateSavedViewDefault savedViewDefault)
+            => (await mediator.InvokeAsync<Result<ViewSavedViewDefaults>>(new SavedViewMessages.UpdateOrganizationSavedViewDefault(organizationId, savedViewDefault))).ToHttpResult(resultMapper))
+        .Accepts<UpdateSavedViewDefault>("application/json", "application/*+json")
+        .Produces<ViewSavedViewDefaults>()
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .WithSummary("Update the organization's saved view default")
+        .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The shared saved view default. A null saved view identifier clears the preference.",
+            RequestBodyRequired = true,
+            ParameterDescriptions = new() {
+                ["organizationId"] = "The identifier of the organization.",
+            },
+            ResponseDescriptions = new() {
+                ["200"] = "The organization saved view default was updated.",
+                ["404"] = "The organization could not be found.",
+                ["422"] = "The saved view is private or is not accessible in this organization.",
+            }
+        });
+
         group.MapPost("organizations/{organizationId:objectid}/saved-views", async (string organizationId, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper,
             [FromBody] NewSavedView savedView) =>
         {

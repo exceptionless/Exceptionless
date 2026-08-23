@@ -537,6 +537,7 @@ describe('useSavedViews', () => {
 
             await vi.advanceTimersByTimeAsync(SAVED_VIEW_REFRESH_DELAY_MS);
             expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.organization(TEST_ORG_ID) });
+            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.defaults(TEST_ORG_ID) });
         });
 
         it('delays invalidation for Saved events so optimistic caches stay visible', async () => {
@@ -558,6 +559,7 @@ describe('useSavedViews', () => {
 
             await vi.advanceTimersByTimeAsync(SAVED_VIEW_REFRESH_DELAY_MS);
             expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.organization(TEST_ORG_ID) });
+            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.defaults(TEST_ORG_ID) });
         });
 
         it('coalesces rapid saved view notifications until the latest refresh window', async () => {
@@ -586,8 +588,9 @@ describe('useSavedViews', () => {
             expect(invalidateSpy).not.toHaveBeenCalled();
 
             await vi.advanceTimersByTimeAsync(SAVED_VIEW_REFRESH_DELAY_MS - 1);
-            expect(invalidateSpy).toHaveBeenCalledOnce();
+            expect(invalidateSpy).toHaveBeenCalledTimes(2);
             expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.organization(TEST_ORG_ID) });
+            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.defaults(TEST_ORG_ID) });
         });
 
         it('removes from cache in-place for Removed events when view is cached', async () => {
@@ -640,8 +643,9 @@ describe('useSavedViews', () => {
             expect(invalidateSpy).not.toHaveBeenCalled();
 
             await vi.advanceTimersByTimeAsync(SAVED_VIEW_REFRESH_DELAY_MS);
-            expect(invalidateSpy).toHaveBeenCalledOnce();
+            expect(invalidateSpy).toHaveBeenCalledTimes(2);
             expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.organization(TEST_ORG_ID) });
+            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.defaults(TEST_ORG_ID) });
         });
 
         it('falls back to invalidation for Removed events when view is not cached', async () => {

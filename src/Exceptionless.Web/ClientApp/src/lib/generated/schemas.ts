@@ -649,6 +649,17 @@ export const UpdateSavedViewSchema = object({
 });
 export type UpdateSavedViewFormData = Infer<typeof UpdateSavedViewSchema>;
 
+export const UpdateSavedViewDefaultSchema = object({
+  saved_view_id: string()
+    .length(24, "Saved view id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "Saved view id has invalid format")
+    .nullable()
+    .optional(),
+});
+export type UpdateSavedViewDefaultFormData = Infer<
+  typeof UpdateSavedViewDefaultSchema
+>;
+
 export const UpdateTokenSchema = object({
   is_disabled: boolean().optional(),
   notes: string().min(1, "Notes is required").nullable().optional(),
@@ -695,6 +706,9 @@ export const UserSchema = object({
     .optional(),
   password_reset_token_expiration: iso.datetime(),
   o_auth_accounts: array(lazy(() => OAuthAccountSchema)),
+  organization_preferences: array(
+    lazy(() => UserOrganizationPreferenceSchema),
+  ),
   full_name: string().min(1, "Full name is required"),
   email_address: email(),
   avatar_file_name: string()
@@ -722,6 +736,18 @@ export const UserDescriptionSchema = object({
   data: record(string(), unknown()).nullable().optional(),
 });
 export type UserDescriptionFormData = Infer<typeof UserDescriptionSchema>;
+
+export const UserOrganizationPreferenceSchema = object({
+  organization_id: string()
+    .length(24, "Organization id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "Organization id has invalid format"),
+  default_saved_view_id: string()
+    .length(24, "Default saved view id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "Default saved view id has invalid format"),
+});
+export type UserOrganizationPreferenceFormData = Infer<
+  typeof UserOrganizationPreferenceSchema
+>;
 
 export const ViewCurrentUserSchema = object({
   hash: string().min(1, "Hash is required").nullable().optional(),
@@ -884,6 +910,14 @@ export const ViewSavedViewSchema = object({
   updated_utc: iso.datetime(),
 });
 export type ViewSavedViewFormData = Infer<typeof ViewSavedViewSchema>;
+
+export const ViewSavedViewDefaultsSchema = object({
+  user_default: lazy(() => ViewSavedViewSchema).optional(),
+  organization_default: lazy(() => ViewSavedViewSchema).optional(),
+});
+export type ViewSavedViewDefaultsFormData = Infer<
+  typeof ViewSavedViewDefaultsSchema
+>;
 
 export const ViewTokenSchema = object({
   id: string()

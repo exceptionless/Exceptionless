@@ -12,7 +12,7 @@ public sealed class UserIndex : VersionedIndex<User>
     private const string KEYWORD_LOWERCASE_ANALYZER = "keyword_lowercase";
     private readonly ExceptionlessElasticConfiguration _configuration;
 
-    public UserIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "users", 1)
+    public UserIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "users", 2)
     {
         _configuration = configuration;
     }
@@ -32,6 +32,9 @@ public sealed class UserIndex : VersionedIndex<User>
                 .Keyword(e => e.PasswordResetToken)
                 .Date(e => e.PasswordResetTokenExpiration)
                 .Keyword(e => e.Roles)
+                .Object(e => e.OrganizationPreferences, o => o.Properties(mp => mp
+                    .Keyword("organization_id")
+                    .Keyword("default_saved_view_id")))
                 .Object(e => e.OAuthAccounts, o => o.Properties(mp => mp
                     .Keyword("provider")
                     .Keyword("provider_user_id")

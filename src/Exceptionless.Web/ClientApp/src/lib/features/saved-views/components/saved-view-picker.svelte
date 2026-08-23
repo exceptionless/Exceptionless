@@ -15,7 +15,9 @@
     import { serializeFilters } from '$features/events/components/filters/helpers.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { supportsColumnWrapping } from '$features/shared/components/data-table/column-meta';
+    import Building2 from '@lucide/svelte/icons/building-2';
     import Columns3 from '@lucide/svelte/icons/columns-3';
+    import House from '@lucide/svelte/icons/house';
     import Pencil from '@lucide/svelte/icons/pencil';
     import Plus from '@lucide/svelte/icons/plus';
     import Save from '@lucide/svelte/icons/save';
@@ -28,7 +30,16 @@
     import type { AutoFillColumnSelection, WrappedColumnIds } from '../column-settings';
     import type { NewSavedView, SavedView, UpdateSavedView } from '../models';
 
-    import { deleteSavedView, markSavedViewDeleted, patchSavedView, postSavedView, restoreDeletedSavedView } from '../api.svelte';
+    import {
+        deleteSavedView,
+        getSavedViewDefaultsQuery,
+        markSavedViewDeleted,
+        patchSavedView,
+        postSavedView,
+        putOrganizationSavedViewDefault,
+        putUserSavedViewDefault,
+        restoreDeletedSavedView
+    } from '../api.svelte';
     import { buildColumnSettings } from '../column-settings';
     import ColumnManagementDialog from './column-management-dialog.svelte';
     import DeleteViewDialog from './delete-view-dialog.svelte';
@@ -105,6 +116,7 @@
     let viewToDelete = $state<null | SavedView>(null);
 
     const organizationId = $derived(organization.current);
+    const activeView = $derived(activeSavedView);
 
     const createMutation = postSavedView({
         route: {
@@ -127,8 +139,37 @@
             }
         }
     });
+    const defaultsQuery = getSavedViewDefaultsQuery({
+        route: {
+            get organizationId() {
+                return organizationId;
+            }
+        }
+    });
+    const userDefaultMutation = putUserSavedViewDefault({
+        route: {
+            get organizationId() {
+                return organizationId;
+            }
+        }
+    });
+    const organizationDefaultMutation = putOrganizationSavedViewDefault({
+        route: {
+            get organizationId() {
+                return organizationId;
+            }
+        }
+    });
 
-    const saving = $derived(createMutation.isPending || updateMutation.isPending || removeMutation.isPending);
+    const saving = $derived(
+        createMutation.isPending ||
+            updateMutation.isPending ||
+            removeMutation.isPending ||
+            userDefaultMutation.isPending ||
+            organizationDefaultMutation.isPending
+    );
+    const isUserDefault = $derived(!!activeView && defaultsQuery.data?.user_default?.id === activeView.id);
+    const isOrganizationDefault = $derived(!!activeView && defaultsQuery.data?.organization_default?.id === activeView.id);
     const currentFilterString = $derived(toFilter(filters.filter((f) => f.type !== 'date')));
 
     // Auto-detect if current filters match an existing saved view for "load existing" hint
@@ -153,8 +194,6 @@
             return true;
         });
     });
-
-    const activeView = $derived(activeSavedView);
 
     const reorderableColumns = $derived(table.getAllLeafColumns().filter((column) => column.id !== 'select'));
 
@@ -265,6 +304,38 @@
         }
     }
 
+    async function toggleUserDefault(): Promise<void> {
+        if (!activeView || !organizationId) {
+            return;
+        }
+
+        const clearingDefault = isUserDefault;
+        try {
+            await userDefaultMutation.mutateAsync({
+                saved_view_id: clearingDefault ? null : activeView.id
+            });
+            toast.success(clearingDefault ? 'Personal home view cleared.' : `"${activeView.name}" is now your home view.`);
+        } catch (error) {
+            toast.error(getErrorMessage(error, 'Failed to update your home view. Please try again.'));
+        }
+    }
+
+    async function toggleOrganizationDefault(): Promise<void> {
+        if (!activeView || activeView.user_id || !organizationId) {
+            return;
+        }
+
+        const clearingDefault = isOrganizationDefault;
+        try {
+            await organizationDefaultMutation.mutateAsync({
+                saved_view_id: clearingDefault ? null : activeView.id
+            });
+            toast.success(clearingDefault ? 'Organization home view cleared.' : `"${activeView.name}" is now the organization home view.`);
+        } catch (error) {
+            toast.error(getErrorMessage(error, 'Failed to update the organization home view. Please try again.'));
+        }
+    }
+
     async function handleDelete() {
         if (!viewToDelete || !organizationId) {
             return;
@@ -329,13 +400,31 @@
                     <Undo2 class="mr-2 size-4" aria-hidden="true" />
                     Reset to Saved
                 </DropdownMenu.Item>
-                <DropdownMenu.Separator />
+            {/if}
+        </DropdownMenu.Group>
+        {#if activeView}
+            <DropdownMenu.Separator />
+            <DropdownMenu.Group>
+                <DropdownMenu.Label>Home</DropdownMenu.Label>
+                <DropdownMenu.Item disabled={saving} onclick={toggleUserDefault}>
+                    <House class="mr-2 size-4" aria-hidden="true" />
+                    {isUserDefault ? 'Clear my home view' : 'Set as my home view'}
+                </DropdownMenu.Item>
+                {#if !activeView.user_id}
+                    <DropdownMenu.Item disabled={saving} onclick={toggleOrganizationDefault}>
+                        <Building2 class="mr-2 size-4" aria-hidden="true" />
+                        {isOrganizationDefault ? 'Clear organization home' : 'Set as organization home'}
+                    </DropdownMenu.Item>
+                {/if}
+            </DropdownMenu.Group>
+            <DropdownMenu.Separator />
+            <DropdownMenu.Group>
                 <DropdownMenu.Item class="text-destructive" onclick={() => openDeleteDialog(activeView)}>
                     <Trash2 class="mr-2 size-4" aria-hidden="true" />
                     Delete "{activeView.name}"
                 </DropdownMenu.Item>
-            {/if}
-        </DropdownMenu.Group>
+            </DropdownMenu.Group>
+        {/if}
         {#if setShowStats || setShowChart}
             <DropdownMenu.Separator />
             <DropdownMenu.Group>
