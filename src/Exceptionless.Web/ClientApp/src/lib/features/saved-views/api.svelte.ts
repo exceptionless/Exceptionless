@@ -280,7 +280,11 @@ export function removeSavedViewFromCaches(queryClient: QueryClient, savedView: S
     queryClient.setQueryData(queryKeys.organization(organizationId), evict);
     queryClient.setQueriesData<SavedView[]>(
         {
-            queryKey: queryKeys.type
+            predicate: (query) =>
+                query.queryKey[0] === queryKeys.type[0] &&
+                query.queryKey[1] === 'organization' &&
+                query.queryKey[2] === organizationId &&
+                query.queryKey[3] === 'view'
         },
         evict
     );

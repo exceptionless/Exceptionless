@@ -738,6 +738,22 @@ describe('useSavedViews', () => {
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'stacks'))).toEqual([otherView]);
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'events'))).toEqual([otherView]);
         });
+
+        it('leaves the saved-view defaults object unchanged when removing list entries', () => {
+            // Arrange
+            const queryClient = new QueryClient();
+            const deletedView = buildSavedView({ id: 'view-1', name: 'Deleted View' });
+            const defaults = { organization_default: deletedView };
+
+            queryClient.setQueryData(queryKeys.organization(TEST_ORG_ID), [deletedView]);
+            queryClient.setQueryData(queryKeys.defaults(TEST_ORG_ID), defaults);
+
+            // Act
+            removeSavedViewFromCaches(queryClient, deletedView, TEST_ORG_ID);
+
+            // Assert
+            expect(queryClient.getQueryData(queryKeys.defaults(TEST_ORG_ID))).toEqual(defaults);
+        });
     });
 
     describe('rename cache update pattern', () => {
