@@ -44,8 +44,6 @@ describe('createStackNotificationRefresher', () => {
         expect(invalidateSpy).toHaveBeenCalledTimes(2);
         const reconciliation = invalidateSpy.mock.calls[1]?.[0];
         expect(reconciliation?.predicate?.({ queryKey: queryKeys.project('project-id') } as never)).toBe(true);
-        expect(reconciliation?.predicate?.({ queryKey: queryKeys.organizationRollups('organization-id') } as never)).toBe(true);
-        expect(reconciliation?.predicate?.({ queryKey: queryKeys.organizationRollupsStats('organization-id') } as never)).toBe(true);
     });
 
     it('refreshes matching active project lists immediately and at most once per throttle window', async () => {
@@ -68,8 +66,6 @@ describe('createStackNotificationRefresher', () => {
         expect(firstInvalidation?.refetchType).toBe('active');
         expect(firstInvalidation?.predicate?.({ queryKey: queryKeys.project('project-id') } as never)).toBe(true);
         expect(firstInvalidation?.predicate?.({ queryKey: queryKeys.project('other-project-id') } as never)).toBe(false);
-        expect(firstInvalidation?.predicate?.({ queryKey: queryKeys.organizationRollups('organization-id') } as never)).toBe(true);
-        expect(firstInvalidation?.predicate?.({ queryKey: queryKeys.organizationRollups('other-organization-id') } as never)).toBe(false);
         expect(firstInvalidation?.predicate?.({ queryKey: queryKeys.id('stack-id') } as never)).toBe(false);
 
         await vi.advanceTimersByTimeAsync(STACK_NOTIFICATION_THROTTLE_MS - 1);
@@ -80,8 +76,6 @@ describe('createStackNotificationRefresher', () => {
         const trailingInvalidation = invalidateSpy.mock.calls[1]?.[0];
         expect(trailingInvalidation?.predicate?.({ queryKey: queryKeys.project('project-id') } as never)).toBe(true);
         expect(trailingInvalidation?.predicate?.({ queryKey: queryKeys.project('other-project-id') } as never)).toBe(true);
-        expect(trailingInvalidation?.predicate?.({ queryKey: queryKeys.organizationRollups('organization-id') } as never)).toBe(true);
-        expect(trailingInvalidation?.predicate?.({ queryKey: queryKeys.organizationRollups('other-organization-id') } as never)).toBe(true);
 
         refresher.schedule('organization-id', 'project-id');
         expect(invalidateSpy).toHaveBeenCalledTimes(3);

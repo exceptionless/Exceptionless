@@ -7635,580 +7635,6 @@
         }
       }
     },
-    "/api/v2/stack-rollups/stats": {
-      "get": {
-        "tags": [
-          "Stack"
-        ],
-        "summary": "Get stack rollup statistics",
-        "parameters": [
-          {
-            "name": "filter",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "time",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StackRollupStatsResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "426": {
-            "description": "Upgrade Required",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v2/organizations/{organizationId}/stack-rollups/stats": {
-      "get": {
-        "tags": [
-          "Stack"
-        ],
-        "summary": "Get stack rollup statistics by organization",
-        "parameters": [
-          {
-            "name": "organizationId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "pattern": "^[a-zA-Z\\d]{24,36}$",
-              "type": "string"
-            }
-          },
-          {
-            "name": "filter",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "time",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StackRollupStatsResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "426": {
-            "description": "Upgrade Required",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v2/projects/{projectId}/stack-rollups/stats": {
-      "get": {
-        "tags": [
-          "Stack"
-        ],
-        "summary": "Get stack rollup statistics by project",
-        "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "pattern": "^[a-zA-Z\\d]{24,36}$",
-              "type": "string"
-            }
-          },
-          {
-            "name": "filter",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "time",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StackRollupStatsResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "426": {
-            "description": "Upgrade Required",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v2/stack-rollups": {
-      "get": {
-        "tags": [
-          "Stack"
-        ],
-        "summary": "Get stack rollups",
-        "parameters": [
-          {
-            "name": "filter",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "sort",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "time",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "default": 10
-            }
-          },
-          {
-            "name": "before",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "after",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "include",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/StackSummaryModel"
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "426": {
-            "description": "Upgrade Required",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v2/organizations/{organizationId}/stack-rollups": {
-      "get": {
-        "tags": [
-          "Stack"
-        ],
-        "summary": "Get stack rollups by organization",
-        "parameters": [
-          {
-            "name": "organizationId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "pattern": "^[a-zA-Z\\d]{24,36}$",
-              "type": "string"
-            }
-          },
-          {
-            "name": "filter",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "sort",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "time",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "default": 10
-            }
-          },
-          {
-            "name": "before",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "after",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "include",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/StackSummaryModel"
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "426": {
-            "description": "Upgrade Required",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v2/projects/{projectId}/stack-rollups": {
-      "get": {
-        "tags": [
-          "Stack"
-        ],
-        "summary": "Get stack rollups by project",
-        "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "pattern": "^[a-zA-Z\\d]{24,36}$",
-              "type": "string"
-            }
-          },
-          {
-            "name": "filter",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "sort",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "time",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "default": 10
-            }
-          },
-          {
-            "name": "before",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "after",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "include",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/StackSummaryModel"
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "426": {
-            "description": "Upgrade Required",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v2/oauth/authorize": {
       "get": {
         "tags": [
@@ -8563,6 +7989,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "mode",
+            "in": "query",
+            "description": "Set to stack to calculate the stack-list dashboard metrics with a lookup join.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -8647,6 +8081,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "mode",
+            "in": "query",
+            "description": "Set to stack to calculate the stack-list dashboard metrics with a lookup join.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -8728,6 +8170,14 @@
             "name": "offset",
             "in": "query",
             "description": "The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mode",
+            "in": "query",
+            "description": "Set to stack to calculate the stack-list dashboard metrics with a lookup join.",
             "schema": {
               "type": "string"
             }
@@ -8896,7 +8346,7 @@
           {
             "name": "mode",
             "in": "query",
-            "description": "If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.",
+            "description": "If no mode is set, the whole event object is returned. Summary returns a lightweight event object; stack returns event metrics grouped into stack summaries.",
             "schema": {
               "type": "string"
             }
@@ -9100,7 +8550,7 @@
           {
             "name": "mode",
             "in": "query",
-            "description": "If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.",
+            "description": "If no mode is set, the whole event object is returned. Summary returns a lightweight event object; stack returns event metrics grouped into stack summaries.",
             "schema": {
               "type": "string"
             }
@@ -9248,7 +8698,7 @@
           {
             "name": "mode",
             "in": "query",
-            "description": "If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.",
+            "description": "If no mode is set, the whole event object is returned. Summary returns a lightweight event object; stack returns event metrics grouped into stack summaries.",
             "schema": {
               "type": "string"
             }
@@ -9472,7 +8922,7 @@
           {
             "name": "mode",
             "in": "query",
-            "description": "If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.",
+            "description": "If no mode is set, the whole event object is returned. Summary returns a lightweight event object; stack returns event metrics grouped into stack summaries.",
             "schema": {
               "type": "string"
             }
@@ -9596,7 +9046,7 @@
           {
             "name": "mode",
             "in": "query",
-            "description": "If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.",
+            "description": "If no mode is set, the whole event object is returned. Summary returns a lightweight event object; stack returns event metrics grouped into stack summaries.",
             "schema": {
               "type": "string"
             }
@@ -9720,7 +9170,7 @@
           {
             "name": "mode",
             "in": "query",
-            "description": "If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.",
+            "description": "If no mode is set, the whole event object is returned. Summary returns a lightweight event object; stack returns event metrics grouped into stack summaries.",
             "schema": {
               "type": "string"
             }
@@ -9868,7 +9318,7 @@
           {
             "name": "mode",
             "in": "query",
-            "description": "If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.",
+            "description": "If no mode is set, the whole event object is returned. Summary returns a lightweight event object; stack returns event metrics grouped into stack summaries.",
             "schema": {
               "type": "string"
             }
@@ -10016,7 +9466,7 @@
           {
             "name": "mode",
             "in": "query",
-            "description": "If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.",
+            "description": "If no mode is set, the whole event object is returned. Summary returns a lightweight event object; stack returns event metrics grouped into stack summaries.",
             "schema": {
               "type": "string"
             }
@@ -10154,7 +9604,7 @@
           {
             "name": "mode",
             "in": "query",
-            "description": "If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.",
+            "description": "If no mode is set, the whole event object is returned. Summary returns a lightweight event object; stack returns event metrics grouped into stack summaries.",
             "schema": {
               "type": "string"
             }
@@ -10292,7 +9742,7 @@
           {
             "name": "mode",
             "in": "query",
-            "description": "If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.",
+            "description": "If no mode is set, the whole event object is returned. Summary returns a lightweight event object; stack returns event metrics grouped into stack summaries.",
             "schema": {
               "type": "string"
             }
@@ -10440,7 +9890,7 @@
           {
             "name": "mode",
             "in": "query",
-            "description": "If no mode is set then the whole event object will be returned. If the mode is set to summary than a lightweight object will be returned.",
+            "description": "If no mode is set, the whole event object is returned. Summary returns a lightweight event object; stack returns event metrics grouped into stack summaries.",
             "schema": {
               "type": "string"
             }
@@ -13569,57 +13019,6 @@
           }
         }
       },
-      "StackRollupStatsBucket": {
-        "required": [
-          "date",
-          "events",
-          "stacks"
-        ],
-        "type": "object",
-        "properties": {
-          "date": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "events": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "stacks": {
-            "type": "integer",
-            "format": "int64"
-          }
-        }
-      },
-      "StackRollupStatsResult": {
-        "required": [
-          "total_events",
-          "total_stacks",
-          "new_stacks",
-          "buckets"
-        ],
-        "type": "object",
-        "properties": {
-          "total_events": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "total_stacks": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "new_stacks": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "buckets": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/StackRollupStatsBucket"
-            }
-          }
-        }
-      },
       "StackStatus": {
         "enum": [
           "open",
@@ -13637,72 +13036,6 @@
           "Ignored",
           "Discarded"
         ]
-      },
-      "StackSummaryModel": {
-        "required": [
-          "title",
-          "id",
-          "template_key",
-          "project_id",
-          "tags",
-          "status",
-          "first_occurrence",
-          "last_occurrence",
-          "total",
-          "users",
-          "total_users"
-        ],
-        "type": "object",
-        "properties": {
-          "project_id": {
-            "type": "string"
-          },
-          "project_name": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "title": {
-            "type": "string"
-          },
-          "status": {
-            "$ref": "#/components/schemas/StackStatus"
-          },
-          "first_occurrence": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "last_occurrence": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "total": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "users": {
-            "type": "number",
-            "format": "double"
-          },
-          "total_users": {
-            "type": "number",
-            "format": "double"
-          },
-          "id": {
-            "type": "string"
-          },
-          "template_key": {
-            "type": "string"
-          },
-          "data": {}
-        }
       },
       "StringValueFromBody": {
         "required": [

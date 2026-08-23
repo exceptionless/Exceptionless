@@ -152,7 +152,7 @@
     const stackSearchQuery = createQuery<FetchClientResponse<StackSummaryModel<SummaryTemplateKeys>[]>, ProblemDetails>(() => ({
         enabled: () => open && !selectingProject && !!accessToken.current && !!organization.current && hasSearchText,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
-            return client.getJSON<StackSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/stack-rollups`, {
+            return client.getJSON<StackSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, {
                 params: {
                     ...(DEFAULT_OFFSET
                         ? {
@@ -161,6 +161,7 @@
                         : {}),
                     filter: debouncedSearchText,
                     limit: COMMAND_SEARCH_REQUEST_LIMIT,
+                    mode: 'stack',
                     sort: '-total',
                     time: COMMAND_SEARCH_TIME_RANGE
                 },

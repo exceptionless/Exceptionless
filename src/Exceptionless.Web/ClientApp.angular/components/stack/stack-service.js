@@ -40,17 +40,18 @@
                           return o;
                       };
                 var mergedOptions = optionsCallback(filterService.apply(options));
+                mergedOptions.mode = "stack";
                 var organization = filterService.getOrganizationId();
                 if (organization) {
-                    return Restangular.one("organizations", organization).all("stack-rollups").getList(mergedOptions);
+                    return Restangular.one("organizations", organization).all("events").getList(mergedOptions);
                 }
 
                 var project = filterService.getProjectId();
                 if (project) {
-                    return Restangular.one("projects", project).all("stack-rollups").getList(mergedOptions);
+                    return Restangular.one("projects", project).all("events").getList(mergedOptions);
                 }
 
-                return Restangular.all("stack-rollups").getList(mergedOptions);
+                return Restangular.all("events").getList(mergedOptions);
             }
 
             function markCritical(id) {

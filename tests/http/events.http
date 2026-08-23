@@ -26,13 +26,13 @@ GET {{apiUrl}}/events?limit=1
 Authorization: Bearer {{token}}
 
 ### Stack summaries (includes project and tags)
-GET {{apiUrl}}/stack-rollups?sort=-total&limit=10
+GET {{apiUrl}}/events?mode=stack&sort=-total&limit=10
 Authorization: Bearer {{token}}
 
 ###
 
 ### Stack summaries with cursor paging (copy the after value from the Link response header)
-GET {{apiUrl}}/stack-rollups?sort=-total&limit=10&after={{after}}
+GET {{apiUrl}}/events?mode=stack&sort=-total&limit=10&after={{after}}
 Authorization: Bearer {{token}}
 
 ###

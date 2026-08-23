@@ -87,6 +87,8 @@ describe('createOrganizationEventNotificationRefresher', () => {
         expect(firstInvalidation?.refetchType).toBe('active');
         expect(firstInvalidation?.predicate?.({ queryKey: queryKeys.organizationsEvents('organization-id') } as never)).toBe(true);
         expect(firstInvalidation?.predicate?.({ queryKey: queryKeys.organizationsCount('organization-id') } as never)).toBe(true);
+        expect(firstInvalidation?.predicate?.({ queryKey: queryKeys.organizationsEvents('organization-id', { mode: 'stack' }) } as never)).toBe(false);
+        expect(firstInvalidation?.predicate?.({ queryKey: queryKeys.organizationsCount('organization-id', { mode: 'stack' }) } as never)).toBe(true);
         expect(firstInvalidation?.predicate?.({ queryKey: queryKeys.organizationsEvents('other-organization-id') } as never)).toBe(false);
         expect(firstInvalidation?.predicate?.({ queryKey: queryKeys.id('event-id') } as never)).toBe(false);
 
@@ -104,6 +106,23 @@ describe('createOrganizationEventNotificationRefresher', () => {
         refresher.cancel();
         await vi.advanceTimersByTimeAsync(ORGANIZATION_EVENT_NOTIFICATION_THROTTLE_MS);
         expect(invalidateSpy).toHaveBeenCalledTimes(3);
+    });
+
+    it('includes stack-mode lists only when scheduled by a stack notification', async () => {
+        // Arrange
+        vi.useFakeTimers();
+        const queryClient = new QueryClient();
+        const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries').mockImplementation(async () => {});
+        const refresher = createOrganizationEventNotificationRefresher(queryClient);
+
+        // Act
+        refresher.schedule('organization-id', true, true);
+
+        // Assert
+        const invalidation = invalidateSpy.mock.calls[0]?.[0];
+        expect(invalidation?.predicate?.({ queryKey: queryKeys.organizationsEvents('organization-id', { mode: 'stack' }) } as never)).toBe(true);
+
+        refresher.cancel();
     });
 });
 

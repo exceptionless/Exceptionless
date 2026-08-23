@@ -9,7 +9,12 @@
     import RefreshButton from '$comp/refresh-button.svelte';
     import { H3 } from '$comp/typography';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
-    import { PERSISTENT_EVENT_DELETE_RECONCILE_EVENT } from '$features/events/api.svelte';
+    import {
+        type GetEventsParams,
+        getOrganizationCountQuery,
+        getOrganizationEventsQuery,
+        PERSISTENT_EVENT_DELETE_RECONCILE_EVENT
+    } from '$features/events/api.svelte';
     import EventsDashboardChart from '$features/events/components/events-dashboard-chart.svelte';
     import EventsStatsDashboard from '$features/events/components/events-stats-dashboard.svelte';
     import {
@@ -45,10 +50,10 @@
     import { premiumPage } from '$features/organizations/premium-page.svelte';
     import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
     import { useSavedViews } from '$features/saved-views/use-saved-views.svelte';
+    import * as agg from '$features/shared/api/aggregations';
     import { createPageSizePreference, getSharedTableOptions, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
     import { fillDateSeries } from '$features/shared/utils/charts';
     import { parseDateMathRange, toDateMathRange } from '$features/shared/utils/datemath';
-    import { getOrganizationStackRollupsQuery, getOrganizationStackRollupStatsQuery, type GetStackRollupsParams } from '$features/stacks/api.svelte';
     import StackDetailSheet from '$features/stacks/components/stack-detail-sheet.svelte';
     import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/stacks-bulk-actions-dropdown-menu.svelte';
     import { StackStatus } from '$features/stacks/models';
@@ -610,7 +615,7 @@
         }
     });
 
-    const stackRollupQueryParameters: GetStackRollupsParams = $state({
+    const stackQueryParameters: GetEventsParams = $state({
         get after() {
             return queryParams.after ?? undefined;
         },
@@ -635,6 +640,7 @@
         set limit(value) {
             setPageSize(value);
         },
+        mode: 'stack',
         offset: DEFAULT_OFFSET,
         sort: '-total',
         get time() {
@@ -647,16 +653,19 @@
     });
 
     $effect(() => {
-        premiumPage.current = filterUsesPremiumFeatures(stackRollupQueryParameters.filter, 'event-stack') ? 'search' : undefined;
+        premiumPage.current = filterUsesPremiumFeatures(stackQueryParameters.filter, 'event-stack') ? 'search' : undefined;
     });
 
-    const stackRollupsQuery = getOrganizationStackRollupsQuery({
+    const stacksQuery = getOrganizationEventsQuery<StackSummaryModel<SummaryTemplateKeys>>({
         enabled: () => !isSavedViewRoutePending,
         get params() {
-            return {
-                ...stackRollupQueryParameters,
-                include: !stackRollupQueryParameters.after && !stackRollupQueryParameters.before ? ('total' as const) : undefined
+            const { page: ignoredPage, ...params } = {
+                ...stackQueryParameters,
+                include: !stackQueryParameters.after && !stackQueryParameters.before ? ('total' as const) : undefined
             };
+            void ignoredPage;
+
+            return params;
         },
         route: {
             get organizationId() {
@@ -671,20 +680,20 @@
             get columns() {
                 return getColumns<StackSummaryModel<SummaryTemplateKeys>>(null, {
                     onTagClick: (tag) => onFilterChanged(new TagFilter([tag])),
-                    showType: !hasSingleTypeFilter(stackRollupQueryParameters.filter)
+                    showType: !hasSingleTypeFilter(stackQueryParameters.filter)
                 });
             },
             defaultColumnVisibility: defaultStackColumnVisibility,
             enableColumnResizing: true,
             paginationStrategy: 'cursor',
             get queryData() {
-                return stackRollupsQuery.data?.data ?? [];
+                return stacksQuery.data?.data ?? [];
             },
             get queryMeta() {
-                return stackRollupsQuery.data?.meta;
+                return stacksQuery.data?.meta;
             },
             get queryParameters() {
-                return stackRollupQueryParameters;
+                return stackQueryParameters;
             }
         })
     );
@@ -705,16 +714,20 @@
             }
         }
 
-        await stackRollupsQuery.refetch();
+        await stacksQuery.refetch();
     }
 
-    const debouncedReconciliationRefetch = debounce(1500, () => stackRollupsQuery.refetch());
+    const debouncedReconciliationRefetch = debounce(1500, () => stacksQuery.refetch());
     onDestroy(() => {
         debouncedReconciliationRefetch.cancel();
     });
 
     function onStackChanged(message: WebSocketMessageValue<'StackChanged'>) {
-        if (message.change_type !== ChangeType.Removed || (message.organization_id && message.organization_id !== organization.current)) {
+        if (message.organization_id && message.organization_id !== organization.current) {
+            return;
+        }
+
+        if (message.change_type !== ChangeType.Removed) {
             return;
         }
 
@@ -734,11 +747,11 @@
 
     let lastEmptyResponseAt = 0;
     $effect(() => {
-        const dataUpdatedAt = stackRollupsQuery.dataUpdatedAt;
+        const dataUpdatedAt = stacksQuery.dataUpdatedAt;
         if (
-            stackRollupsQuery.isPlaceholderData ||
+            stacksQuery.isPlaceholderData ||
             dataUpdatedAt === lastEmptyResponseAt ||
-            stackRollupsQuery.data?.data?.length !== 0 ||
+            stacksQuery.data?.data?.length !== 0 ||
             table.store.state.pagination.pageIndex === 0
         ) {
             return;
@@ -750,30 +763,34 @@
 
     let lastErrorAt = 0;
     $effect(() => {
-        const errorUpdatedAt = stackRollupsQuery.errorUpdatedAt;
-        if (!stackRollupsQuery.error || errorUpdatedAt === lastErrorAt) {
+        const errorUpdatedAt = stacksQuery.errorUpdatedAt;
+        if (!stacksQuery.error || errorUpdatedAt === lastErrorAt) {
             return;
         }
 
         lastErrorAt = errorUpdatedAt;
         untrack(() =>
-            showBillingDialogOnUpgradeProblem(stackRollupsQuery.error, organization.current, async () => {
-                await stackRollupsQuery.refetch();
+            showBillingDialogOnUpgradeProblem(stacksQuery.error, organization.current, async () => {
+                await stacksQuery.refetch();
             })
         );
     });
 
-    const chartDataQuery = getOrganizationStackRollupStatsQuery({
+    const chartDataQuery = getOrganizationCountQuery({
         enabled: () => !isSavedViewRoutePending,
         params: {
-            get filter() {
-                return stackRollupQueryParameters.filter;
+            get aggregations() {
+                return `date:(date${DEFAULT_OFFSET ? `^${DEFAULT_OFFSET}` : ''} cardinality:stack sum:count~1) cardinality:stack terms:(first @include:true) sum:count~1`;
             },
+            get filter() {
+                return stackQueryParameters.filter;
+            },
+            mode: 'stack',
             get offset() {
                 return DEFAULT_OFFSET;
             },
             get time() {
-                return stackRollupQueryParameters.time;
+                return stackQueryParameters.time;
             }
         },
         route: {
@@ -795,26 +812,28 @@
             return series;
         };
 
-        if (!chartDataQuery.data) {
+        if (!chartDataQuery.data?.aggregations) {
             return buildZeroFilledSeries();
         }
 
-        if (chartDataQuery.data.buckets.length === 0) {
+        const dateHistogramBuckets = agg.dateHistogram(chartDataQuery.data.aggregations, 'date_date')?.buckets ?? [];
+        if (dateHistogramBuckets.length === 0) {
             return buildZeroFilledSeries();
         }
 
-        return chartDataQuery.data.buckets.map((bucket) => ({
-            date: new Date(bucket.date),
-            events: bucket.events,
-            stacks: bucket.stacks
+        return dateHistogramBuckets.map((bucket) => ({
+            date: new Date(bucket.key),
+            events: agg.sum(bucket.aggregations, 'sum_count')?.value ?? 0,
+            stacks: agg.cardinality(bucket.aggregations, 'cardinality_stack')?.value ?? 0
         }));
     });
 
     const stats = $derived.by(() => {
         const timeRange = parseDateMathRange(getQueryTime());
-        const totalEvents = chartDataQuery.data?.total_events ?? 0;
-        const totalStacks = chartDataQuery.data?.total_stacks ?? 0;
-        const newStacks = chartDataQuery.data?.new_stacks ?? 0;
+        const aggregations = chartDataQuery.data?.aggregations;
+        const totalEvents = agg.sum(aggregations, 'sum_count')?.value ?? chartDataQuery.data?.total ?? 0;
+        const totalStacks = agg.cardinality(aggregations, 'cardinality_stack')?.value ?? 0;
+        const newStacks = agg.terms<boolean>(aggregations, 'terms_first')?.buckets[0]?.total ?? 0;
         const hours = Math.max((timeRange.end.getTime() - timeRange.start.getTime()) / 3_600_000, 1);
 
         return {
@@ -869,7 +888,7 @@
             {/if}
             <RefreshButton
                 onRefresh={handleRefresh}
-                isRefreshing={stackRollupsQuery.isFetching}
+                isRefreshing={stacksQuery.isFetching}
                 size="icon-lg"
                 title={canRefresh ? 'Refresh results' : 'Return to the first page to refresh results'}
             />
@@ -890,15 +909,15 @@
         {#if showChart}
             <EventsDashboardChart
                 data={chartData()}
-                isLoading={isSavedViewRoutePending || stackRollupsQuery.isFetching || chartDataQuery.isLoading}
+                isLoading={isSavedViewRoutePending || stacksQuery.isFetching || chartDataQuery.isLoading}
                 {onRangeSelect}
             />
         {/if}
 
         <EventsDataTable
             autoFillColumnId={savedViewsState.autoFillColumnId}
-            bind:limit={stackRollupQueryParameters.limit!}
-            isLoading={isSavedViewRoutePending || stackRollupsQuery.isFetching}
+            bind:limit={stackQueryParameters.limit!}
+            isLoading={isSavedViewRoutePending || stacksQuery.isFetching}
             onAutoFillColumnResized={() => savedViewsState.setAutoFillColumnId(null)}
             {rowClick}
             {rowHref}
@@ -910,7 +929,7 @@
                 </div>
 
                 <DataTable.Selection {table} />
-                <DataTable.PageSize bind:value={stackRollupQueryParameters.limit!} {table}></DataTable.PageSize>
+                <DataTable.PageSize bind:value={stackQueryParameters.limit!} {table}></DataTable.PageSize>
                 <div class="flex items-center space-x-6 lg:space-x-8">
                     <DataTable.PageCount {table} />
                     <DataTable.Pagination {table} />

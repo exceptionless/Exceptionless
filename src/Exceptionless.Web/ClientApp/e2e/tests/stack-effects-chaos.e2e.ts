@@ -270,7 +270,7 @@ function createChaosEvent(appUrl: string, run: string, index: number): { event: 
 
 function isStackListRequest(request: Request, organizationId: string): boolean {
     const url = new URL(request.url());
-    return url.pathname === `/api/v2/organizations/${organizationId}/stack-rollups`;
+    return url.pathname === `/api/v2/organizations/${organizationId}/events` && url.searchParams.get('mode') === 'stack';
 }
 
 function isStackListResponse(response: Response, organizationId: string): boolean {
@@ -324,7 +324,7 @@ function recordRequest(diagnostics: RuntimeDiagnostics, request: Request, organi
     }
 
     const url = new URL(request.url());
-    if (url.pathname === `/api/v2/organizations/${organizationId}/stack-rollups/stats`) {
+    if (url.pathname === `/api/v2/organizations/${organizationId}/events/count` && url.searchParams.get('mode') === 'stack') {
         diagnostics.countRequests++;
     }
 }

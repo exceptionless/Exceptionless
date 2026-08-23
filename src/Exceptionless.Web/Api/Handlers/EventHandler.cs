@@ -38,6 +38,7 @@ public class EventHandler(
     IOrganizationRepository organizationRepository,
     IProjectRepository projectRepository,
     IStackRepository stackRepository,
+    IStackRollupSearchService stackRollupSearchService,
     EventPostService eventPostService,
     IQueue<EventUserDescription> eventUserDescriptionQueue,
     MiniValidationValidator miniValidationValidator,
@@ -45,6 +46,7 @@ public class EventHandler(
     ICacheClient cacheClient,
     ITextSerializer serializer,
     PersistentEventQueryValidator validator,
+    EventStackQueryValidator stackValidator,
     AppOptions appOptions,
     UsageService usageService,
     TimeProvider timeProvider,
@@ -77,7 +79,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organizations.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
-        return await CountInternalAsync(sf, ti, httpContext, message.Filter, message.Aggregations);
+        return await CountInternalAsync(sf, ti, httpContext, message.Filter, message.Aggregations, message.Mode);
     }
 
     public async Task<Result<CountResult>> Handle(GetEventCountByOrganization message)
@@ -92,7 +94,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organization);
-        return await CountInternalAsync(sf, ti, httpContext, message.Filter, message.Aggregations);
+        return await CountInternalAsync(sf, ti, httpContext, message.Filter, message.Aggregations, message.Mode);
     }
 
     public async Task<Result<CountResult>> Handle(GetEventCountByProject message)
@@ -111,7 +113,7 @@ public class EventHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(project, appOptions.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(project, organization);
-        return await CountInternalAsync(sf, ti, httpContext, message.Filter, message.Aggregations);
+        return await CountInternalAsync(sf, ti, httpContext, message.Filter, message.Aggregations, message.Mode);
     }
 
     public async Task<Result<PersistentEvent>> Handle(GetEventById message)
@@ -687,9 +689,15 @@ public class EventHandler(
 
     #region Private Helpers
 
-    private async Task<Result<CountResult>> CountInternalAsync(AppFilter sf, TimeInfo ti, HttpContext httpContext, string? filter = null, string? aggregations = null)
+    private async Task<Result<CountResult>> CountInternalAsync(AppFilter sf, TimeInfo ti, HttpContext httpContext, string? filter = null, string? aggregations = null, string? mode = null)
     {
-        var pr = await validator.ValidateQueryAsync(filter);
+        bool isStackMode = String.Equals(mode, "stack", StringComparison.OrdinalIgnoreCase);
+        if (mode is not null && !isStackMode)
+            return Result.BadRequest("Mode must be 'stack' when specified.");
+
+        var pr = isStackMode
+            ? await stackValidator.ValidateQueryAsync(filter)
+            : await validator.ValidateQueryAsync(filter);
         if (!pr.IsValid)
             return Result.BadRequest(pr.Message ?? "Invalid filter.");
 
@@ -697,7 +705,7 @@ public class EventHandler(
         if (!far.IsValid)
             return Result.BadRequest(far.Message ?? "Invalid aggregations.");
 
-        sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || far.UsesPremiumFeatures;
+        sf.UsesPremiumFeatures = pr.UsesPremiumFeatures || !isStackMode && far.UsesPremiumFeatures;
         AppFilter? systemFilter = ApiFilterPolicy.ShouldApplySystemFilter(sf, filter, httpContext.Request) ? sf : null;
         if (systemFilter is not null && ApiFilterPolicy.IsPremiumFeatureQueryBlocked(systemFilter))
             return PlanLimitResult<CountResult>(ApiFilterPolicy.PremiumSearchUpgradeMessage);
@@ -710,7 +718,24 @@ public class EventHandler(
         CountResult result;
         try
         {
-            result = await eventRepository.CountAsync(q => q.SystemFilter(query).FilterExpression(filter).EnforceEventStackFilter().AggregationsExpression(aggregations));
+            if (isStackMode || await stackRollupSearchService.RequiresLookupJoinAsync(filter, httpContext.RequestAborted))
+            {
+                result = await stackRollupSearchService.CountEventsAsync(new EventLookupCountRequest(
+                    systemFilter,
+                    ti.Range.UtcStart,
+                    ti.Range.UtcEnd,
+                    ti.Offset,
+                    filter,
+                    aggregations), httpContext.RequestAborted);
+            }
+            else
+            {
+                result = await eventRepository.CountAsync(q => q.SystemFilter(query).FilterExpression(filter).EnforceEventStackFilter().AggregationsExpression(aggregations));
+            }
+        }
+        catch (NotSupportedException ex)
+        {
+            return Result.BadRequest(ex.Message);
         }
         catch (Exception ex)
         {
@@ -726,8 +751,18 @@ public class EventHandler(
 
     private async Task<Result<PagedResult<object>>> GetInternalAsync(AppFilter sf, TimeInfo ti, HttpContext httpContext, string? filter = null, string? sort = null, string? mode = null, int? page = null, int limit = 10, string? before = null, string? after = null, string? premiumFeatureUpgradeMessage = null, bool includeTotal = false, string? timeExpression = null)
     {
-        if (mode is not null && !String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase))
-            return Result.BadRequest("Mode must be 'summary' when specified.");
+        if (mode is not null
+            && !String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase)
+            && !String.Equals(mode, "stack", StringComparison.OrdinalIgnoreCase))
+            return Result.BadRequest("Mode must be 'summary' or 'stack' when specified.");
+
+        if (String.Equals(mode, "stack", StringComparison.OrdinalIgnoreCase))
+        {
+            if (page.HasValue)
+                return Result.BadRequest("Stack mode uses before and after cursors; page is not supported.");
+
+            return await GetStackModeEventsInternalAsync(sf, ti, httpContext, filter, sort, limit, before, after, includeTotal, timeExpression);
+        }
 
         var currentUser = httpContext.Request.GetUser();
         using var _ = _logger.BeginScope(new ExceptionlessState()
@@ -765,6 +800,48 @@ public class EventHandler(
 
         try
         {
+            if (await stackRollupSearchService.RequiresLookupJoinAsync(filter, httpContext.RequestAborted))
+            {
+                if (page.HasValue)
+                    return Result.BadRequest("Event queries with stack filters use before and after cursors; page is not supported.");
+                if (before is not null && after is not null)
+                    return Result.BadRequest("The before and after parameters cannot be used together.");
+
+                EventLookupSearchResult lookup;
+                try
+                {
+                    lookup = await stackRollupSearchService.SearchEventsAsync(new EventLookupSearchRequest(
+                        appliedAppFilter,
+                        ti.Range.UtcStart,
+                        ti.Range.UtcEnd,
+                        timeExpression,
+                        filter,
+                        sort,
+                        limit,
+                        before,
+                        after,
+                        includeTotal), httpContext.RequestAborted);
+                }
+                catch (InvalidEventLookupCursorException ex)
+                {
+                    return Result.BadRequest(ex.Message);
+                }
+                catch (ArgumentOutOfRangeException ex) when (ex.ParamName == "sort")
+                {
+                    return Result.BadRequest("Event queries with stack filters can only be sorted by date or -date.");
+                }
+
+                var byId = (await eventRepository.GetByIdsAsync(lookup.EventIds.ToArray())).ToDictionary(eventItem => eventItem.Id, StringComparer.Ordinal);
+                var documents = lookup.EventIds.Where(byId.ContainsKey).Select(id => byId[id]).ToList();
+                if (String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase))
+                {
+                    var summaries = await GetEventSummariesAsync(documents);
+                    return new PagedResult<object>(summaries.Cast<object>().ToList(), lookup.HasMore, null, lookup.Total, lookup.Before, lookup.After);
+                }
+
+                return new PagedResult<object>(documents.Cast<object>().ToList(), lookup.HasMore, null, lookup.Total, lookup.Before, lookup.After);
+            }
+
             FindResults<PersistentEvent> events;
             switch (mode)
             {
@@ -820,6 +897,146 @@ public class EventHandler(
             o => page.HasValue
                 ? o.PageNumber(page).PageLimit(limit).TrackTotalHits(includeTotal)
                 : o.SearchBeforeToken(before, serializer).SearchAfterToken(after, serializer).PageLimit(limit).TrackTotalHits(includeTotal));
+    }
+
+    private async Task<ICollection<EventSummaryModel>> GetEventSummariesAsync(IReadOnlyCollection<PersistentEvent> events)
+    {
+        var projects = await projectRepository.GetByIdsAsync(events.Select(eventItem => eventItem.ProjectId).Distinct().ToArray(), query => query.Cache());
+        var projectNames = projects.ToDictionary(project => project.Id, project => project.Name);
+        return events.Select(eventItem =>
+        {
+            var summaryData = formattingPluginManager.GetEventSummaryData(eventItem);
+            return new EventSummaryModel
+            {
+                Id = summaryData.Id,
+                TemplateKey = summaryData.TemplateKey,
+                Date = eventItem.Date,
+                ProjectId = eventItem.ProjectId,
+                ProjectName = projectNames.GetValueOrDefault(eventItem.ProjectId),
+                Tags = eventItem.Tags?.OfType<string>().Order(StringComparer.OrdinalIgnoreCase).ToArray() ?? [],
+                Type = eventItem.Type,
+                Version = eventItem.GetVersion(),
+                Data = summaryData.Data
+            };
+        }).ToList();
+    }
+
+    private async Task<Result<PagedResult<object>>> GetStackModeEventsInternalAsync(
+        AppFilter appFilter,
+        TimeInfo time,
+        HttpContext httpContext,
+        string? filter,
+        string? sort,
+        int limit,
+        string? before,
+        string? after,
+        bool includeTotal,
+        string? timeExpression)
+    {
+        if (before is not null && after is not null)
+            return Result.BadRequest("The before and after parameters cannot be used together.");
+
+        limit = Pagination.GetLimit(limit);
+        var validation = await stackValidator.ValidateQueryAsync(filter);
+        if (!validation.IsValid)
+            return Result.BadRequest(validation.Message ?? "Invalid filter.");
+
+        appFilter.UsesPremiumFeatures = validation.UsesPremiumFeatures;
+        AppFilter? appliedAppFilter = ApiFilterPolicy.ShouldApplySystemFilter(appFilter, filter, httpContext.Request) ? appFilter : null;
+        if (appliedAppFilter is not null && ApiFilterPolicy.IsPremiumFeatureQueryBlocked(appliedAppFilter))
+            return PlanLimitResult<PagedResult<object>>(ApiFilterPolicy.PremiumSearchUpgradeMessage);
+
+        try
+        {
+            var result = await stackRollupSearchService.SearchAsync(new StackRollupSearchRequest(
+                appliedAppFilter,
+                time.Range.UtcStart,
+                time.Range.UtcEnd,
+                time.Offset,
+                timeExpression,
+                filter,
+                sort,
+                limit,
+                before,
+                after,
+                includeTotal), httpContext.RequestAborted);
+
+            string[] stackIds = result.Rows.Select(row => row.StackId).ToArray();
+            var stacks = (await stackRepository.GetByIdsAsync(stackIds))
+                .Select(stack => stack.ApplyOffset(time.Offset))
+                .ToList();
+            var summaries = await GetStackSummariesAsync(stacks, result.Rows, appFilter, time);
+            return new PagedResult<object>(summaries.Cast<object>().ToList(), result.HasMore, null, result.Total, result.Before, result.After);
+        }
+        catch (InvalidStackRollupCursorException ex)
+        {
+            return Result.BadRequest(ex.Message);
+        }
+        catch (ArgumentOutOfRangeException ex) when (ex.ParamName == "sort")
+        {
+            return Result.BadRequest("Stack mode sort must be one of total, users, first_occurrence, or last_occurrence, optionally prefixed with '-'.");
+        }
+    }
+
+    private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(List<Stack> stacks, IReadOnlyCollection<StackRollupRow> rows, AppFilter appFilter, TimeInfo time)
+    {
+        if (stacks.Count == 0)
+            return [];
+
+        var stacksById = stacks.ToDictionary(stack => stack.Id, StringComparer.Ordinal);
+        var projects = await projectRepository.GetByIdsAsync(stacks.Select(stack => stack.ProjectId).Distinct().ToArray(), query => query.Cache());
+        var projectNames = projects.ToDictionary(project => project.Id, project => project.Name);
+        var totalUsers = await GetUserCountByProjectIdsAsync(stacks, appFilter, time.Range.UtcStart, time.Range.UtcEnd);
+        var summaries = new List<StackSummaryModel>(rows.Count);
+        foreach (var row in rows)
+        {
+            if (!stacksById.TryGetValue(row.StackId, out var stack))
+                continue;
+
+            var data = formattingPluginManager.GetStackSummaryData(stack);
+            summaries.Add(new StackSummaryModel
+            {
+                Id = data.Id,
+                TemplateKey = data.TemplateKey,
+                Data = data.Data,
+                ProjectId = stack.ProjectId,
+                ProjectName = projectNames.GetValueOrDefault(stack.ProjectId),
+                Tags = stack.Tags?.OfType<string>().Order(StringComparer.OrdinalIgnoreCase).ToArray() ?? [],
+                Title = stack.Title,
+                Status = stack.Status,
+                FirstOccurrence = row.FirstOccurrence,
+                LastOccurrence = row.LastOccurrence,
+                Total = row.Total,
+                Users = row.Users,
+                TotalUsers = totalUsers.GetOrDefault(stack.ProjectId)
+            });
+        }
+
+        return summaries;
+    }
+
+    private async Task<Dictionary<string, double>> GetUserCountByProjectIdsAsync(ICollection<Stack> stacks, AppFilter appFilter, DateTime utcStart, DateTime utcEnd)
+    {
+        using var scopedCacheClient = new ScopedCacheClient(cacheClient, $"Project:user-count:{utcStart.Floor(TimeSpan.FromMinutes(15)).Ticks}-{utcEnd.Floor(TimeSpan.FromMinutes(15)).Ticks}");
+        var projectIds = stacks.Select(stack => stack.ProjectId).Distinct().ToList();
+        var cachedTotals = await scopedCacheClient.GetAllAsync<double>(projectIds);
+        var totals = cachedTotals.Where(item => item.Value.HasValue).ToDictionary(item => item.Key, item => item.Value.Value);
+        if (totals.Count == projectIds.Count)
+            return totals;
+
+        var projects = cachedTotals
+            .Where(item => !item.Value.HasValue && stacks.Contains(stack => stack.ProjectId == item.Key))
+            .Select(item => new Project { Id = item.Key, OrganizationId = stacks.First(stack => stack.ProjectId == item.Key).OrganizationId })
+            .ToList();
+        var aggregations = (await stackRollupSearchService.GetProjectUserCountsAsync(new StackRollupProjectUsersRequest(
+            appFilter,
+            utcStart,
+            utcEnd,
+            projects.Select(project => project.Id).ToArray())))
+            .ToDictionary(item => item.Key, item => (double)item.Value);
+        await scopedCacheClient.SetAllAsync(aggregations.Where(item => item.Value >= 10).ToDictionary(item => item.Key, item => item.Value), TimeSpan.FromMinutes(5));
+        totals.AddRange(aggregations);
+        return totals;
     }
 
     private async Task<PersistentEvent?> GetModelAsync(string id, HttpContext httpContext, bool useCache = true)

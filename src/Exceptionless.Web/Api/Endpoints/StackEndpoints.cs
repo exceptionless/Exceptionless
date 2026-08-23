@@ -326,62 +326,6 @@ public static class StackEndpoints
             }
         });
 
-        MapStackRollupEndpoints(group);
         return endpoints;
-    }
-
-    private static void MapStackRollupEndpoints(RouteGroupBuilder group)
-    {
-        group.MapGet("stack-rollups/stats", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? filter = null, string? time = null, string? offset = null)
-            => (await mediator.InvokeAsync<Result<StackRollupStatsResult>>(new GetStackRollupStats(filter, time, offset, httpContext))).ToHttpResult(resultMapper))
-        .RequireAuthorization(AuthorizationRoles.StacksReadPolicy)
-        .Produces<StackRollupStatsResult>()
-        .ProducesProblem(StatusCodes.Status400BadRequest)
-        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
-        .WithSummary("Get stack rollup statistics");
-
-        group.MapGet("organizations/{organizationId:objectid}/stack-rollups/stats", async (string organizationId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? filter = null, string? time = null, string? offset = null)
-            => (await mediator.InvokeAsync<Result<StackRollupStatsResult>>(new GetStackRollupStatsByOrganization(organizationId, filter, time, offset, httpContext))).ToHttpResult(resultMapper))
-        .RequireAuthorization(AuthorizationRoles.StacksReadPolicy)
-        .Produces<StackRollupStatsResult>()
-        .ProducesProblem(StatusCodes.Status400BadRequest)
-        .ProducesProblem(StatusCodes.Status404NotFound)
-        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
-        .WithSummary("Get stack rollup statistics by organization");
-
-        group.MapGet("projects/{projectId:objectid}/stack-rollups/stats", async (string projectId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? filter = null, string? time = null, string? offset = null)
-            => (await mediator.InvokeAsync<Result<StackRollupStatsResult>>(new GetStackRollupStatsByProject(projectId, filter, time, offset, httpContext))).ToHttpResult(resultMapper))
-        .RequireAuthorization(AuthorizationRoles.StacksReadPolicy)
-        .Produces<StackRollupStatsResult>()
-        .ProducesProblem(StatusCodes.Status400BadRequest)
-        .ProducesProblem(StatusCodes.Status404NotFound)
-        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
-        .WithSummary("Get stack rollup statistics by project");
-
-        group.MapGet("stack-rollups", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, int limit = 10, string? before = null, string? after = null, string? include = null)
-            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetAllStackRollups(filter, sort, time, offset, limit, before, after, include, httpContext))).ToHttpResult(resultMapper))
-        .RequireAuthorization(AuthorizationRoles.StacksReadPolicy)
-        .Produces<IReadOnlyCollection<StackSummaryModel>>()
-        .ProducesProblem(StatusCodes.Status400BadRequest)
-        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
-        .WithSummary("Get stack rollups");
-
-        group.MapGet("organizations/{organizationId:objectid}/stack-rollups", async (string organizationId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, int limit = 10, string? before = null, string? after = null, string? include = null)
-            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetStackRollupsByOrganization(organizationId, filter, sort, time, offset, limit, before, after, include, httpContext))).ToHttpResult(resultMapper))
-        .RequireAuthorization(AuthorizationRoles.StacksReadPolicy)
-        .Produces<IReadOnlyCollection<StackSummaryModel>>()
-        .ProducesProblem(StatusCodes.Status400BadRequest)
-        .ProducesProblem(StatusCodes.Status404NotFound)
-        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
-        .WithSummary("Get stack rollups by organization");
-
-        group.MapGet("projects/{projectId:objectid}/stack-rollups", async (string projectId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? filter = null, string? sort = null, string? time = null, string? offset = null, int limit = 10, string? before = null, string? after = null, string? include = null)
-            => (await mediator.InvokeAsync<Result<PagedResult<object>>>(new GetStackRollupsByProject(projectId, filter, sort, time, offset, limit, before, after, include, httpContext))).ToHttpResult(resultMapper))
-        .RequireAuthorization(AuthorizationRoles.StacksReadPolicy)
-        .Produces<IReadOnlyCollection<StackSummaryModel>>()
-        .ProducesProblem(StatusCodes.Status400BadRequest)
-        .ProducesProblem(StatusCodes.Status404NotFound)
-        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
-        .WithSummary("Get stack rollups by project");
     }
 }

@@ -13,18 +13,21 @@ import type { PersistentEvent } from './models';
 
 export interface OrganizationEventNotificationRefresher {
     cancel: () => void;
-    schedule: (organizationId?: string, refreshImmediately?: boolean) => void;
+    schedule: (organizationId?: string, refreshImmediately?: boolean, includeStackLists?: boolean) => void;
 }
 
 export function createOrganizationEventNotificationRefresher(queryClient: QueryClient): OrganizationEventNotificationRefresher {
     const pendingOrganizationIds = new SvelteSet<string | undefined>();
+    let pendingStackListRefresh = false;
     let trailingRefresh: ReturnType<typeof setTimeout> | undefined;
     const refresh = () => {
         const organizationIds = [...pendingOrganizationIds];
+        const includeStackLists = pendingStackListRefresh;
 
         void queryClient.invalidateQueries({
             predicate: (query) =>
                 isOrganizationEventDashboardQueryKey(query.queryKey) &&
+                (includeStackLists || !isOrganizationStackListQueryKey(query.queryKey)) &&
                 (organizationIds.includes(undefined) || organizationIds.includes(query.queryKey[2] as string)),
             queryKey: queryKeys.type,
             refetchType: 'active'
@@ -34,13 +37,15 @@ export function createOrganizationEventNotificationRefresher(queryClient: QueryC
     return {
         cancel: () => {
             pendingOrganizationIds.clear();
+            pendingStackListRefresh = false;
             if (trailingRefresh !== undefined) {
                 clearTimeout(trailingRefresh);
                 trailingRefresh = undefined;
             }
         },
-        schedule: (organizationId?: string, refreshImmediately = true) => {
+        schedule: (organizationId?: string, refreshImmediately = true, includeStackLists = false) => {
             pendingOrganizationIds.add(organizationId);
+            pendingStackListRefresh ||= includeStackLists;
             if (trailingRefresh !== undefined) {
                 return;
             }
@@ -53,6 +58,7 @@ export function createOrganizationEventNotificationRefresher(queryClient: QueryC
                 trailingRefresh = undefined;
                 refresh();
                 pendingOrganizationIds.clear();
+                pendingStackListRefresh = false;
             }, ORGANIZATION_EVENT_NOTIFICATION_THROTTLE_MS);
         }
     };
@@ -163,7 +169,7 @@ export interface GetEventsByReferenceRequest {
     };
 }
 
-export type GetEventsMode = 'summary' | null;
+export type GetEventsMode = 'stack' | 'summary' | null;
 
 export interface GetEventsParams {
     after?: string;
@@ -183,6 +189,7 @@ export interface GetOrganizationCountRequest {
     params?: {
         aggregations?: string;
         filter?: string;
+        mode?: 'stack';
         offset?: string;
         time?: string;
     };
@@ -215,6 +222,7 @@ export interface GetProjectCountRequest {
     params?: {
         aggregations?: string;
         filter?: string;
+        mode?: 'stack';
         offset?: string;
         time?: string;
     };
@@ -431,8 +439,8 @@ export function getOrganizationCountQuery(request: GetOrganizationCountRequest) 
     });
 }
 
-export function getOrganizationEventsQuery(request: GetOrganizationEventsRequest) {
-    return createQuery<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>, ProblemDetails>(() => {
+export function getOrganizationEventsQuery<T = EventSummaryModel<SummaryTemplateKeys>>(request: GetOrganizationEventsRequest) {
+    return createQuery<FetchClientResponse<T[]>, ProblemDetails>(() => {
         const organizationId = request.route.organizationId;
         const params = request.params
             ? {
@@ -445,7 +453,7 @@ export function getOrganizationEventsQuery(request: GetOrganizationEventsRequest
             placeholderData: keepPreviousData,
             queryFn: async () => {
                 const client = useFetchClient();
-                return await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organizationId}/events`, {
+                return await client.getJSON<T[]>(`organizations/${organizationId}/events`, {
                     params: params as Record<string, unknown>
                 });
             },
@@ -638,4 +646,8 @@ function isOrganizationEventDashboardQueryKey(queryKey: readonly unknown[]): boo
 
 function isOrganizationEventsQueryKey(queryKey: readonly unknown[]): boolean {
     return queryKey[0] === queryKeys.type[0] && queryKey[1] === 'organizations' && queryKey[3] === 'events';
+}
+
+function isOrganizationStackListQueryKey(queryKey: readonly unknown[]): boolean {
+    return isOrganizationEventsQueryKey(queryKey) && (queryKey[4] as GetEventsParams | undefined)?.mode === 'stack';
 }

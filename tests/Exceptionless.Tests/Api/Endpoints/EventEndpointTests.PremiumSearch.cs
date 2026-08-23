@@ -52,9 +52,11 @@ public partial class EventEndpointTests
         await CreateDataAsync(d => d.Event().FreeProject());
 
         // Act
-        var result = await SendRequestAsAsync<StackRollupStatsResult>(r => r
+        var result = await SendRequestAsAsync<CountResult>(r => r
             .AsFreeOrganizationUser()
-            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "stack-rollups", "stats")
+            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "events", "count")
+            .QueryString("aggregations", "date:(date cardinality:stack sum:count~1) cardinality:stack terms:(first @include:true) sum:count~1")
+            .QueryString("mode", "stack")
             .QueryString("filter", filter)
             .StatusCodeShouldBeOk());
 
@@ -97,7 +99,7 @@ public partial class EventEndpointTests
     }
 
     [Fact]
-    public async Task Handle_GetStackRollupsByProjectWithFreeStackFilter_ReturnsOk()
+    public async Task Handle_GetStackModeEventsByProjectWithFreeStackFilter_ReturnsOk()
     {
         // Arrange
         await CreateDataAsync(d => d.Event().FreeProject());
@@ -105,7 +107,8 @@ public partial class EventEndpointTests
         // Act
         var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
             .AsFreeOrganizationUser()
-            .AppendPaths("projects", SampleDataService.FREE_PROJECT_ID, "stack-rollups")
+            .AppendPaths("projects", SampleDataService.FREE_PROJECT_ID, "events")
+            .QueryString("mode", "stack")
             .QueryString("filter", "critical:false")
             .StatusCodeShouldBeOk());
 
@@ -155,21 +158,24 @@ public partial class EventEndpointTests
         var stack = Assert.Single(stacks);
 
         // Act
-        var stats = await SendRequestAsAsync<StackRollupStatsResult>(r => r
+        var stats = await SendRequestAsAsync<CountResult>(r => r
             .AsFreeOrganizationUser()
-            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "stack-rollups", "stats")
+            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "events", "count")
+            .QueryString("aggregations", "date:(date cardinality:stack sum:count~1) cardinality:stack terms:(first @include:true) sum:count~1")
+            .QueryString("mode", "stack")
             .QueryString("filter", "reference:free-reference first:true")
             .StatusCodeShouldBeOk());
 
         var results = await SendRequestAsAsync<List<StackSummaryModel>>(r => r
             .AsFreeOrganizationUser()
-            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "stack-rollups")
+            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "events")
+            .QueryString("mode", "stack")
             .QueryString("filter", $"stack:{stack.Id} first:true")
             .StatusCodeShouldBeOk());
 
         // Assert
         Assert.NotNull(stats);
-        Assert.Equal(1, stats.TotalEvents);
+        Assert.Equal(1, stats.Aggregations.Sum("sum_count")?.Value);
         Assert.NotNull(results);
         Assert.Single(results);
     }

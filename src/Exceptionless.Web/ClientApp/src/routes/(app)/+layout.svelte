@@ -327,7 +327,7 @@
                     await invalidateSavedViewQueries(queryClient, data.message);
                     break;
                 case 'StackChanged':
-                    organizationEventRefresher.schedule(data.message.organization_id, data.message.change_type !== ChangeType.Removed);
+                    organizationEventRefresher.schedule(data.message.organization_id, data.message.change_type !== ChangeType.Removed, true);
                     stackRefresher.schedule(data.message.organization_id, data.message.project_id, data.message.change_type !== ChangeType.Removed);
                     await invalidateStackQueries(queryClient, data.message);
                     break;

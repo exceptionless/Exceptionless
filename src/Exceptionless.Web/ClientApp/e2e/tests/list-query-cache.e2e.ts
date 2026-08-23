@@ -83,7 +83,7 @@ function isApiRequest(request: Request): boolean {
 }
 
 function isListRequest(request: Request): boolean {
-    return /^\/api\/v2\/organizations\/[^/]+\/(?:events(?:\/count)?|stack-rollups(?:\/stats)?)$/.test(new URL(request.url()).pathname);
+    return /^\/api\/v2\/organizations\/[^/]+\/events(?:\/count)?$/.test(new URL(request.url()).pathname);
 }
 
 async function navigateToList(page: Page, name: 'Events' | 'Stacks'): Promise<void> {
@@ -131,9 +131,9 @@ function recordListRequest(counts: RequestCounts, request: Request): void {
         return;
     }
 
-    const isStats = url.pathname.endsWith('/count') || url.pathname.endsWith('/stats');
+    const isStats = url.pathname.endsWith('/count');
     const mode = url.searchParams.get('mode');
-    if (url.pathname.includes('/stack-rollups')) {
+    if (mode === 'stack') {
         counts[isStats ? 'stackStats' : 'stackList']++;
     } else if (isStats || mode === 'summary') {
         counts[isStats ? 'eventStats' : 'eventList']++;

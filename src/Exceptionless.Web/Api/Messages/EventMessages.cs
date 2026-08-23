@@ -5,9 +5,9 @@ using Exceptionless.Web.Utility;
 namespace Exceptionless.Web.Api.Messages;
 
 // Count messages
-public record GetEventCount(string? Filter, string? Aggregations, string? Time, string? Offset, HttpContext Context);
-public record GetEventCountByOrganization(string OrganizationId, string? Filter, string? Aggregations, string? Time, string? Offset, HttpContext Context);
-public record GetEventCountByProject(string ProjectId, string? Filter, string? Aggregations, string? Time, string? Offset, HttpContext Context);
+public record GetEventCount(string? Filter, string? Aggregations, string? Time, string? Offset, string? Mode, HttpContext Context);
+public record GetEventCountByOrganization(string OrganizationId, string? Filter, string? Aggregations, string? Time, string? Offset, string? Mode, HttpContext Context);
+public record GetEventCountByProject(string ProjectId, string? Filter, string? Aggregations, string? Time, string? Offset, string? Mode, HttpContext Context);
 
 // Get events
 public record GetEventById(string Id, string? ExpectedStackId, string? Time, string? Offset, HttpContext Context);

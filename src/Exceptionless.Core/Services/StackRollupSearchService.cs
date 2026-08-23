@@ -14,6 +14,7 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
+using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
 using Microsoft.Extensions.Logging;
 
@@ -21,10 +22,41 @@ namespace Exceptionless.Core.Services;
 
 public interface IStackRollupSearchService
 {
+    Task<bool> RequiresLookupJoinAsync(string? filter, CancellationToken cancellationToken = default);
+    Task<EventLookupSearchResult> SearchEventsAsync(EventLookupSearchRequest request, CancellationToken cancellationToken = default);
+    Task<CountResult> CountEventsAsync(EventLookupCountRequest request, CancellationToken cancellationToken = default);
     Task<StackRollupSearchResult> SearchAsync(StackRollupSearchRequest request, CancellationToken cancellationToken = default);
     Task<StackRollupStatsResult> GetStatsAsync(StackRollupStatsRequest request, CancellationToken cancellationToken = default);
     Task<IReadOnlyDictionary<string, long>> GetProjectUserCountsAsync(StackRollupProjectUsersRequest request, CancellationToken cancellationToken = default);
 }
+
+public sealed record EventLookupSearchRequest(
+    AppFilter? AppFilter,
+    DateTime UtcStart,
+    DateTime UtcEnd,
+    string? TimeExpression,
+    string? Filter,
+    string? Sort,
+    int Limit,
+    string? Before,
+    string? After,
+    bool IncludeTotal);
+
+public sealed record EventLookupSearchResult(
+    IReadOnlyCollection<string> EventIds,
+    bool HasMore,
+    long? Total,
+    string? Before,
+    string? After);
+
+public sealed record EventLookupCountRequest(
+    AppFilter? AppFilter,
+    DateTime UtcStart,
+    DateTime UtcEnd,
+    TimeSpan Offset,
+    string? Filter,
+    string? Aggregations,
+    int BucketCount = 50);
 
 public sealed record StackRollupSearchRequest(
     AppFilter? AppFilter,
@@ -58,9 +90,10 @@ public sealed record StackRollupStatsResult(
     long TotalEvents,
     long TotalStacks,
     long NewStacks,
-    IReadOnlyCollection<StackRollupStatsBucket> Buckets);
+    IReadOnlyCollection<StackRollupStatsBucket> Buckets,
+    long Documents = 0);
 
-public sealed record StackRollupStatsBucket(DateTime Date, long Events, long Stacks);
+public sealed record StackRollupStatsBucket(DateTime Date, long Events, long Stacks, long Documents = 0);
 
 public sealed record StackRollupProjectUsersRequest(
     AppFilter AppFilter,
@@ -76,6 +109,7 @@ public sealed record StackRollupRow(
     DateTime LastOccurrence);
 
 public sealed class InvalidStackRollupCursorException(string message) : Exception(message);
+public sealed class InvalidEventLookupCursorException(string message) : Exception(message);
 
 public sealed class StackRollupSearchService : IStackRollupSearchService
 {
@@ -103,6 +137,79 @@ public sealed class StackRollupSearchService : IStackRollupSearchService
         _timeProvider = timeProvider;
         _serializerOptions = serializerOptions;
         _logger = loggerFactory.CreateLogger<StackRollupSearchService>();
+    }
+
+    public async Task<bool> RequiresLookupJoinAsync(string? filter, CancellationToken cancellationToken = default)
+    {
+        if (String.IsNullOrWhiteSpace(filter))
+            return false;
+
+        var stackFilter = await _eventStackFilter.GetStackFilterAsync(StripAlternateInversion(filter));
+        return stackFilter?.HasStackOnlyCriteria == true;
+    }
+
+    public async Task<EventLookupSearchResult> SearchEventsAsync(EventLookupSearchRequest request, CancellationToken cancellationToken = default)
+    {
+        var sort = GetEventSort(request.Sort);
+        await EnsureReadyAsync(cancellationToken);
+
+        string fingerprint = CreateEventFingerprint(request, sort.Value);
+        EventLookupCursor? cursor = DecodeEventCursor(request.Before ?? request.After, sort.Value, fingerprint);
+        DateTime utcStart = cursor is null ? request.UtcStart : new DateTime(cursor.UtcStart, DateTimeKind.Utc);
+        DateTime utcEnd = cursor is null ? request.UtcEnd : new DateTime(cursor.UtcEnd, DateTimeKind.Utc);
+        string normalizedFilter = StripAlternateInversion(request.Filter);
+        string? eventFilter = await _eventStackFilter.GetEventFilterAsync(normalizedFilter);
+        string? stackFilter = (await _eventStackFilter.GetStackFilterAsync(normalizedFilter))?.Filter;
+        Query? sourceFilter = await BuildSourceFilterAsync(request.AppFilter, utcStart, utcEnd, eventFilter);
+        var parameters = new List<KeyValuePair<string, ICollection<FieldValue>>>();
+        string query = BuildEventQuery(request, sort, cursor, stackFilter, parameters);
+        var rows = await ExecuteEventRowsAsync(query, sourceFilter, parameters, cancellationToken);
+        long? total = request.IncludeTotal ? rows.FirstOrDefault()?.TotalEvents : null;
+        if (request.IncludeTotal && total is null)
+            total = await ExecuteJoinedEventTotalAsync(stackFilter, sourceFilter, cancellationToken);
+
+        bool isBefore = request.Before is not null;
+        bool hasExtra = rows.Count > request.Limit;
+        if (hasExtra)
+            rows.RemoveAt(rows.Count - 1);
+        if (isBefore)
+            rows.Reverse();
+
+        bool hasPrevious = rows.Count > 0 && (isBefore ? hasExtra : request.After is not null);
+        bool hasNext = rows.Count > 0 && (isBefore || hasExtra);
+        return new EventLookupSearchResult(
+            rows.Select(row => row.EventId).ToArray(),
+            hasNext,
+            total,
+            hasPrevious ? EncodeEventCursor(rows[0], sort, utcStart, utcEnd, fingerprint) : null,
+            hasNext ? EncodeEventCursor(rows[^1], sort, utcStart, utcEnd, fingerprint) : null);
+    }
+
+    public async Task<CountResult> CountEventsAsync(EventLookupCountRequest request, CancellationToken cancellationToken = default)
+    {
+        await EnsureReadyAsync(cancellationToken);
+        string normalizedFilter = StripAlternateInversion(request.Filter);
+        string? eventFilter = await _eventStackFilter.GetEventFilterAsync(normalizedFilter);
+        string? stackFilter = (await _eventStackFilter.GetStackFilterAsync(normalizedFilter))?.Filter;
+        Query? sourceFilter = await BuildSourceFilterAsync(request.AppFilter, request.UtcStart, request.UtcEnd, eventFilter);
+
+        if (String.IsNullOrWhiteSpace(request.Aggregations))
+            return new CountResult(await ExecuteJoinedEventTotalAsync(stackFilter, sourceFilter, cancellationToken));
+
+        if (IsTermsTagsAggregation(request.Aggregations))
+            return await CountEventTagsAsync(stackFilter, sourceFilter, cancellationToken);
+
+        if (!IsDashboardAggregation(request.Aggregations))
+            throw new NotSupportedException("Stack filters currently support the event dashboard aggregations or terms:tags.");
+
+        var stats = await GetStatsAsync(new StackRollupStatsRequest(
+            request.AppFilter,
+            request.UtcStart,
+            request.UtcEnd,
+            request.Offset,
+            request.Filter,
+            request.BucketCount), cancellationToken);
+        return ToCountResult(stats);
     }
 
     public async Task<StackRollupSearchResult> SearchAsync(StackRollupSearchRequest request, CancellationToken cancellationToken = default)
@@ -266,6 +373,173 @@ public sealed class StackRollupSearchService : IStackRollupSearchService
         return context.Filter;
     }
 
+    private string BuildEventQuery(
+        EventLookupSearchRequest request,
+        EventLookupSort sort,
+        EventLookupCursor? cursor,
+        string? stackFilter,
+        ICollection<KeyValuePair<string, ICollection<FieldValue>>> parameters)
+    {
+        string eventIndex = ValidateIndexName(_configuration.Events.Name);
+        string stackIndex = ValidateIndexName(_configuration.Stacks.Name);
+        var query = new StringBuilder()
+            .Append("FROM ").Append(eventIndex).Append(" METADATA _id")
+            .Append(" | KEEP _id, stack_id, date")
+            .Append(" | LOOKUP JOIN ").Append(stackIndex)
+            .Append(" ON stack_id == id AND is_deleted == false");
+
+        if (!String.IsNullOrWhiteSpace(stackFilter))
+        {
+            query.Append(" AND QSTR(?stack_filter, {\"default_operator\": \"AND\"})");
+            AddParameter(parameters, "stack_filter", FieldValue.String(stackFilter));
+        }
+
+        query.Append(" | WHERE id IS NOT NULL");
+        if (request.IncludeTotal)
+            query.Append(" | INLINE STATS total_events = COUNT(*)");
+
+        bool isBefore = request.Before is not null;
+        if (cursor is not null)
+        {
+            string primaryComparison = isBefore
+                ? sort.Ascending ? "<" : ">"
+                : sort.Ascending ? ">" : "<";
+            string idComparison = isBefore ? "<" : ">";
+            query
+                .Append(" | WHERE date ").Append(primaryComparison).Append(" TO_DATETIME(?cursor_date)")
+                .Append(" OR (date == TO_DATETIME(?cursor_date) AND _id ").Append(idComparison).Append(" ?cursor_event_id)");
+            AddParameter(parameters, "cursor_date", FieldValue.String(new DateTime(cursor.Date, DateTimeKind.Utc).ToString("O", CultureInfo.InvariantCulture)));
+            AddParameter(parameters, "cursor_event_id", FieldValue.String(cursor.EventId));
+        }
+
+        bool queryAscending = isBefore ? !sort.Ascending : sort.Ascending;
+        query
+            .Append(" | SORT date ").Append(queryAscending ? "ASC" : "DESC")
+            .Append(", _id ").Append(isBefore ? "DESC" : "ASC")
+            .Append(" | LIMIT ").Append(request.Limit + 1)
+            .Append(" | KEEP _id, date");
+        if (request.IncludeTotal)
+            query.Append(", total_events");
+
+        return query.ToString();
+    }
+
+    private async Task<List<EventLookupEsqlRow>> ExecuteEventRowsAsync(
+        string query,
+        Query? sourceFilter,
+        ICollection<KeyValuePair<string, ICollection<FieldValue>>> parameters,
+        CancellationToken cancellationToken)
+    {
+        using var response = await _client.Esql.QueryAsync(new EsqlQueryRequest(query)
+        {
+            AllowPartialResults = false,
+            Columnar = false,
+            Filter = sourceFilter,
+            Format = EsqlFormat.Json,
+            Params = new Union<ICollection<ICollection<FieldValue>>, ICollection<KeyValuePair<string, ICollection<FieldValue>>>>(parameters)
+        }, cancellationToken);
+
+        if (!response.IsValidResponse)
+        {
+            _logger.LogWarning("Event lookup join failed with Elasticsearch status {StatusCode}", response.ApiCallDetails?.HttpStatusCode);
+            throw new ApplicationException("The event lookup join query failed.");
+        }
+
+        using var document = await JsonDocument.ParseAsync(response.Body, cancellationToken: cancellationToken);
+        if (!document.RootElement.TryGetProperty("columns", out var columns) || !document.RootElement.TryGetProperty("values", out var values))
+            throw new JsonException("The ES|QL event lookup response did not contain columns and values.");
+
+        var columnIndexes = GetColumnIndexes(columns);
+        int idIndex = columnIndexes["_id"];
+        int dateIndex = columnIndexes["date"];
+        int? totalIndex = columnIndexes.TryGetValue("total_events", out int index) ? index : null;
+        return values.EnumerateArray()
+            .Select(value => new EventLookupEsqlRow(
+                value[idIndex].GetString() ?? throw new JsonException("An event lookup row did not contain an event id."),
+                value[dateIndex].GetDateTime().ToUniversalTime(),
+                totalIndex.HasValue ? value[totalIndex.Value].GetInt64() : null))
+            .ToList();
+    }
+
+    private Task<long> ExecuteJoinedEventTotalAsync(string? stackFilter, Query? sourceFilter, CancellationToken cancellationToken)
+    {
+        string eventIndex = ValidateIndexName(_configuration.Events.Name);
+        string stackIndex = ValidateIndexName(_configuration.Stacks.Name);
+        var parameters = new List<KeyValuePair<string, ICollection<FieldValue>>>();
+        var query = new StringBuilder()
+            .Append("FROM ").Append(eventIndex)
+            .Append(" | KEEP stack_id")
+            .Append(" | LOOKUP JOIN ").Append(stackIndex)
+            .Append(" ON stack_id == id AND is_deleted == false");
+        if (!String.IsNullOrWhiteSpace(stackFilter))
+        {
+            query.Append(" AND QSTR(?stack_filter, {\"default_operator\": \"AND\"})");
+            AddParameter(parameters, "stack_filter", FieldValue.String(stackFilter));
+        }
+        query.Append(" | WHERE id IS NOT NULL | STATS total_events = COUNT(*) | KEEP total_events");
+        return ExecuteTotalAsync(query.ToString(), sourceFilter, parameters, cancellationToken);
+    }
+
+    private async Task<CountResult> CountEventTagsAsync(string? stackFilter, Query? sourceFilter, CancellationToken cancellationToken)
+    {
+        string eventIndex = ValidateIndexName(_configuration.Events.Name);
+        string stackIndex = ValidateIndexName(_configuration.Stacks.Name);
+        var parameters = new List<KeyValuePair<string, ICollection<FieldValue>>>();
+        var query = new StringBuilder()
+            .Append("FROM ").Append(eventIndex)
+            .Append(" | KEEP stack_id, tags")
+            .Append(" | LOOKUP JOIN ").Append(stackIndex)
+            .Append(" ON stack_id == id AND is_deleted == false");
+        if (!String.IsNullOrWhiteSpace(stackFilter))
+        {
+            query.Append(" AND QSTR(?stack_filter, {\"default_operator\": \"AND\"})");
+            AddParameter(parameters, "stack_filter", FieldValue.String(stackFilter));
+        }
+        query
+            .Append(" | WHERE id IS NOT NULL")
+            .Append(" | MV_EXPAND tags")
+            .Append(" | STATS tag_total = COUNT(*) BY tag = tags")
+            .Append(" | SORT tag_total DESC, tag ASC | LIMIT 1000 | KEEP tag, tag_total");
+
+        using var response = await _client.Esql.QueryAsync(new EsqlQueryRequest(query.ToString())
+        {
+            AllowPartialResults = false,
+            Columnar = false,
+            Filter = sourceFilter,
+            Format = EsqlFormat.Json,
+            Params = new Union<ICollection<ICollection<FieldValue>>, ICollection<KeyValuePair<string, ICollection<FieldValue>>>>(parameters)
+        }, cancellationToken);
+        if (!response.IsValidResponse)
+            throw new ApplicationException("The event tag lookup join query failed.");
+
+        using var document = await JsonDocument.ParseAsync(response.Body, cancellationToken: cancellationToken);
+        if (!document.RootElement.TryGetProperty("columns", out var columns) || !document.RootElement.TryGetProperty("values", out var values))
+            throw new JsonException("The ES|QL event tag response did not contain columns and values.");
+        var columnIndexes = GetColumnIndexes(columns);
+        int tagIndex = columnIndexes["tag"];
+        int tagTotalIndex = columnIndexes["tag_total"];
+        var buckets = new List<IBucket>();
+        foreach (var value in values.EnumerateArray())
+        {
+            buckets.Add(new KeyedBucket<string>(null)
+            {
+                Key = value[tagIndex].GetString() ?? String.Empty,
+                Total = value[tagTotalIndex].GetInt64(),
+                Data = new Dictionary<string, object> { ["@type"] = "string" }
+            });
+        }
+
+        long total = await ExecuteJoinedEventTotalAsync(stackFilter, sourceFilter, cancellationToken);
+        return new CountResult(total, new Dictionary<string, IAggregate>
+        {
+            ["terms_tags"] = new BucketAggregate
+            {
+                Items = buckets,
+                Data = new Dictionary<string, object> { ["@type"] = "bucket" }
+            }
+        });
+    }
+
     private string BuildQuery(
         StackRollupSearchRequest request,
         StackRollupSort sort,
@@ -357,11 +631,11 @@ public sealed class StackRollupSearchService : IStackRollupSearchService
 
         return query
             .Append(" | WHERE id IS NOT NULL")
-            .Append(" | INLINE STATS total_events = SUM(COALESCE(count, 1)), total_stacks = COUNT_DISTINCT(stack_id, 40000), new_stacks = SUM(CASE(is_first_occurrence, 1, 0))")
-            .Append(" | STATS events = SUM(COALESCE(count, 1)), stacks = COUNT_DISTINCT(stack_id), total_events = MAX(total_events), total_stacks = MAX(total_stacks), new_stacks = MAX(new_stacks)")
+            .Append(" | INLINE STATS total_documents = COUNT(*), total_events = SUM(COALESCE(count, 1)), total_stacks = COUNT_DISTINCT(stack_id, 40000), new_stacks = SUM(CASE(is_first_occurrence, 1, 0))")
+            .Append(" | STATS documents = COUNT(*), events = SUM(COALESCE(count, 1)), stacks = COUNT_DISTINCT(stack_id), total_documents = MAX(total_documents), total_events = MAX(total_events), total_stacks = MAX(total_stacks), new_stacks = MAX(new_stacks)")
             .Append(" BY bucket = BUCKET(date, ").Append(bucketCount).Append(", \"").Append(utcStart).Append("\", \"").Append(utcEnd).Append("\")")
             .Append(" | SORT bucket | LIMIT ").Append(bucketCount + 2)
-            .Append(" | KEEP bucket, events, stacks, total_events, total_stacks, new_stacks")
+            .Append(" | KEEP bucket, documents, events, stacks, total_documents, total_events, total_stacks, new_stacks")
             .ToString();
     }
 
@@ -455,8 +729,10 @@ public sealed class StackRollupSearchService : IStackRollupSearchService
 
         var columnIndexes = GetColumnIndexes(columns);
         int bucketIndex = columnIndexes["bucket"];
+        int documentsIndex = columnIndexes["documents"];
         int eventsIndex = columnIndexes["events"];
         int stacksIndex = columnIndexes["stacks"];
+        int totalDocumentsIndex = columnIndexes["total_documents"];
         int totalEventsIndex = columnIndexes["total_events"];
         int totalStacksIndex = columnIndexes["total_stacks"];
         int newStacksIndex = columnIndexes["new_stacks"];
@@ -464,18 +740,21 @@ public sealed class StackRollupSearchService : IStackRollupSearchService
         long totalEvents = 0;
         long totalStacks = 0;
         long newStacks = 0;
+        long totalDocuments = 0;
         foreach (var value in values.EnumerateArray())
         {
+            totalDocuments = value[totalDocumentsIndex].GetInt64();
             totalEvents = value[totalEventsIndex].GetInt64();
             totalStacks = value[totalStacksIndex].GetInt64();
             newStacks = value[newStacksIndex].GetInt64();
             buckets.Add(new StackRollupStatsBucket(
                 value[bucketIndex].GetDateTimeOffset().UtcDateTime,
                 value[eventsIndex].GetInt64(),
-                value[stacksIndex].GetInt64()));
+                value[stacksIndex].GetInt64(),
+                value[documentsIndex].GetInt64()));
         }
 
-        return new StackRollupStatsResult(totalEvents, totalStacks, newStacks, buckets);
+        return new StackRollupStatsResult(totalEvents, totalStacks, newStacks, buckets, totalDocuments);
     }
 
     private static IReadOnlyDictionary<string, long> ReadProjectUserCounts(JsonElement root)
@@ -501,6 +780,65 @@ public sealed class StackRollupSearchService : IStackRollupSearchService
             .Select((column, index) => (Name: column.GetProperty("name").GetString(), Index: index))
             .Where(column => column.Name is not null)
             .ToDictionary(column => column.Name!, column => column.Index, StringComparer.Ordinal);
+
+    private static bool IsDashboardAggregation(string aggregations)
+    {
+        string value = aggregations.Replace(" ", String.Empty, StringComparison.Ordinal).ToLowerInvariant();
+        return value.Contains("date:(date", StringComparison.Ordinal)
+            && value.Contains("cardinality:stack", StringComparison.Ordinal)
+            && value.Contains("sum:count~1", StringComparison.Ordinal)
+            && value.Contains("terms:(first@include:true)", StringComparison.Ordinal);
+    }
+
+    private static bool IsTermsTagsAggregation(string aggregations)
+        => String.Equals(aggregations.Replace(" ", String.Empty, StringComparison.Ordinal), "terms:tags", StringComparison.OrdinalIgnoreCase);
+
+    private static CountResult ToCountResult(StackRollupStatsResult stats)
+    {
+        static ValueAggregate Metric(double value) => new()
+        {
+            Value = value,
+            Data = new Dictionary<string, object> { ["@type"] = "value" }
+        };
+
+        var dateBuckets = stats.Buckets.Select(bucket => (IBucket)new DateHistogramBucket(bucket.Date, new Dictionary<string, IAggregate>
+        {
+            ["cardinality_stack"] = Metric(bucket.Stacks),
+            ["sum_count"] = Metric(bucket.Events)
+        })
+        {
+            Key = new DateTimeOffset(bucket.Date).ToUnixTimeMilliseconds(),
+            KeyAsString = bucket.Date.ToString("O", CultureInfo.InvariantCulture),
+            Total = bucket.Documents,
+            Data = new Dictionary<string, object> { ["@type"] = "datehistogram" }
+        }).ToArray();
+
+        var firstBuckets = new IBucket[]
+        {
+            new KeyedBucket<bool>(null)
+            {
+                Key = true,
+                Total = stats.NewStacks,
+                Data = new Dictionary<string, object> { ["@type"] = "bool" }
+            }
+        };
+
+        return new CountResult(stats.Documents, new Dictionary<string, IAggregate>
+        {
+            ["date_date"] = new BucketAggregate
+            {
+                Items = dateBuckets,
+                Data = new Dictionary<string, object> { ["@type"] = "bucket" }
+            },
+            ["cardinality_stack"] = Metric(stats.TotalStacks),
+            ["terms_first"] = new BucketAggregate
+            {
+                Items = firstBuckets,
+                Data = new Dictionary<string, object> { ["@type"] = "bucket" }
+            },
+            ["sum_count"] = Metric(stats.TotalEvents)
+        });
+    }
 
     private async Task<StackRollupReadiness> GetReadinessAsync(CancellationToken cancellationToken)
     {
@@ -562,6 +900,51 @@ public sealed class StackRollupSearchService : IStackRollupSearchService
         return Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
     }
 
+    private string EncodeEventCursor(EventLookupEsqlRow row, EventLookupSort sort, DateTime utcStart, DateTime utcEnd, string fingerprint)
+    {
+        var cursor = new EventLookupCursor(CursorVersion, sort.Value, row.Date.Ticks, row.EventId, utcStart.Ticks, utcEnd.Ticks, fingerprint);
+        byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(cursor, _serializerOptions);
+        return Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+    }
+
+    private EventLookupCursor? DecodeEventCursor(string? token, string sort, string fingerprint)
+    {
+        if (String.IsNullOrWhiteSpace(token))
+            return null;
+
+        try
+        {
+            string base64 = token.Replace('-', '+').Replace('_', '/');
+            base64 = base64.PadRight(base64.Length + (4 - base64.Length % 4) % 4, '=');
+            var cursor = JsonSerializer.Deserialize<EventLookupCursor>(Convert.FromBase64String(base64), _serializerOptions);
+            if (cursor is null
+                || cursor.Version != CursorVersion
+                || !String.Equals(cursor.Sort, sort, StringComparison.Ordinal)
+                || !String.Equals(cursor.Fingerprint, fingerprint, StringComparison.Ordinal)
+                || String.IsNullOrWhiteSpace(cursor.EventId)
+                || cursor.Date < DateTime.MinValue.Ticks
+                || cursor.Date > DateTime.MaxValue.Ticks
+                || cursor.UtcStart < DateTime.MinValue.Ticks
+                || cursor.UtcStart > DateTime.MaxValue.Ticks
+                || cursor.UtcEnd < DateTime.MinValue.Ticks
+                || cursor.UtcEnd > DateTime.MaxValue.Ticks
+                || cursor.UtcStart > cursor.UtcEnd)
+            {
+                throw new InvalidEventLookupCursorException("The event pagination cursor is not valid for this query.");
+            }
+
+            return cursor;
+        }
+        catch (InvalidEventLookupCursorException)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is FormatException or JsonException or OverflowException)
+        {
+            throw new InvalidEventLookupCursorException("The event pagination cursor is malformed.");
+        }
+    }
+
     private StackRollupCursor? DecodeCursor(string? token, string sort, string fingerprint)
     {
         if (String.IsNullOrWhiteSpace(token))
@@ -615,6 +998,21 @@ public sealed class StackRollupSearchService : IStackRollupSearchService
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
     }
 
+    private static string CreateEventFingerprint(EventLookupSearchRequest request, string sort)
+    {
+        string organizations = String.Join(',', request.AppFilter?.Organizations.Select(organization => organization.Id).Order(StringComparer.Ordinal) ?? Enumerable.Empty<string>());
+        string projects = String.Join(',', request.AppFilter?.Projects?.Select(project => project.Id).Order(StringComparer.Ordinal) ?? Enumerable.Empty<string>());
+        string value = String.Join('\n', [
+            sort,
+            request.Filter ?? String.Empty,
+            request.TimeExpression ?? String.Empty,
+            organizations,
+            projects,
+            request.AppFilter?.Stack?.Id ?? String.Empty
+        ]);
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
+    }
+
     private static StackRollupRow ToPublicRow(StackRollupEsqlRow row) => new(
         row.StackId,
         row.Total,
@@ -633,6 +1031,13 @@ public sealed class StackRollupSearchService : IStackRollupSearchService
         "last_occurrence" => new StackRollupSort("last_occurrence", "event_last", true, true),
         "-last_occurrence" => new StackRollupSort("-last_occurrence", "event_last", true, false),
         _ => throw new ArgumentOutOfRangeException(nameof(sort), sort, "Unsupported stack rollup sort.")
+    };
+
+    private static EventLookupSort GetEventSort(string? sort) => (String.IsNullOrWhiteSpace(sort) ? "-date" : sort.Trim()) switch
+    {
+        "date" => new EventLookupSort("date", true),
+        "-date" => new EventLookupSort("-date", false),
+        _ => throw new ArgumentOutOfRangeException(nameof(sort), sort, "Unsupported event lookup sort.")
     };
 
     private static string StripAlternateInversion(string? filter) => filter?.StartsWith("@!", StringComparison.Ordinal) == true ? filter[2..] : filter ?? String.Empty;
@@ -664,8 +1069,11 @@ public sealed class StackRollupSearchService : IStackRollupSearchService
         => parameters.Add(new KeyValuePair<string, ICollection<FieldValue>>(name, values));
 
     private sealed record StackRollupSort(string Value, string Metric, bool IsDate, bool Ascending);
+    private sealed record EventLookupSort(string Value, bool Ascending);
     private sealed record StackRollupReadiness(bool IsReady, string Reason);
     private sealed record StackRollupCursor(int Version, string Sort, long Metric, string StackId, long UtcStart, long UtcEnd, string Fingerprint);
+    private sealed record EventLookupCursor(int Version, string Sort, long Date, string EventId, long UtcStart, long UtcEnd, string Fingerprint);
+    private sealed record EventLookupEsqlRow(string EventId, DateTime Date, long? TotalEvents);
     private sealed record StackRollupEsqlRow(
         string StackId,
         long Total,

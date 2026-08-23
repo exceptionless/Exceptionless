@@ -65,7 +65,7 @@ public class EventStackFilter
         _stackQueryVisitor.AddVisitor(new RemoveFieldsQueryVisitor(f => !stackFields.Contains(f)));
         _stackQueryVisitor.AddVisitor(new CleanupQueryVisitor());
         // handles stack special fields and changing event field names to their stack equivalent
-        _stackQueryVisitor.AddVisitor(new StackFilterQueryVisitor());
+        _stackQueryVisitor.AddVisitor(new StackFilterQueryVisitor(_stackOnlyFields.Union(_stackOnlySpecialFields)));
         _stackQueryVisitor.AddVisitor(new CleanupQueryVisitor());
 
         _invertedStackQueryVisitor = new ChainedQueryVisitor();
@@ -73,7 +73,7 @@ public class EventStackFilter
         _invertedStackQueryVisitor.AddVisitor(new RemoveFieldsQueryVisitor(f => !stackFields.Contains(f)));
         _invertedStackQueryVisitor.AddVisitor(new CleanupQueryVisitor());
         // handles stack special fields and changing event field names to their stack equivalent
-        _invertedStackQueryVisitor.AddVisitor(new StackFilterQueryVisitor());
+        _invertedStackQueryVisitor.AddVisitor(new StackFilterQueryVisitor(_stackOnlyFields.Union(_stackOnlySpecialFields)));
         _invertedStackQueryVisitor.AddVisitor(new CleanupQueryVisitor());
         // inverts the filter
         _invertedStackQueryVisitor.AddVisitor(new InvertQueryVisitor(_stackNonInvertedFields));
@@ -109,13 +109,21 @@ public class EventStackFilter
             InvertedFilter = invertedResult?.ToString(),
             HasStatus = context.GetBoolean(nameof(StackFilter.HasStatus)),
             HasStackIds = context.GetBoolean(nameof(StackFilter.HasStackIds)),
-            HasStatusOpen = context.GetBoolean(nameof(StackFilter.HasStatusOpen))
+            HasStatusOpen = context.GetBoolean(nameof(StackFilter.HasStatusOpen)),
+            HasStackOnlyCriteria = context.GetBoolean(nameof(StackFilter.HasStackOnlyCriteria))
         };
     }
 }
 
 public class StackFilterQueryVisitor : ChainableQueryVisitor
 {
+    private readonly ISet<string> _stackOnlyFields;
+
+    public StackFilterQueryVisitor(IEnumerable<string>? stackOnlyFields = null)
+    {
+        _stackOnlyFields = new HashSet<string>(stackOnlyFields ?? [], StringComparer.OrdinalIgnoreCase);
+    }
+
     public override Task<IQueryNode?> VisitAsync(TermNode node, IQueryVisitorContext context)
     {
         IQueryNode result = node;
@@ -126,6 +134,9 @@ public class StackFilterQueryVisitor : ChainableQueryVisitor
             node.RemoveSelf();
             return Task.FromResult<IQueryNode?>(null);
         }
+
+        if (_stackOnlyFields.Contains(node.Field))
+            context.SetValue(nameof(StackFilter.HasStackOnlyCriteria), true);
 
         // process special stack fields
         switch (node.Field?.ToLowerInvariant())
@@ -216,4 +227,5 @@ public record StackFilter
     public required bool HasStatus { get; set; }
     public required bool HasStatusOpen { get; set; }
     public required bool HasStackIds { get; set; }
+    public required bool HasStackOnlyCriteria { get; set; }
 }

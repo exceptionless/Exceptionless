@@ -296,7 +296,8 @@ public sealed class StackRollupBenchmarkTests : IntegrationTestsBase
     {
         var results = await SendRequestAsAsync<IReadOnlyCollection<StackSummaryModel>>(request => request
             .AsTestOrganizationUser()
-            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "stack-rollups")
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "events")
+            .QueryString("mode", "stack")
             .QueryString("filter", "source:StackRollupBenchmark")
             .QueryString("sort", "-total")
             .QueryString("time", "last 24 hours")
@@ -308,15 +309,17 @@ public sealed class StackRollupBenchmarkTests : IntegrationTestsBase
 
     private async Task ExecuteLookupApiStatsAsync(int stackCount, int eventsPerStack)
     {
-        var result = await SendRequestAsAsync<StackRollupStatsResult>(request => request
+        var result = await SendRequestAsAsync<CountResult>(request => request
             .AsTestOrganizationUser()
-            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "stack-rollups", "stats")
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "events", "count")
+            .QueryString("aggregations", "date:(date cardinality:stack sum:count~1) cardinality:stack terms:(first @include:true) sum:count~1")
+            .QueryString("mode", "stack")
             .QueryString("filter", "source:StackRollupBenchmark")
             .QueryString("time", "last 24 hours")
             .StatusCodeShouldBeOk());
         Assert.NotNull(result);
-        Assert.InRange(Math.Abs(result.TotalStacks - stackCount), 0, Math.Max(1, stackCount / 100));
-        Assert.Equal((long)stackCount * eventsPerStack, result.TotalEvents);
+        Assert.InRange(Math.Abs((result.Aggregations.Cardinality("cardinality_stack")?.Value ?? 0) - stackCount), 0, Math.Max(1, stackCount / 100));
+        Assert.Equal((long)stackCount * eventsPerStack, result.Aggregations.Sum("sum_count")?.Value);
     }
 
     private static async Task<double> MeasureAsync(Func<Task> action)
