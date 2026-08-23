@@ -85,6 +85,7 @@ describe('saved view column settings', () => {
         } as Pick<SavedView, 'columns'>;
 
         expect(savedViewColumnSizingEqual({ project: 360 }, view)).toBe(true);
+        expect(savedViewColumnSizingEqual({ project: 359.6 }, view)).toBe(true);
         expect(savedViewColumnSizingEqual({ project: 420 }, view)).toBe(false);
         expect(savedViewColumnSizingEqual({}, view)).toBe(false);
     });

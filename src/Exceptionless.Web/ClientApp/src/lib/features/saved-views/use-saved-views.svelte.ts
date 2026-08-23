@@ -25,6 +25,7 @@ import {
     getSavedColumnSizing,
     getSavedColumnVisibility,
     getSavedWrappedColumnIds,
+    normalizeColumnSizing,
     savedViewColumnSizingEqual,
     savedViewColumnWrappingEqual
 } from './column-settings';
@@ -381,7 +382,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         if (options.getColumnSizing) {
-            draft.columnSizingChanges = buildRecordChanges(getSavedColumnSizing(view), options.getColumnSizing());
+            draft.columnSizingChanges = buildRecordChanges(getSavedColumnSizing(view), normalizeColumnSizing(options.getColumnSizing()));
         }
 
         if (hasSavedViewAutoFillChange(autoFillColumnId, view, options.defaultAutoFillColumnId)) {

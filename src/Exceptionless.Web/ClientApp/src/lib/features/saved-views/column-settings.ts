@@ -101,12 +101,20 @@ export function getSavedWrappedColumnIds(view: SavedColumnState | undefined): Wr
         .map(([columnId]) => columnId);
 }
 
+export function normalizeColumnSizing(sizing: ColumnSizingState | undefined): ColumnSizingState {
+    return Object.fromEntries(
+        Object.entries(sizing ?? {})
+            .filter(([columnId]) => columnId !== 'select')
+            .map(([columnId, width]) => [columnId, Math.round(width)])
+    );
+}
+
 export function savedViewColumnSizingEqual(current: ColumnSizingState | undefined, view: SavedColumnState): boolean {
     const saved = getSavedColumnSizing(view);
-    const currentEntries = Object.entries(current ?? {}).filter(([columnId]) => columnId !== 'select');
+    const currentEntries = Object.entries(normalizeColumnSizing(current));
     const savedEntries = Object.entries(saved);
 
-    return currentEntries.length === savedEntries.length && currentEntries.every(([columnId, width]) => saved[columnId] === Math.round(width));
+    return currentEntries.length === savedEntries.length && currentEntries.every(([columnId, width]) => saved[columnId] === width);
 }
 
 export function savedViewColumnWrappingEqual(current: readonly string[] | undefined, view: SavedColumnState): boolean {
