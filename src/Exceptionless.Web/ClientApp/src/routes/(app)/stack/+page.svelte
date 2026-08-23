@@ -884,7 +884,7 @@
         {#if showChart}
             <EventsDashboardChart
                 data={chartData()}
-                isLoading={isSavedViewRoutePending || eventsQuery.isFetching || chartDataQuery.isLoading}
+                isLoading={isSavedViewRoutePending || (chartDataQuery.isLoading && !chartDataQuery.isSuccess)}
                 {onRangeSelect}
             />
         {/if}
