@@ -30,6 +30,7 @@
     import type { PersistentEvent } from '../models/index';
 
     import { getSessionId } from '../utils';
+    import { shouldResetActiveEventTab } from './events-overview-tab-state';
     import Environment from './views/environment.svelte';
     import Error from './views/error.svelte';
     import ExtendedData from './views/extended-data.svelte';
@@ -163,7 +164,7 @@
     let showJsonDialog = $state(false);
 
     $effect(() => {
-        if (event && !tabs.includes(activeTab)) {
+        if (shouldResetActiveEventTab(!!event, projectQuery.isPending, tabs, activeTab)) {
             activeTab = 'Overview';
         }
     });
