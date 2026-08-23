@@ -17,6 +17,14 @@ test('approved Rataplan UI feedback remains fixed', async ({ e2eApi, e2eScenario
     });
     expect(secondEvent.stack_id).toBe(journey.stackId);
 
+    await page.route(`**/api/v2/events/${secondEvent.id}*`, async (route) => {
+        const response = await route.fetch();
+        const event = (await response.json()) as { data?: Record<string, unknown> };
+        const data = { ...event.data };
+        delete data['@request'];
+        await route.fulfill({ json: { ...event, data }, response });
+    });
+
     for (let index = 0; index < 5; index++) {
         const referenceId = createReferenceId(journey.run, `-stack-${index}`);
         const event = createRepresentativeEvent({
@@ -66,6 +74,20 @@ test('approved Rataplan UI feedback remains fixed', async ({ e2eApi, e2eScenario
 
         await expect(page).not.toHaveURL(new RegExp(`/event/${firstEventId}(?:[?#]|$)`));
         await expect(page.getByRole('tab', { name: 'Exception' })).toHaveAttribute('aria-selected', 'true');
+
+        await page.goto(`/next/stack/${journey.stackId}/event/${firstEventId}`);
+        await page.getByRole('tab', { name: 'Request' }).click();
+        await expect(page.getByRole('tab', { name: 'Request' })).toHaveAttribute('aria-selected', 'true');
+
+        if (await newerEventButton.isEnabled()) {
+            await newerEventButton.click();
+        } else {
+            await olderEventButton.click();
+        }
+
+        await expect(page).toHaveURL(new RegExp(`/event/${secondEvent.id}(?:[?#]|$)`));
+        await expect(page.getByRole('tab', { name: 'Request' })).toBeHidden();
+        await expect(overviewTab).toHaveAttribute('aria-selected', 'true');
     });
 
     await test.step('command palette overflow is discoverable and shortcut chips have stronger emphasis', async () => {

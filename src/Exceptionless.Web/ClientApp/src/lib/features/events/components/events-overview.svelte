@@ -162,6 +162,12 @@
     let notifiedEventId = $state('');
     let showJsonDialog = $state(false);
 
+    $effect(() => {
+        if (event && !tabs.includes(activeTab)) {
+            activeTab = 'Overview';
+        }
+    });
+
     function isPromotedTab(tab: TabType): boolean {
         return !!projectQuery.data?.promoted_tabs?.includes(tab);
     }
