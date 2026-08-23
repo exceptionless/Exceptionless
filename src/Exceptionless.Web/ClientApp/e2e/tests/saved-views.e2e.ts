@@ -202,9 +202,10 @@ test('switching saved views preserves each view temporary filter overrides acros
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
     await expectColumnBefore(page, 'Summary', 'User');
 
-    await page.goto(`/next/event/${firstViewSlug}?project=${e2eScenario.projectId}`);
+    await page.goto(`/next/event/${firstViewSlug}?project=${e2eScenario.projectId}&sort=type&status=open`);
     await expect(page.getByRole('heading', { name: firstViewName })).toBeVisible();
     await expect(page).toHaveURL(new RegExp(`[?&]project=${escapeRegExp(e2eScenario.projectId)}(?:&|$)`));
+    await expect(page).toHaveURL(/[?&]sort=type(?:&|$)/);
     await expect(
         page
             .getByRole('button', { name: /Date\s+Last 90 days/ })
@@ -218,11 +219,16 @@ test('switching saved views preserves each view temporary filter overrides acros
             .filter({ visible: true })
             .first()
     ).toBeVisible();
+    await navigateClientSide(page, `/next/event/${firstViewSlug}?project=${e2eScenario.projectId}&sort=type&status=regressed&time=90d`);
+    await expect(page).toHaveURL(/[?&]status=regressed(?:&|$)/);
     await secondViewLink.click();
     await expect(page.getByRole('heading', { name: secondViewName })).toBeVisible();
 
     await firstViewLink.click();
     await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(firstViewSlug)}(?:[?#]|$)`));
+    await expect(page).toHaveURL(/[?&]status=regressed(?:&|$)/);
+    await expect(page).not.toHaveURL(/[?&]project=/);
+    await expect(page).not.toHaveURL(/[?&]sort=/);
     await expect(page.getByRole('heading', { name: firstViewName })).toBeVisible();
     await expect(
         page
@@ -342,6 +348,15 @@ async function expectColumnBefore(page: Page, firstColumn: string, secondColumn:
             return firstIndex >= 0 && secondIndex >= 0 && firstIndex < secondIndex;
         })
         .toBe(true);
+}
+
+async function navigateClientSide(page: Page, href: string): Promise<void> {
+    await page.evaluate((target) => {
+        const link = document.createElement('a');
+        link.href = target;
+        document.body.append(link);
+        link.click();
+    }, href);
 }
 
 async function openViewMenu(page: Page): Promise<void> {

@@ -35,9 +35,11 @@ import {
     applyRecordChanges,
     applyWrappedColumnChanges,
     buildFilterChanges,
+    buildFilterOverrideBaselines,
     buildRecordChanges,
     buildWrappedColumnChanges,
     clearSavedViewDraft,
+    getMatchingFilterOverrideKeys,
     getSavedViewDraft,
     mergeFilterOverrides,
     type SavedViewDraft,
@@ -132,6 +134,19 @@ export function getComparableSavedViewFilter(
 
 export function getComparableSavedViewTime(time: null | string | undefined, defaultTime: null | string | undefined): null | string {
     return time ?? defaultTime ?? null;
+}
+
+export function getDraftSortValue(
+    serverSort: null | string,
+    currentSort: null | string,
+    initialOverride: undefined | { value: null | string },
+    storedDraft: SavedViewDraft | undefined
+): null | string {
+    if (currentSort === serverSort || initialOverride?.value !== currentSort) {
+        return currentSort;
+    }
+
+    return storedDraft && 'sort' in storedDraft ? (storedDraft.sort ?? null) : serverSort;
 }
 
 export function getSavedViewStateSignature(
@@ -399,6 +414,15 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
     }
 
+    function getActiveFilterOverrideKeys(currentFilters: IFilter[]): string[] {
+        return getMatchingFilterOverrideKeys(currentFilters, activeFilterOverrideBaselines);
+    }
+
+    function getStoredDraft(view: SavedView): SavedViewDraft | undefined {
+        const identity = getDraftIdentity(view);
+        return identity ? getSavedViewDraft(identity) : undefined;
+    }
+
     function buildSavedViewDraft(
         view: SavedView,
         columnOrderBaseline: ColumnOrderState | undefined = hydratedColumnOrder,
@@ -407,16 +431,15 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         const draft: SavedViewDraft = {
             version: 1
         };
+        const storedDraft = preserveExplicitFilterOverrides ? getStoredDraft(view) : undefined;
 
         if (options.getFilterDefinitions) {
             const serverFilters = getServerFilters(view);
             let currentFilters = deserializeFilters(options.getFilterDefinitions());
             const currentFilterChanges = buildFilterChanges(serverFilters, currentFilters);
             if (preserveExplicitFilterOverrides && currentFilterChanges) {
-                const identity = getDraftIdentity(view);
-                const storedDraft = identity ? getSavedViewDraft(identity) : undefined;
                 const storedDraftFilters = applyFilterChanges(serverFilters, storedDraft?.filterChanges);
-                currentFilters = mergeFilterOverrides(currentFilters, storedDraftFilters, activeFilterOverrideKeys);
+                currentFilters = mergeFilterOverrides(currentFilters, storedDraftFilters, getActiveFilterOverrideKeys(currentFilters));
             }
 
             draft.filterChanges = buildFilterChanges(serverFilters, currentFilters);
@@ -458,8 +481,10 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
         if (supportsSort) {
             const currentSort = options.getSort?.() ?? options.queryParams.sort ?? null;
-            if (currentSort !== (view.sort ?? null)) {
-                draft.sort = currentSort;
+            const serverSort = view.sort ?? null;
+            const sortForDraft = preserveExplicitFilterOverrides ? getDraftSortValue(serverSort, currentSort, activeSortOverride, storedDraft) : currentSort;
+            if (sortForDraft !== serverSort) {
+                draft.sort = sortForDraft;
             }
         }
 
@@ -479,7 +504,8 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     // Hydrate saved view state when a saved view loads. Query params remain URL overrides.
     // lastLoadedViewId prevents re-hydration on background refetches (which would stomp user edits).
     let lastLoadedViewId = '';
-    let activeFilterOverrideKeys = $state<string[]>([]);
+    let activeFilterOverrideBaselines = $state<Record<string, string>>({});
+    let activeSortOverride = $state<{ value: null | string }>();
     let appliedDraftKey = $state('');
     let pendingDraftKey = '';
     let hydratedColumnOrder = $state<ColumnOrderState>();
@@ -501,7 +527,8 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
                 }
 
                 lastLoadedViewId = '';
-                activeFilterOverrideKeys = [];
+                activeFilterOverrideBaselines = {};
+                activeSortOverride = undefined;
                 appliedDraftKey = '';
                 hydratedColumnOrder = undefined;
                 hydratedSavedView = undefined;
@@ -541,7 +568,8 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         lastLoadedViewId = view.id;
-        activeFilterOverrideKeys = [];
+        activeFilterOverrideBaselines = {};
+        activeSortOverride = undefined;
         hydratedColumnOrder = undefined;
         hydratedSavedView = view;
         hydratedSavedViewSignature = viewSignature;
@@ -580,14 +608,22 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         const draft = getSavedViewDraft(identity);
-        activeFilterOverrideKeys = getExplicitFilterOverrideKeys(getServerFilters(view));
+        const serverFilters = getServerFilters(view);
+        const currentFilters = options.getFilterDefinitions ? deserializeFilters(options.getFilterDefinitions()) : [];
+        const overrideKeys = getExplicitFilterOverrideKeys(serverFilters);
+        activeFilterOverrideBaselines = buildFilterOverrideBaselines(currentFilters, overrideKeys);
+        activeSortOverride = page.url.searchParams.has('sort')
+            ? {
+                  value: options.getSort?.() ?? options.queryParams.sort ?? null
+              }
+            : undefined;
         appliedDraftKey = draftKey;
         if (pendingDraftKey === draftKey) {
             pendingDraftKey = '';
         }
 
         if (draft) {
-            applyDraftState(view, draft, activeFilterOverrideKeys);
+            applyDraftState(view, draft, overrideKeys);
         }
     }
 
@@ -675,6 +711,26 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         return view && activeSavedView?.id === view.id ? buildSavedViewDraft(view, hydratedColumnOrder, true) : undefined;
     });
 
+    $effect(() => {
+        if (!appliedDraftKey) {
+            return;
+        }
+
+        if (options.getFilterDefinitions) {
+            const currentFilters = deserializeFilters(options.getFilterDefinitions());
+            const activeKeys = getActiveFilterOverrideKeys(currentFilters);
+            const remainingBaselines = Object.fromEntries(Object.entries(activeFilterOverrideBaselines).filter(([key]) => activeKeys.includes(key)));
+            if (Object.keys(remainingBaselines).length !== Object.keys(activeFilterOverrideBaselines).length) {
+                activeFilterOverrideBaselines = remainingBaselines;
+            }
+        }
+
+        const currentSort = options.getSort?.() ?? options.queryParams.sort ?? null;
+        if (activeSortOverride && currentSort !== activeSortOverride.value) {
+            activeSortOverride = undefined;
+        }
+    });
+
     async function persistDraftAfterStateSettles(
         viewId: string,
         identity: SavedViewDraftIdentity,
@@ -755,7 +811,8 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         options.queryParams.filters = null;
         setSortQueryParam(options.queryParams, null);
         setTimeQueryParam(options.queryParams, null);
-        activeFilterOverrideKeys = [];
+        activeFilterOverrideBaselines = {};
+        activeSortOverride = undefined;
         hydratedColumnOrder = undefined;
         applyColumnState(view);
         applyDisplayState(view);

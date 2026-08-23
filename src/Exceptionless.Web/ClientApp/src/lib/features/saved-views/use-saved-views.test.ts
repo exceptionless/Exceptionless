@@ -11,6 +11,7 @@ import {
     filterDefinitionsEqual,
     getComparableSavedViewFilter,
     getComparableSavedViewTime,
+    getDraftSortValue,
     getSavedViewStateSignature,
     hasMissingSavedViewSlug,
     hasSavedViewAutoFillChange,
@@ -231,6 +232,20 @@ describe('useSavedViews', () => {
 
             // Assert
             expect(result).toBe('[now-7d TO now]');
+        });
+    });
+
+    describe('sort drafts', () => {
+        it('keeps a one-off URL sort override out of a local draft', () => {
+            expect(getDraftSortValue('-date', 'type', { value: 'type' }, undefined)).toBe('-date');
+        });
+
+        it('preserves an older local sort behind a one-off URL override', () => {
+            expect(getDraftSortValue('-date', 'type', { value: 'type' }, { sort: 'count', version: 1 })).toBe('count');
+        });
+
+        it('persists a sort changed after hydration', () => {
+            expect(getDraftSortValue('-date', 'count', { value: 'type' }, undefined)).toBe('count');
         });
     });
 

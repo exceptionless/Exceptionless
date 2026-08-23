@@ -142,6 +142,10 @@ export function buildFilterChanges(serverFilters: IFilter[], currentFilters: IFi
     };
 }
 
+export function buildFilterOverrideBaselines(filters: IFilter[], overrideKeys: Iterable<string>): Record<string, string> {
+    return Object.fromEntries([...overrideKeys].map((key) => [key, serializeFilters(filters.filter((filter) => filter.key === key))]));
+}
+
 export function buildRecordChanges<T>(serverValue: Record<string, T>, currentValue: Record<string, T>): Record<string, null | T> | undefined {
     const changes: Record<string, null | T> = {};
     const keys = new Set([...Object.keys(serverValue), ...Object.keys(currentValue)]);
@@ -175,6 +179,12 @@ export function clearSavedViewDraft(identity: SavedViewDraftIdentity, storage: D
     } catch {
         // Storage can be unavailable by browser policy; the saved view still works without a local draft.
     }
+}
+
+export function getMatchingFilterOverrideKeys(filters: IFilter[], baselines: Record<string, string>): string[] {
+    return Object.entries(baselines)
+        .filter(([key, baseline]) => serializeFilters(filters.filter((filter) => filter.key === key)) === baseline)
+        .map(([key]) => key);
 }
 
 export function getSavedViewDraft(identity: SavedViewDraftIdentity, storage: DraftStorage | undefined = getLocalStorage()): SavedViewDraft | undefined {

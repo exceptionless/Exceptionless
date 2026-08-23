@@ -9,9 +9,11 @@ import {
     applyRecordChanges,
     applyWrappedColumnChanges,
     buildFilterChanges,
+    buildFilterOverrideBaselines,
     buildRecordChanges,
     buildWrappedColumnChanges,
     clearSavedViewDraft,
+    getMatchingFilterOverrideKeys,
     getSavedViewDraft,
     mergeFilterOverrides,
     saveSavedViewDraft
@@ -107,6 +109,15 @@ describe('saved view drafts', () => {
 
         expect((mergedFilters.find((filter) => filter.key === 'project') as ProjectFilter).value).toEqual(['url-project']);
         expect((mergedFilters.find((filter) => filter.key === 'status') as StatusFilter).value).toEqual([StackStatus.Regressed]);
+    });
+
+    it('retires an initial filter override after its value changes', () => {
+        const initialFilters = [new ProjectFilter(['url-project']), new StatusFilter([StackStatus.Regressed])];
+        const baselines = buildFilterOverrideBaselines(initialFilters, ['project']);
+
+        expect(getMatchingFilterOverrideKeys(initialFilters, baselines)).toEqual(['project']);
+        expect(getMatchingFilterOverrideKeys([new ProjectFilter(['edited-project']), new StatusFilter([StackStatus.Regressed])], baselines)).toEqual([]);
+        expect(getMatchingFilterOverrideKeys([new StatusFilter([StackStatus.Regressed])], baselines)).toEqual([]);
     });
 
     it('applies per-column changes over the latest server configuration', () => {
