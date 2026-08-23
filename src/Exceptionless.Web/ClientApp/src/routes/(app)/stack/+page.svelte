@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
+    import type { StackSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
     import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
     import { resolve } from '$app/paths';
@@ -9,12 +9,7 @@
     import RefreshButton from '$comp/refresh-button.svelte';
     import { H3 } from '$comp/typography';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
-    import {
-        type GetEventsParams,
-        getOrganizationCountQuery,
-        getOrganizationEventsQuery,
-        PERSISTENT_EVENT_DELETE_RECONCILE_EVENT
-    } from '$features/events/api.svelte';
+    import { PERSISTENT_EVENT_DELETE_RECONCILE_EVENT } from '$features/events/api.svelte';
     import EventsDashboardChart from '$features/events/components/events-dashboard-chart.svelte';
     import EventsStatsDashboard from '$features/events/components/events-stats-dashboard.svelte';
     import {
@@ -50,10 +45,10 @@
     import { premiumPage } from '$features/organizations/premium-page.svelte';
     import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
     import { useSavedViews } from '$features/saved-views/use-saved-views.svelte';
-    import * as agg from '$features/shared/api/aggregations';
     import { createPageSizePreference, getSharedTableOptions, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
     import { fillDateSeries } from '$features/shared/utils/charts';
     import { parseDateMathRange, toDateMathRange } from '$features/shared/utils/datemath';
+    import { getOrganizationStackRollupsQuery, getOrganizationStackRollupStatsQuery, type GetStackRollupsParams } from '$features/stacks/api.svelte';
     import StackDetailSheet from '$features/stacks/components/stack-detail-sheet.svelte';
     import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/stacks-bulk-actions-dropdown-menu.svelte';
     import { StackStatus } from '$features/stacks/models';
@@ -77,7 +72,6 @@
         serializeTimeQueryParam
     } from '../redirect-to-events.svelte';
 
-    // TODO: Update this page to use StackSummaryModel instead of EventSummaryModel.
     let selectedStackId = $state<string>();
     const DEFAULT_FILTER = '(type:404 OR type:error) (status:open OR status:regressed)';
 
@@ -86,11 +80,11 @@
         selectedStackId = undefined;
     }
 
-    function rowClick(row: EventSummaryModel<SummaryTemplateKeys>) {
+    function rowClick(row: StackSummaryModel<SummaryTemplateKeys>) {
         selectedStackId = row.id;
     }
 
-    function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
+    function rowHref(row: StackSummaryModel<SummaryTemplateKeys>): string {
         return resolve('/(app)/stack/[stackId=objectid]', {
             stackId: row.id
         });
@@ -106,12 +100,13 @@
     const PAGE_SIZE_PREFERENCE_KEY = 'event-stack-list-page-size';
     const pageSizePreference = createPageSizePreference(PAGE_SIZE_PREFERENCE_KEY);
     const DEFAULT_PARAMS = {
+        after: undefined as string | undefined,
+        before: undefined as string | undefined,
         bot: undefined as string | undefined,
         filter: undefined as string | undefined,
         first: undefined as string | undefined,
         level: undefined as string | undefined,
         limit: undefined as number | undefined,
-        page: undefined as number | undefined,
         project: undefined as string | undefined,
         reference: undefined as string | undefined,
         session: undefined as string | undefined,
@@ -220,12 +215,13 @@
         defaults: DEFAULT_PARAMS,
         history: 'push',
         schema: {
+            after: 'string',
+            before: 'string',
             bot: 'string',
             filter: 'string',
             first: 'string',
             level: 'string',
             limit: 'number',
-            page: 'number',
             project: 'string',
             reference: 'string',
             session: 'string',
@@ -487,7 +483,7 @@
             queryFilterParams.version !== queryParams.version;
         const effectiveQueryWillChange = (filter || null) !== getEffectiveFilter() || time !== getQueryTime();
         const shouldClearPaginationForFilter = shouldClearPagination && effectiveQueryWillChange;
-        const paginationWillChange = shouldClearPaginationForFilter && queryParams.page != null;
+        const paginationWillChange = shouldClearPaginationForFilter && (queryParams.after != null || queryParams.before != null);
 
         updateFilterCache(filterCacheKey(filter), updatedFilters);
 
@@ -498,11 +494,12 @@
         }
 
         queryParams.update({
+            after: shouldClearPaginationForFilter ? null : queryParams.after,
+            before: shouldClearPaginationForFilter ? null : queryParams.before,
             bot: queryFilterParams.bot,
             filter: newFilterParam,
             first: queryFilterParams.first,
             level: queryFilterParams.level,
-            page: shouldClearPaginationForFilter ? null : queryParams.page,
             project: queryFilterParams.project,
             reference: queryFilterParams.reference,
             session: queryFilterParams.session,
@@ -613,7 +610,19 @@
         }
     });
 
-    const eventsQueryParameters: GetEventsParams = $state({
+    const stackRollupQueryParameters: GetStackRollupsParams = $state({
+        get after() {
+            return queryParams.after ?? undefined;
+        },
+        set after(value) {
+            queryParams.after = value ?? null;
+        },
+        get before() {
+            return queryParams.before ?? undefined;
+        },
+        set before(value) {
+            queryParams.before = value ?? null;
+        },
         get filter() {
             return getEffectiveFilter()!;
         },
@@ -626,14 +635,8 @@
         set limit(value) {
             setPageSize(value);
         },
-        mode: 'stack_frequent',
         offset: DEFAULT_OFFSET,
-        get page() {
-            return queryParams.page ?? undefined;
-        },
-        set page(value) {
-            queryParams.page = value ?? null;
-        },
+        sort: '-total',
         get time() {
             return getQueryTime() ?? undefined;
         },
@@ -644,15 +647,15 @@
     });
 
     $effect(() => {
-        premiumPage.current = filterUsesPremiumFeatures(eventsQueryParameters.filter, 'event-stack') ? 'search' : undefined;
+        premiumPage.current = filterUsesPremiumFeatures(stackRollupQueryParameters.filter, 'event-stack') ? 'search' : undefined;
     });
 
-    const eventsQuery = getOrganizationEventsQuery({
+    const stackRollupsQuery = getOrganizationStackRollupsQuery({
         enabled: () => !isSavedViewRoutePending,
         get params() {
             return {
-                ...eventsQueryParameters,
-                include: 'total' as const
+                ...stackRollupQueryParameters,
+                include: !stackRollupQueryParameters.after && !stackRollupQueryParameters.before ? ('total' as const) : undefined
             };
         },
         route: {
@@ -663,25 +666,25 @@
     });
 
     const table = createTable(
-        getSharedTableOptions<EventSummaryModel<SummaryTemplateKeys>>({
+        getSharedTableOptions<StackSummaryModel<SummaryTemplateKeys>>({
             columnPersistenceKey: 'stacks-column-visibility',
             get columns() {
-                return getColumns<EventSummaryModel<SummaryTemplateKeys>>(eventsQueryParameters.mode, {
+                return getColumns<StackSummaryModel<SummaryTemplateKeys>>(null, {
                     onTagClick: (tag) => onFilterChanged(new TagFilter([tag])),
-                    showType: !hasSingleTypeFilter(eventsQueryParameters.filter)
+                    showType: !hasSingleTypeFilter(stackRollupQueryParameters.filter)
                 });
             },
             defaultColumnVisibility: defaultStackColumnVisibility,
             enableColumnResizing: true,
-            paginationStrategy: 'offset',
+            paginationStrategy: 'cursor',
             get queryData() {
-                return eventsQuery.data?.data ?? [];
+                return stackRollupsQuery.data?.data ?? [];
             },
             get queryMeta() {
-                return eventsQuery.data?.meta;
+                return stackRollupsQuery.data?.meta;
             },
             get queryParameters() {
-                return eventsQueryParameters;
+                return stackRollupQueryParameters;
             }
         })
     );
@@ -702,10 +705,10 @@
             }
         }
 
-        await eventsQuery.refetch();
+        await stackRollupsQuery.refetch();
     }
 
-    const debouncedReconciliationRefetch = debounce(1500, () => eventsQuery.refetch());
+    const debouncedReconciliationRefetch = debounce(1500, () => stackRollupsQuery.refetch());
     onDestroy(() => {
         debouncedReconciliationRefetch.cancel();
     });
@@ -722,7 +725,7 @@
 
             removeTableSelection(table, message.id);
 
-            removeTableData(table, (doc: EventSummaryModel<SummaryTemplateKeys>) => doc.id === message.id);
+            removeTableData(table, (doc: StackSummaryModel<SummaryTemplateKeys>) => doc.id === message.id);
         }
     }
 
@@ -731,11 +734,11 @@
 
     let lastEmptyResponseAt = 0;
     $effect(() => {
-        const dataUpdatedAt = eventsQuery.dataUpdatedAt;
+        const dataUpdatedAt = stackRollupsQuery.dataUpdatedAt;
         if (
-            eventsQuery.isPlaceholderData ||
+            stackRollupsQuery.isPlaceholderData ||
             dataUpdatedAt === lastEmptyResponseAt ||
-            eventsQuery.data?.data?.length !== 0 ||
+            stackRollupsQuery.data?.data?.length !== 0 ||
             table.store.state.pagination.pageIndex === 0
         ) {
             return;
@@ -747,33 +750,30 @@
 
     let lastErrorAt = 0;
     $effect(() => {
-        const errorUpdatedAt = eventsQuery.errorUpdatedAt;
-        if (!eventsQuery.error || errorUpdatedAt === lastErrorAt) {
+        const errorUpdatedAt = stackRollupsQuery.errorUpdatedAt;
+        if (!stackRollupsQuery.error || errorUpdatedAt === lastErrorAt) {
             return;
         }
 
         lastErrorAt = errorUpdatedAt;
         untrack(() =>
-            showBillingDialogOnUpgradeProblem(eventsQuery.error, organization.current, async () => {
-                await eventsQuery.refetch();
+            showBillingDialogOnUpgradeProblem(stackRollupsQuery.error, organization.current, async () => {
+                await stackRollupsQuery.refetch();
             })
         );
     });
 
-    const chartDataQuery = getOrganizationCountQuery({
+    const chartDataQuery = getOrganizationStackRollupStatsQuery({
         enabled: () => !isSavedViewRoutePending,
         params: {
-            get aggregations() {
-                return `date:(date${DEFAULT_OFFSET ? `^${DEFAULT_OFFSET}` : ''} cardinality:stack sum:count~1) cardinality:stack terms:(first @include:true) sum:count~1`;
-            },
             get filter() {
-                return eventsQueryParameters.filter;
+                return stackRollupQueryParameters.filter;
             },
-            get mode() {
-                return eventsQueryParameters.mode;
+            get offset() {
+                return DEFAULT_OFFSET;
             },
             get time() {
-                return eventsQueryParameters.time;
+                return stackRollupQueryParameters.time;
             }
         },
         route: {
@@ -795,28 +795,26 @@
             return series;
         };
 
-        if (!chartDataQuery.data?.aggregations) {
+        if (!chartDataQuery.data) {
             return buildZeroFilledSeries();
         }
 
-        const dateHistogramBuckets = agg.dateHistogram(chartDataQuery.data.aggregations, 'date_date')?.buckets ?? [];
-        if (dateHistogramBuckets.length === 0) {
+        if (chartDataQuery.data.buckets.length === 0) {
             return buildZeroFilledSeries();
         }
 
-        return dateHistogramBuckets.map((bucket) => ({
-            date: new Date(bucket.key),
-            events: agg.sum(bucket.aggregations, 'sum_count')?.value ?? 0,
-            stacks: agg.cardinality(bucket.aggregations, 'cardinality_stack')?.value ?? 0
+        return chartDataQuery.data.buckets.map((bucket) => ({
+            date: new Date(bucket.date),
+            events: bucket.events,
+            stacks: bucket.stacks
         }));
     });
 
     const stats = $derived.by(() => {
-        const aggregations = chartDataQuery.data?.aggregations;
         const timeRange = parseDateMathRange(getQueryTime());
-        const totalEvents = agg.sum(aggregations, 'sum_count')?.value ?? chartDataQuery.data?.total ?? 0;
-        const totalStacks = agg.cardinality(aggregations, 'cardinality_stack')?.value ?? 0;
-        const newStacks = agg.terms<boolean>(aggregations, 'terms_first')?.buckets[0]?.total ?? 0;
+        const totalEvents = chartDataQuery.data?.total_events ?? 0;
+        const totalStacks = chartDataQuery.data?.total_stacks ?? 0;
+        const newStacks = chartDataQuery.data?.new_stacks ?? 0;
         const hours = Math.max((timeRange.end.getTime() - timeRange.start.getTime()) / 3_600_000, 1);
 
         return {
@@ -871,7 +869,7 @@
             {/if}
             <RefreshButton
                 onRefresh={handleRefresh}
-                isRefreshing={eventsQuery.isFetching}
+                isRefreshing={stackRollupsQuery.isFetching}
                 size="icon-lg"
                 title={canRefresh ? 'Refresh results' : 'Return to the first page to refresh results'}
             />
@@ -892,15 +890,15 @@
         {#if showChart}
             <EventsDashboardChart
                 data={chartData()}
-                isLoading={isSavedViewRoutePending || eventsQuery.isFetching || chartDataQuery.isLoading}
+                isLoading={isSavedViewRoutePending || stackRollupsQuery.isFetching || chartDataQuery.isLoading}
                 {onRangeSelect}
             />
         {/if}
 
         <EventsDataTable
             autoFillColumnId={savedViewsState.autoFillColumnId}
-            bind:limit={eventsQueryParameters.limit!}
-            isLoading={isSavedViewRoutePending || eventsQuery.isFetching}
+            bind:limit={stackRollupQueryParameters.limit!}
+            isLoading={isSavedViewRoutePending || stackRollupsQuery.isFetching}
             onAutoFillColumnResized={() => savedViewsState.setAutoFillColumnId(null)}
             {rowClick}
             {rowHref}
@@ -912,7 +910,7 @@
                 </div>
 
                 <DataTable.Selection {table} />
-                <DataTable.PageSize bind:value={eventsQueryParameters.limit!} {table}></DataTable.PageSize>
+                <DataTable.PageSize bind:value={stackRollupQueryParameters.limit!} {table}></DataTable.PageSize>
                 <div class="flex items-center space-x-6 lg:space-x-8">
                     <DataTable.PageCount {table} />
                     <DataTable.Pagination {table} />

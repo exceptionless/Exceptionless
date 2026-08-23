@@ -17,7 +17,7 @@ public sealed class StackIndex : VersionedIndex<Stack>
 
     private readonly ExceptionlessElasticConfiguration _configuration;
 
-    public StackIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "stacks", 1)
+    public StackIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "stacks", 2)
     {
         _configuration = configuration;
     }
@@ -27,9 +27,26 @@ public sealed class StackIndex : VersionedIndex<Stack>
         base.ConfigureIndex(idx);
         idx.Settings(s => s
             .Analysis(a => BuildAnalysis(a))
-            .NumberOfShards(_configuration.Options.NumberOfShards)
+            .Mode("lookup")
+            .NumberOfShards(1)
             .NumberOfReplicas(_configuration.Options.NumberOfReplicas)
             .Priority(5));
+    }
+
+    protected override Task UpdateIndexAsync(string name, Action<PutIndicesSettingsRequestDescriptor>? descriptor = null)
+    {
+        if (descriptor is not null)
+            return base.UpdateIndexAsync(name, descriptor);
+
+        // index.mode is a final creation-only setting. Foundatio derives updates from
+        // ConfigureIndex, so keep the mutable settings explicit for existing indexes.
+        return base.UpdateIndexAsync(name, update => update
+            .Reopen(true)
+            .Settings(new IndexSettings
+            {
+                NumberOfReplicas = _configuration.Options.NumberOfReplicas,
+                Priority = 5
+            }));
     }
 
     public override void ConfigureIndexMapping(TypeMappingDescriptor<Stack> map)

@@ -212,10 +212,10 @@
 
                     vm.mostUsers = {
                         header: "Most Users",
-                        get: eventService.getAll,
+                        get: stackService.getRollups,
                         options: {
                             limit: 15,
-                            mode: "stack_users",
+                            sort: "-users",
                         },
                         source: vm._source + ".Events",
                     };

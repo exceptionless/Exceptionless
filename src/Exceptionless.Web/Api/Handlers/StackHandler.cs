@@ -22,8 +22,10 @@ using Foundatio.Caching;
 using Foundatio.Mediator;
 using Foundatio.Queues;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
+using Foundatio.Serializer;
 using McSherry.SemanticVersioning;
 
 namespace Exceptionless.Web.Api.Handlers;
@@ -32,14 +34,12 @@ public class StackHandler(
     IStackRepository stackRepository,
     IOrganizationRepository organizationRepository,
     IProjectRepository projectRepository,
-    IEventRepository eventRepository,
     IWebHookRepository webHookRepository,
     WebHookDataPluginManager webHookDataPluginManager,
     IQueue<WebHookNotification> webHookNotificationQueue,
-    ICacheClient cacheClient,
-    FormattingPluginManager formattingPluginManager,
     SemanticVersionParser semanticVersionParser,
     StackQueryValidator validator,
+    ITextSerializer serializer,
     AppOptions options,
     TimeProvider timeProvider,
     ILoggerFactory loggerFactory)
@@ -358,7 +358,7 @@ public class StackHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organizations.GetRetentionUtcCutoff(options.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
-        return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Mode, message.Page, message.Limit);
+        return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Limit, message.Before, message.After);
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetStacksByOrganization message)
@@ -373,7 +373,7 @@ public class StackHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(options.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(organization);
-        return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Mode, message.Page, message.Limit);
+        return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Limit, message.Before, message.After);
     }
 
     public async Task<Result<PagedResult<object>>> Handle(GetStacksByProject message)
@@ -392,16 +392,16 @@ public class StackHandler(
 
         var ti = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(project, options.MaximumRetentionDays, timeProvider));
         var sf = new AppFilter(project, organization);
-        return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Mode, message.Page, message.Limit);
+        return await GetInternalAsync(sf, ti, httpContext, message.Filter, message.Sort, message.Limit, message.Before, message.After);
     }
 
-    private async Task<Result<PagedResult<object>>> GetInternalAsync(AppFilter sf, TimeInfo ti, HttpContext httpContext, string? filter = null, string? sort = null, string? mode = null, int page = 1, int limit = 10)
+    private async Task<Result<PagedResult<object>>> GetInternalAsync(AppFilter sf, TimeInfo ti, HttpContext httpContext, string? filter = null, string? sort = null, int limit = 10, string? before = null, string? after = null)
     {
-        page = Pagination.GetPage(page);
+        if (before is not null && after is not null)
+            return Result.BadRequest("The before and after parameters cannot be used together.");
+
         limit = Pagination.GetLimit(limit);
-        int skip = Pagination.GetSkip(page, limit);
-        if (skip > Pagination.MaximumSkip)
-            return new PagedResult<object>(Array.Empty<object>(), false);
+        sort = String.IsNullOrWhiteSpace(sort) ? "-last" : sort;
 
         var pr = await validator.ValidateQueryAsync(filter);
         if (!pr.IsValid)
@@ -414,91 +414,27 @@ public class StackHandler(
 
         try
         {
-            var results = await stackRepository.FindAsync(q => q.AppFilter(systemFilter).FilterExpression(filter).SortExpression(sort).DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field), o => o.PageNumber(page).PageLimit(limit));
+            var results = await stackRepository.FindAsync(
+                q => q.AppFilter(systemFilter).FilterExpression(filter).SortExpression(sort).DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, ti.Field),
+                o => o.SearchBeforeToken(before, serializer).SearchAfterToken(after, serializer).PageLimit(limit));
 
             var stacks = results.Documents.Select(s => s.ApplyOffset(ti.Offset)).ToList();
-            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.OrdinalIgnoreCase))
-                return new PagedResult<object>((await GetStackSummariesAsync(stacks, sf, ti)).Cast<object>().ToList(), results.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page);
-
-            return new PagedResult<object>(stacks.Cast<object>().ToList(), results.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page);
+            return new PagedResult<object>(
+                stacks.Cast<object>().ToList(),
+                results.HasMore,
+                Page: null,
+                Total: null,
+                results.Hits.FirstOrDefault()?.GetSortToken(serializer),
+                results.Hits.LastOrDefault()?.GetSortToken(serializer));
         }
         catch (ApplicationException ex)
         {
             var currentUser = httpContext.Request.GetUser();
-            using (_logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Page = page, Limit = limit }).Tag("Search").Identity(currentUser?.EmailAddress).Property("User", currentUser).SetHttpContext(httpContext)))
+            using (_logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Sort = sort, Before = before, After = after, Limit = limit }).Tag("Search").Identity(currentUser?.EmailAddress).Property("User", currentUser).SetHttpContext(httpContext)))
                 _logger.LogError(ex, "An error has occurred. Please check your search filter");
 
             throw;
         }
-    }
-
-    private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, AppFilter eventSystemFilter, TimeInfo ti)
-    {
-        if (stacks.Count == 0)
-            return new List<StackSummaryModel>();
-
-        var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(eventSystemFilter).DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, (PersistentEvent e) => e.Date).Index(ti.Range.UtcStart, ti.Range.UtcEnd);
-        var stackTerms = await eventRepository.CountAsync(q => q.SystemFilter(systemFilter).Stack(stacks.Select(r => r.Id)).AggregationsExpression($"terms:(stack_id~{stacks.Count} cardinality:user sum:count~1 min:date max:date)"));
-        var buckets = stackTerms.Aggregations.Terms<string>("terms_stack_id")?.Buckets ?? [];
-        return await GetStackSummariesAsync(stacks, buckets, eventSystemFilter, ti);
-    }
-
-    private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(ICollection<Stack> stacks, IReadOnlyCollection<KeyedBucket<string>> stackTerms, AppFilter sf, TimeInfo ti)
-    {
-        if (stacks.Count == 0)
-            return new List<StackSummaryModel>(0);
-
-        var projects = await projectRepository.GetByIdsAsync(stacks.Select(s => s.ProjectId).Distinct().ToArray(), o => o.Cache());
-        var projectNames = projects.ToDictionary(p => p.Id, p => p.Name);
-        var totalUsers = await GetUserCountByProjectIdsAsync(stacks, sf, ti.Range.UtcStart, ti.Range.UtcEnd);
-        return stacks.Join(stackTerms, s => s.Id, tk => tk.Key, (stack, term) =>
-        {
-            var data = formattingPluginManager.GetStackSummaryData(stack);
-            var summary = new StackSummaryModel
-            {
-                Id = data.Id,
-                TemplateKey = data.TemplateKey,
-                Data = data.Data,
-                ProjectId = stack.ProjectId,
-                ProjectName = projectNames.GetValueOrDefault(stack.ProjectId),
-                Tags = stack.Tags?.OfType<string>().Order(StringComparer.OrdinalIgnoreCase).ToArray() ?? [],
-                Title = stack.Title,
-                Status = stack.Status,
-                FirstOccurrence = term.Aggregations.Min<DateTime>("min_date")?.Value ?? stack.FirstOccurrence,
-                LastOccurrence = term.Aggregations.Max<DateTime>("max_date")?.Value ?? stack.LastOccurrence,
-                Total = (long)(term.Aggregations.Sum("sum_count")?.Value ?? term.Total.GetValueOrDefault()),
-
-                Users = term.Aggregations.Cardinality("cardinality_user")?.Value.GetValueOrDefault() ?? 0,
-                TotalUsers = totalUsers.GetOrDefault(stack.ProjectId)
-            };
-
-            return summary;
-        }).ToList();
-    }
-
-    private async Task<Dictionary<string, double>> GetUserCountByProjectIdsAsync(ICollection<Stack> stacks, AppFilter sf, DateTime utcStart, DateTime utcEnd)
-    {
-        using var scopedCacheClient = new ScopedCacheClient(cacheClient, $"Project:user-count:{utcStart.Floor(TimeSpan.FromMinutes(15)).Ticks}-{utcEnd.Floor(TimeSpan.FromMinutes(15)).Ticks}");
-        var projectIds = stacks.Select(s => s.ProjectId).Distinct().ToList();
-        var cachedTotals = await scopedCacheClient.GetAllAsync<double>(projectIds);
-
-        var totals = cachedTotals.Where(kvp => kvp.Value.HasValue).ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Value);
-        if (totals.Count == projectIds.Count)
-            return totals;
-
-        var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(utcStart, utcEnd, (PersistentEvent e) => e.Date).Index(utcStart, utcEnd);
-        var projects = cachedTotals
-            .Where(kvp => !kvp.Value.HasValue && stacks.Contains(s => s.ProjectId == kvp.Key))
-            .Select(kvp => new Project { Id = kvp.Key, OrganizationId = stacks.First(s => s.ProjectId == kvp.Key).OrganizationId })
-            .ToList();
-        var countResult = await eventRepository.CountAsync(q => q.SystemFilter(systemFilter).FilterExpression(projects.BuildFilter()).AggregationsExpression("terms:(project_id cardinality:user)"));
-
-        var projectTerms = countResult.Aggregations.Terms<string>("terms_project_id")?.Buckets ?? [];
-        var aggregations = projectTerms.ToDictionary(t => t.Key, t => t.Aggregations.Cardinality("cardinality_user")?.Value.GetValueOrDefault() ?? 0);
-        await scopedCacheClient.SetAllAsync(aggregations.Where(t => t.Value >= 10).ToDictionary(k => k.Key, v => v.Value), TimeSpan.FromMinutes(5));
-        totals.AddRange(aggregations);
-
-        return totals;
     }
 
     private async Task<Stack?> GetModelAsync(string id, HttpContext httpContext, bool useCache = true)

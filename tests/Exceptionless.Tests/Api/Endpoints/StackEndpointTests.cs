@@ -1,5 +1,7 @@
 using System.Net;
 using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Web;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
@@ -18,6 +20,7 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Net.Http.Headers;
 using Xunit;
 
 namespace Exceptionless.Tests.Api.Endpoints;
@@ -649,6 +652,50 @@ public class StackEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetByProjectAsync_CanPageForwardAndBackwardWithCursors()
+    {
+        await CreateDataAsync(data =>
+        {
+            data.Event().TestProject().Message("Cursor stack A");
+            data.Event().TestProject().Message("Cursor stack B");
+        });
+
+        using var firstResponse = await SendRequestAsync(request => request
+            .AsGlobalAdminUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "stacks")
+            .QueryString("sort", "-last")
+            .QueryString("limit", 1)
+            .StatusCodeShouldBeOk());
+        var firstPage = await firstResponse.Content.ReadFromJsonAsync<IReadOnlyCollection<Stack>>(_jsonSerializerOptions, TestCancellationToken);
+        string firstId = Assert.Single(Assert.IsAssignableFrom<IReadOnlyCollection<Stack>>(firstPage)).Id;
+        var firstLinks = ParseLinkHeaderValue(firstResponse.Headers.GetValues(HeaderNames.Link).ToArray());
+        string after = Assert.IsType<string>(GetQueryStringValue(firstLinks["next"], "after"));
+
+        using var secondResponse = await SendRequestAsync(request => request
+            .AsGlobalAdminUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "stacks")
+            .QueryString("sort", "-last")
+            .QueryString("limit", 1)
+            .QueryString("after", after)
+            .StatusCodeShouldBeOk());
+        var secondPage = await secondResponse.Content.ReadFromJsonAsync<IReadOnlyCollection<Stack>>(_jsonSerializerOptions, TestCancellationToken);
+        string secondId = Assert.Single(Assert.IsAssignableFrom<IReadOnlyCollection<Stack>>(secondPage)).Id;
+        Assert.NotEqual(firstId, secondId);
+        var secondLinks = ParseLinkHeaderValue(secondResponse.Headers.GetValues(HeaderNames.Link).ToArray());
+        string before = Assert.IsType<string>(GetQueryStringValue(secondLinks["previous"], "before"));
+
+        var previousPage = await SendRequestAsAsync<IReadOnlyCollection<Stack>>(request => request
+            .AsGlobalAdminUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "stacks")
+            .QueryString("sort", "-last")
+            .QueryString("limit", 1)
+            .QueryString("before", before)
+            .StatusCodeShouldBeOk());
+        Assert.NotNull(previousPage);
+        Assert.Equal(firstId, Assert.Single(previousPage).Id);
+    }
+
+    [Fact]
     public Task GetByProjectAsync_NonExistentProject_ReturnsNotFound()
     {
         // Arrange & Act
@@ -656,6 +703,25 @@ public class StackEndpointTests : IntegrationTestsBase
             .AsGlobalAdminUser()
             .AppendPath("projects/000000000000000000000000/stacks")
             .StatusCodeShouldBeNotFound());
+    }
+
+    private static string? GetQueryStringValue(string url, string name)
+    {
+        var uri = new Uri(url);
+        return HttpUtility.ParseQueryString(uri.Query).GetValue(name);
+    }
+
+    private static Dictionary<string, string> ParseLinkHeaderValue(string[] links)
+    {
+        var result = new Dictionary<string, string>();
+        foreach (string link in links)
+        {
+            var match = Regex.Match(link, @"<(?<url>[^>]*)>;\s+rel=""(?<rel>\w+)""");
+            if (match.Success)
+                result.Add(match.Groups["rel"].Value, match.Groups["url"].Value);
+        }
+
+        return result;
     }
 
     [Fact]

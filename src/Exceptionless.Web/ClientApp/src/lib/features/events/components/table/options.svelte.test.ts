@@ -27,7 +27,7 @@ describe('event table columns', () => {
     });
 
     it('offers project and tags as hidden optional stack columns', () => {
-        const columns = getColumns<StackSummaryModel<SummaryTemplateKeys>>('stack_frequent');
+        const columns = getColumns<StackSummaryModel<SummaryTemplateKeys>>(null);
         const columnIds = columns.map((column) => column.id);
 
         expect(columnIds).toContain('project');

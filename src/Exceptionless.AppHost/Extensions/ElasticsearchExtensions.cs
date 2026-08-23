@@ -1,4 +1,4 @@
-using Elastic.Clients.Elasticsearch;
+using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
@@ -136,19 +136,25 @@ internal sealed class ElasticsearchConnectionHealthCheck(Func<string?> connectio
         if (string.IsNullOrEmpty(connectionString))
             return new HealthCheckResult(context.Registration.FailureStatus, "Connection string not available.");
 
-        using var settings = new ElasticsearchClientSettings(new Uri(connectionString));
-        var client = new ElasticsearchClient(settings);
-        var response = await client.Cluster.HealthAsync(
-            request => request.WaitForStatus(Elastic.Clients.Elasticsearch.HealthStatus.Yellow),
-            cancellationToken);
-        bool isReady = response.IsValidResponse
-            && !response.TimedOut
-            && response.Status is Elastic.Clients.Elasticsearch.HealthStatus.Yellow or Elastic.Clients.Elasticsearch.HealthStatus.Green;
-        if (isReady)
-            return HealthCheckResult.Healthy();
+        try
+        {
+            using var client = new HttpClient { BaseAddress = new Uri(connectionString), Timeout = TimeSpan.FromSeconds(10) };
+            using var response = await client.GetAsync("_cluster/health?wait_for_status=yellow&timeout=5s", cancellationToken);
+            if (!response.IsSuccessStatusCode)
+                return new HealthCheckResult(context.Registration.FailureStatus, $"Elasticsearch cluster health returned HTTP {(int)response.StatusCode}.");
 
-        return new HealthCheckResult(
-            context.Registration.FailureStatus,
-            $"Elasticsearch cluster health check failed. Timed out: {response.TimedOut}; status: {response.Status}. {response.DebugInformation}");
+            await using var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            using var document = await JsonDocument.ParseAsync(responseStream, cancellationToken: cancellationToken);
+            bool timedOut = document.RootElement.TryGetProperty("timed_out", out var timedOutElement) && timedOutElement.GetBoolean();
+            string? status = document.RootElement.TryGetProperty("status", out var statusElement) ? statusElement.GetString() : null;
+            if (!timedOut && status is "yellow" or "green")
+                return HealthCheckResult.Healthy();
+
+            return new HealthCheckResult(context.Registration.FailureStatus, $"Elasticsearch cluster health check failed. Timed out: {timedOut}; status: {status ?? "unknown"}.");
+        }
+        catch (Exception ex) when (ex is HttpRequestException or JsonException or TaskCanceledException)
+        {
+            return new HealthCheckResult(context.Registration.FailureStatus, "Elasticsearch cluster health check request failed.", ex);
+        }
     }
 }

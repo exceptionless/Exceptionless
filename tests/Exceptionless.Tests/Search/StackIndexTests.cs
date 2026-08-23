@@ -1,5 +1,7 @@
+using Elastic.Clients.Elasticsearch;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
@@ -11,17 +13,32 @@ public sealed class StackIndexTests : IntegrationTestsBase
 {
     private readonly StackData _stackData;
     private readonly IStackRepository _repository;
+    private readonly ExceptionlessElasticConfiguration _configuration;
 
     public StackIndexTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _stackData = GetService<StackData>();
         _repository = GetService<IStackRepository>();
+        _configuration = GetService<ExceptionlessElasticConfiguration>();
     }
 
     protected override async Task ResetDataAsync()
     {
         await base.ResetDataAsync();
         await _stackData.CreateSearchDataAsync();
+    }
+
+    [Fact]
+    public async Task UsesSingleShardLookupModeIndexAsync()
+    {
+        var response = await _configuration.Client.Indices.GetSettingsAsync((Indices)_configuration.Stacks.Name, TestCancellationToken);
+
+        Assert.True(response.IsValidResponse);
+        var settings = Assert.Single(response.Settings).Value.Settings?.Index;
+        Assert.NotNull(settings);
+        Assert.Equal("lookup", settings.Mode);
+        Assert.NotNull(settings.NumberOfShards);
+        Assert.Equal(1, settings.NumberOfShards.Match(value => value, value => Int32.TryParse(value, out int parsed) ? parsed : 0));
     }
 
     [Theory]

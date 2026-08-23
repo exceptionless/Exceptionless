@@ -43,9 +43,10 @@
     let selectedStackId = $state<string>();
 
     const DEFAULT_PARAMS = {
+        after: undefined as string | undefined,
+        before: undefined as string | undefined,
         filter: '(status:ignored OR status:discarded)',
         limit: DEFAULT_LIMIT,
-        page: 1,
         sort: '-last'
     };
 
@@ -60,9 +61,10 @@
         defaults: DEFAULT_PARAMS,
         history: 'push',
         schema: {
+            after: 'string',
+            before: 'string',
             filter: 'string',
             limit: 'number',
-            page: 'number',
             sort: 'string'
         }
     });
@@ -134,7 +136,6 @@
 
     $effect(() => {
         queryParams.limit ??= DEFAULT_LIMIT;
-        queryParams.page ??= 1;
         queryParams.sort ??= '-last';
     });
 
@@ -168,7 +169,8 @@
         const sanitizedFilters = sanitizeStackFilters(updatedFilters);
         const filter = toFilter(sanitizedFilters);
         updateFilterCache(filterCacheKey(filter), sanitizedFilters);
-        queryParams.page = 1;
+        queryParams.after = null;
+        queryParams.before = null;
         queryParams.filter = filter;
     }
 
@@ -177,6 +179,18 @@
     }
 
     const stacksQueryParameters: GetProjectStacksParams = $state({
+        get after() {
+            return queryParams.after ?? undefined;
+        },
+        set after(value) {
+            queryParams.after = value ?? null;
+        },
+        get before() {
+            return queryParams.before ?? undefined;
+        },
+        set before(value) {
+            queryParams.before = value ?? null;
+        },
         get filter() {
             return queryParams.filter!;
         },
@@ -188,12 +202,6 @@
         },
         set limit(value) {
             queryParams.limit = value;
-        },
-        get page() {
-            return queryParams.page!;
-        },
-        set page(value) {
-            queryParams.page = value;
         },
         get sort() {
             return queryParams.sort!;
@@ -298,7 +306,6 @@
             <DataTable.Selection {table} />
             <DataTable.PageSize bind:value={queryParams.limit!} {table}></DataTable.PageSize>
             <div class="flex items-center space-x-6 lg:space-x-8">
-                <DataTable.PageCount {table} />
                 <DataTable.Pagination {table} />
             </div>
         {/snippet}

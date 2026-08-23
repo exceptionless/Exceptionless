@@ -134,7 +134,6 @@ jobs:
       - name: Resolve Elasticsearch image
         id: elasticsearch_image
         env:
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
           PREVIEW_BASE_SHA: ${{ github.event.client_payload.base_sha }}
           PUSH_BEFORE_SHA: ${{ github.event.before }}
@@ -145,7 +144,7 @@ jobs:
           build_locally=false
 
           if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]] &&
-            ! git diff --quiet "$PR_BASE_SHA"...HEAD -- build/docker/elasticsearch/9.x .github/workflows/elasticsearch-docker-9.yml; then
+            ! git diff --quiet origin/main...HEAD -- build/docker/elasticsearch/9.x .github/workflows/elasticsearch-docker-9.yml; then
             image_changed=true
           elif [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/main" ]] &&
             ! git diff --quiet "$PUSH_BEFORE_SHA"..HEAD -- build/docker/elasticsearch/9.x .github/workflows/elasticsearch-docker-9.yml; then
@@ -362,8 +361,8 @@ jobs:
       - name: Wait for Aspire Resources
         run: |
           for attempt in {1..60}; do
-            if curl -fksS https://web-ex.dev.localhost:7131/api/v2/about > /dev/null &&
-              curl -fksS https://web-ex.dev.localhost:7131/next/login > /dev/null; then
+            if curl -fksS --connect-timeout 5 --max-time 10 https://web-ex.dev.localhost:7131/api/v2/about > /dev/null &&
+              curl -fksS --connect-timeout 5 --max-time 10 https://web-ex.dev.localhost:7131/next/login > /dev/null; then
               break
             fi
 
@@ -382,8 +381,8 @@ jobs:
 
       - name: Verify E2E Endpoints
         run: |
-          curl -fksS https://web-ex.dev.localhost:7131/api/v2/about > /dev/null
-          curl -fksS https://web-ex.dev.localhost:7131/next/login > /dev/null
+          curl -fksS --connect-timeout 5 --max-time 10 https://web-ex.dev.localhost:7131/api/v2/about > /dev/null
+          curl -fksS --connect-timeout 5 --max-time 10 https://web-ex.dev.localhost:7131/next/login > /dev/null
 
       - name: Run Playwright E2E Tests
         working-directory: src/Exceptionless.Web/ClientApp

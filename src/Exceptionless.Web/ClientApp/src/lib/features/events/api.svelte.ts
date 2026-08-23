@@ -163,7 +163,7 @@ export interface GetEventsByReferenceRequest {
     };
 }
 
-export type GetEventsMode = 'stack_frequent' | 'stack_new' | 'stack_recent' | 'stack_users' | 'summary' | null;
+export type GetEventsMode = 'summary' | null;
 
 export interface GetEventsParams {
     after?: string;
@@ -183,7 +183,6 @@ export interface GetOrganizationCountRequest {
     params?: {
         aggregations?: string;
         filter?: string;
-        mode?: GetEventsMode;
         offset?: string;
         time?: string;
     };
@@ -216,7 +215,6 @@ export interface GetProjectCountRequest {
     params?: {
         aggregations?: string;
         filter?: string;
-        mode?: 'stack_new';
         offset?: string;
         time?: string;
     };
@@ -246,7 +244,6 @@ export interface GetStackCountRequest {
     params?: {
         aggregations?: string;
         filter?: string;
-        mode?: 'stack_new';
         offset?: string;
         time?: string;
     };

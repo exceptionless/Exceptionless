@@ -1,3 +1,4 @@
+import type { StackSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary';
 import type { WebSocketMessageValue } from '$features/websockets/models';
 import type { WorkInProgressResult } from '$shared/models';
 
@@ -8,20 +9,24 @@ import { SvelteSet } from 'svelte/reactivity';
 
 import type { Stack, StackStatus } from './models';
 
-export interface ProjectStackNotificationRefresher {
+export interface StackNotificationRefresher {
     cancel: () => void;
-    schedule: (projectId?: string, refreshImmediately?: boolean) => void;
+    schedule: (organizationId?: string, projectId?: string, refreshImmediately?: boolean) => void;
 }
 
-export function createProjectStackNotificationRefresher(queryClient: QueryClient): ProjectStackNotificationRefresher {
+export function createStackNotificationRefresher(queryClient: QueryClient): StackNotificationRefresher {
+    const pendingOrganizationIds = new SvelteSet<string | undefined>();
     const pendingProjectIds = new SvelteSet<string | undefined>();
     let trailingRefresh: ReturnType<typeof setTimeout> | undefined;
     const refresh = () => {
+        const organizationIds = [...pendingOrganizationIds];
         const projectIds = [...pendingProjectIds];
 
         void queryClient.invalidateQueries({
             predicate: (query) =>
-                isProjectStacksQueryKey(query.queryKey) && (projectIds.includes(undefined) || projectIds.includes(query.queryKey[2] as string)),
+                (isOrganizationStackRollupsQueryKey(query.queryKey) &&
+                    (organizationIds.includes(undefined) || organizationIds.includes(query.queryKey[3] as string))) ||
+                (isProjectStacksQueryKey(query.queryKey) && (projectIds.includes(undefined) || projectIds.includes(query.queryKey[2] as string))),
             queryKey: queryKeys.type,
             refetchType: 'active'
         });
@@ -29,13 +34,15 @@ export function createProjectStackNotificationRefresher(queryClient: QueryClient
 
     return {
         cancel: () => {
+            pendingOrganizationIds.clear();
             pendingProjectIds.clear();
             if (trailingRefresh !== undefined) {
                 clearTimeout(trailingRefresh);
                 trailingRefresh = undefined;
             }
         },
-        schedule: (projectId?: string, refreshImmediately = true) => {
+        schedule: (organizationId?: string, projectId?: string, refreshImmediately = true) => {
+            pendingOrganizationIds.add(organizationId);
             pendingProjectIds.add(projectId);
             if (trailingRefresh !== undefined) {
                 return;
@@ -48,6 +55,7 @@ export function createProjectStackNotificationRefresher(queryClient: QueryClient
             trailingRefresh = setTimeout(() => {
                 trailingRefresh = undefined;
                 refresh();
+                pendingOrganizationIds.clear();
                 pendingProjectIds.clear();
             }, STACK_NOTIFICATION_THROTTLE_MS);
         }
@@ -76,6 +84,10 @@ export const queryKeys = {
     deleteStack: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'delete'] as const,
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
     ids: (ids: string[] | undefined) => [...queryKeys.type, ...(ids ?? [])] as const,
+    organizationRollups: (organizationId: string | undefined, params?: GetStackRollupsParams) =>
+        [...queryKeys.type, 'rollups', 'organization', organizationId, params] as const,
+    organizationRollupsStats: (organizationId: string | undefined, params?: GetStackRollupStatsParams) =>
+        [...queryKeys.type, 'rollups', 'organization', organizationId, 'stats', params] as const,
     postAddLink: (id: string | undefined) => [...queryKeys.id(id), 'add-link'] as const,
     postChangeStatus: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'change-status'] as const,
     postMarkCritical: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'mark-critical'] as const,
@@ -100,10 +112,27 @@ export interface DeleteStackRequest {
     };
 }
 
+export interface GetOrganizationStackRollupsRequest {
+    enabled?: () => boolean;
+    params?: GetStackRollupsParams;
+    route: {
+        organizationId: string | undefined;
+    };
+}
+
+export interface GetOrganizationStackRollupStatsRequest {
+    enabled?: () => boolean;
+    params?: GetStackRollupStatsParams;
+    route: {
+        organizationId: string | undefined;
+    };
+}
+
 export interface GetProjectStacksParams {
+    after?: string;
+    before?: string;
     filter?: string;
     limit?: number;
-    page?: number;
     sort?: string;
 }
 
@@ -118,6 +147,23 @@ export interface GetStackRequest {
     route: {
         id: string | undefined;
     };
+}
+
+export interface GetStackRollupsParams {
+    after?: string;
+    before?: string;
+    filter?: string;
+    include?: 'total';
+    limit?: number;
+    offset?: string;
+    sort?: '-first_occurrence' | '-last_occurrence' | '-total' | '-users' | 'first_occurrence' | 'last_occurrence' | 'total' | 'users';
+    time?: string;
+}
+
+export interface GetStackRollupStatsParams {
+    filter?: string;
+    offset?: string;
+    time?: string;
 }
 
 export interface PostAddLinkRequest {
@@ -160,6 +206,19 @@ export interface PostRemoveLinkRequest {
     route: {
         id: string | undefined;
     };
+}
+
+export interface StackRollupStats {
+    buckets: StackRollupStatsBucket[];
+    new_stacks: number;
+    total_events: number;
+    total_stacks: number;
+}
+
+export interface StackRollupStatsBucket {
+    date: string;
+    events: number;
+    stacks: number;
 }
 
 export function deleteMarkCritical(request: PostMarkCriticalRequest) {
@@ -213,6 +272,35 @@ export function deleteStack(request: DeleteStackRequest) {
                 })
             );
         }
+    }));
+}
+
+export function getOrganizationStackRollupsQuery(request: GetOrganizationStackRollupsRequest) {
+    return createQuery<FetchClientResponse<StackSummaryModel<SummaryTemplateKeys>[]>, ProblemDetails>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.organizationId && (request.enabled?.() ?? true),
+        queryFn: async () => {
+            const client = useFetchClient();
+            return await client.getJSON<StackSummaryModel<SummaryTemplateKeys>[]>(`organizations/${request.route.organizationId}/stack-rollups`, {
+                params: request.params as Record<string, unknown>
+            });
+        },
+        queryKey: queryKeys.organizationRollups(request.route.organizationId, request.params),
+        staleTime: STACK_LIST_QUERY_STALE_TIME_MS
+    }));
+}
+
+export function getOrganizationStackRollupStatsQuery(request: GetOrganizationStackRollupStatsRequest) {
+    return createQuery<StackRollupStats, ProblemDetails>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.organizationId && (request.enabled?.() ?? true),
+        queryFn: async () => {
+            const client = useFetchClient();
+            const response = await client.getJSON<StackRollupStats>(`organizations/${request.route.organizationId}/stack-rollups/stats`, {
+                params: request.params as Record<string, unknown>
+            });
+            return response.data!;
+        },
+        queryKey: queryKeys.organizationRollupsStats(request.route.organizationId, request.params),
+        staleTime: STACK_LIST_QUERY_STALE_TIME_MS
     }));
 }
 
@@ -463,6 +551,10 @@ export async function prefetchStack(request: GetStackRequest) {
         },
         queryKey: queryKeys.id(request.route.id)
     });
+}
+
+function isOrganizationStackRollupsQueryKey(queryKey: readonly unknown[]): boolean {
+    return queryKey[0] === queryKeys.type[0] && queryKey[1] === 'rollups' && queryKey[2] === 'organization';
 }
 
 function isProjectStacksQueryKey(queryKey: readonly unknown[]): boolean {

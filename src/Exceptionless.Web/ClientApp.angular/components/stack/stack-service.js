@@ -33,58 +33,24 @@
                 return Restangular.one("stacks", id).get();
             }
 
-            function getFrequent(options) {
-                var mergedOptions = filterService.apply(options);
+            function getRollups(options, optionsCallback) {
+                optionsCallback = angular.isFunction(optionsCallback)
+                    ? optionsCallback
+                    : function (o) {
+                          return o;
+                      };
+                var mergedOptions = optionsCallback(filterService.apply(options));
                 var organization = filterService.getOrganizationId();
                 if (organization) {
-                    return Restangular.one("organizations", organization)
-                        .one("stacks")
-                        .all("frequent")
-                        .getList(mergedOptions);
+                    return Restangular.one("organizations", organization).all("stack-rollups").getList(mergedOptions);
                 }
 
                 var project = filterService.getProjectId();
                 if (project) {
-                    return Restangular.one("projects", project).one("stacks").all("frequent").getList(mergedOptions);
+                    return Restangular.one("projects", project).all("stack-rollups").getList(mergedOptions);
                 }
 
-                return Restangular.one("stacks").all("frequent").getList(mergedOptions);
-            }
-
-            function getUsers(options) {
-                var mergedOptions = filterService.apply(options);
-                var organization = filterService.getOrganizationId();
-                if (organization) {
-                    return Restangular.one("organizations", organization)
-                        .one("stacks")
-                        .all("users")
-                        .getList(mergedOptions);
-                }
-
-                var project = filterService.getProjectId();
-                if (project) {
-                    return Restangular.one("projects", project).one("stacks").all("users").getList(mergedOptions);
-                }
-
-                return Restangular.one("stacks").all("users").getList(mergedOptions);
-            }
-
-            function getNew(options) {
-                var mergedOptions = filterService.apply(options);
-                var organization = filterService.getOrganizationId();
-                if (organization) {
-                    return Restangular.one("organizations", organization)
-                        .one("stacks")
-                        .all("new")
-                        .getList(mergedOptions);
-                }
-
-                var project = filterService.getProjectId();
-                if (project) {
-                    return Restangular.one("projects", project).one("stacks").all("new").getList(mergedOptions);
-                }
-
-                return Restangular.one("stacks").all("new").getList(mergedOptions);
+                return Restangular.all("stack-rollups").getList(mergedOptions);
             }
 
             function markCritical(id) {
@@ -122,9 +88,7 @@
                 changeStatus: changeStatus,
                 getAll: getAll,
                 getById: getById,
-                getFrequent: getFrequent,
-                getUsers: getUsers,
-                getNew: getNew,
+                getRollups: getRollups,
                 markCritical: markCritical,
                 markNotCritical: markNotCritical,
                 markFixed: markFixed,

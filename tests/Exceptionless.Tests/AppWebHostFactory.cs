@@ -22,11 +22,11 @@ namespace Exceptionless.Tests;
 
 public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program>, IAsyncLifetime
 {
-    private static readonly string SharedElasticsearchUrl = GetSharedElasticsearchUrl();
     private static readonly TimeSpan SharedElasticsearchStartupTimeout = TimeSpan.FromMinutes(3);
     private static int s_counter = -1;
     private static readonly Lazy<Task<DistributedApplication>> s_sharedAppHost = new(StartSharedAppHostAsync, LazyThreadSafetyMode.ExecutionAndPublication);
     private static readonly ConcurrentQueue<int> s_pool = new();
+    private static string? s_sharedElasticsearchUrl;
     private bool _sliceReleased;
 
     public AppWebHostFactory()
@@ -45,7 +45,7 @@ public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program
     public async ValueTask InitializeAsync()
     {
         _ = await s_sharedAppHost.Value;
-        await WaitForElasticsearchAsync(new Uri(SharedElasticsearchUrl));
+        await WaitForElasticsearchAsync(new Uri(GetSharedElasticsearchUrl()));
     }
 
     private static async Task<DistributedApplication> StartSharedAppHostAsync()
@@ -55,21 +55,16 @@ public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program
             CancellationToken.None);
         var app = await appHost.BuildAsync(CancellationToken.None);
         await app.StartAsync(CancellationToken.None);
+        s_sharedElasticsearchUrl = await app.GetConnectionStringAsync("Elasticsearch", CancellationToken.None)
+            ?? throw new InvalidOperationException("The shared Elasticsearch resource did not expose a connection string.");
 
         return app;
     }
 
     private static string GetSharedElasticsearchUrl()
     {
-        const int defaultPort = 9200;
-        string? configuredPort = Environment.GetEnvironmentVariable("Elasticsearch__Port");
-        if (String.IsNullOrWhiteSpace(configuredPort))
-            return $"http://localhost:{defaultPort}";
-
-        if (!Int32.TryParse(configuredPort, out int port) || port is < 1 or > 65535)
-            throw new InvalidOperationException("Environment variable 'Elasticsearch__Port' must be a valid TCP port.");
-
-        return $"http://localhost:{port}";
+        return s_sharedElasticsearchUrl
+            ?? throw new InvalidOperationException("The shared Elasticsearch resource has not started.");
     }
 
     private static async Task WaitForElasticsearchAsync(Uri elasticsearchUri)
@@ -136,7 +131,7 @@ public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program
                 .AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     ["AppScope"] = AppScope,
-                    ["ConnectionStrings:Elasticsearch"] = SharedElasticsearchUrl
+                    ["ConnectionStrings:Elasticsearch"] = GetSharedElasticsearchUrl()
                 });
 
             if (String.Equals(Environment.GetEnvironmentVariable("RUN_ASSISTANT_EVALS"), "true", StringComparison.OrdinalIgnoreCase))

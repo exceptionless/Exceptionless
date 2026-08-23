@@ -148,6 +148,9 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         AssertArrayResponseSchema(paths, "/api/v2/stacks", "Stack");
         AssertArrayResponseSchema(paths, "/api/v2/organizations/{organizationId}/stacks", "Stack");
         AssertArrayResponseSchema(paths, "/api/v2/projects/{projectId}/stacks", "Stack");
+        AssertArrayResponseSchema(paths, "/api/v2/stack-rollups", "StackSummaryModel");
+        AssertArrayResponseSchema(paths, "/api/v2/organizations/{organizationId}/stack-rollups", "StackSummaryModel");
+        AssertArrayResponseSchema(paths, "/api/v2/projects/{projectId}/stack-rollups", "StackSummaryModel");
         AssertArrayResponseSchema(paths, "/api/v2/organizations/{organizationId}/tokens", "ViewToken");
         AssertArrayResponseSchema(paths, "/api/v2/projects/{projectId}/tokens", "ViewToken");
         AssertArrayResponseSchema(paths, "/api/v2/projects/{projectId}/webhooks", "WebHook");
@@ -232,6 +235,22 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
             AssertPathResponseDescription(paths, path, "get", "426", ApiFilterPolicy.SuspendedOrPremiumSearchUpgradeDescription);
 
         foreach (string path in new[] { "/api/v2/stacks", "/api/v2/organizations/{organizationId}/stacks", "/api/v2/projects/{projectId}/stacks" })
+        {
+            AssertPathResponseCodes(paths, path, "get", "200", "400", "426");
+            var parameterNames = paths.GetProperty(path).GetProperty("get").GetProperty("parameters")
+                .EnumerateArray()
+                .Select(parameter => parameter.GetProperty("name").GetString())
+                .ToArray();
+            Assert.Contains("before", parameterNames);
+            Assert.Contains("after", parameterNames);
+            Assert.DoesNotContain("page", parameterNames);
+            Assert.DoesNotContain("mode", parameterNames);
+        }
+
+        foreach (string path in new[] { "/api/v2/stack-rollups", "/api/v2/organizations/{organizationId}/stack-rollups", "/api/v2/projects/{projectId}/stack-rollups" })
+            AssertPathResponseCodes(paths, path, "get", "200", "400", "426");
+
+        foreach (string path in new[] { "/api/v2/stack-rollups/stats", "/api/v2/organizations/{organizationId}/stack-rollups/stats", "/api/v2/projects/{projectId}/stack-rollups/stats" })
             AssertPathResponseCodes(paths, path, "get", "200", "400", "426");
 
         AssertPathResponseDescription(paths, "/api/v2/stacks", "get", "426", ApiFilterPolicy.PremiumSearchUpgradeMessage);
