@@ -134,7 +134,6 @@ jobs:
       - name: Resolve Elasticsearch image
         id: elasticsearch_image
         env:
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
           PREVIEW_BASE_SHA: ${{ github.event.client_payload.base_sha }}
           PUSH_BEFORE_SHA: ${{ github.event.before }}
@@ -145,7 +144,7 @@ jobs:
           build_locally=false
 
           if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]] &&
-            ! git diff --quiet "$PR_BASE_SHA"...HEAD -- build/docker/elasticsearch/9.x .github/workflows/elasticsearch-docker-9.yml; then
+            ! git diff --quiet origin/main...HEAD -- build/docker/elasticsearch/9.x .github/workflows/elasticsearch-docker-9.yml; then
             image_changed=true
           elif [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/main" ]] &&
             ! git diff --quiet "$PUSH_BEFORE_SHA"..HEAD -- build/docker/elasticsearch/9.x .github/workflows/elasticsearch-docker-9.yml; then
