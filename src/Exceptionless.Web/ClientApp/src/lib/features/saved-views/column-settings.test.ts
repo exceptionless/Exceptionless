@@ -11,6 +11,7 @@ import {
     getSavedColumnSizing,
     getSavedColumnVisibility,
     getSavedWrappedColumnIds,
+    resolveSavedViewColumnOrder,
     savedViewColumnSizingEqual,
     savedViewColumnWrappingEqual
 } from './column-settings';
@@ -95,6 +96,27 @@ describe('saved view column settings', () => {
 
         expect(columnOrdersEqual(['project', 'summary', 'new-column'], hydratedOrder)).toBe(true);
         expect(columnOrdersEqual(['select', 'new-column', 'project', 'summary'], hydratedOrder)).toBe(false);
+    });
+
+    it('resolves saved positions against all currently available columns', () => {
+        const view = {
+            columns: {
+                date: { position: 1 },
+                summary: { position: 0 }
+            }
+        } as Pick<SavedView, 'columns'>;
+
+        expect(resolveSavedViewColumnOrder(view, ['select', 'user', 'summary', 'date'])).toEqual(['select', 'summary', 'date', 'user']);
+
+        const savedAfterReorder = {
+            columns: {
+                date: { position: 2 },
+                summary: { position: 1 },
+                user: { position: 0 }
+            }
+        } as Pick<SavedView, 'columns'>;
+        const currentOrder = ['select', 'user', 'summary', 'date'];
+        expect(columnOrdersEqual(currentOrder, resolveSavedViewColumnOrder(savedAfterReorder, currentOrder))).toBe(true);
     });
 
     it('treats missing wrap settings as the legacy single-line behavior', () => {

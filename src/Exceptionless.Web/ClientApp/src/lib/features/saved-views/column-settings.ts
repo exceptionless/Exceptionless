@@ -109,6 +109,16 @@ export function normalizeColumnSizing(sizing: ColumnSizingState | undefined): Co
     );
 }
 
+export function resolveSavedViewColumnOrder(view: SavedColumnState, availableOrder: ColumnOrderState | undefined): ColumnOrderState {
+    const hasSelectionColumn = availableOrder?.includes('select') ?? false;
+    const availableColumnIds = [...new Set((availableOrder ?? []).filter((columnId) => columnId !== 'select'))];
+    const availableColumnIdSet = new Set(availableColumnIds);
+    const savedOrder = getSavedColumnOrder(view).filter((columnId) => availableColumnIdSet.has(columnId));
+    const resolvedOrder = [...savedOrder, ...availableColumnIds.filter((columnId) => !savedOrder.includes(columnId))];
+
+    return hasSelectionColumn ? ['select', ...resolvedOrder] : resolvedOrder;
+}
+
 export function savedViewColumnSizingEqual(current: ColumnSizingState | undefined, view: SavedColumnState): boolean {
     const saved = getSavedColumnSizing(view);
     const currentEntries = Object.entries(normalizeColumnSizing(current));

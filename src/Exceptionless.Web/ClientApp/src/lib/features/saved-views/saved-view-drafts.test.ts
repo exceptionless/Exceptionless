@@ -1,4 +1,4 @@
-import { ProjectFilter, StatusFilter } from '$features/events/components/filters';
+import { KeywordFilter, ProjectFilter, StatusFilter } from '$features/events/components/filters';
 import { StackStatus } from '$features/stacks/models';
 import { describe, expect, it } from 'vitest';
 
@@ -43,6 +43,8 @@ describe('saved view drafts', () => {
                 columnSizingChanges: { date: null, summary: 480 },
                 columnVisibilityChanges: { date: false },
                 filterChanges: {
+                    duplicateKeys: ['keyword'],
+                    removedDefinitions: '[{"type":"keyword","value":"old"}]',
                     removedKeys: ['status'],
                     upsertDefinitions: '[{"type":"project","value":["project-1"]}]'
                 },
@@ -60,6 +62,8 @@ describe('saved view drafts', () => {
             columnSizingChanges: { date: null, summary: 480 },
             columnVisibilityChanges: { date: false },
             filterChanges: {
+                duplicateKeys: ['keyword'],
+                removedDefinitions: '[{"type":"keyword","value":"old"}]',
                 removedKeys: ['status'],
                 upsertDefinitions: '[{"type":"project","value":["project-1"]}]'
             },
@@ -80,6 +84,18 @@ describe('saved view drafts', () => {
 
         expect((mergedFilters.find((filter) => filter.key === 'project') as ProjectFilter).value).toEqual(['project-2']);
         expect((mergedFilters.find((filter) => filter.key === 'status') as StatusFilter).value).toEqual([StackStatus.Regressed]);
+    });
+
+    it('preserves duplicate keyword filters while rebasing local changes', () => {
+        const originalServerFilters = [new KeywordFilter('foo'), new KeywordFilter('bar')];
+        const locallyEditedFilters = [new KeywordFilter('foo'), new KeywordFilter('baz')];
+        const changes = buildFilterChanges(originalServerFilters, locallyEditedFilters);
+        const latestServerFilters = [new KeywordFilter('foo'), new KeywordFilter('bar'), new KeywordFilter('remote')];
+
+        const mergedFilters = applyFilterChanges(latestServerFilters, changes);
+
+        expect(changes?.duplicateKeys).toEqual(['keyword']);
+        expect(mergedFilters.map((filter) => (filter as KeywordFilter).value)).toEqual(['foo', 'remote', 'baz']);
     });
 
     it('applies per-column changes over the latest server configuration', () => {

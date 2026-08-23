@@ -26,6 +26,7 @@ import {
     getSavedColumnVisibility,
     getSavedWrappedColumnIds,
     normalizeColumnSizing,
+    resolveSavedViewColumnOrder,
     savedViewColumnSizingEqual,
     savedViewColumnWrappingEqual
 } from './column-settings';
@@ -355,7 +356,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
     }
 
-    function buildSavedViewDraft(view: SavedView): SavedViewDraft | undefined {
+    function buildSavedViewDraft(view: SavedView, columnOrderBaseline: ColumnOrderState | undefined = hydratedColumnOrder): SavedViewDraft | undefined {
         const draft: SavedViewDraft = {
             version: 1
         };
@@ -377,7 +378,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             draft.columnVisibilityChanges = buildRecordChanges(serverVisibility, currentVisibility);
         }
 
-        if (options.getColumnOrder && hydratedColumnOrder && !columnOrdersEqual(options.getColumnOrder(), hydratedColumnOrder)) {
+        if (options.getColumnOrder && columnOrderBaseline && !columnOrdersEqual(options.getColumnOrder(), columnOrderBaseline)) {
             draft.columnOrder = [...options.getColumnOrder()];
         }
 
@@ -470,8 +471,9 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         // baseline. Otherwise leave the UI and baseline alone until navigation so
         // remote changes cannot be persisted back as local reverse edits.
         if (view.id === lastLoadedViewId) {
-            if (viewSignature !== hydratedSavedViewSignature && untrack(() => buildSavedViewDraft(view) === undefined)) {
-                hydratedColumnOrder = options.getColumnOrder ? [...options.getColumnOrder()] : undefined;
+            const resolvedServerColumnOrder = options.getColumnOrder ? resolveSavedViewColumnOrder(view, options.getColumnOrder()) : undefined;
+            if (viewSignature !== hydratedSavedViewSignature && untrack(() => buildSavedViewDraft(view, resolvedServerColumnOrder) === undefined)) {
+                hydratedColumnOrder = resolvedServerColumnOrder;
                 hydratedSavedView = view;
                 hydratedSavedViewSignature = viewSignature;
             }

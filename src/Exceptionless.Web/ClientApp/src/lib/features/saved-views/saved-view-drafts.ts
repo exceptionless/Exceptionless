@@ -26,6 +26,8 @@ export interface SavedViewDraftIdentity {
 }
 
 export interface SavedViewFilterChanges {
+    duplicateKeys?: string[];
+    removedDefinitions?: string;
     removedKeys: string[];
     upsertDefinitions: string;
 }
@@ -42,12 +44,27 @@ export function applyFilterChanges(serverFilters: IFilter[], changes: SavedViewF
     }
 
     const removedKeys = new Set(changes.removedKeys);
+    const duplicateKeys = new Set(changes.duplicateKeys ?? []);
+    const removedDefinitionCounts = buildSerializedFilterCounts(changes.removedDefinitions ? deserializeFilters(changes.removedDefinitions) : []);
     const upserts = deserializeFilters(changes.upsertDefinitions);
-    const upsertsByKey = new Map(upserts.map((filter) => [filter.key, filter]));
+    const upsertsByKey = new Map(upserts.filter((filter) => !duplicateKeys.has(filter.key)).map((filter) => [filter.key, filter]));
+    const duplicateUpserts = upserts.filter((filter) => duplicateKeys.has(filter.key));
     const result: IFilter[] = [];
 
     for (const serverFilter of serverFilters) {
         if (removedKeys.has(serverFilter.key)) {
+            continue;
+        }
+
+        const serialized = serializeFilters([serverFilter]);
+        const removedCount = removedDefinitionCounts.get(serialized) ?? 0;
+        if (removedCount > 0) {
+            removedDefinitionCounts.set(serialized, removedCount - 1);
+            continue;
+        }
+
+        if (duplicateKeys.has(serverFilter.key)) {
+            result.push(serverFilter.clone());
             continue;
         }
 
@@ -57,6 +74,7 @@ export function applyFilterChanges(serverFilters: IFilter[], changes: SavedViewF
     }
 
     result.push(...[...upsertsByKey.values()].map((filter) => filter.clone()));
+    result.push(...duplicateUpserts.map((filter) => filter.clone()));
     return result;
 }
 
@@ -87,16 +105,38 @@ export function applyWrappedColumnChanges(serverValue: string[], changes: Record
 }
 
 export function buildFilterChanges(serverFilters: IFilter[], currentFilters: IFilter[]): SavedViewFilterChanges | undefined {
-    const serverByKey = new Map(serverFilters.map((filter) => [filter.key, serializeFilters([filter])]));
-    const currentByKey = new Map(currentFilters.map((filter) => [filter.key, filter]));
-    const removedKeys = [...serverByKey.keys()].filter((key) => !currentByKey.has(key));
-    const upserts = [...currentByKey.values()].filter((filter) => serverByKey.get(filter.key) !== serializeFilters([filter]));
+    const serverByKey = groupFiltersByKey(serverFilters);
+    const currentByKey = groupFiltersByKey(currentFilters);
+    const duplicateKeys: string[] = [];
+    const removedDefinitions: IFilter[] = [];
+    const removedKeys: string[] = [];
+    const upserts: IFilter[] = [];
 
-    if (removedKeys.length === 0 && upserts.length === 0) {
+    for (const key of new Set([...serverByKey.keys(), ...currentByKey.keys()])) {
+        const server = serverByKey.get(key) ?? [];
+        const current = currentByKey.get(key) ?? [];
+
+        if (server.length <= 1 && current.length <= 1) {
+            if (server.length === 1 && current.length === 0) {
+                removedKeys.push(key);
+            } else if (current.length === 1 && (server.length === 0 || serializeFilters(server) !== serializeFilters(current))) {
+                upserts.push(current[0]!);
+            }
+            continue;
+        }
+
+        duplicateKeys.push(key);
+        removedDefinitions.push(...getUnmatchedFilters(server, current));
+        upserts.push(...getUnmatchedFilters(current, server));
+    }
+
+    if (removedKeys.length === 0 && removedDefinitions.length === 0 && upserts.length === 0) {
         return undefined;
     }
 
     return {
+        ...(duplicateKeys.length > 0 ? { duplicateKeys } : {}),
+        ...(removedDefinitions.length > 0 ? { removedDefinitions: serializeFilters(removedDefinitions) } : {}),
         removedKeys,
         upsertDefinitions: serializeFilters(upserts)
     };
@@ -163,12 +203,45 @@ export function saveSavedViewDraft(identity: SavedViewDraftIdentity, draft: Save
     }
 }
 
+function buildSerializedFilterCounts(filters: IFilter[]): Map<string, number> {
+    const counts = new Map<string, number>();
+    for (const filter of filters) {
+        const serialized = serializeFilters([filter]);
+        counts.set(serialized, (counts.get(serialized) ?? 0) + 1);
+    }
+
+    return counts;
+}
+
 function getLocalStorage(): DraftStorage | undefined {
     try {
         return typeof localStorage === 'undefined' ? undefined : localStorage;
     } catch {
         return undefined;
     }
+}
+
+function getUnmatchedFilters(filters: IFilter[], comparison: IFilter[]): IFilter[] {
+    const comparisonCounts = buildSerializedFilterCounts(comparison);
+    return filters.filter((filter) => {
+        const serialized = serializeFilters([filter]);
+        const remaining = comparisonCounts.get(serialized) ?? 0;
+        if (remaining === 0) {
+            return true;
+        }
+
+        comparisonCounts.set(serialized, remaining - 1);
+        return false;
+    });
+}
+
+function groupFiltersByKey(filters: IFilter[]): Map<string, IFilter[]> {
+    const result = new Map<string, IFilter[]>();
+    for (const filter of filters) {
+        result.set(filter.key, [...(result.get(filter.key) ?? []), filter]);
+    }
+
+    return result;
 }
 
 function isBooleanRecord(value: unknown): value is Record<string, boolean> {
@@ -178,6 +251,8 @@ function isBooleanRecord(value: unknown): value is Record<string, boolean> {
 function isFilterChanges(value: unknown): value is SavedViewFilterChanges {
     return (
         isRecord(value) &&
+        (value.duplicateKeys === undefined || isStringArray(value.duplicateKeys)) &&
+        (value.removedDefinitions === undefined || typeof value.removedDefinitions === 'string') &&
         Array.isArray(value.removedKeys) &&
         value.removedKeys.every((item) => typeof item === 'string') &&
         typeof value.upsertDefinitions === 'string'
