@@ -202,6 +202,14 @@ test('switching saved views preserves each view temporary filter overrides acros
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
     await expectColumnBefore(page, 'Summary', 'User');
 
+    const coldLoadEventTimes: string[] = [];
+    const captureColdLoadEventTime = (request: Request) => {
+        const url = new URL(request.url());
+        if (url.pathname === `/api/v2/organizations/${e2eScenario.organizationId}/events`) {
+            coldLoadEventTimes.push(url.searchParams.get('time') ?? '');
+        }
+    };
+    page.on('request', captureColdLoadEventTime);
     await page.goto(`/next/event/${firstViewSlug}?project=${e2eScenario.projectId}&sort=type&status=open`);
     await expect(page.getByRole('heading', { name: firstViewName })).toBeVisible();
     await expect(page).toHaveURL(new RegExp(`[?&]project=${escapeRegExp(e2eScenario.projectId)}(?:&|$)`));
@@ -212,6 +220,9 @@ test('switching saved views preserves each view temporary filter overrides acros
             .filter({ visible: true })
             .first()
     ).toBeVisible();
+    await expect.poll(() => coldLoadEventTimes.length).toBeGreaterThan(0);
+    page.off('request', captureColdLoadEventTime);
+    expect(coldLoadEventTimes.every((time) => time.includes('now-90d'))).toBe(true);
     await page.reload();
     await expect(
         page

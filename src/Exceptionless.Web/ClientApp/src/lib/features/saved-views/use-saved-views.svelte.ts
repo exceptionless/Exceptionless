@@ -494,7 +494,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     async function captureHydratedColumnOrderAfterStateSettles(viewId: string): Promise<void> {
         await tick();
 
-        if (activeSavedView?.id !== viewId || hydratedSavedViewId !== viewId) {
+        if (activeSavedView?.id !== viewId || serverHydratedSavedViewId !== viewId) {
             return;
         }
 
@@ -512,6 +512,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     let hydratedSavedView = $state<SavedView>();
     let hydratedSavedViewSignature = '';
     let hydratedSavedViewId = $state<string>();
+    let serverHydratedSavedViewId = $state<string>();
     $effect(() => {
         const savedViewKey = options.slug ?? options.queryParams.saved;
         const view = activeSavedView;
@@ -536,16 +537,18 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             }
 
             hydratedSavedViewId = undefined;
+            serverHydratedSavedViewId = undefined;
             return;
         }
 
         if (!view) {
-            hydratedSavedViewId = undefined;
             // Skip while refetching to avoid false-positive clears during cache invalidation
             if (isFetching) {
                 return;
             }
 
+            hydratedSavedViewId = undefined;
+            serverHydratedSavedViewId = undefined;
             return;
         }
 
@@ -563,7 +566,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
                 hydratedSavedViewSignature = viewSignature;
             }
 
-            hydratedSavedViewId = view.id;
+            serverHydratedSavedViewId = view.id;
             return;
         }
 
@@ -585,7 +588,8 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
         applyColumnState(view);
         applyDisplayState(view);
-        hydratedSavedViewId = view.id;
+        hydratedSavedViewId = undefined;
+        serverHydratedSavedViewId = view.id;
         void captureHydratedColumnOrderAfterStateSettles(view.id);
     });
 
@@ -600,7 +604,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         const view = activeSavedView;
         const currentIdentity = view ? getDraftIdentity(view) : undefined;
         const currentDraftKey = currentIdentity ? `${currentIdentity.userId}:${currentIdentity.organizationId}:${currentIdentity.savedViewId}` : undefined;
-        if (!view || view.id !== viewId || hydratedSavedViewId !== view.id || currentDraftKey !== draftKey) {
+        if (!view || view.id !== viewId || serverHydratedSavedViewId !== view.id || currentDraftKey !== draftKey) {
             if (pendingDraftKey === draftKey) {
                 pendingDraftKey = '';
             }
@@ -625,11 +629,13 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         if (draft) {
             applyDraftState(view, draft, overrideKeys);
         }
+
+        hydratedSavedViewId = view.id;
     }
 
     $effect(() => {
         const view = activeSavedView;
-        if (!view || hydratedSavedViewId !== view.id) {
+        if (!view || serverHydratedSavedViewId !== view.id) {
             return;
         }
 
