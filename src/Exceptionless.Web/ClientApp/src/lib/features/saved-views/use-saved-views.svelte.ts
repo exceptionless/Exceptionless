@@ -551,7 +551,17 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         return false;
     });
 
-    async function persistDraftAfterStateSettles(viewId: string, identity: SavedViewDraftIdentity, draftKey: string): Promise<void> {
+    const currentDraft = $derived.by(() => {
+        const view = activeSavedView;
+        return view ? buildSavedViewDraft(view) : undefined;
+    });
+
+    async function persistDraftAfterStateSettles(
+        viewId: string,
+        identity: SavedViewDraftIdentity,
+        draftKey: string,
+        draft: SavedViewDraft | undefined
+    ): Promise<void> {
         await tick();
 
         const view = activeSavedView;
@@ -559,7 +569,6 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return;
         }
 
-        const draft = buildSavedViewDraft(view);
         if (draft) {
             saveSavedViewDraft(identity, draft);
         } else {
@@ -579,10 +588,8 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return;
         }
 
-        // Subscribe to every field that contributes to dirty state, then persist after
-        // route-level filter normalization has settled for this render cycle.
-        void isModified;
-        void persistDraftAfterStateSettles(view.id, identity, draftKey);
+        // The draft value tracks every persisted field even while isModified remains true.
+        void persistDraftAfterStateSettles(view.id, identity, draftKey, currentDraft);
     });
 
     const isMissing = $derived(

@@ -116,6 +116,14 @@ test('switching saved views preserves each view temporary filter overrides acros
     await page.getByRole('button', { name: 'Last 90 days' }).click();
     await expect(page).toHaveURL(/[?&]time=90d(?:&|$)/);
 
+    await openViewMenu(page);
+    await page.getByRole('menuitem', { name: 'Manage Columns...' }).click();
+    const columnDialog = page.getByRole('dialog', { name: 'Column Picker' });
+    const summaryWrap = columnDialog.getByRole('checkbox', { name: 'Summary wrap text' });
+    await expect(summaryWrap).not.toBeChecked();
+    await summaryWrap.click();
+    await columnDialog.getByRole('button', { name: 'Done' }).click();
+
     const firstViewLink = page.getByRole('link', { exact: true, name: firstViewName }).first();
     const secondViewLink = page.getByRole('link', { exact: true, name: secondViewName }).first();
 
@@ -144,6 +152,10 @@ test('switching saved views preserves each view temporary filter overrides acros
             .first()
     ).toBeVisible();
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
+    await openViewMenu(page);
+    await page.getByRole('menuitem', { name: 'Manage Columns...' }).click();
+    await expect(summaryWrap).toBeChecked();
+    await columnDialog.getByRole('button', { name: 'Done' }).click();
 
     await secondViewLink.click();
     await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(secondViewSlug)}(?:[?#]|$)`));
@@ -155,6 +167,10 @@ test('switching saved views preserves each view temporary filter overrides acros
             .first()
     ).toBeVisible();
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
+    await openViewMenu(page);
+    await page.getByRole('menuitem', { name: 'Manage Columns...' }).click();
+    await expect(summaryWrap).not.toBeChecked();
+    await columnDialog.getByRole('button', { name: 'Done' }).click();
 
     await page.reload();
     await expect(page.getByRole('heading', { name: secondViewName })).toBeVisible();
@@ -176,6 +192,10 @@ test('switching saved views preserves each view temporary filter overrides acros
             .first()
     ).toBeVisible();
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
+    await openViewMenu(page);
+    await page.getByRole('menuitem', { name: 'Manage Columns...' }).click();
+    await expect(summaryWrap).toBeChecked();
+    await columnDialog.getByRole('button', { name: 'Done' }).click();
 
     await openViewMenu(page);
     await page.getByRole('menuitem', { name: 'Reset to Saved' }).click();
