@@ -11,6 +11,7 @@
 
     import { getDataTableColumnMeta, supportsColumnWrapping } from './column-meta';
     import DataTableColumnHeader from './data-table-column-header.svelte';
+    import { setDataTableLayoutContext } from './data-table-layout-context.svelte';
     import DataTableScrollContainer from './data-table-scroll-container.svelte';
 
     interface Props {
@@ -27,6 +28,14 @@
 
     const selectColumnClass = 'w-8 min-w-8 max-w-8';
     const selectColumnWidth = 32;
+
+    setDataTableLayoutContext({
+        getFillerColumnCount
+    });
+
+    function getFillerColumnCount(): number {
+        return hasSelectColumn() && !getFlexibleDataColumnId() ? 1 : 0;
+    }
 
     function getHeaderColumnClass(header: Header<StockFeatures, TData, unknown>) {
         if (header.column.id === 'select') {
@@ -311,7 +320,7 @@
                             {/if}
                         </Table.Head>
                     {/each}
-                    {#if hasSelectColumn() && !getFlexibleDataColumnId()}
+                    {#if getFillerColumnCount() > 0}
                         <Table.Head aria-hidden="true" class="w-full p-0"></Table.Head>
                     {/if}
                 </Table.Row>
@@ -359,7 +368,7 @@
                             </Table.Cell>
                         {/if}
                     {/each}
-                    {#if hasSelectColumn() && !getFlexibleDataColumnId()}
+                    {#if getFillerColumnCount() > 0}
                         <Table.Cell aria-hidden="true" class="w-full p-0"></Table.Cell>
                     {/if}
                 </Table.Row>

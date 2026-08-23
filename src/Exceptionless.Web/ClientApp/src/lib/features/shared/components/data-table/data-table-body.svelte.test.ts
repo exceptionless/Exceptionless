@@ -31,6 +31,22 @@ describe('DataTableBody', () => {
         expect(table.querySelector('tbody tr')?.lastElementChild?.getAttribute('aria-hidden')).toBe('true');
     });
 
+    it('spans empty state rows across the fixed-width filler column', () => {
+        render(DataTableBodyTestHarness, { allColumnsSized: true, empty: true, kind: 'event', onRowClick: vi.fn() });
+
+        const emptyCell = screen.getByText('No data was found with the current filter.').closest('td');
+
+        expect(emptyCell?.colSpan).toBe(4);
+    });
+
+    it('does not add a filler column to flexible empty state rows', () => {
+        render(DataTableBodyTestHarness, { empty: true, fullWidthSummary: true, kind: 'event', onRowClick: vi.fn() });
+
+        const emptyCell = screen.getByText('No data was found with the current filter.').closest('td');
+
+        expect(emptyCell?.colSpan).toBe(3);
+    });
+
     it('uses the full-width data column as the flexible column', () => {
         render(DataTableBodyTestHarness, { fullWidthSummary: true, kind: 'event', onRowClick: vi.fn() });
 
