@@ -21,15 +21,15 @@ test('user can recover from a failed login, restore the session, and log out', a
             await page.getByPlaceholder('Enter password').fill(E2E_TEST_PASSWORD);
             await page.getByRole('button', { exact: true, name: 'Login' }).click();
 
-            await expect(page.getByRole('heading', { name: 'Stacks' })).toBeVisible({ timeout: 30_000 });
-            await expect(page).toHaveURL(/\/next\/stack(?:[?#]|$)/);
+            await expect(page.getByRole('heading', { name: 'All' })).toBeVisible({ timeout: 30_000 });
+            await expect(page).toHaveURL(/\/next\/stack\/all(?:[?#]|$)/);
         });
 
         await test.step('restore the authenticated application after a reload', async () => {
             await page.reload();
 
-            await expect(page.getByRole('heading', { name: 'Stacks' })).toBeVisible({ timeout: 30_000 });
-            await expect(page).toHaveURL(/\/next\/stack(?:[?#]|$)/);
+            await expect(page.getByRole('heading', { name: 'All' })).toBeVisible({ timeout: 30_000 });
+            await expect(page).toHaveURL(/\/next\/stack\/all(?:[?#]|$)/);
         });
 
         await test.step('log out through the user menu', async () => {

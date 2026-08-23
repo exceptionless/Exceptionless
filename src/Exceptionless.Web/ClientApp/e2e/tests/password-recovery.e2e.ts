@@ -34,6 +34,7 @@ test('user can reset a forgotten password and log in @signup', async ({ e2eApi, 
         await page.getByPlaceholder('Enter password').fill(RESET_PASSWORD);
         await page.getByRole('button', { exact: true, name: 'Login' }).click();
 
-        await expect(page.getByRole('heading', { name: 'Stacks' })).toBeVisible({ timeout: 30_000 });
+        await expect(page.getByRole('heading', { name: 'All' })).toBeVisible({ timeout: 30_000 });
+        await expect(page).toHaveURL(/\/next\/stack\/all(?:[?#]|$)/);
     });
 });

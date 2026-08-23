@@ -65,7 +65,7 @@
         defaultAutoFillColumnId?: string;
         filters: IFilter[];
         isModified: boolean;
-        onClearSavedView: () => void;
+        onClearSavedView: () => Promise<void>;
         onLoadView: (view: SavedView) => void;
         onResetToSaved: () => void;
         savedViews: SavedView[];
@@ -345,7 +345,7 @@
         const wasActiveView = activeSavedView?.id === target.id;
         markSavedViewDeleted(target);
         if (wasActiveView) {
-            onClearSavedView();
+            await onClearSavedView();
         }
 
         try {
