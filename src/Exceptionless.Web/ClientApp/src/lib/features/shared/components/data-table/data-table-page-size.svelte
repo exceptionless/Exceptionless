@@ -51,16 +51,15 @@
     }
 </script>
 
-<div class="flex min-w-0 items-center gap-2">
-    <p class="hidden truncate text-sm font-medium sm:inline">Rows per page</p>
-    <Select.Root type="single" {items} value={valueString} {onValueChange}>
-        <Select.Trigger class="h-8 w-[70px] min-w-[46px]">
-            {selected.label}
-        </Select.Trigger>
-        <Select.Content>
+<Select.Root type="single" {items} value={valueString} {onValueChange}>
+    <Select.Trigger aria-label="Rows per page" class="min-w-18" size="sm" title="Rows per page">
+        {selected.label} rows
+    </Select.Trigger>
+    <Select.Content>
+        <Select.Group>
             {#each items as item (item.value)}
-                <Select.Item value={item.value}>{item.label}</Select.Item>
+                <Select.Item value={item.value}>{item.label} rows</Select.Item>
             {/each}
-        </Select.Content>
-    </Select.Root>
-</div>
+        </Select.Group>
+    </Select.Content>
+</Select.Root>

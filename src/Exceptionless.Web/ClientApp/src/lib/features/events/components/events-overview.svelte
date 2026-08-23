@@ -390,7 +390,7 @@
     </Table.Root>
 
     {#if event}
-        <Tabs.Root class="mt-4 mb-4" value={activeTab}>
+        <Tabs.Root class="mt-4 mb-4" bind:value={activeTab}>
             <div class="relative">
                 {#if canScrollTabsLeft}
                     <Button

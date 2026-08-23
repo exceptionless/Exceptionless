@@ -9,11 +9,13 @@
 
     import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
+    import { Checkbox } from '$comp/ui/checkbox';
     import * as Dialog from '$comp/ui/dialog';
     import * as InputGroup from '$comp/ui/input-group';
     import { Label } from '$comp/ui/label';
     import * as RadioGroup from '$comp/ui/radio-group';
     import { Separator } from '$comp/ui/separator';
+    import { supportsColumnWrapping } from '$features/shared/components/data-table/column-meta';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
     import ChevronUp from '@lucide/svelte/icons/chevron-up';
     import GripVertical from '@lucide/svelte/icons/grip-vertical';
@@ -22,17 +24,19 @@
     import Search from '@lucide/svelte/icons/search';
     import X from '@lucide/svelte/icons/x';
 
-    import type { AutoFillColumnSelection } from '../column-settings';
+    import type { AutoFillColumnSelection, WrappedColumnIds } from '../column-settings';
 
     interface Props {
         autoFillColumnId: AutoFillColumnSelection;
         defaultAutoFillColumnId?: string;
         open: boolean;
         setAutoFillColumnId: (columnId: AutoFillColumnSelection) => void;
+        setWrappedColumnIds: (columnIds: WrappedColumnIds) => void;
         table: Table<StockFeatures, TData>;
+        wrappedColumnIds: WrappedColumnIds;
     }
 
-    let { autoFillColumnId, defaultAutoFillColumnId, open = $bindable(), setAutoFillColumnId, table }: Props = $props();
+    let { autoFillColumnId, defaultAutoFillColumnId, open = $bindable(), setAutoFillColumnId, setWrappedColumnIds, table, wrappedColumnIds }: Props = $props();
 
     let draggedColumnId = $state<null | string>(null);
     let search = $state('');
@@ -91,6 +95,17 @@
         return column.getCanHide() && visibleColumns.length > 1;
     }
 
+    function setColumnWrapped(columnId: string, wrapped: boolean): void {
+        if (wrapped) {
+            if (!wrappedColumnIds.includes(columnId)) {
+                setWrappedColumnIds([...wrappedColumnIds, columnId]);
+            }
+            return;
+        }
+
+        setWrappedColumnIds(wrappedColumnIds.filter((id) => id !== columnId));
+    }
+
     function moveColumnUp(columnId: string): void {
         const columnIds = visibleColumns.map((c) => c.id);
         const index = columnIds.indexOf(columnId);
@@ -131,6 +146,7 @@
         } else {
             setAutoFillColumnId(null);
         }
+        setWrappedColumnIds([]);
         search = '';
     }
 
@@ -177,7 +193,7 @@
     >
         <Dialog.Header class="border-b px-6 py-5 pr-14">
             <Dialog.Title>Column Picker</Dialog.Title>
-            <Dialog.Description>Select, reorder, and choose which column fills the available table width.</Dialog.Description>
+            <Dialog.Description>Select, reorder, wrap text, and choose which column fills the available table width.</Dialog.Description>
         </Dialog.Header>
 
         <div class="grid min-h-0 gap-0 lg:grid-cols-[minmax(0,1fr)_5rem_minmax(0,1fr)]">
@@ -244,7 +260,7 @@
                             <h3 id="selected-columns-heading" class="text-sm font-semibold">Selected Columns</h3>
                             <Badge variant="secondary">{visibleColumns.length}</Badge>
                         </div>
-                        <p class="text-muted-foreground text-sm">Drag to reorder, or mark one column to auto fill the available width.</p>
+                        <p class="text-muted-foreground text-sm">Drag to reorder, wrap text, or mark one column to auto fill the available width.</p>
                     </div>
                 </div>
 
@@ -278,7 +294,7 @@
                                 <Button
                                     variant="ghost"
                                     size="icon-sm"
-                                    class="hover:bg-muted/70 my-1 ml-1 shrink-0"
+                                    class="hover:bg-muted/70 ml-1 shrink-0 self-center"
                                     disabled={!canRemoveColumn(column)}
                                     onclick={() => removeColumn(column)}
                                     aria-label={`Remove ${getColumnLabel(column)} column`}
@@ -286,6 +302,22 @@
                                     <X class="shrink-0" aria-hidden="true" />
                                 </Button>
                                 <span class="min-w-0 flex-1 self-center truncate px-2 text-left font-medium">{getColumnLabel(column)}</span>
+                                {#if supportsColumnWrapping(column.columnDef.meta)}
+                                    <Label
+                                        class="hover:bg-muted/70 flex w-16 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-md text-xs font-normal"
+                                        for={`wrap-column-${column.id}`}
+                                    >
+                                        <Checkbox
+                                            aria-label={`${getColumnLabel(column)} wrap text`}
+                                            checked={wrappedColumnIds.includes(column.id)}
+                                            id={`wrap-column-${column.id}`}
+                                            onCheckedChange={(checked) => setColumnWrapped(column.id, checked)}
+                                        />
+                                        Wrap
+                                    </Label>
+                                {:else}
+                                    <span class="w-16 shrink-0" aria-hidden="true"></span>
+                                {/if}
                                 <Label
                                     class="hover:bg-muted/70 mr-1 flex shrink-0 cursor-pointer items-center gap-2 rounded-md px-2 text-xs font-normal"
                                     for={`auto-fill-column-${column.id}`}

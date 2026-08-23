@@ -11,12 +11,16 @@
         maxVisible?: number;
         onTagClick?: (tag: string) => Promise<void> | void;
         tags?: null | string[];
+        wrappedMaxVisible?: number;
     }
 
-    let { class: className, maxVisible = Number.POSITIVE_INFINITY, onTagClick, tags }: Props = $props();
+    let { class: className, maxVisible = Number.POSITIVE_INFINITY, onTagClick, tags, wrappedMaxVisible }: Props = $props();
 
-    const visibleTags = $derived(tags?.slice(0, maxVisible) ?? []);
+    const effectiveWrappedMaxVisible = $derived(Math.max(maxVisible, wrappedMaxVisible ?? maxVisible));
+    const hasWrappedLimit = $derived(effectiveWrappedMaxVisible > maxVisible);
+    const visibleTags = $derived(tags?.slice(0, effectiveWrappedMaxVisible) ?? []);
     const hiddenTags = $derived(tags?.slice(maxVisible) ?? []);
+    const wrappedHiddenTags = $derived(tags?.slice(effectiveWrappedMaxVisible) ?? []);
     const tagList = $derived(tags?.join(', ') ?? '');
     const truncatedTags = new SvelteSet<string>();
 
@@ -74,10 +78,17 @@
         variant="outline"
         class={[
             'border-border bg-muted text-muted-foreground group-hover/button:bg-accent group-hover/button:text-accent-foreground dark:border-muted-foreground/50 rounded-md text-xs',
-            showFullValue ? 'h-auto max-w-full py-0.5 whitespace-normal' : 'max-w-28'
+            showFullValue
+                ? 'h-auto max-w-full py-0.5 whitespace-normal'
+                : 'max-w-28 group-data-[wrap=true]/wrapped:h-auto group-data-[wrap=true]/wrapped:max-w-full group-data-[wrap=true]/wrapped:py-0.5'
         ]}
     >
-        <span class={showFullValue ? 'max-w-full break-all whitespace-normal' : 'min-w-0 truncate'} use:observeTruncation={tag}>
+        <span
+            class={showFullValue
+                ? 'max-w-full break-all whitespace-normal'
+                : 'min-w-0 truncate group-data-[wrap=true]/wrapped:overflow-visible group-data-[wrap=true]/wrapped:break-all group-data-[wrap=true]/wrapped:text-clip group-data-[wrap=true]/wrapped:whitespace-normal'}
+            use:observeTruncation={tag}
+        >
             {tag}
         </span>
     </Badge>
@@ -95,7 +106,7 @@
     </span>
 {/snippet}
 
-{#snippet tag(tag: string)}
+{#snippet tag(tag: string, visibilityClass?: string)}
     {#if onTagClick}
         <Tooltip.Root suppressWhenOverlayOpen>
             <Tooltip.Trigger>
@@ -105,7 +116,7 @@
                         type="button"
                         size="sm"
                         variant="ghost"
-                        class="h-auto cursor-pointer p-0"
+                        class={['h-auto cursor-pointer p-0', visibilityClass]}
                         onclick={(event) => handleTagClick(event, tag)}
                     >
                         {@render tagBadge(tag)}
@@ -127,7 +138,7 @@
         <Tooltip.Root disabled={!truncatedTags.has(tag)} suppressWhenOverlayOpen>
             <Tooltip.Trigger>
                 {#snippet child({ props })}
-                    <span {...props} class="inline-flex min-w-0">
+                    <span {...props} class={['inline-flex min-w-0', visibilityClass]}>
                         {@render tagBadge(tag)}
                     </span>
                 {/snippet}
@@ -154,40 +165,47 @@
     {/if}
 {/snippet}
 
+{#snippet overflow(hiddenValues: string[], visibilityClass?: string)}
+    <Tooltip.Root suppressWhenOverlayOpen>
+        <Tooltip.Trigger>
+            {#snippet child({ props })}
+                <Badge
+                    {...props}
+                    variant="outline"
+                    class={['border-border bg-muted text-muted-foreground dark:border-muted-foreground/50 cursor-default rounded-md text-xs', visibilityClass]}
+                >
+                    +{hiddenValues.length}
+                </Badge>
+            {/snippet}
+        </Tooltip.Trigger>
+        <Tooltip.Content
+            arrowClasses="hidden"
+            class="border-border bg-popover text-popover-foreground max-w-[calc(100vw-2rem)] flex-col items-start gap-2 border px-3 py-2 shadow-md sm:max-w-sm"
+            sideOffset={4}
+        >
+            <div class="flex flex-wrap gap-1">
+                {#each hiddenValues as value (value)}
+                    {@render overflowTag(value)}
+                {/each}
+            </div>
+            {#if onTagClick}
+                {@render tagActionHint()}
+            {/if}
+        </Tooltip.Content>
+    </Tooltip.Root>
+{/snippet}
+
 <Tooltip.Provider>
     {#if visibleTags.length > 0}
         <div class={['flex flex-wrap items-center gap-1', className]} aria-label={`Tags: ${tagList}`}>
-            {#each visibleTags as value (value)}
-                {@render tag(value)}
+            {#each visibleTags as value, index (value)}
+                {@render tag(value, hasWrappedLimit && index >= maxVisible ? 'hidden group-data-[wrap=true]/wrapped:inline-flex' : undefined)}
             {/each}
             {#if hiddenTags.length > 0}
-                <Tooltip.Root suppressWhenOverlayOpen>
-                    <Tooltip.Trigger>
-                        {#snippet child({ props })}
-                            <Badge
-                                {...props}
-                                variant="outline"
-                                class="border-border bg-muted text-muted-foreground dark:border-muted-foreground/50 cursor-default rounded-md text-xs"
-                            >
-                                +{hiddenTags.length}
-                            </Badge>
-                        {/snippet}
-                    </Tooltip.Trigger>
-                    <Tooltip.Content
-                        arrowClasses="hidden"
-                        class="border-border bg-popover text-popover-foreground max-w-[calc(100vw-2rem)] flex-col items-start gap-2 border px-3 py-2 shadow-md sm:max-w-sm"
-                        sideOffset={4}
-                    >
-                        <div class="flex flex-wrap gap-1">
-                            {#each hiddenTags as value (value)}
-                                {@render overflowTag(value)}
-                            {/each}
-                        </div>
-                        {#if onTagClick}
-                            {@render tagActionHint()}
-                        {/if}
-                    </Tooltip.Content>
-                </Tooltip.Root>
+                {@render overflow(hiddenTags, hasWrappedLimit ? 'group-data-[wrap=true]/wrapped:hidden' : undefined)}
+            {/if}
+            {#if hasWrappedLimit && wrappedHiddenTags.length > 0}
+                {@render overflow(wrappedHiddenTags, 'hidden group-data-[wrap=true]/wrapped:inline-flex')}
             {/if}
         </div>
     {:else}

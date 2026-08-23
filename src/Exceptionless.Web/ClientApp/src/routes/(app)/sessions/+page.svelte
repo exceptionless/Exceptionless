@@ -204,18 +204,12 @@
         })
     );
 
-    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.store.state.pagination.pageIndex === 0);
-
     function reset() {
         table.resetRowSelection();
         table.setPageIndex(0);
     }
 
     async function handleRefresh() {
-        if (!canRefresh) {
-            reset();
-        }
-
         await loadData();
     }
 
@@ -368,12 +362,7 @@
                 <Switch id="view-active" bind:checked={viewActive} disabled={!hasPremiumFeatures} />
                 <Label for="view-active" class="text-sm">View Active</Label>
             </div>
-            <RefreshButton
-                onRefresh={handleRefresh}
-                isRefreshing={clientStatus.isLoading}
-                size="icon-lg"
-                title={canRefresh ? 'Refresh results' : 'Return to the first page to refresh results'}
-            />
+            <RefreshButton onRefresh={handleRefresh} isRefreshing={clientStatus.isLoading} size="icon-lg" title="Refresh results" />
             <DataTableViewOptions size="icon-lg" {table} />
         </div>
     </div>
@@ -392,11 +381,7 @@
         <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {rowHref} {table}>
             {#snippet footerChildren()}
                 <DataTable.Selection {table} />
-                <DataTable.PageSize bind:value={queryParams.limit!} {table}></DataTable.PageSize>
-                <div class="flex items-center space-x-6 lg:space-x-8">
-                    <DataTable.PageCount {table} />
-                    <DataTable.Pagination {table} />
-                </div>
+                <DataTable.Pager bind:value={queryParams.limit!} {table} />
             {/snippet}
         </EventsDataTable>
     </div>

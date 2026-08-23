@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Exceptionless.Core.Models;
 
@@ -17,6 +18,10 @@ public sealed record SavedViewColumnSettings
 
     /// <summary>Whether the column fills the table's remaining width. Null or false means use fixed-width behavior.</summary>
     public bool? AutoFill { get; set; }
+
+    /// <summary>Whether cell content wraps onto multiple lines. Null or false means keep content on one line.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? Wrap { get; set; }
 
     /// <summary>Zero-based display position. Null means use the table default order.</summary>
     [Range(0, MaxPosition)]

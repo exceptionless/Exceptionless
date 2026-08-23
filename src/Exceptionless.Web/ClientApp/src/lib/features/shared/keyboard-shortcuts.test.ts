@@ -16,8 +16,8 @@ describe('formatKeyboardShortcutForPlatform', () => {
     });
 
     it('should format single key shortcuts', () => {
-        expect(formatKeyboardShortcutForPlatform(appKeyboardShortcuts.switchOrganization.keys, false)).toBe('O');
-        expect(formatKeyboardShortcutForPlatform(appKeyboardShortcuts.userMenu.keys, false)).toBe('U');
+        expect(formatKeyboardShortcutForPlatform(appKeyboardShortcuts.switchOrganization.keys, false)).toBe('o');
+        expect(formatKeyboardShortcutForPlatform(appKeyboardShortcuts.userMenu.keys, false)).toBe('u');
         expect(formatKeyboardShortcutForPlatform(appKeyboardShortcuts.keyboardShortcuts.keys, false)).toBe('?');
     });
 

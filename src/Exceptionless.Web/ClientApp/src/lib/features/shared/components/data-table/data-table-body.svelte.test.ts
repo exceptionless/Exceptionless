@@ -72,6 +72,21 @@ describe('DataTableBody', () => {
         expect(dateHeader.style.cssText).toBe('width: 150px; min-width: 150px; max-width: 150px;');
     });
 
+    it('wraps only columns that opt in', () => {
+        render(DataTableBodyTestHarness, { kind: 'event', onRowClick: vi.fn(), wrappedColumnIds: ['summary', 'date'] });
+
+        const summaryCell = screen.getByText('Unexpected end of Stream, the content may have already been read by another component.').closest('td');
+        const dateCell = screen.getByText('event-id').closest('td');
+
+        expect(summaryCell?.getAttribute('data-wrap')).toBe('true');
+        expect(summaryCell?.classList.contains('whitespace-normal')).toBe(true);
+        expect(summaryCell?.classList.contains('break-words')).toBe(true);
+        expect(summaryCell?.classList.contains('truncate')).toBe(false);
+        expect(summaryCell?.className).toContain('[&_.line-clamp-2]:line-clamp-none');
+        expect(dateCell?.hasAttribute('data-wrap')).toBe(false);
+        expect(dateCell?.classList.contains('truncate')).toBe(true);
+    });
+
     it('reports when the selected auto-fill column is resized', async () => {
         const onAutoFillColumnResized = vi.fn();
         render(DataTableBodyTestHarness, {

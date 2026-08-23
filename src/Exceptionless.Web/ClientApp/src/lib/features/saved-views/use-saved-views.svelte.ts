@@ -5,7 +5,7 @@ import { goto } from '$app/navigation';
 import { buildFilterCacheKey, deserializeFilters, serializeFilters } from '$features/events/components/filters/helpers.svelte';
 import { organization } from '$features/organizations/context.svelte';
 
-import type { AutoFillColumnSelection } from './column-settings';
+import type { AutoFillColumnSelection, WrappedColumnIds } from './column-settings';
 import type { SavedView } from './models';
 
 import { getSavedViewsByViewQuery } from './api.svelte';
@@ -14,8 +14,10 @@ import {
     getSavedColumnOrder,
     getSavedColumnSizing,
     getSavedColumnVisibility,
+    getSavedWrappedColumnIds,
     savedViewColumnOrderEqual,
-    savedViewColumnSizingEqual
+    savedViewColumnSizingEqual,
+    savedViewColumnWrappingEqual
 } from './column-settings';
 import { savedViewHref, savedViewResolvedSlug } from './slugs';
 
@@ -67,6 +69,8 @@ export interface UseSavedViewsReturn {
     isModified: boolean;
     savedViews: SavedView[];
     setAutoFillColumnId: (columnId: AutoFillColumnSelection) => void;
+    setWrappedColumnIds: (columnIds: WrappedColumnIds) => void;
+    wrappedColumnIds: WrappedColumnIds;
 }
 
 export function clearSavedViewQueryParams(queryParams: SavedViewQueryParams): void {
@@ -173,6 +177,7 @@ export function supportsTimeQueryParam(queryParams: SavedViewQueryParams): query
 export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsReturn {
     const isEnabled = $derived(!!organization.current);
     let autoFillColumnId = $state<AutoFillColumnSelection>(options.defaultAutoFillColumnId ?? null);
+    let wrappedColumnIds = $state<WrappedColumnIds>([]);
 
     // Some routes, such as stream, do not declare every saved-view query parameter.
     const supportsSort = supportsSortQueryParam(options.queryParams);
@@ -217,6 +222,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
         options.setColumnSizing?.(getSavedColumnSizing(view));
         autoFillColumnId = getSavedAutoFillColumnSelection(view, options.defaultAutoFillColumnId);
+        wrappedColumnIds = getSavedWrappedColumnIds(view);
     }
 
     function applyDisplayState(view: Pick<SavedView, 'show_chart' | 'show_stats'> | undefined): void {
@@ -325,6 +331,10 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return true;
         }
 
+        if (!savedViewColumnWrappingEqual(wrappedColumnIds, view)) {
+            return true;
+        }
+
         if (options.getShowStats && options.getShowStats() !== (view.show_stats ?? true)) {
             return true;
         }
@@ -417,6 +427,12 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         },
         setAutoFillColumnId(columnId: AutoFillColumnSelection) {
             autoFillColumnId = columnId;
+        },
+        setWrappedColumnIds(columnIds: WrappedColumnIds) {
+            wrappedColumnIds = columnIds.filter((columnId, index) => columnIds.indexOf(columnId) === index);
+        },
+        get wrappedColumnIds() {
+            return wrappedColumnIds;
         }
     };
 }
