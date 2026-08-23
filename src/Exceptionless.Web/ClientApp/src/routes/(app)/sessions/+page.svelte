@@ -377,7 +377,7 @@
             totalUsers={stats.totalUsers}
         />
 
-        <SessionsDashboardChart data={chartData} isLoading={clientStatus.isLoading || statsQuery.isLoading} {onRangeSelect} />
+        <SessionsDashboardChart data={chartData} isLoading={statsQuery.isLoading && !statsQuery.isSuccess} {onRangeSelect} />
 
         <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {rowHref} {table}>
             {#snippet footerChildren()}
