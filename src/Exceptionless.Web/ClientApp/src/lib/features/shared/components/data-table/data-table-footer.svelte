@@ -21,7 +21,7 @@
 </script>
 
 <div
-    class={['bg-background/95 sticky top-2 z-30 order-2 flex w-full flex-wrap items-center justify-between gap-2 backdrop-blur-sm', className]}
+    class={['bg-background/95 sticky top-2 z-30 flex w-full flex-wrap items-center justify-between gap-2 backdrop-blur-sm', className]}
     data-slot="data-table-footer"
 >
     {#if children}

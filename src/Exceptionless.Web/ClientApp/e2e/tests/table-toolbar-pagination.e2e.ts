@@ -23,16 +23,20 @@ test('table toolbar remains accessible while moving between different-height res
     await expect(pageIndicator).toBeVisible({ timeout: 30_000 });
     expect(await pageIndicator.evaluate((element) => getComputedStyle(element).userSelect)).toBe('none');
 
-    await expect(toolbar.getByRole('button', { name: /Bulk Actions/ })).toBeDisabled();
-    await expect(toolbar.getByRole('button', { name: /Bulk Actions/ })).toHaveAttribute('title', 'Select one or more events to use bulk actions');
+    const bulkActionsButton = toolbar.getByRole('button', { name: /Bulk Actions/ });
+    await expect(bulkActionsButton).toHaveAttribute('aria-disabled', 'true');
+    await expect(bulkActionsButton).toHaveAttribute('title', 'Select one or more events to use bulk actions');
+    await bulkActionsButton.focus();
+    await expect(bulkActionsButton).toBeFocused();
     await page.locator('tbody').getByRole('checkbox').first().click();
-    await expect(toolbar.getByRole('button', { name: /Bulk Actions/ })).toBeEnabled();
+    await expect(bulkActionsButton).toBeEnabled();
 
     const firstToolbarBox = await toolbar.boundingBox();
     const firstGridBox = await grid.boundingBox();
     expect(firstToolbarBox).not.toBeNull();
     expect(firstGridBox).not.toBeNull();
     expect(await toolbar.evaluate((element) => getComputedStyle(element).position)).toBe('sticky');
+    expect(await toolbar.evaluate((element) => element.nextElementSibling?.getAttribute('data-slot'))).toBe('data-table-body');
     expect(firstToolbarBox!.height).toBeLessThanOrEqual(34);
     expect(firstGridBox!.y - (firstToolbarBox!.y + firstToolbarBox!.height)).toBeLessThanOrEqual(8);
     expect(firstToolbarBox!.y + firstToolbarBox!.height).toBeLessThanOrEqual(firstGridBox!.y);

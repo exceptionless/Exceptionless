@@ -27,7 +27,7 @@ describe('DataTablePager', () => {
 
         expect(toolbar?.classList.contains('sticky')).toBe(true);
         expect(toolbar?.classList.contains('top-2')).toBe(true);
-        expect(toolbar?.classList.contains('order-2')).toBe(true);
+        expect(toolbar?.classList.contains('order-2')).toBe(false);
         expect(toolbar?.classList.contains('border')).toBe(false);
         expect(toolbar?.classList.contains('p-2')).toBe(false);
         expect(toolbar?.contains(screen.getByRole('button', { name: 'Bulk Actions' }))).toBe(true);

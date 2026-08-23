@@ -291,7 +291,7 @@
     }
 </script>
 
-<div class="order-3" data-slot="data-table-body">
+<div data-slot="data-table-body">
     <DataTableScrollContainer>
         <Table.Root class={hasSelectColumn() ? 'table-fixed' : undefined} style={getTableStyle()}>
             <Table.Header class="bg-card">
