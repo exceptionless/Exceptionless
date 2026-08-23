@@ -97,18 +97,69 @@ test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2
     expect(failedApiRequests).toEqual([]);
 });
 
-test('switching saved views preserves each view temporary filter overrides across page reloads', async ({ e2eApi, e2eScenario, page }) => {
+test('switching saved views preserves each view temporary filter overrides across page reloads', async ({ e2eScenario, page, request }) => {
     const failedApiRequests = captureFailedApiRequests(page);
-    const journey = ExceptionlessE2EJourney.fromScenario(page, e2eApi, e2eScenario);
-    const suffix = journey.run.slice(-28);
+    const suffix = e2eScenario.run.slice(-28);
     const firstViewName = `E2E First View ${suffix}`;
     const secondViewName = `E2E Second View ${suffix}`;
     const firstViewSlug = savedViewSlug(firstViewName);
     const secondViewSlug = savedViewSlug(secondViewName);
+    const savedViewsPath = `/api/v2/organizations/${e2eScenario.organizationId}/saved-views/events`;
+    const authorizationHeaders = { Authorization: `Bearer ${e2eScenario.userToken}` };
+    const filterDefinitions = (time: string) =>
+        JSON.stringify([
+            { term: 'date', type: 'date', value: `[now-${time} TO now]` },
+            { type: 'project', value: [] },
+            { type: 'status', value: ['open', 'regressed'] }
+        ]);
 
-    await journey.submitRepresentativeEvent();
-    await saveView(page, firstViewName, journey.referenceId, '15m');
-    await saveView(page, secondViewName, journey.referenceId, '1d');
+    const firstSavedViewResponse = await request.post(`/api/v2/organizations/${e2eScenario.organizationId}/saved-views`, {
+        data: {
+            filter: '(status:open OR status:regressed)',
+            filter_definitions: filterDefinitions('15m'),
+            name: firstViewName,
+            organization_id: e2eScenario.organizationId,
+            show_chart: true,
+            show_stats: true,
+            slug: firstViewSlug,
+            time: '[now-15m TO now]',
+            view_type: 'events'
+        },
+        headers: authorizationHeaders
+    });
+    expect(firstSavedViewResponse.status()).toBe(201);
+    const firstSavedView = (await firstSavedViewResponse.json()) as { id: string };
+
+    const secondSavedViewResponse = await request.post(`/api/v2/organizations/${e2eScenario.organizationId}/saved-views`, {
+        data: {
+            filter: '(status:open OR status:regressed)',
+            filter_definitions: filterDefinitions('1d'),
+            name: secondViewName,
+            organization_id: e2eScenario.organizationId,
+            show_chart: true,
+            show_stats: true,
+            slug: secondViewSlug,
+            time: '[now-1d TO now]',
+            view_type: 'events'
+        },
+        headers: authorizationHeaders
+    });
+    expect(secondSavedViewResponse.status()).toBe(201);
+
+    await expect
+        .poll(
+            async () => {
+                const response = await request.get(savedViewsPath, { headers: authorizationHeaders });
+                if (!response.ok()) {
+                    return false;
+                }
+
+                const viewNames = ((await response.json()) as { name: string }[]).map((view) => view.name);
+                return viewNames.includes(firstViewName) && viewNames.includes(secondViewName);
+            },
+            { timeout: 30_000 }
+        )
+        .toBe(true);
 
     await page.goto(`/next/event/${firstViewSlug}`);
     const dateFilter = page.getByRole('button', { name: /^Date/ }).filter({ visible: true }).first();
@@ -157,6 +208,16 @@ test('switching saved views preserves each view temporary filter overrides acros
     await expect(summaryWrap).toBeChecked();
     await columnDialog.getByRole('button', { name: 'Done' }).click();
 
+    const refreshedSavedViews = page.waitForResponse(
+        (response) => response.request().method() === 'GET' && new URL(response.url()).pathname === savedViewsPath && response.ok()
+    );
+    const serverUpdateResponse = await request.patch(`/api/v2/saved-views/${firstSavedView.id}`, {
+        data: { show_chart: false },
+        headers: authorizationHeaders
+    });
+    expect(serverUpdateResponse.status()).toBe(200);
+    await refreshedSavedViews;
+
     await secondViewLink.click();
     await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(secondViewSlug)}(?:[?#]|$)`));
     await expect(page.getByRole('heading', { name: secondViewName })).toBeVisible();
@@ -193,6 +254,7 @@ test('switching saved views preserves each view temporary filter overrides acros
     ).toBeVisible();
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
     await openViewMenu(page);
+    await expect(page.getByRole('menuitemcheckbox', { name: 'Chart' })).not.toBeChecked();
     await page.getByRole('menuitem', { name: 'Manage Columns...' }).click();
     await expect(summaryWrap).toBeChecked();
     await columnDialog.getByRole('button', { name: 'Done' }).click();
@@ -251,15 +313,4 @@ function savedViewSlug(value: string): string {
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '')
         .replace(/-+/g, '-');
-}
-
-async function saveView(page: Page, viewName: string, referenceId: string, time: string): Promise<void> {
-    await page.goto(`/next/event?reference=${encodeURIComponent(referenceId)}&time=${time}`);
-    await openViewMenu(page);
-    await page.getByRole('menuitem', { name: 'Save As...' }).click();
-    const dialog = page.getByRole('dialog', { name: 'Save View' });
-    await dialog.getByLabel('Name', { exact: true }).fill(viewName);
-    await dialog.getByRole('button', { name: 'Save' }).click();
-    await expect(dialog).toBeHidden({ timeout: 30_000 });
-    await expect(page.getByRole('heading', { name: viewName })).toBeVisible({ timeout: 30_000 });
 }

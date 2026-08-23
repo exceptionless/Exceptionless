@@ -12,7 +12,7 @@ import {
 } from '$features/events/components/filters/helpers.svelte';
 import { organization } from '$features/organizations/context.svelte';
 import { getMeQuery } from '$features/users/api.svelte';
-import { tick } from 'svelte';
+import { tick, untrack } from 'svelte';
 
 import type { AutoFillColumnSelection, WrappedColumnIds } from './column-settings';
 import type { SavedView } from './models';
@@ -129,6 +129,31 @@ export function getComparableSavedViewFilter(
 
 export function getComparableSavedViewTime(time: null | string | undefined, defaultTime: null | string | undefined): null | string {
     return time ?? defaultTime ?? null;
+}
+
+export function getSavedViewStateSignature(
+    view: Pick<SavedView, 'columns' | 'filter' | 'filter_definitions' | 'show_chart' | 'show_stats' | 'sort' | 'time'>
+): string {
+    const columns = Object.entries(view.columns ?? {})
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([columnId, settings]) => [
+            columnId,
+            settings.auto_fill ?? null,
+            settings.position ?? null,
+            settings.visible ?? null,
+            settings.width ?? null,
+            settings.wrap ?? null
+        ]);
+
+    return JSON.stringify({
+        columns,
+        filter: view.filter ?? null,
+        filterDefinitions: view.filter_definitions ?? null,
+        showChart: view.show_chart ?? true,
+        showStats: view.show_stats ?? true,
+        sort: view.sort ?? null,
+        time: view.time ?? null
+    });
 }
 
 export function hasMissingSavedViewSlug(options: {
@@ -388,6 +413,8 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     let lastLoadedViewId = '';
     let appliedDraftKey = $state('');
     let pendingDraftKey = '';
+    let hydratedSavedView = $state<SavedView>();
+    let hydratedSavedViewSignature = '';
     let hydratedSavedViewId = $state<string>();
     $effect(() => {
         const savedViewKey = options.slug ?? options.queryParams.saved;
@@ -405,6 +432,8 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
                 lastLoadedViewId = '';
                 appliedDraftKey = '';
+                hydratedSavedView = undefined;
+                hydratedSavedViewSignature = '';
             }
 
             hydratedSavedViewId = undefined;
@@ -421,13 +450,25 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return;
         }
 
-        // Already loaded this view — skip to avoid stomping user edits on background refetch
+        const viewSignature = getSavedViewStateSignature(view);
+
+        // Keep the last hydrated server content as the local-edit baseline. If a
+        // same-ID update matches the current UI, it was saved and becomes the new
+        // baseline. Otherwise leave the UI and baseline alone until navigation so
+        // remote changes cannot be persisted back as local reverse edits.
         if (view.id === lastLoadedViewId) {
+            if (viewSignature !== hydratedSavedViewSignature && untrack(() => buildSavedViewDraft(view) === undefined)) {
+                hydratedSavedView = view;
+                hydratedSavedViewSignature = viewSignature;
+            }
+
             hydratedSavedViewId = view.id;
             return;
         }
 
         lastLoadedViewId = view.id;
+        hydratedSavedView = view;
+        hydratedSavedViewSignature = viewSignature;
 
         if (view.filter_definitions) {
             try {
@@ -494,8 +535,8 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
     // Detect if current filters or columns differ from the active saved view
     const isModified = $derived.by(() => {
-        const view = activeSavedView;
-        if (!view) {
+        const view = hydratedSavedView;
+        if (!view || activeSavedView?.id !== view.id) {
             return false;
         }
 
@@ -552,8 +593,8 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     });
 
     const currentDraft = $derived.by(() => {
-        const view = activeSavedView;
-        return view ? buildSavedViewDraft(view) : undefined;
+        const view = hydratedSavedView;
+        return view && activeSavedView?.id === view.id ? buildSavedViewDraft(view) : undefined;
     });
 
     async function persistDraftAfterStateSettles(
@@ -615,6 +656,9 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         if (!view) {
             return;
         }
+
+        hydratedSavedView = view;
+        hydratedSavedViewSignature = getSavedViewStateSignature(view);
 
         if (view.filter_definitions) {
             try {

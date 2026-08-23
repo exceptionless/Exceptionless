@@ -11,6 +11,7 @@ import {
     filterDefinitionsEqual,
     getComparableSavedViewFilter,
     getComparableSavedViewTime,
+    getSavedViewStateSignature,
     hasMissingSavedViewSlug,
     hasSavedViewAutoFillChange,
     hasSavedViewColumnChanges,
@@ -63,6 +64,41 @@ function buildSavedView({ id, name, ...overrides }: Partial<SavedView> & Pick<Sa
 }
 
 describe('useSavedViews', () => {
+    describe('saved view state signatures', () => {
+        it('ignores audit and naming changes outside the hydrated state baseline', () => {
+            // Arrange
+            const savedView = buildSavedView({ id: 'view-1', name: 'Original Name', show_chart: false });
+            const renamedView = {
+                ...savedView,
+                name: 'Renamed View',
+                updated_utc: new Date(Date.now() + 1000).toISOString(),
+                version: savedView.version + 1
+            };
+
+            // Act / Assert
+            expect(getSavedViewStateSignature(renamedView)).toBe(getSavedViewStateSignature(savedView));
+        });
+
+        it('detects server changes that affect saved view state', () => {
+            // Arrange
+            const savedView = buildSavedView({
+                columns: { summary: { visible: true, wrap: false } },
+                id: 'view-1',
+                name: 'My View',
+                show_chart: true
+            });
+
+            // Act / Assert
+            expect(getSavedViewStateSignature({ ...savedView, show_chart: false })).not.toBe(getSavedViewStateSignature(savedView));
+            expect(
+                getSavedViewStateSignature({
+                    ...savedView,
+                    columns: { summary: { visible: true, wrap: true } }
+                })
+            ).not.toBe(getSavedViewStateSignature(savedView));
+        });
+    });
+
     describe('saved view slugs', () => {
         it('falls back to the normalized name for views created before slugs were stored', () => {
             // Arrange
