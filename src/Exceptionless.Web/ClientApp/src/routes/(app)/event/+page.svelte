@@ -249,6 +249,12 @@
     let showStats = $state(true);
     let showChart = $state(true);
     const savedViewsState = useSavedViews({
+        applyFilters: (draftFilters) => {
+            updateFilters(draftFilters, {
+                clearPagination: false
+            });
+            filters = draftFilters;
+        },
         baseHref: resolve('/(app)/event'),
         defaultAutoFillColumnId: 'summary',
         defaultColumnVisibility: defaultEventColumnVisibility,

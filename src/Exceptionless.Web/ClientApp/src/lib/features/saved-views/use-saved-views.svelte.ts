@@ -2,8 +2,17 @@ import type { IFilter } from '$comp/faceted-filter';
 import type { ColumnOrderState, ColumnSizingState, ColumnVisibilityState } from '@tanstack/svelte-table';
 
 import { goto } from '$app/navigation';
-import { buildFilterCacheKey, deserializeFilters, serializeFilters } from '$features/events/components/filters/helpers.svelte';
+import { page } from '$app/state';
+import {
+    applyTimeFilter,
+    buildFilterCacheKey,
+    deserializeFilters,
+    getFiltersFromCache,
+    serializeFilters
+} from '$features/events/components/filters/helpers.svelte';
 import { organization } from '$features/organizations/context.svelte';
+import { getMeQuery } from '$features/users/api.svelte';
+import { tick } from 'svelte';
 
 import type { AutoFillColumnSelection, WrappedColumnIds } from './column-settings';
 import type { SavedView } from './models';
@@ -19,6 +28,19 @@ import {
     savedViewColumnSizingEqual,
     savedViewColumnWrappingEqual
 } from './column-settings';
+import {
+    applyFilterChanges,
+    applyRecordChanges,
+    applyWrappedColumnChanges,
+    buildFilterChanges,
+    buildRecordChanges,
+    buildWrappedColumnChanges,
+    clearSavedViewDraft,
+    getSavedViewDraft,
+    type SavedViewDraft,
+    type SavedViewDraftIdentity,
+    saveSavedViewDraft
+} from './saved-view-drafts';
 import { savedViewHref, savedViewResolvedSlug } from './slugs';
 
 export interface SavedViewQueryParams {
@@ -30,6 +52,7 @@ export interface SavedViewQueryParams {
 }
 
 export interface UseSavedViewsOptions {
+    applyFilters?: (filters: IFilter[]) => void;
     baseHref?: string;
     defaultAutoFillColumnId?: string;
     defaultColumnVisibility?: ColumnVisibilityState;
@@ -178,6 +201,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     const isEnabled = $derived(!!organization.current);
     let autoFillColumnId = $state<AutoFillColumnSelection>(options.defaultAutoFillColumnId ?? null);
     let wrappedColumnIds = $state<WrappedColumnIds>([]);
+    const currentUserQuery = getMeQuery();
 
     // Some routes, such as stream, do not declare every saved-view query parameter.
     const supportsSort = supportsSortQueryParam(options.queryParams);
@@ -230,9 +254,140 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         options.setShowChart?.(view?.show_chart ?? true);
     }
 
+    function getDraftIdentity(view: SavedView): SavedViewDraftIdentity | undefined {
+        const organizationId = organization.current;
+        const userId = currentUserQuery.data?.id;
+        if (!organizationId || !userId) {
+            return undefined;
+        }
+
+        return {
+            organizationId,
+            savedViewId: view.id,
+            userId
+        };
+    }
+
+    function getServerFilters(view: SavedView): IFilter[] {
+        if (view.filter_definitions) {
+            return deserializeFilters(view.filter_definitions);
+        }
+
+        const filter = getComparableSavedViewFilter(view.filter, view.filter_definitions, options.defaultFilter);
+        const filters = getFiltersFromCache(options.filterCacheKey(filter), filter);
+        return applyTimeFilter(filters, getComparableSavedViewTime(view.time, options.defaultTime));
+    }
+
+    function hasExplicitFilterOverrides(): boolean {
+        const filterParameterNames = [
+            'bot',
+            'filter',
+            'filters',
+            'first',
+            'level',
+            'project',
+            'reference',
+            'session',
+            'stack',
+            'status',
+            'tag',
+            'time',
+            'type',
+            'version'
+        ];
+
+        return filterParameterNames.some((name) => page.url.searchParams.has(name));
+    }
+
+    function applyDraftState(view: SavedView, draft: SavedViewDraft): void {
+        if (draft.filterChanges && options.applyFilters && !hasExplicitFilterOverrides()) {
+            options.applyFilters(applyFilterChanges(getServerFilters(view), draft.filterChanges));
+        }
+
+        if (options.setColumnVisibility) {
+            options.setColumnVisibility(applyRecordChanges(getSavedColumnVisibility(view), draft.columnVisibilityChanges));
+        }
+
+        if (options.setColumnOrder) {
+            options.setColumnOrder(draft.columnOrder ?? getSavedColumnOrder(view));
+        }
+
+        options.setColumnSizing?.(applyRecordChanges(getSavedColumnSizing(view), draft.columnSizingChanges));
+        autoFillColumnId = 'autoFillColumnId' in draft ? draft.autoFillColumnId! : getSavedAutoFillColumnSelection(view, options.defaultAutoFillColumnId);
+        wrappedColumnIds = applyWrappedColumnChanges(getSavedWrappedColumnIds(view), draft.wrappedColumnChanges);
+
+        if ('showStats' in draft) {
+            options.setShowStats?.(draft.showStats!);
+        }
+
+        if ('showChart' in draft) {
+            options.setShowChart?.(draft.showChart!);
+        }
+
+        if ('sort' in draft && !page.url.searchParams.has('sort')) {
+            setSortQueryParam(options.queryParams, draft.sort === (view.sort ?? null) ? null : (draft.sort ?? null));
+        }
+    }
+
+    function buildSavedViewDraft(view: SavedView): SavedViewDraft | undefined {
+        const draft: SavedViewDraft = {
+            version: 1
+        };
+
+        if (options.getFilterDefinitions) {
+            const currentFilters = deserializeFilters(options.getFilterDefinitions());
+            draft.filterChanges = buildFilterChanges(getServerFilters(view), currentFilters);
+        }
+
+        if (options.getColumnVisibility) {
+            const serverVisibility = {
+                ...options.defaultColumnVisibility,
+                ...getSavedColumnVisibility(view)
+            };
+            const currentVisibility = {
+                ...options.defaultColumnVisibility,
+                ...options.getColumnVisibility()
+            };
+            draft.columnVisibilityChanges = buildRecordChanges(serverVisibility, currentVisibility);
+        }
+
+        if (options.getColumnOrder && !savedViewColumnOrderEqual(options.getColumnOrder(), view)) {
+            draft.columnOrder = [...options.getColumnOrder()];
+        }
+
+        if (options.getColumnSizing) {
+            draft.columnSizingChanges = buildRecordChanges(getSavedColumnSizing(view), options.getColumnSizing());
+        }
+
+        if (hasSavedViewAutoFillChange(autoFillColumnId, view, options.defaultAutoFillColumnId)) {
+            draft.autoFillColumnId = autoFillColumnId;
+        }
+
+        draft.wrappedColumnChanges = buildWrappedColumnChanges(getSavedWrappedColumnIds(view), wrappedColumnIds);
+
+        if (options.getShowStats && options.getShowStats() !== (view.show_stats ?? true)) {
+            draft.showStats = options.getShowStats();
+        }
+
+        if (options.getShowChart && options.getShowChart() !== (view.show_chart ?? true)) {
+            draft.showChart = options.getShowChart();
+        }
+
+        if (supportsSort) {
+            const currentSort = options.getSort?.() ?? options.queryParams.sort ?? null;
+            if (currentSort !== (view.sort ?? null)) {
+                draft.sort = currentSort;
+            }
+        }
+
+        return Object.entries(draft).some(([key, value]) => key !== 'version' && value !== undefined) ? draft : undefined;
+    }
+
     // Hydrate saved view state when a saved view loads. Query params remain URL overrides.
     // lastLoadedViewId prevents re-hydration on background refetches (which would stomp user edits).
     let lastLoadedViewId = '';
+    let appliedDraftKey = $state('');
+    let pendingDraftKey = '';
     let hydratedSavedViewId = $state<string>();
     $effect(() => {
         const savedViewKey = options.slug ?? options.queryParams.saved;
@@ -249,6 +404,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
                 }
 
                 lastLoadedViewId = '';
+                appliedDraftKey = '';
             }
 
             hydratedSavedViewId = undefined;
@@ -285,6 +441,55 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         applyColumnState(view);
         applyDisplayState(view);
         hydratedSavedViewId = view.id;
+    });
+
+    async function applyDraftAfterViewHydrates(viewId: string, identity: SavedViewDraftIdentity, draftKey: string): Promise<void> {
+        // A dirty source view can leave a queued query-param reset behind during
+        // client-side navigation. Let that navigation task and route hydration
+        // finish before applying the destination view's browser-local draft.
+        await tick();
+        await new Promise<void>((resolve) => setTimeout(resolve, 0));
+        await tick();
+
+        const view = activeSavedView;
+        const currentIdentity = view ? getDraftIdentity(view) : undefined;
+        const currentDraftKey = currentIdentity ? `${currentIdentity.userId}:${currentIdentity.organizationId}:${currentIdentity.savedViewId}` : undefined;
+        if (!view || view.id !== viewId || hydratedSavedViewId !== view.id || currentDraftKey !== draftKey) {
+            if (pendingDraftKey === draftKey) {
+                pendingDraftKey = '';
+            }
+            return;
+        }
+
+        const draft = getSavedViewDraft(identity);
+        appliedDraftKey = draftKey;
+        if (pendingDraftKey === draftKey) {
+            pendingDraftKey = '';
+        }
+
+        if (draft) {
+            applyDraftState(view, draft);
+        }
+    }
+
+    $effect(() => {
+        const view = activeSavedView;
+        if (!view || hydratedSavedViewId !== view.id) {
+            return;
+        }
+
+        const identity = getDraftIdentity(view);
+        if (!identity) {
+            return;
+        }
+
+        const draftKey = `${identity.userId}:${identity.organizationId}:${identity.savedViewId}`;
+        if (appliedDraftKey === draftKey || pendingDraftKey === draftKey) {
+            return;
+        }
+
+        pendingDraftKey = draftKey;
+        void applyDraftAfterViewHydrates(view.id, identity, draftKey);
     });
 
     // Detect if current filters or columns differ from the active saved view
@@ -344,6 +549,40 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         return false;
+    });
+
+    async function persistDraftAfterStateSettles(viewId: string, identity: SavedViewDraftIdentity, draftKey: string): Promise<void> {
+        await tick();
+
+        const view = activeSavedView;
+        if (!view || view.id !== viewId || hydratedSavedViewId !== view.id || appliedDraftKey !== draftKey) {
+            return;
+        }
+
+        const draft = buildSavedViewDraft(view);
+        if (draft) {
+            saveSavedViewDraft(identity, draft);
+        } else {
+            clearSavedViewDraft(identity);
+        }
+    }
+
+    $effect(() => {
+        const view = activeSavedView;
+        if (!view || hydratedSavedViewId !== view.id) {
+            return;
+        }
+
+        const identity = getDraftIdentity(view);
+        const draftKey = identity ? `${identity.userId}:${identity.organizationId}:${identity.savedViewId}` : undefined;
+        if (!identity || !draftKey || appliedDraftKey !== draftKey) {
+            return;
+        }
+
+        // Subscribe to every field that contributes to dirty state, then persist after
+        // route-level filter normalization has settled for this render cycle.
+        void isModified;
+        void persistDraftAfterStateSettles(view.id, identity, draftKey);
     });
 
     const isMissing = $derived(

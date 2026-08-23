@@ -97,7 +97,7 @@ test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2
     expect(failedApiRequests).toEqual([]);
 });
 
-test('switching saved views discards temporary filter overrides', async ({ e2eApi, e2eScenario, page }) => {
+test('switching saved views preserves each view temporary filter overrides across page reloads', async ({ e2eApi, e2eScenario, page }) => {
     const failedApiRequests = captureFailedApiRequests(page);
     const journey = ExceptionlessE2EJourney.fromScenario(page, e2eApi, e2eScenario);
     const suffix = journey.run.slice(-28);
@@ -116,7 +116,10 @@ test('switching saved views discards temporary filter overrides', async ({ e2eAp
     await page.getByRole('button', { name: 'Last 90 days' }).click();
     await expect(page).toHaveURL(/[?&]time=90d(?:&|$)/);
 
-    await page.getByRole('link', { exact: true, name: secondViewName }).first().click();
+    const firstViewLink = page.getByRole('link', { exact: true, name: firstViewName }).first();
+    const secondViewLink = page.getByRole('link', { exact: true, name: secondViewName }).first();
+
+    await secondViewLink.click();
     await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(secondViewSlug)}(?:[?#]|$)`));
     await expect(page.getByRole('heading', { name: secondViewName })).toBeVisible();
     await expect(
@@ -125,6 +128,76 @@ test('switching saved views discards temporary filter overrides', async ({ e2eAp
             .filter({ visible: true })
             .first()
     ).toBeVisible();
+
+    await dateFilter.click();
+    await page.getByRole('button', { name: 'Last 90 days' }).click();
+    await expect(page).toHaveURL(/[?&]time=90d(?:&|$)/);
+    await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
+
+    await firstViewLink.click();
+    await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(firstViewSlug)}(?:[?#]|$)`));
+    await expect(page.getByRole('heading', { name: firstViewName })).toBeVisible();
+    await expect(
+        page
+            .getByRole('button', { name: /Date\s+Last 90 days/ })
+            .filter({ visible: true })
+            .first()
+    ).toBeVisible();
+    await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
+
+    await secondViewLink.click();
+    await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(secondViewSlug)}(?:[?#]|$)`));
+    await expect(page.getByRole('heading', { name: secondViewName })).toBeVisible();
+    await expect(
+        page
+            .getByRole('button', { name: /Date\s+Last 90 days/ })
+            .filter({ visible: true })
+            .first()
+    ).toBeVisible();
+    await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
+
+    await page.reload();
+    await expect(page.getByRole('heading', { name: secondViewName })).toBeVisible();
+    await expect(
+        page
+            .getByRole('button', { name: /Date\s+Last 90 days/ })
+            .filter({ visible: true })
+            .first()
+    ).toBeVisible();
+    await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
+    await firstViewLink.click();
+    await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(firstViewSlug)}(?:[?#]|$)`));
+    await expect(page).toHaveURL(/[?&]time=90d(?:&|$)/);
+    await expect(page.getByRole('heading', { name: firstViewName })).toBeVisible();
+    await expect(
+        page
+            .getByRole('button', { name: /Date\s+Last 90 days/ })
+            .filter({ visible: true })
+            .first()
+    ).toBeVisible();
+    await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
+
+    await openViewMenu(page);
+    await page.getByRole('menuitem', { name: 'Reset to Saved' }).click();
+    await expect(page).not.toHaveURL(/[?&]time=90d(?:&|$)/);
+    await secondViewLink.click();
+    await expect(page.getByRole('heading', { name: secondViewName })).toBeVisible();
+    await expect(
+        page
+            .getByRole('button', { name: /Date\s+Last 90 days/ })
+            .filter({ visible: true })
+            .first()
+    ).toBeVisible();
+    await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
+    await firstViewLink.click();
+    await expect(page.getByRole('heading', { name: firstViewName })).toBeVisible();
+    await expect(
+        page
+            .getByRole('button', { name: /Date\s+Last 15 minutes/ })
+            .filter({ visible: true })
+            .first()
+    ).toBeVisible();
+    await expect(page.getByLabel('Unsaved view changes')).toHaveCount(0);
     expect(failedApiRequests).toEqual([]);
 });
 

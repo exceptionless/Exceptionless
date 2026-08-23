@@ -81,6 +81,10 @@
 
     const VIEW = 'stream';
     const savedViewsState = useSavedViews({
+        applyFilters: (draftFilters) => {
+            updateFilters(draftFilters);
+            filters = draftFilters;
+        },
         defaultAutoFillColumnId: 'summary',
         defaultColumnVisibility: defaultEventColumnVisibility,
         defaultFilter: DEFAULT_PARAMS.filter,
