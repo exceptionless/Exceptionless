@@ -11,6 +11,7 @@
 
     import ExtendedDataItem from '../extended-data-item.svelte';
     import SimpleStackTrace from '../simple-stack-trace/simple-stack-trace.svelte';
+    import SourceMapStatus from '../stack-trace/source-map-status.svelte';
     import StackTrace from '../stack-trace/stack-trace.svelte';
 
     interface Props {
@@ -63,7 +64,10 @@
 
 <div class="mt-4 mb-2 flex justify-between">
     <H3>Stack Trace</H3>
-    <div class="flex justify-end">
+    <div class="flex items-center justify-end gap-1.5">
+        {#if event.data?.['@error']}
+            <SourceMapStatus error={event.data['@error']} projectId={event.project_id} />
+        {/if}
         <CopyToClipboardButton size="icon-sm" title="Copy Stack Trace to Clipboard" value={stackTrace} variant="outline"></CopyToClipboardButton>
     </div>
 </div>
