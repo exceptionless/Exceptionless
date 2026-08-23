@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/svelte';
+import { tick } from 'svelte';
 import { describe, expect, it, vi } from 'vitest';
 
 import DataTableBodyTestHarness from './data-table-body.test-harness.svelte';
@@ -23,9 +24,11 @@ describe('DataTableBody', () => {
         const summaryHeader = screen.getByRole('columnheader', { name: 'Summary' });
         const dateHeader = screen.getByRole('columnheader', { name: 'Date' });
 
-        expect(table.style.cssText).toBe('width: 302px; min-width: 302px;');
+        expect(table.style.cssText).toBe('width: 100%; min-width: 302px;');
         expect(summaryHeader.style.cssText).toBe('width: 140px; min-width: 140px; max-width: 140px;');
         expect(dateHeader.style.cssText).toBe('width: 130px; min-width: 130px; max-width: 130px;');
+        expect(table.querySelector('thead tr')?.lastElementChild?.getAttribute('aria-hidden')).toBe('true');
+        expect(table.querySelector('tbody tr')?.lastElementChild?.getAttribute('aria-hidden')).toBe('true');
     });
 
     it('uses the full-width data column as the flexible column', () => {
@@ -55,7 +58,7 @@ describe('DataTableBody', () => {
         const summaryHeader = screen.getByRole('columnheader', { name: 'Summary' });
         const dateHeader = screen.getByRole('columnheader', { name: 'Date' });
 
-        expect(table.style.cssText).toBe('width: 362px; min-width: 362px;');
+        expect(table.style.cssText).toBe('width: 100%; min-width: 362px;');
         expect(summaryHeader.style.cssText).toBe('width: 180px; min-width: 180px; max-width: 180px;');
         expect(dateHeader.style.cssText).toBe('width: 150px; min-width: 150px; max-width: 150px;');
     });
@@ -67,7 +70,7 @@ describe('DataTableBody', () => {
         const summaryHeader = screen.getByRole('columnheader', { name: 'Summary' });
         const dateHeader = screen.getByRole('columnheader', { name: 'Date' });
 
-        expect(table.style.cssText).toBe('width: 342px; min-width: 342px;');
+        expect(table.style.cssText).toBe('width: 100%; min-width: 342px;');
         expect(summaryHeader.style.cssText).toBe('width: 160px; min-width: 160px; max-width: 160px;');
         expect(dateHeader.style.cssText).toBe('width: 150px; min-width: 150px; max-width: 150px;');
     });
@@ -140,6 +143,38 @@ describe('DataTableBody', () => {
         expect(summaryHeader.style.cssText).toBe('width: 316px; min-width: 316px; max-width: 316px;');
 
         await fireEvent.mouseUp(document, { clientX: 116 });
+    });
+
+    it('keeps horizontal scrolling available while the table is in view', async () => {
+        const { container } = render(DataTableBodyTestHarness, { allColumnsSized: true, kind: 'event', onRowClick: vi.fn() });
+        const tableScrollContainer = container.querySelector<HTMLDivElement>('[data-slot="table-container"]');
+        expect(tableScrollContainer).not.toBeNull();
+
+        Object.defineProperties(tableScrollContainer, {
+            clientWidth: { configurable: true, value: 300 },
+            scrollLeft: { configurable: true, value: 0, writable: true },
+            scrollWidth: { configurable: true, value: 600 }
+        });
+        await fireEvent(window, new Event('resize'));
+        await tick();
+
+        const floatingScrollbar = screen.getByRole('scrollbar', { name: 'Horizontal table scroll' });
+        expect(floatingScrollbar.classList).not.toContain('hidden');
+        expect(floatingScrollbar.firstElementChild?.getAttribute('style')).toBe('width: 600px;');
+
+        floatingScrollbar.scrollLeft = 120;
+        await fireEvent.scroll(floatingScrollbar);
+        expect(tableScrollContainer?.scrollLeft).toBe(120);
+
+        if (tableScrollContainer) {
+            tableScrollContainer.scrollLeft = 48;
+            await fireEvent.scroll(tableScrollContainer);
+        }
+        expect(floatingScrollbar.scrollLeft).toBe(48);
+
+        await fireEvent.keyDown(floatingScrollbar, { key: 'End' });
+        expect(tableScrollContainer?.scrollLeft).toBe(300);
+        expect(floatingScrollbar.getAttribute('aria-valuenow')).toBe('300');
     });
 
     it('lets a resized header shrink below its metadata width', () => {
