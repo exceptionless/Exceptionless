@@ -176,8 +176,6 @@
     </DropdownMenu.Trigger>
     <DropdownMenu.Content>
         <DropdownMenu.Group>
-            <DropdownMenu.GroupHeading>Bulk Actions</DropdownMenu.GroupHeading>
-            <DropdownMenu.Separator />
             <DropdownMenu.Item title="Mark stacks as open" onclick={() => markOpen()}>Mark Open</DropdownMenu.Item>
             <DropdownMenu.Item title="Mark stacks as fixed" onclick={() => (openMarkStackFixedInVersionDialog = true)}>Mark Fixed</DropdownMenu.Item>
             <DropdownMenu.Sub>

@@ -245,7 +245,7 @@
             <CopyToClipboardButton size="icon-sm" title="Copy Stack Trace to Clipboard" value={stackTrace} variant="outline"></CopyToClipboardButton>
         </div>
     </div>
-    <div class="mt-2 max-h-75 grow overflow-auto text-xs">
+    <div class="mt-2 grow text-xs">
         {#if event.data?.['@error']}
             <StackTrace error={event.data['@error']} />
         {:else if event.data?.['@simple_error']}

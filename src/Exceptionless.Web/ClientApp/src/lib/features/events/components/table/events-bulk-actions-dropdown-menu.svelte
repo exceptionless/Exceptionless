@@ -54,7 +54,6 @@
     </DropdownMenu.Trigger>
     <DropdownMenu.Content>
         <DropdownMenu.Group>
-            <DropdownMenu.GroupHeading>Bulk Actions</DropdownMenu.GroupHeading>
             <DropdownMenu.Item onclick={() => (openRemoveEventDialog = true)} class="text-destructive" title="Delete event">Delete</DropdownMenu.Item>
         </DropdownMenu.Group>
     </DropdownMenu.Content>

@@ -40,16 +40,12 @@
             {@render bodyChildren()}
         {/if}
     </DataTable.Body>
-    <DataTable.Footer {table} class="space-x-6 lg:space-x-8">
+    <DataTable.Footer {table} class="w-full">
         {#if footerChildren}
             {@render footerChildren()}
         {:else}
             <DataTable.Selection {table} />
-            <DataTable.PageSize bind:value={limit} {table}></DataTable.PageSize>
-            <div class="flex items-center space-x-6 lg:space-x-8">
-                <DataTable.PageCount {table} />
-                <DataTable.Pagination {table} />
-            </div>
+            <DataTable.Pager bind:value={limit} {table} />
         {/if}
     </DataTable.Footer>
 </DataTable.Root>

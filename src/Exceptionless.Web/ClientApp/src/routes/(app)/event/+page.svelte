@@ -714,22 +714,13 @@
         })
     );
 
-    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.store.state.pagination.pageIndex === 0);
-
     function reset() {
         table.resetRowSelection();
         table.setPageIndex(0);
     }
 
     async function handleRefresh() {
-        const isFirstPage = table.store.state.pagination.pageIndex === 0;
-        if (!canRefresh) {
-            reset();
-            if (!isFirstPage) {
-                return;
-            }
-        }
-
+        table.resetRowSelection();
         await eventsQuery.refetch();
     }
 
@@ -957,6 +948,7 @@
                     onResetToSaved={handleResetToSaved}
                     savedViews={savedViewsState.savedViews}
                     setAutoFillColumnId={savedViewsState.setAutoFillColumnId}
+                    setWrappedColumnIds={savedViewsState.setWrappedColumnIds}
                     {showChart}
                     {showStats}
                     setShowChart={(v) => (showChart = v)}
@@ -965,14 +957,10 @@
                     {table}
                     time={getQueryTime() ?? undefined}
                     view={VIEW}
+                    wrappedColumnIds={savedViewsState.wrappedColumnIds}
                 />
             {/if}
-            <RefreshButton
-                onRefresh={handleRefresh}
-                isRefreshing={eventsQuery.isFetching}
-                size="icon-lg"
-                title={canRefresh ? 'Refresh results' : 'Return to the first page to refresh results'}
-            />
+            <RefreshButton onRefresh={handleRefresh} isRefreshing={eventsQuery.isFetching} size="icon-lg" title="Refresh results" />
         </div>
     </div>
 
@@ -1003,20 +991,17 @@
             {rowClick}
             {rowHref}
             {table}
+            wrappedColumnIds={savedViewsState.wrappedColumnIds}
         >
             {#snippet footerChildren()}
-                <div class="h-9 min-w-35">
+                <div class="flex min-w-0 items-center gap-3">
                     {#if table.getSelectedRowModel().flatRows.length}
                         <EventsBulkActionsDropdownMenu {table} />
                     {/if}
+                    <DataTable.Selection {table} />
                 </div>
 
-                <DataTable.Selection {table} />
-                <DataTable.PageSize bind:value={eventsQueryParameters.limit!} {table}></DataTable.PageSize>
-                <div class="flex items-center space-x-6 lg:space-x-8">
-                    <DataTable.PageCount {table} />
-                    <DataTable.Pagination {table} />
-                </div>
+                <DataTable.Pager bind:value={eventsQueryParameters.limit!} {table} />
             {/snippet}
         </EventsDataTable>
     </div>

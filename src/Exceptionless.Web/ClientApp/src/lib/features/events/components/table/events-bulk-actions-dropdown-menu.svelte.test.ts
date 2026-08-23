@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mutateAsync = vi.hoisted(() => vi.fn());
 const deleteEvent = vi.hoisted(() => vi.fn(() => ({ mutateAsync })));
@@ -15,6 +15,25 @@ describe('EventsBulkActionsDropdownMenu', () => {
         mutateAsync.mockResolvedValue(undefined);
         deleteEvent.mockClear();
         toast.success.mockClear();
+    });
+
+    afterEach(async () => {
+        cleanup();
+        // Bits UI defers body-scroll restoration by 24 ms after an overlay unmounts.
+        await new Promise((resolve) => window.setTimeout(resolve, 30));
+    });
+
+    it('does not repeat the trigger label inside the menu', async () => {
+        const table = {
+            getSelectedRowModel: () => ({ flatRows: [{ id: 'event-id' }] }),
+            resetRowSelection: vi.fn()
+        } as never;
+        render(EventsBulkActionsDropdownMenu, { props: { table } });
+
+        await fireEvent.click(screen.getByRole('button', { name: /Bulk Actions/ }));
+
+        expect(document.querySelector('[data-slot="dropdown-menu-group-heading"]')).toBeNull();
+        expect(screen.getByRole('menuitem', { name: 'Delete' })).toBeTruthy();
     });
 
     it('deletes the selected events and clears the selection', async () => {

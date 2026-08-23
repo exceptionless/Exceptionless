@@ -9,8 +9,10 @@ import {
     getSavedColumnOrder,
     getSavedColumnSizing,
     getSavedColumnVisibility,
+    getSavedWrappedColumnIds,
     savedViewColumnOrderEqual,
-    savedViewColumnSizingEqual
+    savedViewColumnSizingEqual,
+    savedViewColumnWrappingEqual
 } from './column-settings';
 
 describe('saved view column settings', () => {
@@ -20,12 +22,14 @@ describe('saved view column settings', () => {
             ['select', 'project', 'summary'],
             { project: true, summary: true },
             { project: 360 },
-            'summary'
+            'summary',
+            undefined,
+            ['summary']
         );
 
         expect(result).toEqual({
             project: { position: 0, visible: true, width: 360 },
-            summary: { auto_fill: true, position: 1, visible: true }
+            summary: { auto_fill: true, position: 1, visible: true, wrap: true }
         });
     });
 
@@ -58,11 +62,11 @@ describe('saved view column settings', () => {
         expect(getSavedAutoFillColumnSelection(legacyFixedDefault, 'summary')).toBeNull();
     });
 
-    it('reads order, visibility, and width from structured columns', () => {
+    it('reads order, visibility, width, and wrapping from structured columns', () => {
         const view = {
             columns: {
                 project: { position: 0, visible: true, width: 360 },
-                summary: { auto_fill: true, position: 1, visible: false }
+                summary: { auto_fill: true, position: 1, visible: false, wrap: true }
             }
         } as Pick<SavedView, 'columns'>;
 
@@ -70,6 +74,7 @@ describe('saved view column settings', () => {
         expect(getSavedColumnVisibility(view)).toEqual({ project: true, summary: false });
         expect(getSavedColumnSizing(view)).toEqual({ project: 360 });
         expect(getSavedAutoFillColumnId(view)).toBe('summary');
+        expect(getSavedWrappedColumnIds(view)).toEqual(['summary']);
     });
 
     it('detects changed and reset column widths', () => {
@@ -105,5 +110,30 @@ describe('saved view column settings', () => {
         } as Pick<SavedView, 'columns'>;
 
         expect(savedViewColumnOrderEqual(['select', 'date', 'project'], view)).toBe(true);
+    });
+
+    it('treats missing wrap settings as the legacy single-line behavior', () => {
+        const view = {
+            columns: {
+                project: { visible: true },
+                summary: { visible: true }
+            }
+        } as Pick<SavedView, 'columns'>;
+
+        expect(getSavedWrappedColumnIds(view)).toEqual([]);
+        expect(savedViewColumnWrappingEqual([], view)).toBe(true);
+        expect(savedViewColumnWrappingEqual(['summary'], view)).toBe(false);
+    });
+
+    it('compares wrapped columns without depending on their order', () => {
+        const view = {
+            columns: {
+                project: { wrap: true },
+                summary: { wrap: true }
+            }
+        } as Pick<SavedView, 'columns'>;
+
+        expect(savedViewColumnWrappingEqual(['summary', 'project'], view)).toBe(true);
+        expect(savedViewColumnWrappingEqual(['summary'], view)).toBe(false);
     });
 });

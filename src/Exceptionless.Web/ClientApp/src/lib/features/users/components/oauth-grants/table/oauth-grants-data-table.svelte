@@ -31,12 +31,8 @@
             <DataTable.Empty {table}>No applications have access to your account.</DataTable.Empty>
         {/if}
     </DataTable.Body>
-    <DataTable.Footer {table} class="space-x-6 lg:space-x-8">
+    <DataTable.Footer {table} class="w-full">
         <DataTable.Selection {table} />
-        <DataTable.PageSize bind:value={limit} {table}></DataTable.PageSize>
-        <div class="flex items-center space-x-6 lg:space-x-8">
-            <DataTable.PageCount {table} />
-            <DataTable.Pagination {table} />
-        </div>
+        <DataTable.Pager bind:value={limit} {table} />
     </DataTable.Footer>
 </DataTable.Root>
