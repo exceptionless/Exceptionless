@@ -6,7 +6,10 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Queries;
+using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Seed;
+using Exceptionless.Core.Services;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Api.Results;
@@ -28,6 +31,9 @@ public partial class SavedViewHandler(
     IOrganizationRepository organizationRepository,
     ILockProvider lockProvider,
     IQueue<WorkItemData> workItemQueue,
+    PersistentEventQueryValidator eventQueryValidator,
+    EventStackQueryValidator eventStackQueryValidator,
+    EventCustomFieldQueryPolicy eventCustomFieldQueryPolicy,
     ApiMapper mapper,
     LinkGenerator linkGenerator,
     IHttpContextAccessor httpContextAccessor)
@@ -137,6 +143,10 @@ public partial class SavedViewHandler(
             var validationError = NewSavedView.ValidateColumns(definition.ViewType, definition.Columns).FirstOrDefault();
             if (validationError is not null)
                 return Result.Invalid(ValidationError.Create("definitions", validationError.ErrorMessage ?? "Invalid column configuration."));
+
+            string? portabilityError = await ValidatePredefinedFilterPortabilityAsync(definition.ViewType, definition.Filter, definition.FilterDefinitions);
+            if (portabilityError is not null)
+                return Result.Invalid(ValidationError.Create("definitions", portabilityError));
         }
 
         var savedViews = message.Definitions.Select(definition => new SavedView
@@ -193,6 +203,10 @@ public partial class SavedViewHandler(
         if (source is null)
             return Result.NotFound("Saved view not found.");
 
+        string? portabilityError = await ValidatePredefinedFilterPortabilityAsync(source.ViewType, source.Filter, ParseFilterDefinitions(source.FilterDefinitions));
+        if (portabilityError is not null)
+            return Result.Invalid(ValidationError.Create("filter", portabilityError));
+
         var savedView = await UpsertSystemPredefinedSavedViewAsync(source);
         return MapToViewModel(savedView);
     }
@@ -230,6 +244,25 @@ public partial class SavedViewHandler(
             original.Slug = ToFallbackSlug(original.Name, original.Id);
 
         original.UpdatedByUserId = GetCurrentUserId();
+
+        if (changedNames.Contains(nameof(UpdateSavedView.Filter)))
+        {
+            await using var consistencyLock = await lockProvider.TryAcquireAsync(
+                EventCustomFieldService.GetSavedViewConsistencyLockName(original.OrganizationId),
+                TimeSpan.FromMinutes(5),
+                TimeSpan.FromSeconds(5));
+            if (consistencyLock is null)
+                return Result.Conflict("Custom field or saved-view changes are already in progress for this organization. Please try again.");
+
+            var validation = await ValidateFilterAsync(original.ViewType, original.Filter, original.OrganizationId);
+            if (validation.Error is not null)
+                return validation.Identifier is null
+                    ? Result.BadRequest(validation.Error)
+                    : Result.Invalid(ValidationError.Create(validation.Identifier, validation.Error));
+
+            await repository.SaveAsync(original, o => o.Cache().ImmediateConsistency());
+            return MapToViewModel(original);
+        }
 
         await repository.SaveAsync(original, o => o.Cache());
         return MapToViewModel(original);
@@ -285,11 +318,49 @@ public partial class SavedViewHandler(
         mapped.CreatedByUserId = GetCurrentUserId();
         mapped.Version = 1;
 
-        var model = await repository.AddAsync(mapped, o => o.Cache());
+        await using var consistencyLock = await lockProvider.TryAcquireAsync(
+            EventCustomFieldService.GetSavedViewConsistencyLockName(mapped.OrganizationId),
+            TimeSpan.FromMinutes(5),
+            TimeSpan.FromSeconds(5));
+        if (consistencyLock is null)
+            return Result.Conflict("Custom field or saved-view changes are already in progress for this organization. Please try again.");
+
+        var validation = await ValidateFilterAsync(mapped.ViewType, mapped.Filter, mapped.OrganizationId);
+        if (validation.Error is not null)
+            return validation.Identifier is null
+                ? Result.BadRequest(validation.Error)
+                : Result.Invalid(ValidationError.Create(validation.Identifier, validation.Error));
+
+        var model = await repository.AddAsync(mapped, o => o.Cache().ImmediateConsistency());
         var viewModel = MapToViewModel(model);
         string location = linkGenerator.GetUriByName(HttpContext, "GetSavedViewById", new { id = model.Id })
             ?? throw new InvalidOperationException("Unable to generate saved view location.");
         return Result<ViewSavedView>.Created(viewModel, location);
+    }
+
+    private async Task<FilterValidationResult> ValidateFilterAsync(string viewType, string? filter, string organizationId)
+    {
+        var queryValidator = String.Equals(viewType, "stacks", StringComparison.OrdinalIgnoreCase)
+            ? (AppQueryValidator)eventStackQueryValidator
+            : eventQueryValidator;
+        var queryValidation = await queryValidator.ValidateQueryAsync(filter);
+        if (!queryValidation.IsValid)
+            return new FilterValidationResult(queryValidation.Message ?? "Invalid filter.");
+
+        var organization = await organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
+        if (organization is null)
+            return new FilterValidationResult("Organization not found.");
+
+        var customFieldValidation = await eventCustomFieldQueryPolicy.ValidateAsync(
+            queryValidation.ReferencedFields, new AppFilter(organization), HttpContext.RequestAborted);
+        return customFieldValidation.IsValid
+            ? FilterValidationResult.Valid
+            : new FilterValidationResult(customFieldValidation.Message, customFieldValidation.ErrorCode);
+    }
+
+    private sealed record FilterValidationResult(string? Error = null, string? Identifier = null)
+    {
+        public static FilterValidationResult Valid { get; } = new();
     }
 
     private async Task<Result<ViewSavedView>?> CanAddAsync(SavedView value)
@@ -729,6 +800,96 @@ public partial class SavedViewHandler(
         existing.UpdatedByUserId = GetCurrentUserId();
         await repository.SaveAsync(existing, o => o.Cache().ImmediateConsistency());
         return existing;
+    }
+
+    private async Task<string?> ValidatePredefinedFilterPortabilityAsync(string viewType, string? filter, JsonElement? filterDefinitions)
+    {
+        var queryValidator = String.Equals(viewType, "stacks", StringComparison.OrdinalIgnoreCase)
+            ? (AppQueryValidator)eventStackQueryValidator
+            : eventQueryValidator;
+        var validation = await queryValidator.ValidateQueryAsync(filter);
+        if (!validation.IsValid)
+            return validation.Message ?? "Invalid filter.";
+
+        if (validation.ReferencedFields.Any(IsOrganizationCustomFieldReference))
+            return "Predefined saved views cannot reference organization custom fields because they are applied to every organization.";
+
+        if (filterDefinitions.HasValue)
+        {
+            var structuredTerms = new List<string>();
+            var keywordFilters = new List<string>();
+            CollectStructuredFilterReferences(filterDefinitions.Value, structuredTerms, keywordFilters);
+            if (structuredTerms.Any(IsOrganizationCustomFieldReference))
+                return "Predefined saved views cannot reference organization custom fields because they are applied to every organization.";
+
+            foreach (string keywordFilter in keywordFilters)
+            {
+                var keywordValidation = await queryValidator.ValidateQueryAsync(keywordFilter);
+                if (!keywordValidation.IsValid)
+                    return keywordValidation.Message ?? "Invalid structured keyword filter.";
+                if (keywordValidation.ReferencedFields.Any(IsOrganizationCustomFieldReference))
+                    return "Predefined saved views cannot reference organization custom fields because they are applied to every organization.";
+            }
+        }
+
+        return null;
+    }
+
+    private static void CollectStructuredFilterReferences(JsonElement element, ICollection<string> terms, ICollection<string> keywordFilters)
+    {
+        if (element.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in element.EnumerateArray())
+                CollectStructuredFilterReferences(item, terms, keywordFilters);
+            return;
+        }
+
+        if (element.ValueKind != JsonValueKind.Object)
+            return;
+
+        string? type = null;
+        string? value = null;
+        foreach (var property in element.EnumerateObject())
+        {
+            if (property.Value.ValueKind == JsonValueKind.String
+                && property.Name.Equals("term", StringComparison.OrdinalIgnoreCase))
+            {
+                terms.Add(property.Value.GetString()!);
+            }
+            else if (property.Value.ValueKind == JsonValueKind.String
+                && property.Name.Equals("type", StringComparison.OrdinalIgnoreCase))
+            {
+                type = property.Value.GetString();
+            }
+            else if (property.Value.ValueKind == JsonValueKind.String
+                && property.Name.Equals("value", StringComparison.OrdinalIgnoreCase))
+            {
+                value = property.Value.GetString();
+            }
+
+            if (property.Value.ValueKind is JsonValueKind.Array or JsonValueKind.Object)
+                CollectStructuredFilterReferences(property.Value, terms, keywordFilters);
+        }
+
+        if (String.Equals(type, "keyword", StringComparison.OrdinalIgnoreCase) && !String.IsNullOrWhiteSpace(value))
+            keywordFilters.Add(value);
+    }
+
+    private static bool IsOrganizationCustomFieldReference(string field)
+    {
+        if (field.StartsWith("data.", StringComparison.OrdinalIgnoreCase))
+        {
+            string dataLogicalName = field["data.".Length..];
+            return !dataLogicalName.StartsWith('@') && !EventCustomFieldService.IsSystemField(dataLogicalName);
+        }
+
+        if (!field.StartsWith("idx.", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        string idxLogicalName = field["idx.".Length..];
+        return !EventCustomFieldService.IsSystemField(idxLogicalName)
+            && !EventCustomFieldService.SystemFields.Any(systemField =>
+                String.Equals(systemField.LegacyIdxField, idxLogicalName, StringComparison.OrdinalIgnoreCase));
     }
 
     private SavedView CreateSystemPredefinedSavedView(SavedView source, string key, string slug)

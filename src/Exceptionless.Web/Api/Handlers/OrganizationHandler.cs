@@ -30,6 +30,7 @@ namespace Exceptionless.Web.Api.Handlers;
 
 public class OrganizationHandler(
     OrganizationService organizationService,
+    EventCustomFieldService eventCustomFieldService,
     IOrganizationRepository repository,
     ICacheClient cacheClient,
     IEventRepository eventRepository,
@@ -835,6 +836,17 @@ public class OrganizationHandler(
 
         var organization = await repository.AddAsync(value, o => o.Cache());
 
+        try
+        {
+            await eventCustomFieldService.EnsureSystemFieldsAsync(organization.Id);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // Custom fields are also provisioned lazily during event processing and before user-field creation.
+            // Do not leave a newly persisted organization inaccessible to its creator if this best-effort step fails.
+            _logger.LogError(ex, "Error provisioning system custom fields for new organization {OrganizationId}", organization.Id);
+        }
+
         user.OrganizationIds.Add(organization.Id);
         await userRepository.SaveAsync(user, o => o.Cache());
         await messagePublisher.PublishAsync(new UserMembershipChanged
@@ -1035,4 +1047,5 @@ public class OrganizationHandler(
     private static User GetCurrentUser(HttpContext httpContext) => httpContext.Request.GetUser();
     private static bool IsStatsMode(string? mode) => !String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.OrdinalIgnoreCase);
     private static bool messageIsGlobalAdmin(HttpContext httpContext) => httpContext.Request.IsGlobalAdmin();
+
 }

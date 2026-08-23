@@ -61,6 +61,18 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.True(projectsPost.TryGetProperty("requestBody", out _));
         AssertResponseCodes(projectsPost, "201");
 
+        Assert.True(paths.TryGetProperty("/api/v2/organizations/{id}/event-custom-fields", out var customFieldsPath));
+        Assert.True(customFieldsPath.TryGetProperty("get", out var customFieldsGet));
+        AssertResponseCodes(customFieldsGet, "200", "404");
+        Assert.True(customFieldsPath.TryGetProperty("post", out var customFieldsPost));
+        Assert.True(customFieldsPost.TryGetProperty("requestBody", out _));
+        AssertResponseCodes(customFieldsPost, "201", "400", "404", "409", "422", "426");
+
+        Assert.True(paths.TryGetProperty("/api/v2/organizations/{id}/event-custom-fields/{fieldId}", out var customFieldPath));
+        Assert.True(customFieldPath.TryGetProperty("patch", out var customFieldPatch));
+        AssertResponseCodes(customFieldPatch, "200", "400", "404", "409", "422", "426");
+        Assert.True(customFieldPath.TryGetProperty("delete", out var customFieldDelete));
+        AssertResponseCodes(customFieldDelete, "204", "400", "404", "409", "426");
         Assert.True(paths.TryGetProperty("/api/v2/assistant/chat", out var assistantChatPath));
         Assert.True(assistantChatPath.TryGetProperty("post", out var assistantChatPost));
         AssertResponseCodes(assistantChatPost, "200", "400", "401", "403", "404", "426", "429", "503");
@@ -101,6 +113,9 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.True(schemas.TryGetProperty("SavedViewColumnSettings", out var savedViewColumnSettings));
         Assert.True(schemas.TryGetProperty("TokenResult", out _));
         Assert.True(schemas.TryGetProperty("ViewOrganization", out _));
+        Assert.True(schemas.TryGetProperty("CustomFieldDefinitionResponse", out _));
+        Assert.True(schemas.TryGetProperty("NewCustomFieldDefinition", out _));
+        Assert.True(schemas.TryGetProperty("UpdateCustomFieldDefinition", out _));
 
         var savedViewColumnProperties = savedViewColumnSettings.GetProperty("properties");
         Assert.Equal("boolean", savedViewColumnProperties.GetProperty("auto_fill").GetProperty("type")[1].GetString());

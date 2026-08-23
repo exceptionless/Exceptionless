@@ -141,11 +141,13 @@ public static class SavedViewEndpoints
         .Accepts<IReadOnlyCollection<PredefinedSavedViewDefinition>>("application/json", "application/*+json", "application/octet-stream", "text/json", "text/plain")
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
         .Produces<IReadOnlyCollection<PredefinedSavedViewDefinition>>()
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Replace all predefined saved views with the provided definitions")
         .WithMetadata(new EndpointDocumentation {
             RequestBodyDescription = "The full set of predefined saved view definitions.",
             ResponseDescriptions = new() {
                 ["200"] = "The predefined saved views were replaced.",
+                ["422"] = "A definition is invalid or references an organization-specific custom field.",
             }
         });
 
@@ -167,6 +169,7 @@ public static class SavedViewEndpoints
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
         .Produces<ViewSavedView>()
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Save a saved view as a global predefined saved view")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -175,6 +178,7 @@ public static class SavedViewEndpoints
             ResponseDescriptions = new() {
                 ["200"] = "The predefined saved view was created or updated.",
                 ["404"] = "The saved view could not be found.",
+                ["422"] = "The saved view references an organization-specific custom field.",
             }
         });
 

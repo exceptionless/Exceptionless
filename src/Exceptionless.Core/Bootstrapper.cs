@@ -39,6 +39,7 @@ using Foundatio.Parsers.LuceneQueries;
 using Foundatio.Queues;
 using Foundatio.Repositories.Elasticsearch;
 using Foundatio.Repositories.Elasticsearch.Configuration;
+using Foundatio.Repositories.Elasticsearch.CustomFields;
 using Foundatio.Repositories.Elasticsearch.Jobs;
 using Foundatio.Repositories.Migrations;
 using Foundatio.Resilience;
@@ -78,6 +79,7 @@ public class Bootstrapper
         services.AddSingleton<ExceptionlessElasticConfiguration>();
         services.AddSingleton<ElasticsearchClient>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>().Client);
         services.AddSingleton<IElasticConfiguration>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>());
+        services.AddSingleton<ICustomFieldDefinitionRepository>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>().CustomFieldDefinitionRepository!);
         services.AddStartupAction<ExceptionlessElasticConfiguration>();
 
         services.AddSingleton<DataSeedService>();
@@ -178,6 +180,9 @@ public class Bootstrapper
         services.AddSingleton<IStripeBillingClient, StripeBillingClient>();
         services.AddSingleton<BillingManager>();
         services.AddSingleton<BillingPlans>();
+        services.AddSingleton<EventCustomFieldQueryPolicy>();
+        services.AddSingleton<EventCustomFieldService>();
+        services.AddStartupAction<EventCustomFieldService>();
         services.AddSingleton<EventPostService>();
         services.AddSingleton<SampleDataService>();
         services.AddSingleton<SemanticVersionParser>();

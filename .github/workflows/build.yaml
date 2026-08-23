@@ -217,10 +217,7 @@ jobs:
         run: npm run build
 
       - name: Run Unit Tests
-        run: echo "npm run test:unit"
-
-      - name: Run Integration Tests
-        run: echo "npm run test:integration"
+        run: npm run test:unit
 
   test-e2e:
     runs-on: ubuntu-latest

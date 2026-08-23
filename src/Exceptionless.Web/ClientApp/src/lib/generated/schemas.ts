@@ -96,6 +96,19 @@ export const CountResultSchema = object({
 });
 export type CountResultFormData = Infer<typeof CountResultSchema>;
 
+export const CustomFieldDefinitionResponseSchema = object({
+  id: string().min(1, "Id is required"),
+  name: string().min(1, "Name is required"),
+  description: string().min(1, "Description is required").nullable().optional(),
+  index_type: string().min(1, "Index type is required"),
+  display_order: int32(),
+  created_utc: iso.datetime(),
+  updated_utc: iso.datetime(),
+});
+export type CustomFieldDefinitionResponseFormData = Infer<
+  typeof CustomFieldDefinitionResponseSchema
+>;
+
 export const ExternalAuthInfoSchema = object({
   clientId: string().min(1, "Client id is required"),
   code: string().min(1, "Code is required"),
@@ -160,6 +173,24 @@ export const LoginSchema = object({
     .optional(),
 });
 export type LoginFormData = Infer<typeof LoginSchema>;
+
+export const NewCustomFieldDefinitionSchema = object({
+  name: string()
+    .min(1, "Name is required")
+    .max(100, "Name must be at most 100 characters"),
+  index_type: string()
+    .min(1, "Index type is required")
+    .max(20, "Index type must be at most 20 characters"),
+  description: string()
+    .min(1, "Description is required")
+    .max(500, "Description must be at most 500 characters")
+    .nullable()
+    .optional(),
+  display_order: int32().nullable().optional(),
+});
+export type NewCustomFieldDefinitionFormData = Infer<
+  typeof NewCustomFieldDefinitionSchema
+>;
 
 export const NewOrganizationSchema = object({
   name: string().min(1, "Name is required"),
@@ -606,6 +637,18 @@ export const TokenResultSchema = object({
   token: string().min(1, "Token is required"),
 });
 export type TokenResultFormData = Infer<typeof TokenResultSchema>;
+
+export const UpdateCustomFieldDefinitionSchema = object({
+  description: string()
+    .min(1, "Description is required")
+    .max(500, "Description must be at most 500 characters")
+    .nullable()
+    .optional(),
+  display_order: int32().nullable().optional(),
+});
+export type UpdateCustomFieldDefinitionFormData = Infer<
+  typeof UpdateCustomFieldDefinitionSchema
+>;
 
 export const UpdateEmailAddressResultSchema = object({
   is_verified: boolean(),

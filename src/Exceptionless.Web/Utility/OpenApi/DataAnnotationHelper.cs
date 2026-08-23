@@ -10,13 +10,13 @@ namespace Exceptionless.Web.Utility.OpenApi;
 /// </summary>
 /// <remarks>
 /// <para>
-/// This helper applies format/pattern annotations that ASP.NET Core's OpenAPI doesn't handle automatically.
-/// The built-in OpenAPI support already handles common annotations like [Required], [StringLength],
-/// [MinLength], [MaxLength], and [Range], but does NOT handle format-related attributes.
+/// This helper applies annotations that ASP.NET Core's OpenAPI doesn't handle automatically for schemas
+/// created manually by <see cref="DeltaSchemaTransformer"/>.
 /// </para>
 /// <para>
 /// <b>Supported annotations:</b>
 /// <list type="bullet">
+///   <item>[StringLength], [MinLength], [MaxLength] → string length constraints</item>
 ///   <item>[EmailAddress] → format: "email"</item>
 ///   <item>[Url] → format: "uri"</item>
 ///   <item>[ObjectId] → pattern for MongoDB ObjectId (24-char hex)</item>
@@ -39,6 +39,19 @@ public static class DataAnnotationHelper
     {
         if (!schema.Type.HasValue || (schema.Type.Value & JsonSchemaType.String) != JsonSchemaType.String)
             return;
+
+        if (property.GetCustomAttribute<MaxLengthAttribute>() is { Length: > -1 } maxLength)
+            schema.MaxLength = maxLength.Length;
+
+        if (property.GetCustomAttribute<MinLengthAttribute>() is { Length: > -1 } minLength)
+            schema.MinLength = minLength.Length;
+
+        if (property.GetCustomAttribute<StringLengthAttribute>() is { } stringLength)
+        {
+            schema.MaxLength = stringLength.MaximumLength;
+            if (stringLength.MinimumLength > 0)
+                schema.MinLength = stringLength.MinimumLength;
+        }
 
         if (property.GetCustomAttribute<EmailAddressAttribute>() is not null)
         {

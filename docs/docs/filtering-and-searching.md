@@ -120,9 +120,11 @@ Specify a `date` or `numeric` range as part of the term.
 
 ## Custom Extended Data
 
-All simple data types (`string`, `boolean`, `date`, `number`) that are stored in extended data will be indexed. _NOTE_: Field names will be lowercased and escaped. Any field name that is not a valid identifier (containing only letter and digits) or is longer than 25 characters will be ignored.
+Extended-data properties are not indexed automatically. An organization administrator must first create a custom event field with the same name and choose its index type. The field name may contain ASCII letters, digits, underscores, dots, and dashes and may be up to 100 characters long.
 
-**Example:** Lets assume that our events extended data contains a property called `Age` with a value of `18`. To search for this value our query would be `data.age:18`.
+Custom-field indexing is forward-only. Only events processed after the definition is created are searchable through it; existing events are not backfilled. Both `data.age:18` and `idx.age:18` resolve to the organization's active custom-field definition.
+
+**Example:** If an administrator creates an integer custom field named `age`, events received afterward with an `age` value of `18` can be found with `data.age:18`.
 
 ***
 

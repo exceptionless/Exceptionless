@@ -18,6 +18,7 @@
     import * as EventsFacetedFilter from '$features/events/components/filters';
     import { getExtendedDataItems, hasErrorOrSimpleError } from '$features/events/persistent-event';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
+    import { getCustomFieldsQuery } from '$features/organizations/custom-fields';
     import { getProjectQuery, updateProject } from '$features/projects/api.svelte';
     import StackCard from '$features/stacks/components/stack-card.svelte';
     import Braces from '@lucide/svelte/icons/braces';
@@ -148,6 +149,15 @@
             }
         }
     });
+
+    const customFieldsQuery = getCustomFieldsQuery({
+        route: {
+            get organizationId() {
+                return event?.organization_id;
+            }
+        }
+    });
+    const customFields = $derived(customFieldsQuery.isSuccess ? customFieldsQuery.data : undefined);
 
     const hasPremiumFeatures = $derived(!organizationQuery.isSuccess || !!organizationQuery.data?.has_premium_features);
 
@@ -454,9 +464,9 @@
                     {:else if tab === 'Session Events'}
                         <SessionEvents {event} {hasPremiumFeatures}></SessionEvents>
                     {:else if tab === 'Extended Data'}
-                        <ExtendedData {event} project={projectQuery.data} promoted={onPromoted}></ExtendedData>
+                        <ExtendedData {customFields} {event} project={projectQuery.data} promoted={onPromoted}></ExtendedData>
                     {:else}
-                        <PromotedExtendedData demoted={onDemoted} {event} title={tab + ''}></PromotedExtendedData>
+                        <PromotedExtendedData {customFields} demoted={onDemoted} {event} title={tab + ''}></PromotedExtendedData>
                     {/if}
                 </Tabs.Content>
             {/each}

@@ -12,6 +12,10 @@ public static class ApiValidationErrorIdentifiers
     public const string NotImplemented = "not_implemented";
     public const string RateLimit = "rate_limit";
     public const string RequestEntityTooLarge = "request_entity_too_large";
+    public const string CustomFieldActiveLimit = "custom_field_active_limit";
+    public const string CustomFieldLifetimeLimit = "custom_field_lifetime_limit";
+    public const string UnknownFilterField = "unknown_filter_field";
+    public const string CustomFieldScopeRequired = "custom_field_scope_required";
 }
 
 /// <summary>
@@ -125,7 +129,14 @@ public sealed class ApiResultMapper : IMediatorResultMapper<IResult>
                 group => group.Select(error => error.ErrorMessage).Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
                 StringComparer.Ordinal);
 
-        return HttpResults.ValidationProblem(errorDict, title: title, statusCode: StatusCodes.Status422UnprocessableEntity);
+        bool isCustomFieldSearchError = errors.Any(error =>
+            String.Equals(error.Identifier, ApiValidationErrorIdentifiers.UnknownFilterField, StringComparison.OrdinalIgnoreCase)
+            || String.Equals(error.Identifier, ApiValidationErrorIdentifiers.CustomFieldScopeRequired, StringComparison.OrdinalIgnoreCase));
+        int statusCode = isCustomFieldSearchError
+            ? StatusCodes.Status400BadRequest
+            : StatusCodes.Status422UnprocessableEntity;
+
+        return HttpResults.ValidationProblem(errorDict, title: title, statusCode: statusCode);
     }
 
     private static IResult MapSuccess(Foundatio.Mediator.IResult result)

@@ -43,4 +43,18 @@ describe('problemDetailsToFormErrors', () => {
             form: 'An organization cannot be deleted if it has a subscription.'
         });
     });
+
+    it('shows custom-field capacity identifiers as form-level errors', () => {
+        const problem = {
+            errors: {
+                custom_field_lifetime_limit: ['No custom-field slots remain.']
+            },
+            status: 422
+        };
+
+        expect(problemDetailsToFormErrors(problem as never)).toEqual({
+            fields: {},
+            form: 'No custom-field slots remain.'
+        });
+    });
 });

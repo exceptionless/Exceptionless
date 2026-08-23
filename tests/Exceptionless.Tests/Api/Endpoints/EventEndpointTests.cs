@@ -26,6 +26,7 @@ using Exceptionless.Web.Utility;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch.CustomFields;
 using Foundatio.Repositories.Models;
 using Foundatio.Serializer;
 using Foundatio.Storage;
@@ -2445,6 +2446,21 @@ public partial class EventEndpointTests : IntegrationTestsBase
         Assert.Equal("log", ev.Type);
         Assert.Equal("Test naming conventions", ev.Message);
         Assert.Equal("ref-1234567890", ev.ReferenceId);
+    }
+
+    [Fact]
+    public async Task GetEvents_WithCustomFieldFilter_Returns426_ForFreeOrganization()
+    {
+        string orgId = SampleDataService.FREE_ORG_ID;
+        await GetService<ICustomFieldDefinitionRepository>().AddFieldAsync(
+            nameof(PersistentEvent), orgId, "my_field", "keyword");
+
+        await SendRequestAsync(r => r
+            .AsFreeOrganizationUser()
+            .AppendPaths("organizations", orgId, "events")
+            .QueryString("filter", "idx.my_field:some_value")
+            .StatusCodeShouldBeUpgradeRequired()
+        );
     }
 
     private string ToPrettyJson(string json)

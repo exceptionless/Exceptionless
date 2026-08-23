@@ -9,6 +9,7 @@ using Foundatio.Repositories.Migrations;
 using Foundatio.Repositories.Utility;
 using Foundatio.Utility;
 using Xunit;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Tests.Migrations;
 
@@ -37,6 +38,7 @@ public class FixDuplicateStacksMigrationTests : IntegrationTestsBase
     [Fact]
     public async Task WillMergeDuplicatedStacks()
     {
+        Log.DefaultLogLevel = LogLevel.Trace;
         var originalStack = _stackData.GenerateStack();
         originalStack.Id = ObjectId.GenerateNewId().ToString();
         originalStack.TotalOccurrences = 100;
