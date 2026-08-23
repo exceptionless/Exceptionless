@@ -8,12 +8,12 @@ export type KeyboardShortcut = {
 export type ShortcutKey = 'Alt' | 'Mod' | 'Shift' | string;
 
 export const appKeyboardShortcuts = {
-    allEvents: { key: 'e', keys: ['E'] },
+    allEvents: { key: 'e', keys: ['e'] },
     commandPalette: { key: '/', keys: ['/'] },
     keyboardShortcuts: { key: '?', keys: ['?'] },
-    stacks: { key: 'i', keys: ['I'] },
-    switchOrganization: { key: 'o', keys: ['O'] },
-    userMenu: { key: 'u', keys: ['U'] }
+    stacks: { key: 'i', keys: ['i'] },
+    switchOrganization: { key: 'o', keys: ['o'] },
+    userMenu: { key: 'u', keys: ['u'] }
 } as const satisfies Record<string, KeyboardShortcut>;
 
 export function formatKeyboardShortcut(keys: readonly ShortcutKey[]): string {

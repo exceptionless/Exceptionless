@@ -30,6 +30,7 @@
     import type { PersistentEvent } from '../models/index';
 
     import { getSessionId } from '../utils';
+    import { shouldResetActiveEventTab } from './events-overview-tab-state';
     import Environment from './views/environment.svelte';
     import Error from './views/error.svelte';
     import ExtendedData from './views/extended-data.svelte';
@@ -161,6 +162,12 @@
     let draggedPromotedTab = $state<null | string>(null);
     let notifiedEventId = $state('');
     let showJsonDialog = $state(false);
+
+    $effect(() => {
+        if (shouldResetActiveEventTab(!!event, projectQuery.isPending, tabs, activeTab)) {
+            activeTab = 'Overview';
+        }
+    });
 
     function isPromotedTab(tab: TabType): boolean {
         return !!projectQuery.data?.promoted_tabs?.includes(tab);
@@ -390,7 +397,7 @@
     </Table.Root>
 
     {#if event}
-        <Tabs.Root class="mt-4 mb-4" value={activeTab}>
+        <Tabs.Root class="mt-4 mb-4" bind:value={activeTab}>
             <div class="relative">
                 {#if canScrollTabsLeft}
                     <Button

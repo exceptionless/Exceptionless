@@ -104,6 +104,7 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
 
         var savedViewColumnProperties = savedViewColumnSettings.GetProperty("properties");
         Assert.Equal("boolean", savedViewColumnProperties.GetProperty("auto_fill").GetProperty("type")[1].GetString());
+        Assert.Equal("boolean", savedViewColumnProperties.GetProperty("wrap").GetProperty("type")[1].GetString());
         var position = savedViewColumnProperties.GetProperty("position");
         Assert.Equal(0, position.GetProperty("minimum").GetInt32());
         Assert.Equal(SavedViewColumnSettings.MaxPosition, position.GetProperty("maximum").GetInt32());

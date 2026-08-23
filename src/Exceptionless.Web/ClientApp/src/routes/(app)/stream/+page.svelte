@@ -343,14 +343,22 @@
                     onResetToSaved={savedViewsState.handleResetToSaved}
                     savedViews={savedViewsState.savedViews}
                     setAutoFillColumnId={savedViewsState.setAutoFillColumnId}
+                    setWrappedColumnIds={savedViewsState.setWrappedColumnIds}
                     {table}
                     view={VIEW}
+                    wrappedColumnIds={savedViewsState.wrappedColumnIds}
                 />
             {/if}
             <StreamingIndicatorButton onToggle={handleToggle} {paused} size="icon-lg" />
         </div>
     </div>
-    <DataTable.Body autoFillColumnId={savedViewsState.autoFillColumnId} rowClick={rowclick} {rowHref} {table}>
+    <DataTable.Body
+        autoFillColumnId={savedViewsState.autoFillColumnId}
+        rowClick={rowclick}
+        {rowHref}
+        {table}
+        wrappedColumnIds={savedViewsState.wrappedColumnIds}
+    >
         {#if clientStatus.isLoading}
             <DelayedRender>
                 <DataTable.Loading {table} />
