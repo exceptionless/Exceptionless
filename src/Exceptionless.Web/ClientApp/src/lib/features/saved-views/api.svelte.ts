@@ -301,6 +301,23 @@ export function syncSavedViewCaches(queryClient: QueryClient, savedView: SavedVi
         upsertSavedViewCache(cachedViews, savedView)
     );
     queryClient.setQueryData(queryKeys.organization(organizationId), (cachedViews: SavedView[] | undefined) => upsertSavedViewCache(cachedViews, savedView));
+    queryClient.setQueryData(queryKeys.defaults(organizationId), (defaults: undefined | ViewSavedViewDefaults) => {
+        if (!defaults) {
+            return defaults;
+        }
+
+        const userDefault = defaults.user_default?.id === savedView.id ? savedView : defaults.user_default;
+        const organizationDefault = defaults.organization_default?.id === savedView.id ? savedView : defaults.organization_default;
+        if (userDefault === defaults.user_default && organizationDefault === defaults.organization_default) {
+            return defaults;
+        }
+
+        return {
+            ...defaults,
+            organization_default: organizationDefault,
+            user_default: userDefault
+        };
+    });
 }
 
 export function upsertSavedViewCache(cachedViews: SavedView[] | undefined, savedView: SavedView): SavedView[] {

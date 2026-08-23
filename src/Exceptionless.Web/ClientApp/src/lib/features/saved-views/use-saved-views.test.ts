@@ -720,6 +720,27 @@ describe('useSavedViews', () => {
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([updatedView, otherView]);
         });
 
+        it('syncs an updated view into personal and organization default snapshots', () => {
+            // Arrange
+            const queryClient = new QueryClient();
+            const existingView = buildSavedView({ id: 'view-1', name: 'Old Home', slug: 'old-home' });
+            const updatedView = buildSavedView({ id: 'view-1', name: 'New Home', slug: 'new-home' });
+
+            queryClient.setQueryData(queryKeys.defaults(TEST_ORG_ID), {
+                organization_default: existingView,
+                user_default: existingView
+            });
+
+            // Act
+            syncSavedViewCaches(queryClient, updatedView);
+
+            // Assert
+            expect(queryClient.getQueryData(queryKeys.defaults(TEST_ORG_ID))).toEqual({
+                organization_default: updatedView,
+                user_default: updatedView
+            });
+        });
+
         it('removes a deleted view from every saved-view list cache', () => {
             // Arrange
             const queryClient = new QueryClient();
