@@ -886,8 +886,8 @@ public partial class EventEndpointTests : IntegrationTestsBase
     [InlineData("before", "malformed", null, null)]
     [InlineData("after", "malformed", null, null)]
     [InlineData("before", "malformed", "after", "malformed")]
-    [InlineData("after", "malformed", "page", "1")]
-    public async Task RejectsInvalidStackCursorRequests(string firstName, string firstValue, string? secondName, string? secondValue)
+    [InlineData("page", "1", null, null)]
+    public async Task GetEvents_StackPaginationIsInvalid_ReturnsBadRequest(string firstName, string firstValue, string? secondName, string? secondValue)
     {
         await CreateStacksAndEventsAsync();
 

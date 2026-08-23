@@ -750,17 +750,18 @@ public class EventHandler(
             .SetHttpContext(httpContext)
         );
 
+        bool isStackMode = IsStackMode(mode);
+        if (isStackMode && before is not null && after is not null)
+            return Result.BadRequest("The before and after parameters cannot be used together.");
+
+        if (isStackMode && page.HasValue)
+            return Result.BadRequest("The page parameter is not supported in stack mode. Use before or after cursor pagination.");
+
         int resolvedPage = Pagination.GetPage(page.GetValueOrDefault(1));
         limit = Pagination.GetLimit(limit);
         int skip = Pagination.GetSkip(resolvedPage, limit);
         if (skip > Pagination.MaximumSkip)
             return new PagedResult<object>(Array.Empty<PersistentEvent>(), false);
-
-        if (IsStackMode(mode) && before is not null && after is not null)
-            return Result.BadRequest("The before and after parameters cannot be used together.");
-
-        if (IsStackMode(mode) && page.HasValue && (before is not null || after is not null))
-            return Result.BadRequest("The page parameter cannot be combined with before or after.");
 
         var pr = await GetQueryValidator(mode).ValidateQueryAsync(filter);
         if (!pr.IsValid)
@@ -804,83 +805,32 @@ public class EventHandler(
                     if (!String.IsNullOrEmpty(sort))
                         return Result.BadRequest("Sort is not supported in stack mode.");
 
-                    if (!page.HasValue)
-                    {
-                        var lookupResult = await stackRollupSearchService.SearchAsync(new StackRollupSearchRequest(
-                            appliedAppFilter,
-                            ti.Range.UtcStart,
-                            ti.Range.UtcEnd,
-                            ti.Offset,
-                            timeExpression,
-                            filter,
-                            mode,
-                            limit,
-                            before,
-                            after,
-                            includeTotal), httpContext.RequestAborted);
+                    var lookupResult = await stackRollupSearchService.SearchAsync(new StackRollupSearchRequest(
+                        appliedAppFilter,
+                        ti.Range.UtcStart,
+                        ti.Range.UtcEnd,
+                        ti.Offset,
+                        timeExpression,
+                        filter,
+                        mode,
+                        limit,
+                        before,
+                        after,
+                        includeTotal), httpContext.RequestAborted);
 
-                        if (lookupResult is not null)
-                        {
-                            string[] lookupStackIds = lookupResult.Rows.Select(row => row.StackId).ToArray();
-                            var lookupStacks = (await stackRepository.GetByIdsAsync(lookupStackIds))
-                                .Select(stack => stack.ApplyOffset(ti.Offset))
-                                .ToList();
-                            var lookupSummaries = await GetStackSummariesAsync(lookupStacks, lookupResult.Rows, sf, ti);
+                    string[] lookupStackIds = lookupResult.Rows.Select(row => row.StackId).ToArray();
+                    var lookupStacks = (await stackRepository.GetByIdsAsync(lookupStackIds))
+                        .Select(stack => stack.ApplyOffset(ti.Offset))
+                        .ToList();
+                    var lookupSummaries = await GetStackSummariesAsync(lookupStacks, lookupResult.Rows, sf, ti);
 
-                            return new PagedResult<object>(
-                                lookupSummaries.Cast<object>().ToList(),
-                                lookupResult.HasMore,
-                                Page: null,
-                                lookupResult.Total,
-                                lookupResult.Before,
-                                lookupResult.After);
-                        }
-
-                        if (before is not null || after is not null)
-                            return Result.BadRequest("Stack cursor paging is not available for the current Elasticsearch index.");
-                    }
-
-                    var systemFilter = new RepositoryQuery<PersistentEvent>()
-                        .AppFilter(appliedAppFilter)
-                        .EnforceEventStackFilter()
-                        .DateRange(ti.Range.UtcStart, ti.Range.UtcEnd, (PersistentEvent e) => e.Date)
-                        .Index(ti.Range.UtcStart, ti.Range.UtcEnd);
-
-                    string? stackAggregations = mode switch
-                    {
-                        "stack_recent" => "cardinality:user sum:count~1 min:date -max:date",
-                        "stack_frequent" => "cardinality:user -sum:count~1 min:date max:date",
-                        "stack_new" => "cardinality:user sum:count~1 -min:date max:date",
-                        "stack_users" => "-cardinality:user sum:count~1 min:date max:date",
-                        _ => null
-                    };
-
-                    if (mode == "stack_new")
-                        filter = AddFirstOccurrenceFilter(ti.Range, filter);
-
-                    string aggregationExpression = includeTotal
-                        ? $"cardinality:stack_id terms:(stack_id~{Pagination.GetSkip(resolvedPage + 1, limit) + 1} {stackAggregations})"
-                        : $"terms:(stack_id~{Pagination.GetSkip(resolvedPage + 1, limit) + 1} {stackAggregations})";
-
-                    var countResponse = await eventRepository.CountAsync(q => q
-                        .SystemFilter(systemFilter)
-                        .FilterExpression(filter)
-                        .EnforceEventStackFilter()
-                        .AggregationsExpression(aggregationExpression),
-                        o => o.TrackTotalHits(false));
-
-                    var stackTerms = countResponse.Aggregations.Terms<string>("terms_stack_id");
-                    if (stackTerms is null || stackTerms.Buckets.Count == 0)
-                        return new PagedResult<object>(Array.Empty<PersistentEvent>(), false);
-
-                    string[] stackIds = stackTerms.Buckets.Skip(skip).Take(limit + 1).Select(t => t.Key).ToArray();
-                    var stacks = (await stackRepository.GetByIdsAsync(stackIds)).Select(s => s.ApplyOffset(ti.Offset)).ToList();
-
-                    var stackSummaries = await GetStackSummariesAsync(stacks, stackTerms.Buckets, sf, ti);
-
-                    double? totalStackCount = countResponse.Aggregations.Cardinality("cardinality_stack_id")?.Value;
-                    long? total = includeTotal && totalStackCount.HasValue ? Convert.ToInt64(totalStackCount.Value) : null;
-                    return new PagedResult<object>(stackSummaries.Take(limit).Cast<object>().ToList(), stackSummaries.Count > limit && !Pagination.NextPageExceedsSkipLimit(resolvedPage, limit), resolvedPage, total);
+                    return new PagedResult<object>(
+                        lookupSummaries.Cast<object>().ToList(),
+                        lookupResult.HasMore,
+                        Page: null,
+                        lookupResult.Total,
+                        lookupResult.Before,
+                        lookupResult.After);
                 default:
                     events = await GetEventsInternalAsync(appliedAppFilter, ti, filter, sort, page, limit, before, after, includeTotal);
                     return new PagedResult<object>(events.Documents.Cast<object>().ToList(), events.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, includeTotal ? events.Total : null, events.Hits.FirstOrDefault()?.GetSortToken(serializer), events.Hits.LastOrDefault()?.GetSortToken(serializer));
@@ -960,39 +910,6 @@ public class EventHandler(
             o => page.HasValue
                 ? o.PageNumber(page).PageLimit(limit).TrackTotalHits(includeTotal)
                 : o.SearchBeforeToken(before, serializer).SearchAfterToken(after, serializer).PageLimit(limit).TrackTotalHits(includeTotal));
-    }
-
-    private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(List<Stack> stacks, IReadOnlyCollection<KeyedBucket<string>> stackTerms, AppFilter sf, TimeInfo ti)
-    {
-        if (stacks.Count == 0)
-            return new List<StackSummaryModel>(0);
-
-        var projects = await projectRepository.GetByIdsAsync(stacks.Select(s => s.ProjectId).Distinct().ToArray(), o => o.Cache());
-        var projectNames = projects.ToDictionary(p => p.Id, p => p.Name);
-        var totalUsers = await GetUserCountByProjectIdsAsync(stacks, sf, ti.Range.UtcStart, ti.Range.UtcEnd);
-        return stacks.Join(stackTerms, s => s.Id, tk => tk.Key, (stack, term) =>
-        {
-            var data = formattingPluginManager.GetStackSummaryData(stack);
-            var summary = new StackSummaryModel
-            {
-                Id = data.Id,
-                TemplateKey = data.TemplateKey,
-                Data = data.Data,
-                ProjectId = stack.ProjectId,
-                ProjectName = projectNames.GetValueOrDefault(stack.ProjectId),
-                Tags = stack.Tags?.OfType<string>().Order(StringComparer.OrdinalIgnoreCase).ToArray() ?? [],
-                Title = stack.Title,
-                Status = stack.Status,
-                FirstOccurrence = term.Aggregations.Min<DateTime>("min_date")?.Value ?? stack.FirstOccurrence,
-                LastOccurrence = term.Aggregations.Max<DateTime>("max_date")?.Value ?? stack.LastOccurrence,
-                Total = (long)(term.Aggregations.Sum("sum_count")?.Value ?? term.Total.GetValueOrDefault()),
-
-                Users = term.Aggregations.Cardinality("cardinality_user")?.Value.GetValueOrDefault() ?? 0,
-                TotalUsers = totalUsers.GetOrDefault(stack.ProjectId)
-            };
-
-            return summary;
-        }).ToList();
     }
 
     private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(List<Stack> stacks, IReadOnlyCollection<StackRollupRow> rows, AppFilter sf, TimeInfo ti)

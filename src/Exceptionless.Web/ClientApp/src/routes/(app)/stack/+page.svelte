@@ -668,19 +668,13 @@
     const eventsQuery = getOrganizationEventsQuery({
         enabled: () => !isSavedViewRoutePending,
         get params() {
-            const params = {
+            const { page: ignoredPage, ...params } = {
                 ...eventsQueryParameters,
                 include: !eventsQueryParameters.after && !eventsQueryParameters.before ? ('total' as const) : undefined
             };
-
-            if (!eventsQueryParameters.after && !eventsQueryParameters.before) {
-                return params;
-            }
-
-            const { page: ignoredPage, ...cursorParams } = params;
             void ignoredPage;
 
-            return cursorParams;
+            return params;
         },
         route: {
             get organizationId() {

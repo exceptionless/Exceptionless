@@ -21,7 +21,7 @@ namespace Exceptionless.Core.Services;
 
 public interface IStackRollupSearchService
 {
-    Task<StackRollupSearchResult?> SearchAsync(StackRollupSearchRequest request, CancellationToken cancellationToken = default);
+    Task<StackRollupSearchResult> SearchAsync(StackRollupSearchRequest request, CancellationToken cancellationToken = default);
 }
 
 public sealed record StackRollupSearchRequest(
@@ -59,7 +59,6 @@ public sealed class StackRollupSearchService : IStackRollupSearchService
     private static readonly TimeSpan ReadinessCacheDuration = TimeSpan.FromMinutes(1);
     private readonly ElasticsearchClient _client;
     private readonly ExceptionlessElasticConfiguration _configuration;
-    private readonly ElasticsearchOptions _options;
     private readonly TimeProvider _timeProvider;
     private readonly JsonSerializerOptions _serializerOptions;
     private readonly EventStackFilter _eventStackFilter = new();
@@ -71,33 +70,28 @@ public sealed class StackRollupSearchService : IStackRollupSearchService
     public StackRollupSearchService(
         ElasticsearchClient client,
         ExceptionlessElasticConfiguration configuration,
-        ElasticsearchOptions options,
         TimeProvider timeProvider,
         JsonSerializerOptions serializerOptions,
         ILoggerFactory loggerFactory)
     {
         _client = client;
         _configuration = configuration;
-        _options = options;
         _timeProvider = timeProvider;
         _serializerOptions = serializerOptions;
         _logger = loggerFactory.CreateLogger<StackRollupSearchService>();
     }
 
-    public async Task<StackRollupSearchResult?> SearchAsync(StackRollupSearchRequest request, CancellationToken cancellationToken = default)
+    public async Task<StackRollupSearchResult> SearchAsync(StackRollupSearchRequest request, CancellationToken cancellationToken = default)
     {
-        if (!_options.EnableStackRollupLookupJoin)
-            return null;
+        if (!IsSupportedMode(request.Mode))
+            throw new ArgumentOutOfRangeException(nameof(request), request.Mode, "Unsupported stack rollup mode.");
 
         var readiness = await GetReadinessAsync(cancellationToken);
         if (!readiness.IsReady)
         {
-            _logger.LogDebug("Stack rollup lookup join is unavailable: {Reason}", readiness.Reason);
-            return null;
+            _logger.LogError("Stack rollup lookup join prerequisite failed: {Reason}", readiness.Reason);
+            throw new InvalidOperationException($"The stack rollup lookup join prerequisite failed: {readiness.Reason}.");
         }
-
-        if (!IsSupportedMode(request.Mode))
-            return null;
 
         string fingerprint = CreateFingerprint(request);
         StackRollupCursor? cursor = DecodeCursor(request.Before ?? request.After, request.Mode, fingerprint);
