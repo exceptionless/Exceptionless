@@ -20,7 +20,10 @@
     let { children, class: className, table }: Props = $props();
 </script>
 
-<div class={['flex w-full flex-wrap items-center justify-between gap-2', className]}>
+<div
+    class={['bg-background/95 sticky top-2 z-30 order-2 flex w-full flex-wrap items-center justify-between gap-2 backdrop-blur-sm', className]}
+    data-slot="data-table-footer"
+>
     {#if children}
         {@render children()}
     {:else}

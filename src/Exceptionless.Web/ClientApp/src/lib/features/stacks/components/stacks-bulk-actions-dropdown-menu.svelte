@@ -168,7 +168,12 @@
 <DropdownMenu.Root>
     <DropdownMenu.Trigger>
         {#snippet child({ props })}
-            <Button {...props} variant="outline">
+            <Button
+                {...props}
+                disabled={ids.length === 0}
+                title={ids.length === 0 ? 'Select one or more stacks to use bulk actions' : 'Bulk Actions'}
+                variant="outline"
+            >
                 Bulk Actions
                 <ChevronDown class="size-4" />
             </Button>

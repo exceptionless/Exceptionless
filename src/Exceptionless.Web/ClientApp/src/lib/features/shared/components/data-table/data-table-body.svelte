@@ -291,88 +291,90 @@
     }
 </script>
 
-<DataTableScrollContainer>
-    <Table.Root class={hasSelectColumn() ? 'table-fixed' : undefined} style={getTableStyle()}>
-        <Table.Header class="bg-card">
-            {#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
-                <Table.Row>
-                    {#each headerGroup.headers as header (header.id)}
-                        {@const headerClass = getHeaderColumnClass(header)}
-                        <Table.Head class={[headerClass, header.column.getCanResize() && 'group relative']} style={getColumnStyle(header.column)}>
-                            <DataTableColumnHeader class={getHeaderContentClass(header, headerClass)} column={header.column}
-                                ><FlexRender {header} /></DataTableColumnHeader
-                            >
-                            {#if header.column.getCanResize()}
-                                <button
-                                    aria-label={`Resize ${header.column.id} column`}
-                                    class={[
-                                        'hover:bg-primary focus-visible:bg-primary absolute top-0 right-0 z-10 h-full w-1.5 cursor-col-resize touch-none outline-none select-none',
-                                        'after:bg-border after:absolute after:top-1/4 after:right-0 after:h-1/2 after:w-px',
-                                        header.column.getIsResizing() && 'bg-primary'
-                                    ]}
-                                    ondblclick={() => header.column.resetSize()}
-                                    onkeydown={(event) => onResizeKeydown(event, header)}
-                                    onmousedown={(event) => onResizeStart(event, header)}
-                                    ontouchstart={(event) => onResizeStart(event, header)}
-                                    title={`Resize ${header.column.id} column`}
-                                    type="button"
-                                ></button>
-                            {/if}
-                        </Table.Head>
-                    {/each}
-                    {#if getFillerColumnCount() > 0}
-                        <Table.Head aria-hidden="true" class="w-full p-0"></Table.Head>
-                    {/if}
-                </Table.Row>
-            {/each}
-        </Table.Header>
-        <Table.Body>
-            {#if children}
-                {@render children()}
-            {/if}
-            {#each table.getRowModel().rows as row (row.id)}
-                <Table.Row
-                    tabindex={rowClick ? 0 : undefined}
-                    onkeydown={rowClick
-                        ? (event) => {
-                              if (event.key === 'Enter' || event.key === ' ') {
-                                  event.preventDefault();
-                                  const firstCell = row.getVisibleCells()[0];
-                                  if (firstCell) {
-                                      rowClick(firstCell.row.original);
+<div class="order-3" data-slot="data-table-body">
+    <DataTableScrollContainer>
+        <Table.Root class={hasSelectColumn() ? 'table-fixed' : undefined} style={getTableStyle()}>
+            <Table.Header class="bg-card">
+                {#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
+                    <Table.Row>
+                        {#each headerGroup.headers as header (header.id)}
+                            {@const headerClass = getHeaderColumnClass(header)}
+                            <Table.Head class={[headerClass, header.column.getCanResize() && 'group relative']} style={getColumnStyle(header.column)}>
+                                <DataTableColumnHeader class={getHeaderContentClass(header, headerClass)} column={header.column}
+                                    ><FlexRender {header} /></DataTableColumnHeader
+                                >
+                                {#if header.column.getCanResize()}
+                                    <button
+                                        aria-label={`Resize ${header.column.id} column`}
+                                        class={[
+                                            'hover:bg-primary focus-visible:bg-primary absolute top-0 right-0 z-10 h-full w-1.5 cursor-col-resize touch-none outline-none select-none',
+                                            'after:bg-border after:absolute after:top-1/4 after:right-0 after:h-1/2 after:w-px',
+                                            header.column.getIsResizing() && 'bg-primary'
+                                        ]}
+                                        ondblclick={() => header.column.resetSize()}
+                                        onkeydown={(event) => onResizeKeydown(event, header)}
+                                        onmousedown={(event) => onResizeStart(event, header)}
+                                        ontouchstart={(event) => onResizeStart(event, header)}
+                                        title={`Resize ${header.column.id} column`}
+                                        type="button"
+                                    ></button>
+                                {/if}
+                            </Table.Head>
+                        {/each}
+                        {#if getFillerColumnCount() > 0}
+                            <Table.Head aria-hidden="true" class="w-full p-0"></Table.Head>
+                        {/if}
+                    </Table.Row>
+                {/each}
+            </Table.Header>
+            <Table.Body>
+                {#if children}
+                    {@render children()}
+                {/if}
+                {#each table.getRowModel().rows as row (row.id)}
+                    <Table.Row
+                        tabindex={rowClick ? 0 : undefined}
+                        onkeydown={rowClick
+                            ? (event) => {
+                                  if (event.key === 'Enter' || event.key === ' ') {
+                                      event.preventDefault();
+                                      const firstCell = row.getVisibleCells()[0];
+                                      if (firstCell) {
+                                          rowClick(firstCell.row.original);
+                                      }
                                   }
                               }
-                          }
-                        : undefined}
-                >
-                    {#each row.getVisibleCells() as cell (cell.id)}
-                        {#if rowHref && cell.row.original}
-                            {@const href = rowHref(cell.row.original)}
-                            <A {href} class="contents" onclick={(event) => onCellClick(event, cell)} variant="ghost">
+                            : undefined}
+                    >
+                        {#each row.getVisibleCells() as cell (cell.id)}
+                            {#if rowHref && cell.row.original}
+                                {@const href = rowHref(cell.row.original)}
+                                <A {href} class="contents" onclick={(event) => onCellClick(event, cell)} variant="ghost">
+                                    <Table.Cell
+                                        class={getCellClass(cell)}
+                                        data-wrap={isColumnWrapped(cell.column) ? 'true' : undefined}
+                                        style={getColumnStyle(cell.column)}
+                                    >
+                                        <FlexRender {cell} />
+                                    </Table.Cell>
+                                </A>
+                            {:else}
                                 <Table.Cell
                                     class={getCellClass(cell)}
                                     data-wrap={isColumnWrapped(cell.column) ? 'true' : undefined}
+                                    onclick={(event) => onCellClick(event, cell)}
                                     style={getColumnStyle(cell.column)}
                                 >
                                     <FlexRender {cell} />
                                 </Table.Cell>
-                            </A>
-                        {:else}
-                            <Table.Cell
-                                class={getCellClass(cell)}
-                                data-wrap={isColumnWrapped(cell.column) ? 'true' : undefined}
-                                onclick={(event) => onCellClick(event, cell)}
-                                style={getColumnStyle(cell.column)}
-                            >
-                                <FlexRender {cell} />
-                            </Table.Cell>
+                            {/if}
+                        {/each}
+                        {#if getFillerColumnCount() > 0}
+                            <Table.Cell aria-hidden="true" class="w-full p-0"></Table.Cell>
                         {/if}
-                    {/each}
-                    {#if getFillerColumnCount() > 0}
-                        <Table.Cell aria-hidden="true" class="w-full p-0"></Table.Cell>
-                    {/if}
-                </Table.Row>
-            {/each}
-        </Table.Body>
-    </Table.Root>
-</DataTableScrollContainer>
+                    </Table.Row>
+                {/each}
+            </Table.Body>
+        </Table.Root>
+    </DataTableScrollContainer>
+</div>
