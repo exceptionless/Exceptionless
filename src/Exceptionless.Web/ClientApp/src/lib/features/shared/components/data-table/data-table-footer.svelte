@@ -15,18 +15,23 @@
     type Props = HTMLAttributes<Element> & {
         children?: Snippet;
         table: Table<StockFeatures, TData>;
+        variant?: 'floating' | 'simple';
     };
 
-    let { children, class: className, table }: Props = $props();
+    let { children, class: className, table, variant = 'simple' }: Props = $props();
 </script>
 
 <div
     aria-label="Table controls"
     class={[
-        'border-border bg-background/95 sticky top-2 z-30 flex w-full flex-wrap items-center justify-between gap-0 rounded-lg border backdrop-blur-sm',
+        'flex w-full items-center',
+        variant === 'floating'
+            ? 'border-border bg-background/95 sticky top-2 z-30 flex-wrap justify-between gap-0 rounded-lg border backdrop-blur-sm'
+            : 'justify-end gap-2',
         className
     ]}
     data-slot="data-table-footer"
+    data-variant={variant}
     role="toolbar"
 >
     {#if children}

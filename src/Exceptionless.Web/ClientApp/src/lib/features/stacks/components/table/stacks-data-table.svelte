@@ -19,12 +19,12 @@
 </script>
 
 <DataTable.Root>
-    <DataTable.Footer {table} class="w-full">
+    <DataTable.Footer {table} class="w-full" variant="floating">
         {#if footerChildren}
             {@render footerChildren()}
         {:else}
             <DataTable.Selection {table} />
-            <DataTable.Pager bind:value={limit} {table} />
+            <DataTable.Pager bind:value={limit} {table} variant="floating" />
         {/if}
     </DataTable.Footer>
     <DataTable.Body {rowClick} {rowHref} {table}>
