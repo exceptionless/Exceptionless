@@ -593,25 +593,6 @@ public partial class SavedViewHandler(
             await organizationRepository.SaveAsync(organization, o => o.Cache().Consistency(Consistency.Immediate));
         }
 
-        var usersById = new Dictionary<string, User>(StringComparer.Ordinal);
-        foreach (string savedViewId in deletedIds)
-        {
-            var results = await userRepository.GetByDefaultSavedViewIdAsync(savedViewId, o => o.SearchAfterPaging().PageLimit(100));
-            do
-            {
-                foreach (var user in results.Documents)
-                    usersById.TryAdd(user.Id, user);
-            } while (await results.NextPageAsync());
-        }
-
-        foreach (var user in usersById.Values)
-        {
-            foreach (var preference in user.OrganizationPreferences.Where(preference => deletedIds.Contains(preference.DefaultSavedViewId)).ToList())
-                user.OrganizationPreferences.Remove(preference);
-        }
-
-        if (usersById.Count > 0)
-            await userRepository.SaveAsync(usersById.Values, o => o.Cache());
     }
 
     private string GetCurrentUserId() => HttpContext.Request.GetUser().Id;

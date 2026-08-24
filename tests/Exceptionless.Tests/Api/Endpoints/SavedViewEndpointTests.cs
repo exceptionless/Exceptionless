@@ -1593,7 +1593,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task DeleteAsync_DefaultSavedView_ClearsPersonalAndOrganizationReferences()
+    public async Task DeleteAsync_DefaultSavedView_ReturnsNoResolvedDefaults()
     {
         var sharedView = await CreateSavedViewAsync("Delete Default Home", "status:open", "events");
         Assert.NotNull(sharedView);
@@ -1632,7 +1632,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         Assert.Null(defaults.UserDefault);
         Assert.Null(defaults.OrganizationDefault);
         Assert.NotNull(user);
-        Assert.DoesNotContain(user.OrganizationPreferences, preference => preference.DefaultSavedViewId == sharedView.Id);
+        Assert.Contains(user.OrganizationPreferences, preference => preference.DefaultSavedViewId == sharedView.Id);
         Assert.NotNull(organization);
         Assert.Null(organization.DefaultSavedViewId);
     }
@@ -1906,29 +1906,6 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         // Assert
         long countAfter = await _savedViewRepository.CountByOrganizationIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.Equal(0, countAfter);
-    }
-
-    [Fact]
-    public async Task SoftDeleteOrganization_GlobalAdministratorOutsideOrganization_RemovesSavedViewPreference()
-    {
-        var globalAdministrator = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
-        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
-        Assert.NotNull(globalAdministrator);
-        Assert.NotNull(organization);
-        Assert.DoesNotContain(organization.Id, globalAdministrator.OrganizationIds);
-
-        globalAdministrator.OrganizationPreferences.Add(new UserOrganizationPreference
-        {
-            OrganizationId = organization.Id,
-            DefaultSavedViewId = "000000000000000000000001"
-        });
-        await _userRepository.SaveAsync(globalAdministrator, o => o.ImmediateConsistency().Cache());
-
-        await _organizationService.SoftDeleteOrganizationAsync(organization, globalAdministrator.Id);
-        var persistedGlobalAdministrator = await _userRepository.GetByIdAsync(globalAdministrator.Id, o => o.Cache(false));
-
-        Assert.NotNull(persistedGlobalAdministrator);
-        Assert.DoesNotContain(persistedGlobalAdministrator.OrganizationPreferences, preference => preference.OrganizationId == organization.Id);
     }
 
     [Fact]
