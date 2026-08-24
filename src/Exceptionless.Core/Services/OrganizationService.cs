@@ -260,9 +260,6 @@ public class OrganizationService : IStartupAction
         if (organization.IsDeleted)
             return;
 
-        await RemoveTokensAsync(organization);
-        await RemoveWebHooksAsync(organization);
-
         await using (var defaultsLock = await _lockProvider.AcquireAsync(GetSavedViewDefaultLockKey(organization.Id), TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30)))
         {
             var currentOrganization = await _organizationRepository.GetByIdAsync(organization.Id, o => o.Cache(false));
@@ -270,15 +267,19 @@ public class OrganizationService : IStartupAction
                 return;
 
             organization = currentOrganization;
-            await RemoveSavedViewsWhileLockedAsync(organization);
-
-            await CancelSubscriptionsAsync(organization);
-            await RemoveUsersAsync(organization, currentUserId);
-            await CleanupProjectNotificationSettingsAsync(organization, []);
-
+            organization.DefaultSavedViewId = null;
             organization.IsDeleted = true;
             await _organizationRepository.SaveAsync(organization);
+
+            await RemoveSavedViewsWhileLockedAsync(organization);
         }
+
+        await RemoveTokensAsync(organization);
+        await RemoveWebHooksAsync(organization);
+
+        await CancelSubscriptionsAsync(organization);
+        await RemoveUsersAsync(organization, currentUserId);
+        await CleanupProjectNotificationSettingsAsync(organization, []);
     }
 
     private async Task<HashSet<string>> GetValidNotificationUserIdsAsync(string organizationId, IReadOnlyCollection<string> userIds, CancellationToken cancellationToken)

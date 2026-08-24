@@ -2358,6 +2358,64 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task SoftDeleteOrganization_VersionConflictOccursBeforeDestructiveCleanup()
+    {
+        var currentUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID, o => o.Cache(false));
+        Assert.NotNull(currentUser);
+        Assert.NotNull(organization);
+
+        var savedView = await _savedViewRepository.AddAsync(new SavedView
+        {
+            OrganizationId = organization.Id,
+            Name = "Preserved Organization View",
+            Filter = "status:open",
+            Slug = "preserved-organization-view",
+            ViewType = "stacks",
+            CreatedByUserId = currentUser.Id
+        }, o => o.ImmediateConsistency());
+
+        var softDeleteSaveStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseSoftDeleteSave = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var savingRegistration = _organizationRepository.DocumentsSaving.AddHandler(async (_, args) =>
+        {
+            if (!args.Documents.Any(document => document.Value.IsDeleted))
+                return;
+
+            softDeleteSaveStarted.TrySetResult();
+            await releaseSoftDeleteSave.Task.WaitAsync(TestCancellationToken);
+        });
+
+        var deleteTask = _organizationService.SoftDeleteOrganizationAsync(organization, currentUser.Id);
+        await softDeleteSaveStarted.Task.WaitAsync(TestCancellationToken);
+        try
+        {
+            var concurrentlyUpdatedOrganization = await _organizationRepository.GetByIdAsync(organization.Id, o => o.Cache(false));
+            Assert.NotNull(concurrentlyUpdatedOrganization);
+            concurrentlyUpdatedOrganization.Name = "Concurrent Organization Rename";
+            await _organizationRepository.SaveAsync(concurrentlyUpdatedOrganization, o => o.ImmediateConsistency());
+        }
+        finally
+        {
+            releaseSoftDeleteSave.TrySetResult();
+        }
+
+        await Assert.ThrowsAsync<VersionConflictDocumentException>(() => deleteTask);
+        await RefreshDataAsync();
+
+        var persistedOrganization = await _organizationRepository.GetByIdAsync(organization.Id, o => o.Cache(false));
+        Assert.NotNull(persistedOrganization);
+        Assert.False(persistedOrganization.IsDeleted);
+        Assert.Equal("Concurrent Organization Rename", persistedOrganization.Name);
+        Assert.NotNull(await _savedViewRepository.GetByIdAsync(savedView.Id));
+        Assert.NotNull(await GetService<ITokenRepository>().GetByIdAsync(SampleDataService.TEST_API_KEY));
+
+        var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, o => o.Cache(false));
+        Assert.NotNull(persistedUser);
+        Assert.Contains(organization.Id, persistedUser.OrganizationIds);
+    }
+
+    [Fact]
     public async Task RemoveUserSavedViews_WithMixedVisibility_OnlyDeletesPrivateViews()
     {
         // Arrange
