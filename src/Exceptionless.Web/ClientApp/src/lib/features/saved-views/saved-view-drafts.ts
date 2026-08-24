@@ -47,13 +47,13 @@ export function applyFilterChanges(serverFilters: IFilter[], changes: SavedViewF
     const removedKeys = new Set(changes.removedKeys);
     const duplicateKeys = new Set(changes.duplicateKeys ?? []);
     const baselineFilters = changes.baselineDefinitions ? deserializeFilters(changes.baselineDefinitions) : [];
-    const rebasedKeys = new Set(baselineFilters.map((filter) => filter.key));
+    const rebasedKeys = new Set([...baselineFilters.map((filter) => filter.key), ...duplicateKeys]);
     const removedDefinitionCounts = buildSerializedFilterCounts(changes.removedDefinitions ? deserializeFilters(changes.removedDefinitions) : []);
     const upserts = deserializeFilters(changes.upsertDefinitions);
     const upsertsByKey = new Map(upserts.filter((filter) => !rebasedKeys.has(filter.key)).map((filter) => [filter.key, filter]));
     const rebasedUpserts = upserts.filter((filter) => rebasedKeys.has(filter.key));
     const rebasedTargetCounts =
-        changes.baselineDefinitions === undefined
+        changes.baselineDefinitions === undefined && duplicateKeys.size === 0
             ? undefined
             : buildDuplicateTargetCounts(
                   baselineFilters,

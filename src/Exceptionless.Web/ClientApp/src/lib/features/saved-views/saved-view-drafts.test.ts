@@ -104,6 +104,17 @@ describe('saved view drafts', () => {
         expect(mergedFilters.map((filter) => (filter as KeywordFilter).value)).toEqual(['foo', 'remote', 'baz']);
     });
 
+    it('preserves duplicate-key additions from an empty server baseline', () => {
+        const locallyEditedFilters = [new KeywordFilter('foo'), new KeywordFilter('bar')];
+        const changes = buildFilterChanges([], locallyEditedFilters);
+
+        const mergedFilters = applyFilterChanges([], changes);
+
+        expect(changes?.baselineDefinitions).toBeUndefined();
+        expect(changes?.duplicateKeys).toEqual(['keyword']);
+        expect(mergedFilters.map((filter) => (filter as KeywordFilter).value)).toEqual(['foo', 'bar']);
+    });
+
     it('does not append a duplicate upsert that the server independently adopted', () => {
         const originalServerFilters = [new KeywordFilter('foo'), new KeywordFilter('bar')];
         const locallyEditedFilters = [new KeywordFilter('bar'), new KeywordFilter('baz')];
