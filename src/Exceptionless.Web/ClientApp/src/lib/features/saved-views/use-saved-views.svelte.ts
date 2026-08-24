@@ -1,7 +1,7 @@
 import type { IFilter } from '$comp/faceted-filter';
 import type { ColumnOrderState, ColumnSizingState, ColumnVisibilityState } from '@tanstack/svelte-table';
 
-import { goto } from '$app/navigation';
+import { afterNavigate, goto } from '$app/navigation';
 import { page } from '$app/state';
 import {
     applyTimeFilter,
@@ -175,6 +175,28 @@ export function getSavedViewStateSignature(
     });
 }
 
+const SAVED_VIEW_OVERRIDE_QUERY_PARAMETERS = [
+    'bot',
+    'filter',
+    'filters',
+    'first',
+    'level',
+    'project',
+    'reference',
+    'session',
+    'sort',
+    'stack',
+    'status',
+    'tag',
+    'time',
+    'type',
+    'version'
+] as const;
+
+export function getSavedViewOverrideSignature(url: URL): string {
+    return JSON.stringify(SAVED_VIEW_OVERRIDE_QUERY_PARAMETERS.map((parameter) => [parameter, url.searchParams.getAll(parameter)]));
+}
+
 export function hasMissingSavedView(options: {
     activeSavedView: SavedView | undefined;
     isLoading: boolean;
@@ -257,6 +279,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     const currentUserQuery = getMeQuery();
 
     // Some routes, such as stream, do not declare every saved-view query parameter.
+    const supportsSaved = supportsSavedQueryParam(options.queryParams);
     const supportsSort = supportsSortQueryParam(options.queryParams);
     const supportsTime = supportsTimeQueryParam(options.queryParams);
 
@@ -517,6 +540,8 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     let activeSortOverride = $state<{ value: null | string }>();
     let appliedDraftKey = $state('');
     let pendingDraftKey = '';
+    let pendingDraftGeneration = -1;
+    let draftHydrationGeneration = $state(0);
     let hydratedColumnOrder = $state<ColumnOrderState>();
     let hydratedSavedView = $state<SavedView>();
     let hydratedSavedViewSignature = '';
@@ -534,6 +559,9 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
                 if (lastLoadedViewId !== '') {
                     applyColumnState(undefined);
                     applyDisplayState(undefined);
+                    pendingDraftKey = '';
+                    pendingDraftGeneration = -1;
+                    draftHydrationGeneration++;
                 }
 
                 lastLoadedViewId = '';
@@ -584,6 +612,8 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         activeSortOverride = undefined;
         appliedDraftKey = '';
         pendingDraftKey = '';
+        pendingDraftGeneration = -1;
+        draftHydrationGeneration++;
         hydratedColumnOrder = undefined;
         hydratedSavedView = view;
         hydratedSavedViewSignature = viewSignature;
@@ -604,7 +634,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         void captureHydratedColumnOrderAfterStateSettles(view.id);
     });
 
-    async function applyDraftAfterViewHydrates(viewId: string, identity: SavedViewDraftIdentity, draftKey: string): Promise<void> {
+    async function applyDraftAfterViewHydrates(viewId: string, identity: SavedViewDraftIdentity, draftKey: string, generation: number): Promise<void> {
         // A dirty source view can leave a queued query-param reset behind during
         // client-side navigation. Let that navigation task and route hydration
         // finish before applying the destination view's browser-local draft.
@@ -615,9 +645,10 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         const view = activeSavedView;
         const currentIdentity = view ? getDraftIdentity(view) : undefined;
         const currentDraftKey = currentIdentity ? `${currentIdentity.userId}:${currentIdentity.organizationId}:${currentIdentity.savedViewId}` : undefined;
-        if (!view || view.id !== viewId || serverHydratedSavedViewId !== view.id || currentDraftKey !== draftKey) {
-            if (pendingDraftKey === draftKey) {
+        if (!view || view.id !== viewId || serverHydratedSavedViewId !== view.id || currentDraftKey !== draftKey || draftHydrationGeneration !== generation) {
+            if (pendingDraftKey === draftKey && pendingDraftGeneration === generation) {
                 pendingDraftKey = '';
+                pendingDraftGeneration = -1;
             }
             return;
         }
@@ -633,8 +664,9 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
               }
             : undefined;
         appliedDraftKey = draftKey;
-        if (pendingDraftKey === draftKey) {
+        if (pendingDraftKey === draftKey && pendingDraftGeneration === generation) {
             pendingDraftKey = '';
+            pendingDraftGeneration = -1;
         }
 
         if (draft) {
@@ -645,6 +677,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     }
 
     $effect(() => {
+        const generation = draftHydrationGeneration;
         const view = activeSavedView;
         if (!view || serverHydratedSavedViewId !== view.id) {
             return;
@@ -660,12 +693,13 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         const draftKey = `${identity.userId}:${identity.organizationId}:${identity.savedViewId}`;
-        if (appliedDraftKey === draftKey || pendingDraftKey === draftKey) {
+        if (appliedDraftKey === draftKey || (pendingDraftKey === draftKey && pendingDraftGeneration === generation)) {
             return;
         }
 
         pendingDraftKey = draftKey;
-        void applyDraftAfterViewHydrates(view.id, identity, draftKey);
+        pendingDraftGeneration = generation;
+        void applyDraftAfterViewHydrates(view.id, identity, draftKey, generation);
     });
 
     // Detect if current filters or columns differ from the active saved view
@@ -805,6 +839,33 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
         options.queryParams.saved = view.id;
     }
+
+    function rehydrateQueryOverrides() {
+        const view = activeSavedView;
+        if (!view || serverHydratedSavedViewId !== view.id) {
+            return;
+        }
+
+        hydratedSavedViewId = undefined;
+        appliedDraftKey = '';
+        pendingDraftKey = '';
+        pendingDraftGeneration = -1;
+        draftHydrationGeneration++;
+    }
+
+    afterNavigate(({ from, to }) => {
+        if (!from?.url || !to?.url || from.url.pathname !== to.url.pathname) {
+            return;
+        }
+
+        if (supportsSaved && from.url.searchParams.get('saved') !== to.url.searchParams.get('saved')) {
+            return;
+        }
+
+        if (getSavedViewOverrideSignature(from.url) !== getSavedViewOverrideSignature(to.url)) {
+            rehydrateQueryOverrides();
+        }
+    });
 
     function handleResetToSaved() {
         const view = activeSavedView;

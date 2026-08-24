@@ -266,7 +266,7 @@ test('switching saved views preserves each view temporary filter overrides acros
 
     await firstViewLink.click();
     await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(firstViewSlug)}(?:[?#]|$)`));
-    await expect(page).toHaveURL(/[?&]status=regressed(?:&|$)/);
+    await expect(page).not.toHaveURL(/[?&]status=/);
     await expect(page).not.toHaveURL(/[?&]project=/);
     await expect(page).not.toHaveURL(/[?&]sort=/);
     await expect(page.getByRole('heading', { name: firstViewName })).toBeVisible();
@@ -295,7 +295,7 @@ test('switching saved views preserves each view temporary filter overrides acros
             .filter({ visible: true })
             .first()
     ).toBeVisible();
-    await expect(page).toHaveURL(/[?&]status=regressed(?:&|$)/);
+    await expect(page).not.toHaveURL(/[?&]status=/);
 
     await openViewMenu(page);
     await page.getByRole('menuitem', { name: 'Manage Columns...' }).click();

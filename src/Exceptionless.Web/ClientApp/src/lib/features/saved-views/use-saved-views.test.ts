@@ -12,6 +12,7 @@ import {
     getComparableSavedViewFilter,
     getComparableSavedViewTime,
     getDraftSortValue,
+    getSavedViewOverrideSignature,
     getSavedViewStateSignature,
     hasMissingSavedView,
     hasSavedViewAutoFillChange,
@@ -98,6 +99,23 @@ describe('useSavedViews', () => {
                     columns: { summary: { visible: true, wrap: true } }
                 })
             ).not.toBe(getSavedViewStateSignature(savedView));
+        });
+    });
+
+    describe('saved view URL override signatures', () => {
+        it('ignores pagination-only query changes', () => {
+            const first = new URL('https://example.test/next/event/errors?time=90d&project=project-1&page=1&limit=10');
+            const second = new URL('https://example.test/next/event/errors?project=project-1&time=90d&page=4&limit=100');
+
+            expect(getSavedViewOverrideSignature(first)).toBe(getSavedViewOverrideSignature(second));
+        });
+
+        it('detects additions, removals, and changes to saved view overrides', () => {
+            const baseline = getSavedViewOverrideSignature(new URL('https://example.test/next/event/errors?time=90d&status=open'));
+
+            expect(getSavedViewOverrideSignature(new URL('https://example.test/next/event/errors?time=30d&status=open'))).not.toBe(baseline);
+            expect(getSavedViewOverrideSignature(new URL('https://example.test/next/event/errors?time=90d'))).not.toBe(baseline);
+            expect(getSavedViewOverrideSignature(new URL('https://example.test/next/event/errors?time=90d&status=open&sort=type'))).not.toBe(baseline);
         });
     });
 
