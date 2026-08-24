@@ -30,7 +30,7 @@ describe('EventsBulkActionsDropdownMenu', () => {
         } as never;
         render(EventsBulkActionsDropdownMenu, { props: { table } });
 
-        const trigger = screen.getByRole('button', { name: /Bulk Actions/ }) as HTMLButtonElement;
+        const trigger = screen.getByRole('button', { name: 'Actions' }) as HTMLButtonElement;
         expect(trigger.disabled).toBe(false);
         expect(trigger.getAttribute('aria-disabled')).toBe('true');
         expect(trigger.title).toBe('Select one or more events to use bulk actions');
@@ -48,7 +48,7 @@ describe('EventsBulkActionsDropdownMenu', () => {
         } as never;
         render(EventsBulkActionsDropdownMenu, { props: { table } });
 
-        await fireEvent.click(screen.getByRole('button', { name: /Bulk Actions/ }));
+        await fireEvent.click(screen.getByRole('button', { name: 'Actions' }));
 
         expect(document.querySelector('[data-slot="dropdown-menu-group-heading"]')).toBeNull();
         expect(screen.getByRole('menuitem', { name: 'Delete' })).toBeTruthy();
@@ -64,7 +64,7 @@ describe('EventsBulkActionsDropdownMenu', () => {
         render(EventsBulkActionsDropdownMenu, { props: { table } });
 
         // Act
-        await fireEvent.click(screen.getByRole('button', { name: /Bulk Actions/ }));
+        await fireEvent.click(screen.getByRole('button', { name: 'Actions' }));
         await fireEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
         await fireEvent.click(screen.getByRole('button', { name: 'Delete Event' }));
 
@@ -83,7 +83,7 @@ describe('EventsBulkActionsDropdownMenu', () => {
         render(EventsBulkActionsDropdownMenu, { props: { table } });
 
         // Act
-        await fireEvent.click(screen.getByRole('button', { name: /Bulk Actions/ }));
+        await fireEvent.click(screen.getByRole('button', { name: 'Actions' }));
         await fireEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
         await fireEvent.click(screen.getByRole('button', { name: 'Delete 2 Events' }));
 

@@ -58,10 +58,10 @@
                 aria-describedby={ids.length === 0 ? bulkActionsDescriptionId : undefined}
                 aria-disabled={ids.length === 0}
                 class="rounded-l-lg rounded-r-none border-0 border-r aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
-                title={ids.length === 0 ? 'Select one or more events to use bulk actions' : 'Bulk Actions'}
+                title={ids.length === 0 ? 'Select one or more events to use bulk actions' : 'Actions'}
                 variant="outline"
             >
-                Bulk Actions
+                Actions
                 <ChevronDown data-icon="inline-end" />
             </Button>
         {/snippet}

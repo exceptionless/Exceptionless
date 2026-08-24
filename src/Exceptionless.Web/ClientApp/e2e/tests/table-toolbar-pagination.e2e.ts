@@ -23,7 +23,7 @@ test('table toolbar remains accessible while moving between different-height res
     await expect(pageIndicator).toBeVisible({ timeout: 30_000 });
     expect(await pageIndicator.evaluate((element) => getComputedStyle(element).userSelect)).toBe('none');
 
-    const bulkActionsButton = toolbar.getByRole('button', { name: /Bulk Actions/ });
+    const bulkActionsButton = toolbar.getByRole('button', { name: 'Actions' });
     await expect(bulkActionsButton).toHaveAttribute('aria-disabled', 'true');
     await expect(bulkActionsButton).toHaveAttribute('title', 'Select one or more events to use bulk actions');
     await bulkActionsButton.focus();

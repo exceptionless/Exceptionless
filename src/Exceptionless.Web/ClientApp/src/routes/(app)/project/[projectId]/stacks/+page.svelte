@@ -268,7 +268,7 @@
 <div class="flex flex-col">
     <div class="mb-4 flex flex-wrap items-start gap-2">
         <Muted class="w-full shrink-0">Manage project stacks, including restoring ignored or discarded stacks</Muted>
-        <div class="flex min-w-0 flex-1 flex-wrap items-start gap-2">
+        <div class="order-3 flex w-full flex-wrap items-start gap-1.5 md:order-none md:w-auto md:min-w-0 md:flex-1">
             <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
                 <StackFacetedFilterBuilder includeProject={false} />
             </FacetedFilter.Root>

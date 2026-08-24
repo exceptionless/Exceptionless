@@ -8,14 +8,16 @@
     import { deleteProjectConfig, getProjectConfig, postProjectConfig } from '$features/projects/api.svelte';
     import { Button } from '$features/shared/components/ui/button';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
+    import ListFilter from '@lucide/svelte/icons/list-filter';
     import { toast } from 'svelte-sonner';
 
     interface Props {
+        iconOnly?: boolean;
         projectId: string;
         source: string;
     }
 
-    let { projectId, source }: Props = $props();
+    let { iconOnly = false, projectId, source }: Props = $props();
     const projectConfigQuery = getProjectConfig({
         route: {
             get id() {
@@ -60,6 +62,9 @@
     const level = $derived(getLogLevel(configSettings[`@@log:${source ?? ''}`]));
     const defaultLevel = $derived(getDefaultLogLevel(configSettings, source ?? ''));
     const defaultLevelDisplayName = $derived(getLogLevelDisplayName(defaultLevel));
+    const triggerLabel = $derived(
+        level ? `Log Level: ${getLogLevelDisplayName(level)}` : defaultLevel ? `Log Level: ${defaultLevelDisplayName} (Default)` : 'Select a Default Log Level'
+    );
 
     function getDefaultLogLevel(configSettings: Record<string, string>, source: string): LogLevel | null {
         const sourcePrefix = '@@log:';
@@ -134,15 +139,19 @@
     <DropdownMenu.Root>
         <DropdownMenu.Trigger>
             {#snippet child({ props })}
-                <Button {...props} variant="outline">
-                    {#if level}
-                        Log Level: {getLogLevelDisplayName(level)}
-                    {:else if defaultLevel}
-                        Log Level: {defaultLevelDisplayName} (Default)
+                <Button
+                    {...props}
+                    aria-label={iconOnly ? triggerLabel : undefined}
+                    size={iconOnly ? 'icon' : 'default'}
+                    title={iconOnly ? triggerLabel : undefined}
+                    variant="outline"
+                >
+                    {#if iconOnly}
+                        <ListFilter aria-hidden="true" />
                     {:else}
-                        Select a Default Log Level
+                        {triggerLabel}
+                        <ChevronDown data-icon="inline-end" />
                     {/if}
-                    <ChevronDown class="size-4" />
                 </Button>
             {/snippet}
         </DropdownMenu.Trigger>
@@ -171,5 +180,5 @@
         </DropdownMenu.Content>
     </DropdownMenu.Root>
 {:else}
-    <Skeleton class="h-9 w-33.75" />
+    <Skeleton class={[iconOnly ? 'size-8' : 'h-9 w-33.75']} />
 {/if}

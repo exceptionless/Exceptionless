@@ -46,7 +46,7 @@
 
 <DataTableRoot>
     <DataTableFooter {table}>
-        <button type="button">Bulk Actions</button>
+        <button type="button">Actions</button>
         <DataTablePager bind:value={limit} {table} />
     </DataTableFooter>
 </DataTableRoot>

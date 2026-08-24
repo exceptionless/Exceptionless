@@ -23,7 +23,7 @@
 <div
     aria-label="Table controls"
     class={[
-        'border-border bg-background/95 sticky top-2 z-30 flex w-full flex-wrap items-center justify-between gap-0 rounded-lg border backdrop-blur-sm sm:flex-nowrap',
+        'border-border bg-background/95 sticky top-2 z-30 flex w-full flex-wrap items-center justify-between gap-0 rounded-lg border backdrop-blur-sm',
         className
     ]}
     data-slot="data-table-footer"
