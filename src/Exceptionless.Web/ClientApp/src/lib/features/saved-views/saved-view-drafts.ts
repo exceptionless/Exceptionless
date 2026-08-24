@@ -141,7 +141,7 @@ export function buildFilterChanges(serverFilters: IFilter[], currentFilters: IFi
 
         if (server.length <= 1 && current.length <= 1) {
             if (server.length === 1 && current.length === 0) {
-                removedKeys.push(key);
+                removedDefinitions.push(server[0]!);
             } else if (current.length === 1 && (server.length === 0 || serializeFilters(server) !== serializeFilters(current))) {
                 upserts.push(current[0]!);
             }
