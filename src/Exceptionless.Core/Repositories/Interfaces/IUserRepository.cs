@@ -12,4 +12,6 @@ public interface IUserRepository : ISearchableRepository<User>
     Task<User?> GetByVerifyEmailAddressTokenAsync(string token);
     Task<FindResults<User>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<User>? options = null);
     Task<FindResults<User>> GetByDefaultSavedViewIdAsync(string savedViewId, CommandOptionsDescriptor<User>? options = null);
+    Task<bool> SetDefaultSavedViewAsync(string userId, string organizationId, string? savedViewId);
+    Task<bool> RemoveDefaultSavedViewsAsync(string userId, IReadOnlyCollection<string> savedViewIds);
 }

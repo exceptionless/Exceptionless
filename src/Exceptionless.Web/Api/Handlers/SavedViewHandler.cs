@@ -128,19 +128,7 @@ public partial class SavedViewHandler(
         if (user is null)
             return Result.NotFound("User not found.");
 
-        foreach (var preference in user.OrganizationPreferences.Where(preference => String.Equals(preference.OrganizationId, message.OrganizationId, StringComparison.Ordinal)).ToList())
-            user.OrganizationPreferences.Remove(preference);
-
-        if (message.Default.SavedViewId is not null)
-        {
-            user.OrganizationPreferences.Add(new UserOrganizationPreference
-            {
-                OrganizationId = message.OrganizationId,
-                DefaultSavedViewId = message.Default.SavedViewId
-            });
-        }
-
-        await userRepository.SaveAsync(user, o => o.Cache());
+        await userRepository.SetDefaultSavedViewAsync(currentUserId, message.OrganizationId, message.Default.SavedViewId);
         return await GetSavedViewDefaultsAsync(organization);
     }
 
@@ -168,8 +156,8 @@ public partial class SavedViewHandler(
             }
         }
 
+        await organizationRepository.SetDefaultSavedViewAsync(organization.Id, message.Default.SavedViewId);
         organization.DefaultSavedViewId = message.Default.SavedViewId;
-        await organizationRepository.SaveAsync(organization, o => o.Cache().Consistency(Consistency.Immediate));
         return await GetSavedViewDefaultsAsync(organization);
     }
 
@@ -615,8 +603,7 @@ public partial class SavedViewHandler(
             if (organization?.DefaultSavedViewId is null || !deletedIds.Contains(organization.DefaultSavedViewId))
                 continue;
 
-            organization.DefaultSavedViewId = null;
-            await organizationRepository.SaveAsync(organization, o => o.Cache().Consistency(Consistency.Immediate));
+            await organizationRepository.SetDefaultSavedViewAsync(organization.Id, null);
         }
 
         var userIds = new HashSet<string>(StringComparer.Ordinal);
@@ -642,21 +629,14 @@ public partial class SavedViewHandler(
                 userLocks.Add(userLock);
             }
 
-            var users = new List<User>(userIds.Count);
             foreach (string userId in userIds)
             {
                 var user = await userRepository.GetByIdAsync(userId, o => o.Cache(false));
                 if (user is null)
                     continue;
 
-                foreach (var preference in user.OrganizationPreferences.Where(preference => deletedIds.Contains(preference.DefaultSavedViewId)).ToList())
-                    user.OrganizationPreferences.Remove(preference);
-
-                users.Add(user);
+                await userRepository.RemoveDefaultSavedViewsAsync(userId, deletedIds);
             }
-
-            if (users.Count > 0)
-                await userRepository.SaveAsync(users, o => o.Cache());
 
             return true;
         }

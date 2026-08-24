@@ -13,6 +13,7 @@ using FluentRest;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Models;
 using Xunit;
 
 namespace Exceptionless.Tests.Api.Endpoints;
@@ -1618,6 +1619,49 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
         Assert.NotNull(user);
         Assert.DoesNotContain(user.OrganizationPreferences, preference => preference.DefaultSavedViewId == savedView.Id);
+    }
+
+    [Fact]
+    public async Task PutOrganizationSavedViewDefault_ConcurrentOrganizationPatch_PreservesUnrelatedChange()
+    {
+        var savedView = await CreateSavedViewAsync("Concurrent Organization Home", "status:open", "stacks");
+        Assert.NotNull(savedView);
+
+        var lockProvider = GetService<ILockProvider>();
+        string lockKey = $"saved-view-defaults:{SampleDataService.TEST_ORG_ID}";
+        string updatedName = $"Concurrent Organization {Guid.NewGuid():N}";
+
+        var heldLock = await lockProvider.AcquireAsync(lockKey, TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(1));
+        var updateTask = SendRequestAsAsync<ViewSavedViewDefaults>(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-defaults", "organization")
+            .Content(new UpdateSavedViewDefault { SavedViewId = savedView.Id })
+            .StatusCodeShouldBeOk()
+        );
+        try
+        {
+            await Task.Delay(100, TestCancellationToken);
+            Assert.False(updateTask.IsCompleted);
+
+            await _organizationRepository.PatchAsync(
+                SampleDataService.TEST_ORG_ID,
+                new PartialPatch(new { name = updatedName }),
+                o => o.ImmediateConsistency());
+        }
+        finally
+        {
+            await heldLock.DisposeAsync();
+        }
+
+        var defaults = await updateTask;
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID, o => o.Cache(false));
+
+        Assert.NotNull(defaults);
+        Assert.Equal(savedView.Id, defaults.OrganizationDefault?.Id);
+        Assert.NotNull(organization);
+        Assert.Equal(updatedName, organization.Name);
+        Assert.Equal(savedView.Id, organization.DefaultSavedViewId);
     }
 
     [Fact]

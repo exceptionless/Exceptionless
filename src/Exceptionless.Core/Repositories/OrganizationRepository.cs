@@ -55,6 +55,24 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
         return FindAsync(q => query, options);
     }
 
+    public Task<bool> SetDefaultSavedViewAsync(string organizationId, string? savedViewId)
+    {
+        const string script = @"
+ctx._source.default_saved_view_id = params.savedViewId;
+ctx._source.updated_utc = params.updatedUtc;";
+
+        var operation = new ScriptPatch(script.TrimScript())
+        {
+            Params = new Dictionary<string, object>
+            {
+                ["savedViewId"] = savedViewId!,
+                ["updatedUtc"] = _timeProvider.GetUtcNow().UtcDateTime
+            }
+        };
+
+        return PatchAsync(organizationId, operation, o => o.ImmediateConsistency());
+    }
+
     public Task<FindResults<Organization>> GetByCriteriaAsync(string? criteria, CommandOptionsDescriptor<Organization> options, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null)
     {
         var query = new RepositoryQuery<Organization>();

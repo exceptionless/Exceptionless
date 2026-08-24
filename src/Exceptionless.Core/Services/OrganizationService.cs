@@ -222,21 +222,14 @@ public class OrganizationService : IStartupAction
             foreach (string userId in userIds.Order(StringComparer.Ordinal))
                 userLocks.Add(await _lockProvider.AcquireAsync(GetUserSavedViewDefaultLockKey(userId), TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30)));
 
-            var users = new List<User>(userIds.Count);
             foreach (string userId in userIds)
             {
                 var user = await _userRepository.GetByIdAsync(userId, o => o.Cache(false));
                 if (user is null)
                     continue;
 
-                foreach (var preference in user.OrganizationPreferences.Where(preference => savedViewIds.Contains(preference.DefaultSavedViewId)).ToList())
-                    user.OrganizationPreferences.Remove(preference);
-
-                users.Add(user);
+                await _userRepository.RemoveDefaultSavedViewsAsync(userId, savedViewIds);
             }
-
-            if (users.Count > 0)
-                await _userRepository.SaveAsync(users, o => o.Cache());
 
             return await _savedViewRepository.RemoveAllByOrganizationIdAsync(organization.Id);
         }
