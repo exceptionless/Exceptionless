@@ -19,7 +19,7 @@ describe('DataTablePager', () => {
         scrollIntoView.mockReset();
     });
 
-    it('keeps bulk actions and pagination together in the sticky table toolbar', () => {
+    it('keeps bulk actions and pagination together in the solid sticky table toolbar', () => {
         render(DataTablePagerTestHarness, { onPageIndexChange: vi.fn(), onPageSizeChange: vi.fn() });
 
         const toolbar = document.querySelector('[data-slot="data-table-footer"]');
@@ -29,6 +29,8 @@ describe('DataTablePager', () => {
         expect(toolbar?.classList.contains('top-2')).toBe(true);
         expect(toolbar?.classList.contains('order-2')).toBe(false);
         expect(toolbar?.classList.contains('border')).toBe(false);
+        expect(toolbar?.classList.contains('border-y')).toBe(true);
+        expect(toolbar?.classList.contains('bg-background')).toBe(true);
         expect(toolbar?.classList.contains('p-2')).toBe(false);
         expect(toolbar?.contains(screen.getByRole('button', { name: 'Bulk Actions' }))).toBe(true);
         expect(toolbar?.contains(pager)).toBe(true);
