@@ -101,7 +101,12 @@
         view: VIEW
     });
     const isSavedViewPending = $derived(
-        isSavedViewHydrationPending(queryParams.saved, savedViewsState.activeSavedView?.id, savedViewsState.hydratedSavedViewId, savedViewsState.isMissing)
+        isSavedViewHydrationPending(
+            queryParams.saved,
+            savedViewsState.activeSavedView?.id,
+            savedViewsState.hydratedSavedViewId,
+            savedViewsState.isMissing || savedViewsState.isError
+        )
     );
     const pageTitle = $derived(savedViewsState.activeSavedView?.name ?? 'Event Stream');
 
@@ -233,6 +238,10 @@
 
     async function loadData(filterChanged: boolean = false) {
         if (isSavedViewPending) {
+            loadDataRequestId++;
+            before = undefined;
+            clientResponse = undefined;
+            queryData = [];
             return;
         }
 

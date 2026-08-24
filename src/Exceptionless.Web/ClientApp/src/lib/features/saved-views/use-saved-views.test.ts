@@ -269,6 +269,10 @@ describe('useSavedViews', () => {
             expect(getDraftSortValue('-date', 'type', { value: 'type' }, { sort: 'count', version: 1 })).toBe('count');
         });
 
+        it('preserves an older local sort when a URL override matches the server', () => {
+            expect(getDraftSortValue('-date', '-date', { value: '-date' }, { sort: 'count', version: 1 })).toBe('count');
+        });
+
         it('persists a sort changed after hydration', () => {
             expect(getDraftSortValue('-date', 'count', { value: 'type' }, undefined)).toBe('count');
         });

@@ -286,7 +286,7 @@
     // Keep queries disabled until saved-view state and its URL overrides have both settled.
     let normalizedSavedViewId = $state<string>();
     const isSavedViewRoutePending = $derived(
-        !!page.params.slug && (!savedViewsState.activeSavedView || savedViewsState.activeSavedView.id !== normalizedSavedViewId)
+        !!page.params.slug && !savedViewsState.isError && (!savedViewsState.activeSavedView || savedViewsState.activeSavedView.id !== normalizedSavedViewId)
     );
 
     $effect(() => {

@@ -92,6 +92,7 @@ export interface UseSavedViewsReturn {
     handleResetToSaved: () => void;
     hydratedSavedViewId: string | undefined;
     isEnabled: boolean;
+    isError: boolean;
     isLoading: boolean;
     isMissing: boolean;
     isModified: boolean;
@@ -142,11 +143,11 @@ export function getDraftSortValue(
     initialOverride: undefined | { value: null | string },
     storedDraft: SavedViewDraft | undefined
 ): null | string {
-    if (currentSort === serverSort || initialOverride?.value !== currentSort) {
-        return currentSort;
+    if (initialOverride?.value === currentSort) {
+        return storedDraft && 'sort' in storedDraft ? (storedDraft.sort ?? null) : serverSort;
     }
 
-    return storedDraft && 'sort' in storedDraft ? (storedDraft.sort ?? null) : serverSort;
+    return currentSort;
 }
 
 export function getSavedViewStateSignature(
@@ -199,9 +200,9 @@ export function isSavedViewHydrationPending(
     savedViewKey: null | string | undefined,
     activeSavedViewId: string | undefined,
     hydratedSavedViewId: string | undefined,
-    isMissing: boolean
+    isUnavailable: boolean
 ): boolean {
-    return !!savedViewKey && !isMissing && (!activeSavedViewId || activeSavedViewId !== hydratedSavedViewId);
+    return !!savedViewKey && !isUnavailable && (!activeSavedViewId || activeSavedViewId !== hydratedSavedViewId);
 }
 
 export function savedViewColumnsEqual(
@@ -862,6 +863,9 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         },
         get isEnabled() {
             return isEnabled;
+        },
+        get isError() {
+            return savedViewsListQuery.isError;
         },
         get isLoading() {
             return savedViewsListQuery.isLoading;

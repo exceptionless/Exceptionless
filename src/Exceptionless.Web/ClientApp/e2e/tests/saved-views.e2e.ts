@@ -350,7 +350,7 @@ test('switching saved views preserves each view temporary filter overrides acros
     expect(failedApiRequests).toEqual([]);
 });
 
-test('stream waits for a browser-local saved view draft before loading events', async ({ e2eApi, e2eScenario, page, request }) => {
+test('stream switches to a browser-local saved view draft without mixing in-flight results', async ({ e2eApi, e2eScenario, page, request }) => {
     const failedApiRequests = captureFailedApiRequests(page);
     const suffix = e2eScenario.run.slice(-28);
     const viewName = `E2E Stream View ${suffix}`;
@@ -402,20 +402,72 @@ test('stream waits for a browser-local saved view draft before loading events', 
         }
     );
 
+    const sourceMessage = `Source stream result ${suffix}`;
+    let releaseSourceRequest!: () => void;
+    const sourceRequestRelease = new Promise<void>((resolve) => {
+        releaseSourceRequest = resolve;
+    });
+    let sourceRequestCompleted = false;
+    let sourceRequestStarted = false;
     const streamRequestFilters: string[] = [];
+    await page.route(`**/api/v2/organizations/${e2eScenario.organizationId}/events*`, async (route) => {
+        const filter = new URL(route.request().url()).searchParams.get('filter') ?? '';
+        streamRequestFilters.push(filter);
+        if (filter.includes(e2eScenario.projectId)) {
+            await route.fulfill({ body: '[]', contentType: 'application/json', status: 200 });
+            return;
+        }
+
+        sourceRequestStarted = true;
+        await sourceRequestRelease;
+        await route.fulfill({
+            body: JSON.stringify([
+                {
+                    data: { Message: sourceMessage },
+                    date: new Date().toISOString(),
+                    id: '000000000000000000000001',
+                    project_id: e2eScenario.projectId,
+                    tags: [],
+                    template_key: 'event-simple-summary'
+                }
+            ]),
+            contentType: 'application/json',
+            status: 200
+        });
+        sourceRequestCompleted = true;
+    });
+
+    await page.goto('/next/stream');
+    await expect.poll(() => sourceRequestStarted).toBe(true);
+    await navigateClientSide(page, `/next/stream?saved=${savedView.id}`);
+    releaseSourceRequest();
+    await expect.poll(() => sourceRequestCompleted).toBe(true);
+    await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
+    await expect.poll(() => streamRequestFilters.some((filter) => filter.includes(e2eScenario.projectId))).toBe(true);
+    await expect(getVisibleText(page, sourceMessage)).toBeHidden();
+    await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
+    expect(failedApiRequests).toEqual([]);
+});
+
+test('stream loads default results when its saved-view lookup fails', async ({ e2eScenario, page }) => {
+    await page.route(`**/api/v2/organizations/${e2eScenario.organizationId}/saved-views/stream*`, async (route) => {
+        await route.fulfill({
+            body: JSON.stringify({ detail: 'Simulated saved-view failure', status: 500, title: 'Internal Server Error' }),
+            contentType: 'application/problem+json',
+            status: 500
+        });
+    });
+    const eventRequests: string[] = [];
     page.on('request', (request) => {
         const url = new URL(request.url());
         if (url.pathname === `/api/v2/organizations/${e2eScenario.organizationId}/events`) {
-            streamRequestFilters.push(url.searchParams.get('filter') ?? '');
+            eventRequests.push(request.url());
         }
     });
 
-    await page.goto(`/next/stream?saved=${savedView.id}`);
-    await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
-    await expect.poll(() => streamRequestFilters.length).toBeGreaterThan(0);
-    expect(streamRequestFilters.every((filter) => filter.includes(e2eScenario.projectId))).toBe(true);
-    await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
-    expect(failedApiRequests).toEqual([]);
+    await page.goto('/next/stream?saved=unavailable-view');
+    await expect(page.getByRole('heading', { name: 'Event Stream' })).toBeVisible();
+    await expect.poll(() => eventRequests.length, { timeout: 30_000 }).toBeGreaterThan(0);
 });
 
 test('saved view loads server state when the current-user lookup fails', async ({ e2eScenario, page, request }) => {
