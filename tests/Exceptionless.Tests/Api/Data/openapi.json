@@ -3637,6 +3637,16 @@
               }
             }
           },
+          "409": {
+            "description": "The saved view defaults are currently being updated.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "500": {
             "description": "An error occurred while deleting one or more saved views.",
             "content": {

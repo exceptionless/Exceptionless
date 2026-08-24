@@ -303,6 +303,7 @@ public static class SavedViewEndpoints
         .Produces<WorkInProgressResult>(StatusCodes.Status202Accepted)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status500InternalServerError)
         .WithSummary("Remove")
         .WithMetadata(new EndpointDocumentation {
@@ -313,6 +314,7 @@ public static class SavedViewEndpoints
                 ["202"] = "Accepted",
                 ["400"] = "One or more validation errors occurred.",
                 ["404"] = "One or more saved views were not found.",
+                ["409"] = "The saved view defaults are currently being updated.",
                 ["500"] = "An error occurred while deleting one or more saved views.",
             }
         });
