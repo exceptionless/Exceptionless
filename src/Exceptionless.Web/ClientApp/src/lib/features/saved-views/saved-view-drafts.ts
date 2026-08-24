@@ -46,20 +46,22 @@ export function applyFilterChanges(serverFilters: IFilter[], changes: SavedViewF
 
     const removedKeys = new Set(changes.removedKeys);
     const duplicateKeys = new Set(changes.duplicateKeys ?? []);
+    const baselineFilters = changes.baselineDefinitions ? deserializeFilters(changes.baselineDefinitions) : [];
+    const rebasedKeys = new Set(baselineFilters.map((filter) => filter.key));
     const removedDefinitionCounts = buildSerializedFilterCounts(changes.removedDefinitions ? deserializeFilters(changes.removedDefinitions) : []);
     const upserts = deserializeFilters(changes.upsertDefinitions);
-    const upsertsByKey = new Map(upserts.filter((filter) => !duplicateKeys.has(filter.key)).map((filter) => [filter.key, filter]));
-    const duplicateUpserts = upserts.filter((filter) => duplicateKeys.has(filter.key));
-    const duplicateTargetCounts =
+    const upsertsByKey = new Map(upserts.filter((filter) => !rebasedKeys.has(filter.key)).map((filter) => [filter.key, filter]));
+    const rebasedUpserts = upserts.filter((filter) => rebasedKeys.has(filter.key));
+    const rebasedTargetCounts =
         changes.baselineDefinitions === undefined
             ? undefined
             : buildDuplicateTargetCounts(
-                  deserializeFilters(changes.baselineDefinitions),
+                  baselineFilters,
                   changes.removedDefinitions ? deserializeFilters(changes.removedDefinitions) : [],
-                  duplicateUpserts,
-                  serverFilters.filter((filter) => duplicateKeys.has(filter.key))
+                  rebasedUpserts,
+                  serverFilters.filter((filter) => rebasedKeys.has(filter.key))
               );
-    const retainedDuplicateCounts = new Map<string, number>();
+    const retainedRebasedCounts = new Map<string, number>();
     const result: IFilter[] = [];
 
     for (const serverFilter of serverFilters) {
@@ -68,11 +70,11 @@ export function applyFilterChanges(serverFilters: IFilter[], changes: SavedViewF
         }
 
         const serialized = serializeFilters([serverFilter]);
-        if (duplicateTargetCounts && duplicateKeys.has(serverFilter.key)) {
-            const retainedCount = retainedDuplicateCounts.get(serialized) ?? 0;
-            if (retainedCount < (duplicateTargetCounts.get(serialized) ?? 0)) {
+        if (rebasedTargetCounts && rebasedKeys.has(serverFilter.key)) {
+            const retainedCount = retainedRebasedCounts.get(serialized) ?? 0;
+            if (retainedCount < (rebasedTargetCounts.get(serialized) ?? 0)) {
                 result.push(serverFilter.clone());
-                retainedDuplicateCounts.set(serialized, retainedCount + 1);
+                retainedRebasedCounts.set(serialized, retainedCount + 1);
             }
 
             continue;
@@ -95,9 +97,8 @@ export function applyFilterChanges(serverFilters: IFilter[], changes: SavedViewF
     }
 
     result.push(...[...upsertsByKey.values()].map((filter) => filter.clone()));
-    const missingDuplicateUpserts =
-        duplicateTargetCounts === undefined ? duplicateUpserts : getMissingDuplicateUpserts(duplicateUpserts, duplicateTargetCounts, result);
-    result.push(...missingDuplicateUpserts.map((filter) => filter.clone()));
+    const missingRebasedUpserts = rebasedTargetCounts === undefined ? rebasedUpserts : getMissingDuplicateUpserts(rebasedUpserts, rebasedTargetCounts, result);
+    result.push(...missingRebasedUpserts.map((filter) => filter.clone()));
     return result;
 }
 
@@ -131,6 +132,7 @@ export function buildFilterChanges(serverFilters: IFilter[], currentFilters: IFi
     const serverByKey = groupFiltersByKey(serverFilters);
     const currentByKey = groupFiltersByKey(currentFilters);
     const duplicateKeys: string[] = [];
+    const baselineDefinitions: IFilter[] = [];
     const removedDefinitions: IFilter[] = [];
     const removedKeys: string[] = [];
     const upserts: IFilter[] = [];
@@ -142,13 +144,18 @@ export function buildFilterChanges(serverFilters: IFilter[], currentFilters: IFi
         if (server.length <= 1 && current.length <= 1) {
             if (server.length === 1 && current.length === 0) {
                 removedDefinitions.push(server[0]!);
-            } else if (current.length === 1 && (server.length === 0 || serializeFilters(server) !== serializeFilters(current))) {
+            } else if (current.length === 1 && server.length === 1 && serializeFilters(server) !== serializeFilters(current)) {
+                baselineDefinitions.push(server[0]!);
+                removedDefinitions.push(server[0]!);
+                upserts.push(current[0]!);
+            } else if (current.length === 1 && server.length === 0) {
                 upserts.push(current[0]!);
             }
             continue;
         }
 
         duplicateKeys.push(key);
+        baselineDefinitions.push(...server);
         removedDefinitions.push(...getUnmatchedFilters(server, current));
         upserts.push(...getUnmatchedFilters(current, server));
     }
@@ -158,7 +165,7 @@ export function buildFilterChanges(serverFilters: IFilter[], currentFilters: IFi
     }
 
     return {
-        ...(duplicateKeys.length > 0 ? { baselineDefinitions: serializeFilters(duplicateKeys.flatMap((key) => serverByKey.get(key) ?? [])) } : {}),
+        ...(baselineDefinitions.length > 0 ? { baselineDefinitions: serializeFilters(baselineDefinitions) } : {}),
         ...(duplicateKeys.length > 0 ? { duplicateKeys } : {}),
         ...(removedDefinitions.length > 0 ? { removedDefinitions: serializeFilters(removedDefinitions) } : {}),
         removedKeys,

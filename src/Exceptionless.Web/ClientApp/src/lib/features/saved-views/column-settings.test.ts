@@ -139,6 +139,15 @@ describe('saved view column settings', () => {
         expect(filterAvailableColumnIds(['removed', 'summary', 'summary'], availableColumnIds)).toEqual(['summary']);
         expect(resolveAvailableAutoFillColumnSelection('removed', availableColumnIds, 'summary')).toBe('summary');
         expect(resolveAvailableAutoFillColumnSelection('removed', availableColumnIds)).toBeNull();
+
+        const view = {
+            columns: {
+                removed: { width: 480, wrap: true },
+                summary: { width: 360, wrap: true }
+            }
+        } as Pick<SavedView, 'columns'>;
+        expect(savedViewColumnSizingEqual({ summary: 360 }, view, availableColumnIds)).toBe(true);
+        expect(savedViewColumnWrappingEqual(['summary'], view, availableColumnIds)).toBe(true);
     });
 
     it('treats missing wrap settings as the legacy single-line behavior', () => {

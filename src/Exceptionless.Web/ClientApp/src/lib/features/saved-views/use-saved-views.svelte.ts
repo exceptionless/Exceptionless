@@ -243,8 +243,17 @@ export function hasMissingSavedView(options: {
     return !!options.savedViewKey && !options.activeSavedView && !!options.savedViews && !options.isLoading;
 }
 
-export function hasSavedViewAutoFillChange(current: AutoFillColumnSelection, view: Pick<SavedView, 'columns'>, defaultAutoFillColumnId?: string): boolean {
-    return current !== getSavedAutoFillColumnSelection(view, defaultAutoFillColumnId);
+export function hasSavedViewAutoFillChange(
+    current: AutoFillColumnSelection,
+    view: Pick<SavedView, 'columns'>,
+    defaultAutoFillColumnId?: string,
+    availableColumnIds?: readonly string[]
+): boolean {
+    const savedSelection = getSavedAutoFillColumnSelection(view, defaultAutoFillColumnId);
+    const resolvedSavedSelection = availableColumnIds
+        ? resolveAvailableAutoFillColumnSelection(savedSelection, availableColumnIds, defaultAutoFillColumnId)
+        : savedSelection;
+    return current !== resolvedSavedSelection;
 }
 
 export function hasSavedViewColumnChanges(
@@ -508,6 +517,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             version: 1
         };
         const storedDraft = preserveExplicitFilterOverrides ? getStoredDraft(view) : undefined;
+        const availableColumnIds = options.getAvailableColumnIds?.() ?? options.getColumnOrder?.() ?? [];
 
         if (options.getFilterDefinitions) {
             const serverFilters = getServerFilters(view);
@@ -521,14 +531,20 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         if (options.getColumnVisibility) {
-            const serverVisibility = {
-                ...options.defaultColumnVisibility,
-                ...getSavedColumnVisibility(view)
-            };
-            const currentVisibility = {
-                ...options.defaultColumnVisibility,
-                ...options.getColumnVisibility()
-            };
+            const serverVisibility = filterAvailableColumnRecord(
+                {
+                    ...options.defaultColumnVisibility,
+                    ...getSavedColumnVisibility(view)
+                },
+                availableColumnIds
+            );
+            const currentVisibility = filterAvailableColumnRecord(
+                {
+                    ...options.defaultColumnVisibility,
+                    ...options.getColumnVisibility()
+                },
+                availableColumnIds
+            );
             draft.columnVisibilityChanges = buildRecordChanges(serverVisibility, currentVisibility);
         }
 
@@ -537,14 +553,20 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         if (options.getColumnSizing) {
-            draft.columnSizingChanges = buildRecordChanges(getSavedColumnSizing(view), normalizeColumnSizing(options.getColumnSizing()));
+            draft.columnSizingChanges = buildRecordChanges(
+                filterAvailableColumnRecord(getSavedColumnSizing(view), availableColumnIds),
+                filterAvailableColumnRecord(normalizeColumnSizing(options.getColumnSizing()), availableColumnIds)
+            );
         }
 
-        if (hasSavedViewAutoFillChange(autoFillColumnId, view, options.defaultAutoFillColumnId)) {
+        if (hasSavedViewAutoFillChange(autoFillColumnId, view, options.defaultAutoFillColumnId, availableColumnIds)) {
             draft.autoFillColumnId = autoFillColumnId;
         }
 
-        draft.wrappedColumnChanges = buildWrappedColumnChanges(getSavedWrappedColumnIds(view), wrappedColumnIds);
+        draft.wrappedColumnChanges = buildWrappedColumnChanges(
+            filterAvailableColumnIds(getSavedWrappedColumnIds(view), availableColumnIds),
+            filterAvailableColumnIds(wrappedColumnIds, availableColumnIds)
+        );
 
         if (options.getShowStats && options.getShowStats() !== (view.show_stats ?? true)) {
             draft.showStats = options.getShowStats();
@@ -753,6 +775,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         if (!view || activeSavedView?.id !== view.id) {
             return false;
         }
+        const availableColumnIds = options.getAvailableColumnIds?.() ?? options.getColumnOrder?.() ?? [];
 
         const savedViewFilter = getComparableSavedViewFilter(view.filter, view.filter_definitions, options.defaultFilter);
         if ((options.getFilter?.() ?? options.queryParams.filter ?? null) !== savedViewFilter) {
@@ -774,7 +797,11 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
         if (
             options.getColumnVisibility &&
-            hasSavedViewColumnChanges(options.getColumnVisibility(), getSavedColumnVisibility(view), options.defaultColumnVisibility)
+            hasSavedViewColumnChanges(
+                filterAvailableColumnRecord(options.getColumnVisibility(), availableColumnIds),
+                filterAvailableColumnRecord(getSavedColumnVisibility(view), availableColumnIds),
+                filterAvailableColumnRecord(options.defaultColumnVisibility ?? {}, availableColumnIds)
+            )
         ) {
             return true;
         }
@@ -783,15 +810,15 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return true;
         }
 
-        if (options.getColumnSizing && !savedViewColumnSizingEqual(options.getColumnSizing(), view)) {
+        if (options.getColumnSizing && !savedViewColumnSizingEqual(options.getColumnSizing(), view, availableColumnIds)) {
             return true;
         }
 
-        if (hasSavedViewAutoFillChange(autoFillColumnId, view, options.defaultAutoFillColumnId)) {
+        if (hasSavedViewAutoFillChange(autoFillColumnId, view, options.defaultAutoFillColumnId, availableColumnIds)) {
             return true;
         }
 
-        if (!savedViewColumnWrappingEqual(wrappedColumnIds, view)) {
+        if (!savedViewColumnWrappingEqual(wrappedColumnIds, view, availableColumnIds)) {
             return true;
         }
 

@@ -127,6 +127,29 @@ describe('saved view drafts', () => {
         expect(mergedFilters.map((filter) => (filter as KeywordFilter).value)).toEqual(['remote']);
     });
 
+    it('targets the original definition when a formerly unique replacement is duplicated remotely', () => {
+        const originalServerFilters = [new KeywordFilter('foo')];
+        const locallyEditedFilters = [new KeywordFilter('baz')];
+        const changes = buildFilterChanges(originalServerFilters, locallyEditedFilters);
+        const latestServerFilters = [new KeywordFilter('remote'), new KeywordFilter('foo')];
+
+        const mergedFilters = applyFilterChanges(latestServerFilters, changes);
+
+        expect(changes?.baselineDefinitions).toBe('[{"type":"keyword","value":"foo"}]');
+        expect(mergedFilters.map((filter) => (filter as KeywordFilter).value)).toEqual(['remote', 'baz']);
+    });
+
+    it('does not duplicate a unique replacement the server independently adopted', () => {
+        const originalServerFilters = [new KeywordFilter('foo')];
+        const locallyEditedFilters = [new KeywordFilter('baz')];
+        const changes = buildFilterChanges(originalServerFilters, locallyEditedFilters);
+        const latestServerFilters = [new KeywordFilter('baz'), new KeywordFilter('foo')];
+
+        const mergedFilters = applyFilterChanges(latestServerFilters, changes);
+
+        expect(mergedFilters.map((filter) => (filter as KeywordFilter).value)).toEqual(['baz']);
+    });
+
     it('continues to apply key removals from legacy browser-local drafts', () => {
         const mergedFilters = applyFilterChanges([new StatusFilter([StackStatus.Open])], {
             removedKeys: ['status'],

@@ -150,17 +150,21 @@ export function resolveSavedViewColumnOrder(view: SavedColumnState, availableOrd
     return resolveAvailableColumnOrder(getSavedColumnOrder(view), availableOrder);
 }
 
-export function savedViewColumnSizingEqual(current: ColumnSizingState | undefined, view: SavedColumnState): boolean {
-    const saved = getSavedColumnSizing(view);
-    const currentEntries = Object.entries(normalizeColumnSizing(current));
+export function savedViewColumnSizingEqual(current: ColumnSizingState | undefined, view: SavedColumnState, availableColumnIds?: readonly string[]): boolean {
+    const savedSizing = getSavedColumnSizing(view);
+    const saved = availableColumnIds ? filterAvailableColumnRecord(savedSizing, availableColumnIds) : savedSizing;
+    const normalizedCurrent = normalizeColumnSizing(current);
+    const resolvedCurrent = availableColumnIds ? filterAvailableColumnRecord(normalizedCurrent, availableColumnIds) : normalizedCurrent;
+    const currentEntries = Object.entries(resolvedCurrent);
     const savedEntries = Object.entries(saved);
 
     return currentEntries.length === savedEntries.length && currentEntries.every(([columnId, width]) => saved[columnId] === width);
 }
 
-export function savedViewColumnWrappingEqual(current: readonly string[] | undefined, view: SavedColumnState): boolean {
-    const saved = getSavedWrappedColumnIds(view);
-    const currentIds = [...new Set(current ?? [])];
+export function savedViewColumnWrappingEqual(current: readonly string[] | undefined, view: SavedColumnState, availableColumnIds?: readonly string[]): boolean {
+    const savedIds = getSavedWrappedColumnIds(view);
+    const saved = availableColumnIds ? filterAvailableColumnIds(savedIds, availableColumnIds) : savedIds;
+    const currentIds = availableColumnIds ? filterAvailableColumnIds(current ?? [], availableColumnIds) : [...new Set(current ?? [])];
 
     return currentIds.length === saved.length && currentIds.every((columnId) => saved.includes(columnId));
 }
