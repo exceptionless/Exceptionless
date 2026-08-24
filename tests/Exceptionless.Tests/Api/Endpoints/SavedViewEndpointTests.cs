@@ -1656,6 +1656,91 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task DeleteSavedView_UserLockConflict_PreservesAllDefaults()
+    {
+        var savedView = await CreateSavedViewAsync("Conflict Home", "status:open", "stacks");
+        var currentUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(savedView);
+        Assert.NotNull(currentUser);
+
+        await SendRequestAsync(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-defaults", "organization")
+            .Content(new UpdateSavedViewDefault { SavedViewId = savedView.Id })
+            .StatusCodeShouldBeOk()
+        );
+        await SendRequestAsync(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-defaults", "user")
+            .Content(new UpdateSavedViewDefault { SavedViewId = savedView.Id })
+            .StatusCodeShouldBeOk()
+        );
+
+        var lockProvider = GetService<ILockProvider>();
+        string userLockKey = $"saved-view-defaults:user:{currentUser.Id}";
+        var heldUserLock = await lockProvider.AcquireAsync(userLockKey, TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(1));
+        try
+        {
+            await SendRequestAsync(r => r
+                .Delete()
+                .AsGlobalAdminUser()
+                .AppendPaths("saved-views", savedView.Id)
+                .ExpectedStatus(HttpStatusCode.Conflict)
+            );
+        }
+        finally
+        {
+            await heldUserLock.DisposeAsync();
+        }
+
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID, o => o.Cache(false));
+        var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, o => o.Cache(false));
+        Assert.NotNull(organization);
+        Assert.NotNull(persistedUser);
+        Assert.Equal(savedView.Id, organization.DefaultSavedViewId);
+        Assert.Contains(persistedUser.OrganizationPreferences, preference => preference.DefaultSavedViewId == savedView.Id);
+        Assert.NotNull(await _savedViewRepository.GetByIdAsync(savedView.Id));
+    }
+
+    [Fact]
+    public async Task PutUserSavedViewDefault_RefetchesOrganizationAfterLock()
+    {
+        var originalDefault = await CreateSavedViewAsync("Original Organization Home", "status:open", "stacks");
+        var updatedDefault = await CreateSavedViewAsync("Updated Organization Home", "status:regressed", "stacks");
+        Assert.NotNull(originalDefault);
+        Assert.NotNull(updatedDefault);
+
+        await _organizationRepository.SetDefaultSavedViewAsync(SampleDataService.TEST_ORG_ID, originalDefault.Id);
+
+        var lockProvider = GetService<ILockProvider>();
+        string lockKey = $"saved-view-defaults:{SampleDataService.TEST_ORG_ID}";
+        var heldLock = await lockProvider.AcquireAsync(lockKey, TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(1));
+        var updateTask = SendRequestAsAsync<ViewSavedViewDefaults>(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-defaults", "user")
+            .Content(new UpdateSavedViewDefault { SavedViewId = null })
+            .StatusCodeShouldBeOk()
+        );
+        try
+        {
+            await Task.Delay(100, TestCancellationToken);
+            Assert.False(updateTask.IsCompleted);
+            await _organizationRepository.SetDefaultSavedViewAsync(SampleDataService.TEST_ORG_ID, updatedDefault.Id);
+        }
+        finally
+        {
+            await heldLock.DisposeAsync();
+        }
+
+        var defaults = await updateTask;
+        Assert.NotNull(defaults);
+        Assert.Equal(updatedDefault.Id, defaults.OrganizationDefault?.Id);
+    }
+
+    [Fact]
     public async Task PutOrganizationSavedViewDefault_ConcurrentOrganizationPatch_PreservesUnrelatedChange()
     {
         var savedView = await CreateSavedViewAsync("Concurrent Organization Home", "status:open", "stacks");
@@ -2148,6 +2233,33 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         Assert.NotNull(persistedGlobalAdministrator);
         Assert.DoesNotContain(persistedGlobalAdministrator.OrganizationPreferences, preference => preference.DefaultSavedViewId == savedView.Id);
         Assert.Null(await _savedViewRepository.GetByIdAsync(savedView.Id));
+    }
+
+    [Fact]
+    public async Task SoftDeleteOrganization_NonmemberMissingSavedViewDefault_RemovesPreference()
+    {
+        var globalAdministrator = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        var freeOrganizationUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.FREE_USER_EMAIL);
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(globalAdministrator);
+        Assert.NotNull(freeOrganizationUser);
+        Assert.NotNull(organization);
+
+        const string missingSavedViewId = "000000000000000000000099";
+        globalAdministrator.OrganizationPreferences.Add(new UserOrganizationPreference
+        {
+            OrganizationId = organization.Id,
+            DefaultSavedViewId = missingSavedViewId
+        });
+        await _userRepository.SaveAsync(globalAdministrator, o => o.Cache());
+        await RefreshDataAsync();
+
+        await _organizationService.SoftDeleteOrganizationAsync(organization, freeOrganizationUser.Id);
+        await RefreshDataAsync();
+
+        var persistedGlobalAdministrator = await _userRepository.GetByIdAsync(globalAdministrator.Id);
+        Assert.NotNull(persistedGlobalAdministrator);
+        Assert.DoesNotContain(persistedGlobalAdministrator.OrganizationPreferences, preference => preference.OrganizationId == organization.Id);
     }
 
     [Fact]

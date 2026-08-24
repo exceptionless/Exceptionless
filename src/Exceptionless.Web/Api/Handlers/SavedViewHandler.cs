@@ -102,10 +102,6 @@ public partial class SavedViewHandler(
         if (!HttpContext.Request.CanAccessOrganization(message.OrganizationId))
             return Result.NotFound("Organization not found.");
 
-        var organization = await organizationRepository.GetByIdAsync(message.OrganizationId);
-        if (organization is null)
-            return Result.NotFound("Organization not found.");
-
         string currentUserId = GetCurrentUserId();
         await using var defaultsLock = await lockProvider.TryAcquireAsync(GetSavedViewDefaultLockKey(message.OrganizationId), SavedViewDefaultLockDuration, SavedViewDefaultLockTimeout);
         if (defaultsLock is null)
@@ -114,6 +110,10 @@ public partial class SavedViewHandler(
         await using var userDefaultsLock = await lockProvider.TryAcquireAsync(GetUserSavedViewDefaultLockKey(currentUserId), SavedViewDefaultLockDuration, SavedViewDefaultLockTimeout);
         if (userDefaultsLock is null)
             return Result.Conflict("Saved view defaults are currently being updated.");
+
+        var organization = await organizationRepository.GetByIdAsync(message.OrganizationId, o => o.Cache(false));
+        if (organization is null)
+            return Result.NotFound("Organization not found.");
 
         if (message.Default.SavedViewId is not null)
         {
@@ -140,13 +140,13 @@ public partial class SavedViewHandler(
         if (!HttpContext.Request.CanAccessOrganization(message.OrganizationId))
             return Result.NotFound("Organization not found.");
 
-        var organization = await organizationRepository.GetByIdAsync(message.OrganizationId, o => o.Cache(false));
-        if (organization is null)
-            return Result.NotFound("Organization not found.");
-
         await using var defaultsLock = await lockProvider.TryAcquireAsync(GetSavedViewDefaultLockKey(message.OrganizationId), SavedViewDefaultLockDuration, SavedViewDefaultLockTimeout);
         if (defaultsLock is null)
             return Result.Conflict("Saved view defaults are currently being updated.");
+
+        var organization = await organizationRepository.GetByIdAsync(message.OrganizationId, o => o.Cache(false));
+        if (organization is null)
+            return Result.NotFound("Organization not found.");
 
         if (message.Default.SavedViewId is not null)
         {
@@ -608,14 +608,13 @@ public partial class SavedViewHandler(
     private async Task<bool> ClearDefaultReferencesAsync(IReadOnlyCollection<SavedView> deletedSavedViews)
     {
         var deletedIds = deletedSavedViews.Select(savedView => savedView.Id).ToHashSet(StringComparer.Ordinal);
+        var organizationIdsToClear = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (string organizationId in deletedSavedViews.Select(savedView => savedView.OrganizationId).Distinct(StringComparer.Ordinal))
         {
             var organization = await organizationRepository.GetByIdAsync(organizationId);
-            if (organization?.DefaultSavedViewId is null || !deletedIds.Contains(organization.DefaultSavedViewId))
-                continue;
-
-            await organizationRepository.SetDefaultSavedViewAsync(organization.Id, null);
+            if (organization?.DefaultSavedViewId is not null && deletedIds.Contains(organization.DefaultSavedViewId))
+                organizationIdsToClear.Add(organization.Id);
         }
 
         var userIds = new HashSet<string>(StringComparer.Ordinal);
@@ -640,6 +639,9 @@ public partial class SavedViewHandler(
 
                 userLocks.Add(userLock);
             }
+
+            foreach (string organizationId in organizationIdsToClear)
+                await organizationRepository.SetDefaultSavedViewAsync(organizationId, null);
 
             foreach (string userId in userIds)
             {

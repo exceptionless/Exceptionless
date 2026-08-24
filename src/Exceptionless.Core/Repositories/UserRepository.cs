@@ -78,6 +78,14 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         return FindAsync(q => q.FieldEquals(u => u.OrganizationPreferences.First().DefaultSavedViewId, savedViewId), options);
     }
 
+    public Task<FindResults<User>> GetByPreferenceOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<User>? options = null)
+    {
+        if (String.IsNullOrEmpty(organizationId))
+            return Task.FromResult(new FindResults<User>());
+
+        return FindAsync(q => q.FieldEquals(u => u.OrganizationPreferences.First().OrganizationId, organizationId), options);
+    }
+
     public Task<bool> SetDefaultSavedViewAsync(string userId, string organizationId, string? savedViewId)
     {
         const string script = @"

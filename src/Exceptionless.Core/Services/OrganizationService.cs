@@ -208,22 +208,15 @@ public class OrganizationService : IStartupAction
             savedViewIds.UnionWith(savedViewResults.Documents.Select(savedView => savedView.Id));
         } while (await savedViewResults.NextPageAsync());
 
-        if (savedViewIds.Count == 0)
-            return 0;
-
-        if (organization.DefaultSavedViewId is not null && savedViewIds.Contains(organization.DefaultSavedViewId))
-            organization.DefaultSavedViewId = null;
+        organization.DefaultSavedViewId = null;
 
         var userIds = new HashSet<string>(StringComparer.Ordinal);
-        foreach (string savedViewId in savedViewIds)
+        var userResults = await _userRepository.GetByPreferenceOrganizationIdAsync(organization.Id, o => o.SearchAfterPaging().PageLimit(BATCH_SIZE));
+        do
         {
-            var userResults = await _userRepository.GetByDefaultSavedViewIdAsync(savedViewId, o => o.SearchAfterPaging().PageLimit(BATCH_SIZE));
-            do
-            {
-                foreach (var user in userResults.Documents)
-                    userIds.Add(user.Id);
-            } while (await userResults.NextPageAsync());
-        }
+            foreach (var user in userResults.Documents)
+                userIds.Add(user.Id);
+        } while (await userResults.NextPageAsync());
 
         var userLocks = new List<ILock>();
         try
@@ -237,8 +230,11 @@ public class OrganizationService : IStartupAction
                 if (user is null)
                     continue;
 
-                await _userRepository.RemoveDefaultSavedViewsAsync(userId, savedViewIds);
+                await _userRepository.SetDefaultSavedViewAsync(userId, organization.Id, null);
             }
+
+            if (savedViewIds.Count == 0)
+                return 0;
 
             return await _savedViewRepository.RemoveAllByOrganizationIdAsync(organization.Id);
         }
