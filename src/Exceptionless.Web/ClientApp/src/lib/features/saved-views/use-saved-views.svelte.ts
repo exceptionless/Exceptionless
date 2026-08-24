@@ -174,13 +174,13 @@ export function getSavedViewStateSignature(
     });
 }
 
-export function hasMissingSavedViewSlug(options: {
+export function hasMissingSavedView(options: {
     activeSavedView: SavedView | undefined;
     isLoading: boolean;
+    savedViewKey: null | string | undefined;
     savedViews: SavedView[] | undefined;
-    slug: string | undefined;
 }): boolean {
-    return !!options.slug && !options.activeSavedView && !!options.savedViews && !options.isLoading;
+    return !!options.savedViewKey && !options.activeSavedView && !!options.savedViews && !options.isLoading;
 }
 
 export function hasSavedViewAutoFillChange(current: AutoFillColumnSelection, view: Pick<SavedView, 'columns'>, defaultAutoFillColumnId?: string): boolean {
@@ -193,6 +193,15 @@ export function hasSavedViewColumnChanges(
     defaultColumnVisibility: ColumnVisibilityState = {}
 ): boolean {
     return !savedViewColumnsEqual(current, saved, defaultColumnVisibility);
+}
+
+export function isSavedViewHydrationPending(
+    savedViewKey: null | string | undefined,
+    activeSavedViewId: string | undefined,
+    hydratedSavedViewId: string | undefined,
+    isMissing: boolean
+): boolean {
+    return !!savedViewKey && !isMissing && (!activeSavedViewId || activeSavedViewId !== hydratedSavedViewId);
 }
 
 export function savedViewColumnsEqual(
@@ -436,8 +445,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         if (options.getFilterDefinitions) {
             const serverFilters = getServerFilters(view);
             let currentFilters = deserializeFilters(options.getFilterDefinitions());
-            const currentFilterChanges = buildFilterChanges(serverFilters, currentFilters);
-            if (preserveExplicitFilterOverrides && currentFilterChanges) {
+            if (preserveExplicitFilterOverrides) {
                 const storedDraftFilters = applyFilterChanges(serverFilters, storedDraft?.filterChanges);
                 currentFilters = mergeFilterOverrides(currentFilters, storedDraftFilters, getActiveFilterOverrideKeys(currentFilters));
             }
@@ -641,6 +649,10 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
         const identity = getDraftIdentity(view);
         if (!identity) {
+            if (currentUserQuery.isError) {
+                hydratedSavedViewId = view.id;
+            }
+
             return;
         }
 
@@ -774,11 +786,11 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     });
 
     const isMissing = $derived(
-        hasMissingSavedViewSlug({
+        hasMissingSavedView({
             activeSavedView,
             isLoading: savedViewsListQuery.isLoading,
-            savedViews: savedViewsListQuery.data,
-            slug: options.slug
+            savedViewKey: options.slug ?? options.queryParams.saved,
+            savedViews: savedViewsListQuery.data
         })
     );
 

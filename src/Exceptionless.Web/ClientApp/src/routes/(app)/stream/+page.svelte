@@ -28,7 +28,7 @@
     import { defaultEventColumnVisibility, getColumns } from '$features/events/components/table/options.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
-    import { useSavedViews } from '$features/saved-views/use-saved-views.svelte';
+    import { isSavedViewHydrationPending, useSavedViews } from '$features/saved-views/use-saved-views.svelte';
     import { getSharedTableOptions, isTableEmpty, removeTableData } from '$features/shared/table.svelte';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
@@ -100,6 +100,9 @@
         updateFilterCache,
         view: VIEW
     });
+    const isSavedViewPending = $derived(
+        isSavedViewHydrationPending(queryParams.saved, savedViewsState.activeSavedView?.id, savedViewsState.hydratedSavedViewId, savedViewsState.isMissing)
+    );
     const pageTitle = $derived(savedViewsState.activeSavedView?.name ?? 'Event Stream');
 
     $effect(() => {
@@ -229,6 +232,10 @@
     }
 
     async function loadData(filterChanged: boolean = false) {
+        if (isSavedViewPending) {
+            return;
+        }
+
         if (client.isLoading && filterChanged && !before) {
             return;
         }
@@ -371,7 +378,7 @@
         {table}
         wrappedColumnIds={savedViewsState.wrappedColumnIds}
     >
-        {#if clientStatus.isLoading}
+        {#if isSavedViewPending || clientStatus.isLoading}
             <DelayedRender>
                 <DataTable.Loading {table} />
             </DelayedRender>

@@ -249,6 +249,25 @@ test('switching saved views preserves each view temporary filter overrides acros
     ).toBeVisible();
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
     await expectColumnBefore(page, 'User', 'Summary');
+
+    await page.goto(`/next/event/${firstViewSlug}?time=15m`);
+    await expect(
+        page
+            .getByRole('button', { name: /Date\s+Last 15 minutes/ })
+            .filter({ visible: true })
+            .first()
+    ).toBeVisible();
+    await secondViewLink.click();
+    await expect(page.getByRole('heading', { name: secondViewName })).toBeVisible();
+    await firstViewLink.click();
+    await expect(
+        page
+            .getByRole('button', { name: /Date\s+Last 90 days/ })
+            .filter({ visible: true })
+            .first()
+    ).toBeVisible();
+    await expect(page).toHaveURL(/[?&]status=regressed(?:&|$)/);
+
     await openViewMenu(page);
     await page.getByRole('menuitem', { name: 'Manage Columns...' }).click();
     await expect(summaryWrap).toBeChecked();
@@ -329,6 +348,130 @@ test('switching saved views preserves each view temporary filter overrides acros
     await expect(page.getByLabel('Unsaved view changes')).toHaveCount(0);
     await expectColumnBefore(page, 'Summary', 'User');
     expect(failedApiRequests).toEqual([]);
+});
+
+test('stream waits for a browser-local saved view draft before loading events', async ({ e2eApi, e2eScenario, page, request }) => {
+    const failedApiRequests = captureFailedApiRequests(page);
+    const suffix = e2eScenario.run.slice(-28);
+    const viewName = `E2E Stream View ${suffix}`;
+    const authorizationHeaders = { Authorization: `Bearer ${e2eScenario.userToken}` };
+    const filterDefinitions = JSON.stringify([
+        { type: 'project', value: [] },
+        { type: 'status', value: ['open', 'regressed'] }
+    ]);
+
+    const savedViewResponse = await request.post(`/api/v2/organizations/${e2eScenario.organizationId}/saved-views`, {
+        data: {
+            filter: '(status:open OR status:regressed)',
+            filter_definitions: filterDefinitions,
+            name: viewName,
+            organization_id: e2eScenario.organizationId,
+            view_type: 'stream'
+        },
+        headers: authorizationHeaders
+    });
+    expect(savedViewResponse.status()).toBe(201);
+    const savedView = (await savedViewResponse.json()) as { id: string };
+    const currentUser = await e2eApi.getCurrentUser(e2eScenario.userToken);
+    expect(currentUser).toBeDefined();
+
+    const savedViewsPath = `/api/v2/organizations/${e2eScenario.organizationId}/saved-views/stream`;
+    await expect
+        .poll(
+            async () => {
+                const response = await request.get(savedViewsPath, { headers: authorizationHeaders });
+                return response.ok() && ((await response.json()) as { id: string }[]).some((view) => view.id === savedView.id);
+            },
+            { timeout: 30_000 }
+        )
+        .toBe(true);
+
+    await page.addInitScript(
+        ({ draft, key }) => {
+            window.localStorage.setItem(key, JSON.stringify(draft));
+        },
+        {
+            draft: {
+                filterChanges: {
+                    removedKeys: [],
+                    upsertDefinitions: JSON.stringify([{ type: 'project', value: [e2eScenario.projectId] }])
+                },
+                version: 1
+            },
+            key: `exceptionless:saved-view-draft:v1:${currentUser!.id}:${e2eScenario.organizationId}:${savedView.id}`
+        }
+    );
+
+    const streamRequestFilters: string[] = [];
+    page.on('request', (request) => {
+        const url = new URL(request.url());
+        if (url.pathname === `/api/v2/organizations/${e2eScenario.organizationId}/events`) {
+            streamRequestFilters.push(url.searchParams.get('filter') ?? '');
+        }
+    });
+
+    await page.goto(`/next/stream?saved=${savedView.id}`);
+    await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
+    await expect.poll(() => streamRequestFilters.length).toBeGreaterThan(0);
+    expect(streamRequestFilters.every((filter) => filter.includes(e2eScenario.projectId))).toBe(true);
+    await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
+    expect(failedApiRequests).toEqual([]);
+});
+
+test('saved view loads server state when the current-user lookup fails', async ({ e2eScenario, page, request }) => {
+    const suffix = e2eScenario.run.slice(-28);
+    const viewName = `E2E User Failure ${suffix}`;
+    const viewSlug = savedViewSlug(viewName);
+    const authorizationHeaders = { Authorization: `Bearer ${e2eScenario.userToken}` };
+    const filterDefinitions = JSON.stringify([
+        { term: 'date', type: 'date', value: '[now-15m TO now]' },
+        { type: 'project', value: [] },
+        { type: 'status', value: ['open', 'regressed'] }
+    ]);
+
+    const savedViewResponse = await request.post(`/api/v2/organizations/${e2eScenario.organizationId}/saved-views`, {
+        data: {
+            filter: '(status:open OR status:regressed)',
+            filter_definitions: filterDefinitions,
+            name: viewName,
+            organization_id: e2eScenario.organizationId,
+            slug: viewSlug,
+            time: '[now-15m TO now]',
+            view_type: 'events'
+        },
+        headers: authorizationHeaders
+    });
+    expect(savedViewResponse.status()).toBe(201);
+
+    const savedViewsPath = `/api/v2/organizations/${e2eScenario.organizationId}/saved-views/events`;
+    await expect
+        .poll(
+            async () => {
+                const response = await request.get(savedViewsPath, { headers: authorizationHeaders });
+                return response.ok() && ((await response.json()) as { name: string }[]).some((view) => view.name === viewName);
+            },
+            { timeout: 30_000 }
+        )
+        .toBe(true);
+
+    await page.route('**/api/v2/users/me', async (route) => {
+        await route.fulfill({
+            body: JSON.stringify({ detail: 'Simulated current-user failure', status: 500, title: 'Internal Server Error' }),
+            contentType: 'application/problem+json',
+            status: 500
+        });
+    });
+    const eventRequests: string[] = [];
+    page.on('request', (request) => {
+        const url = new URL(request.url());
+        if (url.pathname === `/api/v2/organizations/${e2eScenario.organizationId}/events`) {
+            eventRequests.push(request.url());
+        }
+    });
+
+    await page.goto(`/next/event/${viewSlug}`);
+    await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
+    await expect.poll(() => eventRequests.length, { timeout: 30_000 }).toBeGreaterThan(0);
 });
 
 function captureFailedApiRequests(page: Page): { error: null | string; method: string; url: string }[] {

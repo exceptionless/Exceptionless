@@ -13,9 +13,10 @@ import {
     getComparableSavedViewTime,
     getDraftSortValue,
     getSavedViewStateSignature,
-    hasMissingSavedViewSlug,
+    hasMissingSavedView,
     hasSavedViewAutoFillChange,
     hasSavedViewColumnChanges,
+    isSavedViewHydrationPending,
     savedViewColumnsEqual,
     type SavedViewQueryParams,
     setSortQueryParam,
@@ -130,11 +131,11 @@ describe('useSavedViews', () => {
             const savedView = buildSavedView({ id: 'view-1', name: 'My Saved View' });
 
             // Act
-            const result = hasMissingSavedViewSlug({
+            const result = hasMissingSavedView({
                 activeSavedView: undefined,
                 isLoading: false,
-                savedViews: [savedView],
-                slug: 'most-frequent'
+                savedViewKey: 'most-frequent',
+                savedViews: [savedView]
             });
 
             // Assert
@@ -143,11 +144,11 @@ describe('useSavedViews', () => {
 
         it('reports a missing slug while cached saved-view data is background fetching', () => {
             // Act
-            const result = hasMissingSavedViewSlug({
+            const result = hasMissingSavedView({
                 activeSavedView: undefined,
                 isLoading: false,
-                savedViews: [],
-                slug: 'most-frequent'
+                savedViewKey: 'most-frequent',
+                savedViews: []
             });
 
             // Assert
@@ -156,11 +157,11 @@ describe('useSavedViews', () => {
 
         it('does not report a missing slug before saved views are available', () => {
             // Act
-            const result = hasMissingSavedViewSlug({
+            const result = hasMissingSavedView({
                 activeSavedView: undefined,
                 isLoading: false,
-                savedViews: undefined,
-                slug: 'most-frequent'
+                savedViewKey: 'most-frequent',
+                savedViews: undefined
             });
 
             // Assert
@@ -169,15 +170,39 @@ describe('useSavedViews', () => {
 
         it('does not report a missing slug when there is no slug route parameter', () => {
             // Act
-            const result = hasMissingSavedViewSlug({
+            const result = hasMissingSavedView({
                 activeSavedView: undefined,
                 isLoading: false,
-                savedViews: [],
-                slug: undefined
+                savedViewKey: undefined,
+                savedViews: []
             });
 
             // Assert
             expect(result).toBe(false);
+        });
+
+        it('reports a missing query-selected saved view after loading finishes', () => {
+            const result = hasMissingSavedView({
+                activeSavedView: undefined,
+                isLoading: false,
+                savedViewKey: 'view-1',
+                savedViews: []
+            });
+
+            expect(result).toBe(true);
+        });
+    });
+
+    describe('saved view hydration readiness', () => {
+        it('waits until the selected saved view draft is applied', () => {
+            expect(isSavedViewHydrationPending('view-1', undefined, undefined, false)).toBe(true);
+            expect(isSavedViewHydrationPending('view-1', 'view-1', undefined, false)).toBe(true);
+            expect(isSavedViewHydrationPending('view-1', 'view-1', 'view-1', false)).toBe(false);
+        });
+
+        it('does not wait when no view is selected or the selected view is missing', () => {
+            expect(isSavedViewHydrationPending(undefined, undefined, undefined, false)).toBe(false);
+            expect(isSavedViewHydrationPending('missing', undefined, undefined, true)).toBe(false);
         });
     });
 
