@@ -3,6 +3,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Utility;
 using Xunit;
 
 namespace Exceptionless.Tests.Repositories;
@@ -42,5 +43,30 @@ public sealed class UserRepositoryTests : IntegrationTestsBase
         var persistedUser = await _repository.GetByIdAsync(user.Id, o => o.Cache(false));
         Assert.NotNull(persistedUser);
         Assert.Equal("Updated Cached User", persistedUser.FullName);
+    }
+
+    [Fact]
+    public async Task AddOrganizationAsync_PreservesConcurrentUserChanges()
+    {
+        var user = new User
+        {
+            FullName = "Organization Member",
+            EmailAddress = $"organization-member-{Guid.NewGuid():N}@localhost.com",
+            IsEmailAddressVerified = true
+        };
+        await _repository.AddAsync(user, o => o.ImmediateConsistency());
+
+        string preferenceOrganizationId = ObjectId.GenerateNewId().ToString();
+        string savedViewId = ObjectId.GenerateNewId().ToString();
+        string newOrganizationId = ObjectId.GenerateNewId().ToString();
+        await _repository.SetDefaultSavedViewAsync(user.Id, preferenceOrganizationId, savedViewId);
+
+        Assert.True(await _repository.AddOrganizationAsync(user.Id, newOrganizationId));
+
+        var persistedUser = await _repository.GetByIdAsync(user.Id, o => o.Cache(false));
+        Assert.NotNull(persistedUser);
+        Assert.Contains(newOrganizationId, persistedUser.OrganizationIds);
+        Assert.Contains(persistedUser.OrganizationPreferences, preference =>
+            preference.OrganizationId == preferenceOrganizationId && preference.DefaultSavedViewId == savedViewId);
     }
 }

@@ -168,6 +168,28 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         AssertRequiredJsonRequestBody(paths, "/api/v2/users/{id}", "patch", "UpdateUser");
         AssertRequiredJsonRequestBody(paths, "/api/v2/users/{id}", "put", "UpdateUser");
 
+        foreach (var (path, method) in new[]
+        {
+            ("/api/v2/organizations/{id}", "patch"),
+            ("/api/v2/organizations/{id}", "put"),
+            ("/api/v2/organizations/{id}/icon", "post"),
+            ("/api/v2/organizations/{id}/icon", "delete"),
+            ("/api/v2/organizations/{id}/users/{email}", "post"),
+            ("/api/v2/organizations/{id}/users/{email}", "delete"),
+            ("/api/v2/organizations/{id}/data/{key}", "post"),
+            ("/api/v2/organizations/{id}/data/{key}", "delete"),
+            ("/api/v2/users/{id}", "patch"),
+            ("/api/v2/users/{id}", "put"),
+            ("/api/v2/users/{id}/avatar", "post"),
+            ("/api/v2/users/{id}/avatar", "delete"),
+            ("/api/v2/users/{id}/email-address/{email}", "post"),
+            ("/api/v2/users/verify-email-address/{token}", "get"),
+            ("/api/v2/users/{id}/resend-verification-email", "get")
+        })
+        {
+            AssertPathResponseCodes(paths, path, method, "409");
+        }
+
         AssertRequestContentTypes(paths, "/api/v1/error", "post", "application/json", "text/plain");
         AssertRequestContentTypes(paths, "/api/v1/events", "post", "application/json", "text/plain");
         AssertRequestContentTypes(paths, "/api/v1/projects/{projectId}/events", "post", "application/json", "text/plain");

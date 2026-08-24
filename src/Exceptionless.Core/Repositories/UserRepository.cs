@@ -86,6 +86,18 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         return FindAsync(q => q.FieldEquals(u => u.OrganizationPreferences.First().OrganizationId, organizationId), options);
     }
 
+    public Task<bool> AddOrganizationAsync(string userId, string organizationId)
+    {
+        return PatchAsync(userId, new ActionPatch<User>(user =>
+        {
+            if (user.OrganizationIds.Contains(organizationId))
+                return false;
+
+            user.OrganizationIds.Add(organizationId);
+            return true;
+        }), o => o.ImmediateConsistency());
+    }
+
     public Task<bool> SetDefaultSavedViewAsync(string userId, string organizationId, string? savedViewId)
     {
         const string script = @"

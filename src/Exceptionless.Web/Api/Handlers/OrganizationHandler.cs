@@ -9,6 +9,7 @@ using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Utility;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Api.Results;
@@ -370,7 +371,8 @@ public class OrganizationHandler(
             return ChangePlanResult.FailWithMessage("Another billing change is already in progress. Please try again.");
         }
 
-        await using var defaultsLock = await lockProvider.AcquireAsync($"saved-view-defaults:{message.Id}", TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30));
+        await using var defaultsLock = await lockProvider.AcquireAsync(SavedViewDefaultLock.GetOrganizationKey(message.Id), SavedViewDefaultLock.Duration, TimeSpan.FromSeconds(30));
+        await using var defaultsLockRenewal = SavedViewDefaultLock.Renew(defaultsLock);
 
         var organization = await GetModelAsync(message.Id, useCache: false);
         if (organization is null)
@@ -708,8 +710,10 @@ public class OrganizationHandler(
                 }
             }
 
-            await using var defaultsLock = await lockProvider.AcquireAsync($"saved-view-defaults:{organization.Id}", TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30));
-            await using var userDefaultsLock = await lockProvider.AcquireAsync($"saved-view-defaults:user:{user.Id}", TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30));
+            await using var defaultsLock = await lockProvider.AcquireAsync(SavedViewDefaultLock.GetOrganizationKey(organization.Id), SavedViewDefaultLock.Duration, TimeSpan.FromSeconds(30));
+            await using var defaultsLockRenewal = SavedViewDefaultLock.Renew(defaultsLock);
+            await using var userDefaultsLock = await lockProvider.AcquireAsync(SavedViewDefaultLock.GetUserKey(user.Id), SavedViewDefaultLock.Duration, TimeSpan.FromSeconds(30));
+            await using var userDefaultsLockRenewal = SavedViewDefaultLock.Renew(userDefaultsLock);
 
             user = await userRepository.GetByIdAsync(user.Id, o => o.Cache(false));
             if (user is null)
@@ -860,8 +864,13 @@ public class OrganizationHandler(
 
         var organization = await repository.AddAsync(value, o => o.Cache());
 
+        if (!await userRepository.AddOrganizationAsync(user.Id, organization.Id))
+        {
+            await repository.RemoveAsync(organization.Id);
+            throw new InvalidOperationException("Unable to associate the current user with the new organization.");
+        }
+
         user.OrganizationIds.Add(organization.Id);
-        await userRepository.SaveAsync(user, o => o.Cache());
         await messagePublisher.PublishAsync(new UserMembershipChanged
         {
             UserId = user.Id,

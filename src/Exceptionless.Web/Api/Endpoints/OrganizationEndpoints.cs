@@ -95,6 +95,7 @@ public static class OrganizationEndpoints
         .Accepts<Delta<NewOrganization>>("application/json", "application/*+json")
         .Produces<ViewOrganization>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Update")
@@ -106,6 +107,7 @@ public static class OrganizationEndpoints
             },
             ResponseDescriptions = new() {
                 ["400"] = "An error occurred while updating the organization.",
+                ["409"] = "The organization was modified by another request.",
                 ["404"] = "The organization could not be found.",
             }
         });
@@ -120,6 +122,7 @@ public static class OrganizationEndpoints
         .Accepts<Delta<NewOrganization>>("application/json", "application/*+json")
         .Produces<ViewOrganization>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Update")
@@ -131,6 +134,7 @@ public static class OrganizationEndpoints
             },
             ResponseDescriptions = new() {
                 ["400"] = "An error occurred while updating the organization.",
+                ["409"] = "The organization was modified by another request.",
                 ["404"] = "The organization could not be found.",
             }
         });
@@ -138,6 +142,7 @@ public static class OrganizationEndpoints
         group.MapPost("organizations/{id:objectid}/icon", UploadIconAsync)
         .Accepts<IFormFile>("multipart/form-data")
         .Produces<ViewOrganization>()
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithMetadata(
@@ -158,6 +163,7 @@ public static class OrganizationEndpoints
 
         group.MapDelete("organizations/{id:objectid}/icon", DeleteIconAsync)
         .Produces<ViewOrganization>()
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Remove icon")
         .WithMetadata(new EndpointDocumentation {
@@ -280,6 +286,7 @@ public static class OrganizationEndpoints
         group.MapPost("organizations/{id:objectid}/users/{email:minlength(1)}", async (string id, string email, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result<User>>(new OrganizationMessages.AddOrganizationUser(id, email, httpContext))).ToHttpResult(resultMapper))
         .Produces<User>()
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status426UpgradeRequired)
         .WithSummary("Add user")
@@ -298,6 +305,7 @@ public static class OrganizationEndpoints
             => (await mediator.InvokeAsync<Result>(new OrganizationMessages.RemoveOrganizationUser(id, email, httpContext))).ToHttpResult(resultMapper))
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Remove user")
         .WithMetadata(new EndpointDocumentation {
@@ -336,6 +344,7 @@ public static class OrganizationEndpoints
         .Accepts<ValueFromBody<string>>("application/json", "application/*+json")
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Add custom data")
         .WithMetadata(new EndpointDocumentation {
@@ -352,6 +361,7 @@ public static class OrganizationEndpoints
         group.MapDelete("organizations/{id:objectid}/data/{key:minlength(1)}", async (string id, string key, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result>(new OrganizationMessages.DeleteOrganizationData(id, key, httpContext))).ToHttpResult(resultMapper))
         .Produces(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Remove custom data")
         .WithMetadata(new EndpointDocumentation {

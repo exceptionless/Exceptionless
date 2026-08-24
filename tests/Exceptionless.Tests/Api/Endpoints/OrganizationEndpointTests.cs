@@ -386,6 +386,53 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PostAsync_ConcurrentUserPatch_PreservesPatchAndMembership()
+    {
+        const string organizationName = "Concurrent Membership Organization";
+        var currentUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(currentUser);
+
+        var organizationSaveStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseOrganizationSave = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var savingRegistration = _organizationRepository.DocumentsAdding.AddHandler(async (_, args) =>
+        {
+            if (!args.Documents.Any(document => String.Equals(document.Name, organizationName, StringComparison.Ordinal)))
+                return;
+
+            organizationSaveStarted.TrySetResult();
+            await releaseOrganizationSave.Task.WaitAsync(TestCancellationToken);
+        });
+
+        var createTask = SendRequestAsAsync<ViewOrganization>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPath("organizations")
+            .Content(new NewOrganization { Name = organizationName })
+            .StatusCodeShouldBeCreated()
+        );
+
+        await organizationSaveStarted.Task.WaitAsync(TestCancellationToken);
+        string savedViewId = ObjectId.GenerateNewId().ToString();
+        try
+        {
+            await _userRepository.SetDefaultSavedViewAsync(currentUser.Id, SampleDataService.TEST_ORG_ID, savedViewId);
+        }
+        finally
+        {
+            releaseOrganizationSave.TrySetResult();
+        }
+
+        var createdOrganization = await createTask;
+        Assert.NotNull(createdOrganization);
+
+        var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, o => o.Cache(false));
+        Assert.NotNull(persistedUser);
+        Assert.Contains(createdOrganization.Id, persistedUser.OrganizationIds);
+        Assert.Contains(persistedUser.OrganizationPreferences, preference =>
+            preference.OrganizationId == SampleDataService.TEST_ORG_ID && preference.DefaultSavedViewId == savedViewId);
+    }
+
+    [Fact]
     public async Task PostAsync_NewOrganization_ReturnsAbsoluteLocation()
     {
         // Arrange

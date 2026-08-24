@@ -1,6 +1,7 @@
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Utility;
 using Foundatio.Extensions.Hosting.Startup;
 using Foundatio.Lock;
 using Foundatio.Repositories;
@@ -188,7 +189,8 @@ public class OrganizationService : IStartupAction
 
     public async Task<long> RemoveSavedViewsAsync(Organization organization)
     {
-        await using var defaultsLock = await _lockProvider.AcquireAsync(GetSavedViewDefaultLockKey(organization.Id), TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30));
+        await using var defaultsLock = await _lockProvider.AcquireAsync(SavedViewDefaultLock.GetOrganizationKey(organization.Id), SavedViewDefaultLock.Duration, TimeSpan.FromSeconds(30));
+        await using var defaultsLockRenewal = SavedViewDefaultLock.Renew(defaultsLock);
 
         var currentOrganization = await _organizationRepository.GetByIdAsync(organization.Id, o => o.Cache(false).SoftDeleteMode(SoftDeleteQueryMode.All));
         if (currentOrganization is null)
@@ -218,36 +220,25 @@ public class OrganizationService : IStartupAction
                 userIds.Add(user.Id);
         } while (await userResults.NextPageAsync());
 
-        var userLocks = new List<ILock>();
-        try
+        var userLockKeys = userIds.Select(SavedViewDefaultLock.GetUserKey).Order(StringComparer.Ordinal);
+        await using var userLocks = await _lockProvider.AcquireAsync(userLockKeys, SavedViewDefaultLock.Duration, TimeSpan.FromSeconds(30));
+        await using var userLockRenewal = SavedViewDefaultLock.Renew(userLocks);
+
+        foreach (string userId in userIds)
         {
-            foreach (string userId in userIds.Order(StringComparer.Ordinal))
-                userLocks.Add(await _lockProvider.AcquireAsync(GetUserSavedViewDefaultLockKey(userId), TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30)));
+            var user = await _userRepository.GetByIdAsync(userId, o => o.Cache(false));
+            if (user is null)
+                continue;
 
-            foreach (string userId in userIds)
-            {
-                var user = await _userRepository.GetByIdAsync(userId, o => o.Cache(false));
-                if (user is null)
-                    continue;
-
-                await _userRepository.SetDefaultSavedViewAsync(userId, organization.Id, null);
-            }
-
-            if (savedViewIds.Count == 0)
-                return 0;
-
-            return await _savedViewRepository.RemoveAllByOrganizationIdAsync(organization.Id);
+            await _userRepository.SetDefaultSavedViewAsync(userId, organization.Id, null);
         }
-        finally
-        {
-            foreach (var userLock in userLocks)
-                await userLock.DisposeAsync();
-        }
+
+        if (savedViewIds.Count == 0)
+            return 0;
+
+        await userLockRenewal.ThrowIfFailedAsync();
+        return await _savedViewRepository.RemoveAllByOrganizationIdAsync(organization.Id);
     }
-
-    private static string GetSavedViewDefaultLockKey(string organizationId) => $"saved-view-defaults:{organizationId}";
-
-    private static string GetUserSavedViewDefaultLockKey(string userId) => $"saved-view-defaults:user:{userId}";
 
     public Task<long> RemoveUserSavedViewsAsync(string organizationId, string userId)
     {
@@ -257,7 +248,8 @@ public class OrganizationService : IStartupAction
 
     public async Task SoftDeleteOrganizationAsync(Organization organization, string currentUserId)
     {
-        await using (var defaultsLock = await _lockProvider.AcquireAsync(GetSavedViewDefaultLockKey(organization.Id), TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30)))
+        await using (var defaultsLock = await _lockProvider.AcquireAsync(SavedViewDefaultLock.GetOrganizationKey(organization.Id), SavedViewDefaultLock.Duration, TimeSpan.FromSeconds(30)))
+        await using (var defaultsLockRenewal = SavedViewDefaultLock.Renew(defaultsLock))
         {
             var currentOrganization = await _organizationRepository.GetByIdAsync(organization.Id, o => o.Cache(false).SoftDeleteMode(SoftDeleteQueryMode.All));
             if (currentOrganization is null)

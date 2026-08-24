@@ -13,6 +13,7 @@ public interface IUserRepository : ISearchableRepository<User>
     Task<FindResults<User>> GetByOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<User>? options = null);
     Task<FindResults<User>> GetByPreferenceOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<User>? options = null);
     Task<FindResults<User>> GetByDefaultSavedViewIdAsync(string savedViewId, CommandOptionsDescriptor<User>? options = null);
+    Task<bool> AddOrganizationAsync(string userId, string organizationId);
     Task<bool> SetDefaultSavedViewAsync(string userId, string organizationId, string? savedViewId);
     Task<bool> RemoveDefaultSavedViewsAsync(string userId, IReadOnlyCollection<string> savedViewIds);
 }

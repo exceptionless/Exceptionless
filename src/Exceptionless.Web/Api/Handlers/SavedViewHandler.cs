@@ -7,6 +7,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Seed;
+using Exceptionless.Core.Utility;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Api.Results;
@@ -36,9 +37,6 @@ public partial class SavedViewHandler(
     private const int MaxViewsPerOrganization = 100;
     private const string PredefinedSavedViewsContentHashDataKey = "@@PredefinedSavedViewsContentHash";
     private const string PredefinedSavedViewsDataKey = "@@PredefinedSavedViewsVersion";
-    private static readonly TimeSpan SavedViewDefaultLockDuration = TimeSpan.FromMinutes(1);
-    private static readonly TimeSpan SavedViewDefaultLockTimeout = TimeSpan.FromSeconds(10);
-
     private HttpContext HttpContext => httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is unavailable.");
 
     public async Task<Result<PagedResult<ViewSavedView>>> Handle(GetSavedViewsByOrganization message)
@@ -103,11 +101,11 @@ public partial class SavedViewHandler(
             return Result.NotFound("Organization not found.");
 
         string currentUserId = GetCurrentUserId();
-        await using var defaultsLock = await lockProvider.TryAcquireAsync(GetSavedViewDefaultLockKey(message.OrganizationId), SavedViewDefaultLockDuration, SavedViewDefaultLockTimeout);
+        await using var defaultsLock = await lockProvider.TryAcquireAsync(SavedViewDefaultLock.GetOrganizationKey(message.OrganizationId), SavedViewDefaultLock.Duration, SavedViewDefaultLock.Timeout);
         if (defaultsLock is null)
             return Result.Conflict("Saved view defaults are currently being updated.");
 
-        await using var userDefaultsLock = await lockProvider.TryAcquireAsync(GetUserSavedViewDefaultLockKey(currentUserId), SavedViewDefaultLockDuration, SavedViewDefaultLockTimeout);
+        await using var userDefaultsLock = await lockProvider.TryAcquireAsync(SavedViewDefaultLock.GetUserKey(currentUserId), SavedViewDefaultLock.Duration, SavedViewDefaultLock.Timeout);
         if (userDefaultsLock is null)
             return Result.Conflict("Saved view defaults are currently being updated.");
 
@@ -140,7 +138,7 @@ public partial class SavedViewHandler(
         if (!HttpContext.Request.CanAccessOrganization(message.OrganizationId))
             return Result.NotFound("Organization not found.");
 
-        await using var defaultsLock = await lockProvider.TryAcquireAsync(GetSavedViewDefaultLockKey(message.OrganizationId), SavedViewDefaultLockDuration, SavedViewDefaultLockTimeout);
+        await using var defaultsLock = await lockProvider.TryAcquireAsync(SavedViewDefaultLock.GetOrganizationKey(message.OrganizationId), SavedViewDefaultLock.Duration, SavedViewDefaultLock.Timeout);
         if (defaultsLock is null)
             return Result.Conflict("Saved view defaults are currently being updated.");
 
@@ -340,28 +338,20 @@ public partial class SavedViewHandler(
         if (deletableItems.Count == 0)
             return results.Failure.Count == 1 ? Result<ModelActionResults>.FromResult(PermissionToResult(results.Failure.First())) : results;
 
-        var defaultLocks = new List<ILock>();
-        try
-        {
-            foreach (string organizationId in deletableItems.Select(item => item.OrganizationId).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal))
-            {
-                var defaultsLock = await lockProvider.TryAcquireAsync(GetSavedViewDefaultLockKey(organizationId), SavedViewDefaultLockDuration, SavedViewDefaultLockTimeout);
-                if (defaultsLock is null)
-                    return Result.Conflict("Saved view defaults are currently being updated.");
+        var defaultLockKeys = deletableItems
+            .Select(item => SavedViewDefaultLock.GetOrganizationKey(item.OrganizationId))
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal);
+        await using var defaultLocks = await lockProvider.TryAcquireAsync(defaultLockKeys, SavedViewDefaultLock.Duration, SavedViewDefaultLock.Timeout);
+        if (defaultLocks is null)
+            return Result.Conflict("Saved view defaults are currently being updated.");
 
-                defaultLocks.Add(defaultsLock);
-            }
+        await using var defaultLockRenewal = SavedViewDefaultLock.Renew(defaultLocks);
+        if (!await ClearDefaultReferencesAsync(deletableItems))
+            return Result.Conflict("Saved view defaults are currently being updated.");
 
-            if (!await ClearDefaultReferencesAsync(deletableItems))
-                return Result.Conflict("Saved view defaults are currently being updated.");
-
-            await repository.RemoveAsync(deletableItems);
-        }
-        finally
-        {
-            foreach (var defaultsLock in defaultLocks)
-                await defaultsLock.DisposeAsync();
-        }
+        await defaultLockRenewal.ThrowIfFailedAsync();
+        await repository.RemoveAsync(deletableItems);
 
         if (results.Failure.Count == 0)
             return new ModelActionResults();
@@ -628,44 +618,29 @@ public partial class SavedViewHandler(
             } while (await results.NextPageAsync());
         }
 
-        var userLocks = new List<ILock>();
-        try
+        var userLockKeys = userIds.Select(SavedViewDefaultLock.GetUserKey).Order(StringComparer.Ordinal);
+        await using var userLocks = await lockProvider.TryAcquireAsync(userLockKeys, SavedViewDefaultLock.Duration, SavedViewDefaultLock.Timeout);
+        if (userLocks is null)
+            return false;
+
+        await using var userLockRenewal = SavedViewDefaultLock.Renew(userLocks);
+        foreach (string organizationId in organizationIdsToClear)
+            await organizationRepository.SetDefaultSavedViewAsync(organizationId, null);
+
+        foreach (string userId in userIds)
         {
-            foreach (string userId in userIds.Order(StringComparer.Ordinal))
-            {
-                var userLock = await lockProvider.TryAcquireAsync(GetUserSavedViewDefaultLockKey(userId), SavedViewDefaultLockDuration, SavedViewDefaultLockTimeout);
-                if (userLock is null)
-                    return false;
+            var user = await userRepository.GetByIdAsync(userId, o => o.Cache(false));
+            if (user is null)
+                continue;
 
-                userLocks.Add(userLock);
-            }
-
-            foreach (string organizationId in organizationIdsToClear)
-                await organizationRepository.SetDefaultSavedViewAsync(organizationId, null);
-
-            foreach (string userId in userIds)
-            {
-                var user = await userRepository.GetByIdAsync(userId, o => o.Cache(false));
-                if (user is null)
-                    continue;
-
-                await userRepository.RemoveDefaultSavedViewsAsync(userId, deletedIds);
-            }
-
-            return true;
+            await userRepository.RemoveDefaultSavedViewsAsync(userId, deletedIds);
         }
-        finally
-        {
-            foreach (var userLock in userLocks)
-                await userLock.DisposeAsync();
-        }
+
+        await userLockRenewal.ThrowIfFailedAsync();
+        return true;
     }
 
     private string GetCurrentUserId() => HttpContext.Request.GetUser().Id;
-
-    private static string GetSavedViewDefaultLockKey(string organizationId) => $"saved-view-defaults:{organizationId}";
-
-    private static string GetUserSavedViewDefaultLockKey(string userId) => $"saved-view-defaults:user:{userId}";
 
     private static void AfterResultMap<TDestination>(ICollection<TDestination> models)
     {
