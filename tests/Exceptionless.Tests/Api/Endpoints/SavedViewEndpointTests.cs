@@ -13,6 +13,7 @@ using FluentRest;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Models;
 using Xunit;
 
@@ -1662,6 +1663,54 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         Assert.NotNull(organization);
         Assert.Equal(updatedName, organization.Name);
         Assert.Equal(savedView.Id, organization.DefaultSavedViewId);
+    }
+
+    [Fact]
+    public async Task PutUserSavedViewDefault_StaleUserSave_DoesNotOverwriteDefault()
+    {
+        var savedView = await CreateSavedViewAsync("Versioned User Home", "status:open", "stacks");
+        var staleUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(savedView);
+        Assert.NotNull(staleUser);
+
+        await SendRequestAsync(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-defaults", "user")
+            .Content(new UpdateSavedViewDefault { SavedViewId = savedView.Id })
+            .StatusCodeShouldBeOk()
+        );
+
+        staleUser.FullName = $"Stale User {Guid.NewGuid():N}";
+        await Assert.ThrowsAsync<VersionConflictDocumentException>(() => _userRepository.SaveAsync(staleUser, o => o.Cache()));
+
+        var persistedUser = await _userRepository.GetByIdAsync(staleUser.Id, o => o.Cache(false));
+        Assert.NotNull(persistedUser);
+        Assert.Contains(persistedUser.OrganizationPreferences, preference => preference.DefaultSavedViewId == savedView.Id);
+    }
+
+    [Fact]
+    public async Task PutOrganizationSavedViewDefault_StaleOrganizationSave_DoesNotOverwriteDefault()
+    {
+        var savedView = await CreateSavedViewAsync("Versioned Organization Home", "status:open", "stacks");
+        var staleOrganization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID, o => o.Cache(false));
+        Assert.NotNull(savedView);
+        Assert.NotNull(staleOrganization);
+
+        await SendRequestAsync(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-defaults", "organization")
+            .Content(new UpdateSavedViewDefault { SavedViewId = savedView.Id })
+            .StatusCodeShouldBeOk()
+        );
+
+        staleOrganization.Name = $"Stale Organization {Guid.NewGuid():N}";
+        await Assert.ThrowsAsync<VersionConflictDocumentException>(() => _organizationRepository.SaveAsync(staleOrganization, o => o.Cache()));
+
+        var persistedOrganization = await _organizationRepository.GetByIdAsync(staleOrganization.Id, o => o.Cache(false));
+        Assert.NotNull(persistedOrganization);
+        Assert.Equal(savedView.Id, persistedOrganization.DefaultSavedViewId);
     }
 
     [Fact]

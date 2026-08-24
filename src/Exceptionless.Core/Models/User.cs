@@ -1,17 +1,21 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using Exceptionless.Core.Attributes;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models;
 
-public record User : IIdentity, IHaveDates, IValidatableObject
+public record User : IIdentity, IHaveDates, IVersioned, IValidatableObject
 {
     /// <summary>
     /// Unique id that identifies an user.
     /// </summary>
     [ObjectId]
     public string Id { get; set; } = null!;
+
+    [JsonIgnore]
+    public string Version { get; set; } = String.Empty;
 
     /// <summary>
     /// The organizations that the user has access to.
