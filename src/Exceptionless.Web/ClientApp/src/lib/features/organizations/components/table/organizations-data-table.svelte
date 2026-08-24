@@ -27,6 +27,13 @@
     {:else}
         <DataTable.Toolbar {table} />
     {/if}
+    <DataTable.Footer {table} class="gap-6 lg:gap-8">
+        {#if footerChildren}
+            {@render footerChildren()}
+        {:else}
+            <DataTable.Selection {table} />
+        {/if}
+    </DataTable.Footer>
     <DataTable.Body {rowClick} {rowHref} {table}>
         {#if isLoading}
             <DelayedRender>
@@ -39,11 +46,4 @@
             {@render bodyChildren()}
         {/if}
     </DataTable.Body>
-    <DataTable.Footer {table} class="space-x-6 lg:space-x-8">
-        {#if footerChildren}
-            {@render footerChildren()}
-        {:else}
-            <DataTable.Selection {table} />
-        {/if}
-    </DataTable.Footer>
 </DataTable.Root>

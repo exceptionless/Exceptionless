@@ -130,7 +130,7 @@ test('approved Rataplan UI feedback remains fixed', async ({ e2eApi, e2eScenario
 
     await test.step('manual refresh keeps the current page', async () => {
         await page.goto(`/next/stack?project=${e2eScenario.projectId}&limit=5&time=all`);
-        const pager = page.getByRole('group', { name: 'Table pagination' });
+        const pager = page.getByRole('navigation', { name: 'Table pagination' });
         await expect(pager).toBeVisible();
         await expect(pager.getByRole('button', { name: 'Rows per page' })).toContainText('5 rows');
         await expect(pager.getByLabel('Page 1 of 2')).toBeVisible();

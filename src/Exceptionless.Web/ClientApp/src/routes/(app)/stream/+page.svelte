@@ -352,6 +352,14 @@
             <StreamingIndicatorButton onToggle={handleToggle} {paused} size="icon-lg" />
         </div>
     </div>
+    <DataTable.Footer {table}>
+        <div class="flex w-full items-center justify-center gap-4">
+            <DataTable.PageSize bind:value={queryParams.limit!} {table} />
+            <div class="text-center">
+                <ErrorMessage message={clientResponse?.problem?.errors.general} />
+            </div>
+        </div>
+    </DataTable.Footer>
     <DataTable.Body
         autoFillColumnId={savedViewsState.autoFillColumnId}
         rowClick={rowclick}
@@ -367,14 +375,6 @@
             <DataTable.Empty {table} />
         {/if}
     </DataTable.Body>
-    <DataTable.Footer {table}>
-        <div class="flex w-full items-center justify-center space-x-4">
-            <DataTable.PageSize bind:value={queryParams.limit!} {table} />
-            <div class="text-center">
-                <ErrorMessage message={clientResponse?.problem?.errors.general} />
-            </div>
-        </div>
-    </DataTable.Footer>
 </DataTable.Root>
 
 <EventDetailSheet bind:eventId={selectedEventId} filterChanged={onFilterChanged} onClose={() => (selectedEventId = null)} onError={handleEventError} />

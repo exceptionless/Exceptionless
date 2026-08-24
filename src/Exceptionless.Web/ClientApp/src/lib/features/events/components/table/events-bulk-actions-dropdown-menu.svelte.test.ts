@@ -23,6 +23,24 @@ describe('EventsBulkActionsDropdownMenu', () => {
         await new Promise((resolve) => window.setTimeout(resolve, 30));
     });
 
+    it('requires a selected event before opening bulk actions', async () => {
+        const table = {
+            getSelectedRowModel: () => ({ flatRows: [] }),
+            resetRowSelection: vi.fn()
+        } as never;
+        render(EventsBulkActionsDropdownMenu, { props: { table } });
+
+        const trigger = screen.getByRole('button', { name: /Bulk Actions/ }) as HTMLButtonElement;
+        expect(trigger.disabled).toBe(false);
+        expect(trigger.getAttribute('aria-disabled')).toBe('true');
+        expect(trigger.title).toBe('Select one or more events to use bulk actions');
+        expect(document.getElementById(trigger.getAttribute('aria-describedby')!)?.textContent).toBe('Select one or more events to use bulk actions.');
+        trigger.focus();
+        expect(document.activeElement).toBe(trigger);
+        await fireEvent.click(trigger);
+        expect(screen.queryByRole('menuitem', { name: 'Delete' })).toBeNull();
+    });
+
     it('does not repeat the trigger label inside the menu', async () => {
         const table = {
             getSelectedRowModel: () => ({ flatRows: [{ id: 'event-id' }] }),
