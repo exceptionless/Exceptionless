@@ -382,7 +382,7 @@
         <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {rowHref} {table}>
             {#snippet footerChildren()}
                 <DataTable.Selection {table} />
-                <DataTable.Pager bind:value={queryParams.limit!} {table} />
+                <DataTable.Pager bind:value={queryParams.limit!} {table} variant="floating" />
             {/snippet}
         </EventsDataTable>
     </div>

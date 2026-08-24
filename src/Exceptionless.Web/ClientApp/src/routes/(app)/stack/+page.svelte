@@ -930,7 +930,7 @@
                     <DataTable.Selection {table} />
                 </div>
 
-                <DataTable.Pager bind:value={eventsQueryParameters.limit!} {table} />
+                <DataTable.Pager bind:value={eventsQueryParameters.limit!} {table} variant="floating" />
             {/snippet}
         </EventsDataTable>
     </div>

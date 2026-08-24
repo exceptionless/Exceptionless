@@ -17,7 +17,7 @@ describe('DataTablePager', () => {
     });
 
     it('joins bulk actions and pagination in one full-width sticky toolbar', () => {
-        render(DataTablePagerTestHarness, { onPageIndexChange: vi.fn(), onPageSizeChange: vi.fn() });
+        render(DataTablePagerTestHarness, { onPageIndexChange: vi.fn(), onPageSizeChange: vi.fn(), variant: 'floating' });
 
         const toolbar = document.querySelector('[data-slot="data-table-footer"]');
         const pager = screen.getByRole('navigation', { name: 'Table pagination' });
@@ -56,6 +56,26 @@ describe('DataTablePager', () => {
         expect(nextButton.classList.contains('rounded-r-lg!')).toBe(true);
         expect(nextButton.classList.contains('rounded-l-none!')).toBe(true);
         expect(nextButton.classList.contains('border-r-0')).toBe(true);
+    });
+
+    it('shows a simple standalone pager on the right by default', () => {
+        render(DataTablePagerTestHarness, { onPageIndexChange: vi.fn(), onPageSizeChange: vi.fn() });
+
+        const toolbar = document.querySelector('[data-slot="data-table-footer"]');
+        const pager = screen.getByRole('navigation', { name: 'Table pagination' });
+
+        expect(toolbar?.getAttribute('data-variant')).toBe('simple');
+        expect(toolbar?.classList.contains('sticky')).toBe(false);
+        expect(toolbar?.classList.contains('border')).toBe(false);
+        expect(toolbar?.classList.contains('justify-end')).toBe(true);
+        expect(pager.getAttribute('data-variant')).toBe('simple');
+
+        const pageSize = screen.getByLabelText('Rows per page');
+        expect(pageSize.getAttribute('data-size')).toBe('default');
+        expect(pageSize.classList.contains('rounded-none')).toBe(false);
+        expect(pageSize.classList.contains('border-y-0')).toBe(false);
+        expect(screen.getByLabelText('Page 1 of 3').classList.contains('border-y-0')).toBe(false);
+        expect(screen.getByRole('button', { name: 'Go to next page' }).classList.contains('border-r-0')).toBe(false);
     });
 
     it('keeps a standalone page-size selector fully bordered', () => {
