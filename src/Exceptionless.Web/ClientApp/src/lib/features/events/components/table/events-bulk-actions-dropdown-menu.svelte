@@ -57,7 +57,7 @@
                 {...props}
                 aria-describedby={ids.length === 0 ? bulkActionsDescriptionId : undefined}
                 aria-disabled={ids.length === 0}
-                class="aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                class="rounded-l-lg rounded-r-none border-0 border-r aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
                 title={ids.length === 0 ? 'Select one or more events to use bulk actions' : 'Bulk Actions'}
                 variant="outline"
             >

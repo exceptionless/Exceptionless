@@ -54,7 +54,7 @@
 </script>
 
 <Select.Root type="single" {items} value={valueString} {onValueChange}>
-    <Select.Trigger aria-label="Rows per page" class="min-w-18" size="sm" title="Rows per page">
+    <Select.Trigger aria-label="Rows per page" class="min-w-18 rounded-none border-y-0" title="Rows per page">
         {selected.label} rows
     </Select.Trigger>
     <Select.Content>

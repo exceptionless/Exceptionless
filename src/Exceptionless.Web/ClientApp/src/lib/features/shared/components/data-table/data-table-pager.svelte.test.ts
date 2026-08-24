@@ -19,22 +19,32 @@ describe('DataTablePager', () => {
         scrollIntoView.mockReset();
     });
 
-    it('keeps bulk actions and pagination together in the solid sticky table toolbar', () => {
+    it('joins bulk actions and pagination in one full-width sticky toolbar', () => {
         render(DataTablePagerTestHarness, { onPageIndexChange: vi.fn(), onPageSizeChange: vi.fn() });
 
         const toolbar = document.querySelector('[data-slot="data-table-footer"]');
         const pager = screen.getByRole('navigation', { name: 'Table pagination' });
 
+        expect(screen.getByRole('toolbar', { name: 'Table controls' })).toBe(toolbar);
         expect(toolbar?.classList.contains('sticky')).toBe(true);
         expect(toolbar?.classList.contains('top-2')).toBe(true);
         expect(toolbar?.classList.contains('order-2')).toBe(false);
-        expect(toolbar?.classList.contains('border')).toBe(false);
-        expect(toolbar?.classList.contains('border-y')).toBe(true);
-        expect(toolbar?.classList.contains('bg-background')).toBe(true);
+        expect(toolbar?.classList.contains('border')).toBe(true);
+        expect(toolbar?.classList.contains('border-y')).toBe(false);
+        expect(toolbar?.classList.contains('rounded-lg')).toBe(true);
+        expect(toolbar?.classList.contains('gap-0')).toBe(true);
         expect(toolbar?.classList.contains('p-2')).toBe(false);
         expect(toolbar?.contains(screen.getByRole('button', { name: 'Bulk Actions' }))).toBe(true);
         expect(toolbar?.contains(pager)).toBe(true);
-        expect(screen.getByLabelText('Page 1 of 3').classList.contains('select-none')).toBe(true);
+
+        const pageLabel = screen.getByLabelText('Page 1 of 3');
+        expect(pageLabel.classList.contains('select-none')).toBe(true);
+        expect(pageLabel.classList.contains('rounded-none')).toBe(true);
+        expect(pageLabel.classList.contains('border-y-0')).toBe(true);
+        const nextButton = screen.getByRole('button', { name: 'Go to next page' });
+        expect(nextButton.classList.contains('rounded-r-lg!')).toBe(true);
+        expect(nextButton.classList.contains('rounded-l-none!')).toBe(true);
+        expect(nextButton.classList.contains('border-r-0')).toBe(true);
     });
 
     it('keeps focus and scrolls the table to the start when changing pages', async () => {
