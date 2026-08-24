@@ -111,6 +111,22 @@ public class OrganizationService : IStartupAction
                 break;
         }
 
+        var preferenceResults = await _userRepository.GetByOrganizationPreferenceIdAsync(organization.Id, o => o.SearchAfterPaging().PageLimit(BATCH_SIZE));
+        while (preferenceResults.Documents.Count > 0)
+        {
+            foreach (var user in preferenceResults.Documents)
+            {
+                foreach (var preference in user.OrganizationPreferences.Where(preference => String.Equals(preference.OrganizationId, organization.Id, StringComparison.Ordinal)).ToList())
+                    user.OrganizationPreferences.Remove(preference);
+            }
+
+            await _userRepository.SaveAsync(preferenceResults.Documents, o => o.Cache());
+            totalUsersAffected += preferenceResults.Documents.Count;
+
+            if (!await preferenceResults.NextPageAsync())
+                break;
+        }
+
         return totalUsersAffected;
     }
 

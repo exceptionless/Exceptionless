@@ -1909,6 +1909,29 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task SoftDeleteOrganization_GlobalAdministratorOutsideOrganization_RemovesSavedViewPreference()
+    {
+        var globalAdministrator = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(globalAdministrator);
+        Assert.NotNull(organization);
+        Assert.DoesNotContain(organization.Id, globalAdministrator.OrganizationIds);
+
+        globalAdministrator.OrganizationPreferences.Add(new UserOrganizationPreference
+        {
+            OrganizationId = organization.Id,
+            DefaultSavedViewId = "000000000000000000000001"
+        });
+        await _userRepository.SaveAsync(globalAdministrator, o => o.ImmediateConsistency().Cache());
+
+        await _organizationService.SoftDeleteOrganizationAsync(organization, globalAdministrator.Id);
+        var persistedGlobalAdministrator = await _userRepository.GetByIdAsync(globalAdministrator.Id, o => o.Cache(false));
+
+        Assert.NotNull(persistedGlobalAdministrator);
+        Assert.DoesNotContain(persistedGlobalAdministrator.OrganizationPreferences, preference => preference.OrganizationId == organization.Id);
+    }
+
+    [Fact]
     public async Task RemoveUserSavedViews_WithMixedVisibility_OnlyDeletesPrivateViews()
     {
         // Arrange
