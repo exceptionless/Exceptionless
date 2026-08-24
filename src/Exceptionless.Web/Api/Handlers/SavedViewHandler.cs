@@ -560,17 +560,26 @@ public partial class SavedViewHandler(
         string organizationId = organization.Id;
 
         ViewSavedView? userDefault = null;
-        string? userDefaultId = user?.OrganizationPreferences
-            .FirstOrDefault(preference => String.Equals(preference.OrganizationId, organizationId, StringComparison.Ordinal))
-            ?.DefaultSavedViewId;
-        if (userDefaultId is not null)
+        var userDefaultIds = user?.OrganizationPreferences
+            .Where(preference => String.Equals(preference.OrganizationId, organizationId, StringComparison.Ordinal))
+            .Select(preference => preference.DefaultSavedViewId)
+            .Where(savedViewId => !String.IsNullOrEmpty(savedViewId))
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)
+            .ToArray() ?? [];
+        if (userDefaultIds.Length > 0)
         {
-            var savedView = await repository.GetByIdAsync(userDefaultId);
-            if (savedView is not null
-                && String.Equals(savedView.OrganizationId, organizationId, StringComparison.Ordinal)
-                && (savedView.UserId is null || String.Equals(savedView.UserId, GetCurrentUserId(), StringComparison.Ordinal)))
+            var savedViews = await repository.GetByIdsAsync(userDefaultIds);
+            var savedViewsById = savedViews.ToDictionary(savedView => savedView.Id, StringComparer.Ordinal);
+            foreach (string userDefaultId in userDefaultIds)
             {
+                if (!savedViewsById.TryGetValue(userDefaultId, out var savedView)
+                    || !String.Equals(savedView.OrganizationId, organizationId, StringComparison.Ordinal)
+                    || (savedView.UserId is not null && !String.Equals(savedView.UserId, GetCurrentUserId(), StringComparison.Ordinal)))
+                    continue;
+
                 userDefault = MapToViewModel(savedView);
+                break;
             }
         }
 

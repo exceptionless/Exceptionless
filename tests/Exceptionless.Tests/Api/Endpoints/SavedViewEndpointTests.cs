@@ -1444,6 +1444,39 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetSavedViewDefaults_DuplicatePreferences_SkipsMissingView()
+    {
+        var validView = await CreateSavedViewAsync("Legacy Duplicate Home", "status:open", "stacks");
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(validView);
+        Assert.NotNull(user);
+
+        foreach (var preference in user.OrganizationPreferences.Where(preference => preference.OrganizationId == SampleDataService.TEST_ORG_ID).ToList())
+            user.OrganizationPreferences.Remove(preference);
+
+        user.OrganizationPreferences.Add(new UserOrganizationPreference
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            DefaultSavedViewId = "000000000000000000000000"
+        });
+        user.OrganizationPreferences.Add(new UserOrganizationPreference
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            DefaultSavedViewId = validView.Id
+        });
+        await _userRepository.SaveAsync(user, o => o.Cache());
+
+        var defaults = await SendRequestAsAsync<ViewSavedViewDefaults>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-defaults")
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(defaults);
+        Assert.Equal(validView.Id, defaults.UserDefault?.Id);
+    }
+
+    [Fact]
     public Task GetSavedViewDefaults_NonExistentOrganizationAsGlobalAdministrator_ReturnsNotFound()
     {
         return SendRequestAsync(r => r
