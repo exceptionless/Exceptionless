@@ -49,7 +49,7 @@
     import { organization } from '$features/organizations/context.svelte';
     import { premiumPage } from '$features/organizations/premium-page.svelte';
     import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
-    import { useSavedViews } from '$features/saved-views/use-saved-views.svelte';
+    import { isSavedViewHydrationPending, isSavedViewUnavailable, useSavedViews } from '$features/saved-views/use-saved-views.svelte';
     import * as agg from '$features/shared/api/aggregations';
     import { createPageSizePreference, getSharedTableOptions, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
     import { fillDateSeries } from '$features/shared/utils/charts';
@@ -242,12 +242,24 @@
     let showStats = $state(true);
     let showChart = $state(true);
     const savedViewsState = useSavedViews({
+        applyFilters: (draftFilters, options) => {
+            updateFilters(draftFilters, {
+                clearPagination: false,
+                history: options?.history
+            });
+            filters = draftFilters;
+        },
         baseHref: resolve('/(app)/stack'),
         defaultAutoFillColumnId: 'summary',
         defaultColumnVisibility: defaultStackColumnVisibility,
         defaultFilter: DEFAULT_FILTER,
         defaultTime: DEFAULT_TIME_RANGE,
         filterCacheKey,
+        getAvailableColumnIds: () =>
+            table
+                .getAllFlatColumns()
+                .filter((column) => column.columns.length === 0)
+                .map((column) => column.id),
         getColumnOrder: () => table.store.state.columnOrder,
         getColumnSizing: () => table.store.state.columnSizing,
         getColumnVisibility: () => table.store.state.columnVisibility,
@@ -272,7 +284,12 @@
     // Keep queries disabled until saved-view state and its URL overrides have both settled.
     let normalizedSavedViewId = $state<string>();
     const isSavedViewRoutePending = $derived(
-        !!page.params.slug && (!savedViewsState.activeSavedView || savedViewsState.activeSavedView.id !== normalizedSavedViewId)
+        isSavedViewHydrationPending(
+            page.params.slug,
+            savedViewsState.activeSavedView?.id,
+            normalizedSavedViewId,
+            isSavedViewUnavailable(savedViewsState.activeSavedView?.id, savedViewsState.isMissing, savedViewsState.isError)
+        )
     );
 
     $effect(() => {
@@ -460,7 +477,7 @@
         filters = updatedFilters;
     }
 
-    function updateFilters(updatedFilters: FacetedFilter.IFilter[], options: { clearPagination?: boolean } = {}): void {
+    function updateFilters(updatedFilters: FacetedFilter.IFilter[], options: { clearPagination?: boolean; history?: 'push' | 'replace' } = {}): void {
         const shouldClearPagination = options.clearPagination ?? true;
         const filter = toFilter(updatedFilters.filter((f) => f.type !== 'date'));
         const expressionFilters = updatedFilters.filter((f) => f.type !== 'date' && !isQueryParamFilter(f));
@@ -501,22 +518,27 @@
             isInternalFilterUpdate = true;
         }
 
-        queryParams.update({
-            bot: queryFilterParams.bot,
-            filter: newFilterParam,
-            first: queryFilterParams.first,
-            level: queryFilterParams.level,
-            page: shouldClearPaginationForFilter ? null : queryParams.page,
-            project: queryFilterParams.project,
-            reference: queryFilterParams.reference,
-            session: queryFilterParams.session,
-            stack: queryFilterParams.stack,
-            status: queryFilterParams.status,
-            tag: queryFilterParams.tag,
-            time: newTimeParam,
-            type: queryFilterParams.type,
-            version: queryFilterParams.version
-        });
+        queryParams.update(
+            {
+                bot: queryFilterParams.bot,
+                filter: newFilterParam,
+                first: queryFilterParams.first,
+                level: queryFilterParams.level,
+                page: shouldClearPaginationForFilter ? null : queryParams.page,
+                project: queryFilterParams.project,
+                reference: queryFilterParams.reference,
+                session: queryFilterParams.session,
+                stack: queryFilterParams.stack,
+                status: queryFilterParams.status,
+                tag: queryFilterParams.tag,
+                time: newTimeParam,
+                type: queryFilterParams.type,
+                version: queryFilterParams.version
+            },
+            {
+                history: options.history
+            }
+        );
     }
 
     $effect(() => {
@@ -528,7 +550,8 @@
 
         untrack(() => {
             updateFilters(getCurrentFilters(getListFilterQueryParams(queryParams)), {
-                clearPagination: false
+                clearPagination: false,
+                history: 'replace'
             });
         });
         normalizedSavedViewId = activeSavedViewId;
@@ -844,6 +867,7 @@
                 <SavedViewPicker
                     activeSavedView={savedViewsState.activeSavedView}
                     autoFillColumnId={savedViewsState.autoFillColumnId}
+                    canModifySavedView={savedViewsState.canModifySavedView}
                     columnOrder={table.store.state.columnOrder}
                     columnSizing={table.store.state.columnSizing}
                     columnVisibility={table.store.state.columnVisibility}
@@ -853,6 +877,7 @@
                     onLoadView={savedViewsState.handleLoadView}
                     onClearSavedView={savedViewsState.handleClearSavedView}
                     onResetToSaved={handleResetToSaved}
+                    onSavedViewUpdated={savedViewsState.handleSavedViewUpdated}
                     savedViews={savedViewsState.savedViews}
                     setAutoFillColumnId={savedViewsState.setAutoFillColumnId}
                     setWrappedColumnIds={savedViewsState.setWrappedColumnIds}

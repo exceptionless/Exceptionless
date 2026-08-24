@@ -40,6 +40,23 @@ export function buildColumnSettings(
     );
 }
 
+export function columnOrdersEqual(left: ColumnOrderState | undefined, right: ColumnOrderState | undefined): boolean {
+    const normalizedLeft = (left ?? []).filter((columnId) => columnId !== 'select');
+    const normalizedRight = (right ?? []).filter((columnId) => columnId !== 'select');
+
+    return normalizedLeft.length === normalizedRight.length && normalizedLeft.every((columnId, index) => columnId === normalizedRight[index]);
+}
+
+export function filterAvailableColumnIds(columnIds: readonly string[], availableColumnIds: readonly string[]): string[] {
+    const availableColumnIdSet = new Set(availableColumnIds.filter((columnId) => columnId !== 'select'));
+    return [...new Set(columnIds.filter((columnId) => availableColumnIdSet.has(columnId)))];
+}
+
+export function filterAvailableColumnRecord<T>(values: Record<string, T>, availableColumnIds: readonly string[]): Record<string, T> {
+    const availableColumnIdSet = new Set(availableColumnIds.filter((columnId) => columnId !== 'select'));
+    return Object.fromEntries(Object.entries(values).filter(([columnId]) => availableColumnIdSet.has(columnId)));
+}
+
 export function getSavedAutoFillColumnId(view: SavedColumnState | undefined): string | undefined {
     return Object.entries(view?.columns ?? {}).find(([, settings]) => settings.auto_fill === true)?.[0];
 }
@@ -94,25 +111,60 @@ export function getSavedWrappedColumnIds(view: SavedColumnState | undefined): Wr
         .map(([columnId]) => columnId);
 }
 
-export function savedViewColumnOrderEqual(current: ColumnOrderState | undefined, view: SavedColumnState): boolean {
-    const savedOrder = getSavedColumnOrder(view);
-    const savedColumnIds = new Set(savedOrder);
-    const currentSavedOrder = (current ?? []).filter((columnId) => columnId !== 'select' && savedColumnIds.has(columnId));
-
-    return currentSavedOrder.length === savedOrder.length && currentSavedOrder.every((columnId, index) => columnId === savedOrder[index]);
+export function normalizeColumnSizing(sizing: ColumnSizingState | undefined): ColumnSizingState {
+    return Object.fromEntries(
+        Object.entries(sizing ?? {})
+            .filter(([columnId]) => columnId !== 'select')
+            .map(([columnId, width]) => [columnId, Math.round(width)])
+    );
 }
 
-export function savedViewColumnSizingEqual(current: ColumnSizingState | undefined, view: SavedColumnState): boolean {
-    const saved = getSavedColumnSizing(view);
-    const currentEntries = Object.entries(current ?? {}).filter(([columnId]) => columnId !== 'select');
+export function resolveAvailableAutoFillColumnSelection(
+    selection: AutoFillColumnSelection,
+    availableColumnIds: readonly string[],
+    defaultAutoFillColumnId?: string
+): AutoFillColumnSelection {
+    if (selection === null) {
+        return null;
+    }
+
+    const availableColumnIdSet = new Set(availableColumnIds.filter((columnId) => columnId !== 'select'));
+    if (availableColumnIdSet.has(selection)) {
+        return selection;
+    }
+
+    return defaultAutoFillColumnId && availableColumnIdSet.has(defaultAutoFillColumnId) ? defaultAutoFillColumnId : null;
+}
+
+export function resolveAvailableColumnOrder(preferredOrder: ColumnOrderState, availableOrder: ColumnOrderState | undefined): ColumnOrderState {
+    const hasSelectionColumn = availableOrder?.includes('select') ?? false;
+    const availableColumnIds = [...new Set((availableOrder ?? []).filter((columnId) => columnId !== 'select'))];
+    const availableColumnIdSet = new Set(availableColumnIds);
+    const resolvedPreferredOrder = preferredOrder.filter((columnId, index) => availableColumnIdSet.has(columnId) && preferredOrder.indexOf(columnId) === index);
+    const resolvedOrder = [...resolvedPreferredOrder, ...availableColumnIds.filter((columnId) => !resolvedPreferredOrder.includes(columnId))];
+
+    return hasSelectionColumn ? ['select', ...resolvedOrder] : resolvedOrder;
+}
+
+export function resolveSavedViewColumnOrder(view: SavedColumnState, availableOrder: ColumnOrderState | undefined): ColumnOrderState {
+    return resolveAvailableColumnOrder(getSavedColumnOrder(view), availableOrder);
+}
+
+export function savedViewColumnSizingEqual(current: ColumnSizingState | undefined, view: SavedColumnState, availableColumnIds?: readonly string[]): boolean {
+    const savedSizing = getSavedColumnSizing(view);
+    const saved = availableColumnIds ? filterAvailableColumnRecord(savedSizing, availableColumnIds) : savedSizing;
+    const normalizedCurrent = normalizeColumnSizing(current);
+    const resolvedCurrent = availableColumnIds ? filterAvailableColumnRecord(normalizedCurrent, availableColumnIds) : normalizedCurrent;
+    const currentEntries = Object.entries(resolvedCurrent);
     const savedEntries = Object.entries(saved);
 
-    return currentEntries.length === savedEntries.length && currentEntries.every(([columnId, width]) => saved[columnId] === Math.round(width));
+    return currentEntries.length === savedEntries.length && currentEntries.every(([columnId, width]) => saved[columnId] === width);
 }
 
-export function savedViewColumnWrappingEqual(current: readonly string[] | undefined, view: SavedColumnState): boolean {
-    const saved = getSavedWrappedColumnIds(view);
-    const currentIds = [...new Set(current ?? [])];
+export function savedViewColumnWrappingEqual(current: readonly string[] | undefined, view: SavedColumnState, availableColumnIds?: readonly string[]): boolean {
+    const savedIds = getSavedWrappedColumnIds(view);
+    const saved = availableColumnIds ? filterAvailableColumnIds(savedIds, availableColumnIds) : savedIds;
+    const currentIds = availableColumnIds ? filterAvailableColumnIds(current ?? [], availableColumnIds) : [...new Set(current ?? [])];
 
     return currentIds.length === saved.length && currentIds.every((columnId) => saved.includes(columnId));
 }

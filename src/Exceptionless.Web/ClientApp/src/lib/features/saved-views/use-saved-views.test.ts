@@ -1,3 +1,5 @@
+import { DateFilter, ProjectFilter, StringFilter } from '$features/events/components/filters';
+import { serializeFilters } from '$features/events/components/filters/helpers.svelte';
 import { ChangeType } from '$features/websockets/models';
 import { QueryClient } from '@tanstack/svelte-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -8,18 +10,33 @@ import { invalidateSavedViewQueries, queryKeys, removeSavedViewFromCaches, SAVED
 import { savedViewHref, savedViewResolvedSlug } from './slugs';
 import {
     clearSavedViewQueryParams,
+    createSavedViewDraftFilterHistoryEntry,
     filterDefinitionsEqual,
+    getChangedFilterKeys,
     getComparableSavedViewFilter,
+    getComparableSavedViewFilterDefinitions,
     getComparableSavedViewTime,
-    hasMissingSavedViewSlug,
+    getDraftSortQueryParam,
+    getDraftSortValue,
+    getExpressionFilterOverrideKeys,
+    getSavedViewDefinitionFilters,
+    getSavedViewDraftIdentity,
+    getSavedViewOverrideSignature,
+    getSavedViewStateSignature,
+    hasMissingSavedView,
     hasSavedViewAutoFillChange,
     hasSavedViewColumnChanges,
+    isSavedViewDraftFilterHistoryEntry,
+    isSavedViewHydrationPending,
+    isSavedViewUnavailable,
     savedViewColumnsEqual,
     type SavedViewQueryParams,
     setSortQueryParam,
     setTimeQueryParam,
+    shouldTrackPendingSavedViewDraft,
     supportsSortQueryParam,
-    supportsTimeQueryParam
+    supportsTimeQueryParam,
+    trackChangedFilterKeys
 } from './use-saved-views.svelte';
 
 vi.mock('$features/auth/index.svelte', () => ({
@@ -63,6 +80,105 @@ function buildSavedView({ id, name, ...overrides }: Partial<SavedView> & Pick<Sa
 }
 
 describe('useSavedViews', () => {
+    describe('saved view draft identity', () => {
+        it('uses the saved view organization when the active organization changes', () => {
+            const savedView = buildSavedView({ id: 'view-1', name: 'My View', organization_id: 'original-organization' });
+
+            expect(getSavedViewDraftIdentity(savedView, TEST_USER_ID)).toEqual({
+                organizationId: 'original-organization',
+                savedViewId: 'view-1',
+                userId: TEST_USER_ID
+            });
+        });
+    });
+
+    describe('saved view draft filter history', () => {
+        it('preserves provenance for a draft-generated empty filter', () => {
+            expect(createSavedViewDraftFilterHistoryEntry('view-1', '', true)).toEqual({ filter: '', viewId: 'view-1' });
+            expect(createSavedViewDraftFilterHistoryEntry('view-1', null, true)).toBeUndefined();
+            expect(createSavedViewDraftFilterHistoryEntry('view-1', '', false)).toBeUndefined();
+        });
+
+        it('requires explicit history provenance instead of inferring it from matching filter content', () => {
+            expect(isSavedViewDraftFilterHistoryEntry(undefined, 'view-1', 'error.type:TimeoutException')).toBe(false);
+            expect(
+                isSavedViewDraftFilterHistoryEntry({ filter: 'error.type:TimeoutException', viewId: 'view-1' }, 'view-1', 'error.type:TimeoutException')
+            ).toBe(true);
+            expect(
+                isSavedViewDraftFilterHistoryEntry({ filter: 'error.type:TimeoutException', viewId: 'view-2' }, 'view-1', 'error.type:TimeoutException')
+            ).toBe(false);
+        });
+    });
+
+    describe('saved view state signatures', () => {
+        it('ignores audit and naming changes outside the hydrated state baseline', () => {
+            // Arrange
+            const savedView = buildSavedView({ id: 'view-1', name: 'Original Name', show_chart: false });
+            const renamedView = {
+                ...savedView,
+                name: 'Renamed View',
+                updated_utc: new Date(Date.now() + 1000).toISOString(),
+                version: savedView.version + 1
+            };
+
+            // Act / Assert
+            expect(getSavedViewStateSignature(renamedView)).toBe(getSavedViewStateSignature(savedView));
+        });
+
+        it('detects server changes that affect saved view state', () => {
+            // Arrange
+            const savedView = buildSavedView({
+                columns: { summary: { visible: true, wrap: false } },
+                id: 'view-1',
+                name: 'My View',
+                show_chart: true
+            });
+
+            // Act / Assert
+            expect(getSavedViewStateSignature({ ...savedView, show_chart: false })).not.toBe(getSavedViewStateSignature(savedView));
+            expect(
+                getSavedViewStateSignature({
+                    ...savedView,
+                    columns: { summary: { visible: true, wrap: true } }
+                })
+            ).not.toBe(getSavedViewStateSignature(savedView));
+        });
+    });
+
+    describe('saved view URL override signatures', () => {
+        it('ignores pagination-only query changes', () => {
+            const first = new URL('https://example.test/next/event/errors?time=90d&project=project-1&page=1&limit=10');
+            const second = new URL('https://example.test/next/event/errors?project=project-1&time=90d&page=4&limit=100');
+
+            expect(getSavedViewOverrideSignature(first)).toBe(getSavedViewOverrideSignature(second));
+        });
+
+        it('detects additions, removals, and changes to saved view overrides', () => {
+            const baseline = getSavedViewOverrideSignature(new URL('https://example.test/next/event/errors?time=90d&status=open'));
+
+            expect(getSavedViewOverrideSignature(new URL('https://example.test/next/event/errors?time=30d&status=open'))).not.toBe(baseline);
+            expect(getSavedViewOverrideSignature(new URL('https://example.test/next/event/errors?time=90d'))).not.toBe(baseline);
+            expect(getSavedViewOverrideSignature(new URL('https://example.test/next/event/errors?time=90d&status=open&sort=type'))).not.toBe(baseline);
+        });
+    });
+
+    describe('expression filter overrides', () => {
+        it('includes saved and browser-local expression filters without typed query parameter filters', () => {
+            const draft = {
+                filterChanges: {
+                    removedKeys: [],
+                    upsertDefinitions: '[{"type":"keyword","value":"error.type:TimeoutException"}]'
+                },
+                version: 1 as const
+            };
+
+            expect(getExpressionFilterOverrideKeys([new StringFilter('error.type', 'OldException')], [new ProjectFilter(['project-1'])], draft)).toEqual([
+                'string-error.type',
+                'keyword'
+            ]);
+        });
+    });
+
     describe('saved view slugs', () => {
         it('falls back to the normalized name for views created before slugs were stored', () => {
             // Arrange
@@ -93,11 +209,11 @@ describe('useSavedViews', () => {
             const savedView = buildSavedView({ id: 'view-1', name: 'My Saved View' });
 
             // Act
-            const result = hasMissingSavedViewSlug({
+            const result = hasMissingSavedView({
                 activeSavedView: undefined,
                 isLoading: false,
-                savedViews: [savedView],
-                slug: 'most-frequent'
+                savedViewKey: 'most-frequent',
+                savedViews: [savedView]
             });
 
             // Assert
@@ -106,11 +222,11 @@ describe('useSavedViews', () => {
 
         it('reports a missing slug while cached saved-view data is background fetching', () => {
             // Act
-            const result = hasMissingSavedViewSlug({
+            const result = hasMissingSavedView({
                 activeSavedView: undefined,
                 isLoading: false,
-                savedViews: [],
-                slug: 'most-frequent'
+                savedViewKey: 'most-frequent',
+                savedViews: []
             });
 
             // Assert
@@ -119,11 +235,11 @@ describe('useSavedViews', () => {
 
         it('does not report a missing slug before saved views are available', () => {
             // Act
-            const result = hasMissingSavedViewSlug({
+            const result = hasMissingSavedView({
                 activeSavedView: undefined,
                 isLoading: false,
-                savedViews: undefined,
-                slug: 'most-frequent'
+                savedViewKey: 'most-frequent',
+                savedViews: undefined
             });
 
             // Assert
@@ -132,19 +248,81 @@ describe('useSavedViews', () => {
 
         it('does not report a missing slug when there is no slug route parameter', () => {
             // Act
-            const result = hasMissingSavedViewSlug({
+            const result = hasMissingSavedView({
                 activeSavedView: undefined,
                 isLoading: false,
-                savedViews: [],
-                slug: undefined
+                savedViewKey: undefined,
+                savedViews: []
             });
 
             // Assert
             expect(result).toBe(false);
         });
+
+        it('reports a missing query-selected saved view after loading finishes', () => {
+            const result = hasMissingSavedView({
+                activeSavedView: undefined,
+                isLoading: false,
+                savedViewKey: 'view-1',
+                savedViews: []
+            });
+
+            expect(result).toBe(true);
+        });
+    });
+
+    describe('saved view hydration readiness', () => {
+        it('waits until the selected saved view draft is applied', () => {
+            expect(isSavedViewHydrationPending('view-1', undefined, undefined, false)).toBe(true);
+            expect(isSavedViewHydrationPending('view-1', 'view-1', undefined, false)).toBe(true);
+            expect(isSavedViewHydrationPending('view-1', 'view-1', 'view-1', false)).toBe(false);
+        });
+
+        it('does not wait when no view is selected or the selected view is missing', () => {
+            expect(isSavedViewHydrationPending(undefined, undefined, undefined, false)).toBe(false);
+            expect(isSavedViewHydrationPending('missing', undefined, undefined, true)).toBe(false);
+        });
+
+        it('keeps cached saved views available while a background refetch is failing', () => {
+            expect(isSavedViewUnavailable('view-1', false, true)).toBe(false);
+            expect(isSavedViewUnavailable(undefined, false, true)).toBe(true);
+            expect(isSavedViewUnavailable(undefined, true, false)).toBe(true);
+        });
+    });
+
+    describe('pending saved view draft tracking', () => {
+        it('continues until the draft is applied even after the route data gate is released', () => {
+            expect(shouldTrackPendingSavedViewDraft('view-1', 'view-1', '')).toBe(true);
+            expect(shouldTrackPendingSavedViewDraft('view-1', 'view-1', 'user-1:organization-1:view-1')).toBe(false);
+            expect(shouldTrackPendingSavedViewDraft('view-1', 'view-2', '')).toBe(false);
+        });
     });
 
     describe('filter definition comparison', () => {
+        it('retains touched filter keys after an edit is reverted', () => {
+            const touchedKeys = new Set<string>();
+            const serverDefinitions = serializeFilters([new DateFilter('date', '[now-15m TO now]')]);
+            const editedDefinitions = serializeFilters([new DateFilter('date', '[now-90d TO now]')]);
+
+            trackChangedFilterKeys(touchedKeys, serverDefinitions, editedDefinitions);
+            trackChangedFilterKeys(touchedKeys, editedDefinitions, serverDefinitions);
+
+            expect([...touchedKeys]).toEqual(['date-date']);
+        });
+
+        it('finds filter keys edited while saved-view draft hydration is pending', () => {
+            const initial = [new ProjectFilter(['project-1'])];
+            const current = [new ProjectFilter(['project-2'])];
+
+            expect(getChangedFilterKeys(initial, current)).toEqual(['project']);
+            expect(
+                getChangedFilterKeys(
+                    initial,
+                    initial.map((filter) => filter.clone())
+                )
+            ).toEqual([]);
+        });
+
         it('treats omitted empty filter values as equal to hydrated empty values', () => {
             // Arrange
             const seededDefinitions = '[{"type":"date","term":"date","value":"[now-7d TO now]"},{"type":"project"}]';
@@ -195,6 +373,62 @@ describe('useSavedViews', () => {
 
             // Assert
             expect(result).toBe('[now-7d TO now]');
+        });
+
+        it('adds the saved time to legacy filter definitions without a date filter', () => {
+            // Act
+            const result = getSavedViewDefinitionFilters('[{"type":"project","value":["project-1"]}]', '[now-90d TO now]', '[now-7d TO now]');
+
+            // Assert
+            expect(serializeFilters(result)).toBe('[{"type":"project","value":["project-1"]},{"type":"date","term":"date","value":"[now-90d TO now]"}]');
+        });
+
+        it('replaces a stale serialized date with the saved time', () => {
+            // Act
+            const result = getSavedViewDefinitionFilters('[{"type":"date","term":"date","value":"[now-7d TO now]"}]', '[now-90d TO now]', '[now-7d TO now]');
+
+            // Assert
+            expect(serializeFilters(result)).toBe('[{"type":"date","term":"date","value":"[now-90d TO now]"}]');
+        });
+
+        it('normalizes the saved time for modified-state comparisons', () => {
+            const result = getComparableSavedViewFilterDefinitions(
+                '[{"type":"project","value":[]},{"type":"date","term":"date","value":"[now-7d TO now]"}]',
+                '[now-90d TO now]',
+                '[now-15m TO now]'
+            );
+
+            expect(result).toBe('[{"type":"project","value":[]},{"type":"date","term":"date","value":"[now-90d TO now]"}]');
+        });
+    });
+
+    describe('sort drafts', () => {
+        it('uses an explicit empty override when a draft clears the server sort', () => {
+            expect(getDraftSortQueryParam('-date', null)).toBe('');
+        });
+
+        it('removes the override when the draft matches the server sort', () => {
+            expect(getDraftSortQueryParam('-date', '-date')).toBeNull();
+        });
+
+        it('restores a non-empty draft sort', () => {
+            expect(getDraftSortQueryParam('-date', 'count')).toBe('count');
+        });
+
+        it('keeps a one-off URL sort override out of a local draft', () => {
+            expect(getDraftSortValue('-date', 'type', { value: 'type' }, undefined)).toBe('-date');
+        });
+
+        it('preserves an older local sort behind a one-off URL override', () => {
+            expect(getDraftSortValue('-date', 'type', { value: 'type' }, { sort: 'count', version: 1 })).toBe('count');
+        });
+
+        it('preserves an older local sort when a URL override matches the server', () => {
+            expect(getDraftSortValue('-date', '-date', { value: '-date' }, { sort: 'count', version: 1 })).toBe('count');
+        });
+
+        it('persists a sort changed after hydration', () => {
+            expect(getDraftSortValue('-date', 'count', { value: 'type' }, undefined)).toBe('count');
         });
     });
 
