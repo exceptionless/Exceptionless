@@ -18,7 +18,16 @@ test('home navigation honors personal and organization saved views and survives 
 
     await test.step('prefer the personal saved view', async () => {
         await journey.submitRepresentativeEvent();
-        await saveView(page, viewName, journey.referenceId, 'all');
+        await page.goto(`/next/event?reference=${encodeURIComponent(journey.referenceId)}&time=all`);
+        await expect(getVisibleText(page, journey.message)).toBeVisible({ timeout: 30_000 });
+
+        await openViewMenu(page);
+        await page.getByRole('menuitem', { name: 'Save As...' }).click();
+        const dialog = page.getByRole('dialog', { name: 'Save View' });
+        await dialog.getByLabel('Name', { exact: true }).fill(viewName);
+        await dialog.getByRole('button', { name: 'Save' }).click();
+        await expect(dialog).toBeHidden({ timeout: 30_000 });
+        await expect(page.getByRole('heading', { name: viewName })).toBeVisible({ timeout: 30_000 });
 
         await openViewMenu(page);
         await page.getByRole('menuitem', { name: 'Set as my home view' }).click();
