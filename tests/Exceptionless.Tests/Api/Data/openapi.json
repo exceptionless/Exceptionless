@@ -13522,6 +13522,7 @@
           "full_name",
           "email_address",
           "id",
+          "version",
           "organization_ids",
           "password_reset_token_expiration",
           "o_auth_accounts",
@@ -13542,6 +13543,9 @@
             "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string",
             "description": "Unique id that identifies an user."
+          },
+          "version": {
+            "type": "string"
           },
           "organization_ids": {
             "uniqueItems": true,
