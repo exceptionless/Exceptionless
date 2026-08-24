@@ -6,14 +6,16 @@
     import type { RowData, StockFeatures, Table } from '@tanstack/svelte-table';
 
     import * as Select from '$comp/ui/select';
+    import { cn } from '$lib/utils';
 
     interface Props {
+        joined?: boolean;
         onPageSizeChange?: () => void;
         table: Table<StockFeatures, TData>;
         value: number;
     }
 
-    let { onPageSizeChange, table, value = $bindable() }: Props = $props();
+    let { joined = false, onPageSizeChange, table, value = $bindable() }: Props = $props();
 
     type Item = { label: string; value: string };
     const items: Item[] = [
@@ -54,7 +56,12 @@
 </script>
 
 <Select.Root type="single" {items} value={valueString} {onValueChange}>
-    <Select.Trigger aria-label="Rows per page" class="min-w-18 rounded-none border-y-0" title="Rows per page">
+    <Select.Trigger
+        aria-label="Rows per page"
+        class={cn('min-w-18', joined && 'rounded-none border-y-0')}
+        size={joined ? 'default' : 'sm'}
+        title="Rows per page"
+    >
         {selected.label} rows
     </Select.Trigger>
     <Select.Content>

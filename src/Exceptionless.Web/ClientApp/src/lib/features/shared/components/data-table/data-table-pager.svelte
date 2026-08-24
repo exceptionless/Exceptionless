@@ -55,9 +55,13 @@
     }
 </script>
 
-<nav bind:this={pagerElement} aria-label="Table pagination" class="ml-auto shrink-0">
+<nav
+    bind:this={pagerElement}
+    aria-label="Table pagination"
+    class="border-border ml-auto shrink-0 max-sm:flex max-sm:w-full max-sm:justify-end max-sm:border-t"
+>
     <ButtonGroup.Root aria-label="Pagination controls">
-        <DataTablePageSize bind:value onPageSizeChange={scrollTableIntoView} {table} />
+        <DataTablePageSize bind:value joined onPageSizeChange={scrollTableIntoView} {table} />
         <ButtonGroup.Text
             aria-label={`Page ${currentPage} of ${totalPages}`}
             class="min-w-14 justify-center rounded-none border-y-0 select-none"
