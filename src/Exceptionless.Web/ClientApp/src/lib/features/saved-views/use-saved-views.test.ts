@@ -11,7 +11,9 @@ import { savedViewHref, savedViewResolvedSlug } from './slugs';
 import {
     clearSavedViewQueryParams,
     filterDefinitionsEqual,
+    getChangedFilterKeys,
     getComparableSavedViewFilter,
+    getComparableSavedViewFilterDefinitions,
     getComparableSavedViewTime,
     getDraftSortQueryParam,
     getDraftSortValue,
@@ -251,6 +253,19 @@ describe('useSavedViews', () => {
     });
 
     describe('filter definition comparison', () => {
+        it('finds filter keys edited while saved-view draft hydration is pending', () => {
+            const initial = [new ProjectFilter(['project-1'])];
+            const current = [new ProjectFilter(['project-2'])];
+
+            expect(getChangedFilterKeys(initial, current)).toEqual(['project']);
+            expect(
+                getChangedFilterKeys(
+                    initial,
+                    initial.map((filter) => filter.clone())
+                )
+            ).toEqual([]);
+        });
+
         it('treats omitted empty filter values as equal to hydrated empty values', () => {
             // Arrange
             const seededDefinitions = '[{"type":"date","term":"date","value":"[now-7d TO now]"},{"type":"project"}]';
@@ -317,6 +332,16 @@ describe('useSavedViews', () => {
 
             // Assert
             expect(serializeFilters(result)).toBe('[{"type":"date","term":"date","value":"[now-90d TO now]"}]');
+        });
+
+        it('normalizes the saved time for modified-state comparisons', () => {
+            const result = getComparableSavedViewFilterDefinitions(
+                '[{"type":"project","value":[]},{"type":"date","term":"date","value":"[now-7d TO now]"}]',
+                '[now-90d TO now]',
+                '[now-15m TO now]'
+            );
+
+            expect(result).toBe('[{"type":"project","value":[]},{"type":"date","term":"date","value":"[now-90d TO now]"}]');
         });
     });
 

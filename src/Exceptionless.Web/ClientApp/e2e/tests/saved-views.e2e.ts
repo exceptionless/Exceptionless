@@ -622,6 +622,63 @@ test('reset clears a browser-local draft after delayed current-user identity res
     await expect(page.getByLabel('Unsaved view changes')).toHaveCount(0);
 });
 
+test('filter edits made before current-user identity resolves become browser-local drafts', async ({ e2eApi, e2eScenario, page, request }) => {
+    const suffix = e2eScenario.run.slice(-28);
+    const viewName = `E2E Delayed Edit ${suffix}`;
+    const viewSlug = savedViewSlug(viewName);
+    const authorizationHeaders = { Authorization: `Bearer ${e2eScenario.userToken}` };
+    const savedViewResponse = await request.post(`/api/v2/organizations/${e2eScenario.organizationId}/saved-views`, {
+        data: {
+            filter: '(status:open OR status:regressed)',
+            filter_definitions: JSON.stringify([
+                { term: 'date', type: 'date', value: '[now-15m TO now]' },
+                { type: 'project', value: [] },
+                { type: 'status', value: ['open', 'regressed'] }
+            ]),
+            name: viewName,
+            organization_id: e2eScenario.organizationId,
+            slug: viewSlug,
+            time: '[now-15m TO now]',
+            view_type: 'events'
+        },
+        headers: authorizationHeaders
+    });
+    expect(savedViewResponse.status()).toBe(201);
+    const savedView = (await savedViewResponse.json()) as { id: string };
+    const currentUser = await e2eApi.getCurrentUser(e2eScenario.userToken);
+    expect(currentUser).toBeDefined();
+    const draftKey = `exceptionless:saved-view-draft:v1:${currentUser!.id}:${e2eScenario.organizationId}:${savedView.id}`;
+
+    let releaseCurrentUser!: () => void;
+    const currentUserRelease = new Promise<void>((resolve) => {
+        releaseCurrentUser = resolve;
+    });
+    await page.route('**/api/v2/users/me', async (route) => {
+        await currentUserRelease;
+        await route.continue();
+    });
+
+    await page.goto(`/next/event/${viewSlug}`);
+    await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
+    await page.getByRole('button', { name: /^Date/ }).filter({ visible: true }).first().click();
+    await page.getByRole('button', { name: 'Last 90 days' }).click();
+    await expect(page).toHaveURL(/[?&]time=90d(?:&|$)/);
+
+    releaseCurrentUser();
+    await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
+    await expect.poll(() => page.evaluate((key) => window.localStorage.getItem(key), draftKey)).not.toBeNull();
+
+    await page.goto(`/next/event/${viewSlug}`);
+    await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
+    await expect(
+        page
+            .getByRole('button', { name: /Date\s+Last 90 days/ })
+            .filter({ visible: true })
+            .first()
+    ).toBeVisible();
+    await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
+});
+
 test('saved view loads server state and protects drafts when the current-user lookup fails', async ({ e2eApi, e2eScenario, page, request }) => {
     const suffix = e2eScenario.run.slice(-28);
     const viewName = `E2E User Failure ${suffix}`;

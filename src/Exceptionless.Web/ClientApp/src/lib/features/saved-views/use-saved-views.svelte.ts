@@ -13,6 +13,7 @@ import {
 import { organization } from '$features/organizations/context.svelte';
 import { getMeQuery } from '$features/users/api.svelte';
 import { tick, untrack } from 'svelte';
+import { SvelteSet, SvelteURL } from 'svelte/reactivity';
 
 import type { AutoFillColumnSelection, WrappedColumnIds } from './column-settings';
 import type { SavedView } from './models';
@@ -111,6 +112,13 @@ export interface UseSavedViewsReturn {
     wrappedColumnIds: WrappedColumnIds;
 }
 
+interface InitialQueryState {
+    filterDefinitions: string;
+    sort: null | string;
+    url: URL;
+    viewId: string;
+}
+
 const SAVED_VIEW_QUERY_PARAMETER_FILTER_KEYS: readonly string[] = [
     'boolean-bot',
     'boolean-first',
@@ -144,6 +152,14 @@ export function filterDefinitionsEqual(a: null | string | undefined, b: null | s
     return normalizeFilterDefinitions(a) === normalizeFilterDefinitions(b);
 }
 
+export function getChangedFilterKeys(initialFilters: IFilter[], currentFilters: IFilter[]): string[] {
+    const keys = new SvelteSet([...initialFilters.map((filter) => filter.key), ...currentFilters.map((filter) => filter.key)]);
+    return [...keys].filter(
+        (key) =>
+            serializeFilters(initialFilters.filter((filter) => filter.key === key)) !== serializeFilters(currentFilters.filter((filter) => filter.key === key))
+    );
+}
+
 export function getComparableSavedViewFilter(
     filter: null | string | undefined,
     filterDefinitions: null | string | undefined,
@@ -154,6 +170,14 @@ export function getComparableSavedViewFilter(
     }
 
     return filterDefinitions ? null : (defaultFilter ?? null);
+}
+
+export function getComparableSavedViewFilterDefinitions(
+    filterDefinitions: string,
+    time: null | string | undefined,
+    defaultTime: null | string | undefined
+): string {
+    return serializeFilters(getSavedViewDefinitionFilters(filterDefinitions, time, defaultTime));
 }
 
 export function getComparableSavedViewTime(time: null | string | undefined, defaultTime: null | string | undefined): null | string {
@@ -428,7 +452,12 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         return applyTimeFilter(filters, getComparableSavedViewTime(view.time, options.defaultTime));
     }
 
-    function getExplicitFilterOverrideKeys(serverFilters: IFilter[], currentFilters: IFilter[], draft: SavedViewDraft | undefined): string[] {
+    function getExplicitFilterOverrideKeys(
+        serverFilters: IFilter[],
+        currentFilters: IFilter[],
+        draft: SavedViewDraft | undefined,
+        url: URL = page.url
+    ): string[] {
         const keys: string[] = [];
         const queryParameterKeys = [
             ['bot', 'boolean-bot'],
@@ -451,13 +480,13 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         };
 
         for (const [parameter, key] of queryParameterKeys) {
-            if (page.url.searchParams.has(parameter)) {
+            if (url.searchParams.has(parameter)) {
                 addKey(key);
             }
         }
 
-        if (page.url.searchParams.has('filter')) {
-            const filter = page.url.searchParams.get('filter') ?? '';
+        if (url.searchParams.has('filter')) {
+            const filter = url.searchParams.get('filter') ?? '';
             if (filter) {
                 for (const override of getFiltersFromCache(options.filterCacheKey(filter), filter)) {
                     addKey(override.key);
@@ -469,8 +498,8 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             }
         }
 
-        if (page.url.searchParams.has('filters')) {
-            const definitions = page.url.searchParams.get('filters');
+        if (url.searchParams.has('filters')) {
+            const definitions = url.searchParams.get('filters');
             if (definitions) {
                 try {
                     for (const override of deserializeFilters(definitions)) {
@@ -485,7 +514,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         return keys;
     }
 
-    function applyDraftState(view: SavedView, draft: SavedViewDraft | undefined, overrideKeys: string[]): void {
+    function applyDraftState(view: SavedView, draft: SavedViewDraft | undefined, overrideKeys: string[], preservePendingSort = false): void {
         const availableColumnIds = options.getAvailableColumnIds?.() ?? options.getColumnOrder?.() ?? [];
 
         if (options.applyFilters) {
@@ -518,7 +547,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         options.setShowStats?.(draft && 'showStats' in draft ? draft.showStats! : (view.show_stats ?? true));
         options.setShowChart?.(draft && 'showChart' in draft ? draft.showChart! : (view.show_chart ?? true));
 
-        if (draft && 'sort' in draft && !page.url.searchParams.has('sort')) {
+        if (draft && 'sort' in draft && !page.url.searchParams.has('sort') && !preservePendingSort) {
             setSortQueryParam(options.queryParams, getDraftSortQueryParam(view.sort ?? null, draft.sort ?? null), 'replace');
         }
     }
@@ -622,6 +651,23 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         hydratedColumnOrder = options.getColumnOrder ? [...options.getColumnOrder()] : undefined;
     }
 
+    async function captureInitialQueryStateAfterStateSettles(viewId: string): Promise<InitialQueryState | undefined> {
+        await tick();
+        await new Promise<void>((resolve) => setTimeout(resolve, 0));
+        await tick();
+
+        if (activeSavedView?.id !== viewId || serverHydratedSavedViewId !== viewId) {
+            return undefined;
+        }
+
+        return {
+            filterDefinitions: options.getFilterDefinitions?.() ?? '[]',
+            sort: options.getSort?.() ?? options.queryParams.sort ?? null,
+            url: new SvelteURL(page.url),
+            viewId
+        };
+    }
+
     // Hydrate saved view state when a saved view loads. Query params remain URL overrides.
     // lastLoadedViewId prevents re-hydration on background refetches (which would stomp user edits).
     let lastLoadedViewId = '';
@@ -636,6 +682,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     let hydratedSavedView = $state<SavedView>();
     let hydratedSavedViewSignature = '';
     let hydratedSavedViewId = $state<string>();
+    let initialQueryStatePromise: Promise<InitialQueryState | undefined> = Promise.resolve(undefined);
     let serverHydratedSavedViewId = $state<string>();
     $effect(() => {
         const savedViewKey = options.slug ?? options.queryParams.saved;
@@ -661,6 +708,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
                 hydratedColumnOrder = undefined;
                 hydratedSavedView = undefined;
                 hydratedSavedViewSignature = '';
+                initialQueryStatePromise = Promise.resolve(undefined);
             }
 
             hydratedSavedViewId = undefined;
@@ -721,16 +769,12 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         applyDisplayState(view);
         hydratedSavedViewId = undefined;
         serverHydratedSavedViewId = view.id;
+        initialQueryStatePromise = captureInitialQueryStateAfterStateSettles(view.id);
         void captureHydratedColumnOrderAfterStateSettles(view.id);
     });
 
     async function applyDraftAfterViewHydrates(viewId: string, identity: SavedViewDraftIdentity, draftKey: string, generation: number): Promise<void> {
-        // A dirty source view can leave a queued query-param reset behind during
-        // client-side navigation. Let that navigation task and route hydration
-        // finish before applying the destination view's browser-local draft.
-        await tick();
-        await new Promise<void>((resolve) => setTimeout(resolve, 0));
-        await tick();
+        const initialState = await initialQueryStatePromise;
 
         const view = activeSavedView;
         const currentIdentity = view ? getDraftIdentity(view) : undefined;
@@ -747,13 +791,18 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         const draft = mergePendingSavedViewDraftEdits(getSavedViewDraft(identity), pendingEdits);
         const serverFilters = getServerFilters(view);
         const currentFilters = options.getFilterDefinitions ? deserializeFilters(options.getFilterDefinitions()) : [];
-        const overrideKeys = getExplicitFilterOverrideKeys(serverFilters, currentFilters, draft);
-        activeFilterOverrideBaselines = buildFilterOverrideBaselines(currentFilters, overrideKeys);
-        activeSortOverride = page.url.searchParams.has('sort')
+        const matchingInitialState = initialState?.viewId === view.id ? initialState : undefined;
+        const initialFilters = matchingInitialState ? deserializeFilters(matchingInitialState.filterDefinitions) : currentFilters;
+        const initialOverrideKeys = getExplicitFilterOverrideKeys(serverFilters, initialFilters, draft, matchingInitialState?.url ?? page.url);
+        const overrideKeys = [...new SvelteSet([...initialOverrideKeys, ...getChangedFilterKeys(initialFilters, currentFilters)])];
+        activeFilterOverrideBaselines = buildFilterOverrideBaselines(initialFilters, initialOverrideKeys);
+        activeSortOverride = (matchingInitialState?.url ?? page.url).searchParams.has('sort')
             ? {
-                  value: options.getSort?.() ?? options.queryParams.sort ?? null
+                  value: matchingInitialState?.sort ?? options.getSort?.() ?? options.queryParams.sort ?? null
               }
             : undefined;
+        const preservePendingSort =
+            matchingInitialState !== undefined && (options.getSort?.() ?? options.queryParams.sort ?? null) !== matchingInitialState.sort;
         hydratedColumnOrder = options.getColumnOrder ? resolveSavedViewColumnOrder(view, options.getColumnOrder()) : undefined;
         hydratedSavedView = view;
         hydratedSavedViewSignature = getSavedViewStateSignature(view);
@@ -763,7 +812,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             pendingDraftGeneration = -1;
         }
 
-        applyDraftState(view, draft, overrideKeys);
+        applyDraftState(view, draft, overrideKeys, preservePendingSort);
 
         hydratedSavedViewId = view.id;
     }
@@ -816,7 +865,14 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return true;
         }
 
-        if (options.getFilterDefinitions && view.filter_definitions && !filterDefinitionsEqual(options.getFilterDefinitions(), view.filter_definitions)) {
+        if (
+            options.getFilterDefinitions &&
+            view.filter_definitions &&
+            !filterDefinitionsEqual(
+                options.getFilterDefinitions(),
+                getComparableSavedViewFilterDefinitions(view.filter_definitions, view.time, options.defaultTime)
+            )
+        ) {
             return true;
         }
 
@@ -944,6 +1000,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return;
         }
 
+        initialQueryStatePromise = captureInitialQueryStateAfterStateSettles(view.id);
         hydratedSavedViewId = undefined;
         appliedDraftKey = '';
         pendingDraftKey = '';
