@@ -49,6 +49,7 @@ import {
     getSavedViewDraft,
     mergeFilterOverrides,
     mergePendingSavedViewDraftEdits,
+    type PendingSavedViewDraftTouches,
     type SavedViewDraft,
     type SavedViewDraftIdentity,
     saveSavedViewDraft
@@ -117,6 +118,17 @@ interface InitialQueryState {
     filterDefinitions: string;
     sort: null | string;
     url: URL;
+    viewId: string;
+}
+
+type PendingDraftField = NonNullable<PendingSavedViewDraftTouches['fields']>[number];
+type PendingDraftRecordField = keyof NonNullable<PendingSavedViewDraftTouches['recordKeys']>;
+
+interface PendingDraftTracker {
+    columnOrderBaseline: ColumnOrderState | undefined;
+    previousDraft: SavedViewDraft | undefined;
+    touchedFields: Set<PendingDraftField>;
+    touchedRecordKeys: Record<PendingDraftRecordField, Set<string>>;
     viewId: string;
 }
 
@@ -680,6 +692,26 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         };
     }
 
+    async function initializePendingDraftTrackingAfterStateSettles(view: SavedView): Promise<void> {
+        const initialState = await initialQueryStatePromise;
+        if (!initialState || initialState.viewId !== view.id || activeSavedView?.id !== view.id || serverHydratedSavedViewId !== view.id) {
+            return;
+        }
+
+        const columnOrderBaseline = options.getColumnOrder ? resolveSavedViewColumnOrder(view, options.getColumnOrder()) : undefined;
+        pendingDraftTracker = {
+            columnOrderBaseline,
+            previousDraft: buildSavedViewDraft(view, columnOrderBaseline),
+            touchedFields: new SvelteSet(),
+            touchedRecordKeys: {
+                columnSizingChanges: new SvelteSet(),
+                columnVisibilityChanges: new SvelteSet(),
+                wrappedColumnChanges: new SvelteSet()
+            },
+            viewId: view.id
+        };
+    }
+
     // Hydrate saved view state when a saved view loads. Query params remain URL overrides.
     // lastLoadedViewId prevents re-hydration on background refetches (which would stomp user edits).
     let lastLoadedViewId = '';
@@ -688,6 +720,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     let appliedDraftKey = $state('');
     let pendingDraftKey = '';
     let pendingDraftGeneration = -1;
+    let pendingDraftTracker = $state.raw<PendingDraftTracker>();
     let draftHydrationGeneration = $state(0);
     let draftPersistenceGeneration = 0;
     let hydratedColumnOrder = $state<ColumnOrderState>();
@@ -710,6 +743,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
                     applyDisplayState(undefined);
                     pendingDraftKey = '';
                     pendingDraftGeneration = -1;
+                    pendingDraftTracker = undefined;
                     draftHydrationGeneration++;
                 }
 
@@ -763,6 +797,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         appliedDraftKey = '';
         pendingDraftKey = '';
         pendingDraftGeneration = -1;
+        pendingDraftTracker = undefined;
         draftHydrationGeneration++;
         hydratedColumnOrder = undefined;
         hydratedSavedView = view;
@@ -782,7 +817,19 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         hydratedSavedViewId = undefined;
         serverHydratedSavedViewId = view.id;
         initialQueryStatePromise = captureInitialQueryStateAfterStateSettles(view.id);
+        void initializePendingDraftTrackingAfterStateSettles(view);
         void captureHydratedColumnOrderAfterStateSettles(view.id);
+    });
+
+    $effect(() => {
+        const tracker = pendingDraftTracker;
+        const view = activeSavedView;
+        if (!tracker || !view || tracker.viewId !== view.id || hydratedSavedViewId === view.id) {
+            return;
+        }
+
+        const currentDraft = buildSavedViewDraft(view, tracker.columnOrderBaseline);
+        untrack(() => trackPendingDraftChanges(tracker, currentDraft));
     });
 
     async function applyDraftAfterViewHydrates(viewId: string, identity: SavedViewDraftIdentity, draftKey: string, generation: number): Promise<void> {
@@ -799,8 +846,9 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return;
         }
 
+        const tracker = pendingDraftTracker?.viewId === view.id ? pendingDraftTracker : undefined;
         const pendingEdits = hydratedSavedView?.id === view.id ? buildSavedViewDraft(hydratedSavedView, hydratedColumnOrder) : undefined;
-        const draft = mergePendingSavedViewDraftEdits(getSavedViewDraft(identity), pendingEdits);
+        const draft = mergePendingSavedViewDraftEdits(getSavedViewDraft(identity), pendingEdits, tracker ? getPendingDraftTouches(tracker) : undefined);
         const serverFilters = getServerFilters(view);
         const currentFilters = options.getFilterDefinitions ? deserializeFilters(options.getFilterDefinitions()) : [];
         const matchingInitialState = initialState?.viewId === view.id ? initialState : undefined;
@@ -819,6 +867,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         hydratedSavedView = view;
         hydratedSavedViewSignature = getSavedViewStateSignature(view);
         appliedDraftKey = draftKey;
+        pendingDraftTracker = undefined;
         if (pendingDraftKey === draftKey && pendingDraftGeneration === generation) {
             pendingDraftKey = '';
             pendingDraftGeneration = -1;
@@ -1085,6 +1134,13 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
                 : undefined);
         if (identity) {
             clearSavedViewDraft(identity);
+        }
+
+        if (activeSavedView?.id !== view.id) {
+            return;
+        }
+
+        if (identity) {
             appliedDraftKey = `${identity.userId}:${identity.organizationId}:${identity.savedViewId}`;
         }
 
@@ -1154,6 +1210,28 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     };
 }
 
+function getPendingDraftTouches(tracker: PendingDraftTracker): PendingSavedViewDraftTouches | undefined {
+    const recordKeys = Object.fromEntries(
+        Object.entries(tracker.touchedRecordKeys)
+            .filter(([, keys]) => keys.size > 0)
+            .map(([field, keys]) => [field, [...keys]])
+    ) as PendingSavedViewDraftTouches['recordKeys'];
+    const touches: PendingSavedViewDraftTouches = {
+        ...(tracker.touchedFields.size > 0
+            ? {
+                  fields: [...tracker.touchedFields]
+              }
+            : {}),
+        ...(Object.keys(recordKeys ?? {}).length > 0
+            ? {
+                  recordKeys
+              }
+            : {})
+    };
+
+    return touches.fields || touches.recordKeys ? touches : undefined;
+}
+
 function normalizeFilterDefinitions(value: null | string | undefined): string {
     if (!value) {
         return '[]';
@@ -1181,6 +1259,26 @@ function supportsFiltersQueryParam(queryParams: SavedViewQueryParams): queryPara
 
 function supportsSavedQueryParam(queryParams: SavedViewQueryParams): queryParams is SavedViewQueryParams & { saved: null | string | undefined } {
     return Object.prototype.hasOwnProperty.call(queryParams, 'saved');
+}
+
+function trackPendingDraftChanges(tracker: PendingDraftTracker, currentDraft: SavedViewDraft | undefined): void {
+    for (const field of ['autoFillColumnId', 'columnOrder', 'showChart', 'showStats'] as const) {
+        if (JSON.stringify(tracker.previousDraft?.[field]) !== JSON.stringify(currentDraft?.[field])) {
+            tracker.touchedFields.add(field);
+        }
+    }
+
+    for (const field of ['columnSizingChanges', 'columnVisibilityChanges', 'wrappedColumnChanges'] as const) {
+        const previous = (tracker.previousDraft?.[field] ?? {}) as Record<string, unknown>;
+        const current = (currentDraft?.[field] ?? {}) as Record<string, unknown>;
+        for (const key of new SvelteSet([...Object.keys(previous), ...Object.keys(current)])) {
+            if (!Object.is(previous[key], current[key])) {
+                tracker.touchedRecordKeys[field].add(key);
+            }
+        }
+    }
+
+    tracker.previousDraft = currentDraft;
 }
 
 function updateSavedViewFilterCache(options: UseSavedViewsOptions, view: SavedView, filters: IFilter[]): void {

@@ -285,6 +285,28 @@ describe('saved view drafts', () => {
         });
     });
 
+    it('clears stored edits that were explicitly reverted while identity hydration was pending', () => {
+        const merged = mergePendingSavedViewDraftEdits(
+            {
+                columnVisibilityChanges: { date: false, summary: false },
+                showChart: false,
+                showStats: false,
+                version: 1
+            },
+            undefined,
+            {
+                fields: ['showChart'],
+                recordKeys: { columnVisibilityChanges: ['date'] }
+            }
+        );
+
+        expect(merged).toEqual({
+            columnVisibilityChanges: { summary: false },
+            showStats: false,
+            version: 1
+        });
+    });
+
     it('retires an initial filter override after its value changes', () => {
         const initialFilters = [new ProjectFilter(['url-project']), new StatusFilter([StackStatus.Regressed])];
         const baselines = buildFilterOverrideBaselines(initialFilters, ['project']);

@@ -7,6 +7,11 @@ import type { AutoFillColumnSelection } from './column-settings';
 const STORAGE_PREFIX = 'exceptionless:saved-view-draft:v1:';
 const MULTISET_FILTER_TYPES = new Set(['keyword']);
 
+export interface PendingSavedViewDraftTouches {
+    fields?: Array<'autoFillColumnId' | 'columnOrder' | 'showChart' | 'showStats'>;
+    recordKeys?: Partial<Record<'columnSizingChanges' | 'columnVisibilityChanges' | 'wrappedColumnChanges', string[]>>;
+}
+
 export interface SavedViewDraft {
     autoFillColumnId?: AutoFillColumnSelection;
     columnOrder?: string[];
@@ -273,25 +278,48 @@ export function mergeFilterOverrides(baseFilters: IFilter[], overrideFilters: IF
     ];
 }
 
-export function mergePendingSavedViewDraftEdits(storedDraft: SavedViewDraft | undefined, pendingEdits: SavedViewDraft | undefined): SavedViewDraft | undefined {
-    if (!pendingEdits) {
+export function mergePendingSavedViewDraftEdits(
+    storedDraft: SavedViewDraft | undefined,
+    pendingEdits: SavedViewDraft | undefined,
+    touches?: PendingSavedViewDraftTouches
+): SavedViewDraft | undefined {
+    if (!pendingEdits && !touches) {
         return storedDraft;
     }
 
+    const pending = pendingEdits ?? { version: 1 };
     const merged: SavedViewDraft = {
         ...storedDraft,
         version: 1
     };
-    const mergeChanges = <T>(stored: Record<string, T> | undefined, pending: Record<string, T> | undefined): Record<string, T> | undefined =>
-        stored || pending ? { ...stored, ...pending } : undefined;
+    const mergeChanges = <T>(
+        stored: Record<string, T> | undefined,
+        current: Record<string, T> | undefined,
+        touchedKeys: string[] | undefined
+    ): Record<string, T> | undefined => {
+        const result = stored || current ? { ...stored, ...current } : undefined;
+        for (const key of touchedKeys ?? []) {
+            if (!current || !(key in current)) {
+                delete result?.[key];
+            }
+        }
 
-    merged.columnSizingChanges = mergeChanges(storedDraft?.columnSizingChanges, pendingEdits.columnSizingChanges);
-    merged.columnVisibilityChanges = mergeChanges(storedDraft?.columnVisibilityChanges, pendingEdits.columnVisibilityChanges);
-    merged.wrappedColumnChanges = mergeChanges(storedDraft?.wrappedColumnChanges, pendingEdits.wrappedColumnChanges);
+        return result && Object.keys(result).length > 0 ? result : undefined;
+    };
+
+    merged.columnSizingChanges = mergeChanges(storedDraft?.columnSizingChanges, pending.columnSizingChanges, touches?.recordKeys?.columnSizingChanges);
+    merged.columnVisibilityChanges = mergeChanges(
+        storedDraft?.columnVisibilityChanges,
+        pending.columnVisibilityChanges,
+        touches?.recordKeys?.columnVisibilityChanges
+    );
+    merged.wrappedColumnChanges = mergeChanges(storedDraft?.wrappedColumnChanges, pending.wrappedColumnChanges, touches?.recordKeys?.wrappedColumnChanges);
 
     for (const key of ['autoFillColumnId', 'columnOrder', 'showChart', 'showStats'] as const) {
-        if (key in pendingEdits) {
-            Object.assign(merged, { [key]: pendingEdits[key] });
+        if (key in pending) {
+            Object.assign(merged, { [key]: pending[key] });
+        } else if (touches?.fields?.includes(key)) {
+            delete merged[key];
         }
     }
 

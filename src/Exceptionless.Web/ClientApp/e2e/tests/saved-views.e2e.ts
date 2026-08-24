@@ -432,6 +432,93 @@ test('switching saved views preserves each view temporary filter overrides acros
     expect(failedApiRequests).toEqual([]);
 });
 
+test('save completion does not overwrite a newly active saved view', async ({ e2eScenario, page, request }) => {
+    const suffix = e2eScenario.run.slice(-28);
+    const firstViewName = `E2E Save Race A ${suffix}`;
+    const secondViewName = `E2E Save Race B ${suffix}`;
+    const firstViewSlug = savedViewSlug(firstViewName);
+    const secondViewSlug = savedViewSlug(secondViewName);
+    const authorizationHeaders = { Authorization: `Bearer ${e2eScenario.userToken}` };
+    const createView = (name: string, slug: string, time: string) =>
+        request.post(`/api/v2/organizations/${e2eScenario.organizationId}/saved-views`, {
+            data: {
+                filter: '(status:open OR status:regressed)',
+                filter_definitions: JSON.stringify([
+                    { term: 'date', type: 'date', value: `[now-${time} TO now]` },
+                    { type: 'project', value: [] },
+                    { type: 'status', value: ['open', 'regressed'] }
+                ]),
+                name,
+                organization_id: e2eScenario.organizationId,
+                slug,
+                time: `[now-${time} TO now]`,
+                view_type: 'events'
+            },
+            headers: authorizationHeaders
+        });
+
+    const firstViewResponse = await createView(firstViewName, firstViewSlug, '15m');
+    expect(firstViewResponse.status()).toBe(201);
+    const firstView = (await firstViewResponse.json()) as { id: string };
+    const secondViewResponse = await createView(secondViewName, secondViewSlug, '1d');
+    expect(secondViewResponse.status()).toBe(201);
+    const savedViewsPath = `/api/v2/organizations/${e2eScenario.organizationId}/saved-views/events`;
+    await expect
+        .poll(async () => {
+            const response = await request.get(savedViewsPath, { headers: authorizationHeaders });
+            const names = response.ok() ? ((await response.json()) as { name: string }[]).map((view) => view.name) : [];
+            return names.includes(firstViewName) && names.includes(secondViewName);
+        })
+        .toBe(true);
+
+    await page.goto(`/next/event/${firstViewSlug}`);
+    await expect(page.getByRole('heading', { name: firstViewName })).toBeVisible();
+    await page.getByRole('button', { name: /^Date/ }).filter({ visible: true }).first().click();
+    await page.getByRole('button', { name: 'Last 90 days' }).click();
+    await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
+
+    let releaseSave!: () => void;
+    let markSaveStarted!: () => void;
+    const saveStarted = new Promise<void>((resolve) => {
+        markSaveStarted = resolve;
+    });
+    const saveRelease = new Promise<void>((resolve) => {
+        releaseSave = resolve;
+    });
+    await page.route(`**/api/v2/saved-views/${firstView.id}`, async (route) => {
+        if (route.request().method() !== 'PATCH') {
+            await route.continue();
+            return;
+        }
+
+        markSaveStarted();
+        await saveRelease;
+        await route.continue();
+    });
+
+    await openViewMenu(page);
+    await page.getByRole('menuitem', { exact: true, name: 'Save' }).click();
+    await saveStarted;
+    const secondViewRequestTimes: string[] = [];
+    page.on('request', (eventRequest) => {
+        const url = new URL(eventRequest.url());
+        if (url.pathname === `/api/v2/organizations/${e2eScenario.organizationId}/events`) {
+            secondViewRequestTimes.push(url.searchParams.get('time') ?? '');
+        }
+    });
+    await page.getByRole('link', { exact: true, name: secondViewName }).first().click();
+    await expect(page.getByRole('heading', { name: secondViewName })).toBeVisible();
+    await expect.poll(() => secondViewRequestTimes.some((time) => time.includes('now-1d'))).toBe(true);
+    const saveCompleted = page.waitForResponse(
+        (response) => response.request().method() === 'PATCH' && new URL(response.url()).pathname === `/api/v2/saved-views/${firstView.id}`
+    );
+    releaseSave();
+    await saveCompleted;
+    await page.getByRole('button', { name: /^Date/ }).filter({ visible: true }).first().click();
+    await page.getByRole('button', { name: 'Last 7 days' }).click();
+    await expect.poll(() => secondViewRequestTimes.some((time) => time.includes('now-7d'))).toBe(true);
+});
+
 test('stream switches to a browser-local saved view draft without mixing in-flight results', async ({ e2eApi, e2eScenario, page, request }) => {
     const failedApiRequests = captureFailedApiRequests(page);
     const suffix = e2eScenario.run.slice(-28);
@@ -684,6 +771,17 @@ test('filter edits made before current-user identity resolves become browser-loc
     const currentUser = await e2eApi.getCurrentUser(e2eScenario.userToken);
     expect(currentUser).toBeDefined();
     const draftKey = `exceptionless:saved-view-draft:v1:${currentUser!.id}:${e2eScenario.organizationId}:${savedView.id}`;
+    await page.addInitScript(
+        ({ key, marker }) => {
+            if (window.sessionStorage.getItem(marker)) {
+                return;
+            }
+
+            window.localStorage.setItem(key, JSON.stringify({ showChart: false, version: 1 }));
+            window.sessionStorage.setItem(marker, 'true');
+        },
+        { key: draftKey, marker: `${draftKey}:seeded` }
+    );
 
     let releaseCurrentUser!: () => void;
     const currentUserRelease = new Promise<void>((resolve) => {
@@ -696,6 +794,14 @@ test('filter edits made before current-user identity resolves become browser-loc
 
     await page.goto(`/next/event/${viewSlug}`);
     await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
+    await openViewMenu(page);
+    const chartMenuItem = page.getByRole('menuitemcheckbox', { name: 'Chart' });
+    await expect(chartMenuItem).toBeChecked();
+    await chartMenuItem.click();
+    await expect(chartMenuItem).not.toBeChecked();
+    await chartMenuItem.click();
+    await expect(chartMenuItem).toBeChecked();
+    await page.keyboard.press('Escape');
     await page.getByRole('button', { name: /^Date/ }).filter({ visible: true }).first().click();
     await page.getByRole('button', { name: 'Last 90 days' }).click();
     await expect(page).toHaveURL(/[?&]time=90d(?:&|$)/);
@@ -703,9 +809,31 @@ test('filter edits made before current-user identity resolves become browser-loc
     releaseCurrentUser();
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
     await expect.poll(() => page.evaluate((key) => window.localStorage.getItem(key), draftKey)).not.toBeNull();
+    await openViewMenu(page);
+    await expect(page.getByRole('menuitemcheckbox', { name: 'Chart' })).toBeChecked();
+    await page.keyboard.press('Escape');
+    await expect
+        .poll(async () => JSON.parse((await page.evaluate((key) => window.localStorage.getItem(key), draftKey)) ?? '{}') as { showChart?: boolean })
+        .not.toHaveProperty('showChart');
+    await expect
+        .poll(async () => {
+            const draft = JSON.parse((await page.evaluate((key) => window.localStorage.getItem(key), draftKey)) ?? '{}') as {
+                filterChanges?: { upsertDefinitions?: string };
+            };
+            return draft.filterChanges?.upsertDefinitions;
+        })
+        .toContain('now-90d');
 
     await page.goto(`/next/event/${viewSlug}`);
     await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
+    await expect
+        .poll(async () => {
+            const draft = JSON.parse((await page.evaluate((key) => window.localStorage.getItem(key), draftKey)) ?? '{}') as {
+                filterChanges?: { upsertDefinitions?: string };
+            };
+            return draft.filterChanges?.upsertDefinitions;
+        })
+        .toContain('now-90d');
     await expect(
         page
             .getByRole('button', { name: /Date\s+Last 90 days/ })
