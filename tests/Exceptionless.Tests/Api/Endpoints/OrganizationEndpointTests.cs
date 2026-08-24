@@ -11,6 +11,7 @@ using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
+using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
 using Microsoft.Extensions.DependencyInjection;
@@ -1526,6 +1527,44 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         Assert.Equal("4242", organization.CardLast4);
         Assert.Equal(_plans.SmallPlan.Id, organization.PlanId);
         Assert.Equal(BillingStatus.Active, organization.BillingStatus);
+    }
+
+    [Fact]
+    public async Task ChangePlanAsync_WaitsForSavedViewDefaultMutationBeforeCreatingCustomer()
+    {
+        StripeBillingClient.CustomerToReturn = new Customer { Id = "cus_created" };
+
+        var lockProvider = GetService<ILockProvider>();
+        var heldLock = await lockProvider.AcquireAsync($"saved-view-defaults:{SampleDataService.FREE_ORG_ID}", TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(1));
+        var changePlanTask = WithBillingEnabledAsync(() =>
+            SendRequestAsAsync<ChangePlanResult>(r => r
+                .AsFreeOrganizationUser()
+                .Post()
+                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
+                .Content(new ChangePlanRequest
+                {
+                    PlanId = _plans.SmallPlan.Id,
+                    StripeToken = "tok_visa",
+                    Last4 = "4242"
+                })
+                .StatusCodeShouldBeOk()
+            ));
+
+        try
+        {
+            await Task.Delay(100, TestCancellationToken);
+            Assert.False(changePlanTask.IsCompleted);
+            Assert.Null(StripeBillingClient.LastCustomerCreateOptions);
+        }
+        finally
+        {
+            await heldLock.DisposeAsync();
+        }
+
+        var result = await changePlanTask;
+        Assert.NotNull(result);
+        Assert.True(result.Success, result.Message);
+        Assert.NotNull(StripeBillingClient.LastCustomerCreateOptions);
     }
 
     [Fact]

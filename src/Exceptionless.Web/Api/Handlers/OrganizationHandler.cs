@@ -370,6 +370,8 @@ public class OrganizationHandler(
             return ChangePlanResult.FailWithMessage("Another billing change is already in progress. Please try again.");
         }
 
+        await using var defaultsLock = await lockProvider.AcquireAsync($"saved-view-defaults:{message.Id}", TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30));
+
         var organization = await GetModelAsync(message.Id, useCache: false);
         if (organization is null)
             return Result.NotFound("Organization not found.");
@@ -684,7 +686,7 @@ public class OrganizationHandler(
             return Result.NotFound("Organization not found.");
 
         var user = await userRepository.GetByEmailAddressAsync(message.Email);
-        if (user is null || !user.OrganizationIds.Contains(message.Id))
+        if (user is null)
         {
             var invite = organization.Invites.FirstOrDefault(i => String.Equals(i.EmailAddress, message.Email, StringComparison.OrdinalIgnoreCase));
             if (invite is null)
@@ -695,30 +697,45 @@ public class OrganizationHandler(
         }
         else
         {
+            if (!user.OrganizationIds.Contains(message.Id))
+            {
+                var invite = organization.Invites.FirstOrDefault(i => String.Equals(i.EmailAddress, message.Email, StringComparison.OrdinalIgnoreCase));
+                if (invite is not null)
+                {
+                    organization.Invites.Remove(invite);
+                    await repository.SaveAsync(organization, o => o.Cache());
+                    return Result.Success();
+                }
+            }
+
             await using var defaultsLock = await lockProvider.AcquireAsync($"saved-view-defaults:{organization.Id}", TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30));
             await using var userDefaultsLock = await lockProvider.AcquireAsync($"saved-view-defaults:user:{user.Id}", TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30));
 
             user = await userRepository.GetByIdAsync(user.Id, o => o.Cache(false));
-            if (user is null || !user.OrganizationIds.Contains(organization.Id))
+            if (user is null)
                 return Result.Success();
 
-            var organizationUsers = await userRepository.GetByOrganizationIdAsync(organization.Id);
-            if (organizationUsers.Total is 1)
-                return Result.BadRequest("An organization must contain at least one user.");
+            bool isMember = user.OrganizationIds.Contains(organization.Id);
+            if (isMember)
+            {
+                var organizationUsers = await userRepository.GetByOrganizationIdAsync(organization.Id);
+                if (organizationUsers.Total is 1)
+                    return Result.BadRequest("An organization must contain at least one user.");
+
+                user.OrganizationIds.Remove(organization.Id);
+                foreach (var preference in user.OrganizationPreferences.Where(preference => String.Equals(preference.OrganizationId, organization.Id, StringComparison.Ordinal)).ToList())
+                    user.OrganizationPreferences.Remove(preference);
+                await userRepository.SaveAsync(user, o => o.Cache());
+                await messagePublisher.PublishAsync(new UserMembershipChanged
+                {
+                    ChangeType = ChangeType.Removed,
+                    UserId = user.Id,
+                    OrganizationId = organization.Id
+                });
+            }
 
             await organizationService.CleanupProjectNotificationSettingsAsync(organization, [user.Id]);
             await organizationService.RemoveUserSavedViewsAsync(organization.Id, user.Id);
-
-            user.OrganizationIds.Remove(organization.Id);
-            foreach (var preference in user.OrganizationPreferences.Where(preference => String.Equals(preference.OrganizationId, organization.Id, StringComparison.Ordinal)).ToList())
-                user.OrganizationPreferences.Remove(preference);
-            await userRepository.SaveAsync(user, o => o.Cache());
-            await messagePublisher.PublishAsync(new UserMembershipChanged
-            {
-                ChangeType = ChangeType.Removed,
-                UserId = user.Id,
-                OrganizationId = organization.Id
-            });
         }
 
         return Result.Success();

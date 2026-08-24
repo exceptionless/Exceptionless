@@ -2154,6 +2154,77 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task RemoveUser_VersionConflictOccursBeforePrivateViewCleanup()
+    {
+        var testUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(testUser);
+
+        var privateView = await _savedViewRepository.AddAsync(new SavedView
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            UserId = testUser.Id,
+            Name = "Conflict Safe Private View",
+            Filter = "type:error",
+            Slug = "conflict-safe-private-view",
+            ViewType = "events",
+            CreatedByUserId = testUser.Id
+        }, o => o.ImmediateConsistency());
+
+        var projectRepository = GetService<IProjectRepository>();
+        var project = await projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(project);
+        project.NotificationSettings[testUser.Id] = new NotificationSettings { ReportNewErrors = true };
+        await projectRepository.SaveAsync(project, o => o.ImmediateConsistency());
+
+        var membershipSaveStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseMembershipSave = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var savingRegistration = _userRepository.DocumentsSaving.AddHandler(async (_, args) =>
+        {
+            if (!args.Documents.Any(document => String.Equals(document.Value.Id, testUser.Id, StringComparison.Ordinal)
+                && !document.Value.OrganizationIds.Contains(SampleDataService.TEST_ORG_ID)))
+            {
+                return;
+            }
+
+            membershipSaveStarted.TrySetResult();
+            await releaseMembershipSave.Task.WaitAsync(TestCancellationToken);
+        });
+
+        var removeTask = SendRequestAsync(r => r
+            .Delete()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "users", SampleDataService.TEST_ORG_USER_EMAIL)
+            .ExpectedStatus(HttpStatusCode.Conflict)
+        );
+
+        await membershipSaveStarted.Task.WaitAsync(TestCancellationToken);
+        try
+        {
+            var concurrentlyUpdatedUser = await _userRepository.GetByIdAsync(testUser.Id, o => o.Cache(false));
+            Assert.NotNull(concurrentlyUpdatedUser);
+            concurrentlyUpdatedUser.FullName = "Concurrent Profile Update";
+            await _userRepository.SaveAsync(concurrentlyUpdatedUser, o => o.ImmediateConsistency());
+        }
+        finally
+        {
+            releaseMembershipSave.TrySetResult();
+        }
+
+        await removeTask;
+        await RefreshDataAsync();
+
+        var persistedUser = await _userRepository.GetByIdAsync(testUser.Id, o => o.Cache(false));
+        Assert.NotNull(persistedUser);
+        Assert.Contains(SampleDataService.TEST_ORG_ID, persistedUser.OrganizationIds);
+        Assert.Equal("Concurrent Profile Update", persistedUser.FullName);
+        Assert.NotNull(await _savedViewRepository.GetByIdAsync(privateView.Id));
+
+        project = await projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(project);
+        Assert.Contains(testUser.Id, project.NotificationSettings.Keys);
+    }
+
+    [Fact]
     public async Task SoftDeleteOrganization_WithSavedViews_RemovesAllSavedViews()
     {
         // Arrange
