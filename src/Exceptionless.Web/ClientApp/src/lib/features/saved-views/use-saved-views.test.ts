@@ -1,4 +1,5 @@
 import { ProjectFilter } from '$features/events/components/filters';
+import { serializeFilters } from '$features/events/components/filters/helpers.svelte';
 import { ChangeType } from '$features/websockets/models';
 import { QueryClient } from '@tanstack/svelte-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -15,6 +16,7 @@ import {
     getDraftSortQueryParam,
     getDraftSortValue,
     getEmptyFilterOverrideKeys,
+    getSavedViewDefinitionFilters,
     getSavedViewOverrideSignature,
     getSavedViewStateSignature,
     hasMissingSavedView,
@@ -299,6 +301,22 @@ describe('useSavedViews', () => {
 
             // Assert
             expect(result).toBe('[now-7d TO now]');
+        });
+
+        it('adds the saved time to legacy filter definitions without a date filter', () => {
+            // Act
+            const result = getSavedViewDefinitionFilters('[{"type":"project","value":["project-1"]}]', '[now-90d TO now]', '[now-7d TO now]');
+
+            // Assert
+            expect(serializeFilters(result)).toBe('[{"type":"project","value":["project-1"]},{"type":"date","term":"date","value":"[now-90d TO now]"}]');
+        });
+
+        it('replaces a stale serialized date with the saved time', () => {
+            // Act
+            const result = getSavedViewDefinitionFilters('[{"type":"date","term":"date","value":"[now-7d TO now]"}]', '[now-90d TO now]', '[now-7d TO now]');
+
+            // Assert
+            expect(serializeFilters(result)).toBe('[{"type":"date","term":"date","value":"[now-90d TO now]"}]');
         });
     });
 

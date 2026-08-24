@@ -190,6 +190,10 @@ export function getEmptyFilterOverrideKeys(serverFilters: IFilter[], currentFilt
     return keys.filter((key, index) => keys.indexOf(key) === index);
 }
 
+export function getSavedViewDefinitionFilters(filterDefinitions: string, time: null | string | undefined, defaultTime: null | string | undefined): IFilter[] {
+    return applyTimeFilter(deserializeFilters(filterDefinitions), getComparableSavedViewTime(time, defaultTime));
+}
+
 export function getSavedViewStateSignature(
     view: Pick<SavedView, 'columns' | 'filter' | 'filter_definitions' | 'show_chart' | 'show_stats' | 'sort' | 'time'>
 ): string {
@@ -416,7 +420,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
     function getServerFilters(view: SavedView): IFilter[] {
         if (view.filter_definitions) {
-            return deserializeFilters(view.filter_definitions);
+            return getSavedViewDefinitionFilters(view.filter_definitions, view.time, options.defaultTime);
         }
 
         const filter = getComparableSavedViewFilter(view.filter, view.filter_definitions, options.defaultFilter);
