@@ -582,6 +582,8 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         lastLoadedViewId = view.id;
         activeFilterOverrideBaselines = {};
         activeSortOverride = undefined;
+        appliedDraftKey = '';
+        pendingDraftKey = '';
         hydratedColumnOrder = undefined;
         hydratedSavedView = view;
         hydratedSavedViewSignature = viewSignature;

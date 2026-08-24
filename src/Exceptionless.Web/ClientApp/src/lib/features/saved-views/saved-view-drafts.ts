@@ -26,6 +26,7 @@ export interface SavedViewDraftIdentity {
 }
 
 export interface SavedViewFilterChanges {
+    baselineDefinitions?: string;
     duplicateKeys?: string[];
     removedDefinitions?: string;
     removedKeys: string[];
@@ -74,7 +75,11 @@ export function applyFilterChanges(serverFilters: IFilter[], changes: SavedViewF
     }
 
     result.push(...[...upsertsByKey.values()].map((filter) => filter.clone()));
-    result.push(...duplicateUpserts.map((filter) => filter.clone()));
+    const missingDuplicateUpserts =
+        changes.baselineDefinitions === undefined
+            ? duplicateUpserts
+            : getMissingDuplicateUpserts(deserializeFilters(changes.baselineDefinitions), duplicateUpserts, result);
+    result.push(...missingDuplicateUpserts.map((filter) => filter.clone()));
     return result;
 }
 
@@ -135,6 +140,7 @@ export function buildFilterChanges(serverFilters: IFilter[], currentFilters: IFi
     }
 
     return {
+        ...(duplicateKeys.length > 0 ? { baselineDefinitions: serializeFilters(duplicateKeys.flatMap((key) => serverByKey.get(key) ?? [])) } : {}),
         ...(duplicateKeys.length > 0 ? { duplicateKeys } : {}),
         ...(removedDefinitions.length > 0 ? { removedDefinitions: serializeFilters(removedDefinitions) } : {}),
         removedKeys,
@@ -243,6 +249,29 @@ function getLocalStorage(): DraftStorage | undefined {
     }
 }
 
+function getMissingDuplicateUpserts(baselineFilters: IFilter[], upserts: IFilter[], currentFilters: IFilter[]): IFilter[] {
+    const baselineCounts = buildSerializedFilterCounts(baselineFilters);
+    const currentCounts = buildSerializedFilterCounts(currentFilters);
+    const upsertCounts = buildSerializedFilterCounts(upserts);
+    const missingCounts = new Map<string, number>();
+
+    for (const [serialized, upsertCount] of upsertCounts) {
+        const desiredCount = (baselineCounts.get(serialized) ?? 0) + upsertCount;
+        missingCounts.set(serialized, Math.max(0, desiredCount - (currentCounts.get(serialized) ?? 0)));
+    }
+
+    return upserts.filter((filter) => {
+        const serialized = serializeFilters([filter]);
+        const remaining = missingCounts.get(serialized) ?? 0;
+        if (remaining === 0) {
+            return false;
+        }
+
+        missingCounts.set(serialized, remaining - 1);
+        return true;
+    });
+}
+
 function getUnmatchedFilters(filters: IFilter[], comparison: IFilter[]): IFilter[] {
     const comparisonCounts = buildSerializedFilterCounts(comparison);
     return filters.filter((filter) => {
@@ -273,6 +302,7 @@ function isBooleanRecord(value: unknown): value is Record<string, boolean> {
 function isFilterChanges(value: unknown): value is SavedViewFilterChanges {
     return (
         isRecord(value) &&
+        (value.baselineDefinitions === undefined || typeof value.baselineDefinitions === 'string') &&
         (value.duplicateKeys === undefined || isStringArray(value.duplicateKeys)) &&
         (value.removedDefinitions === undefined || typeof value.removedDefinitions === 'string') &&
         Array.isArray(value.removedKeys) &&

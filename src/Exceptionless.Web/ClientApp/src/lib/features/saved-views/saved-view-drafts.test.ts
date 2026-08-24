@@ -46,6 +46,7 @@ describe('saved view drafts', () => {
                 columnSizingChanges: { date: null, summary: 480 },
                 columnVisibilityChanges: { date: false },
                 filterChanges: {
+                    baselineDefinitions: '[{"type":"keyword","value":"old"}]',
                     duplicateKeys: ['keyword'],
                     removedDefinitions: '[{"type":"keyword","value":"old"}]',
                     removedKeys: ['status'],
@@ -65,6 +66,7 @@ describe('saved view drafts', () => {
             columnSizingChanges: { date: null, summary: 480 },
             columnVisibilityChanges: { date: false },
             filterChanges: {
+                baselineDefinitions: '[{"type":"keyword","value":"old"}]',
                 duplicateKeys: ['keyword'],
                 removedDefinitions: '[{"type":"keyword","value":"old"}]',
                 removedKeys: ['status'],
@@ -99,6 +101,27 @@ describe('saved view drafts', () => {
 
         expect(changes?.duplicateKeys).toEqual(['keyword']);
         expect(mergedFilters.map((filter) => (filter as KeywordFilter).value)).toEqual(['foo', 'remote', 'baz']);
+    });
+
+    it('does not append a duplicate upsert that the server independently adopted', () => {
+        const originalServerFilters = [new KeywordFilter('foo'), new KeywordFilter('bar')];
+        const locallyEditedFilters = [new KeywordFilter('bar'), new KeywordFilter('baz')];
+        const changes = buildFilterChanges(originalServerFilters, locallyEditedFilters);
+        const latestServerFilters = [new KeywordFilter('foo'), new KeywordFilter('bar'), new KeywordFilter('baz')];
+
+        const mergedFilters = applyFilterChanges(latestServerFilters, changes);
+
+        expect(mergedFilters.map((filter) => (filter as KeywordFilter).value)).toEqual(['bar', 'baz']);
+    });
+
+    it('preserves an intentional duplicate beyond the server baseline count', () => {
+        const originalServerFilters = [new KeywordFilter('foo')];
+        const locallyEditedFilters = [new KeywordFilter('foo'), new KeywordFilter('foo')];
+        const changes = buildFilterChanges(originalServerFilters, locallyEditedFilters);
+
+        const mergedFilters = applyFilterChanges(originalServerFilters, changes);
+
+        expect(mergedFilters.map((filter) => (filter as KeywordFilter).value)).toEqual(['foo', 'foo']);
     });
 
     it('lets explicit filter keys override a draft without dropping unrelated draft filters', () => {

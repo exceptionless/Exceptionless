@@ -202,6 +202,35 @@ test('switching saved views preserves each view temporary filter overrides acros
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
     await expectColumnBefore(page, 'Summary', 'User');
 
+    await firstViewLink.click();
+    await expect(page.getByRole('heading', { name: firstViewName })).toBeVisible();
+    await page.evaluate(
+        ({ firstHref, secondHref }) => {
+            const navigate = (href: string) => {
+                const link = document.createElement('a');
+                link.href = href;
+                document.body.append(link);
+                link.click();
+            };
+
+            navigate(secondHref);
+            setTimeout(() => navigate(firstHref), 0);
+        },
+        {
+            firstHref: `/next/event/${firstViewSlug}`,
+            secondHref: `/next/event/${secondViewSlug}`
+        }
+    );
+    await page.waitForTimeout(100);
+    await expect(page.getByRole('heading', { name: firstViewName })).toBeVisible();
+    await expect(
+        page
+            .getByRole('button', { name: /Date\s+Last 90 days/ })
+            .filter({ visible: true })
+            .first()
+    ).toBeVisible();
+    await expectColumnBefore(page, 'User', 'Summary');
+
     const coldLoadEventTimes: string[] = [];
     const captureColdLoadEventTime = (request: Request) => {
         const url = new URL(request.url());
