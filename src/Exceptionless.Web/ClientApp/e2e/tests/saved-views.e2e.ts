@@ -384,6 +384,20 @@ test('switching saved views preserves each view temporary filter overrides acros
     await expect(summaryWrap).toBeChecked();
     await columnDialog.getByRole('button', { name: 'Done' }).click();
 
+    await navigateClientSide(page, '/next/stack');
+    await expect(page).toHaveURL(/\/next\/stack(?:[?#]|$)/);
+    await navigateClientSide(page, `/next/event/${firstViewSlug}`);
+    await expect(
+        page
+            .getByRole('button', { name: /Date\s+Last 90 days/ })
+            .filter({ visible: true })
+            .first()
+    ).toBeVisible();
+    await page.goBack();
+    await expect(page).toHaveURL(/\/next\/stack(?:[?#]|$)/);
+    await navigateClientSide(page, `/next/event/${firstViewSlug}`);
+    await expect(page.getByRole('heading', { name: firstViewName })).toBeVisible();
+
     await openViewMenu(page);
     await page.getByRole('menuitem', { name: 'Reset to Saved' }).click();
     await expect(page).not.toHaveURL(/[?&]time=90d(?:&|$)/);

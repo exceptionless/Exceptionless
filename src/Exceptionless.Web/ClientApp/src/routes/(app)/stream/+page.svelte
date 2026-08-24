@@ -81,8 +81,8 @@
 
     const VIEW = 'stream';
     const savedViewsState = useSavedViews({
-        applyFilters: (draftFilters) => {
-            updateFilters(draftFilters);
+        applyFilters: (draftFilters, options) => {
+            updateFilters(draftFilters, options);
             filters = draftFilters;
         },
         defaultAutoFillColumnId: 'summary',
@@ -168,10 +168,17 @@
         filters = updatedFilters;
     }
 
-    function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {
+    function updateFilters(updatedFilters: FacetedFilter.IFilter[], options: { history?: 'push' | 'replace' } = {}): void {
         const filter = toFilter(updatedFilters);
         updateFilterCache(filterCacheKey(filter), updatedFilters);
-        queryParams.filter = filter;
+        queryParams.update(
+            {
+                filter
+            },
+            {
+                history: options.history
+            }
+        );
     }
 
     const eventsQueryParameters: GetEventsParams = $state({

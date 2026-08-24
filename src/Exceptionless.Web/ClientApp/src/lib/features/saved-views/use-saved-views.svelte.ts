@@ -60,10 +60,11 @@ export interface SavedViewQueryParams {
     saved?: null | string | undefined;
     sort?: null | string;
     time?: null | string;
+    update?: (values: Partial<SavedViewQueryParams>, options?: { history?: 'push' | 'replace' }) => void;
 }
 
 export interface UseSavedViewsOptions {
-    applyFilters?: (filters: IFilter[]) => void;
+    applyFilters?: (filters: IFilter[], options?: { history?: 'push' | 'replace' }) => void;
     baseHref?: string;
     defaultAutoFillColumnId?: string;
     defaultColumnVisibility?: ColumnVisibilityState;
@@ -300,9 +301,20 @@ export function savedViewColumnsEqual(
     });
 }
 
-export function setSortQueryParam(queryParams: SavedViewQueryParams, value: null | string): void {
+export function setSortQueryParam(queryParams: SavedViewQueryParams, value: null | string, history?: 'push' | 'replace'): void {
     if (supportsSortQueryParam(queryParams)) {
-        queryParams.sort = value;
+        if (queryParams.update) {
+            queryParams.update(
+                {
+                    sort: value
+                },
+                {
+                    history
+                }
+            );
+        } else {
+            queryParams.sort = value;
+        }
     }
 }
 
@@ -472,7 +484,9 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             const serverFilters = getServerFilters(view);
             const draftFilters = applyFilterChanges(serverFilters, draft?.filterChanges);
             const currentFilters = options.getFilterDefinitions ? deserializeFilters(options.getFilterDefinitions()) : [];
-            options.applyFilters(mergeFilterOverrides(draftFilters, currentFilters, overrideKeys));
+            options.applyFilters(mergeFilterOverrides(draftFilters, currentFilters, overrideKeys), {
+                history: 'replace'
+            });
         }
 
         if (options.setColumnVisibility) {
@@ -497,7 +511,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         options.setShowChart?.(draft && 'showChart' in draft ? draft.showChart! : (view.show_chart ?? true));
 
         if (draft && 'sort' in draft && !page.url.searchParams.has('sort')) {
-            setSortQueryParam(options.queryParams, getDraftSortQueryParam(view.sort ?? null, draft.sort ?? null));
+            setSortQueryParam(options.queryParams, getDraftSortQueryParam(view.sort ?? null, draft.sort ?? null), 'replace');
         }
     }
 
@@ -610,6 +624,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     let pendingDraftKey = '';
     let pendingDraftGeneration = -1;
     let draftHydrationGeneration = $state(0);
+    let draftPersistenceGeneration = 0;
     let hydratedColumnOrder = $state<ColumnOrderState>();
     let hydratedSavedView = $state<SavedView>();
     let hydratedSavedViewSignature = '';
@@ -872,12 +887,13 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         viewId: string,
         identity: SavedViewDraftIdentity,
         draftKey: string,
-        draft: SavedViewDraft | undefined
+        draft: SavedViewDraft | undefined,
+        generation: number
     ): Promise<void> {
         await tick();
 
         const view = activeSavedView;
-        if (!view || view.id !== viewId || hydratedSavedViewId !== view.id || appliedDraftKey !== draftKey) {
+        if (!view || view.id !== viewId || hydratedSavedViewId !== view.id || appliedDraftKey !== draftKey || draftPersistenceGeneration !== generation) {
             return;
         }
 
@@ -901,7 +917,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         // The draft value tracks every persisted field even while isModified remains true.
-        void persistDraftAfterStateSettles(view.id, identity, draftKey, currentDraft);
+        void persistDraftAfterStateSettles(view.id, identity, draftKey, currentDraft, draftPersistenceGeneration);
     });
 
     const isMissing = $derived(
@@ -955,6 +971,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return;
         }
 
+        draftPersistenceGeneration++;
         hydratedSavedView = view;
         hydratedSavedViewSignature = getSavedViewStateSignature(view);
         const identity = getDraftIdentity(view);
@@ -986,6 +1003,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     }
 
     function handleSavedViewUpdated(view: SavedView) {
+        draftPersistenceGeneration++;
         const identity = getDraftIdentity(view);
         if (identity) {
             clearSavedViewDraft(identity);

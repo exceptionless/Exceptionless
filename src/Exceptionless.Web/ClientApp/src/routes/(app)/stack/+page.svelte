@@ -242,9 +242,10 @@
     let showStats = $state(true);
     let showChart = $state(true);
     const savedViewsState = useSavedViews({
-        applyFilters: (draftFilters) => {
+        applyFilters: (draftFilters, options) => {
             updateFilters(draftFilters, {
-                clearPagination: false
+                clearPagination: false,
+                history: options?.history
             });
             filters = draftFilters;
         },
@@ -471,7 +472,7 @@
         filters = updatedFilters;
     }
 
-    function updateFilters(updatedFilters: FacetedFilter.IFilter[], options: { clearPagination?: boolean } = {}): void {
+    function updateFilters(updatedFilters: FacetedFilter.IFilter[], options: { clearPagination?: boolean; history?: 'push' | 'replace' } = {}): void {
         const shouldClearPagination = options.clearPagination ?? true;
         const filter = toFilter(updatedFilters.filter((f) => f.type !== 'date'));
         const expressionFilters = updatedFilters.filter((f) => f.type !== 'date' && !isQueryParamFilter(f));
@@ -512,22 +513,27 @@
             isInternalFilterUpdate = true;
         }
 
-        queryParams.update({
-            bot: queryFilterParams.bot,
-            filter: newFilterParam,
-            first: queryFilterParams.first,
-            level: queryFilterParams.level,
-            page: shouldClearPaginationForFilter ? null : queryParams.page,
-            project: queryFilterParams.project,
-            reference: queryFilterParams.reference,
-            session: queryFilterParams.session,
-            stack: queryFilterParams.stack,
-            status: queryFilterParams.status,
-            tag: queryFilterParams.tag,
-            time: newTimeParam,
-            type: queryFilterParams.type,
-            version: queryFilterParams.version
-        });
+        queryParams.update(
+            {
+                bot: queryFilterParams.bot,
+                filter: newFilterParam,
+                first: queryFilterParams.first,
+                level: queryFilterParams.level,
+                page: shouldClearPaginationForFilter ? null : queryParams.page,
+                project: queryFilterParams.project,
+                reference: queryFilterParams.reference,
+                session: queryFilterParams.session,
+                stack: queryFilterParams.stack,
+                status: queryFilterParams.status,
+                tag: queryFilterParams.tag,
+                time: newTimeParam,
+                type: queryFilterParams.type,
+                version: queryFilterParams.version
+            },
+            {
+                history: options.history
+            }
+        );
     }
 
     $effect(() => {
@@ -539,7 +545,8 @@
 
         untrack(() => {
             updateFilters(getCurrentFilters(getListFilterQueryParams(queryParams)), {
-                clearPagination: false
+                clearPagination: false,
+                history: 'replace'
             });
         });
         normalizedSavedViewId = activeSavedViewId;
