@@ -21,7 +21,7 @@ describe('StacksBulkActionsDropdownMenu', () => {
 
         render(StacksBulkActionsDropdownMenu, { props: { table } });
 
-        const trigger = screen.getByRole('button', { name: /Bulk Actions/ }) as HTMLButtonElement;
+        const trigger = screen.getByRole('button', { name: 'Actions' }) as HTMLButtonElement;
         expect(trigger.disabled).toBe(false);
         expect(trigger.getAttribute('aria-disabled')).toBe('true');
         expect(trigger.title).toBe('Select one or more stacks to use bulk actions');
@@ -40,8 +40,8 @@ describe('StacksBulkActionsDropdownMenu', () => {
 
         render(StacksBulkActionsDropdownMenu, { props: { table } });
 
-        const trigger = screen.getByRole('button', { name: /Bulk Actions/ }) as HTMLButtonElement;
+        const trigger = screen.getByRole('button', { name: 'Actions' }) as HTMLButtonElement;
         expect(trigger.disabled).toBe(false);
-        expect(trigger.title).toBe('Bulk Actions');
+        expect(trigger.title).toBe('Actions');
     });
 });

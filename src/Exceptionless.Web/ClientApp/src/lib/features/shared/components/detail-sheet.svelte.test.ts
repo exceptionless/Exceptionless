@@ -61,6 +61,7 @@ describe('DetailSheet history', () => {
             __exceptionlessDetailSheet: { key: 'event', value: 'abc123' }
         });
         expect(screen.getByTestId('detail-sheet-state').textContent).toBe('open:abc123');
+        expect(document.querySelector('[data-slot="sheet-content"]')?.classList.contains('w-[calc(100%-1rem)]!')).toBe(true);
     });
 
     it('copies the absolute full-page details link', async () => {

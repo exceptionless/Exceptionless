@@ -35,17 +35,22 @@ describe('DataTablePager', () => {
         expect(toolbar?.classList.contains('rounded-lg')).toBe(true);
         expect(toolbar?.classList.contains('gap-0')).toBe(true);
         expect(toolbar?.classList.contains('flex-wrap')).toBe(true);
-        expect(toolbar?.classList.contains('sm:flex-nowrap')).toBe(true);
+        expect(toolbar?.classList.contains('sm:flex-nowrap')).toBe(false);
         expect(toolbar?.classList.contains('p-2')).toBe(false);
-        expect(toolbar?.contains(screen.getByRole('button', { name: 'Bulk Actions' }))).toBe(true);
+        expect(toolbar?.contains(screen.getByRole('button', { name: 'Actions' }))).toBe(true);
         expect(toolbar?.contains(pager)).toBe(true);
-        expect(pager.classList.contains('max-sm:w-full')).toBe(true);
-        expect(pager.classList.contains('max-sm:border-t')).toBe(true);
+        expect(pager.classList.contains('max-sm:w-full')).toBe(false);
+        expect(pager.classList.contains('max-sm:border-t')).toBe(false);
 
         const pageSize = screen.getByLabelText('Rows per page');
         expect(pageSize.getAttribute('data-size')).toBe('default');
+        expect(pageSize.classList.contains('min-w-14')).toBe(true);
+        expect(pageSize.classList.contains('sm:min-w-18')).toBe(true);
         expect(pageSize.classList.contains('rounded-none')).toBe(true);
         expect(pageSize.classList.contains('border-y-0')).toBe(true);
+        const rowsLabel = Array.from(pageSize.querySelectorAll('span')).find((element) => element.textContent?.trim() === 'rows');
+        expect(rowsLabel?.classList.contains('hidden')).toBe(true);
+        expect(rowsLabel?.classList.contains('sm:inline')).toBe(true);
         const pageLabel = screen.getByLabelText('Page 1 of 3');
         expect(pageLabel.classList.contains('select-none')).toBe(true);
         expect(pageLabel.classList.contains('rounded-none')).toBe(true);

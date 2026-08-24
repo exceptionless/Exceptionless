@@ -58,11 +58,11 @@
 <Select.Root type="single" {items} value={valueString} {onValueChange}>
     <Select.Trigger
         aria-label="Rows per page"
-        class={cn('min-w-18', joined && 'rounded-none border-y-0')}
+        class={cn('min-w-14 sm:min-w-18', joined && 'rounded-none border-y-0')}
         size={joined ? 'default' : 'sm'}
         title="Rows per page"
     >
-        {selected.label} rows
+        {selected.label}<span class="hidden sm:inline"> rows</span>
     </Select.Trigger>
     <Select.Content>
         <Select.Group>
