@@ -493,7 +493,12 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
                 const draftExpressionFilters = supportsTime
                     ? draftFilters.filter((candidate) => candidate.type !== 'date' && !SAVED_VIEW_QUERY_PARAMETER_FILTER_KEYS.includes(candidate.key))
                     : draftFilters;
-                if (filter !== toFilter(draftExpressionFilters)) {
+                const sourceFilters = draft?.filterChanges?.sourceDefinitions ? deserializeFilters(draft.filterChanges.sourceDefinitions) : serverFilters;
+                const restoredDraftFilters = applyFilterChanges(sourceFilters, draft?.filterChanges);
+                const restoredDraftExpressionFilters = supportsTime
+                    ? restoredDraftFilters.filter((candidate) => candidate.type !== 'date' && !SAVED_VIEW_QUERY_PARAMETER_FILTER_KEYS.includes(candidate.key))
+                    : restoredDraftFilters;
+                if (filter !== toFilter(draftExpressionFilters) && filter !== toFilter(restoredDraftExpressionFilters)) {
                     for (const override of getFiltersFromCache(options.filterCacheKey(filter), filter)) {
                         addKey(override.key);
                     }

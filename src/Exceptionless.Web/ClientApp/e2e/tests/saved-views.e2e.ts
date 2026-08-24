@@ -476,6 +476,7 @@ test('stream switches to a browser-local saved view draft without mixing in-flig
             draft: {
                 filterChanges: {
                     removedKeys: [],
+                    sourceDefinitions: filterDefinitions,
                     upsertDefinitions: JSON.stringify([{ type: 'project', value: [e2eScenario.projectId] }])
                 },
                 version: 1
@@ -532,12 +533,39 @@ test('stream switches to a browser-local saved view draft without mixing in-flig
     await expect(getVisibleText(page, sourceMessage)).toBeHidden();
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
 
+    const restoredUrl = page.url();
+    const updatedFilterDefinitions = JSON.stringify([
+        { type: 'project', value: [] },
+        { type: 'status', value: ['fixed'] }
+    ]);
+    const serverUpdateResponse = await request.patch(`/api/v2/saved-views/${savedView.id}`, {
+        data: {
+            filter: 'status:fixed',
+            filter_definitions: updatedFilterDefinitions
+        },
+        headers: authorizationHeaders
+    });
+    expect(serverUpdateResponse.status()).toBe(200);
+    await expect
+        .poll(
+            async () => {
+                const response = await request.get(savedViewsPath, { headers: authorizationHeaders });
+                const views = response.ok() ? ((await response.json()) as { filter_definitions: string; id: string }[]) : [];
+                return views.find((view) => view.id === savedView.id)?.filter_definitions;
+            },
+            { timeout: 30_000 }
+        )
+        .toBe(updatedFilterDefinitions);
+
     streamRequestFilters.length = 0;
-    await page.reload();
+    await page.goto(restoredUrl);
     await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
     await expect.poll(() => streamRequestFilters.some((filter) => filter.includes(e2eScenario.projectId))).toBe(true);
     const restoredFilter = streamRequestFilters.findLast((filter) => filter.includes(e2eScenario.projectId))!;
     expect(restoredFilter.split(e2eScenario.projectId)).toHaveLength(2);
+    expect(restoredFilter).toContain('fixed');
+    expect(restoredFilter).not.toContain('open');
+    expect(restoredFilter).not.toContain('regressed');
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
     expect(failedApiRequests).toEqual([]);
 });

@@ -31,6 +31,7 @@ export interface SavedViewFilterChanges {
     duplicateKeys?: string[];
     removedDefinitions?: string;
     removedKeys: string[];
+    sourceDefinitions?: string;
     upsertDefinitions: string;
 }
 
@@ -192,6 +193,7 @@ export function buildFilterChanges(serverFilters: IFilter[], currentFilters: IFi
         ...(duplicateKeys.length > 0 ? { duplicateKeys } : {}),
         ...(removedDefinitions.length > 0 ? { removedDefinitions: serializeFilters(removedDefinitions) } : {}),
         removedKeys,
+        sourceDefinitions: serializeFilters(serverFilters),
         upsertDefinitions: serializeFilters(upserts)
     };
 }
@@ -397,6 +399,7 @@ function isFilterChanges(value: unknown): value is SavedViewFilterChanges {
         (value.removedDefinitions === undefined || typeof value.removedDefinitions === 'string') &&
         Array.isArray(value.removedKeys) &&
         value.removedKeys.every((item) => typeof item === 'string') &&
+        (value.sourceDefinitions === undefined || typeof value.sourceDefinitions === 'string') &&
         typeof value.upsertDefinitions === 'string'
     );
 }

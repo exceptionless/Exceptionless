@@ -51,6 +51,7 @@ describe('saved view drafts', () => {
                     duplicateKeys: ['keyword'],
                     removedDefinitions: '[{"type":"keyword","value":"old"}]',
                     removedKeys: ['status'],
+                    sourceDefinitions: '[{"type":"status","value":["open"]}]',
                     upsertDefinitions: '[{"type":"project","value":["project-1"]}]'
                 },
                 showChart: false,
@@ -71,6 +72,7 @@ describe('saved view drafts', () => {
                 duplicateKeys: ['keyword'],
                 removedDefinitions: '[{"type":"keyword","value":"old"}]',
                 removedKeys: ['status'],
+                sourceDefinitions: '[{"type":"status","value":["open"]}]',
                 upsertDefinitions: '[{"type":"project","value":["project-1"]}]'
             },
             showChart: false,
@@ -88,6 +90,7 @@ describe('saved view drafts', () => {
 
         const mergedFilters = applyFilterChanges(latestServerFilters, changes);
 
+        expect(changes?.sourceDefinitions).toBe('[{"type":"project","value":["project-1"]},{"type":"status","value":["open"]}]');
         expect((mergedFilters.find((filter) => filter.key === 'project') as ProjectFilter).value).toEqual(['project-2']);
         expect((mergedFilters.find((filter) => filter.key === 'status') as StatusFilter).value).toEqual([StackStatus.Regressed]);
     });
