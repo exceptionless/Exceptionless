@@ -19,6 +19,14 @@
 </script>
 
 <DataTable.Root>
+    <DataTable.Footer {table} class="w-full">
+        {#if footerChildren}
+            {@render footerChildren()}
+        {:else}
+            <DataTable.Selection {table} />
+            <DataTable.Pager bind:value={limit} {table} />
+        {/if}
+    </DataTable.Footer>
     <DataTable.Body {rowClick} {rowHref} {table}>
         {#if isLoading}
             <DelayedRender>
@@ -28,12 +36,4 @@
             <DataTable.Empty {table} />
         {/if}
     </DataTable.Body>
-    <DataTable.Footer {table} class="w-full">
-        {#if footerChildren}
-            {@render footerChildren()}
-        {:else}
-            <DataTable.Selection {table} />
-            <DataTable.Pager bind:value={limit} {table} />
-        {/if}
-    </DataTable.Footer>
 </DataTable.Root>

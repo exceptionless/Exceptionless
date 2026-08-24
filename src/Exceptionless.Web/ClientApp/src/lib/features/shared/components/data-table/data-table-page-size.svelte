@@ -8,11 +8,12 @@
     import * as Select from '$comp/ui/select';
 
     interface Props {
+        onPageSizeChange?: () => void;
         table: Table<StockFeatures, TData>;
         value: number;
     }
 
-    let { table, value = $bindable() }: Props = $props();
+    let { onPageSizeChange, table, value = $bindable() }: Props = $props();
 
     type Item = { label: string; value: string };
     const items: Item[] = [
@@ -48,6 +49,7 @@
     function onValueChange(newValue: string) {
         value = Number(newValue);
         table.setPageSize(Number(newValue));
+        onPageSizeChange?.();
     }
 </script>
 

@@ -995,9 +995,7 @@
         >
             {#snippet footerChildren()}
                 <div class="flex min-w-0 items-center gap-3">
-                    {#if table.getSelectedRowModel().flatRows.length}
-                        <EventsBulkActionsDropdownMenu {table} />
-                    {/if}
+                    <EventsBulkActionsDropdownMenu {table} />
                     <DataTable.Selection {table} />
                 </div>
 
