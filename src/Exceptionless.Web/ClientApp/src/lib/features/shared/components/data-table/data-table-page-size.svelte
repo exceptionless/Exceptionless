@@ -11,11 +11,12 @@
     interface Props {
         joined?: boolean;
         onPageSizeChange?: () => void;
+        size?: 'default' | 'sm';
         table: Table<StockFeatures, TData>;
         value: number;
     }
 
-    let { joined = false, onPageSizeChange, table, value = $bindable() }: Props = $props();
+    let { joined = false, onPageSizeChange, size = 'sm', table, value = $bindable() }: Props = $props();
 
     type Item = { label: string; value: string };
     const items: Item[] = [
@@ -56,12 +57,7 @@
 </script>
 
 <Select.Root type="single" {items} value={valueString} {onValueChange}>
-    <Select.Trigger
-        aria-label="Rows per page"
-        class={cn('min-w-14 sm:min-w-18', joined && 'rounded-none border-y-0')}
-        size={joined ? 'default' : 'sm'}
-        title="Rows per page"
-    >
+    <Select.Trigger aria-label="Rows per page" class={cn('min-w-14 sm:min-w-18', joined && 'rounded-none border-y-0')} {size} title="Rows per page">
         {selected.label} <span class="hidden sm:inline">rows</span>
     </Select.Trigger>
     <Select.Content>

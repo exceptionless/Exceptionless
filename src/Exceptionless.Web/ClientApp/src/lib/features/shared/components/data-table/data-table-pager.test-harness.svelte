@@ -6,9 +6,10 @@
     interface Props {
         onPageIndexChange: (pageIndex: number) => void;
         onPageSizeChange: (pageSize: number) => void;
+        variant?: 'floating' | 'simple';
     }
 
-    let { onPageIndexChange, onPageSizeChange }: Props = $props();
+    let { onPageIndexChange, onPageSizeChange, variant = 'simple' }: Props = $props();
 
     let limit = $state(10);
     let pageIndex = $state(0);
@@ -45,8 +46,8 @@
 </script>
 
 <DataTableRoot>
-    <DataTableFooter {table}>
+    <DataTableFooter {table} {variant}>
         <button type="button">Actions</button>
-        <DataTablePager bind:value={limit} {table} />
+        <DataTablePager bind:value={limit} {table} {variant} />
     </DataTableFooter>
 </DataTableRoot>

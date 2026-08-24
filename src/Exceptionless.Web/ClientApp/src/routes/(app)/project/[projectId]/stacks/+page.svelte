@@ -286,7 +286,7 @@
                 <DataTable.Selection {table} />
             </div>
 
-            <DataTable.Pager bind:value={queryParams.limit!} {table} />
+            <DataTable.Pager bind:value={queryParams.limit!} {table} variant="floating" />
         {/snippet}
     </StacksDataTable>
 </div>

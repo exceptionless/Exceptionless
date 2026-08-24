@@ -42,12 +42,12 @@
             {@render toolbarChildren()}
         </DataTable.Toolbar>
     {/if}
-    <DataTable.Footer {table} class="w-full">
+    <DataTable.Footer {table} class="w-full" variant="floating">
         {#if footerChildren}
             {@render footerChildren()}
         {:else}
             <DataTable.Selection {table} />
-            <DataTable.Pager bind:value={limit} {table} />
+            <DataTable.Pager bind:value={limit} {table} variant="floating" />
         {/if}
     </DataTable.Footer>
     <DataTable.Body {autoFillColumnId} {onAutoFillColumnResized} {rowClick} {rowHref} {table} {wrappedColumnIds}>
