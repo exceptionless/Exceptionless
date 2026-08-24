@@ -9,6 +9,7 @@ const MULTISET_FILTER_TYPES = new Set(['keyword']);
 
 export interface PendingSavedViewDraftTouches {
     fields?: Array<'autoFillColumnId' | 'columnOrder' | 'showChart' | 'showStats'>;
+    filterKeys?: string[];
     recordKeys?: Partial<Record<'columnSizingChanges' | 'columnVisibilityChanges' | 'wrappedColumnChanges', string[]>>;
 }
 
@@ -281,7 +282,8 @@ export function mergeFilterOverrides(baseFilters: IFilter[], overrideFilters: IF
 export function mergePendingSavedViewDraftEdits(
     storedDraft: SavedViewDraft | undefined,
     pendingEdits: SavedViewDraft | undefined,
-    touches?: PendingSavedViewDraftTouches
+    touches?: PendingSavedViewDraftTouches,
+    serverFilters?: IFilter[]
 ): SavedViewDraft | undefined {
     if (!pendingEdits && !touches) {
         return storedDraft;
@@ -314,6 +316,12 @@ export function mergePendingSavedViewDraftEdits(
         touches?.recordKeys?.columnVisibilityChanges
     );
     merged.wrappedColumnChanges = mergeChanges(storedDraft?.wrappedColumnChanges, pending.wrappedColumnChanges, touches?.recordKeys?.wrappedColumnChanges);
+
+    if (serverFilters && touches?.filterKeys?.length) {
+        const storedFilters = applyFilterChanges(serverFilters, storedDraft?.filterChanges);
+        const pendingFilters = applyFilterChanges(serverFilters, pending.filterChanges);
+        merged.filterChanges = buildFilterChanges(serverFilters, mergeFilterOverrides(storedFilters, pendingFilters, touches.filterKeys));
+    }
 
     for (const key of ['autoFillColumnId', 'columnOrder', 'showChart', 'showStats'] as const) {
         if (key in pending) {

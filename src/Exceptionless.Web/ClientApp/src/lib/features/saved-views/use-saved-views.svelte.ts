@@ -128,7 +128,9 @@ type PendingDraftRecordField = keyof NonNullable<PendingSavedViewDraftTouches['r
 interface PendingDraftTracker {
     columnOrderBaseline: ColumnOrderState | undefined;
     previousDraft: SavedViewDraft | undefined;
+    previousFilterDefinitions: string;
     touchedFields: Set<PendingDraftField>;
+    touchedFilterKeys: Set<string>;
     touchedRecordKeys: Record<PendingDraftRecordField, Set<string>>;
     viewId: string;
 }
@@ -415,6 +417,12 @@ export function supportsSortQueryParam(queryParams: SavedViewQueryParams): query
 
 export function supportsTimeQueryParam(queryParams: SavedViewQueryParams): queryParams is SavedViewQueryParams & { time: null | string | undefined } {
     return Object.prototype.hasOwnProperty.call(queryParams, 'time');
+}
+
+export function trackChangedFilterKeys(touchedKeys: Set<string>, previousDefinitions: string, currentDefinitions: string): void {
+    for (const key of getChangedFilterKeys(deserializeFilters(previousDefinitions), deserializeFilters(currentDefinitions))) {
+        touchedKeys.add(key);
+    }
 }
 
 export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsReturn {
@@ -819,7 +827,9 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         pendingDraftTracker = {
             columnOrderBaseline,
             previousDraft: buildSavedViewDraft(view, columnOrderBaseline),
+            previousFilterDefinitions: initialState.filterDefinitions,
             touchedFields: new SvelteSet(),
+            touchedFilterKeys: new SvelteSet(),
             touchedRecordKeys: {
                 columnSizingChanges: new SvelteSet(),
                 columnVisibilityChanges: new SvelteSet(),
@@ -947,7 +957,8 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         const currentDraft = buildSavedViewDraft(view, tracker.columnOrderBaseline);
-        untrack(() => trackPendingDraftChanges(tracker, currentDraft));
+        const currentFilterDefinitions = options.getFilterDefinitions?.() ?? '[]';
+        untrack(() => trackPendingDraftChanges(tracker, currentDraft, currentFilterDefinitions));
     });
 
     async function applyDraftAfterViewHydrates(viewId: string, identity: SavedViewDraftIdentity, draftKey: string, generation: number): Promise<void> {
@@ -965,9 +976,14 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         const tracker = pendingDraftTracker?.viewId === view.id ? pendingDraftTracker : undefined;
-        const pendingEdits = hydratedSavedView?.id === view.id ? buildSavedViewDraft(hydratedSavedView, hydratedColumnOrder) : undefined;
-        const draft = mergePendingSavedViewDraftEdits(getSavedViewDraft(identity), pendingEdits, tracker ? getPendingDraftTouches(tracker) : undefined);
         const serverFilters = getServerFilters(view);
+        const pendingEdits = hydratedSavedView?.id === view.id ? buildSavedViewDraft(hydratedSavedView, hydratedColumnOrder) : undefined;
+        const draft = mergePendingSavedViewDraftEdits(
+            getSavedViewDraft(identity),
+            pendingEdits,
+            tracker ? getPendingDraftTouches(tracker) : undefined,
+            serverFilters
+        );
         const currentFilters = options.getFilterDefinitions ? deserializeFilters(options.getFilterDefinitions()) : [];
         const matchingInitialState = initialState?.viewId === view.id ? initialState : undefined;
         const initialFilters = matchingInitialState ? deserializeFilters(matchingInitialState.filterDefinitions) : currentFilters;
@@ -1342,6 +1358,11 @@ function getPendingDraftTouches(tracker: PendingDraftTracker): PendingSavedViewD
                   fields: [...tracker.touchedFields]
               }
             : {}),
+        ...(tracker.touchedFilterKeys.size > 0
+            ? {
+                  filterKeys: [...tracker.touchedFilterKeys]
+              }
+            : {}),
         ...(Object.keys(recordKeys ?? {}).length > 0
             ? {
                   recordKeys
@@ -1349,7 +1370,7 @@ function getPendingDraftTouches(tracker: PendingDraftTracker): PendingSavedViewD
             : {})
     };
 
-    return touches.fields || touches.recordKeys ? touches : undefined;
+    return touches.fields || touches.filterKeys || touches.recordKeys ? touches : undefined;
 }
 
 function normalizeFilterDefinitions(value: null | string | undefined): string {
@@ -1381,7 +1402,10 @@ function supportsSavedQueryParam(queryParams: SavedViewQueryParams): queryParams
     return Object.prototype.hasOwnProperty.call(queryParams, 'saved');
 }
 
-function trackPendingDraftChanges(tracker: PendingDraftTracker, currentDraft: SavedViewDraft | undefined): void {
+function trackPendingDraftChanges(tracker: PendingDraftTracker, currentDraft: SavedViewDraft | undefined, currentFilterDefinitions: string): void {
+    trackChangedFilterKeys(tracker.touchedFilterKeys, tracker.previousFilterDefinitions, currentFilterDefinitions);
+    tracker.previousFilterDefinitions = currentFilterDefinitions;
+
     for (const field of ['autoFillColumnId', 'columnOrder', 'showChart', 'showStats'] as const) {
         if (JSON.stringify(tracker.previousDraft?.[field]) !== JSON.stringify(currentDraft?.[field])) {
             tracker.touchedFields.add(field);

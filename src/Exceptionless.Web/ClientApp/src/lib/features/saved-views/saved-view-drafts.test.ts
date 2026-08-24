@@ -307,6 +307,25 @@ describe('saved view drafts', () => {
         });
     });
 
+    it('clears a touched stored filter when it is reverted to the server value during pending hydration', () => {
+        const serverFilters = [new DateFilter('date', '[now-15m TO now]'), new StatusFilter([StackStatus.Open])];
+        const storedDraftFilters = [new DateFilter('date', '[now-90d TO now]'), new StatusFilter([StackStatus.Regressed])];
+
+        const merged = mergePendingSavedViewDraftEdits(
+            {
+                filterChanges: buildFilterChanges(serverFilters, storedDraftFilters),
+                version: 1
+            },
+            undefined,
+            { filterKeys: ['date-date'] },
+            serverFilters
+        );
+        const mergedFilters = applyFilterChanges(serverFilters, merged?.filterChanges);
+
+        expect((mergedFilters.find((filter) => filter.key === 'date-date') as DateFilter).value).toBe('[now-15m TO now]');
+        expect((mergedFilters.find((filter) => filter.key === 'status') as StatusFilter).value).toEqual([StackStatus.Regressed]);
+    });
+
     it('retires an initial filter override after its value changes', () => {
         const initialFilters = [new ProjectFilter(['url-project']), new StatusFilter([StackStatus.Regressed])];
         const baselines = buildFilterOverrideBaselines(initialFilters, ['project']);

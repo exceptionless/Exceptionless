@@ -1,4 +1,4 @@
-import { ProjectFilter } from '$features/events/components/filters';
+import { DateFilter, ProjectFilter } from '$features/events/components/filters';
 import { serializeFilters } from '$features/events/components/filters/helpers.svelte';
 import { ChangeType } from '$features/websockets/models';
 import { QueryClient } from '@tanstack/svelte-query';
@@ -33,7 +33,8 @@ import {
     setSortQueryParam,
     setTimeQueryParam,
     supportsSortQueryParam,
-    supportsTimeQueryParam
+    supportsTimeQueryParam,
+    trackChangedFilterKeys
 } from './use-saved-views.svelte';
 
 vi.mock('$features/auth/index.svelte', () => ({
@@ -279,6 +280,17 @@ describe('useSavedViews', () => {
     });
 
     describe('filter definition comparison', () => {
+        it('retains touched filter keys after an edit is reverted', () => {
+            const touchedKeys = new Set<string>();
+            const serverDefinitions = serializeFilters([new DateFilter('date', '[now-15m TO now]')]);
+            const editedDefinitions = serializeFilters([new DateFilter('date', '[now-90d TO now]')]);
+
+            trackChangedFilterKeys(touchedKeys, serverDefinitions, editedDefinitions);
+            trackChangedFilterKeys(touchedKeys, editedDefinitions, serverDefinitions);
+
+            expect([...touchedKeys]).toEqual(['date-date']);
+        });
+
         it('finds filter keys edited while saved-view draft hydration is pending', () => {
             const initial = [new ProjectFilter(['project-1'])];
             const current = [new ProjectFilter(['project-2'])];
