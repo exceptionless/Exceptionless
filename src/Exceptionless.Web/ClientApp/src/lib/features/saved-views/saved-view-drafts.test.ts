@@ -124,6 +124,27 @@ describe('saved view drafts', () => {
         expect(mergedFilters.map((filter) => (filter as KeywordFilter).value)).toEqual(['foo', 'foo']);
     });
 
+    it('does not repeat a duplicate removal that the server independently adopted', () => {
+        const originalServerFilters = [new KeywordFilter('foo'), new KeywordFilter('foo')];
+        const locallyEditedFilters = [new KeywordFilter('foo')];
+        const changes = buildFilterChanges(originalServerFilters, locallyEditedFilters);
+        const latestServerFilters = [new KeywordFilter('foo')];
+
+        const mergedFilters = applyFilterChanges(latestServerFilters, changes);
+
+        expect(mergedFilters.map((filter) => (filter as KeywordFilter).value)).toEqual(['foo']);
+    });
+
+    it('keeps a local duplicate addition when the server removes the baseline definition', () => {
+        const originalServerFilters = [new KeywordFilter('foo')];
+        const locallyEditedFilters = [new KeywordFilter('foo'), new KeywordFilter('foo')];
+        const changes = buildFilterChanges(originalServerFilters, locallyEditedFilters);
+
+        const mergedFilters = applyFilterChanges([], changes);
+
+        expect(mergedFilters.map((filter) => (filter as KeywordFilter).value)).toEqual(['foo']);
+    });
+
     it('lets explicit filter keys override a draft without dropping unrelated draft filters', () => {
         const draftFilters = [new ProjectFilter(['saved-project']), new StatusFilter([StackStatus.Regressed])];
         const currentUrlFilters = [new ProjectFilter(['url-project']), new StatusFilter([StackStatus.Open])];

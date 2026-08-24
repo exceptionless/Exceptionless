@@ -50,6 +50,16 @@ export function applyFilterChanges(serverFilters: IFilter[], changes: SavedViewF
     const upserts = deserializeFilters(changes.upsertDefinitions);
     const upsertsByKey = new Map(upserts.filter((filter) => !duplicateKeys.has(filter.key)).map((filter) => [filter.key, filter]));
     const duplicateUpserts = upserts.filter((filter) => duplicateKeys.has(filter.key));
+    const duplicateTargetCounts =
+        changes.baselineDefinitions === undefined
+            ? undefined
+            : buildDuplicateTargetCounts(
+                  deserializeFilters(changes.baselineDefinitions),
+                  changes.removedDefinitions ? deserializeFilters(changes.removedDefinitions) : [],
+                  duplicateUpserts,
+                  serverFilters.filter((filter) => duplicateKeys.has(filter.key))
+              );
+    const retainedDuplicateCounts = new Map<string, number>();
     const result: IFilter[] = [];
 
     for (const serverFilter of serverFilters) {
@@ -58,6 +68,16 @@ export function applyFilterChanges(serverFilters: IFilter[], changes: SavedViewF
         }
 
         const serialized = serializeFilters([serverFilter]);
+        if (duplicateTargetCounts && duplicateKeys.has(serverFilter.key)) {
+            const retainedCount = retainedDuplicateCounts.get(serialized) ?? 0;
+            if (retainedCount < (duplicateTargetCounts.get(serialized) ?? 0)) {
+                result.push(serverFilter.clone());
+                retainedDuplicateCounts.set(serialized, retainedCount + 1);
+            }
+
+            continue;
+        }
+
         const removedCount = removedDefinitionCounts.get(serialized) ?? 0;
         if (removedCount > 0) {
             removedDefinitionCounts.set(serialized, removedCount - 1);
@@ -76,9 +96,7 @@ export function applyFilterChanges(serverFilters: IFilter[], changes: SavedViewF
 
     result.push(...[...upsertsByKey.values()].map((filter) => filter.clone()));
     const missingDuplicateUpserts =
-        changes.baselineDefinitions === undefined
-            ? duplicateUpserts
-            : getMissingDuplicateUpserts(deserializeFilters(changes.baselineDefinitions), duplicateUpserts, result);
+        duplicateTargetCounts === undefined ? duplicateUpserts : getMissingDuplicateUpserts(duplicateUpserts, duplicateTargetCounts, result);
     result.push(...missingDuplicateUpserts.map((filter) => filter.clone()));
     return result;
 }
@@ -231,6 +249,26 @@ export function saveSavedViewDraft(identity: SavedViewDraftIdentity, draft: Save
     }
 }
 
+function buildDuplicateTargetCounts(baselineFilters: IFilter[], removals: IFilter[], upserts: IFilter[], latestFilters: IFilter[]): Map<string, number> {
+    const baselineCounts = buildSerializedFilterCounts(baselineFilters);
+    const latestCounts = buildSerializedFilterCounts(latestFilters);
+    const removalCounts = buildSerializedFilterCounts(removals);
+    const upsertCounts = buildSerializedFilterCounts(upserts);
+    const serializedDefinitions = new Set([...baselineCounts.keys(), ...latestCounts.keys(), ...removalCounts.keys(), ...upsertCounts.keys()]);
+    const targetCounts = new Map<string, number>();
+
+    for (const serialized of serializedDefinitions) {
+        const baselineCount = baselineCounts.get(serialized) ?? 0;
+        const latestCount = latestCounts.get(serialized) ?? 0;
+        const localDelta = (upsertCounts.get(serialized) ?? 0) - (removalCounts.get(serialized) ?? 0);
+        const adoptedDelta = localDelta > 0 ? Math.max(0, latestCount - baselineCount) : Math.max(0, baselineCount - latestCount);
+        const remainingDelta = Math.sign(localDelta) * Math.max(0, Math.abs(localDelta) - adoptedDelta);
+        targetCounts.set(serialized, Math.max(0, latestCount + remainingDelta));
+    }
+
+    return targetCounts;
+}
+
 function buildSerializedFilterCounts(filters: IFilter[]): Map<string, number> {
     const counts = new Map<string, number>();
     for (const filter of filters) {
@@ -249,15 +287,12 @@ function getLocalStorage(): DraftStorage | undefined {
     }
 }
 
-function getMissingDuplicateUpserts(baselineFilters: IFilter[], upserts: IFilter[], currentFilters: IFilter[]): IFilter[] {
-    const baselineCounts = buildSerializedFilterCounts(baselineFilters);
+function getMissingDuplicateUpserts(upserts: IFilter[], targetCounts: Map<string, number>, currentFilters: IFilter[]): IFilter[] {
     const currentCounts = buildSerializedFilterCounts(currentFilters);
-    const upsertCounts = buildSerializedFilterCounts(upserts);
     const missingCounts = new Map<string, number>();
 
-    for (const [serialized, upsertCount] of upsertCounts) {
-        const desiredCount = (baselineCounts.get(serialized) ?? 0) + upsertCount;
-        missingCounts.set(serialized, Math.max(0, desiredCount - (currentCounts.get(serialized) ?? 0)));
+    for (const [serialized, targetCount] of targetCounts) {
+        missingCounts.set(serialized, Math.max(0, targetCount - (currentCounts.get(serialized) ?? 0)));
     }
 
     return upserts.filter((filter) => {
