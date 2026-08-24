@@ -12,6 +12,7 @@ import {
     filterDefinitionsEqual,
     getComparableSavedViewFilter,
     getComparableSavedViewTime,
+    getDraftSortQueryParam,
     getDraftSortValue,
     getEmptyFilterOverrideKeys,
     getSavedViewOverrideSignature,
@@ -295,6 +296,18 @@ describe('useSavedViews', () => {
     });
 
     describe('sort drafts', () => {
+        it('uses an explicit empty override when a draft clears the server sort', () => {
+            expect(getDraftSortQueryParam('-date', null)).toBe('');
+        });
+
+        it('removes the override when the draft matches the server sort', () => {
+            expect(getDraftSortQueryParam('-date', '-date')).toBeNull();
+        });
+
+        it('restores a non-empty draft sort', () => {
+            expect(getDraftSortQueryParam('-date', 'count')).toBe('count');
+        });
+
         it('keeps a one-off URL sort override out of a local draft', () => {
             expect(getDraftSortValue('-date', 'type', { value: 'type' }, undefined)).toBe('-date');
         });

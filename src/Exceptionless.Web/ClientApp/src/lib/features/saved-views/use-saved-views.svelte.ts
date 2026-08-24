@@ -151,6 +151,14 @@ export function getComparableSavedViewTime(time: null | string | undefined, defa
     return time ?? defaultTime ?? null;
 }
 
+export function getDraftSortQueryParam(serverSort: null | string, draftSort: null | string): null | string {
+    if (draftSort === serverSort) {
+        return null;
+    }
+
+    return draftSort ?? '';
+}
+
 export function getDraftSortValue(
     serverSort: null | string,
     currentSort: null | string,
@@ -459,7 +467,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         options.setShowChart?.(draft && 'showChart' in draft ? draft.showChart! : (view.show_chart ?? true));
 
         if (draft && 'sort' in draft && !page.url.searchParams.has('sort')) {
-            setSortQueryParam(options.queryParams, draft.sort === (view.sort ?? null) ? null : (draft.sort ?? null));
+            setSortQueryParam(options.queryParams, getDraftSortQueryParam(view.sort ?? null, draft.sort ?? null));
         }
     }
 
