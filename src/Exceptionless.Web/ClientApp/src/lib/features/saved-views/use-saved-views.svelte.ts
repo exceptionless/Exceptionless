@@ -102,6 +102,20 @@ export interface UseSavedViewsReturn {
     wrappedColumnIds: WrappedColumnIds;
 }
 
+const SAVED_VIEW_QUERY_PARAMETER_FILTER_KEYS: readonly string[] = [
+    'boolean-bot',
+    'boolean-first',
+    'level',
+    'project',
+    'reference',
+    'session',
+    'string-stack',
+    'status',
+    'tag',
+    'type',
+    'version-version'
+];
+
 export function clearSavedViewQueryParams(queryParams: SavedViewQueryParams): void {
     queryParams.filter = null;
 
@@ -148,6 +162,15 @@ export function getDraftSortValue(
     }
 
     return currentSort;
+}
+
+export function getEmptyFilterOverrideKeys(serverFilters: IFilter[], currentFilters: IFilter[], draft: SavedViewDraft | undefined): string[] {
+    const draftFilters = applyFilterChanges(serverFilters, draft?.filterChanges);
+    const keys = [...serverFilters, ...currentFilters, ...draftFilters]
+        .filter((filter) => filter.type !== 'date' && !SAVED_VIEW_QUERY_PARAMETER_FILTER_KEYS.includes(filter.key))
+        .map((filter) => filter.key);
+
+    return keys.filter((key, index) => keys.indexOf(key) === index);
 }
 
 export function getSavedViewStateSignature(
@@ -354,7 +377,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         return applyTimeFilter(filters, getComparableSavedViewTime(view.time, options.defaultTime));
     }
 
-    function getExplicitFilterOverrideKeys(serverFilters: IFilter[]): string[] {
+    function getExplicitFilterOverrideKeys(serverFilters: IFilter[], currentFilters: IFilter[], draft: SavedViewDraft | undefined): string[] {
         const keys: string[] = [];
         const queryParameterKeys = [
             ['bot', 'boolean-bot'],
@@ -370,7 +393,6 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             ['type', 'type'],
             ['version', 'version-version']
         ] as const;
-        const dedicatedQueryFilterKeys: string[] = queryParameterKeys.map(([, key]) => key);
         const addKey = (key: string) => {
             if (!keys.includes(key)) {
                 keys.push(key);
@@ -390,10 +412,8 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
                     addKey(override.key);
                 }
             } else {
-                for (const serverFilter of serverFilters) {
-                    if (serverFilter.type !== 'date' && !dedicatedQueryFilterKeys.includes(serverFilter.key)) {
-                        addKey(serverFilter.key);
-                    }
+                for (const key of getEmptyFilterOverrideKeys(serverFilters, currentFilters, draft)) {
+                    addKey(key);
                 }
             }
         }
@@ -414,35 +434,31 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         return keys;
     }
 
-    function applyDraftState(view: SavedView, draft: SavedViewDraft, overrideKeys: string[]): void {
-        if (draft.filterChanges && options.applyFilters) {
+    function applyDraftState(view: SavedView, draft: SavedViewDraft | undefined, overrideKeys: string[]): void {
+        if (options.applyFilters) {
             const serverFilters = getServerFilters(view);
-            const draftFilters = applyFilterChanges(serverFilters, draft.filterChanges);
+            const draftFilters = applyFilterChanges(serverFilters, draft?.filterChanges);
             const currentFilters = options.getFilterDefinitions ? deserializeFilters(options.getFilterDefinitions()) : [];
             options.applyFilters(mergeFilterOverrides(draftFilters, currentFilters, overrideKeys));
         }
 
         if (options.setColumnVisibility) {
-            options.setColumnVisibility(applyRecordChanges(getSavedColumnVisibility(view), draft.columnVisibilityChanges));
+            options.setColumnVisibility(applyRecordChanges(getSavedColumnVisibility(view), draft?.columnVisibilityChanges));
         }
 
         if (options.setColumnOrder) {
-            options.setColumnOrder(draft.columnOrder ?? getSavedColumnOrder(view));
+            options.setColumnOrder(draft?.columnOrder ?? getSavedColumnOrder(view));
         }
 
-        options.setColumnSizing?.(applyRecordChanges(getSavedColumnSizing(view), draft.columnSizingChanges));
-        autoFillColumnId = 'autoFillColumnId' in draft ? draft.autoFillColumnId! : getSavedAutoFillColumnSelection(view, options.defaultAutoFillColumnId);
-        wrappedColumnIds = applyWrappedColumnChanges(getSavedWrappedColumnIds(view), draft.wrappedColumnChanges);
+        options.setColumnSizing?.(applyRecordChanges(getSavedColumnSizing(view), draft?.columnSizingChanges));
+        autoFillColumnId =
+            draft && 'autoFillColumnId' in draft ? draft.autoFillColumnId! : getSavedAutoFillColumnSelection(view, options.defaultAutoFillColumnId);
+        wrappedColumnIds = applyWrappedColumnChanges(getSavedWrappedColumnIds(view), draft?.wrappedColumnChanges);
 
-        if ('showStats' in draft) {
-            options.setShowStats?.(draft.showStats!);
-        }
+        options.setShowStats?.(draft && 'showStats' in draft ? draft.showStats! : (view.show_stats ?? true));
+        options.setShowChart?.(draft && 'showChart' in draft ? draft.showChart! : (view.show_chart ?? true));
 
-        if ('showChart' in draft) {
-            options.setShowChart?.(draft.showChart!);
-        }
-
-        if ('sort' in draft && !page.url.searchParams.has('sort')) {
+        if (draft && 'sort' in draft && !page.url.searchParams.has('sort')) {
             setSortQueryParam(options.queryParams, draft.sort === (view.sort ?? null) ? null : (draft.sort ?? null));
         }
     }
@@ -656,22 +672,23 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         const draft = getSavedViewDraft(identity);
         const serverFilters = getServerFilters(view);
         const currentFilters = options.getFilterDefinitions ? deserializeFilters(options.getFilterDefinitions()) : [];
-        const overrideKeys = getExplicitFilterOverrideKeys(serverFilters);
+        const overrideKeys = getExplicitFilterOverrideKeys(serverFilters, currentFilters, draft);
         activeFilterOverrideBaselines = buildFilterOverrideBaselines(currentFilters, overrideKeys);
         activeSortOverride = page.url.searchParams.has('sort')
             ? {
                   value: options.getSort?.() ?? options.queryParams.sort ?? null
               }
             : undefined;
+        hydratedColumnOrder = options.getColumnOrder ? resolveSavedViewColumnOrder(view, options.getColumnOrder()) : undefined;
+        hydratedSavedView = view;
+        hydratedSavedViewSignature = getSavedViewStateSignature(view);
         appliedDraftKey = draftKey;
         if (pendingDraftKey === draftKey && pendingDraftGeneration === generation) {
             pendingDraftKey = '';
             pendingDraftGeneration = -1;
         }
 
-        if (draft) {
-            applyDraftState(view, draft, overrideKeys);
-        }
+        applyDraftState(view, draft, overrideKeys);
 
         hydratedSavedViewId = view.id;
     }

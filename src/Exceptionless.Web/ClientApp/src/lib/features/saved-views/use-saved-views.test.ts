@@ -1,3 +1,4 @@
+import { ProjectFilter } from '$features/events/components/filters';
 import { ChangeType } from '$features/websockets/models';
 import { QueryClient } from '@tanstack/svelte-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -12,6 +13,7 @@ import {
     getComparableSavedViewFilter,
     getComparableSavedViewTime,
     getDraftSortValue,
+    getEmptyFilterOverrideKeys,
     getSavedViewOverrideSignature,
     getSavedViewStateSignature,
     hasMissingSavedView,
@@ -116,6 +118,20 @@ describe('useSavedViews', () => {
             expect(getSavedViewOverrideSignature(new URL('https://example.test/next/event/errors?time=30d&status=open'))).not.toBe(baseline);
             expect(getSavedViewOverrideSignature(new URL('https://example.test/next/event/errors?time=90d'))).not.toBe(baseline);
             expect(getSavedViewOverrideSignature(new URL('https://example.test/next/event/errors?time=90d&status=open&sort=type'))).not.toBe(baseline);
+        });
+    });
+
+    describe('empty expression filter overrides', () => {
+        it('includes expression filters that exist only in the browser-local draft', () => {
+            const draft = {
+                filterChanges: {
+                    removedKeys: [],
+                    upsertDefinitions: '[{"type":"keyword","value":"error.type:TimeoutException"}]'
+                },
+                version: 1 as const
+            };
+
+            expect(getEmptyFilterOverrideKeys([], [new ProjectFilter(['project-1'])], draft)).toEqual(['keyword']);
         });
     });
 
