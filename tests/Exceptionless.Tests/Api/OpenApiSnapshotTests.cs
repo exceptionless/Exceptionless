@@ -50,7 +50,7 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.True(paths.TryGetProperty("/api/v2/auth/login", out var loginPath));
         Assert.True(loginPath.TryGetProperty("post", out var loginPost));
         Assert.True(loginPost.TryGetProperty("requestBody", out _));
-        AssertResponseCodes(loginPost, "200", "401", "422");
+        AssertResponseCodes(loginPost, "200", "401", "409", "422");
 
         Assert.True(paths.TryGetProperty("/api/v2/auth/logout", out var logoutPath));
         Assert.True(logoutPath.TryGetProperty("get", out var logoutGet));
@@ -184,7 +184,18 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
             ("/api/v2/users/{id}/avatar", "delete"),
             ("/api/v2/users/{id}/email-address/{email}", "post"),
             ("/api/v2/users/verify-email-address/{token}", "get"),
-            ("/api/v2/users/{id}/resend-verification-email", "get")
+            ("/api/v2/users/{id}/resend-verification-email", "get"),
+            ("/api/v2/auth/login", "post"),
+            ("/api/v2/auth/signup", "post"),
+            ("/api/v2/auth/github", "post"),
+            ("/api/v2/auth/google", "post"),
+            ("/api/v2/auth/facebook", "post"),
+            ("/api/v2/auth/live", "post"),
+            ("/api/v2/auth/unlink/{providerName}", "post"),
+            ("/api/v2/auth/change-password", "post"),
+            ("/api/v2/auth/forgot-password/{email}", "get"),
+            ("/api/v2/auth/reset-password", "post"),
+            ("/api/v2/auth/cancel-reset-password/{token}", "post")
         })
         {
             AssertPathResponseCodes(paths, path, method, "409");

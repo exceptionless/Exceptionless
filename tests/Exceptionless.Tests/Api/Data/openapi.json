@@ -1218,6 +1218,16 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Login failed",
             "content": {
@@ -1346,6 +1356,16 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Sign-up failed",
             "content": {
@@ -1411,6 +1431,16 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Account Creation is currently disabled",
             "content": {
@@ -1462,6 +1492,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TokenResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1521,6 +1561,16 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Account Creation is currently disabled",
             "content": {
@@ -1572,6 +1622,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TokenResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1653,6 +1713,16 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -1685,6 +1755,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TokenResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1733,6 +1813,16 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -1761,6 +1851,16 @@
         "responses": {
           "200": {
             "description": "Password reset email was sent."
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           },
           "422": {
             "description": "Invalid reset password model.",
@@ -1799,6 +1899,16 @@
           },
           "400": {
             "description": "Invalid password reset token.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {

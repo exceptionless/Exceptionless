@@ -27,6 +27,7 @@ public static class AuthEndpoints
         .AllowAnonymous()
         .Accepts<Login>("application/json", "application/*+json")
         .Produces<TokenResult>()
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Login")
@@ -84,6 +85,7 @@ public static class AuthEndpoints
         .AllowAnonymous()
         .Accepts<Signup>("application/json", "application/*+json")
         .Produces<TokenResult>()
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
@@ -104,6 +106,7 @@ public static class AuthEndpoints
         .AllowAnonymous()
         .Accepts<ExternalAuthInfo>("application/json", "application/*+json")
         .Produces<TokenResult>()
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Sign in with GitHub")
@@ -122,6 +125,7 @@ public static class AuthEndpoints
         .AllowAnonymous()
         .Accepts<ExternalAuthInfo>("application/json", "application/*+json")
         .Produces<TokenResult>()
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Sign in with Google")
@@ -140,6 +144,7 @@ public static class AuthEndpoints
         .AllowAnonymous()
         .Accepts<ExternalAuthInfo>("application/json", "application/*+json")
         .Produces<TokenResult>()
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Sign in with Facebook")
@@ -158,6 +163,7 @@ public static class AuthEndpoints
         .AllowAnonymous()
         .Accepts<ExternalAuthInfo>("application/json", "application/*+json")
         .Produces<TokenResult>()
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Sign in with Microsoft")
@@ -174,6 +180,7 @@ public static class AuthEndpoints
         .Accepts<ValueFromBody<string>>("application/json", "application/*+json")
         .Produces<TokenResult>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .WithSummary("Removes an external login provider from the account")
         .WithMetadata(new EndpointDocumentation {
             RequestBodyDescription = "The provider user id.",
@@ -192,6 +199,7 @@ public static class AuthEndpoints
         })
         .Accepts<ChangePasswordModel>("application/json", "application/*+json")
         .Produces<TokenResult>()
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Change password")
         .WithMetadata(new EndpointDocumentation {
@@ -211,6 +219,7 @@ public static class AuthEndpoints
         .AllowAnonymous()
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .WithSummary("Forgot password")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -229,6 +238,7 @@ public static class AuthEndpoints
         .AllowAnonymous()
         .Accepts<ResetPasswordModel>("application/json", "application/*+json")
         .Produces(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Reset password")
         .WithMetadata(new EndpointDocumentation {
@@ -249,6 +259,7 @@ public static class AuthEndpoints
         .AllowAnonymous()
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .WithSummary("Cancel reset password")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {

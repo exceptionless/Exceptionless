@@ -1577,6 +1577,60 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task ChangePlanAsync_ConcurrentOrganizationUpdateAfterCustomerCreation_PreservesUpdateAndBillingState()
+    {
+        const string updatedName = "Concurrently Updated Organization";
+        StripeBillingClient.CustomerToReturn = new Customer { Id = "cus_created" };
+
+        var customerCreated = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseCustomerCreation = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        StripeBillingClient.CreateCustomerCallbackAsync = async _ =>
+        {
+            customerCreated.TrySetResult();
+            await releaseCustomerCreation.Task.WaitAsync(TestCancellationToken);
+        };
+
+        var changePlanTask = WithBillingEnabledAsync(() =>
+            SendRequestAsAsync<ChangePlanResult>(r => r
+                .AsFreeOrganizationUser()
+                .Post()
+                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
+                .Content(new ChangePlanRequest
+                {
+                    PlanId = _plans.SmallPlan.Id,
+                    StripeToken = "tok_visa",
+                    Last4 = "4242"
+                })
+                .StatusCodeShouldBeOk()
+            ));
+
+        await customerCreated.Task.WaitAsync(TestCancellationToken);
+        try
+        {
+            var concurrentOrganization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
+            Assert.NotNull(concurrentOrganization);
+            concurrentOrganization.Name = updatedName;
+            await _organizationRepository.SaveAsync(concurrentOrganization, o => o.ImmediateConsistency().Cache().Originals());
+        }
+        finally
+        {
+            releaseCustomerCreation.TrySetResult();
+        }
+
+        var result = await changePlanTask;
+        Assert.NotNull(result);
+        Assert.True(result.Success, result.Message);
+
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
+        Assert.NotNull(organization);
+        Assert.Equal(updatedName, organization.Name);
+        Assert.Equal("cus_created", organization.StripeCustomerId);
+        Assert.Equal("sub_created", organization.StripeSubscriptionId);
+        Assert.Equal(_plans.SmallPlan.Id, organization.PlanId);
+        Assert.Equal(BillingStatus.Active, organization.BillingStatus);
+    }
+
+    [Fact]
     public async Task ChangePlanAsync_WaitsForSavedViewDefaultMutationBeforeCreatingCustomer()
     {
         StripeBillingClient.CustomerToReturn = new Customer { Id = "cus_created" };
