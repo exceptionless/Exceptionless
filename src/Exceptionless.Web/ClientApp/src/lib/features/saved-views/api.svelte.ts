@@ -23,12 +23,11 @@ export async function invalidateSavedViewQueries(queryClient: QueryClient, messa
             const savedView = cached?.find((v) => v.id === id);
             if (savedView) {
                 removeSavedViewFromCaches(queryClient, savedView, organization_id);
-                await invalidateSavedViewDefaultQueries(queryClient, organization_id);
                 return;
             }
         }
 
-        await Promise.all([invalidateSavedViewCache(queryClient, organization_id), invalidateSavedViewDefaultQueries(queryClient, organization_id)]);
+        await invalidateSavedViewCache(queryClient, organization_id);
         return;
     }
 
@@ -335,19 +334,15 @@ export function upsertSavedViewCache(cachedViews: SavedView[] | undefined, saved
 function putSavedViewDefault(request: { route: { organizationId: string | undefined } }, scope: 'organization' | 'user') {
     const queryClient = useQueryClient();
 
-    return createMutation<{ defaults: ViewSavedViewDefaults; organizationId: string | undefined }, ProblemDetails, UpdateSavedViewDefault>(() => ({
+    return createMutation<ViewSavedViewDefaults, ProblemDetails, UpdateSavedViewDefault>(() => ({
         enabled: () => !!accessToken.current && !!request.route.organizationId,
         mutationFn: async (data: UpdateSavedViewDefault) => {
             const client = useFetchClient();
-            const organizationId = request.route.organizationId;
-            const response = await client.putJSON<ViewSavedViewDefaults>(`organizations/${organizationId}/saved-view-defaults/${scope}`, data);
-            return {
-                defaults: response.data!,
-                organizationId
-            };
+            const response = await client.putJSON<ViewSavedViewDefaults>(`organizations/${request.route.organizationId}/saved-view-defaults/${scope}`, data);
+            return response.data!;
         },
-        onSuccess: ({ defaults, organizationId }) => {
-            queryClient.setQueryData(queryKeys.defaults(organizationId), defaults);
+        onSuccess: (defaults: ViewSavedViewDefaults) => {
+            queryClient.setQueryData(queryKeys.defaults(request.route.organizationId), defaults);
         }
     }));
 }

@@ -92,7 +92,6 @@ public static class UserEndpoints
         .Accepts<Delta<UpdateUser>>(false, "application/json", "application/*+json")
         .Produces<ViewUser>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
-        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Update")
         .WithMetadata(new EndpointDocumentation {
@@ -103,7 +102,6 @@ public static class UserEndpoints
             },
             ResponseDescriptions = new() {
                 ["400"] = "An error occurred while updating the user.",
-                ["409"] = "The user was modified by another request.",
                 ["404"] = "The user could not be found.",
             }
         });
@@ -113,7 +111,6 @@ public static class UserEndpoints
         .Accepts<Delta<UpdateUser>>(false, "application/json", "application/*+json")
         .Produces<ViewUser>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
-        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Update")
         .WithMetadata(new EndpointDocumentation {
@@ -124,7 +121,6 @@ public static class UserEndpoints
             },
             ResponseDescriptions = new() {
                 ["400"] = "An error occurred while updating the user.",
-                ["409"] = "The user was modified by another request.",
                 ["404"] = "The user could not be found.",
             }
         });
@@ -132,7 +128,6 @@ public static class UserEndpoints
         group.MapPost("users/{id:objectid}/avatar", UploadAvatarAsync)
         .Accepts<IFormFile>("multipart/form-data")
         .Produces<ViewUser>()
-        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithMetadata(
@@ -153,7 +148,6 @@ public static class UserEndpoints
 
         group.MapDelete("users/{id:objectid}/avatar", DeleteAvatarAsync)
         .Produces<ViewUser>()
-        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Remove avatar")
         .WithMetadata(new EndpointDocumentation {
@@ -217,7 +211,6 @@ public static class UserEndpoints
             => (await mediator.InvokeAsync<Result<UpdateEmailAddressResult>>(new UserMessages.UpdateEmailAddress(id, email))).ToHttpResult(resultMapper))
         .Produces<UpdateEmailAddressResult>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
-        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .ProducesProblem(StatusCodes.Status429TooManyRequests)
@@ -237,7 +230,6 @@ public static class UserEndpoints
         group.MapGet("users/verify-email-address/{token:token}", async (string token, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result>(new UserMessages.VerifyEmailAddress(token))).ToHttpResult(resultMapper))
         .Produces(StatusCodes.Status200OK)
-        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Verify email address")
@@ -254,7 +246,6 @@ public static class UserEndpoints
         group.MapGet("users/{id:objectid}/resend-verification-email", async (string id, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result>(new UserMessages.ResendVerificationEmail(id))).ToHttpResult(resultMapper))
         .Produces(StatusCodes.Status200OK)
-        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .WithSummary("Resend verification email")
         .WithMetadata(new EndpointDocumentation {

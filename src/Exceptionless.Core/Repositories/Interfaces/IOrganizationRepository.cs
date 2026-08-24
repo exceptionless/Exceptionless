@@ -13,5 +13,4 @@ public interface IOrganizationRepository : ISearchableRepository<Organization>
     Task<FindResults<Organization>> GetByFilterAsync(AppFilter systemFilter, string? userFilter, string? sort, CommandOptionsDescriptor<Organization>? options = null);
     Task<FindResults<Organization>> GetByCriteriaAsync(string? criteria, CommandOptionsDescriptor<Organization> options, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null);
     Task<BillingPlanStats> GetBillingPlanStatsAsync();
-    Task<bool> SetDefaultSavedViewAsync(string organizationId, string? savedViewId);
 }

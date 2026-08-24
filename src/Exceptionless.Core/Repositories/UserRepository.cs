@@ -10,12 +10,9 @@ namespace Exceptionless.Core.Repositories;
 
 public class UserRepository : RepositoryBase<User>, IUserRepository
 {
-    private readonly TimeProvider _timeProvider;
-
     public UserRepository(ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, AppOptions options)
         : base(configuration.Users, validator, options)
     {
-        _timeProvider = configuration.TimeProvider;
         DefaultConsistency = Consistency.Immediate;
         AddRequiredField(u => u.EmailAddress, u => u.OrganizationIds);
     }
@@ -76,86 +73,6 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
             return Task.FromResult(new FindResults<User>());
 
         return FindAsync(q => q.FieldEquals(u => u.OrganizationPreferences.First().DefaultSavedViewId, savedViewId), options);
-    }
-
-    public Task<FindResults<User>> GetByPreferenceOrganizationIdAsync(string organizationId, CommandOptionsDescriptor<User>? options = null)
-    {
-        if (String.IsNullOrEmpty(organizationId))
-            return Task.FromResult(new FindResults<User>());
-
-        return FindAsync(q => q.FieldEquals(u => u.OrganizationPreferences.First().OrganizationId, organizationId), options);
-    }
-
-    public Task<bool> AddOrganizationAsync(string userId, string organizationId)
-    {
-        return PatchAsync(userId, new ActionPatch<User>(user =>
-        {
-            if (user.OrganizationIds.Contains(organizationId))
-                return false;
-
-            user.OrganizationIds.Add(organizationId);
-            return true;
-        }), o => o.ImmediateConsistency());
-    }
-
-    public Task<bool> SetDefaultSavedViewAsync(string userId, string organizationId, string? savedViewId)
-    {
-        const string script = @"
-if (ctx._source.organization_preferences == null) {
-  ctx._source.organization_preferences = [];
-}
-
-for (int i = ctx._source.organization_preferences.size() - 1; i >= 0; i--) {
-  if (ctx._source.organization_preferences[i].organization_id == params.organizationId) {
-    ctx._source.organization_preferences.remove(i);
-  }
-}
-
-if (params.savedViewId != null) {
-  ctx._source.organization_preferences.add([
-    'organization_id': params.organizationId,
-    'default_saved_view_id': params.savedViewId
-  ]);
-}
-
-ctx._source.updated_utc = params.updatedUtc;";
-
-        var operation = new ScriptPatch(script.TrimScript())
-        {
-            Params = new Dictionary<string, object>
-            {
-                ["organizationId"] = organizationId,
-                ["savedViewId"] = savedViewId!,
-                ["updatedUtc"] = _timeProvider.GetUtcNow().UtcDateTime
-            }
-        };
-
-        return PatchAsync(userId, operation, o => o.ImmediateConsistency());
-    }
-
-    public Task<bool> RemoveDefaultSavedViewsAsync(string userId, IReadOnlyCollection<string> savedViewIds)
-    {
-        const string script = @"
-if (ctx._source.organization_preferences != null) {
-  for (int i = ctx._source.organization_preferences.size() - 1; i >= 0; i--) {
-    if (params.savedViewIds.contains(ctx._source.organization_preferences[i].default_saved_view_id)) {
-      ctx._source.organization_preferences.remove(i);
-    }
-  }
-}
-
-ctx._source.updated_utc = params.updatedUtc;";
-
-        var operation = new ScriptPatch(script.TrimScript())
-        {
-            Params = new Dictionary<string, object>
-            {
-                ["savedViewIds"] = savedViewIds,
-                ["updatedUtc"] = _timeProvider.GetUtcNow().UtcDateTime
-            }
-        };
-
-        return PatchAsync(userId, operation, o => o.ImmediateConsistency());
     }
 
     protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<User>> findHits, ICommandOptions options, bool isDirtyRead)

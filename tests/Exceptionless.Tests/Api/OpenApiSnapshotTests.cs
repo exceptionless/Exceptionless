@@ -50,7 +50,7 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.True(paths.TryGetProperty("/api/v2/auth/login", out var loginPath));
         Assert.True(loginPath.TryGetProperty("post", out var loginPost));
         Assert.True(loginPost.TryGetProperty("requestBody", out _));
-        AssertResponseCodes(loginPost, "200", "401", "409", "422");
+        AssertResponseCodes(loginPost, "200", "401", "422");
 
         Assert.True(paths.TryGetProperty("/api/v2/auth/logout", out var logoutPath));
         Assert.True(logoutPath.TryGetProperty("get", out var logoutGet));
@@ -167,39 +167,6 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         AssertDictionaryValueSchema(document.RootElement, "ViewSavedView", "columns", "SavedViewColumnSettings");
         AssertRequiredJsonRequestBody(paths, "/api/v2/users/{id}", "patch", "UpdateUser");
         AssertRequiredJsonRequestBody(paths, "/api/v2/users/{id}", "put", "UpdateUser");
-
-        foreach (var (path, method) in new[]
-        {
-            ("/api/v2/organizations/{id}", "patch"),
-            ("/api/v2/organizations/{id}", "put"),
-            ("/api/v2/organizations/{id}/icon", "post"),
-            ("/api/v2/organizations/{id}/icon", "delete"),
-            ("/api/v2/organizations/{id}/users/{email}", "post"),
-            ("/api/v2/organizations/{id}/users/{email}", "delete"),
-            ("/api/v2/organizations/{id}/data/{key}", "post"),
-            ("/api/v2/organizations/{id}/data/{key}", "delete"),
-            ("/api/v2/users/{id}", "patch"),
-            ("/api/v2/users/{id}", "put"),
-            ("/api/v2/users/{id}/avatar", "post"),
-            ("/api/v2/users/{id}/avatar", "delete"),
-            ("/api/v2/users/{id}/email-address/{email}", "post"),
-            ("/api/v2/users/verify-email-address/{token}", "get"),
-            ("/api/v2/users/{id}/resend-verification-email", "get"),
-            ("/api/v2/auth/login", "post"),
-            ("/api/v2/auth/signup", "post"),
-            ("/api/v2/auth/github", "post"),
-            ("/api/v2/auth/google", "post"),
-            ("/api/v2/auth/facebook", "post"),
-            ("/api/v2/auth/live", "post"),
-            ("/api/v2/auth/unlink/{providerName}", "post"),
-            ("/api/v2/auth/change-password", "post"),
-            ("/api/v2/auth/forgot-password/{email}", "get"),
-            ("/api/v2/auth/reset-password", "post"),
-            ("/api/v2/auth/cancel-reset-password/{token}", "post")
-        })
-        {
-            AssertPathResponseCodes(paths, path, method, "409");
-        }
 
         AssertRequestContentTypes(paths, "/api/v1/error", "post", "application/json", "text/plain");
         AssertRequestContentTypes(paths, "/api/v1/events", "post", "application/json", "text/plain");

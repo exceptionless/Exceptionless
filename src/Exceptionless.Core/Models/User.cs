@@ -5,15 +5,13 @@ using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models;
 
-public record User : IIdentity, IHaveDates, IVersioned, IValidatableObject
+public record User : IIdentity, IHaveDates, IValidatableObject
 {
     /// <summary>
     /// Unique id that identifies an user.
     /// </summary>
     [ObjectId]
     public string Id { get; set; } = null!;
-
-    public string Version { get; set; } = String.Empty;
 
     /// <summary>
     /// The organizations that the user has access to.

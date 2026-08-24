@@ -600,7 +600,6 @@ describe('useSavedViews', () => {
             const otherView = buildSavedView({ id: 'view-2', name: 'Other View' });
             queryClient.setQueryData(queryKeys.organization(TEST_ORG_ID), [view, otherView]);
             queryClient.setQueryData(queryKeys.view(TEST_ORG_ID, 'stacks'), [view, otherView]);
-            const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries').mockImplementation(async () => {});
 
             // Act
             await invalidateSavedViewQueries(queryClient, {
@@ -614,7 +613,6 @@ describe('useSavedViews', () => {
             // Assert - view removed from both caches without refetch
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([otherView]);
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'stacks'))).toEqual([otherView]);
-            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.defaults(TEST_ORG_ID) });
         });
 
         it('preserves a pending reconciliation when a cached view is removed', async () => {
@@ -642,11 +640,10 @@ describe('useSavedViews', () => {
 
             // Assert
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([]);
-            expect(invalidateSpy).toHaveBeenCalledTimes(1);
-            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.defaults(TEST_ORG_ID) });
+            expect(invalidateSpy).not.toHaveBeenCalled();
 
             await vi.advanceTimersByTimeAsync(SAVED_VIEW_REFRESH_DELAY_MS);
-            expect(invalidateSpy).toHaveBeenCalledTimes(3);
+            expect(invalidateSpy).toHaveBeenCalledTimes(2);
             expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.organization(TEST_ORG_ID) });
             expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.defaults(TEST_ORG_ID) });
         });
@@ -667,7 +664,6 @@ describe('useSavedViews', () => {
 
             // Assert - falls through to invalidation since view not in cache
             expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.organization(TEST_ORG_ID) });
-            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.defaults(TEST_ORG_ID) });
         });
     });
 

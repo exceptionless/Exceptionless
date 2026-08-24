@@ -9,7 +9,6 @@ using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
-using Exceptionless.Core.Utility;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Api.Results;
@@ -18,12 +17,10 @@ using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Caching;
-using Foundatio.Lock;
 using Foundatio.Mediator;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
-using Foundatio.Repositories.Utility;
 using Stripe;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 using Invoice = Exceptionless.Web.Models.Invoice;
@@ -44,7 +41,6 @@ public class OrganizationHandler(
     IStripeBillingClient stripeBillingClient,
     IMailer mailer,
     IMessagePublisher messagePublisher,
-    ILockProvider lockProvider,
     ApiMapper mapper,
     AppOptions options,
     TimeProvider timeProvider,
@@ -372,9 +368,6 @@ public class OrganizationHandler(
             return ChangePlanResult.FailWithMessage("Another billing change is already in progress. Please try again.");
         }
 
-        await using var defaultsLock = await lockProvider.AcquireAsync(SavedViewDefaultLock.GetOrganizationKey(message.Id), SavedViewDefaultLock.Duration, TimeSpan.FromSeconds(30));
-        await using var defaultsLockRenewal = SavedViewDefaultLock.Renew(defaultsLock);
-
         var organization = await GetModelAsync(message.Id, useCache: false);
         if (organization is null)
             return Result.NotFound("Organization not found.");
@@ -424,7 +417,7 @@ public class OrganizationHandler(
                         {
                             billingManager.SetStripeSubscriptionId(organization, primarySubscription.Id);
                             ApplyResolvedSubscriptionState(organization, primarySubscription, GetCurrentUser(message.Context).Id);
-                            await PatchResolvedSubscriptionAsync(organization.Id, primarySubscription, GetCurrentUser(message.Context).Id);
+                            await repository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
                         }
 
                         foreach (var duplicateSubscription in subscriptions.Where(subscription =>
@@ -470,7 +463,7 @@ public class OrganizationHandler(
                 var customer = await stripeBillingClient.CreateCustomerAsync(createCustomer);
                 organization.StripeCustomerId = customer.Id;
                 organization.CardLast4 = model.Last4;
-                await PatchCreatedCustomerAsync(organization.Id, customer.Id, model.Last4, organization.SubscribeDate);
+                await repository.SaveAsync(organization, o => o.ImmediateConsistency().Cache());
 
                 var subscriptionOptions = new SubscriptionCreateOptions
                 {
@@ -513,7 +506,7 @@ public class OrganizationHandler(
                 {
                     billingManager.SetStripeSubscriptionId(organization, subscription.Id);
                     ApplyResolvedSubscriptionState(organization, subscription, GetCurrentUser(message.Context).Id);
-                    await PatchResolvedSubscriptionAsync(organization.Id, subscription, GetCurrentUser(message.Context).Id);
+                    await repository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
                 }
 
                 if (!String.IsNullOrEmpty(model.StripeToken))
@@ -602,7 +595,7 @@ public class OrganizationHandler(
             }
 
             billingManager.ApplyBillingPlan(organization, plan, GetCurrentUser(message.Context));
-            await PatchBillingPlanAsync(organization, plan, GetCurrentUser(message.Context));
+            await repository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
             await messagePublisher.PublishAsync(new PlanChanged { OrganizationId = organization.Id });
 
             foreach (var duplicateSubscription in duplicateSubscriptionsToCancelAfterPlanSave)
@@ -689,7 +682,7 @@ public class OrganizationHandler(
             return Result.NotFound("Organization not found.");
 
         var user = await userRepository.GetByEmailAddressAsync(message.Email);
-        if (user is null)
+        if (user is null || !user.OrganizationIds.Contains(message.Id))
         {
             var invite = organization.Invites.FirstOrDefault(i => String.Equals(i.EmailAddress, message.Email, StringComparison.OrdinalIgnoreCase));
             if (invite is null)
@@ -700,47 +693,26 @@ public class OrganizationHandler(
         }
         else
         {
-            if (!user.OrganizationIds.Contains(message.Id))
-            {
-                var invite = organization.Invites.FirstOrDefault(i => String.Equals(i.EmailAddress, message.Email, StringComparison.OrdinalIgnoreCase));
-                if (invite is not null)
-                {
-                    organization.Invites.Remove(invite);
-                    await repository.SaveAsync(organization, o => o.Cache());
-                    return Result.Success();
-                }
-            }
+            if (!user.OrganizationIds.Contains(organization.Id))
+                return Result.BadRequest("Invalid organization user.");
 
-            await using var defaultsLock = await lockProvider.AcquireAsync(SavedViewDefaultLock.GetOrganizationKey(organization.Id), SavedViewDefaultLock.Duration, TimeSpan.FromSeconds(30));
-            await using var defaultsLockRenewal = SavedViewDefaultLock.Renew(defaultsLock);
-            await using var userDefaultsLock = await lockProvider.AcquireAsync(SavedViewDefaultLock.GetUserKey(user.Id), SavedViewDefaultLock.Duration, TimeSpan.FromSeconds(30));
-            await using var userDefaultsLockRenewal = SavedViewDefaultLock.Renew(userDefaultsLock);
-
-            user = await userRepository.GetByIdAsync(user.Id, o => o.Cache(false));
-            if (user is null)
-                return Result.Success();
-
-            bool isMember = user.OrganizationIds.Contains(organization.Id);
-            if (isMember)
-            {
-                var organizationUsers = await userRepository.GetByOrganizationIdAsync(organization.Id);
-                if (organizationUsers.Total is 1)
-                    return Result.BadRequest("An organization must contain at least one user.");
-
-                user.OrganizationIds.Remove(organization.Id);
-                foreach (var preference in user.OrganizationPreferences.Where(preference => String.Equals(preference.OrganizationId, organization.Id, StringComparison.Ordinal)).ToList())
-                    user.OrganizationPreferences.Remove(preference);
-                await userRepository.SaveAsync(user, o => o.Cache());
-                await messagePublisher.PublishAsync(new UserMembershipChanged
-                {
-                    ChangeType = ChangeType.Removed,
-                    UserId = user.Id,
-                    OrganizationId = organization.Id
-                });
-            }
+            var organizationUsers = await userRepository.GetByOrganizationIdAsync(organization.Id);
+            if (organizationUsers.Total is 1)
+                return Result.BadRequest("An organization must contain at least one user.");
 
             await organizationService.CleanupProjectNotificationSettingsAsync(organization, [user.Id]);
             await organizationService.RemoveUserSavedViewsAsync(organization.Id, user.Id);
+
+            user.OrganizationIds.Remove(organization.Id);
+            foreach (var preference in user.OrganizationPreferences.Where(preference => String.Equals(preference.OrganizationId, organization.Id, StringComparison.Ordinal)).ToList())
+                user.OrganizationPreferences.Remove(preference);
+            await userRepository.SaveAsync(user, o => o.Cache());
+            await messagePublisher.PublishAsync(new UserMembershipChanged
+            {
+                ChangeType = ChangeType.Removed,
+                UserId = user.Id,
+                OrganizationId = organization.Id
+            });
         }
 
         return Result.Success();
@@ -865,13 +837,8 @@ public class OrganizationHandler(
 
         var organization = await repository.AddAsync(value, o => o.Cache());
 
-        if (!await userRepository.AddOrganizationAsync(user.Id, organization.Id))
-        {
-            await repository.RemoveAsync(organization.Id);
-            throw new InvalidOperationException("Unable to associate the current user with the new organization.");
-        }
-
         user.OrganizationIds.Add(organization.Id);
+        await userRepository.SaveAsync(user, o => o.Cache());
         await messagePublisher.PublishAsync(new UserMembershipChanged
         {
             UserId = user.Id,
@@ -1016,56 +983,6 @@ public class OrganizationHandler(
             organization.SuspensionNotes = $"Stripe subscription status changed to \"{status.Value}\".";
             organization.SuspendedByUserId = userId;
         }
-    }
-
-    private async Task PatchResolvedSubscriptionAsync(string organizationId, Subscription subscription, string userId)
-    {
-        bool patched = await repository.PatchAsync(organizationId, new ActionPatch<Organization>(organization =>
-        {
-            billingManager.SetStripeSubscriptionId(organization, subscription.Id);
-            ApplyResolvedSubscriptionState(organization, subscription, userId);
-            return true;
-        }), o => o.ImmediateConsistency().Cache());
-
-        if (!patched)
-            throw new InvalidOperationException($"Organization {organizationId} was not found while persisting billing state.");
-    }
-
-    private async Task PatchCreatedCustomerAsync(string organizationId, string customerId, string? cardLast4, DateTime? subscribeDate)
-    {
-        bool patched = await repository.PatchAsync(organizationId, new ActionPatch<Organization>(organization =>
-        {
-            organization.StripeCustomerId = customerId;
-            organization.CardLast4 = cardLast4;
-            organization.SubscribeDate = subscribeDate;
-            return true;
-        }), o => o.ImmediateConsistency().Cache());
-
-        if (!patched)
-            throw new InvalidOperationException($"Organization {organizationId} was not found while persisting billing state.");
-    }
-
-    private async Task PatchBillingPlanAsync(Organization billingState, BillingPlan plan, User user)
-    {
-        bool patched = await repository.PatchAsync(billingState.Id, new ActionPatch<Organization>(organization =>
-        {
-            organization.StripeCustomerId = billingState.StripeCustomerId;
-            organization.StripeSubscriptionId = billingState.StripeSubscriptionId;
-            organization.StripeSubscriptionEventDate = billingState.StripeSubscriptionEventDate;
-            organization.CardLast4 = billingState.CardLast4;
-            organization.SubscribeDate = billingState.SubscribeDate;
-            organization.BillingStatus = billingState.BillingStatus;
-            organization.IsSuspended = billingState.IsSuspended;
-            organization.SuspensionDate = billingState.SuspensionDate;
-            organization.SuspensionCode = billingState.SuspensionCode;
-            organization.SuspensionNotes = billingState.SuspensionNotes;
-            organization.SuspendedByUserId = billingState.SuspendedByUserId;
-            billingManager.ApplyBillingPlan(organization, plan, user);
-            return true;
-        }), o => o.ImmediateConsistency().Cache());
-
-        if (!patched)
-            throw new InvalidOperationException($"Organization {billingState.Id} was not found while persisting billing state.");
     }
 
     private async Task<ViewOrganization> PopulateOrganizationStatsAsync(ViewOrganization organization)

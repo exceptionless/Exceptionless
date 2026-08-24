@@ -11,7 +11,6 @@ using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
-using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
 using Microsoft.Extensions.DependencyInjection;
@@ -383,53 +382,6 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         var organization = await _organizationRepository.GetByIdAsync(organizationView.Id);
         Assert.NotNull(organization);
         Assert.Equal("Test Organization", organization.Name);
-    }
-
-    [Fact]
-    public async Task PostAsync_ConcurrentUserPatch_PreservesPatchAndMembership()
-    {
-        const string organizationName = "Concurrent Membership Organization";
-        var currentUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
-        Assert.NotNull(currentUser);
-
-        var organizationSaveStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var releaseOrganizationSave = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        using var savingRegistration = _organizationRepository.DocumentsAdding.AddHandler(async (_, args) =>
-        {
-            if (!args.Documents.Any(document => String.Equals(document.Name, organizationName, StringComparison.Ordinal)))
-                return;
-
-            organizationSaveStarted.TrySetResult();
-            await releaseOrganizationSave.Task.WaitAsync(TestCancellationToken);
-        });
-
-        var createTask = SendRequestAsAsync<ViewOrganization>(r => r
-            .AsTestOrganizationUser()
-            .Post()
-            .AppendPath("organizations")
-            .Content(new NewOrganization { Name = organizationName })
-            .StatusCodeShouldBeCreated()
-        );
-
-        await organizationSaveStarted.Task.WaitAsync(TestCancellationToken);
-        string savedViewId = ObjectId.GenerateNewId().ToString();
-        try
-        {
-            await _userRepository.SetDefaultSavedViewAsync(currentUser.Id, SampleDataService.TEST_ORG_ID, savedViewId);
-        }
-        finally
-        {
-            releaseOrganizationSave.TrySetResult();
-        }
-
-        var createdOrganization = await createTask;
-        Assert.NotNull(createdOrganization);
-
-        var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, o => o.Cache(false));
-        Assert.NotNull(persistedUser);
-        Assert.Contains(createdOrganization.Id, persistedUser.OrganizationIds);
-        Assert.Contains(persistedUser.OrganizationPreferences, preference =>
-            preference.OrganizationId == SampleDataService.TEST_ORG_ID && preference.DefaultSavedViewId == savedViewId);
     }
 
     [Fact]
@@ -1574,98 +1526,6 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         Assert.Equal("4242", organization.CardLast4);
         Assert.Equal(_plans.SmallPlan.Id, organization.PlanId);
         Assert.Equal(BillingStatus.Active, organization.BillingStatus);
-    }
-
-    [Fact]
-    public async Task ChangePlanAsync_ConcurrentOrganizationUpdateAfterCustomerCreation_PreservesUpdateAndBillingState()
-    {
-        const string updatedName = "Concurrently Updated Organization";
-        StripeBillingClient.CustomerToReturn = new Customer { Id = "cus_created" };
-
-        var customerCreated = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var releaseCustomerCreation = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        StripeBillingClient.CreateCustomerCallbackAsync = async _ =>
-        {
-            customerCreated.TrySetResult();
-            await releaseCustomerCreation.Task.WaitAsync(TestCancellationToken);
-        };
-
-        var changePlanTask = WithBillingEnabledAsync(() =>
-            SendRequestAsAsync<ChangePlanResult>(r => r
-                .AsFreeOrganizationUser()
-                .Post()
-                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
-                .Content(new ChangePlanRequest
-                {
-                    PlanId = _plans.SmallPlan.Id,
-                    StripeToken = "tok_visa",
-                    Last4 = "4242"
-                })
-                .StatusCodeShouldBeOk()
-            ));
-
-        await customerCreated.Task.WaitAsync(TestCancellationToken);
-        try
-        {
-            var concurrentOrganization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
-            Assert.NotNull(concurrentOrganization);
-            concurrentOrganization.Name = updatedName;
-            await _organizationRepository.SaveAsync(concurrentOrganization, o => o.ImmediateConsistency().Cache().Originals());
-        }
-        finally
-        {
-            releaseCustomerCreation.TrySetResult();
-        }
-
-        var result = await changePlanTask;
-        Assert.NotNull(result);
-        Assert.True(result.Success, result.Message);
-
-        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID, o => o.Cache(false));
-        Assert.NotNull(organization);
-        Assert.Equal(updatedName, organization.Name);
-        Assert.Equal("cus_created", organization.StripeCustomerId);
-        Assert.Equal("sub_created", organization.StripeSubscriptionId);
-        Assert.Equal(_plans.SmallPlan.Id, organization.PlanId);
-        Assert.Equal(BillingStatus.Active, organization.BillingStatus);
-    }
-
-    [Fact]
-    public async Task ChangePlanAsync_WaitsForSavedViewDefaultMutationBeforeCreatingCustomer()
-    {
-        StripeBillingClient.CustomerToReturn = new Customer { Id = "cus_created" };
-
-        var lockProvider = GetService<ILockProvider>();
-        var heldLock = await lockProvider.AcquireAsync($"saved-view-defaults:{SampleDataService.FREE_ORG_ID}", TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(1));
-        var changePlanTask = WithBillingEnabledAsync(() =>
-            SendRequestAsAsync<ChangePlanResult>(r => r
-                .AsFreeOrganizationUser()
-                .Post()
-                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
-                .Content(new ChangePlanRequest
-                {
-                    PlanId = _plans.SmallPlan.Id,
-                    StripeToken = "tok_visa",
-                    Last4 = "4242"
-                })
-                .StatusCodeShouldBeOk()
-            ));
-
-        try
-        {
-            await Task.Delay(100, TestCancellationToken);
-            Assert.False(changePlanTask.IsCompleted);
-            Assert.Null(StripeBillingClient.LastCustomerCreateOptions);
-        }
-        finally
-        {
-            await heldLock.DisposeAsync();
-        }
-
-        var result = await changePlanTask;
-        Assert.NotNull(result);
-        Assert.True(result.Success, result.Message);
-        Assert.NotNull(StripeBillingClient.LastCustomerCreateOptions);
     }
 
     [Fact]

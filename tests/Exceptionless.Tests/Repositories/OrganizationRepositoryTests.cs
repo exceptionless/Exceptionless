@@ -60,12 +60,6 @@ public sealed class OrganizationRepositoryTests : IntegrationTestsBase
         Assert.NotNull(organization.Id);
         Assert.Equal(1, _cache.Count);
 
-        var cachedOrganization = await _repository.GetByIdAsync(organization.Id, o => o.Cache());
-        Assert.NotNull(cachedOrganization);
-        Assert.False(String.IsNullOrEmpty(cachedOrganization.Version));
-        cachedOrganization.Name = "Updated Cached Organization";
-        await _repository.SaveAsync(cachedOrganization, o => o.ImmediateConsistency().Cache());
-
         await _repository.RemoveAllAsync(o => o.ImmediateConsistency());
         Assert.Equal(0, _cache.Count);
     }

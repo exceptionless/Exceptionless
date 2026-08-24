@@ -92,7 +92,6 @@ public static class SavedViewEndpoints
         .Accepts<UpdateSavedViewDefault>("application/json", "application/*+json")
         .Produces<ViewSavedViewDefaults>()
         .ProducesProblem(StatusCodes.Status404NotFound)
-        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Update the current user's saved view default")
         .WithMetadata(new EndpointDocumentation {
@@ -104,7 +103,6 @@ public static class SavedViewEndpoints
             ResponseDescriptions = new() {
                 ["200"] = "The personal saved view default was updated.",
                 ["404"] = "The organization could not be found.",
-                ["409"] = "The saved view defaults are currently being updated.",
                 ["422"] = "The saved view is not accessible in this organization.",
             }
         });
@@ -115,7 +113,6 @@ public static class SavedViewEndpoints
         .Accepts<UpdateSavedViewDefault>("application/json", "application/*+json")
         .Produces<ViewSavedViewDefaults>()
         .ProducesProblem(StatusCodes.Status404NotFound)
-        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Update the organization's saved view default")
         .WithMetadata(new EndpointDocumentation {
@@ -127,7 +124,6 @@ public static class SavedViewEndpoints
             ResponseDescriptions = new() {
                 ["200"] = "The organization saved view default was updated.",
                 ["404"] = "The organization could not be found.",
-                ["409"] = "The saved view defaults are currently being updated.",
                 ["422"] = "The saved view is private or is not accessible in this organization.",
             }
         });
@@ -303,7 +299,6 @@ public static class SavedViewEndpoints
         .Produces<WorkInProgressResult>(StatusCodes.Status202Accepted)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
-        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status500InternalServerError)
         .WithSummary("Remove")
         .WithMetadata(new EndpointDocumentation {
@@ -314,7 +309,6 @@ public static class SavedViewEndpoints
                 ["202"] = "Accepted",
                 ["400"] = "One or more validation errors occurred.",
                 ["404"] = "One or more saved views were not found.",
-                ["409"] = "The saved view defaults are currently being updated.",
                 ["500"] = "An error occurred while deleting one or more saved views.",
             }
         });

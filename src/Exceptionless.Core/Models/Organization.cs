@@ -8,7 +8,7 @@ using Foundatio.Repositories.Models;
 namespace Exceptionless.Core.Models;
 
 [DebuggerDisplay("{Id}, {Name}, {PlanName}")]
-public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates, IVersioned, ISupportSoftDeletes, IValidatableObject
+public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates, ISupportSoftDeletes, IValidatableObject
 {
     public Organization()
     {
@@ -25,8 +25,6 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     /// </summary>
     [ObjectId]
     public string Id { get; set; } = null!;
-
-    public string Version { get; set; } = String.Empty;
 
     /// <summary>
     /// Name of the organization.

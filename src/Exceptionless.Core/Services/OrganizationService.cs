@@ -1,9 +1,7 @@
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Utility;
 using Foundatio.Extensions.Hosting.Startup;
-using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Microsoft.Extensions.Logging;
@@ -20,12 +18,11 @@ public class OrganizationService : IStartupAction
     private readonly ITokenRepository _tokenRepository;
     private readonly IUserRepository _userRepository;
     private readonly IWebHookRepository _webHookRepository;
-    private readonly ILockProvider _lockProvider;
     private readonly IStripeBillingClient _stripeBillingClient;
     private readonly UsageService _usageService;
     private readonly ILogger _logger;
 
-    public OrganizationService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ISavedViewRepository savedViewRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, ILockProvider lockProvider, IStripeBillingClient stripeBillingClient, UsageService usageService, ILoggerFactory loggerFactory)
+    public OrganizationService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ISavedViewRepository savedViewRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, IStripeBillingClient stripeBillingClient, UsageService usageService, ILoggerFactory loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
@@ -33,7 +30,6 @@ public class OrganizationService : IStartupAction
         _tokenRepository = tokenRepository;
         _userRepository = userRepository;
         _webHookRepository = webHookRepository;
-        _lockProvider = lockProvider;
         _stripeBillingClient = stripeBillingClient;
         _usageService = usageService;
         _logger = loggerFactory.CreateLogger<OrganizationService>();
@@ -187,57 +183,10 @@ public class OrganizationService : IStartupAction
         return _webHookRepository.RemoveAllByOrganizationIdAsync(organization.Id);
     }
 
-    public async Task<long> RemoveSavedViewsAsync(Organization organization)
-    {
-        await using var defaultsLock = await _lockProvider.AcquireAsync(SavedViewDefaultLock.GetOrganizationKey(organization.Id), SavedViewDefaultLock.Duration, TimeSpan.FromSeconds(30));
-        await using var defaultsLockRenewal = SavedViewDefaultLock.Renew(defaultsLock);
-
-        var currentOrganization = await _organizationRepository.GetByIdAsync(organization.Id, o => o.Cache(false).SoftDeleteMode(SoftDeleteQueryMode.All));
-        if (currentOrganization is null)
-            return 0;
-
-        return await RemoveSavedViewsWhileLockedAsync(currentOrganization);
-    }
-
-    private async Task<long> RemoveSavedViewsWhileLockedAsync(Organization organization)
+    public Task<long> RemoveSavedViewsAsync(Organization organization)
     {
         _logger.LogDebug("Removing saved views for {OrganizationName} ({OrganizationId})", organization.Name, organization.Id);
-
-        var savedViewIds = new HashSet<string>(StringComparer.Ordinal);
-        var savedViewResults = await _savedViewRepository.GetByOrganizationIdAsync(organization.Id, o => o.SearchAfterPaging().PageLimit(BATCH_SIZE));
-        do
-        {
-            savedViewIds.UnionWith(savedViewResults.Documents.Select(savedView => savedView.Id));
-        } while (await savedViewResults.NextPageAsync());
-
-        organization.DefaultSavedViewId = null;
-
-        var userIds = new HashSet<string>(StringComparer.Ordinal);
-        var userResults = await _userRepository.GetByPreferenceOrganizationIdAsync(organization.Id, o => o.SearchAfterPaging().PageLimit(BATCH_SIZE));
-        do
-        {
-            foreach (var user in userResults.Documents)
-                userIds.Add(user.Id);
-        } while (await userResults.NextPageAsync());
-
-        var userLockKeys = userIds.Select(SavedViewDefaultLock.GetUserKey).Order(StringComparer.Ordinal);
-        await using var userLocks = await _lockProvider.AcquireAsync(userLockKeys, SavedViewDefaultLock.Duration, TimeSpan.FromSeconds(30));
-        await using var userLockRenewal = SavedViewDefaultLock.Renew(userLocks);
-
-        foreach (string userId in userIds)
-        {
-            var user = await _userRepository.GetByIdAsync(userId, o => o.Cache(false));
-            if (user is null)
-                continue;
-
-            await _userRepository.SetDefaultSavedViewAsync(userId, organization.Id, null);
-        }
-
-        if (savedViewIds.Count == 0)
-            return 0;
-
-        await userLockRenewal.ThrowIfFailedAsync();
-        return await _savedViewRepository.RemoveAllByOrganizationIdAsync(organization.Id);
+        return _savedViewRepository.RemoveAllByOrganizationIdAsync(organization.Id);
     }
 
     public Task<long> RemoveUserSavedViewsAsync(string organizationId, string userId)
@@ -248,30 +197,18 @@ public class OrganizationService : IStartupAction
 
     public async Task SoftDeleteOrganizationAsync(Organization organization, string currentUserId)
     {
-        await using (var defaultsLock = await _lockProvider.AcquireAsync(SavedViewDefaultLock.GetOrganizationKey(organization.Id), SavedViewDefaultLock.Duration, TimeSpan.FromSeconds(30)))
-        await using (var defaultsLockRenewal = SavedViewDefaultLock.Renew(defaultsLock))
-        {
-            var currentOrganization = await _organizationRepository.GetByIdAsync(organization.Id, o => o.Cache(false).SoftDeleteMode(SoftDeleteQueryMode.All));
-            if (currentOrganization is null)
-                return;
-
-            organization = currentOrganization;
-            if (!organization.IsDeleted)
-            {
-                organization.DefaultSavedViewId = null;
-                organization.IsDeleted = true;
-                await _organizationRepository.SaveAsync(organization);
-            }
-
-            await RemoveSavedViewsWhileLockedAsync(organization);
-        }
+        if (organization.IsDeleted)
+            return;
 
         await RemoveTokensAsync(organization);
         await RemoveWebHooksAsync(organization);
-
+        await RemoveSavedViewsAsync(organization);
         await CancelSubscriptionsAsync(organization);
         await RemoveUsersAsync(organization, currentUserId);
         await CleanupProjectNotificationSettingsAsync(organization, []);
+
+        organization.IsDeleted = true;
+        await _organizationRepository.SaveAsync(organization);
     }
 
     private async Task<HashSet<string>> GetValidNotificationUserIdsAsync(string organizationId, IReadOnlyCollection<string> userIds, CancellationToken cancellationToken)

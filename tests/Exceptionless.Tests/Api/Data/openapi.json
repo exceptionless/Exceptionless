@@ -1218,16 +1218,6 @@
               }
             }
           },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Login failed",
             "content": {
@@ -1356,16 +1346,6 @@
               }
             }
           },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Sign-up failed",
             "content": {
@@ -1431,16 +1411,6 @@
               }
             }
           },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "403": {
             "description": "Account Creation is currently disabled",
             "content": {
@@ -1492,16 +1462,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TokenResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1561,16 +1521,6 @@
               }
             }
           },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "403": {
             "description": "Account Creation is currently disabled",
             "content": {
@@ -1622,16 +1572,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TokenResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1713,16 +1653,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
           }
         }
       }
@@ -1755,16 +1685,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TokenResult"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1813,16 +1733,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
           }
         }
       }
@@ -1851,16 +1761,6 @@
         "responses": {
           "200": {
             "description": "Password reset email was sent."
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
           },
           "422": {
             "description": "Invalid reset password model.",
@@ -1899,16 +1799,6 @@
           },
           "400": {
             "description": "Invalid password reset token.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3309,16 +3199,6 @@
               }
             }
           },
-          "409": {
-            "description": "The saved view defaults are currently being updated.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "422": {
             "description": "The saved view is not accessible in this organization.",
             "content": {
@@ -3379,16 +3259,6 @@
           },
           "404": {
             "description": "The organization could not be found.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The saved view defaults are currently being updated.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3747,16 +3617,6 @@
               }
             }
           },
-          "409": {
-            "description": "The saved view defaults are currently being updated.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "500": {
             "description": "An error occurred while deleting one or more saved views.",
             "content": {
@@ -3982,16 +3842,6 @@
               }
             }
           },
-          "409": {
-            "description": "The user was modified by another request.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "404": {
             "description": "The user could not be found.",
             "content": {
@@ -4050,16 +3900,6 @@
           },
           "400": {
             "description": "An error occurred while updating the user.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The user was modified by another request.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4195,16 +4035,6 @@
               }
             }
           },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "404": {
             "description": "The user could not be found.",
             "content": {
@@ -4251,16 +4081,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ViewUser"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -4434,16 +4254,6 @@
               }
             }
           },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -4499,16 +4309,6 @@
           "200": {
             "description": "OK"
           },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "404": {
             "description": "The user could not be found.",
             "content": {
@@ -4553,16 +4353,6 @@
         "responses": {
           "200": {
             "description": "The user verification email has been sent."
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
           },
           "404": {
             "description": "The user could not be found.",
@@ -6327,16 +6117,6 @@
               }
             }
           },
-          "409": {
-            "description": "The organization was modified by another request.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "404": {
             "description": "The organization could not be found.",
             "content": {
@@ -6405,16 +6185,6 @@
           },
           "400": {
             "description": "An error occurred while updating the organization.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The organization was modified by another request.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -6495,16 +6265,6 @@
               }
             }
           },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "404": {
             "description": "The organization could not be found.",
             "content": {
@@ -6551,16 +6311,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ViewOrganization"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -7033,16 +6783,6 @@
               }
             }
           },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "404": {
             "description": "The organization was not found.",
             "content": {
@@ -7098,16 +6838,6 @@
           },
           "400": {
             "description": "The error occurred while removing the user from your organization",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -7187,16 +6917,6 @@
               }
             }
           },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "404": {
             "description": "The organization was not found.",
             "content": {
@@ -7239,16 +6959,6 @@
         "responses": {
           "200": {
             "description": "OK"
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
           },
           "404": {
             "description": "The organization was not found.",
@@ -13782,7 +13492,6 @@
           "full_name",
           "email_address",
           "id",
-          "version",
           "organization_ids",
           "password_reset_token_expiration",
           "o_auth_accounts",
@@ -13803,9 +13512,6 @@
             "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string",
             "description": "Unique id that identifies an user."
-          },
-          "version": {
-            "type": "string"
           },
           "organization_ids": {
             "uniqueItems": true,

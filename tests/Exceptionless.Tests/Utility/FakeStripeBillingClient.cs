@@ -39,8 +39,6 @@ public sealed class FakeStripeBillingClient : IStripeBillingClient
 
     public Exception? AttachPaymentMethodException { get; set; }
 
-    public Func<CustomerCreateOptions, Task>? CreateCustomerCallbackAsync { get; set; }
-
     public string? LastGetInvoiceId { get; private set; }
 
     public string? LastGetSubscriptionId { get; private set; }
@@ -86,7 +84,6 @@ public sealed class FakeStripeBillingClient : IStripeBillingClient
         ListSubscriptionsException = null;
         CancelSubscriptionException = null;
         AttachPaymentMethodException = null;
-        CreateCustomerCallbackAsync = null;
         LastGetInvoiceId = null;
         LastGetSubscriptionId = null;
         LastInvoiceListOptions = null;
@@ -138,16 +135,13 @@ public sealed class FakeStripeBillingClient : IStripeBillingClient
         return Task.FromResult(FinalizedInvoiceToReturn);
     }
 
-    public async Task<Customer> CreateCustomerAsync(CustomerCreateOptions options)
+    public Task<Customer> CreateCustomerAsync(CustomerCreateOptions options)
     {
         LastCustomerCreateOptions = options;
         if (CreateCustomerException is not null)
             throw CreateCustomerException;
 
-        if (CreateCustomerCallbackAsync is not null)
-            await CreateCustomerCallbackAsync(options);
-
-        return CustomerToReturn;
+        return Task.FromResult(CustomerToReturn);
     }
 
     public Task<Customer> UpdateCustomerAsync(string customerId, CustomerUpdateOptions options)
