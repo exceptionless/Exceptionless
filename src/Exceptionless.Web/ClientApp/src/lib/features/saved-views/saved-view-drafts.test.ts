@@ -291,11 +291,12 @@ describe('saved view drafts', () => {
                 columnVisibilityChanges: { date: false, summary: false },
                 showChart: false,
                 showStats: false,
+                sort: 'count',
                 version: 1
             },
             undefined,
             {
-                fields: ['showChart'],
+                fields: ['showChart', 'sort'],
                 recordKeys: { columnVisibilityChanges: ['date'] }
             }
         );

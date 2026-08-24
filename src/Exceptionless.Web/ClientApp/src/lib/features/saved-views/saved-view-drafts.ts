@@ -8,7 +8,7 @@ const STORAGE_PREFIX = 'exceptionless:saved-view-draft:v1:';
 const MULTISET_FILTER_TYPES = new Set(['keyword']);
 
 export interface PendingSavedViewDraftTouches {
-    fields?: Array<'autoFillColumnId' | 'columnOrder' | 'showChart' | 'showStats'>;
+    fields?: Array<'autoFillColumnId' | 'columnOrder' | 'showChart' | 'showStats' | 'sort'>;
     filterKeys?: string[];
     recordKeys?: Partial<Record<'columnSizingChanges' | 'columnVisibilityChanges' | 'wrappedColumnChanges', string[]>>;
 }
@@ -323,7 +323,7 @@ export function mergePendingSavedViewDraftEdits(
         merged.filterChanges = buildFilterChanges(serverFilters, mergeFilterOverrides(storedFilters, pendingFilters, touches.filterKeys));
     }
 
-    for (const key of ['autoFillColumnId', 'columnOrder', 'showChart', 'showStats'] as const) {
+    for (const key of ['autoFillColumnId', 'columnOrder', 'showChart', 'showStats', 'sort'] as const) {
         if (key in pending) {
             Object.assign(merged, { [key]: pending[key] });
         } else if (touches?.fields?.includes(key)) {

@@ -1406,7 +1406,7 @@ function trackPendingDraftChanges(tracker: PendingDraftTracker, currentDraft: Sa
     trackChangedFilterKeys(tracker.touchedFilterKeys, tracker.previousFilterDefinitions, currentFilterDefinitions);
     tracker.previousFilterDefinitions = currentFilterDefinitions;
 
-    for (const field of ['autoFillColumnId', 'columnOrder', 'showChart', 'showStats'] as const) {
+    for (const field of ['autoFillColumnId', 'columnOrder', 'showChart', 'showStats', 'sort'] as const) {
         if (JSON.stringify(tracker.previousDraft?.[field]) !== JSON.stringify(currentDraft?.[field])) {
             tracker.touchedFields.add(field);
         }
