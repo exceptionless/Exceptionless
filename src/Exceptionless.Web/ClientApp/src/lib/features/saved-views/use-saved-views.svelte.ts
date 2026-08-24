@@ -13,7 +13,6 @@ import {
 import { organization } from '$features/organizations/context.svelte';
 import { getMeQuery } from '$features/users/api.svelte';
 import { tick, untrack } from 'svelte';
-import { SvelteSet } from 'svelte/reactivity';
 
 import type { AutoFillColumnSelection, WrappedColumnIds } from './column-settings';
 import type { SavedView } from './models';
@@ -44,12 +43,10 @@ import {
     buildRecordChanges,
     buildWrappedColumnChanges,
     clearSavedViewDraft,
-    consumeSavedViewDraftClear,
     getMatchingFilterOverrideKeys,
     getSavedViewDraft,
     mergeFilterOverrides,
     mergePendingSavedViewDraftEdits,
-    queueSavedViewDraftClear,
     type SavedViewDraft,
     type SavedViewDraftIdentity,
     saveSavedViewDraft
@@ -97,6 +94,7 @@ export interface UseSavedViewsOptions {
 export interface UseSavedViewsReturn {
     activeSavedView: SavedView | undefined;
     autoFillColumnId: AutoFillColumnSelection;
+    canModifySavedView: boolean;
     handleClearSavedView: () => void;
     handleLoadView: (view: SavedView) => void;
     handleResetToSaved: () => void;
@@ -276,6 +274,10 @@ export function isSavedViewHydrationPending(
     isUnavailable: boolean
 ): boolean {
     return !!savedViewKey && !isUnavailable && (!activeSavedViewId || activeSavedViewId !== hydratedSavedViewId);
+}
+
+export function isSavedViewUnavailable(activeSavedViewId: string | undefined, isMissing: boolean, isError: boolean): boolean {
+    return isMissing || (isError && !activeSavedViewId);
 }
 
 export function savedViewColumnsEqual(
@@ -622,7 +624,6 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     let activeFilterOverrideBaselines = $state<Record<string, string>>({});
     let activeSortOverride = $state<{ value: null | string }>();
     let appliedDraftKey = $state('');
-    const pendingDraftClearViewIds = new SvelteSet<string>();
     let pendingDraftKey = '';
     let pendingDraftGeneration = -1;
     let draftHydrationGeneration = $state(0);
@@ -780,15 +781,6 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         const draftKey = `${identity.userId}:${identity.organizationId}:${identity.savedViewId}`;
-        const wasPendingInMemory = pendingDraftClearViewIds.delete(view.id);
-        const wasPendingInStorage = consumeSavedViewDraftClear(identity);
-        if (wasPendingInMemory || wasPendingInStorage) {
-            clearSavedViewDraft(identity);
-            appliedDraftKey = draftKey;
-            hydratedSavedViewId = view.id;
-            return;
-        }
-
         if (appliedDraftKey === draftKey || (pendingDraftKey === draftKey && pendingDraftGeneration === generation)) {
             return;
         }
@@ -975,22 +967,15 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return;
         }
 
+        const identity = getDraftIdentity(view);
+        if (!identity) {
+            return;
+        }
+
         draftPersistenceGeneration++;
         hydratedSavedView = view;
         hydratedSavedViewSignature = getSavedViewStateSignature(view);
-        const identity = getDraftIdentity(view);
-        if (identity) {
-            clearSavedViewDraft(identity);
-        } else {
-            pendingDraftClearViewIds.add(view.id);
-            const organizationId = organization.current;
-            if (organizationId) {
-                queueSavedViewDraftClear({
-                    organizationId,
-                    savedViewId: view.id
-                });
-            }
-        }
+        clearSavedViewDraft(identity);
 
         if (view.filter_definitions) {
             try {
@@ -1015,20 +1000,19 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
     function handleSavedViewUpdated(view: SavedView) {
         draftPersistenceGeneration++;
-        const identity = getDraftIdentity(view);
+        const organizationId = organization.current;
+        const identity =
+            getDraftIdentity(view) ??
+            (organizationId && view.updated_by_user_id
+                ? {
+                      organizationId,
+                      savedViewId: view.id,
+                      userId: view.updated_by_user_id
+                  }
+                : undefined);
         if (identity) {
             clearSavedViewDraft(identity);
             appliedDraftKey = `${identity.userId}:${identity.organizationId}:${identity.savedViewId}`;
-        } else {
-            pendingDraftClearViewIds.add(view.id);
-            const organizationId = organization.current;
-            if (organizationId) {
-                queueSavedViewDraftClear({
-                    organizationId,
-                    savedViewId: view.id,
-                    userId: view.updated_by_user_id ?? undefined
-                });
-            }
         }
 
         activeFilterOverrideBaselines = {};
@@ -1056,6 +1040,9 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         },
         get autoFillColumnId() {
             return autoFillColumnId;
+        },
+        get canModifySavedView() {
+            return !!currentUserQuery.data?.id;
         },
         handleClearSavedView,
         handleLoadView,

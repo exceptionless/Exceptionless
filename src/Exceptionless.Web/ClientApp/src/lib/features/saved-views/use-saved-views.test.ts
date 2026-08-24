@@ -21,6 +21,7 @@ import {
     hasSavedViewAutoFillChange,
     hasSavedViewColumnChanges,
     isSavedViewHydrationPending,
+    isSavedViewUnavailable,
     savedViewColumnsEqual,
     type SavedViewQueryParams,
     setSortQueryParam,
@@ -238,6 +239,12 @@ describe('useSavedViews', () => {
         it('does not wait when no view is selected or the selected view is missing', () => {
             expect(isSavedViewHydrationPending(undefined, undefined, undefined, false)).toBe(false);
             expect(isSavedViewHydrationPending('missing', undefined, undefined, true)).toBe(false);
+        });
+
+        it('keeps cached saved views available while a background refetch is failing', () => {
+            expect(isSavedViewUnavailable('view-1', false, true)).toBe(false);
+            expect(isSavedViewUnavailable(undefined, false, true)).toBe(true);
+            expect(isSavedViewUnavailable(undefined, true, false)).toBe(true);
         });
     });
 

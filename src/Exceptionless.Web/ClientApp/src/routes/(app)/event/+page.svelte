@@ -50,7 +50,7 @@
     import { organization } from '$features/organizations/context.svelte';
     import { premiumPage } from '$features/organizations/premium-page.svelte';
     import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
-    import { useSavedViews } from '$features/saved-views/use-saved-views.svelte';
+    import { isSavedViewHydrationPending, isSavedViewUnavailable, useSavedViews } from '$features/saved-views/use-saved-views.svelte';
     import * as agg from '$features/shared/api/aggregations';
     import { createPageSizePreference, getSharedTableOptions, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
     import { fillDateSeries } from '$features/shared/utils/charts.js';
@@ -292,7 +292,12 @@
     // Keep queries disabled until saved-view state and its URL overrides have both settled.
     let normalizedSavedViewId = $state<string>();
     const isSavedViewRoutePending = $derived(
-        !!page.params.slug && !savedViewsState.isError && (!savedViewsState.activeSavedView || savedViewsState.activeSavedView.id !== normalizedSavedViewId)
+        isSavedViewHydrationPending(
+            page.params.slug,
+            savedViewsState.activeSavedView?.id,
+            normalizedSavedViewId,
+            isSavedViewUnavailable(savedViewsState.activeSavedView?.id, savedViewsState.isMissing, savedViewsState.isError)
+        )
     );
 
     $effect(() => {
@@ -955,6 +960,7 @@
                 <SavedViewPicker
                     activeSavedView={savedViewsState.activeSavedView}
                     autoFillColumnId={savedViewsState.autoFillColumnId}
+                    canModifySavedView={savedViewsState.canModifySavedView}
                     columnOrder={table.store.state.columnOrder}
                     columnSizing={table.store.state.columnSizing}
                     columnVisibility={table.store.state.columnVisibility}

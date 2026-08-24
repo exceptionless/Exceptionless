@@ -28,7 +28,7 @@
     import { defaultEventColumnVisibility, getColumns } from '$features/events/components/table/options.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
-    import { isSavedViewHydrationPending, useSavedViews } from '$features/saved-views/use-saved-views.svelte';
+    import { isSavedViewHydrationPending, isSavedViewUnavailable, useSavedViews } from '$features/saved-views/use-saved-views.svelte';
     import { getSharedTableOptions, isTableEmpty, removeTableData } from '$features/shared/table.svelte';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
@@ -110,7 +110,7 @@
             queryParams.saved,
             savedViewsState.activeSavedView?.id,
             savedViewsState.hydratedSavedViewId,
-            savedViewsState.isMissing || savedViewsState.isError
+            isSavedViewUnavailable(savedViewsState.activeSavedView?.id, savedViewsState.isMissing, savedViewsState.isError)
         )
     );
     const pageTitle = $derived(savedViewsState.activeSavedView?.name ?? 'Event Stream');
@@ -375,6 +375,7 @@
                 <SavedViewPicker
                     activeSavedView={savedViewsState.activeSavedView}
                     autoFillColumnId={savedViewsState.autoFillColumnId}
+                    canModifySavedView={savedViewsState.canModifySavedView}
                     columnOrder={table.store.state.columnOrder}
                     columnSizing={table.store.state.columnSizing}
                     columnVisibility={table.store.state.columnVisibility}
