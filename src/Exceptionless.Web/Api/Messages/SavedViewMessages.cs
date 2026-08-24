@@ -7,7 +7,6 @@ namespace Exceptionless.Web.Api.Messages;
 public record GetSavedViewsByOrganization(string OrganizationId, int Page, int Limit);
 public record GetSavedViewsByView(string OrganizationId, string ViewType, int Page, int Limit);
 public record GetSavedViewById(string Id);
-public record GetSavedViewDefaults(string OrganizationId);
 public record UpdateUserSavedViewDefault(string OrganizationId, UpdateSavedViewDefault Default);
 public record UpdateOrganizationSavedViewDefault(string OrganizationId, UpdateSavedViewDefault Default);
 public record CreateSavedView(string OrganizationId, NewSavedView SavedView);

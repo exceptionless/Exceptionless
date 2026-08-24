@@ -13,8 +13,10 @@
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { toFilter } from '$features/events/components/filters/helpers.svelte';
     import { serializeFilters } from '$features/events/components/filters/helpers.svelte';
+    import { getOrganizationsQuery } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { supportsColumnWrapping } from '$features/shared/components/data-table/column-meta';
+    import { getMeQuery } from '$features/users/api.svelte';
     import Building2 from '@lucide/svelte/icons/building-2';
     import Columns3 from '@lucide/svelte/icons/columns-3';
     import House from '@lucide/svelte/icons/house';
@@ -32,7 +34,6 @@
 
     import {
         deleteSavedView,
-        getSavedViewDefaultsQuery,
         markSavedViewDeleted,
         patchSavedView,
         postSavedView,
@@ -41,6 +42,7 @@
         restoreDeletedSavedView
     } from '../api.svelte';
     import { buildColumnSettings } from '../column-settings';
+    import { resolveSavedViewDefaults } from '../defaults';
     import ColumnManagementDialog from './column-management-dialog.svelte';
     import DeleteViewDialog from './delete-view-dialog.svelte';
     import RenameViewDialog from './rename-view-dialog.svelte';
@@ -121,6 +123,17 @@
 
     const organizationId = $derived(organization.current);
     const activeView = $derived(activeSavedView);
+    const currentUserQuery = getMeQuery();
+    const organizationsQuery = getOrganizationsQuery({});
+    const currentOrganization = $derived(organizationsQuery.data?.data?.find((organizationItem) => organizationItem.id === organizationId));
+    const defaults = $derived.by(() => {
+        return resolveSavedViewDefaults({
+            organizationDefaultSavedViewId: currentOrganization?.default_saved_view_id,
+            organizationId,
+            organizationPreferences: currentUserQuery.data?.organization_preferences,
+            savedViews
+        });
+    });
 
     const createMutation = postSavedView({
         route: {
@@ -137,13 +150,6 @@
         }
     });
     const removeMutation = deleteSavedView({
-        route: {
-            get organizationId() {
-                return organizationId;
-            }
-        }
-    });
-    const defaultsQuery = getSavedViewDefaultsQuery({
         route: {
             get organizationId() {
                 return organizationId;
@@ -172,8 +178,8 @@
             userDefaultMutation.isPending ||
             organizationDefaultMutation.isPending
     );
-    const isUserDefault = $derived(!!activeView && defaultsQuery.data?.user_default?.id === activeView.id);
-    const isOrganizationDefault = $derived(!!activeView && defaultsQuery.data?.organization_default?.id === activeView.id);
+    const isUserDefault = $derived(!!activeView && defaults.userDefault?.id === activeView.id);
+    const isOrganizationDefault = $derived(!!activeView && defaults.organizationDefault?.id === activeView.id);
     const currentFilterString = $derived(toFilter(filters.filter((f) => f.type !== 'date')));
 
     // Auto-detect if current filters match an existing saved view for "load existing" hint

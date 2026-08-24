@@ -1,8 +1,10 @@
+import type { UserOrganizationPreference } from '$generated/api';
+
 import { describe, expect, it } from 'vitest';
 
-import type { SavedView, ViewSavedViewDefaults } from './models';
+import type { SavedView } from './models';
 
-import { getSavedViewDefaultHref } from './defaults';
+import { getSavedViewDefaultHref, resolveSavedViewDefaults } from './defaults';
 
 function savedView(overrides: Partial<SavedView> = {}): SavedView {
     return {
@@ -21,39 +23,88 @@ function savedView(overrides: Partial<SavedView> = {}): SavedView {
 
 describe('getSavedViewDefaultHref', () => {
     it('uses the personal default before the organization default', () => {
-        const defaults: ViewSavedViewDefaults = {
-            organization_default: savedView({ id: 'organization-default', slug: 'organization-home' }),
-            user_default: savedView({ id: 'user-default', slug: 'my-home', view_type: 'events' })
-        };
+        const savedViews = [
+            savedView({ id: 'organization-default', slug: 'organization-home' }),
+            savedView({ id: 'user-default', slug: 'my-home', view_type: 'events' })
+        ];
+        const defaults = resolveSavedViewDefaults({
+            organizationDefaultSavedViewId: 'organization-default',
+            organizationId: 'organization-id',
+            organizationPreferences: [preference('user-default')],
+            savedViews
+        });
 
-        expect(getSavedViewDefaultHref(defaults)).toBe('/next/event/my-home');
+        expect(getSavedViewDefaultHref(defaults, savedViews)).toBe('/next/event/my-home');
     });
 
     it('uses the organization default when there is no personal default', () => {
-        const defaults: ViewSavedViewDefaults = {
-            organization_default: savedView({ id: 'organization-default', slug: 'organization-home' })
-        };
+        const savedViews = [savedView({ id: 'organization-default', slug: 'organization-home' })];
+        const defaults = resolveSavedViewDefaults({
+            organizationDefaultSavedViewId: 'organization-default',
+            organizationId: 'organization-id',
+            savedViews
+        });
 
-        expect(getSavedViewDefaultHref(defaults)).toBe('/next/stack/organization-home');
+        expect(getSavedViewDefaultHref(defaults, savedViews)).toBe('/next/stack/organization-home');
+    });
+
+    it('skips missing duplicate personal defaults', () => {
+        const savedViews = [savedView({ id: 'valid-default', slug: 'valid-home' })];
+        const defaults = resolveSavedViewDefaults({
+            organizationId: 'organization-id',
+            organizationPreferences: [preference('missing-default'), preference('valid-default'), preference('valid-default')],
+            savedViews
+        });
+
+        expect(defaults.userDefault?.id).toBe('valid-default');
+        expect(getSavedViewDefaultHref(defaults, savedViews)).toBe('/next/stack/valid-home');
+    });
+
+    it('ignores a private organization default', () => {
+        const savedViews = [
+            savedView({ id: 'private-default', slug: 'private-home', user_id: 'user-id', view_type: 'events' }),
+            savedView({ id: 'first-stack-view', slug: 'all' })
+        ];
+        const defaults = resolveSavedViewDefaults({
+            organizationDefaultSavedViewId: 'private-default',
+            organizationId: 'organization-id',
+            savedViews
+        });
+
+        expect(defaults.organizationDefault).toBeUndefined();
+        expect(getSavedViewDefaultHref(defaults, savedViews)).toBe('/next/stack/all');
     });
 
     it('falls back to the first Stacks saved view when no configured default is available', () => {
-        const stackSavedViews = [savedView({ id: 'first-stack-view', slug: 'all' }), savedView({ id: 'second-stack-view', slug: 'errors' })];
+        const savedViews = [
+            savedView({ id: 'event-view', slug: 'recent', view_type: 'events' }),
+            savedView({ id: 'first-stack-view', slug: 'all' }),
+            savedView({ id: 'second-stack-view', slug: 'errors' })
+        ];
 
-        expect(getSavedViewDefaultHref(undefined, stackSavedViews)).toBe('/next/stack/all');
-        expect(getSavedViewDefaultHref({}, stackSavedViews)).toBe('/next/stack/all');
+        expect(getSavedViewDefaultHref({}, savedViews)).toBe('/next/stack/all');
     });
 
     it('falls back to the built-in Stacks route when there are no Stacks saved views', () => {
-        expect(getSavedViewDefaultHref(undefined, [])).toBe('/next/stack');
+        expect(getSavedViewDefaultHref({}, [])).toBe('/next/stack');
         expect(getSavedViewDefaultHref({}, undefined)).toBe('/next/stack');
     });
 
     it('builds stream saved view links using the saved view identifier', () => {
-        const defaults: ViewSavedViewDefaults = {
-            user_default: savedView({ id: 'stream-default', view_type: 'stream' })
-        };
+        const savedViews = [savedView({ id: 'stream-default', view_type: 'stream' })];
+        const defaults = resolveSavedViewDefaults({
+            organizationId: 'organization-id',
+            organizationPreferences: [preference('stream-default')],
+            savedViews
+        });
 
-        expect(getSavedViewDefaultHref(defaults)).toBe('/next/stream?saved=stream-default');
+        expect(getSavedViewDefaultHref(defaults, savedViews)).toBe('/next/stream?saved=stream-default');
     });
 });
+
+function preference(defaultSavedViewId: string): UserOrganizationPreference {
+    return {
+        default_saved_view_id: defaultSavedViewId,
+        organization_id: 'organization-id'
+    };
+}

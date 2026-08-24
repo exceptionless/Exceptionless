@@ -77,10 +77,6 @@ Content-Type: application/json
 
 @savedViewId = {{newSavedView.response.body.$.id}}
 
-### Get saved view defaults
-GET {{apiUrl}}/organizations/{{organizationId}}/saved-view-defaults
-Authorization: Bearer {{token}}
-
 ### Set personal saved view default
 PUT {{apiUrl}}/organizations/{{organizationId}}/saved-view-defaults/user
 Authorization: Bearer {{token}}

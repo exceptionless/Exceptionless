@@ -771,7 +771,6 @@ describe('useSavedViews', () => {
 
             await vi.advanceTimersByTimeAsync(SAVED_VIEW_REFRESH_DELAY_MS);
             expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.organization(TEST_ORG_ID) });
-            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.defaults(TEST_ORG_ID) });
         });
 
         it('delays invalidation for Saved events so optimistic caches stay visible', async () => {
@@ -793,7 +792,6 @@ describe('useSavedViews', () => {
 
             await vi.advanceTimersByTimeAsync(SAVED_VIEW_REFRESH_DELAY_MS);
             expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.organization(TEST_ORG_ID) });
-            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.defaults(TEST_ORG_ID) });
         });
 
         it('coalesces rapid saved view notifications until the latest refresh window', async () => {
@@ -822,9 +820,8 @@ describe('useSavedViews', () => {
             expect(invalidateSpy).not.toHaveBeenCalled();
 
             await vi.advanceTimersByTimeAsync(SAVED_VIEW_REFRESH_DELAY_MS - 1);
-            expect(invalidateSpy).toHaveBeenCalledTimes(2);
+            expect(invalidateSpy).toHaveBeenCalledOnce();
             expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.organization(TEST_ORG_ID) });
-            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.defaults(TEST_ORG_ID) });
         });
 
         it('removes from cache in-place for Removed events when view is cached', async () => {
@@ -848,7 +845,7 @@ describe('useSavedViews', () => {
             // Assert - view removed from both caches without refetch
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([otherView]);
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'stacks'))).toEqual([otherView]);
-            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.defaults(TEST_ORG_ID) });
+            expect(invalidateSpy).not.toHaveBeenCalled();
         });
 
         it('preserves a pending reconciliation when a cached view is removed', async () => {
@@ -876,13 +873,11 @@ describe('useSavedViews', () => {
 
             // Assert
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([]);
-            expect(invalidateSpy).toHaveBeenCalledTimes(1);
-            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.defaults(TEST_ORG_ID) });
+            expect(invalidateSpy).not.toHaveBeenCalled();
 
             await vi.advanceTimersByTimeAsync(SAVED_VIEW_REFRESH_DELAY_MS);
-            expect(invalidateSpy).toHaveBeenCalledTimes(3);
+            expect(invalidateSpy).toHaveBeenCalledOnce();
             expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.organization(TEST_ORG_ID) });
-            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.defaults(TEST_ORG_ID) });
         });
 
         it('falls back to invalidation for Removed events when view is not cached', async () => {
@@ -901,7 +896,6 @@ describe('useSavedViews', () => {
 
             // Assert - falls through to invalidation since view not in cache
             expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.organization(TEST_ORG_ID) });
-            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.defaults(TEST_ORG_ID) });
         });
     });
 
@@ -958,27 +952,6 @@ describe('useSavedViews', () => {
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([updatedView, otherView]);
         });
 
-        it('syncs an updated view into personal and organization default snapshots', () => {
-            // Arrange
-            const queryClient = new QueryClient();
-            const existingView = buildSavedView({ id: 'view-1', name: 'Old Home', slug: 'old-home' });
-            const updatedView = buildSavedView({ id: 'view-1', name: 'New Home', slug: 'new-home' });
-
-            queryClient.setQueryData(queryKeys.defaults(TEST_ORG_ID), {
-                organization_default: existingView,
-                user_default: existingView
-            });
-
-            // Act
-            syncSavedViewCaches(queryClient, updatedView);
-
-            // Assert
-            expect(queryClient.getQueryData(queryKeys.defaults(TEST_ORG_ID))).toEqual({
-                organization_default: updatedView,
-                user_default: updatedView
-            });
-        });
-
         it('removes a deleted view from every saved-view list cache', () => {
             // Arrange
             const queryClient = new QueryClient();
@@ -996,22 +969,6 @@ describe('useSavedViews', () => {
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([otherView]);
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'stacks'))).toEqual([otherView]);
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'events'))).toEqual([otherView]);
-        });
-
-        it('leaves the saved-view defaults object unchanged when removing list entries', () => {
-            // Arrange
-            const queryClient = new QueryClient();
-            const deletedView = buildSavedView({ id: 'view-1', name: 'Deleted View' });
-            const defaults = { organization_default: deletedView };
-
-            queryClient.setQueryData(queryKeys.organization(TEST_ORG_ID), [deletedView]);
-            queryClient.setQueryData(queryKeys.defaults(TEST_ORG_ID), defaults);
-
-            // Act
-            removeSavedViewFromCaches(queryClient, deletedView, TEST_ORG_ID);
-
-            // Assert
-            expect(queryClient.getQueryData(queryKeys.defaults(TEST_ORG_ID))).toEqual(defaults);
         });
     });
 

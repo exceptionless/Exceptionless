@@ -753,6 +753,9 @@ export const ViewCurrentUserSchema = object({
   hash: string().min(1, "Hash is required").nullable().optional(),
   has_local_account: boolean(),
   o_auth_accounts: array(lazy(() => OAuthAccountSchema)),
+  organization_preferences: array(
+    lazy(() => UserOrganizationPreferenceSchema),
+  ),
   id: string()
     .length(24, "Id must be exactly 24 characters")
     .regex(/^[a-fA-F0-9]{24}$/, "Id has invalid format"),
@@ -799,6 +802,11 @@ export const ViewOrganizationSchema = object({
   created_utc: iso.datetime(),
   updated_utc: iso.datetime(),
   name: string().min(1, "Name is required"),
+  default_saved_view_id: string()
+    .length(24, "Default saved view id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "Default saved view id has invalid format")
+    .nullable()
+    .optional(),
   icon_url: url().nullable().optional(),
   plan_id: string().min(1, "Plan id is required"),
   plan_name: string().min(1, "Plan name is required"),
@@ -910,14 +918,6 @@ export const ViewSavedViewSchema = object({
   updated_utc: iso.datetime(),
 });
 export type ViewSavedViewFormData = Infer<typeof ViewSavedViewSchema>;
-
-export const ViewSavedViewDefaultsSchema = object({
-  user_default: lazy(() => ViewSavedViewSchema).optional(),
-  organization_default: lazy(() => ViewSavedViewSchema).optional(),
-});
-export type ViewSavedViewDefaultsFormData = Infer<
-  typeof ViewSavedViewDefaultsSchema
->;
 
 export const ViewTokenSchema = object({
   id: string()

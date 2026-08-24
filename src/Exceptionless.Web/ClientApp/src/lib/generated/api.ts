@@ -650,6 +650,7 @@ export interface ViewCurrentUser {
   hash?: null | string;
   has_local_account: boolean;
   o_auth_accounts: OAuthAccount[];
+  organization_preferences: UserOrganizationPreference[];
   /** @pattern ^[a-fA-F0-9]{24}$ */
   id: string;
   organization_ids: string[];
@@ -696,6 +697,8 @@ export interface ViewOrganization {
   /** @format date-time */
   updated_utc: string;
   name: string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  default_saved_view_id?: null | string;
   icon_url?: null | string;
   plan_id: string;
   plan_name: string;
@@ -794,11 +797,6 @@ export interface ViewSavedView {
   created_utc: string;
   /** @format date-time */
   updated_utc: string;
-}
-
-export interface ViewSavedViewDefaults {
-  user_default?: null | ViewSavedView;
-  organization_default?: null | ViewSavedView;
 }
 
 export interface ViewToken {

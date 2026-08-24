@@ -83,25 +83,12 @@ public partial class SavedViewHandler(
         return MapToViewModel(model);
     }
 
-    public async Task<Result<ViewSavedViewDefaults>> Handle(GetSavedViewDefaults message)
+    public async Task<Result<UpdateSavedViewDefault>> Handle(UpdateUserSavedViewDefault message)
     {
         if (!HttpContext.Request.CanAccessOrganization(message.OrganizationId))
             return Result.NotFound("Organization not found.");
 
-        var organization = await organizationRepository.GetByIdAsync(message.OrganizationId);
-        if (organization is null)
-            return Result.NotFound("Organization not found.");
-
-        return await GetSavedViewDefaultsAsync(organization);
-    }
-
-    public async Task<Result<ViewSavedViewDefaults>> Handle(UpdateUserSavedViewDefault message)
-    {
-        if (!HttpContext.Request.CanAccessOrganization(message.OrganizationId))
-            return Result.NotFound("Organization not found.");
-
-        var organization = await organizationRepository.GetByIdAsync(message.OrganizationId);
-        if (organization is null)
+        if (await organizationRepository.GetByIdAsync(message.OrganizationId) is null)
             return Result.NotFound("Organization not found.");
 
         if (message.Default.SavedViewId is not null)
@@ -130,10 +117,10 @@ public partial class SavedViewHandler(
         }
 
         await userRepository.SaveAsync(user, o => o.Cache());
-        return await GetSavedViewDefaultsAsync(organization);
+        return message.Default;
     }
 
-    public async Task<Result<ViewSavedViewDefaults>> Handle(UpdateOrganizationSavedViewDefault message)
+    public async Task<Result<UpdateSavedViewDefault>> Handle(UpdateOrganizationSavedViewDefault message)
     {
         if (!HttpContext.Request.CanAccessOrganization(message.OrganizationId))
             return Result.NotFound("Organization not found.");
@@ -155,7 +142,7 @@ public partial class SavedViewHandler(
 
         organization.DefaultSavedViewId = message.Default.SavedViewId;
         await organizationRepository.SaveAsync(organization, o => o.Cache().Consistency(Consistency.Immediate));
-        return await GetSavedViewDefaultsAsync(organization);
+        return message.Default;
     }
 
     public async Task<Result<ViewSavedView>> Handle(CreateSavedView message)
@@ -531,54 +518,6 @@ public partial class SavedViewHandler(
 
     private List<ViewSavedView> MapToViewModels(IEnumerable<SavedView> models) => models.Select(MapToViewModel).ToList();
 
-    private async Task<ViewSavedViewDefaults> GetSavedViewDefaultsAsync(Organization organization)
-    {
-        var user = await userRepository.GetByIdAsync(GetCurrentUserId());
-        string organizationId = organization.Id;
-
-        ViewSavedView? userDefault = null;
-        var userDefaultIds = user?.OrganizationPreferences
-            .Where(preference => String.Equals(preference.OrganizationId, organizationId, StringComparison.Ordinal))
-            .Select(preference => preference.DefaultSavedViewId)
-            .Where(savedViewId => !String.IsNullOrEmpty(savedViewId))
-            .Distinct(StringComparer.Ordinal)
-            .Order(StringComparer.Ordinal)
-            .ToArray() ?? [];
-        if (userDefaultIds.Length > 0)
-        {
-            var savedViews = await repository.GetByIdsAsync(userDefaultIds);
-            var savedViewsById = savedViews.ToDictionary(savedView => savedView.Id, StringComparer.Ordinal);
-            foreach (string userDefaultId in userDefaultIds)
-            {
-                if (!savedViewsById.TryGetValue(userDefaultId, out var savedView)
-                    || !String.Equals(savedView.OrganizationId, organizationId, StringComparison.Ordinal)
-                    || (savedView.UserId is not null && !String.Equals(savedView.UserId, GetCurrentUserId(), StringComparison.Ordinal)))
-                    continue;
-
-                userDefault = MapToViewModel(savedView);
-                break;
-            }
-        }
-
-        ViewSavedView? organizationDefault = null;
-        if (organization.DefaultSavedViewId is not null)
-        {
-            var savedView = await repository.GetByIdAsync(organization.DefaultSavedViewId);
-            if (savedView is not null
-                && String.Equals(savedView.OrganizationId, organizationId, StringComparison.Ordinal)
-                && savedView.UserId is null)
-            {
-                organizationDefault = MapToViewModel(savedView);
-            }
-        }
-
-        return new ViewSavedViewDefaults
-        {
-            UserDefault = userDefault,
-            OrganizationDefault = organizationDefault
-        };
-    }
-
     private async Task ClearDefaultReferencesAsync(IReadOnlyCollection<SavedView> deletedSavedViews)
     {
         var deletedIds = deletedSavedViews.Select(savedView => savedView.Id).ToHashSet(StringComparer.Ordinal);
@@ -592,7 +531,6 @@ public partial class SavedViewHandler(
             organization.DefaultSavedViewId = null;
             await organizationRepository.SaveAsync(organization, o => o.Cache().Consistency(Consistency.Immediate));
         }
-
     }
 
     private string GetCurrentUserId() => HttpContext.Request.GetUser().Id;

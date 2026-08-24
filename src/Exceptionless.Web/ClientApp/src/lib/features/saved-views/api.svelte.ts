@@ -2,11 +2,13 @@ import type { WorkInProgressResult } from '$features/shared/models';
 import type { WebSocketMessageValue } from '$features/websockets/models';
 
 import { accessToken } from '$features/auth/index.svelte';
+import { setOrganizationDefaultSavedView } from '$features/organizations/api.svelte';
+import { setCurrentUserSavedViewDefault } from '$features/users/api.svelte';
 import { ChangeType } from '$features/websockets/models';
 import { type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, type QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
-import type { NewSavedView, SavedView, UpdateSavedView, UpdateSavedViewDefault, ViewSavedViewDefaults } from './models';
+import type { NewSavedView, SavedView, UpdateSavedView, UpdateSavedViewDefault } from './models';
 
 export const SAVED_VIEW_REFRESH_DELAY_MS = 1500;
 export const SAVED_VIEW_QUERY_STALE_TIME_MS = 60 * 1000;
@@ -23,12 +25,11 @@ export async function invalidateSavedViewQueries(queryClient: QueryClient, messa
             const savedView = cached?.find((v) => v.id === id);
             if (savedView) {
                 removeSavedViewFromCaches(queryClient, savedView, organization_id);
-                await invalidateSavedViewDefaultQueries(queryClient, organization_id);
                 return;
             }
         }
 
-        await Promise.all([invalidateSavedViewCache(queryClient, organization_id), invalidateSavedViewDefaultQueries(queryClient, organization_id)]);
+        await invalidateSavedViewCache(queryClient, organization_id);
         return;
     }
 
@@ -41,7 +42,7 @@ export async function invalidateSavedViewQueries(queryClient: QueryClient, messa
     }
 
     cancelScheduledSavedViewInvalidation(queryClient, organization_id);
-    await Promise.all([invalidateSavedViewCache(queryClient, organization_id), invalidateSavedViewDefaultQueries(queryClient, organization_id)]);
+    await invalidateSavedViewCache(queryClient, organization_id);
 }
 
 function cancelScheduledSavedViewInvalidation(queryClient: QueryClient, organizationId: string | undefined) {
@@ -75,31 +76,17 @@ function scheduleSavedViewInvalidation(queryClient: QueryClient, organizationId:
     const key = organizationId ?? '';
     timers[key] = setTimeout(() => {
         delete timers[key];
-        void Promise.all([invalidateSavedViewCache(queryClient, organizationId), invalidateSavedViewDefaultQueries(queryClient, organizationId)]);
+        void invalidateSavedViewCache(queryClient, organizationId);
     }, SAVED_VIEW_REFRESH_DELAY_MS);
 }
 
 export const queryKeys = {
-    defaults: (organizationId: string | undefined) => [...queryKeys.type, 'organization', organizationId, 'defaults'] as const,
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
     organization: (organizationId: string | undefined) => [...queryKeys.type, 'organization', organizationId] as const,
     predefined: (organizationId: string | undefined) => [...queryKeys.type, 'organization', organizationId, 'predefined'] as const,
     type: ['SavedView'] as const,
     view: (organizationId: string | undefined, view: string | undefined) => [...queryKeys.type, 'organization', organizationId, 'view', view] as const
 };
-
-export async function invalidateSavedViewDefaultQueries(queryClient: QueryClient, organizationId: string | undefined) {
-    if (organizationId) {
-        await queryClient.invalidateQueries({
-            queryKey: queryKeys.defaults(organizationId)
-        });
-        return;
-    }
-
-    await queryClient.invalidateQueries({
-        predicate: (query) => query.queryKey[0] === queryKeys.type[0] && query.queryKey.at(-1) === 'defaults'
-    });
-}
 
 let deletedSavedViewIds = $state<string[]>([]);
 
@@ -141,19 +128,6 @@ export function deleteSavedView(request: { route: { organizationId: string | und
         onSuccess: (_data: WorkInProgressResult, savedView: SavedView) => {
             removeSavedViewFromCaches(queryClient, savedView, request.route.organizationId);
         }
-    }));
-}
-
-export function getSavedViewDefaultsQuery(request: { route: { organizationId: string | undefined } }) {
-    return createQuery<ViewSavedViewDefaults, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.organizationId,
-        queryFn: async () => {
-            const client = useFetchClient();
-            const response = await client.getJSON<ViewSavedViewDefaults>(`organizations/${request.route.organizationId}/saved-view-defaults`);
-            return response.data!;
-        },
-        queryKey: queryKeys.defaults(request.route.organizationId),
-        staleTime: SAVED_VIEW_QUERY_STALE_TIME_MS
     }));
 }
 
@@ -302,23 +276,6 @@ export function syncSavedViewCaches(queryClient: QueryClient, savedView: SavedVi
         upsertSavedViewCache(cachedViews, savedView)
     );
     queryClient.setQueryData(queryKeys.organization(organizationId), (cachedViews: SavedView[] | undefined) => upsertSavedViewCache(cachedViews, savedView));
-    queryClient.setQueryData(queryKeys.defaults(organizationId), (defaults: undefined | ViewSavedViewDefaults) => {
-        if (!defaults) {
-            return defaults;
-        }
-
-        const userDefault = defaults.user_default?.id === savedView.id ? savedView : defaults.user_default;
-        const organizationDefault = defaults.organization_default?.id === savedView.id ? savedView : defaults.organization_default;
-        if (userDefault === defaults.user_default && organizationDefault === defaults.organization_default) {
-            return defaults;
-        }
-
-        return {
-            ...defaults,
-            organization_default: organizationDefault,
-            user_default: userDefault
-        };
-    });
 }
 
 export function upsertSavedViewCache(cachedViews: SavedView[] | undefined, savedView: SavedView): SavedView[] {
@@ -335,19 +292,27 @@ export function upsertSavedViewCache(cachedViews: SavedView[] | undefined, saved
 function putSavedViewDefault(request: { route: { organizationId: string | undefined } }, scope: 'organization' | 'user') {
     const queryClient = useQueryClient();
 
-    return createMutation<{ defaults: ViewSavedViewDefaults; organizationId: string | undefined }, ProblemDetails, UpdateSavedViewDefault>(() => ({
+    return createMutation<{ default: UpdateSavedViewDefault; organizationId: string | undefined }, ProblemDetails, UpdateSavedViewDefault>(() => ({
         enabled: () => !!accessToken.current && !!request.route.organizationId,
         mutationFn: async (data: UpdateSavedViewDefault) => {
             const client = useFetchClient();
             const organizationId = request.route.organizationId;
-            const response = await client.putJSON<ViewSavedViewDefaults>(`organizations/${organizationId}/saved-view-defaults/${scope}`, data);
+            const response = await client.putJSON<UpdateSavedViewDefault>(`organizations/${organizationId}/saved-view-defaults/${scope}`, data);
             return {
-                defaults: response.data!,
+                default: response.data!,
                 organizationId
             };
         },
-        onSuccess: ({ defaults, organizationId }) => {
-            queryClient.setQueryData(queryKeys.defaults(organizationId), defaults);
+        onSuccess: ({ default: savedViewDefault, organizationId }) => {
+            if (!organizationId) {
+                return;
+            }
+
+            if (scope === 'user') {
+                setCurrentUserSavedViewDefault(queryClient, organizationId, savedViewDefault.saved_view_id ?? null);
+            } else {
+                setOrganizationDefaultSavedView(queryClient, organizationId, savedViewDefault.saved_view_id ?? null);
+            }
         }
     }));
 }

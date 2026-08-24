@@ -18,6 +18,7 @@ public record ViewCurrentUser : ViewUser
         IsEmailAddressVerified = user.IsEmailAddressVerified;
         IsActive = user.IsActive;
         Roles = user.Roles;
+        OrganizationPreferences = user.OrganizationPreferences;
 
         Hash = HMACSHA256HashString(user.Id, options);
         HasLocalAccount = !String.IsNullOrWhiteSpace(user.Password);
@@ -27,6 +28,7 @@ public record ViewCurrentUser : ViewUser
     public string? Hash { get; set; }
     public bool HasLocalAccount { get; set; }
     public ICollection<OAuthAccount> OAuthAccounts { get; set; }
+    public ICollection<UserOrganizationPreference> OrganizationPreferences { get; set; }
 
     private static string? HMACSHA256HashString(string value, IntercomOptions options)
     {

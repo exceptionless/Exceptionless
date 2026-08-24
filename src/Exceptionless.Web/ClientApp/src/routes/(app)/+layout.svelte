@@ -37,7 +37,7 @@
     import { premiumPage } from '$features/organizations/premium-page.svelte';
     import { getUtcMonthKey, ORGANIZATION_USAGE_ROLLOVER_CHECK_INTERVAL_MS } from '$features/organizations/utils';
     import { invalidateProjectQueries } from '$features/projects/api.svelte';
-    import { getSavedViewsQuery, invalidateSavedViewDefaultQueries, invalidateSavedViewQueries, isSavedViewDeleted } from '$features/saved-views/api.svelte';
+    import { getSavedViewsQuery, invalidateSavedViewQueries, isSavedViewDeleted } from '$features/saved-views/api.svelte';
     import { savedViewHref } from '$features/saved-views/slugs';
     import { appKeyboardShortcuts, isKeyboardShortcut } from '$features/shared/keyboard-shortcuts';
     import { createProjectStackNotificationRefresher, invalidateStackQueries, type ProjectStackNotificationRefresher } from '$features/stacks/api.svelte';
@@ -315,7 +315,6 @@
             switch (data.type) {
                 case 'OrganizationChanged':
                     await invalidateOrganizationQueries(queryClient, data.message);
-                    await invalidateSavedViewDefaultQueries(queryClient, data.message.id);
                     break;
                 case 'PersistentEventChanged':
                     organizationEventRefresher.schedule(data.message.organization_id, data.message.change_type !== ChangeType.Removed);
@@ -337,7 +336,6 @@
                     break;
                 case 'UserChanged':
                     await invalidateUserQueries(queryClient, data.message);
-                    await invalidateSavedViewDefaultQueries(queryClient, undefined);
                     break;
                 case 'WebHookChanged':
                     await invalidateWebhookQueries(queryClient, data.message);

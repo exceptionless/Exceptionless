@@ -3102,48 +3102,6 @@
         }
       }
     },
-    "/api/v2/organizations/{organizationId}/saved-view-defaults": {
-      "get": {
-        "tags": [
-          "SavedView"
-        ],
-        "summary": "Get saved view defaults",
-        "parameters": [
-          {
-            "name": "organizationId",
-            "in": "path",
-            "description": "The identifier of the organization.",
-            "required": true,
-            "schema": {
-              "pattern": "^[a-zA-Z\\d]{24,36}$",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The current user\u0027s and organization\u0027s accessible saved view defaults.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ViewSavedViewDefaults"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "The organization could not be found.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v2/organizations/{organizationId}/saved-view-defaults/user": {
       "put": {
         "tags": [
@@ -3184,7 +3142,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ViewSavedViewDefaults"
+                  "$ref": "#/components/schemas/UpdateSavedViewDefault"
                 }
               }
             }
@@ -3252,7 +3210,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ViewSavedViewDefaults"
+                  "$ref": "#/components/schemas/UpdateSavedViewDefault"
                 }
               }
             }
@@ -13659,6 +13617,7 @@
         "required": [
           "has_local_account",
           "o_auth_accounts",
+          "organization_preferences",
           "id",
           "organization_ids",
           "full_name",
@@ -13684,6 +13643,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/OAuthAccount"
+            }
+          },
+          "organization_preferences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserOrganizationPreference"
             }
           },
           "id": {
@@ -13873,6 +13838,15 @@
           },
           "name": {
             "type": "string"
+          },
+          "default_saved_view_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "icon_url": {
             "type": [
@@ -14237,31 +14211,6 @@
           "updated_utc": {
             "type": "string",
             "format": "date-time"
-          }
-        }
-      },
-      "ViewSavedViewDefaults": {
-        "type": "object",
-        "properties": {
-          "user_default": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/ViewSavedView"
-              }
-            ]
-          },
-          "organization_default": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/ViewSavedView"
-              }
-            ]
           }
         }
       },
