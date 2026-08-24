@@ -109,14 +109,18 @@ export function normalizeColumnSizing(sizing: ColumnSizingState | undefined): Co
     );
 }
 
-export function resolveSavedViewColumnOrder(view: SavedColumnState, availableOrder: ColumnOrderState | undefined): ColumnOrderState {
+export function resolveAvailableColumnOrder(preferredOrder: ColumnOrderState, availableOrder: ColumnOrderState | undefined): ColumnOrderState {
     const hasSelectionColumn = availableOrder?.includes('select') ?? false;
     const availableColumnIds = [...new Set((availableOrder ?? []).filter((columnId) => columnId !== 'select'))];
     const availableColumnIdSet = new Set(availableColumnIds);
-    const savedOrder = getSavedColumnOrder(view).filter((columnId) => availableColumnIdSet.has(columnId));
-    const resolvedOrder = [...savedOrder, ...availableColumnIds.filter((columnId) => !savedOrder.includes(columnId))];
+    const resolvedPreferredOrder = preferredOrder.filter((columnId, index) => availableColumnIdSet.has(columnId) && preferredOrder.indexOf(columnId) === index);
+    const resolvedOrder = [...resolvedPreferredOrder, ...availableColumnIds.filter((columnId) => !resolvedPreferredOrder.includes(columnId))];
 
     return hasSelectionColumn ? ['select', ...resolvedOrder] : resolvedOrder;
+}
+
+export function resolveSavedViewColumnOrder(view: SavedColumnState, availableOrder: ColumnOrderState | undefined): ColumnOrderState {
+    return resolveAvailableColumnOrder(getSavedColumnOrder(view), availableOrder);
 }
 
 export function savedViewColumnSizingEqual(current: ColumnSizingState | undefined, view: SavedColumnState): boolean {

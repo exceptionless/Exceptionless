@@ -16,6 +16,7 @@ import {
     getMatchingFilterOverrideKeys,
     getSavedViewDraft,
     mergeFilterOverrides,
+    mergePendingSavedViewDraftEdits,
     saveSavedViewDraft
 } from './saved-view-drafts';
 
@@ -174,6 +175,36 @@ describe('saved view drafts', () => {
 
         expect((mergedFilters.find((filter) => filter.key === 'project') as ProjectFilter).value).toEqual(['url-project']);
         expect((mergedFilters.find((filter) => filter.key === 'status') as StatusFilter).value).toEqual([StackStatus.Regressed]);
+    });
+
+    it('overlays pending non-URL edits without losing stored draft state', () => {
+        const merged = mergePendingSavedViewDraftEdits(
+            {
+                columnSizingChanges: { summary: 480 },
+                columnVisibilityChanges: { date: false },
+                filterChanges: { removedKeys: [], upsertDefinitions: '[{"type":"project","value":["project-1"]}]' },
+                showChart: false,
+                sort: 'count',
+                version: 1
+            },
+            {
+                columnSizingChanges: { date: 200 },
+                columnVisibilityChanges: { summary: false },
+                showChart: true,
+                showStats: false,
+                version: 1
+            }
+        );
+
+        expect(merged).toEqual({
+            columnSizingChanges: { date: 200, summary: 480 },
+            columnVisibilityChanges: { date: false, summary: false },
+            filterChanges: { removedKeys: [], upsertDefinitions: '[{"type":"project","value":["project-1"]}]' },
+            showChart: true,
+            showStats: false,
+            sort: 'count',
+            version: 1
+        });
     });
 
     it('retires an initial filter override after its value changes', () => {

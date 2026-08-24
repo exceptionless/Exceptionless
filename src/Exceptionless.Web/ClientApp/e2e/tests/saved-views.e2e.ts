@@ -468,10 +468,13 @@ test('stream switches to a browser-local saved view draft without mixing in-flig
 
     await page.goto('/next/stream');
     await expect.poll(() => sourceRequestStarted).toBe(true);
+    await page.getByRole('button', { name: 'Pause streaming updates' }).click();
     await navigateClientSide(page, `/next/stream?saved=${savedView.id}`);
     releaseSourceRequest();
     await expect.poll(() => sourceRequestCompleted).toBe(true);
     await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
+    await expect(getVisibleText(page, sourceMessage)).toBeHidden();
+    await page.getByRole('button', { name: 'Resume streaming updates' }).click();
     await expect.poll(() => streamRequestFilters.some((filter) => filter.includes(e2eScenario.projectId))).toBe(true);
     await expect(getVisibleText(page, sourceMessage)).toBeHidden();
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();

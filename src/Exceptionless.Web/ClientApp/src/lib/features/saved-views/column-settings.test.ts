@@ -11,6 +11,7 @@ import {
     getSavedColumnSizing,
     getSavedColumnVisibility,
     getSavedWrappedColumnIds,
+    resolveAvailableColumnOrder,
     resolveSavedViewColumnOrder,
     savedViewColumnSizingEqual,
     savedViewColumnWrappingEqual
@@ -117,6 +118,15 @@ describe('saved view column settings', () => {
         } as Pick<SavedView, 'columns'>;
         const currentOrder = ['select', 'user', 'summary', 'date'];
         expect(columnOrdersEqual(currentOrder, resolveSavedViewColumnOrder(savedAfterReorder, currentOrder))).toBe(true);
+    });
+
+    it('drops unavailable draft columns and includes newly available columns', () => {
+        expect(resolveAvailableColumnOrder(['select', 'removed', 'summary'], ['select', 'project', 'summary', 'date'])).toEqual([
+            'select',
+            'summary',
+            'project',
+            'date'
+        ]);
     });
 
     it('treats missing wrap settings as the legacy single-line behavior', () => {

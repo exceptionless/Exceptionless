@@ -331,6 +331,17 @@
     });
 
     $effect(() => {
+        if (!isSavedViewPending) {
+            return;
+        }
+
+        loadDataRequestId++;
+        before = undefined;
+        clientResponse = undefined;
+        queryData = [];
+    });
+
+    $effect(() => {
         if (paused) {
             return;
         }

@@ -26,6 +26,7 @@ import {
     getSavedColumnVisibility,
     getSavedWrappedColumnIds,
     normalizeColumnSizing,
+    resolveAvailableColumnOrder,
     resolveSavedViewColumnOrder,
     savedViewColumnSizingEqual,
     savedViewColumnWrappingEqual
@@ -42,6 +43,7 @@ import {
     getMatchingFilterOverrideKeys,
     getSavedViewDraft,
     mergeFilterOverrides,
+    mergePendingSavedViewDraftEdits,
     type SavedViewDraft,
     type SavedViewDraftIdentity,
     saveSavedViewDraft
@@ -455,7 +457,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         if (options.setColumnOrder) {
-            options.setColumnOrder(draft?.columnOrder ?? getSavedColumnOrder(view));
+            options.setColumnOrder(draft?.columnOrder ? resolveAvailableColumnOrder(draft.columnOrder, options.getColumnOrder?.()) : getSavedColumnOrder(view));
         }
 
         options.setColumnSizing?.(applyRecordChanges(getSavedColumnSizing(view), draft?.columnSizingChanges));
@@ -677,7 +679,8 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return;
         }
 
-        const draft = getSavedViewDraft(identity);
+        const pendingEdits = hydratedSavedView?.id === view.id ? buildSavedViewDraft(hydratedSavedView, hydratedColumnOrder) : undefined;
+        const draft = mergePendingSavedViewDraftEdits(getSavedViewDraft(identity), pendingEdits);
         const serverFilters = getServerFilters(view);
         const currentFilters = options.getFilterDefinitions ? deserializeFilters(options.getFilterDefinitions()) : [];
         const overrideKeys = getExplicitFilterOverrideKeys(serverFilters, currentFilters, draft);

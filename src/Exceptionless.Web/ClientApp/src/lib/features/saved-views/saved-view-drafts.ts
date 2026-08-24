@@ -241,6 +241,31 @@ export function mergeFilterOverrides(baseFilters: IFilter[], overrideFilters: IF
     ];
 }
 
+export function mergePendingSavedViewDraftEdits(storedDraft: SavedViewDraft | undefined, pendingEdits: SavedViewDraft | undefined): SavedViewDraft | undefined {
+    if (!pendingEdits) {
+        return storedDraft;
+    }
+
+    const merged: SavedViewDraft = {
+        ...storedDraft,
+        version: 1
+    };
+    const mergeChanges = <T>(stored: Record<string, T> | undefined, pending: Record<string, T> | undefined): Record<string, T> | undefined =>
+        stored || pending ? { ...stored, ...pending } : undefined;
+
+    merged.columnSizingChanges = mergeChanges(storedDraft?.columnSizingChanges, pendingEdits.columnSizingChanges);
+    merged.columnVisibilityChanges = mergeChanges(storedDraft?.columnVisibilityChanges, pendingEdits.columnVisibilityChanges);
+    merged.wrappedColumnChanges = mergeChanges(storedDraft?.wrappedColumnChanges, pendingEdits.wrappedColumnChanges);
+
+    for (const key of ['autoFillColumnId', 'columnOrder', 'showChart', 'showStats'] as const) {
+        if (key in pendingEdits) {
+            Object.assign(merged, { [key]: pendingEdits[key] });
+        }
+    }
+
+    return Object.entries(merged).some(([key, value]) => key !== 'version' && value !== undefined) ? merged : undefined;
+}
+
 export function saveSavedViewDraft(identity: SavedViewDraftIdentity, draft: SavedViewDraft, storage: DraftStorage | undefined = getLocalStorage()): void {
     try {
         storage?.setItem(getSavedViewDraftStorageKey(identity), JSON.stringify(draft));
