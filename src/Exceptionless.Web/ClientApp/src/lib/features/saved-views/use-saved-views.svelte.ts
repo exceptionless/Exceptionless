@@ -96,6 +96,7 @@ export interface UseSavedViewsReturn {
     handleClearSavedView: () => void;
     handleLoadView: (view: SavedView) => void;
     handleResetToSaved: () => void;
+    handleSavedViewUpdated: (view: SavedView) => void;
     hydratedSavedViewId: string | undefined;
     isEnabled: boolean;
     isError: boolean;
@@ -973,6 +974,22 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         void captureHydratedColumnOrderAfterStateSettles(view.id);
     }
 
+    function handleSavedViewUpdated(view: SavedView) {
+        const identity = getDraftIdentity(view);
+        if (identity) {
+            clearSavedViewDraft(identity);
+            appliedDraftKey = `${identity.userId}:${identity.organizationId}:${identity.savedViewId}`;
+        }
+
+        activeFilterOverrideBaselines = {};
+        activeSortOverride = undefined;
+        hydratedColumnOrder = options.getColumnOrder ? [...options.getColumnOrder()] : undefined;
+        hydratedSavedView = view;
+        hydratedSavedViewSignature = getSavedViewStateSignature(view);
+        hydratedSavedViewId = view.id;
+        serverHydratedSavedViewId = view.id;
+    }
+
     function handleClearSavedView() {
         clearSavedViewQueryParams(options.queryParams);
         applyColumnState(undefined);
@@ -993,6 +1010,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         handleClearSavedView,
         handleLoadView,
         handleResetToSaved,
+        handleSavedViewUpdated,
         get hydratedSavedViewId() {
             return hydratedSavedViewId;
         },

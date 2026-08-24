@@ -957,6 +957,7 @@
                     onLoadView={savedViewsState.handleLoadView}
                     onClearSavedView={savedViewsState.handleClearSavedView}
                     onResetToSaved={handleResetToSaved}
+                    onSavedViewUpdated={savedViewsState.handleSavedViewUpdated}
                     savedViews={savedViewsState.savedViews}
                     setAutoFillColumnId={savedViewsState.setAutoFillColumnId}
                     setWrappedColumnIds={savedViewsState.setWrappedColumnIds}

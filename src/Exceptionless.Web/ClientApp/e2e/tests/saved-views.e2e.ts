@@ -51,6 +51,36 @@ test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2
         await expect(getVisibleText(page, journey.message)).toBeVisible();
     });
 
+    await test.step('updating a URL override clears the hidden browser-local draft', async () => {
+        await page.goto(`/next/event/${viewSlug}?time=90d`);
+        const dateFilter = page.getByRole('button', { name: /^Date/ }).filter({ visible: true }).first();
+        await dateFilter.click();
+        await page.getByRole('button', { name: 'Last 30 days' }).click();
+        await expect(page).toHaveURL(/[?&]time=30d(?:&|$)/);
+        await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
+
+        await page.goto(`/next/event/${viewSlug}?time=1d`);
+        await expect(
+            page
+                .getByRole('button', { name: /Date\s+Last 24 hours/ })
+                .filter({ visible: true })
+                .first()
+        ).toBeVisible();
+        await openViewMenu(page);
+        await page.getByRole('menuitem', { exact: true, name: 'Save' }).click();
+        await expect(page.getByText(`View "${renamedViewName}" saved.`)).toBeVisible();
+        await expect(page.getByLabel('Unsaved view changes')).toHaveCount(0);
+
+        await page.goto(`/next/event/${viewSlug}`);
+        await expect(
+            page
+                .getByRole('button', { name: /Date\s+Last 24 hours/ })
+                .filter({ visible: true })
+                .first()
+        ).toBeVisible();
+        await expect(page.getByLabel('Unsaved view changes')).toHaveCount(0);
+    });
+
     await test.step('persist removal of a saved filter through reload', async () => {
         const referenceFilter = page
             .getByRole('button', { name: new RegExp(`^Reference\\s+${escapeRegExp(journey.referenceId)}`) })

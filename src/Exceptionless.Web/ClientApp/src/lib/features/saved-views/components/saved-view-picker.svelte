@@ -57,6 +57,7 @@
         onClearSavedView: () => void;
         onLoadView: (view: SavedView) => void;
         onResetToSaved: () => void;
+        onSavedViewUpdated: (view: SavedView) => void;
         savedViews: SavedView[];
         setAutoFillColumnId: (columnId: AutoFillColumnSelection) => void;
         setShowChart?: (show: boolean) => void;
@@ -83,6 +84,7 @@
         onClearSavedView,
         onLoadView,
         onResetToSaved,
+        onSavedViewUpdated,
         savedViews,
         setAutoFillColumnId,
         setShowChart,
@@ -258,7 +260,8 @@
         }
 
         try {
-            await updateMutation.mutateAsync(getUpdateBody());
+            const result = await updateMutation.mutateAsync(getUpdateBody());
+            onSavedViewUpdated(result);
             toast.success(`View "${activeView.name}" saved.`);
         } catch (error) {
             toast.error(getErrorMessage(error, 'Failed to save view. Please try again.'));
