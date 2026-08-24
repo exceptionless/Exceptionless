@@ -5,6 +5,7 @@ import { deserializeFilters, serializeFilters } from '$features/events/component
 import type { AutoFillColumnSelection } from './column-settings';
 
 const STORAGE_PREFIX = 'exceptionless:saved-view-draft:v1:';
+const MULTISET_FILTER_TYPES = new Set(['keyword']);
 
 export interface SavedViewDraft {
     autoFillColumnId?: AutoFillColumnSelection;
@@ -47,13 +48,20 @@ export function applyFilterChanges(serverFilters: IFilter[], changes: SavedViewF
     const removedKeys = new Set(changes.removedKeys);
     const duplicateKeys = new Set(changes.duplicateKeys ?? []);
     const baselineFilters = changes.baselineDefinitions ? deserializeFilters(changes.baselineDefinitions) : [];
-    const rebasedKeys = new Set([...baselineFilters.map((filter) => filter.key), ...duplicateKeys]);
-    const removedDefinitionCounts = buildSerializedFilterCounts(changes.removedDefinitions ? deserializeFilters(changes.removedDefinitions) : []);
     const upserts = deserializeFilters(changes.upsertDefinitions);
+    const multisetKeys = new Set(
+        [...baselineFilters, ...upserts, ...serverFilters].filter((filter) => supportsMultipleDefinitions(filter)).map((filter) => filter.key)
+    );
+    const rebasedKeys = new Set([
+        ...baselineFilters.filter((filter) => supportsMultipleDefinitions(filter)).map((filter) => filter.key),
+        ...[...duplicateKeys].filter((key) => multisetKeys.has(key))
+    ]);
+    const removedDefinitionCounts = buildSerializedFilterCounts(changes.removedDefinitions ? deserializeFilters(changes.removedDefinitions) : []);
     const upsertsByKey = new Map(upserts.filter((filter) => !rebasedKeys.has(filter.key)).map((filter) => [filter.key, filter]));
+    const authoritativeUpsertKeys = new Set(upsertsByKey.keys());
     const rebasedUpserts = upserts.filter((filter) => rebasedKeys.has(filter.key));
     const rebasedTargetCounts =
-        changes.baselineDefinitions === undefined && duplicateKeys.size === 0
+        rebasedKeys.size === 0
             ? undefined
             : buildDuplicateTargetCounts(
                   baselineFilters,
@@ -86,14 +94,18 @@ export function applyFilterChanges(serverFilters: IFilter[], changes: SavedViewF
             continue;
         }
 
-        if (duplicateKeys.has(serverFilter.key)) {
+        if (rebasedKeys.has(serverFilter.key)) {
             result.push(serverFilter.clone());
             continue;
         }
 
         const upsert = upsertsByKey.get(serverFilter.key);
-        result.push((upsert ?? serverFilter).clone());
-        upsertsByKey.delete(serverFilter.key);
+        if (upsert) {
+            result.push(upsert.clone());
+            upsertsByKey.delete(serverFilter.key);
+        } else if (!authoritativeUpsertKeys.has(serverFilter.key)) {
+            result.push(serverFilter.clone());
+        }
     }
 
     result.push(...[...upsertsByKey.values()].map((filter) => filter.clone()));
@@ -140,6 +152,16 @@ export function buildFilterChanges(serverFilters: IFilter[], currentFilters: IFi
     for (const key of new Set([...serverByKey.keys(), ...currentByKey.keys()])) {
         const server = serverByKey.get(key) ?? [];
         const current = currentByKey.get(key) ?? [];
+
+        if (![...server, ...current].some((filter) => supportsMultipleDefinitions(filter))) {
+            if (current.length === 0 && server.length > 0) {
+                removedKeys.push(key);
+            } else if (current.length > 0 && (server.length !== 1 || serializeFilters(server) !== serializeFilters(current))) {
+                upserts.push(current[0]!);
+            }
+
+            continue;
+        }
 
         if (server.length <= 1 && current.length <= 1) {
             if (server.length === 1 && current.length === 0) {
@@ -419,4 +441,8 @@ function isSavedViewDraft(value: unknown): value is SavedViewDraft {
 
 function isStringArray(value: unknown): value is string[] {
     return Array.isArray(value) && value.every((item) => typeof item === 'string');
+}
+
+function supportsMultipleDefinitions(filter: IFilter): boolean {
+    return MULTISET_FILTER_TYPES.has(filter.type);
 }

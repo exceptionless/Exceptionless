@@ -1,4 +1,4 @@
-import { KeywordFilter, ProjectFilter, StatusFilter } from '$features/events/components/filters';
+import { DateFilter, KeywordFilter, ProjectFilter, StatusFilter } from '$features/events/components/filters';
 import { StackStatus } from '$features/stacks/models';
 import { describe, expect, it } from 'vitest';
 
@@ -90,6 +90,39 @@ describe('saved view drafts', () => {
 
         expect((mergedFilters.find((filter) => filter.key === 'project') as ProjectFilter).value).toEqual(['project-2']);
         expect((mergedFilters.find((filter) => filter.key === 'status') as StatusFilter).value).toEqual([StackStatus.Regressed]);
+    });
+
+    it('keeps a local singleton replacement authoritative over a concurrent server change', () => {
+        const changes = buildFilterChanges([new DateFilter('date', '[now-7d TO now]')], [new DateFilter('date', '[now-90d TO now]')]);
+
+        const mergedFilters = applyFilterChanges([new DateFilter('date', '[now-30d TO now]')], changes);
+
+        expect(changes?.duplicateKeys).toBeUndefined();
+        expect(mergedFilters).toHaveLength(1);
+        expect((mergedFilters[0] as DateFilter).value).toBe('[now-90d TO now]');
+    });
+
+    it('keeps previously persisted singleton replacement drafts authoritative', () => {
+        const mergedFilters = applyFilterChanges([new DateFilter('date', '[now-30d TO now]')], {
+            baselineDefinitions: '[{"type":"date","term":"date","value":"[now-7d TO now]"}]',
+            removedDefinitions: '[{"type":"date","term":"date","value":"[now-7d TO now]"}]',
+            removedKeys: [],
+            upsertDefinitions: '[{"type":"date","term":"date","value":"[now-90d TO now]"}]'
+        });
+
+        expect(mergedFilters).toHaveLength(1);
+        expect((mergedFilters[0] as DateFilter).value).toBe('[now-90d TO now]');
+    });
+
+    it('normalizes previously persisted singleton additions marked as duplicate keys', () => {
+        const mergedFilters = applyFilterChanges([new DateFilter('date', '[now-30d TO now]')], {
+            duplicateKeys: ['date-date'],
+            removedKeys: [],
+            upsertDefinitions: '[{"type":"date","term":"date","value":"[now-90d TO now]"}]'
+        });
+
+        expect(mergedFilters).toHaveLength(1);
+        expect((mergedFilters[0] as DateFilter).value).toBe('[now-90d TO now]');
     });
 
     it('preserves duplicate keyword filters while rebasing local changes', () => {
