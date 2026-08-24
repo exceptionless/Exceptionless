@@ -1,15 +1,14 @@
 import type { IFilter } from '$comp/faceted-filter';
 import type { ColumnOrderState, ColumnSizingState, ColumnVisibilityState } from '@tanstack/svelte-table';
 
-import { afterNavigate, goto } from '$app/navigation';
+import { afterNavigate, goto, replaceState } from '$app/navigation';
 import { page } from '$app/state';
 import {
     applyTimeFilter,
     buildFilterCacheKey,
     deserializeFilters,
     getFiltersFromCache,
-    serializeFilters,
-    toFilter
+    serializeFilters
 } from '$features/events/components/filters/helpers.svelte';
 import { organization } from '$features/organizations/context.svelte';
 import { getMeQuery } from '$features/users/api.svelte';
@@ -115,6 +114,7 @@ export interface UseSavedViewsReturn {
 }
 
 interface InitialQueryState {
+    draftGeneratedFilter: boolean;
     filterDefinitions: string;
     sort: null | string;
     url: URL;
@@ -122,6 +122,7 @@ interface InitialQueryState {
 }
 
 type PendingDraftField = NonNullable<PendingSavedViewDraftTouches['fields']>[number];
+
 type PendingDraftRecordField = keyof NonNullable<PendingSavedViewDraftTouches['recordKeys']>;
 
 interface PendingDraftTracker {
@@ -131,6 +132,19 @@ interface PendingDraftTracker {
     touchedRecordKeys: Record<PendingDraftRecordField, Set<string>>;
     viewId: string;
 }
+
+interface SavedViewDraftFilterHistoryEntry {
+    filter: string;
+    viewId: string;
+}
+type SavedViewDraftFilterPageState = App.PageState & {
+    [savedViewDraftFilterHistoryStateKey]?: SavedViewDraftFilterHistoryEntry;
+};
+
+type SvelteKitSavedViewDraftFilterHistoryState = {
+    'sveltekit:history'?: number;
+    'sveltekit:states'?: SavedViewDraftFilterPageState;
+};
 
 const SAVED_VIEW_QUERY_PARAMETER_FILTER_KEYS: readonly string[] = [
     'boolean-bot',
@@ -145,6 +159,8 @@ const SAVED_VIEW_QUERY_PARAMETER_FILTER_KEYS: readonly string[] = [
     'type',
     'version-version'
 ];
+const savedViewDraftFilterHistoryStateKey = '__exceptionlessSavedViewDraftFilter';
+const savedViewDraftFilterStoragePrefix = 'exceptionless:saved-view-filter-history:';
 
 export function clearSavedViewQueryParams(queryParams: SavedViewQueryParams): void {
     queryParams.filter = null;
@@ -231,6 +247,21 @@ export function getSavedViewDefinitionFilters(filterDefinitions: string, time: n
     return applyTimeFilter(deserializeFilters(filterDefinitions), getComparableSavedViewTime(time, defaultTime));
 }
 
+export function getSavedViewDraftIdentity(
+    view: Pick<SavedView, 'id' | 'organization_id'>,
+    userId: null | string | undefined
+): SavedViewDraftIdentity | undefined {
+    if (!view.organization_id || !userId) {
+        return undefined;
+    }
+
+    return {
+        organizationId: view.organization_id,
+        savedViewId: view.id,
+        userId
+    };
+}
+
 export function getSavedViewStateSignature(
     view: Pick<SavedView, 'columns' | 'filter' | 'filter_definitions' | 'show_chart' | 'show_stats' | 'sort' | 'time'>
 ): string {
@@ -254,6 +285,15 @@ export function getSavedViewStateSignature(
         sort: view.sort ?? null,
         time: view.time ?? null
     });
+}
+
+export function isSavedViewDraftFilterHistoryEntry(entry: unknown, viewId: string, filter: null | string): boolean {
+    if (!entry || typeof entry !== 'object') {
+        return false;
+    }
+
+    const candidate = entry as Partial<SavedViewDraftFilterHistoryEntry>;
+    return candidate.viewId === viewId && candidate.filter === filter;
 }
 
 const SAVED_VIEW_OVERRIDE_QUERY_PARAMETERS = [
@@ -442,17 +482,84 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     }
 
     function getDraftIdentity(view: SavedView): SavedViewDraftIdentity | undefined {
-        const organizationId = organization.current;
-        const userId = currentUserQuery.data?.id;
-        if (!organizationId || !userId) {
+        return getSavedViewDraftIdentity(view, currentUserQuery.data?.id);
+    }
+
+    function getCurrentPageState(): SavedViewDraftFilterPageState {
+        const historyState = window.history.state as null | SvelteKitSavedViewDraftFilterHistoryState;
+        return historyState?.['sveltekit:states'] ?? (page.state as SavedViewDraftFilterPageState);
+    }
+
+    function getCurrentHistoryEntryId(): number | undefined {
+        return (window.history.state as null | SvelteKitSavedViewDraftFilterHistoryState)?.['sveltekit:history'];
+    }
+
+    function getStoredDraftFilterHistoryEntry(): SavedViewDraftFilterHistoryEntry | undefined {
+        const historyEntryId = getCurrentHistoryEntryId();
+        if (historyEntryId === undefined) {
             return undefined;
         }
 
-        return {
-            organizationId,
-            savedViewId: view.id,
-            userId
+        try {
+            return JSON.parse(localStorage.getItem(`${savedViewDraftFilterStoragePrefix}${historyEntryId}`) ?? 'null') as
+                SavedViewDraftFilterHistoryEntry | undefined;
+        } catch {
+            return undefined;
+        }
+    }
+
+    function storeDraftFilterHistoryEntry(entry: SavedViewDraftFilterHistoryEntry | undefined): void {
+        const historyEntryId = getCurrentHistoryEntryId();
+        if (historyEntryId === undefined) {
+            return;
+        }
+
+        try {
+            const key = `${savedViewDraftFilterStoragePrefix}${historyEntryId}`;
+            if (entry) {
+                localStorage.setItem(key, JSON.stringify(entry));
+            } else {
+                localStorage.removeItem(key);
+            }
+        } catch {
+            // Storage can be unavailable by browser policy; page-state provenance still works until reload.
+        }
+    }
+
+    function isDraftGeneratedFilter(viewId: string, url: URL = page.url, state: App.PageState = getCurrentPageState()): boolean {
+        const entry = (state as SavedViewDraftFilterPageState)[savedViewDraftFilterHistoryStateKey];
+        const filter = url.searchParams.get('filter');
+        return (
+            isSavedViewDraftFilterHistoryEntry(entry, viewId, filter) || isSavedViewDraftFilterHistoryEntry(getStoredDraftFilterHistoryEntry(), viewId, filter)
+        );
+    }
+
+    async function updateDraftFilterHistoryState(viewId: string, isDraftGenerated: boolean, generation: number): Promise<void> {
+        await tick();
+        await new Promise<void>((resolve) => setTimeout(resolve, 0));
+        await tick();
+
+        if (activeSavedView?.id !== viewId || draftFilterHistoryGeneration !== generation) {
+            return;
+        }
+
+        const state = {
+            ...getCurrentPageState()
         };
+        const filter = new SvelteURL(window.location.href).searchParams.get('filter');
+        if (isDraftGenerated && filter) {
+            const entry = {
+                filter,
+                viewId
+            };
+            state[savedViewDraftFilterHistoryStateKey] = entry;
+            storeDraftFilterHistoryEntry(entry);
+        } else {
+            delete state[savedViewDraftFilterHistoryStateKey];
+            storeDraftFilterHistoryEntry(undefined);
+        }
+
+        replaceState('', state);
     }
 
     function getServerFilters(view: SavedView): IFilter[] {
@@ -469,7 +576,8 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         serverFilters: IFilter[],
         currentFilters: IFilter[],
         draft: SavedViewDraft | undefined,
-        url: URL = page.url
+        url: URL = page.url,
+        draftGeneratedFilter = false
     ): string[] {
         const keys: string[] = [];
         const queryParameterKeys = [
@@ -501,16 +609,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         if (url.searchParams.has('filter')) {
             const filter = url.searchParams.get('filter') ?? '';
             if (filter) {
-                const draftFilters = applyFilterChanges(serverFilters, draft?.filterChanges);
-                const draftExpressionFilters = supportsTime
-                    ? draftFilters.filter((candidate) => candidate.type !== 'date' && !SAVED_VIEW_QUERY_PARAMETER_FILTER_KEYS.includes(candidate.key))
-                    : draftFilters;
-                const sourceFilters = draft?.filterChanges?.sourceDefinitions ? deserializeFilters(draft.filterChanges.sourceDefinitions) : serverFilters;
-                const restoredDraftFilters = applyFilterChanges(sourceFilters, draft?.filterChanges);
-                const restoredDraftExpressionFilters = supportsTime
-                    ? restoredDraftFilters.filter((candidate) => candidate.type !== 'date' && !SAVED_VIEW_QUERY_PARAMETER_FILTER_KEYS.includes(candidate.key))
-                    : restoredDraftFilters;
-                if (filter !== toFilter(draftExpressionFilters) && filter !== toFilter(restoredDraftExpressionFilters)) {
+                if (!draftGeneratedFilter) {
                     for (const override of getFiltersFromCache(options.filterCacheKey(filter), filter)) {
                         addKey(override.key);
                     }
@@ -538,7 +637,13 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         return keys;
     }
 
-    function applyDraftState(view: SavedView, draft: SavedViewDraft | undefined, overrideKeys: string[], preservePendingSort = false): void {
+    function applyDraftState(
+        view: SavedView,
+        draft: SavedViewDraft | undefined,
+        overrideKeys: string[],
+        preservePendingSort = false,
+        preserveDraftFilterProvenance = false
+    ): void {
         const availableColumnIds = options.getAvailableColumnIds?.() ?? options.getColumnOrder?.() ?? [];
 
         if (options.applyFilters) {
@@ -548,6 +653,8 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             options.applyFilters(mergeFilterOverrides(draftFilters, currentFilters, overrideKeys), {
                 history: 'replace'
             });
+            const filterHistoryGeneration = ++draftFilterHistoryGeneration;
+            void updateDraftFilterHistoryState(view.id, preserveDraftFilterProvenance, filterHistoryGeneration);
         }
 
         if (options.setColumnVisibility) {
@@ -685,6 +792,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         return {
+            draftGeneratedFilter: isDraftGeneratedFilter(viewId),
             filterDefinitions: options.getFilterDefinitions?.() ?? '[]',
             sort: options.getSort?.() ?? options.queryParams.sort ?? null,
             url: new SvelteURL(page.url),
@@ -721,6 +829,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     let pendingDraftKey = '';
     let pendingDraftGeneration = -1;
     let pendingDraftTracker = $state.raw<PendingDraftTracker>();
+    let draftFilterHistoryGeneration = 0;
     let draftHydrationGeneration = $state(0);
     let draftPersistenceGeneration = 0;
     let hydratedColumnOrder = $state<ColumnOrderState>();
@@ -853,8 +962,11 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         const currentFilters = options.getFilterDefinitions ? deserializeFilters(options.getFilterDefinitions()) : [];
         const matchingInitialState = initialState?.viewId === view.id ? initialState : undefined;
         const initialFilters = matchingInitialState ? deserializeFilters(matchingInitialState.filterDefinitions) : currentFilters;
-        const initialOverrideKeys = getExplicitFilterOverrideKeys(serverFilters, initialFilters, draft, matchingInitialState?.url ?? page.url);
-        const overrideKeys = [...new SvelteSet([...initialOverrideKeys, ...getChangedFilterKeys(initialFilters, currentFilters)])];
+        const initialUrl = matchingInitialState?.url ?? page.url;
+        const draftGeneratedFilter = matchingInitialState?.draftGeneratedFilter ?? isDraftGeneratedFilter(view.id, initialUrl);
+        const initialOverrideKeys = getExplicitFilterOverrideKeys(serverFilters, initialFilters, draft, initialUrl, draftGeneratedFilter);
+        const pendingOverrideKeys = draftGeneratedFilter ? [] : getChangedFilterKeys(initialFilters, currentFilters);
+        const overrideKeys = [...new SvelteSet([...initialOverrideKeys, ...pendingOverrideKeys])];
         activeFilterOverrideBaselines = buildFilterOverrideBaselines(initialFilters, initialOverrideKeys);
         activeSortOverride = (matchingInitialState?.url ?? page.url).searchParams.has('sort')
             ? {
@@ -873,7 +985,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             pendingDraftGeneration = -1;
         }
 
-        applyDraftState(view, draft, overrideKeys, preservePendingSort);
+        applyDraftState(view, draft, overrideKeys, preservePendingSort, draftGeneratedFilter || !initialUrl.searchParams.has('filter'));
 
         hydratedSavedViewId = view.id;
     }
@@ -1121,12 +1233,11 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     }
 
     function handleSavedViewUpdated(view: SavedView) {
-        const organizationId = organization.current;
         const identity =
             getDraftIdentity(view) ??
-            (organizationId && view.updated_by_user_id
+            (view.organization_id && view.updated_by_user_id
                 ? {
-                      organizationId,
+                      organizationId: view.organization_id,
                       savedViewId: view.id,
                       userId: view.updated_by_user_id
                   }

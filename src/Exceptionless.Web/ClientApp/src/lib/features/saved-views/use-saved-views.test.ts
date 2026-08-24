@@ -19,11 +19,13 @@ import {
     getDraftSortValue,
     getEmptyFilterOverrideKeys,
     getSavedViewDefinitionFilters,
+    getSavedViewDraftIdentity,
     getSavedViewOverrideSignature,
     getSavedViewStateSignature,
     hasMissingSavedView,
     hasSavedViewAutoFillChange,
     hasSavedViewColumnChanges,
+    isSavedViewDraftFilterHistoryEntry,
     isSavedViewHydrationPending,
     isSavedViewUnavailable,
     savedViewColumnsEqual,
@@ -75,6 +77,30 @@ function buildSavedView({ id, name, ...overrides }: Partial<SavedView> & Pick<Sa
 }
 
 describe('useSavedViews', () => {
+    describe('saved view draft identity', () => {
+        it('uses the saved view organization when the active organization changes', () => {
+            const savedView = buildSavedView({ id: 'view-1', name: 'My View', organization_id: 'original-organization' });
+
+            expect(getSavedViewDraftIdentity(savedView, TEST_USER_ID)).toEqual({
+                organizationId: 'original-organization',
+                savedViewId: 'view-1',
+                userId: TEST_USER_ID
+            });
+        });
+    });
+
+    describe('saved view draft filter history', () => {
+        it('requires explicit history provenance instead of inferring it from matching filter content', () => {
+            expect(isSavedViewDraftFilterHistoryEntry(undefined, 'view-1', 'error.type:TimeoutException')).toBe(false);
+            expect(
+                isSavedViewDraftFilterHistoryEntry({ filter: 'error.type:TimeoutException', viewId: 'view-1' }, 'view-1', 'error.type:TimeoutException')
+            ).toBe(true);
+            expect(
+                isSavedViewDraftFilterHistoryEntry({ filter: 'error.type:TimeoutException', viewId: 'view-2' }, 'view-1', 'error.type:TimeoutException')
+            ).toBe(false);
+        });
+    });
+
     describe('saved view state signatures', () => {
         it('ignores audit and naming changes outside the hydrated state baseline', () => {
             // Arrange

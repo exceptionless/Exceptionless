@@ -532,6 +532,8 @@ test('stream switches to a browser-local saved view draft without mixing in-flig
     const suffix = e2eScenario.run.slice(-28);
     const viewName = `E2E Stream View ${suffix}`;
     const authorizationHeaders = { Authorization: `Bearer ${e2eScenario.userToken}` };
+    const draftExpression = `error.type:Local${suffix}`;
+    const remoteExpression = `error.type:Remote${suffix}`;
     const filterDefinitions = JSON.stringify([
         { type: 'project', value: [] },
         { type: 'status', value: ['open', 'regressed'] }
@@ -570,9 +572,10 @@ test('stream switches to a browser-local saved view draft without mixing in-flig
         {
             draft: {
                 filterChanges: {
+                    duplicateKeys: ['keyword'],
                     removedKeys: [],
                     sourceDefinitions: filterDefinitions,
-                    upsertDefinitions: JSON.stringify([{ type: 'project', value: [e2eScenario.projectId] }])
+                    upsertDefinitions: JSON.stringify([{ type: 'keyword', value: draftExpression }])
                 },
                 version: 1
             },
@@ -591,7 +594,7 @@ test('stream switches to a browser-local saved view draft without mixing in-flig
     await page.route(`**/api/v2/organizations/${e2eScenario.organizationId}/events*`, async (route) => {
         const filter = new URL(route.request().url()).searchParams.get('filter') ?? '';
         streamRequestFilters.push(filter);
-        if (filter.includes(e2eScenario.projectId)) {
+        if (filter.includes(draftExpression)) {
             await route.fulfill({ body: '[]', contentType: 'application/json', status: 200 });
             return;
         }
@@ -624,18 +627,26 @@ test('stream switches to a browser-local saved view draft without mixing in-flig
     await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
     await expect(getVisibleText(page, sourceMessage)).toBeHidden();
     await page.getByRole('button', { name: 'Resume streaming updates' }).click();
-    await expect.poll(() => streamRequestFilters.some((filter) => filter.includes(e2eScenario.projectId))).toBe(true);
+    await expect.poll(() => streamRequestFilters.some((filter) => filter.includes(draftExpression))).toBe(true);
     await expect(getVisibleText(page, sourceMessage)).toBeHidden();
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
+    await expect
+        .poll(() =>
+            page.evaluate(() => {
+                const state = window.history.state as { 'sveltekit:states'?: { __exceptionlessSavedViewDraftFilter?: unknown } };
+                return state['sveltekit:states']?.__exceptionlessSavedViewDraftFilter;
+            })
+        )
+        .toEqual({ filter: new URL(page.url()).searchParams.get('filter'), viewId: savedView.id });
 
-    const restoredUrl = page.url();
     const updatedFilterDefinitions = JSON.stringify([
+        { type: 'keyword', value: remoteExpression },
         { type: 'project', value: [] },
         { type: 'status', value: ['fixed'] }
     ]);
     const serverUpdateResponse = await request.patch(`/api/v2/saved-views/${savedView.id}`, {
         data: {
-            filter: 'status:fixed',
+            filter: `status:fixed AND ${remoteExpression}`,
             filter_definitions: updatedFilterDefinitions
         },
         headers: authorizationHeaders
@@ -653,15 +664,32 @@ test('stream switches to a browser-local saved view draft without mixing in-flig
         .toBe(updatedFilterDefinitions);
 
     streamRequestFilters.length = 0;
-    await page.goto(restoredUrl);
+    await page.reload();
+    await expect
+        .poll(() =>
+            page.evaluate(() => {
+                const state = window.history.state as { 'sveltekit:states'?: { __exceptionlessSavedViewDraftFilter?: unknown } };
+                return state['sveltekit:states']?.__exceptionlessSavedViewDraftFilter;
+            })
+        )
+        .toEqual({ filter: new URL(page.url()).searchParams.get('filter'), viewId: savedView.id });
     await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
-    await expect.poll(() => streamRequestFilters.some((filter) => filter.includes(e2eScenario.projectId))).toBe(true);
-    const restoredFilter = streamRequestFilters.findLast((filter) => filter.includes(e2eScenario.projectId))!;
-    expect(restoredFilter.split(e2eScenario.projectId)).toHaveLength(2);
+    await expect.poll(() => streamRequestFilters.join('\n')).toContain(remoteExpression);
+    const restoredFilter = streamRequestFilters.findLast((filter) => filter.includes(draftExpression) && filter.includes(remoteExpression))!;
+    expect(restoredFilter.split(draftExpression)).toHaveLength(2);
     expect(restoredFilter).toContain('fixed');
+    expect(restoredFilter).toContain(remoteExpression);
     expect(restoredFilter).not.toContain('open');
     expect(restoredFilter).not.toContain('regressed');
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
+
+    streamRequestFilters.length = 0;
+    await page.goto(`/next/stream?saved=${savedView.id}&filter=${encodeURIComponent(draftExpression)}`);
+    await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
+    await expect.poll(() => streamRequestFilters.some((filter) => filter.includes(draftExpression))).toBe(true);
+    const explicitFilter = streamRequestFilters.findLast((filter) => filter.includes(draftExpression))!;
+    expect(explicitFilter).toContain('fixed');
+    expect(explicitFilter).not.toContain(remoteExpression);
     expect(failedApiRequests).toEqual([]);
 });
 
