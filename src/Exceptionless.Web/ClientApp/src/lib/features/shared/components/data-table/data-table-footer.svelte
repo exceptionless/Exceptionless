@@ -21,8 +21,13 @@
 </script>
 
 <div
-    class={['border-border bg-background sticky top-2 z-30 flex w-full flex-wrap items-center justify-between gap-2 border-y', className]}
+    aria-label="Table controls"
+    class={[
+        'border-border bg-background/95 sticky top-2 z-30 flex w-full flex-wrap items-center justify-between gap-0 rounded-lg border backdrop-blur-sm sm:flex-nowrap',
+        className
+    ]}
     data-slot="data-table-footer"
+    role="toolbar"
 >
     {#if children}
         {@render children()}
