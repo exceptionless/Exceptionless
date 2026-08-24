@@ -5,6 +5,7 @@ import { deserializeFilters, serializeFilters } from '$features/events/component
 import type { AutoFillColumnSelection } from './column-settings';
 
 const STORAGE_PREFIX = 'exceptionless:saved-view-draft:v1:';
+const CLEAR_STORAGE_PREFIX = 'exceptionless:saved-view-draft-clear:v1:';
 
 export interface SavedViewDraft {
     autoFillColumnId?: AutoFillColumnSelection;
@@ -212,6 +213,24 @@ export function clearSavedViewDraft(identity: SavedViewDraftIdentity, storage: D
     }
 }
 
+export function consumeSavedViewDraftClear(
+    identity: SavedViewDraftIdentity,
+    sessionId: string,
+    storage: DraftStorage | undefined = getLocalStorage()
+): boolean {
+    try {
+        if (storage?.getItem(getSavedViewDraftClearStorageKey(identity)) !== sessionId) {
+            return false;
+        }
+
+        storage.removeItem(getSavedViewDraftStorageKey(identity));
+        storage.removeItem(getSavedViewDraftClearStorageKey(identity));
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 export function getMatchingFilterOverrideKeys(filters: IFilter[], baselines: Record<string, string>): string[] {
     return Object.entries(baselines)
         .filter(([key, baseline]) => serializeFilters(filters.filter((filter) => filter.key === key)) === baseline)
@@ -230,6 +249,10 @@ export function getSavedViewDraft(identity: SavedViewDraftIdentity, storage: Dra
     } catch {
         return undefined;
     }
+}
+
+export function getSavedViewDraftClearStorageKey(identity: Pick<SavedViewDraftIdentity, 'organizationId' | 'savedViewId'>): string {
+    return `${CLEAR_STORAGE_PREFIX}${identity.organizationId}:${identity.savedViewId}`;
 }
 
 export function getSavedViewDraftStorageKey(identity: SavedViewDraftIdentity): string {
@@ -271,6 +294,18 @@ export function mergePendingSavedViewDraftEdits(storedDraft: SavedViewDraft | un
     }
 
     return Object.entries(merged).some(([key, value]) => key !== 'version' && value !== undefined) ? merged : undefined;
+}
+
+export function queueSavedViewDraftClear(
+    identity: Pick<SavedViewDraftIdentity, 'organizationId' | 'savedViewId'>,
+    sessionId: string,
+    storage: DraftStorage | undefined = getLocalStorage()
+): void {
+    try {
+        storage?.setItem(getSavedViewDraftClearStorageKey(identity), sessionId);
+    } catch {
+        // Storage can be unavailable or full; the in-memory clear still protects this session.
+    }
 }
 
 export function saveSavedViewDraft(identity: SavedViewDraftIdentity, draft: SavedViewDraft, storage: DraftStorage | undefined = getLocalStorage()): void {

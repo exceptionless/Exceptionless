@@ -13,10 +13,13 @@ import {
     buildRecordChanges,
     buildWrappedColumnChanges,
     clearSavedViewDraft,
+    consumeSavedViewDraftClear,
     getMatchingFilterOverrideKeys,
     getSavedViewDraft,
+    getSavedViewDraftClearStorageKey,
     mergeFilterOverrides,
     mergePendingSavedViewDraftEdits,
+    queueSavedViewDraftClear,
     saveSavedViewDraft
 } from './saved-view-drafts';
 
@@ -78,6 +81,21 @@ describe('saved view drafts', () => {
             version: 1,
             wrappedColumnChanges: { summary: true }
         });
+    });
+
+    it('persists a queued clear until the user identity is available', () => {
+        const storage = createStorage();
+        saveSavedViewDraft(identity, { showChart: false, version: 1 }, storage);
+
+        queueSavedViewDraftClear(identity, 'session-1', storage);
+
+        expect(storage.getItem(getSavedViewDraftClearStorageKey(identity))).toBe('session-1');
+        expect(consumeSavedViewDraftClear(identity, 'session-2', storage)).toBe(false);
+        expect(getSavedViewDraft(identity, storage)).toBeDefined();
+        expect(consumeSavedViewDraftClear(identity, 'session-1', storage)).toBe(true);
+        expect(getSavedViewDraft(identity, storage)).toBeUndefined();
+        expect(storage.getItem(getSavedViewDraftClearStorageKey(identity))).toBeNull();
+        expect(consumeSavedViewDraftClear(identity, 'session-1', storage)).toBe(false);
     });
 
     it('applies local filter changes over unrelated changes from the latest server view', () => {

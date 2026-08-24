@@ -610,7 +610,7 @@ test('reset clears a browser-local draft after delayed current-user identity res
     await expect(page.getByLabel('Unsaved view changes')).toHaveCount(0);
 });
 
-test('saved view loads server state when the current-user lookup fails', async ({ e2eScenario, page, request }) => {
+test('saved view loads server state and queues draft clears when the current-user lookup fails', async ({ e2eApi, e2eScenario, page, request }) => {
     const suffix = e2eScenario.run.slice(-28);
     const viewName = `E2E User Failure ${suffix}`;
     const viewSlug = savedViewSlug(viewName);
@@ -634,6 +634,23 @@ test('saved view loads server state when the current-user lookup fails', async (
         headers: authorizationHeaders
     });
     expect(savedViewResponse.status()).toBe(201);
+    const savedView = (await savedViewResponse.json()) as { id: string };
+    const currentUser = await e2eApi.getCurrentUser(e2eScenario.userToken);
+    expect(currentUser).toBeDefined();
+    const draftKey = `exceptionless:saved-view-draft:v1:${currentUser!.id}:${e2eScenario.organizationId}:${savedView.id}`;
+    const clearKey = `exceptionless:saved-view-draft-clear:v1:${e2eScenario.organizationId}:${savedView.id}`;
+    await page.addInitScript(({ draft, key }) => window.localStorage.setItem(key, JSON.stringify(draft)), {
+        draft: {
+            filterChanges: {
+                baselineDefinitions: '[{"term":"date","type":"date","value":"[now-15m TO now]"}]',
+                removedDefinitions: '[{"term":"date","type":"date","value":"[now-15m TO now]"}]',
+                removedKeys: [],
+                upsertDefinitions: '[{"term":"date","type":"date","value":"[now-90d TO now]"}]'
+            },
+            version: 1
+        },
+        key: draftKey
+    });
 
     const savedViewsPath = `/api/v2/organizations/${e2eScenario.organizationId}/saved-views/events`;
     await expect
@@ -661,9 +678,25 @@ test('saved view loads server state when the current-user lookup fails', async (
         }
     });
 
-    await page.goto(`/next/event/${viewSlug}`);
+    await page.goto(`/next/event/${viewSlug}?time=1d`);
     await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
     await expect.poll(() => eventRequests.length, { timeout: 30_000 }).toBeGreaterThan(0);
+    await openViewMenu(page);
+    await page.getByRole('menuitem', { name: 'Reset to Saved' }).click();
+
+    await page.unroute('**/api/v2/users/me');
+    await page.reload();
+    await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
+    await expect(
+        page
+            .getByRole('button', { name: /Date\s+Last 15 minutes/ })
+            .filter({ visible: true })
+            .first()
+    ).toBeVisible();
+    await expect(page.getByLabel('Unsaved view changes')).toHaveCount(0);
+    expect(
+        await page.evaluate(({ clearKey, draftKey }) => [window.localStorage.getItem(draftKey), window.localStorage.getItem(clearKey)], { clearKey, draftKey })
+    ).toEqual([null, null]);
 });
 
 function captureFailedApiRequests(page: Page): { error: null | string; method: string; url: string }[] {

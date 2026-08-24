@@ -3,6 +3,7 @@ import type { ColumnOrderState, ColumnSizingState, ColumnVisibilityState } from 
 
 import { afterNavigate, goto } from '$app/navigation';
 import { page } from '$app/state';
+import { accessToken } from '$features/auth/index.svelte';
 import {
     applyTimeFilter,
     buildFilterCacheKey,
@@ -44,10 +45,12 @@ import {
     buildRecordChanges,
     buildWrappedColumnChanges,
     clearSavedViewDraft,
+    consumeSavedViewDraftClear,
     getMatchingFilterOverrideKeys,
     getSavedViewDraft,
     mergeFilterOverrides,
     mergePendingSavedViewDraftEdits,
+    queueSavedViewDraftClear,
     type SavedViewDraft,
     type SavedViewDraftIdentity,
     saveSavedViewDraft
@@ -778,7 +781,10 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         const draftKey = `${identity.userId}:${identity.organizationId}:${identity.savedViewId}`;
-        if (pendingDraftClearViewIds.delete(view.id)) {
+        const wasPendingInMemory = pendingDraftClearViewIds.delete(view.id);
+        const sessionId = accessToken.current;
+        const wasPendingInStorage = sessionId ? consumeSavedViewDraftClear(identity, sessionId) : false;
+        if (wasPendingInMemory || wasPendingInStorage) {
             clearSavedViewDraft(identity);
             appliedDraftKey = draftKey;
             hydratedSavedViewId = view.id;
@@ -979,6 +985,17 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             clearSavedViewDraft(identity);
         } else {
             pendingDraftClearViewIds.add(view.id);
+            const organizationId = organization.current;
+            const sessionId = accessToken.current;
+            if (organizationId && sessionId) {
+                queueSavedViewDraftClear(
+                    {
+                        organizationId,
+                        savedViewId: view.id
+                    },
+                    sessionId
+                );
+            }
         }
 
         if (view.filter_definitions) {
@@ -1010,6 +1027,17 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             appliedDraftKey = `${identity.userId}:${identity.organizationId}:${identity.savedViewId}`;
         } else {
             pendingDraftClearViewIds.add(view.id);
+            const organizationId = organization.current;
+            const sessionId = accessToken.current;
+            if (organizationId && sessionId) {
+                queueSavedViewDraftClear(
+                    {
+                        organizationId,
+                        savedViewId: view.id
+                    },
+                    sessionId
+                );
+            }
         }
 
         activeFilterOverrideBaselines = {};
