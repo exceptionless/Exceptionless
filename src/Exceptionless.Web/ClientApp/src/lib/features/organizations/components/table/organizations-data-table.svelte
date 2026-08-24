@@ -27,13 +27,11 @@
     {:else}
         <DataTable.Toolbar {table} />
     {/if}
-    <DataTable.Footer {table} class="gap-6 lg:gap-8">
-        {#if footerChildren}
+    {#if footerChildren}
+        <DataTable.Footer {table} class="gap-6 lg:gap-8">
             {@render footerChildren()}
-        {:else}
-            <DataTable.Selection {table} />
-        {/if}
-    </DataTable.Footer>
+        </DataTable.Footer>
+    {/if}
     <DataTable.Body {rowClick} {rowHref} {table}>
         {#if isLoading}
             <DelayedRender>
