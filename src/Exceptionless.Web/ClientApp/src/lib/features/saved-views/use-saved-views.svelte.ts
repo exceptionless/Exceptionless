@@ -251,7 +251,7 @@ export function getDraftSortValue(
     return currentSort;
 }
 
-export function getEmptyFilterOverrideKeys(serverFilters: IFilter[], currentFilters: IFilter[], draft: SavedViewDraft | undefined): string[] {
+export function getExpressionFilterOverrideKeys(serverFilters: IFilter[], currentFilters: IFilter[], draft: SavedViewDraft | undefined): string[] {
     const draftFilters = applyFilterChanges(serverFilters, draft?.filterChanges);
     const keys = [...serverFilters, ...currentFilters, ...draftFilters]
         .filter((filter) => filter.type !== 'date' && !SAVED_VIEW_QUERY_PARAMETER_FILTER_KEYS.includes(filter.key))
@@ -635,6 +635,10 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
                         addKey(candidate.key);
                     }
                 }
+            } else if (!draftGeneratedFilter) {
+                for (const key of getExpressionFilterOverrideKeys(serverFilters, currentFilters, draft)) {
+                    addKey(key);
+                }
             }
 
             if (filter) {
@@ -642,10 +646,6 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
                     for (const override of getFiltersFromCache(options.filterCacheKey(filter), filter)) {
                         addKey(override.key);
                     }
-                }
-            } else if (!isExplicitFullStateFilter) {
-                for (const key of getEmptyFilterOverrideKeys(serverFilters, currentFilters, draft)) {
-                    addKey(key);
                 }
             }
         }

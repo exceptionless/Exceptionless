@@ -1,4 +1,4 @@
-import { DateFilter, ProjectFilter } from '$features/events/components/filters';
+import { DateFilter, ProjectFilter, StringFilter } from '$features/events/components/filters';
 import { serializeFilters } from '$features/events/components/filters/helpers.svelte';
 import { ChangeType } from '$features/websockets/models';
 import { QueryClient } from '@tanstack/svelte-query';
@@ -18,7 +18,7 @@ import {
     getComparableSavedViewTime,
     getDraftSortQueryParam,
     getDraftSortValue,
-    getEmptyFilterOverrideKeys,
+    getExpressionFilterOverrideKeys,
     getSavedViewDefinitionFilters,
     getSavedViewDraftIdentity,
     getSavedViewOverrideSignature,
@@ -161,8 +161,8 @@ describe('useSavedViews', () => {
         });
     });
 
-    describe('empty expression filter overrides', () => {
-        it('includes expression filters that exist only in the browser-local draft', () => {
+    describe('expression filter overrides', () => {
+        it('includes saved and browser-local expression filters without typed query parameter filters', () => {
             const draft = {
                 filterChanges: {
                     removedKeys: [],
@@ -171,7 +171,10 @@ describe('useSavedViews', () => {
                 version: 1 as const
             };
 
-            expect(getEmptyFilterOverrideKeys([], [new ProjectFilter(['project-1'])], draft)).toEqual(['keyword']);
+            expect(getExpressionFilterOverrideKeys([new StringFilter('error.type', 'OldException')], [new ProjectFilter(['project-1'])], draft)).toEqual([
+                'string-error.type',
+                'keyword'
+            ]);
         });
     });
 
