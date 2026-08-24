@@ -501,7 +501,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         try {
-            return JSON.parse(localStorage.getItem(`${savedViewDraftFilterStoragePrefix}${historyEntryId}`) ?? 'null') as
+            return JSON.parse(sessionStorage.getItem(`${savedViewDraftFilterStoragePrefix}${historyEntryId}`) ?? 'null') as
                 SavedViewDraftFilterHistoryEntry | undefined;
         } catch {
             return undefined;
@@ -517,9 +517,9 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         try {
             const key = `${savedViewDraftFilterStoragePrefix}${historyEntryId}`;
             if (entry) {
-                localStorage.setItem(key, JSON.stringify(entry));
+                sessionStorage.setItem(key, JSON.stringify(entry));
             } else {
-                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
             }
         } catch {
             // Storage can be unavailable by browser policy; page-state provenance still works until reload.
@@ -610,6 +610,14 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             const filter = url.searchParams.get('filter') ?? '';
             if (filter) {
                 if (!draftGeneratedFilter) {
+                    if (!supportsTime) {
+                        for (const candidate of [...serverFilters, ...applyFilterChanges(serverFilters, draft?.filterChanges)]) {
+                            if (candidate.type !== 'date') {
+                                addKey(candidate.key);
+                            }
+                        }
+                    }
+
                     for (const override of getFiltersFromCache(options.filterCacheKey(filter), filter)) {
                         addKey(override.key);
                     }
