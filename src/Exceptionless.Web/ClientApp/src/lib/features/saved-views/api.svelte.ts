@@ -335,15 +335,19 @@ export function upsertSavedViewCache(cachedViews: SavedView[] | undefined, saved
 function putSavedViewDefault(request: { route: { organizationId: string | undefined } }, scope: 'organization' | 'user') {
     const queryClient = useQueryClient();
 
-    return createMutation<ViewSavedViewDefaults, ProblemDetails, UpdateSavedViewDefault>(() => ({
+    return createMutation<{ defaults: ViewSavedViewDefaults; organizationId: string | undefined }, ProblemDetails, UpdateSavedViewDefault>(() => ({
         enabled: () => !!accessToken.current && !!request.route.organizationId,
         mutationFn: async (data: UpdateSavedViewDefault) => {
             const client = useFetchClient();
-            const response = await client.putJSON<ViewSavedViewDefaults>(`organizations/${request.route.organizationId}/saved-view-defaults/${scope}`, data);
-            return response.data!;
+            const organizationId = request.route.organizationId;
+            const response = await client.putJSON<ViewSavedViewDefaults>(`organizations/${organizationId}/saved-view-defaults/${scope}`, data);
+            return {
+                defaults: response.data!,
+                organizationId
+            };
         },
-        onSuccess: (defaults: ViewSavedViewDefaults) => {
-            queryClient.setQueryData(queryKeys.defaults(request.route.organizationId), defaults);
+        onSuccess: ({ defaults, organizationId }) => {
+            queryClient.setQueryData(queryKeys.defaults(organizationId), defaults);
         }
     }));
 }

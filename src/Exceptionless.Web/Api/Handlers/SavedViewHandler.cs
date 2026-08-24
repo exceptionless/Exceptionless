@@ -128,6 +128,9 @@ public partial class SavedViewHandler(
         if (user is null)
             return Result.NotFound("User not found.");
 
+        if (!HttpContext.User.IsInRole(AuthorizationRoles.GlobalAdmin) && !user.OrganizationIds.Contains(message.OrganizationId))
+            return Result.NotFound("Organization not found.");
+
         await userRepository.SetDefaultSavedViewAsync(currentUserId, message.OrganizationId, message.Default.SavedViewId);
         return await GetSavedViewDefaultsAsync(organization);
     }

@@ -17,6 +17,7 @@ using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Caching;
+using Foundatio.Lock;
 using Foundatio.Mediator;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
@@ -41,6 +42,7 @@ public class OrganizationHandler(
     IStripeBillingClient stripeBillingClient,
     IMailer mailer,
     IMessagePublisher messagePublisher,
+    ILockProvider lockProvider,
     ApiMapper mapper,
     AppOptions options,
     TimeProvider timeProvider,
@@ -693,8 +695,12 @@ public class OrganizationHandler(
         }
         else
         {
-            if (!user.OrganizationIds.Contains(organization.Id))
-                return Result.BadRequest("Invalid organization user.");
+            await using var defaultsLock = await lockProvider.AcquireAsync($"saved-view-defaults:{organization.Id}", TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30));
+            await using var userDefaultsLock = await lockProvider.AcquireAsync($"saved-view-defaults:user:{user.Id}", TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30));
+
+            user = await userRepository.GetByIdAsync(user.Id, o => o.Cache(false));
+            if (user is null || !user.OrganizationIds.Contains(organization.Id))
+                return Result.Success();
 
             var organizationUsers = await userRepository.GetByOrganizationIdAsync(organization.Id);
             if (organizationUsers.Total is 1)

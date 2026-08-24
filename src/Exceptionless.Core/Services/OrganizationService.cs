@@ -188,6 +188,17 @@ public class OrganizationService : IStartupAction
 
     public async Task<long> RemoveSavedViewsAsync(Organization organization)
     {
+        await using var defaultsLock = await _lockProvider.AcquireAsync(GetSavedViewDefaultLockKey(organization.Id), TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30));
+
+        var currentOrganization = await _organizationRepository.GetByIdAsync(organization.Id, o => o.Cache(false).SoftDeleteMode(SoftDeleteQueryMode.All));
+        if (currentOrganization is null)
+            return 0;
+
+        return await RemoveSavedViewsWhileLockedAsync(currentOrganization);
+    }
+
+    private async Task<long> RemoveSavedViewsWhileLockedAsync(Organization organization)
+    {
         _logger.LogDebug("Removing saved views for {OrganizationName} ({OrganizationId})", organization.Name, organization.Id);
 
         var savedViewIds = new HashSet<string>(StringComparer.Ordinal);
@@ -199,8 +210,6 @@ public class OrganizationService : IStartupAction
 
         if (savedViewIds.Count == 0)
             return 0;
-
-        await using var defaultsLock = await _lockProvider.AcquireAsync(GetSavedViewDefaultLockKey(organization.Id), TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30));
 
         if (organization.DefaultSavedViewId is not null && savedViewIds.Contains(organization.DefaultSavedViewId))
             organization.DefaultSavedViewId = null;
@@ -257,7 +266,17 @@ public class OrganizationService : IStartupAction
 
         await RemoveTokensAsync(organization);
         await RemoveWebHooksAsync(organization);
-        await RemoveSavedViewsAsync(organization);
+
+        await using (var defaultsLock = await _lockProvider.AcquireAsync(GetSavedViewDefaultLockKey(organization.Id), TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30)))
+        {
+            var currentOrganization = await _organizationRepository.GetByIdAsync(organization.Id, o => o.Cache(false));
+            if (currentOrganization is null || currentOrganization.IsDeleted)
+                return;
+
+            organization = currentOrganization;
+            await RemoveSavedViewsWhileLockedAsync(organization);
+        }
+
         await CancelSubscriptionsAsync(organization);
         await RemoveUsersAsync(organization, currentUserId);
         await CleanupProjectNotificationSettingsAsync(organization, []);

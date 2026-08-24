@@ -2018,6 +2018,57 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task RemoveUser_SerializesWithDefaultsAndRejectsStaleMembershipClaims()
+    {
+        var testUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(testUser);
+
+        var sharedView = await _savedViewRepository.AddAsync(new SavedView
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            Name = "Shared Home",
+            Filter = "status:open",
+            Slug = "shared-home",
+            ViewType = "stacks",
+            CreatedByUserId = testUser.Id
+        }, o => o.ImmediateConsistency());
+
+        var lockProvider = GetService<ILockProvider>();
+        string lockKey = $"saved-view-defaults:{SampleDataService.TEST_ORG_ID}";
+        var heldLock = await lockProvider.AcquireAsync(lockKey, TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(1));
+        var removeTask = SendRequestAsync(r => r
+            .Delete()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "users", SampleDataService.TEST_ORG_USER_EMAIL)
+            .StatusCodeShouldBeOk()
+        );
+        try
+        {
+            await Task.Delay(100, TestCancellationToken);
+            Assert.False(removeTask.IsCompleted);
+        }
+        finally
+        {
+            await heldLock.DisposeAsync();
+        }
+
+        await removeTask;
+
+        await SendRequestAsync(r => r
+            .Put()
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-defaults", "user")
+            .Content(new UpdateSavedViewDefault { SavedViewId = sharedView.Id })
+            .StatusCodeShouldBeNotFound()
+        );
+
+        var persistedUser = await _userRepository.GetByIdAsync(testUser.Id, o => o.Cache(false));
+        Assert.NotNull(persistedUser);
+        Assert.DoesNotContain(SampleDataService.TEST_ORG_ID, persistedUser.OrganizationIds);
+        Assert.DoesNotContain(persistedUser.OrganizationPreferences, preference => preference.OrganizationId == SampleDataService.TEST_ORG_ID);
+    }
+
+    [Fact]
     public async Task SoftDeleteOrganization_WithSavedViews_RemovesAllSavedViews()
     {
         // Arrange
@@ -2096,6 +2147,50 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         var persistedGlobalAdministrator = await _userRepository.GetByIdAsync(globalAdministrator.Id);
         Assert.NotNull(persistedGlobalAdministrator);
         Assert.DoesNotContain(persistedGlobalAdministrator.OrganizationPreferences, preference => preference.DefaultSavedViewId == savedView.Id);
+        Assert.Null(await _savedViewRepository.GetByIdAsync(savedView.Id));
+    }
+
+    [Fact]
+    public async Task SoftDeleteOrganization_RefetchesDefaultsAfterAcquiringLock()
+    {
+        var currentUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID, o => o.Cache(false));
+        Assert.NotNull(currentUser);
+        Assert.NotNull(organization);
+
+        var savedView = await _savedViewRepository.AddAsync(new SavedView
+        {
+            OrganizationId = organization.Id,
+            Name = "Concurrent Organization Home",
+            Filter = "status:open",
+            Slug = "concurrent-organization-home",
+            ViewType = "stacks",
+            CreatedByUserId = currentUser.Id
+        }, o => o.ImmediateConsistency());
+
+        var lockProvider = GetService<ILockProvider>();
+        string lockKey = $"saved-view-defaults:{organization.Id}";
+        var heldLock = await lockProvider.AcquireAsync(lockKey, TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(1));
+        var deleteTask = _organizationService.SoftDeleteOrganizationAsync(organization, currentUser.Id);
+        try
+        {
+            await Task.Delay(100, TestCancellationToken);
+            Assert.False(deleteTask.IsCompleted);
+
+            await _organizationRepository.SetDefaultSavedViewAsync(organization.Id, savedView.Id);
+        }
+        finally
+        {
+            await heldLock.DisposeAsync();
+        }
+
+        await deleteTask;
+        await RefreshDataAsync();
+
+        var deletedOrganization = await _organizationRepository.GetByIdAsync(organization.Id, o => o.Cache(false).SoftDeleteMode(SoftDeleteQueryMode.All));
+        Assert.NotNull(deletedOrganization);
+        Assert.True(deletedOrganization.IsDeleted);
+        Assert.Null(deletedOrganization.DefaultSavedViewId);
         Assert.Null(await _savedViewRepository.GetByIdAsync(savedView.Id));
     }
 
