@@ -33,6 +33,7 @@ import {
     type SavedViewQueryParams,
     setSortQueryParam,
     setTimeQueryParam,
+    shouldTrackPendingSavedViewDraft,
     supportsSortQueryParam,
     supportsTimeQueryParam,
     trackChangedFilterKeys
@@ -286,6 +287,14 @@ describe('useSavedViews', () => {
             expect(isSavedViewUnavailable('view-1', false, true)).toBe(false);
             expect(isSavedViewUnavailable(undefined, false, true)).toBe(true);
             expect(isSavedViewUnavailable(undefined, true, false)).toBe(true);
+        });
+    });
+
+    describe('pending saved view draft tracking', () => {
+        it('continues until the draft is applied even after the route data gate is released', () => {
+            expect(shouldTrackPendingSavedViewDraft('view-1', 'view-1', '')).toBe(true);
+            expect(shouldTrackPendingSavedViewDraft('view-1', 'view-1', 'user-1:organization-1:view-1')).toBe(false);
+            expect(shouldTrackPendingSavedViewDraft('view-1', 'view-2', '')).toBe(false);
         });
     });
 

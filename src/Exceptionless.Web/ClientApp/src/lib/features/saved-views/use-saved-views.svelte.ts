@@ -426,6 +426,10 @@ export function setTimeQueryParam(queryParams: SavedViewQueryParams, value: null
     }
 }
 
+export function shouldTrackPendingSavedViewDraft(trackerViewId: string, activeViewId: string | undefined, appliedDraftKey: string): boolean {
+    return trackerViewId === activeViewId && !appliedDraftKey;
+}
+
 export function supportsSortQueryParam(queryParams: SavedViewQueryParams): queryParams is SavedViewQueryParams & { sort: null | string | undefined } {
     return Object.prototype.hasOwnProperty.call(queryParams, 'sort');
 }
@@ -964,7 +968,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     $effect(() => {
         const tracker = pendingDraftTracker;
         const view = activeSavedView;
-        if (!tracker || !view || tracker.viewId !== view.id || hydratedSavedViewId === view.id) {
+        if (!tracker || !view || !shouldTrackPendingSavedViewDraft(tracker.viewId, view.id, appliedDraftKey)) {
             return;
         }
 
