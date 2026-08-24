@@ -55,12 +55,12 @@
     }
 </script>
 
-<nav bind:this={pagerElement} aria-label="Table pagination" class="ml-auto shrink-0">
+<nav bind:this={pagerElement} aria-label="Table pagination" class="border-border ml-auto shrink-0 max-sm:flex max-sm:w-full max-sm:justify-end max-sm:border-t">
     <ButtonGroup.Root aria-label="Pagination controls">
-        <DataTablePageSize bind:value onPageSizeChange={scrollTableIntoView} {table} />
+        <DataTablePageSize bind:value joined onPageSizeChange={scrollTableIntoView} {table} />
         <ButtonGroup.Text
             aria-label={`Page ${currentPage} of ${totalPages}`}
-            class="min-w-14 justify-center select-none"
+            class="min-w-14 justify-center rounded-none border-y-0 select-none"
             title={`Page ${currentPage} of ${totalPages}`}
         >
             <Number value={currentPage} /> / <Number value={totalPages} />
@@ -68,9 +68,9 @@
         <Button
             aria-label="Go to previous page"
             aria-disabled={!canGoPrevious}
-            class="aria-disabled:pointer-events-none aria-disabled:opacity-50"
+            class="rounded-none border-y-0 aria-disabled:pointer-events-none aria-disabled:opacity-50"
             onclick={goToPreviousPage}
-            size="icon-sm"
+            size="icon"
             title="Previous page"
             variant="outline"
         >
@@ -79,9 +79,9 @@
         <Button
             aria-label="Go to next page"
             aria-disabled={!canGoNext}
-            class="aria-disabled:pointer-events-none aria-disabled:opacity-50"
+            class="rounded-l-none! rounded-r-lg! border-y-0 border-r-0 aria-disabled:pointer-events-none aria-disabled:opacity-50"
             onclick={goToNextPage}
-            size="icon-sm"
+            size="icon"
             title="Next page"
             variant="outline"
         >
