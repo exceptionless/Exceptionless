@@ -692,6 +692,13 @@ test('stream switches to a browser-local saved view draft without mixing in-flig
     const explicitFilter = streamRequestFilters.findLast((filter) => filter.includes(draftExpression))!;
     expect(explicitFilter).not.toContain('fixed');
     expect(explicitFilter).not.toContain(remoteExpression);
+
+    streamRequestFilters.length = 0;
+    await page.goto(`/next/stream?saved=${savedView.id}&filter=`);
+    await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
+    await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Status Fixed' })).toHaveCount(0);
+    await expect.poll(() => streamRequestFilters.at(-1)).toBe('');
     expect(failedApiRequests).toEqual([]);
 });
 

@@ -608,21 +608,22 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
         if (url.searchParams.has('filter')) {
             const filter = url.searchParams.get('filter') ?? '';
+            const isExplicitFullStateFilter = !draftGeneratedFilter && !supportsTime;
+            if (isExplicitFullStateFilter) {
+                for (const candidate of [...serverFilters, ...applyFilterChanges(serverFilters, draft?.filterChanges)]) {
+                    if (candidate.type !== 'date') {
+                        addKey(candidate.key);
+                    }
+                }
+            }
+
             if (filter) {
                 if (!draftGeneratedFilter) {
-                    if (!supportsTime) {
-                        for (const candidate of [...serverFilters, ...applyFilterChanges(serverFilters, draft?.filterChanges)]) {
-                            if (candidate.type !== 'date') {
-                                addKey(candidate.key);
-                            }
-                        }
-                    }
-
                     for (const override of getFiltersFromCache(options.filterCacheKey(filter), filter)) {
                         addKey(override.key);
                     }
                 }
-            } else {
+            } else if (!isExplicitFullStateFilter) {
                 for (const key of getEmptyFilterOverrideKeys(serverFilters, currentFilters, draft)) {
                     addKey(key);
                 }
