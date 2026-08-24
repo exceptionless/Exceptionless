@@ -10,6 +10,7 @@ import { invalidateSavedViewQueries, queryKeys, removeSavedViewFromCaches, SAVED
 import { savedViewHref, savedViewResolvedSlug } from './slugs';
 import {
     clearSavedViewQueryParams,
+    createSavedViewDraftFilterHistoryEntry,
     filterDefinitionsEqual,
     getChangedFilterKeys,
     getComparableSavedViewFilter,
@@ -91,6 +92,12 @@ describe('useSavedViews', () => {
     });
 
     describe('saved view draft filter history', () => {
+        it('preserves provenance for a draft-generated empty filter', () => {
+            expect(createSavedViewDraftFilterHistoryEntry('view-1', '', true)).toEqual({ filter: '', viewId: 'view-1' });
+            expect(createSavedViewDraftFilterHistoryEntry('view-1', null, true)).toBeUndefined();
+            expect(createSavedViewDraftFilterHistoryEntry('view-1', '', false)).toBeUndefined();
+        });
+
         it('requires explicit history provenance instead of inferring it from matching filter content', () => {
             expect(isSavedViewDraftFilterHistoryEntry(undefined, 'view-1', 'error.type:TimeoutException')).toBe(false);
             expect(

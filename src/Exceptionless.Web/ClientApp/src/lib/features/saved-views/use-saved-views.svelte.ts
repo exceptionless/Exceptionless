@@ -179,6 +179,21 @@ export function clearSavedViewQueryParams(queryParams: SavedViewQueryParams): vo
     }
 }
 
+export function createSavedViewDraftFilterHistoryEntry(
+    viewId: string,
+    filter: null | string,
+    isDraftGenerated: boolean
+): SavedViewDraftFilterHistoryEntry | undefined {
+    if (!isDraftGenerated || filter === null) {
+        return undefined;
+    }
+
+    return {
+        filter,
+        viewId
+    };
+}
+
 export function filterDefinitionsEqual(a: null | string | undefined, b: null | string | undefined): boolean {
     return normalizeFilterDefinitions(a) === normalizeFilterDefinitions(b);
 }
@@ -555,11 +570,8 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             ...getCurrentPageState()
         };
         const filter = new SvelteURL(window.location.href).searchParams.get('filter');
-        if (isDraftGenerated && filter) {
-            const entry = {
-                filter,
-                viewId
-            };
+        const entry = createSavedViewDraftFilterHistoryEntry(viewId, filter, isDraftGenerated);
+        if (entry) {
             state[savedViewDraftFilterHistoryStateKey] = entry;
             storeDraftFilterHistoryEntry(entry);
         } else {
