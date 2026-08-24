@@ -1021,7 +1021,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
         activeFilterOverrideBaselines = {};
         activeSortOverride = undefined;
-        hydratedColumnOrder = options.getColumnOrder ? [...options.getColumnOrder()] : undefined;
+        hydratedColumnOrder = options.getColumnOrder ? resolveSavedViewColumnOrder(view, options.getColumnOrder()) : undefined;
         hydratedSavedView = view;
         hydratedSavedViewSignature = getSavedViewStateSignature(view);
         hydratedSavedViewId = view.id;
