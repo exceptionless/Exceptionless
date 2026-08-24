@@ -1121,7 +1121,6 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     }
 
     function handleSavedViewUpdated(view: SavedView) {
-        draftPersistenceGeneration++;
         const organizationId = organization.current;
         const identity =
             getDraftIdentity(view) ??
@@ -1140,6 +1139,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return;
         }
 
+        draftPersistenceGeneration++;
         if (identity) {
             appliedDraftKey = `${identity.userId}:${identity.organizationId}:${identity.savedViewId}`;
         }

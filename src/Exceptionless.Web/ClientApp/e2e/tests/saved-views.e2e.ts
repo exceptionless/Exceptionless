@@ -509,14 +509,22 @@ test('save completion does not overwrite a newly active saved view', async ({ e2
     await page.getByRole('link', { exact: true, name: secondViewName }).first().click();
     await expect(page.getByRole('heading', { name: secondViewName })).toBeVisible();
     await expect.poll(() => secondViewRequestTimes.some((time) => time.includes('now-1d'))).toBe(true);
+    await page.getByRole('button', { name: /^Date/ }).filter({ visible: true }).first().click();
+    await page.getByRole('button', { name: 'Last 7 days' }).click();
     const saveCompleted = page.waitForResponse(
         (response) => response.request().method() === 'PATCH' && new URL(response.url()).pathname === `/api/v2/saved-views/${firstView.id}`
     );
     releaseSave();
     await saveCompleted;
-    await page.getByRole('button', { name: /^Date/ }).filter({ visible: true }).first().click();
-    await page.getByRole('button', { name: 'Last 7 days' }).click();
     await expect.poll(() => secondViewRequestTimes.some((time) => time.includes('now-7d'))).toBe(true);
+    await page.reload();
+    await expect(
+        page
+            .getByRole('button', { name: /Date\s+Last 7 days/ })
+            .filter({ visible: true })
+            .first()
+    ).toBeVisible();
+    await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
 });
 
 test('stream switches to a browser-local saved view draft without mixing in-flight results', async ({ e2eApi, e2eScenario, page, request }) => {
