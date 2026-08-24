@@ -1542,13 +1542,38 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task SavedViewDefaultUpdateAndDeletion_WaitForOrganizationDefaultLock()
+    public async Task SavedViewDefaultUpdateAndDeletion_WaitForUserAndOrganizationLocks()
     {
         var savedView = await CreateSavedViewAsync("Serialized Home", "status:open", "stacks");
+        var currentUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
         Assert.NotNull(savedView);
+        Assert.NotNull(currentUser);
 
         var lockProvider = GetService<ILockProvider>();
         string lockKey = $"saved-view-defaults:{SampleDataService.TEST_ORG_ID}";
+        string userLockKey = $"saved-view-defaults:user:{currentUser.Id}";
+
+        var heldUserLock = await lockProvider.AcquireAsync(userLockKey, TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(1));
+        var userLockedUpdateTask = SendRequestAsAsync<ViewSavedViewDefaults>(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-defaults", "user")
+            .Content(new UpdateSavedViewDefault { SavedViewId = savedView.Id })
+            .StatusCodeShouldBeOk()
+        );
+        try
+        {
+            await Task.Delay(100, TestCancellationToken);
+            Assert.False(userLockedUpdateTask.IsCompleted);
+        }
+        finally
+        {
+            await heldUserLock.DisposeAsync();
+        }
+
+        var userLockedDefaults = await userLockedUpdateTask;
+        Assert.NotNull(userLockedDefaults);
+        Assert.Equal(savedView.Id, userLockedDefaults.UserDefault?.Id);
 
         var heldUpdateLock = await lockProvider.AcquireAsync(lockKey, TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(1));
         var updateTask = SendRequestAsAsync<ViewSavedViewDefaults>(r => r

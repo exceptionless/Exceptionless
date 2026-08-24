@@ -3199,6 +3199,16 @@
               }
             }
           },
+          "409": {
+            "description": "The saved view defaults are currently being updated.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "422": {
             "description": "The saved view is not accessible in this organization.",
             "content": {
@@ -3259,6 +3269,16 @@
           },
           "404": {
             "description": "The organization could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The saved view defaults are currently being updated.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {

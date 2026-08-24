@@ -23,11 +23,12 @@ export async function invalidateSavedViewQueries(queryClient: QueryClient, messa
             const savedView = cached?.find((v) => v.id === id);
             if (savedView) {
                 removeSavedViewFromCaches(queryClient, savedView, organization_id);
+                await invalidateSavedViewDefaultQueries(queryClient, organization_id);
                 return;
             }
         }
 
-        await invalidateSavedViewCache(queryClient, organization_id);
+        await Promise.all([invalidateSavedViewCache(queryClient, organization_id), invalidateSavedViewDefaultQueries(queryClient, organization_id)]);
         return;
     }
 
