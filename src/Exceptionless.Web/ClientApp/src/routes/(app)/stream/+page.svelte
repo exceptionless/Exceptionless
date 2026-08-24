@@ -89,6 +89,11 @@
         defaultColumnVisibility: defaultEventColumnVisibility,
         defaultFilter: DEFAULT_PARAMS.filter,
         filterCacheKey,
+        getAvailableColumnIds: () =>
+            table
+                .getAllFlatColumns()
+                .filter((column) => column.columns.length === 0)
+                .map((column) => column.id),
         getColumnOrder: () => table.store.state.columnOrder,
         getColumnSizing: () => table.store.state.columnSizing,
         getColumnVisibility: () => table.store.state.columnVisibility,

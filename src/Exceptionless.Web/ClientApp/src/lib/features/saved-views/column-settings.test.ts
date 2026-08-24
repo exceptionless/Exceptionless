@@ -5,12 +5,15 @@ import type { SavedView } from './models';
 import {
     buildColumnSettings,
     columnOrdersEqual,
+    filterAvailableColumnIds,
+    filterAvailableColumnRecord,
     getSavedAutoFillColumnId,
     getSavedAutoFillColumnSelection,
     getSavedColumnOrder,
     getSavedColumnSizing,
     getSavedColumnVisibility,
     getSavedWrappedColumnIds,
+    resolveAvailableAutoFillColumnSelection,
     resolveAvailableColumnOrder,
     resolveSavedViewColumnOrder,
     savedViewColumnSizingEqual,
@@ -127,6 +130,15 @@ describe('saved view column settings', () => {
             'project',
             'date'
         ]);
+    });
+
+    it('drops unavailable IDs from restored column-scoped settings', () => {
+        const availableColumnIds = ['select', 'project', 'summary'];
+
+        expect(filterAvailableColumnRecord({ removed: 480, summary: 360 }, availableColumnIds)).toEqual({ summary: 360 });
+        expect(filterAvailableColumnIds(['removed', 'summary', 'summary'], availableColumnIds)).toEqual(['summary']);
+        expect(resolveAvailableAutoFillColumnSelection('removed', availableColumnIds, 'summary')).toBe('summary');
+        expect(resolveAvailableAutoFillColumnSelection('removed', availableColumnIds)).toBeNull();
     });
 
     it('treats missing wrap settings as the legacy single-line behavior', () => {

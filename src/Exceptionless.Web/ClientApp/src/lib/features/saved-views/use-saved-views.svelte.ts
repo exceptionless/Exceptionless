@@ -20,12 +20,15 @@ import type { SavedView } from './models';
 import { getSavedViewsByViewQuery } from './api.svelte';
 import {
     columnOrdersEqual,
+    filterAvailableColumnIds,
+    filterAvailableColumnRecord,
     getSavedAutoFillColumnSelection,
     getSavedColumnOrder,
     getSavedColumnSizing,
     getSavedColumnVisibility,
     getSavedWrappedColumnIds,
     normalizeColumnSizing,
+    resolveAvailableAutoFillColumnSelection,
     resolveAvailableColumnOrder,
     resolveSavedViewColumnOrder,
     savedViewColumnSizingEqual,
@@ -66,6 +69,7 @@ export interface UseSavedViewsOptions {
     defaultFilter?: null | string;
     defaultTime?: null | string;
     filterCacheKey: (filter: null | string) => string;
+    getAvailableColumnIds?: () => string[];
     getColumnOrder?: () => ColumnOrderState;
     getColumnSizing?: () => ColumnSizingState;
     getColumnVisibility?: () => ColumnVisibilityState;
@@ -345,17 +349,23 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     });
 
     function applyColumnState(view: Pick<SavedView, 'columns'> | undefined): void {
+        const availableColumnIds = options.getAvailableColumnIds?.() ?? options.getColumnOrder?.() ?? [];
+
         if (options.setColumnVisibility) {
-            options.setColumnVisibility(getSavedColumnVisibility(view));
+            options.setColumnVisibility(filterAvailableColumnRecord(getSavedColumnVisibility(view), availableColumnIds));
         }
 
         if (options.setColumnOrder) {
-            options.setColumnOrder(getSavedColumnOrder(view));
+            options.setColumnOrder(resolveAvailableColumnOrder(getSavedColumnOrder(view), availableColumnIds));
         }
 
-        options.setColumnSizing?.(getSavedColumnSizing(view));
-        autoFillColumnId = getSavedAutoFillColumnSelection(view, options.defaultAutoFillColumnId);
-        wrappedColumnIds = getSavedWrappedColumnIds(view);
+        options.setColumnSizing?.(filterAvailableColumnRecord(getSavedColumnSizing(view), availableColumnIds));
+        autoFillColumnId = resolveAvailableAutoFillColumnSelection(
+            getSavedAutoFillColumnSelection(view, options.defaultAutoFillColumnId),
+            availableColumnIds,
+            options.defaultAutoFillColumnId
+        );
+        wrappedColumnIds = filterAvailableColumnIds(getSavedWrappedColumnIds(view), availableColumnIds);
     }
 
     function applyDisplayState(view: Pick<SavedView, 'show_chart' | 'show_stats'> | undefined): void {
@@ -445,6 +455,8 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     }
 
     function applyDraftState(view: SavedView, draft: SavedViewDraft | undefined, overrideKeys: string[]): void {
+        const availableColumnIds = options.getAvailableColumnIds?.() ?? options.getColumnOrder?.() ?? [];
+
         if (options.applyFilters) {
             const serverFilters = getServerFilters(view);
             const draftFilters = applyFilterChanges(serverFilters, draft?.filterChanges);
@@ -453,17 +465,22 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         if (options.setColumnVisibility) {
-            options.setColumnVisibility(applyRecordChanges(getSavedColumnVisibility(view), draft?.columnVisibilityChanges));
+            options.setColumnVisibility(
+                filterAvailableColumnRecord(applyRecordChanges(getSavedColumnVisibility(view), draft?.columnVisibilityChanges), availableColumnIds)
+            );
         }
 
         if (options.setColumnOrder) {
-            options.setColumnOrder(draft?.columnOrder ? resolveAvailableColumnOrder(draft.columnOrder, options.getColumnOrder?.()) : getSavedColumnOrder(view));
+            options.setColumnOrder(resolveAvailableColumnOrder(draft?.columnOrder ?? getSavedColumnOrder(view), availableColumnIds));
         }
 
-        options.setColumnSizing?.(applyRecordChanges(getSavedColumnSizing(view), draft?.columnSizingChanges));
-        autoFillColumnId =
-            draft && 'autoFillColumnId' in draft ? draft.autoFillColumnId! : getSavedAutoFillColumnSelection(view, options.defaultAutoFillColumnId);
-        wrappedColumnIds = applyWrappedColumnChanges(getSavedWrappedColumnIds(view), draft?.wrappedColumnChanges);
+        options.setColumnSizing?.(filterAvailableColumnRecord(applyRecordChanges(getSavedColumnSizing(view), draft?.columnSizingChanges), availableColumnIds));
+        autoFillColumnId = resolveAvailableAutoFillColumnSelection(
+            draft && 'autoFillColumnId' in draft ? draft.autoFillColumnId! : getSavedAutoFillColumnSelection(view, options.defaultAutoFillColumnId),
+            availableColumnIds,
+            options.defaultAutoFillColumnId
+        );
+        wrappedColumnIds = filterAvailableColumnIds(applyWrappedColumnChanges(getSavedWrappedColumnIds(view), draft?.wrappedColumnChanges), availableColumnIds);
 
         options.setShowStats?.(draft && 'showStats' in draft ? draft.showStats! : (view.show_stats ?? true));
         options.setShowChart?.(draft && 'showChart' in draft ? draft.showChart! : (view.show_chart ?? true));

@@ -47,6 +47,16 @@ export function columnOrdersEqual(left: ColumnOrderState | undefined, right: Col
     return normalizedLeft.length === normalizedRight.length && normalizedLeft.every((columnId, index) => columnId === normalizedRight[index]);
 }
 
+export function filterAvailableColumnIds(columnIds: readonly string[], availableColumnIds: readonly string[]): string[] {
+    const availableColumnIdSet = new Set(availableColumnIds.filter((columnId) => columnId !== 'select'));
+    return [...new Set(columnIds.filter((columnId) => availableColumnIdSet.has(columnId)))];
+}
+
+export function filterAvailableColumnRecord<T>(values: Record<string, T>, availableColumnIds: readonly string[]): Record<string, T> {
+    const availableColumnIdSet = new Set(availableColumnIds.filter((columnId) => columnId !== 'select'));
+    return Object.fromEntries(Object.entries(values).filter(([columnId]) => availableColumnIdSet.has(columnId)));
+}
+
 export function getSavedAutoFillColumnId(view: SavedColumnState | undefined): string | undefined {
     return Object.entries(view?.columns ?? {}).find(([, settings]) => settings.auto_fill === true)?.[0];
 }
@@ -107,6 +117,23 @@ export function normalizeColumnSizing(sizing: ColumnSizingState | undefined): Co
             .filter(([columnId]) => columnId !== 'select')
             .map(([columnId, width]) => [columnId, Math.round(width)])
     );
+}
+
+export function resolveAvailableAutoFillColumnSelection(
+    selection: AutoFillColumnSelection,
+    availableColumnIds: readonly string[],
+    defaultAutoFillColumnId?: string
+): AutoFillColumnSelection {
+    if (selection === null) {
+        return null;
+    }
+
+    const availableColumnIdSet = new Set(availableColumnIds.filter((columnId) => columnId !== 'select'));
+    if (availableColumnIdSet.has(selection)) {
+        return selection;
+    }
+
+    return defaultAutoFillColumnId && availableColumnIdSet.has(defaultAutoFillColumnId) ? defaultAutoFillColumnId : null;
 }
 
 export function resolveAvailableColumnOrder(preferredOrder: ColumnOrderState, availableOrder: ColumnOrderState | undefined): ColumnOrderState {
