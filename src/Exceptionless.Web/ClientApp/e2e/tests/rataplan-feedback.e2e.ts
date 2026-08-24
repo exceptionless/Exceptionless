@@ -179,7 +179,7 @@ test('approved Rataplan UI feedback remains fixed', async ({ e2eApi, e2eScenario
     await test.step('the fixed-version field has space before the dialog footer', async () => {
         await page.goto(`/next/stack?filter=project:${e2eScenario.projectId}&time=all`);
         await page.getByRole('checkbox', { name: 'Select row' }).first().click();
-        const bulkActionsButton = page.getByRole('button', { name: 'Bulk Actions' });
+        const bulkActionsButton = page.getByRole('button', { name: 'Actions' });
         const selectionCount = page.getByText('1 selected', { exact: true });
         await expect(selectionCount).toBeVisible();
         await expect
@@ -190,7 +190,7 @@ test('approved Rataplan UI feedback remains fixed', async ({ e2eApi, e2eScenario
             })
             .toBeLessThanOrEqual(16);
         await bulkActionsButton.click();
-        await expect(page.locator('[data-slot="dropdown-menu-group-heading"]', { hasText: 'Bulk Actions' })).toHaveCount(0);
+        await expect(page.locator('[data-slot="dropdown-menu-group-heading"]', { hasText: 'Actions' })).toHaveCount(0);
         await page.getByRole('menuitem', { name: 'Mark Fixed' }).click();
 
         const versionField = page.getByRole('textbox', { name: 'Version' }).locator('xpath=..');
