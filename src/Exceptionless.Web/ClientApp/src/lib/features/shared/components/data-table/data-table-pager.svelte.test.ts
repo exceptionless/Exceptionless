@@ -46,6 +46,7 @@ describe('DataTablePager', () => {
         expect(pageSize.getAttribute('data-size')).toBe('default');
         expect(pageSize.classList.contains('min-w-14')).toBe(true);
         expect(pageSize.classList.contains('sm:min-w-18')).toBe(true);
+        expect(pageSize.textContent).toContain('10 rows');
         expect(pageSize.classList.contains('rounded-none')).toBe(true);
         expect(pageSize.classList.contains('border-y-0')).toBe(true);
         const rowsLabel = Array.from(pageSize.querySelectorAll('span')).find((element) => element.textContent?.trim() === 'rows');

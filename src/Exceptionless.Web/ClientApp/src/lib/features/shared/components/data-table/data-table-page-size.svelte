@@ -62,7 +62,7 @@
         size={joined ? 'default' : 'sm'}
         title="Rows per page"
     >
-        {selected.label}<span class="hidden sm:inline"> rows</span>
+        {selected.label} <span class="hidden sm:inline">rows</span>
     </Select.Trigger>
     <Select.Content>
         <Select.Group>
