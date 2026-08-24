@@ -1,7 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
-using System.Text.Json.Serialization;
 using Exceptionless.Core.Attributes;
 using Exceptionless.Core.Billing;
 using Foundatio.Repositories.Models;
@@ -27,7 +26,6 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     [ObjectId]
     public string Id { get; set; } = null!;
 
-    [JsonIgnore]
     public string Version { get; set; } = String.Empty;
 
     /// <summary>

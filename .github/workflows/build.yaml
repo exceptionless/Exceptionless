@@ -323,11 +323,6 @@ jobs:
       - name: Stop AppHost
         if: ${{ always() }}
         run: |
-          mkdir -p aspire-logs
-          aspire describe --format Table --non-interactive > aspire-logs/resources.log 2>&1 || true
-          aspire logs Api --timestamps --tail 1000 --non-interactive > aspire-logs/api.log 2>&1 || true
-          aspire logs Jobs --timestamps --tail 1000 --non-interactive > aspire-logs/jobs.log 2>&1 || true
-          aspire logs App --timestamps --tail 1000 --non-interactive > aspire-logs/app.log 2>&1 || true
           aspire stop --all --non-interactive || true
           if [ -f aspire-run.pid ]; then
             kill "$(cat aspire-run.pid)" 2>/dev/null || true

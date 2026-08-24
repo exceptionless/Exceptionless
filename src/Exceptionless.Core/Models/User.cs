@@ -1,6 +1,5 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
 using Exceptionless.Core.Attributes;
 using Foundatio.Repositories.Models;
 
@@ -14,7 +13,6 @@ public record User : IIdentity, IHaveDates, IVersioned, IValidatableObject
     [ObjectId]
     public string Id { get; set; } = null!;
 
-    [JsonIgnore]
     public string Version { get; set; } = String.Empty;
 
     /// <summary>
