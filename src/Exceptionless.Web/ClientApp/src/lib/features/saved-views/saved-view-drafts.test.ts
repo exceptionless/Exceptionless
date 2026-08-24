@@ -87,15 +87,26 @@ describe('saved view drafts', () => {
         const storage = createStorage();
         saveSavedViewDraft(identity, { showChart: false, version: 1 }, storage);
 
-        queueSavedViewDraftClear(identity, 'session-1', storage);
+        queueSavedViewDraftClear(identity, storage);
 
-        expect(storage.getItem(getSavedViewDraftClearStorageKey(identity))).toBe('session-1');
-        expect(consumeSavedViewDraftClear(identity, 'session-2', storage)).toBe(false);
+        expect(storage.getItem(getSavedViewDraftClearStorageKey(identity))).toBe(identity.userId);
+        expect(consumeSavedViewDraftClear({ ...identity, userId: 'user-2' }, storage)).toBe(false);
         expect(getSavedViewDraft(identity, storage)).toBeDefined();
-        expect(consumeSavedViewDraftClear(identity, 'session-1', storage)).toBe(true);
+        expect(consumeSavedViewDraftClear(identity, storage)).toBe(true);
         expect(getSavedViewDraft(identity, storage)).toBeUndefined();
         expect(storage.getItem(getSavedViewDraftClearStorageKey(identity))).toBeNull();
-        expect(consumeSavedViewDraftClear(identity, 'session-1', storage)).toBe(false);
+        expect(consumeSavedViewDraftClear(identity, storage)).toBe(false);
+    });
+
+    it('keeps identity-independent Reset clears valid across reauthentication', () => {
+        const storage = createStorage();
+        saveSavedViewDraft(identity, { showChart: false, version: 1 }, storage);
+
+        queueSavedViewDraftClear({ organizationId: identity.organizationId, savedViewId: identity.savedViewId }, storage);
+
+        expect(storage.getItem(getSavedViewDraftClearStorageKey(identity))).toBe('*');
+        expect(consumeSavedViewDraftClear(identity, storage)).toBe(true);
+        expect(getSavedViewDraft(identity, storage)).toBeUndefined();
     });
 
     it('applies local filter changes over unrelated changes from the latest server view', () => {
@@ -131,6 +142,14 @@ describe('saved view drafts', () => {
         expect(changes?.baselineDefinitions).toBeUndefined();
         expect(changes?.duplicateKeys).toEqual(['keyword']);
         expect(mergedFilters.map((filter) => (filter as KeywordFilter).value)).toEqual(['foo', 'bar']);
+    });
+
+    it('preserves a concurrent same-key server addition over a single local addition from an empty baseline', () => {
+        const changes = buildFilterChanges([], [new KeywordFilter('local')]);
+        const mergedFilters = applyFilterChanges([new KeywordFilter('remote')], changes);
+
+        expect(changes?.duplicateKeys).toEqual(['keyword']);
+        expect(mergedFilters.map((filter) => (filter as KeywordFilter).value)).toEqual(['remote', 'local']);
     });
 
     it('does not append a duplicate upsert that the server independently adopted', () => {

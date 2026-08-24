@@ -150,6 +150,7 @@ export function buildFilterChanges(serverFilters: IFilter[], currentFilters: IFi
                 removedDefinitions.push(server[0]!);
                 upserts.push(current[0]!);
             } else if (current.length === 1 && server.length === 0) {
+                duplicateKeys.push(key);
                 upserts.push(current[0]!);
             }
             continue;
@@ -213,13 +214,14 @@ export function clearSavedViewDraft(identity: SavedViewDraftIdentity, storage: D
     }
 }
 
-export function consumeSavedViewDraftClear(
-    identity: SavedViewDraftIdentity,
-    sessionId: string,
-    storage: DraftStorage | undefined = getLocalStorage()
-): boolean {
+export function consumeSavedViewDraftClear(identity: SavedViewDraftIdentity, storage: DraftStorage | undefined = getLocalStorage()): boolean {
     try {
-        if (storage?.getItem(getSavedViewDraftClearStorageKey(identity)) !== sessionId) {
+        if (!storage) {
+            return false;
+        }
+
+        const userId = storage.getItem(getSavedViewDraftClearStorageKey(identity));
+        if (!userId || (userId !== '*' && userId !== identity.userId)) {
             return false;
         }
 
@@ -297,12 +299,11 @@ export function mergePendingSavedViewDraftEdits(storedDraft: SavedViewDraft | un
 }
 
 export function queueSavedViewDraftClear(
-    identity: Pick<SavedViewDraftIdentity, 'organizationId' | 'savedViewId'>,
-    sessionId: string,
+    identity: Partial<Pick<SavedViewDraftIdentity, 'userId'>> & Pick<SavedViewDraftIdentity, 'organizationId' | 'savedViewId'>,
     storage: DraftStorage | undefined = getLocalStorage()
 ): void {
     try {
-        storage?.setItem(getSavedViewDraftClearStorageKey(identity), sessionId);
+        storage?.setItem(getSavedViewDraftClearStorageKey(identity), identity.userId ?? '*');
     } catch {
         // Storage can be unavailable or full; the in-memory clear still protects this session.
     }

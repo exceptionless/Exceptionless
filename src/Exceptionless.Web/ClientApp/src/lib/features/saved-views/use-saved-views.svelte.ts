@@ -3,7 +3,6 @@ import type { ColumnOrderState, ColumnSizingState, ColumnVisibilityState } from 
 
 import { afterNavigate, goto } from '$app/navigation';
 import { page } from '$app/state';
-import { accessToken } from '$features/auth/index.svelte';
 import {
     applyTimeFilter,
     buildFilterCacheKey,
@@ -782,8 +781,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
         const draftKey = `${identity.userId}:${identity.organizationId}:${identity.savedViewId}`;
         const wasPendingInMemory = pendingDraftClearViewIds.delete(view.id);
-        const sessionId = accessToken.current;
-        const wasPendingInStorage = sessionId ? consumeSavedViewDraftClear(identity, sessionId) : false;
+        const wasPendingInStorage = consumeSavedViewDraftClear(identity);
         if (wasPendingInMemory || wasPendingInStorage) {
             clearSavedViewDraft(identity);
             appliedDraftKey = draftKey;
@@ -986,15 +984,11 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         } else {
             pendingDraftClearViewIds.add(view.id);
             const organizationId = organization.current;
-            const sessionId = accessToken.current;
-            if (organizationId && sessionId) {
-                queueSavedViewDraftClear(
-                    {
-                        organizationId,
-                        savedViewId: view.id
-                    },
-                    sessionId
-                );
+            if (organizationId) {
+                queueSavedViewDraftClear({
+                    organizationId,
+                    savedViewId: view.id
+                });
             }
         }
 
@@ -1028,15 +1022,12 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         } else {
             pendingDraftClearViewIds.add(view.id);
             const organizationId = organization.current;
-            const sessionId = accessToken.current;
-            if (organizationId && sessionId) {
-                queueSavedViewDraftClear(
-                    {
-                        organizationId,
-                        savedViewId: view.id
-                    },
-                    sessionId
-                );
+            if (organizationId) {
+                queueSavedViewDraftClear({
+                    organizationId,
+                    savedViewId: view.id,
+                    userId: view.updated_by_user_id ?? undefined
+                });
             }
         }
 
