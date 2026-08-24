@@ -9,10 +9,6 @@ describe('DataTablePager', () => {
 
     beforeEach(() => {
         Element.prototype.scrollIntoView = scrollIntoView;
-        Object.defineProperty(window, 'matchMedia', {
-            configurable: true,
-            value: vi.fn().mockReturnValue({ matches: false })
-        });
     });
 
     afterEach(() => {
@@ -72,7 +68,7 @@ describe('DataTablePager', () => {
         expect(pageSize.classList.contains('border-y-0')).toBe(false);
     });
 
-    it('keeps focus and scrolls the table to the start when changing pages', async () => {
+    it('keeps focus without scrolling the table when changing pages', async () => {
         const onPageIndexChange = vi.fn();
         render(DataTablePagerTestHarness, { onPageIndexChange, onPageSizeChange: vi.fn() });
 
@@ -82,7 +78,7 @@ describe('DataTablePager', () => {
 
         expect(onPageIndexChange).toHaveBeenCalledWith(1);
         expect(screen.getByLabelText('Page 2 of 3')).toBeTruthy();
-        expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+        expect(scrollIntoView).not.toHaveBeenCalled();
         expect(document.activeElement).toBe(nextButton);
     });
 

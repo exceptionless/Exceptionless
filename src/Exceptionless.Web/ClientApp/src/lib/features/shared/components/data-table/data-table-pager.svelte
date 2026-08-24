@@ -20,44 +20,27 @@
 
     let { table, value = $bindable() }: Props = $props();
 
-    let pagerElement: HTMLElement;
-
     const currentPage = $derived((table.options.state?.pagination?.pageIndex ?? table.store.state.pagination.pageIndex) + 1);
     const totalPages = $derived(Math.max(1, table.getPageCount() || 1));
     const canGoNext = $derived(currentPage < totalPages);
     const canGoPrevious = $derived(currentPage > 1);
 
-    function scrollTableIntoView(): void {
-        const tableElement = pagerElement.closest<HTMLElement>('[data-slot="data-table"]');
-        if (!tableElement) {
-            return;
-        }
-
-        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        tableElement.scrollIntoView({
-            behavior: prefersReducedMotion ? 'auto' : 'smooth',
-            block: 'start'
-        });
-    }
-
     function goToNextPage(): void {
         if (canGoNext) {
             table.setPageIndex(currentPage);
-            scrollTableIntoView();
         }
     }
 
     function goToPreviousPage(): void {
         if (canGoPrevious) {
             table.setPageIndex(currentPage - 2);
-            scrollTableIntoView();
         }
     }
 </script>
 
-<nav bind:this={pagerElement} aria-label="Table pagination" class="ml-auto shrink-0">
+<nav aria-label="Table pagination" class="ml-auto shrink-0">
     <ButtonGroup.Root aria-label="Pagination controls">
-        <DataTablePageSize bind:value joined onPageSizeChange={scrollTableIntoView} {table} />
+        <DataTablePageSize bind:value joined {table} />
         <ButtonGroup.Text
             aria-label={`Page ${currentPage} of ${totalPages}`}
             class="min-w-14 justify-center rounded-none border-y-0 select-none"

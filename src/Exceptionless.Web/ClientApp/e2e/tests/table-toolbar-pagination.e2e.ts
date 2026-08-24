@@ -46,10 +46,13 @@ test('table toolbar remains accessible while moving between different-height res
     }
 
     const nextButton = pager.getByRole('button', { name: 'Go to next page' });
+    const scrollContainer = page.locator('main').locator('..');
+    const scrollTopBeforePaging = await scrollContainer.evaluate((element) => element.scrollTop);
     await nextButton.focus();
     await nextButton.click();
     await expect(pager.getByLabel('Page 2 of 2')).toBeVisible();
     await expect(pager.getByRole('button', { name: 'Go to next page' })).toBeFocused();
+    await expect.poll(() => scrollContainer.evaluate((element) => element.scrollTop)).toBe(scrollTopBeforePaging);
 
     const secondToolbarBox = await toolbar.boundingBox();
     const secondGridBox = await grid.boundingBox();
