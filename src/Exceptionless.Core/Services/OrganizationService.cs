@@ -271,14 +271,14 @@ public class OrganizationService : IStartupAction
 
             organization = currentOrganization;
             await RemoveSavedViewsWhileLockedAsync(organization);
+
+            await CancelSubscriptionsAsync(organization);
+            await RemoveUsersAsync(organization, currentUserId);
+            await CleanupProjectNotificationSettingsAsync(organization, []);
+
+            organization.IsDeleted = true;
+            await _organizationRepository.SaveAsync(organization);
         }
-
-        await CancelSubscriptionsAsync(organization);
-        await RemoveUsersAsync(organization, currentUserId);
-        await CleanupProjectNotificationSettingsAsync(organization, []);
-
-        organization.IsDeleted = true;
-        await _organizationRepository.SaveAsync(organization);
     }
 
     private async Task<HashSet<string>> GetValidNotificationUserIdsAsync(string organizationId, IReadOnlyCollection<string> userIds, CancellationToken cancellationToken)

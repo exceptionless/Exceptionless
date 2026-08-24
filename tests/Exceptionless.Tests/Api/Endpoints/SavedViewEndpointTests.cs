@@ -2307,6 +2307,57 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task SoftDeleteOrganization_SerializesDefaultUpdatesThroughFinalSave()
+    {
+        var currentUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID, o => o.Cache(false));
+        Assert.NotNull(currentUser);
+        Assert.NotNull(organization);
+
+        var savedView = await _savedViewRepository.AddAsync(new SavedView
+        {
+            OrganizationId = organization.Id,
+            Name = "Concurrent Organization Home",
+            Filter = "status:open",
+            Slug = "concurrent-organization-home",
+            ViewType = "stacks",
+            CreatedByUserId = currentUser.Id
+        }, o => o.ImmediateConsistency());
+
+        var lockProvider = GetService<ILockProvider>();
+        string lockKey = $"saved-view-defaults:{organization.Id}";
+        var heldLock = await lockProvider.AcquireAsync(lockKey, TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(1));
+        var deleteTask = _organizationService.SoftDeleteOrganizationAsync(organization, currentUser.Id);
+        await Task.Delay(100, TestCancellationToken);
+        Assert.False(deleteTask.IsCompleted);
+
+        var updateTask = SendRequestAsync(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", organization.Id, "saved-view-defaults", "organization")
+            .Content(new UpdateSavedViewDefault { SavedViewId = savedView.Id })
+            .StatusCodeShouldBeNotFound()
+        );
+        try
+        {
+            await Task.Delay(100, TestCancellationToken);
+            Assert.False(updateTask.IsCompleted);
+        }
+        finally
+        {
+            await heldLock.DisposeAsync();
+        }
+
+        await Task.WhenAll(deleteTask, updateTask);
+        await RefreshDataAsync();
+
+        var deletedOrganization = await _organizationRepository.GetByIdAsync(organization.Id, o => o.Cache(false).SoftDeleteMode(SoftDeleteQueryMode.All));
+        Assert.NotNull(deletedOrganization);
+        Assert.True(deletedOrganization.IsDeleted);
+        Assert.Null(deletedOrganization.DefaultSavedViewId);
+    }
+
+    [Fact]
     public async Task RemoveUserSavedViews_WithMixedVisibility_OnlyDeletesPrivateViews()
     {
         // Arrange
