@@ -13,7 +13,7 @@
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { toFilter } from '$features/events/components/filters/helpers.svelte';
     import { serializeFilters } from '$features/events/components/filters/helpers.svelte';
-    import { getOrganizationsQuery } from '$features/organizations/api.svelte';
+    import { getOrganizationQuery, getOrganizationsQuery } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { supportsColumnWrapping } from '$features/shared/components/data-table/column-meta';
     import { getMeQuery } from '$features/users/api.svelte';
@@ -125,7 +125,16 @@
     const activeView = $derived(activeSavedView);
     const currentUserQuery = getMeQuery();
     const organizationsQuery = getOrganizationsQuery({});
-    const currentOrganization = $derived(organizationsQuery.data?.data?.find((organizationItem) => organizationItem.id === organizationId));
+    const membershipOrganization = $derived(organizationsQuery.data?.data?.find((organizationItem) => organizationItem.id === organizationId));
+    const organizationIdToLoad = $derived(organizationsQuery.isSuccess && !membershipOrganization ? organizationId : undefined);
+    const currentOrganizationQuery = getOrganizationQuery({
+        route: {
+            get id() {
+                return organizationIdToLoad;
+            }
+        }
+    });
+    const currentOrganization = $derived(membershipOrganization ?? currentOrganizationQuery.data);
     const defaults = $derived.by(() => {
         return resolveSavedViewDefaults({
             organizationDefaultSavedViewId: currentOrganization?.default_saved_view_id,

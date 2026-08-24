@@ -6,6 +6,13 @@ import { getVisibleText } from '../support/page-helpers';
 
 test('home navigation honors personal and organization saved views and survives deletion', async ({ e2eApi, e2eScenario, page, request }) => {
     const failedApiRequests = captureFailedApiRequests(page);
+    const savedViewListLimits: string[] = [];
+    page.on('request', (request) => {
+        const url = new URL(request.url());
+        if (url.pathname === `/api/v2/organizations/${e2eScenario.organizationId}/saved-views`) {
+            savedViewListLimits.push(url.searchParams.get('limit') ?? '');
+        }
+    });
     const journey = ExceptionlessE2EJourney.fromScenario(page, e2eApi, e2eScenario);
     const viewName = `E2E Home ${journey.run.slice(-36)}`;
     const viewSlug = savedViewSlug(viewName);
@@ -14,6 +21,7 @@ test('home navigation honors personal and organization saved views and survives 
         await page.goto('/next/');
         await expect(page).toHaveURL(/\/next\/stack\/all(?:[?#]|$)/);
         await expect(page.getByRole('heading', { name: 'All' })).toBeVisible({ timeout: 30_000 });
+        await expect.poll(() => savedViewListLimits).toContain('100');
     });
 
     await test.step('prefer the personal saved view', async () => {

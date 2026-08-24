@@ -1,6 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
-    import { getOrganizationsQuery } from '$features/organizations/api.svelte';
+    import { getOrganizationQuery, getOrganizationsQuery } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { getSavedViewsQuery, isSavedViewDeleted } from '$features/saved-views/api.svelte';
     import { getSavedViewDefaultHref, resolveSavedViewDefaults } from '$features/saved-views/defaults';
@@ -15,7 +15,16 @@
             }
         }
     });
-    const currentOrganization = $derived(organizationsQuery.data?.data?.find((organizationItem) => organizationItem.id === organization.current));
+    const membershipOrganization = $derived(organizationsQuery.data?.data?.find((organizationItem) => organizationItem.id === organization.current));
+    const organizationIdToLoad = $derived(organizationsQuery.isSuccess && !membershipOrganization ? organization.current : undefined);
+    const currentOrganizationQuery = getOrganizationQuery({
+        route: {
+            get id() {
+                return organizationIdToLoad;
+            }
+        }
+    });
+    const currentOrganization = $derived(membershipOrganization ?? currentOrganizationQuery.data);
     const savedViews = $derived((savedViewsQuery.data ?? []).filter((savedView) => !isSavedViewDeleted(savedView)));
     const defaults = $derived.by(() => {
         return resolveSavedViewDefaults({
@@ -27,7 +36,13 @@
     });
 
     $effect(() => {
-        if (!organization.current || currentUserQuery.isPending || organizationsQuery.isPending || savedViewsQuery.isPending) {
+        if (
+            !organization.current ||
+            currentUserQuery.isPending ||
+            organizationsQuery.isPending ||
+            savedViewsQuery.isPending ||
+            (organizationIdToLoad && currentOrganizationQuery.isPending)
+        ) {
             return;
         }
 

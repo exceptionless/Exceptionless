@@ -150,7 +150,11 @@ export function getSavedViewsQuery(request: { route: { organizationId: string | 
         enabled: () => !!accessToken.current && !!request.route.organizationId,
         queryFn: async () => {
             const client = useFetchClient();
-            const response = await client.getJSON<SavedView[]>(`organizations/${request.route.organizationId}/saved-views`);
+            const response = await client.getJSON<SavedView[]>(`organizations/${request.route.organizationId}/saved-views`, {
+                params: {
+                    limit: 100
+                }
+            });
             return response.data!;
         },
         queryKey: queryKeys.organization(request.route.organizationId),
