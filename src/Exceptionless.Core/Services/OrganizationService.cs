@@ -257,19 +257,19 @@ public class OrganizationService : IStartupAction
 
     public async Task SoftDeleteOrganizationAsync(Organization organization, string currentUserId)
     {
-        if (organization.IsDeleted)
-            return;
-
         await using (var defaultsLock = await _lockProvider.AcquireAsync(GetSavedViewDefaultLockKey(organization.Id), TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30)))
         {
-            var currentOrganization = await _organizationRepository.GetByIdAsync(organization.Id, o => o.Cache(false));
-            if (currentOrganization is null || currentOrganization.IsDeleted)
+            var currentOrganization = await _organizationRepository.GetByIdAsync(organization.Id, o => o.Cache(false).SoftDeleteMode(SoftDeleteQueryMode.All));
+            if (currentOrganization is null)
                 return;
 
             organization = currentOrganization;
-            organization.DefaultSavedViewId = null;
-            organization.IsDeleted = true;
-            await _organizationRepository.SaveAsync(organization);
+            if (!organization.IsDeleted)
+            {
+                organization.DefaultSavedViewId = null;
+                organization.IsDeleted = true;
+                await _organizationRepository.SaveAsync(organization);
+            }
 
             await RemoveSavedViewsWhileLockedAsync(organization);
         }

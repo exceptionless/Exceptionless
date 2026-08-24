@@ -2416,6 +2416,59 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task SoftDeleteOrganization_CanResumeCleanupAfterSoftDelete()
+    {
+        var currentUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID, o => o.Cache(false));
+        Assert.NotNull(currentUser);
+        Assert.NotNull(organization);
+
+        var savedView = await _savedViewRepository.AddAsync(new SavedView
+        {
+            OrganizationId = organization.Id,
+            Name = "Cleanup Retry View",
+            Filter = "status:open",
+            Slug = "cleanup-retry-view",
+            ViewType = "stacks",
+            CreatedByUserId = currentUser.Id
+        }, o => o.ImmediateConsistency());
+
+        bool failUserCleanup = true;
+        using (var savingRegistration = _userRepository.DocumentsSaving.AddHandler((_, args) =>
+        {
+            if (!failUserCleanup || !args.Documents.Any(document => !document.Value.OrganizationIds.Contains(organization.Id)))
+                return Task.CompletedTask;
+
+            failUserCleanup = false;
+            throw new InvalidOperationException("Simulated user cleanup failure.");
+        }))
+        {
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _organizationService.SoftDeleteOrganizationAsync(organization, currentUser.Id));
+        }
+
+        var partiallyDeletedOrganization = await _organizationRepository.GetByIdAsync(organization.Id, o => o.Cache(false).SoftDeleteMode(SoftDeleteQueryMode.All));
+        Assert.NotNull(partiallyDeletedOrganization);
+        Assert.True(partiallyDeletedOrganization.IsDeleted);
+
+        var userBeforeRetry = await _userRepository.GetByIdAsync(currentUser.Id, o => o.Cache(false));
+        Assert.NotNull(userBeforeRetry);
+        Assert.Contains(organization.Id, userBeforeRetry.OrganizationIds);
+
+        await _organizationService.SoftDeleteOrganizationAsync(partiallyDeletedOrganization, currentUser.Id);
+        await RefreshDataAsync();
+
+        var deletedOrganization = await _organizationRepository.GetByIdAsync(organization.Id, o => o.Cache(false).SoftDeleteMode(SoftDeleteQueryMode.All));
+        Assert.NotNull(deletedOrganization);
+        Assert.True(deletedOrganization.IsDeleted);
+        Assert.Null(await _savedViewRepository.GetByIdAsync(savedView.Id));
+        Assert.Null(await GetService<ITokenRepository>().GetByIdAsync(SampleDataService.TEST_API_KEY));
+
+        var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, o => o.Cache(false));
+        Assert.NotNull(persistedUser);
+        Assert.DoesNotContain(organization.Id, persistedUser.OrganizationIds);
+    }
+
+    [Fact]
     public async Task RemoveUserSavedViews_WithMixedVisibility_OnlyDeletesPrivateViews()
     {
         // Arrange
