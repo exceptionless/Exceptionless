@@ -531,6 +531,14 @@ test('stream switches to a browser-local saved view draft without mixing in-flig
     await expect.poll(() => streamRequestFilters.some((filter) => filter.includes(e2eScenario.projectId))).toBe(true);
     await expect(getVisibleText(page, sourceMessage)).toBeHidden();
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
+
+    streamRequestFilters.length = 0;
+    await page.reload();
+    await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
+    await expect.poll(() => streamRequestFilters.some((filter) => filter.includes(e2eScenario.projectId))).toBe(true);
+    const restoredFilter = streamRequestFilters.findLast((filter) => filter.includes(e2eScenario.projectId))!;
+    expect(restoredFilter.split(e2eScenario.projectId)).toHaveLength(2);
+    await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
     expect(failedApiRequests).toEqual([]);
 });
 

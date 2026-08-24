@@ -8,7 +8,8 @@ import {
     buildFilterCacheKey,
     deserializeFilters,
     getFiltersFromCache,
-    serializeFilters
+    serializeFilters,
+    toFilter
 } from '$features/events/components/filters/helpers.svelte';
 import { organization } from '$features/organizations/context.svelte';
 import { getMeQuery } from '$features/users/api.svelte';
@@ -488,8 +489,14 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         if (url.searchParams.has('filter')) {
             const filter = url.searchParams.get('filter') ?? '';
             if (filter) {
-                for (const override of getFiltersFromCache(options.filterCacheKey(filter), filter)) {
-                    addKey(override.key);
+                const draftFilters = applyFilterChanges(serverFilters, draft?.filterChanges);
+                const draftExpressionFilters = supportsTime
+                    ? draftFilters.filter((candidate) => candidate.type !== 'date' && !SAVED_VIEW_QUERY_PARAMETER_FILTER_KEYS.includes(candidate.key))
+                    : draftFilters;
+                if (filter !== toFilter(draftExpressionFilters)) {
+                    for (const override of getFiltersFromCache(options.filterCacheKey(filter), filter)) {
+                        addKey(override.key);
+                    }
                 }
             } else {
                 for (const key of getEmptyFilterOverrideKeys(serverFilters, currentFilters, draft)) {
