@@ -59,6 +59,7 @@
     interface Props {
         activeSavedView?: SavedView;
         autoFillColumnId: AutoFillColumnSelection;
+        canModifySavedView?: boolean;
         columnOrder?: string[];
         columnSizing?: Record<string, number>;
         columnVisibility?: Record<string, boolean>;
@@ -68,6 +69,7 @@
         onClearSavedView: () => Promise<void>;
         onLoadView: (view: SavedView) => void;
         onResetToSaved: () => void;
+        onSavedViewUpdated: (view: SavedView) => void;
         savedViews: SavedView[];
         setAutoFillColumnId: (columnId: AutoFillColumnSelection) => void;
         setShowChart?: (show: boolean) => void;
@@ -85,6 +87,7 @@
     let {
         activeSavedView,
         autoFillColumnId,
+        canModifySavedView = true,
         columnOrder,
         columnSizing,
         columnVisibility,
@@ -94,6 +97,7 @@
         onClearSavedView,
         onLoadView,
         onResetToSaved,
+        onSavedViewUpdated,
         savedViews,
         setAutoFillColumnId,
         setShowChart,
@@ -227,6 +231,10 @@
     }
 
     function handleResetToSaved(): void {
+        if (!canModifySavedView) {
+            return;
+        }
+
         isMenuOpen = false;
         onResetToSaved();
     }
@@ -292,12 +300,13 @@
     }
 
     async function handleUpdate() {
-        if (!activeView || !organizationId) {
+        if (!activeView || !organizationId || !canModifySavedView) {
             return;
         }
 
         try {
-            await updateMutation.mutateAsync(getUpdateBody());
+            const result = await updateMutation.mutateAsync(getUpdateBody());
+            onSavedViewUpdated(result);
             toast.success(`View "${activeView.name}" saved.`);
         } catch (error) {
             toast.error(getErrorMessage(error, 'Failed to save view. Please try again.'));
@@ -382,7 +391,7 @@
         <DropdownMenu.Group>
             <DropdownMenu.Label>Saved View</DropdownMenu.Label>
             {#if activeView}
-                <DropdownMenu.Item disabled={saving || !isModified} onclick={handleUpdate}>
+                <DropdownMenu.Item disabled={saving || !isModified || !canModifySavedView} onclick={handleUpdate}>
                     <Save class="mr-2 size-4" aria-hidden="true" />
                     Save
                 </DropdownMenu.Item>
@@ -396,7 +405,7 @@
                     <Pencil class="mr-2 size-4" aria-hidden="true" />
                     Rename
                 </DropdownMenu.Item>
-                <DropdownMenu.Item disabled={!isModified} onclick={handleResetToSaved}>
+                <DropdownMenu.Item disabled={!isModified || !canModifySavedView} onclick={handleResetToSaved}>
                     <Undo2 class="mr-2 size-4" aria-hidden="true" />
                     Reset to Saved
                 </DropdownMenu.Item>

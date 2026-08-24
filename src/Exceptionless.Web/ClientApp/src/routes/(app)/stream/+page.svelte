@@ -28,7 +28,7 @@
     import { defaultEventColumnVisibility, getColumns } from '$features/events/components/table/options.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
-    import { useSavedViews } from '$features/saved-views/use-saved-views.svelte';
+    import { isSavedViewHydrationPending, isSavedViewUnavailable, useSavedViews } from '$features/saved-views/use-saved-views.svelte';
     import { getSharedTableOptions, isTableEmpty, removeTableData } from '$features/shared/table.svelte';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
@@ -81,10 +81,19 @@
 
     const VIEW = 'stream';
     const savedViewsState = useSavedViews({
+        applyFilters: (draftFilters, options) => {
+            updateFilters(draftFilters, options);
+            filters = draftFilters;
+        },
         defaultAutoFillColumnId: 'summary',
         defaultColumnVisibility: defaultEventColumnVisibility,
         defaultFilter: DEFAULT_PARAMS.filter,
         filterCacheKey,
+        getAvailableColumnIds: () =>
+            table
+                .getAllFlatColumns()
+                .filter((column) => column.columns.length === 0)
+                .map((column) => column.id),
         getColumnOrder: () => table.store.state.columnOrder,
         getColumnSizing: () => table.store.state.columnSizing,
         getColumnVisibility: () => table.store.state.columnVisibility,
@@ -96,6 +105,14 @@
         updateFilterCache,
         view: VIEW
     });
+    const isSavedViewPending = $derived(
+        isSavedViewHydrationPending(
+            queryParams.saved,
+            savedViewsState.activeSavedView?.id,
+            savedViewsState.hydratedSavedViewId,
+            isSavedViewUnavailable(savedViewsState.activeSavedView?.id, savedViewsState.isMissing, savedViewsState.isError)
+        )
+    );
     const pageTitle = $derived(savedViewsState.activeSavedView?.name ?? 'Event Stream');
 
     $effect(() => {
@@ -151,10 +168,17 @@
         filters = updatedFilters;
     }
 
-    function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {
+    function updateFilters(updatedFilters: FacetedFilter.IFilter[], options: { history?: 'push' | 'replace' } = {}): void {
         const filter = toFilter(updatedFilters);
         updateFilterCache(filterCacheKey(filter), updatedFilters);
-        queryParams.filter = filter;
+        queryParams.update(
+            {
+                filter
+            },
+            {
+                history: options.history
+            }
+        );
     }
 
     const eventsQueryParameters: GetEventsParams = $state({
@@ -225,6 +249,14 @@
     }
 
     async function loadData(filterChanged: boolean = false) {
+        if (isSavedViewPending) {
+            loadDataRequestId++;
+            before = undefined;
+            clientResponse = undefined;
+            queryData = [];
+            return;
+        }
+
         if (client.isLoading && filterChanged && !before) {
             return;
         }
@@ -311,6 +343,17 @@
     });
 
     $effect(() => {
+        if (!isSavedViewPending) {
+            return;
+        }
+
+        loadDataRequestId++;
+        before = undefined;
+        clientResponse = undefined;
+        queryData = [];
+    });
+
+    $effect(() => {
         if (paused) {
             return;
         }
@@ -332,6 +375,7 @@
                 <SavedViewPicker
                     activeSavedView={savedViewsState.activeSavedView}
                     autoFillColumnId={savedViewsState.autoFillColumnId}
+                    canModifySavedView={savedViewsState.canModifySavedView}
                     columnOrder={table.store.state.columnOrder}
                     columnSizing={table.store.state.columnSizing}
                     columnVisibility={table.store.state.columnVisibility}
@@ -341,6 +385,7 @@
                     onLoadView={savedViewsState.handleLoadView}
                     onClearSavedView={savedViewsState.handleClearSavedView}
                     onResetToSaved={savedViewsState.handleResetToSaved}
+                    onSavedViewUpdated={savedViewsState.handleSavedViewUpdated}
                     savedViews={savedViewsState.savedViews}
                     setAutoFillColumnId={savedViewsState.setAutoFillColumnId}
                     setWrappedColumnIds={savedViewsState.setWrappedColumnIds}
@@ -367,7 +412,7 @@
         {table}
         wrappedColumnIds={savedViewsState.wrappedColumnIds}
     >
-        {#if clientStatus.isLoading}
+        {#if isSavedViewPending || clientStatus.isLoading}
             <DelayedRender>
                 <DataTable.Loading {table} />
             </DelayedRender>
