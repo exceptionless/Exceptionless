@@ -13,6 +13,7 @@ import {
 import { organization } from '$features/organizations/context.svelte';
 import { getMeQuery } from '$features/users/api.svelte';
 import { tick, untrack } from 'svelte';
+import { SvelteSet } from 'svelte/reactivity';
 
 import type { AutoFillColumnSelection, WrappedColumnIds } from './column-settings';
 import type { SavedView } from './models';
@@ -605,6 +606,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     let activeFilterOverrideBaselines = $state<Record<string, string>>({});
     let activeSortOverride = $state<{ value: null | string }>();
     let appliedDraftKey = $state('');
+    const pendingDraftClearViewIds = new SvelteSet<string>();
     let pendingDraftKey = '';
     let pendingDraftGeneration = -1;
     let draftHydrationGeneration = $state(0);
@@ -761,6 +763,13 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         const draftKey = `${identity.userId}:${identity.organizationId}:${identity.savedViewId}`;
+        if (pendingDraftClearViewIds.delete(view.id)) {
+            clearSavedViewDraft(identity);
+            appliedDraftKey = draftKey;
+            hydratedSavedViewId = view.id;
+            return;
+        }
+
         if (appliedDraftKey === draftKey || (pendingDraftKey === draftKey && pendingDraftGeneration === generation)) {
             return;
         }
@@ -951,6 +960,8 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         const identity = getDraftIdentity(view);
         if (identity) {
             clearSavedViewDraft(identity);
+        } else {
+            pendingDraftClearViewIds.add(view.id);
         }
 
         if (view.filter_definitions) {
@@ -979,6 +990,8 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         if (identity) {
             clearSavedViewDraft(identity);
             appliedDraftKey = `${identity.userId}:${identity.organizationId}:${identity.savedViewId}`;
+        } else {
+            pendingDraftClearViewIds.add(view.id);
         }
 
         activeFilterOverrideBaselines = {};

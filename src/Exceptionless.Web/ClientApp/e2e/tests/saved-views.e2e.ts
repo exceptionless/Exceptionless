@@ -532,6 +532,70 @@ test('stream loads default results when its saved-view lookup fails', async ({ e
     await expect.poll(() => eventRequests.length, { timeout: 30_000 }).toBeGreaterThan(0);
 });
 
+test('reset clears a browser-local draft after delayed current-user identity resolves', async ({ e2eApi, e2eScenario, page, request }) => {
+    const suffix = e2eScenario.run.slice(-28);
+    const viewName = `E2E Delayed Reset ${suffix}`;
+    const viewSlug = savedViewSlug(viewName);
+    const authorizationHeaders = { Authorization: `Bearer ${e2eScenario.userToken}` };
+    const savedViewResponse = await request.post(`/api/v2/organizations/${e2eScenario.organizationId}/saved-views`, {
+        data: {
+            filter: '(status:open OR status:regressed)',
+            filter_definitions: JSON.stringify([
+                { term: 'date', type: 'date', value: '[now-15m TO now]' },
+                { type: 'project', value: [] },
+                { type: 'status', value: ['open', 'regressed'] }
+            ]),
+            name: viewName,
+            organization_id: e2eScenario.organizationId,
+            slug: viewSlug,
+            time: '[now-15m TO now]',
+            view_type: 'events'
+        },
+        headers: authorizationHeaders
+    });
+    expect(savedViewResponse.status()).toBe(201);
+    const savedView = (await savedViewResponse.json()) as { id: string };
+    const currentUser = await e2eApi.getCurrentUser(e2eScenario.userToken);
+    expect(currentUser).toBeDefined();
+
+    await page.addInitScript(({ draft, key }) => window.localStorage.setItem(key, JSON.stringify(draft)), {
+        draft: {
+            filterChanges: {
+                baselineDefinitions: '[{"term":"date","type":"date","value":"[now-15m TO now]"}]',
+                removedDefinitions: '[{"term":"date","type":"date","value":"[now-15m TO now]"}]',
+                removedKeys: [],
+                upsertDefinitions: '[{"term":"date","type":"date","value":"[now-90d TO now]"}]'
+            },
+            version: 1
+        },
+        key: `exceptionless:saved-view-draft:v1:${currentUser!.id}:${e2eScenario.organizationId}:${savedView.id}`
+    });
+
+    let releaseCurrentUser!: () => void;
+    const currentUserRelease = new Promise<void>((resolve) => {
+        releaseCurrentUser = resolve;
+    });
+    await page.route('**/api/v2/users/me', async (route) => {
+        await currentUserRelease;
+        await route.continue();
+    });
+
+    await page.goto(`/next/event/${viewSlug}?time=1d`);
+    await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
+    await openViewMenu(page);
+    await page.getByRole('menuitem', { name: 'Reset to Saved' }).click();
+    await expect(page).not.toHaveURL(/[?&]time=/);
+    releaseCurrentUser();
+
+    await expect(
+        page
+            .getByRole('button', { name: /Date\s+Last 15 minutes/ })
+            .filter({ visible: true })
+            .first()
+    ).toBeVisible();
+    await expect(page.getByLabel('Unsaved view changes')).toHaveCount(0);
+});
+
 test('saved view loads server state when the current-user lookup fails', async ({ e2eScenario, page, request }) => {
     const suffix = e2eScenario.run.slice(-28);
     const viewName = `E2E User Failure ${suffix}`;
