@@ -115,6 +115,25 @@ public sealed class MailerTests : TestWithServices
     }
 
     [Fact]
+    public async Task Constructor_ExistingSignature_RendersEmail()
+    {
+        var mailer = new Mailer(
+            GetService<IQueue<MailMessage>>(),
+            GetService<FormattingPluginManager>(),
+            GetService<ITextSerializer>(),
+            _options,
+            TimeProvider,
+            Log.CreateLogger<Mailer>());
+        var user = _userData.GenerateSampleUser();
+        user.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
+
+        await mailer.SendUserEmailVerifyAsync(user);
+        string body = await RunMailJobAsync();
+
+        Assert.Contains("Verify Address", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public Task SendEventNoticeSimpleErrorAsync()
     {
         var ex = GetException();
