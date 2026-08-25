@@ -61,6 +61,16 @@ public sealed class MailerTests : TestWithServices
         Assert.Equal("testpass", uri.Password);
     }
 
+    [Theory]
+    [InlineData("http://localhost:9001")]
+    [InlineData("http://localhost:9001/#!")]
+    public void OrganizationBilling_BaseUrlVariant_ReturnsLegacyRoute(string baseUrl)
+    {
+        var appUrls = new EmailAppUrlBuilder(baseUrl);
+
+        Assert.Equal("http://localhost:9001/#!/organization/organization-1/manage?tab=billing", appUrls.OrganizationBilling("organization-1"));
+    }
+
     [Fact]
     public async Task SendContactRequestAsync_WithHtmlInput_EncodesBody()
     {
@@ -277,6 +287,10 @@ public sealed class MailerTests : TestWithServices
         await _mailer.SendEventNoticeAsync(user, ev, project, RandomData.GetBool(), RandomData.GetBool(), 1);
         string body = await RunMailJobAsync();
         Assert.Contains("View Event Details", body, StringComparison.Ordinal);
+        Assert.Contains(GetLegacyAppUrl($"event/{ev.Id}"), body, StringComparison.Ordinal);
+        Assert.Contains(GetLegacyAppUrl($"stack/{ev.StackId}/mark-fixed"), body, StringComparison.Ordinal);
+        Assert.Contains(GetLegacyAppUrl($"stack/{ev.StackId}/ignored"), body, StringComparison.Ordinal);
+        Assert.Contains(GetLegacyAppUrl($"stack/{ev.StackId}/discarded"), body, StringComparison.Ordinal);
         Assert.Contains("\"@context\":\"https://schema.org\"", body, StringComparison.Ordinal);
         return body;
     }
@@ -290,7 +304,7 @@ public sealed class MailerTests : TestWithServices
         await _mailer.SendOrganizationAddedAsync(user, organization, user);
         string body = await RunMailJobAsync();
         Assert.Contains("View Organization", body, StringComparison.Ordinal);
-        Assert.Contains($"/organization/{organization.Id}/manage", body, StringComparison.Ordinal);
+        Assert.Contains(GetLegacyAppUrl($"organization/{organization.Id}/dashboard"), body, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -308,7 +322,7 @@ public sealed class MailerTests : TestWithServices
 
         string body = await RunMailJobAsync();
         Assert.Contains("Join Organization", body, StringComparison.Ordinal);
-        Assert.Contains("/signup?token=1", body, StringComparison.Ordinal);
+        Assert.Contains(GetLegacyAppUrl("signup?token=1"), body, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -331,7 +345,10 @@ public sealed class MailerTests : TestWithServices
         await _mailer.SendOrganizationNoticeAsync(user, organization, true, false);
         string body = await RunMailJobAsync();
         Assert.Contains("monthly plan limit", body, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains($"/organization/{organization.Id}/billing?changePlan=true", body, StringComparison.Ordinal);
+        Assert.Contains(GetLegacyAppUrl($"organization/{organization.Id}/upgrade"), body, StringComparison.Ordinal);
+        Assert.Contains(GetLegacyAppUrl($"organization/{organization.Id}/frequent"), body, StringComparison.Ordinal);
+        Assert.Contains(GetLegacyAppUrl($"organization/{organization.Id}/manage"), body, StringComparison.Ordinal);
+        Assert.Contains(GetLegacyAppUrl("account/manage?tab=notifications"), body, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -343,7 +360,7 @@ public sealed class MailerTests : TestWithServices
         await _mailer.SendOrganizationPaymentFailedAsync(user, organization);
         string body = await RunMailJobAsync();
         Assert.Contains("Payment failed", body, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains(GetSvelteAppUrl($"organization/{organization.Id}/billing"), body, StringComparison.Ordinal);
+        Assert.Contains(GetLegacyAppUrl($"organization/{organization.Id}/manage?tab=billing"), body, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -351,14 +368,16 @@ public sealed class MailerTests : TestWithServices
     {
         var user = _userData.GenerateSampleUser();
         var project = _projectData.GenerateSampleProject();
-        var mostFrequent = _stackData.GenerateStacks(3, generateId: true, type: Event.KnownTypes.Error);
+        var mostFrequent = _stackData.GenerateStacks(3, generateId: true, type: Event.KnownTypes.Error).ToArray();
 
         await _mailer.SendProjectDailySummaryAsync(user, project, mostFrequent, null, DateTime.UtcNow.Date, true, 12, 1, 0, 1, 0, 0, false);
         string body = await RunMailJobAsync();
         Assert.Contains("View Timeline", body, StringComparison.Ordinal);
         Assert.Contains("Most Frequent", body, StringComparison.Ordinal);
-        Assert.Contains($"/event?project={project.Id}", body, StringComparison.Ordinal);
-        Assert.Contains("type=error", body, StringComparison.Ordinal);
+        Assert.Contains(GetLegacyAppUrl($"project/{project.Id}/error/timeline"), body, StringComparison.Ordinal);
+        Assert.Contains(GetLegacyAppUrl($"stack/{mostFrequent.First().Id}"), body, StringComparison.Ordinal);
+        Assert.Contains(GetLegacyAppUrl($"project/{project.Id}/error/frequent"), body, StringComparison.Ordinal);
+        Assert.Contains(WebUtility.HtmlEncode(GetLegacyAppUrl($"account/manage?projectId={project.Id}&tab=notifications")), body, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -382,6 +401,7 @@ public sealed class MailerTests : TestWithServices
         await _mailer.SendProjectDailySummaryAsync(user, project, null, null, DateTime.UtcNow.Date, false, 0, 0, 0, 0, 0, 0, false);
         string body = await RunMailJobAsync();
         Assert.Contains("Configure Project", body, StringComparison.Ordinal);
+        Assert.Contains(GetLegacyAppUrl($"project/{project.Id}/configure"), body, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -440,7 +460,8 @@ public sealed class MailerTests : TestWithServices
         await _mailer.SendUserPasswordResetAsync(user);
         string body = await RunMailJobAsync();
         Assert.Contains("Reset Password", body, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("?cancel=true", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(GetLegacyAppUrl($"reset-password/{user.PasswordResetToken}"), body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(GetLegacyAppUrl($"reset-password/{user.PasswordResetToken}?cancel=true"), body, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("click here to cancel the password reset request", body, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -453,6 +474,7 @@ public sealed class MailerTests : TestWithServices
         await _mailer.SendUserEmailVerifyAsync(user);
         string body = await RunMailJobAsync();
         Assert.Contains("Verify Address", body, StringComparison.Ordinal);
+        Assert.Contains(GetLegacyAppUrl($"account/verify?token={user.VerifyEmailAddressToken}"), body, StringComparison.Ordinal);
     }
 
     private async Task<string> RunMailJobAsync()
@@ -487,7 +509,11 @@ public sealed class MailerTests : TestWithServices
         return body;
     }
 
-    private string GetSvelteAppUrl(string relativeUrl) => $"{_options.BaseURL.TrimEnd('/')}/next/{relativeUrl.TrimStart('/')}";
+    private string GetLegacyAppUrl(string relativeUrl)
+    {
+        string baseUrl = new Uri(_options.BaseURL, UriKind.Absolute).GetLeftPart(UriPartial.Path).TrimEnd('/');
+        return $"{baseUrl}/#!/{relativeUrl.TrimStart('/')}";
+    }
 
     private Exception? GetException()
     {

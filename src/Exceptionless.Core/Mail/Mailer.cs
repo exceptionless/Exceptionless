@@ -13,9 +13,9 @@ namespace Exceptionless.Core.Mail;
 
 public class Mailer : IMailer
 {
-    private const string SvelteAppPathPrefix = "next/";
     private readonly IQueue<MailMessage> _queue;
     private readonly IEmailTemplateRenderer _templateRenderer;
+    private readonly EmailAppUrlBuilder _appUrls;
     private readonly FormattingPluginManager _pluginManager;
     private readonly AppOptions _appOptions;
     private readonly TimeProvider _timeProvider;
@@ -26,6 +26,7 @@ public class Mailer : IMailer
     {
         _queue = queue;
         _templateRenderer = templateRenderer;
+        _appUrls = new EmailAppUrlBuilder(appOptions.BaseURL);
         _pluginManager = pluginManager;
         _appOptions = appOptions;
         _timeProvider = timeProvider;
@@ -86,7 +87,6 @@ public class Mailer : IMailer
         AddDefaultFields(ev, result.Data);
 
         const string template = "event-notice";
-        string stackUrl = GetAppUrl($"project/{project.Id}/stacks/{ev.StackId}");
         var message = new EventNoticeEmail(
             result.Subject,
             project.Name,
@@ -97,12 +97,12 @@ public class Mailer : IMailer
             result.Data.ToDictionary(kvp => kvp.Key, kvp => kvp.Value?.ToString() ?? String.Empty),
             GetEventUser(ev),
             [
-                new("Mark event as fixed", stackUrl),
-                new("Stop sending notifications for this event", stackUrl),
-                new("Discard future event occurrences", stackUrl),
-                new("Change your notification settings for this project", GetAppUrl($"account/notifications?project={Uri.EscapeDataString(project.Id)}"))
+                new("Mark event as fixed", _appUrls.MarkStackFixed(ev.StackId)),
+                new("Stop sending notifications for this event", _appUrls.IgnoreStack(ev.StackId)),
+                new("Discard future event occurrences", _appUrls.DiscardStack(ev.StackId)),
+                new("Change your notification settings for this project", _appUrls.ProjectNotifications(project.Id))
             ],
-            new EmailAction("View Event Details", GetAppUrl($"event/{ev.Id}")));
+            new EmailAction("View Event Details", _appUrls.Event(ev.Id)));
 
         await QueueMessageAsync(new MailMessage
         {
@@ -182,7 +182,7 @@ public class Mailer : IMailer
         string subject = $"{sender.FullName} added you to the organization \"{organization.Name}\" on Exceptionless";
         var message = new OrganizationAddedEmail(
             subject,
-            new EmailAction("View Organization", GetAppUrl($"organization/{organization.Id}/manage")));
+            new EmailAction("View Organization", _appUrls.OrganizationDashboard(organization.Id)));
 
         await QueueMessageAsync(new MailMessage
         {
@@ -198,7 +198,7 @@ public class Mailer : IMailer
         string subject = $"{sender.FullName} invited you to join the organization \"{organization.Name}\" on Exceptionless";
         var message = new OrganizationInvitedEmail(
             subject,
-            new EmailAction("Join Organization", GetAppUrl($"signup?token={Uri.EscapeDataString(invite.Token)}")));
+            new EmailAction("Join Organization", _appUrls.Signup(invite.Token)));
 
         await QueueMessageAsync(new MailMessage
         {
@@ -214,7 +214,7 @@ public class Mailer : IMailer
         string subject = isOverMonthlyLimit
                 ? $"[{organization.Name}] Monthly plan limit exceeded."
                 : $"[{organization.Name}] Events are currently being throttled.";
-        string upgradeUrl = GetAppUrl($"organization/{organization.Id}/billing?changePlan=true");
+        string upgradeUrl = _appUrls.OrganizationUpgrade(organization.Id);
         string learnMoreUrl = isOverMonthlyLimit
             ? "https://github.com/exceptionless/Exceptionless/wiki/Frequently-Asked-Questions#q-what-happens-if-the-organization-plan-limit-is-reached"
             : "https://github.com/exceptionless/Exceptionless/wiki/Frequently-Asked-Questions#q-why-is-my-organization-throttled";
@@ -225,11 +225,11 @@ public class Mailer : IMailer
             isOverHourlyLimit,
             _timeProvider.GetUtcNow().UtcDateTime.StartOfHour().AddHours(1).ToShortTimeString(),
             upgradeUrl,
-            GetAppUrl("stack?status=open,regressed"),
+            _appUrls.OrganizationFrequent(organization.Id),
             learnMoreUrl,
             [
-                new("View usage", GetAppUrl($"organization/{organization.Id}/usage")),
-                new("Change your notification settings", GetAppUrl("account/notifications"))
+                new("View usage", _appUrls.OrganizationManage(organization.Id)),
+                new("Change your notification settings", _appUrls.AccountNotifications())
             ]);
 
         await QueueMessageAsync(new MailMessage
@@ -247,7 +247,7 @@ public class Mailer : IMailer
         var message = new OrganizationPaymentFailedEmail(
             subject,
             organization.Name,
-            GetAppUrl($"organization/{organization.Id}/billing"));
+            _appUrls.OrganizationBilling(organization.Id));
 
         await QueueMessageAsync(new MailMessage
         {
@@ -261,8 +261,8 @@ public class Mailer : IMailer
     {
         const string template = "project-daily-summary";
         string subject = $"[{project.Name}] Summary for {startDate.ToLongDateString()}";
-        string timelineUrl = GetAppUrl($"event?project={Uri.EscapeDataString(project.Id)}&type=error");
-        string configureUrl = GetAppUrl($"project/{project.Id}/configure");
+        string timelineUrl = _appUrls.ProjectTimeline(project.Id);
+        string configureUrl = _appUrls.ProjectConfigure(project.Id);
         var message = new ProjectDailySummaryEmail(
             subject,
             project.Name,
@@ -274,14 +274,14 @@ public class Mailer : IMailer
             fixedCount,
             blockedCount,
             isFreePlan,
-            GetStackTemplateData(project.Id, mostFrequent),
-            GetStackTemplateData(project.Id, newest),
+            GetStackTemplateData(mostFrequent),
+            GetStackTemplateData(newest),
             timelineUrl,
             configureUrl,
-            GetAppUrl($"organization/{project.OrganizationId}/billing?changePlan=true"),
-            GetAppUrl($"project/{project.Id}/stacks?sort=-total"),
-            GetAppUrl($"project/{project.Id}/stacks?sort=-first"),
-            GetAppUrl($"account/notifications?project={Uri.EscapeDataString(project.Id)}"));
+            _appUrls.OrganizationUpgrade(project.OrganizationId),
+            _appUrls.ProjectMostFrequent(project.Id),
+            _appUrls.ProjectNewest(project.Id),
+            _appUrls.ProjectNotifications(project.Id));
 
         await QueueMessageAsync(new MailMessage
         {
@@ -291,7 +291,7 @@ public class Mailer : IMailer
         }, template);
     }
 
-    private IReadOnlyCollection<StackSummary> GetStackTemplateData(string projectId, IEnumerable<Stack>? stacks)
+    private IReadOnlyCollection<StackSummary> GetStackTemplateData(IEnumerable<Stack>? stacks)
     {
         if (stacks is null)
         {
@@ -302,7 +302,7 @@ public class Mailer : IMailer
             stack.Title.Truncate(50),
             stack.GetTypeName()?.Truncate(50),
             stack.Status == StackStatus.Regressed,
-            GetAppUrl($"project/{projectId}/stacks/{stack.Id}"))).ToArray();
+            _appUrls.Stack(stack.Id))).ToArray();
     }
 
     public async Task SendUserEmailVerifyAsync(User user)
@@ -317,7 +317,7 @@ public class Mailer : IMailer
         var message = new UserEmailVerifyEmail(
             subject,
             user.FullName,
-            new EmailAction("Verify Address", GetAppUrl($"account/verify?token={Uri.EscapeDataString(user.VerifyEmailAddressToken)}")));
+            new EmailAction("Verify Address", _appUrls.VerifyEmail(user.VerifyEmailAddressToken)));
 
         await QueueMessageAsync(new MailMessage
         {
@@ -336,12 +336,11 @@ public class Mailer : IMailer
 
         const string template = "user-password-reset";
         const string subject = "Exceptionless Password Reset";
-        string resetUrl = GetAppUrl($"reset-password/{Uri.EscapeDataString(user.PasswordResetToken)}");
         var message = new UserPasswordResetEmail(
             subject,
             user.FullName,
-            $"{resetUrl}?cancel=true",
-            new EmailAction("Reset Password", resetUrl));
+            _appUrls.PasswordReset(user.PasswordResetToken, cancel: true),
+            new EmailAction("Reset Password", _appUrls.PasswordReset(user.PasswordResetToken)));
 
         await QueueMessageAsync(new MailMessage
         {
@@ -350,8 +349,6 @@ public class Mailer : IMailer
             Body = await _templateRenderer.RenderAsync(message)
         }, template);
     }
-
-    private string GetAppUrl(string relativeUrl) => $"{_appOptions.BaseURL.TrimEnd('/')}/{SvelteAppPathPrefix}{relativeUrl.TrimStart('/')}";
 
     private Task<string?> QueueMessageAsync(MailMessage message, string metricsName)
     {
