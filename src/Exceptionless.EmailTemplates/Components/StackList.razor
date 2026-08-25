@@ -1,0 +1,31 @@
+<h5 style="@EmailStyles.Heading5;color:@EmailStyles.Dark">@Heading</h5>
+<ul style="margin-top:0">
+    @foreach (var stack in Stacks)
+    {
+        <li style="margin-left:5px;margin-top:5px">
+            <a href="@stack.Url" target="_blank" style="@EmailStyles.Link">
+                @if (stack.IsRegressed)
+                {
+                    <strong>[REGRESSED]</strong><text> </text>
+                }
+                @if (!String.IsNullOrEmpty(stack.TypeName))
+                {
+                    <strong>@stack.TypeName:</strong><text> </text>
+                }
+                @stack.Title
+            </a>
+        </li>
+    }
+    <li style="margin-left:5px;margin-top:5px"><a href="@MoreUrl" target="_blank" style="@EmailStyles.Link">View more...</a></li>
+</ul>
+
+@code {
+    [Parameter, EditorRequired]
+    public required string Heading { get; set; }
+
+    [Parameter, EditorRequired]
+    public required IReadOnlyCollection<StackSummary> Stacks { get; set; }
+
+    [Parameter, EditorRequired]
+    public required string MoreUrl { get; set; }
+}

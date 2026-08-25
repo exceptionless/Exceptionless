@@ -1,43 +1,35 @@
-using System.Collections.Concurrent;
-using System.Text.Json;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.DateTimeExtensions;
+using Exceptionless.EmailTemplates;
+using Exceptionless.EmailTemplates.Models;
 using Foundatio.Queues;
 using Foundatio.Serializer;
-using HandlebarsDotNet;
 using Microsoft.Extensions.Logging;
-using NetMailAddress = System.Net.Mail.MailAddress;
 
 namespace Exceptionless.Core.Mail;
 
 public class Mailer : IMailer
 {
-    private readonly ConcurrentDictionary<string, HandlebarsTemplate<object, object>> _cachedTemplates = new();
-    private readonly IHandlebars _handlebars = Handlebars.Create();
     private readonly IQueue<MailMessage> _queue;
+    private readonly IEmailTemplateRenderer _templateRenderer;
     private readonly FormattingPluginManager _pluginManager;
     private readonly AppOptions _appOptions;
     private readonly TimeProvider _timeProvider;
     private readonly ITextSerializer _serializer;
     private readonly ILogger _logger;
 
-    public Mailer(IQueue<MailMessage> queue, FormattingPluginManager pluginManager, ITextSerializer serializer, AppOptions appOptions, TimeProvider timeProvider, ILogger<Mailer> logger)
+    public Mailer(IQueue<MailMessage> queue, IEmailTemplateRenderer templateRenderer, FormattingPluginManager pluginManager, ITextSerializer serializer, AppOptions appOptions, TimeProvider timeProvider, ILogger<Mailer> logger)
     {
         _queue = queue;
+        _templateRenderer = templateRenderer;
         _pluginManager = pluginManager;
         _appOptions = appOptions;
         _timeProvider = timeProvider;
         _serializer = serializer;
         _logger = logger;
-
-        _handlebars.RegisterHelper("json", (writer, _, parameters) =>
-        {
-            object? value = parameters.Length > 0 ? parameters[0] : null;
-            writer.WriteSafeString(JsonSerializer.Serialize(value));
-        });
     }
 
     public async Task<bool> SendContactRequestAsync(string name, string emailAddress, string? company, string? subject, string message, string? clientIpAddress, string? userAgent, string? referrer)
@@ -54,24 +46,23 @@ public class Mailer : IMailer
             : subject.Trim().StripInvisible().Truncate(100);
         string mailSubject = $"[Contact] {requestSubject}";
         const string template = "contact-request";
-        var data = new Dictionary<string, object?> {
-                { "Subject", mailSubject },
-                { "Name", name.Trim() },
-                { "EmailAddress", emailAddress.Trim() },
-                { "Company", company?.Trim() },
-                { "RequestSubject", requestSubject },
-                { "MessageLines", message.SplitLines().ToArray() },
-                { "ClientIpAddress", clientIpAddress },
-                { "UserAgent", userAgent },
-                { "Referrer", referrer }
-            };
+        string body = await _templateRenderer.RenderAsync(new ContactRequestEmail(
+            mailSubject,
+            name.Trim(),
+            emailAddress.Trim(),
+            company?.Trim(),
+            requestSubject,
+            message.SplitLines().ToArray(),
+            clientIpAddress,
+            userAgent,
+            referrer));
 
         string? messageId = await QueueMessageAsync(new MailMessage
         {
             To = contactEmailAddress,
             ReplyTo = emailAddress.Trim(),
             Subject = mailSubject,
-            Body = RenderTemplate(template, data)
+            Body = body
         }, template);
         return !String.IsNullOrEmpty(messageId);
     }
@@ -87,288 +78,286 @@ public class Mailer : IMailer
         }
 
         if (String.IsNullOrEmpty(result.Subject))
+        {
             result.Subject = ev.Message ?? ev.Source ?? "(Global)";
-
-        var messageData = new Dictionary<string, object?> {
-                { "Subject", result.Subject },
-                { "BaseUrl", _appOptions.BaseURL },
-                { "ProjectName", project.Name },
-                { "ProjectId", project.Id },
-                { "StackId", ev.StackId },
-                { "EventId", ev.Id },
-                { "IsCritical", isCritical },
-                { "IsNew", isNew },
-                { "IsRegression", isRegression },
-                { "TotalOccurrences", totalOccurrences },
-                { "Fields", result.Data }
-            };
+        }
 
         AddDefaultFields(ev, result.Data);
-        AddUserInfo(ev, messageData);
 
         const string template = "event-notice";
+        string stackUrl = GetAppUrl($"project/{project.Id}/stacks/{ev.StackId}");
+        var message = new EventNoticeEmail(
+            result.Subject,
+            project.Name,
+            isCritical,
+            isNew,
+            isRegression,
+            totalOccurrences,
+            result.Data.ToDictionary(kvp => kvp.Key, kvp => kvp.Value?.ToString() ?? String.Empty),
+            GetEventUser(ev),
+            [
+                new("Mark event as fixed", stackUrl),
+                new("Stop sending notifications for this event", stackUrl),
+                new("Discard future event occurrences", stackUrl),
+                new("Change your notification settings for this project", GetAppUrl($"account/notifications?project={Uri.EscapeDataString(project.Id)}"))
+            ],
+            new EmailAction("View Event Details", GetAppUrl($"event/{ev.Id}")));
+
         await QueueMessageAsync(new MailMessage
         {
             To = user.EmailAddress,
             Subject = $"[{project.Name}] {result.Subject}",
-            Body = RenderTemplate(template, messageData)
+            Body = await _templateRenderer.RenderAsync(message)
         }, template);
         return true;
     }
 
-    private void AddUserInfo(PersistentEvent ev, Dictionary<string, object?> data)
+    private EventUser? GetEventUser(PersistentEvent ev)
     {
         var ud = ev.GetUserDescription(_serializer, _logger);
         var ui = ev.GetUserIdentity(_serializer, _logger);
-        if (!String.IsNullOrEmpty(ud?.Description))
-            data["UserDescription"] = ud.Description;
-
-        if (!String.IsNullOrEmpty(ud?.EmailAddress))
-        {
-            data["UserEmail"] = ud.EmailAddress;
-            data["UserEmailHref"] = BuildMailtoHref(ud.EmailAddress, ud.Description);
-        }
 
         string? displayName = null;
         if (!String.IsNullOrEmpty(ui?.Identity))
-            data["UserIdentity"] = displayName = ui.Identity;
+        {
+            displayName = ui.Identity;
+        }
 
         if (!String.IsNullOrEmpty(ui?.Name))
-            data["UserName"] = displayName = ui.Name;
+        {
+            displayName = ui.Name;
+        }
 
         if (!String.IsNullOrEmpty(displayName) && !String.IsNullOrEmpty(ud?.EmailAddress))
+        {
             displayName = $"{displayName} ({ud.EmailAddress})";
+        }
         else if (!String.IsNullOrEmpty(ui?.Identity) && !String.IsNullOrEmpty(ui.Name))
+        {
             displayName = $"{ui.Name} ({ui.Identity})";
+        }
 
-        if (!String.IsNullOrEmpty(displayName))
-            data["UserDisplayName"] = displayName;
+        if (ud is null && ui is null)
+        {
+            return null;
+        }
 
-        data["HasUserInfo"] = ud is not null || ui is not null;
+        string? emailUrl = !String.IsNullOrEmpty(ud?.EmailAddress)
+            ? BuildMailtoUrl(ud.EmailAddress, ud.Description)
+            : null;
+
+        return new EventUser(displayName, emailUrl, ud?.Description);
     }
 
-    private static string BuildMailtoHref(string emailAddress, string? body)
+    private static string BuildMailtoUrl(string emailAddress, string? body)
     {
-        string address = NetMailAddress.TryCreate(emailAddress, out NetMailAddress? parsedAddress)
-            ? parsedAddress.Address
-            : emailAddress;
-        int atIndex = address.LastIndexOf('@');
-        string escapedAddress = atIndex > 0
-            ? $"{Uri.EscapeDataString(address[..atIndex])}@{Uri.EscapeDataString(address[(atIndex + 1)..])}"
-            : Uri.EscapeDataString(address);
-        string href = $"mailto:{escapedAddress}";
+        string href = $"mailto:{Uri.EscapeDataString(emailAddress)}";
         return String.IsNullOrEmpty(body) ? href : $"{href}?body={Uri.EscapeDataString(body)}";
     }
 
     private static void AddDefaultFields(PersistentEvent ev, Dictionary<string, object?> data)
     {
         if (ev.Tags?.Count > 0)
+        {
             data["Tags"] = String.Join(", ", ev.Tags);
+        }
 
         decimal value = ev.Value.GetValueOrDefault();
         if (value != 0)
+        {
             data["Value"] = value;
+        }
 
         string? version = ev.GetVersion();
         if (!String.IsNullOrEmpty(version))
+        {
             data["Version"] = version;
+        }
     }
 
-    public Task SendOrganizationAddedAsync(User sender, Organization organization, User user)
+    public async Task SendOrganizationAddedAsync(User sender, Organization organization, User user)
     {
         const string template = "organization-added";
         string subject = $"{sender.FullName} added you to the organization \"{organization.Name}\" on Exceptionless";
-        var data = new Dictionary<string, object?> {
-                { "Subject", subject },
-                { "BaseUrl", _appOptions.BaseURL },
-                { "OrganizationId", organization.Id },
-                { "OrganizationName", organization.Name }
-            };
+        var message = new OrganizationAddedEmail(
+            subject,
+            new EmailAction("View Organization", GetAppUrl($"organization/{organization.Id}/manage")));
 
-        return QueueMessageAsync(new MailMessage
+        await QueueMessageAsync(new MailMessage
         {
             To = user.EmailAddress,
             Subject = subject,
-            Body = RenderTemplate(template, data)
+            Body = await _templateRenderer.RenderAsync(message)
         }, template);
     }
 
-    public Task SendOrganizationInviteAsync(User sender, Organization organization, Invite invite)
+    public async Task SendOrganizationInviteAsync(User sender, Organization organization, Invite invite)
     {
         const string template = "organization-invited";
         string subject = $"{sender.FullName} invited you to join the organization \"{organization.Name}\" on Exceptionless";
-        var data = new Dictionary<string, object?> {
-                { "Subject", subject },
-                { "BaseUrl", _appOptions.BaseURL },
-                { "InviteToken", invite.Token }
-            };
+        var message = new OrganizationInvitedEmail(
+            subject,
+            new EmailAction("Join Organization", GetAppUrl($"signup?token={Uri.EscapeDataString(invite.Token)}")));
 
-        string body = RenderTemplate(template, data);
-        return QueueMessageAsync(new MailMessage
+        await QueueMessageAsync(new MailMessage
         {
             To = invite.EmailAddress,
             Subject = subject,
-            Body = body
+            Body = await _templateRenderer.RenderAsync(message)
         }, template);
     }
 
-    public Task SendOrganizationNoticeAsync(User user, Organization organization, bool isOverMonthlyLimit, bool isOverHourlyLimit)
+    public async Task SendOrganizationNoticeAsync(User user, Organization organization, bool isOverMonthlyLimit, bool isOverHourlyLimit)
     {
         const string template = "organization-notice";
         string subject = isOverMonthlyLimit
                 ? $"[{organization.Name}] Monthly plan limit exceeded."
                 : $"[{organization.Name}] Events are currently being throttled.";
+        string upgradeUrl = GetAppUrl($"organization/{organization.Id}/billing?changePlan=true");
+        string learnMoreUrl = isOverMonthlyLimit
+            ? "https://github.com/exceptionless/Exceptionless/wiki/Frequently-Asked-Questions#q-what-happens-if-the-organization-plan-limit-is-reached"
+            : "https://github.com/exceptionless/Exceptionless/wiki/Frequently-Asked-Questions#q-why-is-my-organization-throttled";
+        var message = new OrganizationNoticeEmail(
+            subject,
+            organization.Name,
+            isOverMonthlyLimit,
+            isOverHourlyLimit,
+            _timeProvider.GetUtcNow().UtcDateTime.StartOfHour().AddHours(1).ToShortTimeString(),
+            upgradeUrl,
+            GetAppUrl("stack?status=open,regressed"),
+            learnMoreUrl,
+            [
+                new("View usage", GetAppUrl($"organization/{organization.Id}/usage")),
+                new("Change your notification settings", GetAppUrl("account/notifications"))
+            ]);
 
-        var data = new Dictionary<string, object?> {
-                { "Subject", subject },
-                { "BaseUrl", _appOptions.BaseURL },
-                { "OrganizationId", organization.Id },
-                { "OrganizationName", organization.Name },
-                { "IsOverMonthlyLimit", isOverMonthlyLimit },
-                { "IsOverHourlyLimit", isOverHourlyLimit },
-                { "ThrottledUntil", _timeProvider.GetUtcNow().UtcDateTime.StartOfHour().AddHours(1).ToShortTimeString() }
-            };
-
-        return QueueMessageAsync(new MailMessage
+        await QueueMessageAsync(new MailMessage
         {
             To = user.EmailAddress,
             Subject = subject,
-            Body = RenderTemplate(template, data)
+            Body = await _templateRenderer.RenderAsync(message)
         }, template);
     }
 
-    public Task SendOrganizationPaymentFailedAsync(User owner, Organization organization)
+    public async Task SendOrganizationPaymentFailedAsync(User owner, Organization organization)
     {
         const string template = "organization-payment-failed";
         string subject = $"[{organization.Name}] Payment failed! Update billing information to avoid service interruption!";
-        var data = new Dictionary<string, object?> {
-                { "Subject", subject },
-                { "BaseUrl", _appOptions.BaseURL },
-                { "OrganizationId", organization.Id },
-                { "OrganizationName", organization.Name }
-            };
+        var message = new OrganizationPaymentFailedEmail(
+            subject,
+            organization.Name,
+            GetAppUrl($"organization/{organization.Id}/billing"));
 
-        return QueueMessageAsync(new MailMessage
+        await QueueMessageAsync(new MailMessage
         {
             To = owner.EmailAddress,
             Subject = subject,
-            Body = RenderTemplate(template, data)
+            Body = await _templateRenderer.RenderAsync(message)
         }, template);
     }
 
-    public Task SendProjectDailySummaryAsync(User user, Project project, IEnumerable<Stack>? mostFrequent, IEnumerable<Stack>? newest, DateTime startDate, bool hasSubmittedEvents, double count, double uniqueCount, double newCount, double fixedCount, int blockedCount, int tooBigCount, bool isFreePlan)
+    public async Task SendProjectDailySummaryAsync(User user, Project project, IEnumerable<Stack>? mostFrequent, IEnumerable<Stack>? newest, DateTime startDate, bool hasSubmittedEvents, double count, double uniqueCount, double newCount, double fixedCount, int blockedCount, int tooBigCount, bool isFreePlan)
     {
         const string template = "project-daily-summary";
         string subject = $"[{project.Name}] Summary for {startDate.ToLongDateString()}";
-        var data = new Dictionary<string, object?> {
-                { "Subject", subject },
-                { "BaseUrl", _appOptions.BaseURL },
-                { "OrganizationId", project.OrganizationId },
-                { "ProjectId", project.Id },
-                { "ProjectName", project.Name },
-                { "MostFrequent", mostFrequent is not null ? GetStackTemplateData(mostFrequent) : null },
-                { "Newest", newest is not null ? GetStackTemplateData(newest) : null },
-                { "StartDate", startDate.ToLongDateString() },
-                { "HasSubmittedEvents", hasSubmittedEvents },
-                { "Count", count },
-                { "Unique", uniqueCount },
-                { "New", newCount },
-                { "Fixed", fixedCount },
-                { "Blocked", blockedCount },
-                { "TooBig", tooBigCount },
-                { "IsFreePlan", isFreePlan }
-            };
+        string timelineUrl = GetAppUrl($"event?project={Uri.EscapeDataString(project.Id)}&type=error");
+        string configureUrl = GetAppUrl($"project/{project.Id}/configure");
+        var message = new ProjectDailySummaryEmail(
+            subject,
+            project.Name,
+            startDate.ToLongDateString(),
+            hasSubmittedEvents,
+            count,
+            uniqueCount,
+            newCount,
+            fixedCount,
+            blockedCount,
+            isFreePlan,
+            GetStackTemplateData(project.Id, mostFrequent),
+            GetStackTemplateData(project.Id, newest),
+            timelineUrl,
+            configureUrl,
+            GetAppUrl($"organization/{project.OrganizationId}/billing?changePlan=true"),
+            GetAppUrl($"project/{project.Id}/stacks?sort=-total"),
+            GetAppUrl($"project/{project.Id}/stacks?sort=-first"),
+            GetAppUrl($"account/notifications?project={Uri.EscapeDataString(project.Id)}"));
 
-        return QueueMessageAsync(new MailMessage
+        await QueueMessageAsync(new MailMessage
         {
             To = user.EmailAddress,
             Subject = subject,
-            Body = RenderTemplate(template, data)
+            Body = await _templateRenderer.RenderAsync(message)
         }, template);
     }
 
-    private static IEnumerable<object> GetStackTemplateData(IEnumerable<Stack> stacks)
+    private IReadOnlyCollection<StackSummary> GetStackTemplateData(string projectId, IEnumerable<Stack>? stacks)
     {
-        return stacks.Select(s => new
+        if (stacks is null)
         {
-            StackId = s.Id,
-            Title = s.Title.Truncate(50),
-            TypeName = s.GetTypeName()?.Truncate(50),
-            s.Status,
-            IsRegressed = s.Status == StackStatus.Regressed
-        });
+            return [];
+        }
+
+        return stacks.Select(stack => new StackSummary(
+            stack.Title.Truncate(50),
+            stack.GetTypeName()?.Truncate(50),
+            stack.Status == StackStatus.Regressed,
+            GetAppUrl($"project/{projectId}/stacks/{stack.Id}"))).ToArray();
     }
 
-    public Task SendUserEmailVerifyAsync(User user)
+    public async Task SendUserEmailVerifyAsync(User user)
     {
         if (String.IsNullOrEmpty(user?.VerifyEmailAddressToken))
-            return Task.CompletedTask;
+        {
+            return;
+        }
 
         const string template = "user-email-verify";
         const string subject = "Exceptionless Account Confirmation";
-        var data = new Dictionary<string, object?> {
-                { "Subject", subject },
-                { "BaseUrl", _appOptions.BaseURL },
-                { "UserFullName", user.FullName },
-                { "UserVerifyEmailAddressToken", user.VerifyEmailAddressToken }
-            };
+        var message = new UserEmailVerifyEmail(
+            subject,
+            user.FullName,
+            new EmailAction("Verify Address", GetAppUrl($"account/verify?token={Uri.EscapeDataString(user.VerifyEmailAddressToken)}")));
 
-        return QueueMessageAsync(new MailMessage
+        await QueueMessageAsync(new MailMessage
         {
             To = user.EmailAddress,
             Subject = subject,
-            Body = RenderTemplate(template, data)
+            Body = await _templateRenderer.RenderAsync(message)
         }, template);
     }
 
-    public Task SendUserPasswordResetAsync(User user)
+    public async Task SendUserPasswordResetAsync(User user)
     {
         if (String.IsNullOrEmpty(user?.PasswordResetToken))
-            return Task.CompletedTask;
+        {
+            return;
+        }
 
         const string template = "user-password-reset";
         const string subject = "Exceptionless Password Reset";
-        var data = new Dictionary<string, object?> {
-                { "Subject", subject },
-                { "BaseUrl", _appOptions.BaseURL },
-                { "UserFullName", user.FullName },
-                { "UserPasswordResetToken", user.PasswordResetToken }
-            };
+        string resetUrl = GetAppUrl($"reset-password/{Uri.EscapeDataString(user.PasswordResetToken)}");
+        var message = new UserPasswordResetEmail(
+            subject,
+            user.FullName,
+            $"{resetUrl}?cancel=true",
+            new EmailAction("Reset Password", resetUrl));
 
-        return QueueMessageAsync(new MailMessage
+        await QueueMessageAsync(new MailMessage
         {
             To = user.EmailAddress,
             Subject = subject,
-            Body = RenderTemplate(template, data)
+            Body = await _templateRenderer.RenderAsync(message)
         }, template);
     }
 
-    private string RenderTemplate(string name, IDictionary<string, object?> data)
-    {
-        var template = GetCompiledTemplate(name);
-        return template(data);
-    }
-
-    private HandlebarsTemplate<object, object> GetCompiledTemplate(string name)
-    {
-        return _cachedTemplates.GetOrAdd(name, templateName =>
-        {
-            var assembly = typeof(Mailer).Assembly;
-            string resourceName = $"Exceptionless.Core.Mail.Templates.{templateName}.html";
-
-            using var stream = assembly.GetManifestResourceStream(resourceName);
-            using var reader = new StreamReader(stream ?? throw new InvalidOperationException());
-
-            string template = reader.ReadToEnd();
-            var compiledTemplateFunc = _handlebars.Compile(template);
-            return compiledTemplateFunc;
-        });
-    }
+    private string GetAppUrl(string relativeUrl) => $"{_appOptions.BaseURL.TrimEnd('/')}/{relativeUrl.TrimStart('/')}";
 
     private Task<string?> QueueMessageAsync(MailMessage message, string metricsName)
     {
         if (!CleanAddresses(message))
+        {
             return Task.FromResult<string?>(null);
+        }
 
         AppDiagnostics.Counter($"mailer.{metricsName}");
         return _queue.EnqueueAsync(message);
@@ -377,11 +366,15 @@ public class Mailer : IMailer
     private bool CleanAddresses(MailMessage message)
     {
         if (_appOptions.AppMode == AppMode.Production)
+        {
             return true;
+        }
 
         string address = message.To.ToLowerInvariant();
         if (_appOptions.EmailOptions.AllowedOutboundAddresses.Any(address.Contains))
+        {
             return true;
+        }
 
         if (String.IsNullOrEmpty(_appOptions.EmailOptions.TestEmailAddress))
         {

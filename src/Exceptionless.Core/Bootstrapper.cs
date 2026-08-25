@@ -28,6 +28,7 @@ using Exceptionless.Core.Services;
 using Exceptionless.Core.Services.SourceMaps;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Validation;
+using Exceptionless.EmailTemplates;
 using Foundatio.Caching;
 using Foundatio.Extensions.Hosting.Jobs;
 using Foundatio.Extensions.Hosting.Startup;
@@ -169,6 +170,7 @@ public class Bootstrapper
         services.AddSingleton<WorkItemJob>();
         services.AddSingleton<MaintainIndexesJob>();
 
+        services.AddEmailTemplates();
         services.AddSingleton<IMailer, Mailer>();
         services.AddSingleton<IMailSender>(s => new InMemoryMailSender());
 
