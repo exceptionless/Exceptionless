@@ -13,6 +13,7 @@ namespace Exceptionless.Core.Mail;
 
 public class Mailer : IMailer
 {
+    private const string SvelteAppPathPrefix = "next/";
     private readonly IQueue<MailMessage> _queue;
     private readonly IEmailTemplateRenderer _templateRenderer;
     private readonly FormattingPluginManager _pluginManager;
@@ -350,7 +351,7 @@ public class Mailer : IMailer
         }, template);
     }
 
-    private string GetAppUrl(string relativeUrl) => $"{_appOptions.BaseURL.TrimEnd('/')}/{relativeUrl.TrimStart('/')}";
+    private string GetAppUrl(string relativeUrl) => $"{_appOptions.BaseURL.TrimEnd('/')}/{SvelteAppPathPrefix}{relativeUrl.TrimStart('/')}";
 
     private Task<string?> QueueMessageAsync(MailMessage message, string metricsName)
     {

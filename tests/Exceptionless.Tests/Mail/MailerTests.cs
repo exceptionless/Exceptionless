@@ -343,6 +343,7 @@ public sealed class MailerTests : TestWithServices
         await _mailer.SendOrganizationPaymentFailedAsync(user, organization);
         string body = await RunMailJobAsync();
         Assert.Contains("Payment failed", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(GetSvelteAppUrl($"organization/{organization.Id}/billing"), body, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -485,6 +486,8 @@ public sealed class MailerTests : TestWithServices
 
         return body;
     }
+
+    private string GetSvelteAppUrl(string relativeUrl) => $"{_options.BaseURL.TrimEnd('/')}/next/{relativeUrl.TrimStart('/')}";
 
     private Exception? GetException()
     {
