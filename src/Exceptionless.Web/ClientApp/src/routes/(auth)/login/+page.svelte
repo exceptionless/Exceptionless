@@ -2,7 +2,6 @@
     import { dev } from '$app/environment';
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
-    import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
     import FacebookIcon from '$comp/icons/FacebookIcon.svelte';
     import GitHubIcon from '$comp/icons/GitHubIcon.svelte';
@@ -30,22 +29,33 @@
     } from '$features/auth/index.svelte';
     import { type LoginFormData, LoginSchema } from '$features/auth/schemas';
     import { getSafeRedirectUrl } from '$features/shared/url';
+    import { createQueryParameters } from '$shared/query-params';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import { createForm } from '@tanstack/svelte-form';
+    import { untrack } from 'svelte';
 
     const defaultRedirect = resolve('/');
-    const redirectUrl = getSafeRedirectUrl(page.url.searchParams.get('redirect'), defaultRedirect);
+    const queryParameters = createQueryParameters({
+        schema: {
+            redirect: 'string',
+            token: 'string'
+        }
+    });
+    const redirectUrl = $derived(getSafeRedirectUrl(queryParameters.redirect, defaultRedirect));
+    const inviteToken = $derived(queryParameters.token ?? null);
+    const canSignup = $derived(enableAccountCreation || !!inviteToken);
+    const signupUrl = $derived(inviteToken ? `${resolve('/(auth)/signup')}?token=${encodeURIComponent(inviteToken)}` : resolve('/(auth)/signup'));
 
     const form = createForm(() => ({
         defaultValues: {
             email: '',
-            invite_token: page.url.searchParams.get('token'),
+            invite_token: inviteToken,
             password: ''
         } as LoginFormData,
         validators: {
             onSubmit: LoginSchema,
             onSubmitAsync: async ({ value }) => {
-                const response = await login(value.email, value.password);
+                const response = await login(value.email, value.password, value.invite_token);
                 if (response.ok) {
                     await goto(redirectUrl);
                     return null;
@@ -55,6 +65,11 @@
             }
         }
     }));
+
+    $effect(() => {
+        const token = inviteToken;
+        untrack(() => form.setFieldValue('invite_token', token));
+    });
 
     function prefillDevCredentials(): void {
         form.setFieldValue('email', 'admin@exceptionless.test');
@@ -137,7 +152,7 @@
                 </form.Field>
                 <form.Subscribe selector={(state) => state.isSubmitting}>
                     {#snippet children(isSubmitting)}
-                        <div class={enableAccountCreation ? 'mt-4 grid grid-cols-2 gap-3' : 'mt-4'}>
+                        <div class={canSignup ? 'mt-4 grid grid-cols-2 gap-3' : 'mt-4'}>
                             <Button type="submit" class="w-full" tabindex={3} disabled={isSubmitting}>
                                 {#if isSubmitting}
                                     <Spinner /> Logging in...
@@ -145,8 +160,8 @@
                                     Login
                                 {/if}
                             </Button>
-                            {#if enableAccountCreation}
-                                <Button variant="secondary" href={resolve('/(auth)/signup')} class="w-full" tabindex={4}>Signup</Button>
+                            {#if canSignup}
+                                <Button variant="secondary" href={signupUrl} class="w-full" tabindex={4}>Signup</Button>
                             {/if}
                         </div>
                     {/snippet}
@@ -161,38 +176,38 @@
                 </div>
                 <div class="grid grid-flow-col grid-cols-2 grid-rows-2 gap-4">
                     {#if microsoftClientId}
-                        <Button aria-label="Login with Microsoft" tabindex={4} onclick={() => liveLogin(redirectUrl)}>
+                        <Button aria-label="Login with Microsoft" tabindex={4} onclick={() => liveLogin(redirectUrl, inviteToken)}>
                             <MicrosoftIcon class="size-4" /> Microsoft
                         </Button>
                     {/if}
                     {#if googleClientId}
-                        <Button aria-label="Login with Google" tabindex={4} onclick={() => googleLogin(redirectUrl)}>
+                        <Button aria-label="Login with Google" tabindex={4} onclick={() => googleLogin(redirectUrl, inviteToken)}>
                             <GoogleIcon class="size-4" /> Google
                         </Button>
                     {/if}
                     {#if facebookClientId}
-                        <Button aria-label="Login with Facebook" tabindex={4} onclick={() => facebookLogin(redirectUrl)}>
+                        <Button aria-label="Login with Facebook" tabindex={4} onclick={() => facebookLogin(redirectUrl, inviteToken)}>
                             <FacebookIcon class="size-4" /> Facebook
                         </Button>
                     {/if}
                     {#if gitHubClientId}
-                        <Button aria-label="Login with GitHub" tabindex={4} onclick={() => githubLogin(redirectUrl)}>
+                        <Button aria-label="Login with GitHub" tabindex={4} onclick={() => githubLogin(redirectUrl, inviteToken)}>
                             <GitHubIcon class="size-4" /> GitHub
                         </Button>
                     {/if}
                 </div>
             {/if}
 
-            {#if enableAccountCreation}
+            {#if canSignup}
                 <P class="text-center text-sm">
                     Not a member?
-                    <A href={resolve('/(auth)/signup')} tabindex={5}>Start a free trial</A>
+                    <A href={signupUrl} tabindex={5}>Start a free trial</A>
                 </P>
             {/if}
         </Card.Content>
     </Card.Root>
 
-    {#if enableAccountCreation}
+    {#if canSignup}
         <P class="text-muted-foreground mt-3! px-4 text-center text-sm">
             By signing up, you agree to our <A href="https://exceptionless.com/privacy" target="_blank">Privacy Policy</A>
             and

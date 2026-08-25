@@ -1,7 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
-    import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
     import FacebookIcon from '$comp/icons/FacebookIcon.svelte';
     import GitHubIcon from '$comp/icons/GitHubIcon.svelte';
@@ -29,11 +28,18 @@
     } from '$features/auth/index.svelte';
     import { type SignupFormData, SignupSchema } from '$features/auth/schemas';
     import { validateEmailAvailability } from '$features/auth/validators';
+    import { createQueryParameters } from '$shared/query-params';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import { createForm } from '@tanstack/svelte-form';
+    import { untrack } from 'svelte';
 
-    const inviteToken = page.url.searchParams.get('token');
-    const redirectUrl = inviteToken ? resolve('/(app)/project/add') : resolve('/(app)/organization/add');
+    const queryParameters = createQueryParameters({
+        schema: {
+            token: 'string'
+        }
+    });
+    const inviteToken = $derived(queryParameters.token ?? null);
+    const redirectUrl = $derived(inviteToken ? resolve('/(app)/project/add') : resolve('/(app)/organization/add'));
 
     const form = createForm(() => ({
         defaultValues: {
@@ -55,6 +61,11 @@
             }
         }
     }));
+
+    $effect(() => {
+        const token = inviteToken;
+        untrack(() => form.setFieldValue('invite_token', token));
+    });
 </script>
 
 <Card.Root class="mx-auto w-[calc(100vw-2rem)] max-w-lg">
@@ -68,22 +79,22 @@
                 <P class="text-center">Sign up with</P>
                 <div class="grid grid-flow-col grid-cols-2 grid-rows-2 gap-4">
                     {#if microsoftClientId}
-                        <Button aria-label="Sign up with Microsoft" onclick={() => liveLogin(redirectUrl)}>
+                        <Button aria-label="Sign up with Microsoft" onclick={() => liveLogin(redirectUrl, inviteToken)}>
                             <MicrosoftIcon class="size-4" /> Microsoft
                         </Button>
                     {/if}
                     {#if googleClientId}
-                        <Button aria-label="Sign up with Google" onclick={() => googleLogin(redirectUrl)}>
+                        <Button aria-label="Sign up with Google" onclick={() => googleLogin(redirectUrl, inviteToken)}>
                             <GoogleIcon class="size-4" /> Google
                         </Button>
                     {/if}
                     {#if facebookClientId}
-                        <Button aria-label="Sign up with Facebook" onclick={() => facebookLogin(redirectUrl)}>
+                        <Button aria-label="Sign up with Facebook" onclick={() => facebookLogin(redirectUrl, inviteToken)}>
                             <FacebookIcon class="size-4" /> Facebook
                         </Button>
                     {/if}
                     {#if gitHubClientId}
-                        <Button aria-label="Sign up with GitHub" onclick={() => githubLogin(redirectUrl)}>
+                        <Button aria-label="Sign up with GitHub" onclick={() => githubLogin(redirectUrl, inviteToken)}>
                             <GitHubIcon class="size-4" /> GitHub
                         </Button>
                     {/if}
