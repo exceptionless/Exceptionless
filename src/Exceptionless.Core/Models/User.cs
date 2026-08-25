@@ -23,6 +23,7 @@ public record User : IIdentity, IHaveDates, IValidatableObject
     public string? PasswordResetToken { get; set; }
     public DateTime PasswordResetTokenExpiration { get; set; }
     public ICollection<OAuthAccount> OAuthAccounts { get; init; } = new Collection<OAuthAccount>();
+    public ICollection<UserOrganizationPreference> OrganizationPreferences { get; init; } = new Collection<UserOrganizationPreference>();
 
     /// <summary>
     /// Gets or sets the users Full Name.

@@ -271,6 +271,28 @@ export function resendVerificationEmail(request: ResendVerificationEmailRequest)
     }));
 }
 
+export function setCurrentUserSavedViewDefault(queryClient: QueryClient, organizationId: string, savedViewId: null | string) {
+    const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
+    if (!currentUser) {
+        return;
+    }
+
+    const organizationPreferences = currentUser.organization_preferences.filter((preference) => preference.organization_id !== organizationId);
+    if (savedViewId) {
+        organizationPreferences.push({
+            default_saved_view_id: savedViewId,
+            organization_id: organizationId
+        });
+    }
+
+    const updatedUser = {
+        ...currentUser,
+        organization_preferences: organizationPreferences
+    };
+    queryClient.setQueryData(queryKeys.me(), updatedUser);
+    queryClient.setQueryData(queryKeys.id(currentUser.id), updatedUser);
+}
+
 export function uploadUserAvatar(request: UserAvatarRequest) {
     const queryClient = useQueryClient();
     return createMutation<ViewCurrentUser, ProblemDetails, File>(() => ({

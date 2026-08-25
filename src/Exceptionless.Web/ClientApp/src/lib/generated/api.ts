@@ -548,6 +548,11 @@ export interface UpdateSavedView {
   show_chart?: null | boolean;
 }
 
+export interface UpdateSavedViewDefault {
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  saved_view_id?: null | string;
+}
+
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
 export interface UpdateToken {
   is_disabled: boolean;
@@ -606,6 +611,7 @@ export interface User {
   /** @format date-time */
   password_reset_token_expiration: string;
   o_auth_accounts: OAuthAccount[];
+  organization_preferences: UserOrganizationPreference[];
   /** Gets or sets the users Full Name. */
   full_name: string;
   /** @format email */
@@ -633,10 +639,18 @@ export interface UserDescription {
   data?: null | Record<string, unknown>;
 }
 
+export interface UserOrganizationPreference {
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  organization_id: string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  default_saved_view_id: string;
+}
+
 export interface ViewCurrentUser {
   hash?: null | string;
   has_local_account: boolean;
   o_auth_accounts: OAuthAccount[];
+  organization_preferences: UserOrganizationPreference[];
   /** @pattern ^[a-fA-F0-9]{24}$ */
   id: string;
   organization_ids: string[];
@@ -683,6 +697,8 @@ export interface ViewOrganization {
   /** @format date-time */
   updated_utc: string;
   name: string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  default_saved_view_id?: null | string;
   icon_url?: null | string;
   plan_id: string;
   plan_name: string;

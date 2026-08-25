@@ -831,6 +831,7 @@ describe('useSavedViews', () => {
             const otherView = buildSavedView({ id: 'view-2', name: 'Other View' });
             queryClient.setQueryData(queryKeys.organization(TEST_ORG_ID), [view, otherView]);
             queryClient.setQueryData(queryKeys.view(TEST_ORG_ID, 'stacks'), [view, otherView]);
+            const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries').mockImplementation(async () => {});
 
             // Act
             await invalidateSavedViewQueries(queryClient, {
@@ -844,6 +845,7 @@ describe('useSavedViews', () => {
             // Assert - view removed from both caches without refetch
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.organization(TEST_ORG_ID))).toEqual([otherView]);
             expect(queryClient.getQueryData<SavedView[]>(queryKeys.view(TEST_ORG_ID, 'stacks'))).toEqual([otherView]);
+            expect(invalidateSpy).not.toHaveBeenCalled();
         });
 
         it('preserves a pending reconciliation when a cached view is removed', async () => {

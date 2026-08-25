@@ -4,6 +4,97 @@ import { expect, test } from '../fixtures/e2e-test';
 import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
 import { getVisibleText } from '../support/page-helpers';
 
+test('home navigation honors personal and organization saved views and survives deletion', async ({ e2eApi, e2eScenario, page, request }) => {
+    const failedApiRequests = captureFailedApiRequests(page);
+    const savedViewListLimits: string[] = [];
+    page.on('request', (request) => {
+        const url = new URL(request.url());
+        if (url.pathname === `/api/v2/organizations/${e2eScenario.organizationId}/saved-views`) {
+            savedViewListLimits.push(url.searchParams.get('limit') ?? '');
+        }
+    });
+    const journey = ExceptionlessE2EJourney.fromScenario(page, e2eApi, e2eScenario);
+    const viewName = `E2E Home ${journey.run.slice(-36)}`;
+    const viewSlug = savedViewSlug(viewName);
+
+    await test.step('fall back to the first Stacks saved view when no default is configured', async () => {
+        await page.goto('/next/');
+        await expect(page).toHaveURL(/\/next\/stack\/all(?:[?#]|$)/);
+        await expect(page.getByRole('heading', { name: 'All' })).toBeVisible({ timeout: 30_000 });
+        await expect.poll(() => savedViewListLimits).toContain('100');
+    });
+
+    await test.step('prefer the personal saved view', async () => {
+        await journey.submitRepresentativeEvent();
+        await page.goto(`/next/event?reference=${encodeURIComponent(journey.referenceId)}&time=all`);
+        await expect(getVisibleText(page, journey.message)).toBeVisible({ timeout: 30_000 });
+
+        await openViewMenu(page);
+        await page.getByRole('menuitem', { name: 'Save As...' }).click();
+        const dialog = page.getByRole('dialog', { name: 'Save View' });
+        await dialog.getByLabel('Name', { exact: true }).fill(viewName);
+        await dialog.getByRole('button', { name: 'Save' }).click();
+        await expect(dialog).toBeHidden({ timeout: 30_000 });
+        await expect(page.getByRole('heading', { name: viewName })).toBeVisible({ timeout: 30_000 });
+
+        await openViewMenu(page);
+        await page.getByRole('menuitem', { name: 'Set as my home view' }).click();
+        await expect(page.getByText(`"${viewName}" is now your home view.`)).toBeVisible();
+
+        await expect
+            .poll(
+                async () => {
+                    const response = await request.get(`/api/v2/organizations/${e2eScenario.organizationId}/saved-views/events`, {
+                        headers: { Authorization: `Bearer ${e2eScenario.userToken}` }
+                    });
+                    const savedViews = response.ok() ? ((await response.json()) as { name: string }[]) : [];
+                    return savedViews.some((savedView) => savedView.name === viewName);
+                },
+                { timeout: 30_000 }
+            )
+            .toBe(true);
+
+        await page.goto('/next/');
+        await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(viewSlug)}(?:[?#]|$)`));
+    });
+
+    await test.step('fall back to the organization saved view after clearing the personal preference', async () => {
+        await openViewMenu(page);
+        await page.getByRole('menuitem', { name: 'Set as organization home' }).click();
+        await expect(page.getByText(`"${viewName}" is now the organization home view.`)).toBeVisible();
+
+        await openViewMenu(page);
+        await page.getByRole('menuitem', { name: 'Clear my home view' }).click();
+        await expect(page.getByText('Personal home view cleared.')).toBeVisible();
+
+        await page.goto('/next/');
+        await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(viewSlug)}(?:[?#]|$)`));
+    });
+
+    await test.step('clear deleted defaults and return to the first Stacks saved view', async () => {
+        const deletion = await page.evaluate(
+            async ({ organizationId, token, viewName }) => {
+                const headers = { Authorization: `Bearer ${token}` };
+                const savedViewsResponse = await fetch(`/api/v2/organizations/${organizationId}/saved-views/events`, { headers });
+                const savedViews = await savedViewsResponse.json();
+                const savedView = savedViews.find((view: { name: string }) => view.name === viewName);
+                const response = await fetch(`/api/v2/saved-views/${savedView.id}`, {
+                    headers,
+                    method: 'DELETE'
+                });
+                return response.status;
+            },
+            { organizationId: e2eScenario.organizationId, token: e2eScenario.userToken, viewName }
+        );
+        expect(deletion).toBe(202);
+
+        await page.goto('/next/');
+        await expect(page).toHaveURL(/\/next\/stack\/all(?:[?#]|$)/);
+    });
+
+    expect(failedApiRequests).toEqual([]);
+});
+
 test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2eApi, e2eScenario, page, request }) => {
     const failedApiRequests = captureFailedApiRequests(page);
     const journey = ExceptionlessE2EJourney.fromScenario(page, e2eApi, e2eScenario);

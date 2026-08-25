@@ -1398,6 +1398,212 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PutSavedViewDefaults_PersonalAndOrganizationDefaults_AppearInStartupResponses()
+    {
+        var sharedView = await CreateSavedViewAsync("Shared Home", "status:open", "events");
+        var privateView = await CreateSavedViewAsync("Private Home", "status:regressed", "stacks", isPrivate: true);
+        Assert.NotNull(sharedView);
+        Assert.NotNull(privateView);
+
+        await SendRequestAsync(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-defaults", "organization")
+            .Content(new UpdateSavedViewDefault { SavedViewId = sharedView.Id })
+            .StatusCodeShouldBeOk()
+        );
+
+        await SendRequestAsync(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-defaults", "user")
+            .Content(new UpdateSavedViewDefault { SavedViewId = privateView.Id })
+            .StatusCodeShouldBeOk()
+        );
+
+        var organizationPreferences = await GetCurrentUserOrganizationPreferencesAsync();
+        var organization = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID)
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.Contains(organizationPreferences, preference => preference.OrganizationId == SampleDataService.TEST_ORG_ID && preference.DefaultSavedViewId == privateView.Id);
+        Assert.NotNull(organization);
+        Assert.Equal(sharedView.Id, organization.DefaultSavedViewId);
+    }
+
+    [Fact]
+    public async Task PutOrganizationSavedViewDefault_PrivateView_ReturnsUnprocessableEntity()
+    {
+        var privateView = await CreateSavedViewAsync("Private Organization Home", "status:open", "events", isPrivate: true);
+        Assert.NotNull(privateView);
+
+        await SendRequestAsync(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-defaults", "organization")
+            .Content(new UpdateSavedViewDefault { SavedViewId = privateView.Id })
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+    }
+
+    [Fact]
+    public async Task GetStartupResponses_MissingSavedViews_ReturnsStoredReferences()
+    {
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(user);
+        Assert.NotNull(organization);
+
+        foreach (var preference in user.OrganizationPreferences.Where(preference => preference.OrganizationId == organization.Id).ToList())
+            user.OrganizationPreferences.Remove(preference);
+
+        user.OrganizationPreferences.Add(new UserOrganizationPreference
+        {
+            OrganizationId = organization.Id,
+            DefaultSavedViewId = "000000000000000000000001"
+        });
+        organization.DefaultSavedViewId = "000000000000000000000002";
+        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache());
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache());
+
+        var organizationPreferences = await GetCurrentUserOrganizationPreferencesAsync();
+        var organizationView = await SendRequestAsAsync<ViewOrganization>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", organization.Id)
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.Contains(organizationPreferences, preference => preference.OrganizationId == organization.Id && preference.DefaultSavedViewId == "000000000000000000000001");
+        Assert.NotNull(organizationView);
+        Assert.Equal("000000000000000000000002", organizationView.DefaultSavedViewId);
+    }
+
+    [Fact]
+    public async Task GetCurrentUser_DuplicatePreferences_ReturnsStoredPreferences()
+    {
+        var validView = await CreateSavedViewAsync("Legacy Duplicate Home", "status:open", "stacks");
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(validView);
+        Assert.NotNull(user);
+
+        foreach (var preference in user.OrganizationPreferences.Where(preference => preference.OrganizationId == SampleDataService.TEST_ORG_ID).ToList())
+            user.OrganizationPreferences.Remove(preference);
+
+        user.OrganizationPreferences.Add(new UserOrganizationPreference
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            DefaultSavedViewId = "000000000000000000000000"
+        });
+        user.OrganizationPreferences.Add(new UserOrganizationPreference
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            DefaultSavedViewId = validView.Id
+        });
+        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache());
+
+        var organizationPreferences = await GetCurrentUserOrganizationPreferencesAsync();
+
+        var preferences = organizationPreferences.Where(preference => preference.OrganizationId == SampleDataService.TEST_ORG_ID).ToList();
+        Assert.Equal(2, preferences.Count);
+        Assert.Contains(preferences, preference => preference.DefaultSavedViewId == validView.Id);
+    }
+
+    [Fact]
+    public async Task PutUserSavedViewDefault_GlobalAdministratorOutsideOrganization_AllowsSharedViewButRejectsPrivateView()
+    {
+        var sharedView = await SendRequestAsAsync<ViewSavedView>(r => r
+            .Post()
+            .AsFreeOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "saved-views")
+            .Content(new NewSavedView
+            {
+                OrganizationId = SampleDataService.FREE_ORG_ID,
+                Name = "Shared Free Organization Home",
+                Filter = "status:open",
+                ViewType = "stacks"
+            })
+            .StatusCodeShouldBeCreated()
+        );
+        var privateView = await SendRequestAsAsync<ViewSavedView>(r => r
+            .Post()
+            .AsFreeOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "saved-views")
+            .Content(new NewSavedView
+            {
+                OrganizationId = SampleDataService.FREE_ORG_ID,
+                Name = "Private Free Organization Home",
+                Filter = "status:regressed",
+                ViewType = "stacks",
+                IsPrivate = true
+            })
+            .StatusCodeShouldBeCreated()
+        );
+
+        Assert.NotNull(sharedView);
+        Assert.NotNull(privateView);
+
+        await SendRequestAsync(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "saved-view-defaults", "user")
+            .Content(new UpdateSavedViewDefault { SavedViewId = sharedView.Id })
+            .StatusCodeShouldBeOk()
+        );
+
+        await SendRequestAsync(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "saved-view-defaults", "user")
+            .Content(new UpdateSavedViewDefault { SavedViewId = privateView.Id })
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+
+        Assert.NotNull(user);
+        Assert.Contains(user.OrganizationPreferences, preference => preference.OrganizationId == SampleDataService.FREE_ORG_ID && preference.DefaultSavedViewId == sharedView.Id);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_DefaultSavedView_ClearsOrganizationReferenceAndLeavesUserReference()
+    {
+        var sharedView = await CreateSavedViewAsync("Delete Default Home", "status:open", "events");
+        Assert.NotNull(sharedView);
+
+        await SendRequestAsync(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-defaults", "user")
+            .Content(new UpdateSavedViewDefault { SavedViewId = sharedView.Id })
+            .StatusCodeShouldBeOk()
+        );
+        await SendRequestAsync(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-defaults", "organization")
+            .Content(new UpdateSavedViewDefault { SavedViewId = sharedView.Id })
+            .StatusCodeShouldBeOk()
+        );
+
+        await SendRequestAsync(r => r
+            .Delete()
+            .AsGlobalAdminUser()
+            .AppendPaths("saved-views", sharedView.Id)
+            .StatusCodeShouldBeAccepted()
+        );
+
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+
+        Assert.NotNull(user);
+        Assert.Contains(user.OrganizationPreferences, preference => preference.DefaultSavedViewId == sharedView.Id);
+        Assert.NotNull(organization);
+        Assert.Null(organization.DefaultSavedViewId);
+    }
+
+    [Fact]
     public async Task DeleteAsync_OwnOrganizationWideFilter_Succeeds()
     {
         // Arrange
@@ -2774,6 +2980,24 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
             || IsPredefinedSavedView(savedView, "stacks", "Most Frequent Errors")
             || IsPredefinedSavedView(savedView, "stacks", "Most Frequent 404s")
             || IsPredefinedSavedView(savedView, "stacks", "Most Used Features");
+    }
+
+    private async Task<IReadOnlyCollection<UserOrganizationPreference>> GetCurrentUserOrganizationPreferencesAsync()
+    {
+        var currentUser = await SendRequestAsAsync<JsonElement>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("users/me")
+            .StatusCodeShouldBeOk()
+        );
+
+        return currentUser.GetProperty("organization_preferences")
+            .EnumerateArray()
+            .Select(preference => new UserOrganizationPreference
+            {
+                OrganizationId = preference.GetProperty("organization_id").GetString()!,
+                DefaultSavedViewId = preference.GetProperty("default_saved_view_id").GetString()!
+            })
+            .ToList();
     }
 
 }

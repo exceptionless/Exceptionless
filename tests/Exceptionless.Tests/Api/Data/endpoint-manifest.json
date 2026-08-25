@@ -1399,6 +1399,34 @@
     "authenticationSchemes": []
   },
   {
+    "method": "PUT",
+    "route": "/api/v2/organizations/{organizationId:objectid}/saved-view-defaults/organization",
+    "displayName": "HTTP: PUT api/v2/organizations/{organizationId:objectid}/saved-view-defaults/organization",
+    "tags": [
+      "SavedView"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "PUT",
+    "route": "/api/v2/organizations/{organizationId:objectid}/saved-view-defaults/user",
+    "displayName": "HTTP: PUT api/v2/organizations/{organizationId:objectid}/saved-view-defaults/user",
+    "tags": [
+      "SavedView"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
     "method": "GET",
     "route": "/api/v2/organizations/{organizationId:objectid}/saved-views",
     "displayName": "HTTP: GET api/v2/organizations/{organizationId:objectid}/saved-views",

@@ -3102,6 +3102,142 @@
         }
       }
     },
+    "/api/v2/organizations/{organizationId}/saved-view-defaults/user": {
+      "put": {
+        "tags": [
+          "SavedView"
+        ],
+        "summary": "Update the current user\u0027s saved view default",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "description": "The identifier of the organization.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "The personal saved view default. A null saved view identifier clears the preference.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSavedViewDefault"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSavedViewDefault"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The personal saved view default was updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateSavedViewDefault"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The organization could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The saved view is not accessible in this organization.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/organizations/{organizationId}/saved-view-defaults/organization": {
+      "put": {
+        "tags": [
+          "SavedView"
+        ],
+        "summary": "Update the organization\u0027s saved view default",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "description": "The identifier of the organization.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "The shared saved view default. A null saved view identifier clears the preference.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSavedViewDefault"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSavedViewDefault"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The organization saved view default was updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateSavedViewDefault"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The organization could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The saved view is private or is not accessible in this organization.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/organizations/{organizationId}/saved-views/predefined": {
       "post": {
         "tags": [
@@ -13189,6 +13325,20 @@
         },
         "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
       },
+      "UpdateSavedViewDefault": {
+        "type": "object",
+        "properties": {
+          "saved_view_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "UpdateToken": {
         "type": "object",
         "properties": {
@@ -13303,6 +13453,7 @@
           "organization_ids",
           "password_reset_token_expiration",
           "o_auth_accounts",
+          "organization_preferences",
           "email_notifications_enabled",
           "is_email_address_verified",
           "verify_email_address_token_expiration",
@@ -13354,6 +13505,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/OAuthAccount"
+            }
+          },
+          "organization_preferences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserOrganizationPreference"
             }
           },
           "full_name": {
@@ -13435,10 +13592,32 @@
           }
         }
       },
+      "UserOrganizationPreference": {
+        "required": [
+          "organization_id",
+          "default_saved_view_id"
+        ],
+        "type": "object",
+        "properties": {
+          "organization_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
+          },
+          "default_saved_view_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
+          }
+        }
+      },
       "ViewCurrentUser": {
         "required": [
           "has_local_account",
           "o_auth_accounts",
+          "organization_preferences",
           "id",
           "organization_ids",
           "full_name",
@@ -13464,6 +13643,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/OAuthAccount"
+            }
+          },
+          "organization_preferences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserOrganizationPreference"
             }
           },
           "id": {
@@ -13653,6 +13838,15 @@
           },
           "name": {
             "type": "string"
+          },
+          "default_saved_view_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "icon_url": {
             "type": [

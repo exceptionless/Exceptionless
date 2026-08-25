@@ -26,6 +26,7 @@ namespace Exceptionless.Web.Api.Handlers;
 public partial class SavedViewHandler(
     ISavedViewRepository repository,
     IOrganizationRepository organizationRepository,
+    IUserRepository userRepository,
     ILockProvider lockProvider,
     IQueue<WorkItemData> workItemQueue,
     ApiMapper mapper,
@@ -80,6 +81,68 @@ public partial class SavedViewHandler(
             return Result.NotFound("Saved view not found.");
 
         return MapToViewModel(model);
+    }
+
+    public async Task<Result<UpdateSavedViewDefault>> Handle(UpdateUserSavedViewDefault message)
+    {
+        if (!HttpContext.Request.CanAccessOrganization(message.OrganizationId))
+            return Result.NotFound("Organization not found.");
+
+        if (await organizationRepository.GetByIdAsync(message.OrganizationId) is null)
+            return Result.NotFound("Organization not found.");
+
+        if (message.Default.SavedViewId is not null)
+        {
+            var savedView = await repository.GetByIdAsync(message.Default.SavedViewId, o => o.Cache(false));
+            if (savedView is null
+                || !String.Equals(savedView.OrganizationId, message.OrganizationId, StringComparison.Ordinal)
+                || (savedView.UserId is not null && !String.Equals(savedView.UserId, GetCurrentUserId(), StringComparison.Ordinal)))
+                return Result.Invalid(ValidationError.Create("saved_view_id", "The saved view is not accessible in this organization."));
+        }
+
+        var user = await userRepository.GetByIdAsync(GetCurrentUserId(), o => o.Cache(false));
+        if (user is null)
+            return Result.NotFound("User not found.");
+
+        foreach (var preference in user.OrganizationPreferences.Where(preference => String.Equals(preference.OrganizationId, message.OrganizationId, StringComparison.Ordinal)).ToList())
+            user.OrganizationPreferences.Remove(preference);
+
+        if (message.Default.SavedViewId is not null)
+        {
+            user.OrganizationPreferences.Add(new UserOrganizationPreference
+            {
+                OrganizationId = message.OrganizationId,
+                DefaultSavedViewId = message.Default.SavedViewId
+            });
+        }
+
+        await userRepository.SaveAsync(user, o => o.Cache());
+        return message.Default;
+    }
+
+    public async Task<Result<UpdateSavedViewDefault>> Handle(UpdateOrganizationSavedViewDefault message)
+    {
+        if (!HttpContext.Request.CanAccessOrganization(message.OrganizationId))
+            return Result.NotFound("Organization not found.");
+
+        var organization = await organizationRepository.GetByIdAsync(message.OrganizationId, o => o.Cache(false));
+        if (organization is null)
+            return Result.NotFound("Organization not found.");
+
+        if (message.Default.SavedViewId is not null)
+        {
+            var savedView = await repository.GetByIdAsync(message.Default.SavedViewId, o => o.Cache(false));
+            if (savedView is null
+                || !String.Equals(savedView.OrganizationId, message.OrganizationId, StringComparison.Ordinal)
+                || savedView.UserId is not null)
+            {
+                return Result.Invalid(ValidationError.Create("saved_view_id", "The organization default must be a shared saved view in this organization."));
+            }
+        }
+
+        organization.DefaultSavedViewId = message.Default.SavedViewId;
+        await organizationRepository.SaveAsync(organization, o => o.Cache().Consistency(Consistency.Immediate));
+        return message.Default;
     }
 
     public async Task<Result<ViewSavedView>> Handle(CreateSavedView message)
@@ -258,6 +321,7 @@ public partial class SavedViewHandler(
         if (deletableItems.Count == 0)
             return results.Failure.Count == 1 ? Result<ModelActionResults>.FromResult(PermissionToResult(results.Failure.First())) : results;
 
+        await ClearDefaultReferencesAsync(deletableItems);
         await repository.RemoveAsync(deletableItems);
 
         if (results.Failure.Count == 0)
@@ -453,6 +517,21 @@ public partial class SavedViewHandler(
     }
 
     private List<ViewSavedView> MapToViewModels(IEnumerable<SavedView> models) => models.Select(MapToViewModel).ToList();
+
+    private async Task ClearDefaultReferencesAsync(IReadOnlyCollection<SavedView> deletedSavedViews)
+    {
+        var deletedIds = deletedSavedViews.Select(savedView => savedView.Id).ToHashSet(StringComparer.Ordinal);
+
+        foreach (string organizationId in deletedSavedViews.Select(savedView => savedView.OrganizationId).Distinct(StringComparer.Ordinal))
+        {
+            var organization = await organizationRepository.GetByIdAsync(organizationId);
+            if (organization?.DefaultSavedViewId is null || !deletedIds.Contains(organization.DefaultSavedViewId))
+                continue;
+
+            organization.DefaultSavedViewId = null;
+            await organizationRepository.SaveAsync(organization, o => o.Cache().Consistency(Consistency.Immediate));
+        }
+    }
 
     private string GetCurrentUserId() => HttpContext.Request.GetUser().Id;
 

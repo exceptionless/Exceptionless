@@ -681,6 +681,13 @@ export function removeOrganizationFeature(request: SetOrganizationFeatureRequest
     }));
 }
 
+export function setOrganizationDefaultSavedView(queryClient: QueryClient, organizationId: string, savedViewId: null | string) {
+    updateOrganizationCaches(queryClient, organizationId, (organization) => ({
+        ...organization,
+        default_saved_view_id: savedViewId
+    }));
+}
+
 export function setOrganizationFeature(request: SetOrganizationFeatureRequest) {
     const queryClient = useQueryClient();
     return createMutation<boolean, ProblemDetails, string>(() => ({
@@ -729,21 +736,29 @@ export function uploadOrganizationIcon(request: OrganizationIconRequest) {
 }
 
 function updateOrganizationCache(queryClient: QueryClient, id: string | undefined, organization: ViewOrganization) {
-    queryClient.setQueryData(queryKeys.id(id, 'stats'), organization);
-    queryClient.setQueryData(queryKeys.id(id, undefined), organization);
+    if (!id) {
+        return;
+    }
+
+    updateOrganizationCaches(queryClient, id, () => organization);
+}
+
+function updateOrganizationCaches(queryClient: QueryClient, id: string, update: (organization: ViewOrganization) => ViewOrganization) {
+    queryClient.setQueryData<undefined | ViewOrganization>(queryKeys.id(id, 'stats'), (organization) => (organization ? update(organization) : organization));
+    queryClient.setQueryData<undefined | ViewOrganization>(queryKeys.id(id, undefined), (organization) => (organization ? update(organization) : organization));
     queryClient.setQueriesData<FetchClientResponse<ViewOrganization[]> | undefined>(
         {
             queryKey: queryKeys.type
         },
         (response) => {
-            if (!Array.isArray(response?.data) || !response.data.some((existingOrganization) => existingOrganization.id === organization.id)) {
+            if (!Array.isArray(response?.data) || !response.data.some((existingOrganization) => existingOrganization.id === id)) {
                 return response;
             }
 
             return {
                 ...response,
                 data: response.data.map((existingOrganization) => {
-                    return existingOrganization.id === organization.id ? organization : existingOrganization;
+                    return existingOrganization.id === id ? update(existingOrganization) : existingOrganization;
                 })
             };
         }

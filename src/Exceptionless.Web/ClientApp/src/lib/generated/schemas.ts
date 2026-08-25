@@ -649,6 +649,17 @@ export const UpdateSavedViewSchema = object({
 });
 export type UpdateSavedViewFormData = Infer<typeof UpdateSavedViewSchema>;
 
+export const UpdateSavedViewDefaultSchema = object({
+  saved_view_id: string()
+    .length(24, "Saved view id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "Saved view id has invalid format")
+    .nullable()
+    .optional(),
+});
+export type UpdateSavedViewDefaultFormData = Infer<
+  typeof UpdateSavedViewDefaultSchema
+>;
+
 export const UpdateTokenSchema = object({
   is_disabled: boolean().optional(),
   notes: string().min(1, "Notes is required").nullable().optional(),
@@ -695,6 +706,9 @@ export const UserSchema = object({
     .optional(),
   password_reset_token_expiration: iso.datetime(),
   o_auth_accounts: array(lazy(() => OAuthAccountSchema)),
+  organization_preferences: array(
+    lazy(() => UserOrganizationPreferenceSchema),
+  ),
   full_name: string().min(1, "Full name is required"),
   email_address: email(),
   avatar_file_name: string()
@@ -723,10 +737,25 @@ export const UserDescriptionSchema = object({
 });
 export type UserDescriptionFormData = Infer<typeof UserDescriptionSchema>;
 
+export const UserOrganizationPreferenceSchema = object({
+  organization_id: string()
+    .length(24, "Organization id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "Organization id has invalid format"),
+  default_saved_view_id: string()
+    .length(24, "Default saved view id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "Default saved view id has invalid format"),
+});
+export type UserOrganizationPreferenceFormData = Infer<
+  typeof UserOrganizationPreferenceSchema
+>;
+
 export const ViewCurrentUserSchema = object({
   hash: string().min(1, "Hash is required").nullable().optional(),
   has_local_account: boolean(),
   o_auth_accounts: array(lazy(() => OAuthAccountSchema)),
+  organization_preferences: array(
+    lazy(() => UserOrganizationPreferenceSchema),
+  ),
   id: string()
     .length(24, "Id must be exactly 24 characters")
     .regex(/^[a-fA-F0-9]{24}$/, "Id has invalid format"),
@@ -773,6 +802,11 @@ export const ViewOrganizationSchema = object({
   created_utc: iso.datetime(),
   updated_utc: iso.datetime(),
   name: string().min(1, "Name is required"),
+  default_saved_view_id: string()
+    .length(24, "Default saved view id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "Default saved view id has invalid format")
+    .nullable()
+    .optional(),
   icon_url: url().nullable().optional(),
   plan_id: string().min(1, "Plan id is required"),
   plan_name: string().min(1, "Plan name is required"),

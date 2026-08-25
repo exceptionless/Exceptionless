@@ -53,7 +53,7 @@ test('Exie opens from navigation and expands without losing the conversation', a
 
     await test.step('expand the side panel and retain its conversation and source URL', async () => {
         await page.getByRole('link', { name: 'Collapse Exie to side panel' }).click();
-        await expect(page).toHaveURL(/\/next\/stack(?:[?#]|$)/);
+        await expect(page).toHaveURL(/\/next\/stack\/all(?:[?#]|$)/);
         await expect(page.locator('[data-assistant-panel]')).toBeVisible();
         await page.getByRole('button', { name: 'Close Exie' }).click();
 

@@ -97,7 +97,7 @@ export interface UseSavedViewsReturn {
     activeSavedView: SavedView | undefined;
     autoFillColumnId: AutoFillColumnSelection;
     canModifySavedView: boolean;
-    handleClearSavedView: () => void;
+    handleClearSavedView: () => Promise<void>;
     handleLoadView: (view: SavedView) => void;
     handleResetToSaved: () => void;
     handleSavedViewUpdated: (view: SavedView) => void;
@@ -1305,13 +1305,13 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         serverHydratedSavedViewId = view.id;
     }
 
-    function handleClearSavedView() {
+    async function handleClearSavedView(): Promise<void> {
         clearSavedViewQueryParams(options.queryParams);
         applyColumnState(undefined);
         applyDisplayState(undefined);
 
         if (options.baseHref) {
-            goto(options.baseHref);
+            await goto(options.baseHref);
         }
     }
 
