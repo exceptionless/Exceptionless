@@ -1,7 +1,7 @@
 namespace Exceptionless.Core.Mail;
 
 /// <summary>
-/// Centralizes email destinations for the legacy Angular UI. Update these mappings when the Svelte UI moves to the application root.
+/// Centralizes the existing email destinations. Update these mappings when the Svelte UI moves to the application root.
 /// </summary>
 internal sealed class EmailAppUrlBuilder
 {
@@ -9,7 +9,7 @@ internal sealed class EmailAppUrlBuilder
 
     public EmailAppUrlBuilder(string baseUrl)
     {
-        _baseUrl = new Uri(baseUrl, UriKind.Absolute).GetLeftPart(UriPartial.Path).TrimEnd('/');
+        _baseUrl = baseUrl.TrimEnd('/');
     }
 
     public string Event(string eventId) => Build($"event/{eventId}");
@@ -54,5 +54,5 @@ internal sealed class EmailAppUrlBuilder
         return cancel ? $"{url}?cancel=true" : url;
     }
 
-    private string Build(string relativeUrl) => $"{_baseUrl}/#!/{relativeUrl.TrimStart('/')}";
+    private string Build(string relativeUrl) => $"{_baseUrl}/{relativeUrl.TrimStart('/')}";
 }

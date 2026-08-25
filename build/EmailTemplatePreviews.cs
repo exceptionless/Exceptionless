@@ -115,7 +115,7 @@ static string BuildIndex(IReadOnlyCollection<RenderedPreview> previews)
 
 static IReadOnlyCollection<EmailPreview> GetPreviews()
 {
-    const string appUrl = "https://app.exceptionless.test/#!";
+    const string appUrl = "https://app.exceptionless.test";
     var actionLinks = new[]
     {
         new EmailLink("Mark event as fixed", $"{appUrl}/stack/stack-1/mark-fixed"),
