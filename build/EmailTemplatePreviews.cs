@@ -2,6 +2,24 @@
 #:property TargetFramework=net10.0
 #:project ../src/Exceptionless.EmailTemplates/Exceptionless.EmailTemplates.csproj
 
+// Run from the repository root.
+//
+// Render the static preview gallery to artifacts/email-previews:
+//   dotnet run --no-cache --file build/EmailTemplatePreviews.cs
+//
+// Render the gallery and send every preview to the Aspire-hosted Mailpit instance:
+//   dotnet run --no-cache --file build/EmailTemplatePreviews.cs -- --send
+//
+// Options:
+//   --output <directory>  Output directory (default: artifacts/email-previews)
+//   --send                Send rendered previews over SMTP
+//   --smtp-host <host>    SMTP host (default: localhost)
+//   --smtp-port <port>    SMTP port (default: 1026)
+//   --send-to <address>   Recipient address (default: preview@exceptionless.test)
+//
+// Start the Exceptionless AppHost before using --send. Mailpit is available at
+// http://localhost:8026 by default.
+
 using System.Net;
 using System.Net.Mail;
 using System.Text;
