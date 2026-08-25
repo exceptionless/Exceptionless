@@ -52,6 +52,10 @@ describe('DataTablePager', () => {
         expect(pageLabel.classList.contains('select-none')).toBe(true);
         expect(pageLabel.classList.contains('rounded-none')).toBe(true);
         expect(pageLabel.classList.contains('border-y-0')).toBe(true);
+        const firstButton = screen.getByRole('button', { name: 'Go to first page' });
+        expect(firstButton.getAttribute('aria-disabled')).toBe('true');
+        expect(firstButton.classList.contains('rounded-none')).toBe(true);
+        expect(firstButton.classList.contains('border-y-0')).toBe(true);
         const nextButton = screen.getByRole('button', { name: 'Go to next page' });
         expect(nextButton.classList.contains('rounded-r-lg!')).toBe(true);
         expect(nextButton.classList.contains('rounded-l-none!')).toBe(true);
@@ -100,6 +104,21 @@ describe('DataTablePager', () => {
         expect(screen.getByLabelText('Page 2 of 3')).toBeTruthy();
         expect(scrollIntoView).not.toHaveBeenCalled();
         expect(document.activeElement).toBe(nextButton);
+    });
+
+    it('returns directly to the first page without moving the controls', async () => {
+        const onPageIndexChange = vi.fn();
+        render(DataTablePagerTestHarness, { onPageIndexChange, onPageSizeChange: vi.fn() });
+
+        await fireEvent.click(screen.getByRole('button', { name: 'Go to next page' }));
+        const firstButton = screen.getByRole('button', { name: 'Go to first page' });
+        firstButton.focus();
+        await fireEvent.click(firstButton);
+
+        expect(onPageIndexChange).toHaveBeenLastCalledWith(0);
+        expect(screen.getByLabelText('Page 1 of 3')).toBeTruthy();
+        expect(firstButton.getAttribute('aria-disabled')).toBe('true');
+        expect(document.activeElement).toBe(firstButton);
     });
 
     it('keeps an unavailable paging target focused without changing pages', async () => {

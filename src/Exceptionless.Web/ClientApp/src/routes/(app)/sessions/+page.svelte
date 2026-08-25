@@ -110,6 +110,7 @@
     watch(
         [() => queryParams.filter, () => queryParams.time],
         ([filter, time]) => {
+            table.resetRowSelection();
             filters = applyTimeFilter(getFiltersFromCache(filterCacheKey(filter), filter), time);
         },
         {
@@ -140,9 +141,14 @@
 
     function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {
         const filter = toFilter(updatedFilters.filter((f) => f.type !== 'date'));
+        const time = ((updatedFilters.find((f) => f.type === 'date') as DateFilter | undefined)?.value as string | undefined) ?? null;
+
+        if (queryParams.filter !== filter || queryParams.time !== time) {
+            table.resetRowSelection();
+        }
 
         updateFilterCache(filterCacheKey(filter), updatedFilters);
-        queryParams.time = ((updatedFilters.find((f) => f.type === 'date') as DateFilter | undefined)?.value as string | undefined) ?? null;
+        queryParams.time = time;
         queryParams.filter = filter;
     }
 
@@ -202,6 +208,14 @@
                 return eventsQueryParameters;
             }
         })
+    );
+
+    watch(
+        () => viewActive,
+        () => reset(),
+        {
+            lazy: true
+        }
     );
 
     function reset() {

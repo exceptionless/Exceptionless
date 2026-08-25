@@ -163,7 +163,7 @@ describe('useSavedViews', () => {
     });
 
     describe('expression filter overrides', () => {
-        it('includes saved and browser-local expression filters without typed query parameter filters', () => {
+        it('includes saved and session-local expression filters without typed query parameter filters', () => {
             const draft = {
                 filterChanges: {
                     removedKeys: [],
