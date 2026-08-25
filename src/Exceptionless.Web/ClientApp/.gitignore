@@ -6,6 +6,7 @@ node_modules
 .vercel
 /.svelte-kit
 /build
+/.email-dist
 
 # OS
 .DS_Store

@@ -66,5 +66,12 @@ export default ts.config(
             'perfectionist/sort-svelte-attributes': 'off'
         }
     },
+    {
+        files: ['emails/templates/**/*.svelte'],
+        rules: {
+            'svelte/no-at-html-tags': 'off',
+            'svelte/no-useless-mustaches': 'off'
+        }
+    },
     storybook.configs['flat/recommended']
 );

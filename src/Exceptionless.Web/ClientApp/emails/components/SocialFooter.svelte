@@ -1,13 +1,22 @@
 <script module lang="ts">
-    import { Section, Row, Column, Heading, Link, Text } from '@better-svelte-email/components';
+    import { Column, Heading, Link, Row, Section, Text } from '@better-svelte-email/components';
+
+    export const socialFooterStyles = `
+[data-email-social]>tbody>tr>td{padding:0}
+[data-email-social] a{line-height:1.3}
+[data-email-social] table[role="presentation"] tr:not(:last-child)>td{padding-bottom:16px}
+@media only screen and (min-width:597px){[data-social-column]:first-child>h5,[data-social-column]:first-child>table{width:calc(100% - .375px)}[data-social-column]:last-child>h5,[data-social-column]:last-child>p{position:relative;left:-.375px;width:calc(100% + .375px)}}
+@media only screen and (max-width:596px){[data-social-column]{display:block!important;width:100%!important;max-width:100%!important;padding-left:16px!important;padding-right:16px!important}[data-social-column]:first-child{padding-bottom:32px!important}}
+`;
+
+    // Equal columns need a 0.375px gutter correction to preserve the old
+    // Foundation layout's subpixel rounding inside the 580px email container.
 </script>
 
 <Section data-email-social class="bg-bg p-4">
     <Row style="table-layout:fixed">
-        <Column data-social-column width="289.625" style="vertical-align:top;padding:0 8px 0 16px">
-            <Heading as="h5" class="text-[20px] font-normal text-dark leading-[1.3] mt-0 mb-[5px]"
-                >Connect With Us:</Heading
-            >
+        <Column data-social-column width="50%" style="vertical-align:top;padding:0 8px 0 16px">
+            <Heading as="h5" class="text-dark mt-0 mb-[5px] text-[20px] leading-[1.3] font-normal">Connect With Us:</Heading>
             <table width="100%" cellpadding="0" cellspacing="4" role="presentation">
                 <tbody>
                     <tr>
@@ -40,14 +49,10 @@
                 </tbody>
             </table>
         </Column>
-        <Column data-social-column width="290.375" style="vertical-align:top;padding:0 16px 0 8px">
-            <Heading as="h5" class="text-[20px] font-normal text-dark leading-[1.3] mt-0 mb-[5px]"
-                >Contact Info:</Heading
-            >
-            <Text class="text-base text-dark leading-[1.3] m-0 mb-[10px]"
-                >Email: <Link href="mailto:support@exceptionless.io" class="text-primary no-underline"
-                    >support@exceptionless.io</Link
-                ></Text
+        <Column data-social-column width="50%" style="vertical-align:top;padding:0 16px 0 8px">
+            <Heading as="h5" class="text-dark mt-0 mb-[5px] text-[20px] leading-[1.3] font-normal">Contact Info:</Heading>
+            <Text class="text-dark m-0 mb-[10px] text-base leading-[1.3]"
+                >Email: <Link href="mailto:support@exceptionless.io" class="text-primary no-underline">support@exceptionless.io</Link></Text
             >
         </Column>
     </Row>
