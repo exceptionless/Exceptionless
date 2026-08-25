@@ -13,6 +13,8 @@ using Exceptionless.EmailTemplates.Models;
 using Exceptionless.Tests.Utility;
 using Foundatio.Queues;
 using Foundatio.Serializer;
+using System.Net;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace Exceptionless.Tests.Mail;
@@ -472,6 +474,14 @@ public sealed class MailerTests : TestWithServices
         Assert.Contains("<!doctype html", body, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("{{", body, StringComparison.Ordinal);
         Assert.DoesNotContain("<!--Blazor:", body, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("=\"Model.", body, StringComparison.Ordinal);
+
+        foreach (Match match in Regex.Matches(body, "href=\"([^\"]+)\"", RegexOptions.IgnoreCase))
+        {
+            string href = WebUtility.HtmlDecode(match.Groups[1].Value);
+            bool isValidMailto = href.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase) && !href.Any(Char.IsWhiteSpace);
+            Assert.True(isValidMailto || Uri.TryCreate(href, UriKind.Absolute, out _), $"Email contains an invalid link target: {href}");
+        }
 
         return body;
     }

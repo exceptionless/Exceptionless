@@ -17,7 +17,7 @@
                 <text>@(Model.IsCritical ? "A critical" : "An") event has reoccurred for the @Model.TotalOccurrences time in the "@Model.ProjectName" project.</text>
             }
         </p>
-        <EmailButton Url="Model.Action!.Url">View Event Details</EmailButton>
+        <EmailButton Url="@Model.Action!.Url">View Event Details</EmailButton>
 
         @if (Model.Fields.Count > 0)
         {

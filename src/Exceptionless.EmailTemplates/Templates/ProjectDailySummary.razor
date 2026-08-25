@@ -22,23 +22,23 @@
                     <text> Additionally, <strong>@Model.Fixed errors</strong> that have been marked as fixed occurred in outdated instances of your application.</text>
                 }
             </p>
-            <EmailButton Url="Model.TimelineUrl">View Timeline</EmailButton>
+            <EmailButton Url="@Model.TimelineUrl">View Timeline</EmailButton>
 
             @if (Model.Blocked != 0)
             {
                 <EmailCallout BackgroundColor="#f4dede" BorderColor="#bb423f">
                     <p style="@EmailStyles.Paragraph"><strong>@Model.Blocked events</strong> were discarded due to throttling. <a href="@Model.UpgradeUrl" style="@EmailStyles.Link">Upgrade now</a> to increase your limits. <a href="https://github.com/exceptionless/Exceptionless/wiki/Frequently-Asked-Questions#q-why-is-my-organization-throttled" style="@EmailStyles.Link">Click here to learn more about throttling.</a></p>
-                    <EmailButton Url="Model.UpgradeUrl" BackgroundColor="#bb423f">Upgrade Plan</EmailButton>
+                    <EmailButton Url="@Model.UpgradeUrl" BackgroundColor="#bb423f">Upgrade Plan</EmailButton>
                 </EmailCallout>
             }
 
             @if (Model.MostFrequent.Count > 0)
             {
-                <StackList Heading="Most Frequent" Stacks="Model.MostFrequent" MoreUrl="Model.MostFrequentUrl" />
+                <StackList Heading="Most Frequent" Stacks="Model.MostFrequent" MoreUrl="@Model.MostFrequentUrl" />
             }
             @if (Model.Newest.Count > 0)
             {
-                <StackList Heading="Newest" Stacks="Model.Newest" MoreUrl="Model.NewestUrl" />
+                <StackList Heading="Newest" Stacks="Model.Newest" MoreUrl="@Model.NewestUrl" />
             }
             @if (Model.IsFreePlan)
             {
@@ -48,7 +48,7 @@
         else
         {
             <p style="@EmailStyles.Lead">Unfortunately, it appears that your "@Model.ProjectName" project has not yet been configured to send errors to <a href="https://exceptionless.com" style="@EmailStyles.Link">Exceptionless</a>.</p>
-            <EmailButton Url="Model.ConfigureUrl">Configure Project</EmailButton>
+            <EmailButton Url="@Model.ConfigureUrl">Configure Project</EmailButton>
             <p style="@EmailStyles.Paragraph">Send us an email at <a href="mailto:support@exceptionless.io" style="@EmailStyles.Link">support@exceptionless.io</a> if you have any questions or need help getting started.</p>
         }
     </EmailSection>

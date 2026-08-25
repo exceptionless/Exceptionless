@@ -18,7 +18,7 @@
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:@EmailStyles.Background;width:100%">
         <tr>
             <td style="background:@EmailStyles.Dark;padding:8px 15px">
-                <table role="presentation" class="email-container" width="580" align="center" cellpadding="0" cellspacing="0" style="margin:0 auto;width:580px">
+                <table role="presentation" class="email-container" width="580" align="center" cellpadding="0" cellspacing="0" style="margin:0 auto;table-layout:fixed;width:580px">
                     <tr>
                         <td><img src="https://be.exceptionless.io/img/exceptionless-logo.png" width="235" height="50" alt="Exceptionless" style="display:block;margin-left:15px;max-width:100%" /></td>
                     </tr>
@@ -27,7 +27,7 @@
         </tr>
         <tr>
             <td align="center">
-                <table role="presentation" class="email-container" width="580" align="center" cellpadding="0" cellspacing="0" style="background:@EmailStyles.Background;margin:0 auto;width:580px">
+                <table role="presentation" class="email-container" width="580" align="center" cellpadding="0" cellspacing="0" style="background:@EmailStyles.Background;margin:0 auto;table-layout:fixed;width:580px">
                     <tr>
                         <td>@ChildContent</td>
                     </tr>
@@ -49,24 +49,16 @@
     [Parameter, EditorRequired]
     public required RenderFragment ChildContent { get; set; }
 
-    private MarkupString JsonLd => new(JsonSerializer.Serialize(new Dictionary<string, object?>
-    {
-        ["@context"] = "https://schema.org",
-        ["@type"] = "EmailMessage",
-        ["description"] = Model.Subject,
-        ["potentialAction"] = new Dictionary<string, object?>
-        {
-            ["@type"] = "ViewAction",
-            ["target"] = Model.Action!.Url,
-            ["url"] = Model.Action.Url,
-            ["name"] = Model.Action.Name
-        },
-        ["publisher"] = new Dictionary<string, object?>
-        {
-            ["@type"] = "Organization",
-            ["name"] = "Exceptionless",
-            ["url"] = "https://exceptionless.com",
-            ["logo"] = "https://be.exceptionless.io/img/exceptionless-48.png"
-        }
-    }));
+    private MarkupString JsonLd => new(JsonSerializer.Serialize(
+        new EmailMessageMetadata(
+            "https://schema.org",
+            "EmailMessage",
+            Model.Subject,
+            new EmailViewActionMetadata("ViewAction", Model.Action!.Url, Model.Action.Url, Model.Action.Name),
+            new EmailPublisherMetadata(
+                "Organization",
+                "Exceptionless",
+                "https://exceptionless.com",
+                "https://be.exceptionless.io/img/exceptionless-48.png")),
+        EmailTemplateJsonSerializerContext.Default.EmailMessageMetadata));
 }

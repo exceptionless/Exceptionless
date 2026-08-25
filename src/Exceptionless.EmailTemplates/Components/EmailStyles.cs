@@ -22,6 +22,6 @@ internal static class EmailStyles
         html,body{margin:0!important;padding:0!important;width:100%!important;min-width:100%!important;background:#f7f7f7!important;color:#2c2c2c!important;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%}
         table{border-collapse:collapse;border-spacing:0}
         img{border:0;line-height:100%;outline:none;text-decoration:none}
-        @media only screen and (max-width:596px){.email-container{width:95%!important}.email-social-column{display:block!important;width:100%!important;padding:0 16px 24px!important}.email-metric{display:inline-block!important;box-sizing:border-box!important;padding:4px!important}.email-metric-3{width:33.333%!important}.email-metric-4{width:25%!important}}
+        @media only screen and (max-width:596px){.email-container{width:95%!important}.email-social-column{display:block!important;width:100%!important;padding:0 16px 24px!important}.email-metric{display:inline-block!important;box-sizing:border-box!important;padding:4px!important}.email-metric-3{width:33.333%!important}.email-metric-4{width:50%!important}}
         """;
 }

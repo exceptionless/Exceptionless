@@ -3,14 +3,14 @@
     @foreach (var stack in Stacks)
     {
         <li style="margin-left:5px;margin-top:5px">
-            <a href="@stack.Url" target="_blank" style="@EmailStyles.Link">
+            <a href="@stack.Url" target="_blank" style="@EmailStyles.Link;word-break:break-word;word-wrap:break-word">
                 @if (stack.IsRegressed)
                 {
-                    <strong>[REGRESSED]</strong><text> </text>
+                    <strong>[REGRESSED]</strong>@((MarkupString)"&#32;")
                 }
                 @if (!String.IsNullOrEmpty(stack.TypeName))
                 {
-                    <strong>@stack.TypeName:</strong><text> </text>
+                    <strong>@stack.TypeName:</strong>@((MarkupString)"&#32;")
                 }
                 @stack.Title
             </a>

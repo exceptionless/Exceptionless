@@ -5,7 +5,7 @@
     <EmailSection>
         <h1 style="@EmailStyles.Heading1">You've been invited to become Exceptionless!</h1>
         <p style="@EmailStyles.Lead">@Model.Subject</p>
-        <EmailButton Url="Model.Action!.Url">Join Organization</EmailButton>
+        <EmailButton Url="@Model.Action!.Url">Join Organization</EmailButton>
         <p style="@EmailStyles.Paragraph">What is <a href="https://exceptionless.com" style="@EmailStyles.Link">Exceptionless</a>? Exceptionless is an error reporting service. Go from signing up to catching every error in your application in 15 minutes or less.</p>
     </EmailSection>
     <SocialFooter />

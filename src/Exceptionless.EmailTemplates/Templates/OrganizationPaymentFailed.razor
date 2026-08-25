@@ -5,7 +5,7 @@
     <EmailSection>
         <h1 style="@EmailStyles.Heading1">Payment Failed</h1>
         <p style="@EmailStyles.Lead">Payment failed for organization "@Model.OrganizationName". In order to avoid service interruption, please log in and update your payment information.</p>
-        <EmailButton Url="Model.BillingUrl">Update Billing Information</EmailButton>
+        <EmailButton Url="@Model.BillingUrl">Update Billing Information</EmailButton>
         <p style="@EmailStyles.Paragraph">Send us an email at <a href="mailto:support@exceptionless.io" style="@EmailStyles.Link">support@exceptionless.io</a> if you have any questions or need assistance.</p>
     </EmailSection>
     <ActionsFooter Links="InvoiceLink" />

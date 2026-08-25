@@ -13,7 +13,7 @@
                 <text>Events are currently being throttled for @Model.OrganizationName until @Model.ThrottledUntil UTC to prevent using up your plan limit in a small window of time. Upgrade now to increase your limits.</text>
             }
         </p>
-        <EmailButton Url="Model.UpgradeUrl">Upgrade Plan</EmailButton>
+        <EmailButton Url="@Model.UpgradeUrl">Upgrade Plan</EmailButton>
         <p style="@EmailStyles.Paragraph">
             <a href="@Model.LearnMoreUrl" style="@EmailStyles.Link">@(Model.IsOverMonthlyLimit ? "Learn more about what happens when the plan limit is reached." : "Learn more about being throttled.")</a>
             You can also view the <a href="@Model.FrequentEventsUrl" style="@EmailStyles.Link">most frequent events</a> to see an overall picture of the events that are being counted against your plan limits.
