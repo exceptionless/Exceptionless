@@ -68,22 +68,22 @@
                 <P class="text-center">Sign up with</P>
                 <div class="grid grid-flow-col grid-cols-2 grid-rows-2 gap-4">
                     {#if microsoftClientId}
-                        <Button aria-label="Sign up with Microsoft" onclick={() => liveLogin(redirectUrl, inviteToken)}>
+                        <Button aria-label="Sign up with Microsoft" onclick={() => liveLogin(redirectUrl)}>
                             <MicrosoftIcon class="size-4" /> Microsoft
                         </Button>
                     {/if}
                     {#if googleClientId}
-                        <Button aria-label="Sign up with Google" onclick={() => googleLogin(redirectUrl, inviteToken)}>
+                        <Button aria-label="Sign up with Google" onclick={() => googleLogin(redirectUrl)}>
                             <GoogleIcon class="size-4" /> Google
                         </Button>
                     {/if}
                     {#if facebookClientId}
-                        <Button aria-label="Sign up with Facebook" onclick={() => facebookLogin(redirectUrl, inviteToken)}>
+                        <Button aria-label="Sign up with Facebook" onclick={() => facebookLogin(redirectUrl)}>
                             <FacebookIcon class="size-4" /> Facebook
                         </Button>
                     {/if}
                     {#if gitHubClientId}
-                        <Button aria-label="Sign up with GitHub" onclick={() => githubLogin(redirectUrl, inviteToken)}>
+                        <Button aria-label="Sign up with GitHub" onclick={() => githubLogin(redirectUrl)}>
                             <GitHubIcon class="size-4" /> GitHub
                         </Button>
                     {/if}

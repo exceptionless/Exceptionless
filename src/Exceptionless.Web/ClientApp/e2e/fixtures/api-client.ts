@@ -191,14 +191,6 @@ export class E2EApiClient {
         return toToken(await readJson(response));
     }
 
-    async inviteOrganizationUser(token: string, organizationId: string, email: string): Promise<void> {
-        const response = await this.request.post(this.url(`organizations/${organizationId}/users/${encodeURIComponent(email)}`), {
-            headers: this.authHeaders(token)
-        });
-
-        await expectStatus(response, [200], 'invite organization user');
-    }
-
     async login(email = this.environment.email, password = this.environment.password): Promise<string> {
         const token = await this.loginIfExists(email, password);
         if (!token) {

@@ -8,31 +8,7 @@ vi.mock('./exceptionless-session', () => ({
 }));
 vi.mock('./session.svelte', () => ({ clearAuthenticationSession }));
 
-import { login, logout } from './api.svelte';
-
-describe('login', () => {
-    it('login_WithInvitationToken_IncludesTokenInRequest', async () => {
-        // Arrange
-        const mockClient = {
-            isLoading: false,
-            postJSON: vi.fn().mockResolvedValue({ data: { token: 'access-token' }, ok: true, status: 200 })
-        } as unknown as FetchClient;
-
-        // Act
-        await login('invited@example.com', 'password', 'invite-token', mockClient);
-
-        // Assert
-        expect(mockClient.postJSON).toHaveBeenCalledWith(
-            'auth/login',
-            {
-                email: 'invited@example.com',
-                invite_token: 'invite-token',
-                password: 'password'
-            },
-            { expectedStatusCodes: [401, 422] }
-        );
-    });
-});
+import { logout } from './api.svelte';
 
 describe('logout', () => {
     beforeEach(() => {
