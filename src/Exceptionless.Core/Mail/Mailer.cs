@@ -116,7 +116,10 @@ public class Mailer : IMailer
             data["UserDescription"] = ud.Description;
 
         if (!String.IsNullOrEmpty(ud?.EmailAddress))
+        {
             data["UserEmail"] = ud.EmailAddress;
+            data["UserEmailHref"] = BuildMailtoHref(ud.EmailAddress, ud.Description);
+        }
 
         string? displayName = null;
         if (!String.IsNullOrEmpty(ui?.Identity))
@@ -134,6 +137,12 @@ public class Mailer : IMailer
             data["UserDisplayName"] = displayName;
 
         data["HasUserInfo"] = ud is not null || ui is not null;
+    }
+
+    private static string BuildMailtoHref(string emailAddress, string? body)
+    {
+        string href = $"mailto:{Uri.EscapeDataString(emailAddress)}";
+        return String.IsNullOrEmpty(body) ? href : $"{href}?body={Uri.EscapeDataString(body)}";
     }
 
     private static void AddDefaultFields(PersistentEvent ev, Dictionary<string, object?> data)
@@ -270,7 +279,8 @@ public class Mailer : IMailer
             StackId = s.Id,
             Title = s.Title.Truncate(50),
             TypeName = s.GetTypeName()?.Truncate(50),
-            s.Status
+            s.Status,
+            IsRegressed = s.Status == StackStatus.Regressed
         });
     }
 
