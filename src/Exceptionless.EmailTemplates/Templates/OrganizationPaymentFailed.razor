@@ -1,4 +1,5 @@
 @namespace Exceptionless.EmailTemplates.Templates
+@inherits EmailTemplateComponent<OrganizationPaymentFailedEmail>
 
 <EmailLayout Model="Model">
     <EmailSection>
@@ -11,8 +12,5 @@
 </EmailLayout>
 
 @code {
-    [Parameter, EditorRequired]
-    public required OrganizationPaymentFailedEmail Model { get; set; }
-
     private IReadOnlyCollection<EmailLink> InvoiceLink => [new("View invoices", Model.BillingUrl)];
 }

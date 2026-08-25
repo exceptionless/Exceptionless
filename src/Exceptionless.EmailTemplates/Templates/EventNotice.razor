@@ -1,4 +1,5 @@
 @namespace Exceptionless.EmailTemplates.Templates
+@inherits EmailTemplateComponent<EventNoticeEmail>
 
 <EmailLayout Model="Model">
     <EmailSection>
@@ -63,8 +64,3 @@
     </EmailSection>
     <ActionsFooter Links="Model.OtherActions" />
 </EmailLayout>
-
-@code {
-    [Parameter, EditorRequired]
-    public required EventNoticeEmail Model { get; set; }
-}

@@ -1,4 +1,5 @@
 @namespace Exceptionless.EmailTemplates.Templates
+@inherits EmailTemplateComponent<ProjectDailySummaryEmail>
 
 <EmailLayout Model="Model">
     <EmailSection>
@@ -55,9 +56,6 @@
 </EmailLayout>
 
 @code {
-    [Parameter, EditorRequired]
-    public required ProjectDailySummaryEmail Model { get; set; }
-
     private IReadOnlyList<SummaryMetrics.SummaryMetric> Metrics
     {
         get

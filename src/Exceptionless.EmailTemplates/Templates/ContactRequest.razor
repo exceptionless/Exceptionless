@@ -1,4 +1,5 @@
 @namespace Exceptionless.EmailTemplates.Templates
+@inherits EmailTemplateComponent<ContactRequestEmail>
 
 <!doctype html>
 <html lang="en">
@@ -39,8 +40,3 @@
     </dl>
 </body>
 </html>
-
-@code {
-    [Parameter, EditorRequired]
-    public required ContactRequestEmail Model { get; set; }
-}

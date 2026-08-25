@@ -1,4 +1,5 @@
 @namespace Exceptionless.EmailTemplates.Templates
+@inherits EmailTemplateComponent<OrganizationAddedEmail>
 
 <EmailLayout Model="Model">
     <EmailSection>
@@ -8,8 +9,3 @@
     </EmailSection>
     <SocialFooter />
 </EmailLayout>
-
-@code {
-    [Parameter, EditorRequired]
-    public required OrganizationAddedEmail Model { get; set; }
-}
