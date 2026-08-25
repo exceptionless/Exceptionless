@@ -46,6 +46,7 @@ describe('StackTrace', () => {
         expect(frames?.classList.contains('flex-col')).toBe(true);
         expect(frameRows).toHaveLength(2);
         expect([...frameRows].every((frame) => frame.classList.contains('flex') && frame.classList.contains('flex-wrap'))).toBe(true);
+        expect([...frameRows].every((frame) => frame.classList.contains('*:min-w-0'))).toBe(true);
         expect(frameRows[0]?.textContent).toContain('TransformManyBlock`2.Initialize');
         expect(frameRows[1]?.textContent).toContain('CancellationTokenSource.ThrowObjectDisposedException');
     });
