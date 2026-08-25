@@ -142,7 +142,7 @@ test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2
         await expect(getVisibleText(page, journey.message)).toBeVisible();
     });
 
-    await test.step('updating a URL override clears the hidden browser-local draft', async () => {
+    await test.step('updating a URL override clears the hidden session-local draft', async () => {
         await page.goto(`/next/event/${viewSlug}?time=90d`);
         const dateFilter = page.getByRole('button', { name: /^Date/ }).filter({ visible: true }).first();
         await dateFilter.click();
@@ -618,7 +618,7 @@ test('save completion does not overwrite a newly active saved view', async ({ e2
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
 });
 
-test('stream switches to a browser-local saved view draft without mixing in-flight results', async ({ e2eApi, e2eScenario, page, request }) => {
+test('stream switches to a session-local saved view draft without mixing in-flight results', async ({ e2eApi, e2eScenario, page, request }) => {
     const failedApiRequests = captureFailedApiRequests(page);
     const suffix = e2eScenario.run.slice(-28);
     const viewName = `E2E Stream View ${suffix}`;
@@ -658,7 +658,7 @@ test('stream switches to a browser-local saved view draft without mixing in-flig
 
     await page.addInitScript(
         ({ draft, key }) => {
-            window.localStorage.setItem(key, JSON.stringify(draft));
+            window.sessionStorage.setItem(key, JSON.stringify(draft));
         },
         {
             draft: {
@@ -814,7 +814,7 @@ test('stream loads default results when its saved-view lookup fails', async ({ e
     await expect.poll(() => eventRequests.length, { timeout: 30_000 }).toBeGreaterThan(0);
 });
 
-test('reset clears a browser-local draft after delayed current-user identity resolves', async ({ e2eApi, e2eScenario, page, request }) => {
+test('reset clears a session-local draft after delayed current-user identity resolves', async ({ e2eApi, e2eScenario, page, request }) => {
     const suffix = e2eScenario.run.slice(-28);
     const viewName = `E2E Delayed Reset ${suffix}`;
     const viewSlug = savedViewSlug(viewName);
@@ -840,7 +840,7 @@ test('reset clears a browser-local draft after delayed current-user identity res
     const currentUser = await e2eApi.getCurrentUser(e2eScenario.userToken);
     expect(currentUser).toBeDefined();
 
-    await page.addInitScript(({ draft, key }) => window.localStorage.setItem(key, JSON.stringify(draft)), {
+    await page.addInitScript(({ draft, key }) => window.sessionStorage.setItem(key, JSON.stringify(draft)), {
         draft: {
             filterChanges: {
                 baselineDefinitions: '[{"term":"date","type":"date","value":"[now-15m TO now]"}]',
@@ -881,7 +881,7 @@ test('reset clears a browser-local draft after delayed current-user identity res
     await expect(page.getByLabel('Unsaved view changes')).toHaveCount(0);
 });
 
-test('filter edits made before current-user identity resolves become browser-local drafts', async ({ e2eApi, e2eScenario, page, request }) => {
+test('filter edits made before current-user identity resolves become session-local drafts', async ({ e2eApi, e2eScenario, page, request }) => {
     const suffix = e2eScenario.run.slice(-28);
     const viewName = `E2E Delayed Edit ${suffix}`;
     const viewSlug = savedViewSlug(viewName);
@@ -913,7 +913,7 @@ test('filter edits made before current-user identity resolves become browser-loc
                 return;
             }
 
-            window.localStorage.setItem(key, JSON.stringify({ showChart: false, version: 1 }));
+            window.sessionStorage.setItem(key, JSON.stringify({ showChart: false, version: 1 }));
             window.sessionStorage.setItem(marker, 'true');
         },
         { key: draftKey, marker: `${draftKey}:seeded` }
@@ -944,16 +944,16 @@ test('filter edits made before current-user identity resolves become browser-loc
 
     releaseCurrentUser();
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
-    await expect.poll(() => page.evaluate((key) => window.localStorage.getItem(key), draftKey)).not.toBeNull();
+    await expect.poll(() => page.evaluate((key) => window.sessionStorage.getItem(key), draftKey)).not.toBeNull();
     await openViewMenu(page);
     await expect(page.getByRole('menuitemcheckbox', { name: 'Chart' })).toBeChecked();
     await page.keyboard.press('Escape');
     await expect
-        .poll(async () => JSON.parse((await page.evaluate((key) => window.localStorage.getItem(key), draftKey)) ?? '{}') as { showChart?: boolean })
+        .poll(async () => JSON.parse((await page.evaluate((key) => window.sessionStorage.getItem(key), draftKey)) ?? '{}') as { showChart?: boolean })
         .not.toHaveProperty('showChart');
     await expect
         .poll(async () => {
-            const draft = JSON.parse((await page.evaluate((key) => window.localStorage.getItem(key), draftKey)) ?? '{}') as {
+            const draft = JSON.parse((await page.evaluate((key) => window.sessionStorage.getItem(key), draftKey)) ?? '{}') as {
                 filterChanges?: { upsertDefinitions?: string };
             };
             return draft.filterChanges?.upsertDefinitions;
@@ -964,7 +964,7 @@ test('filter edits made before current-user identity resolves become browser-loc
     await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
     await expect
         .poll(async () => {
-            const draft = JSON.parse((await page.evaluate((key) => window.localStorage.getItem(key), draftKey)) ?? '{}') as {
+            const draft = JSON.parse((await page.evaluate((key) => window.sessionStorage.getItem(key), draftKey)) ?? '{}') as {
                 filterChanges?: { upsertDefinitions?: string };
             };
             return draft.filterChanges?.upsertDefinitions;
@@ -1007,7 +1007,7 @@ test('saved view loads server state and protects drafts when the current-user lo
     const currentUser = await e2eApi.getCurrentUser(e2eScenario.userToken);
     expect(currentUser).toBeDefined();
     const draftKey = `exceptionless:saved-view-draft:v1:${currentUser!.id}:${e2eScenario.organizationId}:${savedView.id}`;
-    await page.addInitScript(({ draft, key }) => window.localStorage.setItem(key, JSON.stringify(draft)), {
+    await page.addInitScript(({ draft, key }) => window.sessionStorage.setItem(key, JSON.stringify(draft)), {
         draft: {
             filterChanges: {
                 baselineDefinitions: '[{"term":"date","type":"date","value":"[now-15m TO now]"}]',
@@ -1063,7 +1063,7 @@ test('saved view loads server state and protects drafts when the current-user lo
             .first()
     ).toBeVisible();
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
-    expect(await page.evaluate((key) => window.localStorage.getItem(key), draftKey)).not.toBeNull();
+    expect(await page.evaluate((key) => window.sessionStorage.getItem(key), draftKey)).not.toBeNull();
 });
 
 function captureFailedApiRequests(page: Page): { error: null | string; method: string; url: string }[] {

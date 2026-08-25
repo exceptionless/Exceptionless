@@ -52,6 +52,7 @@ test('table toolbar remains accessible while moving between different-height res
     await nextButton.click();
     await expect(pager.getByLabel('Page 2 of 2')).toBeVisible();
     await expect(pager.getByRole('button', { name: 'Go to next page' })).toBeFocused();
+    await expect(bulkActionsButton).toHaveAttribute('aria-disabled', 'true');
     await expect.poll(() => scrollContainer.evaluate((element) => element.scrollTop)).toBe(scrollTopBeforePaging);
 
     const secondToolbarBox = await toolbar.boundingBox();
@@ -85,4 +86,9 @@ test('table toolbar remains accessible while moving between different-height res
     if (process.env.E2E_CAPTURE_PAGER_TOOLBAR_SCREENSHOTS === 'true') {
         await page.screenshot({ path: resolve(process.cwd(), '../../../dogfood-output/pager-toolbar/narrow-page-2.png') });
     }
+
+    const firstPageButton = pager.getByRole('button', { name: 'Go to first page' });
+    await firstPageButton.click();
+    await expect(pager.getByLabel('Page 1 of 2')).toBeVisible();
+    await expect(page.locator('tbody').getByRole('checkbox').first()).not.toBeChecked();
 });

@@ -431,8 +431,13 @@
     let isInternalFilterUpdate = false;
     watch(
         [() => page.url.pathname, () => getListFilterQueryParams(queryParams), () => savedViewsState.activeSavedView],
-        ([pathname, currentQueryParams, activeSavedView], [previousPathname, , previousSavedView]) => {
+        ([pathname, currentQueryParams, activeSavedView], [previousPathname, previousQueryParams, previousSavedView]) => {
             const savedViewChanged = pathname !== previousPathname || activeSavedView?.id !== previousSavedView?.id;
+            const queryChanged = JSON.stringify(currentQueryParams) !== JSON.stringify(previousQueryParams);
+            if (savedViewChanged || queryChanged) {
+                table.resetRowSelection();
+            }
+
             if (isInternalFilterUpdate && !savedViewChanged) {
                 isInternalFilterUpdate = false;
                 return;
@@ -448,6 +453,7 @@
 
     function handleResetToSaved(): void {
         isInternalFilterUpdate = false;
+        table.resetRowSelection();
         queryParams.update(LIST_FILTER_QUERY_PARAM_RESET);
         savedViewsState.handleResetToSaved();
         filters = getCurrentFilters();
@@ -509,6 +515,10 @@
         const effectiveQueryWillChange = (filter || null) !== getEffectiveFilter() || time !== getQueryTime();
         const shouldClearPaginationForFilter = shouldClearPagination && effectiveQueryWillChange;
         const paginationWillChange = shouldClearPaginationForFilter && (queryParams.after != null || queryParams.before != null || queryParams.page != null);
+
+        if (effectiveQueryWillChange) {
+            table.resetRowSelection();
+        }
 
         updateFilterCache(filterCacheKey(filter), updatedFilters);
 

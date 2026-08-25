@@ -235,11 +235,14 @@ export function buildWrappedColumnChanges(serverValue: string[], currentValue: s
     return Object.keys(changes).length > 0 ? changes : undefined;
 }
 
-export function clearSavedViewDraft(identity: SavedViewDraftIdentity, storage: DraftStorage | undefined = getLocalStorage()): void {
-    try {
-        storage?.removeItem(getSavedViewDraftStorageKey(identity));
-    } catch {
-        // Storage can be unavailable by browser policy; the saved view still works without a local draft.
+export function clearSavedViewDraft(
+    identity: SavedViewDraftIdentity,
+    storage: DraftStorage | undefined = getSessionStorage(),
+    legacyStorage: DraftStorage | undefined = getLocalStorage()
+): void {
+    removeSavedViewDraftFromStorage(identity, storage);
+    if (legacyStorage !== storage) {
+        removeSavedViewDraftFromStorage(identity, legacyStorage);
     }
 }
 
@@ -249,7 +252,15 @@ export function getMatchingFilterOverrideKeys(filters: IFilter[], baselines: Rec
         .map(([key]) => key);
 }
 
-export function getSavedViewDraft(identity: SavedViewDraftIdentity, storage: DraftStorage | undefined = getLocalStorage()): SavedViewDraft | undefined {
+export function getSavedViewDraft(
+    identity: SavedViewDraftIdentity,
+    storage: DraftStorage | undefined = getSessionStorage(),
+    legacyStorage: DraftStorage | undefined = getLocalStorage()
+): SavedViewDraft | undefined {
+    if (legacyStorage !== storage) {
+        removeSavedViewDraftFromStorage(identity, legacyStorage);
+    }
+
     try {
         const value = storage?.getItem(getSavedViewDraftStorageKey(identity));
         if (!value) {
@@ -334,11 +345,20 @@ export function mergePendingSavedViewDraftEdits(
     return Object.entries(merged).some(([key, value]) => key !== 'version' && value !== undefined) ? merged : undefined;
 }
 
-export function saveSavedViewDraft(identity: SavedViewDraftIdentity, draft: SavedViewDraft, storage: DraftStorage | undefined = getLocalStorage()): void {
+export function saveSavedViewDraft(
+    identity: SavedViewDraftIdentity,
+    draft: SavedViewDraft,
+    storage: DraftStorage | undefined = getSessionStorage(),
+    legacyStorage: DraftStorage | undefined = getLocalStorage()
+): void {
     try {
         storage?.setItem(getSavedViewDraftStorageKey(identity), JSON.stringify(draft));
     } catch {
         // Storage can be unavailable or full; the current in-memory edits remain usable.
+    }
+
+    if (legacyStorage !== storage) {
+        removeSavedViewDraftFromStorage(identity, legacyStorage);
     }
 }
 
@@ -398,6 +418,14 @@ function getMissingDuplicateUpserts(upserts: IFilter[], targetCounts: Map<string
         missingCounts.set(serialized, remaining - 1);
         return true;
     });
+}
+
+function getSessionStorage(): DraftStorage | undefined {
+    try {
+        return typeof sessionStorage === 'undefined' ? undefined : sessionStorage;
+    } catch {
+        return undefined;
+    }
 }
 
 function getUnmatchedFilters(filters: IFilter[], comparison: IFilter[]): IFilter[] {
@@ -480,6 +508,14 @@ function isSavedViewDraft(value: unknown): value is SavedViewDraft {
 
 function isStringArray(value: unknown): value is string[] {
     return Array.isArray(value) && value.every((item) => typeof item === 'string');
+}
+
+function removeSavedViewDraftFromStorage(identity: SavedViewDraftIdentity, storage: DraftStorage | undefined): void {
+    try {
+        storage?.removeItem(getSavedViewDraftStorageKey(identity));
+    } catch {
+        // Storage can be unavailable by browser policy; the saved view still works without a stored draft.
+    }
 }
 
 function supportsMultipleDefinitions(filter: IFilter): boolean {

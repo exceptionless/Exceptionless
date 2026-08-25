@@ -11,6 +11,7 @@
     import { cn } from '$lib/utils';
     import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
     import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
+    import ChevronsLeftIcon from '@lucide/svelte/icons/chevrons-left';
 
     import DataTablePageSize from './data-table-page-size.svelte';
 
@@ -26,6 +27,12 @@
     const totalPages = $derived(Math.max(1, table.getPageCount() || 1));
     const canGoNext = $derived(currentPage < totalPages);
     const canGoPrevious = $derived(currentPage > 1);
+
+    function goToFirstPage(): void {
+        if (canGoPrevious) {
+            table.setPageIndex(0);
+        }
+    }
 
     function goToNextPage(): void {
         if (canGoNext) {
@@ -50,6 +57,17 @@
         >
             <Number value={currentPage} /> / <Number value={totalPages} />
         </ButtonGroup.Text>
+        <Button
+            aria-label="Go to first page"
+            aria-disabled={!canGoPrevious}
+            class={cn('aria-disabled:pointer-events-none aria-disabled:opacity-50', variant === 'floating' && 'rounded-none border-y-0')}
+            onclick={goToFirstPage}
+            size="icon"
+            title="First page"
+            variant="outline"
+        >
+            <ChevronsLeftIcon />
+        </Button>
         <Button
             aria-label="Go to previous page"
             aria-disabled={!canGoPrevious}

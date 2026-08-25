@@ -125,6 +125,7 @@
     watch(
         [() => queryParams.filter],
         ([filter]) => {
+            table.resetRowSelection();
             filters = sanitizeStackFilters(getFiltersFromCache(filterCacheKey(filter), filter), true);
         },
         {
@@ -167,6 +168,10 @@
     function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {
         const sanitizedFilters = sanitizeStackFilters(updatedFilters);
         const filter = toFilter(sanitizedFilters);
+        if (queryParams.filter !== filter) {
+            table.resetRowSelection();
+        }
+
         updateFilterCache(filterCacheKey(filter), sanitizedFilters);
         queryParams.page = 1;
         queryParams.filter = filter;

@@ -15,6 +15,7 @@ import {
     clearSavedViewDraft,
     getMatchingFilterOverrideKeys,
     getSavedViewDraft,
+    getSavedViewDraftStorageKey,
     mergeFilterOverrides,
     mergePendingSavedViewDraftEdits,
     saveSavedViewDraft
@@ -205,7 +206,7 @@ describe('saved view drafts', () => {
         expect(mergedFilters.map((filter) => (filter as KeywordFilter).value)).toEqual(['baz']);
     });
 
-    it('continues to apply key removals from legacy browser-local drafts', () => {
+    it('continues to apply key removals from legacy saved-view drafts', () => {
         const mergedFilters = applyFilterChanges([new StatusFilter([StackStatus.Open])], {
             removedKeys: ['status'],
             upsertDefinitions: '[]'
@@ -367,5 +368,21 @@ describe('saved view drafts', () => {
         clearSavedViewDraft(identity, storage);
 
         expect(getSavedViewDraft(identity, storage)).toBeUndefined();
+    });
+
+    it('removes a legacy persistent draft without restoring it into the current session', () => {
+        const sessionStorage = createStorage();
+        const legacyLocalStorage = createStorage();
+        const key = getSavedViewDraftStorageKey(identity);
+        legacyLocalStorage.setItem(key, JSON.stringify({ showChart: false, version: 1 }));
+
+        expect(getSavedViewDraft(identity, sessionStorage, legacyLocalStorage)).toBeUndefined();
+        expect(legacyLocalStorage.getItem(key)).toBeNull();
+
+        saveSavedViewDraft(identity, { showStats: false, version: 1 }, sessionStorage, legacyLocalStorage);
+        expect(getSavedViewDraft(identity, sessionStorage, legacyLocalStorage)).toEqual({ showStats: false, version: 1 });
+
+        clearSavedViewDraft(identity, sessionStorage, legacyLocalStorage);
+        expect(getSavedViewDraft(identity, sessionStorage, legacyLocalStorage)).toBeUndefined();
     });
 });

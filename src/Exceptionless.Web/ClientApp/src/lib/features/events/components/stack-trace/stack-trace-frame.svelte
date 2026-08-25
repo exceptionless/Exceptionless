@@ -15,8 +15,10 @@
     let { frame }: Props = $props();
 </script>
 
-{#if frame}<div class="bg-inherit pl-[10px]">
-        at <StackTraceFrameNamespace {frame} /><StackTraceFrameMethodName {frame} /><StackTraceFrameGenericArguments {frame} />(<StackTraceFrameParameters
-            {frame}
-        />)<StackTraceFrameOffset {frame} /><StackTraceFrameFileName {frame} />
+{#if frame}<div class="flex flex-wrap bg-inherit pl-[10px]" data-slot="stack-trace-frame">
+        <span class="min-w-0" data-slot="stack-trace-frame-content"
+            >at <StackTraceFrameNamespace {frame} /><StackTraceFrameMethodName {frame} /><StackTraceFrameGenericArguments {frame} />(<StackTraceFrameParameters
+                {frame}
+            />)<StackTraceFrameOffset {frame} /><StackTraceFrameFileName {frame} /></span
+        >
     </div>{:else}&lt;null&gt;{/if}

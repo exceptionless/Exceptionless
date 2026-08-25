@@ -135,6 +135,13 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
         const previousPageInfo = pagination();
         const requestedPageInfo = resolveUpdater(previousPageInfo, updaterOrValue);
         const paginationChange = resolvePaginationChange(previousPageInfo, requestedPageInfo);
+        if (
+            previousPageInfo.pageIndex !== paginationChange.currentPageInfo.pageIndex ||
+            previousPageInfo.pageSize !== paginationChange.currentPageInfo.pageSize
+        ) {
+            setRowSelection({});
+        }
+
         setPagination(paginationChange.currentPageInfo);
 
         const currentPageInfo = paginationChange.currentPageInfo;
@@ -154,8 +161,12 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
     };
 
     const onSortingChange = (updaterOrValue: Updater<ColumnSort[]>) => {
+        const previousSorting = sorting();
         setSorting(updaterOrValue);
         const newSorting = sorting();
+        if (serializeSortState(previousSorting) !== serializeSortState(newSorting)) {
+            setRowSelection({});
+        }
 
         if (isCursorPaging) {
             const parameters = configuration.queryParameters as TableCursorPagingParameters;
@@ -233,6 +244,7 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
         const currentPageInfo = pagination();
 
         if (currentPageInfo.pageSize !== nextPageSize || currentPageInfo.pageIndex !== nextPageIndex) {
+            setRowSelection({});
             setPagination({
                 pageIndex: nextPageIndex,
                 pageSize: nextPageSize
@@ -246,6 +258,7 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
 
         const parsedSort = parseSortString(configuration.queryParameters.sort);
         if (serializeSortState(parsedSort) !== serializeSortState(sorting())) {
+            setRowSelection({});
             setSorting(parsedSort);
         }
     });
