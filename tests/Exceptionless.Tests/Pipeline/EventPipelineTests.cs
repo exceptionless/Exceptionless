@@ -816,16 +816,17 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
         var project = _projectData.GenerateSampleProject();
         var firstContext = await _pipeline.RunAsync(
-            _eventData.GenerateEvent(projectId: project.Id, organizationId: organization.Id, source: "first-stack", occurrenceDate: fixedAtUtc.AddMinutes(-2)),
+            _eventData.GenerateEvent(projectId: project.Id, organizationId: organization.Id, type: Event.KnownTypes.Log, source: "first-stack", occurrenceDate: fixedAtUtc.AddMinutes(-2)),
             organization,
             project);
         var secondContext = await _pipeline.RunAsync(
-            _eventData.GenerateEvent(projectId: project.Id, organizationId: organization.Id, source: "second-stack", occurrenceDate: fixedAtUtc.AddMinutes(-2)),
+            _eventData.GenerateEvent(projectId: project.Id, organizationId: organization.Id, type: Event.KnownTypes.Log, source: "second-stack", occurrenceDate: fixedAtUtc.AddMinutes(-2)),
             organization,
             project);
 
         Assert.NotNull(firstContext.Stack);
         Assert.NotNull(secondContext.Stack);
+        Assert.NotEqual(firstContext.Stack.Id, secondContext.Stack.Id);
         firstContext.Stack.MarkFixed(null, TimeProvider);
         secondContext.Stack.MarkFixed(null, TimeProvider);
         await _stackRepository.SaveAsync(firstContext.Stack, o => o.ImmediateConsistency().Cache());
