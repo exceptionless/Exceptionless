@@ -127,7 +127,7 @@ describe('DataTablePager', () => {
         const tableRoot = document.querySelector<HTMLElement>('[data-slot="data-table"]')!;
         const toolbar = screen.getByRole('toolbar', { name: 'Table controls' });
         const tableBody = document.querySelector<HTMLElement>('[data-slot="data-table-body"]')!;
-        const firstRow = tableBody.querySelector<HTMLElement>('tbody > tr')!;
+        const firstRow = tableBody.querySelector<HTMLElement>('tbody > tr:not(.hidden)')!;
         toolbar.setAttribute('data-floating', '');
         const scrollTo = vi.fn();
         scrollContainer.scrollTop = 400;
@@ -167,7 +167,7 @@ describe('DataTablePager', () => {
         const tableRoot = document.querySelector<HTMLElement>('[data-slot="data-table"]')!;
         const toolbar = screen.getByRole('toolbar', { name: 'Table controls' });
         const tableBody = document.querySelector<HTMLElement>('[data-slot="data-table-body"]')!;
-        const firstRow = tableBody.querySelector<HTMLElement>('tbody > tr')!;
+        const firstRow = tableBody.querySelector<HTMLElement>('tbody > tr:not(.hidden)')!;
         toolbar.setAttribute('data-floating', '');
         const scrollTo = vi.fn();
         scrollContainer.scrollTop = 100;

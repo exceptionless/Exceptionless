@@ -29,10 +29,10 @@ export function scrollTableToFirstRow(trigger: HTMLElement): void {
     const scrollContainerRect = scrollContainer.getBoundingClientRect();
     const toolbarRect = toolbar.getBoundingClientRect();
     const tableBodyRect = tableBody.getBoundingClientRect();
-    const firstRowRect = tableBody.querySelector<HTMLElement>('tbody > tr')?.getBoundingClientRect() ?? tableBodyRect;
+    const firstRowRect = tableBody.querySelector<HTMLElement>('tbody > tr:not(.hidden)')?.getBoundingClientRect() ?? tableBodyRect;
     const visibleTop = Math.max(scrollContainerRect.top + scrollContainer.clientTop, toolbarRect.bottom);
     const visibleBottom = scrollContainerRect.bottom - (scrollContainer.offsetHeight - scrollContainer.clientHeight - scrollContainer.clientTop);
-    if (firstRowRect.bottom > visibleTop && firstRowRect.top < visibleBottom) {
+    if (firstRowRect.top >= visibleTop && firstRowRect.top < visibleBottom) {
         return;
     }
 

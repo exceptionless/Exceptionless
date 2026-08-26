@@ -54,6 +54,9 @@
         <div data-slot="data-table-body">
             <table>
                 <tbody>
+                    <tr class="hidden">
+                        <td>No data</td>
+                    </tr>
                     <tr>
                         <td>First row</td>
                     </tr>
