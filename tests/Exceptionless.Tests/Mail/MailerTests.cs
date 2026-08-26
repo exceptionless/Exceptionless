@@ -175,7 +175,7 @@ public sealed class MailerTests : TestWithServices
     }
 
     [Fact]
-    public Task SendEventNoticeAsync_WithNotFoundEvent_RendersEventNotice()
+    public async Task SendEventNoticeAsync_WithNotFoundEvent_RendersSourceUrl()
     {
         // Arrange
         var ev = new PersistentEvent
@@ -185,7 +185,10 @@ public sealed class MailerTests : TestWithServices
         };
 
         // Act
-        return SendEventNoticeAsync(ev);
+        string body = await SendEventNoticeAsync(ev);
+
+        // Assert
+        Assert.Contains("[GET] /not-found?page=20", WebUtility.HtmlDecode(body), StringComparison.Ordinal);
     }
 
     [Fact]
