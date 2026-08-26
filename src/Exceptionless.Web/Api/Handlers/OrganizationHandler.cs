@@ -702,6 +702,7 @@ public class OrganizationHandler(
 
             await organizationService.CleanupProjectNotificationSettingsAsync(organization, [user.Id]);
             await organizationService.RemoveUserSavedViewsAsync(organization.Id, user.Id);
+            await organizationService.RemoveUserRateNotificationRulesAsync(organization.Id, user.Id);
 
             user.OrganizationIds.Remove(organization.Id);
             foreach (var preference in user.OrganizationPreferences.Where(preference => String.Equals(preference.OrganizationId, organization.Id, StringComparison.Ordinal)).ToList())

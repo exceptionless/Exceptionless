@@ -335,6 +335,35 @@ public sealed class MailerTests : TestWithServices
         await RunMailJobAsync();
     }
 
+    [Theory]
+    [InlineData(1, "1 event (threshold: 1)")]
+    [InlineData(2, "2 events (threshold: 1)")]
+    public async Task SendRateNotificationUsesCorrectEventNounAsync(long observedCount, string expectedText)
+    {
+        var user = _userData.GenerateSampleUser();
+        var project = _projectData.GenerateSampleProject();
+        var rule = new RateNotificationRule
+        {
+            Id = TestConstants.WebHookId,
+            OrganizationId = project.OrganizationId,
+            ProjectId = project.Id,
+            UserId = user.Id,
+            Name = "Production error storm",
+            IsEnabled = true,
+            Signal = RateNotificationSignal.Errors,
+            Subject = RateNotificationSubject.Project,
+            Threshold = 1,
+            Window = TimeSpan.FromMinutes(1),
+            Cooldown = TimeSpan.FromMinutes(30)
+        };
+
+        await _mailer.SendRateNotificationAsync(user, project, rule, observedCount, DateTime.UtcNow.AddMinutes(-1), DateTime.UtcNow);
+        await RunMailJobAsync();
+
+        var sender = Assert.IsType<InMemoryMailSender>(GetService<IMailSender>());
+        Assert.Contains(expectedText, sender.LastMessage?.Body);
+    }
+
     [Fact]
     public async Task SendUserPasswordResetAsync()
     {

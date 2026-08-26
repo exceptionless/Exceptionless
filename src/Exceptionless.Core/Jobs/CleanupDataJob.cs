@@ -286,6 +286,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         await _organizationService.RemoveTokensAsync(organization);
         await _organizationService.RemoveWebHooksAsync(organization);
         await _organizationService.RemoveSavedViewsAsync(organization);
+        await _organizationService.RemoveRateNotificationRulesAsync(organization.Id);
         await _organizationService.CancelSubscriptionsAsync(organization);
         await _organizationService.RemoveUsersAsync(organization, null);
 
@@ -359,6 +360,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         _logger.RemoveProjectStart(project.Name, project.Id);
         await _tokenRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id);
         await _webHookRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id);
+        await _organizationService.RemoveProjectRateNotificationRulesAsync(project.OrganizationId, project.Id);
 
         await RenewLockAsync(context);
         long removedEvents = await _eventRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id);

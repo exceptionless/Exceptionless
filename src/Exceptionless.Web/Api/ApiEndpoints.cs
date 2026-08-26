@@ -24,6 +24,7 @@ public static class ApiEndpoints
         app.MapOAuthApplicationEndpoints();
         app.MapOAuthEndpoints();
         app.MapEventEndpoints();
+        app.MapRateNotificationEndpoints();
         app.MapSourceMapEndpoints();
         app.MapMediatorEndpoints();
 

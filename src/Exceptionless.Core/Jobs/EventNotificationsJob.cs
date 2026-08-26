@@ -6,7 +6,6 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
-using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Queues;
@@ -30,6 +29,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
     private readonly ICacheClient _cache;
     private readonly UserAgentParser _parser;
     private readonly ITextSerializer _serializer;
+    private readonly ProjectNotificationThrottleService _projectNotificationThrottle;
 
     public EventNotificationsJob(IQueue<EventNotification> queue,
         SlackService slackService,
@@ -40,6 +40,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
         IUserRepository userRepository,
         IEventRepository eventRepository,
         ICacheClient cacheClient,
+        ProjectNotificationThrottleService projectNotificationThrottle,
         UserAgentParser parser,
         ITextSerializer serializer,
         TimeProvider timeProvider,
@@ -54,6 +55,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
         _userRepository = userRepository;
         _eventRepository = eventRepository;
         _cache = cacheClient;
+        _projectNotificationThrottle = projectNotificationThrottle;
         _parser = parser;
         _serializer = serializer;
     }
@@ -90,10 +92,8 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
                 return JobResult.Cancelled;
 
             // don't send more than 10 notifications for a given project every 30 minutes
-            var projectTimeWindow = TimeSpan.FromMinutes(30);
-            string cacheKey = String.Concat("notify:project-throttle:", ev.ProjectId, "-", _timeProvider.GetUtcNow().UtcDateTime.Floor(projectTimeWindow).Ticks);
-            double notificationCount = await _cache.IncrementAsync(cacheKey, 1, projectTimeWindow);
-            if (notificationCount > 10 && !wi.IsRegression)
+            long notificationCount = await _projectNotificationThrottle.IncrementAsync(ev.ProjectId, context.CancellationToken);
+            if (notificationCount > ProjectNotificationThrottleService.NotificationLimit && !wi.IsRegression)
             {
                 if (shouldLog) _logger.LogInformation("Skipping message because of project throttling: count={NotificationCount}", notificationCount);
                 return JobResult.Success;
