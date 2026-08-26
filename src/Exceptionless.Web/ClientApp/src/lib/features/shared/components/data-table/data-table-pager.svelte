@@ -14,6 +14,7 @@
     import ChevronsLeftIcon from '@lucide/svelte/icons/chevrons-left';
 
     import DataTablePageSize from './data-table-page-size.svelte';
+    import { scrollTableToFirstRow } from './data-table-scroll';
 
     interface Props {
         table: Table<StockFeatures, TData>;
@@ -28,22 +29,30 @@
     const canGoNext = $derived(currentPage < totalPages);
     const canGoPrevious = $derived(currentPage > 1);
 
-    function goToFirstPage(): void {
+    function goToFirstPage(event: MouseEvent): void {
         if (canGoPrevious) {
-            table.setPageIndex(0);
+            goToPage(0, event);
         }
     }
 
-    function goToNextPage(): void {
+    function goToNextPage(event: MouseEvent): void {
         if (canGoNext) {
-            table.setPageIndex(currentPage);
+            goToPage(currentPage, event);
         }
     }
 
-    function goToPreviousPage(): void {
+    function goToPreviousPage(event: MouseEvent): void {
         if (canGoPrevious) {
-            table.setPageIndex(currentPage - 2);
+            goToPage(currentPage - 2, event);
         }
+    }
+
+    function goToPage(pageIndex: number, event: MouseEvent): void {
+        if (variant === 'floating') {
+            scrollTableToFirstRow(event.currentTarget as HTMLElement);
+        }
+
+        table.setPageIndex(pageIndex);
     }
 </script>
 

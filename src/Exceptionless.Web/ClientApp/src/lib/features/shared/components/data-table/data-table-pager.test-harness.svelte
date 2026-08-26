@@ -45,9 +45,12 @@
     } as never;
 </script>
 
-<DataTableRoot>
-    <DataTableFooter {table} {variant}>
-        <button type="button">Actions</button>
-        <DataTablePager bind:value={limit} {table} {variant} />
-    </DataTableFooter>
-</DataTableRoot>
+<div data-testid="scroll-container" style="height: 200px; overflow-y: auto;">
+    <DataTableRoot>
+        <DataTableFooter {table} {variant}>
+            <button type="button">Actions</button>
+            <DataTablePager bind:value={limit} {table} {variant} />
+        </DataTableFooter>
+        <div data-slot="data-table-body">First row</div>
+    </DataTableRoot>
+</div>
