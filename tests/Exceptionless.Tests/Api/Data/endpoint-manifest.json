@@ -633,20 +633,6 @@
   },
   {
     "method": "POST",
-    "route": "/api/v2/auth/live",
-    "displayName": "HTTP: POST api/v2/auth/live",
-    "tags": [
-      "Auth"
-    ],
-    "allowAnonymous": true,
-    "authorizationPolicies": [
-      "UserPolicy"
-    ],
-    "authorizationRoles": [],
-    "authenticationSchemes": []
-  },
-  {
-    "method": "POST",
     "route": "/api/v2/auth/login",
     "displayName": "HTTP: POST api/v2/auth/login",
     "tags": [
@@ -667,6 +653,20 @@
       "Auth"
     ],
     "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "POST",
+    "route": "/api/v2/auth/microsoft",
+    "displayName": "HTTP: POST api/v2/auth/microsoft",
+    "tags": [
+      "Auth"
+    ],
+    "allowAnonymous": true,
     "authorizationPolicies": [
       "UserPolicy"
     ],

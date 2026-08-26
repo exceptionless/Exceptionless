@@ -46,6 +46,16 @@ Content-Type: application/json
     "redirectUri": "http://localhost"
 }
 
+### Microsoft OAuth Login
+POST {{apiUrl}}/auth/microsoft
+Content-Type: application/json
+
+{
+    "code": "code",
+    "clientId": "clientId",
+    "redirectUri": "http://localhost"
+}
+
 ### Intercom token
 GET {{apiUrl}}/auth/intercom
 Authorization: Bearer {{token}}
