@@ -51,6 +51,14 @@
             <button type="button">Actions</button>
             <DataTablePager bind:value={limit} {table} {variant} />
         </DataTableFooter>
-        <div data-slot="data-table-body">First row</div>
+        <div data-slot="data-table-body">
+            <table>
+                <tbody>
+                    <tr>
+                        <td>First row</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </DataTableRoot>
 </div>

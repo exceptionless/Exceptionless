@@ -95,6 +95,16 @@ test('floating table controls keep the first row visible between different-heigh
     expect(firstRowBox!.y).toBeGreaterThanOrEqual(secondToolbarBox!.y + secondToolbarBox!.height);
     expect(firstRowBox!.y).toBeLessThan(400);
 
+    const scrollTopWithFirstRowVisible = await scrollContainer.evaluate((element) => element.scrollTop);
+    const previousButton = pager.getByRole('button', { name: 'Go to previous page' });
+    await previousButton.click();
+    await expect(pager.getByLabel('Page 1 of 2')).toBeVisible();
+    await expect.poll(() => scrollContainer.evaluate((element) => element.scrollTop)).toBe(scrollTopWithFirstRowVisible);
+
+    await pager.getByRole('button', { name: 'Go to next page' }).click();
+    await expect(pager.getByLabel('Page 2 of 2')).toBeVisible();
+    await expect.poll(() => scrollContainer.evaluate((element) => element.scrollTop)).toBe(scrollTopWithFirstRowVisible);
+
     await page.locator('main').evaluate((element) => element.parentElement?.scrollTo({ top: element.parentElement.scrollHeight }));
     const appFooter = page.getByRole('link', { exact: true, name: 'Terms' }).locator('xpath=ancestor::div[contains(@class, "border-t")][1]');
     await expect(appFooter).toBeVisible();

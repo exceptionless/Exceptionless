@@ -127,12 +127,14 @@ describe('DataTablePager', () => {
         const tableRoot = document.querySelector<HTMLElement>('[data-slot="data-table"]')!;
         const toolbar = screen.getByRole('toolbar', { name: 'Table controls' });
         const tableBody = document.querySelector<HTMLElement>('[data-slot="data-table-body"]')!;
+        const firstRow = tableBody.querySelector<HTMLElement>('tbody > tr')!;
         const scrollTo = vi.fn();
         scrollContainer.scrollTop = 400;
         scrollContainer.scrollTo = scrollTo;
         vi.spyOn(scrollContainer, 'getBoundingClientRect').mockReturnValue(createRect({ top: 60 }));
         vi.spyOn(toolbar, 'getBoundingClientRect').mockReturnValue(createRect({ height: 32, top: 68 }));
         vi.spyOn(tableBody, 'getBoundingClientRect').mockReturnValue(createRect({ top: -100 }));
+        vi.spyOn(firstRow, 'getBoundingClientRect').mockReturnValue(createRect({ bottom: -40, height: 40, top: -80 }));
 
         const originalGetComputedStyle = window.getComputedStyle.bind(window);
         vi.spyOn(window, 'getComputedStyle').mockImplementation((element) => {
@@ -152,6 +154,45 @@ describe('DataTablePager', () => {
         await fireEvent.click(nextButton);
 
         expect(scrollTo).toHaveBeenCalledWith({ behavior: 'auto', top: 192 });
+        expect(onPageIndexChange).toHaveBeenCalledWith(1);
+        expect(document.activeElement).toBe(nextButton);
+    });
+
+    it('preserves the scroll position when the first row is already visible', async () => {
+        const onPageIndexChange = vi.fn();
+        render(DataTablePagerTestHarness, { onPageIndexChange, onPageSizeChange: vi.fn(), variant: 'floating' });
+
+        const scrollContainer = screen.getByTestId('scroll-container');
+        const tableRoot = document.querySelector<HTMLElement>('[data-slot="data-table"]')!;
+        const toolbar = screen.getByRole('toolbar', { name: 'Table controls' });
+        const tableBody = document.querySelector<HTMLElement>('[data-slot="data-table-body"]')!;
+        const firstRow = tableBody.querySelector<HTMLElement>('tbody > tr')!;
+        const scrollTo = vi.fn();
+        scrollContainer.scrollTop = 100;
+        scrollContainer.scrollTo = scrollTo;
+        vi.spyOn(scrollContainer, 'getBoundingClientRect').mockReturnValue(createRect({ bottom: 260, height: 200, top: 60 }));
+        vi.spyOn(toolbar, 'getBoundingClientRect').mockReturnValue(createRect({ bottom: 100, height: 32, top: 68 }));
+        vi.spyOn(tableBody, 'getBoundingClientRect').mockReturnValue(createRect({ top: 108 }));
+        vi.spyOn(firstRow, 'getBoundingClientRect').mockReturnValue(createRect({ bottom: 148, height: 40, top: 108 }));
+
+        const originalGetComputedStyle = window.getComputedStyle.bind(window);
+        vi.spyOn(window, 'getComputedStyle').mockImplementation((element) => {
+            if (element === toolbar) {
+                return { position: 'sticky', top: '8px' } as CSSStyleDeclaration;
+            }
+
+            if (element === tableRoot) {
+                return { rowGap: '8px' } as CSSStyleDeclaration;
+            }
+
+            return originalGetComputedStyle(element);
+        });
+
+        const nextButton = screen.getByRole('button', { name: 'Go to next page' });
+        nextButton.focus();
+        await fireEvent.click(nextButton);
+
+        expect(scrollTo).not.toHaveBeenCalled();
         expect(onPageIndexChange).toHaveBeenCalledWith(1);
         expect(document.activeElement).toBe(nextButton);
     });
