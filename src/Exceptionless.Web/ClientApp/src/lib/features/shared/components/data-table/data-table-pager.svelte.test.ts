@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import DataTablePageSize from './data-table-page-size.svelte';
@@ -14,6 +14,7 @@ describe('DataTablePager', () => {
     afterEach(() => {
         cleanup();
         scrollIntoView.mockReset();
+        vi.restoreAllMocks();
     });
 
     it('joins bulk actions and pagination in one full-width sticky toolbar', () => {
@@ -29,6 +30,9 @@ describe('DataTablePager', () => {
         expect(toolbar?.classList.contains('border')).toBe(true);
         expect(toolbar?.classList.contains('border-y')).toBe(false);
         expect(toolbar?.classList.contains('rounded-lg')).toBe(true);
+        expect(toolbar?.classList.contains('border-border')).toBe(true);
+        expect(toolbar?.getAttribute('data-floating')).toBeNull();
+        expect(toolbar?.classList.contains('floating-glow')).toBe(false);
         expect(toolbar?.classList.contains('gap-0')).toBe(true);
         expect(toolbar?.classList.contains('flex-wrap')).toBe(true);
         expect(toolbar?.classList.contains('sm:flex-nowrap')).toBe(false);
@@ -71,6 +75,8 @@ describe('DataTablePager', () => {
         expect(toolbar?.getAttribute('data-variant')).toBe('simple');
         expect(toolbar?.classList.contains('sticky')).toBe(false);
         expect(toolbar?.classList.contains('border')).toBe(false);
+        expect(toolbar?.getAttribute('data-floating')).toBeNull();
+        expect(toolbar?.classList.contains('floating-glow')).toBe(false);
         expect(toolbar?.classList.contains('justify-end')).toBe(true);
         expect(pager.getAttribute('data-variant')).toBe('simple');
 
@@ -80,6 +86,117 @@ describe('DataTablePager', () => {
         expect(pageSize.classList.contains('border-y-0')).toBe(false);
         expect(screen.getByLabelText('Page 1 of 3').classList.contains('border-y-0')).toBe(false);
         expect(screen.getByRole('button', { name: 'Go to next page' }).classList.contains('border-r-0')).toBe(false);
+    });
+
+    it('adds a neutral all-sided glow only after the sticky toolbar starts floating', async () => {
+        render(DataTablePagerTestHarness, { onPageIndexChange: vi.fn(), onPageSizeChange: vi.fn(), variant: 'floating' });
+
+        const toolbar = screen.getByRole('toolbar', { name: 'Table controls' });
+        const scrollContainer = screen.getByTestId('scroll-container');
+        const originalGetComputedStyle = window.getComputedStyle.bind(window);
+        vi.spyOn(window, 'getComputedStyle').mockImplementation((element) => {
+            if (element === toolbar) {
+                return { position: 'sticky', top: '8px' } as CSSStyleDeclaration;
+            }
+
+            return originalGetComputedStyle(element);
+        });
+        vi.spyOn(toolbar, 'getBoundingClientRect').mockReturnValue({
+            bottom: 40,
+            height: 32,
+            left: 0,
+            right: 100,
+            toJSON: () => ({}),
+            top: 8,
+            width: 100,
+            x: 0,
+            y: 8
+        });
+
+        scrollContainer.dispatchEvent(new Event('scroll'));
+
+        await waitFor(() => expect(toolbar.getAttribute('data-floating')).toBe(''));
+        expect(toolbar.classList.contains('floating-glow')).toBe(true);
+    });
+
+    it('positions the first row beneath floating controls before changing pages', async () => {
+        const onPageIndexChange = vi.fn();
+        render(DataTablePagerTestHarness, { onPageIndexChange, onPageSizeChange: vi.fn(), variant: 'floating' });
+
+        const scrollContainer = screen.getByTestId('scroll-container');
+        const tableRoot = document.querySelector<HTMLElement>('[data-slot="data-table"]')!;
+        const toolbar = screen.getByRole('toolbar', { name: 'Table controls' });
+        const tableBody = document.querySelector<HTMLElement>('[data-slot="data-table-body"]')!;
+        const firstRow = tableBody.querySelector<HTMLElement>('tbody > tr:not(.hidden)')!;
+        toolbar.setAttribute('data-floating', '');
+        const scrollTo = vi.fn();
+        scrollContainer.scrollTop = 400;
+        scrollContainer.scrollTo = scrollTo;
+        vi.spyOn(scrollContainer, 'getBoundingClientRect').mockReturnValue(createRect({ top: 60 }));
+        vi.spyOn(toolbar, 'getBoundingClientRect').mockReturnValue(createRect({ height: 32, top: 68 }));
+        vi.spyOn(tableBody, 'getBoundingClientRect').mockReturnValue(createRect({ top: -100 }));
+        vi.spyOn(firstRow, 'getBoundingClientRect').mockReturnValue(createRect({ bottom: -40, height: 40, top: -80 }));
+
+        const originalGetComputedStyle = window.getComputedStyle.bind(window);
+        vi.spyOn(window, 'getComputedStyle').mockImplementation((element) => {
+            if (element === toolbar) {
+                return { position: 'sticky', top: '8px' } as CSSStyleDeclaration;
+            }
+
+            if (element === tableRoot) {
+                return { rowGap: '8px' } as CSSStyleDeclaration;
+            }
+
+            return originalGetComputedStyle(element);
+        });
+
+        const nextButton = screen.getByRole('button', { name: 'Go to next page' });
+        nextButton.focus();
+        await fireEvent.click(nextButton);
+
+        expect(scrollTo).toHaveBeenCalledWith({ behavior: 'auto', top: 192 });
+        expect(onPageIndexChange).toHaveBeenCalledWith(1);
+        expect(document.activeElement).toBe(nextButton);
+    });
+
+    it('preserves the scroll position when the first row is already visible', async () => {
+        const onPageIndexChange = vi.fn();
+        render(DataTablePagerTestHarness, { onPageIndexChange, onPageSizeChange: vi.fn(), variant: 'floating' });
+
+        const scrollContainer = screen.getByTestId('scroll-container');
+        const tableRoot = document.querySelector<HTMLElement>('[data-slot="data-table"]')!;
+        const toolbar = screen.getByRole('toolbar', { name: 'Table controls' });
+        const tableBody = document.querySelector<HTMLElement>('[data-slot="data-table-body"]')!;
+        const firstRow = tableBody.querySelector<HTMLElement>('tbody > tr:not(.hidden)')!;
+        toolbar.setAttribute('data-floating', '');
+        const scrollTo = vi.fn();
+        scrollContainer.scrollTop = 100;
+        scrollContainer.scrollTo = scrollTo;
+        vi.spyOn(scrollContainer, 'getBoundingClientRect').mockReturnValue(createRect({ bottom: 260, height: 200, top: 60 }));
+        vi.spyOn(toolbar, 'getBoundingClientRect').mockReturnValue(createRect({ bottom: 100, height: 32, top: 68 }));
+        vi.spyOn(tableBody, 'getBoundingClientRect').mockReturnValue(createRect({ top: 108 }));
+        vi.spyOn(firstRow, 'getBoundingClientRect').mockReturnValue(createRect({ bottom: 148, height: 40, top: 108 }));
+
+        const originalGetComputedStyle = window.getComputedStyle.bind(window);
+        vi.spyOn(window, 'getComputedStyle').mockImplementation((element) => {
+            if (element === toolbar) {
+                return { position: 'sticky', top: '8px' } as CSSStyleDeclaration;
+            }
+
+            if (element === tableRoot) {
+                return { rowGap: '8px' } as CSSStyleDeclaration;
+            }
+
+            return originalGetComputedStyle(element);
+        });
+
+        const nextButton = screen.getByRole('button', { name: 'Go to next page' });
+        nextButton.focus();
+        await fireEvent.click(nextButton);
+
+        expect(scrollTo).not.toHaveBeenCalled();
+        expect(onPageIndexChange).toHaveBeenCalledWith(1);
+        expect(document.activeElement).toBe(nextButton);
     });
 
     it('keeps a standalone page-size selector fully bordered', () => {
@@ -134,3 +251,18 @@ describe('DataTablePager', () => {
         expect(document.activeElement).toBe(previousButton);
     });
 });
+
+function createRect(overrides: Partial<DOMRect> = {}): DOMRect {
+    return {
+        bottom: 0,
+        height: 0,
+        left: 0,
+        right: 0,
+        toJSON: () => ({}),
+        top: 0,
+        width: 0,
+        x: 0,
+        y: 0,
+        ...overrides
+    };
+}

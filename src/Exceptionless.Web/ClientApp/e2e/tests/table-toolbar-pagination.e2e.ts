@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { expect, test } from '../fixtures/e2e-test';
 import { seedRepresentativeEvent } from '../support/event-data';
 
-test('table toolbar remains accessible while moving between different-height result pages', async ({ e2eApi, e2eScenario, page }) => {
+test('floating table controls keep the first row visible between different-height result pages', async ({ e2eApi, e2eScenario, page }) => {
     for (let index = 1; index <= 6; index++) {
         await seedRepresentativeEvent(e2eApi, e2eScenario.userToken, {
             message: `${e2eScenario.message} ${index}`,
@@ -36,31 +36,96 @@ test('table toolbar remains accessible while moving between different-height res
     expect(firstToolbarBox).not.toBeNull();
     expect(firstGridBox).not.toBeNull();
     expect(await toolbar.evaluate((element) => getComputedStyle(element).position)).toBe('sticky');
+    await expect(toolbar).not.toHaveAttribute('data-floating');
     expect(await toolbar.evaluate((element) => element.nextElementSibling?.getAttribute('data-slot'))).toBe('data-table-body');
     expect(firstToolbarBox!.height).toBeLessThanOrEqual(34);
     expect(firstGridBox!.y - (firstToolbarBox!.y + firstToolbarBox!.height)).toBeLessThanOrEqual(8);
     expect(firstToolbarBox!.y + firstToolbarBox!.height).toBeLessThanOrEqual(firstGridBox!.y);
 
+    const scrollContainer = page.locator('main').locator('..');
+    const scrollTopAtPageTop = await scrollContainer.evaluate((element) => element.scrollTop);
+    await pager.getByRole('button', { name: 'Go to next page' }).click();
+    await expect(pager.getByLabel('Page 2 of 2')).toBeVisible();
+    await expect.poll(() => scrollContainer.evaluate((element) => element.scrollTop)).toBe(scrollTopAtPageTop);
+    await pager.getByRole('button', { name: 'Go to first page' }).click();
+    await expect(pager.getByLabel('Page 1 of 2')).toBeVisible();
+    await expect.poll(() => scrollContainer.evaluate((element) => element.scrollTop)).toBe(scrollTopAtPageTop);
+
     if (process.env.E2E_CAPTURE_PAGER_TOOLBAR_SCREENSHOTS === 'true') {
         await page.screenshot({ path: resolve(process.cwd(), '../../../dogfood-output/pager-toolbar/desktop-page-1.png') });
     }
 
+    const scrollTopBeforeVisiblePageSizeChange = await scrollContainer.evaluate((element) => element.scrollTop);
+    await pager.getByLabel('Rows per page').click();
+    await page.getByRole('option', { name: '10 rows' }).click();
+    await expect(pager.getByLabel('Page 1 of 1')).toBeVisible();
+    await expect.poll(() => scrollContainer.evaluate((element) => element.scrollTop)).toBe(scrollTopBeforeVisiblePageSizeChange);
+
+    await page.setViewportSize({ height: 400, width: 1280 });
+    await scrollContainer.evaluate((element) => element.scrollTo({ top: element.scrollHeight }));
+    await expect(toolbar).toHaveAttribute('data-floating', '');
+
+    if (process.env.E2E_CAPTURE_PAGER_TOOLBAR_SCREENSHOTS === 'true') {
+        await page.screenshot({ path: resolve(process.cwd(), '../../../dogfood-output/pager-toolbar/desktop-floating.png') });
+
+        const wasDark = await page.locator('html').evaluate((element) => element.classList.contains('dark'));
+        await page.locator('html').evaluate((element) => {
+            element.classList.add('dark');
+            element.style.colorScheme = 'dark';
+        });
+        await page.screenshot({ path: resolve(process.cwd(), '../../../dogfood-output/pager-toolbar/desktop-floating-dark.png') });
+
+        if (!wasDark) {
+            await page.locator('html').evaluate((element) => {
+                element.classList.remove('dark');
+                element.style.colorScheme = 'light';
+            });
+        }
+    }
+
+    const scrollTopBeforeHiddenPageSizeChange = await scrollContainer.evaluate((element) => element.scrollTop);
+    await pager.getByLabel('Rows per page').click();
+    await page.getByRole('option', { name: '5 rows' }).click();
+    await expect(pager.getByLabel('Page 1 of 2')).toBeVisible();
+    await expect.poll(() => scrollContainer.evaluate((element) => element.scrollTop)).toBeLessThan(scrollTopBeforeHiddenPageSizeChange);
+    await scrollContainer.evaluate((element) => element.scrollTo({ top: element.scrollHeight }));
+    await expect(toolbar).toHaveAttribute('data-floating', '');
+
     const nextButton = pager.getByRole('button', { name: 'Go to next page' });
-    const scrollContainer = page.locator('main').locator('..');
     const scrollTopBeforePaging = await scrollContainer.evaluate((element) => element.scrollTop);
     await nextButton.focus();
     await nextButton.click();
     await expect(pager.getByLabel('Page 2 of 2')).toBeVisible();
     await expect(pager.getByRole('button', { name: 'Go to next page' })).toBeFocused();
     await expect(bulkActionsButton).toHaveAttribute('aria-disabled', 'true');
-    await expect.poll(() => scrollContainer.evaluate((element) => element.scrollTop)).toBe(scrollTopBeforePaging);
+    await expect(toolbar).toHaveAttribute('data-floating', '');
+
+    const scrollTopAfterPaging = await scrollContainer.evaluate((element) => element.scrollTop);
+    expect(scrollTopAfterPaging).toBeGreaterThan(0);
+    expect(scrollTopAfterPaging).toBeLessThan(scrollTopBeforePaging);
 
     const secondToolbarBox = await toolbar.boundingBox();
     const secondGridBox = await grid.boundingBox();
+    const firstRow = page.locator('tbody tr:visible').first();
+    await expect(firstRow).toBeVisible({ timeout: 30_000 });
+    const firstRowBox = await firstRow.boundingBox();
     expect(secondToolbarBox).not.toBeNull();
     expect(secondGridBox).not.toBeNull();
+    expect(firstRowBox).not.toBeNull();
     expect(secondToolbarBox!.y).toBeGreaterThanOrEqual(8);
     expect(secondToolbarBox!.y + secondToolbarBox!.height).toBeLessThanOrEqual(secondGridBox!.y);
+    expect(firstRowBox!.y).toBeGreaterThanOrEqual(secondToolbarBox!.y + secondToolbarBox!.height);
+    expect(firstRowBox!.y).toBeLessThan(400);
+
+    const scrollTopWithFirstRowVisible = await scrollContainer.evaluate((element) => element.scrollTop);
+    const previousButton = pager.getByRole('button', { name: 'Go to previous page' });
+    await previousButton.click();
+    await expect(pager.getByLabel('Page 1 of 2')).toBeVisible();
+    await expect.poll(() => scrollContainer.evaluate((element) => element.scrollTop)).toBe(scrollTopWithFirstRowVisible);
+
+    await pager.getByRole('button', { name: 'Go to next page' }).click();
+    await expect(pager.getByLabel('Page 2 of 2')).toBeVisible();
+    await expect.poll(() => scrollContainer.evaluate((element) => element.scrollTop)).toBe(scrollTopWithFirstRowVisible);
 
     await page.locator('main').evaluate((element) => element.parentElement?.scrollTo({ top: element.parentElement.scrollHeight }));
     const appFooter = page.getByRole('link', { exact: true, name: 'Terms' }).locator('xpath=ancestor::div[contains(@class, "border-t")][1]');

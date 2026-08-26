@@ -14,6 +14,7 @@
     import ChevronsLeftIcon from '@lucide/svelte/icons/chevrons-left';
 
     import DataTablePageSize from './data-table-page-size.svelte';
+    import { scrollTableToFirstRow } from './data-table-scroll';
 
     interface Props {
         table: Table<StockFeatures, TData>;
@@ -22,34 +23,54 @@
     }
 
     let { table, value = $bindable(), variant = 'simple' }: Props = $props();
+    let pagerElement = $state<HTMLElement>();
 
     const currentPage = $derived((table.options.state?.pagination?.pageIndex ?? table.store.state.pagination.pageIndex) + 1);
     const totalPages = $derived(Math.max(1, table.getPageCount() || 1));
     const canGoNext = $derived(currentPage < totalPages);
     const canGoPrevious = $derived(currentPage > 1);
 
-    function goToFirstPage(): void {
+    function goToFirstPage(event: MouseEvent): void {
         if (canGoPrevious) {
-            table.setPageIndex(0);
+            goToPage(0, event);
         }
     }
 
-    function goToNextPage(): void {
+    function goToNextPage(event: MouseEvent): void {
         if (canGoNext) {
-            table.setPageIndex(currentPage);
+            goToPage(currentPage, event);
         }
     }
 
-    function goToPreviousPage(): void {
+    function goToPreviousPage(event: MouseEvent): void {
         if (canGoPrevious) {
-            table.setPageIndex(currentPage - 2);
+            goToPage(currentPage - 2, event);
         }
+    }
+
+    function goToPage(pageIndex: number, event: MouseEvent): void {
+        const trigger = event.currentTarget as HTMLElement;
+        if (shouldAdjustScroll(trigger)) {
+            scrollTableToFirstRow(trigger);
+        }
+
+        table.setPageIndex(pageIndex);
+    }
+
+    function onBeforePageSizeChange(): void {
+        if (pagerElement && shouldAdjustScroll(pagerElement)) {
+            scrollTableToFirstRow(pagerElement);
+        }
+    }
+
+    function shouldAdjustScroll(trigger: HTMLElement): boolean {
+        return variant === 'floating' && trigger.closest('[data-slot="data-table-footer"]')?.hasAttribute('data-floating') === true;
     }
 </script>
 
-<nav aria-label="Table pagination" class="ml-auto shrink-0" data-variant={variant}>
+<nav aria-label="Table pagination" bind:this={pagerElement} class="ml-auto shrink-0" data-variant={variant}>
     <ButtonGroup.Root aria-label="Pagination controls">
-        <DataTablePageSize bind:value joined={variant === 'floating'} size="default" {table} />
+        <DataTablePageSize bind:value joined={variant === 'floating'} {onBeforePageSizeChange} size="default" {table} />
         <ButtonGroup.Text
             aria-label={`Page ${currentPage} of ${totalPages}`}
             class={cn('min-w-14 justify-center select-none', variant === 'floating' && 'rounded-none border-y-0')}
