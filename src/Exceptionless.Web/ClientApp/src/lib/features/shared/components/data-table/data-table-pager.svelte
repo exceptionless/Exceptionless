@@ -23,6 +23,7 @@
     }
 
     let { table, value = $bindable(), variant = 'simple' }: Props = $props();
+    let pagerElement = $state<HTMLElement>();
 
     const currentPage = $derived((table.options.state?.pagination?.pageIndex ?? table.store.state.pagination.pageIndex) + 1);
     const totalPages = $derived(Math.max(1, table.getPageCount() || 1));
@@ -48,17 +49,28 @@
     }
 
     function goToPage(pageIndex: number, event: MouseEvent): void {
-        if (variant === 'floating') {
-            scrollTableToFirstRow(event.currentTarget as HTMLElement);
+        const trigger = event.currentTarget as HTMLElement;
+        if (shouldAdjustScroll(trigger)) {
+            scrollTableToFirstRow(trigger);
         }
 
         table.setPageIndex(pageIndex);
     }
+
+    function onBeforePageSizeChange(): void {
+        if (pagerElement && shouldAdjustScroll(pagerElement)) {
+            scrollTableToFirstRow(pagerElement);
+        }
+    }
+
+    function shouldAdjustScroll(trigger: HTMLElement): boolean {
+        return variant === 'floating' && trigger.closest('[data-slot="data-table-footer"]')?.hasAttribute('data-floating') === true;
+    }
 </script>
 
-<nav aria-label="Table pagination" class="ml-auto shrink-0" data-variant={variant}>
+<nav aria-label="Table pagination" bind:this={pagerElement} class="ml-auto shrink-0" data-variant={variant}>
     <ButtonGroup.Root aria-label="Pagination controls">
-        <DataTablePageSize bind:value joined={variant === 'floating'} size="default" {table} />
+        <DataTablePageSize bind:value joined={variant === 'floating'} {onBeforePageSizeChange} size="default" {table} />
         <ButtonGroup.Text
             aria-label={`Page ${currentPage} of ${totalPages}`}
             class={cn('min-w-14 justify-center select-none', variant === 'floating' && 'rounded-none border-y-0')}

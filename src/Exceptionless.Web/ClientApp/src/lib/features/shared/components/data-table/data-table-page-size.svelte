@@ -10,13 +10,14 @@
 
     interface Props {
         joined?: boolean;
+        onBeforePageSizeChange?: () => void;
         onPageSizeChange?: () => void;
         size?: 'default' | 'sm';
         table: Table<StockFeatures, TData>;
         value: number;
     }
 
-    let { joined = false, onPageSizeChange, size = 'sm', table, value = $bindable() }: Props = $props();
+    let { joined = false, onBeforePageSizeChange, onPageSizeChange, size = 'sm', table, value = $bindable() }: Props = $props();
 
     type Item = { label: string; value: string };
     const items: Item[] = [
@@ -50,6 +51,7 @@
     let selected = $derived((items.find((item) => item.value === valueString) || items[0]) as Item);
 
     function onValueChange(newValue: string) {
+        onBeforePageSizeChange?.();
         value = Number(newValue);
         table.setPageSize(Number(newValue));
         onPageSizeChange?.();

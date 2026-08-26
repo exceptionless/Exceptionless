@@ -42,11 +42,25 @@ test('floating table controls keep the first row visible between different-heigh
     expect(firstGridBox!.y - (firstToolbarBox!.y + firstToolbarBox!.height)).toBeLessThanOrEqual(8);
     expect(firstToolbarBox!.y + firstToolbarBox!.height).toBeLessThanOrEqual(firstGridBox!.y);
 
+    const scrollContainer = page.locator('main').locator('..');
+    const scrollTopAtPageTop = await scrollContainer.evaluate((element) => element.scrollTop);
+    await pager.getByRole('button', { name: 'Go to next page' }).click();
+    await expect(pager.getByLabel('Page 2 of 2')).toBeVisible();
+    await expect.poll(() => scrollContainer.evaluate((element) => element.scrollTop)).toBe(scrollTopAtPageTop);
+    await pager.getByRole('button', { name: 'Go to first page' }).click();
+    await expect(pager.getByLabel('Page 1 of 2')).toBeVisible();
+    await expect.poll(() => scrollContainer.evaluate((element) => element.scrollTop)).toBe(scrollTopAtPageTop);
+
     if (process.env.E2E_CAPTURE_PAGER_TOOLBAR_SCREENSHOTS === 'true') {
         await page.screenshot({ path: resolve(process.cwd(), '../../../dogfood-output/pager-toolbar/desktop-page-1.png') });
     }
 
-    const scrollContainer = page.locator('main').locator('..');
+    const scrollTopBeforeVisiblePageSizeChange = await scrollContainer.evaluate((element) => element.scrollTop);
+    await pager.getByLabel('Rows per page').click();
+    await page.getByRole('option', { name: '10 rows' }).click();
+    await expect(pager.getByLabel('Page 1 of 1')).toBeVisible();
+    await expect.poll(() => scrollContainer.evaluate((element) => element.scrollTop)).toBe(scrollTopBeforeVisiblePageSizeChange);
+
     await page.setViewportSize({ height: 400, width: 1280 });
     await scrollContainer.evaluate((element) => element.scrollTo({ top: element.scrollHeight }));
     await expect(toolbar).toHaveAttribute('data-floating', '');
@@ -68,6 +82,14 @@ test('floating table controls keep the first row visible between different-heigh
             });
         }
     }
+
+    const scrollTopBeforeHiddenPageSizeChange = await scrollContainer.evaluate((element) => element.scrollTop);
+    await pager.getByLabel('Rows per page').click();
+    await page.getByRole('option', { name: '5 rows' }).click();
+    await expect(pager.getByLabel('Page 1 of 2')).toBeVisible();
+    await expect.poll(() => scrollContainer.evaluate((element) => element.scrollTop)).toBeLessThan(scrollTopBeforeHiddenPageSizeChange);
+    await scrollContainer.evaluate((element) => element.scrollTo({ top: element.scrollHeight }));
+    await expect(toolbar).toHaveAttribute('data-floating', '');
 
     const nextButton = pager.getByRole('button', { name: 'Go to next page' });
     const scrollTopBeforePaging = await scrollContainer.evaluate((element) => element.scrollTop);
