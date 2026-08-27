@@ -8,6 +8,7 @@ using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Api.Handlers;
 using Exceptionless.Web.Models.Admin;
+using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
@@ -87,6 +88,78 @@ public class AdminEndpointTests : IntegrationTestsBase
         Assert.Equal(5m, usage.MonthlyCostLimitUsd);
         Assert.Equal(0.0005m, usage.TokenUtilization);
         Assert.Equal(0.0005m, usage.CostUtilization);
+    }
+
+    [Fact]
+    public async Task AssistantSettingsAsync_AsGlobalAdmin_UpdatesAndClearsRuntimeModelOverride()
+    {
+        var initial = await SendRequestAsAsync<AssistantModelSettingsResponse>(request => request
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "assistant-settings")
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(initial);
+        Assert.Equal(initial.ConfiguredModel, initial.Model);
+        Assert.False(initial.IsOverridden);
+
+        var updated = await SendRequestAsAsync<AssistantModelSettingsResponse>(request => request
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "assistant-settings")
+            .Content(new UpdateAssistantSettings { Model = "  z-ai/glm-5.3-flash  " })
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(updated);
+        Assert.Equal("z-ai/glm-5.3-flash", updated.Model);
+        Assert.Equal(initial.ConfiguredModel, updated.ConfiguredModel);
+        Assert.True(updated.IsOverridden);
+
+        var persistedSettings = await GetService<ISystemSettingsRepository>().GetByIdAsync(SystemSettings.DefaultId, options => options.ImmediateConsistency());
+        Assert.NotNull(persistedSettings);
+        Assert.Equal("z-ai/glm-5.3-flash", persistedSettings.AssistantModel);
+        Assert.False(String.IsNullOrWhiteSpace(persistedSettings.CreatedByUserId));
+        Assert.False(String.IsNullOrWhiteSpace(persistedSettings.UpdatedByUserId));
+
+        await GetService<ICacheClient>().RemoveAllAsync();
+        var afterCacheClear = await SendRequestAsAsync<AssistantModelSettingsResponse>(request => request
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "assistant-settings")
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(afterCacheClear);
+        Assert.Equal("z-ai/glm-5.3-flash", afterCacheClear.Model);
+        Assert.True(afterCacheClear.IsOverridden);
+
+        var cleared = await SendRequestAsAsync<AssistantModelSettingsResponse>(request => request
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "assistant-settings")
+            .Content(new UpdateAssistantSettings { Model = null })
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(cleared);
+        Assert.Equal(initial.ConfiguredModel, cleared.Model);
+        Assert.False(cleared.IsOverridden);
+    }
+
+    [Fact]
+    public Task AssistantSettingsAsync_AsOrganizationUser_ReturnsForbidden()
+    {
+        return SendRequestAsync(request => request
+            .AsTestOrganizationUser()
+            .AppendPaths("admin", "assistant-settings")
+            .StatusCodeShouldBeForbidden());
+    }
+
+    [Fact]
+    public Task AssistantSettingsAsync_ModelIsTooLong_ReturnsUnprocessableEntity()
+    {
+        return SendRequestAsync(request => request
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "assistant-settings")
+            .Content(new UpdateAssistantSettings { Model = new string('m', 201) })
+            .StatusCodeShouldBeUnprocessableEntity());
     }
 
     protected override async Task ResetDataAsync()
@@ -958,5 +1031,6 @@ public class AdminEndpointTests : IntegrationTestsBase
             .StatusCodeShouldBeForbidden());
     }
 
+    private sealed record AssistantModelSettingsResponse(string Model, string ConfiguredModel, bool IsOverridden);
     private sealed record RequeueResult([property: JsonPropertyName("enqueued")] int Enqueued);
 }

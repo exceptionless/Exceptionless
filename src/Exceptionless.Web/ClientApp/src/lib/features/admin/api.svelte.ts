@@ -2,6 +2,7 @@ import { type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 
 import type {
+    AdminAssistantSettings,
     AdminAssistantUsage,
     AdminStats,
     ElasticsearchInfo,
@@ -9,7 +10,8 @@ import type {
     MigrationsResponse,
     OAuthApplication,
     OAuthApplicationRequest,
-    PredefinedSavedViewDefinition
+    PredefinedSavedViewDefinition,
+    UpdateAssistantSettingsRequest
 } from './models';
 
 export type RunMaintenanceJobParams = {
@@ -20,6 +22,7 @@ export type RunMaintenanceJobParams = {
 };
 
 export const queryKeys = {
+    assistantSettings: ['admin', 'assistant-settings'] as const,
     assistantUsage: (month: string) => ['admin', 'assistant-usage', month] as const,
     elasticsearch: ['admin', 'elasticsearch'] as const,
     migrations: ['admin', 'migrations'] as const,
@@ -45,6 +48,25 @@ export function deleteOAuthApplicationMutation() {
                 queryKey: queryKeys.oauthApplications
             });
         }
+    }));
+}
+
+export function getAdminAssistantSettingsQuery() {
+    return createQuery<AdminAssistantSettings, ProblemDetails>(() => ({
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<AdminAssistantSettings>('admin/assistant-settings', {
+                signal
+            });
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+
+            return response.data!;
+        },
+        queryKey: queryKeys.assistantSettings,
+        staleTime: 30 * 1000
     }));
 }
 
@@ -203,6 +225,26 @@ export function postOAuthApplicationMutation() {
             queryClient.invalidateQueries({
                 queryKey: queryKeys.oauthApplications
             });
+        }
+    }));
+}
+
+export function putAdminAssistantSettingsMutation() {
+    const queryClient = useQueryClient();
+
+    return createMutation<AdminAssistantSettings, ProblemDetails, UpdateAssistantSettingsRequest>(() => ({
+        mutationFn: async (request) => {
+            const client = useFetchClient();
+            const response = await client.putJSON<AdminAssistantSettings>('admin/assistant-settings', request);
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+
+            return response.data!;
+        },
+        onSuccess: (settings) => {
+            queryClient.setQueryData(queryKeys.assistantSettings, settings);
         }
     }));
 }

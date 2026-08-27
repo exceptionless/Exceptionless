@@ -30,6 +30,12 @@ export type AdminAssistantOrganizationUsage = {
     turns: number;
 };
 
+export type AdminAssistantSettings = {
+    configured_model: string;
+    is_overridden: boolean;
+    model: string;
+};
+
 export type AdminAssistantUsage = {
     active_organizations: number;
     completion_tokens: number;
@@ -169,6 +175,10 @@ export type ShardMetric = {
     id: string;
     label: string;
     value: number;
+};
+
+export type UpdateAssistantSettingsRequest = {
+    model: null | string;
 };
 
 export const maintenanceActions: MaintenanceAction[] = [

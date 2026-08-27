@@ -2,8 +2,12 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Api.Results;
+using Exceptionless.Web.Assistant;
+using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models.Admin;
 using Foundatio.Mediator;
+using Microsoft.AspNetCore.Mvc;
+using HttpResults = Microsoft.AspNetCore.Http.Results;
 using HttpIResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace Exceptionless.Web.Api.Endpoints;
@@ -19,6 +23,12 @@ public static class AdminEndpoints
 
         group.MapGet("echo", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result<object>>(new GetAdminEcho(httpContext))).ToHttpResult(resultMapper));
+
+        group.MapGet("assistant-settings", async (AssistantModelSettingsService settingsService)
+            => HttpResults.Ok(await settingsService.GetAsync()));
+
+        group.MapPut("assistant-settings", async (HttpContext httpContext, [FromBody] UpdateAssistantSettings request, AssistantModelSettingsService settingsService)
+            => HttpResults.Ok(await settingsService.SetModelAsync(request.Model, httpContext.Request.GetUser().Id)));
 
         endpoints.MapGet("api/v2/admin/assistant-usage", GetAssistantUsageAsync)
             .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
