@@ -5,7 +5,7 @@ export function buildEmailMetadata(potentialAction: string): string {
 {
   "@context": "http://schema.org",
   "@type": "EmailMessage",
-  "description": "{{Subject}}",
+  "description": {{json Subject}},
   "potentialAction": ${potentialAction.trim()},
   "publisher": {
     "@type": "Organization",

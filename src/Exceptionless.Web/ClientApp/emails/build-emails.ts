@@ -65,8 +65,8 @@ function validateTemplate(name: string, html: string): void {
         throw new Error(`Template "${name}" is missing its doctype.`);
     }
 
-    if (!html.includes('{{Subject}}')) {
-        throw new Error(`Template "${name}" is missing the required {{Subject}} token.`);
+    if (html.includes('<script type="application/ld+json">') && !html.includes('{{json Subject}}')) {
+        throw new Error(`Template "${name}" is missing the required {{json Subject}} token.`);
     }
 
     if (svelteRenderMarkers.some((marker) => html.includes(marker))) {
