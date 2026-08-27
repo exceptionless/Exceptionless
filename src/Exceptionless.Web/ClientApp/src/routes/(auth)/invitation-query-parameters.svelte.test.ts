@@ -18,6 +18,10 @@ const navigation = vi.hoisted(() => ({
     pushState: vi.fn(),
     replaceState: vi.fn()
 }));
+const queryClient = vi.hoisted(() => ({
+    cancelQueries: vi.fn(),
+    clear: vi.fn()
+}));
 
 vi.mock('$app/environment', () => ({ browser: true, building: false, dev: false }));
 vi.mock('$app/navigation', () => navigation);
@@ -48,6 +52,7 @@ vi.mock('$features/auth/index.svelte', () => ({
 vi.mock('$features/auth/validators', () => ({
     validateEmailAvailability: vi.fn().mockResolvedValue(undefined)
 }));
+vi.mock('@tanstack/svelte-query', () => ({ useQueryClient: () => queryClient }));
 
 describe('invitation query parameters', () => {
     beforeEach(() => {
@@ -93,6 +98,6 @@ describe('invitation query parameters', () => {
         await fireEvent.click(screen.getByRole('button', { name: 'Sign up with Google' }));
 
         // Assert
-        expect(authUi.googleLogin).toHaveBeenCalledWith('/(app)/project/add', currentToken);
+        expect(authUi.googleLogin).toHaveBeenCalledWith('/(app)/project/add', currentToken, queryClient);
     });
 });

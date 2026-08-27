@@ -1,3 +1,5 @@
+import type { QueryClient } from '@tanstack/svelte-query';
+
 import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 import { page } from '$app/state';
@@ -29,6 +31,7 @@ export { validateEmailAvailability } from './validators';
 
 export interface OAuthLoginOptions extends OAuthPopupOptions {
     inviteToken?: null | string;
+    queryClient?: QueryClient;
     redirectUrl?: string;
 }
 
@@ -58,7 +61,7 @@ export const enableOAuthLogin = facebookClientId || gitHubClientId || googleClie
 
 // OAuth login functions (interactive popup-based, not pure API calls)
 
-export async function facebookLogin(redirectUrl?: string, inviteToken?: null | string) {
+export async function facebookLogin(redirectUrl?: string, inviteToken?: null | string, queryClient?: QueryClient) {
     if (!facebookClientId) {
         throw new Error('Facebook client id not set');
     }
@@ -68,12 +71,13 @@ export async function facebookLogin(redirectUrl?: string, inviteToken?: null | s
         clientId: facebookClientId,
         inviteToken,
         provider: 'facebook',
+        queryClient,
         redirectUrl,
         scope: 'email'
     });
 }
 
-export async function githubLogin(redirectUrl?: string, inviteToken?: null | string) {
+export async function githubLogin(redirectUrl?: string, inviteToken?: null | string, queryClient?: QueryClient) {
     if (!gitHubClientId) {
         throw new Error('GitHub client id not set');
     }
@@ -87,12 +91,13 @@ export async function githubLogin(redirectUrl?: string, inviteToken?: null | str
             width: 1020
         },
         provider: 'github',
+        queryClient,
         redirectUrl,
         scope: 'user:email'
     });
 }
 
-export async function googleLogin(redirectUrl?: string, inviteToken?: null | string) {
+export async function googleLogin(redirectUrl?: string, inviteToken?: null | string, queryClient?: QueryClient) {
     if (!googleClientId) {
         throw new Error('Google client id not set');
     }
@@ -109,6 +114,7 @@ export async function googleLogin(redirectUrl?: string, inviteToken?: null | str
         },
         inviteToken,
         provider: 'google',
+        queryClient,
         redirectUrl,
         scope: 'openid profile email'
     });
@@ -123,7 +129,7 @@ export async function gotoLogin() {
     });
 }
 
-export async function liveLogin(redirectUrl?: string, inviteToken?: null | string) {
+export async function liveLogin(redirectUrl?: string, inviteToken?: null | string, queryClient?: QueryClient) {
     if (!microsoftClientId) {
         throw new Error('Live client id not set');
     }
@@ -136,6 +142,7 @@ export async function liveLogin(redirectUrl?: string, inviteToken?: null | strin
         },
         inviteToken,
         provider: 'live',
+        queryClient,
         redirectUrl,
         scope: 'wl.emails'
     });
@@ -169,7 +176,7 @@ async function oauthLogin(options: OAuthLoginOptions) {
     const data = await openOAuthPopup(options);
 
     if (options.inviteToken && accessToken.current) {
-        await logout();
+        await logout(options.queryClient);
     }
 
     const client = useFetchClient();

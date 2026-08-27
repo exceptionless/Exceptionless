@@ -1,4 +1,5 @@
 import type { FetchClient } from '@foundatiofx/fetchclient';
+import type { QueryClient } from '@tanstack/svelte-query';
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -72,18 +73,24 @@ describe('logout', () => {
         });
     });
 
-    it('logout_WithProvidedClient_UsesClientAndClearsSession', async () => {
+    it('logout_WithProvidedClients_ClearsQueriesAndSession', async () => {
         // Arrange
         const mockClient = {
             get: vi.fn().mockResolvedValue({ ok: true, status: 200 }),
             isLoading: false
         } as unknown as FetchClient;
+        const queryClient = {
+            cancelQueries: vi.fn().mockResolvedValue(undefined),
+            clear: vi.fn()
+        } as unknown as QueryClient;
 
         // Act
-        await logout(undefined, mockClient);
+        await logout(queryClient, mockClient);
 
         // Assert
         expect(mockClient.get).toHaveBeenCalledWith('auth/logout', { expectedStatusCodes: [200, 401, 403] });
+        expect(queryClient.cancelQueries).toHaveBeenCalledOnce();
+        expect(queryClient.clear).toHaveBeenCalledOnce();
         expect(clearAuthenticationSession).toHaveBeenCalledOnce();
     });
 });

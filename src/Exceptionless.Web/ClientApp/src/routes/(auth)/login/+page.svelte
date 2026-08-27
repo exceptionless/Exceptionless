@@ -32,6 +32,7 @@
     import { createQueryParameters } from '$shared/query-params';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import { createForm } from '@tanstack/svelte-form';
+    import { useQueryClient } from '@tanstack/svelte-query';
     import { untrack } from 'svelte';
 
     const defaultRedirect = resolve('/');
@@ -45,6 +46,7 @@
     const inviteToken = $derived(queryParameters.token ?? null);
     const canSignup = $derived(enableAccountCreation || !!inviteToken);
     const signupUrl = $derived(inviteToken ? `${resolve('/(auth)/signup')}?token=${encodeURIComponent(inviteToken)}` : resolve('/(auth)/signup'));
+    const queryClient = useQueryClient();
 
     const form = createForm(() => ({
         defaultValues: {
@@ -176,22 +178,22 @@
                 </div>
                 <div class="grid grid-flow-col grid-cols-2 grid-rows-2 gap-4">
                     {#if microsoftClientId}
-                        <Button aria-label="Login with Microsoft" tabindex={4} onclick={() => liveLogin(redirectUrl, inviteToken)}>
+                        <Button aria-label="Login with Microsoft" tabindex={4} onclick={() => liveLogin(redirectUrl, inviteToken, queryClient)}>
                             <MicrosoftIcon class="size-4" /> Microsoft
                         </Button>
                     {/if}
                     {#if googleClientId}
-                        <Button aria-label="Login with Google" tabindex={4} onclick={() => googleLogin(redirectUrl, inviteToken)}>
+                        <Button aria-label="Login with Google" tabindex={4} onclick={() => googleLogin(redirectUrl, inviteToken, queryClient)}>
                             <GoogleIcon class="size-4" /> Google
                         </Button>
                     {/if}
                     {#if facebookClientId}
-                        <Button aria-label="Login with Facebook" tabindex={4} onclick={() => facebookLogin(redirectUrl, inviteToken)}>
+                        <Button aria-label="Login with Facebook" tabindex={4} onclick={() => facebookLogin(redirectUrl, inviteToken, queryClient)}>
                             <FacebookIcon class="size-4" /> Facebook
                         </Button>
                     {/if}
                     {#if gitHubClientId}
-                        <Button aria-label="Login with GitHub" tabindex={4} onclick={() => githubLogin(redirectUrl, inviteToken)}>
+                        <Button aria-label="Login with GitHub" tabindex={4} onclick={() => githubLogin(redirectUrl, inviteToken, queryClient)}>
                             <GitHubIcon class="size-4" /> GitHub
                         </Button>
                     {/if}
