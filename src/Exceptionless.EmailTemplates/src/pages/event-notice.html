@@ -39,7 +39,7 @@
           <p>
             <strong>Name</strong><br />
             \{{#if UserEmail}}
-              <a href="mailto:\{{UserEmail}}?body=\{{UserDescription}}">\{{UserDisplayName}}</a>
+              <a href="\{{UserEmailHref}}">\{{UserDisplayName}}</a>
             \{{else}}
               <span class="blt">\{{UserDisplayName}}</span>
             \{{/if}}
@@ -75,7 +75,7 @@
 {
   "@context": "http://schema.org",
   "@type": "EmailMessage",
-  "description": "\{{Subject}}",
+  "description": \{{json Subject}},
   "potentialAction": {
     "@type": "ViewAction",
     "target": "\{{BaseUrl}}/event/\{{EventId}}",
