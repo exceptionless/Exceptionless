@@ -8,7 +8,7 @@
     <NoWarn>$(NoWarn);ASPIRECERTIFICATES001</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="13.4.6" />
+    <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="13.5.0" />
     <PackageReference Include="Aspire.Hosting.Browsers" Version="13.4.6-preview.1.26319.6" />
     <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.4.6" />
     <PackageReference Include="Aspire.Hosting.Redis" Version="13.4.6" />
