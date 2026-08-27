@@ -24,11 +24,27 @@ public static class AdminEndpoints
         group.MapGet("echo", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result<object>>(new GetAdminEcho(httpContext))).ToHttpResult(resultMapper));
 
-        group.MapGet("assistant-settings", async (AssistantModelSettingsService settingsService)
-            => HttpResults.Ok(await settingsService.GetAsync()));
+        endpoints.MapGet("api/v2/admin/assistant-settings", async (AssistantModelSettingsService settingsService)
+            => HttpResults.Ok(await settingsService.GetAsync()))
+            .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
+            .AddEndpointFilter<AutoValidationEndpointFilter>()
+            .Produces<AssistantModelSettings>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
+            .WithTags(nameof(AdminEndpoints))
+            .WithSummary("Get Exie assistant settings");
 
-        group.MapPut("assistant-settings", async (HttpContext httpContext, [FromBody] UpdateAssistantSettings request, AssistantModelSettingsService settingsService)
-            => HttpResults.Ok(await settingsService.SetModelAsync(request.Model, httpContext.Request.GetUser().Id)));
+        endpoints.MapPut("api/v2/admin/assistant-settings", async (HttpContext httpContext, [FromBody] UpdateAssistantSettings request, AssistantModelSettingsService settingsService)
+            => HttpResults.Ok(await settingsService.SetModelAsync(request.Model, httpContext.Request.GetUser().Id)))
+            .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
+            .AddEndpointFilter<AutoValidationEndpointFilter>()
+            .Accepts<UpdateAssistantSettings>("application/json", "application/*+json")
+            .Produces<AssistantModelSettings>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+            .WithTags(nameof(AdminEndpoints))
+            .WithSummary("Update Exie assistant settings");
 
         endpoints.MapGet("api/v2/admin/assistant-usage", GetAssistantUsageAsync)
             .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)

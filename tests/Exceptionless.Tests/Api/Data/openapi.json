@@ -173,6 +173,81 @@
         "deprecated": true
       }
     },
+    "/api/v2/admin/assistant-settings": {
+      "get": {
+        "tags": [
+          "AdminEndpoints"
+        ],
+        "summary": "Get Exie assistant settings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantModelSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "AdminEndpoints"
+        ],
+        "summary": "Update Exie assistant settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAssistantSettings"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAssistantSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantModelSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/admin/assistant-usage": {
       "get": {
         "tags": [
@@ -11491,6 +11566,25 @@
           }
         }
       },
+      "AssistantModelSettings": {
+        "required": [
+          "model",
+          "configured_model",
+          "is_overridden"
+        ],
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string"
+          },
+          "configured_model": {
+            "type": "string"
+          },
+          "is_overridden": {
+            "type": "boolean"
+          }
+        }
+      },
       "BillingPlan": {
         "required": [
           "id",
@@ -13208,6 +13302,18 @@
         "properties": {
           "token": {
             "type": "string"
+          }
+        }
+      },
+      "UpdateAssistantSettings": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "maxLength": 200,
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

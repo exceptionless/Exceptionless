@@ -263,7 +263,9 @@
     "method": "GET",
     "route": "/api/v2/admin/assistant-settings",
     "displayName": "HTTP: GET api/v2/admin/assistant-settings",
-    "tags": [],
+    "tags": [
+      "AdminEndpoints"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "GlobalAdminPolicy"
@@ -275,7 +277,9 @@
     "method": "PUT",
     "route": "/api/v2/admin/assistant-settings",
     "displayName": "HTTP: PUT api/v2/admin/assistant-settings",
-    "tags": [],
+    "tags": [
+      "AdminEndpoints"
+    ],
     "allowAnonymous": false,
     "authorizationPolicies": [
       "GlobalAdminPolicy"
