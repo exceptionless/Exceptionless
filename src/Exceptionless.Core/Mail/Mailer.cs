@@ -8,6 +8,7 @@ using Exceptionless.EmailTemplates.Models;
 using Foundatio.Queues;
 using Foundatio.Serializer;
 using Microsoft.Extensions.Logging;
+using NetMailAddress = System.Net.Mail.MailAddress;
 
 namespace Exceptionless.Core.Mail;
 
@@ -157,7 +158,14 @@ public class Mailer : IMailer
 
     private static string BuildMailtoUrl(string emailAddress, string? body)
     {
-        string href = $"mailto:{Uri.EscapeDataString(emailAddress)}";
+        string address = NetMailAddress.TryCreate(emailAddress, out NetMailAddress? parsedAddress)
+            ? parsedAddress.Address
+            : emailAddress;
+        int atIndex = address.LastIndexOf('@');
+        string escapedAddress = atIndex > 0
+            ? $"{Uri.EscapeDataString(address[..atIndex])}@{Uri.EscapeDataString(address[(atIndex + 1)..])}"
+            : Uri.EscapeDataString(address);
+        string href = $"mailto:{escapedAddress}";
         return String.IsNullOrEmpty(body) ? href : $"{href}?body={Uri.EscapeDataString(body)}";
     }
 

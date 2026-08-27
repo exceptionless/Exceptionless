@@ -14,6 +14,7 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Queues;
 using Foundatio.Serializer;
 using System.Net;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Xunit;
 
@@ -222,13 +223,15 @@ public sealed class MailerTests : TestWithServices
     }
 
     [Fact]
-    public Task SendEventNoticeNotFoundAsync()
+    public async Task SendEventNoticeNotFoundAsync()
     {
-        return SendEventNoticeAsync(new PersistentEvent
+        string body = await SendEventNoticeAsync(new PersistentEvent
         {
             Source = "[GET] /not-found?page=20",
             Type = Event.KnownTypes.NotFound
         });
+
+        Assert.Contains("[GET] /not-found?page=20", WebUtility.HtmlDecode(body), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -315,14 +318,31 @@ public sealed class MailerTests : TestWithServices
             Message = "Hostile user description",
             Data = new Core.Models.DataDictionary {
                     { Event.KnownDataKeys.UserInfo, new UserInfo("user-id", "<img src=x onerror=alert(1)>") },
-                    { Event.KnownDataKeys.UserDescription, new UserDescription("victim@example.com", "hello&bcc=attacker@example.com") }
+                    { Event.KnownDataKeys.UserDescription, new UserDescription("\"alerts@prod\"@example.com", "hello&bcc=attacker@example.com") }
                 }
         });
 
-        Assert.Contains("mailto:victim%40example.com?body=hello%26bcc%3Dattacker%40example.com", body, StringComparison.Ordinal);
+        string mailto = Assert.Single(GetHrefs(body), href => href.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase));
+        int bodySeparatorIndex = mailto.IndexOf("?body=", StringComparison.OrdinalIgnoreCase);
+        Assert.True(bodySeparatorIndex > 0);
+        Assert.Equal("\"alerts@prod\"@example.com", Uri.UnescapeDataString(mailto["mailto:".Length..bodySeparatorIndex]));
+        Assert.Equal("hello&bcc=attacker@example.com", Uri.UnescapeDataString(mailto[(bodySeparatorIndex + "?body=".Length)..]));
         Assert.DoesNotContain("&bcc=", body, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("&lt;img", body, StringComparison.Ordinal);
         Assert.DoesNotContain("<img src=x onerror=alert(1)>", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SendEventNoticeAsync_WithQuotedSubject_RendersValidJsonLd()
+    {
+        string body = await SendEventNoticeAsync(new PersistentEvent
+        {
+            Type = Event.KnownTypes.Error,
+            Message = "Failure in the \"Acme\" worker"
+        });
+
+        JsonElement metadata = Assert.Single(GetStructuredData(body));
+        Assert.Contains("Failure in the \"Acme\" worker", metadata.GetProperty("description").GetString(), StringComparison.Ordinal);
     }
 
     private async Task<string> SendEventNoticeAsync(PersistentEvent ev)
@@ -342,7 +362,7 @@ public sealed class MailerTests : TestWithServices
         Assert.Contains(GetExistingEmailAppUrl($"stack/{ev.StackId}/mark-fixed"), body, StringComparison.Ordinal);
         Assert.Contains(GetExistingEmailAppUrl($"stack/{ev.StackId}/ignored"), body, StringComparison.Ordinal);
         Assert.Contains(GetExistingEmailAppUrl($"stack/{ev.StackId}/discarded"), body, StringComparison.Ordinal);
-        Assert.Contains("\"@context\":\"https://schema.org\"", body, StringComparison.Ordinal);
+        Assert.Contains("\"@context\":\"http://schema.org\"", body, StringComparison.Ordinal);
         return body;
     }
 
@@ -503,6 +523,18 @@ public sealed class MailerTests : TestWithServices
     }
 
     [Fact]
+    public async Task SendProjectDailySummaryAsync_WithNonRegressedStack_OmitsRegressedLabel()
+    {
+        var user = _userData.GenerateSampleUser();
+        var project = _projectData.GenerateSampleProject();
+        var openStack = _stackData.GenerateStack(generateId: true, type: Event.KnownTypes.Error, status: StackStatus.Open);
+
+        await _mailer.SendProjectDailySummaryAsync(user, project, [openStack], null, DateTime.UtcNow.Date, true, 5, 3, 1, 0, 0, 0, false);
+        string body = await RunMailJobAsync();
+        Assert.DoesNotContain("[REGRESSED]", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task SendUserPasswordResetAsync()
     {
         var user = _userData.GenerateSampleUser();
@@ -533,12 +565,8 @@ public sealed class MailerTests : TestWithServices
         var job = GetService<MailMessageJob>();
         await job.RunAsync();
 
-        if (GetService<IMailSender>() is not InMemoryMailSender sender)
-        {
-            return String.Empty;
-        }
-
-        string body = sender.LastMessage?.Body ?? String.Empty;
+        var sender = Assert.IsType<InMemoryMailSender>(GetService<IMailSender>());
+        string body = Assert.IsType<string>(sender.LastMessage?.Body);
 
         _logger.LogTrace("To:      {To}", sender.LastMessage?.To);
         _logger.LogTrace("Subject: {Subject}", sender.LastMessage?.Subject);
@@ -558,6 +586,32 @@ public sealed class MailerTests : TestWithServices
         }
 
         return body;
+    }
+
+    private static JsonElement[] GetStructuredData(string body)
+    {
+        string decodedBody = WebUtility.HtmlDecode(body);
+        var scripts = Regex.Matches(
+            decodedBody,
+            "<script\\b(?=[^>]*\\btype\\s*=\\s*[\"']application/ld\\+json[\"'])[^>]*>(?<json>.*?)</script>",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline);
+
+        var elements = new List<JsonElement>();
+        foreach (Match script in scripts)
+        {
+            using JsonDocument document = JsonDocument.Parse(script.Groups["json"].Value);
+            elements.Add(document.RootElement.Clone());
+        }
+
+        return elements.ToArray();
+    }
+
+    private static string[] GetHrefs(string body)
+    {
+        string decodedBody = WebUtility.HtmlDecode(body);
+        return Regex.Matches(decodedBody, "href\\s*=\\s*[\"'](?<url>[^\"']+)[\"']", RegexOptions.IgnoreCase)
+            .Select(match => match.Groups["url"].Value)
+            .ToArray();
     }
 
     private string GetExistingEmailAppUrl(string relativeUrl)

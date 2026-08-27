@@ -51,7 +51,7 @@
 
     private MarkupString JsonLd => new(JsonSerializer.Serialize(
         new EmailMessageMetadata(
-            "https://schema.org",
+            "http://schema.org",
             "EmailMessage",
             Model.Subject,
             new EmailViewActionMetadata("ViewAction", Model.Action!.Url, Model.Action.Url, Model.Action.Name),
