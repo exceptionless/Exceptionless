@@ -1,4 +1,4 @@
-import type { CountResult } from '$generated/api';
+import type { AssistantModelSettings, CountResult, UpdateAssistantSettings } from '$generated/api';
 
 export enum MigrationType {
     Versioned = 0,
@@ -30,11 +30,7 @@ export type AdminAssistantOrganizationUsage = {
     turns: number;
 };
 
-export type AdminAssistantSettings = {
-    configured_model: string;
-    is_overridden: boolean;
-    model: string;
-};
+export type AdminAssistantSettings = AssistantModelSettings;
 
 export type AdminAssistantUsage = {
     active_organizations: number;
@@ -177,9 +173,7 @@ export type ShardMetric = {
     value: number;
 };
 
-export type UpdateAssistantSettingsRequest = {
-    model: null | string;
-};
+export type UpdateAssistantSettingsRequest = UpdateAssistantSettings;
 
 export const maintenanceActions: MaintenanceAction[] = [
     {

@@ -15,6 +15,94 @@ export enum BillingStatus {
   Unpaid = 4,
 }
 
+export interface AdminAssistantOrganizationUsage {
+  organization_id: string;
+  organization_name: string;
+  plan_id: string;
+  /** @format date-time */
+  last_used_utc: string;
+  /** @format int64 */
+  turns: number;
+  /** @format int64 */
+  completed: number;
+  /** @format int64 */
+  failed: number;
+  /** @format int64 */
+  cancelled: number;
+  /** @format int64 */
+  provider_requests: number;
+  /** @format int64 */
+  tool_calls: number;
+  /** @format int64 */
+  prompt_tokens: number;
+  /** @format int64 */
+  completion_tokens: number;
+  /** @format double */
+  cost_usd: number;
+  /** @format int64 */
+  blocked_by_concurrency: number;
+  /** @format int64 */
+  blocked_by_rate_limit: number;
+  /** @format int64 */
+  blocked_by_token_limit: number;
+  /** @format int64 */
+  blocked_by_cost_limit: number;
+  /** @format int64 */
+  monthly_token_limit?: null | number;
+  /** @format double */
+  monthly_cost_limit_usd?: null | number;
+  /** @format double */
+  token_utilization?: null | number;
+  /** @format double */
+  cost_utilization?: null | number;
+}
+
+export interface AdminAssistantUsageResponse {
+  /** @format date-time */
+  month: string;
+  /** @format int64 */
+  active_organizations: number;
+  /** @format int64 */
+  turns: number;
+  /** @format int64 */
+  prompt_tokens: number;
+  /** @format int64 */
+  completion_tokens: number;
+  /** @format double */
+  cost_usd: number;
+  organizations: AdminAssistantOrganizationUsage[];
+}
+
+export interface AssistantAccessResponse {
+  enabled: boolean;
+  has_access: boolean;
+  upgrade_required: boolean;
+  message?: null | string;
+  minimum_plan_id?: null | string;
+}
+
+export interface AssistantChatMessage {
+  role: string;
+  content: string;
+  is_suggested_action?: null | boolean;
+  suggested_action_label?: null | string;
+  suggested_action_path?: null | string;
+}
+
+export interface AssistantChatRequest {
+  messages: AssistantChatMessage[];
+  organization_id?: null | string;
+  project_id?: null | string;
+  path?: null | string;
+  conversation_id?: null | string;
+}
+
+export interface AssistantModelSettings {
+  model: string;
+  configured_model: string;
+  is_overridden: boolean;
+}
+
 export interface BillingPlan {
   id: string;
   name: string;
@@ -69,6 +157,16 @@ export interface ExternalAuthInfo {
   /** @format uri */
   redirectUri: string;
   inviteToken?: null | string;
+}
+
+export interface HttpValidationProblemDetails {
+  type?: null | string;
+  title?: null | string;
+  /** @format int32 */
+  status?: null | number;
+  detail?: null | string;
+  instance?: null | string;
+  errors: Record<string, string[]>;
 }
 
 /** Base interface for aggregation results. Concrete types include ValueAggregate, BucketAggregate, StatsAggregate, etc. See client-side type definitions for full type information. */
@@ -515,6 +613,10 @@ export interface StringValueFromBody {
 
 export interface TokenResult {
   token: string;
+}
+
+export interface UpdateAssistantSettings {
+  model?: null | string;
 }
 
 export interface UpdateEmailAddressResult {
