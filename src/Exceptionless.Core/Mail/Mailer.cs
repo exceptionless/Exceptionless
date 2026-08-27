@@ -141,7 +141,11 @@ public class Mailer : IMailer
 
     private static string BuildMailtoHref(string emailAddress, string? body)
     {
-        string href = $"mailto:{Uri.EscapeDataString(emailAddress)}";
+        int atIndex = emailAddress.IndexOf('@');
+        string escapedAddress = atIndex > 0
+            ? $"{Uri.EscapeDataString(emailAddress[..atIndex])}@{Uri.EscapeDataString(emailAddress[(atIndex + 1)..])}"
+            : Uri.EscapeDataString(emailAddress);
+        string href = $"mailto:{escapedAddress}";
         return String.IsNullOrEmpty(body) ? href : $"{href}?body={Uri.EscapeDataString(body)}";
     }
 

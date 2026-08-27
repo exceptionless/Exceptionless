@@ -333,7 +333,7 @@ public sealed class MailerTests : TestWithServices
         string body = await SendEventNoticeAsync(ev);
 
         // Assert
-        AssertContainsHref(body, "mailto:victim%40example.com?body=hello%26bcc%3Dattacker%40example.com");
+        AssertContainsHref(body, "mailto:victim@example.com?body=hello%26bcc%3Dattacker%40example.com");
         Assert.DoesNotContain("&bcc=", body, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("&lt;img", body, StringComparison.Ordinal);
         Assert.DoesNotContain("<img src=x onerror=alert(1)>", body, StringComparison.Ordinal);
