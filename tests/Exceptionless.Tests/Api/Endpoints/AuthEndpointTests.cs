@@ -594,11 +594,11 @@ public class AuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task FacebookAsync_WithValidInviteAndAccountCreationDisabled_CreatesInvitedUser()
+    public async Task GitHubAsync_WithValidInviteAndAccountCreationDisabled_CreatesInvitedUser()
     {
         // Arrange
         _authOptions.EnableAccountCreation = false;
-        const string code = "facebook-invited-user";
+        const string code = "github-invited-user";
         string email = TestOAuthProviderClient.GetEmailAddress(code);
         var organization = (await _organizationRepository.GetAllAsync()).Documents.First();
         var invite = new Invite
@@ -611,10 +611,10 @@ public class AuthEndpointTests : IntegrationTestsBase
         await _organizationRepository.SaveAsync(organization, options => options.ImmediateConsistency());
 
         // Act
-        var result = await SendExternalLoginAsync("facebook", code, invite.Token);
+        var result = await SendExternalLoginAsync("github", code, invite.Token);
 
         // Assert
-        await AssertExternalLoginAsync(result, "facebook", code);
+        await AssertExternalLoginAsync(result, "github", code);
         var user = await _userRepository.GetByEmailAddressAsync(email);
         Assert.NotNull(user);
         Assert.Contains(organization.Id, user.OrganizationIds);
@@ -624,12 +624,12 @@ public class AuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task FacebookAsync_WithValidInviteAndAuthenticatedSession_AuthenticatesInvitedUser()
+    public async Task GitHubAsync_WithValidInviteAndAuthenticatedSession_AuthenticatesInvitedUser()
     {
         // Arrange
-        const string code = "facebook-existing-invited-user";
+        const string code = "github-existing-invited-user";
         string invitedEmail = TestOAuthProviderClient.GetEmailAddress(code);
-        var initialLogin = await SendExternalLoginAsync("facebook", code);
+        var initialLogin = await SendExternalLoginAsync("github", code);
         Assert.NotNull(initialLogin);
 
         var invitedUser = await _userRepository.GetByEmailAddressAsync(invitedEmail);
@@ -652,7 +652,7 @@ public class AuthEndpointTests : IntegrationTestsBase
         var result = await SendRequestAsAsync<TokenResult>(request => request
             .Post()
             .AsTestOrganizationUser()
-            .AppendPaths("auth", "facebook")
+            .AppendPaths("auth", "github")
             .Content(new ExternalAuthInfo
             {
                 ClientId = "client-id",
@@ -671,12 +671,12 @@ public class AuthEndpointTests : IntegrationTestsBase
 
         invitedUser = await _userRepository.GetByIdAsync(invitedUser.Id);
         Assert.NotNull(invitedUser);
-        Assert.Contains(invitedUser.OAuthAccounts, account => account.Provider == "facebook" && account.ProviderUserId == code);
+        Assert.Contains(invitedUser.OAuthAccounts, account => account.Provider == "github" && account.ProviderUserId == code);
         Assert.Contains(organization.Id, invitedUser.OrganizationIds);
 
         currentUser = await _userRepository.GetByIdAsync(currentUser.Id);
         Assert.NotNull(currentUser);
-        Assert.DoesNotContain(currentUser.OAuthAccounts, account => account.Provider == "facebook" && account.ProviderUserId == code);
+        Assert.DoesNotContain(currentUser.OAuthAccounts, account => account.Provider == "github" && account.ProviderUserId == code);
         Assert.Equal(currentOrganizationIds, currentUser.OrganizationIds);
 
         var updatedOrganization = await _organizationRepository.GetByIdAsync(organization.Id);
