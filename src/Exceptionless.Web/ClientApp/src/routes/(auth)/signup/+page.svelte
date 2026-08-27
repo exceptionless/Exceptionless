@@ -16,6 +16,7 @@
     import { Spinner } from '$comp/ui/spinner';
     import { signup } from '$features/auth/api.svelte';
     import {
+        accessToken,
         enableOAuthLogin,
         facebookClientId,
         facebookLogin,
@@ -24,6 +25,7 @@
         googleClientId,
         googleLogin,
         liveLogin,
+        logout,
         microsoftClientId
     } from '$features/auth/index.svelte';
     import { type SignupFormData, SignupSchema } from '$features/auth/schemas';
@@ -43,6 +45,17 @@
     const redirectUrl = $derived(inviteToken ? resolve('/(app)/project/add') : resolve('/(app)/organization/add'));
     const queryClient = useQueryClient();
 
+    async function logoutExistingInvitationSession(token?: null | string) {
+        if (token && accessToken.current) {
+            await logout(queryClient);
+        }
+    }
+
+    async function loginWithOAuth(authenticate: typeof facebookLogin) {
+        await logoutExistingInvitationSession(inviteToken);
+        await authenticate(redirectUrl, inviteToken);
+    }
+
     const form = createForm(() => ({
         defaultValues: {
             email: '',
@@ -53,11 +66,7 @@
         validators: {
             onSubmit: SignupSchema,
             onSubmitAsync: async ({ value }) => {
-                if (value.invite_token) {
-                    await queryClient.cancelQueries();
-                    queryClient.clear();
-                }
-
+                await logoutExistingInvitationSession(value.invite_token);
                 const response = await signup(value.name, value.email, value.password, value.invite_token);
                 if (response.ok) {
                     await goto(redirectUrl);
@@ -86,22 +95,22 @@
                 <P class="text-center">Sign up with</P>
                 <div class="grid grid-flow-col grid-cols-2 grid-rows-2 gap-4">
                     {#if microsoftClientId}
-                        <Button aria-label="Sign up with Microsoft" onclick={() => liveLogin(redirectUrl, inviteToken, queryClient)}>
+                        <Button aria-label="Sign up with Microsoft" onclick={() => loginWithOAuth(liveLogin)}>
                             <MicrosoftIcon class="size-4" /> Microsoft
                         </Button>
                     {/if}
                     {#if googleClientId}
-                        <Button aria-label="Sign up with Google" onclick={() => googleLogin(redirectUrl, inviteToken, queryClient)}>
+                        <Button aria-label="Sign up with Google" onclick={() => loginWithOAuth(googleLogin)}>
                             <GoogleIcon class="size-4" /> Google
                         </Button>
                     {/if}
                     {#if facebookClientId}
-                        <Button aria-label="Sign up with Facebook" onclick={() => facebookLogin(redirectUrl, inviteToken, queryClient)}>
+                        <Button aria-label="Sign up with Facebook" onclick={() => loginWithOAuth(facebookLogin)}>
                             <FacebookIcon class="size-4" /> Facebook
                         </Button>
                     {/if}
                     {#if gitHubClientId}
-                        <Button aria-label="Sign up with GitHub" onclick={() => githubLogin(redirectUrl, inviteToken, queryClient)}>
+                        <Button aria-label="Sign up with GitHub" onclick={() => loginWithOAuth(githubLogin)}>
                             <GitHubIcon class="size-4" /> GitHub
                         </Button>
                     {/if}

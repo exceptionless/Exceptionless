@@ -16,6 +16,7 @@
     import { Spinner } from '$comp/ui/spinner';
     import { login } from '$features/auth/api.svelte';
     import {
+        accessToken,
         enableAccountCreation,
         enableOAuthLogin,
         facebookClientId,
@@ -25,6 +26,7 @@
         googleClientId,
         googleLogin,
         liveLogin,
+        logout,
         microsoftClientId
     } from '$features/auth/index.svelte';
     import { type LoginFormData, LoginSchema } from '$features/auth/schemas';
@@ -48,6 +50,17 @@
     const signupUrl = $derived(inviteToken ? `${resolve('/(auth)/signup')}?token=${encodeURIComponent(inviteToken)}` : resolve('/(auth)/signup'));
     const queryClient = useQueryClient();
 
+    async function logoutExistingInvitationSession(token?: null | string) {
+        if (token && accessToken.current) {
+            await logout(queryClient);
+        }
+    }
+
+    async function loginWithOAuth(authenticate: typeof facebookLogin) {
+        await logoutExistingInvitationSession(inviteToken);
+        await authenticate(redirectUrl, inviteToken);
+    }
+
     const form = createForm(() => ({
         defaultValues: {
             email: '',
@@ -57,11 +70,7 @@
         validators: {
             onSubmit: LoginSchema,
             onSubmitAsync: async ({ value }) => {
-                if (value.invite_token) {
-                    await queryClient.cancelQueries();
-                    queryClient.clear();
-                }
-
+                await logoutExistingInvitationSession(value.invite_token);
                 const response = await login(value.email, value.password, value.invite_token);
                 if (response.ok) {
                     await goto(redirectUrl);
@@ -183,22 +192,22 @@
                 </div>
                 <div class="grid grid-flow-col grid-cols-2 grid-rows-2 gap-4">
                     {#if microsoftClientId}
-                        <Button aria-label="Login with Microsoft" tabindex={4} onclick={() => liveLogin(redirectUrl, inviteToken, queryClient)}>
+                        <Button aria-label="Login with Microsoft" tabindex={4} onclick={() => loginWithOAuth(liveLogin)}>
                             <MicrosoftIcon class="size-4" /> Microsoft
                         </Button>
                     {/if}
                     {#if googleClientId}
-                        <Button aria-label="Login with Google" tabindex={4} onclick={() => googleLogin(redirectUrl, inviteToken, queryClient)}>
+                        <Button aria-label="Login with Google" tabindex={4} onclick={() => loginWithOAuth(googleLogin)}>
                             <GoogleIcon class="size-4" /> Google
                         </Button>
                     {/if}
                     {#if facebookClientId}
-                        <Button aria-label="Login with Facebook" tabindex={4} onclick={() => facebookLogin(redirectUrl, inviteToken, queryClient)}>
+                        <Button aria-label="Login with Facebook" tabindex={4} onclick={() => loginWithOAuth(facebookLogin)}>
                             <FacebookIcon class="size-4" /> Facebook
                         </Button>
                     {/if}
                     {#if gitHubClientId}
-                        <Button aria-label="Login with GitHub" tabindex={4} onclick={() => githubLogin(redirectUrl, inviteToken, queryClient)}>
+                        <Button aria-label="Login with GitHub" tabindex={4} onclick={() => loginWithOAuth(githubLogin)}>
                             <GitHubIcon class="size-4" /> GitHub
                         </Button>
                     {/if}

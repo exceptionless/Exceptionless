@@ -1,5 +1,3 @@
-import type { QueryClient } from '@tanstack/svelte-query';
-
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const authApi = vi.hoisted(() => ({
@@ -23,11 +21,6 @@ const fetchClient = vi.hoisted(() => ({
 const navigation = vi.hoisted(() => ({
     goto: vi.fn()
 }));
-const queryClient = vi.hoisted(() => ({
-    cancelQueries: vi.fn(),
-    clear: vi.fn()
-}));
-
 vi.mock('$app/navigation', () => navigation);
 vi.mock('$app/paths', () => ({ resolve: (route: string) => route }));
 vi.mock('$app/state', () => ({ page: { url: new URL('https://app.example.test/next/login') } }));
@@ -61,13 +54,6 @@ describe('facebookLogin', () => {
     beforeEach(() => {
         vi.useFakeTimers();
         authState.accessToken.current = 'existing-access-token';
-        queryClient.cancelQueries.mockReset();
-        queryClient.clear.mockReset();
-        authApi.logout.mockImplementation(async (client?: QueryClient) => {
-            await client?.cancelQueries();
-            client?.clear();
-            authState.accessToken.current = null;
-        });
         fetchClient.postJSON.mockResolvedValue({ data: { token: 'new-access-token' }, ok: true });
         navigation.goto.mockResolvedValue(undefined);
     });
@@ -77,22 +63,16 @@ describe('facebookLogin', () => {
         vi.restoreAllMocks();
     });
 
-    it('facebookLogin_WithInvitationToken_LogsOutBeforeExchangingCode', async () => {
+    it('facebookLogin_WithInvitationToken_ForwardsInvitationToken', async () => {
         // Arrange
-        const open = vi.spyOn(window, 'open').mockReturnValue(createOAuthPopup('facebook-code'));
+        vi.spyOn(window, 'open').mockReturnValue(createOAuthPopup('facebook-code'));
 
         // Act
-        const login = facebookLogin('/(app)/project/add', 'invite-token', queryClient as unknown as QueryClient);
+        const login = facebookLogin('/(app)/project/add', 'invite-token');
         await vi.advanceTimersByTimeAsync(500);
         await login;
 
         // Assert
-        expect(authApi.logout).toHaveBeenCalledWith(queryClient);
-        expect(queryClient.cancelQueries).toHaveBeenCalledOnce();
-        expect(queryClient.clear).toHaveBeenCalledOnce();
-        expect(open.mock.invocationCallOrder[0]).toBeLessThan(authApi.logout.mock.invocationCallOrder[0]!);
-        expect(authApi.logout.mock.invocationCallOrder[0]).toBeLessThan(fetchClient.postJSON.mock.invocationCallOrder[0]!);
-        expect(queryClient.clear.mock.invocationCallOrder[0]).toBeLessThan(fetchClient.postJSON.mock.invocationCallOrder[0]!);
         expect(fetchClient.postJSON).toHaveBeenCalledWith('auth/facebook', {
             clientId: 'facebook-client-id',
             code: 'facebook-code',
@@ -114,7 +94,6 @@ describe('facebookLogin', () => {
         await login;
 
         // Assert
-        expect(authApi.logout).not.toHaveBeenCalled();
         expect(fetchClient.postJSON).toHaveBeenCalledWith('auth/facebook', {
             clientId: 'facebook-client-id',
             code: 'facebook-link-code',
