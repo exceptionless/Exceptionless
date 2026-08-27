@@ -9,12 +9,14 @@ using Foundatio.Queues;
 using Foundatio.Serializer;
 using HandlebarsDotNet;
 using Microsoft.Extensions.Logging;
+using NetMailAddress = System.Net.Mail.MailAddress;
 
 namespace Exceptionless.Core.Mail;
 
 public class Mailer : IMailer
 {
     private readonly ConcurrentDictionary<string, HandlebarsTemplate<object, object>> _cachedTemplates = new();
+    private readonly IHandlebars _handlebars = Handlebars.Create();
     private readonly IQueue<MailMessage> _queue;
     private readonly FormattingPluginManager _pluginManager;
     private readonly AppOptions _appOptions;
@@ -30,6 +32,12 @@ public class Mailer : IMailer
         _timeProvider = timeProvider;
         _serializer = serializer;
         _logger = logger;
+
+        _handlebars.RegisterHelper("json", (writer, _, parameters) =>
+        {
+            object? value = parameters.Length > 0 ? parameters[0] : null;
+            writer.WriteSafeString(JsonSerializer.Serialize(value));
+        });
     }
 
     public async Task<bool> SendContactRequestAsync(string name, string emailAddress, string? company, string? subject, string message, string? clientIpAddress, string? userAgent, string? referrer)
@@ -141,10 +149,13 @@ public class Mailer : IMailer
 
     private static string BuildMailtoHref(string emailAddress, string? body)
     {
-        int atIndex = emailAddress.LastIndexOf('@');
+        string address = NetMailAddress.TryCreate(emailAddress, out NetMailAddress? parsedAddress)
+            ? parsedAddress.Address
+            : emailAddress;
+        int atIndex = address.LastIndexOf('@');
         string escapedAddress = atIndex > 0
-            ? $"{Uri.EscapeDataString(emailAddress[..atIndex])}@{Uri.EscapeDataString(emailAddress[(atIndex + 1)..])}"
-            : Uri.EscapeDataString(emailAddress);
+            ? $"{Uri.EscapeDataString(address[..atIndex])}@{Uri.EscapeDataString(address[(atIndex + 1)..])}"
+            : Uri.EscapeDataString(address);
         string href = $"mailto:{escapedAddress}";
         return String.IsNullOrEmpty(body) ? href : $"{href}?body={Uri.EscapeDataString(body)}";
     }
@@ -334,9 +345,6 @@ public class Mailer : IMailer
 
     private string RenderTemplate(string name, IDictionary<string, object?> data)
     {
-        if (data.TryGetValue("Subject", out object? subject) && subject is string subjectValue)
-            data["SubjectJson"] = JsonEncodedText.Encode(subjectValue).ToString();
-
         var template = GetCompiledTemplate(name);
         return template(data);
     }
@@ -352,7 +360,7 @@ public class Mailer : IMailer
             using var reader = new StreamReader(stream ?? throw new InvalidOperationException());
 
             string template = reader.ReadToEnd();
-            var compiledTemplateFunc = Handlebars.Compile(template);
+            var compiledTemplateFunc = _handlebars.Compile(template);
             return compiledTemplateFunc;
         });
     }

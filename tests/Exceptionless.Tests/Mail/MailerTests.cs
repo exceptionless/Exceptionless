@@ -316,6 +316,23 @@ public sealed class MailerTests : TestWithServices
     }
 
     [Fact]
+    public async Task SendEventNoticeAsync_WithQuotedSubject_RendersValidJsonLd()
+    {
+        // Arrange
+        var ev = new PersistentEvent
+        {
+            Type = Event.KnownTypes.Error,
+            Message = "Failure in the \"Acme\" worker"
+        };
+
+        // Act
+        string body = await SendEventNoticeAsync(ev);
+
+        // Assert
+        Assert.Contains("Failure in the \"Acme\" worker", WebUtility.HtmlDecode(body), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task SendEventNoticeAsync_WithHostileUserDescription_EncodesHtmlAndMailtoComponents()
     {
         // Arrange
