@@ -56,7 +56,7 @@
 <EmailLayout styles={dailySummaryStyles}>
     {#snippet content()}
         <Section data-email-content data-summary-blocked={'{{Blocked}}'} class="px-4 py-2">
-            <Heading as="h1" class="text-dark mt-0 mb-[5px] text-[34px] leading-[1.3] font-normal">{@html 'Summary for {{StartDate}}'}</Heading>
+            <Heading as="h1" class="text-foreground mt-0 mb-[5px] text-[34px] leading-[1.3] font-normal">{@html 'Summary for {{StartDate}}'}</Heading>
 
             {@html '{{#if HasSubmittedEvents}}{{#if Blocked}}'}
             <Section data-email-summary-metrics data-summary-count="4" class="my-4">
@@ -127,7 +127,7 @@
             {@html '{{/if}}{{/if}}'}
 
             {@html '{{#if HasSubmittedEvents}}'}
-            <Text class="text-dark text-base leading-[1.3]"
+            <Text class="text-foreground text-base leading-[1.3]"
                 >{@html '{{#if Count}}The "{{ProjectName}}" project had <strong>{{Count}} total</strong>, <strong>{{Unique}} unique</strong>, and <strong>{{New}} new</strong> errors.{{else}}Congrats! The "{{ProjectName}}" project was exceptionless!{{/if}}{{#if Fixed}} Additionally, <strong>{{Fixed}} errors</strong> that have been marked as fixed occurred in outdated instances of your application.{{/if}}'}</Text
             >
 
@@ -139,35 +139,35 @@
             </Section>
 
             {@html '{{#if Blocked}}'}
-            <Section data-email-summary-alert class="border-alert bg-alert-bg my-4 rounded-[3px] border p-[10px]">
-                <Text class="text-dark text-base leading-[1.3]"
-                    >{@html '<strong>{{Blocked}} events</strong> were discarded due to throttling. <a href="{{BaseUrl}}/organization/{{OrganizationId}}/upgrade" style="color:#5E9A00;text-decoration:none">Upgrade now</a> to increase your limits. <a href="https://github.com/exceptionless/Exceptionless/wiki/Frequently-Asked-Questions#q-why-is-my-organization-throttled" style="color:#5E9A00;text-decoration:none">Click here to learn more about throttling.</a>'}</Text
+            <Section data-email-summary-alert class="border-destructive bg-destructive/10 my-4 rounded-[3px] border p-[10px]">
+                <Text class="text-foreground text-base leading-[1.3]"
+                    >{@html '<strong>{{Blocked}} events</strong> were discarded due to throttling. <a href="{{BaseUrl}}/organization/{{OrganizationId}}/upgrade" class="text-primary no-underline">Upgrade now</a> to increase your limits. <a href="https://github.com/exceptionless/Exceptionless/wiki/Frequently-Asked-Questions#q-why-is-my-organization-throttled" class="text-primary no-underline">Click here to learn more about throttling.</a>'}</Text
                 >
                 <Section data-email-button-row class="text-center">
                     <Button
                         href="{'{{BaseUrl}}'}/organization/{'{{OrganizationId}}'}/upgrade"
-                        class="bg-alert inline-block rounded-[3px] px-4 py-2 text-base font-bold text-white no-underline">Upgrade Plan</Button
+                        class="bg-destructive inline-block rounded-[3px] px-4 py-2 text-base font-bold text-white no-underline">Upgrade Plan</Button
                     >
                 </Section>
             </Section>
             {@html '{{/if}}'}
 
             {@html '{{#if MostFrequent}}'}
-            <Heading as="h5" class="text-dark mt-0 mb-[5px] text-[20px] leading-[1.3] font-normal">Most Frequent</Heading>
+            <Heading as="h5" class="text-foreground mt-0 mb-[5px] text-[20px] leading-[1.3] font-normal">Most Frequent</Heading>
             {@html '<ul style="margin-top:0">'}
-            {@html '{{#each MostFrequent}}<li style="margin-top:5px;margin-left:5px"><a href="{{../BaseUrl}}/stack/{{StackId}}" style="color:#5E9A00;text-decoration:none">{{#if IsRegressed}}<strong>[REGRESSED]</strong> {{/if}}{{#if TypeName}}<strong>{{TypeName}}:</strong> {{/if}}{{Title}}</a></li>{{/each}}'}
-            {@html '<li style="margin-top:5px;margin-left:5px"><a href="{{BaseUrl}}/project/{{ProjectId}}/error/frequent" style="color:#5E9A00;text-decoration:none">View more...</a></li></ul>'}
+            {@html '{{#each MostFrequent}}<li style="margin-top:5px;margin-left:5px"><a href="{{../BaseUrl}}/stack/{{StackId}}" class="text-primary no-underline">{{#if IsRegressed}}<strong>[REGRESSED]</strong> {{/if}}{{#if TypeName}}<strong>{{TypeName}}:</strong> {{/if}}{{Title}}</a></li>{{/each}}'}
+            {@html '<li style="margin-top:5px;margin-left:5px"><a href="{{BaseUrl}}/project/{{ProjectId}}/error/frequent" class="text-primary no-underline">View more...</a></li></ul>'}
             {@html '{{/if}}'}
 
             {@html '{{#if Newest}}'}
-            <Heading as="h5" class="text-dark mt-0 mb-[5px] text-[20px] leading-[1.3] font-normal">Newest</Heading>
+            <Heading as="h5" class="text-foreground mt-0 mb-[5px] text-[20px] leading-[1.3] font-normal">Newest</Heading>
             {@html '<ul style="margin-top:0">'}
-            {@html '{{#each Newest}}<li style="margin-top:5px;margin-left:5px"><a href="{{../BaseUrl}}/stack/{{StackId}}" style="color:#5E9A00;text-decoration:none">{{#if IsRegressed}}<strong>[REGRESSED]</strong> {{/if}}{{#if TypeName}}<strong>{{TypeName}}:</strong> {{/if}}{{Title}}</a></li>{{/each}}'}
-            {@html '<li style="margin-top:5px;margin-left:5px"><a href="{{BaseUrl}}/project/{{ProjectId}}/error/new" style="color:#5E9A00;text-decoration:none">View more...</a></li></ul>'}
+            {@html '{{#each Newest}}<li style="margin-top:5px;margin-left:5px"><a href="{{../BaseUrl}}/stack/{{StackId}}" class="text-primary no-underline">{{#if IsRegressed}}<strong>[REGRESSED]</strong> {{/if}}{{#if TypeName}}<strong>{{TypeName}}:</strong> {{/if}}{{Title}}</a></li>{{/each}}'}
+            {@html '<li style="margin-top:5px;margin-left:5px"><a href="{{BaseUrl}}/project/{{ProjectId}}/error/new" class="text-primary no-underline">View more...</a></li></ul>'}
             {@html '{{/if}}'}
 
             {@html '{{#if IsFreePlan}}'}
-            <Text data-email-free-plan class="text-dark text-base leading-[1.3]"
+            <Text data-email-free-plan class="text-foreground text-base leading-[1.3]"
                 >You are currently on a free plan. If you would like to receive notifications for errors as they happen, <Link
                     href="{'{{BaseUrl}}'}/organization/{'{{OrganizationId}}'}/upgrade"
                     class="text-primary no-underline">upgrade to a paid plan</Link
@@ -176,7 +176,7 @@
             {@html '{{/if}}'}
 
             {@html '{{else}}'}
-            <Text data-email-unconfigured class="text-dark text-[20px] leading-[1.6]"
+            <Text data-email-unconfigured class="text-foreground text-[20px] leading-[1.6]"
                 >{@html 'Unfortunately, it appears that your "{{ProjectName}}" project has not yet been configured to send errors to'}
                 <Link href="https://exceptionless.com" class="text-primary no-underline">Exceptionless</Link>.</Text
             >
@@ -186,7 +186,7 @@
                     class="bg-primary inline-block rounded-[3px] px-4 py-2 text-base font-bold text-white no-underline">Configure Project</Button
                 >
             </Section>
-            <Text class="text-dark text-base leading-[1.3]"
+            <Text class="text-foreground text-base leading-[1.3]"
                 >Send us an email at <Link href="mailto:support@exceptionless.io" class="text-primary no-underline">support@exceptionless.io</Link> if you have any
                 questions or need help getting started.</Text
             >
@@ -196,7 +196,7 @@
         <ActionsFooter summaryBlocked={'{{Blocked}}'}>
             {#snippet actions()}
                 <li class="mt-[5px] ml-[5px]">
-                    <Link href="{'{{BaseUrl}}'}/account/manage?projectId={'{{ProjectId}}'}&tab=notifications" class="text-primary-action no-underline"
+                    <Link href="{'{{BaseUrl}}'}/account/manage?projectId={'{{ProjectId}}'}&tab=notifications" class="text-primary no-underline"
                         >Change your notification settings for this project</Link
                     >
                 </li>

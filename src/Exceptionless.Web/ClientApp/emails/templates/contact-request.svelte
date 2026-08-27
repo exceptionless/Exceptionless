@@ -7,7 +7,7 @@
         <meta charset="utf-8" />
         <title>{'{{Subject}}'}</title>
     </Head>
-    <svelte:element this={"body"} style="font-family:Helvetica,Arial,sans-serif;color:#2c2c2c;line-height:1.5">
+    <svelte:element this={"body"} class="text-foreground" style="font-family:Helvetica,Arial,sans-serif;line-height:1.5">
         <h1 style="font-size:22px;font-weight:400">{'{{Subject}}'}</h1>
         <dl>
             <dt>Name</dt>

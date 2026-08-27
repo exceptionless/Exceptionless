@@ -3,7 +3,7 @@
 
     const sharedStyles = `
 :root{color-scheme:light only;supported-color-schemes:light}
-html,body{margin:0!important;padding:0!important;width:100%!important;min-width:100%!important;background:#f7f7f7!important;color:#2c2c2c!important;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%}
+html,body{margin:0!important;padding:0!important;width:100%!important;min-width:100%!important;background:#fff!important;color:#111827!important;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%}
 table{border-collapse:collapse;border-spacing:0}
 td{box-sizing:border-box}
 img{border:0;line-height:100%;outline:none;text-decoration:none}
@@ -31,16 +31,16 @@ p+p{margin-top:15px!important}
         <meta name="supported-color-schemes" content="light only" />
         <svelte:element this={"style"}>{sharedStyles}{styles}</svelte:element>
     </Head>
-    <Body class="bg-bg font-[Helvetica,Arial,sans-serif]">
+    <Body class="bg-background text-foreground font-[Helvetica,Arial,sans-serif]">
         {#if preheader}
             <Preview preview={preheader} />
         {/if}
-        <Section data-email-header class="bg-dark w-full px-4 py-2">
+        <Section data-email-header class="bg-foreground w-full px-4 py-2">
             <Container class="mx-auto max-w-[580px]">
                 <Img src="https://be.exceptionless.io/img/exceptionless-logo.png" alt="Exceptionless" width="235" height="50" class="ml-[15px] block" />
             </Container>
         </Section>
-        <Container data-email-container class="bg-bg mx-auto max-w-[580px]">
+        <Container data-email-container class="bg-background mx-auto max-w-[580px]">
             {@render content()}
         </Container>
     </Body>

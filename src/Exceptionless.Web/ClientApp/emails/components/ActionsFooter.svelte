@@ -13,7 +13,7 @@
 </script>
 
 <Section data-email-actions data-summary-blocked={summaryBlocked} class="px-4 py-2">
-    <Heading as="h5" class="text-muted mt-0 mb-[5px] text-[20px] leading-[1.3] font-normal">Other Actions</Heading>
+    <Heading as="h5" class="text-muted-foreground mt-0 mb-[5px] text-[20px] leading-[1.3] font-normal">Other Actions</Heading>
     <ul style="margin-top:0">
         {@render actions()}
     </ul>

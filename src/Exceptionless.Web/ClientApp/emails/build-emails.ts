@@ -4,7 +4,7 @@ import { Renderer } from '@better-svelte-email/server';
 import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import { basename, resolve } from 'node:path';
 
-import { tailwindTheme } from './theme';
+import appStyles from '../src/app.css?raw';
 
 const templateModules = import.meta.glob('./templates/*.svelte', {
     eager: true,
@@ -14,7 +14,7 @@ const templateModules = import.meta.glob('./templates/*.svelte', {
 const svelteRenderMarkers = ['<!---->', '<!--[-->', '<!--[-1-->', '<!--]-->'];
 
 async function buildEmails(): Promise<void> {
-    const renderer = new Renderer({ tailwindConfig: tailwindTheme });
+    const renderer = new Renderer({ customCSS: appStyles });
     const outputDirectory = resolve(process.cwd(), '..', '..', 'Exceptionless.Core', 'Mail', 'Templates');
     const sourceDirectory = resolve(process.cwd(), 'emails', 'templates');
     const templates = Object.entries(templateModules)

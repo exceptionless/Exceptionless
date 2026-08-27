@@ -24,7 +24,7 @@
 <EmailLayout styles={eventStyles}>
     {#snippet content()}
         <Section data-email-content class="px-4 py-2">
-            <Text class="text-dark text-[20px] leading-[1.6]"
+            <Text class="text-foreground text-[20px] leading-[1.6]"
                 >{@html '{{#if IsNew}}A new {{#if IsCritical}}critical {{/if}}event has occurred in the "{{ProjectName}}" project.{{else if IsRegression}}{{#if IsCritical}}A critical{{else}}An{{/if}} event has regressed in the "{{ProjectName}}" project.{{else}}{{#if IsCritical}}A critical{{else}}An{{/if}} event has reoccurred for the {{TotalOccurrences}} time in the "{{ProjectName}}" project.{{/if}}'}</Text
             >
 
@@ -40,7 +40,7 @@
                 {@html '{{#each Fields}}{{#if @index}}'}
                 <hr style="border-color:#f7f7f7" />
                 {@html '{{/if}}'}
-                <Text class="text-dark my-[10px] text-base leading-[1.3]"
+                <Text class="text-foreground my-[10px] text-base leading-[1.3]"
                     >{@html '<strong>{{@key}}</strong><br /><span style="word-wrap:break-word;word-break:break-all">{{this}}</span>'}</Text
                 >
                 {@html '{{/each}}'}
@@ -48,17 +48,17 @@
             {@html '{{/if}}'}
 
             {@html '{{#if HasUserInfo}}'}
-            <Heading as="h4" class="text-dark mt-0 mb-[5px] text-[24px] leading-[1.3] font-normal">User Info</Heading>
+            <Heading as="h4" class="text-foreground mt-0 mb-[5px] text-[24px] leading-[1.3] font-normal">User Info</Heading>
             <Section data-email-user-card class="border-border my-4 rounded-[3px] border bg-white p-[10px]">
                 {@html '{{#if UserDisplayName}}'}
-                <Text class="text-dark my-[10px] text-base leading-[1.3]"
-                    >{@html '<strong>Name</strong><br />{{#if UserEmail}}<a href="{{UserEmailHref}}" style="color:#5E9A00;text-decoration:none">{{UserDisplayName}}</a>{{else}}<span style="word-wrap:break-word;word-break:break-all">{{UserDisplayName}}</span>{{/if}}'}</Text
+                <Text class="text-foreground my-[10px] text-base leading-[1.3]"
+                    >{@html '<strong>Name</strong><br />{{#if UserEmail}}<a href="{{UserEmailHref}}" class="text-primary no-underline">{{UserDisplayName}}</a>{{else}}<span style="word-wrap:break-word;word-break:break-all">{{UserDisplayName}}</span>{{/if}}'}</Text
                 >
                 {@html '{{#if UserDescription}}'}
                 <hr style="border-color:#f7f7f7" />
                 {@html '{{/if}}{{/if}}'}
                 {@html '{{#if UserDescription}}'}
-                <Text class="text-dark my-[10px] text-base leading-[1.3]"
+                <Text class="text-foreground my-[10px] text-base leading-[1.3]"
                     >{@html '<strong>Description</strong><br /><span style="word-wrap:break-word;word-break:break-all">{{UserDescription}}</span>'}</Text
                 >
                 {@html '{{/if}}'}
@@ -69,19 +69,17 @@
         <ActionsFooter>
             {#snippet actions()}
                 <li class="mt-[5px] ml-[5px]">
-                    <Link href="{'{{BaseUrl}}'}/stack/{'{{StackId}}'}/mark-fixed" class="text-primary-action no-underline">Mark event as fixed</Link>
+                    <Link href="{'{{BaseUrl}}'}/stack/{'{{StackId}}'}/mark-fixed" class="text-primary no-underline">Mark event as fixed</Link>
                 </li>
                 <li class="mt-[5px] ml-[5px]">
-                    <Link href="{'{{BaseUrl}}'}/stack/{'{{StackId}}'}/ignored" class="text-primary-action no-underline"
-                        >Stop sending notifications for this event</Link
+                    <Link href="{'{{BaseUrl}}'}/stack/{'{{StackId}}'}/ignored" class="text-primary no-underline">Stop sending notifications for this event</Link
                     >
                 </li>
                 <li class="mt-[5px] ml-[5px]">
-                    <Link href="{'{{BaseUrl}}'}/stack/{'{{StackId}}'}/discarded" class="text-primary-action no-underline">Discard future event occurrences</Link
-                    >
+                    <Link href="{'{{BaseUrl}}'}/stack/{'{{StackId}}'}/discarded" class="text-primary no-underline">Discard future event occurrences</Link>
                 </li>
                 <li class="mt-[5px] ml-[5px]">
-                    <Link href="{'{{BaseUrl}}'}/account/manage?projectId={'{{ProjectId}}'}&tab=notifications" class="text-primary-action no-underline"
+                    <Link href="{'{{BaseUrl}}'}/account/manage?projectId={'{{ProjectId}}'}&tab=notifications" class="text-primary no-underline"
                         >Change your notification settings for this project</Link
                     >
                 </li>

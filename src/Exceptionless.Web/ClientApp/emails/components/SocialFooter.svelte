@@ -13,10 +13,10 @@
     // Foundation layout's subpixel rounding inside the 580px email container.
 </script>
 
-<Section data-email-social class="bg-bg p-4">
+<Section data-email-social class="bg-background p-4">
     <Row style="table-layout:fixed">
         <Column data-social-column width="50%" style="vertical-align:top;padding:0 8px 0 16px">
-            <Heading as="h5" class="text-dark mt-0 mb-[5px] text-[20px] leading-[1.3] font-normal">Connect With Us:</Heading>
+            <Heading as="h5" class="text-foreground mt-0 mb-[5px] text-[20px] leading-[1.3] font-normal">Connect With Us:</Heading>
             <table width="100%" cellpadding="0" cellspacing="4" role="presentation">
                 <tbody>
                     <tr>
@@ -50,8 +50,8 @@
             </table>
         </Column>
         <Column data-social-column width="50%" style="vertical-align:top;padding:0 16px 0 8px">
-            <Heading as="h5" class="text-dark mt-0 mb-[5px] text-[20px] leading-[1.3] font-normal">Contact Info:</Heading>
-            <Text class="text-dark m-0 mb-[10px] text-base leading-[1.3]"
+            <Heading as="h5" class="text-foreground mt-0 mb-[5px] text-[20px] leading-[1.3] font-normal">Contact Info:</Heading>
+            <Text class="text-foreground m-0 mb-[10px] text-base leading-[1.3]"
                 >Email: <Link href="mailto:support@exceptionless.io" class="text-primary no-underline">support@exceptionless.io</Link></Text
             >
         </Column>
