@@ -94,7 +94,7 @@
         "clsx": "^2.1.1",
         "d3-scale": "^4.0.2",
         "dompurify": "^3.4.13",
-        "layerchart": "^2.1.0",
+        "layerchart": "^2.2.0",
         "mode-watcher": "^1.1.0",
         "oidc-client-ts": "^3.5.0",
         "pretty-ms": "^9.3.0",
