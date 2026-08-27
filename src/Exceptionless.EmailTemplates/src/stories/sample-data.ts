@@ -13,7 +13,7 @@ export type TokenValue = string | number | boolean | EachItem[] | Record<string,
 export type TokenData = Record<string, TokenValue>;
 
 export function fillTokens(html: string, tokens: TokenData): string {
-    const template = Handlebars.compile(html, { noEscape: true });
+    const template = Handlebars.compile(html);
     return template(tokens);
 }
 
@@ -58,6 +58,7 @@ export const eventNoticeTokens: TokenData = {
     HasUserInfo: 'true',
     UserDisplayName: 'Jane Smith',
     UserEmail: 'jane@example.com',
+    UserEmailHref: 'mailto:jane%40example.com?body=User%20reported%3A%20app%20crashed%20on%20checkout',
     UserDescription: 'User reported: app crashed on checkout',
     HasSubmittedEvents: 'true',
     // Fields is a plain object — {{#each Fields}} iterates with @key = property name, this = value
@@ -66,6 +67,29 @@ export const eventNoticeTokens: TokenData = {
         'Error.Type': 'System.NullReferenceException',
         'Error.StackTrace': 'at MyApp.Controllers.CheckoutController.ProcessOrder() in CheckoutController.cs:line 42'
     }
+};
+
+export const regressedEventNoticeTokens: TokenData = {
+    ...eventNoticeTokens,
+    Subject: 'Critical Event Regression: System.NullReferenceException',
+    IsNew: '',
+    IsRegression: true,
+    TotalOccurrences: 48
+};
+
+export const reoccurredEventNoticeTokens: TokenData = {
+    ...eventNoticeTokens,
+    Subject: 'Event Reoccurred: System.NullReferenceException',
+    IsNew: '',
+    IsCritical: '',
+    IsRegression: '',
+    HasUserInfo: '',
+    Fields: [],
+    UserDisplayName: '',
+    UserEmail: '',
+    UserEmailHref: '',
+    UserDescription: '',
+    TotalOccurrences: 48
 };
 
 export const dailySummaryTokens: TokenData = {
@@ -115,6 +139,26 @@ export const dailySummaryTokens: TokenData = {
     ]
 };
 
+export const blockedDailySummaryTokens: TokenData = {
+    ...dailySummaryTokens,
+    Subject: 'Daily Summary with discarded events',
+    Blocked: 123,
+    IsFreePlan: true
+};
+
+export const unconfiguredDailySummaryTokens: TokenData = {
+    ...dailySummaryTokens,
+    Subject: 'Project setup reminder',
+    HasSubmittedEvents: '',
+    Count: 0,
+    Unique: 0,
+    New: 0,
+    Blocked: 0,
+    Fixed: 0,
+    MostFrequent: [],
+    Newest: []
+};
+
 export const organizationAddedTokens: TokenData = {
     ...sharedTokens,
     Subject: 'You have been added to Acme Corp on Exceptionless'
@@ -132,6 +176,13 @@ export const organizationNoticeTokens: TokenData = {
     IsOverMonthlyLimit: '',
     IsOverHourlyLimit: 'true',
     ThrottledUntil: '2026-05-27 15:00:00'
+};
+
+export const monthlyOrganizationNoticeTokens: TokenData = {
+    ...organizationNoticeTokens,
+    Subject: 'Exceptionless: Acme Corp reached its monthly plan limit',
+    IsOverMonthlyLimit: true,
+    IsOverHourlyLimit: ''
 };
 
 export const paymentFailedTokens: TokenData = {

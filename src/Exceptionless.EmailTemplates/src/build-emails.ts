@@ -1,6 +1,7 @@
 import { Renderer } from '@better-svelte-email/server';
+import Handlebars from 'handlebars';
 import type { Component } from 'svelte';
-import { writeFileSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { tailwindTheme } from './theme.js';
@@ -32,9 +33,8 @@ function cleanHtml(html: string): string {
     html = html.replace(/<!--\[!?-->/g, '');
     html = html.replace(/<!--]-->/g, '');
     html = html.replace(/<!--\[-->/g, '');
+    html = html.replace(/<!--\[-?\d*-->/g, '');
     html = html.replace(/<!---->/g, '');
-    html = html.replace(/<!--[\s\S]*?-->/g, '');
-
     // Extract JSON-LD script blocks before whitespace collapsing — adjacent `}` chars
     // can merge into `}}` after collapse, which HandlebarsDotNet parses as a closing token.
     const scripts: string[] = [];
@@ -62,20 +62,10 @@ function validateTemplate(name: string, html: string): void {
         throw new Error(`Template "${name}" has HTML-encoded curly braces — Handlebars tokens are broken.`);
     }
 
-    const blockOpens = (html.match(/\{\{#(if|each|unless)/g) ?? []).length;
-    const blockCloses = (html.match(/\{\{\/(if|each|unless)/g) ?? []).length;
-    if (blockOpens !== blockCloses) {
-        throw new Error(
-            `Template "${name}" has unbalanced Handlebars blocks: ${blockOpens} opens vs ${blockCloses} closes`
-        );
-    }
-
-    const tokenOpens = (html.match(/\{\{/g) ?? []).length;
-    const tokenCloses = (html.match(/\}\}/g) ?? []).length;
-    if (tokenOpens !== tokenCloses) {
-        throw new Error(
-            `Template "${name}" has unbalanced Handlebars delimiters: ${tokenOpens} {{ vs ${tokenCloses} }}`
-        );
+    try {
+        Handlebars.parse(html);
+    } catch (error) {
+        throw new Error(`Template "${name}" has invalid Handlebars syntax`, { cause: error });
     }
 
     if (!html.includes('<!DOCTYPE html')) {
@@ -92,16 +82,34 @@ async function main(): Promise<void> {
     const outputDir = resolve(__dirname, '..', '..', 'Exceptionless.Core', 'Mail', 'Templates');
     mkdirSync(outputDir, { recursive: true });
 
-    const names = Object.keys(templates);
+    const entries = Object.entries(templates);
+    const names = entries.map(([name]) => name);
     console.log(`Building ${names.length} email templates...`);
 
-    for (const [name, component] of Object.entries(templates)) {
-        console.log(`  Rendering: ${name}`);
-        const raw = await renderer.render(component);
-        const html = cleanHtml(raw);
-        validateTemplate(name, html);
+    const renderedTemplates = await Promise.all(
+        entries.map(async ([name, component]) => {
+            console.log(`  Rendering: ${name}`);
+            const raw = await renderer.render(component);
+            const html = cleanHtml(raw);
+            validateTemplate(name, html);
+            return { name, html };
+        })
+    );
+
+    const manifestPath = resolve(__dirname, '..', 'generated-templates.json');
+    const previousNames: string[] = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, 'utf8')) : [];
+    for (const staleName of previousNames.filter((name) => !names.includes(name))) {
+        const stalePath = resolve(outputDir, `${staleName}.html`);
+        if (existsSync(stalePath)) {
+            unlinkSync(stalePath);
+        }
+    }
+
+    for (const { name, html } of renderedTemplates) {
         writeFileSync(resolve(outputDir, `${name}.html`), html);
     }
+
+    writeFileSync(manifestPath, `${JSON.stringify(names.slice().sort(), null, 4)}\n`);
 
     console.log(`\nDone! ${names.length} templates written to: ${outputDir}`);
 }

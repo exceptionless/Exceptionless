@@ -1,32 +1,21 @@
 <script module lang="ts">
     import { Button, Text, Heading, Section, Row, Column, Link } from '@better-svelte-email/components';
     import EmailLayout from '../components/EmailLayout.svelte';
-    import { wrapJsonLd } from '../lib/json-ld';
+    import { buildEmailMetadata } from '../lib/email-metadata';
     import ActionsFooter from '../components/ActionsFooter.svelte';
 
-    const jsonLd = wrapJsonLd(`
+    const jsonLd = buildEmailMetadata(`
 {
-  "@context": "http://schema.org",
-  "@type": "EmailMessage",
-  "description": "{{Subject}}",
-  "potentialAction": {
-    "@type": "ViewAction",
-    {{#if HasSubmittedEvents}}
-    "target": "{{BaseUrl}}/project/{{ProjectId}}/error/timeline",
-    "url": "{{BaseUrl}}/project/{{ProjectId}}/error/timeline",
-    "name": "View Timeline"
-    {{else}}
-    "target": "{{BaseUrl}}/project/{{ProjectId}}/configure",
-    "url": "{{BaseUrl}}/project/{{ProjectId}}/configure",
-    "name": "Configure Project"
-    {{/if}}
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": "Exceptionless",
-    "url": "https://exceptionless.com",
-    "logo": "https://be.exceptionless.io/img/exceptionless-48.png"
-  }
+  "@type": "ViewAction",
+  {{#if HasSubmittedEvents}}
+  "target": "{{BaseUrl}}/project/{{ProjectId}}/error/timeline",
+  "url": "{{BaseUrl}}/project/{{ProjectId}}/error/timeline",
+  "name": "View Timeline"
+  {{else}}
+  "target": "{{BaseUrl}}/project/{{ProjectId}}/configure",
+  "url": "{{BaseUrl}}/project/{{ProjectId}}/configure",
+  "name": "Configure Project"
+  {{/if}}
 }
 `);
 </script>
@@ -41,25 +30,25 @@
             {@html '{{#if HasSubmittedEvents}}{{#if Blocked}}'}
             <Section class="my-4">
                 <Row>
-                    <Column width="25%" style="padding:4px;vertical-align:top">
+                    <Column data-summary-column width="25%" style="padding:4px;vertical-align:top">
                         <div style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center">
                             <b>Count</b>
                             <div style="font-size:34px;font-weight:400;text-align:center">{@html '{{Count}}'}</div>
                         </div>
                     </Column>
-                    <Column width="25%" style="padding:4px;vertical-align:top">
+                    <Column data-summary-column width="25%" style="padding:4px;vertical-align:top">
                         <div style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center">
                             <b>Unique</b>
                             <div style="font-size:34px;font-weight:400;text-align:center">{@html '{{Unique}}'}</div>
                         </div>
                     </Column>
-                    <Column width="25%" style="padding:4px;vertical-align:top">
+                    <Column data-summary-column width="25%" style="padding:4px;vertical-align:top">
                         <div style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center">
                             <b>New</b>
                             <div style="font-size:34px;font-weight:400;text-align:center">{@html '{{New}}'}</div>
                         </div>
                     </Column>
-                    <Column width="25%" style="padding:4px;vertical-align:top">
+                    <Column data-summary-column width="25%" style="padding:4px;vertical-align:top">
                         <div style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center">
                             <b>Discarded</b>
                             <div style="font-size:34px;font-weight:400;text-align:center">{@html '{{Blocked}}'}</div>
@@ -70,19 +59,19 @@
             {@html '{{else}}'}
             <Section class="my-4">
                 <Row>
-                    <Column width="33%" style="padding:4px;vertical-align:top">
+                    <Column data-summary-column width="33%" style="padding:4px;vertical-align:top">
                         <div style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center">
                             <b>Count</b>
                             <div style="font-size:34px;font-weight:400;text-align:center">{@html '{{Count}}'}</div>
                         </div>
                     </Column>
-                    <Column width="33%" style="padding:4px;vertical-align:top">
+                    <Column data-summary-column width="33%" style="padding:4px;vertical-align:top">
                         <div style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center">
                             <b>Unique</b>
                             <div style="font-size:34px;font-weight:400;text-align:center">{@html '{{Unique}}'}</div>
                         </div>
                     </Column>
-                    <Column width="34%" style="padding:4px;vertical-align:top">
+                    <Column data-summary-column width="34%" style="padding:4px;vertical-align:top">
                         <div style="background:#fefefe;border:1px solid #cbcbcb;padding:10px;text-align:center">
                             <b>New</b>
                             <div style="font-size:34px;font-weight:400;text-align:center">{@html '{{New}}'}</div>

@@ -1,25 +1,14 @@
 <script module lang="ts">
-    import { Button, Text, Heading, Section, Link } from '@better-svelte-email/components';
+    import { Button, Text, Heading, Section } from '@better-svelte-email/components';
     import EmailLayout from '../components/EmailLayout.svelte';
-    import { wrapJsonLd } from '../lib/json-ld';
+    import { buildEmailMetadata } from '../lib/email-metadata';
 
-    const jsonLd = wrapJsonLd(`
+    const jsonLd = buildEmailMetadata(`
 {
-  "@context": "http://schema.org",
-  "@type": "EmailMessage",
-  "description": "{{Subject}}",
-  "potentialAction": {
-    "@type": "ViewAction",
-    "target": "{{BaseUrl}}/reset-password/{{UserPasswordResetToken}}",
-    "url": "{{BaseUrl}}/reset-password/{{UserPasswordResetToken}}",
-    "name": "Reset Password"
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": "Exceptionless",
-    "url": "https://exceptionless.com",
-    "logo": "https://be.exceptionless.io/img/exceptionless-48.png"
-  }
+  "@type": "ViewAction",
+  "target": "{{BaseUrl}}/reset-password/{{UserPasswordResetToken}}",
+  "url": "{{BaseUrl}}/reset-password/{{UserPasswordResetToken}}",
+  "name": "Reset Password"
 }
 `);
 </script>
@@ -42,10 +31,8 @@
                 >
             </Section>
             <Text class="text-base text-dark leading-[1.3]"
-                >If you didn't try to reset your password, <Link
-                    href="{'{{BaseUrl}}'}/reset-password/{'{{UserPasswordResetToken}}'}?cancel=true"
-                    class="text-primary no-underline">click here to cancel the password reset request</Link
-                > and we'll forget this ever happened.</Text
+                >If you didn't try to reset your password, you can safely ignore this email. The reset link will expire
+                automatically.</Text
             >
         </Section>
     {/snippet}

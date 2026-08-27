@@ -4,7 +4,7 @@
 
 <Section class="bg-bg p-4">
     <Row>
-        <Column width="50%" style="vertical-align:top;padding:8px">
+        <Column data-social-column width="50%" style="vertical-align:top;padding:8px">
             <Heading as="h5" class="text-[20px] font-normal text-dark leading-[1.3] mt-0 mb-[5px]"
                 >Connect With Us:</Heading
             >
@@ -40,7 +40,7 @@
                 </tbody>
             </table>
         </Column>
-        <Column width="50%" style="vertical-align:top;padding:8px">
+        <Column data-social-column width="50%" style="vertical-align:top;padding:8px">
             <Heading as="h5" class="text-[20px] font-normal text-dark leading-[1.3] mt-0 mb-[5px]"
                 >Contact Info:</Heading
             >

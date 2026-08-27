@@ -1,25 +1,14 @@
 <script module lang="ts">
     import { Button, Text, Heading, Section } from '@better-svelte-email/components';
     import EmailLayout from '../components/EmailLayout.svelte';
-    import { wrapJsonLd } from '../lib/json-ld';
+    import { buildEmailMetadata } from '../lib/email-metadata';
 
-    const jsonLd = wrapJsonLd(`
+    const jsonLd = buildEmailMetadata(`
 {
-  "@context": "http://schema.org",
-  "@type": "EmailMessage",
-  "description": "{{Subject}}",
-  "potentialAction": {
-    "@type": "ViewAction",
-    "target": "{{BaseUrl}}/account/verify?token={{UserVerifyEmailAddressToken}}",
-    "url": "{{BaseUrl}}/account/verify?token={{UserVerifyEmailAddressToken}}",
-    "name": "Verify Address"
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": "Exceptionless",
-    "url": "https://exceptionless.com",
-    "logo": "https://be.exceptionless.io/img/exceptionless-48.png"
-  }
+  "@type": "ViewAction",
+  "target": "{{BaseUrl}}/account/verify?token={{UserVerifyEmailAddressToken}}",
+  "url": "{{BaseUrl}}/account/verify?token={{UserVerifyEmailAddressToken}}",
+  "name": "Verify Address"
 }
 `);
 </script>

@@ -1,5 +1,14 @@
 <script module lang="ts">
     import { Html, Head, Body, Container, Section, Img, Preview } from '@better-svelte-email/components';
+
+    const clientStyles = `
+:root{color-scheme:light only;supported-color-schemes:light}
+html,body{margin:0!important;padding:0!important;width:100%!important;min-width:100%!important;background:#f7f7f7!important;color:#2c2c2c!important;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%}
+table{border-collapse:collapse;border-spacing:0}
+td{box-sizing:border-box}
+img{border:0;line-height:100%;outline:none;text-decoration:none}
+@media only screen and (max-width:596px){[data-email-container]{width:95%!important}[data-social-column]{display:block!important;width:100%!important;max-width:100%!important}[data-summary-column]{display:inline-block!important;width:50%!important}}
+`;
 </script>
 
 <script lang="ts">
@@ -8,7 +17,12 @@
 </script>
 
 <Html lang="en">
-    <Head />
+    <Head>
+        <title>{'{{Subject}}'}</title>
+        <meta name="color-scheme" content="light only" />
+        <meta name="supported-color-schemes" content="light only" />
+        <svelte:element this={"style"}>{clientStyles}</svelte:element>
+    </Head>
     <Body class="bg-bg font-[Helvetica,Arial,sans-serif]">
         {#if preheader}
             <Preview preview={preheader} />
@@ -24,7 +38,7 @@
                 />
             </Container>
         </Section>
-        <Container class="max-w-[580px] mx-auto bg-bg">
+        <Container data-email-container class="max-w-[580px] mx-auto bg-bg">
             {@render content()}
         </Container>
     </Body>

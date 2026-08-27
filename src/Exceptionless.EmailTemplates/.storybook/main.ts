@@ -10,10 +10,14 @@ const config: StorybookConfig = {
     stories: ['../src/**/*.stories.@(js|ts|svelte)'],
     docs: {},
     async viteFinal(config) {
-        // Allow Vite to read HTML template files from the sibling Core project
+        // Allow Vite to read generated templates and preview assets from sibling projects.
         config.server = config.server ?? {};
         config.server.fs = {
-            allow: [resolve(__dirname, '..'), resolve(__dirname, '../../Exceptionless.Core/Mail/Templates')]
+            allow: [
+                resolve(__dirname, '..'),
+                resolve(__dirname, '../../Exceptionless.Core/Mail/Templates'),
+                resolve(__dirname, '../../Exceptionless.Web/ClientApp.angular/img')
+            ]
         };
         return config;
     }

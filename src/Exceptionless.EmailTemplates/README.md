@@ -7,6 +7,7 @@ Svelte 5 email templates using [better-svelte-email](https://github.com/Konixy/b
 ```bash
 npm ci
 npm run build
+npm run storybook
 ```
 
 This compiles all Svelte email templates to static HTML with inlined CSS and writes them to `../Exceptionless.Core/Mail/Templates/`.
@@ -37,6 +38,12 @@ src/
 2. **Render**: `@better-svelte-email/server` renders each template to HTML with inlined Tailwind CSS
 3. **Clean**: The build script strips Svelte artifacts (SSR comments) and validates Handlebars token balance
 4. **Output**: Static HTML files with `{{HandlebarsTokens}}` that the .NET runtime fills at send-time
+
+The generated file inventory is tracked in `generated-templates.json`. The build removes outputs that were previously
+managed by this project when their source template is removed.
+
+Storybook includes representative variants for conditional template branches. It uses escaped Handlebars rendering for
+preview data; the C# mailer tests remain authoritative for production HandlebarsDotNet output and hostile input handling.
 
 ## Handlebars Tokens
 

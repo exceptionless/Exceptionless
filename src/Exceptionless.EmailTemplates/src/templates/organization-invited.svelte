@@ -1,26 +1,15 @@
 <script module lang="ts">
     import { Button, Text, Heading, Section, Link } from '@better-svelte-email/components';
     import EmailLayout from '../components/EmailLayout.svelte';
-    import { wrapJsonLd } from '../lib/json-ld';
+    import { buildEmailMetadata } from '../lib/email-metadata';
     import SocialFooter from '../components/SocialFooter.svelte';
 
-    const jsonLd = wrapJsonLd(`
+    const jsonLd = buildEmailMetadata(`
 {
-  "@context": "http://schema.org",
-  "@type": "EmailMessage",
-  "description": "{{Subject}}",
-  "potentialAction": {
-    "@type": "ViewAction",
-    "target": "{{BaseUrl}}/signup?token={{InviteToken}}",
-    "url": "{{BaseUrl}}/signup?token={{InviteToken}}",
-    "name": "Join Organization"
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": "Exceptionless",
-    "url": "https://exceptionless.com",
-    "logo": "https://be.exceptionless.io/img/exceptionless-48.png"
-  }
+  "@type": "ViewAction",
+  "target": "{{BaseUrl}}/signup?token={{InviteToken}}",
+  "url": "{{BaseUrl}}/signup?token={{InviteToken}}",
+  "name": "Join Organization"
 }
 `);
 </script>
