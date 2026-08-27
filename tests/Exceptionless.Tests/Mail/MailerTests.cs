@@ -675,6 +675,7 @@ public sealed class MailerTests : TestWithServices
                 continue;
             }
 
+            Assert.True(String.Equals(uri.Scheme, baseUri.Scheme, StringComparison.OrdinalIgnoreCase), $"Expected internal email URL scheme '{baseUri.Scheme}' but found '{uri.Scheme}'.");
             Assert.DoesNotContain("/next/", uri.PathAndQuery, StringComparison.OrdinalIgnoreCase);
             AssertValidInternalUrl(uri);
         }
