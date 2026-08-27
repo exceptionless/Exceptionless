@@ -333,7 +333,7 @@ public sealed class MailerTests : TestWithServices
         string body = await SendEventNoticeAsync(ev);
 
         // Assert
-        AssertContainsUrl(body, "mailto:victim%40example.com?body=hello%26bcc%3Dattacker%40example.com");
+        AssertContainsHref(body, "mailto:victim%40example.com?body=hello%26bcc%3Dattacker%40example.com");
         Assert.DoesNotContain("&bcc=", body, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("&lt;img", body, StringComparison.Ordinal);
         Assert.DoesNotContain("<img src=x onerror=alert(1)>", body, StringComparison.Ordinal);
@@ -578,7 +578,7 @@ public sealed class MailerTests : TestWithServices
 
         // Assert
         Assert.Contains("[REGRESSED]", body, StringComparison.Ordinal);
-        AssertContainsUrl(body, $"{_options.BaseURL}/stack/{regressedStack.Id}");
+        AssertContainsHref(body, $"{_options.BaseURL}/stack/{regressedStack.Id}");
     }
 
     [Fact]
@@ -596,7 +596,7 @@ public sealed class MailerTests : TestWithServices
 
         // Assert
         Assert.DoesNotContain("[REGRESSED]", body, StringComparison.Ordinal);
-        AssertContainsUrl(body, $"{_options.BaseURL}/stack/{openStack.Id}");
+        AssertContainsHref(body, $"{_options.BaseURL}/stack/{openStack.Id}");
     }
 
     [Fact]
@@ -639,10 +639,9 @@ public sealed class MailerTests : TestWithServices
         var job = GetService<MailMessageJob>();
         await job.RunAsync();
 
-        if (GetService<IMailSender>() is not InMemoryMailSender sender)
-            return String.Empty;
-
-        var body = sender.LastMessage?.Body ?? String.Empty;
+        var sender = Assert.IsType<InMemoryMailSender>(GetService<IMailSender>());
+        var body = sender.LastMessage?.Body;
+        Assert.NotNull(body);
 
         _logger.LogTrace("To:      {To}", sender.LastMessage?.To);
         _logger.LogTrace("Subject: {Subject}", sender.LastMessage?.Subject);
