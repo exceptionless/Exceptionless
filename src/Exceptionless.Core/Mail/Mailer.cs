@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Text.Json;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
@@ -8,12 +9,14 @@ using Foundatio.Queues;
 using Foundatio.Serializer;
 using HandlebarsDotNet;
 using Microsoft.Extensions.Logging;
+using NetMailAddress = System.Net.Mail.MailAddress;
 
 namespace Exceptionless.Core.Mail;
 
 public class Mailer : IMailer
 {
     private readonly ConcurrentDictionary<string, HandlebarsTemplate<object, object>> _cachedTemplates = new();
+    private readonly IHandlebars _handlebars = Handlebars.Create();
     private readonly IQueue<MailMessage> _queue;
     private readonly FormattingPluginManager _pluginManager;
     private readonly AppOptions _appOptions;
@@ -29,6 +32,12 @@ public class Mailer : IMailer
         _timeProvider = timeProvider;
         _serializer = serializer;
         _logger = logger;
+
+        _handlebars.RegisterHelper("json", (writer, _, parameters) =>
+        {
+            object? value = parameters.Length > 0 ? parameters[0] : null;
+            writer.WriteSafeString(JsonSerializer.Serialize(value));
+        });
     }
 
     public async Task<bool> SendContactRequestAsync(string name, string emailAddress, string? company, string? subject, string message, string? clientIpAddress, string? userAgent, string? referrer)
@@ -115,7 +124,10 @@ public class Mailer : IMailer
             data["UserDescription"] = ud.Description;
 
         if (!String.IsNullOrEmpty(ud?.EmailAddress))
+        {
             data["UserEmail"] = ud.EmailAddress;
+            data["UserEmailHref"] = BuildMailtoHref(ud.EmailAddress, ud.Description);
+        }
 
         string? displayName = null;
         if (!String.IsNullOrEmpty(ui?.Identity))
@@ -133,6 +145,19 @@ public class Mailer : IMailer
             data["UserDisplayName"] = displayName;
 
         data["HasUserInfo"] = ud is not null || ui is not null;
+    }
+
+    private static string BuildMailtoHref(string emailAddress, string? body)
+    {
+        string address = NetMailAddress.TryCreate(emailAddress, out NetMailAddress? parsedAddress)
+            ? parsedAddress.Address
+            : emailAddress;
+        int atIndex = address.LastIndexOf('@');
+        string escapedAddress = atIndex > 0
+            ? $"{Uri.EscapeDataString(address[..atIndex])}@{Uri.EscapeDataString(address[(atIndex + 1)..])}"
+            : Uri.EscapeDataString(address);
+        string href = $"mailto:{escapedAddress}";
+        return String.IsNullOrEmpty(body) ? href : $"{href}?body={Uri.EscapeDataString(body)}";
     }
 
     private static void AddDefaultFields(PersistentEvent ev, Dictionary<string, object?> data)
@@ -269,7 +294,8 @@ public class Mailer : IMailer
             StackId = s.Id,
             Title = s.Title.Truncate(50),
             TypeName = s.GetTypeName()?.Truncate(50),
-            s.Status
+            s.Status,
+            IsRegressed = s.Status == StackStatus.Regressed
         });
     }
 
@@ -334,7 +360,7 @@ public class Mailer : IMailer
             using var reader = new StreamReader(stream ?? throw new InvalidOperationException());
 
             string template = reader.ReadToEnd();
-            var compiledTemplateFunc = Handlebars.Compile(template);
+            var compiledTemplateFunc = _handlebars.Compile(template);
             return compiledTemplateFunc;
         });
     }
