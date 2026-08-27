@@ -809,7 +809,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task ProcessBatchAsync_ContinuesAfterStackWithoutRegression()
+    public async Task ProcessBatchAsync_StackWithoutRegression_ContinuesProcessingRemainingStacks()
     {
         // Arrange
         var fixedAtUtc = new DateTimeOffset(2026, 8, 27, 12, 0, 0, TimeSpan.Zero);
