@@ -22,7 +22,6 @@ const navigation = vi.hoisted(() => ({
     pushState: vi.fn(),
     replaceState: vi.fn()
 }));
-const queryClient = vi.hoisted(() => ({}));
 const validateEmailAvailability = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 
 vi.mock('$app/environment', () => ({ browser: true, building: false, dev: false }));
@@ -56,7 +55,6 @@ vi.mock('$features/auth/index.svelte', () => ({
 vi.mock('$features/auth/validators', () => ({
     validateEmailAvailability
 }));
-vi.mock('@tanstack/svelte-query', () => ({ useQueryClient: () => queryClient }));
 
 describe('invitation query parameters', () => {
     beforeEach(() => {
@@ -89,7 +87,7 @@ describe('invitation query parameters', () => {
 
         // Assert
         await waitFor(() => expect(authApi.login).toHaveBeenCalledWith('invited@example.com', 'password', currentToken));
-        expect(authApi.logout).toHaveBeenCalledWith(queryClient);
+        expect(authApi.logout).toHaveBeenCalledWith();
         expect(authApi.logout.mock.invocationCallOrder[0]).toBeLessThan(authApi.login.mock.invocationCallOrder[0]!);
         expect(screen.getByRole('link', { name: 'Signup' }).getAttribute('href')).toBe(`/(auth)/signup?token=${currentToken}`);
     });
@@ -108,7 +106,7 @@ describe('invitation query parameters', () => {
         await fireEvent.click(screen.getByRole('button', { name: 'Sign up with Google' }));
 
         // Assert
-        expect(authApi.logout).toHaveBeenCalledWith(queryClient);
+        expect(authApi.logout).toHaveBeenCalledWith();
         expect(authUi.googleLogin).toHaveBeenCalledWith('/(app)/project/add', currentToken);
         expect(authApi.logout.mock.invocationCallOrder[0]).toBeLessThan(authUi.googleLogin.mock.invocationCallOrder[0]!);
 

@@ -34,7 +34,6 @@
     import { createQueryParameters } from '$shared/query-params';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import { createForm } from '@tanstack/svelte-form';
-    import { useQueryClient } from '@tanstack/svelte-query';
     import { untrack } from 'svelte';
 
     const defaultRedirect = resolve('/');
@@ -48,16 +47,12 @@
     const inviteToken = $derived(queryParameters.token ?? null);
     const canSignup = $derived(enableAccountCreation || !!inviteToken);
     const signupUrl = $derived(inviteToken ? `${resolve('/(auth)/signup')}?token=${encodeURIComponent(inviteToken)}` : resolve('/(auth)/signup'));
-    const queryClient = useQueryClient();
-
-    async function logoutExistingInvitationSession(token?: null | string) {
-        if (token && accessToken.current) {
-            await logout(queryClient);
-        }
-    }
 
     async function loginWithOAuth(authenticate: typeof facebookLogin) {
-        await logoutExistingInvitationSession(inviteToken);
+        if (inviteToken && accessToken.current) {
+            await logout();
+        }
+
         await authenticate(redirectUrl, inviteToken);
     }
 
@@ -70,7 +65,10 @@
         validators: {
             onSubmit: LoginSchema,
             onSubmitAsync: async ({ value }) => {
-                await logoutExistingInvitationSession(value.invite_token);
+                if (value.invite_token && accessToken.current) {
+                    await logout();
+                }
+
                 const response = await login(value.email, value.password, value.invite_token);
                 if (response.ok) {
                     await goto(redirectUrl);

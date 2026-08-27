@@ -33,7 +33,6 @@
     import { createQueryParameters } from '$shared/query-params';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import { createForm } from '@tanstack/svelte-form';
-    import { useQueryClient } from '@tanstack/svelte-query';
     import { untrack } from 'svelte';
 
     const queryParameters = createQueryParameters({
@@ -43,16 +42,12 @@
     });
     const inviteToken = $derived(queryParameters.token ?? null);
     const redirectUrl = $derived(inviteToken ? resolve('/(app)/project/add') : resolve('/(app)/organization/add'));
-    const queryClient = useQueryClient();
-
-    async function logoutExistingInvitationSession(token?: null | string) {
-        if (token && accessToken.current) {
-            await logout(queryClient);
-        }
-    }
 
     async function loginWithOAuth(authenticate: typeof facebookLogin) {
-        await logoutExistingInvitationSession(inviteToken);
+        if (inviteToken && accessToken.current) {
+            await logout();
+        }
+
         await authenticate(redirectUrl, inviteToken);
     }
 
@@ -66,7 +61,10 @@
         validators: {
             onSubmit: SignupSchema,
             onSubmitAsync: async ({ value }) => {
-                await logoutExistingInvitationSession(value.invite_token);
+                if (value.invite_token && accessToken.current) {
+                    await logout();
+                }
+
                 const response = await signup(value.name, value.email, value.password, value.invite_token);
                 if (response.ok) {
                     await goto(redirectUrl);
