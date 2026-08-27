@@ -12,6 +12,25 @@ npm run storybook
 
 This compiles all Svelte email templates to static HTML with inlined CSS and writes them to `../Exceptionless.Core/Mail/Templates/`.
 
+Storybook's **Email Templates / Parity Gallery** contains every production template and representative conditional
+branch. It supports legacy/modern side-by-side, isolated, and opacity-overlay views using identical sample data.
+
+Run the executable parity contract before changing template content or layout:
+
+```bash
+npm run validate:parity
+```
+
+The command validates all gallery scenarios in two ways:
+
+- normalized visible text and every labeled action must match the frozen legacy HTML;
+- legacy and Svelte output must render to identical full-document pixels at desktop and mobile widths in one Chromium
+  process.
+
+Chromium is discovered automatically on macOS and GitHub-hosted Ubuntu runners. Set `CHROME_PATH` when using another
+installation. Failed pixel comparisons write legacy, modern, and red-on-white diff images to the ignored
+`parity-artifacts/` directory, which CI uploads for diagnosis.
+
 ## Architecture
 
 ```
@@ -43,7 +62,8 @@ The generated file inventory is tracked in `generated-templates.json`. The build
 managed by this project when their source template is removed.
 
 Storybook includes representative variants for conditional template branches. It uses escaped Handlebars rendering for
-preview data; the C# mailer tests remain authoritative for production HandlebarsDotNet output and hostile input handling.
+preview data. The parity validator uses the same scenario registry and immutable pre-migration HTML fixtures, while the
+C# mailer tests remain authoritative for production HandlebarsDotNet output and hostile input handling.
 
 ## Handlebars Tokens
 

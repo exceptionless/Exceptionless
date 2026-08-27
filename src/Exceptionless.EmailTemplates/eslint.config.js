@@ -26,11 +26,12 @@ export default [
         }
     },
     {
-        // Templates use {@html '{{#if ...}}'} to pass Handlebars block syntax through Svelte.
-        // This is intentional — disable the no-at-html-tags rule for templates only.
+        // Templates pass Handlebars blocks and significant literal whitespace through
+        // Svelte. These forms are intentional and guarded by the parity validator.
         files: ['src/templates/**/*.svelte'],
         rules: {
-            'svelte/no-at-html-tags': 'off'
+            'svelte/no-at-html-tags': 'off',
+            'svelte/no-useless-mustaches': 'off'
         }
     },
     {

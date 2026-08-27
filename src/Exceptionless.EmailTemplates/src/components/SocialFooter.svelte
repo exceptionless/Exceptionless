@@ -2,9 +2,9 @@
     import { Section, Row, Column, Heading, Link, Text } from '@better-svelte-email/components';
 </script>
 
-<Section class="bg-bg p-4">
-    <Row>
-        <Column data-social-column width="50%" style="vertical-align:top;padding:8px">
+<Section data-email-social class="bg-bg p-4">
+    <Row style="table-layout:fixed">
+        <Column data-social-column width="289.625" style="vertical-align:top;padding:0 8px 0 16px">
             <Heading as="h5" class="text-[20px] font-normal text-dark leading-[1.3] mt-0 mb-[5px]"
                 >Connect With Us:</Heading
             >
@@ -40,7 +40,7 @@
                 </tbody>
             </table>
         </Column>
-        <Column data-social-column width="50%" style="vertical-align:top;padding:8px">
+        <Column data-social-column width="290.375" style="vertical-align:top;padding:0 16px 0 8px">
             <Heading as="h5" class="text-[20px] font-normal text-dark leading-[1.3] mt-0 mb-[5px]"
                 >Contact Info:</Heading
             >
