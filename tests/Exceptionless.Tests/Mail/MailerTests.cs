@@ -78,16 +78,24 @@ public sealed class MailerTests : TestWithServices
     [InlineData("http://localhost:9001/#!", "http://localhost:9001/#!/organization/organization-1/manage?tab=billing")]
     public void OrganizationBilling_BaseUrlVariant_MatchesExistingTemplate(string baseUrl, string expected)
     {
+        // Arrange
         var appUrls = new EmailAppUrlBuilder(baseUrl);
 
-        Assert.Equal(expected, appUrls.OrganizationBilling("organization-1"));
+        // Act
+        string url = appUrls.OrganizationBilling("organization-1");
+
+        // Assert
+        Assert.Equal(expected, url);
     }
 
     [Fact]
     public void EmailAppUrlBuilder_ProductionBaseUrl_MatchesExistingTemplates()
     {
+        // Arrange
         const string baseUrl = "https://be.exceptionless.io";
         var appUrls = new EmailAppUrlBuilder(baseUrl);
+
+        // Act
         (string Path, string Url)[] routes =
         [
             ("event/event-1", appUrls.Event("event-1")),
@@ -112,6 +120,7 @@ public sealed class MailerTests : TestWithServices
             ("reset-password/token-1?cancel=true", appUrls.PasswordReset("token-1", cancel: true))
         ];
 
+        // Assert
         Assert.All(routes, route => Assert.Equal($"{baseUrl}/{route.Path}", route.Url));
     }
 
@@ -146,20 +155,24 @@ public sealed class MailerTests : TestWithServices
     [Fact]
     public async Task SendContactRequestAsync_WithHtmlInput_EncodesBody()
     {
-        _options.EmailOptions.ContactEmailAddress = "support@exceptionless.com";
+        // Arrange
+        const string name = "<script>alert('name')</script>";
+        const string message = "<img src=x onerror=alert(1)>";
 
+        // Act
         bool queued = await _mailer.SendContactRequestAsync(
-            "<script>alert('name')</script>",
+            name,
             "sender@example.com",
             "Example & Sons",
             "Need help",
-            "<img src=x onerror=alert(1)>",
+            message,
             "127.0.0.1",
             "Test Agent",
             "https://example.com");
-
-        Assert.True(queued);
         string body = await RunMailJobAsync(requireUrls: false);
+
+        // Assert
+        Assert.True(queued);
         Assert.Contains("&lt;script&gt;", body, StringComparison.Ordinal);
         Assert.Contains("&lt;img", body, StringComparison.Ordinal);
         Assert.DoesNotContain("<script>alert('name')</script>", body, StringComparison.Ordinal);
@@ -169,7 +182,10 @@ public sealed class MailerTests : TestWithServices
     [Fact]
     public async Task RenderAsync_WithConcurrentTemplates_RendersEachModel()
     {
+        // Arrange
         var renderer = GetService<IEmailTemplateRenderer>();
+
+        // Act
         var renderTasks = Enumerable.Range(0, 16).Select(index => renderer.RenderAsync(
             new UserEmailVerifyEmail(
                 $"Verify account {index}",
@@ -178,6 +194,7 @@ public sealed class MailerTests : TestWithServices
 
         string[] bodies = await Task.WhenAll(renderTasks);
 
+        // Assert
         Assert.Equal(16, bodies.Length);
         for (int index = 0; index < bodies.Length; index++)
         {
