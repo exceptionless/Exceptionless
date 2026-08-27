@@ -116,13 +116,13 @@ static string BuildIndex(IReadOnlyCollection<RenderedPreview> previews)
 static IReadOnlyCollection<EmailPreview> GetPreviews()
 {
     const string appUrl = "https://app.exceptionless.test";
-    var actionLinks = new[]
-    {
-        new EmailLink("Mark event as fixed", $"{appUrl}/stack/stack-1/mark-fixed"),
-        new EmailLink("Stop sending notifications for this event", $"{appUrl}/stack/stack-1/ignored"),
-        new EmailLink("Discard future event occurrences", $"{appUrl}/stack/stack-1/discarded"),
+    EmailLink[] GetActionLinks(string stackId) =>
+    [
+        new EmailLink("Mark event as fixed", $"{appUrl}/stack/{stackId}/mark-fixed"),
+        new EmailLink("Stop sending notifications for this event", $"{appUrl}/stack/{stackId}/ignored"),
+        new EmailLink("Discard future event occurrences", $"{appUrl}/stack/{stackId}/discarded"),
         new EmailLink("Change your notification settings for this project", $"{appUrl}/account/manage?projectId=project-1&tab=notifications")
-    };
+    ];
     var stacks = new[]
     {
         new StackSummary("The operation timed out while processing the checkout request", "System.TimeoutException", true, $"{appUrl}/stack/stack-1"),
@@ -158,7 +158,7 @@ static IReadOnlyCollection<EmailPreview> GetPreviews()
                 ["Tags"] = "critical, checkout, production"
             },
             new EventUser("Ada Lovelace (ada@example.com)", "mailto:ada%40example.com?body=Checkout%20failed", "Checkout failed after submitting payment."),
-            actionLinks,
+            GetActionLinks("stack-1"),
             new EmailAction("View Event Details", $"{appUrl}/event/event-1"))),
         new("event-regression", "Regressed event", new EventNoticeEmail(
             "System.InvalidOperationException: Sequence contains no elements",
@@ -169,7 +169,7 @@ static IReadOnlyCollection<EmailPreview> GetPreviews()
             42,
             new Dictionary<string, string> { ["Message"] = "Sequence contains no elements", ["Version"] = "8.2.1" },
             null,
-            actionLinks,
+            GetActionLinks("stack-2"),
             new EmailAction("View Event Details", $"{appUrl}/event/event-2"))),
         new("organization-added", "Added to organization", new OrganizationAddedEmail(
             "Grace Hopper added you to the organization \"Engineering\" on Exceptionless",
@@ -263,7 +263,7 @@ static IReadOnlyCollection<EmailPreview> GetPreviews()
             "Ada Lovelace",
             new EmailAction("Verify Address", $"{appUrl}/account/verify?token=preview-token"))),
         new("user-password-reset", "Password reset", new UserPasswordResetEmail(
-            "Reset your Exceptionless password",
+            "Exceptionless Password Reset",
             "Ada Lovelace",
             $"{appUrl}/reset-password/preview-token?cancel=true",
             new EmailAction("Reset Password", $"{appUrl}/reset-password/preview-token")))

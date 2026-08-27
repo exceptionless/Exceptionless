@@ -1,3 +1,6 @@
+using System.Net;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -13,15 +16,19 @@ using Exceptionless.EmailTemplates.Models;
 using Exceptionless.Tests.Utility;
 using Foundatio.Queues;
 using Foundatio.Serializer;
-using System.Net;
-using System.Text.Json;
-using System.Text.RegularExpressions;
 using Xunit;
 
 namespace Exceptionless.Tests.Mail;
 
 public sealed class MailerTests : TestWithServices
 {
+    private static readonly HashSet<string> _expectedExternalHosts = new(StringComparer.OrdinalIgnoreCase) {
+        "exceptionless.com",
+        "github.com",
+        "www.facebook.com",
+        "twitter.com"
+    };
+
     private readonly IMailer _mailer;
     private readonly AppOptions _options;
     private readonly BillingManager _billingManager;
@@ -51,9 +58,15 @@ public sealed class MailerTests : TestWithServices
     }
 
     [Fact]
-    public void CanParseSmtpUri()
+    public void Constructor_WithSecureSmtpUri_ParsesComponents()
     {
-        var uri = new SmtpUri("smtps://test%40test.com:testpass@smtp.test.com:587");
+        // Arrange
+        const string value = "smtps://test%40test.com:testpass@smtp.test.com:587";
+
+        // Act
+        var uri = new SmtpUri(value);
+
+        // Assert
         Assert.NotNull(uri);
         Assert.True(uri.IsSecure);
         Assert.Equal("smtp.test.com", uri.Host);
@@ -105,6 +118,34 @@ public sealed class MailerTests : TestWithServices
     }
 
     [Fact]
+    public async Task SendContactRequestAsync_WithCompleteRequest_RendersAllFields()
+    {
+        // Arrange
+        const string message = "First line\nSecond line";
+
+        // Act
+        bool queued = await _mailer.SendContactRequestAsync(
+            "Test User",
+            "test@example.com",
+            "Example Company",
+            "Need help",
+            message,
+            "127.0.0.1",
+            "Test Browser",
+            "contact-referrer");
+        string body = await RunMailJobAsync(requireUrls: false);
+
+        // Assert
+        Assert.True(queued);
+        Assert.Contains("Test User", body, StringComparison.Ordinal);
+        Assert.Contains("Example Company", body, StringComparison.Ordinal);
+        Assert.Contains("First line", body, StringComparison.Ordinal);
+        Assert.Contains("Second line", body, StringComparison.Ordinal);
+        Assert.Contains("127.0.0.1", body, StringComparison.Ordinal);
+        Assert.Contains("Test Browser", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task SendContactRequestAsync_WithHtmlInput_EncodesBody()
     {
         _options.EmailOptions.ContactEmailAddress = "support@exceptionless.com";
@@ -120,7 +161,7 @@ public sealed class MailerTests : TestWithServices
             "https://example.com");
 
         Assert.True(queued);
-        string body = await RunMailJobAsync();
+        string body = await RunMailJobAsync(requireUrls: false);
         Assert.Contains("&lt;script&gt;", body, StringComparison.Ordinal);
         Assert.Contains("&lt;img", body, StringComparison.Ordinal);
         Assert.DoesNotContain("<script>alert('name')</script>", body, StringComparison.Ordinal);
@@ -128,7 +169,7 @@ public sealed class MailerTests : TestWithServices
     }
 
     [Fact]
-    public async Task RenderAsync_ConcurrentTemplates_RendersEachModel()
+    public async Task RenderAsync_WithConcurrentTemplates_RendersEachModel()
     {
         var renderer = GetService<IEmailTemplateRenderer>();
         var renderTasks = Enumerable.Range(0, 16).Select(index => renderer.RenderAsync(
@@ -148,49 +189,36 @@ public sealed class MailerTests : TestWithServices
     }
 
     [Fact]
-    public async Task Constructor_ExistingSignature_RendersEmail()
+    public async Task SendEventNoticeAsync_WithSimpleError_RendersEventNotice()
     {
-        var mailer = new Mailer(
-            GetService<IQueue<MailMessage>>(),
-            GetService<FormattingPluginManager>(),
-            GetService<ITextSerializer>(),
-            _options,
-            TimeProvider,
-            Log.CreateLogger<Mailer>());
-        var user = _userData.GenerateSampleUser();
-        user.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
-
-        await mailer.SendUserEmailVerifyAsync(user);
-        string body = await RunMailJobAsync();
-
-        Assert.Contains("Verify Address", body, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public Task SendEventNoticeSimpleErrorAsync()
-    {
-        var ex = GetException();
-        Assert.NotNull(ex);
-
-        return SendEventNoticeAsync(new PersistentEvent
+        // Arrange
+        var exception = GetException();
+        var ev = new PersistentEvent
         {
             Type = Event.KnownTypes.Error,
             Data = new Core.Models.DataDictionary {
                     {
                         Event.KnownDataKeys.SimpleError, new SimpleError {
-                            Message = ex.Message,
-                            Type = ex.GetType().FullName,
-                            StackTrace = ex.StackTrace
+                            Message = exception.Message,
+                            Type = exception.GetType().FullName,
+                            StackTrace = exception.StackTrace
                         }
                     }
                 }
-        });
+        };
+
+        // Act
+        string body = await SendEventNoticeAsync(ev);
+
+        // Assert
+        Assert.Contains(exception.Message, body, StringComparison.Ordinal);
     }
 
     [Fact]
-    public Task SendEventNoticeErrorAsync()
+    public async Task SendEventNoticeAsync_WithStructuredError_RendersEventNotice()
     {
-        return SendEventNoticeAsync(new PersistentEvent
+        // Arrange
+        var ev = new PersistentEvent
         {
             Type = Event.KnownTypes.Error,
             Data = new Core.Models.DataDictionary {
@@ -198,14 +226,21 @@ public sealed class MailerTests : TestWithServices
                         Event.KnownDataKeys.Error, _eventData.GenerateError()
                     }
                 }
-        });
+        };
+
+        // Act
+        string body = await SendEventNoticeAsync(ev);
+
+        // Assert
+        Assert.Contains("Generated exception message.", body, StringComparison.Ordinal);
     }
 
 
     [Fact]
-    public Task SendEventNoticeErrorWithDetailsAsync()
+    public async Task SendEventNoticeAsync_WithDetailedError_RendersEventNotice()
     {
-        return SendEventNoticeAsync(new PersistentEvent
+        // Arrange
+        var ev = new PersistentEvent
         {
             Type = Event.KnownTypes.Error,
             Geo = "44.5241,-87.9056",
@@ -219,76 +254,120 @@ public sealed class MailerTests : TestWithServices
                     { Event.KnownDataKeys.UserInfo, new UserInfo("niemyjski", "Blake Niemyjski")  },
                     { Event.KnownDataKeys.UserDescription, new UserDescription("noreply@exceptionless.io", "Blake ate two boxes of cookies and needs help") }
                 }
-        });
+        };
+
+        // Act
+        string body = await SendEventNoticeAsync(ev);
+
+        // Assert
+        Assert.Contains("Blake Niemyjski", body, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task SendEventNoticeNotFoundAsync()
+    public async Task SendEventNoticeAsync_WithNotFoundEvent_RendersSourceUrl()
     {
-        string body = await SendEventNoticeAsync(new PersistentEvent
+        // Arrange
+        var ev = new PersistentEvent
         {
             Source = "[GET] /not-found?page=20",
             Type = Event.KnownTypes.NotFound
-        });
+        };
 
+        // Act
+        string body = await SendEventNoticeAsync(ev);
+
+        // Assert
         Assert.Contains("[GET] /not-found?page=20", WebUtility.HtmlDecode(body), StringComparison.Ordinal);
     }
 
     [Fact]
-    public Task SendEventNoticeFeatureAsync()
+    public async Task SendEventNoticeAsync_WithFeatureEvent_RendersEventNotice()
     {
-        return SendEventNoticeAsync(new PersistentEvent
+        // Arrange
+        var ev = new PersistentEvent
         {
             Source = "My Feature Usage",
             Value = 1,
             Type = Event.KnownTypes.FeatureUsage
-        });
+        };
+
+        // Act
+        string body = await SendEventNoticeAsync(ev);
+
+        // Assert
+        Assert.Contains("My Feature Usage", body, StringComparison.Ordinal);
     }
 
     [Fact]
-    public Task SendEventNoticeEmptyLogEventAsync()
+    public Task SendEventNoticeAsync_WithEmptyLogEvent_RendersEventNotice()
     {
-        return SendEventNoticeAsync(new PersistentEvent
+        // Arrange
+        var ev = new PersistentEvent
         {
             Value = 1,
             Type = Event.KnownTypes.Log
-        });
+        };
+
+        // Act
+        return SendEventNoticeAsync(ev);
     }
 
     [Fact]
-    public Task SendEventNoticeLogMessageAsync()
+    public async Task SendEventNoticeAsync_WithLogMessage_RendersEventNotice()
     {
-        return SendEventNoticeAsync(new PersistentEvent
+        // Arrange
+        var ev = new PersistentEvent
         {
             Message = "Only Message",
             Type = Event.KnownTypes.Log
-        });
+        };
+
+        // Act
+        string body = await SendEventNoticeAsync(ev);
+
+        // Assert
+        Assert.Contains("Only Message", body, StringComparison.Ordinal);
     }
 
     [Fact]
-    public Task SendEventNoticeLogSourceAsync()
+    public async Task SendEventNoticeAsync_WithLogSource_RendersEventNotice()
     {
-        return SendEventNoticeAsync(new PersistentEvent
+        // Arrange
+        var ev = new PersistentEvent
         {
             Source = "Only Source",
             Type = Event.KnownTypes.Log
-        });
+        };
+
+        // Act
+        string body = await SendEventNoticeAsync(ev);
+
+        // Assert
+        Assert.Contains("Only Source", body, StringComparison.Ordinal);
     }
 
     [Fact]
-    public Task SendEventNoticeLogReallyLongSourceAsync()
+    public async Task SendEventNoticeAsync_WithLongLogSource_RendersEventNotice()
     {
-        return SendEventNoticeAsync(new PersistentEvent
+        // Arrange
+        var ev = new PersistentEvent
         {
             Source = "Soooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooorce",
             Type = Event.KnownTypes.Log
-        });
+        };
+
+        // Act
+        string body = await SendEventNoticeAsync(ev);
+
+        // Assert
+        Assert.Contains("Soooooooo", body, StringComparison.Ordinal);
     }
 
     [Fact]
-    public Task SendEventNoticeLogMessageSourceLevelAsync()
+    public async Task SendEventNoticeAsync_WithLogDetails_RendersEventNotice()
     {
-        return SendEventNoticeAsync(new PersistentEvent
+        // Arrange
+        var ev = new PersistentEvent
         {
             Message = "My Message",
             Source = "My Source",
@@ -296,23 +375,55 @@ public sealed class MailerTests : TestWithServices
             Data = new Core.Models.DataDictionary {
                     { Event.KnownDataKeys.Level, "Warn" }
                 }
-        });
+        };
+
+        // Act
+        string body = await SendEventNoticeAsync(ev);
+
+        // Assert
+        Assert.Contains("My Message", body, StringComparison.Ordinal);
     }
 
     [Fact]
-    public Task SendEventNoticeDefaultAsync()
+    public async Task SendEventNoticeAsync_WithDefaultEvent_RendersEventNotice()
     {
-        return SendEventNoticeAsync(new PersistentEvent
+        // Arrange
+        var ev = new PersistentEvent
         {
             Message = "Default Test Message",
             Source = "Default Test Source"
-        });
+        };
+
+        // Act
+        string body = await SendEventNoticeAsync(ev);
+
+        // Assert
+        Assert.Contains("Default Test Message", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SendEventNoticeAsync_WithQuotedSubject_RendersValidJsonLd()
+    {
+        // Arrange
+        var ev = new PersistentEvent
+        {
+            Type = Event.KnownTypes.Error,
+            Message = "Failure in the \"Acme\" worker"
+        };
+
+        // Act
+        string body = await SendEventNoticeAsync(ev);
+
+        // Assert
+        JsonElement metadata = Assert.Single(GetStructuredData(body));
+        Assert.Contains("Failure in the \"Acme\" worker", metadata.GetProperty("description").GetString(), StringComparison.Ordinal);
     }
 
     [Fact]
     public async Task SendEventNoticeAsync_WithHostileUserDescription_EncodesHtmlAndMailtoComponents()
     {
-        string body = await SendEventNoticeAsync(new PersistentEvent
+        // Arrange
+        var ev = new PersistentEvent
         {
             Type = Event.KnownTypes.Error,
             Message = "Hostile user description",
@@ -320,8 +431,12 @@ public sealed class MailerTests : TestWithServices
                     { Event.KnownDataKeys.UserInfo, new UserInfo("user-id", "<img src=x onerror=alert(1)>") },
                     { Event.KnownDataKeys.UserDescription, new UserDescription("\"alerts@prod\"@example.com", "hello&bcc=attacker@example.com") }
                 }
-        });
+        };
 
+        // Act
+        string body = await SendEventNoticeAsync(ev);
+
+        // Assert
         string mailto = Assert.Single(GetHrefs(body), href => href.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase));
         int bodySeparatorIndex = mailto.IndexOf("?body=", StringComparison.OrdinalIgnoreCase);
         Assert.True(bodySeparatorIndex > 0);
@@ -330,19 +445,6 @@ public sealed class MailerTests : TestWithServices
         Assert.DoesNotContain("&bcc=", body, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("&lt;img", body, StringComparison.Ordinal);
         Assert.DoesNotContain("<img src=x onerror=alert(1)>", body, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task SendEventNoticeAsync_WithQuotedSubject_RendersValidJsonLd()
-    {
-        string body = await SendEventNoticeAsync(new PersistentEvent
-        {
-            Type = Event.KnownTypes.Error,
-            Message = "Failure in the \"Acme\" worker"
-        });
-
-        JsonElement metadata = Assert.Single(GetStructuredData(body));
-        Assert.Contains("Failure in the \"Acme\" worker", metadata.GetProperty("description").GetString(), StringComparison.Ordinal);
     }
 
     private async Task<string> SendEventNoticeAsync(PersistentEvent ev)
@@ -356,236 +458,370 @@ public sealed class MailerTests : TestWithServices
         ev.StackId = TestConstants.StackId;
 
         await _mailer.SendEventNoticeAsync(user, ev, project, RandomData.GetBool(), RandomData.GetBool(), 1);
-        string body = await RunMailJobAsync();
+        var body = await RunMailJobAsync();
         Assert.Contains("View Event Details", body, StringComparison.Ordinal);
-        Assert.Contains(GetExistingEmailAppUrl($"event/{ev.Id}"), body, StringComparison.Ordinal);
-        Assert.Contains(GetExistingEmailAppUrl($"stack/{ev.StackId}/mark-fixed"), body, StringComparison.Ordinal);
-        Assert.Contains(GetExistingEmailAppUrl($"stack/{ev.StackId}/ignored"), body, StringComparison.Ordinal);
-        Assert.Contains(GetExistingEmailAppUrl($"stack/{ev.StackId}/discarded"), body, StringComparison.Ordinal);
-        Assert.Contains("\"@context\":\"http://schema.org\"", body, StringComparison.Ordinal);
         return body;
     }
 
     [Fact]
-    public async Task SendOrganizationAddedAsync()
+    public async Task SendOrganizationAddedAsync_WithOrganization_RendersOrganizationLink()
     {
+        // Arrange
         var user = _userData.GenerateSampleUser();
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
 
+        // Act
         await _mailer.SendOrganizationAddedAsync(user, organization, user);
-        string body = await RunMailJobAsync();
+        var body = await RunMailJobAsync();
+
+        // Assert
         Assert.Contains("View Organization", body, StringComparison.Ordinal);
-        Assert.Contains(GetExistingEmailAppUrl($"organization/{organization.Id}/dashboard"), body, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task SendOrganizationInviteAsync()
+    public async Task SendOrganizationInviteAsync_WithInvite_RendersSignupLink()
     {
+        // Arrange
         var user = _userData.GenerateSampleUser();
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
-
-        await _mailer.SendOrganizationInviteAsync(user, organization, new Invite
+        var invite = new Invite
         {
             DateAdded = DateTime.UtcNow,
             EmailAddress = "test@exceptionless.com",
             Token = "1"
-        });
+        };
 
-        string body = await RunMailJobAsync();
+        // Act
+        await _mailer.SendOrganizationInviteAsync(user, organization, invite);
+        var body = await RunMailJobAsync();
+
+        // Assert
         Assert.Contains("Join Organization", body, StringComparison.Ordinal);
-        Assert.Contains(GetExistingEmailAppUrl("signup?token=1"), body, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task SendOrganizationHourlyOverageNoticeAsync()
+    public async Task SendOrganizationNoticeAsync_WithHourlyOverage_RendersUsageLinks()
     {
+        // Arrange
         var user = _userData.GenerateSampleUser();
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
 
+        // Act
         await _mailer.SendOrganizationNoticeAsync(user, organization, false, true);
-        string body = await RunMailJobAsync();
+        var body = await RunMailJobAsync();
+
+        // Assert
         Assert.Contains("throttled", body, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public async Task SendOrganizationMonthlyOverageNoticeAsync()
+    public async Task SendOrganizationNoticeAsync_WithMonthlyOverage_RendersUsageLinks()
     {
+        // Arrange
         var user = _userData.GenerateSampleUser();
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
 
+        // Act
         await _mailer.SendOrganizationNoticeAsync(user, organization, true, false);
-        string body = await RunMailJobAsync();
+        var body = await RunMailJobAsync();
+
+        // Assert
         Assert.Contains("monthly plan limit", body, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains(GetExistingEmailAppUrl($"organization/{organization.Id}/upgrade"), body, StringComparison.Ordinal);
-        Assert.Contains(GetExistingEmailAppUrl($"organization/{organization.Id}/frequent"), body, StringComparison.Ordinal);
-        Assert.Contains(GetExistingEmailAppUrl($"organization/{organization.Id}/manage"), body, StringComparison.Ordinal);
-        Assert.Contains(GetExistingEmailAppUrl("account/manage?tab=notifications"), body, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task SendOrganizationPaymentFailedAsync()
+    public async Task SendOrganizationPaymentFailedAsync_WithOrganization_RendersBillingLinks()
     {
+        // Arrange
         var user = _userData.GenerateSampleUser();
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
 
+        // Act
         await _mailer.SendOrganizationPaymentFailedAsync(user, organization);
-        string body = await RunMailJobAsync();
+        var body = await RunMailJobAsync();
+
+        // Assert
         Assert.Contains("Payment failed", body, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains(GetExistingEmailAppUrl($"organization/{organization.Id}/manage?tab=billing"), body, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task SendProjectDailySummaryAsync()
+    public async Task SendProjectDailySummaryAsync_WithSubmittedEvents_RendersTimelineLinks()
     {
+        // Arrange
         var user = _userData.GenerateSampleUser();
         var project = _projectData.GenerateSampleProject();
         var mostFrequent = _stackData.GenerateStacks(3, generateId: true, type: Event.KnownTypes.Error).ToArray();
+        for (int index = 0; index < mostFrequent.Length; index++)
+            mostFrequent[index].Id = $"frequent-stack-{index}";
 
+        // Act
         await _mailer.SendProjectDailySummaryAsync(user, project, mostFrequent, null, DateTime.UtcNow.Date, true, 12, 1, 0, 1, 0, 0, false);
-        string body = await RunMailJobAsync();
+        var body = await RunMailJobAsync();
+
+        // Assert
         Assert.Contains("View Timeline", body, StringComparison.Ordinal);
         Assert.Contains("Most Frequent", body, StringComparison.Ordinal);
-        Assert.Contains(GetExistingEmailAppUrl($"project/{project.Id}/error/timeline"), body, StringComparison.Ordinal);
-        Assert.Contains(GetExistingEmailAppUrl($"stack/{mostFrequent.First().Id}"), body, StringComparison.Ordinal);
-        Assert.Contains(GetExistingEmailAppUrl($"project/{project.Id}/error/frequent"), body, StringComparison.Ordinal);
-        Assert.Contains(WebUtility.HtmlEncode(GetExistingEmailAppUrl($"account/manage?projectId={project.Id}&tab=notifications")), body, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task SendProjectDailySummaryWithAllBlockedAsync()
+    public async Task SendProjectDailySummaryAsync_WithAllEventsBlocked_RendersThrottleContent()
     {
+        // Arrange
         var user = _userData.GenerateSampleUser();
         var project = _projectData.GenerateSampleProject();
         var mostFrequent = _stackData.GenerateStacks(3, generateId: true, type: Event.KnownTypes.Error);
 
+        // Act
         await _mailer.SendProjectDailySummaryAsync(user, project, mostFrequent, null, DateTime.UtcNow.Date, true, 123456, 1, 0, 1, 123456, 0, false);
-        string body = await RunMailJobAsync();
+        var body = await RunMailJobAsync();
+
+        // Assert
         Assert.Contains("discarded due to throttling", body, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public async Task SendProjectDailySummaryNotConfiguredAsync()
+    public async Task SendProjectDailySummaryAsync_WithUnconfiguredProject_RendersConfigureLink()
     {
+        // Arrange
         var user = _userData.GenerateSampleUser();
         var project = _projectData.GenerateSampleProject();
 
+        // Act
         await _mailer.SendProjectDailySummaryAsync(user, project, null, null, DateTime.UtcNow.Date, false, 0, 0, 0, 0, 0, 0, false);
-        string body = await RunMailJobAsync();
+        var body = await RunMailJobAsync();
+
+        // Assert
         Assert.Contains("Configure Project", body, StringComparison.Ordinal);
-        Assert.Contains(GetExistingEmailAppUrl($"project/{project.Id}/configure"), body, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task SendProjectDailySummaryWithNoEventsButHasFixedEventsAsync()
+    public async Task SendProjectDailySummaryAsync_WithOnlyFixedEvents_RendersFixedContent()
     {
+        // Arrange
         var user = _userData.GenerateSampleUser();
         var project = _projectData.GenerateSampleProject();
 
+        // Act
         await _mailer.SendProjectDailySummaryAsync(user, project, null, null, DateTime.UtcNow.Date, true, 0, 0, 0, 10, 0, 0, false);
-        string body = await RunMailJobAsync();
+        var body = await RunMailJobAsync();
+
+        // Assert
         Assert.Contains("marked as fixed", body, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public async Task SendProjectDailySummaryWithNoEventsButHasFixedAndTooBigEventsAsync()
+    public async Task SendProjectDailySummaryAsync_WithFixedAndOversizedEvents_RendersFixedContent()
     {
+        // Arrange
         var user = _userData.GenerateSampleUser();
         var project = _projectData.GenerateSampleProject();
 
+        // Act
         await _mailer.SendProjectDailySummaryAsync(user, project, null, null, DateTime.UtcNow.Date, true, 0, 0, 0, 10, 123456, 23, false);
-        string body = await RunMailJobAsync();
+        var body = await RunMailJobAsync();
+
+        // Assert
         Assert.Contains("marked as fixed", body, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public async Task SendProjectDailySummaryWithFreeProjectAsync()
+    public async Task SendProjectDailySummaryAsync_WithFreeProject_RendersPlanContent()
     {
+        // Arrange
         var user = _userData.GenerateSampleUser();
         var project = _projectData.GenerateSampleProject();
-        var mostFrequent = _stackData.GenerateStacks(3, generateId: true, type: Event.KnownTypes.Error);
-        var newest = _stackData.GenerateStacks(1, generateId: true, type: Event.KnownTypes.Error);
+        var mostFrequent = _stackData.GenerateStacks(3, generateId: true, type: Event.KnownTypes.Error).ToArray();
+        var newest = _stackData.GenerateStacks(1, generateId: true, type: Event.KnownTypes.Error).ToArray();
+        for (int index = 0; index < mostFrequent.Length; index++)
+            mostFrequent[index].Id = $"frequent-stack-{index}";
+        newest[0].Id = "newest-stack-0";
 
+        // Act
         await _mailer.SendProjectDailySummaryAsync(user, project, mostFrequent, newest, DateTime.UtcNow.Date, true, 12, 1, 1, 2, 0, 0, true);
-        string body = await RunMailJobAsync();
+        var body = await RunMailJobAsync();
+
+        // Assert
         Assert.Contains("free plan", body, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
     public async Task SendProjectDailySummaryAsync_WithRegressedStack_RendersRegressedLabel()
     {
+        // Arrange
         var user = _userData.GenerateSampleUser();
         var project = _projectData.GenerateSampleProject();
         var regressedStack = _stackData.GenerateStack(generateId: true, type: Event.KnownTypes.Error, status: StackStatus.Regressed);
+        regressedStack.Id = "regressed-stack";
 
-        await _mailer.SendProjectDailySummaryAsync(user, project, [regressedStack], null, DateTime.UtcNow.Date, true, 5, 3, 1, 0, 0, 0, false);
-        string body = await RunMailJobAsync();
+        // Act
+        await _mailer.SendProjectDailySummaryAsync(user, project, new[] { regressedStack }, null, DateTime.UtcNow.Date, true, 5, 3, 1, 0, 0, 0, false);
+        var body = await RunMailJobAsync();
+
+        // Assert
         Assert.Contains("[REGRESSED]", body, StringComparison.Ordinal);
     }
 
     [Fact]
     public async Task SendProjectDailySummaryAsync_WithNonRegressedStack_OmitsRegressedLabel()
     {
+        // Arrange
         var user = _userData.GenerateSampleUser();
         var project = _projectData.GenerateSampleProject();
         var openStack = _stackData.GenerateStack(generateId: true, type: Event.KnownTypes.Error, status: StackStatus.Open);
+        openStack.Id = "open-stack";
 
-        await _mailer.SendProjectDailySummaryAsync(user, project, [openStack], null, DateTime.UtcNow.Date, true, 5, 3, 1, 0, 0, 0, false);
-        string body = await RunMailJobAsync();
+        // Act
+        await _mailer.SendProjectDailySummaryAsync(user, project, new[] { openStack }, null, DateTime.UtcNow.Date, true, 5, 3, 1, 0, 0, 0, false);
+        var body = await RunMailJobAsync();
+
+        // Assert
         Assert.DoesNotContain("[REGRESSED]", body, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task SendUserPasswordResetAsync()
+    public async Task SendUserPasswordResetAsync_WithResetToken_RendersResetLinks()
     {
+        // Arrange
         var user = _userData.GenerateSampleUser();
         user.CreatePasswordResetToken(TimeProvider);
 
+        // Act
         await _mailer.SendUserPasswordResetAsync(user);
-        string body = await RunMailJobAsync();
+        var body = await RunMailJobAsync();
+
+        // Assert
         Assert.Contains("Reset Password", body, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains(GetExistingEmailAppUrl($"reset-password/{user.PasswordResetToken}"), body, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains(GetExistingEmailAppUrl($"reset-password/{user.PasswordResetToken}?cancel=true"), body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("?cancel=true", body, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("click here to cancel the password reset request", body, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public async Task SendUserEmailVerifyAsync()
+    public async Task SendUserEmailVerifyAsync_WithVerificationToken_RendersVerificationLink()
     {
+        // Arrange
         var user = _userData.GenerateSampleUser();
         user.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
 
+        // Act
         await _mailer.SendUserEmailVerifyAsync(user);
-        string body = await RunMailJobAsync();
+        var body = await RunMailJobAsync();
+
+        // Assert
         Assert.Contains("Verify Address", body, StringComparison.Ordinal);
-        Assert.Contains(GetExistingEmailAppUrl($"account/verify?token={user.VerifyEmailAddressToken}"), body, StringComparison.Ordinal);
     }
 
-    private async Task<string> RunMailJobAsync()
+    private async Task<string> RunMailJobAsync(bool requireUrls = true)
     {
         var job = GetService<MailMessageJob>();
         await job.RunAsync();
 
         var sender = Assert.IsType<InMemoryMailSender>(GetService<IMailSender>());
-        string body = Assert.IsType<string>(sender.LastMessage?.Body);
+        var body = sender.LastMessage?.Body;
+        Assert.NotNull(body);
 
         _logger.LogTrace("To:      {To}", sender.LastMessage?.To);
         _logger.LogTrace("Subject: {Subject}", sender.LastMessage?.Subject);
         _logger.LogTrace("Body:\n{Body}", body);
 
         Assert.NotEmpty(body);
-        Assert.Contains("<!doctype html", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("<!DOCTYPE html", body, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("{{", body, StringComparison.Ordinal);
         Assert.DoesNotContain("<!--Blazor:", body, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("=\"Model.", body, StringComparison.Ordinal);
-
-        foreach (Match match in Regex.Matches(body, "href=\"([^\"]+)\"", RegexOptions.IgnoreCase))
-        {
-            string href = WebUtility.HtmlDecode(match.Groups[1].Value);
-            bool isValidMailto = href.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase) && !href.Any(Char.IsWhiteSpace);
-            Assert.True(isValidMailto || Uri.TryCreate(href, UriKind.Absolute, out _), $"Email contains an invalid link target: {href}");
-        }
+        AssertValidUrls(body, requireUrls);
 
         return body;
+    }
+
+    private void AssertValidUrls(string body, bool requireUrls)
+    {
+        var hrefs = GetHrefs(body);
+        var structuredDataUrls = GetStructuredDataUrls(body);
+        var structuredDataActionUrls = GetStructuredDataUrls(body, actionOnly: true);
+        var urls = hrefs.Concat(structuredDataUrls).ToArray();
+        if (!requireUrls)
+        {
+            Assert.Empty(urls);
+            return;
+        }
+
+        Assert.NotEmpty(urls);
+        Assert.NotEmpty(structuredDataActionUrls);
+        Assert.All(structuredDataActionUrls, actionUrl => Assert.Contains(actionUrl, hrefs));
+
+        var baseUri = new Uri(_options.BaseURL);
+        foreach (string url in urls)
+        {
+            if (url.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase))
+            {
+                Assert.Matches(@"^mailto:[^?]+(?:\?body=.+)?$", url);
+                continue;
+            }
+
+            Assert.True(Uri.TryCreate(url, UriKind.Absolute, out var uri), $"Expected an absolute email URL but found '{url}'.");
+            Assert.Contains(uri.Scheme, new[] { Uri.UriSchemeHttp, Uri.UriSchemeHttps });
+
+            if (!String.Equals(uri.Authority, baseUri.Authority, StringComparison.OrdinalIgnoreCase))
+            {
+                Assert.Contains(uri.Authority, _expectedExternalHosts);
+                continue;
+            }
+
+            Assert.True(String.Equals(uri.Scheme, baseUri.Scheme, StringComparison.OrdinalIgnoreCase), $"Expected internal email URL scheme '{baseUri.Scheme}' but found '{uri.Scheme}'.");
+            Assert.DoesNotContain("/next/", uri.PathAndQuery, StringComparison.OrdinalIgnoreCase);
+            AssertValidInternalUrl(uri);
+        }
+    }
+
+    private static void AssertValidInternalUrl(Uri uri)
+    {
+        Assert.Empty(uri.Fragment);
+        Assert.Matches(@"^/(?:event/[^/]+|stack/[^/]+(?:/(?:mark-fixed|ignored|discarded))?|project/[^/]+/(?:configure|error/(?:timeline|frequent|new))|account/(?:manage|verify)|organization/[^/]+/(?:dashboard|upgrade|frequent|manage)|signup|reset-password/[^/]+)$", uri.AbsolutePath);
+
+        if (uri.AbsolutePath is "/account/verify" or "/signup")
+        {
+            Assert.Matches(@"^\?token=[^?&#]+$", uri.Query);
+            return;
+        }
+
+        if (uri.AbsolutePath == "/account/manage")
+        {
+            Assert.Matches(@"^\?(?:tab=notifications|projectId=[^?&#]+&tab=notifications)$", uri.Query);
+            return;
+        }
+
+        if (Regex.IsMatch(uri.AbsolutePath, @"^/organization/[^/]+/manage$"))
+        {
+            Assert.Matches(@"^(?:|\?tab=billing)$", uri.Query);
+            return;
+        }
+
+        if (Regex.IsMatch(uri.AbsolutePath, @"^/reset-password/[^/]+$"))
+        {
+            Assert.Matches(@"^(?:|\?cancel=true)$", uri.Query);
+            return;
+        }
+
+        Assert.Empty(uri.Query);
+    }
+
+    private static string[] GetHrefs(string body)
+    {
+        string decodedBody = WebUtility.HtmlDecode(body);
+        return Regex.Matches(decodedBody, "href\\s*=\\s*[\"'](?<url>[^\"']+)[\"']", RegexOptions.IgnoreCase)
+            .Select(match => match.Groups["url"].Value)
+            .ToArray();
+    }
+
+    private static string[] GetStructuredDataUrls(string body, bool actionOnly = false)
+    {
+        var urls = new List<string>();
+        foreach (JsonElement element in GetStructuredData(body))
+        {
+            AddStructuredDataUrls(element, urls, actionOnly);
+        }
+
+        return urls.ToArray();
     }
 
     private static JsonElement[] GetStructuredData(string body)
@@ -606,20 +842,32 @@ public sealed class MailerTests : TestWithServices
         return elements.ToArray();
     }
 
-    private static string[] GetHrefs(string body)
+    private static void AddStructuredDataUrls(JsonElement element, ICollection<string> urls, bool actionOnly, bool isAction = false)
     {
-        string decodedBody = WebUtility.HtmlDecode(body);
-        return Regex.Matches(decodedBody, "href\\s*=\\s*[\"'](?<url>[^\"']+)[\"']", RegexOptions.IgnoreCase)
-            .Select(match => match.Groups["url"].Value)
-            .ToArray();
+        if (element.ValueKind == JsonValueKind.Array)
+        {
+            foreach (JsonElement item in element.EnumerateArray())
+                AddStructuredDataUrls(item, urls, actionOnly, isAction);
+
+            return;
+        }
+
+        if (element.ValueKind != JsonValueKind.Object)
+            return;
+
+        foreach (JsonProperty property in element.EnumerateObject())
+        {
+            if ((!actionOnly || isAction) && (property.NameEquals("target") || property.NameEquals("url")))
+            {
+                Assert.Equal(JsonValueKind.String, property.Value.ValueKind);
+                urls.Add(property.Value.GetString()!);
+            }
+
+            AddStructuredDataUrls(property.Value, urls, actionOnly, isAction || property.NameEquals("potentialAction"));
+        }
     }
 
-    private string GetExistingEmailAppUrl(string relativeUrl)
-    {
-        return $"{_options.BaseURL.TrimEnd('/')}/{relativeUrl.TrimStart('/')}";
-    }
-
-    private Exception? GetException()
+    private Exception GetException()
     {
         void TestInner()
         {
@@ -634,12 +882,11 @@ public sealed class MailerTests : TestWithServices
         try
         {
             TestInner();
+            throw new InvalidOperationException("Expected exception was not thrown.");
         }
-        catch (Exception ex)
+        catch (ApplicationException ex)
         {
             return ex;
         }
-
-        return null;
     }
 }

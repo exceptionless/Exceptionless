@@ -23,11 +23,6 @@ public class Mailer : IMailer
     private readonly ITextSerializer _serializer;
     private readonly ILogger _logger;
 
-    public Mailer(IQueue<MailMessage> queue, FormattingPluginManager pluginManager, ITextSerializer serializer, AppOptions appOptions, TimeProvider timeProvider, ILogger<Mailer> logger)
-        : this(queue, new RazorEmailTemplateRenderer(), pluginManager, serializer, appOptions, timeProvider, logger)
-    {
-    }
-
     public Mailer(IQueue<MailMessage> queue, IEmailTemplateRenderer templateRenderer, FormattingPluginManager pluginManager, ITextSerializer serializer, AppOptions appOptions, TimeProvider timeProvider, ILogger<Mailer> logger)
     {
         _queue = queue;
