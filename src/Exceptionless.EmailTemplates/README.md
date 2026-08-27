@@ -1,87 +1,24 @@
 # Exceptionless Email Templates
 
-Svelte 5 email templates using [better-svelte-email](https://github.com/Konixy/better-svelte-email) with Tailwind CSS.
+Svelte 5 sources in `src/templates` generate the Handlebars HTML consumed by `Exceptionless.Core`.
 
-## Quick Start
+## Commands
 
 ```bash
 npm ci
 npm run build
-npm run storybook
+npm run lint
+npm run check
 ```
 
-This compiles all Svelte email templates to static HTML with inlined CSS and writes them to `../Exceptionless.Core/Mail/Templates/`.
+Use `npm run dev` to rebuild on source changes. Generated templates are written to
+`../Exceptionless.Core/Mail/Templates` and must be committed with their Svelte sources.
 
-Storybook's **Email Templates / Parity Gallery** contains every production template and representative conditional
-branch. It supports legacy/modern side-by-side, isolated, and opacity-overlay views using identical sample data.
+## Template contract
 
-Run the executable parity contract before changing template content or layout:
+- Every `src/templates/*.svelte` file must have one registry entry and one generated `.html` file with the same name.
+- Generated HTML must contain a doctype, a `{{Subject}}` token, and valid Handlebars syntax.
+- Links target the current Svelte application routes. Route and rendering behavior is covered by `MailerTests`.
+- Shared layout, footer, metadata, and design tokens belong in `src/components`, `src/lib`, and `src/theme.ts`.
 
-```bash
-npm run validate:parity
-```
-
-The command validates all gallery scenarios in two ways:
-
-- normalized visible text, every labeled link, and parsed JSON-LD actions must match the frozen legacy HTML;
-- legacy and Svelte output must render to identical full-document pixels at desktop and mobile widths in one Chromium
-  process.
-
-Chromium is discovered automatically on macOS and common Linux installations. CI runs exact pixel comparison on macOS
-because the production templates specify Helvetica and Linux substitutes a metrically different fallback font. Set
-`CHROME_PATH` when using another installation, or run `npm run validate:parity -- --semantic-only` when the host does not
-have compatible font metrics. Failed pixel comparisons write legacy, modern, and red-on-white diff images to the
-ignored `parity-artifacts/` directory, which CI uploads for diagnosis.
-
-## Architecture
-
-```
-src/
-├── components/          # Shared layout components
-│   ├── EmailLayout.svelte    # Header + body wrapper
-│   ├── ActionsFooter.svelte  # "Other Actions" bullet list
-│   └── SocialFooter.svelte   # Social links footer
-├── templates/           # One .svelte file per email template
-│   ├── user-password-reset.svelte
-│   ├── user-email-verify.svelte
-│   ├── event-notice.svelte
-│   ├── project-daily-summary.svelte
-│   ├── organization-added.svelte
-│   ├── organization-invited.svelte
-│   ├── organization-notice.svelte
-│   └── organization-payment-failed.svelte
-└── build-emails.ts      # Build script (render + clean + validate + write)
-```
-
-## How It Works
-
-1. **Build-time**: Vite compiles Svelte components in SSR mode
-2. **Render**: `@better-svelte-email/server` renders each template to HTML with inlined Tailwind CSS
-3. **Clean**: The build script strips Svelte artifacts (SSR comments) and validates Handlebars token balance
-4. **Output**: Static HTML files with `{{HandlebarsTokens}}` that the .NET runtime fills at send-time
-
-The generated file inventory is tracked in `generated-templates.json`. The build removes outputs that were previously
-managed by this project when their source template is removed.
-
-Storybook includes representative variants for conditional template branches. It uses escaped Handlebars rendering for
-preview data. The parity validator uses the same scenario registry and immutable pre-migration HTML fixtures, while the
-C# mailer tests remain authoritative for production HandlebarsDotNet output and hostile input handling.
-
-## Handlebars Tokens
-
-Templates use literal Handlebars syntax that passes through Svelte compilation unchanged:
-
-- Simple tokens: `{'{{UserFullName}}'}`
-- Block helpers: `{@html '{{#if Condition}}'}...{@html '{{/if}}'}`
-- Each loops: `{@html '{{#each Items}}'}...{@html '{{/each}}'}`
-
-At runtime, `HandlebarsDotNet` in `Mailer.cs` compiles and renders these with real data.
-
-## Adding a New Template
-
-1. Create `src/templates/my-template.svelte`
-2. Import and use the `EmailLayout` component
-3. Register the component in `src/build-emails.ts`
-4. Run `npm run build`
-5. Add the output HTML as an EmbeddedResource in `Exceptionless.Core.csproj`
-6. Add rendering logic in `Mailer.cs`
+The build fails when the source, registry, and generated output sets are not one-to-one.

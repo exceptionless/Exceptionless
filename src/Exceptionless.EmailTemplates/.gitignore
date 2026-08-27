@@ -1,5 +1,3 @@
 node_modules/
 dist/
-storybook-static/
-parity-artifacts/
 .DS_Store

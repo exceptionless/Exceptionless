@@ -1,8 +1,7 @@
 <script module lang="ts">
     import { Html, Head, Body, Container, Section, Img, Preview } from '@better-svelte-email/components';
 
-    // Preserve the legacy Foundation email geometry exactly. The fractional widths are
-    // intentional browser table-layout results and are guarded by validate:parity.
+    // Fractional widths preserve the production email geometry across table-based clients.
     const clientStyles = `
 :root{color-scheme:light only;supported-color-schemes:light}
 html,body{margin:0!important;padding:0!important;width:100%!important;min-width:100%!important;background:#f7f7f7!important;color:#2c2c2c!important;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%}

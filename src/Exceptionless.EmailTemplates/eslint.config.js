@@ -26,8 +26,7 @@ export default [
         }
     },
     {
-        // Templates pass Handlebars blocks and significant literal whitespace through
-        // Svelte. These forms are intentional and guarded by the parity validator.
+        // Templates pass Handlebars blocks and significant literal whitespace through Svelte.
         files: ['src/templates/**/*.svelte'],
         rules: {
             'svelte/no-at-html-tags': 'off',
@@ -35,6 +34,6 @@ export default [
         }
     },
     {
-        ignores: ['dist/**', 'node_modules/**', '.storybook/**', 'storybook-static/**']
+        ignores: ['dist/**', 'node_modules/**']
     }
 ];

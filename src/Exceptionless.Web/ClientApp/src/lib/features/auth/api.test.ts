@@ -11,14 +11,17 @@ vi.mock('./session.svelte', () => ({ clearAuthenticationSession }));
 import { login, logout } from './api.svelte';
 
 describe('login', () => {
-    it('includes the organization invitation token', async () => {
+    it('login_WithInvitationToken_IncludesTokenInRequest', async () => {
+        // Arrange
         const mockClient = {
             isLoading: false,
             postJSON: vi.fn().mockResolvedValue({ data: { token: 'access-token' }, ok: true, status: 200 })
         } as unknown as FetchClient;
 
+        // Act
         await login('invited@example.com', 'password', 'invite-token', mockClient);
 
+        // Assert
         expect(mockClient.postJSON).toHaveBeenCalledWith(
             'auth/login',
             {

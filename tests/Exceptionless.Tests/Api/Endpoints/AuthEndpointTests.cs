@@ -561,6 +561,33 @@ public class AuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task FacebookAsync_WithValidInviteAndAccountCreationDisabled_CreatesInvitedUser()
+    {
+        // Arrange
+        _authOptions.EnableAccountCreation = false;
+        const string code = "facebook-invited-user";
+        string email = TestOAuthProviderClient.GetEmailAddress(code);
+        var organization = (await _organizationRepository.GetAllAsync()).Documents.First();
+        var invite = new Invite
+        {
+            Token = StringExtensions.GetNewToken(),
+            EmailAddress = email,
+            DateAdded = DateTime.UtcNow
+        };
+        organization.Invites.Add(invite);
+        await _organizationRepository.SaveAsync(organization, options => options.ImmediateConsistency());
+
+        // Act
+        var result = await SendExternalLoginAsync("facebook", code, invite.Token);
+
+        // Assert
+        await AssertExternalLoginAsync(result, "facebook", code);
+        var user = await _userRepository.GetByEmailAddressAsync(email);
+        Assert.NotNull(user);
+        Assert.Contains(organization.Id, user.OrganizationIds);
+    }
+
+    [Fact]
     public async Task LoginValidAsync()
     {
         _authOptions.EnableActiveDirectoryAuth = false;
@@ -1418,7 +1445,7 @@ public class AuthEndpointTests : IntegrationTestsBase
         Assert.Equal(user.EmailAddress, account.Username);
     }
 
-    private Task<TokenResult?> SendExternalLoginAsync(string providerPath, string code)
+    private Task<TokenResult?> SendExternalLoginAsync(string providerPath, string code, string? inviteToken = null)
     {
         return SendRequestAsAsync<TokenResult>(r => r
             .Post()
@@ -1427,6 +1454,7 @@ public class AuthEndpointTests : IntegrationTestsBase
             {
                 ClientId = "client-id",
                 Code = code,
+                InviteToken = inviteToken,
                 RedirectUri = "http://localhost/callback"
             })
             .StatusCodeShouldBeOk()

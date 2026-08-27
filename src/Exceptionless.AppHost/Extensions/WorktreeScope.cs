@@ -14,9 +14,7 @@ public sealed record WorktreePorts(
     int OldAppHttps,
     int OldAppLiveReload,
     int AppHttps,
-    int DocsHttp,
-    int Storybook,
-    int EmailStorybook)
+    int DocsHttp)
 {
     public string ApiHttpUrl => $"http://localhost:{ApiHttp}";
     public string ApiHttpsUrl => $"https://localhost:{ApiHttps}";
@@ -53,7 +51,7 @@ public static class WorktreeScope
 
     public static WorktreePorts AssignFreePorts()
     {
-        int[] ports = FreePorts(14);
+        int[] ports = FreePorts(12);
         var assignments = new WorktreePorts(
             ports[0],
             ports[1],
@@ -66,9 +64,7 @@ public static class WorktreeScope
             ports[8],
             ports[9],
             ports[10],
-            ports[11],
-            ports[12],
-            ports[13]);
+            ports[11]);
 
         Environment.SetEnvironmentVariable("ASPNETCORE_URLS", $"https://localhost:{assignments.DashboardHttps};http://localhost:{assignments.DashboardHttp}");
         Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_ENDPOINT_URL", $"https://localhost:{assignments.DashboardOtlp}");

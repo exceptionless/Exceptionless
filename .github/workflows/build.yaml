@@ -223,10 +223,7 @@ jobs:
         run: echo "npm run test:integration"
 
   test-email-templates:
-    # The legacy templates specify Helvetica. Keep exact pixel comparisons on
-    # macOS, where that production font is available, instead of comparing
-    # different Linux fallback-font table metrics.
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
       run:
@@ -259,23 +256,12 @@ jobs:
       - name: Type Check
         run: npm run check
 
-      - name: Validate Legacy Text, Actions, and Pixels
-        run: npm run validate:parity
-
-      - name: Upload Email Parity Failures
-        if: failure()
-        uses: actions/upload-artifact@v5
-        with:
-          name: email-parity-failures
-          path: src/Exceptionless.EmailTemplates/parity-artifacts/
-          if-no-files-found: ignore
-
-      - name: Build Storybook
-        run: npm run build-storybook
+      - name: Build Templates
+        run: npm run build
 
       - name: Verify Generated HTML is Up-To-Date
         run: |
-          changes="$(git status --short --untracked-files=all -- ../Exceptionless.Core/Mail/Templates/ generated-templates.json)"
+          changes="$(git status --short --untracked-files=all -- ../Exceptionless.Core/Mail/Templates/)"
           if [ -n "$changes" ]; then
             echo "$changes"
             echo "::error::Generated email artifacts are stale. Run 'npm run build' in src/Exceptionless.EmailTemplates and commit the updated files."

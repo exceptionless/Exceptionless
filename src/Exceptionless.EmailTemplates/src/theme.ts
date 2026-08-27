@@ -1,7 +1,3 @@
-/**
- * Exceptionless email design tokens.
- * Single source of truth — all templates reference these via Tailwind class names.
- */
 export const colors = {
     primary: '#5E9A00',
     'primary-action': '#6EBC1A',

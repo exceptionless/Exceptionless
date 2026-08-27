@@ -10,6 +10,6 @@
         "rootDir": ".",
         "types": ["node", "vite/client"]
     },
-    "include": ["*.ts", "src/**/*.ts", "src/**/*.svelte", ".storybook/**/*.ts"],
+    "include": ["*.ts", "src/**/*.ts", "src/**/*.svelte"],
     "exclude": ["node_modules"]
 }

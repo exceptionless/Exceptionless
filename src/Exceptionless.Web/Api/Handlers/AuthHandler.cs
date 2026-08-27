@@ -534,7 +534,7 @@ public class AuthHandler(
         User? user;
         try
         {
-            user = await FromExternalLoginAsync(userInfo, httpContext);
+            user = await FromExternalLoginAsync(userInfo, authInfo.InviteToken, httpContext);
         }
         catch (ApplicationException ex)
         {
@@ -554,7 +554,7 @@ public class AuthHandler(
         return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) };
     }
 
-    private async Task<User> FromExternalLoginAsync(UserInfo userInfo, HttpContext httpContext)
+    private async Task<User> FromExternalLoginAsync(UserInfo userInfo, string? inviteToken, HttpContext httpContext)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.Id);
         ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.ProviderName);
@@ -599,7 +599,7 @@ public class AuthHandler(
         var user = !String.IsNullOrEmpty(userInfo.Email) ? await userRepository.GetByEmailAddressAsync(userInfo.Email) : null;
         if (user is null)
         {
-            if (!authOptions.EnableAccountCreation)
+            if (!await IsAccountCreationEnabledAsync(inviteToken))
                 throw new ApplicationException("Account Creation is currently disabled.");
 
             user = new User { FullName = userInfo.GetFullName()!, EmailAddress = userInfo.Email };

@@ -6,9 +6,6 @@ export default defineConfig({
     plugins: [
         svelte(),
         {
-            // After each Vite build (including watch-mode rebuilds), run the
-            // email renderer so the generated HTML files in
-            // Exceptionless.Core/Mail/Templates stay in sync with source changes.
             name: 'run-email-renderer',
             closeBundle() {
                 execSync('node dist/build.js', { stdio: 'inherit' });

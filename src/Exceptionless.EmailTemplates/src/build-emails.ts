@@ -1,7 +1,6 @@
 import { Renderer } from '@better-svelte-email/server';
 import Handlebars from 'handlebars';
-import type { Component } from 'svelte';
-import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
+import { mkdirSync, readdirSync, writeFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { tailwindTheme } from './theme.js';
@@ -14,33 +13,33 @@ import OrganizationAdded from './templates/organization-added.svelte';
 import OrganizationInvited from './templates/organization-invited.svelte';
 import OrganizationNotice from './templates/organization-notice.svelte';
 import OrganizationPaymentFailed from './templates/organization-payment-failed.svelte';
+import ContactRequest from './templates/contact-request.svelte';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const templates: Record<string, Component> = {
-    'user-password-reset': UserPasswordReset as unknown as Component,
-    'user-email-verify': UserEmailVerify as unknown as Component,
-    'event-notice': EventNotice as unknown as Component,
-    'project-daily-summary': ProjectDailySummary as unknown as Component,
-    'organization-added': OrganizationAdded as unknown as Component,
-    'organization-invited': OrganizationInvited as unknown as Component,
-    'organization-notice': OrganizationNotice as unknown as Component,
-    'organization-payment-failed': OrganizationPaymentFailed as unknown as Component
+const templates = {
+    'contact-request': ContactRequest,
+    'user-password-reset': UserPasswordReset,
+    'user-email-verify': UserEmailVerify,
+    'event-notice': EventNotice,
+    'project-daily-summary': ProjectDailySummary,
+    'organization-added': OrganizationAdded,
+    'organization-invited': OrganizationInvited,
+    'organization-notice': OrganizationNotice,
+    'organization-payment-failed': OrganizationPaymentFailed
 };
 
-function validateTemplateRegistry(names: string[]): void {
-    const sourceDirectory = resolve(__dirname, '..', 'src', 'templates');
-    const sourceNames = readdirSync(sourceDirectory, { withFileTypes: true })
-        .filter((entry) => entry.isFile() && entry.name.endsWith('.svelte'))
-        .map((entry) => entry.name.slice(0, -'.svelte'.length))
+function getTemplateNames(directory: string, extension: string): string[] {
+    return readdirSync(directory, { withFileTypes: true })
+        .filter((entry) => entry.isFile() && entry.name.endsWith(extension))
+        .map((entry) => entry.name.slice(0, -extension.length))
         .sort();
+}
 
-    const registeredNames = names.slice().sort();
-    if (JSON.stringify(sourceNames) !== JSON.stringify(registeredNames)) {
-        throw new Error(
-            `Template registry does not match src/templates. Sources: ${sourceNames.join(', ')}. Registered: ${registeredNames.join(', ')}.`
-        );
+function validateTemplateNames(expected: string[], actual: string[], location: string): void {
+    if (JSON.stringify(expected) !== JSON.stringify(actual)) {
+        throw new Error(`${location} must contain exactly: ${expected.join(', ')}. Found: ${actual.join(', ')}.`);
     }
 }
 
@@ -51,8 +50,6 @@ function cleanHtml(html: string): string {
     html = html.replace(/<!--\[-->/g, '');
     html = html.replace(/<!--\[-?\d*-->/g, '');
     html = html.replace(/<!---->/g, '');
-    // Extract JSON-LD script blocks before whitespace collapsing — adjacent `}` chars
-    // can merge into `}}` after collapse, which HandlebarsDotNet parses as a closing token.
     const scripts: string[] = [];
     html = html.replace(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g, (_match, content: string) => {
         scripts.push(content);
@@ -60,8 +57,6 @@ function cleanHtml(html: string): string {
     });
 
     html = html.replace(/>\s+</g, '><');
-    // Replace newlines within text nodes with a space (not empty string) to prevent
-    // adjacent words from being concatenated (e.g. "from\nwhich" → "from which").
     html = html.replace(/\n[ \t]*/g, ' ');
     html = html.replace(/ {2,}/g, ' ');
 
@@ -96,11 +91,12 @@ async function main(): Promise<void> {
     const renderer = new Renderer({ tailwindConfig: tailwindTheme });
 
     const outputDir = resolve(__dirname, '..', '..', 'Exceptionless.Core', 'Mail', 'Templates');
+    const sourceDirectory = resolve(__dirname, '..', 'src', 'templates');
     mkdirSync(outputDir, { recursive: true });
 
     const entries = Object.entries(templates);
-    const names = entries.map(([name]) => name);
-    validateTemplateRegistry(names);
+    const names = entries.map(([name]) => name).sort();
+    validateTemplateNames(names, getTemplateNames(sourceDirectory, '.svelte'), 'src/templates');
     console.log(`Building ${names.length} email templates...`);
 
     const renderedTemplates = await Promise.all(
@@ -113,20 +109,11 @@ async function main(): Promise<void> {
         })
     );
 
-    const manifestPath = resolve(__dirname, '..', 'generated-templates.json');
-    const previousNames: string[] = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, 'utf8')) : [];
-    for (const staleName of previousNames.filter((name) => !names.includes(name))) {
-        const stalePath = resolve(outputDir, `${staleName}.html`);
-        if (existsSync(stalePath)) {
-            unlinkSync(stalePath);
-        }
-    }
-
     for (const { name, html } of renderedTemplates) {
         writeFileSync(resolve(outputDir, `${name}.html`), html);
     }
 
-    writeFileSync(manifestPath, `${JSON.stringify(names.slice().sort(), null, 4)}\n`);
+    validateTemplateNames(names, getTemplateNames(outputDir, '.html'), 'Exceptionless.Core/Mail/Templates');
 
     console.log(`\nDone! ${names.length} templates written to: ${outputDir}`);
 }
