@@ -34,13 +34,19 @@
     import { getSafeRedirectUrl } from '$features/shared/url';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import { createForm } from '@tanstack/svelte-form';
+    import { onMount } from 'svelte';
 
     const defaultRedirect = resolve('/');
     const redirectUrl = getSafeRedirectUrl(page.url.searchParams.get('redirect'), defaultRedirect);
     const inviteToken = page.url.searchParams.get('token');
     const canSignup = enableAccountCreation || !!inviteToken;
     const signupUrl = inviteToken ? `${resolve('/(auth)/signup')}?token=${encodeURIComponent(inviteToken)}` : resolve('/(auth)/signup');
-    const logoutPromise = inviteToken && accessToken.current ? logout() : undefined;
+
+    onMount(() => {
+        if (inviteToken && accessToken.current) {
+            void logout().catch(() => undefined);
+        }
+    });
 
     const form = createForm(() => ({
         defaultValues: {
@@ -68,13 +74,7 @@
     }
 </script>
 
-{#if logoutPromise}
-    {#await logoutPromise}
-        <Spinner />
-    {/await}
-{/if}
-
-<div class="mx-auto flex w-[calc(100vw-2rem)] max-w-lg flex-col items-center" inert={!!inviteToken && !!accessToken.current}>
+<div class="mx-auto flex w-[calc(100vw-2rem)] max-w-lg flex-col items-center">
     <Card.Root class="w-full">
         <Card.Header>
             <Logo />

@@ -31,6 +31,7 @@ test('invited user can accept an organization invitation @signup', async ({ brow
 
             try {
                 await invitedPage.goto(`/next/signup?token=${encodeURIComponent(inviteToken)}`);
+                await expect(invitedPage.getByRole('link', { name: 'Log In' })).toHaveAttribute('href', `/next/login?token=${encodeURIComponent(inviteToken)}`);
                 await invitedPage.getByLabel('Name', { exact: true }).fill(`Invited User ${e2eScenario.run}`);
                 await invitedPage.getByLabel('Email', { exact: true }).fill(invitedEmail);
                 await waitForEmailValidation(invitedPage);
@@ -106,6 +107,10 @@ test('existing invited user can accept an organization invitation when logging i
 
             await invitedPage.goto(`/next/login?token=${encodeURIComponent(inviteToken)}`);
             expect((await logoutResponse).ok()).toBe(true);
+            await expect(invitedPage.getByRole('link', { name: 'Start a free trial' })).toHaveAttribute(
+                'href',
+                `/next/signup?token=${encodeURIComponent(inviteToken)}`
+            );
             await invitedPage.getByLabel('Email', { exact: true }).fill(invitedEmail);
             await invitedPage.getByPlaceholder('Enter password').fill(E2E_TEST_PASSWORD);
 

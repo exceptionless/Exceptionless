@@ -33,10 +33,16 @@
     import { validateEmailAvailability } from '$features/auth/validators';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import { createForm } from '@tanstack/svelte-form';
+    import { onMount } from 'svelte';
 
     const inviteToken = page.url.searchParams.get('token');
     const redirectUrl = inviteToken ? resolve('/(app)/project/add') : resolve('/(app)/organization/add');
-    const logoutPromise = inviteToken && accessToken.current ? logout() : undefined;
+
+    onMount(() => {
+        if (inviteToken && accessToken.current) {
+            void logout().catch(() => undefined);
+        }
+    });
 
     const form = createForm(() => ({
         defaultValues: {
@@ -60,13 +66,7 @@
     }));
 </script>
 
-{#if logoutPromise}
-    {#await logoutPromise}
-        <Spinner />
-    {/await}
-{/if}
-
-<Card.Root class="mx-auto w-[calc(100vw-2rem)] max-w-lg" inert={!!inviteToken && !!accessToken.current}>
+<Card.Root class="mx-auto w-[calc(100vw-2rem)] max-w-lg">
     <Card.Header>
         <Logo />
         <Card.Title class="text-center text-2xl">Signup for a FREE account in seconds</Card.Title>
@@ -208,7 +208,7 @@
 
             <P class="mt-4 text-center text-sm">
                 Already have an account?
-                <A href={inviteToken ? `${resolve('/(auth)/login')}?token=${inviteToken}` : resolve('/(auth)/login')}>Log In</A>
+                <A href={inviteToken ? `${resolve('/(auth)/login')}?token=${encodeURIComponent(inviteToken)}` : resolve('/(auth)/login')}>Log In</A>
             </P>
 
             <P class="text-center text-sm">
