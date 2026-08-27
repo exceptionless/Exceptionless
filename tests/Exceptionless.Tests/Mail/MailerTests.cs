@@ -325,7 +325,7 @@ public sealed class MailerTests : TestWithServices
             Message = "Hostile user description",
             Data = new Core.Models.DataDictionary {
                     { Event.KnownDataKeys.UserInfo, new UserInfo("user-id", "<img src=x onerror=alert(1)>") },
-                    { Event.KnownDataKeys.UserDescription, new UserDescription("victim@example.com", "hello&bcc=attacker@example.com") }
+                    { Event.KnownDataKeys.UserDescription, new UserDescription("\"alerts@prod\"@example.com", "hello&bcc=attacker@example.com") }
                 }
         };
 
@@ -333,7 +333,7 @@ public sealed class MailerTests : TestWithServices
         string body = await SendEventNoticeAsync(ev);
 
         // Assert
-        AssertContainsHref(body, "mailto:victim@example.com?body=hello%26bcc%3Dattacker%40example.com");
+        AssertContainsHref(body, "mailto:%22alerts%40prod%22@example.com?body=hello%26bcc%3Dattacker%40example.com");
         Assert.DoesNotContain("&bcc=", body, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("&lt;img", body, StringComparison.Ordinal);
         Assert.DoesNotContain("<img src=x onerror=alert(1)>", body, StringComparison.Ordinal);
@@ -659,6 +659,7 @@ public sealed class MailerTests : TestWithServices
     {
         var hrefs = GetHrefs(body);
         var structuredDataUrls = GetStructuredDataUrls(body);
+        var structuredDataActionUrls = GetStructuredDataUrls(body, actionOnly: true);
         var urls = hrefs.Concat(structuredDataUrls).ToArray();
         if (!requireUrls)
         {
@@ -667,6 +668,7 @@ public sealed class MailerTests : TestWithServices
         }
 
         Assert.NotEmpty(urls);
+        Assert.NotEmpty(structuredDataActionUrls);
 
         var baseUri = new Uri(_options.BaseURL);
         foreach (string url in urls)
@@ -736,7 +738,7 @@ public sealed class MailerTests : TestWithServices
             .ToArray();
     }
 
-    private static string[] GetStructuredDataUrls(string body)
+    private static string[] GetStructuredDataUrls(string body, bool actionOnly = false)
     {
         string decodedBody = WebUtility.HtmlDecode(body);
         var urls = new List<string>();
@@ -748,18 +750,18 @@ public sealed class MailerTests : TestWithServices
         foreach (Match script in scripts)
         {
             using JsonDocument document = JsonDocument.Parse(script.Groups["json"].Value);
-            AddStructuredDataUrls(document.RootElement, urls);
+            AddStructuredDataUrls(document.RootElement, urls, actionOnly);
         }
 
         return urls.ToArray();
     }
 
-    private static void AddStructuredDataUrls(JsonElement element, ICollection<string> urls)
+    private static void AddStructuredDataUrls(JsonElement element, ICollection<string> urls, bool actionOnly, bool isAction = false)
     {
         if (element.ValueKind == JsonValueKind.Array)
         {
             foreach (JsonElement item in element.EnumerateArray())
-                AddStructuredDataUrls(item, urls);
+                AddStructuredDataUrls(item, urls, actionOnly, isAction);
 
             return;
         }
@@ -769,13 +771,13 @@ public sealed class MailerTests : TestWithServices
 
         foreach (JsonProperty property in element.EnumerateObject())
         {
-            if (property.NameEquals("target") || property.NameEquals("url"))
+            if ((!actionOnly || isAction) && (property.NameEquals("target") || property.NameEquals("url")))
             {
                 Assert.Equal(JsonValueKind.String, property.Value.ValueKind);
                 urls.Add(property.Value.GetString()!);
             }
 
-            AddStructuredDataUrls(property.Value, urls);
+            AddStructuredDataUrls(property.Value, urls, actionOnly, isAction || property.NameEquals("potentialAction"));
         }
     }
 
