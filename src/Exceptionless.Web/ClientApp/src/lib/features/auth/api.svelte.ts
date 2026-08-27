@@ -80,12 +80,13 @@ export async function isEmailAddressTaken(email: string) {
     return response.status === 201;
 }
 
-export async function login(email: string, password: string, inviteToken?: null | string, client = useFetchClient()) {
+export async function login(email: string, password: string, inviteToken?: null | string) {
     const data: Login = {
         email,
         invite_token: inviteToken,
         password
     };
+    const client = useFetchClient();
     const response = await client.postJSON<TokenResult>('auth/login', data, {
         expectedStatusCodes: [401, 422]
     });
@@ -132,7 +133,8 @@ export async function resetPassword(passwordResetToken: string, password: string
     return response;
 }
 
-export async function signup(name: string, email: string, password: string, inviteToken?: null | string, client = useFetchClient()) {
+export async function signup(name: string, email: string, password: string, inviteToken?: null | string) {
+    const client = useFetchClient();
     const response = await client.postJSON<TokenResult>(
         'auth/signup',
         {

@@ -1,6 +1,7 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
+    import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
     import FacebookIcon from '$comp/icons/FacebookIcon.svelte';
     import GitHubIcon from '$comp/icons/GitHubIcon.svelte';
@@ -30,20 +31,13 @@
     } from '$features/auth/index.svelte';
     import { type SignupFormData, SignupSchema } from '$features/auth/schemas';
     import { validateEmailAvailability } from '$features/auth/validators';
-    import { createQueryParameters } from '$shared/query-params';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import { createForm } from '@tanstack/svelte-form';
-    import { untrack } from 'svelte';
 
-    const queryParameters = createQueryParameters({
-        schema: {
-            token: 'string'
-        }
-    });
-    const inviteToken = $derived(queryParameters.token ?? null);
-    const redirectUrl = $derived(inviteToken ? resolve('/(app)/project/add') : resolve('/(app)/organization/add'));
+    const inviteToken = page.url.searchParams.get('token');
+    const redirectUrl = inviteToken ? resolve('/(app)/project/add') : resolve('/(app)/organization/add');
 
-    async function loginWithOAuth(authenticate: typeof facebookLogin) {
+    async function loginWithOAuth(authenticate: typeof githubLogin) {
         if (inviteToken && accessToken.current) {
             await logout();
         }
@@ -75,11 +69,6 @@
             }
         }
     }));
-
-    $effect(() => {
-        const token = inviteToken;
-        untrack(() => form.setFieldValue('invite_token', token));
-    });
 </script>
 
 <Card.Root class="mx-auto w-[calc(100vw-2rem)] max-w-lg">

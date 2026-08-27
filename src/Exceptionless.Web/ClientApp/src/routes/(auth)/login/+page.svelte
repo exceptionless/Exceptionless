@@ -2,6 +2,7 @@
     import { dev } from '$app/environment';
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
+    import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
     import FacebookIcon from '$comp/icons/FacebookIcon.svelte';
     import GitHubIcon from '$comp/icons/GitHubIcon.svelte';
@@ -31,24 +32,16 @@
     } from '$features/auth/index.svelte';
     import { type LoginFormData, LoginSchema } from '$features/auth/schemas';
     import { getSafeRedirectUrl } from '$features/shared/url';
-    import { createQueryParameters } from '$shared/query-params';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import { createForm } from '@tanstack/svelte-form';
-    import { untrack } from 'svelte';
 
     const defaultRedirect = resolve('/');
-    const queryParameters = createQueryParameters({
-        schema: {
-            redirect: 'string',
-            token: 'string'
-        }
-    });
-    const redirectUrl = $derived(getSafeRedirectUrl(queryParameters.redirect, defaultRedirect));
-    const inviteToken = $derived(queryParameters.token ?? null);
-    const canSignup = $derived(enableAccountCreation || !!inviteToken);
-    const signupUrl = $derived(inviteToken ? `${resolve('/(auth)/signup')}?token=${encodeURIComponent(inviteToken)}` : resolve('/(auth)/signup'));
+    const redirectUrl = getSafeRedirectUrl(page.url.searchParams.get('redirect'), defaultRedirect);
+    const inviteToken = page.url.searchParams.get('token');
+    const canSignup = enableAccountCreation || !!inviteToken;
+    const signupUrl = inviteToken ? `${resolve('/(auth)/signup')}?token=${encodeURIComponent(inviteToken)}` : resolve('/(auth)/signup');
 
-    async function loginWithOAuth(authenticate: typeof facebookLogin) {
+    async function loginWithOAuth(authenticate: typeof githubLogin) {
         if (inviteToken && accessToken.current) {
             await logout();
         }
@@ -79,11 +72,6 @@
             }
         }
     }));
-
-    $effect(() => {
-        const token = inviteToken;
-        untrack(() => form.setFieldValue('invite_token', token));
-    });
 
     function prefillDevCredentials(): void {
         form.setFieldValue('email', 'admin@exceptionless.test');
