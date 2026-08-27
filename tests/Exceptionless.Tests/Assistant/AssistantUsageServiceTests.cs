@@ -309,17 +309,10 @@ public sealed class AssistantUsageServiceTests
         var providerRequest = await service.StartProviderRequestAsync("organization-id", providerInputCharacters: 1_000);
 
         timeProvider.Advance(TimeSpan.FromMinutes(2));
-        using var scopedCache = new ScopedCacheClient(cache, "AssistantUsage");
-        await scopedCache.RemoveAllAsync(
-        [
-            "organization:organization-id:turns:month:202608",
-            "organization:organization-id:usage:202608:prompt-tokens",
-            "organization:organization-id:usage:202608:completion-tokens",
-            "organization:organization-id:usage:202608:cost-microdollars"
-        ]);
         await providerRequest.ReconcileAsync(new AssistantProviderUsage(2_000, 500, 0.01m));
 
         var septemberUsage = await service.GetMonthlyUsageAsync("organization-id");
+        using var scopedCache = new ScopedCacheClient(cache, "AssistantUsage");
         long augustPromptTokens = await scopedCache.GetAsync<long>("organization:organization-id:usage:202608:prompt-tokens", 0);
         long augustReservedTokens = await scopedCache.GetAsync<long>("organization:organization-id:usage:202608:reserved-prompt-tokens", 0);
         long septemberReservedTokens = await scopedCache.GetAsync<long>("organization:organization-id:usage:202609:reserved-prompt-tokens", 0);
