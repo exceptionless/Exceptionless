@@ -233,7 +233,7 @@ jobs:
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.*
+          dotnet-version: 10.0.400
           dotnet-quality: ga
 
       - name: Install Aspire CLI
