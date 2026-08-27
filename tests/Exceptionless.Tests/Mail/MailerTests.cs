@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
@@ -19,11 +20,13 @@ namespace Exceptionless.Tests.Mail;
 
 public sealed class MailerTests : TestWithServices
 {
-    private static readonly HashSet<string> _expectedExternalHosts = new(StringComparer.OrdinalIgnoreCase) {
-        "exceptionless.com",
-        "github.com",
-        "www.facebook.com",
-        "twitter.com"
+    private static readonly HashSet<string> _expectedExternalUrls = new(StringComparer.Ordinal) {
+        "https://exceptionless.com",
+        "https://github.com/exceptionless/exceptionless",
+        "https://github.com/exceptionless/Exceptionless/wiki/Frequently-Asked-Questions#q-what-happens-if-the-organization-plan-limit-is-reached",
+        "https://github.com/exceptionless/Exceptionless/wiki/Frequently-Asked-Questions#q-why-is-my-organization-throttled",
+        "https://twitter.com/exceptionless",
+        "https://www.facebook.com/exceptionless/"
     };
 
     private readonly IMailer _mailer;
@@ -325,11 +328,11 @@ public sealed class MailerTests : TestWithServices
         await _mailer.SendEventNoticeAsync(user, ev, project, RandomData.GetBool(), RandomData.GetBool(), 1);
         var body = await RunMailJobAsync();
         Assert.Contains("View Event Details", body, StringComparison.Ordinal);
-        Assert.Contains($"{_options.BaseURL}/event/{TestConstants.EventId}", body, StringComparison.Ordinal);
-        Assert.Contains($"{_options.BaseURL}/stack/{TestConstants.StackId}/mark-fixed", body, StringComparison.Ordinal);
-        Assert.Contains($"{_options.BaseURL}/stack/{TestConstants.StackId}/ignored", body, StringComparison.Ordinal);
-        Assert.Contains($"{_options.BaseURL}/stack/{TestConstants.StackId}/discarded", body, StringComparison.Ordinal);
-        AssertContainsUrl(body, $"{_options.BaseURL}/account/manage?projectId={TestConstants.ProjectId}&tab=notifications");
+        AssertContainsHref(body, $"{_options.BaseURL}/event/{TestConstants.EventId}");
+        AssertContainsHref(body, $"{_options.BaseURL}/stack/{TestConstants.StackId}/mark-fixed");
+        AssertContainsHref(body, $"{_options.BaseURL}/stack/{TestConstants.StackId}/ignored");
+        AssertContainsHref(body, $"{_options.BaseURL}/stack/{TestConstants.StackId}/discarded");
+        AssertContainsHref(body, $"{_options.BaseURL}/account/manage?projectId={TestConstants.ProjectId}&tab=notifications");
         return body;
     }
 
@@ -346,7 +349,7 @@ public sealed class MailerTests : TestWithServices
 
         // Assert
         Assert.Contains("View Organization", body, StringComparison.Ordinal);
-        Assert.Contains($"{_options.BaseURL}/organization/{organization.Id}/dashboard", body, StringComparison.Ordinal);
+        AssertContainsHref(body, $"{_options.BaseURL}/organization/{organization.Id}/dashboard");
     }
 
     [Fact]
@@ -368,7 +371,7 @@ public sealed class MailerTests : TestWithServices
 
         // Assert
         Assert.Contains("Join Organization", body, StringComparison.Ordinal);
-        Assert.Contains($"{_options.BaseURL}/signup?token={invite.Token}", body, StringComparison.Ordinal);
+        AssertContainsHref(body, $"{_options.BaseURL}/signup?token={invite.Token}");
     }
 
     [Fact]
@@ -384,10 +387,10 @@ public sealed class MailerTests : TestWithServices
 
         // Assert
         Assert.Contains("throttled", body, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains($"{_options.BaseURL}/organization/{organization.Id}/upgrade", body, StringComparison.Ordinal);
-        Assert.Contains($"{_options.BaseURL}/organization/{organization.Id}/frequent", body, StringComparison.Ordinal);
-        Assert.Contains($"{_options.BaseURL}/organization/{organization.Id}/manage", body, StringComparison.Ordinal);
-        Assert.Contains($"{_options.BaseURL}/account/manage?tab=notifications", body, StringComparison.Ordinal);
+        AssertContainsHref(body, $"{_options.BaseURL}/organization/{organization.Id}/upgrade");
+        AssertContainsHref(body, $"{_options.BaseURL}/organization/{organization.Id}/frequent");
+        AssertContainsHref(body, $"{_options.BaseURL}/organization/{organization.Id}/manage");
+        AssertContainsHref(body, $"{_options.BaseURL}/account/manage?tab=notifications");
     }
 
     [Fact]
@@ -403,10 +406,10 @@ public sealed class MailerTests : TestWithServices
 
         // Assert
         Assert.Contains("monthly plan limit", body, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains($"{_options.BaseURL}/organization/{organization.Id}/upgrade", body, StringComparison.Ordinal);
-        Assert.Contains($"{_options.BaseURL}/organization/{organization.Id}/frequent", body, StringComparison.Ordinal);
-        Assert.Contains($"{_options.BaseURL}/organization/{organization.Id}/manage", body, StringComparison.Ordinal);
-        Assert.Contains($"{_options.BaseURL}/account/manage?tab=notifications", body, StringComparison.Ordinal);
+        AssertContainsHref(body, $"{_options.BaseURL}/organization/{organization.Id}/upgrade");
+        AssertContainsHref(body, $"{_options.BaseURL}/organization/{organization.Id}/frequent");
+        AssertContainsHref(body, $"{_options.BaseURL}/organization/{organization.Id}/manage");
+        AssertContainsHref(body, $"{_options.BaseURL}/account/manage?tab=notifications");
     }
 
     [Fact]
@@ -422,7 +425,7 @@ public sealed class MailerTests : TestWithServices
 
         // Assert
         Assert.Contains("Payment failed", body, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains($"{_options.BaseURL}/organization/{organization.Id}/manage?tab=billing", body, StringComparison.Ordinal);
+        AssertContainsHref(body, $"{_options.BaseURL}/organization/{organization.Id}/manage?tab=billing");
     }
 
     [Fact]
@@ -442,10 +445,10 @@ public sealed class MailerTests : TestWithServices
         // Assert
         Assert.Contains("View Timeline", body, StringComparison.Ordinal);
         Assert.Contains("Most Frequent", body, StringComparison.Ordinal);
-        Assert.Contains($"{_options.BaseURL}/project/{project.Id}/error/timeline", body, StringComparison.Ordinal);
-        Assert.Contains($"{_options.BaseURL}/project/{project.Id}/error/frequent", body, StringComparison.Ordinal);
-        AssertContainsUrl(body, $"{_options.BaseURL}/account/manage?projectId={project.Id}&tab=notifications");
-        Assert.All(mostFrequent, stack => AssertContainsUrl(body, $"{_options.BaseURL}/stack/{stack.Id}"));
+        AssertContainsHref(body, $"{_options.BaseURL}/project/{project.Id}/error/timeline");
+        AssertContainsHref(body, $"{_options.BaseURL}/project/{project.Id}/error/frequent");
+        AssertContainsHref(body, $"{_options.BaseURL}/account/manage?projectId={project.Id}&tab=notifications");
+        Assert.All(mostFrequent, stack => AssertContainsHref(body, $"{_options.BaseURL}/stack/{stack.Id}"));
     }
 
     [Fact]
@@ -462,7 +465,7 @@ public sealed class MailerTests : TestWithServices
 
         // Assert
         Assert.Contains("discarded due to throttling", body, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains($"{_options.BaseURL}/organization/{project.OrganizationId}/upgrade", body, StringComparison.Ordinal);
+        AssertContainsHref(body, $"{_options.BaseURL}/organization/{project.OrganizationId}/upgrade");
     }
 
     [Fact]
@@ -478,7 +481,7 @@ public sealed class MailerTests : TestWithServices
 
         // Assert
         Assert.Contains("Configure Project", body, StringComparison.Ordinal);
-        Assert.Contains($"{_options.BaseURL}/project/{project.Id}/configure", body, StringComparison.Ordinal);
+        AssertContainsHref(body, $"{_options.BaseURL}/project/{project.Id}/configure");
     }
 
     [Fact]
@@ -494,7 +497,7 @@ public sealed class MailerTests : TestWithServices
 
         // Assert
         Assert.Contains("marked as fixed", body, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains($"{_options.BaseURL}/project/{project.Id}/error/timeline", body, StringComparison.Ordinal);
+        AssertContainsHref(body, $"{_options.BaseURL}/project/{project.Id}/error/timeline");
     }
 
     [Fact]
@@ -510,7 +513,7 @@ public sealed class MailerTests : TestWithServices
 
         // Assert
         Assert.Contains("marked as fixed", body, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains($"{_options.BaseURL}/project/{project.Id}/error/timeline", body, StringComparison.Ordinal);
+        AssertContainsHref(body, $"{_options.BaseURL}/project/{project.Id}/error/timeline");
     }
 
     [Fact]
@@ -531,9 +534,9 @@ public sealed class MailerTests : TestWithServices
 
         // Assert
         Assert.Contains("free plan", body, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains($"{_options.BaseURL}/organization/{project.OrganizationId}/upgrade", body, StringComparison.Ordinal);
-        Assert.Contains($"{_options.BaseURL}/project/{project.Id}/error/new", body, StringComparison.Ordinal);
-        Assert.All(mostFrequent.Concat(newest), stack => AssertContainsUrl(body, $"{_options.BaseURL}/stack/{stack.Id}"));
+        AssertContainsHref(body, $"{_options.BaseURL}/organization/{project.OrganizationId}/upgrade");
+        AssertContainsHref(body, $"{_options.BaseURL}/project/{project.Id}/error/new");
+        Assert.All(mostFrequent.Concat(newest), stack => AssertContainsHref(body, $"{_options.BaseURL}/stack/{stack.Id}"));
     }
 
     [Fact]
@@ -551,7 +554,8 @@ public sealed class MailerTests : TestWithServices
         Assert.Contains("Reset Password", body, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("?cancel=true", body, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("click here to cancel the password reset request", body, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains($"{_options.BaseURL}/reset-password/{user.PasswordResetToken}", body, StringComparison.Ordinal);
+        AssertContainsHref(body, $"{_options.BaseURL}/reset-password/{user.PasswordResetToken}");
+        AssertContainsHref(body, $"{_options.BaseURL}/reset-password/{user.PasswordResetToken}?cancel=true");
     }
 
     [Fact]
@@ -567,7 +571,7 @@ public sealed class MailerTests : TestWithServices
 
         // Assert
         Assert.Contains("Verify Address", body, StringComparison.Ordinal);
-        Assert.Contains($"{_options.BaseURL}/account/verify?token={user.VerifyEmailAddressToken}", body, StringComparison.Ordinal);
+        AssertContainsHref(body, $"{_options.BaseURL}/account/verify?token={user.VerifyEmailAddressToken}");
     }
 
     private async Task<string> RunMailJobAsync(bool requireUrls = true)
@@ -594,7 +598,9 @@ public sealed class MailerTests : TestWithServices
 
     private void AssertValidUrls(string body, bool requireUrls)
     {
-        var urls = GetUrls(body);
+        var hrefs = GetHrefs(body);
+        var structuredDataUrls = GetStructuredDataUrls(body);
+        var urls = hrefs.Concat(structuredDataUrls).ToArray();
         if (!requireUrls)
         {
             Assert.Empty(urls);
@@ -617,26 +623,101 @@ public sealed class MailerTests : TestWithServices
 
             if (!String.Equals(uri.Authority, baseUri.Authority, StringComparison.OrdinalIgnoreCase))
             {
-                Assert.Contains(uri.Authority, _expectedExternalHosts);
+                Assert.Contains(url, _expectedExternalUrls);
                 continue;
             }
 
             Assert.DoesNotContain("/next/", uri.PathAndQuery, StringComparison.OrdinalIgnoreCase);
-            Assert.Matches(@"^/(?:event/[^/?#]+|stack/[^/?#]+(?:/(?:mark-fixed|ignored|discarded))?|project/[^/]+/(?:configure|error/(?:timeline|frequent|new))|account/(?:manage|verify)|organization/[^/]+/(?:dashboard|upgrade|frequent|manage)|signup|reset-password/[^/?#]+)(?:[/?].*)?$", uri.PathAndQuery);
+            AssertValidInternalUrl(uri);
         }
     }
 
-    private static void AssertContainsUrl(string body, string expectedUrl)
+    private static void AssertValidInternalUrl(Uri uri)
     {
-        Assert.Contains(expectedUrl, GetUrls(body));
+        Assert.Empty(uri.Fragment);
+        Assert.Matches(@"^/(?:event/[^/]+|stack/[^/]+(?:/(?:mark-fixed|ignored|discarded))?|project/[^/]+/(?:configure|error/(?:timeline|frequent|new))|account/(?:manage|verify)|organization/[^/]+/(?:dashboard|upgrade|frequent|manage)|signup|reset-password/[^/]+)$", uri.AbsolutePath);
+
+        if (uri.AbsolutePath is "/account/verify" or "/signup")
+        {
+            Assert.Matches(@"^\?token=[^?&#]+$", uri.Query);
+            return;
+        }
+
+        if (uri.AbsolutePath == "/account/manage")
+        {
+            Assert.Matches(@"^\?(?:tab=notifications|projectId=[^?&#]+&tab=notifications)$", uri.Query);
+            return;
+        }
+
+        if (Regex.IsMatch(uri.AbsolutePath, @"^/organization/[^/]+/manage$"))
+        {
+            Assert.Matches(@"^(?:|\?tab=billing)$", uri.Query);
+            return;
+        }
+
+        if (Regex.IsMatch(uri.AbsolutePath, @"^/reset-password/[^/]+$"))
+        {
+            Assert.Matches(@"^(?:|\?cancel=true)$", uri.Query);
+            return;
+        }
+
+        Assert.Empty(uri.Query);
     }
 
-    private static string[] GetUrls(string body)
+    private static void AssertContainsHref(string body, string expectedUrl)
+    {
+        Assert.Contains(expectedUrl, GetHrefs(body));
+    }
+
+    private static string[] GetHrefs(string body)
     {
         string decodedBody = WebUtility.HtmlDecode(body);
-        return Regex.Matches(decodedBody, "(?:href=|\\\"(?:target|url)\\\":\\s*)\\\"(?<url>[^\\\"]+)\\\"")
+        return Regex.Matches(decodedBody, "href\\s*=\\s*[\"'](?<url>[^\"']+)[\"']", RegexOptions.IgnoreCase)
             .Select(match => match.Groups["url"].Value)
             .ToArray();
+    }
+
+    private static string[] GetStructuredDataUrls(string body)
+    {
+        string decodedBody = WebUtility.HtmlDecode(body);
+        var urls = new List<string>();
+        var scripts = Regex.Matches(
+            decodedBody,
+            "<script\\b(?=[^>]*\\btype\\s*=\\s*[\"']application/ld\\+json[\"'])[^>]*>(?<json>.*?)</script>",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline);
+
+        foreach (Match script in scripts)
+        {
+            using JsonDocument document = JsonDocument.Parse(script.Groups["json"].Value);
+            AddStructuredDataUrls(document.RootElement, urls);
+        }
+
+        return urls.ToArray();
+    }
+
+    private static void AddStructuredDataUrls(JsonElement element, ICollection<string> urls)
+    {
+        if (element.ValueKind == JsonValueKind.Array)
+        {
+            foreach (JsonElement item in element.EnumerateArray())
+                AddStructuredDataUrls(item, urls);
+
+            return;
+        }
+
+        if (element.ValueKind != JsonValueKind.Object)
+            return;
+
+        foreach (JsonProperty property in element.EnumerateObject())
+        {
+            if (property.NameEquals("target") || property.NameEquals("url"))
+            {
+                Assert.Equal(JsonValueKind.String, property.Value.ValueKind);
+                urls.Add(property.Value.GetString()!);
+            }
+
+            AddStructuredDataUrls(property.Value, urls);
+        }
     }
 
     private Exception GetException()

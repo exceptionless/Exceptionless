@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Text.Json;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
@@ -319,6 +320,9 @@ public class Mailer : IMailer
 
     private string RenderTemplate(string name, IDictionary<string, object?> data)
     {
+        if (data.TryGetValue("Subject", out object? subject) && subject is string subjectValue)
+            data["SubjectJson"] = JsonEncodedText.Encode(subjectValue).ToString();
+
         var template = GetCompiledTemplate(name);
         return template(data);
     }
