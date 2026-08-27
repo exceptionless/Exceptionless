@@ -20,11 +20,11 @@ export default defineConfig({
     plugins: [
         svelte(),
         {
-            async closeBundle() {
+            name: 'render-email-templates',
+            async writeBundle() {
                 const renderer = pathToFileURL(resolve('.email-dist/build.js'));
                 await import(`${renderer.href}?updated=${Date.now()}`);
-            },
-            name: 'render-email-templates'
+            }
         }
     ]
 });
