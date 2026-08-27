@@ -1,7 +1,6 @@
 @apiUrl = http://localhost:7110/api/v2
 @email = admin@exceptionless.test
 @password = tester
-@inviteToken = REPLACE_WITH_INVITE_TOKEN
 
 ### login to test account
 # @name login
@@ -33,7 +32,6 @@ Content-Type: application/json
 
 {
     "email": "{{email}}",
-    "invite_token": "{{inviteToken}}",
     "password": "{{password}}",
     "name": "test"
 }

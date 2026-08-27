@@ -92,12 +92,20 @@ test('existing invited user can accept an organization invitation when logging i
         });
 
         const inviteToken = await e2eApi.pollForMailToken(invitedEmail, 'signup');
-        invitedUserToken = await e2eApi.signup(`Existing Invited User ${e2eScenario.run}`, invitedEmail, E2E_TEST_PASSWORD);
+        const existingUserToken = await e2eApi.signup(`Existing Invited User ${e2eScenario.run}`, invitedEmail, E2E_TEST_PASSWORD);
+        invitedUserToken = existingUserToken;
         const invitedContext = await browser.newContext({ baseURL: e2eApi.environment.appUrl, ignoreHTTPSErrors: true });
+        await invitedContext.addInitScript((token) => window.localStorage.setItem('satellizer_token', token), existingUserToken);
         const invitedPage = await invitedContext.newPage();
 
         try {
+            const logoutResponse = invitedPage.waitForResponse((response) => {
+                const url = new URL(response.url());
+                return response.request().method() === 'GET' && url.pathname.endsWith('/api/v2/auth/logout');
+            });
+
             await invitedPage.goto(`/next/login?token=${encodeURIComponent(inviteToken)}`);
+            expect((await logoutResponse).ok()).toBe(true);
             await invitedPage.getByLabel('Email', { exact: true }).fill(invitedEmail);
             await invitedPage.getByPlaceholder('Enter password').fill(E2E_TEST_PASSWORD);
 

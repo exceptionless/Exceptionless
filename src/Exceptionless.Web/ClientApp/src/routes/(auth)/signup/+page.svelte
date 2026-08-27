@@ -36,14 +36,7 @@
 
     const inviteToken = page.url.searchParams.get('token');
     const redirectUrl = inviteToken ? resolve('/(app)/project/add') : resolve('/(app)/organization/add');
-
-    async function loginWithOAuth(authenticate: typeof githubLogin) {
-        if (inviteToken && accessToken.current) {
-            await logout();
-        }
-
-        await authenticate(redirectUrl, inviteToken);
-    }
+    const logoutPromise = inviteToken && accessToken.current ? logout() : undefined;
 
     const form = createForm(() => ({
         defaultValues: {
@@ -55,10 +48,6 @@
         validators: {
             onSubmit: SignupSchema,
             onSubmitAsync: async ({ value }) => {
-                if (value.invite_token && accessToken.current) {
-                    await logout();
-                }
-
                 const response = await signup(value.name, value.email, value.password, value.invite_token);
                 if (response.ok) {
                     await goto(redirectUrl);
@@ -71,7 +60,13 @@
     }));
 </script>
 
-<Card.Root class="mx-auto w-[calc(100vw-2rem)] max-w-lg">
+{#if logoutPromise}
+    {#await logoutPromise}
+        <Spinner />
+    {/await}
+{/if}
+
+<Card.Root class="mx-auto w-[calc(100vw-2rem)] max-w-lg" inert={!!inviteToken && !!accessToken.current}>
     <Card.Header>
         <Logo />
         <Card.Title class="text-center text-2xl">Signup for a FREE account in seconds</Card.Title>
@@ -82,22 +77,22 @@
                 <P class="text-center">Sign up with</P>
                 <div class="grid grid-flow-col grid-cols-2 grid-rows-2 gap-4">
                     {#if microsoftClientId}
-                        <Button aria-label="Sign up with Microsoft" onclick={() => loginWithOAuth(liveLogin)}>
+                        <Button aria-label="Sign up with Microsoft" onclick={() => liveLogin(redirectUrl, inviteToken)}>
                             <MicrosoftIcon class="size-4" /> Microsoft
                         </Button>
                     {/if}
                     {#if googleClientId}
-                        <Button aria-label="Sign up with Google" onclick={() => loginWithOAuth(googleLogin)}>
+                        <Button aria-label="Sign up with Google" onclick={() => googleLogin(redirectUrl, inviteToken)}>
                             <GoogleIcon class="size-4" /> Google
                         </Button>
                     {/if}
                     {#if facebookClientId}
-                        <Button aria-label="Sign up with Facebook" onclick={() => loginWithOAuth(facebookLogin)}>
+                        <Button aria-label="Sign up with Facebook" onclick={() => facebookLogin(redirectUrl, inviteToken)}>
                             <FacebookIcon class="size-4" /> Facebook
                         </Button>
                     {/if}
                     {#if gitHubClientId}
-                        <Button aria-label="Sign up with GitHub" onclick={() => loginWithOAuth(githubLogin)}>
+                        <Button aria-label="Sign up with GitHub" onclick={() => githubLogin(redirectUrl, inviteToken)}>
                             <GitHubIcon class="size-4" /> GitHub
                         </Button>
                     {/if}
