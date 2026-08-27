@@ -92,9 +92,6 @@ export async function login(email: string, password: string, inviteToken?: null 
 
     if (response.ok && response.data?.token) {
         accessToken.current = response.data.token;
-        if (inviteToken) {
-            organization.current = undefined;
-        }
     } else if (response.status === 401) {
         response.problem.setErrorMessage('Invalid email or password');
     }
@@ -114,6 +111,9 @@ export async function logout(queryClient?: QueryClient, client = useFetchClient(
     clearAuthenticationSession();
 
     organization.current = undefined;
+    if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('organization');
+    }
 }
 
 export async function resetPassword(passwordResetToken: string, password: string) {
@@ -148,9 +148,6 @@ export async function signup(name: string, email: string, password: string, invi
 
     if (response.ok && response.data?.token) {
         accessToken.current = response.data.token;
-        if (inviteToken) {
-            organization.current = undefined;
-        }
     } else if (response.status === 401) {
         response.problem.setErrorMessage('Invalid email or password');
     }

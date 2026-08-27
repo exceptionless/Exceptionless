@@ -1,18 +1,6 @@
 import { PersistedState } from 'runed';
 
-class OrganizationState {
-    get current(): string | undefined {
-        return this.#persisted.current || undefined;
-    }
-
-    set current(value: string | undefined) {
-        this.#persisted.current = value ?? '';
-    }
-
-    #persisted = new PersistedState<string>('organization', '');
-}
-
-export const organization = new OrganizationState();
+export const organization = new PersistedState<string | undefined>('organization', undefined);
 
 class ShowOrganizationNotificationsState {
     get current() {
