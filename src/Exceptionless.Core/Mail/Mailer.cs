@@ -81,9 +81,7 @@ public class Mailer : IMailer
         }
 
         if (String.IsNullOrEmpty(result.Subject))
-        {
             result.Subject = ev.Message ?? ev.Source ?? "(Global)";
-        }
 
         AddDefaultFields(ev, result.Data);
 
@@ -121,28 +119,18 @@ public class Mailer : IMailer
 
         string? displayName = null;
         if (!String.IsNullOrEmpty(ui?.Identity))
-        {
             displayName = ui.Identity;
-        }
 
         if (!String.IsNullOrEmpty(ui?.Name))
-        {
             displayName = ui.Name;
-        }
 
         if (!String.IsNullOrEmpty(displayName) && !String.IsNullOrEmpty(ud?.EmailAddress))
-        {
             displayName = $"{displayName} ({ud.EmailAddress})";
-        }
         else if (!String.IsNullOrEmpty(ui?.Identity) && !String.IsNullOrEmpty(ui.Name))
-        {
             displayName = $"{ui.Name} ({ui.Identity})";
-        }
 
         if (ud is null && ui is null)
-        {
             return null;
-        }
 
         string? emailUrl = !String.IsNullOrEmpty(ud?.EmailAddress)
             ? BuildMailtoUrl(ud.EmailAddress, ud.Description)
@@ -167,21 +155,15 @@ public class Mailer : IMailer
     private static void AddDefaultFields(PersistentEvent ev, Dictionary<string, object?> data)
     {
         if (ev.Tags?.Count > 0)
-        {
             data["Tags"] = String.Join(", ", ev.Tags);
-        }
 
         decimal value = ev.Value.GetValueOrDefault();
         if (value != 0)
-        {
             data["Value"] = value;
-        }
 
         string? version = ev.GetVersion();
         if (!String.IsNullOrEmpty(version))
-        {
             data["Version"] = version;
-        }
     }
 
     public async Task SendOrganizationAddedAsync(User sender, Organization organization, User user)
@@ -302,9 +284,7 @@ public class Mailer : IMailer
     private IReadOnlyCollection<StackSummary> GetStackTemplateData(IEnumerable<Stack>? stacks)
     {
         if (stacks is null)
-        {
             return [];
-        }
 
         return stacks.Select(stack => new StackSummary(
             stack.Title.Truncate(50),
@@ -316,9 +296,7 @@ public class Mailer : IMailer
     public async Task SendUserEmailVerifyAsync(User user)
     {
         if (String.IsNullOrEmpty(user?.VerifyEmailAddressToken))
-        {
             return;
-        }
 
         const string template = "user-email-verify";
         const string subject = "Exceptionless Account Confirmation";
@@ -338,9 +316,7 @@ public class Mailer : IMailer
     public async Task SendUserPasswordResetAsync(User user)
     {
         if (String.IsNullOrEmpty(user?.PasswordResetToken))
-        {
             return;
-        }
 
         const string template = "user-password-reset";
         const string subject = "Exceptionless Password Reset";
@@ -361,9 +337,7 @@ public class Mailer : IMailer
     private Task<string?> QueueMessageAsync(MailMessage message, string metricsName)
     {
         if (!CleanAddresses(message))
-        {
             return Task.FromResult<string?>(null);
-        }
 
         AppDiagnostics.Counter($"mailer.{metricsName}");
         return _queue.EnqueueAsync(message);
@@ -372,15 +346,11 @@ public class Mailer : IMailer
     private bool CleanAddresses(MailMessage message)
     {
         if (_appOptions.AppMode == AppMode.Production)
-        {
             return true;
-        }
 
         string address = message.To.ToLowerInvariant();
         if (_appOptions.EmailOptions.AllowedOutboundAddresses.Any(address.Contains))
-        {
             return true;
-        }
 
         if (String.IsNullOrEmpty(_appOptions.EmailOptions.TestEmailAddress))
         {

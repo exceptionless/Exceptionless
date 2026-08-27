@@ -52,9 +52,7 @@ public sealed class MailerTests : TestWithServices
         _plans = GetService<BillingPlans>();
 
         if (_mailer is NullMailer)
-        {
             _mailer = new Mailer(GetService<IQueue<MailMessage>>(), GetService<IEmailTemplateRenderer>(), GetService<FormattingPluginManager>(), GetService<ITextSerializer>(), _options, TimeProvider, Log.CreateLogger<Mailer>());
-        }
     }
 
     [Fact]
@@ -817,9 +815,7 @@ public sealed class MailerTests : TestWithServices
     {
         var urls = new List<string>();
         foreach (JsonElement element in GetStructuredData(body))
-        {
             AddStructuredDataUrls(element, urls, actionOnly);
-        }
 
         return urls.ToArray();
     }
