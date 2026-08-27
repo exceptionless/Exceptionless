@@ -84,7 +84,7 @@
         "@lucide/svelte": "^1.31.0",
         "@shikijs/themes": "^4.4.2",
         "@stripe/stripe-js": "^9.13.0",
-        "@tanstack/svelte-form": "^1.33.4",
+        "@tanstack/svelte-form": "^1.33.5",
         "@tanstack/svelte-query": "^6.1.38",
         "@tanstack/svelte-query-devtools": "^6.1.38",
         "@tanstack/svelte-table": "^9.1.2",
