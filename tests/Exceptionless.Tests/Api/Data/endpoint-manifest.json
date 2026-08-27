@@ -261,6 +261,30 @@
   },
   {
     "method": "GET",
+    "route": "/api/v2/admin/assistant-settings",
+    "displayName": "HTTP: GET api/v2/admin/assistant-settings",
+    "tags": [],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "PUT",
+    "route": "/api/v2/admin/assistant-settings",
+    "displayName": "HTTP: PUT api/v2/admin/assistant-settings",
+    "tags": [],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
     "route": "/api/v2/admin/assistant-usage",
     "displayName": "HTTP: GET api/v2/admin/assistant-usage =\u003E GetAssistantUsageAsync",
     "tags": [],
