@@ -53,6 +53,11 @@
         validators: {
             onSubmit: SignupSchema,
             onSubmitAsync: async ({ value }) => {
+                if (value.invite_token) {
+                    await queryClient.cancelQueries();
+                    queryClient.clear();
+                }
+
                 const response = await signup(value.name, value.email, value.password, value.invite_token);
                 if (response.ok) {
                     await goto(redirectUrl);

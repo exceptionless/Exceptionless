@@ -22,6 +22,7 @@ const queryClient = vi.hoisted(() => ({
     cancelQueries: vi.fn(),
     clear: vi.fn()
 }));
+const validateEmailAvailability = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 
 vi.mock('$app/environment', () => ({ browser: true, building: false, dev: false }));
 vi.mock('$app/navigation', () => navigation);
@@ -50,7 +51,7 @@ vi.mock('$features/auth/index.svelte', () => ({
     microsoftClientId: undefined
 }));
 vi.mock('$features/auth/validators', () => ({
-    validateEmailAvailability: vi.fn().mockResolvedValue(undefined)
+    validateEmailAvailability
 }));
 vi.mock('@tanstack/svelte-query', () => ({ useQueryClient: () => queryClient }));
 
@@ -60,6 +61,7 @@ describe('invitation query parameters', () => {
         authApi.login.mockResolvedValue({ ok: true });
         authApi.signup.mockResolvedValue({ ok: true });
         navigation.goto.mockResolvedValue(undefined);
+        queryClient.cancelQueries.mockResolvedValue(undefined);
         navigation.pushState.mockImplementation((url: string | URL, state: App.PageState) => window.history.pushState(state, '', url));
         navigation.replaceState.mockImplementation((url: string | URL, state: App.PageState) => window.history.replaceState(state, '', url));
     });
@@ -81,6 +83,9 @@ describe('invitation query parameters', () => {
 
         // Assert
         await waitFor(() => expect(authApi.login).toHaveBeenCalledWith('invited@example.com', 'password', currentToken));
+        expect(queryClient.cancelQueries).toHaveBeenCalledOnce();
+        expect(queryClient.clear).toHaveBeenCalledOnce();
+        expect(queryClient.clear.mock.invocationCallOrder[0]).toBeLessThan(authApi.login.mock.invocationCallOrder[0]!);
         expect(screen.getByRole('link', { name: 'Signup' }).getAttribute('href')).toBe(`/(auth)/signup?token=${currentToken}`);
     });
 
@@ -99,5 +104,18 @@ describe('invitation query parameters', () => {
 
         // Assert
         expect(authUi.googleLogin).toHaveBeenCalledWith('/(app)/project/add', currentToken, queryClient);
+
+        // Act
+        await fireEvent.input(screen.getByLabelText('Name'), { target: { value: 'Invited User' } });
+        await fireEvent.input(screen.getByLabelText('Email'), { target: { value: 'invited@example.com' } });
+        await fireEvent.input(screen.getByLabelText('Password'), { target: { value: 'password' } });
+        await waitFor(() => expect(validateEmailAvailability).toHaveBeenCalledWith('invited@example.com'), { timeout: 1500 });
+        await fireEvent.click(screen.getByRole('button', { name: 'Create My Account' }));
+
+        // Assert
+        await waitFor(() => expect(authApi.signup).toHaveBeenCalledWith('Invited User', 'invited@example.com', 'password', currentToken));
+        expect(queryClient.cancelQueries).toHaveBeenCalledOnce();
+        expect(queryClient.clear).toHaveBeenCalledOnce();
+        expect(queryClient.clear.mock.invocationCallOrder[0]).toBeLessThan(authApi.signup.mock.invocationCallOrder[0]!);
     });
 });
