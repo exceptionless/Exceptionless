@@ -39,7 +39,7 @@
         "@iconify-json/lucide": "^1.2.122",
         "@playwright/test": "^1.62.1",
         "@storybook/addon-a11y": "^10.5.7",
-        "@storybook/addon-docs": "^10.5.7",
+        "@storybook/addon-docs": "^10.5.9",
         "@storybook/addon-svelte-csf": "^5.1.2",
         "@storybook/sveltekit": "^10.5.7",
         "@stylistic/eslint-plugin": "^5.10.0",
