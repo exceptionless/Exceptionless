@@ -42,9 +42,13 @@
     const canSignup = enableAccountCreation || !!inviteToken;
     const signupUrl = inviteToken ? `${resolve('/(auth)/signup')}?token=${encodeURIComponent(inviteToken)}` : resolve('/(auth)/signup');
 
-    onMount(() => {
-        if (inviteToken && accessToken.current) {
-            void logout().catch(() => undefined);
+    onMount(async () => {
+        if (accessToken.current) {
+            try {
+                await logout();
+            } catch {
+                // The login flow can continue when an existing session cannot be ended.
+            }
         }
     });
 
@@ -74,7 +78,7 @@
     }
 </script>
 
-<div class="mx-auto flex w-[calc(100vw-2rem)] max-w-lg flex-col items-center">
+<div class="mx-auto flex w-[calc(100vw-2rem)] max-w-lg flex-col items-center" inert={!!accessToken.current}>
     <Card.Root class="w-full">
         <Card.Header>
             <Logo />

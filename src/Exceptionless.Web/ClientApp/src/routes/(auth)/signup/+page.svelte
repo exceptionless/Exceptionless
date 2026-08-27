@@ -38,9 +38,13 @@
     const inviteToken = page.url.searchParams.get('token');
     const redirectUrl = inviteToken ? resolve('/(app)/project/add') : resolve('/(app)/organization/add');
 
-    onMount(() => {
-        if (inviteToken && accessToken.current) {
-            void logout().catch(() => undefined);
+    onMount(async () => {
+        if (accessToken.current) {
+            try {
+                await logout();
+            } catch {
+                // The signup flow can continue when an existing session cannot be ended.
+            }
         }
     });
 
@@ -66,7 +70,7 @@
     }));
 </script>
 
-<Card.Root class="mx-auto w-[calc(100vw-2rem)] max-w-lg">
+<Card.Root class="mx-auto w-[calc(100vw-2rem)] max-w-lg" inert={!!accessToken.current}>
     <Card.Header>
         <Logo />
         <Card.Title class="text-center text-2xl">Signup for a FREE account in seconds</Card.Title>
