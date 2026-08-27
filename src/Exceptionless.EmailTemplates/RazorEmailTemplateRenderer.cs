@@ -4,22 +4,19 @@ using Exceptionless.EmailTemplates.Templates;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Exceptionless.EmailTemplates;
 
 public sealed class RazorEmailTemplateRenderer : IEmailTemplateRenderer
 {
-    private static readonly IServiceProvider DefaultServiceProvider = new EmptyServiceProvider();
     private readonly IServiceProvider _serviceProvider;
     private readonly ILoggerFactory _loggerFactory;
 
-    public RazorEmailTemplateRenderer() : this(DefaultServiceProvider, NullLoggerFactory.Instance)
-    {
-    }
-
     public RazorEmailTemplateRenderer(IServiceProvider serviceProvider, ILoggerFactory loggerFactory)
     {
+        ArgumentNullException.ThrowIfNull(serviceProvider);
+        ArgumentNullException.ThrowIfNull(loggerFactory);
+
         _serviceProvider = serviceProvider;
         _loggerFactory = loggerFactory;
     }
@@ -59,10 +56,5 @@ public sealed class RazorEmailTemplateRenderer : IEmailTemplateRenderer
             var output = await renderer.RenderComponentAsync<TComponent>(parameters);
             return output.ToHtmlString();
         });
-    }
-
-    private sealed class EmptyServiceProvider : IServiceProvider
-    {
-        public object? GetService(Type serviceType) => null;
     }
 }
