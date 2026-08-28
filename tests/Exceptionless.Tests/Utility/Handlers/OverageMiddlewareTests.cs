@@ -5,8 +5,11 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
+using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Utility;
+using Exceptionless.Web.Models.Admin;
+using FluentRest;
 using Xunit;
 
 namespace Exceptionless.Tests.Utility.Handlers;
@@ -208,6 +211,32 @@ public sealed class OverageMiddlewareTests : IntegrationTestsBase
         }
     }
 
+    [Fact]
+    public async Task Invoke_RuntimeEventSubmissionOverrideDisabled_ReturnsServiceUnavailable()
+    {
+        await SendRequestAsync(request => request
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "event-submission-settings")
+            .Content(new UpdateEventSubmissionSettings { Enabled = false })
+            .StatusCodeShouldBeOk());
+
+        bool nextCalled = false;
+        var middleware = CreateMiddleware(context =>
+        {
+            nextCalled = true;
+            return Task.CompletedTask;
+        });
+        var context = CreateEventPostContext(
+            CreateTokenPrincipal(SampleDataService.TEST_API_KEY, SampleDataService.TEST_ORG_ID, SampleDataService.TEST_PROJECT_ID),
+            128);
+
+        await middleware.Invoke(context);
+
+        Assert.False(nextCalled);
+        Assert.Equal(StatusCodes.Status503ServiceUnavailable, context.Response.StatusCode);
+    }
+
     private OverageMiddleware CreateMiddleware(RequestDelegate next)
     {
         return new OverageMiddleware(
@@ -215,6 +244,7 @@ public sealed class OverageMiddlewareTests : IntegrationTestsBase
             _usageService,
             _organizationRepository,
             GetService<AppOptions>(),
+            GetService<SystemSettingsService>(),
             GetService<ILogger<OverageMiddleware>>());
     }
 

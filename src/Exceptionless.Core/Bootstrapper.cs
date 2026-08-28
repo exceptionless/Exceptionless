@@ -151,6 +151,7 @@ public class Bootstrapper
         services.AddSingleton<IUserRepository, UserRepository>();
         services.AddSingleton<IWebHookRepository, WebHookRepository>();
         services.AddSingleton<ISavedViewRepository, SavedViewRepository>();
+        services.AddSingleton<ISystemSettingsRepository, SystemSettingsRepository>();
         services.AddSingleton<ITokenRepository, TokenRepository>();
 
         services.AddSingleton<IGeocodeService, NullGeocodeService>();
@@ -190,6 +191,7 @@ public class Bootstrapper
         services.AddSingleton<UserAgentParser>();
         services.AddSingleton<ICoreLastReferenceIdManager, NullCoreLastReferenceIdManager>();
 
+        services.AddSingleton<SystemSettingsService>();
         services.AddSingleton<NotificationService>();
         services.AddSingleton<OrganizationService>();
         services.AddStartupAction<OrganizationService>();
