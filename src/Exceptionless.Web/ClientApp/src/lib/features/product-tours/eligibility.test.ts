@@ -1,7 +1,18 @@
 import { ProductTourStatus } from '$generated/api';
 import { describe, expect, it } from 'vitest';
 
-import { shouldOfferProductTourAnnouncement, shouldOfferProductTourWelcome } from './eligibility';
+import { isProductTourSetupRoute, shouldOfferProductTourAnnouncement, shouldOfferProductTourWelcome } from './eligibility';
+
+describe('product tour setup routes', () => {
+    it.each(['/(app)/organization/add', '/(app)/project/add', '/(app)/project/[projectId]/configure'])('suppresses automatic tours on %s', (routeId) => {
+        expect(isProductTourSetupRoute(routeId)).toBe(true);
+    });
+
+    it('allows automatic tours after setup', () => {
+        expect(isProductTourSetupRoute('/(app)/stack')).toBe(false);
+        expect(isProductTourSetupRoute(null)).toBe(false);
+    });
+});
 
 describe('product tour welcome eligibility', () => {
     it('offers legacy users and a newer welcome version', () => {

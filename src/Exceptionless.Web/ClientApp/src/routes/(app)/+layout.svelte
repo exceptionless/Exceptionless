@@ -40,6 +40,7 @@
     import { getUtcMonthKey, ORGANIZATION_USAGE_ROLLOVER_CHECK_INTERVAL_MS } from '$features/organizations/utils';
     import { getProductTourItems } from '$features/product-tours/catalog';
     import ProductTourHost from '$features/product-tours/components/product-tour-host.svelte';
+    import { isProductTourSetupRoute } from '$features/product-tours/eligibility';
     import { productTourCheckpoint } from '$features/product-tours/state.svelte';
     import { getOrganizationProjectsQuery, invalidateProjectQueries } from '$features/projects/api.svelte';
     import { getSavedViewsQuery, invalidateSavedViewQueries, isSavedViewDeleted, putUserSavedViewOrder } from '$features/saved-views/api.svelte';
@@ -727,13 +728,14 @@
 
     const setupPath = resolve('/(app)/organization/add');
     const isSetupPage = $derived(page.url.pathname === setupPath);
+    const suppressAutomaticProductTours = $derived(isProductTourSetupRoute(page.route.id));
     const productTourItems = $derived(
         meQuery.isSuccess
             ? getProductTourItems(
                   {
                       assistantAccess,
                       errorEventAvailability: productTourErrorEventAvailability,
-                      isSetupPage,
+                      isSetupPage: suppressAutomaticProductTours,
                       organizationId: organization.current,
                       pathname: page.url.pathname,
                       projects
@@ -901,7 +903,7 @@
         errorEventAvailability={productTourErrorEventAvailability}
         isAnyOverlayOpen={isAnyProductTourOverlayOpen}
         {isImpersonating}
-        {isSetupPage}
+        isSetupPage={suppressAutomaticProductTours}
         openAssistant={openAssistantPanel}
         organizationId={organization.current}
         pathname={page.url.pathname}
