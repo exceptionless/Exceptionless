@@ -233,4 +233,51 @@ public class StatusEndpointTests : IntegrationTestsBase
         var settings = await GetService<ISystemSettingsRepository>().GetByIdAsync(SystemSettings.DefaultId, options => options.ImmediateConsistency());
         Assert.Equal("Silent notification", settings?.SystemNotification?.Message);
     }
+
+    [Fact]
+    public async Task GetSystemNotificationAsync_LegacyUpdateIsReconciledDuringRollingDeployment()
+    {
+        var durableNotification = await SendRequestAsAsync<SystemNotification>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("notifications/system")
+            .Content(new { message = "Durable notification", level = "Info", target = "Both" })
+            .StatusCodeShouldBeOk());
+        Assert.NotNull(durableNotification);
+
+        var legacyNotification = durableNotification with
+        {
+            Date = durableNotification.Date.AddMinutes(1),
+            Message = "Legacy notification"
+        };
+        await GetService<ICacheClient>().SetAsync("system-notification", legacyNotification);
+
+        var response = await SendRequestAsAsync<SystemNotification>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("notifications/system")
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(response);
+        Assert.Equal(legacyNotification.Message, response.Message);
+        Assert.Equal(legacyNotification.Date, response.Date);
+    }
+
+    [Fact]
+    public async Task GetSystemNotificationAsync_LegacyClearIsReconciledDuringRollingDeployment()
+    {
+        await SendRequestAsAsync<SystemNotification>(r => r
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPath("notifications/system")
+            .Content(new { message = "Durable notification", level = "Info", target = "Both" })
+            .StatusCodeShouldBeOk());
+
+        // Older instances remove only this key when clearing a notification.
+        await GetService<ICacheClient>().RemoveAsync("system-notification");
+
+        await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("notifications/system")
+            .StatusCodeShouldBeNoContent());
+    }
 }

@@ -10,17 +10,32 @@ namespace Exceptionless.Core.Services;
 public class NotificationService(ICacheClient cacheClient, IMessagePublisher messagePublisher, TimeProvider timeProvider, CacheLockProvider lockProvider, SystemSettingsService systemSettingsService)
 {
     private const string SystemNotificationCacheKey = "system-notification";
+    private const string SystemNotificationCompatibilityCacheKey = "system-notification-compatibility";
     private static readonly TimeSpan OrganizationNotificationLockTimeout = TimeSpan.FromMinutes(90);
 
     public async Task<SystemNotification?> GetSystemNotificationAsync()
     {
         var settings = await systemSettingsService.GetAsync();
-        if (settings?.SystemNotification is not null)
-            return settings.SystemNotification;
+        var durableNotification = settings?.SystemNotification;
+        var legacyNotification = await cacheClient.GetAsync<SystemNotification>(SystemNotificationCacheKey);
 
-        // Preserve an active notification created before notifications became durable.
-        var result = await cacheClient.GetAsync<SystemNotification>(SystemNotificationCacheKey);
-        return result.HasValue ? result.Value : null;
+        // Reconcile a newer notification written by an older instance during a rolling deployment.
+        if (legacyNotification.HasValue && (durableNotification is null || legacyNotification.Value.Date > durableNotification.Date))
+            return legacyNotification.Value;
+
+        if (durableNotification is null)
+            return legacyNotification.HasValue ? legacyNotification.Value : null;
+
+        // Older instances clear only the legacy key. A separate marker distinguishes that targeted
+        // removal from a full cache restart, where Elasticsearch must remain authoritative.
+        if (!legacyNotification.HasValue)
+        {
+            var compatibilityDate = await cacheClient.GetAsync<DateTime>(SystemNotificationCompatibilityCacheKey);
+            if (compatibilityDate.HasValue && compatibilityDate.Value >= durableNotification.Date)
+                return null;
+        }
+
+        return durableNotification;
     }
 
     public async Task<SystemNotification> SetSystemNotificationAsync(string message, string userId, SystemNotificationLevel level = SystemNotificationLevel.Info, SystemNotificationTarget target = SystemNotificationTarget.Both, bool publish = true)
@@ -29,6 +44,7 @@ public class NotificationService(ICacheClient cacheClient, IMessagePublisher mes
         await systemSettingsService.UpdateAsync(userId, settings => settings.SystemNotification = notification);
         // Keep older instances in a rolling deployment synchronized until they all read durable settings.
         await cacheClient.SetAsync(SystemNotificationCacheKey, notification);
+        await cacheClient.SetAsync(SystemNotificationCompatibilityCacheKey, notification.Date);
         if (publish)
             await messagePublisher.PublishAsync(notification);
         return notification;
@@ -38,6 +54,7 @@ public class NotificationService(ICacheClient cacheClient, IMessagePublisher mes
     {
         await systemSettingsService.UpdateAsync(userId, settings => settings.SystemNotification = null);
         await cacheClient.RemoveAsync(SystemNotificationCacheKey);
+        await cacheClient.RemoveAsync(SystemNotificationCompatibilityCacheKey);
         if (publish)
             await messagePublisher.PublishAsync(new SystemNotification { Date = timeProvider.GetUtcNow().UtcDateTime });
     }
