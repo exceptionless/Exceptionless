@@ -1,0 +1,64 @@
+@using System.Text.Json
+
+<!doctype html>
+<html lang="en" style="background:@EmailStyles.Background">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="color-scheme" content="light only" />
+    <meta name="supported-color-schemes" content="light only" />
+    <title>@Model.Subject</title>
+    <style>@((MarkupString)EmailStyles.ClientCss)</style>
+</head>
+<body style="background:@EmailStyles.Background;color:@EmailStyles.Dark;font-family:Helvetica,Arial,sans-serif;margin:0;min-width:100%;padding:0;width:100%">
+    @if (!String.IsNullOrEmpty(Model.Preview))
+    {
+        <div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;visibility:hidden">@Model.Preview</div>
+    }
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:@EmailStyles.Background;width:100%">
+        <tr>
+            <td style="background:@EmailStyles.Dark;padding:8px 15px">
+                <table role="presentation" class="email-container" width="580" align="center" cellpadding="0" cellspacing="0" style="margin:0 auto;table-layout:fixed;width:580px">
+                    <tr>
+                        <td><img src="https://be.exceptionless.io/img/exceptionless-logo.png" width="235" height="50" alt="Exceptionless" style="display:block;margin-left:15px;max-width:100%" /></td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td align="center">
+                <table role="presentation" class="email-container" width="580" align="center" cellpadding="0" cellspacing="0" style="background:@EmailStyles.Background;margin:0 auto;table-layout:fixed;width:580px">
+                    <tr>
+                        <td>@ChildContent</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+    @if (Model.Action is not null)
+    {
+        <script type="application/ld+json">@JsonLd</script>
+    }
+</body>
+</html>
+
+@code {
+    [Parameter, EditorRequired]
+    public required EmailTemplate Model { get; set; }
+
+    [Parameter, EditorRequired]
+    public required RenderFragment ChildContent { get; set; }
+
+    private MarkupString JsonLd => new(JsonSerializer.Serialize(
+        new EmailMessageMetadata(
+            "http://schema.org",
+            "EmailMessage",
+            Model.Subject,
+            new EmailViewActionMetadata("ViewAction", Model.Action!.Url, Model.Action.Url, Model.Action.Name),
+            new EmailPublisherMetadata(
+                "Organization",
+                "Exceptionless",
+                "https://exceptionless.com",
+                "https://be.exceptionless.io/img/exceptionless-48.png")),
+        EmailTemplateJsonSerializerContext.Default.EmailMessageMetadata));
+}

@@ -11,6 +11,8 @@ using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
+using Exceptionless.EmailTemplates;
+using Exceptionless.EmailTemplates.Models;
 using Exceptionless.Tests.Utility;
 using Foundatio.Queues;
 using Foundatio.Serializer;
@@ -50,7 +52,7 @@ public sealed class MailerTests : TestWithServices
         _plans = GetService<BillingPlans>();
 
         if (_mailer is NullMailer)
-            _mailer = new Mailer(GetService<IQueue<MailMessage>>(), GetService<FormattingPluginManager>(), GetService<ITextSerializer>(), _options, TimeProvider, Log.CreateLogger<Mailer>());
+            _mailer = new Mailer(GetService<IQueue<MailMessage>>(), GetService<IEmailTemplateRenderer>(), GetService<FormattingPluginManager>(), GetService<ITextSerializer>(), _options, TimeProvider, Log.CreateLogger<Mailer>());
     }
 
     [Fact]
@@ -69,6 +71,57 @@ public sealed class MailerTests : TestWithServices
         Assert.Equal(587, uri.Port);
         Assert.Equal("test@test.com", uri.User);
         Assert.Equal("testpass", uri.Password);
+    }
+
+    [Theory]
+    [InlineData("http://localhost:9001", "http://localhost:9001/organization/organization-1/manage?tab=billing")]
+    [InlineData("http://localhost:9001/#!", "http://localhost:9001/#!/organization/organization-1/manage?tab=billing")]
+    public void OrganizationBilling_BaseUrlVariant_MatchesExistingTemplate(string baseUrl, string expected)
+    {
+        // Arrange
+        var appUrls = new EmailAppUrlBuilder(baseUrl);
+
+        // Act
+        string url = appUrls.OrganizationBilling("organization-1");
+
+        // Assert
+        Assert.Equal(expected, url);
+    }
+
+    [Fact]
+    public void EmailAppUrlBuilder_ProductionBaseUrl_MatchesExistingTemplates()
+    {
+        // Arrange
+        const string baseUrl = "https://be.exceptionless.io";
+        var appUrls = new EmailAppUrlBuilder(baseUrl);
+
+        // Act
+        (string Path, string Url)[] routes =
+        [
+            ("event/event-1", appUrls.Event("event-1")),
+            ("stack/stack-1", appUrls.Stack("stack-1")),
+            ("stack/stack-1/mark-fixed", appUrls.MarkStackFixed("stack-1")),
+            ("stack/stack-1/ignored", appUrls.IgnoreStack("stack-1")),
+            ("stack/stack-1/discarded", appUrls.DiscardStack("stack-1")),
+            ("account/manage?projectId=project-1&tab=notifications", appUrls.ProjectNotifications("project-1")),
+            ("organization/organization-1/dashboard", appUrls.OrganizationDashboard("organization-1")),
+            ("signup?token=token-1", appUrls.Signup("token-1")),
+            ("organization/organization-1/upgrade", appUrls.OrganizationUpgrade("organization-1")),
+            ("organization/organization-1/frequent", appUrls.OrganizationFrequent("organization-1")),
+            ("organization/organization-1/manage", appUrls.OrganizationManage("organization-1")),
+            ("organization/organization-1/manage?tab=billing", appUrls.OrganizationBilling("organization-1")),
+            ("project/project-1/error/timeline", appUrls.ProjectTimeline("project-1")),
+            ("project/project-1/configure", appUrls.ProjectConfigure("project-1")),
+            ("project/project-1/error/frequent", appUrls.ProjectMostFrequent("project-1")),
+            ("project/project-1/error/new", appUrls.ProjectNewest("project-1")),
+            ("account/manage?tab=notifications", appUrls.AccountNotifications()),
+            ("account/verify?token=token-1", appUrls.VerifyEmail("token-1")),
+            ("reset-password/token-1", appUrls.PasswordReset("token-1")),
+            ("reset-password/token-1?cancel=true", appUrls.PasswordReset("token-1", cancel: true))
+        ];
+
+        // Assert
+        Assert.All(routes, route => Assert.Equal($"{baseUrl}/{route.Path}", route.Url));
     }
 
     [Fact]
@@ -97,6 +150,57 @@ public sealed class MailerTests : TestWithServices
         Assert.Contains("Second line", body, StringComparison.Ordinal);
         Assert.Contains("127.0.0.1", body, StringComparison.Ordinal);
         Assert.Contains("Test Browser", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SendContactRequestAsync_WithHtmlInput_EncodesBody()
+    {
+        // Arrange
+        const string name = "<script>alert('name')</script>";
+        const string message = "<img src=x onerror=alert(1)>";
+
+        // Act
+        bool queued = await _mailer.SendContactRequestAsync(
+            name,
+            "sender@example.com",
+            "Example & Sons",
+            "Need help",
+            message,
+            "127.0.0.1",
+            "Test Agent",
+            "https://example.com");
+        string body = await RunMailJobAsync(requireUrls: false);
+
+        // Assert
+        Assert.True(queued);
+        Assert.Contains("&lt;script&gt;", body, StringComparison.Ordinal);
+        Assert.Contains("&lt;img", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("<script>alert('name')</script>", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("<img src=x onerror=alert(1)>", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RenderAsync_WithConcurrentTemplates_RendersEachModel()
+    {
+        // Arrange
+        var renderer = GetService<IEmailTemplateRenderer>();
+
+        // Act
+        var renderTasks = Enumerable.Range(0, 16).Select(index => renderer.RenderAsync(
+            new UserEmailVerifyEmail(
+                $"Verify account {index}",
+                $"User {index}",
+                new EmailAction("Verify Address", $"https://example.com/verify/{index}"))));
+
+        string[] bodies = await Task.WhenAll(renderTasks);
+
+        // Assert
+        Assert.Equal(16, bodies.Length);
+        for (int index = 0; index < bodies.Length; index++)
+        {
+            Assert.Contains($"Hello User {index}", bodies[index], StringComparison.Ordinal);
+            Assert.Contains($"https://example.com/verify/{index}", bodies[index], StringComparison.Ordinal);
+        }
     }
 
     [Fact]
@@ -326,7 +430,8 @@ public sealed class MailerTests : TestWithServices
         string body = await SendEventNoticeAsync(ev);
 
         // Assert
-        Assert.Contains("Failure in the \"Acme\" worker", WebUtility.HtmlDecode(body), StringComparison.Ordinal);
+        JsonElement metadata = Assert.Single(GetStructuredData(body));
+        Assert.Contains("Failure in the \"Acme\" worker", metadata.GetProperty("description").GetString(), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -636,6 +741,8 @@ public sealed class MailerTests : TestWithServices
         Assert.NotEmpty(body);
         Assert.Contains("<!DOCTYPE html", body, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("{{", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("<!--Blazor:", body, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("=\"Model.", body, StringComparison.Ordinal);
         AssertValidUrls(body, requireUrls);
 
         return body;
@@ -723,20 +830,29 @@ public sealed class MailerTests : TestWithServices
 
     private static string[] GetStructuredDataUrls(string body, bool actionOnly = false)
     {
-        string decodedBody = WebUtility.HtmlDecode(body);
         var urls = new List<string>();
+        foreach (JsonElement element in GetStructuredData(body))
+            AddStructuredDataUrls(element, urls, actionOnly);
+
+        return urls.ToArray();
+    }
+
+    private static JsonElement[] GetStructuredData(string body)
+    {
+        string decodedBody = WebUtility.HtmlDecode(body);
         var scripts = Regex.Matches(
             decodedBody,
             "<script\\b(?=[^>]*\\btype\\s*=\\s*[\"']application/ld\\+json[\"'])[^>]*>(?<json>.*?)</script>",
             RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
+        var elements = new List<JsonElement>();
         foreach (Match script in scripts)
         {
             using JsonDocument document = JsonDocument.Parse(script.Groups["json"].Value);
-            AddStructuredDataUrls(document.RootElement, urls, actionOnly);
+            elements.Add(document.RootElement.Clone());
         }
 
-        return urls.ToArray();
+        return elements.ToArray();
     }
 
     private static void AddStructuredDataUrls(JsonElement element, ICollection<string> urls, bool actionOnly, bool isAction = false)
