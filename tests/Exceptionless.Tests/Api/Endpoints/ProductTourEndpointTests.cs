@@ -49,9 +49,15 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     public async Task UpdateCurrentUserProductTourAsync_OlderProgress_PreservesStoredValue()
     {
         var currentUser = await GetTestOrganizationUserAsync();
-        await UpdateProgressAsync("meet-exie", ProductTourStatus.Completed, 3);
+        currentUser.ProductTours[ProductTours.MeetExie] = new ProductTourProgress
+        {
+            Status = ProductTourStatus.Completed,
+            UpdatedUtc = TimeProvider.GetUtcNow().UtcDateTime,
+            Version = 3
+        };
+        await _userRepository.SaveAsync(currentUser, options => options.Cache().ImmediateConsistency());
 
-        var replacement = await UpdateProgressAsync("meet-exie", ProductTourStatus.Dismissed, 1);
+        var replacement = await UpdateProgressAsync(ProductTours.MeetExie, ProductTourStatus.Dismissed, 1);
 
         Assert.Equal(ProductTourStatus.Completed, replacement.Status);
         Assert.Equal(3, replacement.Version);
@@ -64,45 +70,32 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     public async Task UpdateCurrentUserProductTourAsync_CompletedProgress_ReplacesDismissedProgressForSameVersion()
     {
         var currentUser = await GetTestOrganizationUserAsync();
-        await UpdateProgressAsync("meet-exie", ProductTourStatus.Dismissed, 3);
+        await UpdateProgressAsync(ProductTours.MeetExie, ProductTourStatus.Dismissed, 1);
 
-        var replacement = await UpdateProgressAsync("meet-exie", ProductTourStatus.Completed, 3);
+        var replacement = await UpdateProgressAsync(ProductTours.MeetExie, ProductTourStatus.Completed, 1);
 
         Assert.Equal(ProductTourStatus.Completed, replacement.Status);
-        Assert.Equal(3, replacement.Version);
+        Assert.Equal(1, replacement.Version);
         var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, options => options.Cache(false));
         Assert.NotNull(persistedUser);
         Assert.Equal(replacement, persistedUser.ProductTours["meet-exie"]);
     }
 
     [Fact]
-    public async Task UpdateCurrentUserProductTourAsync_MoreThanThirtyTwoNames_ReturnsUnprocessableEntity()
+    public async Task UpdateCurrentUserProductTourAsync_UnknownTourName_ReturnsUnprocessableEntity()
     {
         var currentUser = await GetTestOrganizationUserAsync();
-        var user = await _userRepository.GetByIdAsync(currentUser.Id, options => options.Cache(false));
-        Assert.NotNull(user);
-        foreach (int index in Enumerable.Range(0, 32))
-        {
-            user.ProductTours[$"guide-{index}"] = new ProductTourProgress
-            {
-                Status = ProductTourStatus.Dismissed,
-                UpdatedUtc = TimeProvider.GetUtcNow().UtcDateTime,
-                Version = 1
-            };
-        }
-        await _userRepository.SaveAsync(user, options => options.Cache().ImmediateConsistency());
 
         await SendRequestAsync(request => request
             .Put()
             .AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", "guide-32")
+            .AppendPaths("users", "me", "product-tours", "unknown-tour")
             .Content(new UpdateProductTourProgress { Status = ProductTourStatus.Completed, Version = 1 })
             .StatusCodeShouldBeUnprocessableEntity());
 
         var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, options => options.Cache(false));
         Assert.NotNull(persistedUser);
-        Assert.Equal(32, persistedUser.ProductTours.Count);
-        Assert.DoesNotContain("guide-32", persistedUser.ProductTours);
+        Assert.DoesNotContain("unknown-tour", persistedUser.ProductTours);
     }
 
     [Fact]
@@ -139,12 +132,13 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
-    public Task UpdateCurrentUserProductTourAsync_NonPositiveVersion_ReturnsUnprocessableEntity(int version)
+    [InlineData(2)]
+    public Task UpdateCurrentUserProductTourAsync_UnsupportedVersion_ReturnsUnprocessableEntity(int version)
     {
         return SendRequestAsync(request => request
             .Put()
             .AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", "invalid-version")
+            .AppendPaths("users", "me", "product-tours", "ui-overview")
             .Content(new UpdateProductTourProgress { Status = ProductTourStatus.Completed, Version = version })
             .StatusCodeShouldBeUnprocessableEntity());
     }
@@ -155,7 +149,7 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
         return SendRequestAsync(request => request
             .Put()
             .AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", "invalid-status")
+            .AppendPaths("users", "me", "product-tours", "ui-overview")
             .Content(new { Status = 999, Version = 1 })
             .StatusCodeShouldBeUnprocessableEntity());
     }

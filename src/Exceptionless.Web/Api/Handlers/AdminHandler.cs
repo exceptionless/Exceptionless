@@ -1,4 +1,3 @@
-using Elastic.Clients.Elasticsearch.QueryDsl;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -45,7 +44,6 @@ public class AdminHandler(
     TimeProvider timeProvider,
     ILoggerFactory loggerFactory)
 {
-    private const string ProductTourSourceField = EventIndex.Alias.Source + ".keyword";
     private readonly ILogger _logger = loggerFactory.CreateLogger<AdminHandler>();
 
     [HandlerEndpoint(HandlerMethod.Get, "settings", Group = "Admin")]
@@ -83,7 +81,7 @@ public class AdminHandler(
     public async Task<Result<object>> Handle(GetAdminAssistantUsage message)
     {
         var requestedMonth = message.Month ?? timeProvider.GetUtcNow().UtcDateTime;
-        var month = new DateTime(requestedMonth.Year, requestedMonth.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var month = requestedMonth.ToUniversalTime().StartOfMonth();
         var results = await organizationRepository.FindAsync(
             query => query.FieldEquals(organization => organization.AssistantUsage.First().Date, month),
             options => options.SearchAfterPaging().PageLimit(500));
@@ -142,62 +140,28 @@ public class AdminHandler(
     public async Task<Result<object>> Handle(GetAdminProductTourUsage message)
     {
         var requestedMonth = message.Month ?? timeProvider.GetUtcNow().UtcDateTime;
-        var month = new DateTime(requestedMonth.Year, requestedMonth.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var month = requestedMonth.ToUniversalTime().StartOfMonth();
         var nextMonth = month.AddMonths(1);
         int limit = Math.Clamp(message.Limit, 1, 500);
 
-        var countTask = eventRepository.CountAsync((IRepositoryQuery<PersistentEvent> query) => ApplyProductTourUsageFilter(query, month, nextMonth)
-            .AggregationsExpression("terms:(source~500 sum:count~1 max:date)"));
-        var recentTask = eventRepository.FindAsync(query => ApplyProductTourUsageFilter(query, month, nextMonth)
-            .SortDescending(ev => ev.Date), options => options.PageLimit(500));
-
-        await Task.WhenAll(countTask, recentTask);
-
-        var sourceBuckets = (await countTask).Aggregations.Terms<string>("terms_source")?.Buckets ?? [];
-        var parsedBuckets = sourceBuckets
-            .Select(bucket => ProductTourUsageSource.TryParse(bucket.Key, out var source)
-                ? new ProductTourUsageBucket(source, Convert.ToInt64(bucket.Aggregations.Sum("sum_count")?.Value ?? bucket.Total ?? 0), bucket.Aggregations.Max<DateTime>("max_date")?.Value)
-                : null)
-            .OfType<ProductTourUsageBucket>()
-            .ToArray();
-
-        var groupedBuckets = parsedBuckets.GroupBy(bucket => bucket.Source.TourName, StringComparer.Ordinal).ToArray();
-        string[] tourNames = groupedBuckets.Select(group => group.Key).ToArray();
-        Task<CountResult>[] uniqueUserTasks = groupedBuckets
-            .Select(group => eventRepository.CountAsync((IRepositoryQuery<PersistentEvent> query) => ApplyProductTourUsageFilter(
-                    query,
-                    month,
-                    nextMonth,
-                    group.Select(bucket => bucket.Source.Raw).ToArray())
-                .AggregationsExpression("cardinality:user")))
-            .ToArray();
-        CountResult[] uniqueUserResults = await Task.WhenAll(uniqueUserTasks);
-        var uniqueUsersByTour = tourNames
-            .Zip(uniqueUserResults, (tourName, result) => new
+        var usage = await eventRepository.GetProductTourUsageAsync(appOptions.InternalProjectId, month, nextMonth);
+        var tours = usage.Tours
+            .Select(tour =>
             {
-                TourName = tourName,
-                UniqueUsers = Convert.ToInt64(result.Aggregations.Cardinality("cardinality_user")?.Value ?? 0)
-            })
-            .ToDictionary(item => item.TourName, item => item.UniqueUsers, StringComparer.Ordinal);
-
-        var tours = groupedBuckets
-            .Select(group =>
-            {
-                long shown = SumEvent(group, ProductTourUsageSource.ShownEvent);
-                long started = SumEvent(group, ProductTourUsageSource.StartedEvent);
-                long completed = SumEvent(group, ProductTourUsageSource.CompletedEvent);
-                long dismissed = SumEvent(group, ProductTourUsageSource.DismissedEvent);
+                long shown = SumEvent(tour.Buckets, "shown");
+                long started = SumEvent(tour.Buckets, "started");
+                long completed = SumEvent(tour.Buckets, "completed");
+                long dismissed = SumEvent(tour.Buckets, "dismissed");
                 long decisionDenominator = started > 0 ? started : shown;
-                long uniqueUsers = uniqueUsersByTour[group.Key];
-                DateTime? lastRunUtc = group.Select(bucket => bucket.LastUtc).Max();
+                DateTime? lastRunUtc = tour.Buckets.Select(bucket => bucket.LastUtc).Max();
 
                 return new AdminProductTourSummary(
-                    group.Key,
+                    tour.Name,
                     shown,
                     started,
                     completed,
                     dismissed,
-                    uniqueUsers,
+                    tour.UniqueUsers,
                     lastRunUtc,
                     CalculateRate(completed, decisionDenominator),
                     CalculateRate(dismissed, decisionDenominator));
@@ -206,15 +170,13 @@ public class AdminHandler(
             .ThenBy(tour => tour.Name, StringComparer.Ordinal)
             .ToArray();
 
-        var recentActivity = (await recentTask).Documents
-            .Select(ev => ProductTourUsageSource.TryParse(ev.Source, out var source) ? CreateActivity(ev, source) : null)
-            .OfType<AdminProductTourActivity>()
+        var recentActivity = usage.RecentEvents
+            .Select(item => CreateActivity(item.Event, item.Source))
             .Take(limit)
             .ToArray();
 
         return new AdminProductTourUsageResponse(
             month,
-            !String.IsNullOrWhiteSpace(appOptions.ExceptionlessApiKey),
             tours,
             recentActivity);
     }
@@ -280,36 +242,6 @@ public class AdminHandler(
     {
         return buckets.Where(bucket => String.Equals(bucket.Source.Event, eventName, StringComparison.Ordinal)).Sum(bucket => bucket.Count);
     }
-
-    private IRepositoryQuery<PersistentEvent> ApplyProductTourUsageFilter(
-        IRepositoryQuery<PersistentEvent> query,
-        DateTime utcStart,
-        DateTime utcEnd,
-        IReadOnlyCollection<string>? sources = null)
-    {
-        query
-            .Project(appOptions.InternalProjectId)
-            .FieldEquals(ev => ev.Type, Event.KnownTypes.FeatureUsage)
-            .DateRange(utcStart, utcEnd, (PersistentEvent ev) => ev.Date)
-            .Index(utcStart, utcEnd);
-
-        if (sources is null)
-        {
-            return query.ElasticFilter(new PrefixQuery
-            {
-                Field = ProductTourSourceField,
-                Value = ProductTourUsageSource.Prefix
-            });
-        }
-
-        return query.ElasticFilter(new TermsQuery
-        {
-            Field = ProductTourSourceField,
-            Terms = new TermsQueryField(sources.Select(source => (Elastic.Clients.Elasticsearch.FieldValue)source).ToArray())
-        });
-    }
-
-    private sealed record ProductTourUsageBucket(ProductTourUsageSource Source, long Count, DateTime? LastUtc);
 
     [HandlerEndpoint(HandlerMethod.Get, "assemblies", Group = "Admin")]
     public Task<Result<object>> Handle(GetAdminAssemblies message)

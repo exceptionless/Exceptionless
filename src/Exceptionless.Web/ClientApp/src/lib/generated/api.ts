@@ -115,7 +115,6 @@ export interface AdminProductTourSummary {
 export interface AdminProductTourUsageResponse {
   /** @format date-time */
   month: string;
-  telemetry_configured: boolean;
   tours: AdminProductTourSummary[];
   recent_activity: AdminProductTourActivity[];
 }

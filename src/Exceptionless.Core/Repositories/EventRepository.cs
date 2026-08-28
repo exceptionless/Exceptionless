@@ -1,16 +1,22 @@
-﻿using Elastic.Clients.Elasticsearch.QueryDsl;
+﻿using Elastic.Clients.Elasticsearch.Aggregations;
+using Elastic.Clients.Elasticsearch.QueryDsl;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Validation;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch.Extensions;
+using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Repositories;
 
 public class EventRepository : RepositoryOwnedByOrganizationAndProject<PersistentEvent>, IEventRepository
 {
+    private static readonly string[] _productTourEvents = ["completed", "dismissed", "shown", "started"];
+    private static readonly string[] _productTourLaunchSources = ["automatic", "catalog", "command-palette", "feature-announcement", "help-menu"];
     private readonly TimeProvider _timeProvider;
 
     public EventRepository(ExceptionlessElasticConfiguration configuration, AppOptions options, MiniValidationValidator validator)
@@ -80,6 +86,163 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
     public Task<FindResults<PersistentEvent>> GetByReferenceIdAsync(string projectId, string referenceId)
     {
         return FindAsync(q => q.Project(projectId).FieldEquals(e => e.ReferenceId, referenceId).SortDescending(e => e.Date), o => o.PageLimit(10));
+    }
+
+    public async Task<ProductTourUsageResult> GetProductTourUsageAsync(string projectId, DateTime utcStart, DateTime utcEnd, int recentLimit = 500)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(projectId);
+        ArgumentOutOfRangeException.ThrowIfLessThan(recentLimit, 1);
+        if (utcEnd <= utcStart)
+            throw new ArgumentOutOfRangeException(nameof(utcEnd), "The end date must be later than the start date.");
+
+        var sourcesByTour = ProductTours.Versions.ToDictionary(
+            pair => pair.Key,
+            pair => CreateProductTourSources(pair.Key, pair.Value),
+            StringComparer.Ordinal);
+        var sourcesByName = sourcesByTour.Values
+            .SelectMany(sources => sources)
+            .ToDictionary(source => source.Raw, StringComparer.Ordinal);
+        string[] allSources = sourcesByName.Keys.ToArray();
+
+        var aggregationTask = GetProductTourUsageToursAsync(projectId, utcStart, utcEnd, sourcesByTour, allSources);
+        var recentTask = FindAsync(query => ApplyProductTourUsageFilter(query, projectId, utcStart, utcEnd, allSources)
+            .SortDescending(ev => ev.Date), options => options.PageLimit(recentLimit));
+
+        await Task.WhenAll(aggregationTask, recentTask);
+        var recentEvents = (await recentTask).Documents
+            .Select(ev => ev.Source is not null && sourcesByName.TryGetValue(ev.Source, out var source) ? new ProductTourUsageEvent(ev, source) : null)
+            .OfType<ProductTourUsageEvent>()
+            .ToArray();
+        return new ProductTourUsageResult(await aggregationTask, recentEvents);
+    }
+
+    private async Task<IReadOnlyCollection<ProductTourUsageTour>> GetProductTourUsageToursAsync(
+        string projectId,
+        DateTime utcStart,
+        DateTime utcEnd,
+        IReadOnlyDictionary<string, ProductTourUsageSource[]> sourcesByTour,
+        string[] allSources)
+    {
+        var query = ApplyProductTourUsageFilter(NewQuery(), projectId, utcStart, utcEnd, allSources);
+        var options = ConfigureOptions(null);
+        await OnBeforeQueryAsync(query, options, typeof(PersistentEvent));
+        await RefreshForConsistency(query, options);
+
+        var search = (await CreateSearchDescriptorAsync(query, options))
+            .Size(0)
+            .Aggregations(CreateProductTourAggregations(sourcesByTour));
+        var response = await _client.SearchAsync<PersistentEvent>(search);
+        _logger.LogRequest(response);
+
+        if (!response.IsValidResponse)
+            throw new DocumentException($"Error getting product tour usage: {response.ElasticsearchServerError?.Error?.Reason}", response.ApiCallDetails.OriginalException);
+
+        var tours = new List<ProductTourUsageTour>();
+        foreach ((string tourName, ProductTourUsageSource[] sources) in sourcesByTour)
+        {
+            if (response.Aggregations is null
+                || !response.Aggregations.TryGetValue(tourName, out var aggregate)
+                || aggregate is not FilterAggregate filterAggregate
+                || filterAggregate.Aggregations is null)
+                continue;
+
+            if (!filterAggregate.Aggregations.TryGetValue("sources", out var sourceAggregate) || sourceAggregate is not StringTermsAggregate sourceTerms)
+                continue;
+
+            var buckets = new List<ProductTourUsageBucket>();
+            foreach (var bucket in sourceTerms.Buckets)
+            {
+                if (!bucket.Key.TryGetString(out string? sourceValue))
+                    continue;
+
+                var source = sources.FirstOrDefault(source => String.Equals(source.Raw, sourceValue, StringComparison.Ordinal));
+                if (source is null)
+                    continue;
+
+                long count = bucket.Aggregations is { } bucketAggregations
+                    && bucketAggregations.TryGetValue("count", out var countAggregate)
+                    && countAggregate is SumAggregate sum
+                    ? Convert.ToInt64(sum.Value)
+                    : bucket.DocCount;
+                DateTime? lastUtc = bucket.Aggregations is { } lastAggregations
+                    && lastAggregations.TryGetValue("last", out var lastAggregate)
+                    && lastAggregate is MaxAggregate max
+                    ? max.ValueAsString is null ? null : DateTime.Parse(max.ValueAsString, null, System.Globalization.DateTimeStyles.RoundtripKind)
+                    : null;
+                buckets.Add(new ProductTourUsageBucket(source, count, lastUtc));
+            }
+
+            long uniqueUsers = filterAggregate.Aggregations.TryGetValue("users", out var usersAggregate) && usersAggregate is CardinalityAggregate cardinality
+                ? Convert.ToInt64(cardinality.Value)
+                : 0;
+            if (buckets.Count > 0)
+                tours.Add(new ProductTourUsageTour(tourName, uniqueUsers, buckets));
+        }
+
+        return tours;
+    }
+
+    private IDictionary<string, Aggregation> CreateProductTourAggregations(IReadOnlyDictionary<string, ProductTourUsageSource[]> sourcesByTour)
+    {
+        string sourceField = ElasticIndex.MappingResolver.GetNonAnalyzedFieldName(InferField(ev => ev.Source))!;
+        string userPath = EventIndexExtensions.DataPath<UserInfo>(Event.KnownDataKeys.UserInfo, user => user.Identity);
+        string userField = ElasticIndex.MappingResolver.GetNonAnalyzedFieldName(userPath) ?? userPath;
+        var aggregations = new Dictionary<string, Aggregation>(StringComparer.Ordinal);
+
+        foreach ((string tourName, ProductTourUsageSource[] sources) in sourcesByTour)
+        {
+            aggregations[tourName] = new Aggregation
+            {
+                Filter = new TermsQuery
+                {
+                    Field = sourceField,
+                    Terms = new TermsQueryField(sources.Select(source => (Elastic.Clients.Elasticsearch.FieldValue)source.Raw).ToArray())
+                },
+                Aggregations = new Dictionary<string, Aggregation>
+                {
+                    ["sources"] = new Aggregation
+                    {
+                        Terms = new TermsAggregation { Field = sourceField, Size = sources.Length },
+                        Aggregations = new Dictionary<string, Aggregation>
+                        {
+                            ["count"] = new SumAggregation { Field = InferField(ev => ev.Count), Missing = 1 },
+                            ["last"] = new MaxAggregation { Field = InferField(ev => ev.Date) }
+                        }
+                    },
+                    ["users"] = new CardinalityAggregation { Field = userField }
+                }
+            };
+        }
+
+        return aggregations;
+    }
+
+    private static IRepositoryQuery<PersistentEvent> ApplyProductTourUsageFilter(
+        IRepositoryQuery<PersistentEvent> query,
+        string projectId,
+        DateTime utcStart,
+        DateTime utcEnd,
+        string[] sources)
+    {
+        return query
+            .Project(projectId)
+            .FieldEquals(ev => ev.Type, Event.KnownTypes.FeatureUsage)
+            .FieldEquals(ev => ev.Source, sources)
+            .DateRange(utcStart, utcEnd, (PersistentEvent ev) => ev.Date)
+            .Index(utcStart, utcEnd);
+    }
+
+    private static ProductTourUsageSource[] CreateProductTourSources(string tourName, int currentVersion)
+    {
+        return Enumerable.Range(1, currentVersion)
+            .SelectMany(version => _productTourEvents.SelectMany(eventName => _productTourLaunchSources.Select(launchSource =>
+                new ProductTourUsageSource(
+                    $"product-tour.{eventName}.{tourName}.v{version}.{launchSource}",
+                    eventName,
+                    tourName,
+                    version,
+                    launchSource))))
+            .ToArray();
     }
 
     public async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, AppFilter? systemFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null)

@@ -11941,7 +11941,6 @@
       "AdminProductTourUsageResponse": {
         "required": [
           "month",
-          "telemetry_configured",
           "tours",
           "recent_activity"
         ],
@@ -11950,9 +11949,6 @@
           "month": {
             "type": "string",
             "format": "date-time"
-          },
-          "telemetry_configured": {
-            "type": "boolean"
           },
           "tours": {
             "type": "array",

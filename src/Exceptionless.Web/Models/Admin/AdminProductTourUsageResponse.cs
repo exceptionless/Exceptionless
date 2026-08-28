@@ -2,7 +2,6 @@ namespace Exceptionless.Web.Models.Admin;
 
 public sealed record AdminProductTourUsageResponse(
     DateTime Month,
-    bool TelemetryConfigured,
     IReadOnlyCollection<AdminProductTourSummary> Tours,
     IReadOnlyCollection<AdminProductTourActivity> RecentActivity);
 
