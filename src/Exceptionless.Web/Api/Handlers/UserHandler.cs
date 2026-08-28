@@ -35,7 +35,6 @@ public class UserHandler(
     IHttpContextAccessor httpContextAccessor,
     ILoggerFactory loggerFactory)
 {
-    private const int MaximumProductTours = 32;
     private readonly ICacheClient _cache = new ScopedCacheClient(cacheClient, "User");
     private readonly ILogger _logger = loggerFactory.CreateLogger<UserHandler>();
     private HttpContext HttpContext => httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is unavailable.");
@@ -54,19 +53,18 @@ public class UserHandler(
 
     public async Task<Result<ProductTourProgress>> Handle(UpdateCurrentUserProductTour message)
     {
-        bool maximumExceeded = false;
+        if (!ProductTours.IsKnown(message.TourName))
+            return Result.Invalid(ValidationError.Create("tour_name", "Unknown product tour."));
+
+        if (!ProductTours.IsValid(message.TourName, message.Progress.Version))
+            return Result.Invalid(ValidationError.Create("version", "The product tour version is not supported."));
+
         ProductTourProgress? progress = null;
         await repository.PatchAsync(
             GetCurrentUserId(),
             new ActionPatch<User>(user =>
             {
                 user.ProductTours.TryGetValue(message.TourName, out var currentProgress);
-                if (currentProgress is null && user.ProductTours.Count >= MaximumProductTours)
-                {
-                    maximumExceeded = true;
-                    return false;
-                }
-
                 if (!ShouldUpdateProductTourProgress(currentProgress, message.Progress))
                 {
                     progress = currentProgress;
@@ -83,9 +81,6 @@ public class UserHandler(
                 return true;
             }),
             options => options.Cache());
-
-        if (maximumExceeded)
-            return Result.Invalid(ValidationError.Create("tour_name", $"A user cannot track more than {MaximumProductTours} product tours."));
 
         return progress is null ? Result.NotFound("User not found.") : progress;
     }

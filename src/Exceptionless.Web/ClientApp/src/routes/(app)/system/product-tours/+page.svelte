@@ -39,13 +39,6 @@
                 <p class="text-destructive text-sm">Failed to load guided-tour usage. Please try again.</p>
             </Card.Content>
         </Card.Root>
-    {:else if usage && !usage.telemetry_configured}
-        <Card.Root>
-            <Card.Header>
-                <Card.Title>Feature Usage telemetry is not configured</Card.Title>
-                <Card.Description>Configure the internal project before using this report. No tour activity is being recorded.</Card.Description>
-            </Card.Header>
-        </Card.Root>
     {:else}
         <Card.Root>
             <Card.Header>

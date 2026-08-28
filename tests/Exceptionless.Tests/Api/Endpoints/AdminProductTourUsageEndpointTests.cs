@@ -37,7 +37,7 @@ public sealed class AdminProductTourUsageEndpointTests : IntegrationTestsBase
             AddUsage(builder, "product-tour.started.ui-overview.v1.catalog", month.AddDays(4), "user-2");
             AddUsage(builder, "product-tour.completed.ui-overview.v1.catalog", month.AddDays(5), "user-1");
             AddUsage(builder, "product-tour.dismissed.ui-overview.v1.catalog", month.AddDays(6), "user-2");
-            AddUsage(builder, "product-tour.started.meet-exie.v2.command-palette", month.AddDays(7), "user-3");
+            AddUsage(builder, "product-tour.started.meet-exie.v1.command-palette", month.AddDays(7), "user-3");
             AddUsage(builder, "product-tour.shown.welcome.v1.automatic", month.AddDays(1), "user-1", 2);
             AddUsage(builder, "product-tour.dismissed.welcome.v1.automatic", month.AddDays(2), "user-1");
             AddUsage(builder, "product-tour.started.unknown.v1.unknown-source", month.AddDays(8), "user-4");
@@ -60,7 +60,6 @@ public sealed class AdminProductTourUsageEndpointTests : IntegrationTestsBase
 
         Assert.NotNull(response);
         Assert.Equal(month, response.Month);
-        Assert.Equal(!String.IsNullOrWhiteSpace(_appOptions.ExceptionlessApiKey), response.TelemetryConfigured);
         Assert.Equal(3, response.Tours.Count);
 
         var overview = Assert.Single(response.Tours, tour => String.Equals(tour.Name, "ui-overview", StringComparison.Ordinal));

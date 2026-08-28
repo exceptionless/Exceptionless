@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Exceptionless.Core;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories;
@@ -16,6 +17,7 @@ namespace Exceptionless.Tests.Repositories;
 public sealed class EventRepositoryTests : IntegrationTestsBase
 {
     private readonly List<Tuple<string, DateTime>> _ids = new();
+    private readonly AppOptions _appOptions;
     private readonly Exceptionless.Helpers.RandomEventGenerator _randomEventGenerator;
     private readonly EventData _eventData;
     private readonly IEventRepository _repository;
@@ -25,12 +27,59 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
 
     public EventRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
+        _appOptions = GetService<AppOptions>();
         _randomEventGenerator = GetService<Exceptionless.Helpers.RandomEventGenerator>();
         _eventData = GetService<EventData>();
         _repository = GetService<IEventRepository>();
         _stackData = GetService<StackData>();
         _stackRepository = GetService<IStackRepository>();
         _serializer = GetService<ITextSerializer>();
+    }
+
+    [Fact]
+    public async Task GetProductTourUsageAsync_KnownSources_ReturnsPerTourAggregations()
+    {
+        var month = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc);
+        await CreateDataAsync(builder =>
+        {
+            AddProductTourUsage(builder, "product-tour.started.ui-overview.v1.catalog", month.AddDays(1), "user-1", 2);
+            AddProductTourUsage(builder, "product-tour.started.ui-overview.v1.help-menu", month.AddDays(2), "user-1");
+            AddProductTourUsage(builder, "product-tour.completed.ui-overview.v1.catalog", month.AddDays(3), "user-2");
+            AddProductTourUsage(builder, "product-tour.shown.welcome.v1.automatic", month.AddDays(4), "user-3");
+            AddProductTourUsage(builder, "product-tour.started.ui-overview.v2.catalog", month.AddDays(5), "user-4");
+            AddProductTourUsage(builder, "product-tour.started.unknown-tour.v1.catalog", month.AddDays(6), "user-5");
+            AddProductTourUsage(builder, "product-tour.started.ui-overview.v1.catalog", month.AddMonths(-1), "user-6");
+            builder.Event()
+                .Organization(TestConstants.OrganizationId)
+                .Project(_appOptions.InternalProjectId)
+                .Type(Event.KnownTypes.FeatureUsage)
+                .Source("product-tour.started.ui-overview.v1.catalog")
+                .Date(month.AddDays(8))
+                .UserIdentity("user-8");
+            builder.Event()
+                .TestProject()
+                .Type(Event.KnownTypes.FeatureUsage)
+                .Source("product-tour.started.ui-overview.v1.catalog")
+                .Date(month.AddDays(7))
+                .UserIdentity("user-7");
+        });
+
+        var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, month, month.AddMonths(1));
+
+        Assert.Equal(5, result.RecentEvents.Count);
+        Assert.Equal(2, result.Tours.Count);
+        var overview = Assert.Single(result.Tours, tour => String.Equals(tour.Name, ProductTours.UiOverview, StringComparison.Ordinal));
+        Assert.Equal(3, overview.UniqueUsers);
+        Assert.Equal(4, overview.Buckets.Where(bucket => String.Equals(bucket.Source.Event, "started", StringComparison.Ordinal)).Sum(bucket => bucket.Count));
+        Assert.Equal(1, overview.Buckets.Where(bucket => String.Equals(bucket.Source.Event, "completed", StringComparison.Ordinal)).Sum(bucket => bucket.Count));
+        Assert.Equal(month.AddDays(8), overview.Buckets.Max(bucket => bucket.LastUtc));
+
+        var welcome = Assert.Single(result.Tours, tour => String.Equals(tour.Name, ProductTours.Welcome, StringComparison.Ordinal));
+        Assert.Equal(1, welcome.UniqueUsers);
+        Assert.Equal(1, Assert.Single(welcome.Buckets).Count);
+
+        Assert.Equal(month.AddDays(8), result.RecentEvents.First().Event.Date);
+        Assert.All(result.RecentEvents, item => Assert.True(ProductTours.IsValid(item.Source.TourName, item.Source.Version)));
     }
 
     [Fact]
@@ -243,6 +292,18 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
 
         events = (await _repository.GetByProjectIdAsync(TestConstants.ProjectId, o => o.PageLimit(NUMBER_OF_EVENTS_TO_CREATE))).Documents.ToList();
         Assert.Empty(events);
+    }
+
+    private void AddProductTourUsage(DataBuilder builder, string source, DateTime dateUtc, string userIdentity, int count = 1)
+    {
+        builder.Event()
+            .Organization(TestConstants.OrganizationId)
+            .Project(_appOptions.InternalProjectId)
+            .Type(Event.KnownTypes.FeatureUsage)
+            .Source(source)
+            .Date(dateUtc)
+            .UserIdentity(userIdentity)
+            .Mutate(ev => ev.Count = count);
     }
 
     private async Task CreateDataAsync()

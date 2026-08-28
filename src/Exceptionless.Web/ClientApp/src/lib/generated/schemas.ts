@@ -107,7 +107,6 @@ export type AdminProductTourSummaryFormData = Infer<
 
 export const AdminProductTourUsageResponseSchema = object({
   month: iso.datetime(),
-  telemetry_configured: boolean(),
   tours: array(lazy(() => AdminProductTourSummarySchema)),
   recent_activity: array(lazy(() => AdminProductTourActivitySchema)),
 });
