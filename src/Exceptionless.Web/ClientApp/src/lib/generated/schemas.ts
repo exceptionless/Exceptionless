@@ -27,7 +27,20 @@ export const StackStatusSchema = zodEnum([
   "ignored",
   "discarded",
 ]);
+export const ProductTourTelemetryEventSchema = zodEnum([
+  "completed",
+  "dismissed",
+  "shown",
+  "started",
+]);
 export const ProductTourStatusSchema = zodEnum(["completed", "dismissed"]);
+export const ProductTourLaunchSourceSchema = zodEnum([
+  "automatic",
+  "catalog",
+  "command-palette",
+  "feature-announcement",
+  "help-menu",
+]);
 export const BillingStatusSchema = union([
   literal(0),
   literal(1),
@@ -78,8 +91,8 @@ export type AdminAssistantUsageResponseFormData = Infer<
 
 export const AdminProductTourActivitySchema = object({
   date_utc: iso.datetime(),
-  event: string().min(1, "Event is required"),
-  launch_source: string().min(1, "Launch source is required"),
+  event: ProductTourTelemetryEventSchema,
+  launch_source: ProductTourLaunchSourceSchema,
   tour_name: string().min(1, "Tour name is required"),
   user_identity: string().min(1, "User identity is required").nullable(),
   user_name: string().min(1, "User name is required").nullable(),
@@ -985,6 +998,7 @@ export const ViewCurrentUserSchema = object({
     string(),
     lazy(() => ProductTourProgressSchema),
   ),
+  product_tour_versions: record(string(), number()).optional(),
   id: string()
     .length(24, "Id must be exactly 24 characters")
     .regex(/^[a-fA-F0-9]{24}$/, "Id has invalid format"),

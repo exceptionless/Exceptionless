@@ -15,8 +15,6 @@ namespace Exceptionless.Core.Repositories;
 
 public class EventRepository : RepositoryOwnedByOrganizationAndProject<PersistentEvent>, IEventRepository
 {
-    private static readonly string[] _productTourEvents = ["completed", "dismissed", "shown", "started"];
-    private static readonly string[] _productTourLaunchSources = ["automatic", "catalog", "command-palette", "feature-announcement", "help-menu"];
     private readonly TimeProvider _timeProvider;
 
     public EventRepository(ExceptionlessElasticConfiguration configuration, AppOptions options, MiniValidationValidator validator)
@@ -235,10 +233,10 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
     private static ProductTourUsageSource[] CreateProductTourSources(string tourName, int currentVersion)
     {
         return Enumerable.Range(1, currentVersion)
-            .SelectMany(version => _productTourEvents.SelectMany(eventName => _productTourLaunchSources.Select(launchSource =>
+            .SelectMany(version => ProductTours.TelemetryEvents.SelectMany(telemetryEvent => ProductTours.LaunchSources.Select(launchSource =>
                 new ProductTourUsageSource(
-                    $"product-tour.{eventName}.{tourName}.v{version}.{launchSource}",
-                    eventName,
+                    ProductTours.CreateTelemetrySource(telemetryEvent, tourName, version, launchSource),
+                    telemetryEvent,
                     tourName,
                     version,
                     launchSource))))

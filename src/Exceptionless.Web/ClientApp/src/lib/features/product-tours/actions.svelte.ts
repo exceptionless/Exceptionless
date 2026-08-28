@@ -5,7 +5,6 @@ import { toast } from 'svelte-sonner';
 
 import type { ProductTourCheckpoint, ProductTourKey, ProductTourLaunchSource } from './types';
 
-import { getProductTour } from './catalog';
 import { productTourCheckpoint } from './state.svelte';
 import { buildProductTourTelemetryEvent, type ProductTourTelemetryEvent } from './telemetry';
 
@@ -21,12 +20,11 @@ export function createProductTourActions() {
     }
 
     async function finish(checkpoint: ProductTourCheckpoint, status: ProductTourStatus): Promise<boolean> {
-        const definition = getProductTour(checkpoint.tourName);
         try {
             await progressMutation.mutateAsync({
                 progress: {
                     status,
-                    version: definition.version
+                    version: checkpoint.version
                 },
                 tourName: checkpoint.tourName
             });
@@ -38,7 +36,7 @@ export function createProductTourActions() {
         if (!productTourCheckpoint.clear(checkpoint)) {
             return false;
         }
-        await track(status === ProductTourStatus.Completed ? 'completed' : 'dismissed', checkpoint.tourName, definition.version, checkpoint.source);
+        await track(status === ProductTourStatus.Completed ? 'completed' : 'dismissed', checkpoint.tourName, checkpoint.version, checkpoint.source);
         return true;
     }
 

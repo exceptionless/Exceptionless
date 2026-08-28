@@ -7,9 +7,24 @@ export enum StackStatus {
   Discarded = "discarded",
 }
 
+export enum ProductTourTelemetryEvent {
+  Completed = "completed",
+  Dismissed = "dismissed",
+  Shown = "shown",
+  Started = "started",
+}
+
 export enum ProductTourStatus {
   Completed = "completed",
   Dismissed = "dismissed",
+}
+
+export enum ProductTourLaunchSource {
+  Automatic = "automatic",
+  Catalog = "catalog",
+  CommandPalette = "command-palette",
+  FeatureAnnouncement = "feature-announcement",
+  HelpMenu = "help-menu",
 }
 
 export enum BillingStatus {
@@ -81,8 +96,8 @@ export interface AdminAssistantUsageResponse {
 export interface AdminProductTourActivity {
   /** @format date-time */
   date_utc: string;
-  event: string;
-  launch_source: string;
+  event: ProductTourTelemetryEvent;
+  launch_source: ProductTourLaunchSource;
   tour_name: string;
   user_identity?: null | string;
   user_name?: null | string;
@@ -850,6 +865,7 @@ export interface ViewCurrentUser {
   organization_preferences: UserOrganizationPreference[];
   saved_view_orders: UserSavedViewOrderPreference[];
   product_tours: Record<string, ProductTourProgress>;
+  product_tour_versions: Record<string, number>;
   /** @pattern ^[a-fA-F0-9]{24}$ */
   id: string;
   organization_ids: string[];

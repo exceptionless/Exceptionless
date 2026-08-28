@@ -1,3 +1,5 @@
+using Exceptionless.Core.Models.Data;
+
 namespace Exceptionless.Web.Models.Admin;
 
 public sealed record AdminProductTourUsageResponse(
@@ -18,8 +20,8 @@ public sealed record AdminProductTourSummary(
 
 public sealed record AdminProductTourActivity(
     DateTime DateUtc,
-    string Event,
-    string LaunchSource,
+    ProductTourTelemetryEvent Event,
+    ProductTourLaunchSource LaunchSource,
     string TourName,
     string? UserIdentity,
     string? UserName,

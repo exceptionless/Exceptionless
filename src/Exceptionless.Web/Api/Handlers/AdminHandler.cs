@@ -3,6 +3,7 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
@@ -144,14 +145,14 @@ public class AdminHandler(
         var nextMonth = month.AddMonths(1);
         int limit = Math.Clamp(message.Limit, 1, 500);
 
-        var usage = await eventRepository.GetProductTourUsageAsync(appOptions.InternalProjectId, month, nextMonth);
+        var usage = await eventRepository.GetProductTourUsageAsync(appOptions.InternalProjectId, month, nextMonth, limit);
         var tours = usage.Tours
             .Select(tour =>
             {
-                long shown = SumEvent(tour.Buckets, "shown");
-                long started = SumEvent(tour.Buckets, "started");
-                long completed = SumEvent(tour.Buckets, "completed");
-                long dismissed = SumEvent(tour.Buckets, "dismissed");
+                long shown = SumEvent(tour.Buckets, ProductTourTelemetryEvent.Shown);
+                long started = SumEvent(tour.Buckets, ProductTourTelemetryEvent.Started);
+                long completed = SumEvent(tour.Buckets, ProductTourTelemetryEvent.Completed);
+                long dismissed = SumEvent(tour.Buckets, ProductTourTelemetryEvent.Dismissed);
                 long decisionDenominator = started > 0 ? started : shown;
                 DateTime? lastRunUtc = tour.Buckets.Select(bucket => bucket.LastUtc).Max();
 
@@ -238,9 +239,9 @@ public class AdminHandler(
         return denominator > 0 ? Decimal.Round(value / (decimal)denominator, 4) : null;
     }
 
-    private static long SumEvent(IEnumerable<ProductTourUsageBucket> buckets, string eventName)
+    private static long SumEvent(IEnumerable<ProductTourUsageBucket> buckets, ProductTourTelemetryEvent telemetryEvent)
     {
-        return buckets.Where(bucket => String.Equals(bucket.Source.Event, eventName, StringComparison.Ordinal)).Sum(bucket => bucket.Count);
+        return buckets.Where(bucket => bucket.Source.Event == telemetryEvent).Sum(bucket => bucket.Count);
     }
 
     [HandlerEndpoint(HandlerMethod.Get, "assemblies", Group = "Admin")]

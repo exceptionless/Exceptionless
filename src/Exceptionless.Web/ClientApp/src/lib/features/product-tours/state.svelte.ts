@@ -1,27 +1,28 @@
-import type { ProductTourCheckpoint, ProductTourCheckpointName, ProductTourPhase } from './types';
+import type { ProductTourCheckpoint, ProductTourCheckpointName, ProductTourLaunchSource, ProductTourName, ProductTourPhase } from './types';
 
 import { clearProductTourSession, readProductTourSession, writeProductTourSession } from './session';
 
 class ProductTourCheckpointStore {
     current = $state.raw<ProductTourCheckpoint>();
 
-    advance(
-        expected: ProductTourCheckpoint,
-        checkpointName: ProductTourCheckpointName,
-        phase: ProductTourPhase = {
+    advance<Name extends ProductTourCheckpoint['tourName']>(
+        expected: ProductTourCheckpoint<Name>,
+        checkpointName: ProductTourCheckpointName<Name>,
+        phase: ProductTourPhase<Name> = {
             type: 'active'
         },
         organizationId = expected.organizationId
-    ) {
+    ): ProductTourCheckpoint<Name> | undefined {
         if (this.current !== expected) {
             return undefined;
         }
-        return this.save({
+        const next = {
             ...expected,
             checkpointName,
             organizationId,
             phase
-        });
+        } as ProductTourCheckpoint<Name>;
+        return this.save(next);
     }
 
     clear(expected?: ProductTourCheckpoint): boolean {
@@ -52,11 +53,29 @@ class ProductTourCheckpointStore {
         return stored;
     }
 
-    start(checkpoint: ProductTourCheckpoint): ProductTourCheckpoint {
+    start<Name extends ProductTourName>(
+        tourName: Name,
+        checkpointName: ProductTourCheckpointName<Name>,
+        source: ProductTourLaunchSource,
+        userId: string,
+        version: number,
+        organizationId?: string
+    ): ProductTourCheckpoint<Name> {
+        const checkpoint = {
+            checkpointName,
+            organizationId,
+            phase: {
+                type: 'active'
+            },
+            source,
+            tourName,
+            userId,
+            version
+        } as ProductTourCheckpoint<Name>;
         return this.save(checkpoint);
     }
 
-    private save(checkpoint: ProductTourCheckpoint): ProductTourCheckpoint {
+    private save<Name extends ProductTourCheckpoint['tourName']>(checkpoint: ProductTourCheckpoint<Name>): ProductTourCheckpoint<Name> {
         this.current = checkpoint;
         writeProductTourSession(checkpoint);
         return checkpoint;

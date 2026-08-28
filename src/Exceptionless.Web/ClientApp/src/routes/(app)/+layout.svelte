@@ -740,6 +740,7 @@
                       pathname: page.url.pathname,
                       projects
                   },
+                  meQuery.data?.product_tour_versions ?? {},
                   meQuery.data?.product_tours
               )
             : []

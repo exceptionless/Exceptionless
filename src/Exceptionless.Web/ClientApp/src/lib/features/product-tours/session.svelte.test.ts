@@ -10,7 +10,8 @@ const checkpoint: ProductTourCheckpoint = {
     phase: { type: 'active' },
     source: 'command-palette',
     tourName: 'investigate-error',
-    userId: 'user-id'
+    userId: 'user-id',
+    version: 1
 };
 
 describe('product tour session', () => {
@@ -30,6 +31,7 @@ describe('product tour session', () => {
         JSON.stringify({ ...checkpoint, tourName: 'unknown-tour' }),
         JSON.stringify({ ...checkpoint, checkpointName: 'unknown-step' }),
         JSON.stringify({ ...checkpoint, source: 'unknown-source' }),
+        JSON.stringify({ ...checkpoint, version: 0 }),
         JSON.stringify({ ...checkpoint, phase: { type: 'saved-view-created' } }),
         JSON.stringify({ ...checkpoint, phase: { type: 'saved-view-created', viewId: 'view-id' } }),
         JSON.stringify({ ...checkpoint, phase: { type: 'saved-view-loaded', viewId: 'view-id' } }),

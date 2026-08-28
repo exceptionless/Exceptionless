@@ -1,4 +1,5 @@
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
 
 namespace Exceptionless.Core.Repositories;
 
@@ -12,4 +13,9 @@ public sealed record ProductTourUsageBucket(ProductTourUsageSource Source, long 
 
 public sealed record ProductTourUsageEvent(PersistentEvent Event, ProductTourUsageSource Source);
 
-public sealed record ProductTourUsageSource(string Raw, string Event, string TourName, int Version, string LaunchSource);
+public sealed record ProductTourUsageSource(
+    string Raw,
+    ProductTourTelemetryEvent Event,
+    string TourName,
+    int Version,
+    ProductTourLaunchSource LaunchSource);

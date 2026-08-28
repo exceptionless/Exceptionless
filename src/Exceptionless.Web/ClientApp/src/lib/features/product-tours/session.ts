@@ -1,9 +1,11 @@
+import { ProductTourLaunchSource as ProductTourLaunchSourceContract } from '$generated/api';
+
 import type { ProductTourCheckpoint, ProductTourLaunchSource, ProductTourName, ProductTourPhase } from './types';
 
 import { PRODUCT_TOUR_CHECKPOINTS } from './types';
 
 const SESSION_KEY = 'exceptionless.product-tour';
-const SOURCES: readonly ProductTourLaunchSource[] = ['automatic', 'catalog', 'command-palette', 'feature-announcement', 'help-menu'];
+const SOURCES = new Set<string>(Object.values(ProductTourLaunchSourceContract));
 
 export function clearProductTourSession(storage: Pick<Storage, 'removeItem'> = sessionStorage): void {
     storage.removeItem(SESSION_KEY);
@@ -44,7 +46,16 @@ function isPhase(value: unknown, tourName: string, checkpointName: unknown): val
 }
 
 function isProductTourCheckpoint(value: unknown): value is ProductTourCheckpoint {
-    if (!isRecord(value) || typeof value.userId !== 'string' || !value.userId || typeof value.tourName !== 'string') return false;
+    if (
+        !isRecord(value) ||
+        typeof value.userId !== 'string' ||
+        !value.userId ||
+        typeof value.tourName !== 'string' ||
+        typeof value.version !== 'number' ||
+        !Number.isSafeInteger(value.version) ||
+        value.version < 1
+    )
+        return false;
     if (value.organizationId !== undefined && typeof value.organizationId !== 'string') return false;
     if (!isProductTourLaunchSource(value.source) || !isProductTourName(value.tourName)) return false;
 
@@ -54,7 +65,7 @@ function isProductTourCheckpoint(value: unknown): value is ProductTourCheckpoint
 }
 
 function isProductTourLaunchSource(value: unknown): value is ProductTourLaunchSource {
-    return typeof value === 'string' && (SOURCES as readonly string[]).includes(value);
+    return typeof value === 'string' && SOURCES.has(value);
 }
 
 function isProductTourName(value: string): value is ProductTourName {
