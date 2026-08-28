@@ -25,7 +25,7 @@ if (codespaceName && codespaceDomain) {
 }
 
 const SVELTE_RUNTIME_DIAGNOSTICS_GLOBAL = '__exceptionlessSvelteEffectDepthDiagnostics';
-const SUPPORTED_SVELTE_RUNTIME_VERSION = '5.56.8';
+const SUPPORTED_SVELTE_RUNTIME_VERSION = '5.56.10';
 
 // Svelte's useful effect-depth diagnostics are development-only. Preserve the
 // minimal state-write tracking needed to diagnose production-only loops.
