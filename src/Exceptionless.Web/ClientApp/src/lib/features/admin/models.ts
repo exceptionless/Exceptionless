@@ -1,4 +1,5 @@
 import type {
+    AdminProductTourUsageResponse,
     AssistantModelSettings,
     CountResult,
     EventSubmissionSettings,
@@ -50,6 +51,7 @@ export type AdminAssistantUsage = {
 };
 
 export type AdminEventSubmissionSettings = EventSubmissionSettings;
+export type AdminProductTourUsage = AdminProductTourUsageResponse;
 
 export type AdminStats = {
     events: CountResult;

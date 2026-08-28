@@ -6,6 +6,7 @@ namespace Exceptionless.Web.Api.Messages;
 public record GetCurrentUser;
 public record GetCurrentUserOAuthGrants;
 public record RevokeCurrentUserOAuthGrant(string Id);
+public record UpdateCurrentUserProductTour(string TourName, UpdateProductTourProgress Progress);
 public record GetUserById(string Id);
 public record GetUsersByOrganization(string OrganizationId, int Page, int Limit);
 public record UpdateUserMessage(string Id, Delta<UpdateUser> Changes);

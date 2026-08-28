@@ -7,7 +7,16 @@ import { fetchApiJson } from '$features/shared/api/api.svelte';
 import { type FetchClientResponse, ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
-import type { OAuthGrant, UpdateEmailAddressResult, UpdateUser, UpdateUserEmailAddress, ViewCurrentUser, ViewUser } from './models';
+import type {
+    OAuthGrant,
+    ProductTourProgress,
+    UpdateEmailAddressResult,
+    UpdateProductTourProgress,
+    UpdateUser,
+    UpdateUserEmailAddress,
+    ViewCurrentUser,
+    ViewUser
+} from './models';
 
 export async function invalidateUserQueries(queryClient: QueryClient, message: WebSocketMessageValue<'UserChanged'>) {
     const { id } = message;
@@ -41,6 +50,7 @@ export const queryKeys = {
     organization: (id: string | undefined) => [...queryKeys.type, 'organization', id] as const,
     patchUser: (id: string | undefined) => [...queryKeys.id(id), 'patch'] as const,
     postEmailAddress: (id: string | undefined) => [...queryKeys.idEmailAddress(id), 'update'] as const,
+    productTour: (tourName: string | undefined) => [...queryKeys.me(), 'product-tours', tourName] as const,
     type: ['User'] as const
 };
 
@@ -66,6 +76,11 @@ export interface PostEmailAddressRequest {
     route: {
         id: string | undefined;
     };
+}
+
+export interface PutCurrentUserProductTourRequest {
+    progress: UpdateProductTourProgress;
+    tourName: string;
 }
 
 export interface ResendVerificationEmailRequest {
@@ -256,6 +271,35 @@ export function postEmailAddress(request: PostEmailAddressRequest) {
                     ...partialUserData
                 });
             }
+        }
+    }));
+}
+
+export function putCurrentUserProductTour() {
+    const queryClient = useQueryClient();
+    return createMutation<ProductTourProgress, ProblemDetails, PutCurrentUserProductTourRequest>(() => ({
+        enabled: () => !!accessToken.current,
+        mutationFn: async ({ progress, tourName }) => {
+            const client = useFetchClient();
+            const response = await client.putJSON<ProductTourProgress>(`users/me/product-tours/${tourName}`, progress);
+            return response.data!;
+        },
+        mutationKey: queryKeys.productTour(undefined),
+        onSuccess: (progress, { tourName }) => {
+            const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
+            if (!currentUser) {
+                return;
+            }
+
+            const updatedUser = {
+                ...currentUser,
+                product_tours: {
+                    ...currentUser.product_tours,
+                    [tourName]: progress
+                }
+            };
+            queryClient.setQueryData(queryKeys.me(), updatedUser);
+            queryClient.setQueryData(queryKeys.id(currentUser.id), updatedUser);
         }
     }));
 }

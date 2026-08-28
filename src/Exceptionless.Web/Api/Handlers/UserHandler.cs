@@ -3,6 +3,7 @@ using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Api.Infrastructure;
@@ -14,8 +15,9 @@ using Exceptionless.Web.Models;
 using Exceptionless.Web.Models.OAuth;
 using Exceptionless.Web.Utility;
 using Foundatio.Caching;
-using Foundatio.Repositories;
 using Foundatio.Mediator;
+using Foundatio.Repositories;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Web.Api.Handlers;
 
@@ -33,6 +35,7 @@ public class UserHandler(
     IHttpContextAccessor httpContextAccessor,
     ILoggerFactory loggerFactory)
 {
+    private const int MaximumProductTours = 32;
     private readonly ICacheClient _cache = new ScopedCacheClient(cacheClient, "User");
     private readonly ILogger _logger = loggerFactory.CreateLogger<UserHandler>();
     private HttpContext HttpContext => httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is unavailable.");
@@ -47,6 +50,53 @@ public class UserHandler(
         {
             AvatarUrl = GetUserAvatarUrl(currentUser.Id, currentUser.AvatarFileName)
         };
+    }
+
+    public async Task<Result<ProductTourProgress>> Handle(UpdateCurrentUserProductTour message)
+    {
+        bool maximumExceeded = false;
+        ProductTourProgress? progress = null;
+        await repository.PatchAsync(
+            GetCurrentUserId(),
+            new ActionPatch<User>(user =>
+            {
+                user.ProductTours.TryGetValue(message.TourName, out var currentProgress);
+                if (currentProgress is null && user.ProductTours.Count >= MaximumProductTours)
+                {
+                    maximumExceeded = true;
+                    return false;
+                }
+
+                if (!ShouldUpdateProductTourProgress(currentProgress, message.Progress))
+                {
+                    progress = currentProgress;
+                    return false;
+                }
+
+                progress = new ProductTourProgress
+                {
+                    Status = message.Progress.Status!.Value,
+                    UpdatedUtc = timeProvider.GetUtcNow().UtcDateTime,
+                    Version = message.Progress.Version
+                };
+                user.ProductTours[message.TourName] = progress;
+                return true;
+            }),
+            options => options.Cache());
+
+        if (maximumExceeded)
+            return Result.Invalid(ValidationError.Create("tour_name", $"A user cannot track more than {MaximumProductTours} product tours."));
+
+        return progress is null ? Result.NotFound("User not found.") : progress;
+    }
+
+    private static bool ShouldUpdateProductTourProgress(ProductTourProgress? current, UpdateProductTourProgress requested)
+    {
+        return current is null
+            || requested.Version > current.Version
+            || (requested.Version == current.Version
+                && current.Status is ProductTourStatus.Dismissed
+                && requested.Status is ProductTourStatus.Completed);
     }
 
     public async Task<Result<IReadOnlyCollection<ViewOAuthGrant>>> Handle(GetCurrentUserOAuthGrants message)

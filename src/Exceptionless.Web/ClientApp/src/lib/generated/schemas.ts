@@ -27,6 +27,7 @@ export const StackStatusSchema = zodEnum([
   "ignored",
   "discarded",
 ]);
+export const ProductTourStatusSchema = zodEnum(["completed", "dismissed"]);
 export const BillingStatusSchema = union([
   literal(0),
   literal(1),
@@ -73,6 +74,45 @@ export const AdminAssistantUsageResponseSchema = object({
 });
 export type AdminAssistantUsageResponseFormData = Infer<
   typeof AdminAssistantUsageResponseSchema
+>;
+
+export const AdminProductTourActivitySchema = object({
+  date_utc: iso.datetime(),
+  event: string().min(1, "Event is required"),
+  launch_source: string().min(1, "Launch source is required"),
+  tour_name: string().min(1, "Tour name is required"),
+  user_identity: string().min(1, "User identity is required").nullable(),
+  user_name: string().min(1, "User name is required").nullable(),
+  version: int32(),
+  count: int(),
+});
+export type AdminProductTourActivityFormData = Infer<
+  typeof AdminProductTourActivitySchema
+>;
+
+export const AdminProductTourSummarySchema = object({
+  name: string().min(1, "Name is required"),
+  shown: int(),
+  started: int(),
+  completed: int(),
+  dismissed: int(),
+  unique_users: int(),
+  last_run_utc: iso.datetime().nullable(),
+  completion_rate: number().nullable(),
+  dismissal_rate: number().nullable(),
+});
+export type AdminProductTourSummaryFormData = Infer<
+  typeof AdminProductTourSummarySchema
+>;
+
+export const AdminProductTourUsageResponseSchema = object({
+  month: iso.datetime(),
+  telemetry_configured: boolean(),
+  tours: array(lazy(() => AdminProductTourSummarySchema)),
+  recent_activity: array(lazy(() => AdminProductTourActivitySchema)),
+});
+export type AdminProductTourUsageResponseFormData = Infer<
+  typeof AdminProductTourUsageResponseSchema
 >;
 
 export const AssistantAccessResponseSchema = object({
@@ -626,6 +666,15 @@ export const ProblemDetailsSchema = object({
 });
 export type ProblemDetailsFormData = Infer<typeof ProblemDetailsSchema>;
 
+export const ProductTourProgressSchema = object({
+  status: ProductTourStatusSchema,
+  updated_utc: iso.datetime(),
+  version: int32(),
+});
+export type ProductTourProgressFormData = Infer<
+  typeof ProductTourProgressSchema
+>;
+
 export const ResetPasswordModelSchema = object({
   password_reset_token: string().length(
     40,
@@ -768,6 +817,16 @@ export type UpdateEventSubmissionSettingsFormData = Infer<
   typeof UpdateEventSubmissionSettingsSchema
 >;
 
+export const UpdateProductTourProgressSchema = object({
+  status: ProductTourStatusSchema,
+  version: int32()
+    .min(1, "Version must be at least 1")
+    .max(2147483647, "Version must be at most 2147483647"),
+});
+export type UpdateProductTourProgressFormData = Infer<
+  typeof UpdateProductTourProgressSchema
+>;
+
 export const UpdateProjectSchema = object({
   name: string().min(1, "Name is required").optional(),
   delete_bot_data_enabled: boolean().optional(),
@@ -862,6 +921,10 @@ export const UserSchema = object({
   o_auth_accounts: array(lazy(() => OAuthAccountSchema)),
   organization_preferences: array(lazy(() => UserOrganizationPreferenceSchema)),
   saved_view_orders: array(lazy(() => UserSavedViewOrderPreferenceSchema)),
+  product_tours: record(
+    string(),
+    lazy(() => ProductTourProgressSchema),
+  ),
   full_name: string().min(1, "Full name is required"),
   email_address: email(),
   avatar_file_name: string()
@@ -919,6 +982,10 @@ export const ViewCurrentUserSchema = object({
   o_auth_accounts: array(lazy(() => OAuthAccountSchema)),
   organization_preferences: array(lazy(() => UserOrganizationPreferenceSchema)),
   saved_view_orders: array(lazy(() => UserSavedViewOrderPreferenceSchema)),
+  product_tours: record(
+    string(),
+    lazy(() => ProductTourProgressSchema),
+  ),
   id: string()
     .length(24, "Id must be exactly 24 characters")
     .regex(/^[a-fA-F0-9]{24}$/, "Id has invalid format"),
