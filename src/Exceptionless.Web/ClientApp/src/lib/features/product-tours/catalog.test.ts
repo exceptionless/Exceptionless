@@ -16,6 +16,8 @@ function context(overrides: Partial<ProductTourContext> = {}): ProductTourContex
 }
 
 describe('product tour catalog', () => {
+    const versions = Object.fromEntries(productTourCatalog.map((tour) => [tour.name, 1]));
+
     it('contains only durable metadata for the five named tours', () => {
         expect(productTourCatalog.map((tour) => tour.name)).toEqual([
             'ui-overview',
@@ -24,7 +26,7 @@ describe('product tour catalog', () => {
             'investigate-error',
             'meet-exie'
         ]);
-        expect(productTourCatalog.every((tour) => tour.version > 0 && tour.keywords.length > 0)).toBe(true);
+        expect(productTourCatalog.every((tour) => tour.keywords.length > 0)).toBe(true);
         expect(JSON.stringify(productTourCatalog)).not.toContain('data-tour');
     });
 
@@ -39,9 +41,15 @@ describe('product tour catalog', () => {
             context({
                 assistantAccess: { enabled: false, has_access: false, upgrade_required: false },
                 errorEventAvailability: 'empty'
-            })
+            }),
+            versions
         );
         expect(items.find((item) => item.name === 'meet-exie')?.currentAvailability.available).toBe(false);
         expect(items.find((item) => item.name === 'investigate-error')?.currentAvailability.available).toBe(false);
+    });
+
+    it('uses server versions as the availability boundary', () => {
+        const items = getProductTourItems(context(), {});
+        expect(items.every((item) => !item.currentAvailability.available && item.version === 0)).toBe(true);
     });
 });

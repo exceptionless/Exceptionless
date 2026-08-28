@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories;
@@ -43,6 +44,20 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
         var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, options => options.Cache(false));
         Assert.NotNull(persistedUser);
         Assert.Equal(progress, persistedUser.ProductTours["ui-overview"]);
+    }
+
+    [Fact]
+    public async Task GetCurrentUserAsync_ReturnsAuthoritativeProductTourVersions()
+    {
+        var currentUser = await SendRequestAsAsync<JsonElement>(request => request
+            .AsTestOrganizationUser()
+            .AppendPaths("users", "me")
+            .StatusCodeShouldBeOk());
+
+        var versions = currentUser.GetProperty("product_tour_versions")
+            .Deserialize<Dictionary<string, int>>();
+
+        Assert.Equal(ProductTours.Versions, versions);
     }
 
     [Fact]

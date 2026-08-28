@@ -11843,10 +11843,10 @@
             "format": "date-time"
           },
           "event": {
-            "type": "string"
+            "$ref": "#/components/schemas/ProductTourTelemetryEvent"
           },
           "launch_source": {
-            "type": "string"
+            "$ref": "#/components/schemas/ProductTourLaunchSource"
           },
           "tour_name": {
             "type": "string"
@@ -13491,6 +13491,22 @@
           }
         }
       },
+      "ProductTourLaunchSource": {
+        "enum": [
+          "automatic",
+          "catalog",
+          "command-palette",
+          "feature-announcement",
+          "help-menu"
+        ],
+        "x-enumNames": [
+          "Automatic",
+          "Catalog",
+          "CommandPalette",
+          "FeatureAnnouncement",
+          "HelpMenu"
+        ]
+      },
       "ProductTourProgress": {
         "required": [
           "status",
@@ -13520,6 +13536,20 @@
         "x-enumNames": [
           "Completed",
           "Dismissed"
+        ]
+      },
+      "ProductTourTelemetryEvent": {
+        "enum": [
+          "completed",
+          "dismissed",
+          "shown",
+          "started"
+        ],
+        "x-enumNames": [
+          "Completed",
+          "Dismissed",
+          "Shown",
+          "Started"
         ]
       },
       "ResetPasswordModel": {
@@ -14432,6 +14462,14 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/ProductTourProgress"
             }
+          },
+          "product_tour_versions": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "readOnly": true
           },
           "id": {
             "maxLength": 24,

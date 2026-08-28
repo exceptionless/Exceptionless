@@ -1,6 +1,8 @@
+import type { ProductTourTelemetryEvent as ProductTourTelemetryEventContract } from '$generated/api';
+
 import type { ProductTourKey, ProductTourLaunchSource } from './types';
 
-export type ProductTourTelemetryEvent = 'completed' | 'dismissed' | 'shown' | 'started';
+export type ProductTourTelemetryEvent = `${ProductTourTelemetryEventContract}`;
 
 export function buildProductTourTelemetryEvent(
     event: ProductTourTelemetryEvent,

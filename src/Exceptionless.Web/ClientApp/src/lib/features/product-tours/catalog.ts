@@ -30,8 +30,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
         keywords: ['navigation', 'ui', 'search', 'command', 'help', 'saved views'],
         name: 'ui-overview',
         startingRoute: () => resolve('/'),
-        title: 'Explore Exceptionless',
-        version: 1
+        title: 'Explore Exceptionless'
     },
     {
         availability: () => ({ available: true }),
@@ -40,8 +39,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
         keywords: ['add project', 'configure', 'sdk', 'api key', 'first event'],
         name: 'configure-project',
         startingRoute: (context) => (context.organizationId ? resolve('/(app)/project/add') : resolve('/(app)/organization/add')),
-        title: 'Configure a project',
-        version: 1
+        title: 'Configure a project'
     },
     {
         availability: requireOrganization,
@@ -50,8 +48,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
         keywords: ['saved view', 'filter', 'columns', 'private', 'dashboard'],
         name: 'create-saved-view',
         startingRoute: () => resolve('/(app)/event'),
-        title: 'Create a saved view',
-        version: 1
+        title: 'Create a saved view'
     },
     {
         availability: requireError,
@@ -60,8 +57,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
         keywords: ['error report', 'event details', 'exception', 'filter', 'stack', 'triage'],
         name: 'investigate-error',
         startingRoute: () => `${resolve('/(app)/event')}?time=all&type=error`,
-        title: 'Investigate an error',
-        version: 1
+        title: 'Investigate an error'
     },
     {
         availability: (context) =>
@@ -71,21 +67,25 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
         keywords: ['exie', 'assistant', 'ai', 'help', 'investigate'],
         name: 'meet-exie',
         startingRoute: () => resolve('/'),
-        title: 'Meet Exie',
-        version: 1
+        title: 'Meet Exie'
     }
 ] as const;
 
-export function getProductTour(name: ProductTourName): ProductTourDefinition {
-    return productTourCatalog.find((tour) => tour.name === name)!;
-}
-
-export function getProductTourItems(context: ProductTourContext, progress: Record<string, ProductTourProgress> = {}): ProductTourListItem[] {
-    return productTourCatalog.map((definition) => ({
-        ...definition,
-        currentAvailability: definition.availability(context),
-        progress: progress[definition.name]
-    }));
+export function getProductTourItems(
+    context: ProductTourContext,
+    versions: Record<string, number>,
+    progress: Record<string, ProductTourProgress> = {}
+): ProductTourListItem[] {
+    return productTourCatalog.map((definition) => {
+        const version = versions[definition.name] ?? 0;
+        return {
+            ...definition,
+            currentAvailability:
+                version > 0 ? definition.availability(context) : { available: false, reason: 'This guided tour is not supported by the server.' },
+            progress: progress[definition.name],
+            version
+        };
+    });
 }
 
 export function getRecommendedProductTourName(context: ProductTourContext): ProductTourName {

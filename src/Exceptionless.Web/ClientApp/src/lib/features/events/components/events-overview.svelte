@@ -18,9 +18,6 @@
     import * as EventsFacetedFilter from '$features/events/components/filters';
     import { getExtendedDataItems, hasErrorOrSimpleError } from '$features/events/persistent-event';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
-    import { createProductTourActions } from '$features/product-tours/actions.svelte';
-    import ProductTourInlineCallout from '$features/product-tours/components/product-tour-inline-callout.svelte';
-    import { productTourCheckpoint } from '$features/product-tours/state.svelte';
     import { getProjectQuery, updateProject } from '$features/projects/api.svelte';
     import StackCard from '$features/stacks/components/stack-card.svelte';
     import Braces from '@lucide/svelte/icons/braces';
@@ -34,6 +31,7 @@
 
     import { getSessionId } from '../utils';
     import { shouldResetActiveEventTab } from './events-overview-tab-state';
+    import InvestigationDetailTour from './investigation-detail-tour.svelte';
     import Environment from './views/environment.svelte';
     import Error from './views/error.svelte';
     import ExtendedData from './views/extended-data.svelte';
@@ -166,40 +164,6 @@
     let notifiedEventId = $state('');
     let showJsonDialog = $state(false);
 
-    const tourActions = createProductTourActions();
-    const investigationCheckpoint = $derived(productTourCheckpoint.current?.tourName === 'investigate-error' ? productTourCheckpoint.current : undefined);
-    const investigationCopy = $derived.by(() => {
-        switch (investigationCheckpoint?.checkpointName) {
-            case 'event-occurrence':
-                return {
-                    description: 'This occurrence contains its timestamp, raw JSON, and navigation to nearby events.',
-                    title: 'Inspect the occurrence'
-                };
-            case 'filter-stack-events':
-                return {
-                    description: 'Show all events filters the list to this stack when you are ready to compare occurrences.',
-                    title: 'Compare every occurrence'
-                };
-            case 'stack-summary':
-                return {
-                    description: 'Use the grouped stack title, affected users, occurrence count, and trend to judge scope and impact.',
-                    title: 'Understand the grouped issue'
-                };
-            case 'stack-triage':
-                return {
-                    description: 'Status and options change shared issue state. Review them here; this guide will not invoke them.',
-                    title: 'Triage deliberately'
-                };
-            case 'tab-overview':
-                return {
-                    description: 'Overview summarizes the message and useful event fields. Choose other tabs when the evidence calls for them.',
-                    title: 'Begin with the overview'
-                };
-            default:
-                return undefined;
-        }
-    });
-
     $effect(() => {
         if (shouldResetActiveEventTab(!!event, projectQuery.isPending, tabs, activeTab)) {
             activeTab = 'Overview';
@@ -319,35 +283,6 @@
         }
     }
 
-    async function continueInvestigationTour(): Promise<void> {
-        const checkpoint = investigationCheckpoint;
-        if (!checkpoint) {
-            return;
-        }
-        switch (checkpoint.checkpointName) {
-            case 'event-occurrence':
-                productTourCheckpoint.advance(checkpoint, 'tab-overview');
-                break;
-            case 'stack-summary':
-                productTourCheckpoint.advance(checkpoint, 'stack-triage');
-                break;
-            case 'stack-triage':
-                productTourCheckpoint.advance(checkpoint, 'event-occurrence');
-                break;
-            case 'tab-overview':
-                productTourCheckpoint.advance(checkpoint, 'filter-stack-events');
-                break;
-            default:
-                await tourActions.complete(checkpoint);
-        }
-    }
-
-    async function dismissInvestigationTour(): Promise<void> {
-        if (investigationCheckpoint) {
-            await tourActions.dismiss(investigationCheckpoint);
-        }
-    }
-
     function prepareEventAssistantContext(): void {
         if (event) {
             assistantPageContext.setPageEvent(event);
@@ -367,10 +302,6 @@
     $effect(() => {
         if (event && event.id !== notifiedEventId) {
             notifiedEventId = event.id;
-            const checkpoint = investigationCheckpoint;
-            if (checkpoint?.checkpointName === 'choose-error' && hasErrorOrSimpleError(event)) {
-                productTourCheckpoint.advance(checkpoint, 'stack-summary');
-            }
             onEventLoaded?.(event);
         }
     });
@@ -401,15 +332,7 @@
     });
 </script>
 
-{#if event && investigationCopy && ['stack-summary', 'stack-triage'].includes(investigationCheckpoint?.checkpointName ?? '')}
-    <ProductTourInlineCallout
-        description={investigationCopy.description}
-        onContinue={continueInvestigationTour}
-        onDismiss={dismissInvestigationTour}
-        title={investigationCopy.title}
-        tourName="investigate-error"
-    />
-{/if}
+<InvestigationDetailTour {event} placement="stack" />
 
 <section data-event-type={event ? (hasErrorOrSimpleError(event) ? 'error' : event.type) : undefined} data-tour={event ? 'event-details' : undefined}>
     <h4 class="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">Stack</h4>
@@ -423,16 +346,7 @@
     {/if}
 </section>
 
-{#if event && investigationCopy && ['event-occurrence', 'filter-stack-events'].includes(investigationCheckpoint?.checkpointName ?? '')}
-    <ProductTourInlineCallout
-        continueLabel={investigationCheckpoint?.checkpointName === 'filter-stack-events' ? 'Finish guide' : 'Continue'}
-        description={investigationCopy.description}
-        onContinue={continueInvestigationTour}
-        onDismiss={dismissInvestigationTour}
-        title={investigationCopy.title}
-        tourName="investigate-error"
-    />
-{/if}
+<InvestigationDetailTour {event} placement="occurrence" />
 
 <section class="mt-2" data-tour={event ? 'event-occurrence' : undefined}>
     <div class="mb-2 flex items-center justify-between">
@@ -489,15 +403,7 @@
     </Table.Root>
 
     {#if event}
-        {#if investigationCheckpoint?.checkpointName === 'tab-overview' && investigationCopy}
-            <ProductTourInlineCallout
-                description={investigationCopy.description}
-                onContinue={continueInvestigationTour}
-                onDismiss={dismissInvestigationTour}
-                title={investigationCopy.title}
-                tourName="investigate-error"
-            />
-        {/if}
+        <InvestigationDetailTour {event} placement="overview" />
         <Tabs.Root class="mt-4 mb-4" bind:value={activeTab}>
             <div class="relative">
                 {#if canScrollTabsLeft}

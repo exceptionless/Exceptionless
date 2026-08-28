@@ -64,14 +64,14 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
                 .UserIdentity("user-7");
         });
 
-        var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, month, month.AddMonths(1));
+        var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, month, month.AddMonths(1), recentLimit: 3);
 
-        Assert.Equal(5, result.RecentEvents.Count);
+        Assert.Equal(3, result.RecentEvents.Count);
         Assert.Equal(2, result.Tours.Count);
         var overview = Assert.Single(result.Tours, tour => String.Equals(tour.Name, ProductTours.UiOverview, StringComparison.Ordinal));
         Assert.Equal(3, overview.UniqueUsers);
-        Assert.Equal(4, overview.Buckets.Where(bucket => String.Equals(bucket.Source.Event, "started", StringComparison.Ordinal)).Sum(bucket => bucket.Count));
-        Assert.Equal(1, overview.Buckets.Where(bucket => String.Equals(bucket.Source.Event, "completed", StringComparison.Ordinal)).Sum(bucket => bucket.Count));
+        Assert.Equal(4, overview.Buckets.Where(bucket => bucket.Source.Event == ProductTourTelemetryEvent.Started).Sum(bucket => bucket.Count));
+        Assert.Equal(1, overview.Buckets.Where(bucket => bucket.Source.Event == ProductTourTelemetryEvent.Completed).Sum(bucket => bucket.Count));
         Assert.Equal(month.AddDays(8), overview.Buckets.Max(bucket => bucket.LastUtc));
 
         var welcome = Assert.Single(result.Tours, tour => String.Equals(tour.Name, ProductTours.Welcome, StringComparison.Ordinal));

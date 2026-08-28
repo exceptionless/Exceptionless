@@ -34,6 +34,7 @@ public record ViewCurrentUser : ViewUser
     public ICollection<UserOrganizationPreference> OrganizationPreferences { get; set; }
     public ICollection<UserSavedViewOrderPreference> SavedViewOrders { get; set; }
     public IDictionary<string, ProductTourProgress> ProductTours { get; set; } = new Dictionary<string, ProductTourProgress>(StringComparer.Ordinal);
+    public IReadOnlyDictionary<string, int> ProductTourVersions { get; } = Exceptionless.Core.Models.Data.ProductTours.Versions;
 
     private static string? HMACSHA256HashString(string value, IntercomOptions options)
     {

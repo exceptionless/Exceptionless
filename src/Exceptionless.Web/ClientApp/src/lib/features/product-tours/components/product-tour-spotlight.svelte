@@ -8,6 +8,7 @@
 
     interface Props {
         checkpoint: ProductTourCheckpoint;
+        continueLabel?: string;
         description: string;
         onDismiss: (checkpoint: ProductTourCheckpoint) => Promise<boolean>;
         onNext?: (checkpoint: ProductTourCheckpoint) => Promise<void> | void;
@@ -16,7 +17,7 @@
         title: string;
     }
 
-    let { checkpoint, description, onDismiss, onNext, side, target, title }: Props = $props();
+    let { checkpoint, continueLabel = 'Continue', description, onDismiss, onNext, side, target, title }: Props = $props();
     let activeDriver: Driver | undefined;
 
     onMount(() => {
@@ -38,7 +39,7 @@
                     element: target,
                     popover: {
                         description,
-                        doneBtnText: 'Continue',
+                        doneBtnText: continueLabel,
                         onNextClick: onNext
                             ? async () => {
                                   await onNext(checkpoint);
