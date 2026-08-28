@@ -1,4 +1,6 @@
+using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Services;
 using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Api.Results;
@@ -46,6 +48,37 @@ public static class AdminEndpoints
             .WithTags(nameof(AdminEndpoints))
             .WithSummary("Update Exie assistant settings");
 
+        endpoints.MapPut("api/v2/admin/assistant-settings/enabled", async (HttpContext httpContext, [FromBody] UpdateAssistantEnabledSettings request, AssistantModelSettingsService settingsService)
+            => HttpResults.Ok(await settingsService.SetEnabledAsync(request.Enabled, httpContext.Request.GetUser().Id)))
+            .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
+            .AddEndpointFilter<AutoValidationEndpointFilter>()
+            .Accepts<UpdateAssistantEnabledSettings>("application/json", "application/*+json")
+            .Produces<AssistantModelSettings>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+            .WithTags(nameof(AdminEndpoints))
+            .WithSummary("Update Exie assistant availability");
+
+        endpoints.MapGet("api/v2/admin/event-submission-settings", GetEventSubmissionSettingsAsync)
+            .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
+            .Produces<EventSubmissionSettings>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
+            .WithTags(nameof(AdminEndpoints))
+            .WithSummary("Get event submission settings");
+
+        endpoints.MapPut("api/v2/admin/event-submission-settings", UpdateEventSubmissionSettingsAsync)
+            .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
+            .AddEndpointFilter<AutoValidationEndpointFilter>()
+            .Accepts<UpdateEventSubmissionSettings>("application/json", "application/*+json")
+            .Produces<EventSubmissionSettings>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+            .WithTags(nameof(AdminEndpoints))
+            .WithSummary("Update event submission settings");
+
         endpoints.MapGet("api/v2/admin/assistant-usage", GetAssistantUsageAsync)
             .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
             .AddEndpointFilter<AutoValidationEndpointFilter>()
@@ -73,4 +106,28 @@ public static class AdminEndpoints
         DateTime? month = null,
         int limit = 100)
         => (await mediator.InvokeAsync<Result<object>>(new GetAdminAssistantUsage(month, limit, httpContext))).ToHttpResult(resultMapper);
+
+    private static async Task<HttpIResult> GetEventSubmissionSettingsAsync(SystemSettingsService settingsService, AppOptions appOptions)
+    {
+        var settings = await settingsService.GetAsync();
+        return HttpResults.Ok(CreateEventSubmissionSettings(settings?.EventSubmissionEnabled, appOptions));
+    }
+
+    private static async Task<HttpIResult> UpdateEventSubmissionSettingsAsync(
+        HttpContext httpContext,
+        [FromBody] UpdateEventSubmissionSettings request,
+        SystemSettingsService settingsService,
+        AppOptions appOptions)
+    {
+        bool configuredEnabled = !appOptions.EventSubmissionDisabled;
+        bool? enabledOverride = request.Enabled == configuredEnabled ? null : request.Enabled;
+        var settings = await settingsService.UpdateAsync(httpContext.Request.GetUser().Id, value => value.EventSubmissionEnabled = enabledOverride);
+        return HttpResults.Ok(CreateEventSubmissionSettings(settings.EventSubmissionEnabled, appOptions));
+    }
+
+    private static EventSubmissionSettings CreateEventSubmissionSettings(bool? enabledOverride, AppOptions appOptions)
+    {
+        bool configuredEnabled = !appOptions.EventSubmissionDisabled;
+        return new EventSubmissionSettings(enabledOverride ?? configuredEnabled, configuredEnabled, enabledOverride.HasValue);
+    }
 }

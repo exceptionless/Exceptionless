@@ -248,6 +248,132 @@
         }
       }
     },
+    "/api/v2/admin/assistant-settings/enabled": {
+      "put": {
+        "tags": [
+          "AdminEndpoints"
+        ],
+        "summary": "Update Exie assistant availability",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAssistantEnabledSettings"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAssistantEnabledSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantModelSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/event-submission-settings": {
+      "get": {
+        "tags": [
+          "AdminEndpoints"
+        ],
+        "summary": "Get event submission settings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventSubmissionSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "AdminEndpoints"
+        ],
+        "summary": "Update event submission settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEventSubmissionSettings"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEventSubmissionSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventSubmissionSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/admin/assistant-usage": {
       "get": {
         "tags": [
@@ -11570,7 +11696,11 @@
         "required": [
           "model",
           "configured_model",
-          "is_overridden"
+          "is_overridden",
+          "enabled",
+          "configured_enabled",
+          "is_enabled_overridden",
+          "is_configured"
         ],
         "type": "object",
         "properties": {
@@ -11581,6 +11711,18 @@
             "type": "string"
           },
           "is_overridden": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "configured_enabled": {
+            "type": "boolean"
+          },
+          "is_enabled_overridden": {
+            "type": "boolean"
+          },
+          "is_configured": {
             "type": "boolean"
           }
         }
@@ -11769,6 +11911,25 @@
               "null",
               "object"
             ]
+          }
+        }
+      },
+      "EventSubmissionSettings": {
+        "required": [
+          "enabled",
+          "configured_enabled",
+          "is_overridden"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "configured_enabled": {
+            "type": "boolean"
+          },
+          "is_overridden": {
+            "type": "boolean"
           }
         }
       },
@@ -13305,6 +13466,17 @@
           }
         }
       },
+      "UpdateAssistantEnabledSettings": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        }
+      },
       "UpdateAssistantSettings": {
         "type": "object",
         "properties": {
@@ -13346,6 +13518,17 @@
           }
         },
         "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
+      },
+      "UpdateEventSubmissionSettings": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        }
       },
       "UpdateProject": {
         "type": "object",

@@ -1,42 +1,23 @@
 using Exceptionless.Core;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Repositories;
-using Foundatio.Repositories;
+using Exceptionless.Core.Services;
 
 namespace Exceptionless.Web.Assistant;
 
 public sealed class AssistantModelSettingsService
 {
     private readonly AppOptions _appOptions;
-    private readonly Func<Task<SystemSettings?>> _getSettingsAsync;
-    private readonly Func<SystemSettings, Task> _saveSettingsAsync;
-    private readonly TimeProvider _timeProvider;
+    private readonly SystemSettingsService _systemSettingsService;
 
     public AssistantModelSettingsService(
-        ISystemSettingsRepository repository,
-        AppOptions appOptions,
-        TimeProvider timeProvider)
-        : this(
-            () => repository.GetByIdAsync(SystemSettings.DefaultId, options => options.Cache()),
-            async settings => await repository.SaveAsync(settings, options => options.Cache().ImmediateConsistency()),
-            appOptions,
-            timeProvider)
+        SystemSettingsService systemSettingsService,
+        AppOptions appOptions)
     {
-    }
-
-    internal AssistantModelSettingsService(
-        Func<Task<SystemSettings?>> getSettingsAsync,
-        Func<SystemSettings, Task> saveSettingsAsync,
-        AppOptions appOptions,
-        TimeProvider timeProvider)
-    {
-        _getSettingsAsync = getSettingsAsync;
-        _saveSettingsAsync = saveSettingsAsync;
+        _systemSettingsService = systemSettingsService;
         _appOptions = appOptions;
-        _timeProvider = timeProvider;
     }
 
-    public async Task<AssistantModelSettings> GetAsync() => CreateResponse(await _getSettingsAsync());
+    public async Task<AssistantModelSettings> GetAsync() => CreateResponse(await _systemSettingsService.GetAsync());
 
     public async Task<AssistantModelSettings> SetModelAsync(string? model, string userId)
     {
@@ -47,18 +28,18 @@ public sealed class AssistantModelSettingsService
             || String.Equals(normalizedModel, _appOptions.AssistantOptions.Model, StringComparison.Ordinal))
             normalizedModel = null;
 
-        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
-        var settings = await _getSettingsAsync() ?? new SystemSettings
-        {
-            CreatedByUserId = userId,
-            CreatedUtc = utcNow
-        };
-        settings.AssistantModel = normalizedModel;
-        settings.UpdatedByUserId = userId;
-        settings.UpdatedUtc = utcNow;
+        var settings = await _systemSettingsService.UpdateAsync(userId, value => value.AssistantModel = normalizedModel);
 
-        await _saveSettingsAsync(settings);
+        return CreateResponse(settings);
+    }
 
+    public async Task<AssistantModelSettings> SetEnabledAsync(bool? enabled, string userId)
+    {
+        bool? normalizedEnabled = enabled;
+        if (normalizedEnabled == _appOptions.AssistantOptions.Enabled)
+            normalizedEnabled = null;
+
+        var settings = await _systemSettingsService.UpdateAsync(userId, value => value.AssistantEnabled = normalizedEnabled);
         return CreateResponse(settings);
     }
 
@@ -66,13 +47,26 @@ public sealed class AssistantModelSettingsService
     {
         string configuredModel = _appOptions.AssistantOptions.Model;
         string? modelOverride = settings?.AssistantModel;
-        bool isOverridden = !String.IsNullOrWhiteSpace(modelOverride);
+        bool isModelOverridden = !String.IsNullOrWhiteSpace(modelOverride);
+        bool configuredEnabled = _appOptions.AssistantOptions.Enabled;
+        bool? enabledOverride = settings?.AssistantEnabled;
 
         return new AssistantModelSettings(
-            isOverridden ? modelOverride! : configuredModel,
+            isModelOverridden ? modelOverride! : configuredModel,
             configuredModel,
-            isOverridden);
+            isModelOverridden,
+            enabledOverride ?? configuredEnabled,
+            configuredEnabled,
+            enabledOverride.HasValue,
+            _appOptions.AssistantOptions.IsConfigured);
     }
 }
 
-public sealed record AssistantModelSettings(string Model, string ConfiguredModel, bool IsOverridden);
+public sealed record AssistantModelSettings(
+    string Model,
+    string ConfiguredModel,
+    bool IsOverridden,
+    bool Enabled,
+    bool ConfiguredEnabled,
+    bool IsEnabledOverridden,
+    bool IsConfigured);

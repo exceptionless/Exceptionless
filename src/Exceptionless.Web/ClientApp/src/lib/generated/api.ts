@@ -101,6 +101,10 @@ export interface AssistantModelSettings {
   model: string;
   configured_model: string;
   is_overridden: boolean;
+  enabled: boolean;
+  configured_enabled: boolean;
+  is_enabled_overridden: boolean;
+  is_configured: boolean;
 }
 
 export interface BillingPlan {
@@ -149,6 +153,12 @@ export interface CountResult {
   total: number;
   aggregations?: null | Record<string, IAggregate>;
   data?: null | object;
+}
+
+export interface EventSubmissionSettings {
+  enabled: boolean;
+  configured_enabled: boolean;
+  is_overridden: boolean;
 }
 
 export interface ExternalAuthInfo {
@@ -615,6 +625,10 @@ export interface TokenResult {
   token: string;
 }
 
+export interface UpdateAssistantEnabledSettings {
+  enabled?: null | boolean;
+}
+
 export interface UpdateAssistantSettings {
   model?: null | string;
 }
@@ -628,6 +642,10 @@ export interface UpdateEvent {
   /** @format email */
   email_address?: null | string;
   description?: null | string;
+}
+
+export interface UpdateEventSubmissionSettings {
+  enabled?: null | boolean;
 }
 
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */

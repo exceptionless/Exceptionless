@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Exceptionless.Core.Attributes;
+using Exceptionless.Core.Messaging.Models;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models;
@@ -13,6 +14,12 @@ public sealed class SystemSettings : IIdentity, IHaveDates
 
     [MaxLength(200)]
     public string? AssistantModel { get; set; }
+
+    public bool? AssistantEnabled { get; set; }
+
+    public bool? EventSubmissionEnabled { get; set; }
+
+    public SystemNotification? SystemNotification { get; set; }
 
     [ObjectId]
     public string CreatedByUserId { get; set; } = null!;

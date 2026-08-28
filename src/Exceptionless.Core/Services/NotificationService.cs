@@ -7,28 +7,35 @@ using Foundatio.Messaging;
 
 namespace Exceptionless.Core.Services;
 
-public class NotificationService(ICacheClient cacheClient, IMessagePublisher messagePublisher, TimeProvider timeProvider, CacheLockProvider lockProvider)
+public class NotificationService(ICacheClient cacheClient, IMessagePublisher messagePublisher, TimeProvider timeProvider, CacheLockProvider lockProvider, SystemSettingsService systemSettingsService)
 {
     private const string SystemNotificationCacheKey = "system-notification";
     private static readonly TimeSpan OrganizationNotificationLockTimeout = TimeSpan.FromMinutes(90);
 
     public async Task<SystemNotification?> GetSystemNotificationAsync()
     {
+        var settings = await systemSettingsService.GetAsync();
+        if (settings?.SystemNotification is not null)
+            return settings.SystemNotification;
+
+        // Preserve an active notification created before notifications became durable.
         var result = await cacheClient.GetAsync<SystemNotification>(SystemNotificationCacheKey);
         return result.HasValue ? result.Value : null;
     }
 
-    public async Task<SystemNotification> SetSystemNotificationAsync(string message, SystemNotificationLevel level = SystemNotificationLevel.Info, SystemNotificationTarget target = SystemNotificationTarget.Both, bool publish = true)
+    public async Task<SystemNotification> SetSystemNotificationAsync(string message, string userId, SystemNotificationLevel level = SystemNotificationLevel.Info, SystemNotificationTarget target = SystemNotificationTarget.Both, bool publish = true)
     {
         var notification = new SystemNotification { Date = timeProvider.GetUtcNow().UtcDateTime, Message = message, Level = level, Target = target };
-        await cacheClient.SetAsync(SystemNotificationCacheKey, notification);
+        await systemSettingsService.UpdateAsync(userId, settings => settings.SystemNotification = notification);
+        await cacheClient.RemoveAsync(SystemNotificationCacheKey);
         if (publish)
             await messagePublisher.PublishAsync(notification);
         return notification;
     }
 
-    public async Task ClearSystemNotificationAsync(bool publish = true)
+    public async Task ClearSystemNotificationAsync(string userId, bool publish = true)
     {
+        await systemSettingsService.UpdateAsync(userId, settings => settings.SystemNotification = null);
         await cacheClient.RemoveAsync(SystemNotificationCacheKey);
         if (publish)
             await messagePublisher.PublishAsync(new SystemNotification { Date = timeProvider.GetUtcNow().UtcDateTime });

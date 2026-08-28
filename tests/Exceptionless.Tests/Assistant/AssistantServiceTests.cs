@@ -6,6 +6,7 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Serialization;
+using Exceptionless.Core.Services;
 using Exceptionless.Web.Assistant;
 using Exceptionless.Web.Mcp;
 using Foundatio.Caching;
@@ -1261,7 +1262,7 @@ public sealed class AssistantServiceTests
     private static AssistantModelSettingsService CreateAssistantModelSettingsService(AppOptions appOptions)
     {
         SystemSettings? settings = null;
-        return new AssistantModelSettingsService(
+        var systemSettingsService = new SystemSettingsService(
             () => Task.FromResult(settings),
             value =>
             {
@@ -1270,6 +1271,7 @@ public sealed class AssistantServiceTests
             },
             appOptions,
             TimeProvider.System);
+        return new AssistantModelSettingsService(systemSettingsService, appOptions);
     }
 
     private static ILockProvider CreateLockProvider(ICacheClient cache, TimeProvider timeProvider)

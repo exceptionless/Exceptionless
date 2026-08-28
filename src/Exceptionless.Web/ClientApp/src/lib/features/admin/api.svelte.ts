@@ -4,6 +4,7 @@ import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-qu
 import type {
     AdminAssistantSettings,
     AdminAssistantUsage,
+    AdminEventSubmissionSettings,
     AdminStats,
     ElasticsearchInfo,
     ElasticsearchSnapshotsResponse,
@@ -11,7 +12,9 @@ import type {
     OAuthApplication,
     OAuthApplicationRequest,
     PredefinedSavedViewDefinition,
-    UpdateAssistantSettingsRequest
+    UpdateAssistantEnabledSettingsRequest,
+    UpdateAssistantSettingsRequest,
+    UpdateEventSubmissionSettingsRequest
 } from './models';
 
 export type RunMaintenanceJobParams = {
@@ -25,6 +28,7 @@ export const queryKeys = {
     assistantSettings: ['admin', 'assistant-settings'] as const,
     assistantUsage: (month: string) => ['admin', 'assistant-usage', month] as const,
     elasticsearch: ['admin', 'elasticsearch'] as const,
+    eventSubmissionSettings: ['admin', 'event-submission-settings'] as const,
     migrations: ['admin', 'migrations'] as const,
     oauthApplications: ['admin', 'oauth-applications'] as const,
     snapshots: ['admin', 'elasticsearch', 'snapshots'] as const,
@@ -138,6 +142,25 @@ export function getElasticsearchSnapshotsQuery() {
     }));
 }
 
+export function getEventSubmissionSettingsQuery() {
+    return createQuery<AdminEventSubmissionSettings, ProblemDetails>(() => ({
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<AdminEventSubmissionSettings>('admin/event-submission-settings', {
+                signal
+            });
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+
+            return response.data!;
+        },
+        queryKey: queryKeys.eventSubmissionSettings,
+        staleTime: 30 * 1000
+    }));
+}
+
 export function getMigrationsQuery() {
     return createQuery<MigrationsResponse, ProblemDetails>(() => ({
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
@@ -229,6 +252,26 @@ export function postOAuthApplicationMutation() {
     }));
 }
 
+export function putAdminAssistantEnabledSettingsMutation() {
+    const queryClient = useQueryClient();
+
+    return createMutation<AdminAssistantSettings, ProblemDetails, UpdateAssistantEnabledSettingsRequest>(() => ({
+        mutationFn: async (request) => {
+            const client = useFetchClient();
+            const response = await client.putJSON<AdminAssistantSettings>('admin/assistant-settings/enabled', request);
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+
+            return response.data!;
+        },
+        onSuccess: (settings) => {
+            queryClient.setQueryData(queryKeys.assistantSettings, settings);
+        }
+    }));
+}
+
 export function putAdminAssistantSettingsMutation() {
     const queryClient = useQueryClient();
 
@@ -245,6 +288,26 @@ export function putAdminAssistantSettingsMutation() {
         },
         onSuccess: (settings) => {
             queryClient.setQueryData(queryKeys.assistantSettings, settings);
+        }
+    }));
+}
+
+export function putEventSubmissionSettingsMutation() {
+    const queryClient = useQueryClient();
+
+    return createMutation<AdminEventSubmissionSettings, ProblemDetails, UpdateEventSubmissionSettingsRequest>(() => ({
+        mutationFn: async (request) => {
+            const client = useFetchClient();
+            const response = await client.putJSON<AdminEventSubmissionSettings>('admin/event-submission-settings', request);
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+
+            return response.data!;
+        },
+        onSuccess: (settings) => {
+            queryClient.setQueryData(queryKeys.eventSubmissionSettings, settings);
         }
     }));
 }

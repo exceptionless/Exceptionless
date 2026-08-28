@@ -101,6 +101,8 @@ public class AdminEndpointTests : IntegrationTestsBase
         Assert.NotNull(initial);
         Assert.Equal(initial.ConfiguredModel, initial.Model);
         Assert.False(initial.IsOverridden);
+        Assert.Equal(initial.ConfiguredEnabled, initial.Enabled);
+        Assert.False(initial.IsEnabledOverridden);
 
         var updated = await SendRequestAsAsync<AssistantModelSettingsResponse>(request => request
             .Put()
@@ -130,6 +132,24 @@ public class AdminEndpointTests : IntegrationTestsBase
         Assert.Equal("z-ai/glm-5.3-flash", afterCacheClear.Model);
         Assert.True(afterCacheClear.IsOverridden);
 
+        var restoredDefault = await SendRequestAsAsync<AssistantModelSettingsResponse>(request => request
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "assistant-settings")
+            .Content(new UpdateAssistantSettings { Model = initial.ConfiguredModel })
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(restoredDefault);
+        Assert.Equal(initial.ConfiguredModel, restoredDefault.Model);
+        Assert.False(restoredDefault.IsOverridden);
+
+        await SendRequestAsAsync<AssistantModelSettingsResponse>(request => request
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "assistant-settings")
+            .Content(new UpdateAssistantSettings { Model = "z-ai/glm-5.3-flash" })
+            .StatusCodeShouldBeOk());
+
         var cleared = await SendRequestAsAsync<AssistantModelSettingsResponse>(request => request
             .Put()
             .AsGlobalAdminUser()
@@ -140,6 +160,159 @@ public class AdminEndpointTests : IntegrationTestsBase
         Assert.NotNull(cleared);
         Assert.Equal(initial.ConfiguredModel, cleared.Model);
         Assert.False(cleared.IsOverridden);
+    }
+
+    [Fact]
+    public async Task AssistantSettingsAsync_AsGlobalAdmin_UpdatesAndClearsRuntimeEnabledOverride()
+    {
+        var initial = await SendRequestAsAsync<AssistantModelSettingsResponse>(request => request
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "assistant-settings")
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(initial);
+
+        var updated = await SendRequestAsAsync<AssistantModelSettingsResponse>(request => request
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "assistant-settings", "enabled")
+            .Content(new UpdateAssistantEnabledSettings { Enabled = !initial.ConfiguredEnabled })
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(updated);
+        Assert.Equal(!initial.ConfiguredEnabled, updated.Enabled);
+        Assert.True(updated.IsEnabledOverridden);
+
+        await GetService<ICacheClient>().RemoveAllAsync();
+        var afterCacheClear = await SendRequestAsAsync<AssistantModelSettingsResponse>(request => request
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "assistant-settings")
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(afterCacheClear);
+        Assert.Equal(updated.Enabled, afterCacheClear.Enabled);
+        Assert.True(afterCacheClear.IsEnabledOverridden);
+
+        var restoredDefault = await SendRequestAsAsync<AssistantModelSettingsResponse>(request => request
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "assistant-settings", "enabled")
+            .Content(new UpdateAssistantEnabledSettings { Enabled = initial.ConfiguredEnabled })
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(restoredDefault);
+        Assert.Equal(initial.ConfiguredEnabled, restoredDefault.Enabled);
+        Assert.False(restoredDefault.IsEnabledOverridden);
+
+        await SendRequestAsAsync<AssistantModelSettingsResponse>(request => request
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "assistant-settings", "enabled")
+            .Content(new UpdateAssistantEnabledSettings { Enabled = !initial.ConfiguredEnabled })
+            .StatusCodeShouldBeOk());
+
+        var cleared = await SendRequestAsAsync<AssistantModelSettingsResponse>(request => request
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "assistant-settings", "enabled")
+            .Content(new UpdateAssistantEnabledSettings { Enabled = null })
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(cleared);
+        Assert.Equal(initial.ConfiguredEnabled, cleared.Enabled);
+        Assert.False(cleared.IsEnabledOverridden);
+    }
+
+    [Fact]
+    public async Task EventSubmissionSettingsAsync_AsGlobalAdmin_UpdatesAndClearsRuntimeOverride()
+    {
+        var initial = await SendRequestAsAsync<EventSubmissionSettings>(request => request
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "event-submission-settings")
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(initial);
+        Assert.Equal(initial.ConfiguredEnabled, initial.Enabled);
+        Assert.False(initial.IsOverridden);
+
+        var updated = await SendRequestAsAsync<EventSubmissionSettings>(request => request
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "event-submission-settings")
+            .Content(new UpdateEventSubmissionSettings { Enabled = !initial.ConfiguredEnabled })
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(updated);
+        Assert.Equal(!initial.ConfiguredEnabled, updated.Enabled);
+        Assert.True(updated.IsOverridden);
+
+        await GetService<ICacheClient>().RemoveAllAsync();
+        var afterCacheClear = await SendRequestAsAsync<EventSubmissionSettings>(request => request
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "event-submission-settings")
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(afterCacheClear);
+        Assert.Equal(updated.Enabled, afterCacheClear.Enabled);
+        Assert.True(afterCacheClear.IsOverridden);
+
+        var restoredDefault = await SendRequestAsAsync<EventSubmissionSettings>(request => request
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "event-submission-settings")
+            .Content(new UpdateEventSubmissionSettings { Enabled = initial.ConfiguredEnabled })
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(restoredDefault);
+        Assert.Equal(initial.ConfiguredEnabled, restoredDefault.Enabled);
+        Assert.False(restoredDefault.IsOverridden);
+
+        await SendRequestAsAsync<EventSubmissionSettings>(request => request
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "event-submission-settings")
+            .Content(new UpdateEventSubmissionSettings { Enabled = !initial.ConfiguredEnabled })
+            .StatusCodeShouldBeOk());
+
+        var cleared = await SendRequestAsAsync<EventSubmissionSettings>(request => request
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "event-submission-settings")
+            .Content(new UpdateEventSubmissionSettings { Enabled = null })
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(cleared);
+        Assert.Equal(initial.ConfiguredEnabled, cleared.Enabled);
+        Assert.False(cleared.IsOverridden);
+    }
+
+    [Fact]
+    public async Task RuntimeSettingsAsync_LegacyDocumentUsesDeploymentDefaults()
+    {
+        await GetService<ISystemSettingsRepository>().SaveAsync(new SystemSettings
+        {
+            AssistantModel = "legacy/model",
+            CreatedByUserId = TestConstants.UserId,
+            CreatedUtc = TimeProvider.GetUtcNow().UtcDateTime,
+            UpdatedByUserId = TestConstants.UserId,
+            UpdatedUtc = TimeProvider.GetUtcNow().UtcDateTime
+        }, options => options.ImmediateConsistency());
+
+        var assistantSettings = await SendRequestAsAsync<AssistantModelSettingsResponse>(request => request
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "assistant-settings")
+            .StatusCodeShouldBeOk());
+        var eventSubmissionSettings = await SendRequestAsAsync<EventSubmissionSettings>(request => request
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "event-submission-settings")
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(assistantSettings);
+        Assert.Equal(assistantSettings.ConfiguredEnabled, assistantSettings.Enabled);
+        Assert.False(assistantSettings.IsEnabledOverridden);
+        Assert.NotNull(eventSubmissionSettings);
+        Assert.Equal(eventSubmissionSettings.ConfiguredEnabled, eventSubmissionSettings.Enabled);
+        Assert.False(eventSubmissionSettings.IsOverridden);
     }
 
     [Fact]
@@ -1031,6 +1204,13 @@ public class AdminEndpointTests : IntegrationTestsBase
             .StatusCodeShouldBeForbidden());
     }
 
-    private sealed record AssistantModelSettingsResponse(string Model, string ConfiguredModel, bool IsOverridden);
+    private sealed record AssistantModelSettingsResponse(
+        string Model,
+        string ConfiguredModel,
+        bool IsOverridden,
+        bool Enabled,
+        bool ConfiguredEnabled,
+        bool IsEnabledOverridden,
+        bool IsConfigured);
     private sealed record RequeueResult([property: JsonPropertyName("enqueued")] int Enqueued);
 }

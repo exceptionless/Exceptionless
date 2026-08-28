@@ -23,6 +23,13 @@ public sealed class SystemSettingsIndex : VersionedIndex<SystemSettings>
             .Properties(properties => properties
                 .SetupDefaults()
                 .Keyword(settings => settings.AssistantModel)
+                .Boolean(settings => settings.AssistantEnabled)
+                .Boolean(settings => settings.EventSubmissionEnabled)
+                .Object(settings => settings.SystemNotification, notification => notification.Properties(properties => properties
+                    .Date("date")
+                    .Text("message")
+                    .Keyword("level")
+                    .Keyword("target")))
                 .Keyword(settings => settings.CreatedByUserId)
                 .Keyword(settings => settings.UpdatedByUserId));
     }

@@ -1,9 +1,13 @@
 using System.Text.Json;
 using Exceptionless.Core.Messaging.Models;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models;
+using Foundatio.Caching;
+using Foundatio.Repositories;
 using FluentRest;
 using Xunit;
 
@@ -122,6 +126,22 @@ public class StatusEndpointTests : IntegrationTestsBase
         Assert.Equal(SystemNotificationLevel.Info, notification.Level);
         Assert.Equal(SystemNotificationTarget.Both, notification.Target);
         Assert.True(notification.Date.IsAfterOrEqual(utcNow));
+
+        var settings = await GetService<ISystemSettingsRepository>().GetByIdAsync(SystemSettings.DefaultId, options => options.ImmediateConsistency());
+        Assert.NotNull(settings?.SystemNotification);
+        Assert.Equal(notification.Message, settings.SystemNotification.Message);
+        Assert.Equal(notification.Level, settings.SystemNotification.Level);
+        Assert.Equal(notification.Target, settings.SystemNotification.Target);
+
+        await GetService<ICacheClient>().RemoveAllAsync();
+        var afterCacheClear = await SendRequestAsAsync<SystemNotification>(r => r
+            .AsGlobalAdminUser()
+            .AppendPath("notifications/system")
+            .StatusCodeShouldBeOk());
+        Assert.NotNull(afterCacheClear);
+        Assert.Equal(notification.Message, afterCacheClear.Message);
+        Assert.Equal(notification.Level, afterCacheClear.Level);
+        Assert.Equal(notification.Target, afterCacheClear.Target);
     }
 
     [Fact]
@@ -198,12 +218,15 @@ public class StatusEndpointTests : IntegrationTestsBase
         Assert.NotNull(notification);
         Assert.Equal("Silent notification", notification.Message);
 
-        // Verify it was actually persisted to cache
+        // Verify it was actually persisted to durable system settings.
         var persisted = await SendRequestAsAsync<SystemNotification>(r => r
             .AsGlobalAdminUser()
             .AppendPath("notifications/system")
             .StatusCodeShouldBeOk());
         Assert.NotNull(persisted);
         Assert.Equal("Silent notification", persisted.Message);
+
+        var settings = await GetService<ISystemSettingsRepository>().GetByIdAsync(SystemSettings.DefaultId, options => options.ImmediateConsistency());
+        Assert.Equal("Silent notification", settings?.SystemNotification?.Message);
     }
 }

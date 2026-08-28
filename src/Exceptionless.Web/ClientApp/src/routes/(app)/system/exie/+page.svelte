@@ -13,8 +13,14 @@
     import { Input } from '$comp/ui/input';
     import { Skeleton } from '$comp/ui/skeleton';
     import { Spinner } from '$comp/ui/spinner';
+    import { Switch } from '$comp/ui/switch';
     import * as Table from '$comp/ui/table';
-    import { getAdminAssistantSettingsQuery, getAdminAssistantUsageQuery, putAdminAssistantSettingsMutation } from '$features/admin/api.svelte';
+    import {
+        getAdminAssistantSettingsQuery,
+        getAdminAssistantUsageQuery,
+        putAdminAssistantEnabledSettingsMutation,
+        putAdminAssistantSettingsMutation
+    } from '$features/admin/api.svelte';
     import { getBlockedCount, getTotalTokens, getUsageRisk, getUtcMonthKey, type UsageRisk } from '$features/admin/assistant-usage';
     import { type AssistantSettingsFormData, AssistantSettingsSchema } from '$features/admin/schemas';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
@@ -44,11 +50,17 @@
 
     const currentMonth = getUtcMonthKey();
     const settingsQuery = getAdminAssistantSettingsQuery();
+    const updateEnabledSettings = putAdminAssistantEnabledSettingsMutation();
     const updateSettings = putAdminAssistantSettingsMutation();
+    let assistantEnabled = $state(false);
+    let loadedAvailabilityKey = $state<null | string>(null);
     let selectedMonth = $state(currentMonth);
     let loadedSettingsKey = $state<null | string>(null);
     const usageQuery = getAdminAssistantUsageQuery(() => selectedMonth);
     const settings = $derived(settingsQuery.data);
+    const availabilityKey = $derived(
+        settings ? JSON.stringify([settings.enabled, settings.configured_enabled, settings.is_enabled_overridden, settings.is_configured]) : null
+    );
     const settingsKey = $derived(settings ? JSON.stringify([settings.model, settings.configured_model, settings.is_overridden]) : null);
     const usage = $derived(usageQuery.data);
     const totalTokens = $derived((usage?.prompt_tokens ?? 0) + (usage?.completion_tokens ?? 0));
@@ -83,6 +95,15 @@
     }));
 
     $effect(() => {
+        if (!settings || loadedAvailabilityKey === availabilityKey) {
+            return;
+        }
+
+        loadedAvailabilityKey = availabilityKey;
+        assistantEnabled = settings.enabled;
+    });
+
+    $effect(() => {
         if (!settings || loadedSettingsKey === settingsKey) {
             return;
         }
@@ -100,6 +121,30 @@
             toast.success('Exie model reset to the deployment default.');
         } catch {
             toast.error('Failed to reset the Exie model.');
+        }
+    }
+
+    async function saveAvailability() {
+        try {
+            const saved = await updateEnabledSettings.mutateAsync({
+                enabled: assistantEnabled
+            });
+            assistantEnabled = saved.enabled;
+            toast.success(saved.enabled ? 'Exie is enabled.' : 'Exie is disabled.');
+        } catch {
+            toast.error('Failed to update Exie availability.');
+        }
+    }
+
+    async function resetAvailability() {
+        try {
+            const saved = await updateEnabledSettings.mutateAsync({
+                enabled: null
+            });
+            assistantEnabled = saved.enabled;
+            toast.success('Exie availability reset to the deployment default.');
+        } catch {
+            toast.error('Failed to reset Exie availability.');
         }
     }
 
@@ -146,6 +191,64 @@
 </script>
 
 <div class="flex flex-col gap-6">
+    <Card.Root>
+        <Card.Header>
+            <div class="flex flex-wrap items-center gap-2">
+                <Card.Title>Availability</Card.Title>
+                {#if settings}
+                    <Badge variant={settings.is_enabled_overridden ? 'secondary' : 'outline'}>
+                        {settings.is_enabled_overridden ? 'Runtime override' : 'Deployment default'}
+                    </Badge>
+                {/if}
+            </div>
+            <Card.Description>Enable or disable Exie for all organizations without restarting the app.</Card.Description>
+        </Card.Header>
+        {#if settingsQuery.isPending}
+            <Card.Content class="flex items-center gap-2">
+                <Spinner />
+                <Muted>Loading Exie availability...</Muted>
+            </Card.Content>
+        {:else if settingsQuery.isError}
+            <Card.Content>
+                <p class="text-destructive text-sm">Failed to load Exie availability.</p>
+            </Card.Content>
+        {:else}
+            <Card.Content class="space-y-2">
+                <div class="flex items-center justify-between gap-6 rounded-lg border p-4">
+                    <div class="space-y-1">
+                        <label class="text-sm font-medium" for="assistant-enabled">Exie enabled</label>
+                        <Muted class="text-xs"
+                            >Disabled Exie requests are rejected immediately. The deployment default is {settings?.configured_enabled
+                                ? 'enabled'
+                                : 'disabled'}.</Muted
+                        >
+                    </div>
+                    <Switch id="assistant-enabled" bind:checked={assistantEnabled} disabled={updateEnabledSettings.isPending} />
+                </div>
+                {#if settings && !settings.is_configured}
+                    <p class="text-destructive text-sm">An OpenRouter API key must be configured before Exie can be used.</p>
+                {/if}
+            </Card.Content>
+            <Card.Footer class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                {#if settings?.is_enabled_overridden}
+                    <Button type="button" variant="outline" disabled={updateEnabledSettings.isPending} onclick={resetAvailability}>
+                        <RotateCcw data-icon="inline-start" />
+                        Reset to Deployment Default
+                    </Button>
+                {/if}
+                <Button type="button" disabled={updateEnabledSettings.isPending || assistantEnabled === settings?.enabled} onclick={saveAvailability}>
+                    {#if updateEnabledSettings.isPending}
+                        <Spinner data-icon="inline-start" />
+                        Saving...
+                    {:else}
+                        <Save data-icon="inline-start" />
+                        Save Availability
+                    {/if}
+                </Button>
+            </Card.Footer>
+        {/if}
+    </Card.Root>
+
     <Card.Root>
         <Card.Header>
             <div class="flex flex-wrap items-center gap-2">

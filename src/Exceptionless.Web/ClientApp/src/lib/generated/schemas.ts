@@ -127,6 +127,10 @@ export const AssistantModelSettingsSchema = object({
   model: string().min(1, "Model is required"),
   configured_model: string().min(1, "Configured model is required"),
   is_overridden: boolean(),
+  enabled: boolean(),
+  configured_enabled: boolean(),
+  is_enabled_overridden: boolean(),
+  is_configured: boolean(),
 });
 export type AssistantModelSettingsFormData = Infer<
   typeof AssistantModelSettingsSchema
@@ -192,6 +196,15 @@ export const CountResultSchema = object({
   data: record(string(), unknown()).nullable(),
 });
 export type CountResultFormData = Infer<typeof CountResultSchema>;
+
+export const EventSubmissionSettingsSchema = object({
+  enabled: boolean(),
+  configured_enabled: boolean(),
+  is_overridden: boolean(),
+});
+export type EventSubmissionSettingsFormData = Infer<
+  typeof EventSubmissionSettingsSchema
+>;
 
 export const ExternalAuthInfoSchema = object({
   clientId: string().min(1, "Client id is required"),
@@ -717,6 +730,13 @@ export const TokenResultSchema = object({
 });
 export type TokenResultFormData = Infer<typeof TokenResultSchema>;
 
+export const UpdateAssistantEnabledSettingsSchema = object({
+  enabled: boolean().nullable().optional(),
+});
+export type UpdateAssistantEnabledSettingsFormData = Infer<
+  typeof UpdateAssistantEnabledSettingsSchema
+>;
+
 export const UpdateAssistantSettingsSchema = object({
   model: string()
     .min(1, "Model is required")
@@ -740,6 +760,13 @@ export const UpdateEventSchema = object({
   description: string().min(1, "Description is required").nullable().optional(),
 });
 export type UpdateEventFormData = Infer<typeof UpdateEventSchema>;
+
+export const UpdateEventSubmissionSettingsSchema = object({
+  enabled: boolean().nullable().optional(),
+});
+export type UpdateEventSubmissionSettingsFormData = Infer<
+  typeof UpdateEventSubmissionSettingsSchema
+>;
 
 export const UpdateProjectSchema = object({
   name: string().min(1, "Name is required").optional(),

@@ -1,4 +1,11 @@
-import type { AssistantModelSettings, CountResult, UpdateAssistantSettings } from '$generated/api';
+import type {
+    AssistantModelSettings,
+    CountResult,
+    EventSubmissionSettings,
+    UpdateAssistantEnabledSettings,
+    UpdateAssistantSettings,
+    UpdateEventSubmissionSettings
+} from '$generated/api';
 
 export enum MigrationType {
     Versioned = 0,
@@ -41,6 +48,8 @@ export type AdminAssistantUsage = {
     prompt_tokens: number;
     turns: number;
 };
+
+export type AdminEventSubmissionSettings = EventSubmissionSettings;
 
 export type AdminStats = {
     events: CountResult;
@@ -173,7 +182,9 @@ export type ShardMetric = {
     value: number;
 };
 
+export type UpdateAssistantEnabledSettingsRequest = UpdateAssistantEnabledSettings;
 export type UpdateAssistantSettingsRequest = UpdateAssistantSettings;
+export type UpdateEventSubmissionSettingsRequest = UpdateEventSubmissionSettings;
 
 export const maintenanceActions: MaintenanceAction[] = [
     {

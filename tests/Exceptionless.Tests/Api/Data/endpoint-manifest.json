@@ -288,6 +288,20 @@
     "authenticationSchemes": []
   },
   {
+    "method": "PUT",
+    "route": "/api/v2/admin/assistant-settings/enabled",
+    "displayName": "HTTP: PUT api/v2/admin/assistant-settings/enabled",
+    "tags": [
+      "AdminEndpoints"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
     "method": "GET",
     "route": "/api/v2/admin/assistant-usage",
     "displayName": "HTTP: GET api/v2/admin/assistant-usage =\u003E GetAssistantUsageAsync",
@@ -343,6 +357,34 @@
     "displayName": "HTTP: GET /api/v2/admin/elasticsearch/snapshots",
     "tags": [
       "Admin"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
+    "route": "/api/v2/admin/event-submission-settings",
+    "displayName": "HTTP: GET api/v2/admin/event-submission-settings =\u003E GetEventSubmissionSettingsAsync",
+    "tags": [
+      "AdminEndpoints"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "PUT",
+    "route": "/api/v2/admin/event-submission-settings",
+    "displayName": "HTTP: PUT api/v2/admin/event-submission-settings =\u003E UpdateEventSubmissionSettingsAsync",
+    "tags": [
+      "AdminEndpoints"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
