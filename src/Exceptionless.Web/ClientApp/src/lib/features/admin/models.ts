@@ -1,12 +1,12 @@
 import type {
-    AdminProductTourUsageResponse,
     AssistantModelSettings,
     CountResult,
-    EventSubmissionSettings,
     UpdateAssistantEnabledSettings,
     UpdateAssistantSettings,
     UpdateEventSubmissionSettings
 } from '$generated/api';
+
+export type { EventSubmissionSettings as AdminEventSubmissionSettings, AdminProductTourUsageResponse as AdminProductTourUsage } from '$generated/api';
 
 export enum MigrationType {
     Versioned = 0,
@@ -49,9 +49,6 @@ export type AdminAssistantUsage = {
     prompt_tokens: number;
     turns: number;
 };
-
-export type AdminEventSubmissionSettings = EventSubmissionSettings;
-export type AdminProductTourUsage = AdminProductTourUsageResponse;
 
 export type AdminStats = {
     events: CountResult;

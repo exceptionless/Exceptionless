@@ -38,7 +38,7 @@ export function createProductTourActions() {
         if (!productTourCheckpoint.clear(checkpoint)) {
             return false;
         }
-        void track(status === ProductTourStatus.Completed ? 'completed' : 'dismissed', checkpoint.tourName, definition.version, checkpoint.source);
+        await track(status === ProductTourStatus.Completed ? 'completed' : 'dismissed', checkpoint.tourName, definition.version, checkpoint.source);
         return true;
     }
 

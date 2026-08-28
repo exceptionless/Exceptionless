@@ -183,7 +183,7 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         AssertDictionaryValueSchema(document.RootElement, "ViewSavedView", "columns", "SavedViewColumnSettings");
         AssertRequiredJsonRequestBody(paths, "/api/v2/users/{id}", "patch", "UpdateUser");
         AssertRequiredJsonRequestBody(paths, "/api/v2/users/{id}", "put", "UpdateUser");
-        AssertRequiredJsonRequestBody(paths, "/api/v2/users/me/product-tours/{tourName}", "put", "UpdateProductTourProgress");
+        AssertRequiredJsonRequestBody(paths, "/api/v2/users/me/product-tours/{tourName}", "put", "UpdateProductTourProgress", "application/json");
 
         AssertRequestContentTypes(paths, "/api/v1/error", "post", "application/json", "text/plain");
         AssertRequestContentTypes(paths, "/api/v1/events", "post", "application/json", "text/plain");
@@ -395,13 +395,14 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.Equal(expectedContentTypes.Order(), content.EnumerateObject().Select(property => property.Name).Order());
     }
 
-    private static void AssertRequiredJsonRequestBody(JsonElement paths, string path, string method, string expectedSchema)
+    private static void AssertRequiredJsonRequestBody(JsonElement paths, string path, string method, string expectedSchema, params string[] expectedContentTypes)
     {
         var requestBody = paths.GetProperty(path).GetProperty(method).GetProperty("requestBody");
         Assert.True(requestBody.GetProperty("required").GetBoolean());
 
         var content = requestBody.GetProperty("content");
-        Assert.Equal(["application/*+json", "application/json"], content.EnumerateObject().Select(property => property.Name).Order());
+        string[] contentTypes = expectedContentTypes.Length > 0 ? expectedContentTypes : ["application/*+json", "application/json"];
+        Assert.Equal(contentTypes.Order(), content.EnumerateObject().Select(property => property.Name).Order());
 
         foreach (var mediaType in content.EnumerateObject())
             Assert.Equal($"#/components/schemas/{expectedSchema}", mediaType.Value.GetProperty("schema").GetProperty("$ref").GetString());
