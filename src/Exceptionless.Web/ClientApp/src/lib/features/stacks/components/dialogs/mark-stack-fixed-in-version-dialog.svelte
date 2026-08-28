@@ -122,7 +122,7 @@
 
             <form.Field name="version">
                 {#snippet children(field)}
-                    <Field.Field data-invalid={field.state.meta.errors.length > 0 ? true : undefined}>
+                    <Field.Field class="pb-4" data-invalid={field.state.meta.errors.length > 0 ? true : undefined}>
                         <Field.Label for={field.name}>Version</Field.Label>
                         <Input
                             id={field.name}

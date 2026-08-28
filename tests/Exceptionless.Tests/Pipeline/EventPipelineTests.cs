@@ -809,6 +809,53 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task ProcessBatchAsync_StackWithoutRegression_ContinuesProcessingRemainingStacks()
+    {
+        // Arrange
+        var fixedAtUtc = new DateTimeOffset(2026, 8, 27, 12, 0, 0, TimeSpan.Zero);
+        TimeProvider.SetUtcNow(fixedAtUtc);
+
+        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
+        var project = _projectData.GenerateSampleProject();
+        var firstContext = await _pipeline.RunAsync(
+            _eventData.GenerateEvent(projectId: project.Id, organizationId: organization.Id, source: "first-stack", type: Event.KnownTypes.Log, occurrenceDate: fixedAtUtc.AddMinutes(-2)),
+            organization,
+            project);
+        var secondContext = await _pipeline.RunAsync(
+            _eventData.GenerateEvent(projectId: project.Id, organizationId: organization.Id, source: "second-stack", type: Event.KnownTypes.Log, occurrenceDate: fixedAtUtc.AddMinutes(-2)),
+            organization,
+            project);
+
+        Assert.NotNull(firstContext.Stack);
+        Assert.NotNull(secondContext.Stack);
+        Assert.NotEqual(firstContext.Stack.Id, secondContext.Stack.Id);
+        firstContext.Stack.MarkFixed(null, TimeProvider);
+        secondContext.Stack.MarkFixed(null, TimeProvider);
+        Assert.Equal(fixedAtUtc.UtcDateTime, firstContext.Stack.DateFixed);
+        Assert.Equal(fixedAtUtc.UtcDateTime, secondContext.Stack.DateFixed);
+
+        await _stackRepository.SaveAsync(firstContext.Stack, o => o.ImmediateConsistency().Cache());
+        await _stackRepository.SaveAsync(secondContext.Stack, o => o.ImmediateConsistency().Cache());
+        await RefreshDataAsync();
+        TimeProvider.Advance(TimeSpan.FromMinutes(2));
+
+        var contexts = new List<EventContext>
+        {
+            new(_eventData.GenerateEvent(stackId: firstContext.Stack.Id, projectId: project.Id, organizationId: organization.Id, source: "first-stack", type: Event.KnownTypes.Log, occurrenceDate: fixedAtUtc.AddMinutes(-1)), organization, project),
+            new(_eventData.GenerateEvent(stackId: secondContext.Stack.Id, projectId: project.Id, organizationId: organization.Id, source: "second-stack", type: Event.KnownTypes.Log, occurrenceDate: fixedAtUtc.AddMinutes(1)), organization, project)
+        };
+
+        // Act
+        await _pipeline.RunAsync(contexts);
+
+        // Assert
+        Assert.False(contexts[0].IsRegression);
+        Assert.Equal(StackStatus.Fixed, contexts[0].Stack?.Status);
+        Assert.True(contexts[1].IsRegression);
+        Assert.Equal(StackStatus.Regressed, contexts[1].Stack?.Status);
+    }
+
+    [Fact]
     public async Task EnsureVersionedRegressionAsync()
     {
         var utcNow = DateTime.UtcNow;

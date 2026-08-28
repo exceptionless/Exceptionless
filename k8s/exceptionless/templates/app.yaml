@@ -167,9 +167,9 @@ spec:
         - port: 80
           protocol: HTTP
       timeouts:
-        # Exie streams multiple provider and tool rounds over one response. Disable the
-        # strict route deadline while the gateway's idle timeout still protects dead streams.
-        requestTimeout: 0s
+        # Exie allows up to two minutes for provider and tool rounds. Use an explicit
+        # bounded timeout with enough headroom for the response to finish cleanly.
+        requestTimeout: {{ .Values.ingress.appRequestTimeout }}
 
 ---
 apiVersion: networking.k8s.io/v1

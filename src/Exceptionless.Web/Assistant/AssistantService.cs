@@ -17,6 +17,7 @@ public sealed class AssistantService(
     ExceptionlessMcpTools tools,
     AssistantToolContext assistantToolContext,
     AssistantConversationService assistantConversationService,
+    AssistantModelSettingsService assistantModelSettingsService,
     AssistantUsageService assistantUsageService,
     TimeProvider timeProvider,
     ILogger<AssistantService> logger)
@@ -42,6 +43,7 @@ public sealed class AssistantService(
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var options = appOptions.AssistantOptions;
+        string model = (await assistantModelSettingsService.GetAsync()).Model;
         AssistantConversationState? conversationState = null;
         if (!String.IsNullOrWhiteSpace(request.OrganizationId) && !String.IsNullOrWhiteSpace(request.ConversationId))
         {
@@ -112,7 +114,7 @@ public sealed class AssistantService(
             }
 
             await using var providerRequest = await assistantUsageService.StartProviderRequestAsync(request.OrganizationId, providerInputCharacters);
-            using var response = await SendRequestAsync(messages, options, allowTools, request, cancellationToken);
+            using var response = await SendRequestAsync(messages, options, model, allowTools, request, cancellationToken);
             providerRequest.MarkAccepted();
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
             using var reader = new StreamReader(stream);
@@ -382,7 +384,7 @@ public sealed class AssistantService(
         }
     }
 
-    private async Task<HttpResponseMessage> SendRequestAsync(List<object> messages, AssistantOptions options, bool allowTools, AssistantChatRequest chatRequest, CancellationToken cancellationToken)
+    private async Task<HttpResponseMessage> SendRequestAsync(List<object> messages, AssistantOptions options, string model, bool allowTools, AssistantChatRequest chatRequest, CancellationToken cancellationToken)
     {
         var client = httpClientFactory.CreateClient(nameof(AssistantService));
         using var providerRequest = new HttpRequestMessage(HttpMethod.Post, options.Endpoint);
@@ -391,7 +393,7 @@ public sealed class AssistantService(
         providerRequest.Headers.TryAddWithoutValidation("X-OpenRouter-Title", "Exceptionless");
         var payload = new Dictionary<string, object?>
         {
-            ["model"] = options.Model,
+            ["model"] = model,
             ["messages"] = messages,
             ["stream"] = true,
             ["max_tokens"] = AssistantLimits.MaximumOutputTokens,

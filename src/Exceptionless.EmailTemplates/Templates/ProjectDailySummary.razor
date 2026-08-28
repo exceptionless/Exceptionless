@@ -1,0 +1,81 @@
+@namespace Exceptionless.EmailTemplates.Templates
+@inherits EmailTemplateComponent<ProjectDailySummaryEmail>
+
+<EmailLayout Model="Model">
+    <EmailSection>
+        <h1 style="@EmailStyles.Heading1">Summary for @Model.StartDate</h1>
+
+        @if (Model.HasSubmittedEvents)
+        {
+            <SummaryMetrics Metrics="Metrics" />
+            <p style="@EmailStyles.Paragraph">
+                @if (Model.Count != 0)
+                {
+                    <text>The "@Model.ProjectName" project had <strong>@Model.Count total</strong>, <strong>@Model.Unique unique</strong>, and <strong>@Model.New new</strong> errors.</text>
+                }
+                else
+                {
+                    <text>Congrats! The "@Model.ProjectName" project was exceptionless!</text>
+                }
+                @if (Model.Fixed != 0)
+                {
+                    <text> Additionally, <strong>@Model.Fixed errors</strong> that have been marked as fixed occurred in outdated instances of your application.</text>
+                }
+            </p>
+            <EmailButton Url="@Model.TimelineUrl">View Timeline</EmailButton>
+
+            @if (Model.Blocked != 0)
+            {
+                <EmailCallout BackgroundColor="#f4dede" BorderColor="#bb423f">
+                    <p style="@EmailStyles.Paragraph"><strong>@Model.Blocked events</strong> were discarded due to throttling. <a href="@Model.UpgradeUrl" style="@EmailStyles.Link">Upgrade now</a> to increase your limits. <a href="https://github.com/exceptionless/Exceptionless/wiki/Frequently-Asked-Questions#q-why-is-my-organization-throttled" style="@EmailStyles.Link">Click here to learn more about throttling.</a></p>
+                    <EmailButton Url="@Model.UpgradeUrl" BackgroundColor="#bb423f">Upgrade Plan</EmailButton>
+                </EmailCallout>
+            }
+
+            @if (Model.MostFrequent.Count > 0)
+            {
+                <StackList Heading="Most Frequent" Stacks="Model.MostFrequent" MoreUrl="@Model.MostFrequentUrl" />
+            }
+            @if (Model.Newest.Count > 0)
+            {
+                <StackList Heading="Newest" Stacks="Model.Newest" MoreUrl="@Model.NewestUrl" />
+            }
+            @if (Model.IsFreePlan)
+            {
+                <p style="@EmailStyles.Paragraph">You are currently on a free plan. If you would like to receive notifications for errors as they happen, <a href="@Model.UpgradeUrl" style="@EmailStyles.Link">upgrade to a paid plan</a>.</p>
+            }
+        }
+        else
+        {
+            <p style="@EmailStyles.Lead">Unfortunately, it appears that your "@Model.ProjectName" project has not yet been configured to send errors to <a href="https://exceptionless.com" style="@EmailStyles.Link">Exceptionless</a>.</p>
+            <EmailButton Url="@Model.ConfigureUrl">Configure Project</EmailButton>
+            <p style="@EmailStyles.Paragraph">Send us an email at <a href="mailto:support@exceptionless.io" style="@EmailStyles.Link">support@exceptionless.io</a> if you have any questions or need help getting started.</p>
+        }
+    </EmailSection>
+    <ActionsFooter Links="NotificationLink" />
+</EmailLayout>
+
+@code {
+    private IReadOnlyList<SummaryMetrics.SummaryMetric> Metrics
+    {
+        get
+        {
+            var metrics = new List<SummaryMetrics.SummaryMetric>
+            {
+                new("Count", Model.Count),
+                new("Unique", Model.Unique),
+                new("New", Model.New)
+            };
+
+            if (Model.Blocked != 0)
+            {
+                metrics.Add(new("Discarded", Model.Blocked, "#bb423f"));
+            }
+
+            return metrics;
+        }
+    }
+
+    private IReadOnlyCollection<EmailLink> NotificationLink =>
+        [new("Change your notification settings for this project", Model.NotificationSettingsUrl)];
+}

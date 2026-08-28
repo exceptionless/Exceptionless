@@ -10,7 +10,7 @@ export type QueryParameterInput<T extends QueryParameterSchema> = {
 };
 
 export type QueryParameters<T extends QueryParameterSchema> = QueryParameterState<T> & {
-    update: (values: Partial<QueryParameterInput<T>>) => void;
+    update: (values: Partial<QueryParameterInput<T>>, options?: QueryParameterUpdateOptions) => void;
 };
 
 export type QueryParameterSchema = Record<string, QueryParameterType>;
@@ -30,6 +30,10 @@ export type QueryParameterTypeOutput<T extends QueryParameterType> = T extends '
         : T extends 'boolean'
           ? boolean | null
           : InferEnum<T>;
+
+export interface QueryParameterUpdateOptions {
+    history?: 'push' | 'replace';
+}
 
 export type QueryParameterValue = boolean | Date | null | number | string;
 

@@ -157,7 +157,7 @@
     }
 
     function getAssistantReturnHref(): string {
-        return normalizeAssistantHref(page.url.searchParams.get('from')) ?? resolve('/(app)/stack');
+        return normalizeAssistantHref(page.url.searchParams.get('from')) ?? resolve('/');
     }
 
     function normalizeAssistantHref(value: null | string): string | undefined {
@@ -230,8 +230,8 @@
 
     async function stopImpersonating(): Promise<void> {
         isCommandOpen = false;
-        await goto(resolve('/(app)/stack'));
         organization.current = organizations[0]?.id;
+        await goto(resolve('/'));
     }
 
     useMiddleware(async (ctx, next) => {

@@ -77,6 +77,42 @@ Content-Type: application/json
 
 @savedViewId = {{newSavedView.response.body.$.id}}
 
+### Set personal saved view default
+PUT {{apiUrl}}/organizations/{{organizationId}}/saved-view-defaults/user
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "saved_view_id": "{{savedViewId}}"
+}
+
+### Clear personal saved view default
+PUT {{apiUrl}}/organizations/{{organizationId}}/saved-view-defaults/user
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "saved_view_id": null
+}
+
+### Set organization saved view default
+PUT {{apiUrl}}/organizations/{{organizationId}}/saved-view-defaults/organization
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "saved_view_id": "{{savedViewId}}"
+}
+
+### Clear organization saved view default
+PUT {{apiUrl}}/organizations/{{organizationId}}/saved-view-defaults/organization
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "saved_view_id": null
+}
+
 ### Create private saved view
 POST {{apiUrl}}/organizations/{{organizationId}}/saved-views
 Authorization: Bearer {{token}}

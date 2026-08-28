@@ -13,8 +13,13 @@
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { toFilter } from '$features/events/components/filters/helpers.svelte';
     import { serializeFilters } from '$features/events/components/filters/helpers.svelte';
+    import { getOrganizationQuery, getOrganizationsQuery } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import { supportsColumnWrapping } from '$features/shared/components/data-table/column-meta';
+    import { getMeQuery } from '$features/users/api.svelte';
+    import Building2 from '@lucide/svelte/icons/building-2';
     import Columns3 from '@lucide/svelte/icons/columns-3';
+    import House from '@lucide/svelte/icons/house';
     import Pencil from '@lucide/svelte/icons/pencil';
     import Plus from '@lucide/svelte/icons/plus';
     import Save from '@lucide/svelte/icons/save';
@@ -24,11 +29,20 @@
     import { tick } from 'svelte';
     import { toast } from 'svelte-sonner';
 
-    import type { AutoFillColumnSelection } from '../column-settings';
+    import type { AutoFillColumnSelection, WrappedColumnIds } from '../column-settings';
     import type { NewSavedView, SavedView, UpdateSavedView } from '../models';
 
-    import { deleteSavedView, markSavedViewDeleted, patchSavedView, postSavedView, restoreDeletedSavedView } from '../api.svelte';
+    import {
+        deleteSavedView,
+        markSavedViewDeleted,
+        patchSavedView,
+        postSavedView,
+        putOrganizationSavedViewDefault,
+        putUserSavedViewDefault,
+        restoreDeletedSavedView
+    } from '../api.svelte';
     import { buildColumnSettings } from '../column-settings';
+    import { resolveSavedViewDefaults } from '../defaults';
     import ColumnManagementDialog from './column-management-dialog.svelte';
     import DeleteViewDialog from './delete-view-dialog.svelte';
     import RenameViewDialog from './rename-view-dialog.svelte';
@@ -47,30 +61,35 @@
     interface Props {
         activeSavedView?: SavedView;
         autoFillColumnId: AutoFillColumnSelection;
+        canModifySavedView?: boolean;
         columnOrder?: string[];
         columnSizing?: Record<string, number>;
         columnVisibility?: Record<string, boolean>;
         defaultAutoFillColumnId?: string;
         filters: IFilter[];
         isModified: boolean;
-        onClearSavedView: () => void;
+        onClearSavedView: () => Promise<void>;
         onLoadView: (view: SavedView) => void;
         onResetToSaved: () => void;
+        onSavedViewUpdated: (view: SavedView) => void;
         savedViews: SavedView[];
         setAutoFillColumnId: (columnId: AutoFillColumnSelection) => void;
         setShowChart?: (show: boolean) => void;
         setShowStats?: (show: boolean) => void;
+        setWrappedColumnIds: (columnIds: WrappedColumnIds) => void;
         showChart?: boolean;
         showStats?: boolean;
         sort?: string;
         table: Table<StockFeatures, TData>;
         time?: string;
         view: string;
+        wrappedColumnIds: WrappedColumnIds;
     }
 
     let {
         activeSavedView,
         autoFillColumnId,
+        canModifySavedView = true,
         columnOrder,
         columnSizing,
         columnVisibility,
@@ -80,16 +99,19 @@
         onClearSavedView,
         onLoadView,
         onResetToSaved,
+        onSavedViewUpdated,
         savedViews,
         setAutoFillColumnId,
         setShowChart,
         setShowStats,
+        setWrappedColumnIds,
         showChart = true,
         showStats = true,
         sort,
         table,
         time,
-        view
+        view,
+        wrappedColumnIds
     }: Props = $props();
 
     let isSaveDialogOpen = $state(false);
@@ -100,6 +122,27 @@
     let viewToDelete = $state<null | SavedView>(null);
 
     const organizationId = $derived(organization.current);
+    const activeView = $derived(activeSavedView);
+    const currentUserQuery = getMeQuery();
+    const organizationsQuery = getOrganizationsQuery({});
+    const membershipOrganization = $derived(organizationsQuery.data?.data?.find((organizationItem) => organizationItem.id === organizationId));
+    const organizationIdToLoad = $derived(organizationsQuery.isSuccess && !membershipOrganization ? organizationId : undefined);
+    const currentOrganizationQuery = getOrganizationQuery({
+        route: {
+            get id() {
+                return organizationIdToLoad;
+            }
+        }
+    });
+    const currentOrganization = $derived(membershipOrganization ?? currentOrganizationQuery.data);
+    const defaults = $derived.by(() => {
+        return resolveSavedViewDefaults({
+            organizationDefaultSavedViewId: currentOrganization?.default_saved_view_id,
+            organizationId,
+            organizationPreferences: currentUserQuery.data?.organization_preferences,
+            savedViews
+        });
+    });
 
     const createMutation = postSavedView({
         route: {
@@ -122,8 +165,30 @@
             }
         }
     });
+    const userDefaultMutation = putUserSavedViewDefault({
+        route: {
+            get organizationId() {
+                return organizationId;
+            }
+        }
+    });
+    const organizationDefaultMutation = putOrganizationSavedViewDefault({
+        route: {
+            get organizationId() {
+                return organizationId;
+            }
+        }
+    });
 
-    const saving = $derived(createMutation.isPending || updateMutation.isPending || removeMutation.isPending);
+    const saving = $derived(
+        createMutation.isPending ||
+            updateMutation.isPending ||
+            removeMutation.isPending ||
+            userDefaultMutation.isPending ||
+            organizationDefaultMutation.isPending
+    );
+    const isUserDefault = $derived(!!activeView && defaults.userDefault?.id === activeView.id);
+    const isOrganizationDefault = $derived(!!activeView && defaults.organizationDefault?.id === activeView.id);
     const currentFilterString = $derived(toFilter(filters.filter((f) => f.type !== 'date')));
 
     // Auto-detect if current filters match an existing saved view for "load existing" hint
@@ -149,8 +214,6 @@
         });
     });
 
-    const activeView = $derived(activeSavedView);
-
     const reorderableColumns = $derived(table.getAllLeafColumns().filter((column) => column.id !== 'select'));
 
     async function openSaveDialog() {
@@ -164,13 +227,15 @@
     }
 
     function getSavedColumnSettings() {
+        const supportedWrappedColumnIds = wrappedColumnIds.filter((columnId) => supportsColumnWrapping(table.getColumn(columnId)?.columnDef.meta));
         return buildColumnSettings(
             table.getAllLeafColumns().map((column) => column.id),
             columnOrder ?? [],
             columnVisibility ?? {},
             columnSizing ?? {},
             autoFillColumnId,
-            defaultAutoFillColumnId
+            defaultAutoFillColumnId,
+            supportedWrappedColumnIds
         );
     }
 
@@ -181,6 +246,10 @@
     }
 
     function handleResetToSaved(): void {
+        if (!canModifySavedView) {
+            return;
+        }
+
         isMenuOpen = false;
         onResetToSaved();
     }
@@ -246,15 +315,48 @@
     }
 
     async function handleUpdate() {
-        if (!activeView || !organizationId) {
+        if (!activeView || !organizationId || !canModifySavedView) {
             return;
         }
 
         try {
-            await updateMutation.mutateAsync(getUpdateBody());
+            const result = await updateMutation.mutateAsync(getUpdateBody());
+            onSavedViewUpdated(result);
             toast.success(`View "${activeView.name}" saved.`);
         } catch (error) {
             toast.error(getErrorMessage(error, 'Failed to save view. Please try again.'));
+        }
+    }
+
+    async function toggleUserDefault(): Promise<void> {
+        if (!activeView || !organizationId) {
+            return;
+        }
+
+        const clearingDefault = isUserDefault;
+        try {
+            await userDefaultMutation.mutateAsync({
+                saved_view_id: clearingDefault ? null : activeView.id
+            });
+            toast.success(clearingDefault ? 'Personal home view cleared.' : `"${activeView.name}" is now your home view.`);
+        } catch (error) {
+            toast.error(getErrorMessage(error, 'Failed to update your home view. Please try again.'));
+        }
+    }
+
+    async function toggleOrganizationDefault(): Promise<void> {
+        if (!activeView || activeView.user_id || !organizationId) {
+            return;
+        }
+
+        const clearingDefault = isOrganizationDefault;
+        try {
+            await organizationDefaultMutation.mutateAsync({
+                saved_view_id: clearingDefault ? null : activeView.id
+            });
+            toast.success(clearingDefault ? 'Organization home view cleared.' : `"${activeView.name}" is now the organization home view.`);
+        } catch (error) {
+            toast.error(getErrorMessage(error, 'Failed to update the organization home view. Please try again.'));
         }
     }
 
@@ -267,7 +369,7 @@
         const wasActiveView = activeSavedView?.id === target.id;
         markSavedViewDeleted(target);
         if (wasActiveView) {
-            onClearSavedView();
+            await onClearSavedView();
         }
 
         try {
@@ -304,7 +406,7 @@
         <DropdownMenu.Group>
             <DropdownMenu.Label>Saved View</DropdownMenu.Label>
             {#if activeView}
-                <DropdownMenu.Item disabled={saving || !isModified} onclick={handleUpdate}>
+                <DropdownMenu.Item disabled={saving || !isModified || !canModifySavedView} onclick={handleUpdate}>
                     <Save class="mr-2 size-4" aria-hidden="true" />
                     Save
                 </DropdownMenu.Item>
@@ -318,17 +420,35 @@
                     <Pencil class="mr-2 size-4" aria-hidden="true" />
                     Rename
                 </DropdownMenu.Item>
-                <DropdownMenu.Item disabled={!isModified} onclick={handleResetToSaved}>
+                <DropdownMenu.Item disabled={!isModified || !canModifySavedView} onclick={handleResetToSaved}>
                     <Undo2 class="mr-2 size-4" aria-hidden="true" />
                     Reset to Saved
                 </DropdownMenu.Item>
-                <DropdownMenu.Separator />
+            {/if}
+        </DropdownMenu.Group>
+        {#if activeView}
+            <DropdownMenu.Separator />
+            <DropdownMenu.Group>
+                <DropdownMenu.Label>Home</DropdownMenu.Label>
+                <DropdownMenu.Item disabled={saving} onclick={toggleUserDefault}>
+                    <House class="mr-2 size-4" aria-hidden="true" />
+                    {isUserDefault ? 'Clear my home view' : 'Set as my home view'}
+                </DropdownMenu.Item>
+                {#if !activeView.user_id}
+                    <DropdownMenu.Item disabled={saving} onclick={toggleOrganizationDefault}>
+                        <Building2 class="mr-2 size-4" aria-hidden="true" />
+                        {isOrganizationDefault ? 'Clear organization home' : 'Set as organization home'}
+                    </DropdownMenu.Item>
+                {/if}
+            </DropdownMenu.Group>
+            <DropdownMenu.Separator />
+            <DropdownMenu.Group>
                 <DropdownMenu.Item class="text-destructive" onclick={() => openDeleteDialog(activeView)}>
                     <Trash2 class="mr-2 size-4" aria-hidden="true" />
                     Delete "{activeView.name}"
                 </DropdownMenu.Item>
-            {/if}
-        </DropdownMenu.Group>
+            </DropdownMenu.Group>
+        {/if}
         {#if setShowStats || setShowChart}
             <DropdownMenu.Separator />
             <DropdownMenu.Group>
@@ -401,5 +521,13 @@
 {/if}
 
 {#if isColumnDialogOpen}
-    <ColumnManagementDialog bind:open={isColumnDialogOpen} {autoFillColumnId} {defaultAutoFillColumnId} {setAutoFillColumnId} {table} />
+    <ColumnManagementDialog
+        bind:open={isColumnDialogOpen}
+        {autoFillColumnId}
+        {defaultAutoFillColumnId}
+        {setAutoFillColumnId}
+        {setWrappedColumnIds}
+        {table}
+        {wrappedColumnIds}
+    />
 {/if}

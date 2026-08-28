@@ -2,11 +2,13 @@ import type { WorkInProgressResult } from '$features/shared/models';
 import type { WebSocketMessageValue } from '$features/websockets/models';
 
 import { accessToken } from '$features/auth/index.svelte';
+import { setOrganizationDefaultSavedView } from '$features/organizations/api.svelte';
+import { setCurrentUserSavedViewDefault } from '$features/users/api.svelte';
 import { ChangeType } from '$features/websockets/models';
 import { type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, type QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
-import type { NewSavedView, SavedView, UpdateSavedView } from './models';
+import type { NewSavedView, SavedView, UpdateSavedView, UpdateSavedViewDefault } from './models';
 
 export const SAVED_VIEW_REFRESH_DELAY_MS = 1500;
 export const SAVED_VIEW_QUERY_STALE_TIME_MS = 60 * 1000;
@@ -148,7 +150,11 @@ export function getSavedViewsQuery(request: { route: { organizationId: string | 
         enabled: () => !!accessToken.current && !!request.route.organizationId,
         queryFn: async () => {
             const client = useFetchClient();
-            const response = await client.getJSON<SavedView[]>(`organizations/${request.route.organizationId}/saved-views`);
+            const response = await client.getJSON<SavedView[]>(`organizations/${request.route.organizationId}/saved-views`, {
+                params: {
+                    limit: 100
+                }
+            });
             return response.data!;
         },
         queryKey: queryKeys.organization(request.route.organizationId),
@@ -239,13 +245,25 @@ export function postSavedView(request: { route: { organizationId: string | undef
     }));
 }
 
+export function putOrganizationSavedViewDefault(request: { route: { organizationId: string | undefined } }) {
+    return putSavedViewDefault(request, 'organization');
+}
+
+export function putUserSavedViewDefault(request: { route: { organizationId: string | undefined } }) {
+    return putSavedViewDefault(request, 'user');
+}
+
 export function removeSavedViewFromCaches(queryClient: QueryClient, savedView: SavedView, organizationId: string | undefined = savedView.organization_id) {
     const evict = (cachedViews: SavedView[] | undefined) => cachedViews?.filter((v) => v.id !== savedView.id);
     queryClient.setQueryData(queryKeys.view(organizationId, savedView.view_type), evict);
     queryClient.setQueryData(queryKeys.organization(organizationId), evict);
     queryClient.setQueriesData<SavedView[]>(
         {
-            queryKey: queryKeys.type
+            predicate: (query) =>
+                query.queryKey[0] === queryKeys.type[0] &&
+                query.queryKey[1] === 'organization' &&
+                query.queryKey[2] === organizationId &&
+                query.queryKey[3] === 'view'
         },
         evict
     );
@@ -273,4 +291,32 @@ export function upsertSavedViewCache(cachedViews: SavedView[] | undefined, saved
     }
 
     return views.map((view) => (view.id === savedView.id ? savedView : view));
+}
+
+function putSavedViewDefault(request: { route: { organizationId: string | undefined } }, scope: 'organization' | 'user') {
+    const queryClient = useQueryClient();
+
+    return createMutation<{ default: UpdateSavedViewDefault; organizationId: string | undefined }, ProblemDetails, UpdateSavedViewDefault>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.organizationId,
+        mutationFn: async (data: UpdateSavedViewDefault) => {
+            const client = useFetchClient();
+            const organizationId = request.route.organizationId;
+            const response = await client.putJSON<UpdateSavedViewDefault>(`organizations/${organizationId}/saved-view-defaults/${scope}`, data);
+            return {
+                default: response.data!,
+                organizationId
+            };
+        },
+        onSuccess: ({ default: savedViewDefault, organizationId }) => {
+            if (!organizationId) {
+                return;
+            }
+
+            if (scope === 'user') {
+                setCurrentUserSavedViewDefault(queryClient, organizationId, savedViewDefault.saved_view_id ?? null);
+            } else {
+                setOrganizationDefaultSavedView(queryClient, organizationId, savedViewDefault.saved_view_id ?? null);
+            }
+        }
+    }));
 }

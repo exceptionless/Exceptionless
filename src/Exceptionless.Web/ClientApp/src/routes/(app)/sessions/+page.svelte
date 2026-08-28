@@ -110,6 +110,7 @@
     watch(
         [() => queryParams.filter, () => queryParams.time],
         ([filter, time]) => {
+            table.resetRowSelection();
             filters = applyTimeFilter(getFiltersFromCache(filterCacheKey(filter), filter), time);
         },
         {
@@ -140,9 +141,14 @@
 
     function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {
         const filter = toFilter(updatedFilters.filter((f) => f.type !== 'date'));
+        const time = ((updatedFilters.find((f) => f.type === 'date') as DateFilter | undefined)?.value as string | undefined) ?? null;
+
+        if (queryParams.filter !== filter || queryParams.time !== time) {
+            table.resetRowSelection();
+        }
 
         updateFilterCache(filterCacheKey(filter), updatedFilters);
-        queryParams.time = ((updatedFilters.find((f) => f.type === 'date') as DateFilter | undefined)?.value as string | undefined) ?? null;
+        queryParams.time = time;
         queryParams.filter = filter;
     }
 
@@ -204,7 +210,13 @@
         })
     );
 
-    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.store.state.pagination.pageIndex === 0);
+    watch(
+        () => viewActive,
+        () => reset(),
+        {
+            lazy: true
+        }
+    );
 
     function reset() {
         table.resetRowSelection();
@@ -212,10 +224,7 @@
     }
 
     async function handleRefresh() {
-        if (!canRefresh) {
-            reset();
-        }
-
+        table.resetRowSelection();
         await loadData();
     }
 
@@ -358,7 +367,7 @@
 <div class="flex flex-col">
     <div class="mb-4 flex flex-wrap items-start gap-2">
         <H3 class="my-0 shrink-0">Sessions</H3>
-        <div class="flex min-w-0 flex-1 flex-wrap items-start gap-2">
+        <div class="order-3 flex w-full flex-wrap items-start gap-1.5 md:order-none md:w-auto md:min-w-0 md:flex-1">
             <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
                 <OrganizationDefaultsFacetedFilterBuilder />
             </FacetedFilter.Root>
@@ -368,12 +377,7 @@
                 <Switch id="view-active" bind:checked={viewActive} disabled={!hasPremiumFeatures} />
                 <Label for="view-active" class="text-sm">View Active</Label>
             </div>
-            <RefreshButton
-                onRefresh={handleRefresh}
-                isRefreshing={clientStatus.isLoading}
-                size="icon-lg"
-                title={canRefresh ? 'Refresh results' : 'Return to the first page to refresh results'}
-            />
+            <RefreshButton onRefresh={handleRefresh} isRefreshing={clientStatus.isLoading} size="icon-lg" title="Refresh results" />
             <DataTableViewOptions size="icon-lg" {table} />
         </div>
     </div>
@@ -387,16 +391,12 @@
             totalUsers={stats.totalUsers}
         />
 
-        <SessionsDashboardChart data={chartData} isLoading={clientStatus.isLoading || statsQuery.isLoading} {onRangeSelect} />
+        <SessionsDashboardChart data={chartData} isLoading={statsQuery.isLoading && !statsQuery.isSuccess} {onRangeSelect} />
 
         <EventsDataTable bind:limit={queryParams.limit!} isLoading={clientStatus.isLoading} rowClick={rowclick} {rowHref} {table}>
             {#snippet footerChildren()}
                 <DataTable.Selection {table} />
-                <DataTable.PageSize bind:value={queryParams.limit!} {table}></DataTable.PageSize>
-                <div class="flex items-center space-x-6 lg:space-x-8">
-                    <DataTable.PageCount {table} />
-                    <DataTable.Pagination {table} />
-                </div>
+                <DataTable.Pager bind:value={queryParams.limit!} {table} variant="floating" />
             {/snippet}
         </EventsDataTable>
     </div>

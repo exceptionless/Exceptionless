@@ -28,31 +28,19 @@ Should the request to `FetchUser()`, or whatever your method is, happen to throw
 
 Of course, Exceptionless is more than just error handling. You can leverage any of the Exceptionless event methods [documented here](/docs/clients/dotnet/sending-events) through the client interface.
 
-Exceptionless can be configured as a generic host for your web server. In your `Startup.cs` file, you would include the following within the `ConfigureServices` method:
+Register Exceptionless with your ASP.NET Core application builder, then enable the exception handler and Exceptionless middleware:
 
 ```csharp
-services.AddHttpContextAccessor();
+var builder = WebApplication.CreateBuilder(args);
+builder.AddExceptionless();
+builder.Services.AddProblemDetails();
+
+var app = builder.Build();
+app.UseExceptionHandler();
+app.UseExceptionless();
 ```
 
-By adding this helper method, Exceptionless is able to gather more information about the request including the API endpoint that threw the error, user-agent information, and more.
-
-Then in your `Configure` method, you would add:
-
-```csharp
-app.UseExceptionless(Configuration);
-```
-
-To get access to your Exceptionless configuration (which we'll explain next), you'll need to do create a `builder` variable in your `Startup` method and build the configuration like this:
-
-```csharp
-var builder = new ConfigurationBuilder()
-        .SetBasePath(env.ContentRootPath)
-        .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-        .AddEnvironmentVariables();
-Configuration = builder.Build();
-```
-
-This gives your server application access to any configuration you've set in your `appsettings.json` file. And that's exactly where we will configure Exceptionless. So, go ahead and open that file and we can create some configuration for your Exceptionless client:
+`AddExceptionless` reads the `Exceptionless` settings from the application configuration and registers the services needed to capture unhandled exceptions and request information. Configure those settings in `appsettings.json`:
 
 ```json
  "Exceptionless": {

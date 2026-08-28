@@ -28,6 +28,7 @@ using Exceptionless.Core.Services;
 using Exceptionless.Core.Services.SourceMaps;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Validation;
+using Exceptionless.EmailTemplates;
 using Foundatio.Caching;
 using Foundatio.Extensions.Hosting.Jobs;
 using Foundatio.Extensions.Hosting.Startup;
@@ -151,6 +152,7 @@ public class Bootstrapper
         services.AddSingleton<IUserRepository, UserRepository>();
         services.AddSingleton<IWebHookRepository, WebHookRepository>();
         services.AddSingleton<ISavedViewRepository, SavedViewRepository>();
+        services.AddSingleton<ISystemSettingsRepository, SystemSettingsRepository>();
         services.AddSingleton<ITokenRepository, TokenRepository>();
 
         services.AddSingleton<IGeocodeService, NullGeocodeService>();
@@ -169,6 +171,7 @@ public class Bootstrapper
         services.AddSingleton<WorkItemJob>();
         services.AddSingleton<MaintainIndexesJob>();
 
+        services.AddEmailTemplates();
         services.AddSingleton<IMailer, Mailer>();
         services.AddSingleton<IMailSender>(s => new InMemoryMailSender());
 
@@ -190,6 +193,7 @@ public class Bootstrapper
         services.AddSingleton<UserAgentParser>();
         services.AddSingleton<ICoreLastReferenceIdManager, NullCoreLastReferenceIdManager>();
 
+        services.AddSingleton<SystemSettingsService>();
         services.AddSingleton<NotificationService>();
         services.AddSingleton<OrganizationService>();
         services.AddStartupAction<OrganizationService>();

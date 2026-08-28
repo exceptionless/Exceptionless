@@ -84,4 +84,29 @@ test('row selection column stays fixed at desktop and narrow widths', async ({ e
     const expectedTableWidth = explicitlySizedSelectionBox!.width + columnWidthsBeforeResize.reduce((total, width) => total + width + 16, 0);
     expect(explicitlySizedTableBox!.width).toBeCloseTo(expectedTableWidth, 1);
     expect(explicitlySizedSelectionBox!.width).toBeCloseTo(32, 1);
+
+    const border = table.locator('xpath=ancestor::div[contains(@class, "rounded-md") and contains(@class, "border")][1]');
+    const fixedHeaderWidths = await table
+        .locator('thead th:not([aria-hidden="true"])')
+        .evaluateAll((headers) => headers.map((header) => header.getBoundingClientRect().width));
+    const horizontalScrollbar = border.getByRole('scrollbar', { name: 'Horizontal table scroll' });
+
+    await page.setViewportSize({ height: 900, width: 2000 });
+    await expect.poll(async () => (await border.boundingBox())!.width).toBeGreaterThan(expectedTableWidth + 300);
+    expect(Math.abs((await table.boundingBox())!.width - (await border.boundingBox())!.width)).toBeLessThanOrEqual(2);
+    expect((await table.locator('thead th[aria-hidden="true"]').boundingBox())!.width).toBeGreaterThan(300);
+    expect(
+        await table.locator('thead th:not([aria-hidden="true"])').evaluateAll((headers) => headers.map((header) => header.getBoundingClientRect().width))
+    ).toEqual(fixedHeaderWidths);
+    await expect(horizontalScrollbar).toBeHidden();
+
+    await page.setViewportSize({ height: 900, width: 520 });
+    await expect(horizontalScrollbar).toBeVisible();
+    expect((await table.boundingBox())!.width).toBeCloseTo(expectedTableWidth, 1);
+    await expect(border.locator('[data-scroll-edge="right"]')).toBeVisible();
+
+    await horizontalScrollbar.press('End');
+    await expect.poll(async () => Number(await horizontalScrollbar.getAttribute('aria-valuenow'))).toBeGreaterThan(0);
+    await expect(border.locator('[data-scroll-edge="left"]')).toBeVisible();
+    await expect(border.locator('[data-scroll-edge="right"]')).toHaveCount(0);
 });

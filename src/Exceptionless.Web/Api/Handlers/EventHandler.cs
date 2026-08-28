@@ -47,6 +47,7 @@ public class EventHandler(
     PersistentEventQueryValidator validator,
     EventStackQueryValidator stackModeValidator,
     AppOptions appOptions,
+    SystemSettingsService systemSettingsService,
     UsageService usageService,
     TimeProvider timeProvider,
     LinkGenerator linkGenerator,
@@ -395,7 +396,7 @@ public class EventHandler(
     public async Task<Result> Handle(RecordEventHeartbeat message)
     {
         var httpContext = message.Context;
-        if (appOptions.EventSubmissionDisabled || String.IsNullOrEmpty(message.Id))
+        if (!await systemSettingsService.IsEventSubmissionEnabledAsync() || String.IsNullOrEmpty(message.Id))
             return Result.Success();
 
         string? projectId = httpContext.Request.GetDefaultProjectId();

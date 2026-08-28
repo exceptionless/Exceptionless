@@ -11,6 +11,9 @@ const navigation = vi.hoisted(() => ({
     replaceState: vi.fn()
 }));
 const pageState = vi.hoisted(() => ({}));
+const toast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
+
+vi.mock('svelte-sonner', () => ({ toast }));
 
 function createSvelteKitHistoryState(state: App.PageState): Record<string, App.PageState> {
     return { 'sveltekit:states': state };
@@ -28,8 +31,11 @@ vi.mock('$app/state', () => ({
 }));
 
 describe('DetailSheet history', () => {
+    const writeText = vi.fn(() => Promise.resolve());
+
     beforeEach(() => {
         vi.clearAllMocks();
+        Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
         window.history.replaceState(createSvelteKitHistoryState(pageState), '', '/events?filter=open');
         navigation.goto.mockResolvedValue(undefined);
         navigation.pushState.mockImplementation((url: string | URL, state: App.PageState) =>
@@ -55,6 +61,17 @@ describe('DetailSheet history', () => {
             __exceptionlessDetailSheet: { key: 'event', value: 'abc123' }
         });
         expect(screen.getByTestId('detail-sheet-state').textContent).toBe('open:abc123');
+        expect(document.querySelector('[data-slot="sheet-content"]')?.classList.contains('w-[calc(100%-1rem)]!')).toBe(true);
+    });
+
+    it('copies the absolute full-page details link', async () => {
+        render(DetailSheetTestHarness);
+        await fireEvent.click(screen.getByRole('button', { name: 'Open details' }));
+
+        await fireEvent.click(screen.getByRole('button', { name: 'Copy event link' }));
+
+        expect(writeText).toHaveBeenCalledWith(new URL('/event/abc123', window.location.href).href);
+        expect(toast.success).toHaveBeenCalledWith('Event link copied');
     });
 
     it('closes details during Back navigation without traversing twice', async () => {

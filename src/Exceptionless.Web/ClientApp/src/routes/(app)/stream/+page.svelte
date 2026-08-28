@@ -28,7 +28,7 @@
     import { defaultEventColumnVisibility, getColumns } from '$features/events/components/table/options.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
-    import { useSavedViews } from '$features/saved-views/use-saved-views.svelte';
+    import { isSavedViewHydrationPending, isSavedViewUnavailable, useSavedViews } from '$features/saved-views/use-saved-views.svelte';
     import { getSharedTableOptions, isTableEmpty, removeTableData } from '$features/shared/table.svelte';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
@@ -81,10 +81,19 @@
 
     const VIEW = 'stream';
     const savedViewsState = useSavedViews({
+        applyFilters: (draftFilters, options) => {
+            updateFilters(draftFilters, options);
+            filters = draftFilters;
+        },
         defaultAutoFillColumnId: 'summary',
         defaultColumnVisibility: defaultEventColumnVisibility,
         defaultFilter: DEFAULT_PARAMS.filter,
         filterCacheKey,
+        getAvailableColumnIds: () =>
+            table
+                .getAllFlatColumns()
+                .filter((column) => column.columns.length === 0)
+                .map((column) => column.id),
         getColumnOrder: () => table.store.state.columnOrder,
         getColumnSizing: () => table.store.state.columnSizing,
         getColumnVisibility: () => table.store.state.columnVisibility,
@@ -96,6 +105,14 @@
         updateFilterCache,
         view: VIEW
     });
+    const isSavedViewPending = $derived(
+        isSavedViewHydrationPending(
+            queryParams.saved,
+            savedViewsState.activeSavedView?.id,
+            savedViewsState.hydratedSavedViewId,
+            isSavedViewUnavailable(savedViewsState.activeSavedView?.id, savedViewsState.isMissing, savedViewsState.isError)
+        )
+    );
     const pageTitle = $derived(savedViewsState.activeSavedView?.name ?? 'Event Stream');
 
     $effect(() => {
@@ -151,10 +168,17 @@
         filters = updatedFilters;
     }
 
-    function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {
+    function updateFilters(updatedFilters: FacetedFilter.IFilter[], options: { history?: 'push' | 'replace' } = {}): void {
         const filter = toFilter(updatedFilters);
         updateFilterCache(filterCacheKey(filter), updatedFilters);
-        queryParams.filter = filter;
+        queryParams.update(
+            {
+                filter
+            },
+            {
+                history: options.history
+            }
+        );
     }
 
     const eventsQueryParameters: GetEventsParams = $state({
@@ -225,6 +249,14 @@
     }
 
     async function loadData(filterChanged: boolean = false) {
+        if (isSavedViewPending) {
+            loadDataRequestId++;
+            before = undefined;
+            clientResponse = undefined;
+            queryData = [];
+            return;
+        }
+
         if (client.isLoading && filterChanged && !before) {
             return;
         }
@@ -311,6 +343,17 @@
     });
 
     $effect(() => {
+        if (!isSavedViewPending) {
+            return;
+        }
+
+        loadDataRequestId++;
+        before = undefined;
+        clientResponse = undefined;
+        queryData = [];
+    });
+
+    $effect(() => {
         if (paused) {
             return;
         }
@@ -322,7 +365,7 @@
 <DataTable.Root>
     <div class="mb-4 flex flex-wrap items-start gap-2">
         <H3 class="my-0 shrink-0">{pageTitle}</H3>
-        <div class="flex min-w-0 flex-1 flex-wrap items-start gap-2">
+        <div class="order-3 flex w-full flex-wrap items-start gap-1.5 md:order-none md:w-auto md:min-w-0 md:flex-1">
             <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
                 <OrganizationDefaultsFacetedFilterBuilder />
             </FacetedFilter.Root>
@@ -332,6 +375,7 @@
                 <SavedViewPicker
                     activeSavedView={savedViewsState.activeSavedView}
                     autoFillColumnId={savedViewsState.autoFillColumnId}
+                    canModifySavedView={savedViewsState.canModifySavedView}
                     columnOrder={table.store.state.columnOrder}
                     columnSizing={table.store.state.columnSizing}
                     columnVisibility={table.store.state.columnVisibility}
@@ -341,17 +385,34 @@
                     onLoadView={savedViewsState.handleLoadView}
                     onClearSavedView={savedViewsState.handleClearSavedView}
                     onResetToSaved={savedViewsState.handleResetToSaved}
+                    onSavedViewUpdated={savedViewsState.handleSavedViewUpdated}
                     savedViews={savedViewsState.savedViews}
                     setAutoFillColumnId={savedViewsState.setAutoFillColumnId}
+                    setWrappedColumnIds={savedViewsState.setWrappedColumnIds}
                     {table}
                     view={VIEW}
+                    wrappedColumnIds={savedViewsState.wrappedColumnIds}
                 />
             {/if}
             <StreamingIndicatorButton onToggle={handleToggle} {paused} size="icon-lg" />
         </div>
     </div>
-    <DataTable.Body autoFillColumnId={savedViewsState.autoFillColumnId} rowClick={rowclick} {rowHref} {table}>
-        {#if clientStatus.isLoading}
+    <DataTable.Footer {table}>
+        <div class="flex w-full items-center justify-center gap-4">
+            <DataTable.PageSize bind:value={queryParams.limit!} {table} />
+            <div class="text-center">
+                <ErrorMessage message={clientResponse?.problem?.errors.general} />
+            </div>
+        </div>
+    </DataTable.Footer>
+    <DataTable.Body
+        autoFillColumnId={savedViewsState.autoFillColumnId}
+        rowClick={rowclick}
+        {rowHref}
+        {table}
+        wrappedColumnIds={savedViewsState.wrappedColumnIds}
+    >
+        {#if isSavedViewPending || clientStatus.isLoading}
             <DelayedRender>
                 <DataTable.Loading {table} />
             </DelayedRender>
@@ -359,14 +420,6 @@
             <DataTable.Empty {table} />
         {/if}
     </DataTable.Body>
-    <DataTable.Footer {table}>
-        <div class="flex w-full items-center justify-center space-x-4">
-            <DataTable.PageSize bind:value={queryParams.limit!} {table} />
-            <div class="text-center">
-                <ErrorMessage message={clientResponse?.problem?.errors.general} />
-            </div>
-        </div>
-    </DataTable.Footer>
 </DataTable.Root>
 
 <EventDetailSheet bind:eventId={selectedEventId} filterChanged={onFilterChanged} onClose={() => (selectedEventId = null)} onError={handleEventError} />

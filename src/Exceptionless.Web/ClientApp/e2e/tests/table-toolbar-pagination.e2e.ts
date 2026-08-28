@@ -1,0 +1,159 @@
+import { resolve } from 'node:path';
+
+import { expect, test } from '../fixtures/e2e-test';
+import { seedRepresentativeEvent } from '../support/event-data';
+
+test('floating table controls keep the first row visible between different-height result pages', async ({ e2eApi, e2eScenario, page }) => {
+    for (let index = 1; index <= 6; index++) {
+        await seedRepresentativeEvent(e2eApi, e2eScenario.userToken, {
+            message: `${e2eScenario.message} ${index}`,
+            projectId: e2eScenario.projectId,
+            projectToken: e2eScenario.projectToken,
+            referenceId: `${e2eScenario.referenceId}-${index}`
+        });
+    }
+
+    await page.setViewportSize({ height: 720, width: 1280 });
+    await page.goto('/next/event?limit=5&time=all');
+
+    const toolbar = page.locator('[data-slot="data-table-footer"]');
+    const pager = toolbar.getByRole('navigation', { name: 'Table pagination' });
+    const grid = page.locator('[data-slot="data-table-body"]');
+    const pageIndicator = pager.getByLabel('Page 1 of 2');
+    await expect(pageIndicator).toBeVisible({ timeout: 30_000 });
+    expect(await pageIndicator.evaluate((element) => getComputedStyle(element).userSelect)).toBe('none');
+
+    const bulkActionsButton = toolbar.getByRole('button', { name: 'Actions' });
+    await expect(bulkActionsButton).toHaveAttribute('aria-disabled', 'true');
+    await expect(bulkActionsButton).toHaveAttribute('title', 'Select one or more events to use bulk actions');
+    await bulkActionsButton.focus();
+    await expect(bulkActionsButton).toBeFocused();
+    await page.locator('tbody').getByRole('checkbox').first().click();
+    await expect(bulkActionsButton).toBeEnabled();
+
+    const firstToolbarBox = await toolbar.boundingBox();
+    const firstGridBox = await grid.boundingBox();
+    expect(firstToolbarBox).not.toBeNull();
+    expect(firstGridBox).not.toBeNull();
+    expect(await toolbar.evaluate((element) => getComputedStyle(element).position)).toBe('sticky');
+    await expect(toolbar).not.toHaveAttribute('data-floating');
+    expect(await toolbar.evaluate((element) => element.nextElementSibling?.getAttribute('data-slot'))).toBe('data-table-body');
+    expect(firstToolbarBox!.height).toBeLessThanOrEqual(34);
+    expect(firstGridBox!.y - (firstToolbarBox!.y + firstToolbarBox!.height)).toBeLessThanOrEqual(8);
+    expect(firstToolbarBox!.y + firstToolbarBox!.height).toBeLessThanOrEqual(firstGridBox!.y);
+
+    const scrollContainer = page.locator('main').locator('..');
+    const scrollTopAtPageTop = await scrollContainer.evaluate((element) => element.scrollTop);
+    await pager.getByRole('button', { name: 'Go to next page' }).click();
+    await expect(pager.getByLabel('Page 2 of 2')).toBeVisible();
+    await expect.poll(() => scrollContainer.evaluate((element) => element.scrollTop)).toBe(scrollTopAtPageTop);
+    await pager.getByRole('button', { name: 'Go to first page' }).click();
+    await expect(pager.getByLabel('Page 1 of 2')).toBeVisible();
+    await expect.poll(() => scrollContainer.evaluate((element) => element.scrollTop)).toBe(scrollTopAtPageTop);
+
+    if (process.env.E2E_CAPTURE_PAGER_TOOLBAR_SCREENSHOTS === 'true') {
+        await page.screenshot({ path: resolve(process.cwd(), '../../../dogfood-output/pager-toolbar/desktop-page-1.png') });
+    }
+
+    const scrollTopBeforeVisiblePageSizeChange = await scrollContainer.evaluate((element) => element.scrollTop);
+    await pager.getByLabel('Rows per page').click();
+    await page.getByRole('option', { name: '10 rows' }).click();
+    await expect(pager.getByLabel('Page 1 of 1')).toBeVisible();
+    await expect.poll(() => scrollContainer.evaluate((element) => element.scrollTop)).toBe(scrollTopBeforeVisiblePageSizeChange);
+
+    await page.setViewportSize({ height: 400, width: 1280 });
+    await scrollContainer.evaluate((element) => element.scrollTo({ top: element.scrollHeight }));
+    await expect(toolbar).toHaveAttribute('data-floating', '');
+
+    if (process.env.E2E_CAPTURE_PAGER_TOOLBAR_SCREENSHOTS === 'true') {
+        await page.screenshot({ path: resolve(process.cwd(), '../../../dogfood-output/pager-toolbar/desktop-floating.png') });
+
+        const wasDark = await page.locator('html').evaluate((element) => element.classList.contains('dark'));
+        await page.locator('html').evaluate((element) => {
+            element.classList.add('dark');
+            element.style.colorScheme = 'dark';
+        });
+        await page.screenshot({ path: resolve(process.cwd(), '../../../dogfood-output/pager-toolbar/desktop-floating-dark.png') });
+
+        if (!wasDark) {
+            await page.locator('html').evaluate((element) => {
+                element.classList.remove('dark');
+                element.style.colorScheme = 'light';
+            });
+        }
+    }
+
+    const scrollTopBeforeHiddenPageSizeChange = await scrollContainer.evaluate((element) => element.scrollTop);
+    await pager.getByLabel('Rows per page').click();
+    await page.getByRole('option', { name: '5 rows' }).click();
+    await expect(pager.getByLabel('Page 1 of 2')).toBeVisible();
+    await expect.poll(() => scrollContainer.evaluate((element) => element.scrollTop)).toBeLessThan(scrollTopBeforeHiddenPageSizeChange);
+    await scrollContainer.evaluate((element) => element.scrollTo({ top: element.scrollHeight }));
+    await expect(toolbar).toHaveAttribute('data-floating', '');
+
+    const nextButton = pager.getByRole('button', { name: 'Go to next page' });
+    const scrollTopBeforePaging = await scrollContainer.evaluate((element) => element.scrollTop);
+    await nextButton.focus();
+    await nextButton.click();
+    await expect(pager.getByLabel('Page 2 of 2')).toBeVisible();
+    await expect(pager.getByRole('button', { name: 'Go to next page' })).toBeFocused();
+    await expect(bulkActionsButton).toHaveAttribute('aria-disabled', 'true');
+    await expect(toolbar).toHaveAttribute('data-floating', '');
+
+    const scrollTopAfterPaging = await scrollContainer.evaluate((element) => element.scrollTop);
+    expect(scrollTopAfterPaging).toBeGreaterThan(0);
+    expect(scrollTopAfterPaging).toBeLessThan(scrollTopBeforePaging);
+
+    const secondToolbarBox = await toolbar.boundingBox();
+    const secondGridBox = await grid.boundingBox();
+    const firstRow = page.locator('tbody tr:visible').first();
+    await expect(firstRow).toBeVisible({ timeout: 30_000 });
+    const firstRowBox = await firstRow.boundingBox();
+    expect(secondToolbarBox).not.toBeNull();
+    expect(secondGridBox).not.toBeNull();
+    expect(firstRowBox).not.toBeNull();
+    expect(secondToolbarBox!.y).toBeGreaterThanOrEqual(8);
+    expect(secondToolbarBox!.y + secondToolbarBox!.height).toBeLessThanOrEqual(secondGridBox!.y);
+    expect(firstRowBox!.y).toBeGreaterThanOrEqual(secondToolbarBox!.y + secondToolbarBox!.height);
+    expect(firstRowBox!.y).toBeLessThan(400);
+
+    const scrollTopWithFirstRowVisible = await scrollContainer.evaluate((element) => element.scrollTop);
+    const previousButton = pager.getByRole('button', { name: 'Go to previous page' });
+    await previousButton.click();
+    await expect(pager.getByLabel('Page 1 of 2')).toBeVisible();
+    await expect.poll(() => scrollContainer.evaluate((element) => element.scrollTop)).toBe(scrollTopWithFirstRowVisible);
+
+    await pager.getByRole('button', { name: 'Go to next page' }).click();
+    await expect(pager.getByLabel('Page 2 of 2')).toBeVisible();
+    await expect.poll(() => scrollContainer.evaluate((element) => element.scrollTop)).toBe(scrollTopWithFirstRowVisible);
+
+    await page.locator('main').evaluate((element) => element.parentElement?.scrollTo({ top: element.parentElement.scrollHeight }));
+    const appFooter = page.getByRole('link', { exact: true, name: 'Terms' }).locator('xpath=ancestor::div[contains(@class, "border-t")][1]');
+    await expect(appFooter).toBeVisible();
+    const settledToolbarBox = await toolbar.boundingBox();
+    const appFooterBox = await appFooter.boundingBox();
+    expect(settledToolbarBox).not.toBeNull();
+    expect(appFooterBox).not.toBeNull();
+    expect(settledToolbarBox!.y + settledToolbarBox!.height).toBeLessThanOrEqual(appFooterBox!.y);
+
+    if (process.env.E2E_CAPTURE_PAGER_TOOLBAR_SCREENSHOTS === 'true') {
+        await page.screenshot({ path: resolve(process.cwd(), '../../../dogfood-output/pager-toolbar/desktop-page-2.png') });
+    }
+
+    await page.setViewportSize({ height: 720, width: 520 });
+    const narrowToolbarBox = await toolbar.boundingBox();
+    const narrowGridBox = await grid.boundingBox();
+    expect(narrowToolbarBox).not.toBeNull();
+    expect(narrowGridBox).not.toBeNull();
+    expect(narrowToolbarBox!.x).toBeCloseTo(narrowGridBox!.x, 1);
+    expect(narrowToolbarBox!.width).toBeCloseTo(narrowGridBox!.width, 1);
+
+    if (process.env.E2E_CAPTURE_PAGER_TOOLBAR_SCREENSHOTS === 'true') {
+        await page.screenshot({ path: resolve(process.cwd(), '../../../dogfood-output/pager-toolbar/narrow-page-2.png') });
+    }
+
+    const firstPageButton = pager.getByRole('button', { name: 'Go to first page' });
+    await firstPageButton.click();
+    await expect(pager.getByLabel('Page 1 of 2')).toBeVisible();
+    await expect(page.locator('tbody').getByRole('checkbox').first()).not.toBeChecked();
+});

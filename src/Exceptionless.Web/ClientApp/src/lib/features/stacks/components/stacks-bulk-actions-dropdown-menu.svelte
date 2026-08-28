@@ -3,7 +3,7 @@
 </script>
 
 <script generics="TData extends RowData" lang="ts">
-    import Button from '$comp/ui/button/button.svelte';
+    import { Button } from '$comp/ui/button';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { getProblemMessage } from '$shared/validation';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
@@ -22,8 +22,11 @@
     }
 
     let { table }: Props = $props();
+    const componentId = $props.id();
+    const bulkActionsDescriptionId = `${componentId}-bulk-actions-description`;
     const ids = $derived(table.getSelectedRowModel().flatRows.map((row) => row.id));
 
+    let open = $state(false);
     let openRemoveStackDialog = $state<boolean>(false);
     let openMarkStackDiscardedDialog = $state<boolean>(false);
     let openMarkStackFixedInVersionDialog = $state<boolean>(false);
@@ -163,21 +166,30 @@
 
         table.resetRowSelection();
     }
+
+    function setOpen(isOpen: boolean): void {
+        open = ids.length > 0 && isOpen;
+    }
 </script>
 
-<DropdownMenu.Root>
+<DropdownMenu.Root bind:open={() => open, setOpen}>
     <DropdownMenu.Trigger>
         {#snippet child({ props })}
-            <Button {...props} variant="outline">
-                Bulk Actions
-                <ChevronDown class="size-4" />
+            <Button
+                {...props}
+                aria-describedby={ids.length === 0 ? bulkActionsDescriptionId : undefined}
+                aria-disabled={ids.length === 0}
+                class="rounded-l-lg rounded-r-none border-0 border-r aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                title={ids.length === 0 ? 'Select one or more stacks to use bulk actions' : 'Actions'}
+                variant="outline"
+            >
+                Actions
+                <ChevronDown data-icon="inline-end" />
             </Button>
         {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content>
         <DropdownMenu.Group>
-            <DropdownMenu.GroupHeading>Bulk Actions</DropdownMenu.GroupHeading>
-            <DropdownMenu.Separator />
             <DropdownMenu.Item title="Mark stacks as open" onclick={() => markOpen()}>Mark Open</DropdownMenu.Item>
             <DropdownMenu.Item title="Mark stacks as fixed" onclick={() => (openMarkStackFixedInVersionDialog = true)}>Mark Fixed</DropdownMenu.Item>
             <DropdownMenu.Sub>
@@ -201,6 +213,9 @@
         </DropdownMenu.Group>
     </DropdownMenu.Content>
 </DropdownMenu.Root>
+{#if ids.length === 0}
+    <span class="sr-only" id={bulkActionsDescriptionId}>Select one or more stacks to use bulk actions.</span>
+{/if}
 
 {#if openMarkStackDiscardedDialog}
     <MarkStackDiscardedDialog bind:open={openMarkStackDiscardedDialog} discard={markDiscarded} count={ids.length} />

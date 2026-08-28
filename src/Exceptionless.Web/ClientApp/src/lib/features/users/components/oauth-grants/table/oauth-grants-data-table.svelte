@@ -22,6 +22,10 @@
             {@render toolbarChildren()}
         </DataTable.Toolbar>
     {/if}
+    <DataTable.Footer {table} class="w-full">
+        <DataTable.Selection {table} />
+        <DataTable.Pager bind:value={limit} {table} />
+    </DataTable.Footer>
     <DataTable.Body {table}>
         {#if isLoading}
             <DelayedRender>
@@ -31,12 +35,4 @@
             <DataTable.Empty {table}>No applications have access to your account.</DataTable.Empty>
         {/if}
     </DataTable.Body>
-    <DataTable.Footer {table} class="space-x-6 lg:space-x-8">
-        <DataTable.Selection {table} />
-        <DataTable.PageSize bind:value={limit} {table}></DataTable.PageSize>
-        <div class="flex items-center space-x-6 lg:space-x-8">
-            <DataTable.PageCount {table} />
-            <DataTable.Pagination {table} />
-        </div>
-    </DataTable.Footer>
 </DataTable.Root>

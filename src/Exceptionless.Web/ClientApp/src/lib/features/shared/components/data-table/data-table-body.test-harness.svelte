@@ -8,27 +8,32 @@
     import { type ColumnSizingState, createTable, renderComponent } from '@tanstack/svelte-table';
 
     import DataTableBody from './data-table-body.svelte';
+    import DataTableEmpty from './data-table-empty.svelte';
 
     type TestSummary = EventSummaryModel<'event-error-summary'> | StackSummaryModel<'stack-error-summary'>;
 
     interface Props {
         allColumnsSized?: boolean;
         autoFillColumnId?: null | string;
+        empty?: boolean;
         fullWidthSummary?: boolean;
         kind: 'event' | 'stack';
         onAutoFillColumnResized?: (columnId: string) => void;
         onRowClick: (row: TestSummary) => void;
         sizedFullWidthSummary?: boolean;
+        wrappedColumnIds?: readonly string[];
     }
 
     let {
         allColumnsSized = false,
         autoFillColumnId,
+        empty = false,
         fullWidthSummary = false,
         kind,
         onAutoFillColumnResized,
         onRowClick,
-        sizedFullWidthSummary = false
+        sizedFullWidthSummary = false,
+        wrappedColumnIds = []
     }: Props = $props();
 
     const summaryData = {
@@ -100,7 +105,8 @@
                     meta: {
                         get class() {
                             return fullWidthSummary ? 'w-full' : 'w-60 min-w-60 max-w-60';
-                        }
+                        },
+                        enableWrapping: true
                     },
                     minSize: 120,
                     size: 160
@@ -117,7 +123,7 @@
             enableColumnResizing: true,
             paginationStrategy: 'memory',
             get queryData() {
-                return [summary];
+                return empty ? [] : [summary];
             },
             queryParameters
         })
@@ -128,6 +134,11 @@
     {autoFillColumnId}
     {onAutoFillColumnResized}
     rowClick={onRowClick}
+    {wrappedColumnIds}
     rowHref={(row: SummaryModel<SummaryTemplateKeys>) => (kind === 'event' ? buildEventDetailsHref(row.id) : buildStackDetailsHref(row.id))}
     {table}
-/>
+>
+    {#if empty}
+        <DataTableEmpty {table} />
+    {/if}
+</DataTableBody>

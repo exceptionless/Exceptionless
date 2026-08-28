@@ -6,6 +6,7 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Serialization;
+using Exceptionless.Core.Services;
 using Exceptionless.Web.Assistant;
 using Exceptionless.Web.Mcp;
 using Foundatio.Caching;
@@ -166,6 +167,44 @@ public sealed class AssistantServiceTests
         Assert.Equal(
             AssistantLimits.MaximumToolItemsPerCall,
             getStackEventsParameters.GetProperty("properties").GetProperty("limit").GetProperty("maximum").GetInt32());
+    }
+
+    [Fact]
+    public async Task StreamAsync_RuntimeModelOverride_UsesOverride()
+    {
+        var handler = new StubHttpMessageHandler(
+            """
+            data: {"choices":[{"delta":{"content":"Hello"}}]}
+
+            data: [DONE]
+
+            """);
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            })
+            .Build());
+        using var cache = new InMemoryCacheClient(new InMemoryCacheClientOptions
+        {
+            LoggerFactory = NullLoggerFactory.Instance,
+            TimeProvider = TimeProvider.System
+        });
+        var settingsService = CreateAssistantModelSettingsService(appOptions);
+        await settingsService.SetModelAsync("z-ai/glm-5.3-flash", "000000000000000000000001");
+        var service = CreateAssistantService(handler, appOptions, cache, modelSettingsService: settingsService);
+
+        await foreach (var _ in service.StreamAsync(
+            new AssistantChatRequest([new AssistantChatMessage("user", "Say hello")]),
+            "user-id",
+            CreatePlanOptions(),
+            TestContext.Current.CancellationToken))
+        {
+        }
+
+        using var providerRequest = JsonDocument.Parse(handler.RequestBody);
+        Assert.Equal("z-ai/glm-5.3-flash", providerRequest.RootElement.GetProperty("model").GetString());
     }
 
     [Fact]
@@ -1189,7 +1228,8 @@ public sealed class AssistantServiceTests
         AppOptions appOptions,
         ICacheClient? cache = null,
         ILockProvider? lockProvider = null,
-        AssistantUsageService? usageService = null)
+        AssistantUsageService? usageService = null,
+        AssistantModelSettingsService? modelSettingsService = null)
     {
         cache ??= new InMemoryCacheClient(new InMemoryCacheClientOptions
         {
@@ -1204,6 +1244,7 @@ public sealed class AssistantServiceTests
             appOptions,
             TimeProvider.System,
             NullLogger<AssistantUsageService>.Instance);
+        modelSettingsService ??= CreateAssistantModelSettingsService(appOptions);
 
         var assistantToolContext = new AssistantToolContext();
         return new AssistantService(
@@ -1212,9 +1253,25 @@ public sealed class AssistantServiceTests
             CreateMcpTools(assistantToolContext),
             assistantToolContext,
             new AssistantConversationService(cache, lockProvider, NullLogger<AssistantConversationService>.Instance),
+            modelSettingsService,
             usageService,
             TimeProvider.System,
             NullLogger<AssistantService>.Instance);
+    }
+
+    private static AssistantModelSettingsService CreateAssistantModelSettingsService(AppOptions appOptions)
+    {
+        SystemSettings? settings = null;
+        var systemSettingsService = new SystemSettingsService(
+            () => Task.FromResult(settings),
+            value =>
+            {
+                settings = value;
+                return Task.CompletedTask;
+            },
+            appOptions,
+            TimeProvider.System);
+        return new AssistantModelSettingsService(systemSettingsService, appOptions);
     }
 
     private static ILockProvider CreateLockProvider(ICacheClient cache, TimeProvider timeProvider)
