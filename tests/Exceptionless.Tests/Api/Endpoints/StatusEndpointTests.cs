@@ -133,6 +133,10 @@ public class StatusEndpointTests : IntegrationTestsBase
         Assert.Equal(notification.Level, settings.SystemNotification.Level);
         Assert.Equal(notification.Target, settings.SystemNotification.Target);
 
+        var cachedNotification = await GetService<ICacheClient>().GetAsync<SystemNotification>("system-notification");
+        Assert.True(cachedNotification.HasValue);
+        Assert.Equal(notification.Message, cachedNotification.Value.Message);
+
         await GetService<ICacheClient>().RemoveAllAsync();
         var afterCacheClear = await SendRequestAsAsync<SystemNotification>(r => r
             .AsGlobalAdminUser()

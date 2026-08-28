@@ -27,7 +27,8 @@ public class NotificationService(ICacheClient cacheClient, IMessagePublisher mes
     {
         var notification = new SystemNotification { Date = timeProvider.GetUtcNow().UtcDateTime, Message = message, Level = level, Target = target };
         await systemSettingsService.UpdateAsync(userId, settings => settings.SystemNotification = notification);
-        await cacheClient.RemoveAsync(SystemNotificationCacheKey);
+        // Keep older instances in a rolling deployment synchronized until they all read durable settings.
+        await cacheClient.SetAsync(SystemNotificationCacheKey, notification);
         if (publish)
             await messagePublisher.PublishAsync(notification);
         return notification;

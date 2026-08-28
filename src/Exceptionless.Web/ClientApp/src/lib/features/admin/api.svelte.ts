@@ -1,3 +1,4 @@
+import { invalidateAssistantAccessQueries } from '$features/assistant/api.svelte';
 import { type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 
@@ -266,8 +267,9 @@ export function putAdminAssistantEnabledSettingsMutation() {
 
             return response.data!;
         },
-        onSuccess: (settings) => {
+        onSuccess: async (settings) => {
             queryClient.setQueryData(queryKeys.assistantSettings, settings);
+            await invalidateAssistantAccessQueries(queryClient);
         }
     }));
 }
