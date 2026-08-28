@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Services;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Utility;
 using Foundatio.Caching;
@@ -98,6 +99,7 @@ public sealed class RecordSessionHeartbeatMiddlewareTests : TestWithServices
             next,
             GetService<ICacheClient>(),
             GetService<AppOptions>(),
+            GetService<SystemSettingsService>(),
             TimeProvider,
             GetService<ILogger<ProjectConfigMiddleware>>());
     }

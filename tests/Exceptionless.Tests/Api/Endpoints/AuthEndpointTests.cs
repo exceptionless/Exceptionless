@@ -561,6 +561,156 @@ public class AuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GitHubAsync_WithoutInviteAndAuthenticatedSession_LinksCurrentUser()
+    {
+        // Arrange
+        const string code = "github-linked-user";
+        var currentUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(currentUser);
+
+        // Act
+        var result = await SendRequestAsAsync<TokenResult>(request => request
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("auth", "github")
+            .Content(new ExternalAuthInfo
+            {
+                ClientId = "client-id",
+                Code = code,
+                RedirectUri = "http://localhost/callback"
+            })
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(result);
+        var token = await _tokenRepository.GetByIdAsync(result.Token);
+        Assert.NotNull(token);
+        Assert.Equal(currentUser.Id, token.UserId);
+
+        currentUser = await _userRepository.GetByIdAsync(currentUser.Id);
+        Assert.NotNull(currentUser);
+        Assert.Contains(currentUser.OAuthAccounts, account => account.Provider == "github" && account.ProviderUserId == code);
+    }
+
+    [Fact]
+    public async Task GitHubAsync_WithValidInviteAndAccountCreationDisabled_CreatesInvitedUser()
+    {
+        // Arrange
+        _authOptions.EnableAccountCreation = false;
+        const string code = "github-invited-user";
+        string email = TestOAuthProviderClient.GetEmailAddress(code);
+        var organization = (await _organizationRepository.GetAllAsync()).Documents.First();
+        var invite = new Invite
+        {
+            Token = StringExtensions.GetNewToken(),
+            EmailAddress = email,
+            DateAdded = DateTime.UtcNow
+        };
+        organization.Invites.Add(invite);
+        await _organizationRepository.SaveAsync(organization, options => options.ImmediateConsistency());
+
+        // Act
+        var result = await SendExternalLoginAsync("github", code, invite.Token);
+
+        // Assert
+        await AssertExternalLoginAsync(result, "github", code);
+        var user = await _userRepository.GetByEmailAddressAsync(email);
+        Assert.NotNull(user);
+        Assert.Contains(organization.Id, user.OrganizationIds);
+        var updatedOrganization = await _organizationRepository.GetByIdAsync(organization.Id);
+        Assert.NotNull(updatedOrganization);
+        Assert.DoesNotContain(updatedOrganization.Invites, candidate => candidate.Token == invite.Token);
+    }
+
+    [Fact]
+    public async Task GitHubAsync_WithValidInviteAndAuthenticatedSession_AuthenticatesInvitedUser()
+    {
+        // Arrange
+        const string code = "github-existing-invited-user";
+        string invitedEmail = TestOAuthProviderClient.GetEmailAddress(code);
+        var initialLogin = await SendExternalLoginAsync("github", code);
+        Assert.NotNull(initialLogin);
+
+        var invitedUser = await _userRepository.GetByEmailAddressAsync(invitedEmail);
+        Assert.NotNull(invitedUser);
+        var currentUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(currentUser);
+        string[] currentOrganizationIds = currentUser.OrganizationIds.ToArray();
+
+        var organization = (await _organizationRepository.GetAllAsync()).Documents.First();
+        var invite = new Invite
+        {
+            Token = StringExtensions.GetNewToken(),
+            EmailAddress = invitedEmail,
+            DateAdded = DateTime.UtcNow
+        };
+        organization.Invites.Add(invite);
+        await _organizationRepository.SaveAsync(organization, options => options.ImmediateConsistency());
+
+        // Act
+        var result = await SendRequestAsAsync<TokenResult>(request => request
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("auth", "github")
+            .Content(new ExternalAuthInfo
+            {
+                ClientId = "client-id",
+                Code = code,
+                InviteToken = invite.Token,
+                RedirectUri = "http://localhost/callback"
+            })
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(result);
+        var token = await _tokenRepository.GetByIdAsync(result.Token);
+        Assert.NotNull(token);
+        Assert.Equal(invitedUser.Id, token.UserId);
+
+        invitedUser = await _userRepository.GetByIdAsync(invitedUser.Id);
+        Assert.NotNull(invitedUser);
+        Assert.Contains(invitedUser.OAuthAccounts, account => account.Provider == "github" && account.ProviderUserId == code);
+        Assert.Contains(organization.Id, invitedUser.OrganizationIds);
+
+        currentUser = await _userRepository.GetByIdAsync(currentUser.Id);
+        Assert.NotNull(currentUser);
+        Assert.DoesNotContain(currentUser.OAuthAccounts, account => account.Provider == "github" && account.ProviderUserId == code);
+        Assert.Equal(currentOrganizationIds, currentUser.OrganizationIds);
+
+        var updatedOrganization = await _organizationRepository.GetByIdAsync(organization.Id);
+        Assert.NotNull(updatedOrganization);
+        Assert.DoesNotContain(updatedOrganization.Invites, candidate => candidate.Token == invite.Token);
+    }
+
+    [Fact]
+    public async Task GitHubAsync_WithInvalidInviteAndAccountCreationDisabled_IsForbidden()
+    {
+        // Arrange
+        _authOptions.EnableAccountCreation = false;
+        const string code = "github-invited-user";
+        string email = TestOAuthProviderClient.GetEmailAddress(code);
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AppendPaths("auth", "github")
+            .Content(new ExternalAuthInfo
+            {
+                ClientId = "client-id",
+                Code = code,
+                InviteToken = StringExtensions.GetNewToken(),
+                RedirectUri = "http://localhost/callback"
+            })
+            .StatusCodeShouldBeForbidden()
+        );
+
+        // Assert
+        Assert.Null(await _userRepository.GetByEmailAddressAsync(email));
+    }
+
+    [Fact]
     public async Task LoginValidAsync()
     {
         _authOptions.EnableActiveDirectoryAuth = false;
@@ -1418,7 +1568,7 @@ public class AuthEndpointTests : IntegrationTestsBase
         Assert.Equal(user.EmailAddress, account.Username);
     }
 
-    private Task<TokenResult?> SendExternalLoginAsync(string providerPath, string code)
+    private Task<TokenResult?> SendExternalLoginAsync(string providerPath, string code, string? inviteToken = null)
     {
         return SendRequestAsAsync<TokenResult>(r => r
             .Post()
@@ -1427,6 +1577,7 @@ public class AuthEndpointTests : IntegrationTestsBase
             {
                 ClientId = "client-id",
                 Code = code,
+                InviteToken = inviteToken,
                 RedirectUri = "http://localhost/callback"
             })
             .StatusCodeShouldBeOk()

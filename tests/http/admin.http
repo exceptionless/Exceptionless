@@ -54,6 +54,68 @@ Authorization: Bearer {{token}}
 GET {{apiUrl}}/admin/assistant-usage
 Authorization: Bearer {{token}}
 
+### Get Exie Settings
+GET {{apiUrl}}/admin/assistant-settings
+Authorization: Bearer {{token}}
+
+### Set Exie Model Override
+PUT {{apiUrl}}/admin/assistant-settings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "model": "z-ai/glm-5.3-flash"
+}
+
+### Reset Exie Model Override
+PUT {{apiUrl}}/admin/assistant-settings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "model": null
+}
+
+### Disable Exie at Runtime
+PUT {{apiUrl}}/admin/assistant-settings/enabled
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "enabled": false
+}
+
+### Reset Exie Availability to Deployment Default
+PUT {{apiUrl}}/admin/assistant-settings/enabled
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "enabled": null
+}
+
+### Get Event Submission Settings
+GET {{apiUrl}}/admin/event-submission-settings
+Authorization: Bearer {{token}}
+
+### Disable Event Submission at Runtime
+PUT {{apiUrl}}/admin/event-submission-settings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "enabled": false
+}
+
+### Reset Event Submission to Deployment Default
+PUT {{apiUrl}}/admin/event-submission-settings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "enabled": null
+}
+
 ### Suspend
 POST {{apiUrl}}/organizations/{{organizationId}}/suspend?code=1
 Authorization: Bearer {{token}}
