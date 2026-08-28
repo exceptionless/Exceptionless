@@ -282,6 +282,11 @@ export function putCurrentUserProductTour() {
         mutationFn: async ({ progress, tourName }) => {
             const client = useFetchClient();
             const response = await client.putJSON<ProductTourProgress>(`users/me/product-tours/${tourName}`, progress);
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+
             return response.data!;
         },
         mutationKey: queryKeys.productTour(undefined),

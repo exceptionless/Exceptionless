@@ -140,7 +140,6 @@ export interface GetProjectIntegrationNotificationSettingsRequest {
 }
 
 export interface GetProjectRequest {
-    enabled?: () => boolean;
     refetchInterval?: false | number;
     route: {
         id: string | undefined;
@@ -441,7 +440,7 @@ export function getProjectQuery(request: GetProjectRequest) {
         const id = request.route.id;
 
         return {
-            enabled: () => !!accessToken.current && !!id && (request.enabled?.() ?? true),
+            enabled: () => !!accessToken.current && !!id,
             // Like event and stack reads, finish across remounts so the next observer can reuse the result.
             queryFn: async () => {
                 const client = useFetchClient();

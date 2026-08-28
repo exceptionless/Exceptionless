@@ -27,6 +27,7 @@
     import EventsIcon from '@lucide/svelte/icons/calendar-days';
     import ChevronLeft from '@lucide/svelte/icons/chevron-left';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
+    import { onMount, tick } from 'svelte';
     import { toast } from 'svelte-sonner';
 
     import type { PersistentEvent } from '../models/index';
@@ -48,7 +49,6 @@
         filterChanged: (filter: IFilter) => void;
         handleError: (problem: ProblemDetails) => void;
         id: string;
-        loadProjectDetails?: boolean;
         onEventLoaded?: (event: PersistentEvent) => void;
         onNavigate?: (eventId: string) => void;
         prepareStackAssistantContext?: () => void;
@@ -60,7 +60,6 @@
         filterChanged,
         handleError,
         id,
-        loadProjectDetails = true,
         onEventLoaded,
         onNavigate,
         prepareStackAssistantContext
@@ -131,7 +130,6 @@
     const navigation = $derived(eventQuery.data?.navigation);
 
     const projectQuery = getProjectQuery({
-        enabled: () => loadProjectDetails,
         route: {
             get id() {
                 return event?.project_id;
@@ -161,6 +159,9 @@
 
     let activeTab = $state<TabType>('Overview');
     let tabs = $derived<TabType[]>(getTabs(event, projectQuery.data));
+    let tabsListRef = $state<HTMLElement | null>(null);
+    let canScrollTabsLeft = $state(false);
+    let canScrollTabsRight = $state(false);
     let draggedPromotedTab = $state<null | string>(null);
     let notifiedEventId = $state('');
     let showJsonDialog = $state(false);
@@ -207,6 +208,29 @@
 
     function isPromotedTab(tab: TabType): boolean {
         return !!projectQuery.data?.promoted_tabs?.includes(tab);
+    }
+
+    function updateTabsOverflow(): void {
+        if (!tabsListRef) {
+            canScrollTabsLeft = false;
+            canScrollTabsRight = false;
+            return;
+        }
+
+        const maxScrollLeft = tabsListRef.scrollWidth - tabsListRef.clientWidth;
+        canScrollTabsLeft = tabsListRef.scrollLeft > 1;
+        canScrollTabsRight = tabsListRef.scrollLeft < maxScrollLeft - 1;
+    }
+
+    function scrollTabs(direction: 'left' | 'right'): void {
+        if (!tabsListRef) {
+            return;
+        }
+
+        tabsListRef.scrollBy({
+            behavior: 'smooth',
+            left: direction === 'left' ? -tabsListRef.clientWidth / 2 : tabsListRef.clientWidth / 2
+        });
     }
 
     function onPromoted(title: string): void {
@@ -350,6 +374,31 @@
             onEventLoaded?.(event);
         }
     });
+
+    $effect(() => {
+        const tabCount = tabs.length;
+        void tick().then(() => {
+            if (tabCount === tabs.length) {
+                updateTabsOverflow();
+            }
+        });
+    });
+
+    onMount(() => {
+        updateTabsOverflow();
+
+        const resizeObserver = new ResizeObserver(updateTabsOverflow);
+        if (tabsListRef) {
+            resizeObserver.observe(tabsListRef);
+        }
+
+        window.addEventListener('resize', updateTabsOverflow);
+
+        return () => {
+            resizeObserver.disconnect();
+            window.removeEventListener('resize', updateTabsOverflow);
+        };
+    });
 </script>
 
 {#if event && investigationCopy && ['stack-summary', 'stack-triage'].includes(investigationCheckpoint?.checkpointName ?? '')}
@@ -364,7 +413,7 @@
 
 <section data-event-type={event ? (hasErrorOrSimpleError(event) ? 'error' : event.type) : undefined} data-tour={event ? 'event-details' : undefined}>
     <h4 class="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">Stack</h4>
-    {#if loadProjectDetails && event?.stack_id}
+    {#if event?.stack_id}
         <StackCard
             {assistantResource}
             {filterChanged}
@@ -439,7 +488,7 @@
         </Table.Body>
     </Table.Root>
 
-    {#if loadProjectDetails && event && projectQuery.data?.id === event.project_id}
+    {#if event}
         {#if investigationCheckpoint?.checkpointName === 'tab-overview' && investigationCopy}
             <ProductTourInlineCallout
                 description={investigationCopy.description}
@@ -450,8 +499,23 @@
             />
         {/if}
         <Tabs.Root class="mt-4 mb-4" bind:value={activeTab}>
-            <div>
-                <Tabs.List class="no-scrollbar h-auto w-full justify-normal gap-1 overflow-x-auto overflow-y-hidden scroll-smooth p-1">
+            <div class="relative">
+                {#if canScrollTabsLeft}
+                    <Button
+                        aria-label="Scroll tabs left"
+                        class="bg-background/95 absolute top-1/2 left-0 z-10 -translate-y-1/2 shadow-sm"
+                        onclick={() => scrollTabs('left')}
+                        size="icon-sm"
+                        variant="outline"
+                    >
+                        <ChevronLeft class="size-4" />
+                    </Button>
+                {/if}
+                <Tabs.List
+                    bind:ref={tabsListRef}
+                    class="no-scrollbar h-auto w-full justify-normal gap-1 overflow-x-auto overflow-y-hidden scroll-smooth p-1"
+                    onscroll={updateTabsOverflow}
+                >
                     {#each tabs as tab (tab)}
                         <Tabs.Trigger
                             aria-label={isPromotedTab(tab) ? `${tab}. Drag to reorder custom tab.` : undefined}
@@ -471,6 +535,17 @@
                         >
                     {/each}
                 </Tabs.List>
+                {#if canScrollTabsRight}
+                    <Button
+                        aria-label="Scroll tabs right"
+                        class="bg-background/95 absolute top-1/2 right-0 z-10 -translate-y-1/2 shadow-sm"
+                        onclick={() => scrollTabs('right')}
+                        size="icon-sm"
+                        variant="outline"
+                    >
+                        <ChevronRight class="size-4" />
+                    </Button>
+                {/if}
             </div>
 
             {#each tabs as tab (tab)}

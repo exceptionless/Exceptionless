@@ -181,7 +181,7 @@
             tourName: name,
             userId: currentUser.id
         });
-        void Promise.all([track('shown', name, item.version, source), track('started', name, item.version, source)]);
+        await Promise.all([track('shown', name, item.version, source), track('started', name, item.version, source)]);
 
         const destination = item.startingRoute(context);
         if (`${pathname}${window.location.search}` !== destination) {
@@ -214,7 +214,7 @@
             return;
         }
         welcomeHandled = true;
-        void track('completed', 'welcome', WELCOME_VERSION, 'automatic');
+        await track('completed', 'welcome', WELCOME_VERSION, 'automatic');
         await startTour(recommended.name, 'automatic');
     }
 
@@ -223,7 +223,7 @@
             return;
         }
         welcomeHandled = true;
-        void track('completed', 'welcome', WELCOME_VERSION, 'automatic');
+        await track('completed', 'welcome', WELCOME_VERSION, 'automatic');
         openCatalog('catalog');
     }
 
@@ -232,14 +232,14 @@
             return;
         }
         welcomeHandled = true;
-        void track('dismissed', 'welcome', WELCOME_VERSION, 'automatic');
+        await track('dismissed', 'welcome', WELCOME_VERSION, 'automatic');
     }
 
     async function onExieAnnouncementStart(): Promise<void> {
         if (!(await recordPreference('exie-announcement', EXIE_ANNOUNCEMENT_VERSION, ProductTourStatus.Completed))) {
             return;
         }
-        void track('completed', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
+        await track('completed', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
         await startTour('meet-exie', 'feature-announcement');
     }
 
@@ -247,7 +247,7 @@
         if (!(await recordPreference('exie-announcement', EXIE_ANNOUNCEMENT_VERSION, ProductTourStatus.Dismissed))) {
             return;
         }
-        void track('dismissed', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
+        await track('dismissed', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
     }
 
     function getItem(name: ProductTourName): ProductTourListItem {

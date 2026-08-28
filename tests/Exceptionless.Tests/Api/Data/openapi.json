@@ -4034,11 +4034,6 @@
               "schema": {
                 "$ref": "#/components/schemas/UpdateProductTourProgress"
               }
-            },
-            "application/*\u002Bjson": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateProductTourProgress"
-              }
             }
           },
           "required": true

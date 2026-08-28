@@ -40,7 +40,7 @@ public static class UserEndpoints
 
         group.MapPut("users/me/product-tours/{tourName:regex(^[a-z0-9]+(?:-[a-z0-9]+)*$):maxlength(64)}", async (string tourName, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] UpdateProductTourProgress progress)
             => (await mediator.InvokeAsync<Result<ProductTourProgress>>(new UserMessages.UpdateCurrentUserProductTour(tourName, progress))).ToHttpResult(resultMapper))
-        .Accepts<UpdateProductTourProgress>(false, "application/json", "application/*+json")
+        .Accepts<UpdateProductTourProgress>(false, "application/json")
         .Produces<ProductTourProgress>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)

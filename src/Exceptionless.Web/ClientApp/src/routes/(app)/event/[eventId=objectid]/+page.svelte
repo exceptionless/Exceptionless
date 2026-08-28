@@ -56,7 +56,6 @@
     {filterChanged}
     id={page.params.eventId || ''}
     {handleError}
-    loadProjectDetails={false}
     onEventLoaded={handleEventLoaded}
     onNavigate={(newId) => goto(buildEventDetailsHref(newId))}
 />

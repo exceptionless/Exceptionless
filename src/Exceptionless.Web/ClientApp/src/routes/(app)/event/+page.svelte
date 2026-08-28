@@ -1,7 +1,4 @@
 <script lang="ts">
-    import type { SavedView } from '$features/saved-views/models';
-
-    import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import * as DataTable from '$comp/data-table';
@@ -55,7 +52,6 @@
     import { premiumPage } from '$features/organizations/premium-page.svelte';
     import { productTourCheckpoint } from '$features/product-tours/state.svelte';
     import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
-    import { savedViewHref } from '$features/saved-views/slugs';
     import { isSavedViewHydrationPending, isSavedViewUnavailable, useSavedViews } from '$features/saved-views/use-saved-views.svelte';
     import * as agg from '$features/shared/api/aggregations';
     import { createPageSizePreference, getSharedTableOptions, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
@@ -103,10 +99,6 @@
 
     function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
         return buildEventDetailsHref(row.id);
-    }
-
-    async function loadSavedView(view: SavedView): Promise<void> {
-        await goto(savedViewHref(view));
     }
 
     const DEFAULT_TIME_RANGE = '[now-7d TO now]';
@@ -922,7 +914,7 @@
                     defaultAutoFillColumnId="summary"
                     filters={filters ?? []}
                     isModified={savedViewsState.isModified}
-                    onLoadView={loadSavedView}
+                    onLoadView={savedViewsState.handleLoadView}
                     onClearSavedView={savedViewsState.handleClearSavedView}
                     onResetToSaved={handleResetToSaved}
                     onSavedViewUpdated={savedViewsState.handleSavedViewUpdated}

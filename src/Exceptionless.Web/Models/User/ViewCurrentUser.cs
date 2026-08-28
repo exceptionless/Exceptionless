@@ -8,14 +8,7 @@ namespace Exceptionless.Web.Models;
 
 public record ViewCurrentUser : ViewUser
 {
-    public ViewCurrentUser()
-    {
-        OAuthAccounts = [];
-        OrganizationPreferences = [];
-        ProductTours = new Dictionary<string, ProductTourProgress>(StringComparer.Ordinal);
-    }
-
-    public ViewCurrentUser(User user, IntercomOptions options) : this()
+    public ViewCurrentUser(User user, IntercomOptions options)
     {
         Id = user.Id;
         OrganizationIds = user.OrganizationIds;
@@ -40,7 +33,7 @@ public record ViewCurrentUser : ViewUser
     public ICollection<OAuthAccount> OAuthAccounts { get; set; }
     public ICollection<UserOrganizationPreference> OrganizationPreferences { get; set; }
     public ICollection<UserSavedViewOrderPreference> SavedViewOrders { get; set; }
-    public IDictionary<string, ProductTourProgress> ProductTours { get; set; }
+    public IDictionary<string, ProductTourProgress> ProductTours { get; set; } = new Dictionary<string, ProductTourProgress>(StringComparer.Ordinal);
 
     private static string? HMACSHA256HashString(string value, IntercomOptions options)
     {

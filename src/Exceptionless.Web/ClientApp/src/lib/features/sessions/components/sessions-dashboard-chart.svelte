@@ -49,50 +49,51 @@
     ];
 </script>
 
-<Chart.Shell class={`relative ${className}`}>
-    <Chart.Container config={chartConfig} class="h-16 w-full">
-        <AreaChart
-            {data}
-            x="date"
-            xScale={scaleUtc()}
-            yDomain={[0, Math.max(1, Math.max(...data.map((d) => Math.max(d.sessions, d.users))))]}
-            {series}
-            axis={false}
-            grid={false}
-            brush={{
-                onBrushEnd: (e) => {
-                    if (!e.brush.active) {
-                        return;
-                    }
-
-                    const [start, end] = e.brush.x;
-                    if (start instanceof Date && end instanceof Date) {
-                        onRangeSelect?.(start, end);
-                    }
-                }
-            }}
-            props={{
-                area: {
-                    curve: curveLinear
-                },
-                canvas: {
-                    class: 'cursor-crosshair'
-                },
-                svg: {
-                    class: 'cursor-crosshair'
-                }
-            }}
-        >
-            {#snippet tooltip()}
-                <Chart.Tooltip
-                    class="min-w-62.5"
-                    indicator="line"
-                    labelFormatter={(v) => (v instanceof Date ? formatDateLabel(v) : typeof v === 'number' ? formatDateLabel(new Date(v)) : String(v))}
-                />
-            {/snippet}
-        </AreaChart>
-    </Chart.Container>
+<Chart.Shell class={className}>
     {#if isLoading}
-        <Skeleton class="absolute inset-0 h-16 w-full rounded" />
+        <Skeleton class="h-16 w-full rounded" />
+    {:else}
+        <Chart.Container config={chartConfig} class="h-16 w-full">
+            <AreaChart
+                {data}
+                x="date"
+                xScale={scaleUtc()}
+                yDomain={[0, Math.max(1, Math.max(...data.map((d) => Math.max(d.sessions, d.users))))]}
+                {series}
+                axis={false}
+                grid={false}
+                brush={{
+                    onBrushEnd: (e) => {
+                        if (!e.brush.active) {
+                            return;
+                        }
+
+                        const [start, end] = e.brush.x;
+                        if (start instanceof Date && end instanceof Date) {
+                            onRangeSelect?.(start, end);
+                        }
+                    }
+                }}
+                props={{
+                    area: {
+                        curve: curveLinear
+                    },
+                    canvas: {
+                        class: 'cursor-crosshair'
+                    },
+                    svg: {
+                        class: 'cursor-crosshair'
+                    }
+                }}
+            >
+                {#snippet tooltip()}
+                    <Chart.Tooltip
+                        class="min-w-62.5"
+                        indicator="line"
+                        labelFormatter={(v) => (v instanceof Date ? formatDateLabel(v) : typeof v === 'number' ? formatDateLabel(new Date(v)) : String(v))}
+                    />
+                {/snippet}
+            </AreaChart>
+        </Chart.Container>
     {/if}
 </Chart.Shell>
