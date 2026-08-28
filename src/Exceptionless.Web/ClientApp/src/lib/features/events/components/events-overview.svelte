@@ -18,13 +18,15 @@
     import * as EventsFacetedFilter from '$features/events/components/filters';
     import { getExtendedDataItems, hasErrorOrSimpleError } from '$features/events/persistent-event';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
+    import { createProductTourActions } from '$features/product-tours/actions.svelte';
+    import ProductTourInlineCallout from '$features/product-tours/components/product-tour-inline-callout.svelte';
+    import { productTourCheckpoint } from '$features/product-tours/state.svelte';
     import { getProjectQuery, updateProject } from '$features/projects/api.svelte';
     import StackCard from '$features/stacks/components/stack-card.svelte';
     import Braces from '@lucide/svelte/icons/braces';
     import EventsIcon from '@lucide/svelte/icons/calendar-days';
     import ChevronLeft from '@lucide/svelte/icons/chevron-left';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
-    import { onMount, tick } from 'svelte';
     import { toast } from 'svelte-sonner';
 
     import type { PersistentEvent } from '../models/index';
@@ -46,6 +48,7 @@
         filterChanged: (filter: IFilter) => void;
         handleError: (problem: ProblemDetails) => void;
         id: string;
+        loadProjectDetails?: boolean;
         onEventLoaded?: (event: PersistentEvent) => void;
         onNavigate?: (eventId: string) => void;
         prepareStackAssistantContext?: () => void;
@@ -57,6 +60,7 @@
         filterChanged,
         handleError,
         id,
+        loadProjectDetails = true,
         onEventLoaded,
         onNavigate,
         prepareStackAssistantContext
@@ -127,6 +131,7 @@
     const navigation = $derived(eventQuery.data?.navigation);
 
     const projectQuery = getProjectQuery({
+        enabled: () => loadProjectDetails,
         route: {
             get id() {
                 return event?.project_id;
@@ -156,12 +161,43 @@
 
     let activeTab = $state<TabType>('Overview');
     let tabs = $derived<TabType[]>(getTabs(event, projectQuery.data));
-    let tabsListRef = $state<HTMLElement | null>(null);
-    let canScrollTabsLeft = $state(false);
-    let canScrollTabsRight = $state(false);
     let draggedPromotedTab = $state<null | string>(null);
     let notifiedEventId = $state('');
     let showJsonDialog = $state(false);
+
+    const tourActions = createProductTourActions();
+    const investigationCheckpoint = $derived(productTourCheckpoint.current?.tourName === 'investigate-error' ? productTourCheckpoint.current : undefined);
+    const investigationCopy = $derived.by(() => {
+        switch (investigationCheckpoint?.checkpointName) {
+            case 'event-occurrence':
+                return {
+                    description: 'This occurrence contains its timestamp, raw JSON, and navigation to nearby events.',
+                    title: 'Inspect the occurrence'
+                };
+            case 'filter-stack-events':
+                return {
+                    description: 'Show all events filters the list to this stack when you are ready to compare occurrences.',
+                    title: 'Compare every occurrence'
+                };
+            case 'stack-summary':
+                return {
+                    description: 'Use the grouped stack title, affected users, occurrence count, and trend to judge scope and impact.',
+                    title: 'Understand the grouped issue'
+                };
+            case 'stack-triage':
+                return {
+                    description: 'Status and options change shared issue state. Review them here; this guide will not invoke them.',
+                    title: 'Triage deliberately'
+                };
+            case 'tab-overview':
+                return {
+                    description: 'Overview summarizes the message and useful event fields. Choose other tabs when the evidence calls for them.',
+                    title: 'Begin with the overview'
+                };
+            default:
+                return undefined;
+        }
+    });
 
     $effect(() => {
         if (shouldResetActiveEventTab(!!event, projectQuery.isPending, tabs, activeTab)) {
@@ -171,29 +207,6 @@
 
     function isPromotedTab(tab: TabType): boolean {
         return !!projectQuery.data?.promoted_tabs?.includes(tab);
-    }
-
-    function updateTabsOverflow(): void {
-        if (!tabsListRef) {
-            canScrollTabsLeft = false;
-            canScrollTabsRight = false;
-            return;
-        }
-
-        const maxScrollLeft = tabsListRef.scrollWidth - tabsListRef.clientWidth;
-        canScrollTabsLeft = tabsListRef.scrollLeft > 1;
-        canScrollTabsRight = tabsListRef.scrollLeft < maxScrollLeft - 1;
-    }
-
-    function scrollTabs(direction: 'left' | 'right'): void {
-        if (!tabsListRef) {
-            return;
-        }
-
-        tabsListRef.scrollBy({
-            behavior: 'smooth',
-            left: direction === 'left' ? -tabsListRef.clientWidth / 2 : tabsListRef.clientWidth / 2
-        });
     }
 
     function onPromoted(title: string): void {
@@ -282,6 +295,35 @@
         }
     }
 
+    async function continueInvestigationTour(): Promise<void> {
+        const checkpoint = investigationCheckpoint;
+        if (!checkpoint) {
+            return;
+        }
+        switch (checkpoint.checkpointName) {
+            case 'event-occurrence':
+                productTourCheckpoint.advance(checkpoint, 'tab-overview');
+                break;
+            case 'stack-summary':
+                productTourCheckpoint.advance(checkpoint, 'stack-triage');
+                break;
+            case 'stack-triage':
+                productTourCheckpoint.advance(checkpoint, 'event-occurrence');
+                break;
+            case 'tab-overview':
+                productTourCheckpoint.advance(checkpoint, 'filter-stack-events');
+                break;
+            default:
+                await tourActions.complete(checkpoint);
+        }
+    }
+
+    async function dismissInvestigationTour(): Promise<void> {
+        if (investigationCheckpoint) {
+            await tourActions.dismiss(investigationCheckpoint);
+        }
+    }
+
     function prepareEventAssistantContext(): void {
         if (event) {
             assistantPageContext.setPageEvent(event);
@@ -301,39 +343,28 @@
     $effect(() => {
         if (event && event.id !== notifiedEventId) {
             notifiedEventId = event.id;
+            const checkpoint = investigationCheckpoint;
+            if (checkpoint?.checkpointName === 'choose-error' && hasErrorOrSimpleError(event)) {
+                productTourCheckpoint.advance(checkpoint, 'stack-summary');
+            }
             onEventLoaded?.(event);
         }
     });
-
-    $effect(() => {
-        const tabCount = tabs.length;
-        void tick().then(() => {
-            if (tabCount === tabs.length) {
-                updateTabsOverflow();
-            }
-        });
-    });
-
-    onMount(() => {
-        updateTabsOverflow();
-
-        const resizeObserver = new ResizeObserver(updateTabsOverflow);
-        if (tabsListRef) {
-            resizeObserver.observe(tabsListRef);
-        }
-
-        window.addEventListener('resize', updateTabsOverflow);
-
-        return () => {
-            resizeObserver.disconnect();
-            window.removeEventListener('resize', updateTabsOverflow);
-        };
-    });
 </script>
 
-<section>
+{#if event && investigationCopy && ['stack-summary', 'stack-triage'].includes(investigationCheckpoint?.checkpointName ?? '')}
+    <ProductTourInlineCallout
+        description={investigationCopy.description}
+        onContinue={continueInvestigationTour}
+        onDismiss={dismissInvestigationTour}
+        title={investigationCopy.title}
+        tourName="investigate-error"
+    />
+{/if}
+
+<section data-event-type={event ? (hasErrorOrSimpleError(event) ? 'error' : event.type) : undefined} data-tour={event ? 'event-details' : undefined}>
     <h4 class="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">Stack</h4>
-    {#if event?.stack_id}
+    {#if loadProjectDetails && event?.stack_id}
         <StackCard
             {assistantResource}
             {filterChanged}
@@ -343,7 +374,18 @@
     {/if}
 </section>
 
-<section class="mt-2">
+{#if event && investigationCopy && ['event-occurrence', 'filter-stack-events'].includes(investigationCheckpoint?.checkpointName ?? '')}
+    <ProductTourInlineCallout
+        continueLabel={investigationCheckpoint?.checkpointName === 'filter-stack-events' ? 'Finish guide' : 'Continue'}
+        description={investigationCopy.description}
+        onContinue={continueInvestigationTour}
+        onDismiss={dismissInvestigationTour}
+        title={investigationCopy.title}
+        tourName="investigate-error"
+    />
+{/if}
+
+<section class="mt-2" data-tour={event ? 'event-occurrence' : undefined}>
     <div class="mb-2 flex items-center justify-between">
         <h4 class="text-muted-foreground text-sm font-semibold tracking-wide uppercase">Event</h4>
         <div class="flex items-center gap-1">
@@ -355,6 +397,7 @@
             {#if event?.stack_id}
                 <Button
                     aria-label="Show all events"
+                    data-tour="event-stack-filter"
                     onclick={() => filterChanged(new EventsFacetedFilter.StringFilter('stack', event!.stack_id))}
                     size="icon-sm"
                     title="Show all events"
@@ -396,25 +439,19 @@
         </Table.Body>
     </Table.Root>
 
-    {#if event}
+    {#if loadProjectDetails && event && projectQuery.data?.id === event.project_id}
+        {#if investigationCheckpoint?.checkpointName === 'tab-overview' && investigationCopy}
+            <ProductTourInlineCallout
+                description={investigationCopy.description}
+                onContinue={continueInvestigationTour}
+                onDismiss={dismissInvestigationTour}
+                title={investigationCopy.title}
+                tourName="investigate-error"
+            />
+        {/if}
         <Tabs.Root class="mt-4 mb-4" bind:value={activeTab}>
-            <div class="relative">
-                {#if canScrollTabsLeft}
-                    <Button
-                        aria-label="Scroll tabs left"
-                        class="bg-background/95 absolute top-1/2 left-0 z-10 -translate-y-1/2 shadow-sm"
-                        onclick={() => scrollTabs('left')}
-                        size="icon-sm"
-                        variant="outline"
-                    >
-                        <ChevronLeft class="size-4" />
-                    </Button>
-                {/if}
-                <Tabs.List
-                    bind:ref={tabsListRef}
-                    class="no-scrollbar h-auto w-full justify-normal gap-1 overflow-x-auto overflow-y-hidden scroll-smooth p-1"
-                    onscroll={updateTabsOverflow}
-                >
+            <div>
+                <Tabs.List class="no-scrollbar h-auto w-full justify-normal gap-1 overflow-x-auto overflow-y-hidden scroll-smooth p-1">
                     {#each tabs as tab (tab)}
                         <Tabs.Trigger
                             aria-label={isPromotedTab(tab) ? `${tab}. Drag to reorder custom tab.` : undefined}
@@ -424,6 +461,7 @@
                                 draggedPromotedTab === tab && 'bg-accent/70'
                             ]}
                             draggable={isPromotedTab(tab)}
+                            data-tour={tab === 'Overview' ? 'event-tab-overview' : undefined}
                             ondragstart={(event) => handlePromotedTabDragStart(event, tab)}
                             ondragover={(event) => handlePromotedTabDragOver(event, tab)}
                             ondrop={(event) => handlePromotedTabDrop(event, tab)}
@@ -433,17 +471,6 @@
                         >
                     {/each}
                 </Tabs.List>
-                {#if canScrollTabsRight}
-                    <Button
-                        aria-label="Scroll tabs right"
-                        class="bg-background/95 absolute top-1/2 right-0 z-10 -translate-y-1/2 shadow-sm"
-                        onclick={() => scrollTabs('right')}
-                        size="icon-sm"
-                        variant="outline"
-                    >
-                        <ChevronRight class="size-4" />
-                    </Button>
-                {/if}
             </div>
 
             {#each tabs as tab (tab)}

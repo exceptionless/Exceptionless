@@ -11,6 +11,9 @@
     import { Spinner } from '$comp/ui/spinner';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing';
     import { organization } from '$features/organizations/context.svelte';
+    import { createProductTourActions } from '$features/product-tours/actions.svelte';
+    import ProductTourSpotlight from '$features/product-tours/components/product-tour-spotlight.svelte';
+    import { productTourCheckpoint } from '$features/product-tours/state.svelte';
     import { postProject } from '$features/projects/api.svelte';
     import { type NewProjectFormData, NewProjectSchema } from '$features/projects/schemas';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
@@ -21,6 +24,8 @@
 
     let toastId = $state<number | string>();
     const createProject = postProject();
+    const tourActions = createProductTourActions();
+    const configureCheckpoint = $derived(productTourCheckpoint.current?.tourName === 'configure-project' ? productTourCheckpoint.current : undefined);
 
     const form = createForm(() => ({
         defaultValues: {
@@ -37,6 +42,10 @@
                         ...value,
                         organization_id: organization.current ?? value.organization_id
                     } as NewProject);
+                    const checkpoint = configureCheckpoint;
+                    if (checkpoint) {
+                        productTourCheckpoint.advance(checkpoint, 'choose-platform');
+                    }
                     toastId = toast.success('Project added successfully');
                     await goto(
                         resolve('/(app)/project/[projectId]/configure', {
@@ -75,6 +84,7 @@
         <Muted>Create a project, then configure a client to send your first event.</Muted>
     </div>
     <form
+        data-tour="project-setup-form"
         onsubmit={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -91,6 +101,7 @@
                 <Field.Field data-invalid={ariaInvalid(field)}>
                     <Field.Label for={field.name}>Project Name</Field.Label>
                     <Input
+                        data-tour="project-name"
                         id={field.name}
                         name={field.name}
                         placeholder="Enter project name"
@@ -105,7 +116,7 @@
         </form.Field>
         <form.Subscribe selector={(state) => state.isSubmitting}>
             {#snippet children(isSubmitting)}
-                <Button type="submit" class="mt-4" disabled={isSubmitting}>
+                <Button data-tour="project-setup-submit" type="submit" class="mt-4" disabled={isSubmitting}>
                     {#if isSubmitting}
                         <Spinner /> Adding Project...
                     {:else}
@@ -116,3 +127,14 @@
         </form.Subscribe>
     </form>
 </div>
+
+{#if configureCheckpoint?.checkpointName === 'project-name'}
+    <ProductTourSpotlight
+        checkpoint={configureCheckpoint}
+        description="Name the application or service that will send events. Continue by submitting this form; the guide advances only after creation succeeds."
+        onDismiss={tourActions.dismiss}
+        side="top"
+        target="[data-tour='project-setup-form']"
+        title="Name your project"
+    />
+{/if}

@@ -6,6 +6,7 @@ import type {
     AdminAssistantSettings,
     AdminAssistantUsage,
     AdminEventSubmissionSettings,
+    AdminProductTourUsage,
     AdminStats,
     ElasticsearchInfo,
     ElasticsearchSnapshotsResponse,
@@ -44,6 +45,7 @@ export const queryKeys = {
     migrations: ['admin', 'migrations'] as const,
     oauthApplication: (id: string | undefined) => [...queryKeys.oauthApplications, id] as const,
     oauthApplications: ['admin', 'oauth-applications'] as const,
+    productTourUsage: (month: string) => ['admin', 'product-tour-usage', month] as const,
     snapshots: ['admin', 'elasticsearch', 'snapshots'] as const,
     stats: ['admin', 'stats'] as const
 };
@@ -106,6 +108,29 @@ export function getAdminAssistantUsageQuery(month: () => string) {
             return response.data!;
         },
         queryKey: queryKeys.assistantUsage(month()),
+        staleTime: 60 * 1000
+    }));
+}
+
+export function getAdminProductTourUsageQuery(month: () => string) {
+    return createQuery<AdminProductTourUsage, ProblemDetails>(() => ({
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<AdminProductTourUsage>('admin/product-tour-usage', {
+                params: {
+                    limit: 100,
+                    month: `${month()}-01`
+                },
+                signal
+            });
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+
+            return response.data!;
+        },
+        queryKey: queryKeys.productTourUsage(month()),
         staleTime: 60 * 1000
     }));
 }

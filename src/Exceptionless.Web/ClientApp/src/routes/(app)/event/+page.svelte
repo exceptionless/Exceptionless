@@ -1,4 +1,7 @@
 <script lang="ts">
+    import type { SavedView } from '$features/saved-views/models';
+
+    import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import * as DataTable from '$comp/data-table';
@@ -42,6 +45,7 @@
         updateFilterCache
     } from '$features/events/components/filters/helpers.svelte';
     import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
+    import InvestigationListTour from '$features/events/components/investigation-list-tour.svelte';
     import { buildEventDetailsHref, type EventSummaryModel, type SummaryTemplateKeys } from '$features/events/components/summary/index';
     import EventsBulkActionsDropdownMenu from '$features/events/components/table/events-bulk-actions-dropdown-menu.svelte';
     import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
@@ -49,7 +53,9 @@
     import { filterUsesPremiumFeatures } from '$features/events/premium-filter';
     import { organization } from '$features/organizations/context.svelte';
     import { premiumPage } from '$features/organizations/premium-page.svelte';
+    import { productTourCheckpoint } from '$features/product-tours/state.svelte';
     import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
+    import { savedViewHref } from '$features/saved-views/slugs';
     import { isSavedViewHydrationPending, isSavedViewUnavailable, useSavedViews } from '$features/saved-views/use-saved-views.svelte';
     import * as agg from '$features/shared/api/aggregations';
     import { createPageSizePreference, getSharedTableOptions, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
@@ -77,8 +83,10 @@
         redirectToEventsWithFilter,
         serializeTimeQueryParam
     } from '../redirect-to-events.svelte';
+    import { getEventQueryFilters } from './query-filters';
 
     let selectedEventId: null | string = $state(null);
+    const investigationCheckpoint = $derived(productTourCheckpoint.current?.tourName === 'investigate-error' ? productTourCheckpoint.current : undefined);
 
     function handleEventError(problem: ProblemDetails) {
         showBillingDialogOnUpgradeProblem(problem, organization.current);
@@ -87,10 +95,18 @@
 
     function rowClick(row: EventSummaryModel<SummaryTemplateKeys>) {
         selectedEventId = row.id;
+        const checkpoint = investigationCheckpoint;
+        if (checkpoint?.checkpointName === 'choose-error') {
+            productTourCheckpoint.advance(checkpoint, 'stack-summary');
+        }
     }
 
     function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {
         return buildEventDetailsHref(row.id);
+    }
+
+    async function loadSavedView(view: SavedView): Promise<void> {
+        await goto(savedViewHref(view));
     }
 
     const DEFAULT_TIME_RANGE = '[now-7d TO now]';
@@ -138,77 +154,6 @@
     function getEffectiveFilter(): null | string {
         const filter = toFilter(getCurrentFiltersWithoutTime());
         return filter || null;
-    }
-
-    function getQueryFilters(params: ListFilterQueryParams = queryParams): FacetedFilter.IFilter[] | null {
-        const filters: FacetedFilter.IFilter[] = [];
-
-        if (params.project) {
-            filters.push(new ProjectFilter(splitQueryParam(params.project)));
-        }
-
-        if (params.stack) {
-            filters.push(new StringFilter('stack', params.stack));
-        }
-
-        const bot = parseBooleanQueryParam(params.bot);
-        if (bot !== undefined) {
-            filters.push(new BooleanFilter('bot', bot));
-        }
-
-        const first = parseBooleanQueryParam(params.first);
-        if (first !== undefined) {
-            filters.push(new BooleanFilter('first', first));
-        }
-
-        if (params.level) {
-            filters.push(new LevelFilter(splitQueryParam(params.level) as never[]));
-        }
-
-        if (params.reference) {
-            filters.push(new ReferenceFilter(params.reference));
-        }
-
-        if (params.session) {
-            filters.push(new SessionFilter(params.session));
-        }
-
-        if (params.status) {
-            filters.push(new StatusFilter(splitQueryParam(params.status) as never[]));
-        }
-
-        if (params.tag) {
-            filters.push(new TagFilter(splitQueryParam(params.tag) as never[]));
-        }
-
-        if (params.type) {
-            filters.push(new TypeFilter(splitQueryParam(params.type) as never[]));
-        }
-
-        if (params.version) {
-            filters.push(new VersionFilter('version', params.version));
-        }
-
-        return filters.length > 0 ? filters : null;
-    }
-
-    function parseBooleanQueryParam(value: null | string | undefined): boolean | undefined {
-        if (value === 'true') {
-            return true;
-        }
-
-        if (value === 'false') {
-            return false;
-        }
-
-        return undefined;
-    }
-
-    function splitQueryParam(value: string): string[] {
-        return value
-            .split(',')
-            .map((item) => item.trim())
-            .filter((item) => item);
     }
 
     function getEffectiveSort(): null | string | undefined {
@@ -331,7 +276,7 @@
 
     function getCurrentFiltersWithoutTime(params: ListFilterQueryParams = queryParams): FacetedFilter.IFilter[] {
         const savedViewFilters = getSavedViewFilters();
-        const queryFilters = getQueryFilters(params) ?? [];
+        const queryFilters = getEventQueryFilters(params) ?? [];
         const expressionFilters =
             params.filter != null ? getFiltersFromCache(filterCacheKey(params.filter), params.filter).filter((filter) => filter.type !== 'date') : [];
 
@@ -960,7 +905,7 @@
 <div class="flex flex-col">
     <div class="mb-4 flex flex-wrap items-start gap-2">
         <H3 class="my-0 shrink-0">{pageTitle}</H3>
-        <div class="order-3 flex w-full flex-wrap items-start gap-1.5 md:order-none md:w-auto md:min-w-0 md:flex-1">
+        <div class="order-3 flex w-full flex-wrap items-start gap-1.5 md:order-none md:w-auto md:min-w-0 md:flex-1" data-tour="event-filters">
             <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
                 <OrganizationDefaultsFacetedFilterBuilder />
             </FacetedFilter.Root>
@@ -977,7 +922,7 @@
                     defaultAutoFillColumnId="summary"
                     filters={filters ?? []}
                     isModified={savedViewsState.isModified}
-                    onLoadView={savedViewsState.handleLoadView}
+                    onLoadView={loadSavedView}
                     onClearSavedView={savedViewsState.handleClearSavedView}
                     onResetToSaved={handleResetToSaved}
                     onSavedViewUpdated={savedViewsState.handleSavedViewUpdated}
@@ -1018,25 +963,27 @@
             />
         {/if}
 
-        <EventsDataTable
-            autoFillColumnId={savedViewsState.autoFillColumnId}
-            bind:limit={eventsQueryParameters.limit!}
-            isLoading={isSavedViewRoutePending || eventsQuery.isFetching}
-            onAutoFillColumnResized={() => savedViewsState.setAutoFillColumnId(null)}
-            {rowClick}
-            {rowHref}
-            {table}
-            wrappedColumnIds={savedViewsState.wrappedColumnIds}
-        >
-            {#snippet footerChildren()}
-                <div class="flex min-w-0 items-center gap-3">
-                    <EventsBulkActionsDropdownMenu {table} />
-                    <DataTable.Selection {table} />
-                </div>
+        <div data-tour="event-list">
+            <EventsDataTable
+                autoFillColumnId={savedViewsState.autoFillColumnId}
+                bind:limit={eventsQueryParameters.limit!}
+                isLoading={isSavedViewRoutePending || eventsQuery.isFetching}
+                onAutoFillColumnResized={() => savedViewsState.setAutoFillColumnId(null)}
+                {rowClick}
+                {rowHref}
+                {table}
+                wrappedColumnIds={savedViewsState.wrappedColumnIds}
+            >
+                {#snippet footerChildren()}
+                    <div class="flex min-w-0 items-center gap-3">
+                        <EventsBulkActionsDropdownMenu {table} />
+                        <DataTable.Selection {table} />
+                    </div>
 
-                <DataTable.Pager bind:value={eventsQueryParameters.limit!} {table} variant="floating" />
-            {/snippet}
-        </EventsDataTable>
+                    <DataTable.Pager bind:value={eventsQueryParameters.limit!} {table} variant="floating" />
+                {/snippet}
+            </EventsDataTable>
+        </div>
     </div>
 </div>
 
@@ -1048,3 +995,5 @@
     }}
     onError={handleEventError}
 />
+
+<InvestigationListTour />

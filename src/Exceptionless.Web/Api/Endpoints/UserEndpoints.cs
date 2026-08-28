@@ -1,4 +1,5 @@
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Infrastructure;
@@ -33,6 +34,27 @@ public static class UserEndpoints
         .WithSummary("Get current user")
         .WithMetadata(new EndpointDocumentation {
             ResponseDescriptions = new() {
+                ["404"] = "The current user could not be found.",
+            }
+        });
+
+        group.MapPut("users/me/product-tours/{tourName:regex(^[a-z0-9]+(?:-[a-z0-9]+)*$):maxlength(64)}", async (string tourName, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] UpdateProductTourProgress progress)
+            => (await mediator.InvokeAsync<Result<ProductTourProgress>>(new UserMessages.UpdateCurrentUserProductTour(tourName, progress))).ToHttpResult(resultMapper))
+        .Accepts<UpdateProductTourProgress>(false, "application/json", "application/*+json")
+        .Produces<ProductTourProgress>()
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .WithSummary("Update current user product tour progress")
+        .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The versioned product tour outcome.",
+            RequestBodyRequired = true,
+            ParameterDescriptions = new() {
+                ["tourName"] = "The stable product tour name.",
+            },
+            ResponseDescriptions = new() {
+                ["400"] = "The request body is missing or malformed.",
+                ["422"] = "The product tour progress is invalid.",
                 ["404"] = "The current user could not be found.",
             }
         });

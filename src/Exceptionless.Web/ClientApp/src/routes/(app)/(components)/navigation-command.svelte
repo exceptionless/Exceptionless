@@ -1,5 +1,6 @@
 <script lang="ts">
     import type { ViewOrganization } from '$features/organizations/models';
+    import type { ProductTourListItem, ProductTourName } from '$features/product-tours/types';
     import type { ViewProject } from '$features/projects/models';
     import type { FetchClientResponse } from '@foundatiofx/fetchclient';
 
@@ -24,6 +25,7 @@
     import Building2 from '@lucide/svelte/icons/building-2';
     import CircleHelp from '@lucide/svelte/icons/circle-help';
     import CircleUserRound from '@lucide/svelte/icons/circle-user-round';
+    import Compass from '@lucide/svelte/icons/compass';
     import Eye from '@lucide/svelte/icons/eye';
     import EyeOff from '@lucide/svelte/icons/eye-off';
     import Keyboard from '@lucide/svelte/icons/keyboard';
@@ -56,6 +58,7 @@
 
     type Props = {
         askExie: (prompt: string) => Promise<void> | void;
+        guidedTours: ProductTourListItem[];
         isChatEnabled: boolean;
         isExieEnabled: boolean;
         isGlobalAdmin: boolean;
@@ -63,6 +66,7 @@
         open: boolean;
         openChat: () => void;
         openExie: () => Promise<void> | void;
+        openGuidedTours: () => void;
         openImpersonateOrganization: () => Promise<void> | void;
         openKeyboardShortcuts: () => Promise<void> | void;
         openOrganizationSwitcher: () => Promise<void> | void;
@@ -70,6 +74,7 @@
         organizations: ViewOrganization[];
         resetKey: number;
         routes: NavigationItem[];
+        startGuidedTour: (name: ProductTourName) => Promise<void>;
         stopImpersonating: () => Promise<void> | void;
     };
 
@@ -86,6 +91,7 @@
 
     let {
         askExie,
+        guidedTours,
         isChatEnabled,
         isExieEnabled,
         isGlobalAdmin,
@@ -93,6 +99,7 @@
         open = $bindable(),
         openChat,
         openExie,
+        openGuidedTours,
         openImpersonateOrganization,
         openKeyboardShortcuts,
         openOrganizationSwitcher,
@@ -100,6 +107,7 @@
         organizations,
         resetKey,
         routes,
+        startGuidedTour,
         stopImpersonating
     }: Props = $props();
     let searchText = $state('');
@@ -415,6 +423,16 @@
         openChat();
     }
 
+    function openGuidedTourCatalog(): void {
+        closeCommandWindow();
+        openGuidedTours();
+    }
+
+    async function launchGuidedTour(name: ProductTourName): Promise<void> {
+        closeCommandWindow();
+        await startGuidedTour(name);
+    }
+
     function toggleTheme(): void {
         closeCommandWindow();
         toggleMode();
@@ -556,6 +574,19 @@
                 bind:selectedActionId={selectedProjectActionId}
             />
             {#if !selectingProject}
+                <Command.Group heading="Guided Tours">
+                    {#each guidedTours.filter((tour) => tour.currentAvailability.available) as tour (tour.name)}
+                        <Command.Item keywords={[...tour.keywords]} value={`Guided Tour ${tour.title}`} onSelect={() => launchGuidedTour(tour.name)}>
+                            <Compass />
+                            <span>{tour.title}</span>
+                        </Command.Item>
+                    {/each}
+                    <Command.Item value="Browse Guided Tours help onboarding guides" onSelect={openGuidedTourCatalog}>
+                        <CircleHelp />
+                        <span>Browse Guided Tours…</span>
+                    </Command.Item>
+                </Command.Group>
+                <Command.Separator />
                 {#if isExieEnabled}
                     <Command.Group heading="Exie" value="Exie Assistant">
                         <Command.Item value="Ask Exie open assistant AI chat" onSelect={() => void openExieAssistant()}>

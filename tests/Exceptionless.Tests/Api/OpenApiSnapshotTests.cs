@@ -61,6 +61,17 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.True(projectsPost.TryGetProperty("requestBody", out _));
         AssertResponseCodes(projectsPost, "201");
 
+        Assert.True(paths.TryGetProperty("/api/v2/users/me/product-tours/{tourName}", out var productTourPath));
+        Assert.True(productTourPath.TryGetProperty("put", out var productTourPut));
+        Assert.True(productTourPut.TryGetProperty("requestBody", out _));
+        AssertResponseCodes(productTourPut, "200", "404", "422");
+        AssertResponseSchema(productTourPut, "200", "ProductTourProgress");
+
+        Assert.True(paths.TryGetProperty("/api/v2/admin/product-tour-usage", out var productTourUsagePath));
+        Assert.True(productTourUsagePath.TryGetProperty("get", out var productTourUsageGet));
+        AssertResponseCodes(productTourUsageGet, "200", "400", "401", "403");
+        AssertResponseSchema(productTourUsageGet, "200", "AdminProductTourUsageResponse");
+
         Assert.True(paths.TryGetProperty("/api/v2/assistant/chat", out var assistantChatPath));
         Assert.True(assistantChatPath.TryGetProperty("post", out var assistantChatPost));
         AssertResponseCodes(assistantChatPost, "200", "400", "401", "403", "404", "426", "429", "503");
@@ -100,6 +111,11 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.True(schemas.TryGetProperty("NewProject", out _));
         Assert.True(schemas.TryGetProperty("SavedViewColumnSettings", out var savedViewColumnSettings));
         Assert.True(schemas.TryGetProperty("TokenResult", out _));
+        Assert.True(schemas.TryGetProperty("ProductTourProgress", out _));
+        Assert.True(schemas.TryGetProperty("UpdateProductTourProgress", out _));
+        Assert.True(schemas.TryGetProperty("AdminProductTourActivity", out _));
+        Assert.True(schemas.TryGetProperty("AdminProductTourSummary", out _));
+        Assert.True(schemas.TryGetProperty("AdminProductTourUsageResponse", out _));
         Assert.True(schemas.TryGetProperty("ViewOrganization", out _));
 
         var savedViewColumnProperties = savedViewColumnSettings.GetProperty("properties");
@@ -167,6 +183,7 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         AssertDictionaryValueSchema(document.RootElement, "ViewSavedView", "columns", "SavedViewColumnSettings");
         AssertRequiredJsonRequestBody(paths, "/api/v2/users/{id}", "patch", "UpdateUser");
         AssertRequiredJsonRequestBody(paths, "/api/v2/users/{id}", "put", "UpdateUser");
+        AssertRequiredJsonRequestBody(paths, "/api/v2/users/me/product-tours/{tourName}", "put", "UpdateProductTourProgress");
 
         AssertRequestContentTypes(paths, "/api/v1/error", "post", "application/json", "text/plain");
         AssertRequestContentTypes(paths, "/api/v1/events", "post", "application/json", "text/plain");
@@ -288,6 +305,20 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         var responses = operation.GetProperty("responses");
         foreach (string statusCode in expectedStatusCodes)
             Assert.True(responses.TryGetProperty(statusCode, out _), $"Expected response status code '{statusCode}'.");
+    }
+
+    private static void AssertResponseSchema(JsonElement operation, string statusCode, string expectedSchema)
+    {
+        string? schema = operation
+            .GetProperty("responses")
+            .GetProperty(statusCode)
+            .GetProperty("content")
+            .GetProperty("application/json")
+            .GetProperty("schema")
+            .GetProperty("$ref")
+            .GetString();
+
+        Assert.Equal($"#/components/schemas/{expectedSchema}", schema);
     }
 
     private static void AssertPathResponseCodes(JsonElement paths, string path, string method, params string[] expectedStatusCodes)

@@ -1,3 +1,5 @@
+import type { ProductTourListItem } from '$features/product-tours/types';
+
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -53,14 +55,17 @@ import NavigationCommand from './navigation-command.svelte';
 
 type RenderOptions = {
     askExie?: (prompt: string) => Promise<void> | void;
+    guidedTours?: ProductTourListItem[];
     isChatEnabled?: boolean;
     isExieEnabled?: boolean;
     isGlobalAdmin?: boolean;
     isImpersonating?: boolean;
     openChat?: () => void;
     openExie?: () => Promise<void> | void;
+    openGuidedTours?: () => void;
     openImpersonateOrganization?: () => Promise<void> | void;
     organizations?: Array<{ id: string; name: string }>;
+    startGuidedTour?: (name: ProductTourListItem['name']) => Promise<void>;
     stopImpersonating?: () => Promise<void> | void;
 };
 
@@ -74,6 +79,7 @@ const sessionsRoute: NavigationItem = {
 function renderCommandPalette(routes: NavigationItem[] = [], options: RenderOptions = {}) {
     return render(NavigationCommand, {
         askExie: options.askExie ?? vi.fn(),
+        guidedTours: options.guidedTours ?? [],
         isChatEnabled: options.isChatEnabled ?? false,
         isExieEnabled: options.isExieEnabled ?? true,
         isGlobalAdmin: options.isGlobalAdmin ?? false,
@@ -81,6 +87,7 @@ function renderCommandPalette(routes: NavigationItem[] = [], options: RenderOpti
         open: true,
         openChat: options.openChat ?? vi.fn(),
         openExie: options.openExie ?? vi.fn(),
+        openGuidedTours: options.openGuidedTours ?? vi.fn(),
         openImpersonateOrganization: options.openImpersonateOrganization ?? vi.fn(),
         openKeyboardShortcuts: vi.fn(),
         openOrganizationSwitcher: vi.fn(),
@@ -88,6 +95,7 @@ function renderCommandPalette(routes: NavigationItem[] = [], options: RenderOpti
         organizations: (options.organizations ?? []) as never,
         resetKey: 0,
         routes: [sessionsRoute, ...routes],
+        startGuidedTour: options.startGuidedTour ?? vi.fn(),
         stopImpersonating: options.stopImpersonating ?? vi.fn()
     });
 }
@@ -317,5 +325,45 @@ describe('NavigationCommand project actions', () => {
         await fireEvent.click(screen.getByText('Log Out'));
         await waitFor(() => expect(logout).toHaveBeenCalledOnce());
         expect(goto).toHaveBeenCalledWith('/next/login');
+    });
+});
+
+describe('NavigationCommand guided tours', () => {
+    it('launches available tours directly and opens the full catalog', async () => {
+        vi.useFakeTimers();
+        const openGuidedTours = vi.fn();
+        const startGuidedTour = vi.fn();
+        try {
+            const tourPalette = renderCommandPalette([], {
+                guidedTours: [
+                    {
+                        availability: vi.fn(() => ({ available: true })),
+                        currentAvailability: { available: true },
+                        description: 'Learn the UI.',
+                        initialCheckpoint: 'navigation',
+                        keywords: ['tour'],
+                        name: 'ui-overview',
+                        startingRoute: vi.fn(() => '/next'),
+                        title: 'Explore Exceptionless',
+                        version: 1
+                    }
+                ],
+                openGuidedTours,
+                startGuidedTour
+            });
+
+            await fireEvent.click(screen.getByText('Explore Exceptionless'));
+            expect(startGuidedTour).toHaveBeenCalledWith('ui-overview');
+            tourPalette.unmount();
+            await vi.runAllTimersAsync();
+
+            const catalogPalette = renderCommandPalette([], { openGuidedTours });
+            await fireEvent.click(screen.getByText('Browse Guided Tours…'));
+            expect(openGuidedTours).toHaveBeenCalled();
+            catalogPalette.unmount();
+            await vi.runAllTimersAsync();
+        } finally {
+            vi.useRealTimers();
+        }
     });
 });

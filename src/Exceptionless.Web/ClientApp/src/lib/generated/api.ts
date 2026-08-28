@@ -7,6 +7,11 @@ export enum StackStatus {
   Discarded = "discarded",
 }
 
+export enum ProductTourStatus {
+  Completed = "completed",
+  Dismissed = "dismissed",
+}
+
 export enum BillingStatus {
   Trialing = 0,
   Active = 1,
@@ -71,6 +76,48 @@ export interface AdminAssistantUsageResponse {
   /** @format double */
   cost_usd: number;
   organizations: AdminAssistantOrganizationUsage[];
+}
+
+export interface AdminProductTourActivity {
+  /** @format date-time */
+  date_utc: string;
+  event: string;
+  launch_source: string;
+  tour_name: string;
+  user_identity?: null | string;
+  user_name?: null | string;
+  /** @format int32 */
+  version: number;
+  /** @format int64 */
+  count: number;
+}
+
+export interface AdminProductTourSummary {
+  name: string;
+  /** @format int64 */
+  shown: number;
+  /** @format int64 */
+  started: number;
+  /** @format int64 */
+  completed: number;
+  /** @format int64 */
+  dismissed: number;
+  /** @format int64 */
+  unique_users: number;
+  /** @format date-time */
+  last_run_utc?: null | string;
+  /** @format double */
+  completion_rate?: null | number;
+  /** @format double */
+  dismissal_rate?: null | number;
+}
+
+export interface AdminProductTourUsageResponse {
+  /** @format date-time */
+  month: string;
+  telemetry_configured: boolean;
+  tours: AdminProductTourSummary[];
+  recent_activity: AdminProductTourActivity[];
 }
 
 export interface AssistantAccessResponse {
@@ -494,6 +541,14 @@ export interface ProblemDetails {
   instance?: null | string;
 }
 
+export interface ProductTourProgress {
+  status: ProductTourStatus;
+  /** @format date-time */
+  updated_utc: string;
+  /** @format int32 */
+  version: number;
+}
+
 export interface ResetPasswordModel {
   password_reset_token: string;
   password: string;
@@ -648,6 +703,16 @@ export interface UpdateEventSubmissionSettings {
   enabled?: null | boolean;
 }
 
+export interface UpdateProductTourProgress {
+  status?: null | ProductTourStatus;
+  /**
+   * @format int32
+   * @min 1
+   * @max 2147483647
+   */
+  version: number;
+}
+
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
 export interface UpdateProject {
   name: string;
@@ -737,6 +802,7 @@ export interface User {
   o_auth_accounts: OAuthAccount[];
   organization_preferences: UserOrganizationPreference[];
   saved_view_orders: UserSavedViewOrderPreference[];
+  product_tours: Record<string, ProductTourProgress>;
   /** Gets or sets the users Full Name. */
   full_name: string;
   /** @format email */
@@ -784,6 +850,7 @@ export interface ViewCurrentUser {
   o_auth_accounts: OAuthAccount[];
   organization_preferences: UserOrganizationPreference[];
   saved_view_orders: UserSavedViewOrderPreference[];
+  product_tours: Record<string, ProductTourProgress>;
   /** @pattern ^[a-fA-F0-9]{24}$ */
   id: string;
   organization_ids: string[];

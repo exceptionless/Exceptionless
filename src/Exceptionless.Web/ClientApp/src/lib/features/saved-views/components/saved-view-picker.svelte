@@ -15,6 +15,9 @@
     import { serializeFilters } from '$features/events/components/filters/helpers.svelte';
     import { getOrganizationQuery, getOrganizationsQuery } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import { createProductTourActions } from '$features/product-tours/actions.svelte';
+    import ProductTourSpotlight from '$features/product-tours/components/product-tour-spotlight.svelte';
+    import { productTourCheckpoint } from '$features/product-tours/state.svelte';
     import { supportsColumnWrapping } from '$features/shared/components/data-table/column-meta';
     import { getMeQuery } from '$features/users/api.svelte';
     import Building2 from '@lucide/svelte/icons/building-2';
@@ -69,7 +72,7 @@
         filters: IFilter[];
         isModified: boolean;
         onClearSavedView: () => Promise<void>;
-        onLoadView: (view: SavedView) => void;
+        onLoadView: (view: SavedView) => Promise<void> | void;
         onResetToSaved: () => void;
         onSavedViewUpdated: (view: SavedView) => void;
         savedViews: SavedView[];
@@ -114,12 +117,23 @@
         wrappedColumnIds
     }: Props = $props();
 
-    let isSaveDialogOpen = $state(false);
+    let isSaveDialogOpenManually = $state(false);
     let isRenameDialogOpen = $state(false);
     let isDeleteDialogOpen = $state(false);
     let isColumnDialogOpen = $state(false);
     let isMenuOpen = $state(false);
     let viewToDelete = $state<null | SavedView>(null);
+    const tourActions = createProductTourActions();
+    const savedViewCheckpoint = $derived(productTourCheckpoint.current?.tourName === 'create-saved-view' ? productTourCheckpoint.current : undefined);
+    const isSaveDialogOpen = $derived(
+        isSaveDialogOpenManually || savedViewCheckpoint?.phase.type === 'saved-view-created' || savedViewCheckpoint?.phase.type === 'saved-view-loaded'
+    );
+    const pendingTourView = $derived.by(() => {
+        const phase = savedViewCheckpoint?.phase;
+        return phase?.type === 'saved-view-created' || phase?.type === 'saved-view-loaded'
+            ? savedViews.find((savedView) => savedView.id === phase.viewId)
+            : undefined;
+    });
 
     const organizationId = $derived(organization.current);
     const activeView = $derived(activeSavedView);
@@ -218,7 +232,7 @@
 
     async function openSaveDialog() {
         await tick();
-        isSaveDialogOpen = true;
+        isSaveDialogOpenManually = true;
     }
 
     async function openRenameDialog() {
@@ -259,6 +273,35 @@
             return;
         }
 
+        const checkpoint = savedViewCheckpoint;
+        if (checkpoint?.phase.type === 'saved-view-loaded') {
+            if (await tourActions.complete(checkpoint)) {
+                isSaveDialogOpenManually = false;
+            }
+            return;
+        }
+
+        if (checkpoint?.phase.type === 'saved-view-created') {
+            if (!pendingTourView) {
+                toast.error('The created view could not be loaded. Refresh and try again.');
+                return;
+            }
+
+            try {
+                await onLoadView(pendingTourView);
+                const loadedCheckpoint = productTourCheckpoint.advance(checkpoint, 'view-created', {
+                    type: 'saved-view-loaded',
+                    viewId: checkpoint.phase.viewId
+                });
+                if (loadedCheckpoint && (await tourActions.complete(loadedCheckpoint))) {
+                    isSaveDialogOpenManually = false;
+                }
+            } catch (error) {
+                toast.error(getErrorMessage(error, 'Failed to load the created view. Please try again.'));
+            }
+            return;
+        }
+
         const filterDefinitions = serializeFilters(filters);
         const body: NewSavedView = {
             columns: getSavedColumnSettings(),
@@ -277,8 +320,25 @@
 
         try {
             const result = await createMutation.mutateAsync(body);
-            isSaveDialogOpen = false;
-            onLoadView(result);
+            if (checkpoint) {
+                const createdCheckpoint = productTourCheckpoint.advance(checkpoint, 'view-created', {
+                    type: 'saved-view-created',
+                    viewId: result.id
+                });
+                await onLoadView(result);
+                const loadedCheckpoint = createdCheckpoint
+                    ? productTourCheckpoint.advance(createdCheckpoint, 'view-created', {
+                          type: 'saved-view-loaded',
+                          viewId: result.id
+                      })
+                    : undefined;
+                if (loadedCheckpoint && (await tourActions.complete(loadedCheckpoint))) {
+                    isSaveDialogOpenManually = false;
+                }
+            } else {
+                isSaveDialogOpenManually = false;
+                await onLoadView(result);
+            }
             toast.success(`Saved view "${result.name}" created.`);
         } catch (error) {
             toast.error(getErrorMessage(error, 'Failed to save view. Please try again.'));
@@ -393,7 +453,7 @@
 <DropdownMenu.Root bind:open={isMenuOpen}>
     <DropdownMenu.Trigger>
         {#snippet child({ props })}
-            <Button {...props} class="relative gap-x-1.5 px-3" size="lg" variant="outline" title="Manage View Settings">
+            <Button {...props} class="relative gap-x-1.5 px-3" data-tour="saved-view-trigger" size="lg" variant="outline" title="Manage View Settings">
                 <SlidersHorizontal class="size-4" aria-hidden="true" />
                 <span>View</span>
                 {#if isModified}
@@ -402,7 +462,7 @@
             </Button>
         {/snippet}
     </DropdownMenu.Trigger>
-    <DropdownMenu.Content align="end" class="w-64">
+    <DropdownMenu.Content align="end" class="w-64" data-tour="saved-view-settings">
         <DropdownMenu.Group>
             <DropdownMenu.Label>Saved View</DropdownMenu.Label>
             {#if activeView}
@@ -493,13 +553,54 @@
 
 {#if isSaveDialogOpen}
     <SaveViewDialog
-        bind:open={isSaveDialogOpen}
+        open={isSaveDialogOpen}
+        defaultPrivate={!!savedViewCheckpoint}
         {duplicateView}
+        onCancel={async () => {
+            if (savedViewCheckpoint) {
+                await tourActions.dismiss(savedViewCheckpoint);
+            }
+        }}
         {savedViews}
         {saving}
         onSave={handleSave}
-        onClose={() => (isSaveDialogOpen = false)}
+        onClose={() => (isSaveDialogOpenManually = false)}
+        onTourContinue={(checkpointName) => {
+            const checkpoint = savedViewCheckpoint;
+            if (checkpoint) {
+                productTourCheckpoint.advance(checkpoint, checkpointName);
+            }
+        }}
+        pendingCompletion={savedViewCheckpoint?.phase.type === 'saved-view-created' || savedViewCheckpoint?.phase.type === 'saved-view-loaded'}
+        tourCheckpointName={savedViewCheckpoint?.checkpointName}
         {onLoadView}
+    />
+{/if}
+
+{#if savedViewCheckpoint?.checkpointName === 'open-view-menu'}
+    <ProductTourSpotlight
+        checkpoint={savedViewCheckpoint}
+        description="Open View settings to review what a reusable saved view can remember."
+        onDismiss={tourActions.dismiss}
+        onNext={(checkpoint) => {
+            isMenuOpen = true;
+            productTourCheckpoint.advance(checkpoint, 'review-settings');
+        }}
+        target="[data-tour='saved-view-trigger']"
+        title="Open View settings"
+    />
+{:else if savedViewCheckpoint?.checkpointName === 'review-settings'}
+    <ProductTourSpotlight
+        checkpoint={savedViewCheckpoint}
+        description="Review the filters, date range, display choices, and columns. The guide will not change them for you."
+        onDismiss={tourActions.dismiss}
+        onNext={(checkpoint) => {
+            isMenuOpen = false;
+            isSaveDialogOpenManually = true;
+            productTourCheckpoint.advance(checkpoint, 'name-view');
+        }}
+        target="[data-tour='saved-view-settings']"
+        title="Configure what the view remembers"
     />
 {/if}
 

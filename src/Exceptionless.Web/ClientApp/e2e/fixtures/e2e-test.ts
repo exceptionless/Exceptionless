@@ -43,6 +43,7 @@ export interface E2ESecondaryProject {
 interface E2EFixtures {
     e2eApi: E2EApiClient;
     e2eCleanupPassword: string;
+    e2eDismissProductTourWelcome: boolean;
     e2eScenario: E2EScenario;
     e2eSecondaryOrganization: E2ESecondaryOrganization;
     e2eSecondaryProject: E2ESecondaryProject;
@@ -57,7 +58,9 @@ export const test = base.extend<E2EFixtures>({
 
     e2eCleanupPassword: [E2E_TEST_PASSWORD, { option: true }],
 
-    e2eScenario: async ({ e2eApi, e2eCleanupPassword, e2eUseGeneratedUser, page }, use, testInfo) => {
+    e2eDismissProductTourWelcome: [true, { option: true }],
+
+    e2eScenario: async ({ e2eApi, e2eCleanupPassword, e2eDismissProductTourWelcome, e2eUseGeneratedUser, page }, use, testInfo) => {
         const run = createRunName(e2eApi.environment.runId, testInfo);
         const userName = `Playwright User ${run}`;
         const email = `playwright-${run}@exceptionless.test`.toLowerCase();
@@ -85,6 +88,9 @@ export const test = base.extend<E2EFixtures>({
             const project = await e2eApi.createProject(userToken, organization.id, projectName);
             projectId = project.id;
             const projectToken = await e2eApi.getProjectDefaultToken(userToken, project.id);
+            if (e2eDismissProductTourWelcome) {
+                await e2eApi.updateProductTour(userToken, 'welcome', 1, 'dismissed');
+            }
 
             await page.addInitScript(
                 ({ organizationId, token }) => {
