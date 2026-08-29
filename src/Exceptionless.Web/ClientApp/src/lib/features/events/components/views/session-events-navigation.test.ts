@@ -28,6 +28,17 @@ describe('getSessionEventsPath', () => {
         expect(getSessionEventsPath([createSavedView({ name: 'Everything', slug: 'all' })])).toBe('/next/event/all');
     });
 
+    it('prefers the shared All view when a private view already owns the all slug', () => {
+        const privateAll = createSavedView({ id: 'private-all', user_id: 'user-id' });
+        const sharedAll = createSavedView({ id: 'shared-all', slug: 'all-2' });
+
+        expect(getSessionEventsPath([privateAll, sharedAll])).toBe('/next/event/all-2');
+    });
+
+    it('does not use a private All view when no shared All view exists', () => {
+        expect(getSessionEventsPath([createSavedView({ user_id: 'user-id' })])).toBe('/next/event');
+    });
+
     it('falls back to the generic Events route when All is unavailable', () => {
         expect(getSessionEventsPath([createSavedView({ name: 'Errors', slug: 'errors' })])).toBe('/next/event');
     });

@@ -4,8 +4,10 @@ import { resolve } from '$app/paths';
 import { savedViewHref, savedViewResolvedSlug } from '$features/saved-views/slugs';
 
 export function getSessionEventsPath(savedViews: SavedView[] | undefined): string {
-    const eventViews = (savedViews ?? []).filter((savedView) => savedView.view_type === 'events');
-    const allEventsView = eventViews.find((savedView) => savedViewResolvedSlug(savedView) === 'all');
+    const sharedEventViews = (savedViews ?? []).filter((savedView) => savedView.view_type === 'events' && !savedView.user_id);
+    const allEventsView =
+        sharedEventViews.find((savedView) => savedView.name.trim().toLowerCase() === 'all') ??
+        sharedEventViews.find((savedView) => /^all(?:-\d+)?$/.test(savedViewResolvedSlug(savedView)));
 
     return allEventsView ? savedViewHref(allEventsView) : resolve('/(app)/event');
 }
