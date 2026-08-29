@@ -24,7 +24,7 @@ public class OAuthApplicationHandler(
     {
         int page = Pagination.GetPage(message.Page);
         int limit = Pagination.GetLimit(message.Limit);
-        var organizationIds = await ResolveOrganizationIdsAsync(message.Organization);
+        var organizationIds = await ResolveOrganizationIdsAsync(message.Organization, message.Context.RequestAborted);
         if (!String.IsNullOrWhiteSpace(message.Organization) && organizationIds.Count == 0)
             return new PagedResult<ViewOAuthApplication>([], false, page, 0);
 
@@ -129,7 +129,7 @@ public class OAuthApplicationHandler(
         return existing is null;
     }
 
-    private async Task<IReadOnlyCollection<string>> ResolveOrganizationIdsAsync(string? organization)
+    private async Task<IReadOnlyCollection<string>> ResolveOrganizationIdsAsync(string? organization, CancellationToken cancellationToken)
     {
         if (String.IsNullOrWhiteSpace(organization))
             return [];
@@ -139,8 +139,14 @@ public class OAuthApplicationHandler(
             .FieldOr(group => group
                 .FieldEquals(item => item.Id, criteria)
                 .FieldContains(item => item.Name, criteria))
-            .SortAscending(item => item.Name), options => options.PageLimit(Pagination.MaximumLimit));
-        return results.Documents.Select(item => item.Id).ToArray();
+            .SortAscending(item => item.Name), options => options.SearchAfterPaging().PageLimit(Pagination.MaximumLimit));
+        var organizationIds = new List<string>();
+        do
+        {
+            organizationIds.AddRange(results.Documents.Select(item => item.Id));
+        } while (!cancellationToken.IsCancellationRequested && await results.NextPageAsync());
+
+        return organizationIds;
     }
 
     private async Task<IReadOnlyCollection<ViewOAuthApplication>> MapApplicationsAsync(IReadOnlyCollection<OAuthApplication> applications)

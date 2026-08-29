@@ -1,7 +1,10 @@
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Billing;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
+using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Models.Admin;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Mvc;
@@ -12,10 +15,14 @@ namespace Exceptionless.Tests.Api.Endpoints;
 public sealed class OAuthApplicationEndpointTests : IntegrationTestsBase
 {
     private readonly IOAuthApplicationRepository _repository;
+    private readonly IOrganizationRepository _organizationRepository;
+    private readonly BillingPlans _plans;
 
     public OAuthApplicationEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _repository = GetService<IOAuthApplicationRepository>();
+        _organizationRepository = GetService<IOrganizationRepository>();
+        _plans = GetService<BillingPlans>();
     }
 
     protected override async Task ResetDataAsync()
@@ -73,6 +80,22 @@ public sealed class OAuthApplicationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetAllAsync_WithoutLimit_PreservesLegacyPageSize()
+    {
+        for (int i = 0; i < 21; i++)
+            Assert.NotNull(await CreateApplicationAsync(CreateModel($"legacy-default-{i:D2}", $"Legacy Default {i:D2}")));
+
+        var applications = await SendRequestAsAsync<IReadOnlyCollection<ViewOAuthApplication>>(request => request
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "oauth-applications")
+            .QueryString("criteria", "Legacy Default")
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(applications);
+        Assert.Equal(21, applications.Count);
+    }
+
+    [Fact]
     public async Task GetAllAsync_WithPagingAndFilters_ReturnsMatchingOrganizationDetails()
     {
         var first = await CreateApplicationAsync(CreateModel("paged-oauth-alpha", "Paged OAuth Alpha"));
@@ -119,6 +142,38 @@ public sealed class OAuthApplicationEndpointTests : IntegrationTestsBase
         var organization = Assert.Single(match.Organizations);
         Assert.Equal(SampleDataService.TEST_ORG_ID, organization.Id);
         Assert.Equal("Acme", organization.Name);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WithOrganizationFilter_ResolvesMatchesBeyondFirstPage()
+    {
+        var organizations = Enumerable.Range(0, Pagination.MaximumLimit + 1)
+            .Select(index => new Organization
+            {
+                Name = $"OAuth Filter Organization {index:D3}",
+                PlanId = _plans.FreePlan.Id
+            })
+            .ToArray();
+        await _organizationRepository.AddAsync(organizations, options => options.ImmediateConsistency());
+
+        var created = await CreateApplicationAsync(CreateModel("deep-organization-filter", "Deep Organization Filter"));
+        Assert.NotNull(created);
+        var application = await _repository.GetByIdAsync(created.Id);
+        Assert.NotNull(application);
+        application.OrganizationIds.Add(organizations[^1].Id);
+        await _repository.SaveAsync(application, options => options.ImmediateConsistency());
+
+        var applications = await SendRequestAsAsync<IReadOnlyCollection<ViewOAuthApplication>>(request => request
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "oauth-applications")
+            .QueryString("organization", "OAuth Filter Organization")
+            .QueryString("criteria", "deep-organization-filter")
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(applications);
+        var match = Assert.Single(applications);
+        Assert.Equal(created.Id, match.Id);
+        Assert.Contains(match.Organizations, organization => organization.Id == organizations[^1].Id);
     }
 
     [Fact]

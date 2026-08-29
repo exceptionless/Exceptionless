@@ -18,8 +18,8 @@ public static class OAuthApplicationEndpoints
             .AddEndpointFilter<AutoValidationEndpointFilter>()
             .ExcludeFromDescription();
 
-        endpoints.MapGet("api/v2/admin/oauth-applications", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? criteria = null, string? organization = null, int page = 1, int limit = 20)
-            => (await mediator.InvokeAsync<Result<PagedResult<ViewOAuthApplication>>>(new GetOAuthApplications(criteria, organization, page, limit))).ToHttpResult(resultMapper))
+        endpoints.MapGet("api/v2/admin/oauth-applications", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? criteria = null, string? organization = null, int page = 1, int limit = 100)
+            => (await mediator.InvokeAsync<Result<PagedResult<ViewOAuthApplication>>>(new GetOAuthApplications(criteria, organization, page, limit, httpContext))).ToHttpResult(resultMapper))
             .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
             .AddEndpointFilter<AutoValidationEndpointFilter>()
             .Produces<IReadOnlyCollection<ViewOAuthApplication>>()
