@@ -15,8 +15,8 @@ export enum ProductTourTelemetryEvent {
 }
 
 export enum ProductTourStatus {
-  Completed = "completed",
-  Dismissed = "dismissed",
+  Completed = 1,
+  Dismissed = 2,
 }
 
 export enum ProductTourLaunchSource {
@@ -91,47 +91,6 @@ export interface AdminAssistantUsageResponse {
   /** @format double */
   cost_usd: number;
   organizations: AdminAssistantOrganizationUsage[];
-}
-
-export interface AdminProductTourActivity {
-  /** @format date-time */
-  date_utc: string;
-  event: ProductTourTelemetryEvent;
-  launch_source: ProductTourLaunchSource;
-  tour_name: string;
-  user_identity?: null | string;
-  user_name?: null | string;
-  /** @format int32 */
-  version: number;
-  /** @format int64 */
-  count: number;
-}
-
-export interface AdminProductTourSummary {
-  name: string;
-  /** @format int64 */
-  shown: number;
-  /** @format int64 */
-  started: number;
-  /** @format int64 */
-  completed: number;
-  /** @format int64 */
-  dismissed: number;
-  /** @format int64 */
-  unique_users: number;
-  /** @format date-time */
-  last_run_utc?: null | string;
-  /** @format double */
-  completion_rate?: null | number;
-  /** @format double */
-  dismissal_rate?: null | number;
-}
-
-export interface AdminProductTourUsageResponse {
-  /** @format date-time */
-  month: string;
-  tours: AdminProductTourSummary[];
-  recent_activity: AdminProductTourActivity[];
 }
 
 export interface AssistantAccessResponse {
@@ -555,12 +514,49 @@ export interface ProblemDetails {
   instance?: null | string;
 }
 
-export interface ProductTourProgress {
-  status: ProductTourStatus;
+export interface ProductTourEvent {
   /** @format date-time */
-  updated_utc: string;
+  date_utc: string;
+  event: ProductTourTelemetryEvent;
+  launch_source: ProductTourLaunchSource;
+  tour_name: string;
+  user_identity?: null | string;
+  user_name?: null | string;
   /** @format int32 */
   version: number;
+  /** @format int64 */
+  count: number;
+}
+
+export interface ProductTourProgress {
+  status: ProductTourStatus;
+  /** @format int32 */
+  version: number;
+}
+
+export interface ProductTourSummary {
+  name: string;
+  /** @format int64 */
+  shown: number;
+  /** @format int64 */
+  started: number;
+  /** @format int64 */
+  completed: number;
+  /** @format int64 */
+  dismissed: number;
+  /** @format date-time */
+  last_run_utc?: null | string;
+  /** @format double */
+  completion_rate?: null | number;
+  /** @format double */
+  dismissal_rate?: null | number;
+}
+
+export interface ProductTourUsageResponse {
+  /** @format date-time */
+  month: string;
+  tours: ProductTourSummary[];
+  recent_events: ProductTourEvent[];
 }
 
 export interface ResetPasswordModel {
@@ -865,7 +861,6 @@ export interface ViewCurrentUser {
   organization_preferences: UserOrganizationPreference[];
   saved_view_orders: UserSavedViewOrderPreference[];
   product_tours: Record<string, ProductTourProgress>;
-  product_tour_versions: Record<string, number>;
   /** @pattern ^[a-fA-F0-9]{24}$ */
   id: string;
   organization_ids: string[];

@@ -64,7 +64,6 @@
                                 <Table.Head class="pl-4">Tour</Table.Head>
                                 <Table.Head class="text-right">Shown</Table.Head>
                                 <Table.Head class="text-right">Started</Table.Head>
-                                <Table.Head class="text-right">Users</Table.Head>
                                 <Table.Head class="text-right">Completed</Table.Head>
                                 <Table.Head class="text-right">Dismissed</Table.Head>
                                 <Table.Head>Last Run</Table.Head>
@@ -76,7 +75,6 @@
                                     <Table.Cell class="pl-4 font-medium">{title(tour.name)}</Table.Cell>
                                     <Table.Cell class="text-right"><Number value={tour.shown} /></Table.Cell>
                                     <Table.Cell class="text-right"><Number value={tour.started} /></Table.Cell>
-                                    <Table.Cell class="text-right"><Number value={tour.unique_users} /></Table.Cell>
                                     <Table.Cell class="text-right">
                                         <Number value={tour.completed} />
                                         <span class="text-muted-foreground ml-1 text-xs">
@@ -110,7 +108,7 @@
                 <Card.Description>Latest identified-user tour events for investigating support and onboarding patterns.</Card.Description>
             </Card.Header>
             <Card.Content class="px-0">
-                {#if usage?.recent_activity.length === 0}
+                {#if usage?.recent_events.length === 0}
                     <p class="text-muted-foreground px-4 py-10 text-center text-sm">No recent tour activity was recorded.</p>
                 {:else}
                     <Table.Root aria-label="Recent guided-tour activity" class="min-w-3xl">
@@ -124,7 +122,7 @@
                             </Table.Row>
                         </Table.Header>
                         <Table.Body>
-                            {#each usage?.recent_activity ?? [] as activity (activity)}
+                            {#each usage?.recent_events ?? [] as activity (activity)}
                                 <Table.Row>
                                     <Table.Cell class="pl-4">
                                         <div class="font-medium">{activity.user_name || activity.user_identity || 'Unknown user'}</div>

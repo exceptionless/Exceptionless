@@ -2,6 +2,7 @@
     import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
     import * as Dialog from '$comp/ui/dialog';
+    import { ProductTourStatus } from '$features/users/models';
     import Compass from '@lucide/svelte/icons/compass';
 
     import type { ProductTourListItem, ProductTourName } from '../../types';
@@ -29,7 +30,7 @@
                         <div class="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg">
                             <Compass aria-hidden="true" class="size-5" />
                         </div>
-                        {#if item.progress?.status === 'completed' && item.progress.version >= item.version}
+                        {#if item.progress?.status === ProductTourStatus.Completed && item.progress.version >= item.version}
                             <Badge variant="secondary">Completed</Badge>
                         {/if}
                     </div>
@@ -41,7 +42,7 @@
                         {/if}
                     </div>
                     <Button disabled={!item.currentAvailability.available} onclick={() => onStart(item.name)} variant="outline">
-                        {item.progress?.status === 'completed' && item.progress.version >= item.version ? 'Restart' : 'Start'}
+                        {item.progress?.status === ProductTourStatus.Completed && item.progress.version >= item.version ? 'Restart' : 'Start'}
                     </Button>
                 </section>
             {/each}

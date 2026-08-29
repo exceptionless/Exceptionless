@@ -15,7 +15,7 @@ test.describe('first-run welcome', () => {
             await expect(page.getByRole('dialog', { name: 'Welcome to Exceptionless' })).toBeVisible();
         });
 
-        const persisted = page.waitForResponse(isSuccessfulTourProgress('welcome'));
+        const persisted = page.waitForResponse(isSuccessfulTourProgress('app-welcome'));
         await page.getByRole('dialog', { name: 'Welcome to Exceptionless' }).getByRole('button', { name: 'Browse Guides' }).click();
         await persisted;
 
@@ -42,7 +42,7 @@ test.describe('shell and identity checkpoints', () => {
         await test.step('closing the welcome persists dismissal', async () => {
             await page.goto('/next/stack');
             await expect(page.getByRole('dialog', { name: 'Welcome to Exceptionless' })).toBeVisible();
-            const dismissed = page.waitForResponse(isSuccessfulTourProgress('welcome'));
+            const dismissed = page.waitForResponse(isSuccessfulTourProgress('app-welcome'));
             await page.keyboard.press('Escape');
             await dismissed;
             await expect(page.getByRole('dialog', { name: 'Welcome to Exceptionless' })).toBeHidden();
@@ -62,7 +62,7 @@ test.describe('shell and identity checkpoints', () => {
             await page.reload();
             await expect(tour.getByText('Find anything quickly')).toBeVisible();
 
-            const dismissed = page.waitForResponse(isSuccessfulTourProgress('ui-overview'));
+            const dismissed = page.waitForResponse(isSuccessfulTourProgress('app-overview'));
             await tour.getByRole('button', { name: 'Close' }).click();
             await dismissed;
             await expectProductTourSession(page, false);
@@ -118,7 +118,7 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
 
         await page.locator('[data-tour="project-configure-platform"]').click();
         await page.getByRole('option', { name: 'Browser applications' }).click();
-        await page.locator('[data-product-tour-inline="configure-project"]').getByRole('button', { name: 'Continue' }).click();
+        await page.locator('[data-product-tour-inline="project-configure"]').getByRole('button', { name: 'Continue' }).click();
         await expect(page.getByText('Waiting for your first event')).toBeVisible();
 
         try {
@@ -148,7 +148,7 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
             const path = new URL(request.url()).pathname;
             if (request.method() === 'POST' && /^\/api\/v2\/organizations\/[^/]+\/saved-views$/.test(path)) createRequests += 1;
         };
-        const progressRoute = (url: URL) => url.pathname === '/api/v2/users/me/product-tours/create-saved-view';
+        const progressRoute = (url: URL) => url.pathname === '/api/v2/users/me/product-tours/saved-view-create';
         page.on('request', countSavedViewCreation);
         await page.route(progressRoute, async (route) => {
             progressRequests += 1;
@@ -177,7 +177,7 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
 
             await page.reload();
             await expect(page.getByRole('button', { name: 'Retry guide completion' })).toBeVisible();
-            const completed = page.waitForResponse(isSuccessfulTourProgress('create-saved-view'));
+            const completed = page.waitForResponse(isSuccessfulTourProgress('saved-view-create'));
             await page.getByRole('button', { name: 'Retry guide completion' }).click();
             await completed;
             await expect.poll(() => createRequests).toBe(1);
@@ -200,19 +200,19 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
         await startTourFromCommand(page, 'Investigate an error');
         await page.locator('.driver-popover').getByRole('button', { name: 'Continue' }).click();
         await page.locator('tr').filter({ hasText: e2eScenario.message }).first().click();
-        const callout = page.locator('[data-product-tour-inline="investigate-error"]');
+        const callout = page.locator('[data-product-tour-inline="event-investigate"]');
         await expect(callout.getByText('Understand the grouped issue')).toBeVisible();
         for (const title of ['Triage deliberately', 'Inspect the occurrence', 'Begin with the overview', 'Compare every occurrence']) {
             await callout.getByRole('button', { name: 'Continue' }).click();
             await expect(callout.getByText(title)).toBeVisible();
         }
 
-        const completed = page.waitForResponse(isSuccessfulTourProgress('investigate-error'));
+        const completed = page.waitForResponse(isSuccessfulTourProgress('event-investigate'));
         await callout.getByRole('button', { name: 'Finish guide' }).click();
         await completed;
         await expectProductTourSession(page, false);
         await page.reload();
-        await expect(page.locator('[data-product-tour-inline="investigate-error"]')).toBeHidden();
+        await expect(page.locator('[data-product-tour-inline="event-investigate"]')).toBeHidden();
     });
 
     await test.step('Exie opens context without provider submission', async () => {

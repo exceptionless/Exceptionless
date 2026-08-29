@@ -4,7 +4,7 @@ import { expect, test } from '../fixtures/e2e-test';
 
 test('dashboard charts stay mounted while list data refreshes', async ({ e2eApi, page }) => {
     const userToken = await e2eApi.login();
-    await e2eApi.updateProductTour(userToken, 'welcome', 1, 'dismissed');
+    await e2eApi.updateProductTour(userToken, 'app-welcome', 1, 2);
     const organizations = await e2eApi.getOrganizations(userToken);
     const organizationId = organizations[0]?.id;
     expect(organizationId).toBeTruthy();

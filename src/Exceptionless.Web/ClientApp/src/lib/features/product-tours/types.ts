@@ -1,15 +1,15 @@
 import type { AssistantAccess } from '$features/assistant/models';
 import type { ViewProject } from '$features/projects/models';
 import type { ProductTourProgress } from '$features/users/models';
-import type { ProductTourLaunchSource as ProductTourLaunchSourceContract } from '$generated/api';
-
 export const PRODUCT_TOUR_CHECKPOINTS = {
-    'configure-project': ['organization-name', 'project-name', 'choose-platform', 'sdk-instructions', 'wait-for-event'],
-    'create-saved-view': ['open-view-menu', 'review-settings', 'name-view', 'private-view', 'save-view', 'view-created'],
-    'investigate-error': ['filter-errors', 'choose-error', 'stack-summary', 'stack-triage', 'event-occurrence', 'tab-overview', 'filter-stack-events'],
-    'meet-exie': ['open-exie', 'exie-context'],
-    'ui-overview': ['navigation', 'command-search', 'saved-views', 'exie', 'help']
+    'app-overview': ['navigation', 'command-search', 'saved-views', 'exie', 'help'],
+    'event-investigate': ['filter-errors', 'choose-error', 'stack-summary', 'stack-triage', 'event-occurrence', 'tab-overview', 'filter-stack-events'],
+    'exie-overview': ['open-exie', 'exie-context'],
+    'project-configure': ['organization-name', 'project-name', 'choose-platform', 'sdk-instructions', 'wait-for-event'],
+    'saved-view-create': ['open-view-menu', 'review-settings', 'name-view', 'private-view', 'save-view', 'view-created']
 } as const;
+
+export const PRODUCT_TOUR_LAUNCH_SOURCES = ['automatic', 'catalog', 'command-palette', 'feature-announcement', 'help-menu'] as const;
 
 export interface ProductTourAvailability {
     available: boolean;
@@ -43,19 +43,19 @@ export interface ProductTourDefinition<Name extends ProductTourName = ProductTou
     name: Name;
     startingRoute: (context: ProductTourContext) => string;
     title: string;
+    version: number;
 }
 
-export type ProductTourKey = 'exie-announcement' | 'welcome' | ProductTourName;
+export type ProductTourKey = 'app-welcome' | 'exie-announcement' | ProductTourName;
 
-export type ProductTourLaunchSource = `${ProductTourLaunchSourceContract}`;
+export type ProductTourLaunchSource = (typeof PRODUCT_TOUR_LAUNCH_SOURCES)[number];
 
 export interface ProductTourListItem<Name extends ProductTourName = ProductTourName> extends ProductTourDefinition<Name> {
     currentAvailability: ProductTourAvailability;
     progress?: ProductTourProgress;
-    version: number;
 }
 
 export type ProductTourName = keyof typeof PRODUCT_TOUR_CHECKPOINTS;
 
 export type ProductTourPhase<Name extends ProductTourName = ProductTourName> =
-    (Name extends 'create-saved-view' ? { type: 'saved-view-created' | 'saved-view-loaded'; viewId: string } : never) | { type: 'active' };
+    (Name extends 'saved-view-create' ? { type: 'saved-view-created' | 'saved-view-loaded'; viewId: string } : never) | { type: 'active' };

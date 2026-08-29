@@ -242,6 +242,7 @@ public class UserSerializerTests : TestWithServices
     [Fact]
     public void Deserialize_User_PreservesProductTourProgress()
     {
+        // Arrange
         var original = new User
         {
             Id = "tour-user",
@@ -250,29 +251,30 @@ public class UserSerializerTests : TestWithServices
             IsEmailAddressVerified = true,
             ProductTours = new Dictionary<string, ProductTourProgress>(StringComparer.Ordinal)
             {
-                ["welcome"] = new()
+                ["app-welcome"] = new()
                 {
                     Version = 1,
-                    Status = ProductTourStatus.Dismissed,
-                    UpdatedUtc = FixedDateTime
+                    Status = ProductTourStatus.Dismissed
                 },
-                ["ui-overview"] = new()
+                ["app-overview"] = new()
                 {
                     Version = 2,
-                    Status = ProductTourStatus.Completed,
-                    UpdatedUtc = FixedDateTime.AddMinutes(1)
+                    Status = ProductTourStatus.Completed
                 }
             }
         };
 
+        // Act
         string? json = _serializer.SerializeToString(original);
         var deserialized = _serializer.Deserialize<User>(json);
 
+        // Assert
+        Assert.Contains("\"status\":2", json);
         Assert.NotNull(deserialized);
         Assert.Equal(2, deserialized.ProductTours.Count);
-        Assert.Equal(ProductTourStatus.Dismissed, deserialized.ProductTours["welcome"].Status);
-        Assert.Equal(2, deserialized.ProductTours["ui-overview"].Version);
-        Assert.Equal(ProductTourStatus.Completed, deserialized.ProductTours["ui-overview"].Status);
+        Assert.Equal(ProductTourStatus.Dismissed, deserialized.ProductTours["app-welcome"].Status);
+        Assert.Equal(2, deserialized.ProductTours["app-overview"].Version);
+        Assert.Equal(ProductTourStatus.Completed, deserialized.ProductTours["app-overview"].Status);
     }
 
     [Fact]

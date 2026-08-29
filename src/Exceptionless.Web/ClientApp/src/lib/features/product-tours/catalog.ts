@@ -28,36 +28,40 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
         description: 'Learn navigation, command search, saved views, Exie, and where to get help.',
         initialCheckpoint: 'navigation',
         keywords: ['navigation', 'ui', 'search', 'command', 'help', 'saved views'],
-        name: 'ui-overview',
+        name: 'app-overview',
         startingRoute: () => resolve('/'),
-        title: 'Explore Exceptionless'
+        title: 'Explore Exceptionless',
+        version: 1
     },
     {
         availability: () => ({ available: true }),
         description: 'Create or resume a project, connect an SDK, and wait for its first real event.',
         initialCheckpoint: 'project-name',
         keywords: ['add project', 'configure', 'sdk', 'api key', 'first event'],
-        name: 'configure-project',
+        name: 'project-configure',
         startingRoute: (context) => (context.organizationId ? resolve('/(app)/project/add') : resolve('/(app)/organization/add')),
-        title: 'Configure a project'
+        title: 'Configure a project',
+        version: 1
     },
     {
         availability: requireOrganization,
         description: 'Save the current Events configuration as a private view that only you can see.',
         initialCheckpoint: 'open-view-menu',
         keywords: ['saved view', 'filter', 'columns', 'private', 'dashboard'],
-        name: 'create-saved-view',
+        name: 'saved-view-create',
         startingRoute: () => resolve('/(app)/event'),
-        title: 'Create a saved view'
+        title: 'Create a saved view',
+        version: 1
     },
     {
         availability: requireError,
         description: 'Open a real error, assess its stack and status, then inspect the occurrence.',
         initialCheckpoint: 'filter-errors',
         keywords: ['error report', 'event details', 'exception', 'filter', 'stack', 'triage'],
-        name: 'investigate-error',
+        name: 'event-investigate',
         startingRoute: () => `${resolve('/(app)/event')}?time=all&type=error`,
-        title: 'Investigate an error'
+        title: 'Investigate an error',
+        version: 1
     },
     {
         availability: (context) =>
@@ -65,29 +69,23 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
         description: 'See how Exie uses the current page as context without sending a prompt.',
         initialCheckpoint: 'open-exie',
         keywords: ['exie', 'assistant', 'ai', 'help', 'investigate'],
-        name: 'meet-exie',
+        name: 'exie-overview',
         startingRoute: () => resolve('/'),
-        title: 'Meet Exie'
+        title: 'Meet Exie',
+        version: 1
     }
 ] as const;
 
-export function getProductTourItems(
-    context: ProductTourContext,
-    versions: Record<string, number>,
-    progress: Record<string, ProductTourProgress> = {}
-): ProductTourListItem[] {
+export function getProductTourItems(context: ProductTourContext, progress: Record<string, ProductTourProgress> = {}): ProductTourListItem[] {
     return productTourCatalog.map((definition) => {
-        const version = versions[definition.name] ?? 0;
         return {
             ...definition,
-            currentAvailability:
-                version > 0 ? definition.availability(context) : { available: false, reason: 'This guided tour is not supported by the server.' },
-            progress: progress[definition.name],
-            version
+            currentAvailability: definition.availability(context),
+            progress: progress[definition.name]
         };
     });
 }
 
 export function getRecommendedProductTourName(context: ProductTourContext): ProductTourName {
-    return !context.organizationId || context.projects.some((project) => !project.is_configured) ? 'configure-project' : 'ui-overview';
+    return !context.organizationId || context.projects.some((project) => !project.is_configured) ? 'project-configure' : 'app-overview';
 }

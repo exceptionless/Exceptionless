@@ -4,7 +4,7 @@
     import { productTourCheckpoint } from '$features/product-tours/state.svelte';
 
     const actions = createProductTourActions();
-    const checkpoint = $derived(productTourCheckpoint.current?.tourName === 'investigate-error' ? productTourCheckpoint.current : undefined);
+    const checkpoint = $derived(productTourCheckpoint.current?.tourName === 'event-investigate' ? productTourCheckpoint.current : undefined);
 </script>
 
 {#if checkpoint?.checkpointName === 'filter-errors'}

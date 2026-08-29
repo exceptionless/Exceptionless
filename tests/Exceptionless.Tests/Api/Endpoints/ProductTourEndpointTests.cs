@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories;
@@ -28,79 +27,75 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     [Fact]
     public async Task UpdateCurrentUserProductTourAsync_NewProgress_PersistsAndReturnsProgress()
     {
+        // Arrange
         var currentUser = await GetTestOrganizationUserAsync();
 
+        // Act
         var progress = await SendRequestAsAsync<ProductTourProgress>(request => request
             .Put()
             .AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", "ui-overview")
+            .AppendPaths("users", "me", "product-tours", "app-overview")
             .Content(new UpdateProductTourProgress { Status = ProductTourStatus.Dismissed, Version = 1 })
             .StatusCodeShouldBeOk());
 
+        // Assert
         Assert.NotNull(progress);
         Assert.Equal(ProductTourStatus.Dismissed, progress.Status);
         Assert.Equal(1, progress.Version);
 
         var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, options => options.Cache(false));
         Assert.NotNull(persistedUser);
-        Assert.Equal(progress, persistedUser.ProductTours["ui-overview"]);
-    }
-
-    [Fact]
-    public async Task GetCurrentUserAsync_ReturnsAuthoritativeProductTourVersions()
-    {
-        var currentUser = await SendRequestAsAsync<JsonElement>(request => request
-            .AsTestOrganizationUser()
-            .AppendPaths("users", "me")
-            .StatusCodeShouldBeOk());
-
-        var versions = currentUser.GetProperty("product_tour_versions")
-            .Deserialize<Dictionary<string, int>>();
-
-        Assert.Equal(ProductTours.Versions, versions);
+        Assert.Equal(progress, persistedUser.ProductTours["app-overview"]);
     }
 
     [Fact]
     public async Task UpdateCurrentUserProductTourAsync_OlderProgress_PreservesStoredValue()
     {
+        // Arrange
         var currentUser = await GetTestOrganizationUserAsync();
-        currentUser.ProductTours[ProductTours.MeetExie] = new ProductTourProgress
+        currentUser.ProductTours[ProductTours.ExieOverview] = new ProductTourProgress
         {
             Status = ProductTourStatus.Completed,
-            UpdatedUtc = TimeProvider.GetUtcNow().UtcDateTime,
             Version = 3
         };
         await _userRepository.SaveAsync(currentUser, options => options.Cache().ImmediateConsistency());
 
-        var replacement = await UpdateProgressAsync(ProductTours.MeetExie, ProductTourStatus.Dismissed, 1);
+        // Act
+        var replacement = await UpdateProgressAsync(ProductTours.ExieOverview, ProductTourStatus.Dismissed, 1);
 
+        // Assert
         Assert.Equal(ProductTourStatus.Completed, replacement.Status);
         Assert.Equal(3, replacement.Version);
         var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, options => options.Cache(false));
         Assert.NotNull(persistedUser);
-        Assert.Equal(replacement, persistedUser.ProductTours["meet-exie"]);
+        Assert.Equal(replacement, persistedUser.ProductTours["exie-overview"]);
     }
 
     [Fact]
     public async Task UpdateCurrentUserProductTourAsync_CompletedProgress_ReplacesDismissedProgressForSameVersion()
     {
+        // Arrange
         var currentUser = await GetTestOrganizationUserAsync();
-        await UpdateProgressAsync(ProductTours.MeetExie, ProductTourStatus.Dismissed, 1);
+        await UpdateProgressAsync(ProductTours.ExieOverview, ProductTourStatus.Dismissed, 1);
 
-        var replacement = await UpdateProgressAsync(ProductTours.MeetExie, ProductTourStatus.Completed, 1);
+        // Act
+        var replacement = await UpdateProgressAsync(ProductTours.ExieOverview, ProductTourStatus.Completed, 1);
 
+        // Assert
         Assert.Equal(ProductTourStatus.Completed, replacement.Status);
         Assert.Equal(1, replacement.Version);
         var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, options => options.Cache(false));
         Assert.NotNull(persistedUser);
-        Assert.Equal(replacement, persistedUser.ProductTours["meet-exie"]);
+        Assert.Equal(replacement, persistedUser.ProductTours["exie-overview"]);
     }
 
     [Fact]
     public async Task UpdateCurrentUserProductTourAsync_UnknownTourName_ReturnsUnprocessableEntity()
     {
+        // Arrange
         var currentUser = await GetTestOrganizationUserAsync();
 
+        // Act
         await SendRequestAsync(request => request
             .Put()
             .AsTestOrganizationUser()
@@ -108,6 +103,7 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
             .Content(new UpdateProductTourProgress { Status = ProductTourStatus.Completed, Version = 1 })
             .StatusCodeShouldBeUnprocessableEntity());
 
+        // Assert
         var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, options => options.Cache(false));
         Assert.NotNull(persistedUser);
         Assert.DoesNotContain("unknown-tour", persistedUser.ProductTours);
@@ -116,6 +112,7 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     [Fact]
     public Task UpdateCurrentUserProductTourAsync_InvalidTourName_DoesNotMatchRoute()
     {
+        // Act & Assert
         return SendRequestAsync(request => request
             .Put()
             .AsTestOrganizationUser()
@@ -127,9 +124,10 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     [Fact]
     public Task UpdateCurrentUserProductTourAsync_AnonymousUser_ReturnsUnauthorized()
     {
+        // Act & Assert
         return SendRequestAsync(request => request
             .Put()
-            .AppendPaths("users", "me", "product-tours", "welcome")
+            .AppendPaths("users", "me", "product-tours", ProductTours.AppWelcome)
             .Content(new UpdateProductTourProgress { Status = ProductTourStatus.Dismissed, Version = 1 })
             .StatusCodeShouldBeUnauthorized());
     }
@@ -137,10 +135,11 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     [Fact]
     public Task UpdateCurrentUserProductTourAsync_MissingBody_ReturnsBadRequest()
     {
+        // Act & Assert
         return SendRequestAsync(request => request
             .Put()
             .AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", "ui-overview")
+            .AppendPaths("users", "me", "product-tours", "app-overview")
             .StatusCodeShouldBeBadRequest());
     }
 
@@ -150,10 +149,11 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     [InlineData(2)]
     public Task UpdateCurrentUserProductTourAsync_UnsupportedVersion_ReturnsUnprocessableEntity(int version)
     {
+        // Act & Assert
         return SendRequestAsync(request => request
             .Put()
             .AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", "ui-overview")
+            .AppendPaths("users", "me", "product-tours", "app-overview")
             .Content(new UpdateProductTourProgress { Status = ProductTourStatus.Completed, Version = version })
             .StatusCodeShouldBeUnprocessableEntity());
     }
@@ -161,10 +161,11 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     [Fact]
     public Task UpdateCurrentUserProductTourAsync_UndefinedStatus_ReturnsUnprocessableEntity()
     {
+        // Act & Assert
         return SendRequestAsync(request => request
             .Put()
             .AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", "ui-overview")
+            .AppendPaths("users", "me", "product-tours", "app-overview")
             .Content(new { Status = 999, Version = 1 })
             .StatusCodeShouldBeUnprocessableEntity());
     }

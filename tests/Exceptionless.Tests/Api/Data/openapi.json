@@ -458,7 +458,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AdminProductTourUsageResponse"
+                  "$ref": "#/components/schemas/ProductTourUsageResponse"
                 }
               }
             }
@@ -11825,140 +11825,6 @@
           }
         }
       },
-      "AdminProductTourActivity": {
-        "required": [
-          "date_utc",
-          "event",
-          "launch_source",
-          "tour_name",
-          "user_identity",
-          "user_name",
-          "version",
-          "count"
-        ],
-        "type": "object",
-        "properties": {
-          "date_utc": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "event": {
-            "$ref": "#/components/schemas/ProductTourTelemetryEvent"
-          },
-          "launch_source": {
-            "$ref": "#/components/schemas/ProductTourLaunchSource"
-          },
-          "tour_name": {
-            "type": "string"
-          },
-          "user_identity": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "user_name": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "version": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "count": {
-            "type": "integer",
-            "format": "int64"
-          }
-        }
-      },
-      "AdminProductTourSummary": {
-        "required": [
-          "name",
-          "shown",
-          "started",
-          "completed",
-          "dismissed",
-          "unique_users",
-          "last_run_utc",
-          "completion_rate",
-          "dismissal_rate"
-        ],
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "shown": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "started": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "completed": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "dismissed": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "unique_users": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "last_run_utc": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
-          },
-          "completion_rate": {
-            "type": [
-              "null",
-              "number"
-            ],
-            "format": "double"
-          },
-          "dismissal_rate": {
-            "type": [
-              "null",
-              "number"
-            ],
-            "format": "double"
-          }
-        }
-      },
-      "AdminProductTourUsageResponse": {
-        "required": [
-          "month",
-          "tours",
-          "recent_activity"
-        ],
-        "type": "object",
-        "properties": {
-          "month": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "tours": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AdminProductTourSummary"
-            }
-          },
-          "recent_activity": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AdminProductTourActivity"
-            }
-          }
-        }
-      },
       "AssistantAccessResponse": {
         "required": [
           "enabled",
@@ -13491,6 +13357,54 @@
           }
         }
       },
+      "ProductTourEvent": {
+        "required": [
+          "date_utc",
+          "event",
+          "launch_source",
+          "tour_name",
+          "user_identity",
+          "user_name",
+          "version",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "date_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "event": {
+            "$ref": "#/components/schemas/ProductTourTelemetryEvent"
+          },
+          "launch_source": {
+            "$ref": "#/components/schemas/ProductTourLaunchSource"
+          },
+          "tour_name": {
+            "type": "string"
+          },
+          "user_identity": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "user_name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "ProductTourLaunchSource": {
         "enum": [
           "automatic",
@@ -13510,17 +13424,12 @@
       "ProductTourProgress": {
         "required": [
           "status",
-          "updated_utc",
           "version"
         ],
         "type": "object",
         "properties": {
           "status": {
             "$ref": "#/components/schemas/ProductTourStatus"
-          },
-          "updated_utc": {
-            "type": "string",
-            "format": "date-time"
           },
           "version": {
             "type": "integer",
@@ -13530,13 +13439,69 @@
       },
       "ProductTourStatus": {
         "enum": [
-          "completed",
-          "dismissed"
+          1,
+          2
         ],
+        "type": "integer",
         "x-enumNames": [
           "Completed",
           "Dismissed"
         ]
+      },
+      "ProductTourSummary": {
+        "required": [
+          "name",
+          "shown",
+          "started",
+          "completed",
+          "dismissed",
+          "last_run_utc",
+          "completion_rate",
+          "dismissal_rate"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "shown": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "started": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "completed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dismissed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "last_run_utc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "completion_rate": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "dismissal_rate": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          }
+        }
       },
       "ProductTourTelemetryEvent": {
         "enum": [
@@ -13551,6 +13516,32 @@
           "Shown",
           "Started"
         ]
+      },
+      "ProductTourUsageResponse": {
+        "required": [
+          "month",
+          "tours",
+          "recent_events"
+        ],
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "tours": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductTourSummary"
+            }
+          },
+          "recent_events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductTourEvent"
+            }
+          }
+        }
       },
       "ResetPasswordModel": {
         "required": [
@@ -14462,14 +14453,6 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/ProductTourProgress"
             }
-          },
-          "product_tour_versions": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "readOnly": true
           },
           "id": {
             "maxLength": 24,

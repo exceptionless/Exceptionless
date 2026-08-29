@@ -9,7 +9,7 @@ const recommended = {
     description: 'Learn navigation and search.',
     initialCheckpoint: 'navigation' as const,
     keywords: ['navigation'],
-    name: 'ui-overview' as const,
+    name: 'app-overview' as const,
     startingRoute: vi.fn(() => '/next'),
     title: 'Explore Exceptionless',
     version: 1

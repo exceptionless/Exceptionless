@@ -90,7 +90,7 @@ public static class AdminEndpoints
         endpoints.MapGet("api/v2/admin/product-tour-usage", GetProductTourUsageAsync)
             .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
             .AddEndpointFilter<AutoValidationEndpointFilter>()
-            .Produces<AdminProductTourUsageResponse>(StatusCodes.Status200OK)
+            .Produces<ProductTourUsageResponse>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status403Forbidden);

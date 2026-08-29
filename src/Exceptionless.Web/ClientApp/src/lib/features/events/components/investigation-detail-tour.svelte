@@ -16,7 +16,7 @@
     let advancedEventId = $state('');
 
     const actions = createProductTourActions();
-    const checkpoint = $derived(productTourCheckpoint.current?.tourName === 'investigate-error' ? productTourCheckpoint.current : undefined);
+    const checkpoint = $derived(productTourCheckpoint.current?.tourName === 'event-investigate' ? productTourCheckpoint.current : undefined);
     const copy = $derived.by(() => {
         switch (checkpoint?.checkpointName) {
             case 'event-occurrence':
@@ -109,6 +109,6 @@
         onContinue={continueTour}
         onDismiss={dismiss}
         title={copy.title}
-        tourName="investigate-error"
+        tourName="event-investigate"
     />
 {/if}

@@ -33,7 +33,7 @@ export const ProductTourTelemetryEventSchema = zodEnum([
   "shown",
   "started",
 ]);
-export const ProductTourStatusSchema = zodEnum(["completed", "dismissed"]);
+export const ProductTourStatusSchema = union([literal(1), literal(2)]);
 export const ProductTourLaunchSourceSchema = zodEnum([
   "automatic",
   "catalog",
@@ -87,44 +87,6 @@ export const AdminAssistantUsageResponseSchema = object({
 });
 export type AdminAssistantUsageResponseFormData = Infer<
   typeof AdminAssistantUsageResponseSchema
->;
-
-export const AdminProductTourActivitySchema = object({
-  date_utc: iso.datetime(),
-  event: ProductTourTelemetryEventSchema,
-  launch_source: ProductTourLaunchSourceSchema,
-  tour_name: string().min(1, "Tour name is required"),
-  user_identity: string().min(1, "User identity is required").nullable(),
-  user_name: string().min(1, "User name is required").nullable(),
-  version: int32(),
-  count: int(),
-});
-export type AdminProductTourActivityFormData = Infer<
-  typeof AdminProductTourActivitySchema
->;
-
-export const AdminProductTourSummarySchema = object({
-  name: string().min(1, "Name is required"),
-  shown: int(),
-  started: int(),
-  completed: int(),
-  dismissed: int(),
-  unique_users: int(),
-  last_run_utc: iso.datetime().nullable(),
-  completion_rate: number().nullable(),
-  dismissal_rate: number().nullable(),
-});
-export type AdminProductTourSummaryFormData = Infer<
-  typeof AdminProductTourSummarySchema
->;
-
-export const AdminProductTourUsageResponseSchema = object({
-  month: iso.datetime(),
-  tours: array(lazy(() => AdminProductTourSummarySchema)),
-  recent_activity: array(lazy(() => AdminProductTourActivitySchema)),
-});
-export type AdminProductTourUsageResponseFormData = Infer<
-  typeof AdminProductTourUsageResponseSchema
 >;
 
 export const AssistantAccessResponseSchema = object({
@@ -678,13 +640,45 @@ export const ProblemDetailsSchema = object({
 });
 export type ProblemDetailsFormData = Infer<typeof ProblemDetailsSchema>;
 
+export const ProductTourEventSchema = object({
+  date_utc: iso.datetime(),
+  event: ProductTourTelemetryEventSchema,
+  launch_source: ProductTourLaunchSourceSchema,
+  tour_name: string().min(1, "Tour name is required"),
+  user_identity: string().min(1, "User identity is required").nullable(),
+  user_name: string().min(1, "User name is required").nullable(),
+  version: int32(),
+  count: int(),
+});
+export type ProductTourEventFormData = Infer<typeof ProductTourEventSchema>;
+
 export const ProductTourProgressSchema = object({
   status: ProductTourStatusSchema,
-  updated_utc: iso.datetime(),
   version: int32(),
 });
 export type ProductTourProgressFormData = Infer<
   typeof ProductTourProgressSchema
+>;
+
+export const ProductTourSummarySchema = object({
+  name: string().min(1, "Name is required"),
+  shown: int(),
+  started: int(),
+  completed: int(),
+  dismissed: int(),
+  last_run_utc: iso.datetime().nullable(),
+  completion_rate: number().nullable(),
+  dismissal_rate: number().nullable(),
+});
+export type ProductTourSummaryFormData = Infer<typeof ProductTourSummarySchema>;
+
+export const ProductTourUsageResponseSchema = object({
+  month: iso.datetime(),
+  tours: array(lazy(() => ProductTourSummarySchema)),
+  recent_events: array(lazy(() => ProductTourEventSchema)),
+});
+export type ProductTourUsageResponseFormData = Infer<
+  typeof ProductTourUsageResponseSchema
 >;
 
 export const ResetPasswordModelSchema = object({
@@ -998,7 +992,6 @@ export const ViewCurrentUserSchema = object({
     string(),
     lazy(() => ProductTourProgressSchema),
   ),
-  product_tour_versions: record(string(), number()).optional(),
   id: string()
     .length(24, "Id must be exactly 24 characters")
     .regex(/^[a-fA-F0-9]{24}$/, "Id has invalid format"),

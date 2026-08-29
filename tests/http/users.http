@@ -27,13 +27,13 @@ Authorization: Bearer {{token}}
 @oauthGrantId = replace-with-oauth-grant-id
 
 ### Record Product Tour Progress
-PUT {{apiUrl}}/users/me/product-tours/ui-overview
+PUT {{apiUrl}}/users/me/product-tours/app-overview
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
     "version": 1,
-    "status": "completed"
+    "status": 1
 }
 
 ### Get OAuth Grants

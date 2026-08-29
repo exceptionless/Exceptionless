@@ -16,7 +16,6 @@
     import ProductTourInlineCallout from '$features/product-tours/components/product-tour-inline-callout.svelte';
     import ProductTourSpotlight from '$features/product-tours/components/product-tour-spotlight.svelte';
     import { productTourCheckpoint } from '$features/product-tours/state.svelte';
-    import { getProjectQuery } from '$features/projects/api.svelte';
     import { getProjectDefaultTokenQuery, patchToken } from '$features/tokens/api.svelte';
     import EnableTokenDialog from '$features/tokens/components/dialogs/enable-token-dialog.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
@@ -42,14 +41,6 @@
             }
         }
     });
-    const projectQuery = getProjectQuery({
-        route: {
-            get id() {
-                return projectId;
-            }
-        }
-    });
-
     const apiKey = $derived(defaultTokenQuery.data?.id || 'YOUR_API_KEY');
     const serverUrl = (env.PUBLIC_EXCEPTIONLESS_SERVER_URL || '').trim();
     const showServerUrl = env.PUBLIC_EXCEPTIONLESS_CLIENT_SETUP_SHOW_SERVER_URL !== 'false';
@@ -62,7 +53,7 @@
     let isProjectTypeOpen = $state(false);
     let openEnableTokenDialog = $state(false);
     const tourActions = createProductTourActions();
-    const configureCheckpoint = $derived(productTourCheckpoint.current?.tourName === 'configure-project' ? productTourCheckpoint.current : undefined);
+    const projectConfigureCheckpoint = $derived(productTourCheckpoint.current?.tourName === 'project-configure' ? productTourCheckpoint.current : undefined);
 
     const enableTokenMutation = patchToken({
         route: {
@@ -434,39 +425,13 @@ public partial class App : Application {
         const message = (event as CustomEvent<WebSocketMessageValue<'PersistentEventChanged'>>).detail;
 
         if (queryParams.redirect && message.project_id === projectId && message.change_type !== ChangeType.Removed) {
-            if (configureCheckpoint && !(await tourActions.complete(configureCheckpoint))) {
-                return;
+            if (projectConfigureCheckpoint) {
+                await tourActions.complete(projectConfigureCheckpoint);
             }
 
             toast.success('First event received. Opening Events...');
             await redirectToEventsWithFilter(organization.current, new ProjectFilter([projectId]));
         }
-    });
-
-    async function refreshConfiguredProject(): Promise<void> {
-        const checkpoint = configureCheckpoint;
-        if (!queryParams.redirect || !checkpoint) {
-            return;
-        }
-
-        const result = await projectQuery.refetch();
-        if (!result.data?.is_configured) {
-            return;
-        }
-
-        if (!(await tourActions.complete(checkpoint))) {
-            return;
-        }
-
-        toast.success('First event received. Opening Events...');
-        await redirectToEventsWithFilter(organization.current, new ProjectFilter([projectId]));
-    }
-
-    useEventListener(window, 'focus', async () => {
-        await refreshConfiguredProject();
-    });
-    useEventListener(document, 'refresh', async () => {
-        await refreshConfiguredProject();
     });
 
     // Use Intercom from parent provider context
@@ -511,12 +476,12 @@ public partial class App : Application {
             <NotificationTitle>Waiting for your first event</NotificationTitle>
             <NotificationDescription>
                 <P>Send an event from your app. When it arrives, we'll open the project Events page automatically.</P>
-                {#if configureCheckpoint}
+                {#if projectConfigureCheckpoint}
                     <P class="mt-2">You can leave this tab while updating your application. The guide will resume here when you return.</P>
                     <Button
                         class="mt-2"
                         onclick={async () => {
-                            await tourActions.dismiss(configureCheckpoint);
+                            await tourActions.dismiss(projectConfigureCheckpoint);
                         }}
                         size="sm"
                         variant="outline">End guide</Button
@@ -536,8 +501,8 @@ public partial class App : Application {
                 onValueChange={(value) => {
                     selectedProjectType = projectTypes.find((P) => P.id === value) || null;
                     queryParams.type = value;
-                    if (configureCheckpoint?.checkpointName === 'choose-platform') {
-                        productTourCheckpoint.advance(configureCheckpoint, 'sdk-instructions');
+                    if (projectConfigureCheckpoint?.checkpointName === 'choose-platform') {
+                        productTourCheckpoint.advance(projectConfigureCheckpoint, 'sdk-instructions');
                     }
                 }}
             >
@@ -828,23 +793,23 @@ public partial class App : Application {
         {/if}
     </ol>
 
-    {#if configureCheckpoint?.checkpointName === 'sdk-instructions'}
+    {#if projectConfigureCheckpoint?.checkpointName === 'sdk-instructions'}
         <ProductTourInlineCallout
             description="Follow these SDK instructions in your own application. When it is connected, return here and continue to wait for the first event."
             onContinue={() => {
-                productTourCheckpoint.advance(configureCheckpoint, 'wait-for-event');
+                productTourCheckpoint.advance(projectConfigureCheckpoint, 'wait-for-event');
             }}
             onDismiss={async () => {
-                await tourActions.dismiss(configureCheckpoint);
+                await tourActions.dismiss(projectConfigureCheckpoint);
             }}
             title="Connect your application"
-            tourName="configure-project"
+            tourName="project-configure"
         />
     {/if}
 
-    {#if configureCheckpoint?.checkpointName === 'choose-platform' && !isProjectTypeOpen}
+    {#if projectConfigureCheckpoint?.checkpointName === 'choose-platform' && !isProjectTypeOpen}
         <ProductTourSpotlight
-            checkpoint={configureCheckpoint}
+            checkpoint={projectConfigureCheckpoint}
             description="Choose the SDK platform that matches the application you are connecting."
             onDismiss={tourActions.dismiss}
             target="[data-tour='project-configure-platform']"

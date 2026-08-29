@@ -4,10 +4,8 @@ using Exceptionless.Core.Models.Data;
 namespace Exceptionless.Core.Repositories;
 
 public sealed record ProductTourUsageResult(
-    IReadOnlyCollection<ProductTourUsageTour> Tours,
+    IReadOnlyCollection<ProductTourUsageBucket> Buckets,
     IReadOnlyCollection<ProductTourUsageEvent> RecentEvents);
-
-public sealed record ProductTourUsageTour(string Name, long UniqueUsers, IReadOnlyCollection<ProductTourUsageBucket> Buckets);
 
 public sealed record ProductTourUsageBucket(ProductTourUsageSource Source, long Count, DateTime? LastUtc);
 

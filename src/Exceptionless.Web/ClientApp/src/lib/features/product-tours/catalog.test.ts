@@ -16,24 +16,22 @@ function context(overrides: Partial<ProductTourContext> = {}): ProductTourContex
 }
 
 describe('product tour catalog', () => {
-    const versions = Object.fromEntries(productTourCatalog.map((tour) => [tour.name, 1]));
-
     it('contains only durable metadata for the five named tours', () => {
         expect(productTourCatalog.map((tour) => tour.name)).toEqual([
-            'ui-overview',
-            'configure-project',
-            'create-saved-view',
-            'investigate-error',
-            'meet-exie'
+            'app-overview',
+            'project-configure',
+            'saved-view-create',
+            'event-investigate',
+            'exie-overview'
         ]);
         expect(productTourCatalog.every((tour) => tour.keywords.length > 0)).toBe(true);
         expect(JSON.stringify(productTourCatalog)).not.toContain('data-tour');
     });
 
     it('recommends setup until an organization has configured projects', () => {
-        expect(getRecommendedProductTourName(context({ organizationId: undefined }))).toBe('configure-project');
-        expect(getRecommendedProductTourName(context({ projects: [{ is_configured: false }] }))).toBe('configure-project');
-        expect(getRecommendedProductTourName(context({ projects: [{ is_configured: true }] }))).toBe('ui-overview');
+        expect(getRecommendedProductTourName(context({ organizationId: undefined }))).toBe('project-configure');
+        expect(getRecommendedProductTourName(context({ projects: [{ is_configured: false }] }))).toBe('project-configure');
+        expect(getRecommendedProductTourName(context({ projects: [{ is_configured: true }] }))).toBe('app-overview');
     });
 
     it('reports availability separately from catalog metadata', () => {
@@ -41,15 +39,13 @@ describe('product tour catalog', () => {
             context({
                 assistantAccess: { enabled: false, has_access: false, upgrade_required: false },
                 errorEventAvailability: 'empty'
-            }),
-            versions
+            })
         );
-        expect(items.find((item) => item.name === 'meet-exie')?.currentAvailability.available).toBe(false);
-        expect(items.find((item) => item.name === 'investigate-error')?.currentAvailability.available).toBe(false);
+        expect(items.find((item) => item.name === 'exie-overview')?.currentAvailability.available).toBe(false);
+        expect(items.find((item) => item.name === 'event-investigate')?.currentAvailability.available).toBe(false);
     });
 
-    it('uses server versions as the availability boundary', () => {
-        const items = getProductTourItems(context(), {});
-        expect(items.every((item) => !item.currentAvailability.available && item.version === 0)).toBe(true);
+    it('defines a positive version for every tour', () => {
+        expect(getProductTourItems(context()).every((item) => item.version > 0)).toBe(true);
     });
 });

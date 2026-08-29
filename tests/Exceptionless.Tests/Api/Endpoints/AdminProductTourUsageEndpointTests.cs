@@ -1,5 +1,6 @@
 using Exceptionless.Core;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
@@ -26,20 +27,21 @@ public sealed class AdminProductTourUsageEndpointTests : IntegrationTestsBase
     [Fact]
     public async Task GetProductTourUsageAsync_AsGlobalAdmin_ReturnsInternalMonthlyUsage()
     {
+        // Arrange
         var month = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc);
         TimeProvider.SetUtcNow(month.AddDays(20));
 
         await CreateDataAsync(builder =>
         {
-            AddUsage(builder, "product-tour.shown.ui-overview.v1.automatic", month.AddDays(1), "user-1", 2);
-            AddUsage(builder, "product-tour.started.ui-overview.v1.catalog", month.AddDays(2), "user-1");
-            AddUsage(builder, "product-tour.started.ui-overview.v1.help-menu", month.AddDays(3), "user-1");
-            AddUsage(builder, "product-tour.started.ui-overview.v1.catalog", month.AddDays(4), "user-2");
-            AddUsage(builder, "product-tour.completed.ui-overview.v1.catalog", month.AddDays(5), "user-1");
-            AddUsage(builder, "product-tour.dismissed.ui-overview.v1.catalog", month.AddDays(6), "user-2");
-            AddUsage(builder, "product-tour.started.meet-exie.v1.command-palette", month.AddDays(7), "user-3");
-            AddUsage(builder, "product-tour.shown.welcome.v1.automatic", month.AddDays(1), "user-1", 2);
-            AddUsage(builder, "product-tour.dismissed.welcome.v1.automatic", month.AddDays(2), "user-1");
+            AddUsage(builder, ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Shown, ProductTours.AppOverview, 1, ProductTourLaunchSource.Automatic), month.AddDays(1), "user-1", 2);
+            AddUsage(builder, ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Started, ProductTours.AppOverview, 1, ProductTourLaunchSource.Catalog), month.AddDays(2), "user-1");
+            AddUsage(builder, ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Started, ProductTours.AppOverview, 1, ProductTourLaunchSource.HelpMenu), month.AddDays(3), "user-1");
+            AddUsage(builder, ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Started, ProductTours.AppOverview, 1, ProductTourLaunchSource.Catalog), month.AddDays(4), "user-2");
+            AddUsage(builder, ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Completed, ProductTours.AppOverview, 1, ProductTourLaunchSource.Catalog), month.AddDays(5), "user-1");
+            AddUsage(builder, ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Dismissed, ProductTours.AppOverview, 1, ProductTourLaunchSource.Catalog), month.AddDays(6), "user-2");
+            AddUsage(builder, ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Started, ProductTours.ExieOverview, 1, ProductTourLaunchSource.CommandPalette), month.AddDays(7), "user-3");
+            AddUsage(builder, ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Shown, ProductTours.AppWelcome, 1, ProductTourLaunchSource.Automatic), month.AddDays(1), "user-1", 2);
+            AddUsage(builder, ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Dismissed, ProductTours.AppWelcome, 1, ProductTourLaunchSource.Automatic), month.AddDays(2), "user-1");
             AddUsage(builder, "product-tour.started.unknown.v1.unknown-source", month.AddDays(8), "user-4");
 
             builder.Event()
@@ -51,64 +53,68 @@ public sealed class AdminProductTourUsageEndpointTests : IntegrationTestsBase
             AddUsage(builder, "product-tour.started.old-tour.v1.catalog", month.AddMonths(-1), "user-6");
         });
 
-        var response = await SendRequestAsAsync<AdminProductTourUsageResponse>(request => request
+        // Act
+        var response = await SendRequestAsAsync<ProductTourUsageResponse>(request => request
             .AsGlobalAdminUser()
             .AppendPaths("admin", "product-tour-usage")
             .QueryString("month", "2026-08-01")
             .QueryString("limit", "3")
             .StatusCodeShouldBeOk());
 
+        // Assert
         Assert.NotNull(response);
         Assert.Equal(month, response.Month);
         Assert.Equal(3, response.Tours.Count);
 
-        var overview = Assert.Single(response.Tours, tour => String.Equals(tour.Name, "ui-overview", StringComparison.Ordinal));
+        var overview = Assert.Single(response.Tours, tour => String.Equals(tour.Name, ProductTours.AppOverview, StringComparison.Ordinal));
         Assert.Equal(2, overview.Shown);
         Assert.Equal(3, overview.Started);
         Assert.Equal(1, overview.Completed);
         Assert.Equal(1, overview.Dismissed);
-        Assert.Equal(2, overview.UniqueUsers);
         Assert.Equal(month.AddDays(6), overview.LastRunUtc);
         Assert.Equal(0.3333m, overview.CompletionRate);
         Assert.Equal(0.3333m, overview.DismissalRate);
 
-        var exie = Assert.Single(response.Tours, tour => String.Equals(tour.Name, "meet-exie", StringComparison.Ordinal));
+        var exie = Assert.Single(response.Tours, tour => String.Equals(tour.Name, ProductTours.ExieOverview, StringComparison.Ordinal));
         Assert.Equal(1, exie.Started);
-        Assert.Equal(1, exie.UniqueUsers);
         Assert.Equal(month.AddDays(7), exie.LastRunUtc);
         Assert.Equal(0m, exie.CompletionRate);
         Assert.Equal(0m, exie.DismissalRate);
 
-        var welcome = Assert.Single(response.Tours, tour => String.Equals(tour.Name, "welcome", StringComparison.Ordinal));
+        var welcome = Assert.Single(response.Tours, tour => String.Equals(tour.Name, ProductTours.AppWelcome, StringComparison.Ordinal));
         Assert.Equal(2, welcome.Shown);
         Assert.Equal(1, welcome.Dismissed);
         Assert.Equal(month.AddDays(2), welcome.LastRunUtc);
         Assert.Equal(0.5m, welcome.DismissalRate);
 
-        Assert.Equal(3, response.RecentActivity.Count);
-        Assert.Equal(month.AddDays(7), response.RecentActivity.First().DateUtc);
-        Assert.All(response.RecentActivity, activity => Assert.StartsWith("user-", activity.UserIdentity));
+        Assert.Equal(3, response.RecentEvents.Count);
+        Assert.Equal(month.AddDays(7), response.RecentEvents.First().DateUtc);
+        Assert.All(response.RecentEvents, productTourEvent => Assert.StartsWith("user-", productTourEvent.UserIdentity));
     }
 
     [Fact]
     public async Task GetProductTourUsageAsync_WithoutMonth_UsesCurrentUtcMonth()
     {
+        // Arrange
         TimeProvider.SetUtcNow(new DateTime(2026, 9, 17, 12, 0, 0, DateTimeKind.Utc));
 
-        var response = await SendRequestAsAsync<AdminProductTourUsageResponse>(request => request
+        // Act
+        var response = await SendRequestAsAsync<ProductTourUsageResponse>(request => request
             .AsGlobalAdminUser()
             .AppendPaths("admin", "product-tour-usage")
             .StatusCodeShouldBeOk());
 
+        // Assert
         Assert.NotNull(response);
         Assert.Equal(new DateTime(2026, 9, 1, 0, 0, 0, DateTimeKind.Utc), response.Month);
         Assert.Empty(response.Tours);
-        Assert.Empty(response.RecentActivity);
+        Assert.Empty(response.RecentEvents);
     }
 
     [Fact]
     public Task GetProductTourUsageAsync_AsOrganizationUser_ReturnsForbidden()
     {
+        // Act & Assert
         return SendRequestAsync(request => request
             .AsTestOrganizationUser()
             .AppendPaths("admin", "product-tour-usage")

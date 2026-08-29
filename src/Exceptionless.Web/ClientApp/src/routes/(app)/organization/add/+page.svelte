@@ -36,7 +36,7 @@
     const createOrganization = postOrganization();
     const createProject = postProject();
     const tourActions = createProductTourActions();
-    const configureCheckpoint = $derived(productTourCheckpoint.current?.tourName === 'configure-project' ? productTourCheckpoint.current : undefined);
+    const projectConfigureCheckpoint = $derived(productTourCheckpoint.current?.tourName === 'project-configure' ? productTourCheckpoint.current : undefined);
     const CREATE_ERROR_MESSAGE = 'Error creating setup. Please try again.';
 
     useHideOrganizationNotifications();
@@ -62,7 +62,7 @@
                         organization_id: createdOrganization.id
                     } as NewProject);
 
-                    const checkpoint = configureCheckpoint;
+                    const checkpoint = projectConfigureCheckpoint;
                     if (checkpoint) {
                         productTourCheckpoint.advance(
                             checkpoint,
@@ -172,20 +172,22 @@
     </Card.Content>
 </Card.Root>
 
-{#if configureCheckpoint}
+{#if projectConfigureCheckpoint}
     <ProductTourSpotlight
-        checkpoint={configureCheckpoint}
-        description={configureCheckpoint.checkpointName === 'organization-name'
+        checkpoint={projectConfigureCheckpoint}
+        description={projectConfigureCheckpoint.checkpointName === 'organization-name'
             ? 'Name the organization that will own your projects and error data.'
             : 'Name the application or service that will send events. The guide advances only after setup succeeds.'}
         onDismiss={tourActions.dismiss}
-        onNext={configureCheckpoint.checkpointName === 'organization-name'
+        onNext={projectConfigureCheckpoint.checkpointName === 'organization-name'
             ? (checkpoint) => {
                   productTourCheckpoint.advance(checkpoint, 'project-name');
               }
             : undefined}
         side="top"
-        target={configureCheckpoint.checkpointName === 'organization-name' ? "[data-tour='setup-organization-name']" : "[data-tour='project-setup-form']"}
-        title={configureCheckpoint.checkpointName === 'organization-name' ? 'Name your organization' : 'Name your first project'}
+        target={projectConfigureCheckpoint.checkpointName === 'organization-name'
+            ? "[data-tour='setup-organization-name']"
+            : "[data-tour='project-setup-form']"}
+        title={projectConfigureCheckpoint.checkpointName === 'organization-name' ? 'Name your organization' : 'Name your first project'}
     />
 {/if}

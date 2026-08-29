@@ -7,27 +7,24 @@ namespace Exceptionless.Core.Models.Data;
 
 public static class ProductTours
 {
-    public const string ConfigureProject = "configure-project";
-    public const string CreateSavedView = "create-saved-view";
+    public const string AppOverview = "app-overview";
+    public const string AppWelcome = "app-welcome";
     public const string ExieAnnouncement = "exie-announcement";
-    public const string InvestigateError = "investigate-error";
-    public const string MeetExie = "meet-exie";
-    public const string UiOverview = "ui-overview";
-    public const string Welcome = "welcome";
+    public const string ExieOverview = "exie-overview";
+    public const string EventInvestigate = "event-investigate";
+    public const string ProjectConfigure = "project-configure";
+    public const string SavedViewCreate = "saved-view-create";
 
     public static IReadOnlyDictionary<string, int> Versions { get; } = new Dictionary<string, int>(StringComparer.Ordinal)
     {
-        [ConfigureProject] = 1,
-        [CreateSavedView] = 1,
+        [AppOverview] = 1,
+        [AppWelcome] = 1,
         [ExieAnnouncement] = 1,
-        [InvestigateError] = 1,
-        [MeetExie] = 1,
-        [UiOverview] = 1,
-        [Welcome] = 1
+        [ExieOverview] = 1,
+        [EventInvestigate] = 1,
+        [ProjectConfigure] = 1,
+        [SavedViewCreate] = 1
     }.ToFrozenDictionary(StringComparer.Ordinal);
-
-    public static IReadOnlyCollection<ProductTourTelemetryEvent> TelemetryEvents { get; } = Enum.GetValues<ProductTourTelemetryEvent>();
-    public static IReadOnlyCollection<ProductTourLaunchSource> LaunchSources { get; } = Enum.GetValues<ProductTourLaunchSource>();
 
     public static bool IsKnown(string name) => Versions.ContainsKey(name);
 
@@ -45,9 +42,9 @@ public static class ProductTours
         return $"product-tour.{GetTelemetryName(telemetryEvent)}.{tourName}.v{version}.{GetLaunchSourceName(launchSource)}";
     }
 
-    public static string GetTelemetryName(ProductTourTelemetryEvent telemetryEvent) => telemetryEvent.ToString().ToLowerUnderscoredWords('-');
+    private static string GetTelemetryName(ProductTourTelemetryEvent telemetryEvent) => telemetryEvent.ToString().ToLowerUnderscoredWords('-');
 
-    public static string GetLaunchSourceName(ProductTourLaunchSource launchSource) => launchSource.ToString().ToLowerUnderscoredWords('-');
+    private static string GetLaunchSourceName(ProductTourLaunchSource launchSource) => launchSource.ToString().ToLowerUnderscoredWords('-');
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter))]

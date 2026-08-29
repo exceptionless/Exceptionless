@@ -39,44 +39,45 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     [Fact]
     public async Task GetProductTourUsageAsync_KnownSources_ReturnsPerTourAggregations()
     {
+        // Arrange
         var month = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc);
         await CreateDataAsync(builder =>
         {
-            AddProductTourUsage(builder, "product-tour.started.ui-overview.v1.catalog", month.AddDays(1), "user-1", 2);
-            AddProductTourUsage(builder, "product-tour.started.ui-overview.v1.help-menu", month.AddDays(2), "user-1");
-            AddProductTourUsage(builder, "product-tour.completed.ui-overview.v1.catalog", month.AddDays(3), "user-2");
-            AddProductTourUsage(builder, "product-tour.shown.welcome.v1.automatic", month.AddDays(4), "user-3");
-            AddProductTourUsage(builder, "product-tour.started.ui-overview.v2.catalog", month.AddDays(5), "user-4");
+            AddProductTourUsage(builder, ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Started, ProductTours.AppOverview, 1, ProductTourLaunchSource.Catalog), month.AddDays(1), "user-1", 2);
+            AddProductTourUsage(builder, ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Started, ProductTours.AppOverview, 1, ProductTourLaunchSource.HelpMenu), month.AddDays(2), "user-1");
+            AddProductTourUsage(builder, ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Completed, ProductTours.AppOverview, 1, ProductTourLaunchSource.Catalog), month.AddDays(3), "user-2");
+            AddProductTourUsage(builder, ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Shown, ProductTours.AppWelcome, 1, ProductTourLaunchSource.Automatic), month.AddDays(4), "user-3");
+            AddProductTourUsage(builder, "product-tour.started.app-overview.v2.catalog", month.AddDays(5), "user-4");
             AddProductTourUsage(builder, "product-tour.started.unknown-tour.v1.catalog", month.AddDays(6), "user-5");
-            AddProductTourUsage(builder, "product-tour.started.ui-overview.v1.catalog", month.AddMonths(-1), "user-6");
+            AddProductTourUsage(builder, ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Started, ProductTours.AppOverview, 1, ProductTourLaunchSource.Catalog), month.AddMonths(-1), "user-6");
             builder.Event()
                 .Organization(TestConstants.OrganizationId)
                 .Project(_appOptions.InternalProjectId)
                 .Type(Event.KnownTypes.FeatureUsage)
-                .Source("product-tour.started.ui-overview.v1.catalog")
+                .Source(ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Started, ProductTours.AppOverview, 1, ProductTourLaunchSource.Catalog))
                 .Date(month.AddDays(8))
                 .UserIdentity("user-8");
             builder.Event()
                 .TestProject()
                 .Type(Event.KnownTypes.FeatureUsage)
-                .Source("product-tour.started.ui-overview.v1.catalog")
+                .Source(ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Started, ProductTours.AppOverview, 1, ProductTourLaunchSource.Catalog))
                 .Date(month.AddDays(7))
                 .UserIdentity("user-7");
         });
 
+        // Act
         var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, month, month.AddMonths(1), recentLimit: 3);
 
+        // Assert
         Assert.Equal(3, result.RecentEvents.Count);
-        Assert.Equal(2, result.Tours.Count);
-        var overview = Assert.Single(result.Tours, tour => String.Equals(tour.Name, ProductTours.UiOverview, StringComparison.Ordinal));
-        Assert.Equal(3, overview.UniqueUsers);
-        Assert.Equal(4, overview.Buckets.Where(bucket => bucket.Source.Event == ProductTourTelemetryEvent.Started).Sum(bucket => bucket.Count));
-        Assert.Equal(1, overview.Buckets.Where(bucket => bucket.Source.Event == ProductTourTelemetryEvent.Completed).Sum(bucket => bucket.Count));
-        Assert.Equal(month.AddDays(8), overview.Buckets.Max(bucket => bucket.LastUtc));
+        Assert.Equal(2, result.Buckets.Select(bucket => bucket.Source.TourName).Distinct(StringComparer.Ordinal).Count());
+        var overview = result.Buckets.Where(bucket => String.Equals(bucket.Source.TourName, ProductTours.AppOverview, StringComparison.Ordinal)).ToArray();
+        Assert.Equal(4, overview.Where(bucket => bucket.Source.Event == ProductTourTelemetryEvent.Started).Sum(bucket => bucket.Count));
+        Assert.Equal(1, overview.Where(bucket => bucket.Source.Event == ProductTourTelemetryEvent.Completed).Sum(bucket => bucket.Count));
+        Assert.Equal(month.AddDays(8), overview.Max(bucket => bucket.LastUtc));
 
-        var welcome = Assert.Single(result.Tours, tour => String.Equals(tour.Name, ProductTours.Welcome, StringComparison.Ordinal));
-        Assert.Equal(1, welcome.UniqueUsers);
-        Assert.Equal(1, Assert.Single(welcome.Buckets).Count);
+        var welcome = Assert.Single(result.Buckets, bucket => String.Equals(bucket.Source.TourName, ProductTours.AppWelcome, StringComparison.Ordinal));
+        Assert.Equal(1, welcome.Count);
 
         Assert.Equal(month.AddDays(8), result.RecentEvents.First().Event.Date);
         Assert.All(result.RecentEvents, item => Assert.True(ProductTours.IsValid(item.Source.TourName, item.Source.Version)));

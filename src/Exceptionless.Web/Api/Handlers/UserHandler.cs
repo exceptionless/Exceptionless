@@ -74,7 +74,6 @@ public class UserHandler(
                 progress = new ProductTourProgress
                 {
                     Status = message.Progress.Status!.Value,
-                    UpdatedUtc = timeProvider.GetUtcNow().UtcDateTime,
                     Version = message.Progress.Version
                 };
                 user.ProductTours[message.TourName] = progress;

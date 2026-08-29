@@ -25,7 +25,7 @@
     let toastId = $state<number | string>();
     const createProject = postProject();
     const tourActions = createProductTourActions();
-    const configureCheckpoint = $derived(productTourCheckpoint.current?.tourName === 'configure-project' ? productTourCheckpoint.current : undefined);
+    const projectConfigureCheckpoint = $derived(productTourCheckpoint.current?.tourName === 'project-configure' ? productTourCheckpoint.current : undefined);
 
     const form = createForm(() => ({
         defaultValues: {
@@ -42,7 +42,7 @@
                         ...value,
                         organization_id: organization.current ?? value.organization_id
                     } as NewProject);
-                    const checkpoint = configureCheckpoint;
+                    const checkpoint = projectConfigureCheckpoint;
                     if (checkpoint) {
                         productTourCheckpoint.advance(checkpoint, 'choose-platform');
                     }
@@ -128,9 +128,9 @@
     </form>
 </div>
 
-{#if configureCheckpoint?.checkpointName === 'project-name'}
+{#if projectConfigureCheckpoint?.checkpointName === 'project-name'}
     <ProductTourSpotlight
-        checkpoint={configureCheckpoint}
+        checkpoint={projectConfigureCheckpoint}
         description="Name the application or service that will send events. Continue by submitting this form; the guide advances only after creation succeeds."
         onDismiss={tourActions.dismiss}
         side="top"
