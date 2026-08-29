@@ -541,11 +541,17 @@ export interface ProductTourSummary {
   /** @format int64 */
   started: number;
   /** @format int64 */
+  manual_started: number;
+  /** @format int64 */
   completed: number;
   /** @format int64 */
   dismissed: number;
   /** @format date-time */
   last_run_utc?: null | string;
+  /** @format double */
+  started_rate?: null | number;
+  /** @format double */
+  manual_started_rate?: null | number;
   /** @format double */
   completion_rate?: null | number;
   /** @format double */
@@ -554,7 +560,7 @@ export interface ProductTourSummary {
 
 export interface ProductTourUsageResponse {
   /** @format date-time */
-  month: string;
+  month?: null | string;
   tours: ProductTourSummary[];
   recent_events: ProductTourEvent[];
 }

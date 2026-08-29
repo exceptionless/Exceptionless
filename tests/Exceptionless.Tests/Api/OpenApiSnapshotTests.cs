@@ -69,7 +69,7 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
 
         Assert.True(paths.TryGetProperty("/api/v2/admin/product-tour-usage", out var productTourUsagePath));
         Assert.True(productTourUsagePath.TryGetProperty("get", out var productTourUsageGet));
-        AssertResponseCodes(productTourUsageGet, "200", "400", "401", "403");
+        AssertResponseCodes(productTourUsageGet, "200", "400", "401", "403", "422");
         AssertResponseSchema(productTourUsageGet, "200", "ProductTourUsageResponse");
 
         Assert.True(paths.TryGetProperty("/api/v2/assistant/chat", out var assistantChatPath));

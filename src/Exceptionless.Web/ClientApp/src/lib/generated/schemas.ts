@@ -664,16 +664,19 @@ export const ProductTourSummarySchema = object({
   name: string().min(1, "Name is required"),
   shown: int(),
   started: int(),
+  manual_started: int(),
   completed: int(),
   dismissed: int(),
   last_run_utc: iso.datetime().nullable(),
+  started_rate: number().nullable(),
+  manual_started_rate: number().nullable(),
   completion_rate: number().nullable(),
   dismissal_rate: number().nullable(),
 });
 export type ProductTourSummaryFormData = Infer<typeof ProductTourSummarySchema>;
 
 export const ProductTourUsageResponseSchema = object({
-  month: iso.datetime(),
+  month: iso.datetime().nullable(),
   tours: array(lazy(() => ProductTourSummarySchema)),
   recent_events: array(lazy(() => ProductTourEventSchema)),
 });

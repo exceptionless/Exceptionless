@@ -84,11 +84,11 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         return FindAsync(q => q.Project(projectId).FieldEquals(e => e.ReferenceId, referenceId).SortDescending(e => e.Date), o => o.PageLimit(10));
     }
 
-    public async Task<ProductTourUsageResult> GetProductTourUsageAsync(string projectId, DateTime utcStart, DateTime utcEnd, int recentLimit = 500)
+    public async Task<ProductTourUsageResult> GetProductTourUsageAsync(string projectId, DateTime? utcStart = null, DateTime? utcEnd = null, int recentLimit = 500)
     {
         ArgumentException.ThrowIfNullOrEmpty(projectId);
         ArgumentOutOfRangeException.ThrowIfLessThan(recentLimit, 1);
-        if (utcEnd <= utcStart)
+        if (utcStart.HasValue && utcEnd.HasValue && utcEnd <= utcStart)
             throw new ArgumentOutOfRangeException(nameof(utcEnd), "The end date must be later than the start date.");
 
         var sourcesByName = ProductTours.Versions
@@ -125,16 +125,23 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
     private static IRepositoryQuery<PersistentEvent> ApplyProductTourUsageFilter(
         IRepositoryQuery<PersistentEvent> query,
         string projectId,
-        DateTime utcStart,
-        DateTime utcEnd,
+        DateTime? utcStart,
+        DateTime? utcEnd,
         string[] sources)
     {
-        return query
+        query = query
             .Project(projectId)
             .FieldEquals(ev => ev.Type, Event.KnownTypes.FeatureUsage)
-            .FieldEquals(ev => ev.Source, sources)
-            .DateRange(utcStart, utcEnd, (PersistentEvent ev) => ev.Date)
-            .Index(utcStart, utcEnd);
+            .FieldEquals(ev => ev.Source, sources);
+
+        if (utcStart.HasValue && utcEnd.HasValue)
+            return query.DateRange(utcStart, utcEnd, (PersistentEvent ev) => ev.Date).Index(utcStart, utcEnd);
+        if (utcStart.HasValue)
+            return query.DateRange(utcStart, null, (PersistentEvent ev) => ev.Date);
+        if (utcEnd.HasValue)
+            return query.DateRange(null, utcEnd, (PersistentEvent ev) => ev.Date);
+
+        return query;
     }
 
     private static ProductTourUsageSource[] CreateProductTourSources(string tourName, int currentVersion)
