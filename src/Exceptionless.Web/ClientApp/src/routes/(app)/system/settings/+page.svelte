@@ -92,11 +92,19 @@
                 <div class="flex flex-wrap items-center justify-end gap-2">
                     <Switch id="event-submission-enabled" bind:checked={eventSubmissionEnabled} disabled={updateSettings.isPending} />
                     {#if settings?.is_overridden}
-                        <Button type="button" size="sm" variant="outline" disabled={updateSettings.isPending} onclick={resetEventSubmission}>Reset</Button>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            aria-label="Reset event submission to deployment default"
+                            disabled={updateSettings.isPending}
+                            onclick={resetEventSubmission}>Reset</Button
+                        >
                     {/if}
                     <Button
                         type="button"
                         size="sm"
+                        aria-label="Save event submission"
                         disabled={updateSettings.isPending || eventSubmissionEnabled === settings?.enabled}
                         onclick={saveEventSubmission}
                     >

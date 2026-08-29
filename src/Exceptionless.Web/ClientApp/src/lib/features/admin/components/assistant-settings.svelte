@@ -136,9 +136,22 @@
         <div class="flex flex-wrap items-center justify-end gap-2">
             <Switch id="assistant-enabled" bind:checked={assistantEnabled} disabled={updateEnabledSettings.isPending} />
             {#if settings?.is_enabled_overridden}
-                <Button type="button" size="sm" variant="outline" disabled={updateEnabledSettings.isPending} onclick={resetAvailability}>Reset</Button>
+                <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    aria-label="Reset Exie availability to deployment default"
+                    disabled={updateEnabledSettings.isPending}
+                    onclick={resetAvailability}>Reset</Button
+                >
             {/if}
-            <Button type="button" size="sm" disabled={updateEnabledSettings.isPending || assistantEnabled === settings?.enabled} onclick={saveAvailability}>
+            <Button
+                type="button"
+                size="sm"
+                aria-label="Save Exie availability"
+                disabled={updateEnabledSettings.isPending || assistantEnabled === settings?.enabled}
+                onclick={saveAvailability}
+            >
                 {updateEnabledSettings.isPending ? 'Saving...' : 'Save'}
             </Button>
         </div>
@@ -180,11 +193,18 @@
                             />
                             <div class="flex items-center justify-end gap-2">
                                 {#if settings?.is_overridden}
-                                    <Button type="button" size="sm" variant="outline" disabled={updateSettings.isPending} onclick={resetModel}>Reset</Button>
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        aria-label="Reset Exie model to deployment default"
+                                        disabled={updateSettings.isPending}
+                                        onclick={resetModel}>Reset</Button
+                                    >
                                 {/if}
                                 <settingsForm.Subscribe selector={(state) => state.isSubmitting}>
                                     {#snippet children(isSubmitting)}
-                                        <Button type="submit" size="sm" disabled={isSubmitting || updateSettings.isPending}>
+                                        <Button type="submit" size="sm" aria-label="Save Exie model" disabled={isSubmitting || updateSettings.isPending}>
                                             {isSubmitting || updateSettings.isPending ? 'Saving...' : 'Save'}
                                         </Button>
                                     {/snippet}
