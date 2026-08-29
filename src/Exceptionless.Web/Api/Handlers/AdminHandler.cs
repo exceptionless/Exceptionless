@@ -140,9 +140,11 @@ public class AdminHandler(
 
     public async Task<Result<object>> Handle(GetAdminProductTourUsage message)
     {
-        var requestedMonth = message.Month ?? timeProvider.GetUtcNow().UtcDateTime;
-        var month = requestedMonth.ToUniversalTime().StartOfMonth();
-        var nextMonth = month.AddMonths(1);
+        if (message.All && message.Month.HasValue)
+            return Result.Invalid(ValidationError.Create("month", "Month cannot be specified when requesting all-time usage."));
+
+        DateTime? month = message.All ? null : (message.Month ?? timeProvider.GetUtcNow().UtcDateTime).ToUniversalTime().StartOfMonth();
+        DateTime? nextMonth = month?.AddMonths(1);
         int limit = Math.Clamp(message.Limit, 1, 500);
 
         var usage = await eventRepository.GetProductTourUsageAsync(appOptions.InternalProjectId, month, nextMonth, limit);
@@ -152,18 +154,24 @@ public class AdminHandler(
             {
                 long shown = SumEvent(buckets, ProductTourTelemetryEvent.Shown);
                 long started = SumEvent(buckets, ProductTourTelemetryEvent.Started);
+                long manualStarted = buckets
+                    .Where(bucket => bucket.Source.Event == ProductTourTelemetryEvent.Started && bucket.Source.LaunchSource != ProductTourLaunchSource.Automatic)
+                    .Sum(bucket => bucket.Count);
                 long completed = SumEvent(buckets, ProductTourTelemetryEvent.Completed);
                 long dismissed = SumEvent(buckets, ProductTourTelemetryEvent.Dismissed);
-                long decisionDenominator = started > 0 ? started : shown;
+                long decisionDenominator = ProductTours.IsPrompt(buckets.Key) ? shown : started;
                 DateTime? lastRunUtc = buckets.Select(bucket => bucket.LastUtc).Max();
 
                 return new ProductTourSummary(
                     buckets.Key,
                     shown,
                     started,
+                    manualStarted,
                     completed,
                     dismissed,
                     lastRunUtc,
+                    CalculateRate(started, shown),
+                    CalculateRate(manualStarted, started),
                     CalculateRate(completed, decisionDenominator),
                     CalculateRate(dismissed, decisionDenominator));
             })

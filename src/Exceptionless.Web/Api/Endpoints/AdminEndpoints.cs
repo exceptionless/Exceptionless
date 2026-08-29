@@ -92,6 +92,7 @@ public static class AdminEndpoints
             .AddEndpointFilter<AutoValidationEndpointFilter>()
             .Produces<ProductTourUsageResponse>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status403Forbidden);
 
@@ -143,6 +144,7 @@ public static class AdminEndpoints
         IMediator mediator,
         IMediatorResultMapper<HttpIResult> resultMapper,
         DateTime? month = null,
+        bool all = false,
         int limit = 100)
-        => (await mediator.InvokeAsync<Result<object>>(new GetAdminProductTourUsage(month, limit))).ToHttpResult(resultMapper);
+        => (await mediator.InvokeAsync<Result<object>>(new GetAdminProductTourUsage(month, all, limit))).ToHttpResult(resultMapper);
 }

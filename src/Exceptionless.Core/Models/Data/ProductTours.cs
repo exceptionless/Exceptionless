@@ -28,6 +28,8 @@ public static class ProductTours
 
     public static bool IsKnown(string name) => Versions.ContainsKey(name);
 
+    public static bool IsPrompt(string name) => name is AppWelcome or ExieAnnouncement;
+
     public static bool IsValid(string name, int version)
     {
         return Versions.TryGetValue(name, out int currentVersion) && version > 0 && version <= currentVersion;

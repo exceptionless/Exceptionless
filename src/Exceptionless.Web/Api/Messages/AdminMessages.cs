@@ -3,7 +3,7 @@ namespace Exceptionless.Web.Api.Messages;
 public record GetAdminSettings;
 public record GetAdminStats;
 public record GetAdminAssistantUsage(DateTime? Month, int Limit, HttpContext Context);
-public record GetAdminProductTourUsage(DateTime? Month, int Limit);
+public record GetAdminProductTourUsage(DateTime? Month, bool All, int Limit);
 public record GetAdminMigrations;
 public record GetAdminEcho(HttpContext Context);
 public record GetAdminAssemblies;

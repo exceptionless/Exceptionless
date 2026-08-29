@@ -120,6 +120,11 @@ Content-Type: application/json
 GET {{apiUrl}}/admin/product-tour-usage?month=2026-08-01&limit=100
 Authorization: Bearer {{token}}
 
+###
+
+GET {{apiUrl}}/admin/product-tour-usage?all=true&limit=100
+Authorization: Bearer {{token}}
+
 ### Suspend
 POST {{apiUrl}}/organizations/{{organizationId}}/suspend?code=1
 Authorization: Bearer {{token}}

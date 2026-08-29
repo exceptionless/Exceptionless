@@ -4,6 +4,8 @@
     import TimeAgo from '$comp/formatters/time-ago.svelte';
     import { Muted } from '$comp/typography';
     import { Badge } from '$comp/ui/badge';
+    import { Button } from '$comp/ui/button';
+    import * as ButtonGroup from '$comp/ui/button-group';
     import * as Card from '$comp/ui/card';
     import { Input } from '$comp/ui/input';
     import { Skeleton } from '$comp/ui/skeleton';
@@ -12,8 +14,9 @@
     import { getUtcMonthKey } from '$features/admin/assistant-usage';
 
     const currentMonth = getUtcMonthKey();
+    let range = $state<'all' | 'month'>('month');
     let selectedMonth = $state(currentMonth);
-    const usageQuery = getAdminProductTourUsageQuery(() => selectedMonth);
+    const usageQuery = getAdminProductTourUsageQuery(() => (range === 'month' ? selectedMonth : undefined));
     const usage = $derived(usageQuery.data);
 
     function title(value: string): string {
@@ -27,10 +30,18 @@
 <div class="space-y-6">
     <div class="flex flex-wrap items-end justify-between gap-4">
         <Muted>Tour starts, outcomes, and recent user activity recorded by Exceptionless Feature Usage events</Muted>
-        <label class="flex flex-col gap-1 text-sm font-medium">
-            Month
-            <Input class="w-40" type="month" max={currentMonth} bind:value={selectedMonth} />
-        </label>
+        <div class="flex items-end gap-2">
+            <ButtonGroup.Root aria-label="Usage period">
+                <Button variant={range === 'all' ? 'secondary' : 'outline'} aria-pressed={range === 'all'} onclick={() => (range = 'all')}>All time</Button>
+                <Button variant={range === 'month' ? 'secondary' : 'outline'} aria-pressed={range === 'month'} onclick={() => (range = 'month')}>Month</Button>
+            </ButtonGroup.Root>
+            {#if range === 'month'}
+                <label class="flex flex-col gap-1 text-sm font-medium">
+                    Month
+                    <Input class="w-40" type="month" max={currentMonth} bind:value={selectedMonth} />
+                </label>
+            {/if}
+        </div>
     </div>
 
     {#if usageQuery.isError}
@@ -44,8 +55,8 @@
             <Card.Header>
                 <Card.Title>Tour Outcomes</Card.Title>
                 <Card.Description>
-                    Tour rates use starts as the denominator. Welcome and announcement decision rates use shown prompts because they do not have a separate
-                    start event.
+                    Start rate uses real prompt impressions when available. Outcome rates use starts, or shown prompts for prompt-only experiences. Manual
+                    starts come from the catalog, command palette, feature announcements, and help menu.
                 </Card.Description>
             </Card.Header>
             <Card.Content class="px-0">
@@ -56,7 +67,9 @@
                         {/each}
                     </div>
                 {:else if usage?.tours.length === 0}
-                    <p class="text-muted-foreground px-4 py-10 text-center text-sm">No guided-tour activity was recorded for this month.</p>
+                    <p class="text-muted-foreground px-4 py-10 text-center text-sm">
+                        No guided-tour activity was recorded {range === 'month' ? 'for this month' : 'yet'}.
+                    </p>
                 {:else}
                     <Table.Root aria-label="Tour outcomes" class="min-w-4xl">
                         <Table.Header>
@@ -74,7 +87,20 @@
                                 <Table.Row>
                                     <Table.Cell class="pl-4 font-medium">{title(tour.name)}</Table.Cell>
                                     <Table.Cell class="text-right"><Number value={tour.shown} /></Table.Cell>
-                                    <Table.Cell class="text-right"><Number value={tour.started} /></Table.Cell>
+                                    <Table.Cell class="text-right">
+                                        <Number value={tour.started} />
+                                        <span class="text-muted-foreground ml-1 text-xs">
+                                            ({#if tour.started_rate == null}—{:else}<Percentage percent={tour.started_rate * 100} />{/if})
+                                        </span>
+                                        {#if tour.manual_started > 0}
+                                            <div class="text-muted-foreground text-xs">
+                                                <Number value={tour.manual_started} /> manual
+                                                {#if tour.manual_started_rate != null}
+                                                    (<Percentage percent={tour.manual_started_rate * 100} />)
+                                                {/if}
+                                            </div>
+                                        {/if}
+                                    </Table.Cell>
                                     <Table.Cell class="text-right">
                                         <Number value={tour.completed} />
                                         <span class="text-muted-foreground ml-1 text-xs">

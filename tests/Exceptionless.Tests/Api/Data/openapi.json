@@ -443,6 +443,14 @@
             }
           },
           {
+            "name": "all",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
             "schema": {
@@ -469,6 +477,16 @@
               "application/problem\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
                 }
               }
             }
@@ -13453,9 +13471,12 @@
           "name",
           "shown",
           "started",
+          "manual_started",
           "completed",
           "dismissed",
           "last_run_utc",
+          "started_rate",
+          "manual_started_rate",
           "completion_rate",
           "dismissal_rate"
         ],
@@ -13469,6 +13490,10 @@
             "format": "int64"
           },
           "started": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "manual_started": {
             "type": "integer",
             "format": "int64"
           },
@@ -13486,6 +13511,20 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "started_rate": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "manual_started_rate": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
           },
           "completion_rate": {
             "type": [
@@ -13526,7 +13565,10 @@
         "type": "object",
         "properties": {
           "month": {
-            "type": "string",
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "date-time"
           },
           "tours": {

@@ -174,7 +174,7 @@
         closeOverlays();
         catalogOpen = false;
         const next = productTourCheckpoint.start(name, item.initialCheckpoint, source, currentUser.id, item.version, organizationId);
-        await Promise.all([track('shown', name, item.version, source), track('started', name, item.version, source)]);
+        await track('started', name, item.version, source);
 
         const destination = item.startingRoute(context);
         if (`${pathname}${window.location.search}` !== destination) {
@@ -207,6 +207,7 @@
             return;
         }
         welcomeHandled = true;
+        await track('started', 'app-welcome', WELCOME_VERSION, 'automatic');
         await track('completed', 'app-welcome', WELCOME_VERSION, 'automatic');
         await startTour(recommended.name, 'automatic');
     }
@@ -232,6 +233,7 @@
         if (!(await recordPreference('exie-announcement', EXIE_ANNOUNCEMENT_VERSION, ProductTourStatus.Completed))) {
             return;
         }
+        await track('started', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
         await track('completed', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
         await startTour('exie-overview', 'feature-announcement');
     }

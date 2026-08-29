@@ -84,6 +84,25 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetProductTourUsageAsync_WithoutDates_ReturnsAllUsage()
+    {
+        // Arrange
+        var month = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc);
+        await CreateDataAsync(builder =>
+        {
+            AddProductTourUsage(builder, ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Started, ProductTours.AppOverview, 1, ProductTourLaunchSource.Catalog), month.AddMonths(-1), "user-1");
+            AddProductTourUsage(builder, ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Started, ProductTours.AppOverview, 1, ProductTourLaunchSource.Automatic), month.AddDays(1), "user-2");
+        });
+
+        // Act
+        var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId);
+
+        // Assert
+        Assert.Equal(2, result.RecentEvents.Count);
+        Assert.Equal(2, result.Buckets.Sum(bucket => bucket.Count));
+    }
+
+    [Fact]
     public async Task GetAsync()
     {
         Log.SetLogLevel<EventRepository>(LogLevel.Trace);
