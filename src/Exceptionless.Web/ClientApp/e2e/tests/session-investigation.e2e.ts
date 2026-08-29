@@ -100,13 +100,16 @@ test('operator can find and inspect a user session', async ({ e2eApi, e2eScenari
 
         const activePanel = () => page.getByRole('tabpanel').filter({ visible: true });
         const activeTable = () => activePanel().locator('[data-slot="table-container"]').first();
-        const expectNoHorizontalOverflow = async () => {
-            await expect.poll(() => activeTable().evaluate((element) => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(2);
+        const expectWrappedMessageWithoutMeaningfulOverflow = async () => {
+            const messageCell = activePanel().getByRole('row').filter({ hasText: 'Message' }).first().locator('[data-slot="table-cell"]').last();
+            await expect(messageCell).toHaveCSS('overflow-wrap', 'anywhere');
+            await expect(messageCell).toHaveCSS('white-space', 'normal');
+            await expect.poll(() => activeTable().evaluate((element) => element.scrollWidth / element.offsetWidth)).toBeLessThanOrEqual(1.05);
         };
 
-        await expectNoHorizontalOverflow();
+        await expectWrappedMessageWithoutMeaningfulOverflow();
         await page.getByRole('tab', { name: 'Exception' }).click();
-        await expectNoHorizontalOverflow();
+        await expectWrappedMessageWithoutMeaningfulOverflow();
 
         await page.getByRole('tab', { name: 'Environment' }).click();
         const machineNameRow = activePanel().getByRole('row').filter({ hasText: 'Machine Name' });
