@@ -7,6 +7,7 @@
     import { Spinner } from '$comp/ui/spinner';
     import { Switch } from '$comp/ui/switch';
     import { getEventSubmissionSettingsQuery, putEventSubmissionSettingsMutation } from '$features/admin/api.svelte';
+    import AssistantSettings from '$features/admin/components/assistant-settings.svelte';
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
     import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
     import Save from '@lucide/svelte/icons/save';
@@ -54,8 +55,10 @@
     }
 </script>
 
-<div class="space-y-6">
+<div class="space-y-8">
     <Muted>Manage runtime system behavior</Muted>
+
+    <AssistantSettings />
 
     <Card.Root>
         <Card.Header>
