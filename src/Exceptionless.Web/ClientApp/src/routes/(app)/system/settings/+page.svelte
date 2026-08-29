@@ -3,14 +3,13 @@
     import * as Alert from '$comp/ui/alert';
     import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
-    import * as Card from '$comp/ui/card';
+    import * as Field from '$comp/ui/field';
+    import { Separator } from '$comp/ui/separator';
     import { Spinner } from '$comp/ui/spinner';
     import { Switch } from '$comp/ui/switch';
     import { getEventSubmissionSettingsQuery, putEventSubmissionSettingsMutation } from '$features/admin/api.svelte';
     import AssistantSettings from '$features/admin/components/assistant-settings.svelte';
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
-    import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
-    import Save from '@lucide/svelte/icons/save';
     import { toast } from 'svelte-sonner';
 
     const settingsQuery = getEventSubmissionSettingsQuery();
@@ -55,69 +54,56 @@
     }
 </script>
 
-<div class="space-y-8">
+<div class="flex flex-col gap-4">
     <Muted>Manage runtime system behavior</Muted>
 
-    <AssistantSettings />
+    <Field.FieldGroup class="gap-0 overflow-hidden rounded-lg border">
+        <AssistantSettings />
+        <Separator />
 
-    <Card.Root>
-        <Card.Header>
-            <div class="flex flex-wrap items-center gap-2">
-                <Card.Title>Event Submission</Card.Title>
-                {#if settings}
-                    <Badge variant={settings.is_overridden ? 'secondary' : 'outline'}>
-                        {settings.is_overridden ? 'Runtime override' : 'Deployment default'}
-                    </Badge>
-                {/if}
-            </div>
-            <Card.Description>Control whether Exceptionless accepts new events without restarting the app.</Card.Description>
-        </Card.Header>
-        {#if settingsQuery.isPending}
-            <Card.Content class="flex items-center gap-2">
-                <Spinner />
-                <Muted>Loading event submission settings...</Muted>
-            </Card.Content>
-        {:else if settingsQuery.isError}
-            <Card.Content>
-                <p class="text-destructive text-sm">Failed to load event submission settings.</p>
-            </Card.Content>
-        {:else}
-            <Card.Content class="space-y-4">
-                <div class="flex items-center justify-between gap-6 rounded-lg border p-4">
-                    <div class="space-y-1">
-                        <label class="text-sm font-medium" for="event-submission-enabled">Accept event submissions</label>
-                        <Muted class="text-xs">
-                            The deployment default is {settings?.configured_enabled ? 'enabled' : 'disabled'}. Changes apply to new requests immediately.
-                        </Muted>
-                    </div>
-                    <Switch id="event-submission-enabled" bind:checked={eventSubmissionEnabled} disabled={updateSettings.isPending} />
+        <Field.Field orientation="responsive" class="gap-4 p-4">
+            <Field.Content>
+                <div class="flex flex-wrap items-center gap-2">
+                    <Field.Label for="event-submission-enabled">Event submission</Field.Label>
+                    {#if settings}
+                        <Badge variant={settings.is_overridden ? 'secondary' : 'outline'}>
+                            {settings.is_overridden ? 'Runtime override' : 'Deployment default'}
+                        </Badge>
+                    {/if}
                 </div>
-
-                {#if !eventSubmissionEnabled}
+                <Field.Description>Control whether Exceptionless accepts new events. Changes apply to new requests immediately.</Field.Description>
+                {#if !settingsQuery.isPending && !settingsQuery.isError && !eventSubmissionEnabled}
                     <Alert.Root variant="destructive">
                         <AlertTriangle />
                         <Alert.Title>Incoming events will be rejected with HTTP 503.</Alert.Title>
-                        <Alert.Description>Session heartbeats remain successful but will not record activity while submission is disabled.</Alert.Description>
+                        <Alert.Description>Session heartbeats remain successful but will not record activity.</Alert.Description>
                     </Alert.Root>
                 {/if}
-            </Card.Content>
-            <Card.Footer class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                {#if settings?.is_overridden}
-                    <Button type="button" variant="outline" disabled={updateSettings.isPending} onclick={resetEventSubmission}>
-                        <RotateCcw data-icon="inline-start" />
-                        Reset to Deployment Default
-                    </Button>
-                {/if}
-                <Button type="button" disabled={updateSettings.isPending || eventSubmissionEnabled === settings?.enabled} onclick={saveEventSubmission}>
-                    {#if updateSettings.isPending}
-                        <Spinner data-icon="inline-start" />
-                        Saving...
-                    {:else}
-                        <Save data-icon="inline-start" />
-                        Save Setting
+            </Field.Content>
+
+            {#if settingsQuery.isPending}
+                <div class="flex items-center justify-end gap-2">
+                    <Spinner />
+                    <Muted>Loading...</Muted>
+                </div>
+            {:else if settingsQuery.isError}
+                <p class="text-destructive text-sm">Failed to load event submission settings.</p>
+            {:else}
+                <div class="flex flex-wrap items-center justify-end gap-2">
+                    <Switch id="event-submission-enabled" bind:checked={eventSubmissionEnabled} disabled={updateSettings.isPending} />
+                    {#if settings?.is_overridden}
+                        <Button type="button" size="sm" variant="outline" disabled={updateSettings.isPending} onclick={resetEventSubmission}>Reset</Button>
                     {/if}
-                </Button>
-            </Card.Footer>
-        {/if}
-    </Card.Root>
+                    <Button
+                        type="button"
+                        size="sm"
+                        disabled={updateSettings.isPending || eventSubmissionEnabled === settings?.enabled}
+                        onclick={saveEventSubmission}
+                    >
+                        {updateSettings.isPending ? 'Saving...' : 'Save'}
+                    </Button>
+                </div>
+            {/if}
+        </Field.Field>
+    </Field.FieldGroup>
 </div>
