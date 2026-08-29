@@ -342,7 +342,7 @@ describe('NavigationCommand guided tours', () => {
                         description: 'Learn the UI.',
                         initialCheckpoint: 'navigation',
                         keywords: ['tour'],
-                        name: 'ui-overview',
+                        name: 'app-overview',
                         startingRoute: vi.fn(() => '/next'),
                         title: 'Explore Exceptionless',
                         version: 1
@@ -353,7 +353,7 @@ describe('NavigationCommand guided tours', () => {
             });
 
             await fireEvent.click(screen.getByText('Explore Exceptionless'));
-            expect(startGuidedTour).toHaveBeenCalledWith('ui-overview');
+            expect(startGuidedTour).toHaveBeenCalledWith('app-overview');
             tourPalette.unmount();
             await vi.runAllTimersAsync();
 

@@ -38,8 +38,10 @@
     }
 
     const EVENT_PATH = resolve('/(app)/event');
+    const EXIE_ANNOUNCEMENT_VERSION = 1;
     const STACK_PATH = resolve('/(app)/stack');
     const SYSTEM_PATH = resolve('/(app)/system');
+    const WELCOME_VERSION = 1;
 
     let {
         assistantAccess,
@@ -74,11 +76,9 @@
         pathname,
         projects
     });
-    const items = $derived(getProductTourItems(context, currentUser?.product_tour_versions ?? {}, currentUser?.product_tours));
+    const items = $derived(getProductTourItems(context, currentUser?.product_tours));
     const recommended = $derived(items.find((item) => item.name === getRecommendedProductTourName(context)) ?? items[0]!);
     const checkpoint = $derived(productTourCheckpoint.current);
-    const welcomeVersion = $derived(currentUser?.product_tour_versions.welcome ?? 0);
-    const exieAnnouncementVersion = $derived(currentUser?.product_tour_versions['exie-announcement'] ?? 0);
     const welcomeOpen = $derived(
         !!(
             stateSettled &&
@@ -89,8 +89,7 @@
             !isImpersonating &&
             !isSetupPage &&
             !pathname.startsWith(SYSTEM_PATH) &&
-            welcomeVersion > 0 &&
-            shouldOfferProductTourWelcome(currentUser.product_tours?.welcome, welcomeVersion)
+            shouldOfferProductTourWelcome(currentUser.product_tours?.['app-welcome'], WELCOME_VERSION)
         )
     );
     const exieAnnouncementOpen = $derived(
@@ -105,9 +104,8 @@
             !welcomeOpen &&
             !catalogOpen &&
             !isAnyOverlayOpen &&
-            !shouldOfferProductTourWelcome(currentUser.product_tours?.welcome, welcomeVersion) &&
-            exieAnnouncementVersion > 0 &&
-            shouldOfferProductTourAnnouncement(currentUser.product_tours?.['exie-announcement'], exieAnnouncementVersion)
+            !shouldOfferProductTourWelcome(currentUser.product_tours?.['app-welcome'], WELCOME_VERSION) &&
+            shouldOfferProductTourAnnouncement(currentUser.product_tours?.['exie-announcement'], EXIE_ANNOUNCEMENT_VERSION)
         )
     );
 
@@ -132,10 +130,10 @@
             return;
         }
 
-        const impression = `${currentUser.id}:${welcomeVersion}`;
+        const impression = `${currentUser.id}:${WELCOME_VERSION}`;
         if (welcomeOpen && lastTrackedWelcomeImpression !== impression) {
             lastTrackedWelcomeImpression = impression;
-            void track('shown', 'welcome', welcomeVersion, 'automatic');
+            void track('shown', 'app-welcome', WELCOME_VERSION, 'automatic');
         }
     });
 
@@ -144,10 +142,10 @@
             return;
         }
 
-        const impression = `${currentUser.id}:${exieAnnouncementVersion}`;
+        const impression = `${currentUser.id}:${EXIE_ANNOUNCEMENT_VERSION}`;
         if (exieAnnouncementOpen && lastTrackedAnnouncementImpression !== impression) {
             lastTrackedAnnouncementImpression = impression;
-            void track('shown', 'exie-announcement', exieAnnouncementVersion, 'feature-announcement');
+            void track('shown', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
         }
     });
 
@@ -183,12 +181,12 @@
             await goto(destination);
         }
 
-        if (next.tourName === 'meet-exie' && next.checkpointName === 'open-exie') {
+        if (next.tourName === 'exie-overview' && next.checkpointName === 'open-exie') {
             setMobileNavigationOpen(false);
         }
     }
 
-    async function recordPreference(name: 'exie-announcement' | 'welcome', version: number, status: ProductTourStatus): Promise<boolean> {
+    async function recordPreference(name: 'app-welcome' | 'exie-announcement', version: number, status: ProductTourStatus): Promise<boolean> {
         try {
             await progressMutation.mutateAsync({
                 progress: {
@@ -205,44 +203,44 @@
     }
 
     async function onWelcomeStart(): Promise<void> {
-        if (!(await recordPreference('welcome', welcomeVersion, ProductTourStatus.Completed))) {
+        if (!(await recordPreference('app-welcome', WELCOME_VERSION, ProductTourStatus.Completed))) {
             return;
         }
         welcomeHandled = true;
-        await track('completed', 'welcome', welcomeVersion, 'automatic');
+        await track('completed', 'app-welcome', WELCOME_VERSION, 'automatic');
         await startTour(recommended.name, 'automatic');
     }
 
     async function onWelcomeBrowse(): Promise<void> {
-        if (!(await recordPreference('welcome', welcomeVersion, ProductTourStatus.Completed))) {
+        if (!(await recordPreference('app-welcome', WELCOME_VERSION, ProductTourStatus.Completed))) {
             return;
         }
         welcomeHandled = true;
-        await track('completed', 'welcome', welcomeVersion, 'automatic');
+        await track('completed', 'app-welcome', WELCOME_VERSION, 'automatic');
         openCatalog('catalog');
     }
 
     async function onWelcomeSkip(): Promise<void> {
-        if (!(await recordPreference('welcome', welcomeVersion, ProductTourStatus.Dismissed))) {
+        if (!(await recordPreference('app-welcome', WELCOME_VERSION, ProductTourStatus.Dismissed))) {
             return;
         }
         welcomeHandled = true;
-        await track('dismissed', 'welcome', welcomeVersion, 'automatic');
+        await track('dismissed', 'app-welcome', WELCOME_VERSION, 'automatic');
     }
 
     async function onExieAnnouncementStart(): Promise<void> {
-        if (!(await recordPreference('exie-announcement', exieAnnouncementVersion, ProductTourStatus.Completed))) {
+        if (!(await recordPreference('exie-announcement', EXIE_ANNOUNCEMENT_VERSION, ProductTourStatus.Completed))) {
             return;
         }
-        await track('completed', 'exie-announcement', exieAnnouncementVersion, 'feature-announcement');
-        await startTour('meet-exie', 'feature-announcement');
+        await track('completed', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
+        await startTour('exie-overview', 'feature-announcement');
     }
 
     async function onExieAnnouncementDismiss(): Promise<void> {
-        if (!(await recordPreference('exie-announcement', exieAnnouncementVersion, ProductTourStatus.Dismissed))) {
+        if (!(await recordPreference('exie-announcement', EXIE_ANNOUNCEMENT_VERSION, ProductTourStatus.Dismissed))) {
             return;
         }
-        await track('dismissed', 'exie-announcement', exieAnnouncementVersion, 'feature-announcement');
+        await track('dismissed', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
     }
 
     function getItem<Name extends ProductTourName>(name: Name): ProductTourListItem<Name> {
@@ -263,7 +261,7 @@
 
 <ProductTourCatalogDialog bind:open={catalogOpen} {items} onStart={(name) => startTour(name, catalogSource)} />
 
-{#if checkpoint && (checkpoint.tourName === 'meet-exie' || checkpoint.tourName === 'ui-overview')}
+{#if checkpoint && (checkpoint.tourName === 'exie-overview' || checkpoint.tourName === 'app-overview')}
     {#key checkpoint}
         <ProductTourShellSpotlight {assistantAccess} {checkpoint} {isAnyOverlayOpen} {openAssistant} {setMobileNavigationOpen} />
     {/key}

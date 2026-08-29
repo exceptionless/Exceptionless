@@ -19,7 +19,7 @@
 
     let { closeMenu, onLoadView, openMenu, openSaveDialog, savedViews }: Props = $props();
     const actions = createProductTourActions();
-    const checkpoint = $derived(productTourCheckpoint.current?.tourName === 'create-saved-view' ? productTourCheckpoint.current : undefined);
+    const checkpoint = $derived(productTourCheckpoint.current?.tourName === 'saved-view-create' ? productTourCheckpoint.current : undefined);
     const pendingView = $derived.by(() => {
         const phase = checkpoint?.phase;
         return phase?.type === 'saved-view-created' || phase?.type === 'saved-view-loaded'
@@ -93,7 +93,7 @@
         }
     }
 
-    async function loadAndComplete(active: ProductTourCheckpoint<'create-saved-view'>, view: SavedView): Promise<void> {
+    async function loadAndComplete(active: ProductTourCheckpoint<'saved-view-create'>, view: SavedView): Promise<void> {
         try {
             await onLoadView(view);
             const loadedCheckpoint = productTourCheckpoint.advance(active, 'view-created', {

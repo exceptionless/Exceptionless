@@ -9,7 +9,7 @@ const checkpoint: ProductTourCheckpoint = {
     organizationId: 'organization-id',
     phase: { type: 'active' },
     source: 'catalog',
-    tourName: 'ui-overview',
+    tourName: 'app-overview',
     userId: 'user-id',
     version: 1
 };

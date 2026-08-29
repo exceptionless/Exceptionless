@@ -6,7 +6,6 @@ import type {
     AdminAssistantSettings,
     AdminAssistantUsage,
     AdminEventSubmissionSettings,
-    AdminProductTourUsage,
     AdminStats,
     ElasticsearchInfo,
     ElasticsearchSnapshotsResponse,
@@ -14,6 +13,7 @@ import type {
     OAuthApplication,
     OAuthApplicationRequest,
     PredefinedSavedViewDefinition,
+    ProductTourUsageResponse,
     UpdateAssistantEnabledSettingsRequest,
     UpdateAssistantSettingsRequest,
     UpdateEventSubmissionSettingsRequest
@@ -113,10 +113,10 @@ export function getAdminAssistantUsageQuery(month: () => string) {
 }
 
 export function getAdminProductTourUsageQuery(month: () => string) {
-    return createQuery<AdminProductTourUsage, ProblemDetails>(() => ({
+    return createQuery<ProductTourUsageResponse, ProblemDetails>(() => ({
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
-            const response = await client.getJSON<AdminProductTourUsage>('admin/product-tour-usage', {
+            const response = await client.getJSON<ProductTourUsageResponse>('admin/product-tour-usage', {
                 params: {
                     limit: 100,
                     month: `${month()}-01`

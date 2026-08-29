@@ -70,7 +70,7 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.True(paths.TryGetProperty("/api/v2/admin/product-tour-usage", out var productTourUsagePath));
         Assert.True(productTourUsagePath.TryGetProperty("get", out var productTourUsageGet));
         AssertResponseCodes(productTourUsageGet, "200", "400", "401", "403");
-        AssertResponseSchema(productTourUsageGet, "200", "AdminProductTourUsageResponse");
+        AssertResponseSchema(productTourUsageGet, "200", "ProductTourUsageResponse");
 
         Assert.True(paths.TryGetProperty("/api/v2/assistant/chat", out var assistantChatPath));
         Assert.True(assistantChatPath.TryGetProperty("post", out var assistantChatPost));
@@ -113,9 +113,9 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.True(schemas.TryGetProperty("TokenResult", out _));
         Assert.True(schemas.TryGetProperty("ProductTourProgress", out _));
         Assert.True(schemas.TryGetProperty("UpdateProductTourProgress", out _));
-        Assert.True(schemas.TryGetProperty("AdminProductTourActivity", out _));
-        Assert.True(schemas.TryGetProperty("AdminProductTourSummary", out _));
-        Assert.True(schemas.TryGetProperty("AdminProductTourUsageResponse", out _));
+        Assert.True(schemas.TryGetProperty("ProductTourEvent", out _));
+        Assert.True(schemas.TryGetProperty("ProductTourSummary", out _));
+        Assert.True(schemas.TryGetProperty("ProductTourUsageResponse", out _));
         Assert.True(schemas.TryGetProperty("ViewOrganization", out _));
 
         var savedViewColumnProperties = savedViewColumnSettings.GetProperty("properties");

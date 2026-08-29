@@ -309,7 +309,7 @@ export class E2EApiClient {
         await expectStatus(response, [202], 'submit event');
     }
 
-    async updateProductTour(token: string, tourName: string, version: number, status: 'completed' | 'dismissed'): Promise<void> {
+    async updateProductTour(token: string, tourName: string, version: number, status: 1 | 2): Promise<void> {
         const response = await this.request.put(this.url(`users/me/product-tours/${tourName}`), {
             data: { status, version },
             headers: this.authHeaders(token)

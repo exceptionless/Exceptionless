@@ -41,7 +41,7 @@
             <Button onclick={onDismiss} variant="ghost">Skip</Button>
             <div class="flex flex-col-reverse gap-2 sm:flex-row">
                 <Button onclick={onBrowse} variant="outline">Browse Guides</Button>
-                <Button onclick={onStart}>{recommended.name === 'configure-project' ? 'Continue setup' : 'Explore Exceptionless'}</Button>
+                <Button onclick={onStart}>{recommended.name === 'project-configure' ? 'Continue setup' : 'Explore Exceptionless'}</Button>
             </div>
         </Dialog.Footer>
     </Dialog.Content>

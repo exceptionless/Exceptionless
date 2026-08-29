@@ -2,23 +2,22 @@ using Exceptionless.Core.Models.Data;
 
 namespace Exceptionless.Web.Models.Admin;
 
-public sealed record AdminProductTourUsageResponse(
+public sealed record ProductTourUsageResponse(
     DateTime Month,
-    IReadOnlyCollection<AdminProductTourSummary> Tours,
-    IReadOnlyCollection<AdminProductTourActivity> RecentActivity);
+    IReadOnlyCollection<ProductTourSummary> Tours,
+    IReadOnlyCollection<ProductTourEvent> RecentEvents);
 
-public sealed record AdminProductTourSummary(
+public sealed record ProductTourSummary(
     string Name,
     long Shown,
     long Started,
     long Completed,
     long Dismissed,
-    long UniqueUsers,
     DateTime? LastRunUtc,
     decimal? CompletionRate,
     decimal? DismissalRate);
 
-public sealed record AdminProductTourActivity(
+public sealed record ProductTourEvent(
     DateTime DateUtc,
     ProductTourTelemetryEvent Event,
     ProductTourLaunchSource LaunchSource,

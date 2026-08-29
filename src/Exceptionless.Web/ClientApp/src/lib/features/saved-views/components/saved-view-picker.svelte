@@ -15,7 +15,7 @@
     import { serializeFilters } from '$features/events/components/filters/helpers.svelte';
     import { getOrganizationQuery, getOrganizationsQuery } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
-    import CreateSavedViewTour from '$features/product-tours/components/create-saved-view-tour.svelte';
+    import SavedViewCreateTour from '$features/product-tours/components/saved-view-create-tour.svelte';
     import { supportsColumnWrapping } from '$features/shared/components/data-table/column-meta';
     import { getMeQuery } from '$features/users/api.svelte';
     import Building2 from '@lucide/svelte/icons/building-2';
@@ -121,7 +121,7 @@
     let isColumnDialogOpen = $state(false);
     let isMenuOpen = $state(false);
     let viewToDelete = $state<null | SavedView>(null);
-    let createSavedViewTour = $state<CreateSavedViewTour>();
+    let savedViewCreateTour = $state<SavedViewCreateTour>();
 
     const organizationId = $derived(organization.current);
     const activeView = $derived(activeSavedView);
@@ -261,7 +261,7 @@
             return;
         }
 
-        const tour = createSavedViewTour;
+        const tour = savedViewCreateTour;
         if (tour && !tour.validateSave(isPrivate)) {
             return;
         }
@@ -502,18 +502,18 @@
 {#if isSaveDialogOpen}
     <SaveViewDialog
         bind:open={isSaveDialogOpen}
-        defaultPrivate={createSavedViewTour?.shouldDefaultPrivate()}
+        defaultPrivate={savedViewCreateTour?.shouldDefaultPrivate()}
         {duplicateView}
         {savedViews}
         {saving}
         onSave={handleSave}
-        onClose={() => createSavedViewTour?.closed()}
+        onClose={() => savedViewCreateTour?.closed()}
         {onLoadView}
     />
 {/if}
 
-<CreateSavedViewTour
-    bind:this={createSavedViewTour}
+<SavedViewCreateTour
+    bind:this={savedViewCreateTour}
     closeMenu={() => (isMenuOpen = false)}
     openMenu={() => (isMenuOpen = true)}
     openSaveDialog={() => (isSaveDialogOpen = true)}

@@ -28,7 +28,7 @@
     const currentAssistantAccess = untrack(() => assistantAccess);
     const currentCheckpoint = untrack(() => checkpoint);
     const actions = createProductTourActions();
-    const meetExieSteps: ShellStep[] = [
+    const exieOverviewSteps: ShellStep[] = [
         {
             checkpointName: 'open-exie',
             description: 'Open Exie to see the page context available for your next question.',
@@ -42,7 +42,7 @@
             title: 'You control every request'
         }
     ];
-    const uiOverviewSteps: ShellStep[] = [
+    const appOverviewSteps: ShellStep[] = [
         {
             checkpointName: 'navigation',
             description: 'Move between dashboards, saved views, and settings from the application navigation.',
@@ -78,7 +78,7 @@
             title: 'Help is always nearby'
         }
     ];
-    const steps = currentCheckpoint.tourName === 'ui-overview' ? uiOverviewSteps : meetExieSteps;
+    const steps = currentCheckpoint.tourName === 'app-overview' ? appOverviewSteps : exieOverviewSteps;
     const spotlight = steps.find((step) => step.checkpointName === currentCheckpoint.checkpointName);
 
     onMount(() => {
@@ -90,7 +90,7 @@
     });
 
     async function advance(): Promise<void> {
-        if (currentCheckpoint.tourName === 'meet-exie' && currentCheckpoint.checkpointName === 'open-exie') {
+        if (currentCheckpoint.tourName === 'exie-overview' && currentCheckpoint.checkpointName === 'open-exie') {
             await openAssistant();
             productTourCheckpoint.advance(currentCheckpoint, 'exie-context');
             return;
@@ -107,7 +107,7 @@
     }
 </script>
 
-{#if spotlight && (!isAnyOverlayOpen || checkpoint.tourName === 'meet-exie')}
+{#if spotlight && (!isAnyOverlayOpen || checkpoint.tourName === 'exie-overview')}
     <ProductTourSpotlight
         checkpoint={currentCheckpoint}
         description={spotlight.description}

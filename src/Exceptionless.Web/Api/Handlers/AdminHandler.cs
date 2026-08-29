@@ -146,23 +146,23 @@ public class AdminHandler(
         int limit = Math.Clamp(message.Limit, 1, 500);
 
         var usage = await eventRepository.GetProductTourUsageAsync(appOptions.InternalProjectId, month, nextMonth, limit);
-        var tours = usage.Tours
-            .Select(tour =>
+        var tours = usage.Buckets
+            .GroupBy(bucket => bucket.Source.TourName, StringComparer.Ordinal)
+            .Select(buckets =>
             {
-                long shown = SumEvent(tour.Buckets, ProductTourTelemetryEvent.Shown);
-                long started = SumEvent(tour.Buckets, ProductTourTelemetryEvent.Started);
-                long completed = SumEvent(tour.Buckets, ProductTourTelemetryEvent.Completed);
-                long dismissed = SumEvent(tour.Buckets, ProductTourTelemetryEvent.Dismissed);
+                long shown = SumEvent(buckets, ProductTourTelemetryEvent.Shown);
+                long started = SumEvent(buckets, ProductTourTelemetryEvent.Started);
+                long completed = SumEvent(buckets, ProductTourTelemetryEvent.Completed);
+                long dismissed = SumEvent(buckets, ProductTourTelemetryEvent.Dismissed);
                 long decisionDenominator = started > 0 ? started : shown;
-                DateTime? lastRunUtc = tour.Buckets.Select(bucket => bucket.LastUtc).Max();
+                DateTime? lastRunUtc = buckets.Select(bucket => bucket.LastUtc).Max();
 
-                return new AdminProductTourSummary(
-                    tour.Name,
+                return new ProductTourSummary(
+                    buckets.Key,
                     shown,
                     started,
                     completed,
                     dismissed,
-                    tour.UniqueUsers,
                     lastRunUtc,
                     CalculateRate(completed, decisionDenominator),
                     CalculateRate(dismissed, decisionDenominator));
@@ -171,15 +171,15 @@ public class AdminHandler(
             .ThenBy(tour => tour.Name, StringComparer.Ordinal)
             .ToArray();
 
-        var recentActivity = usage.RecentEvents
-            .Select(item => CreateActivity(item.Event, item.Source))
+        var recentEvents = usage.RecentEvents
+            .Select(item => CreateRecentEvent(item.Event, item.Source))
             .Take(limit)
             .ToArray();
 
-        return new AdminProductTourUsageResponse(
+        return new ProductTourUsageResponse(
             month,
             tours,
-            recentActivity);
+            recentEvents);
     }
 
     [HandlerEndpoint(HandlerMethod.Get, "migrations", Group = "Admin")]
@@ -220,10 +220,10 @@ public class AdminHandler(
         });
     }
 
-    private AdminProductTourActivity CreateActivity(PersistentEvent ev, ProductTourUsageSource source)
+    private ProductTourEvent CreateRecentEvent(PersistentEvent ev, ProductTourUsageSource source)
     {
         var user = ev.GetUserIdentity(serializer, _logger);
-        return new AdminProductTourActivity(
+        return new ProductTourEvent(
             ev.Date.UtcDateTime,
             source.Event,
             source.LaunchSource,

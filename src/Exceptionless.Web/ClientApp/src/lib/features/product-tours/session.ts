@@ -1,11 +1,9 @@
-import { ProductTourLaunchSource as ProductTourLaunchSourceContract } from '$generated/api';
-
 import type { ProductTourCheckpoint, ProductTourLaunchSource, ProductTourName, ProductTourPhase } from './types';
 
-import { PRODUCT_TOUR_CHECKPOINTS } from './types';
+import { PRODUCT_TOUR_CHECKPOINTS, PRODUCT_TOUR_LAUNCH_SOURCES } from './types';
 
 const SESSION_KEY = 'exceptionless.product-tour';
-const SOURCES = new Set<string>(Object.values(ProductTourLaunchSourceContract));
+const SOURCES = new Set<string>(PRODUCT_TOUR_LAUNCH_SOURCES);
 
 export function clearProductTourSession(storage: Pick<Storage, 'removeItem'> = sessionStorage): void {
     storage.removeItem(SESSION_KEY);
@@ -37,7 +35,7 @@ function isPhase(value: unknown, tourName: string, checkpointName: unknown): val
     if (!isRecord(value) || typeof value.type !== 'string') return false;
     if (value.type === 'active') return true;
     return (
-        tourName === 'create-saved-view' &&
+        tourName === 'saved-view-create' &&
         checkpointName === 'view-created' &&
         (value.type === 'saved-view-created' || value.type === 'saved-view-loaded') &&
         typeof value.viewId === 'string' &&

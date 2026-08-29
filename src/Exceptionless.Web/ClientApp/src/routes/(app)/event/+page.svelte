@@ -80,7 +80,7 @@
         serializeTimeQueryParam
     } from '../redirect-to-events.svelte';
     let selectedEventId: null | string = $state(null);
-    const investigationCheckpoint = $derived(productTourCheckpoint.current?.tourName === 'investigate-error' ? productTourCheckpoint.current : undefined);
+    const investigationCheckpoint = $derived(productTourCheckpoint.current?.tourName === 'event-investigate' ? productTourCheckpoint.current : undefined);
 
     function handleEventError(problem: ProblemDetails) {
         showBillingDialogOnUpgradeProblem(problem, organization.current);
