@@ -2,7 +2,7 @@ import { createReferenceId, expect, test } from '../fixtures/e2e-test';
 import { getVisibleRow, getVisibleText } from '../support/page-helpers';
 import { createRepresentativeEvent, createSessionEvent } from '../support/synthetic-event';
 
-test('operator can find and inspect a user session', async ({ e2eApi, e2eScenario, page }) => {
+test('operator can find and inspect a user session', async ({ e2eApi, e2eScenario, page, request }) => {
     const sessionId = createReferenceId(e2eScenario.run, '-session');
     const eventReferenceId = createReferenceId(e2eScenario.run, '-session-error');
     const identity = `session-${e2eScenario.run}@exceptionless.test`;
@@ -12,6 +12,21 @@ test('operator can find and inspect a user session', async ({ e2eApi, e2eScenari
     let relatedStackId = '';
 
     await test.step('seed a representative session', async () => {
+        const savedViewResponse = await request.post(`/api/v2/organizations/${e2eScenario.organizationId}/saved-views`, {
+            data: {
+                columns: {
+                    date: { position: 1, visible: true },
+                    summary: { position: 0, visible: true, wrap: true }
+                },
+                name: 'All',
+                organization_id: e2eScenario.organizationId,
+                slug: 'all',
+                view_type: 'events'
+            },
+            headers: { Authorization: `Bearer ${e2eScenario.userToken}` }
+        });
+        expect(savedViewResponse.status(), await savedViewResponse.text()).toBe(201);
+
         await e2eApi.submitEvent(e2eScenario.projectId, e2eScenario.projectToken, createSessionEvent({ identity, name, sessionId }));
         await e2eApi.pollForEventByReference(e2eScenario.userToken, e2eScenario.projectId, sessionId);
 
@@ -68,7 +83,7 @@ test('operator can find and inspect a user session', async ({ e2eApi, e2eScenari
         const sessionEventsTable = summaryHeader.locator('xpath=ancestor::div[@data-slot="table-container"]');
         await expect(sessionEventsTable.getByRole('columnheader')).toHaveText(['Summary', 'User', 'Session Time']);
         await expect(sessionEventsTable.getByTitle(`${name} (${identity})`).first()).toBeVisible();
-        await expect.poll(() => sessionEventsTable.evaluate((element) => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(1);
+        await expect.poll(() => sessionEventsTable.evaluate((element) => element.scrollWidth - element.offsetWidth)).toBeLessThanOrEqual(1);
 
         const eventsLink = page.getByRole('link', { name: 'Open events filtered to this session' });
         await expect(eventsLink).toHaveAttribute('href', /\/next\/event\/all\?/);
