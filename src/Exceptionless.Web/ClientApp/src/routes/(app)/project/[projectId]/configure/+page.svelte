@@ -444,7 +444,8 @@ public partial class App : Application {
     });
 
     async function refreshConfiguredProject(): Promise<void> {
-        if (!queryParams.redirect) {
+        const checkpoint = configureCheckpoint;
+        if (!queryParams.redirect || !checkpoint) {
             return;
         }
 
@@ -453,7 +454,7 @@ public partial class App : Application {
             return;
         }
 
-        if (configureCheckpoint && !(await tourActions.complete(configureCheckpoint))) {
+        if (!(await tourActions.complete(checkpoint))) {
             return;
         }
 

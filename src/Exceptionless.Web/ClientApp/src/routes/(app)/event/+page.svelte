@@ -79,8 +79,6 @@
         redirectToEventsWithFilter,
         serializeTimeQueryParam
     } from '../redirect-to-events.svelte';
-    import { getEventQueryFilters } from './query-filters';
-
     let selectedEventId: null | string = $state(null);
     const investigationCheckpoint = $derived(productTourCheckpoint.current?.tourName === 'investigate-error' ? productTourCheckpoint.current : undefined);
 
@@ -146,6 +144,77 @@
     function getEffectiveFilter(): null | string {
         const filter = toFilter(getCurrentFiltersWithoutTime());
         return filter || null;
+    }
+
+    function getQueryFilters(params: ListFilterQueryParams = queryParams): FacetedFilter.IFilter[] | null {
+        const filters: FacetedFilter.IFilter[] = [];
+
+        if (params.project) {
+            filters.push(new ProjectFilter(splitQueryParam(params.project)));
+        }
+
+        if (params.stack) {
+            filters.push(new StringFilter('stack', params.stack));
+        }
+
+        const bot = parseBooleanQueryParam(params.bot);
+        if (bot !== undefined) {
+            filters.push(new BooleanFilter('bot', bot));
+        }
+
+        const first = parseBooleanQueryParam(params.first);
+        if (first !== undefined) {
+            filters.push(new BooleanFilter('first', first));
+        }
+
+        if (params.level) {
+            filters.push(new LevelFilter(splitQueryParam(params.level) as never[]));
+        }
+
+        if (params.reference) {
+            filters.push(new ReferenceFilter(params.reference));
+        }
+
+        if (params.session) {
+            filters.push(new SessionFilter(params.session));
+        }
+
+        if (params.status) {
+            filters.push(new StatusFilter(splitQueryParam(params.status) as never[]));
+        }
+
+        if (params.tag) {
+            filters.push(new TagFilter(splitQueryParam(params.tag) as never[]));
+        }
+
+        if (params.type) {
+            filters.push(new TypeFilter(splitQueryParam(params.type) as never[]));
+        }
+
+        if (params.version) {
+            filters.push(new VersionFilter('version', params.version));
+        }
+
+        return filters.length > 0 ? filters : null;
+    }
+
+    function parseBooleanQueryParam(value: null | string | undefined): boolean | undefined {
+        if (value === 'true') {
+            return true;
+        }
+
+        if (value === 'false') {
+            return false;
+        }
+
+        return undefined;
+    }
+
+    function splitQueryParam(value: string): string[] {
+        return value
+            .split(',')
+            .map((item) => item.trim())
+            .filter((item) => item);
     }
 
     function getEffectiveSort(): null | string | undefined {
@@ -268,7 +337,7 @@
 
     function getCurrentFiltersWithoutTime(params: ListFilterQueryParams = queryParams): FacetedFilter.IFilter[] {
         const savedViewFilters = getSavedViewFilters();
-        const queryFilters = getEventQueryFilters(params) ?? [];
+        const queryFilters = getQueryFilters(params) ?? [];
         const expressionFilters =
             params.filter != null ? getFiltersFromCache(filterCacheKey(params.filter), params.filter).filter((filter) => filter.type !== 'date') : [];
 
