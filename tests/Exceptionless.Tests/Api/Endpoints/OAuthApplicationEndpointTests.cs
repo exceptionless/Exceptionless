@@ -93,6 +93,9 @@ public sealed class OAuthApplicationEndpointTests : IntegrationTestsBase
 
         Assert.NotNull(applications);
         Assert.Equal(21, applications.Count);
+        Assert.Equal(
+            Enumerable.Range(0, 21).Select(index => $"Legacy Default {index:D2}"),
+            applications.Select(application => application.Name));
     }
 
     [Fact]
@@ -147,7 +150,7 @@ public sealed class OAuthApplicationEndpointTests : IntegrationTestsBase
     [Fact]
     public async Task GetAllAsync_WithOrganizationFilter_ResolvesMatchesBeyondFirstPage()
     {
-        var organizations = Enumerable.Range(0, Pagination.MaximumLimit + 1)
+        var organizations = Enumerable.Range(0, Pagination.MaximumLimit * 11)
             .Select(index => new Organization
             {
                 Name = $"OAuth Filter Organization {index:D3}",
@@ -197,6 +200,10 @@ public sealed class OAuthApplicationEndpointTests : IntegrationTestsBase
     {
         var created = await CreateApplicationAsync(CreateModel("chatgpt-dev", "ChatGPT Dev"));
         Assert.NotNull(created);
+        var persistedApplication = await _repository.GetByIdAsync(created.Id);
+        Assert.NotNull(persistedApplication);
+        persistedApplication.OrganizationIds.Add(SampleDataService.TEST_ORG_ID);
+        await _repository.SaveAsync(persistedApplication, options => options.ImmediateConsistency());
 
         var updated = await SendRequestAsAsync<ViewOAuthApplication>(r => r
             .Put()
@@ -219,6 +226,9 @@ public sealed class OAuthApplicationEndpointTests : IntegrationTestsBase
         Assert.Equal("ChatGPT Production", updated.Name);
         Assert.Equal(["mcp:read", "projects:read"], updated.Scopes);
         Assert.True(updated.IsDisabled);
+        var organization = Assert.Single(updated.Organizations);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, organization.Id);
+        Assert.Equal("Acme", organization.Name);
 
         var application = await _repository.GetByIdAsync(created.Id);
         Assert.NotNull(application);

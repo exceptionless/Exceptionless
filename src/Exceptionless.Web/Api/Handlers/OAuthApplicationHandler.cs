@@ -109,7 +109,7 @@ public class OAuthApplicationHandler(
 
         await oauthService.ClearAccessTokenClientValidityCacheAsync(previousClientId);
         await oauthService.ClearAccessTokenClientValidityCacheAsync(application.ClientId);
-        return ViewOAuthApplication.FromApplication(application);
+        return (await MapApplicationsAsync([application])).Single();
     }
 
     public async Task<Result> Handle(DeleteOAuthApplicationMessage message)

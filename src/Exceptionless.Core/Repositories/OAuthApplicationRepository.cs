@@ -64,15 +64,9 @@ public class OAuthApplicationRepository : RepositoryBase<OAuthApplication>, IOAu
         }
 
         if (organizationIds is { Count: > 0 })
-        {
-            query.FieldOr(group =>
-            {
-                foreach (string organizationId in organizationIds)
-                    group.FieldEquals(application => application.OrganizationIds, organizationId);
-            });
-        }
+            query.FieldEquals(application => application.OrganizationIds, organizationIds);
 
-        query.SortDescending(application => application.UpdatedUtc).SortAscending(application => application.Name);
+        query.SortAscending(application => application.Name);
         return FindAsync(q => query, options);
     }
 }
