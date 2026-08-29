@@ -18,10 +18,11 @@ public static class OAuthApplicationEndpoints
             .AddEndpointFilter<AutoValidationEndpointFilter>()
             .ExcludeFromDescription();
 
-        endpoints.MapGet("api/v2/admin/oauth-applications", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
-            => (await mediator.InvokeAsync<Result<IReadOnlyCollection<ViewOAuthApplication>>>(new GetOAuthApplications())).ToHttpResult(resultMapper))
+        endpoints.MapGet("api/v2/admin/oauth-applications", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? criteria = null, string? organization = null, int page = 1, int limit = 20)
+            => (await mediator.InvokeAsync<Result<PagedResult<ViewOAuthApplication>>>(new GetOAuthApplications(criteria, organization, page, limit))).ToHttpResult(resultMapper))
             .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
             .AddEndpointFilter<AutoValidationEndpointFilter>()
+            .Produces<IReadOnlyCollection<ViewOAuthApplication>>()
             .ExcludeFromDescription();
 
         endpoints.MapPost("api/v2/admin/oauth-applications", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] NewOAuthApplication model)
@@ -31,6 +32,11 @@ public static class OAuthApplicationEndpoints
             .ExcludeFromDescription()
             .Produces<ViewOAuthApplication>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+
+        group.MapGet("{id:objectid}", async (string id, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
+            => (await mediator.InvokeAsync<Result<ViewOAuthApplication>>(new GetOAuthApplication(id))).ToHttpResult(resultMapper))
+            .Produces<ViewOAuthApplication>()
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPut("{id:objectid}", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] UpdateOAuthApplication model)
             => (await mediator.InvokeAsync<Result<ViewOAuthApplication>>(new UpdateOAuthApplicationMessage(id, model, httpContext))).ToHttpResult(resultMapper))

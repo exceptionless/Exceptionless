@@ -3,6 +3,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models.Admin;
+using Foundatio.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;
 
@@ -44,6 +45,7 @@ public sealed class OAuthApplicationEndpointTests : IntegrationTestsBase
         Assert.Equal(["mcp:read", "events:read"], created.Scopes);
         Assert.Equal("Dev OAuth app", created.Notes);
         Assert.False(created.IsDisabled);
+        Assert.Empty(created.Organizations);
         Assert.True(created.CreatedUtc > DateTime.MinValue);
         Assert.True(created.UpdatedUtc > DateTime.MinValue);
 
@@ -68,6 +70,71 @@ public sealed class OAuthApplicationEndpointTests : IntegrationTestsBase
         Assert.NotNull(applications);
         Assert.Contains(applications, a => a.Id == first.Id);
         Assert.Contains(applications, a => a.Id == second.Id);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WithPagingAndFilters_ReturnsMatchingOrganizationDetails()
+    {
+        var first = await CreateApplicationAsync(CreateModel("paged-oauth-alpha", "Paged OAuth Alpha"));
+        var second = await CreateApplicationAsync(CreateModel("paged-oauth-beta", "Paged OAuth Beta"));
+        Assert.NotNull(first);
+        Assert.NotNull(second);
+
+        var firstApplication = await _repository.GetByIdAsync(first.Id);
+        Assert.NotNull(firstApplication);
+        firstApplication.OrganizationIds.Add(SampleDataService.TEST_ORG_ID);
+        await _repository.SaveAsync(firstApplication, options => options.ImmediateConsistency());
+
+        var firstPage = await SendRequestAsAsync<IReadOnlyCollection<ViewOAuthApplication>>(request => request
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "oauth-applications")
+            .QueryString("criteria", "Paged OAuth")
+            .QueryString("page", 1)
+            .QueryString("limit", 1)
+            .StatusCodeShouldBeOk());
+        var secondPage = await SendRequestAsAsync<IReadOnlyCollection<ViewOAuthApplication>>(request => request
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "oauth-applications")
+            .QueryString("criteria", "Paged OAuth")
+            .QueryString("page", 2)
+            .QueryString("limit", 1)
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(firstPage);
+        Assert.NotNull(secondPage);
+        Assert.Single(firstPage);
+        Assert.Single(secondPage);
+        Assert.NotEqual(firstPage.Single().Id, secondPage.Single().Id);
+
+        var organizationMatches = await SendRequestAsAsync<IReadOnlyCollection<ViewOAuthApplication>>(request => request
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "oauth-applications")
+            .QueryString("organization", "Acme")
+            .QueryString("criteria", "paged-oauth")
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(organizationMatches);
+        var match = Assert.Single(organizationMatches);
+        Assert.Equal(first.Id, match.Id);
+        var organization = Assert.Single(match.Organizations);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, organization.Id);
+        Assert.Equal("Acme", organization.Name);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_AsGlobalAdmin_ReturnsOAuthApplication()
+    {
+        var created = await CreateApplicationAsync(CreateModel("oauth-by-id", "OAuth By Id"));
+        Assert.NotNull(created);
+
+        var application = await SendRequestAsAsync<ViewOAuthApplication>(request => request
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "oauth-applications", created.Id)
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(application);
+        Assert.Equal(created.Id, application.Id);
+        Assert.Equal(created.ClientId, application.ClientId);
     }
 
     [Fact]

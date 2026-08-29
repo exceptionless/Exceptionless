@@ -146,10 +146,16 @@ export type OAuthApplication = {
     is_disabled: boolean;
     name: string;
     notes?: null | string;
+    organizations: OAuthApplicationOrganization[];
     redirect_uris: string[];
     scopes: string[];
     updated_by_user_id?: null | string;
     updated_utc: string;
+};
+
+export type OAuthApplicationOrganization = {
+    id: string;
+    name: string;
 };
 
 export type OAuthApplicationRequest = {

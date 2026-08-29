@@ -9,6 +9,7 @@ public record ViewOAuthApplication
     public required string Name { get; init; }
     public required string[] RedirectUris { get; init; }
     public required string[] Scopes { get; init; }
+    public required IReadOnlyCollection<ViewOAuthApplicationOrganization> Organizations { get; init; }
     public string? Notes { get; init; }
     public bool IsDisabled { get; init; }
     public required string CreatedByUserId { get; init; }
@@ -16,7 +17,7 @@ public record ViewOAuthApplication
     public DateTime CreatedUtc { get; init; }
     public DateTime UpdatedUtc { get; init; }
 
-    public static ViewOAuthApplication FromApplication(OAuthApplication application)
+    public static ViewOAuthApplication FromApplication(OAuthApplication application, IReadOnlyDictionary<string, string>? organizationNames = null)
     {
         return new ViewOAuthApplication
         {
@@ -25,6 +26,10 @@ public record ViewOAuthApplication
             Name = application.Name,
             RedirectUris = application.RedirectUris,
             Scopes = application.Scopes,
+            Organizations = application.OrganizationIds
+                .Select(id => new ViewOAuthApplicationOrganization(id, organizationNames?.GetValueOrDefault(id) ?? id))
+                .OrderBy(organization => organization.Name)
+                .ToArray(),
             Notes = application.Notes,
             IsDisabled = application.IsDisabled,
             CreatedByUserId = application.CreatedByUserId,
@@ -34,3 +39,5 @@ public record ViewOAuthApplication
         };
     }
 }
+
+public sealed record ViewOAuthApplicationOrganization(string Id, string Name);
