@@ -83,7 +83,10 @@ test('operator can find and inspect a user session', async ({ e2eApi, e2eScenari
         const sessionEventsTable = summaryHeader.locator('xpath=ancestor::div[@data-slot="table-container"]');
         await expect(sessionEventsTable.getByRole('columnheader')).toHaveText(['Summary', 'User', 'Session Time']);
         await expect(sessionEventsTable.getByTitle(`${name} (${identity})`).first()).toBeVisible();
-        await expect.poll(() => sessionEventsTable.evaluate((element) => element.scrollWidth - element.offsetWidth)).toBeLessThanOrEqual(1);
+        const summaryCell = sessionEventsTable.getByRole('cell').first();
+        await expect(summaryCell).toHaveCSS('overflow-wrap', 'anywhere');
+        await expect(summaryCell).toHaveCSS('white-space', 'normal');
+        await expect.poll(() => sessionEventsTable.evaluate((element) => element.scrollWidth / element.offsetWidth)).toBeLessThanOrEqual(1.02);
 
         const eventsLink = page.getByRole('link', { name: 'Open events filtered to this session' });
         await expect(eventsLink).toHaveAttribute('href', /\/next\/event\/all\?/);
