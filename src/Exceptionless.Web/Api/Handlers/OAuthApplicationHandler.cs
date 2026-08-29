@@ -4,6 +4,8 @@ using Exceptionless.Core.Services;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Validation;
 using Exceptionless.Web.Api.Messages;
+using Exceptionless.Web.Api.Infrastructure;
+using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models.Admin;
 using Foundatio.Mediator;
@@ -14,13 +16,30 @@ namespace Exceptionless.Web.Api.Handlers;
 
 public class OAuthApplicationHandler(
     IOAuthApplicationRepository repository,
+    IOrganizationRepository organizationRepository,
     OAuthService oauthService,
     TimeProvider timeProvider)
 {
-    public async Task<Result<IReadOnlyCollection<ViewOAuthApplication>>> Handle(GetOAuthApplications message)
+    public async Task<Result<PagedResult<ViewOAuthApplication>>> Handle(GetOAuthApplications message)
     {
-        var results = await repository.FindAsync(q => q.SortAscending(a => a.Name), o => o.PageLimit(100));
-        return results.Documents.Select(ViewOAuthApplication.FromApplication).ToArray();
+        int page = Pagination.GetPage(message.Page);
+        int limit = Pagination.GetLimit(message.Limit);
+        var organizationIds = await ResolveOrganizationIdsAsync(message.Organization, message.Context.RequestAborted);
+        if (!String.IsNullOrWhiteSpace(message.Organization) && organizationIds.Count == 0)
+            return new PagedResult<ViewOAuthApplication>([], false, page, 0);
+
+        var results = await repository.GetByCriteriaAsync(message.Criteria, organizationIds, o => o.PageNumber(page).PageLimit(limit));
+        var applications = await MapApplicationsAsync(results.Documents);
+        return new PagedResult<ViewOAuthApplication>(applications, results.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, results.Total);
+    }
+
+    public async Task<Result<ViewOAuthApplication>> Handle(GetOAuthApplication message)
+    {
+        var application = await repository.GetByIdAsync(message.Id);
+        if (application is null)
+            return Result.NotFound("OAuth application not found.");
+
+        return (await MapApplicationsAsync([application])).Single();
     }
 
     public async Task<Result<ViewOAuthApplication>> Handle(CreateOAuthApplicationMessage message)
@@ -90,7 +109,7 @@ public class OAuthApplicationHandler(
 
         await oauthService.ClearAccessTokenClientValidityCacheAsync(previousClientId);
         await oauthService.ClearAccessTokenClientValidityCacheAsync(application.ClientId);
-        return ViewOAuthApplication.FromApplication(application);
+        return (await MapApplicationsAsync([application])).Single();
     }
 
     public async Task<Result> Handle(DeleteOAuthApplicationMessage message)
@@ -108,6 +127,39 @@ public class OAuthApplicationHandler(
     {
         var existing = await repository.GetByClientIdAsync(clientId.Trim(), o => o.ImmediateConsistency());
         return existing is null;
+    }
+
+    private async Task<IReadOnlyCollection<string>> ResolveOrganizationIdsAsync(string? organization, CancellationToken cancellationToken)
+    {
+        if (String.IsNullOrWhiteSpace(organization))
+            return [];
+
+        string criteria = organization.Trim();
+        var results = await organizationRepository.FindAsync(query => query
+            .FieldOr(group => group
+                .FieldEquals(item => item.Id, criteria)
+                .FieldContains(item => item.Name, criteria))
+            .SortAscending(item => item.Name), options => options.SearchAfterPaging().PageLimit(Pagination.MaximumLimit));
+        var organizationIds = new List<string>();
+        do
+        {
+            organizationIds.AddRange(results.Documents.Select(item => item.Id));
+        } while (!cancellationToken.IsCancellationRequested && await results.NextPageAsync());
+
+        return organizationIds;
+    }
+
+    private async Task<IReadOnlyCollection<ViewOAuthApplication>> MapApplicationsAsync(IReadOnlyCollection<OAuthApplication> applications)
+    {
+        string[] organizationIds = applications
+            .SelectMany(application => application.OrganizationIds)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+        var organizations = organizationIds.Length > 0
+            ? await organizationRepository.GetByIdsAsync(organizationIds, options => options.Cache())
+            : [];
+        var organizationNames = organizations.ToDictionary(organization => organization.Id, organization => organization.Name, StringComparer.Ordinal);
+        return applications.Select(application => ViewOAuthApplication.FromApplication(application, organizationNames)).ToArray();
     }
 
     private static string[] NormalizeValues(IEnumerable<string> values, IEqualityComparer<string> comparer)

@@ -39,4 +39,16 @@ public sealed class MigrationRegistrationTests : TestWithServices
         Assert.Equal(MigrationType.VersionedAndResumable, migration.MigrationType);
         Assert.Equal(7, migration.Version);
     }
+
+    [Fact]
+    public void MigrationRegistration_OAuthApplicationOrganizationMigration_IsRegisteredAsVersionedAndResumable()
+    {
+        var migration = GetService<IEnumerable<IMigration>>()
+            .DistinctBy(item => item.GetType())
+            .SingleOrDefault(item => item is PopulateOAuthApplicationOrganizationIds);
+
+        Assert.NotNull(migration);
+        Assert.Equal(MigrationType.VersionedAndResumable, migration.MigrationType);
+        Assert.Equal(8, migration.Version);
+    }
 }

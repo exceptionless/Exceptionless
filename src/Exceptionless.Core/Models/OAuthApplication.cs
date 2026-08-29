@@ -28,6 +28,8 @@ public class OAuthApplication : IIdentity, IHaveDates, IValidatableObject
     [Length(1, 20)]
     public string[] Scopes { get; set; } = [];
 
+    public HashSet<string> OrganizationIds { get; set; } = new(StringComparer.Ordinal);
+
     [MaxLength(1000)]
     public string? Notes { get; set; }
 

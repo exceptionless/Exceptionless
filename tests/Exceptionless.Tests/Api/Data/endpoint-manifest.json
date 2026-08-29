@@ -470,6 +470,18 @@
     "authenticationSchemes": []
   },
   {
+    "method": "GET",
+    "route": "/api/v2/admin/oauth-applications/{id:objectid}",
+    "displayName": "HTTP: GET api/v2/admin/oauth-applications/{id:objectid}",
+    "tags": [],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
     "method": "PUT",
     "route": "/api/v2/admin/oauth-applications/{id:objectid}",
     "displayName": "HTTP: PUT api/v2/admin/oauth-applications/{id:objectid}",

@@ -601,7 +601,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
     [Fact]
     public async Task CompleteAuthorizeAsync_ClientMetadataDocument_PersistsObservedApplication()
     {
-        await CreateAuthorizationCodeAsync(PkceVerifier, MetadataRedirectUri, clientId: MetadataClientId);
+        await CreateAuthorizationCodeAsync(PkceVerifier, MetadataRedirectUri, clientId: MetadataClientId, organizationIds: [SampleDataService.TEST_ORG_ID]);
 
         var application = await _oauthApplicationRepository.GetByClientIdAsync(MetadataClientId, o => o.ImmediateConsistency());
 
@@ -610,6 +610,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         Assert.Equal(OAuthApplication.SystemUserId, application.CreatedByUserId);
         Assert.Contains(MetadataRedirectUri, application.RedirectUris);
         Assert.Contains(AuthorizationRoles.McpRead, application.Scopes);
+        Assert.Contains(SampleDataService.TEST_ORG_ID, application.OrganizationIds);
     }
 
     [Fact]
