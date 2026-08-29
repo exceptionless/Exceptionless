@@ -58,7 +58,7 @@
                 {:else if usage?.tours.length === 0}
                     <p class="text-muted-foreground px-4 py-10 text-center text-sm">No guided-tour activity was recorded for this month.</p>
                 {:else}
-                    <Table.Root>
+                    <Table.Root aria-label="Tour outcomes" class="min-w-4xl">
                         <Table.Header>
                             <Table.Row>
                                 <Table.Head class="pl-4">Tour</Table.Head>
@@ -113,7 +113,7 @@
                 {#if usage?.recent_activity.length === 0}
                     <p class="text-muted-foreground px-4 py-10 text-center text-sm">No recent tour activity was recorded.</p>
                 {:else}
-                    <Table.Root>
+                    <Table.Root aria-label="Recent guided-tour activity" class="min-w-3xl">
                         <Table.Header>
                             <Table.Row>
                                 <Table.Head class="pl-4">User</Table.Head>
@@ -124,7 +124,7 @@
                             </Table.Row>
                         </Table.Header>
                         <Table.Body>
-                            {#each usage?.recent_activity ?? [] as activity (`${activity.date_utc}-${activity.user_identity}-${activity.event}-${activity.tour_name}`)}
+                            {#each usage?.recent_activity ?? [] as activity (activity)}
                                 <Table.Row>
                                     <Table.Cell class="pl-4">
                                         <div class="font-medium">{activity.user_name || activity.user_identity || 'Unknown user'}</div>

@@ -37,6 +37,8 @@
         stateSettled: boolean;
     }
 
+    const EVENT_PATH = resolve('/(app)/event');
+    const STACK_PATH = resolve('/(app)/stack');
     const SYSTEM_PATH = resolve('/(app)/system');
 
     let {
@@ -96,7 +98,7 @@
             stateSettled &&
             currentUser &&
             assistantAccess?.enabled &&
-            (pathname.startsWith('/next/event') || pathname.startsWith('/next/stack')) &&
+            (pathname.startsWith(EVENT_PATH) || pathname.startsWith(STACK_PATH)) &&
             !isSetupPage &&
             !isImpersonating &&
             !checkpoint &&
