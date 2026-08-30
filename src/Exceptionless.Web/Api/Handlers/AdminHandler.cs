@@ -19,7 +19,6 @@ using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
 using Foundatio.Repositories.Models;
-using Foundatio.Serializer;
 using Foundatio.Storage;
 using Foundatio.Mediator;
 
@@ -41,7 +40,6 @@ public class AdminHandler(
     BillingPlans plans,
     IMigrationStateRepository migrationStateRepository,
     SampleDataService sampleDataService,
-    ITextSerializer serializer,
     TimeProvider timeProvider,
     ILoggerFactory loggerFactory)
 {
@@ -140,54 +138,54 @@ public class AdminHandler(
 
     public async Task<Result<object>> Handle(GetAdminProductTourUsage message)
     {
-        if (message.All && message.Month.HasValue)
-            return Result.Invalid(ValidationError.Create("month", "Month cannot be specified when requesting all-time usage."));
+        if (message.History && message.Month.HasValue)
+            return Result.Invalid(ValidationError.Create("month", "Month cannot be specified when requesting available history."));
 
-        DateTime? month = message.All ? null : (message.Month ?? timeProvider.GetUtcNow().UtcDateTime).ToUniversalTime().StartOfMonth();
-        DateTime? nextMonth = month?.AddMonths(1);
-        int limit = Math.Clamp(message.Limit, 1, 500);
+        DateTime utcEnd = timeProvider.GetUtcNow().UtcDateTime;
+        DateTime monthStart = (message.Month ?? utcEnd).ToUniversalTime().StartOfMonth();
+        DateTime? utcStart = message.History
+            ? appOptions.MaximumRetentionDays > 0
+                ? utcEnd.SubtractDays(appOptions.MaximumRetentionDays)
+                : null
+            : monthStart;
+        if (!message.History)
+            utcEnd = monthStart.AddMonths(1);
 
-        var usage = await eventRepository.GetProductTourUsageAsync(appOptions.InternalProjectId, month, nextMonth, limit);
-        var tours = usage.Buckets
-            .GroupBy(bucket => bucket.Source.TourName, StringComparer.Ordinal)
-            .Select(buckets =>
+        var usage = await eventRepository.GetProductTourUsageAsync(appOptions.InternalProjectId, utcStart, utcEnd);
+        var bucketsByTour = usage.Buckets
+            .GroupBy(bucket => (bucket.Source.TourName, bucket.Source.Version))
+            .ToDictionary(group => group.Key);
+        var tours = ProductTours.Definitions.Values
+            .SelectMany(definition => Enumerable.Range(1, definition.CurrentVersion).Select(version =>
             {
-                long shown = SumEvent(buckets, ProductTourTelemetryEvent.Shown);
-                long started = SumEvent(buckets, ProductTourTelemetryEvent.Started);
-                long manualStarted = buckets
-                    .Where(bucket => bucket.Source.Event == ProductTourTelemetryEvent.Started && bucket.Source.LaunchSource != ProductTourLaunchSource.Automatic)
-                    .Sum(bucket => bucket.Count);
-                long completed = SumEvent(buckets, ProductTourTelemetryEvent.Completed);
-                long dismissed = SumEvent(buckets, ProductTourTelemetryEvent.Dismissed);
-                long decisionDenominator = ProductTours.IsPrompt(buckets.Key) ? shown : started;
-                DateTime? lastRunUtc = buckets.Select(bucket => bucket.LastUtc).Max();
+                IEnumerable<ProductTourUsageBucket> buckets = bucketsByTour.TryGetValue((definition.Name, version), out var matchingBuckets)
+                    ? matchingBuckets
+                    : [];
 
                 return new ProductTourSummary(
-                    buckets.Key,
-                    shown,
-                    started,
-                    manualStarted,
-                    completed,
-                    dismissed,
-                    lastRunUtc,
-                    CalculateRate(started, shown),
-                    CalculateRate(manualStarted, started),
-                    CalculateRate(completed, decisionDenominator),
-                    CalculateRate(dismissed, decisionDenominator));
-            })
-            .OrderByDescending(tour => tour.Started)
-            .ThenBy(tour => tour.Name, StringComparer.Ordinal)
-            .ToArray();
-
-        var recentEvents = usage.RecentEvents
-            .Select(item => CreateRecentEvent(item.Event, item.Source))
-            .Take(limit)
+                    definition.Name,
+                    version,
+                    definition.Kind,
+                    SumEvent(buckets, ProductTourTelemetryEvent.Shown),
+                    SumEvent(buckets, ProductTourTelemetryEvent.Started),
+                    SumEvent(buckets, ProductTourTelemetryEvent.Completed),
+                    SumEvent(buckets, ProductTourTelemetryEvent.Dismissed),
+                    buckets.Select(bucket => bucket.LastUtc).Max(),
+                    buckets
+                        .Where(bucket => bucket.Source.Event is ProductTourTelemetryEvent.Started)
+                        .GroupBy(bucket => bucket.Source.LaunchSource)
+                        .Select(group => new ProductTourStartSource(group.Key, group.Sum(bucket => bucket.Count)))
+                        .OrderBy(source => source.Source)
+                        .ToArray());
+            }))
+            .OrderBy(tour => tour.Name, StringComparer.Ordinal)
+            .ThenBy(tour => tour.Version)
             .ToArray();
 
         return new ProductTourUsageResponse(
-            month,
-            tours,
-            recentEvents);
+            utcStart,
+            utcEnd,
+            tours);
     }
 
     [HandlerEndpoint(HandlerMethod.Get, "migrations", Group = "Admin")]
@@ -226,25 +224,6 @@ public class AdminHandler(
             httpContext.Request.Headers,
             IpAddress = httpContext.Request.GetClientIpAddress()
         });
-    }
-
-    private ProductTourEvent CreateRecentEvent(PersistentEvent ev, ProductTourUsageSource source)
-    {
-        var user = ev.GetUserIdentity(serializer, _logger);
-        return new ProductTourEvent(
-            ev.Date.UtcDateTime,
-            source.Event,
-            source.LaunchSource,
-            source.TourName,
-            user?.Identity,
-            user?.Name,
-            source.Version,
-            ev.Count ?? 1);
-    }
-
-    private static decimal? CalculateRate(long value, long denominator)
-    {
-        return denominator > 0 ? Decimal.Round(value / (decimal)denominator, 4) : null;
     }
 
     private static long SumEvent(IEnumerable<ProductTourUsageBucket> buckets, ProductTourTelemetryEvent telemetryEvent)

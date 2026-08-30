@@ -54,6 +54,14 @@ Authorization: Bearer {{token}}
 GET {{apiUrl}}/admin/assistant-usage
 Authorization: Bearer {{token}}
 
+### Product Tour Usage (current retained month)
+GET {{apiUrl}}/admin/product-tour-usage
+Authorization: Bearer {{token}}
+
+### Product Tour Usage (available retained history)
+GET {{apiUrl}}/admin/product-tour-usage?history=true
+Authorization: Bearer {{token}}
+
 ### Get Exie Settings
 GET {{apiUrl}}/admin/assistant-settings
 Authorization: Bearer {{token}}
@@ -117,12 +125,12 @@ Content-Type: application/json
 }
 
 ### Product Tour Usage
-GET {{apiUrl}}/admin/product-tour-usage?month=2026-08-01&limit=100
+GET {{apiUrl}}/admin/product-tour-usage?month=2026-08-01
 Authorization: Bearer {{token}}
 
 ###
 
-GET {{apiUrl}}/admin/product-tour-usage?all=true&limit=100
+GET {{apiUrl}}/admin/product-tour-usage?history=true
 Authorization: Bearer {{token}}
 
 ### Suspend
