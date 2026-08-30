@@ -28,7 +28,6 @@ export const StackStatusSchema = zodEnum([
   "discarded",
 ]);
 export const ProductTourStatusSchema = union([literal(1), literal(2)]);
-export const ProductTourKindSchema = zodEnum(["guide", "prompt"]);
 export const ProductTourLaunchSourceSchema = zodEnum([
   "welcome",
   "catalog",
@@ -36,6 +35,7 @@ export const ProductTourLaunchSourceSchema = zodEnum([
   "feature-announcement",
   "help-menu",
 ]);
+export const ProductTourKindSchema = zodEnum(["guide", "prompt"]);
 export const BillingStatusSchema = union([
   literal(0),
   literal(1),
@@ -643,6 +643,14 @@ export type ProductTourProgressFormData = Infer<
   typeof ProductTourProgressSchema
 >;
 
+export const ProductTourStartSourceSchema = object({
+  source: ProductTourLaunchSourceSchema,
+  count: int(),
+});
+export type ProductTourStartSourceFormData = Infer<
+  typeof ProductTourStartSourceSchema
+>;
+
 export const ProductTourSummarySchema = object({
   name: string().min(1, "Name is required"),
   version: int32(),
@@ -655,14 +663,6 @@ export const ProductTourSummarySchema = object({
   start_sources: array(lazy(() => ProductTourStartSourceSchema)),
 });
 export type ProductTourSummaryFormData = Infer<typeof ProductTourSummarySchema>;
-
-export const ProductTourStartSourceSchema = object({
-  source: ProductTourLaunchSourceSchema,
-  count: int(),
-});
-export type ProductTourStartSourceFormData = Infer<
-  typeof ProductTourStartSourceSchema
->;
 
 export const ProductTourUsageResponseSchema = object({
   utc_start: iso.datetime().nullable(),

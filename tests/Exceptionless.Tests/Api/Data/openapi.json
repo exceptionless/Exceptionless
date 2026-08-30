@@ -13366,6 +13366,16 @@
           }
         }
       },
+      "ProductTourKind": {
+        "enum": [
+          "guide",
+          "prompt"
+        ],
+        "x-enumNames": [
+          "Guide",
+          "Prompt"
+        ]
+      },
       "ProductTourLaunchSource": {
         "enum": [
           "welcome",
@@ -13382,16 +13392,6 @@
           "HelpMenu"
         ]
       },
-      "ProductTourKind": {
-        "enum": [
-          "guide",
-          "prompt"
-        ],
-        "x-enumNames": [
-          "Guide",
-          "Prompt"
-        ]
-      },
       "ProductTourProgress": {
         "required": [
           "status",
@@ -13405,6 +13405,22 @@
           "version": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "ProductTourStartSource": {
+        "required": [
+          "source",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "source": {
+            "$ref": "#/components/schemas/ProductTourLaunchSource"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -13471,22 +13487,6 @@
             "items": {
               "$ref": "#/components/schemas/ProductTourStartSource"
             }
-          }
-        }
-      },
-      "ProductTourStartSource": {
-        "required": [
-          "source",
-          "count"
-        ],
-        "type": "object",
-        "properties": {
-          "source": {
-            "$ref": "#/components/schemas/ProductTourLaunchSource"
-          },
-          "count": {
-            "type": "integer",
-            "format": "int64"
           }
         }
       },
