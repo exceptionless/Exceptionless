@@ -12,17 +12,17 @@ export enum ProductTourStatus {
   Dismissed = 2,
 }
 
-export enum ProductTourKind {
-  Guide = "guide",
-  Prompt = "prompt",
-}
-
 export enum ProductTourLaunchSource {
   Welcome = "welcome",
   Catalog = "catalog",
   CommandPalette = "command-palette",
   FeatureAnnouncement = "feature-announcement",
   HelpMenu = "help-menu",
+}
+
+export enum ProductTourKind {
+  Guide = "guide",
+  Prompt = "prompt",
 }
 
 export enum BillingStatus {
@@ -518,6 +518,12 @@ export interface ProductTourProgress {
   version: number;
 }
 
+export interface ProductTourStartSource {
+  source: ProductTourLaunchSource;
+  /** @format int64 */
+  count: number;
+}
+
 export interface ProductTourSummary {
   name: string;
   /** @format int32 */
@@ -534,12 +540,6 @@ export interface ProductTourSummary {
   /** @format date-time */
   last_run_utc?: null | string;
   start_sources: ProductTourStartSource[];
-}
-
-export interface ProductTourStartSource {
-  source: ProductTourLaunchSource;
-  /** @format int64 */
-  count: number;
 }
 
 export interface ProductTourUsageResponse {
