@@ -1,7 +1,6 @@
 using System.Collections.Frozen;
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
-using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Models.Data;
 
@@ -15,25 +14,27 @@ public static class ProductTours
     public const string ProjectConfigure = "project-configure";
     public const string SavedViewCreate = "saved-view-create";
 
-    public static IReadOnlyDictionary<string, int> Versions { get; } = new Dictionary<string, int>(StringComparer.Ordinal)
+    public static FrozenDictionary<string, ProductTourDefinition> Definitions { get; } = new[]
     {
-        [AppOverview] = 1,
-        [AppWelcome] = 1,
-        [ExieAnnouncement] = 1,
-        [ExieOverview] = 1,
-        [EventInvestigate] = 1,
-        [ProjectConfigure] = 1,
-        [SavedViewCreate] = 1
-    }.ToFrozenDictionary(StringComparer.Ordinal);
+        new ProductTourDefinition(AppOverview, 1, ProductTourKind.Guide),
+        new ProductTourDefinition(AppWelcome, 1, ProductTourKind.Prompt),
+        new ProductTourDefinition(ExieAnnouncement, 1, ProductTourKind.Prompt),
+        new ProductTourDefinition(ExieOverview, 1, ProductTourKind.Guide),
+        new ProductTourDefinition(EventInvestigate, 1, ProductTourKind.Guide),
+        new ProductTourDefinition(ProjectConfigure, 1, ProductTourKind.Guide),
+        new ProductTourDefinition(SavedViewCreate, 1, ProductTourKind.Guide)
+    }.ToFrozenDictionary(definition => definition.Name, StringComparer.Ordinal);
 
-    public static bool IsKnown(string name) => Versions.ContainsKey(name);
+    public static bool IsKnown(string name) => Definitions.ContainsKey(name);
 
-    public static bool IsPrompt(string name) => name is AppWelcome or ExieAnnouncement;
+    public static bool IsPrompt(string name) => Find(name)?.Kind is ProductTourKind.Prompt;
 
     public static bool IsValid(string name, int version)
     {
-        return Versions.TryGetValue(name, out int currentVersion) && version > 0 && version <= currentVersion;
+        return Find(name) is { } definition && version > 0 && version <= definition.CurrentVersion;
     }
+
+    public static ProductTourDefinition? Find(string name) => Definitions.GetValueOrDefault(name);
 
     public static string CreateTelemetrySource(
         ProductTourTelemetryEvent telemetryEvent,
@@ -44,9 +45,37 @@ public static class ProductTours
         return $"product-tour.{GetTelemetryName(telemetryEvent)}.{tourName}.v{version}.{GetLaunchSourceName(launchSource)}";
     }
 
-    private static string GetTelemetryName(ProductTourTelemetryEvent telemetryEvent) => telemetryEvent.ToString().ToLowerUnderscoredWords('-');
+    private static string GetTelemetryName(ProductTourTelemetryEvent telemetryEvent) => telemetryEvent switch
+    {
+        ProductTourTelemetryEvent.Completed => "completed",
+        ProductTourTelemetryEvent.Dismissed => "dismissed",
+        ProductTourTelemetryEvent.Shown => "shown",
+        ProductTourTelemetryEvent.Started => "started",
+        _ => throw new ArgumentOutOfRangeException(nameof(telemetryEvent), telemetryEvent, "Unknown product tour telemetry event.")
+    };
 
-    private static string GetLaunchSourceName(ProductTourLaunchSource launchSource) => launchSource.ToString().ToLowerUnderscoredWords('-');
+    private static string GetLaunchSourceName(ProductTourLaunchSource launchSource) => launchSource switch
+    {
+        ProductTourLaunchSource.Welcome => "welcome",
+        ProductTourLaunchSource.Catalog => "catalog",
+        ProductTourLaunchSource.CommandPalette => "command-palette",
+        ProductTourLaunchSource.FeatureAnnouncement => "feature-announcement",
+        ProductTourLaunchSource.HelpMenu => "help-menu",
+        _ => throw new ArgumentOutOfRangeException(nameof(launchSource), launchSource, "Unknown product tour launch source.")
+    };
+}
+
+public sealed record ProductTourDefinition(string Name, int CurrentVersion, ProductTourKind Kind);
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum ProductTourKind
+{
+    [JsonStringEnumMemberName("guide")]
+    [EnumMember(Value = "guide")]
+    Guide,
+    [JsonStringEnumMemberName("prompt")]
+    [EnumMember(Value = "prompt")]
+    Prompt
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
@@ -69,9 +98,9 @@ public enum ProductTourTelemetryEvent
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum ProductTourLaunchSource
 {
-    [JsonStringEnumMemberName("automatic")]
-    [EnumMember(Value = "automatic")]
-    Automatic,
+    [JsonStringEnumMemberName("welcome")]
+    [EnumMember(Value = "welcome")]
+    Welcome,
     [JsonStringEnumMemberName("catalog")]
     [EnumMember(Value = "catalog")]
     Catalog,

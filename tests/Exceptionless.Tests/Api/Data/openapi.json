@@ -443,20 +443,11 @@
             }
           },
           {
-            "name": "all",
+            "name": "history",
             "in": "query",
             "schema": {
               "type": "boolean",
               "default": false
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "default": 100
             }
           }
         ],
@@ -13375,68 +13366,30 @@
           }
         }
       },
-      "ProductTourEvent": {
-        "required": [
-          "date_utc",
-          "event",
-          "launch_source",
-          "tour_name",
-          "user_identity",
-          "user_name",
-          "version",
-          "count"
-        ],
-        "type": "object",
-        "properties": {
-          "date_utc": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "event": {
-            "$ref": "#/components/schemas/ProductTourTelemetryEvent"
-          },
-          "launch_source": {
-            "$ref": "#/components/schemas/ProductTourLaunchSource"
-          },
-          "tour_name": {
-            "type": "string"
-          },
-          "user_identity": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "user_name": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "version": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "count": {
-            "type": "integer",
-            "format": "int64"
-          }
-        }
-      },
       "ProductTourLaunchSource": {
         "enum": [
-          "automatic",
+          "welcome",
           "catalog",
           "command-palette",
           "feature-announcement",
           "help-menu"
         ],
         "x-enumNames": [
-          "Automatic",
+          "Welcome",
           "Catalog",
           "CommandPalette",
           "FeatureAnnouncement",
           "HelpMenu"
+        ]
+      },
+      "ProductTourKind": {
+        "enum": [
+          "guide",
+          "prompt"
+        ],
+        "x-enumNames": [
+          "Guide",
+          "Prompt"
         ]
       },
       "ProductTourProgress": {
@@ -13469,31 +13422,32 @@
       "ProductTourSummary": {
         "required": [
           "name",
+          "version",
+          "kind",
           "shown",
           "started",
-          "manual_started",
           "completed",
           "dismissed",
           "last_run_utc",
-          "started_rate",
-          "manual_started_rate",
-          "completion_rate",
-          "dismissal_rate"
+          "start_sources"
         ],
         "type": "object",
         "properties": {
           "name": {
             "type": "string"
           },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ProductTourKind"
+          },
           "shown": {
             "type": "integer",
             "format": "int64"
           },
           "started": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "manual_started": {
             "type": "integer",
             "format": "int64"
           },
@@ -13512,75 +13466,53 @@
             ],
             "format": "date-time"
           },
-          "started_rate": {
-            "type": [
-              "null",
-              "number"
-            ],
-            "format": "double"
-          },
-          "manual_started_rate": {
-            "type": [
-              "null",
-              "number"
-            ],
-            "format": "double"
-          },
-          "completion_rate": {
-            "type": [
-              "null",
-              "number"
-            ],
-            "format": "double"
-          },
-          "dismissal_rate": {
-            "type": [
-              "null",
-              "number"
-            ],
-            "format": "double"
+          "start_sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductTourStartSource"
+            }
           }
         }
       },
-      "ProductTourTelemetryEvent": {
-        "enum": [
-          "completed",
-          "dismissed",
-          "shown",
-          "started"
-        ],
-        "x-enumNames": [
-          "Completed",
-          "Dismissed",
-          "Shown",
-          "Started"
-        ]
-      },
-      "ProductTourUsageResponse": {
+      "ProductTourStartSource": {
         "required": [
-          "month",
-          "tours",
-          "recent_events"
+          "source",
+          "count"
         ],
         "type": "object",
         "properties": {
-          "month": {
+          "source": {
+            "$ref": "#/components/schemas/ProductTourLaunchSource"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ProductTourUsageResponse": {
+        "required": [
+          "utc_start",
+          "utc_end",
+          "tours"
+        ],
+        "type": "object",
+        "properties": {
+          "utc_start": {
             "type": [
               "null",
               "string"
             ],
             "format": "date-time"
           },
+          "utc_end": {
+            "type": "string",
+            "format": "date-time"
+          },
           "tours": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ProductTourSummary"
-            }
-          },
-          "recent_events": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ProductTourEvent"
             }
           }
         }

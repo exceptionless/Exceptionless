@@ -3,29 +3,19 @@ using Exceptionless.Core.Models.Data;
 namespace Exceptionless.Web.Models.Admin;
 
 public sealed record ProductTourUsageResponse(
-    DateTime? Month,
-    IReadOnlyCollection<ProductTourSummary> Tours,
-    IReadOnlyCollection<ProductTourEvent> RecentEvents);
+    DateTime? UtcStart,
+    DateTime UtcEnd,
+    IReadOnlyCollection<ProductTourSummary> Tours);
 
 public sealed record ProductTourSummary(
     string Name,
+    int Version,
+    ProductTourKind Kind,
     long Shown,
     long Started,
-    long ManualStarted,
     long Completed,
     long Dismissed,
     DateTime? LastRunUtc,
-    decimal? StartedRate,
-    decimal? ManualStartedRate,
-    decimal? CompletionRate,
-    decimal? DismissalRate);
+    IReadOnlyCollection<ProductTourStartSource> StartSources);
 
-public sealed record ProductTourEvent(
-    DateTime DateUtc,
-    ProductTourTelemetryEvent Event,
-    ProductTourLaunchSource LaunchSource,
-    string TourName,
-    string? UserIdentity,
-    string? UserName,
-    int Version,
-    long Count);
+public sealed record ProductTourStartSource(ProductTourLaunchSource Source, long Count);

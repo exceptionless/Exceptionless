@@ -113,7 +113,8 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.True(schemas.TryGetProperty("TokenResult", out _));
         Assert.True(schemas.TryGetProperty("ProductTourProgress", out _));
         Assert.True(schemas.TryGetProperty("UpdateProductTourProgress", out _));
-        Assert.True(schemas.TryGetProperty("ProductTourEvent", out _));
+        Assert.True(schemas.TryGetProperty("ProductTourKind", out _));
+        Assert.True(schemas.TryGetProperty("ProductTourStartSource", out _));
         Assert.True(schemas.TryGetProperty("ProductTourSummary", out _));
         Assert.True(schemas.TryGetProperty("ProductTourUsageResponse", out _));
         Assert.True(schemas.TryGetProperty("ViewOrganization", out _));

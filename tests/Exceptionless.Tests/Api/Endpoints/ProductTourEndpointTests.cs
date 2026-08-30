@@ -90,6 +90,57 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task UpdateCurrentUserProductTourAsync_ConcurrentUpdatesPreserveBothTourKeys()
+    {
+        // Arrange
+        var currentUser = await GetTestOrganizationUserAsync();
+
+        // Act
+        await Task.WhenAll(
+            UpdateProgressAsync(ProductTours.AppOverview, ProductTourStatus.Completed, 1),
+            UpdateProgressAsync(ProductTours.SavedViewCreate, ProductTourStatus.Dismissed, 1));
+
+        // Assert
+        var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, options => options.Cache(false));
+        Assert.NotNull(persistedUser);
+        Assert.Equal(ProductTourStatus.Completed, persistedUser.ProductTours[ProductTours.AppOverview].Status);
+        Assert.Equal(ProductTourStatus.Dismissed, persistedUser.ProductTours[ProductTours.SavedViewCreate].Status);
+    }
+
+    [Fact]
+    public async Task UpdateCurrentUserProductTourAsync_ConcurrentDismissAndCompleteLeavesCompletedProgress()
+    {
+        // Arrange
+        var currentUser = await GetTestOrganizationUserAsync();
+
+        // Act
+        await Task.WhenAll(
+            UpdateProgressAsync(ProductTours.ExieOverview, ProductTourStatus.Dismissed, 1),
+            UpdateProgressAsync(ProductTours.ExieOverview, ProductTourStatus.Completed, 1));
+
+        // Assert
+        var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, options => options.Cache(false));
+        Assert.NotNull(persistedUser);
+        Assert.Equal(ProductTourStatus.Completed, persistedUser.ProductTours[ProductTours.ExieOverview].Status);
+    }
+
+    [Fact]
+    public async Task UpdateCurrentUserProductTourAsync_MissingUser_ReturnsNotFound()
+    {
+        // Arrange
+        var currentUser = await GetTestOrganizationUserAsync();
+        await _userRepository.RemoveAsync(currentUser.Id, options => options.ImmediateConsistency());
+
+        // Act & Assert
+        await SendRequestAsync(request => request
+            .Put()
+            .AsTestOrganizationUser()
+            .AppendPaths("users", "me", "product-tours", ProductTours.AppOverview)
+            .Content(new UpdateProductTourProgress { Status = ProductTourStatus.Completed, Version = 1 })
+            .StatusCodeShouldBeNotFound());
+    }
+
+    [Fact]
     public async Task UpdateCurrentUserProductTourAsync_UnknownTourName_ReturnsUnprocessableEntity()
     {
         // Arrange

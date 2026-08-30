@@ -46,7 +46,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
             AddProductTourUsage(builder, ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Started, ProductTours.AppOverview, 1, ProductTourLaunchSource.Catalog), month.AddDays(1), "user-1", 2);
             AddProductTourUsage(builder, ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Started, ProductTours.AppOverview, 1, ProductTourLaunchSource.HelpMenu), month.AddDays(2), "user-1");
             AddProductTourUsage(builder, ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Completed, ProductTours.AppOverview, 1, ProductTourLaunchSource.Catalog), month.AddDays(3), "user-2");
-            AddProductTourUsage(builder, ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Shown, ProductTours.AppWelcome, 1, ProductTourLaunchSource.Automatic), month.AddDays(4), "user-3");
+            AddProductTourUsage(builder, ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Shown, ProductTours.AppWelcome, 1, ProductTourLaunchSource.Welcome), month.AddDays(4), "user-3");
             AddProductTourUsage(builder, "product-tour.started.app-overview.v2.catalog", month.AddDays(5), "user-4");
             AddProductTourUsage(builder, "product-tour.started.unknown-tour.v1.catalog", month.AddDays(6), "user-5");
             AddProductTourUsage(builder, ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Started, ProductTours.AppOverview, 1, ProductTourLaunchSource.Catalog), month.AddMonths(-1), "user-6");
@@ -66,10 +66,9 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         });
 
         // Act
-        var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, month, month.AddMonths(1), recentLimit: 3);
+        var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, month, month.AddMonths(1));
 
         // Assert
-        Assert.Equal(3, result.RecentEvents.Count);
         Assert.Equal(2, result.Buckets.Select(bucket => bucket.Source.TourName).Distinct(StringComparer.Ordinal).Count());
         var overview = result.Buckets.Where(bucket => String.Equals(bucket.Source.TourName, ProductTours.AppOverview, StringComparison.Ordinal)).ToArray();
         Assert.Equal(4, overview.Where(bucket => bucket.Source.Event == ProductTourTelemetryEvent.Started).Sum(bucket => bucket.Count));
@@ -79,8 +78,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         var welcome = Assert.Single(result.Buckets, bucket => String.Equals(bucket.Source.TourName, ProductTours.AppWelcome, StringComparison.Ordinal));
         Assert.Equal(1, welcome.Count);
 
-        Assert.Equal(month.AddDays(8), result.RecentEvents.First().Event.Date);
-        Assert.All(result.RecentEvents, item => Assert.True(ProductTours.IsValid(item.Source.TourName, item.Source.Version)));
+        Assert.All(result.Buckets, item => Assert.True(ProductTours.IsValid(item.Source.TourName, item.Source.Version)));
     }
 
     [Fact]
@@ -91,14 +89,13 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         await CreateDataAsync(builder =>
         {
             AddProductTourUsage(builder, ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Started, ProductTours.AppOverview, 1, ProductTourLaunchSource.Catalog), month.AddMonths(-1), "user-1");
-            AddProductTourUsage(builder, ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Started, ProductTours.AppOverview, 1, ProductTourLaunchSource.Automatic), month.AddDays(1), "user-2");
+            AddProductTourUsage(builder, ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Started, ProductTours.AppOverview, 1, ProductTourLaunchSource.Welcome), month.AddDays(1), "user-2");
         });
 
         // Act
-        var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId);
+        var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, null, month.AddMonths(1));
 
         // Assert
-        Assert.Equal(2, result.RecentEvents.Count);
         Assert.Equal(2, result.Buckets.Sum(bucket => bucket.Count));
     }
 

@@ -17,6 +17,7 @@ using Exceptionless.Web.Utility;
 using Foundatio.Caching;
 using Foundatio.Mediator;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Web.Api.Handlers;
@@ -60,26 +61,33 @@ public class UserHandler(
             return Result.Invalid(ValidationError.Create("version", "The product tour version is not supported."));
 
         ProductTourProgress? progress = null;
-        await repository.PatchAsync(
-            GetCurrentUserId(),
-            new ActionPatch<User>(user =>
-            {
-                user.ProductTours.TryGetValue(message.TourName, out var currentProgress);
-                if (!ShouldUpdateProductTourProgress(currentProgress, message.Progress))
+        try
+        {
+            await repository.PatchAsync(
+                GetCurrentUserId(),
+                new ActionPatch<User>(user =>
                 {
-                    progress = currentProgress;
-                    return false;
-                }
+                    user.ProductTours.TryGetValue(message.TourName, out var currentProgress);
+                    if (!ShouldUpdateProductTourProgress(currentProgress, message.Progress))
+                    {
+                        progress = currentProgress;
+                        return false;
+                    }
 
-                progress = new ProductTourProgress
-                {
-                    Status = message.Progress.Status!.Value,
-                    Version = message.Progress.Version
-                };
-                user.ProductTours[message.TourName] = progress;
-                return true;
-            }),
-            options => options.Cache());
+                    progress = new ProductTourProgress
+                    {
+                        Status = message.Progress.Status!.Value,
+                        Version = message.Progress.Version
+                    };
+                    user.ProductTours[message.TourName] = progress;
+                    return true;
+                }),
+                options => options.Cache());
+        }
+        catch (DocumentNotFoundException)
+        {
+            return Result.NotFound("User not found.");
+        }
 
         return progress is null ? Result.NotFound("User not found.") : progress;
     }
