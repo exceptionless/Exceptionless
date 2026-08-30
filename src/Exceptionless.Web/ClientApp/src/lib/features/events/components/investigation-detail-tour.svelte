@@ -104,11 +104,11 @@
 
 {#if event && checkpoint && copy}
     <ProductTourInlineCallout
+        {checkpoint}
         continueLabel={checkpoint.checkpointName === 'filter-stack-events' ? 'Finish guide' : 'Continue'}
         description={copy.description}
         onContinue={continueTour}
         onDismiss={dismiss}
         title={copy.title}
-        tourName="event-investigate"
     />
 {/if}

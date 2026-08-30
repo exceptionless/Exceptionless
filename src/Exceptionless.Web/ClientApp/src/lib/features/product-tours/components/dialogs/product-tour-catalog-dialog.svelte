@@ -7,13 +7,17 @@
 
     import type { ProductTourListItem, ProductTourName } from '../../types';
 
+    import { PRODUCT_TOUR_CHECKPOINTS } from '../../types';
+
     interface Props {
+        activeTourName?: ProductTourName;
         items: ProductTourListItem[];
         onStart: (name: ProductTourName) => Promise<void>;
         open?: boolean;
+        resumableTourName?: ProductTourName;
     }
 
-    let { items, onStart, open = $bindable(false) }: Props = $props();
+    let { activeTourName, items, onStart, open = $bindable(false), resumableTourName }: Props = $props();
 </script>
 
 <Dialog.Root bind:open>
@@ -37,12 +41,19 @@
                     <div class="flex-1">
                         <h3 class="font-semibold">{item.title}</h3>
                         <p class="text-muted-foreground mt-1 text-sm">{item.description}</p>
+                        <p class="text-muted-foreground mt-2 text-xs">
+                            {item.name === 'app-overview' ? 'Up to ' : ''}{PRODUCT_TOUR_CHECKPOINTS[item.name].length} steps
+                        </p>
                         {#if !item.currentAvailability.available}
                             <p class="text-muted-foreground mt-2 text-xs">{item.currentAvailability.reason}</p>
                         {/if}
                     </div>
                     <Button disabled={!item.currentAvailability.available} onclick={() => onStart(item.name)} variant="outline">
-                        {item.progress?.status === ProductTourStatus.Completed && item.progress.version >= item.version ? 'Restart' : 'Start'}
+                        {resumableTourName === item.name
+                            ? 'Continue'
+                            : activeTourName === item.name || (item.progress?.status === ProductTourStatus.Completed && item.progress.version >= item.version)
+                              ? 'Restart'
+                              : 'Start'}
                     </Button>
                 </section>
             {/each}

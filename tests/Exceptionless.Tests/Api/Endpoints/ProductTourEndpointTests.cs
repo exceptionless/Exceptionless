@@ -5,6 +5,7 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Exceptions;
 using Xunit;
 
 namespace Exceptionless.Tests.Api.Endpoints;
@@ -125,19 +126,17 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task UpdateCurrentUserProductTourAsync_MissingUser_ReturnsNotFound()
+    public async Task UpdateProductTourProgressAsync_MissingUser_ThrowsNotFound()
     {
         // Arrange
         var currentUser = await GetTestOrganizationUserAsync();
         await _userRepository.RemoveAsync(currentUser.Id, options => options.ImmediateConsistency());
 
         // Act & Assert
-        await SendRequestAsync(request => request
-            .Put()
-            .AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", ProductTours.AppOverview)
-            .Content(new UpdateProductTourProgress { Status = ProductTourStatus.Completed, Version = 1 })
-            .StatusCodeShouldBeNotFound());
+        await Assert.ThrowsAsync<DocumentNotFoundException>(() => _userRepository.UpdateProductTourProgressAsync(
+            currentUser.Id,
+            ProductTours.AppOverview,
+            new ProductTourProgress { Status = ProductTourStatus.Completed, Version = 1 }));
     }
 
     [Fact]

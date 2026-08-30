@@ -173,7 +173,6 @@
 {#if stack}
     <Card.Root
         class="bg-background relative overflow-hidden ring-[color-mix(in_oklab,var(--chart-1)_42%,transparent)] before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-[linear-gradient(90deg,var(--chart-1),var(--chart-2))] before:content-['']"
-        data-tour="event-stack"
     >
         <Card.Header>
             <Card.Title class="flex flex-row items-center justify-between text-lg font-semibold">
@@ -185,7 +184,7 @@
                 <div class="ml-2 flex shrink-0 items-center gap-2">
                     <StackLogLevel {stack} />
                     <AssistantFixButton {prepareContext} resource={assistantResource} />
-                    <ButtonGroup.Root data-tour="event-stack-triage">
+                    <ButtonGroup.Root>
                         <StackStatusDropdownMenu {stack} />
                         <StackOptionsDropdownMenu {onDeleted} {stack} />
                     </ButtonGroup.Root>

@@ -64,14 +64,7 @@
 
                     const checkpoint = projectConfigureCheckpoint;
                     if (checkpoint) {
-                        productTourCheckpoint.advance(
-                            checkpoint,
-                            'choose-platform',
-                            {
-                                type: 'active'
-                            },
-                            createdOrganization.id
-                        );
+                        productTourCheckpoint.advance(checkpoint, 'choose-platform', createdOrganization.id);
                     }
 
                     toastId = toast.success('Project added successfully');
@@ -159,7 +152,7 @@
             </form.Field>
             <form.Subscribe selector={(state) => state.isSubmitting}>
                 {#snippet children(isSubmitting)}
-                    <Button data-tour="project-setup-submit" type="submit" class="mt-4 w-full" disabled={isSubmitting}>
+                    <Button type="submit" class="mt-4 w-full" disabled={isSubmitting}>
                         {#if isSubmitting}
                             <Spinner /> Creating Setup...
                         {:else}

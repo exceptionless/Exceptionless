@@ -70,7 +70,7 @@
         filters: IFilter[];
         isModified: boolean;
         onClearSavedView: () => Promise<void>;
-        onLoadView: (view: SavedView) => Promise<void> | void;
+        onLoadView: (view: SavedView) => void;
         onResetToSaved: () => void;
         onSavedViewUpdated: (view: SavedView) => void;
         savedViews: SavedView[];
@@ -284,9 +284,9 @@
 
         try {
             const result = await createMutation.mutateAsync(body);
-            const tourCompletion = tour ? tour.created(result) : onLoadView(result);
             isSaveDialogOpen = false;
-            await tourCompletion;
+            onLoadView(result);
+            void tour?.created();
             toast.success(`Saved view "${result.name}" created.`);
         } catch (error) {
             toast.error(getErrorMessage(error, 'Failed to save view. Please try again.'));
@@ -517,8 +517,6 @@
     closeMenu={() => (isMenuOpen = false)}
     openMenu={() => (isMenuOpen = true)}
     openSaveDialog={() => (isSaveDialogOpen = true)}
-    {onLoadView}
-    {savedViews}
 />
 
 {#if isRenameDialogOpen && activeView}

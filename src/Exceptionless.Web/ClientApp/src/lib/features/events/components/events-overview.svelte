@@ -334,7 +334,7 @@
 
 <InvestigationDetailTour {event} placement="stack" />
 
-<section data-event-type={event ? (hasErrorOrSimpleError(event) ? 'error' : event.type) : undefined} data-tour={event ? 'event-details' : undefined}>
+<section>
     <h4 class="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">Stack</h4>
     {#if event?.stack_id}
         <StackCard
@@ -348,7 +348,7 @@
 
 <InvestigationDetailTour {event} placement="occurrence" />
 
-<section class="mt-2" data-tour={event ? 'event-occurrence' : undefined}>
+<section class="mt-2">
     <div class="mb-2 flex items-center justify-between">
         <h4 class="text-muted-foreground text-sm font-semibold tracking-wide uppercase">Event</h4>
         <div class="flex items-center gap-1">
@@ -360,7 +360,6 @@
             {#if event?.stack_id}
                 <Button
                     aria-label="Show all events"
-                    data-tour="event-stack-filter"
                     onclick={() => filterChanged(new EventsFacetedFilter.StringFilter('stack', event!.stack_id))}
                     size="icon-sm"
                     title="Show all events"
@@ -431,7 +430,6 @@
                                 draggedPromotedTab === tab && 'bg-accent/70'
                             ]}
                             draggable={isPromotedTab(tab)}
-                            data-tour={tab === 'Overview' ? 'event-tab-overview' : undefined}
                             ondragstart={(event) => handlePromotedTabDragStart(event, tab)}
                             ondragover={(event) => handlePromotedTabDragOver(event, tab)}
                             ondrop={(event) => handlePromotedTabDrop(event, tab)}

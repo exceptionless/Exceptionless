@@ -50,7 +50,6 @@
     import { filterUsesPremiumFeatures } from '$features/events/premium-filter';
     import { organization } from '$features/organizations/context.svelte';
     import { premiumPage } from '$features/organizations/premium-page.svelte';
-    import { productTourCheckpoint } from '$features/product-tours/state.svelte';
     import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
     import { isSavedViewHydrationPending, isSavedViewUnavailable, useSavedViews } from '$features/saved-views/use-saved-views.svelte';
     import * as agg from '$features/shared/api/aggregations';
@@ -80,7 +79,6 @@
         serializeTimeQueryParam
     } from '../redirect-to-events.svelte';
     let selectedEventId: null | string = $state(null);
-    const investigationCheckpoint = $derived(productTourCheckpoint.current?.tourName === 'event-investigate' ? productTourCheckpoint.current : undefined);
 
     function handleEventError(problem: ProblemDetails) {
         showBillingDialogOnUpgradeProblem(problem, organization.current);
@@ -89,10 +87,6 @@
 
     function rowClick(row: EventSummaryModel<SummaryTemplateKeys>) {
         selectedEventId = row.id;
-        const checkpoint = investigationCheckpoint;
-        if (checkpoint?.checkpointName === 'choose-error') {
-            productTourCheckpoint.advance(checkpoint, 'stack-summary');
-        }
     }
 
     function rowHref(row: EventSummaryModel<SummaryTemplateKeys>): string {

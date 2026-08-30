@@ -1,4 +1,4 @@
-import type { ProductTourCheckpoint, ProductTourLaunchSource, ProductTourName, ProductTourPhase } from './types';
+import type { ProductTourCheckpoint, ProductTourLaunchSource, ProductTourName } from './types';
 
 import { PRODUCT_TOUR_CHECKPOINTS, PRODUCT_TOUR_LAUNCH_SOURCES } from './types';
 
@@ -20,7 +20,14 @@ export function readProductTourSession(storage: Pick<Storage, 'getItem' | 'remov
             return undefined;
         }
 
-        return candidate;
+        return {
+            checkpointName: candidate.checkpointName,
+            organizationId: candidate.organizationId,
+            source: candidate.source,
+            tourName: candidate.tourName,
+            userId: candidate.userId,
+            version: candidate.version
+        } as ProductTourCheckpoint;
     } catch {
         clearProductTourSession(storage);
         return undefined;
@@ -29,18 +36,6 @@ export function readProductTourSession(storage: Pick<Storage, 'getItem' | 'remov
 
 export function writeProductTourSession(checkpoint: ProductTourCheckpoint, storage: Pick<Storage, 'setItem'> = sessionStorage): void {
     storage.setItem(SESSION_KEY, JSON.stringify(checkpoint));
-}
-
-function isPhase(value: unknown, tourName: string, checkpointName: unknown): value is ProductTourPhase {
-    if (!isRecord(value) || typeof value.type !== 'string') return false;
-    if (value.type === 'active') return true;
-    return (
-        tourName === 'saved-view-create' &&
-        checkpointName === 'view-created' &&
-        (value.type === 'saved-view-created' || value.type === 'saved-view-loaded') &&
-        typeof value.viewId === 'string' &&
-        !!value.viewId
-    );
 }
 
 function isProductTourCheckpoint(value: unknown): value is ProductTourCheckpoint {
@@ -59,7 +54,7 @@ function isProductTourCheckpoint(value: unknown): value is ProductTourCheckpoint
 
     const checkpoints: readonly string[] = PRODUCT_TOUR_CHECKPOINTS[value.tourName];
     if (typeof value.checkpointName !== 'string' || !checkpoints.includes(value.checkpointName)) return false;
-    return isPhase(value.phase, value.tourName, value.checkpointName);
+    return true;
 }
 
 function isProductTourLaunchSource(value: unknown): value is ProductTourLaunchSource {

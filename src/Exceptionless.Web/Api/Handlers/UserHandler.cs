@@ -18,7 +18,6 @@ using Foundatio.Caching;
 using Foundatio.Mediator;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Exceptions;
-using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Web.Api.Handlers;
 
@@ -60,45 +59,22 @@ public class UserHandler(
         if (!ProductTours.IsValid(message.TourName, message.Progress.Version))
             return Result.Invalid(ValidationError.Create("version", "The product tour version is not supported."));
 
-        ProductTourProgress? progress = null;
         try
         {
-            await repository.PatchAsync(
+            var progress = await repository.UpdateProductTourProgressAsync(
                 GetCurrentUserId(),
-                new ActionPatch<User>(user =>
+                message.TourName,
+                new ProductTourProgress
                 {
-                    user.ProductTours.TryGetValue(message.TourName, out var currentProgress);
-                    if (!ShouldUpdateProductTourProgress(currentProgress, message.Progress))
-                    {
-                        progress = currentProgress;
-                        return false;
-                    }
-
-                    progress = new ProductTourProgress
-                    {
-                        Status = message.Progress.Status!.Value,
-                        Version = message.Progress.Version
-                    };
-                    user.ProductTours[message.TourName] = progress;
-                    return true;
-                }),
-                options => options.Cache());
+                    Status = message.Progress.Status!.Value,
+                    Version = message.Progress.Version
+                });
+            return progress;
         }
         catch (DocumentNotFoundException)
         {
             return Result.NotFound("User not found.");
         }
-
-        return progress is null ? Result.NotFound("User not found.") : progress;
-    }
-
-    private static bool ShouldUpdateProductTourProgress(ProductTourProgress? current, UpdateProductTourProgress requested)
-    {
-        return current is null
-            || requested.Version > current.Version
-            || (requested.Version == current.Version
-                && current.Status is ProductTourStatus.Dismissed
-                && requested.Status is ProductTourStatus.Completed);
     }
 
     public async Task<Result<IReadOnlyCollection<ViewOAuthGrant>>> Handle(GetCurrentUserOAuthGrants message)

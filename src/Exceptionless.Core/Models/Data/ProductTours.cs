@@ -27,14 +27,10 @@ public static class ProductTours
 
     public static bool IsKnown(string name) => Definitions.ContainsKey(name);
 
-    public static bool IsPrompt(string name) => Find(name)?.Kind is ProductTourKind.Prompt;
-
     public static bool IsValid(string name, int version)
     {
-        return Find(name) is { } definition && version > 0 && version <= definition.CurrentVersion;
+        return Definitions.TryGetValue(name, out var definition) && version > 0 && version <= definition.CurrentVersion;
     }
-
-    public static ProductTourDefinition? Find(string name) => Definitions.GetValueOrDefault(name);
 
     public static string CreateTelemetrySource(
         ProductTourTelemetryEvent telemetryEvent,

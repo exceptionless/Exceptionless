@@ -7,20 +7,18 @@ export enum StackStatus {
   Discarded = "discarded",
 }
 
-export enum ProductTourTelemetryEvent {
-  Completed = "completed",
-  Dismissed = "dismissed",
-  Shown = "shown",
-  Started = "started",
-}
-
 export enum ProductTourStatus {
   Completed = 1,
   Dismissed = 2,
 }
 
+export enum ProductTourKind {
+  Guide = "guide",
+  Prompt = "prompt",
+}
+
 export enum ProductTourLaunchSource {
-  Automatic = "automatic",
+  Welcome = "welcome",
   Catalog = "catalog",
   CommandPalette = "command-palette",
   FeatureAnnouncement = "feature-announcement",
@@ -514,20 +512,6 @@ export interface ProblemDetails {
   instance?: null | string;
 }
 
-export interface ProductTourEvent {
-  /** @format date-time */
-  date_utc: string;
-  event: ProductTourTelemetryEvent;
-  launch_source: ProductTourLaunchSource;
-  tour_name: string;
-  user_identity?: null | string;
-  user_name?: null | string;
-  /** @format int32 */
-  version: number;
-  /** @format int64 */
-  count: number;
-}
-
 export interface ProductTourProgress {
   status: ProductTourStatus;
   /** @format int32 */
@@ -536,33 +520,34 @@ export interface ProductTourProgress {
 
 export interface ProductTourSummary {
   name: string;
+  /** @format int32 */
+  version: number;
+  kind: ProductTourKind;
   /** @format int64 */
   shown: number;
   /** @format int64 */
   started: number;
-  /** @format int64 */
-  manual_started: number;
   /** @format int64 */
   completed: number;
   /** @format int64 */
   dismissed: number;
   /** @format date-time */
   last_run_utc?: null | string;
-  /** @format double */
-  started_rate?: null | number;
-  /** @format double */
-  manual_started_rate?: null | number;
-  /** @format double */
-  completion_rate?: null | number;
-  /** @format double */
-  dismissal_rate?: null | number;
+  start_sources: ProductTourStartSource[];
+}
+
+export interface ProductTourStartSource {
+  source: ProductTourLaunchSource;
+  /** @format int64 */
+  count: number;
 }
 
 export interface ProductTourUsageResponse {
   /** @format date-time */
-  month?: null | string;
+  utc_start?: null | string;
+  /** @format date-time */
+  utc_end: string;
   tours: ProductTourSummary[];
-  recent_events: ProductTourEvent[];
 }
 
 export interface ResetPasswordModel {

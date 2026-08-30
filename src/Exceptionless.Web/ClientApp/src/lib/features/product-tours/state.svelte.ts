@@ -1,4 +1,4 @@
-import type { ProductTourCheckpoint, ProductTourCheckpointName, ProductTourLaunchSource, ProductTourName, ProductTourPhase } from './types';
+import type { ProductTourCheckpoint, ProductTourCheckpointName, ProductTourLaunchSource, ProductTourName } from './types';
 
 import { clearProductTourSession, readProductTourSession, writeProductTourSession } from './session';
 
@@ -8,9 +8,6 @@ class ProductTourCheckpointStore {
     advance<Name extends ProductTourCheckpoint['tourName']>(
         expected: ProductTourCheckpoint<Name>,
         checkpointName: ProductTourCheckpointName<Name>,
-        phase: ProductTourPhase<Name> = {
-            type: 'active'
-        },
         organizationId = expected.organizationId
     ): ProductTourCheckpoint<Name> | undefined {
         if (this.current !== expected) {
@@ -19,8 +16,7 @@ class ProductTourCheckpointStore {
         const next = {
             ...expected,
             checkpointName,
-            organizationId,
-            phase
+            organizationId
         } as ProductTourCheckpoint<Name>;
         return this.save(next);
     }
@@ -64,9 +60,6 @@ class ProductTourCheckpointStore {
         const checkpoint = {
             checkpointName,
             organizationId,
-            phase: {
-                type: 'active'
-            },
             source,
             tourName,
             userId,

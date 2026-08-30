@@ -63,8 +63,35 @@ test.describe('shell and identity checkpoints', () => {
             await expect(tour.getByText('Find anything quickly')).toBeVisible();
 
             const dismissed = page.waitForResponse(isSuccessfulTourProgress('app-overview'));
-            await tour.getByRole('button', { name: 'Close' }).click();
+            await tour.getByRole('button', { name: 'End guide' }).click();
             await dismissed;
+            await expectProductTourSession(page, false);
+        });
+
+        await test.step('every shell target remains visible on mobile', async () => {
+            await mockAssistantAccess(page);
+            await page.reload();
+            await page.setViewportSize({ height: 844, width: 390 });
+            await startTourFromCommand(page, 'Explore Exceptionless');
+            const tour = page.locator('.driver-popover');
+
+            for (const [title, target] of [
+                ['Your workspace navigation', '[data-tour="app-navigation"]'],
+                ['Find anything quickly', '[data-tour="command-search"]'],
+                ['Reuse configured views', '[data-tour="saved-view-navigation"]'],
+                ['Ask Exie with context', '[data-tour="exie-trigger"]'],
+                ['Help is always nearby', '[data-tour="help-menu"]']
+            ] as const) {
+                await expect(tour.getByText(title)).toBeVisible();
+                await expect(page.locator(target)).toBeVisible();
+                if (title !== 'Help is always nearby') {
+                    await tour.getByRole('button', { name: 'Continue' }).click();
+                }
+            }
+
+            const completed = page.waitForResponse(isSuccessfulTourProgress('app-overview'));
+            await tour.getByRole('button', { name: 'Continue' }).click();
+            await completed;
             await expectProductTourSession(page, false);
         });
 
@@ -121,6 +148,12 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
         await page.locator('[data-product-tour-inline="project-configure"]').getByRole('button', { name: 'Continue' }).click();
         await expect(page.getByText('Waiting for your first event')).toBeVisible();
 
+        let projectProgressRequests = 0;
+        const projectProgressRoute = (url: URL) => url.pathname === '/api/v2/users/me/product-tours/project-configure';
+        await page.route(projectProgressRoute, async (route) => {
+            projectProgressRequests += 1;
+            await route.fulfill({ json: { title: 'Injected progress failure' }, status: 500 });
+        });
         try {
             const token = await e2eApi.getProjectDefaultToken(e2eScenario.userToken, projectId!);
             await e2eApi.submitEvent(
@@ -134,8 +167,16 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
                 })
             );
             await expect(page).toHaveURL(/\/next\/event/);
+            await expectProductTourSession(page, true);
+            await expect.poll(() => projectProgressRequests).toBe(1);
+
+            await page.unroute(projectProgressRoute);
+            const completed = page.waitForResponse(isSuccessfulTourProgress('project-configure'));
+            await page.goto(`/next/project/${projectId}/configure`);
+            await completed;
             await expectProductTourSession(page, false);
         } finally {
+            await page.unroute(projectProgressRoute);
             await e2eApi.deleteProject(e2eScenario.userToken, projectId!);
             await e2eApi.waitForProjectDeleted(e2eScenario.userToken, projectId!);
         }
@@ -267,5 +308,8 @@ async function startTourFromCommand(page: Page, title: string): Promise<void> {
     }
 
     await page.getByRole('button', { name: 'Search Exceptionless' }).click();
-    await page.getByRole('dialog').getByText(title, { exact: true }).click();
+    await page.getByRole('dialog').getByText('Guided Tours…', { exact: true }).click();
+    const catalog = page.getByRole('dialog', { name: 'Guided Tours' });
+    const tour = catalog.locator('section').filter({ has: catalog.getByRole('heading', { name: title }) });
+    await tour.getByRole('button', { name: /^(Continue|Restart|Start)$/ }).click();
 }

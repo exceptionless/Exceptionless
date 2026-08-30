@@ -30,8 +30,9 @@ describe('product tour catalog', () => {
 
     it('recommends setup until an organization has configured projects', () => {
         expect(getRecommendedProductTourName(context({ organizationId: undefined }))).toBe('project-configure');
-        expect(getRecommendedProductTourName(context({ projects: [{ is_configured: false }] }))).toBe('project-configure');
-        expect(getRecommendedProductTourName(context({ projects: [{ is_configured: true }] }))).toBe('app-overview');
+        expect(getRecommendedProductTourName(context({ projects: [] }))).toBe('project-configure');
+        expect(getRecommendedProductTourName(context({ projects: [{ id: 'project-id', is_configured: false }] }))).toBe('project-configure');
+        expect(getRecommendedProductTourName(context({ projects: [{ id: 'project-id', is_configured: true }] }))).toBe('app-overview');
     });
 
     it('reports availability separately from catalog metadata', () => {
@@ -47,5 +48,23 @@ describe('product tour catalog', () => {
 
     it('defines a positive version for every tour', () => {
         expect(getProductTourItems(context()).every((item) => item.version > 0)).toBe(true);
+    });
+
+    it('starts project setup from domain state', () => {
+        const definition = productTourCatalog.find((tour) => tour.name === 'project-configure')!;
+
+        expect(definition.start(context({ organizationId: undefined }))).toEqual({ checkpointName: 'organization-name', route: '/next/organization/add' });
+        expect(definition.start(context({ projects: [] }))).toEqual({ checkpointName: 'project-name', route: '/next/project/add' });
+        expect(definition.start(context({ projects: [{ id: 'project-id', is_configured: false }] }))).toEqual({
+            checkpointName: 'choose-platform',
+            route: '/next/project/project-id/configure?redirect=true'
+        });
+    });
+
+    it('requires actual Exie access', () => {
+        const item = getProductTourItems(context({ assistantAccess: { enabled: true, has_access: false, upgrade_required: true } })).find(
+            (tour) => tour.name === 'exie-overview'
+        );
+        expect(item?.currentAvailability.available).toBe(false);
     });
 });
