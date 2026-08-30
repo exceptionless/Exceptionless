@@ -113,6 +113,7 @@ test.describe('shell and identity checkpoints', () => {
         });
 
         await test.step('logout clears an active checkpoint without recording progress', async () => {
+            await page.setViewportSize({ height: 900, width: 1440 });
             await startTourFromCommand(page, 'Meet Exie');
             await expectProductTourSession(page, true);
             const writesBeforeLogout = progressWrites.length;
@@ -131,16 +132,24 @@ test.describe('shell and identity checkpoints', () => {
 test('domain workflows advance only on real success', async ({ e2eApi, e2eScenario, page }) => {
     test.setTimeout(300_000);
 
-    await test.step('project configuration advances after creation and the first event', async () => {
+    await test.step('project configuration advances after setup and the first event', async () => {
         await page.goto('/next/stack');
         await startTourFromCommand(page, 'Configure a project');
-        await expect(page.getByRole('heading', { name: 'Add Project' })).toBeVisible();
+        await page.waitForURL(/\/next\/project\/(?:add|[^/]+\/configure)/);
 
-        const projectName = `Tour Project ${e2eScenario.run}`;
-        await page.getByLabel('Project Name', { exact: true }).fill(projectName);
-        await page.getByRole('button', { name: 'Continue to Client Setup' }).click();
-        await page.waitForURL(/\/next\/project\/[^/]+\/configure\?redirect=true/);
-        const projectId = page.url().match(/\/project\/([^/]+)\/configure/)?.[1];
+        let createdProject = false;
+        let projectId = page.url().match(/\/project\/([^/]+)\/configure/)?.[1];
+        if (!projectId) {
+            createdProject = true;
+            await expect(page.getByRole('heading', { name: 'Add Project' })).toBeVisible();
+            await page.getByLabel('Project Name', { exact: true }).fill(`Tour Project ${e2eScenario.run}`);
+            await page.getByRole('button', { name: 'Continue to Client Setup' }).click();
+            await page.waitForURL(/\/next\/project\/[^/]+\/configure\?redirect=true/);
+            projectId = page.url().match(/\/project\/([^/]+)\/configure/)?.[1];
+        } else {
+            expect(projectId).toBe(e2eScenario.projectId);
+        }
+
         expect(projectId).toBeTruthy();
 
         await page.locator('[data-tour="project-configure-platform"]').click();
@@ -169,6 +178,7 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
             await expect(page).toHaveURL(/\/next\/event/);
             await expectProductTourSession(page, true);
             await expect.poll(() => projectProgressRequests).toBe(1);
+            await expect.poll(async () => (await e2eApi.getProject(e2eScenario.userToken, projectId!))?.is_configured).toBe(true);
 
             await page.unroute(projectProgressRoute);
             const completed = page.waitForResponse(isSuccessfulTourProgress('project-configure'));
@@ -177,8 +187,10 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
             await expectProductTourSession(page, false);
         } finally {
             await page.unroute(projectProgressRoute);
-            await e2eApi.deleteProject(e2eScenario.userToken, projectId!);
-            await e2eApi.waitForProjectDeleted(e2eScenario.userToken, projectId!);
+            if (createdProject) {
+                await e2eApi.deleteProject(e2eScenario.userToken, projectId!);
+                await e2eApi.waitForProjectDeleted(e2eScenario.userToken, projectId!);
+            }
         }
     });
 
@@ -310,6 +322,6 @@ async function startTourFromCommand(page: Page, title: string): Promise<void> {
     await page.getByRole('button', { name: 'Search Exceptionless' }).click();
     await page.getByRole('dialog').getByText('Guided Tours…', { exact: true }).click();
     const catalog = page.getByRole('dialog', { name: 'Guided Tours' });
-    const tour = catalog.locator('section').filter({ has: catalog.getByRole('heading', { name: title }) });
+    const tour = catalog.getByRole('region', { name: title });
     await tour.getByRole('button', { name: /^(Continue|Restart|Start)$/ }).click();
 }
