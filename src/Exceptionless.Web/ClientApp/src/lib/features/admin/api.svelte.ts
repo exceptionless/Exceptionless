@@ -19,6 +19,8 @@ import type {
     UpdateEventSubmissionSettingsRequest
 } from './models';
 
+import { getProductTourUsageParams, type ProductTourUsageRange } from './product-tour-usage';
+
 export type GetOAuthApplicationsParams = {
     criteria?: string;
     limit?: number;
@@ -45,7 +47,7 @@ export const queryKeys = {
     migrations: ['admin', 'migrations'] as const,
     oauthApplication: (id: string | undefined) => [...queryKeys.oauthApplications, id] as const,
     oauthApplications: ['admin', 'oauth-applications'] as const,
-    productTourUsage: (month?: string) => ['admin', 'product-tour-usage', month ?? 'all'] as const,
+    productTourUsage: (range: ProductTourUsageRange) => ['admin', 'product-tour-usage', range] as const,
     snapshots: ['admin', 'elasticsearch', 'snapshots'] as const,
     stats: ['admin', 'stats'] as const
 };
@@ -112,34 +114,28 @@ export function getAdminAssistantUsageQuery(month: () => string) {
     }));
 }
 
-export function getAdminProductTourUsageQuery(month: () => string | undefined) {
-    return createQuery<ProductTourUsageResponse, ProblemDetails>(() => ({
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
-            const client = useFetchClient();
-            const selectedMonth = month();
-            const params = selectedMonth
-                ? {
-                      limit: 100,
-                      month: `${selectedMonth}-01`
-                  }
-                : {
-                      all: true,
-                      limit: 100
-                  };
-            const response = await client.getJSON<ProductTourUsageResponse>('admin/product-tour-usage', {
-                params,
-                signal
-            });
+export function getAdminProductTourUsageQuery(range: () => ProductTourUsageRange) {
+    return createQuery<ProductTourUsageResponse, ProblemDetails>(() => {
+        const selectedRange = range();
 
-            if (!response.ok) {
-                throw response.problem;
-            }
+        return {
+            queryFn: async ({ signal }: { signal: AbortSignal }) => {
+                const client = useFetchClient();
+                const response = await client.getJSON<ProductTourUsageResponse>('admin/product-tour-usage', {
+                    params: getProductTourUsageParams(selectedRange),
+                    signal
+                });
 
-            return response.data!;
-        },
-        queryKey: queryKeys.productTourUsage(month()),
-        staleTime: 60 * 1000
-    }));
+                if (!response.ok) {
+                    throw response.problem;
+                }
+
+                return response.data!;
+            },
+            queryKey: queryKeys.productTourUsage(selectedRange),
+            staleTime: 60 * 1000
+        };
+    });
 }
 
 export function getAdminStatsQuery() {

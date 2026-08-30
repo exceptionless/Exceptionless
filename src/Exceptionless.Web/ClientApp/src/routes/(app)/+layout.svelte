@@ -1,6 +1,6 @@
 <script lang="ts">
     import type { AssistantPromptRequest } from '$features/assistant/models';
-    import type { ProductTourLaunchSource, ProductTourName } from '$features/product-tours/types';
+    import type { ProductTourLaunchSource } from '$features/product-tours/types';
     import type { SavedView } from '$features/saved-views/models';
     import type { Snippet } from 'svelte';
 
@@ -18,7 +18,6 @@
     import { ChangePlanDialogHost, UpgradeRequiredDialog } from '$features/billing';
     import {
         createOrganizationEventNotificationRefresher,
-        getOrganizationEventsQuery,
         invalidatePersistentEventQueries,
         type OrganizationEventNotificationRefresher
     } from '$features/events/api.svelte';
@@ -38,11 +37,10 @@
     import { organization, showOrganizationNotifications } from '$features/organizations/context.svelte';
     import { premiumPage } from '$features/organizations/premium-page.svelte';
     import { getUtcMonthKey, ORGANIZATION_USAGE_ROLLOVER_CHECK_INTERVAL_MS } from '$features/organizations/utils';
-    import { getProductTourItems } from '$features/product-tours/catalog';
     import ProductTourHost from '$features/product-tours/components/product-tour-host.svelte';
     import { isProductTourSetupRoute } from '$features/product-tours/eligibility';
     import { productTourCheckpoint } from '$features/product-tours/state.svelte';
-    import { getOrganizationProjectsQuery, invalidateProjectQueries } from '$features/projects/api.svelte';
+    import { invalidateProjectQueries } from '$features/projects/api.svelte';
     import { getSavedViewsQuery, invalidateSavedViewQueries, isSavedViewDeleted, putUserSavedViewOrder } from '$features/saved-views/api.svelte';
     import { getPersonalSavedViewOrder, resolvePersonalSavedViewOrder } from '$features/saved-views/ordering';
     import { savedViewHref } from '$features/saved-views/slugs';
@@ -100,7 +98,6 @@
     let isImpersonateOrganizationOpen = $state(false);
     let isUserMenuOpen = $state(false);
     let productToursComponent = $state<ProductTourHost>();
-    let productTourErrorCheckEnabled = $state(false);
 
     // Auto-reset premium page state on navigation so pages don't need cleanup
     beforeNavigate(() => {
@@ -109,7 +106,6 @@
 
     function openCommandPalette(): void {
         commandResetKey += 1;
-        productTourErrorCheckEnabled = true;
         isCommandOpen = true;
     }
 
@@ -248,12 +244,7 @@
     }
 
     function openGuidedTours(source: ProductTourLaunchSource): void {
-        productTourErrorCheckEnabled = true;
         productToursComponent?.openCatalog(source);
-    }
-
-    async function startGuidedTour(name: ProductTourName, source: ProductTourLaunchSource): Promise<void> {
-        await productToursComponent?.startTour(name, source);
     }
 
     async function stopImpersonating(): Promise<void> {
@@ -513,43 +504,6 @@
 
     const organizationsQuery = getOrganizationsQuery({});
     const organizations = $derived(organizationsQuery.data?.data ?? []);
-    const projectsQuery = getOrganizationProjectsQuery({
-        params: {
-            limit: 1000
-        },
-        route: {
-            get organizationId() {
-                return organization.current;
-            }
-        }
-    });
-    const projects = $derived(projectsQuery.data?.data ?? []);
-    const productTourErrorEventsQuery = getOrganizationEventsQuery({
-        enabled: () => productTourErrorCheckEnabled,
-        params: {
-            filter: 'type:error',
-            limit: 1,
-            mode: 'summary',
-            time: 'all'
-        },
-        route: {
-            get organizationId() {
-                return organization.current;
-            }
-        }
-    });
-    const productTourErrorEventAvailability = $derived.by(() => {
-        if (!organization.current || !productTourErrorCheckEnabled || productTourErrorEventsQuery.isPending) {
-            return 'loading' as const;
-        }
-
-        if (productTourErrorEventsQuery.isError) {
-            return 'error' as const;
-        }
-
-        return (productTourErrorEventsQuery.data?.data?.length ?? 0) > 0 ? ('available' as const) : ('empty' as const);
-    });
-
     const impersonatingOrganizationId = $derived.by(() => {
         // Only consider impersonation if user data is loaded and user has organizations
         const userOrganizationIds = meQuery.data?.organization_ids;
@@ -729,21 +683,6 @@
     const setupPath = resolve('/(app)/organization/add');
     const isSetupPage = $derived(page.url.pathname === setupPath);
     const suppressAutomaticProductTours = $derived(isProductTourSetupRoute(page.route.id));
-    const productTourItems = $derived(
-        meQuery.isSuccess
-            ? getProductTourItems(
-                  {
-                      assistantAccess,
-                      errorEventAvailability: productTourErrorEventAvailability,
-                      isSetupPage: suppressAutomaticProductTours,
-                      organizationId: organization.current,
-                      pathname: page.url.pathname,
-                      projects
-                  },
-                  meQuery.data?.product_tours
-              )
-            : []
-    );
     const isAnyProductTourOverlayOpen = $derived(
         isAssistantOpen || isCommandOpen || isImpersonateOrganizationOpen || isKeyboardShortcutsOpen || isOrganizationSwitcherOpen || isUserMenuOpen
     );
@@ -829,7 +768,6 @@
                     isExieEnabled={isAssistantEnabled}
                     {isGlobalAdmin}
                     {isImpersonating}
-                    guidedTours={productTourItems}
                     {openChat}
                     openExie={openAssistantPanel}
                     {openImpersonateOrganization}
@@ -841,7 +779,6 @@
                     resetKey={commandResetKey}
                     routes={filteredRoutes}
                     {stopImpersonating}
-                    startGuidedTour={(id) => startGuidedTour(id, 'command-palette')}
                 />
                 <KeyboardShortcutsDialog bind:open={isKeyboardShortcutsOpen} />
 
@@ -900,19 +837,16 @@
         bind:this={productToursComponent}
         closeOverlays={closeProductTourOverlays}
         currentUser={meQuery.data}
-        errorEventAvailability={productTourErrorEventAvailability}
         isAnyOverlayOpen={isAnyProductTourOverlayOpen}
         {isImpersonating}
+        isMobile={sidebar.isMobile}
         isSetupPage={suppressAutomaticProductTours}
         openAssistant={openAssistantPanel}
         organizationId={organization.current}
         pathname={page.url.pathname}
-        {projects}
-        requestErrorAvailability={() => (productTourErrorCheckEnabled = true)}
         setMobileNavigationOpen={(open) => (sidebar.isMobile ? sidebar.setOpenMobile(open) : sidebar.setOpen(open))}
         stateSettled={meQuery.isSuccess &&
             organizationsQuery.isSuccess &&
-            (!organization.current || projectsQuery.isSuccess) &&
             (!organization.current || assistantAccessQuery.isSuccess || assistantAccessQuery.isError)}
     />
     <IntercomShell

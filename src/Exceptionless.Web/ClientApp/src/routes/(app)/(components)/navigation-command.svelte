@@ -1,6 +1,5 @@
 <script lang="ts">
     import type { ViewOrganization } from '$features/organizations/models';
-    import type { ProductTourListItem, ProductTourName } from '$features/product-tours/types';
     import type { ViewProject } from '$features/projects/models';
     import type { FetchClientResponse } from '@foundatiofx/fetchclient';
 
@@ -58,7 +57,6 @@
 
     type Props = {
         askExie: (prompt: string) => Promise<void> | void;
-        guidedTours: ProductTourListItem[];
         isChatEnabled: boolean;
         isExieEnabled: boolean;
         isGlobalAdmin: boolean;
@@ -74,7 +72,6 @@
         organizations: ViewOrganization[];
         resetKey: number;
         routes: NavigationItem[];
-        startGuidedTour: (name: ProductTourName) => Promise<void>;
         stopImpersonating: () => Promise<void> | void;
     };
 
@@ -91,7 +88,6 @@
 
     let {
         askExie,
-        guidedTours,
         isChatEnabled,
         isExieEnabled,
         isGlobalAdmin,
@@ -107,7 +103,6 @@
         organizations,
         resetKey,
         routes,
-        startGuidedTour,
         stopImpersonating
     }: Props = $props();
     let searchText = $state('');
@@ -428,11 +423,6 @@
         openGuidedTours();
     }
 
-    async function launchGuidedTour(name: ProductTourName): Promise<void> {
-        closeCommandWindow();
-        await startGuidedTour(name);
-    }
-
     function toggleTheme(): void {
         closeCommandWindow();
         toggleMode();
@@ -575,15 +565,9 @@
             />
             {#if !selectingProject}
                 <Command.Group heading="Guided Tours">
-                    {#each guidedTours.filter((tour) => tour.currentAvailability.available) as tour (tour.name)}
-                        <Command.Item keywords={[...tour.keywords]} value={`Guided Tour ${tour.title}`} onSelect={() => launchGuidedTour(tour.name)}>
-                            <Compass />
-                            <span>{tour.title}</span>
-                        </Command.Item>
-                    {/each}
                     <Command.Item value="Browse Guided Tours help onboarding guides" onSelect={openGuidedTourCatalog}>
-                        <CircleHelp />
-                        <span>Browse Guided Tours…</span>
+                        <Compass />
+                        <span>Guided Tours…</span>
                     </Command.Item>
                 </Command.Group>
                 <Command.Separator />

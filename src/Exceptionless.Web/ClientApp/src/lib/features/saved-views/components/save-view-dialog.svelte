@@ -124,7 +124,7 @@
         }
     }}
 >
-    <Dialog.Content class="sm:max-w-100" data-tour="saved-view-dialog">
+    <Dialog.Content class="sm:max-w-100">
         <Dialog.Header>
             <Dialog.Title>Save View</Dialog.Title>
             <Dialog.Description>Save the current view configuration for quick access.</Dialog.Description>

@@ -27,15 +27,10 @@ export const StackStatusSchema = zodEnum([
   "ignored",
   "discarded",
 ]);
-export const ProductTourTelemetryEventSchema = zodEnum([
-  "completed",
-  "dismissed",
-  "shown",
-  "started",
-]);
 export const ProductTourStatusSchema = union([literal(1), literal(2)]);
+export const ProductTourKindSchema = zodEnum(["guide", "prompt"]);
 export const ProductTourLaunchSourceSchema = zodEnum([
-  "automatic",
+  "welcome",
   "catalog",
   "command-palette",
   "feature-announcement",
@@ -640,18 +635,6 @@ export const ProblemDetailsSchema = object({
 });
 export type ProblemDetailsFormData = Infer<typeof ProblemDetailsSchema>;
 
-export const ProductTourEventSchema = object({
-  date_utc: iso.datetime(),
-  event: ProductTourTelemetryEventSchema,
-  launch_source: ProductTourLaunchSourceSchema,
-  tour_name: string().min(1, "Tour name is required"),
-  user_identity: string().min(1, "User identity is required").nullable(),
-  user_name: string().min(1, "User name is required").nullable(),
-  version: int32(),
-  count: int(),
-});
-export type ProductTourEventFormData = Infer<typeof ProductTourEventSchema>;
-
 export const ProductTourProgressSchema = object({
   status: ProductTourStatusSchema,
   version: int32(),
@@ -662,23 +645,29 @@ export type ProductTourProgressFormData = Infer<
 
 export const ProductTourSummarySchema = object({
   name: string().min(1, "Name is required"),
+  version: int32(),
+  kind: ProductTourKindSchema,
   shown: int(),
   started: int(),
-  manual_started: int(),
   completed: int(),
   dismissed: int(),
   last_run_utc: iso.datetime().nullable(),
-  started_rate: number().nullable(),
-  manual_started_rate: number().nullable(),
-  completion_rate: number().nullable(),
-  dismissal_rate: number().nullable(),
+  start_sources: array(lazy(() => ProductTourStartSourceSchema)),
 });
 export type ProductTourSummaryFormData = Infer<typeof ProductTourSummarySchema>;
 
+export const ProductTourStartSourceSchema = object({
+  source: ProductTourLaunchSourceSchema,
+  count: int(),
+});
+export type ProductTourStartSourceFormData = Infer<
+  typeof ProductTourStartSourceSchema
+>;
+
 export const ProductTourUsageResponseSchema = object({
-  month: iso.datetime().nullable(),
+  utc_start: iso.datetime().nullable(),
+  utc_end: iso.datetime(),
   tours: array(lazy(() => ProductTourSummarySchema)),
-  recent_events: array(lazy(() => ProductTourEventSchema)),
 });
 export type ProductTourUsageResponseFormData = Infer<
   typeof ProductTourUsageResponseSchema

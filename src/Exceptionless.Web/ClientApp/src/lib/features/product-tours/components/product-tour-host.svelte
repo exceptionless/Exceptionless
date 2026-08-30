@@ -1,15 +1,17 @@
 <script lang="ts">
     import type { AssistantAccess } from '$features/assistant/models';
-    import type { ViewProject } from '$features/projects/models';
     import type { ViewCurrentUser } from '$features/users/models';
 
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
+    import { getOrganizationEventsQuery } from '$features/events/api.svelte';
+    import { getOrganizationProjectsQuery } from '$features/projects/api.svelte';
     import { putCurrentUserProductTour } from '$features/users/api.svelte';
     import { ProductTourStatus } from '$features/users/models';
+    import { onMount } from 'svelte';
     import { toast } from 'svelte-sonner';
 
-    import type { ProductTourContext, ProductTourLaunchSource, ProductTourListItem, ProductTourName } from '../types';
+    import type { ProductTourCheckpoint, ProductTourContext, ProductTourLaunchSource, ProductTourListItem, ProductTourName } from '../types';
 
     import { createProductTourActions, track } from '../actions.svelte';
     import { getProductTourItems, getRecommendedProductTourName } from '../catalog';
@@ -24,21 +26,21 @@
         assistantAccess?: AssistantAccess;
         closeOverlays: () => void;
         currentUser?: ViewCurrentUser;
-        errorEventAvailability: ProductTourContext['errorEventAvailability'];
         isAnyOverlayOpen: boolean;
         isImpersonating: boolean;
+        isMobile: boolean;
         isSetupPage: boolean;
         openAssistant: () => Promise<void>;
         organizationId?: string;
         pathname: string;
-        projects: ViewProject[];
-        requestErrorAvailability: () => void;
         setMobileNavigationOpen: (open: boolean) => void;
         stateSettled: boolean;
     }
 
     const EVENT_PATH = resolve('/(app)/event');
     const EXIE_ANNOUNCEMENT_VERSION = 1;
+    const ORGANIZATION_ADD_PATH = resolve('/(app)/organization/add');
+    const PROJECT_ADD_PATH = resolve('/(app)/project/add');
     const STACK_PATH = resolve('/(app)/stack');
     const SYSTEM_PATH = resolve('/(app)/system');
     const WELCOME_VERSION = 1;
@@ -47,27 +49,74 @@
         assistantAccess,
         closeOverlays,
         currentUser,
-        errorEventAvailability,
         isAnyOverlayOpen,
         isImpersonating,
+        isMobile,
         isSetupPage,
         openAssistant,
         organizationId,
         pathname,
-        projects,
-        requestErrorAvailability,
         setMobileNavigationOpen,
         stateSettled
     }: Props = $props();
 
     let catalogOpen = $state(false);
     let catalogSource = $state<ProductTourLaunchSource>('catalog');
+    let checkErrorAvailability = $state(false);
+    let automaticSurface = $state<'exie-announcement' | 'welcome'>();
+    let automaticSurfaceReady = $state(false);
+    let automaticSurfaceClaimed = $state(false);
+    let automaticSurfaceUserId = $state<string>();
     let lastTrackedAnnouncementImpression = $state('');
     let lastTrackedWelcomeImpression = $state('');
     let welcomeHandled = $state(false);
+    let attemptedProjectCompletion: ProductTourCheckpoint | undefined;
 
     const actions = createProductTourActions();
     const progressMutation = putCurrentUserProductTour();
+    const projectsQuery = getOrganizationProjectsQuery({
+        route: {
+            get organizationId() {
+                return organizationId;
+            }
+        }
+    });
+    const projects = $derived(projectsQuery.data?.data ?? []);
+    const configuredProjectOnPage = $derived(
+        projects.some(
+            (project) =>
+                project.is_configured &&
+                project.id &&
+                pathname ===
+                    resolve('/(app)/project/[projectId]/configure', {
+                        projectId: project.id
+                    })
+        )
+    );
+    const errorEventsQuery = getOrganizationEventsQuery({
+        enabled: () => checkErrorAvailability,
+        params: {
+            filter: 'type:error',
+            limit: 1,
+            mode: 'summary',
+            time: 'all'
+        },
+        route: {
+            get organizationId() {
+                return organizationId;
+            }
+        }
+    });
+    const errorEventAvailability = $derived<ProductTourContext['errorEventAvailability']>(
+        !organizationId || !checkErrorAvailability || errorEventsQuery.isPending
+            ? 'loading'
+            : errorEventsQuery.isError
+              ? 'error'
+              : (errorEventsQuery.data?.data?.length ?? 0) > 0
+                ? 'available'
+                : 'empty'
+    );
+    const hostStateSettled = $derived(stateSettled && (!organizationId || projectsQuery.isSuccess));
     const context = $derived<ProductTourContext>({
         assistantAccess,
         errorEventAvailability,
@@ -81,7 +130,8 @@
     const checkpoint = $derived(productTourCheckpoint.current);
     const welcomeOpen = $derived(
         !!(
-            stateSettled &&
+            hostStateSettled &&
+            automaticSurface === 'welcome' &&
             currentUser &&
             !welcomeHandled &&
             !catalogOpen &&
@@ -94,14 +144,14 @@
     );
     const exieAnnouncementOpen = $derived(
         !!(
-            stateSettled &&
+            hostStateSettled &&
+            automaticSurface === 'exie-announcement' &&
             currentUser &&
             assistantAccess?.enabled &&
             (pathname.startsWith(EVENT_PATH) || pathname.startsWith(STACK_PATH)) &&
             !isSetupPage &&
             !isImpersonating &&
             !checkpoint &&
-            !welcomeOpen &&
             !catalogOpen &&
             !isAnyOverlayOpen &&
             !shouldOfferProductTourWelcome(currentUser.product_tours?.['app-welcome'], WELCOME_VERSION) &&
@@ -109,8 +159,46 @@
         )
     );
 
+    onMount(() => {
+        automaticSurfaceReady = true;
+    });
+
     $effect(() => {
-        if (!stateSettled) {
+        if (!automaticSurfaceReady || !currentUser) {
+            automaticSurface = undefined;
+            automaticSurfaceUserId = undefined;
+            automaticSurfaceClaimed = false;
+            return;
+        }
+
+        if (automaticSurfaceUserId !== currentUser.id) {
+            automaticSurface = undefined;
+            automaticSurfaceUserId = currentUser.id;
+            automaticSurfaceClaimed = sessionStorage.getItem(getAutomaticSurfaceKey(currentUser.id)) === 'shown';
+            welcomeHandled = false;
+            return;
+        }
+
+        if (automaticSurfaceClaimed || !hostStateSettled || isImpersonating || isSetupPage) {
+            return;
+        }
+
+        if (shouldOfferProductTourWelcome(currentUser.product_tours?.['app-welcome'], WELCOME_VERSION) && !pathname.startsWith(SYSTEM_PATH)) {
+            claimAutomaticSurface('welcome');
+            return;
+        }
+
+        if (
+            assistantAccess?.enabled &&
+            (pathname.startsWith(EVENT_PATH) || pathname.startsWith(STACK_PATH)) &&
+            shouldOfferProductTourAnnouncement(currentUser.product_tours?.['exie-announcement'], EXIE_ANNOUNCEMENT_VERSION)
+        ) {
+            claimAutomaticSurface('exie-announcement');
+        }
+    });
+
+    $effect(() => {
+        if (!hostStateSettled) {
             return;
         }
 
@@ -126,6 +214,18 @@
     });
 
     $effect(() => {
+        const active = checkpoint;
+        if (active?.tourName === 'project-configure' && active.checkpointName === 'wait-for-event' && configuredProjectOnPage) {
+            if (attemptedProjectCompletion !== active) {
+                attemptedProjectCompletion = active;
+                actions.completeAfterDomainSuccess(active);
+            }
+        } else {
+            attemptedProjectCompletion = undefined;
+        }
+    });
+
+    $effect(() => {
         if (!currentUser) {
             return;
         }
@@ -133,7 +233,7 @@
         const impression = `${currentUser.id}:${WELCOME_VERSION}`;
         if (welcomeOpen && lastTrackedWelcomeImpression !== impression) {
             lastTrackedWelcomeImpression = impression;
-            void track('shown', 'app-welcome', WELCOME_VERSION, 'automatic');
+            void track('shown', 'app-welcome', WELCOME_VERSION, 'welcome');
         }
     });
 
@@ -151,7 +251,7 @@
 
     export function openCatalog(source: ProductTourLaunchSource = 'catalog'): void {
         closeOverlays();
-        requestErrorAvailability();
+        checkErrorAvailability = true;
         catalogSource = source;
         catalogOpen = true;
     }
@@ -167,16 +267,23 @@
         }
 
         const active = productTourCheckpoint.current;
+        if (active?.tourName === name && isActiveTourRenderable(active)) {
+            closeOverlays();
+            catalogOpen = false;
+            return;
+        }
+
         if (active && !(await actions.dismiss(active))) {
             return;
         }
 
         closeOverlays();
         catalogOpen = false;
-        const next = productTourCheckpoint.start(name, item.initialCheckpoint, source, currentUser.id, item.version, organizationId);
-        await track('started', name, item.version, source);
+        const start = item.start(context);
+        const next = productTourCheckpoint.start(name, start.checkpointName, source, currentUser.id, item.version, organizationId);
+        void track('started', name, item.version, source);
 
-        const destination = item.startingRoute(context);
+        const destination = start.route;
         if (`${pathname}${window.location.search}` !== destination) {
             await goto(destination);
         }
@@ -187,6 +294,9 @@
     }
 
     async function recordPreference(name: 'app-welcome' | 'exie-announcement', version: number, status: ProductTourStatus): Promise<boolean> {
+        if (progressMutation.isPending) {
+            return false;
+        }
         try {
             await progressMutation.mutateAsync({
                 progress: {
@@ -207,9 +317,10 @@
             return;
         }
         welcomeHandled = true;
-        await track('started', 'app-welcome', WELCOME_VERSION, 'automatic');
-        await track('completed', 'app-welcome', WELCOME_VERSION, 'automatic');
-        await startTour(recommended.name, 'automatic');
+        automaticSurface = undefined;
+        void track('started', 'app-welcome', WELCOME_VERSION, 'welcome');
+        void track('completed', 'app-welcome', WELCOME_VERSION, 'welcome');
+        await startTour(recommended.name, 'welcome');
     }
 
     async function onWelcomeBrowse(): Promise<void> {
@@ -217,7 +328,8 @@
             return;
         }
         welcomeHandled = true;
-        await track('completed', 'app-welcome', WELCOME_VERSION, 'automatic');
+        automaticSurface = undefined;
+        void track('completed', 'app-welcome', WELCOME_VERSION, 'welcome');
         openCatalog('catalog');
     }
 
@@ -226,45 +338,102 @@
             return;
         }
         welcomeHandled = true;
-        await track('dismissed', 'app-welcome', WELCOME_VERSION, 'automatic');
+        automaticSurface = undefined;
+        void track('dismissed', 'app-welcome', WELCOME_VERSION, 'welcome');
     }
 
     async function onExieAnnouncementStart(): Promise<void> {
         if (!(await recordPreference('exie-announcement', EXIE_ANNOUNCEMENT_VERSION, ProductTourStatus.Completed))) {
             return;
         }
-        await track('started', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
-        await track('completed', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
-        await startTour('exie-overview', 'feature-announcement');
+        automaticSurface = undefined;
+        void track('started', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
+        void track('completed', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
+        if (assistantAccess?.has_access) {
+            await startTour('exie-overview', 'feature-announcement');
+        } else {
+            await openAssistant();
+        }
     }
 
     async function onExieAnnouncementDismiss(): Promise<void> {
         if (!(await recordPreference('exie-announcement', EXIE_ANNOUNCEMENT_VERSION, ProductTourStatus.Dismissed))) {
             return;
         }
-        await track('dismissed', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
+        automaticSurface = undefined;
+        void track('dismissed', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
     }
 
     function getItem<Name extends ProductTourName>(name: Name): ProductTourListItem<Name> {
         return items.find((item) => item.name === name)! as ProductTourListItem<Name>;
     }
+
+    function claimAutomaticSurface(surface: 'exie-announcement' | 'welcome'): void {
+        if (!currentUser) {
+            return;
+        }
+
+        automaticSurface = surface;
+        automaticSurfaceClaimed = true;
+        sessionStorage.setItem(getAutomaticSurfaceKey(currentUser.id), 'shown');
+    }
+
+    function getAutomaticSurfaceKey(userId: string): string {
+        return `exceptionless.product-tour.automatic-surface.${userId}.welcome-v${WELCOME_VERSION}.announcement-v${EXIE_ANNOUNCEMENT_VERSION}`;
+    }
+
+    function isActiveTourRenderable(active: NonNullable<typeof checkpoint>): boolean {
+        switch (active.tourName) {
+            case 'app-overview':
+                return true;
+            case 'event-investigate':
+                return pathname.startsWith(EVENT_PATH) && (active.checkpointName === 'filter-errors' || active.checkpointName === 'choose-error');
+            case 'exie-overview':
+                return active.checkpointName === 'open-exie';
+            case 'project-configure':
+                if (active.checkpointName === 'organization-name') {
+                    return pathname === ORGANIZATION_ADD_PATH;
+                }
+
+                if (active.checkpointName === 'project-name') {
+                    return pathname === ORGANIZATION_ADD_PATH || pathname === PROJECT_ADD_PATH;
+                }
+                return pathname.startsWith(PROJECT_ADD_PATH.slice(0, -3)) && pathname.endsWith('/configure');
+            case 'saved-view-create':
+                return pathname.startsWith(EVENT_PATH) && (active.checkpointName === 'open-view-menu' || active.checkpointName === 'view-created');
+        }
+    }
 </script>
 
-<ProductTourWelcomeDialog open={welcomeOpen} onBrowse={onWelcomeBrowse} onDismiss={onWelcomeSkip} onStart={onWelcomeStart} {recommended} />
+<ProductTourWelcomeDialog
+    busy={progressMutation.isPending}
+    open={welcomeOpen}
+    onBrowse={onWelcomeBrowse}
+    onDismiss={onWelcomeSkip}
+    onStart={onWelcomeStart}
+    {recommended}
+/>
 
 {#if exieAnnouncementOpen && assistantAccess}
     <ProductTourFeatureAnnouncement
         hasAccess={assistantAccess.has_access}
         message={assistantAccess.message}
+        busy={progressMutation.isPending}
         onDismiss={onExieAnnouncementDismiss}
         onStart={onExieAnnouncementStart}
     />
 {/if}
 
-<ProductTourCatalogDialog bind:open={catalogOpen} {items} onStart={(name) => startTour(name, catalogSource)} />
+<ProductTourCatalogDialog
+    activeTourName={checkpoint?.tourName}
+    bind:open={catalogOpen}
+    {items}
+    onStart={(name) => startTour(name, catalogSource)}
+    resumableTourName={checkpoint && isActiveTourRenderable(checkpoint) ? checkpoint.tourName : undefined}
+/>
 
 {#if checkpoint && (checkpoint.tourName === 'exie-overview' || checkpoint.tourName === 'app-overview')}
     {#key checkpoint}
-        <ProductTourShellSpotlight {assistantAccess} {checkpoint} {isAnyOverlayOpen} {openAssistant} {setMobileNavigationOpen} />
+        <ProductTourShellSpotlight {assistantAccess} {checkpoint} {isAnyOverlayOpen} {isMobile} {openAssistant} {setMobileNavigationOpen} />
     {/key}
 {/if}

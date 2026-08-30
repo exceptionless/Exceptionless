@@ -9,7 +9,7 @@ export const PRODUCT_TOUR_CHECKPOINTS = {
     'saved-view-create': ['open-view-menu', 'review-settings', 'name-view', 'private-view', 'save-view', 'view-created']
 } as const;
 
-export const PRODUCT_TOUR_LAUNCH_SOURCES = ['automatic', 'catalog', 'command-palette', 'feature-announcement', 'help-menu'] as const;
+export const PRODUCT_TOUR_LAUNCH_SOURCES = ['welcome', 'catalog', 'command-palette', 'feature-announcement', 'help-menu'] as const;
 
 export interface ProductTourAvailability {
     available: boolean;
@@ -19,7 +19,6 @@ export type ProductTourCheckpoint<Name extends ProductTourName = ProductTourName
     ? {
           checkpointName: ProductTourCheckpointName<Name>;
           organizationId?: string;
-          phase: ProductTourPhase<Name>;
           source: ProductTourLaunchSource;
           tourName: Name;
           userId: string;
@@ -33,19 +32,17 @@ export interface ProductTourContext {
     isSetupPage: boolean;
     organizationId?: string;
     pathname: string;
-    projects: Pick<ViewProject, 'is_configured'>[];
+    projects: Pick<ViewProject, 'id' | 'is_configured'>[];
 }
 export interface ProductTourDefinition<Name extends ProductTourName = ProductTourName> {
     availability: (context: ProductTourContext) => ProductTourAvailability;
     description: string;
-    initialCheckpoint: ProductTourCheckpointName<Name>;
     keywords: readonly string[];
     name: Name;
-    startingRoute: (context: ProductTourContext) => string;
+    start: (context: ProductTourContext) => ProductTourStart<Name>;
     title: string;
     version: number;
 }
-
 export type ProductTourKey = 'app-welcome' | 'exie-announcement' | ProductTourName;
 
 export type ProductTourLaunchSource = (typeof PRODUCT_TOUR_LAUNCH_SOURCES)[number];
@@ -57,5 +54,7 @@ export interface ProductTourListItem<Name extends ProductTourName = ProductTourN
 
 export type ProductTourName = keyof typeof PRODUCT_TOUR_CHECKPOINTS;
 
-export type ProductTourPhase<Name extends ProductTourName = ProductTourName> =
-    (Name extends 'saved-view-create' ? { type: 'saved-view-created' | 'saved-view-loaded'; viewId: string } : never) | { type: 'active' };
+export interface ProductTourStart<Name extends ProductTourName = ProductTourName> {
+    checkpointName: ProductTourCheckpointName<Name>;
+    route: string;
+}

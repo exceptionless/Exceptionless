@@ -6,6 +6,7 @@
     import type { ProductTourListItem } from '../../types';
 
     interface Props {
+        busy?: boolean;
         onBrowse: () => Promise<void>;
         onDismiss: () => Promise<void>;
         onStart: () => Promise<void>;
@@ -13,10 +14,10 @@
         recommended: ProductTourListItem;
     }
 
-    let { onBrowse, onDismiss, onStart, open = $bindable(false), recommended }: Props = $props();
+    let { busy = false, onBrowse, onDismiss, onStart, open = $bindable(false), recommended }: Props = $props();
 
     async function onOpenChange(nextOpen: boolean): Promise<void> {
-        if (!nextOpen && open) {
+        if (!nextOpen && open && !busy) {
             await onDismiss();
         }
     }
@@ -38,10 +39,10 @@
         </section>
 
         <Dialog.Footer class="gap-2 sm:justify-between">
-            <Button onclick={onDismiss} variant="ghost">Skip</Button>
+            <Button disabled={busy} onclick={onDismiss} variant="ghost">Skip</Button>
             <div class="flex flex-col-reverse gap-2 sm:flex-row">
-                <Button onclick={onBrowse} variant="outline">Browse Guides</Button>
-                <Button onclick={onStart}>{recommended.name === 'project-configure' ? 'Continue setup' : 'Explore Exceptionless'}</Button>
+                <Button disabled={busy} onclick={onBrowse} variant="outline">Browse Guides</Button>
+                <Button disabled={busy} onclick={onStart}>{recommended.name === 'project-configure' ? 'Continue setup' : 'Explore Exceptionless'}</Button>
             </div>
         </Dialog.Footer>
     </Dialog.Content>

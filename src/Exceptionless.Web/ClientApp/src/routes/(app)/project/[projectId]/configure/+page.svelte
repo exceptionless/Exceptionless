@@ -426,7 +426,7 @@ public partial class App : Application {
 
         if (queryParams.redirect && message.project_id === projectId && message.change_type !== ChangeType.Removed) {
             if (projectConfigureCheckpoint) {
-                await tourActions.complete(projectConfigureCheckpoint);
+                tourActions.completeAfterDomainSuccess(projectConfigureCheckpoint);
             }
 
             toast.success('First event received. Opening Events...');
@@ -472,7 +472,7 @@ public partial class App : Application {
     {/if}
 
     {#if queryParams.redirect}
-        <Notification data-tour="project-configure-waiting">
+        <Notification>
             <NotificationTitle>Waiting for your first event</NotificationTitle>
             <NotificationDescription>
                 <P>Send an event from your app. When it arrives, we'll open the project Events page automatically.</P>
@@ -795,6 +795,7 @@ public partial class App : Application {
 
     {#if projectConfigureCheckpoint?.checkpointName === 'sdk-instructions'}
         <ProductTourInlineCallout
+            checkpoint={projectConfigureCheckpoint}
             description="Follow these SDK instructions in your own application. When it is connected, return here and continue to wait for the first event."
             onContinue={() => {
                 productTourCheckpoint.advance(projectConfigureCheckpoint, 'wait-for-event');
@@ -803,7 +804,6 @@ public partial class App : Application {
                 await tourActions.dismiss(projectConfigureCheckpoint);
             }}
             title="Connect your application"
-            tourName="project-configure"
         />
     {/if}
 

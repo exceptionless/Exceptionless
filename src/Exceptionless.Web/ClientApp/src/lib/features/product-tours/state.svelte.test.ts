@@ -7,7 +7,6 @@ import { productTourCheckpoint } from './state.svelte';
 const checkpoint: ProductTourCheckpoint = {
     checkpointName: 'navigation',
     organizationId: 'organization-id',
-    phase: { type: 'active' },
     source: 'catalog',
     tourName: 'app-overview',
     userId: 'user-id',

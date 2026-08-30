@@ -26,51 +26,67 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
     {
         availability: requireApplicationShell,
         description: 'Learn navigation, command search, saved views, Exie, and where to get help.',
-        initialCheckpoint: 'navigation',
         keywords: ['navigation', 'ui', 'search', 'command', 'help', 'saved views'],
         name: 'app-overview',
-        startingRoute: () => resolve('/'),
+        start: () => ({ checkpointName: 'navigation', route: resolve('/') }),
         title: 'Explore Exceptionless',
         version: 1
     },
     {
         availability: () => ({ available: true }),
         description: 'Create or resume a project, connect an SDK, and wait for its first real event.',
-        initialCheckpoint: 'project-name',
         keywords: ['add project', 'configure', 'sdk', 'api key', 'first event'],
         name: 'project-configure',
-        startingRoute: (context) => (context.organizationId ? resolve('/(app)/project/add') : resolve('/(app)/organization/add')),
+        start: (context) => {
+            if (!context.organizationId) {
+                return { checkpointName: 'organization-name', route: resolve('/(app)/organization/add') };
+            }
+
+            const unconfiguredProject = context.projects.find((project) => !project.is_configured);
+            if (unconfiguredProject?.id) {
+                return {
+                    checkpointName: 'choose-platform',
+                    route: `${resolve('/(app)/project/[projectId]/configure', { projectId: unconfiguredProject.id })}?redirect=true`
+                };
+            }
+
+            return { checkpointName: 'project-name', route: resolve('/(app)/project/add') };
+        },
         title: 'Configure a project',
         version: 1
     },
     {
         availability: requireOrganization,
         description: 'Save the current Events configuration as a private view that only you can see.',
-        initialCheckpoint: 'open-view-menu',
         keywords: ['saved view', 'filter', 'columns', 'private', 'dashboard'],
         name: 'saved-view-create',
-        startingRoute: () => resolve('/(app)/event'),
+        start: () => ({ checkpointName: 'open-view-menu', route: resolve('/(app)/event') }),
         title: 'Create a saved view',
         version: 1
     },
     {
         availability: requireError,
         description: 'Open a real error, assess its stack and status, then inspect the occurrence.',
-        initialCheckpoint: 'filter-errors',
         keywords: ['error report', 'event details', 'exception', 'filter', 'stack', 'triage'],
         name: 'event-investigate',
-        startingRoute: () => `${resolve('/(app)/event')}?time=all&type=error`,
+        start: () => ({ checkpointName: 'filter-errors', route: `${resolve('/(app)/event')}?time=all&type=error` }),
         title: 'Investigate an error',
         version: 1
     },
     {
-        availability: (context) =>
-            context.assistantAccess?.enabled ? { available: true } : { available: false, reason: 'Exie is not enabled by this Exceptionless installation.' },
+        availability: (context) => {
+            if (!context.assistantAccess?.enabled) {
+                return { available: false, reason: 'Exie is not enabled by this Exceptionless installation.' };
+            }
+
+            return context.assistantAccess.has_access
+                ? { available: true }
+                : { available: false, reason: context.assistantAccess.message ?? 'Exie requires access.' };
+        },
         description: 'See how Exie uses the current page as context without sending a prompt.',
-        initialCheckpoint: 'open-exie',
         keywords: ['exie', 'assistant', 'ai', 'help', 'investigate'],
         name: 'exie-overview',
-        startingRoute: () => resolve('/'),
+        start: () => ({ checkpointName: 'open-exie', route: resolve('/') }),
         title: 'Meet Exie',
         version: 1
     }
@@ -87,5 +103,7 @@ export function getProductTourItems(context: ProductTourContext, progress: Recor
 }
 
 export function getRecommendedProductTourName(context: ProductTourContext): ProductTourName {
-    return !context.organizationId || context.projects.some((project) => !project.is_configured) ? 'project-configure' : 'app-overview';
+    return !context.organizationId || context.projects.length === 0 || context.projects.some((project) => !project.is_configured)
+        ? 'project-configure'
+        : 'app-overview';
 }

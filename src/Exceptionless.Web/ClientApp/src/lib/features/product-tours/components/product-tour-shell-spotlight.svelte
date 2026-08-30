@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { AssistantAccess } from '$features/assistant/models';
 
-    import { onDestroy, onMount, untrack } from 'svelte';
+    import { onDestroy, onMount, tick, untrack } from 'svelte';
 
     import type { ProductTourCheckpoint, ProductTourCheckpointName } from '../types';
 
@@ -13,6 +13,7 @@
         assistantAccess?: AssistantAccess;
         checkpoint: ProductTourCheckpoint;
         isAnyOverlayOpen: boolean;
+        isMobile: boolean;
         openAssistant: () => Promise<void>;
         setMobileNavigationOpen: (open: boolean) => void;
     }
@@ -20,11 +21,12 @@
     interface ShellStep {
         checkpointName: ProductTourCheckpointName;
         description: string;
+        mobileNavigation?: boolean;
         target: string;
         title: string;
     }
 
-    let { assistantAccess, checkpoint, isAnyOverlayOpen, openAssistant, setMobileNavigationOpen }: Props = $props();
+    let { assistantAccess, checkpoint, isAnyOverlayOpen, isMobile, openAssistant, setMobileNavigationOpen }: Props = $props();
     const currentAssistantAccess = untrack(() => assistantAccess);
     const currentCheckpoint = untrack(() => checkpoint);
     const actions = createProductTourActions();
@@ -46,6 +48,7 @@
         {
             checkpointName: 'navigation',
             description: 'Move between dashboards, saved views, and settings from the application navigation.',
+            mobileNavigation: true,
             target: '[data-tour="app-navigation"]',
             title: 'Your workspace navigation'
         },
@@ -58,10 +61,11 @@
         {
             checkpointName: 'saved-views',
             description: 'Saved views preserve filters, time, sorting, charts, stats, and columns for quick reuse.',
+            mobileNavigation: true,
             target: '[data-tour="saved-view-navigation"]',
             title: 'Reuse configured views'
         },
-        ...(currentAssistantAccess?.enabled
+        ...(currentAssistantAccess?.has_access
             ? [
                   {
                       checkpointName: 'exie' as const,
@@ -74,15 +78,21 @@
         {
             checkpointName: 'help',
             description: 'Open Help for documentation, support, keyboard shortcuts, and guided tours.',
+            mobileNavigation: true,
             target: '[data-tour="help-menu"]',
             title: 'Help is always nearby'
         }
     ];
     const steps = currentCheckpoint.tourName === 'app-overview' ? appOverviewSteps : exieOverviewSteps;
     const spotlight = steps.find((step) => step.checkpointName === currentCheckpoint.checkpointName);
+    let targetReady = $state(false);
 
-    onMount(() => {
-        setMobileNavigationOpen(currentCheckpoint.checkpointName === 'navigation');
+    onMount(async () => {
+        setMobileNavigationOpen(spotlight?.mobileNavigation ?? false);
+        if (isMobile && spotlight?.mobileNavigation) {
+            await tick();
+        }
+        targetReady = true;
     });
 
     onDestroy(() => {
@@ -107,12 +117,14 @@
     }
 </script>
 
-{#if spotlight && (!isAnyOverlayOpen || checkpoint.tourName === 'exie-overview')}
+{#if spotlight && targetReady && (!isAnyOverlayOpen || checkpoint.tourName === 'exie-overview')}
     <ProductTourSpotlight
         checkpoint={currentCheckpoint}
         description={spotlight.description}
         onDismiss={actions.dismiss}
         onNext={advance}
+        stepCount={steps.length}
+        stepNumber={steps.indexOf(spotlight) + 1}
         target={spotlight.target}
         title={spotlight.title}
     />

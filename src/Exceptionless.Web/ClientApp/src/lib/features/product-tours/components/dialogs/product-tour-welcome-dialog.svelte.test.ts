@@ -7,10 +7,9 @@ const recommended = {
     availability: vi.fn(() => ({ available: true })),
     currentAvailability: { available: true },
     description: 'Learn navigation and search.',
-    initialCheckpoint: 'navigation' as const,
     keywords: ['navigation'],
     name: 'app-overview' as const,
-    startingRoute: vi.fn(() => '/next'),
+    start: vi.fn(() => ({ checkpointName: 'navigation' as const, route: '/next' })),
     title: 'Explore Exceptionless',
     version: 1
 };

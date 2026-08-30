@@ -7,7 +7,6 @@ import { clearProductTourSession, readProductTourSession, writeProductTourSessio
 const checkpoint: ProductTourCheckpoint = {
     checkpointName: 'choose-error',
     organizationId: 'organization-id',
-    phase: { type: 'active' },
     source: 'command-palette',
     tourName: 'event-investigate',
     userId: 'user-id',
@@ -32,13 +31,15 @@ describe('product tour session', () => {
         JSON.stringify({ ...checkpoint, checkpointName: 'unknown-step' }),
         JSON.stringify({ ...checkpoint, source: 'unknown-source' }),
         JSON.stringify({ ...checkpoint, version: 0 }),
-        JSON.stringify({ ...checkpoint, phase: { type: 'saved-view-created' } }),
-        JSON.stringify({ ...checkpoint, phase: { type: 'saved-view-created', viewId: 'view-id' } }),
-        JSON.stringify({ ...checkpoint, phase: { type: 'saved-view-loaded', viewId: 'view-id' } }),
         JSON.stringify({ ...checkpoint, userId: 42 })
     ])('clears malformed or unknown stored state: %s', (value) => {
         sessionStorage.setItem('exceptionless.product-tour', value);
         expect(readProductTourSession()).toBeUndefined();
         expect(sessionStorage).toHaveLength(0);
+    });
+
+    it('drops obsolete workflow state from an existing browser session', () => {
+        sessionStorage.setItem('exceptionless.product-tour', JSON.stringify({ ...checkpoint, phase: { type: 'saved-view-created', viewId: 'view-id' } }));
+        expect(readProductTourSession()).toEqual(checkpoint);
     });
 });
