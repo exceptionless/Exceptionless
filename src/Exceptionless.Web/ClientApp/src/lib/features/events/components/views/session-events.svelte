@@ -7,8 +7,6 @@
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
     import { getSessionEventsQuery } from '$features/events/api.svelte';
-    import { SessionFilter } from '$features/events/components/filters';
-    import { buildFilterCacheKey, toFilter, updateFilterCache } from '$features/events/components/filters/helpers.svelte';
     import { buildEventDetailsHref } from '$features/events/components/summary';
     import Summary from '$features/events/components/summary/summary.svelte';
     import EventsUserIdentitySummaryCell from '$features/events/components/table/events-user-identity-summary-cell.svelte';
@@ -19,7 +17,7 @@
     import InfoIcon from '@lucide/svelte/icons/info';
 
     import SessionEventDuration from '../session-event-duration.svelte';
-    import { getSessionEventsPath } from './session-events-navigation';
+    import { getSessionEventsHref, getSessionEventsPath } from './session-events-navigation';
 
     interface Props {
         event: PersistentEvent;
@@ -45,18 +43,7 @@
             savedViewsQuery.isPending
         )
     );
-    const sessionEventsHref = $derived.by(() => {
-        const filter = getSessionFilter();
-        if (!filter || !eventsPath) {
-            return undefined;
-        }
-
-        const query = new URLSearchParams({
-            filter: filter.toFilter(),
-            time: 'all'
-        });
-        return `${eventsPath}?${query.toString()}`;
-    });
+    const sessionEventsHref = $derived(getSessionEventsHref(eventsPath, sessionId));
 
     const userInfo = $derived(event.data?.['@user']);
     const userIdentity = $derived(userInfo?.identity);
@@ -90,22 +77,7 @@
         return buildEventDetailsHref(eventId);
     }
 
-    function getSessionFilter(): SessionFilter | undefined {
-        return sessionId ? new SessionFilter(sessionId) : undefined;
-    }
-
-    function prepareSessionEventsFilter(): void {
-        const filter = getSessionFilter();
-        if (!filter || !eventsPath) {
-            return;
-        }
-
-        const filterQuery = toFilter([filter]);
-        updateFilterCache(buildFilterCacheKey(organization.current, eventsPath, filterQuery), [filter]);
-    }
-
     function handleSessionFilterClick(): void {
-        prepareSessionEventsFilter();
         onSessionFilter?.();
     }
 </script>

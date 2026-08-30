@@ -91,7 +91,11 @@ test('operator can find and inspect a user session', async ({ e2eApi, e2eScenari
         const eventsLink = page.getByRole('link', { name: 'Open events filtered to this session' });
         await expect(eventsLink).toHaveAttribute('href', /\/next\/event\/all\?/);
         const eventsHref = await eventsLink.getAttribute('href');
-        expect(new URL(eventsHref!, page.url()).searchParams.get('filter')).toContain('ref.session');
+        const eventsUrl = new URL(eventsHref!, page.url());
+        expect(eventsUrl.searchParams.get('session')).toBe(sessionId);
+        expect(eventsUrl.searchParams.get('filter')).toBe('');
+        expect(eventsUrl.searchParams.get('type')).toBe('');
+        expect(eventsUrl.searchParams.get('time')).toBe('all');
     });
 
     await test.step('event detail messages wrap and small alignment fixes render consistently', async () => {
