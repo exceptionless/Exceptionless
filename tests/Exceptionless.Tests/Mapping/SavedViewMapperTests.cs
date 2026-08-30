@@ -110,6 +110,7 @@ public sealed class SavedViewMapperTests
             UserId = "1ecd0826e447ad1e78822555",
             CreatedByUserId = "1ecd0826e447ad1e78822555",
             UpdatedByUserId = "1ecd0826e447ad1e78822666",
+            PredefinedKey = "events:all",
             Filter = "status:open",
             FilterDefinitions = "[{\"type\":\"status\",\"values\":[\"open\"]}]",
             Columns = new Dictionary<string, SavedViewColumnSettings>
@@ -135,6 +136,7 @@ public sealed class SavedViewMapperTests
         Assert.Equal("1ecd0826e447ad1e78822555", result.UserId);
         Assert.Equal("1ecd0826e447ad1e78822555", result.CreatedByUserId);
         Assert.Equal("1ecd0826e447ad1e78822666", result.UpdatedByUserId);
+        Assert.Equal("events:all", result.PredefinedKey);
         Assert.Equal("status:open", result.Filter);
         Assert.Equal("[{\"type\":\"status\",\"values\":[\"open\"]}]", result.FilterDefinitions);
         Assert.NotNull(result.Columns);
@@ -172,6 +174,7 @@ public sealed class SavedViewMapperTests
         // Assert
         Assert.Null(result.UserId);
         Assert.Null(result.UpdatedByUserId);
+        Assert.Null(result.PredefinedKey);
         Assert.Null(result.Filter);
         Assert.Null(result.FilterDefinitions);
         Assert.Null(result.Columns);

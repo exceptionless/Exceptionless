@@ -901,6 +901,7 @@ export interface ViewSavedView {
   created_by_user_id: string;
   /** @pattern ^[a-fA-F0-9]{24}$ */
   updated_by_user_id?: null | string;
+  predefined_key?: null | string;
   filter?: null | string;
   filter_definitions?: null | string;
   columns?: null | Record<string, SavedViewColumnSettings>;

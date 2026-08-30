@@ -1038,6 +1038,10 @@ export const ViewSavedViewSchema = object({
     .regex(/^[a-fA-F0-9]{24}$/, "Updated by user id has invalid format")
     .nullable()
     .optional(),
+  predefined_key: string()
+    .min(1, "Predefined key is required")
+    .nullable()
+    .optional(),
   filter: string().min(1, "Filter is required").nullable().optional(),
   filter_definitions: string()
     .min(1, "Filter definitions is required")

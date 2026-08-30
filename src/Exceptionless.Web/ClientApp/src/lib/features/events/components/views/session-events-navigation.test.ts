@@ -11,6 +11,7 @@ function createSavedView(overrides: Partial<SavedView> = {}): SavedView {
         id: 'saved-view-id',
         name: 'All',
         organization_id: 'organization-id',
+        predefined_key: 'events:all',
         slug: 'all',
         updated_utc: '2026-08-29T00:00:00Z',
         version: 1,
@@ -28,6 +29,10 @@ describe('getSessionEventsPath', () => {
         expect(getSessionEventsPath([createSavedView()])).toBe('/next/event/all');
     });
 
+    it('uses the immutable predefined key after the Events All view is renamed', () => {
+        expect(getSessionEventsPath([createSavedView({ name: 'Everything', slug: 'everything' })])).toBe('/next/event/everything');
+    });
+
     it('prefers the shared All view when a private view already owns the all slug', () => {
         const privateAll = createSavedView({ id: 'private-all', user_id: 'user-id' });
         const sharedAll = createSavedView({ id: 'shared-all', slug: 'all-2' });
@@ -40,11 +45,19 @@ describe('getSessionEventsPath', () => {
     });
 
     it('falls back to the generic Events route when All is unavailable', () => {
-        expect(getSessionEventsPath([createSavedView({ name: 'Errors', slug: 'errors' })])).toBe('/next/event');
+        expect(getSessionEventsPath([createSavedView({ name: 'Errors', predefined_key: 'events:errors', slug: 'errors' })])).toBe('/next/event');
     });
 
     it('does not mistake an unrelated all-N slug for the All view', () => {
-        expect(getSessionEventsPath([createSavedView({ name: 'Everything', slug: 'all-2' })])).toBe('/next/event');
+        expect(getSessionEventsPath([createSavedView({ name: 'Everything', predefined_key: undefined, slug: 'all-2' })])).toBe('/next/event');
+    });
+
+    it('supports a legacy unkeyed shared All view', () => {
+        expect(getSessionEventsPath([createSavedView({ predefined_key: undefined })])).toBe('/next/event/all');
+    });
+
+    it('does not use a differently keyed view that was renamed to All', () => {
+        expect(getSessionEventsPath([createSavedView({ predefined_key: 'events:errors' })])).toBe('/next/event');
     });
 
     it('does not use an All view belonging to another resource', () => {
