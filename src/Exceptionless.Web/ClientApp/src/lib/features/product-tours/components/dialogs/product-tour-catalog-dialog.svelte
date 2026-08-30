@@ -29,7 +29,7 @@
 
         <div class="grid gap-3 py-2 sm:grid-cols-2">
             {#each items as item (item.name)}
-                <section class="border-border bg-card flex min-h-44 flex-col gap-3 rounded-lg border p-4">
+                <section aria-label={item.title} class="border-border bg-card flex min-h-44 flex-col gap-3 rounded-lg border p-4">
                     <div class="flex items-start justify-between gap-3">
                         <div class="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg">
                             <Compass aria-hidden="true" class="size-5" />

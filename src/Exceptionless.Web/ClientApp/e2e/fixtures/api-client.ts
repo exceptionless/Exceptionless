@@ -22,6 +22,7 @@ export interface E2EOrganization {
 
 export interface E2EProject {
     id: string;
+    is_configured?: boolean;
     name: string;
     organization_id?: string;
 }
@@ -469,6 +470,7 @@ function toProject(value: unknown): E2EProject {
 
     return {
         id: getRequiredString(record, 'id', 'project response'),
+        is_configured: typeof record.is_configured === 'boolean' ? record.is_configured : undefined,
         name: getRequiredString(record, 'name', 'project response'),
         organization_id: getOptionalString(record, 'organization_id')
     };
