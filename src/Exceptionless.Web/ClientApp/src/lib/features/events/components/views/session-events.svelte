@@ -39,10 +39,15 @@
             }
         }
     });
-    const eventsPath = $derived(getSessionEventsPath(savedViewsQuery.data?.filter((savedView) => !isSavedViewDeleted(savedView))));
+    const eventsPath = $derived(
+        getSessionEventsPath(
+            savedViewsQuery.data?.filter((savedView) => !isSavedViewDeleted(savedView)),
+            savedViewsQuery.isPending
+        )
+    );
     const sessionEventsHref = $derived.by(() => {
         const filter = getSessionFilter();
-        if (!filter) {
+        if (!filter || !eventsPath) {
             return undefined;
         }
 
@@ -91,7 +96,7 @@
 
     function prepareSessionEventsFilter(): void {
         const filter = getSessionFilter();
-        if (!filter) {
+        if (!filter || !eventsPath) {
             return;
         }
 

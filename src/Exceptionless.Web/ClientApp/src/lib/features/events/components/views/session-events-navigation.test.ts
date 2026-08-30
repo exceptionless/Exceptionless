@@ -20,6 +20,10 @@ function createSavedView(overrides: Partial<SavedView> = {}): SavedView {
 }
 
 describe('getSessionEventsPath', () => {
+    it('waits for saved views before enabling navigation', () => {
+        expect(getSessionEventsPath(undefined, true)).toBeUndefined();
+    });
+
     it('uses the Events All saved view when it exists', () => {
         expect(getSessionEventsPath([createSavedView()])).toBe('/next/event/all');
     });
