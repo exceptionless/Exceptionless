@@ -126,6 +126,10 @@
         return buildFilterCacheKey(organization.current, page.url.pathname, filter);
     }
 
+    function getSessionsStatsFilter(filter: null | string | undefined): string {
+        return filter ? `${DEFAULT_FILTER} AND (${filter})` : DEFAULT_FILTER;
+    }
+
     function getQueryTime(params: ListFilterQueryParams = queryParams): null | string {
         if (params.time != null) {
             if (params.time === ALL_TIME_QUERY_VALUE) {
@@ -363,7 +367,16 @@
 
     function getSavedViewFilters(): FacetedFilter.IFilter[] | null {
         const savedView = savedViewsState.activeSavedView;
-        return savedView?.filter_definitions ? deserializeFilters(savedView.filter_definitions) : null;
+        if (!savedView) {
+            return null;
+        }
+
+        if (savedView.filter_definitions) {
+            return deserializeFilters(savedView.filter_definitions);
+        }
+
+        const filter = savedView.filter ?? DEFAULT_FILTER;
+        return getFiltersFromCache(filterCacheKey(filter), filter);
     }
 
     function getQueryFilterRemovalKeys(savedViewFilters: FacetedFilter.IFilter[], params: SessionListFilterQueryParams): string[] {
@@ -834,7 +847,7 @@
                 return `avg:value cardinality:user date:(date${DEFAULT_OFFSET ? `^${DEFAULT_OFFSET}` : ''} cardinality:user)`;
             },
             get filter() {
-                return eventsQueryParameters.filter;
+                return getSessionsStatsFilter(eventsQueryParameters.filter);
             },
             get time() {
                 return eventsQueryParameters.time;

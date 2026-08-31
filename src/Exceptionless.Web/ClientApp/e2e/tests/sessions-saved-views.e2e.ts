@@ -166,6 +166,60 @@ test('Sessions saved views persist active state, display settings, filters, and 
     expect(failedApiRequests).toEqual([]);
 });
 
+test('Sessions legacy raw-filter views keep URL removals and session-scoped statistics', async ({ e2eScenario, page, request }) => {
+    await page.setViewportSize({ height: 900, width: 1600 });
+
+    const suffix = e2eScenario.run.slice(-32);
+    const viewName = `E2E Legacy Sessions ${suffix}`;
+    const viewSlug = savedViewSlug(viewName);
+    const rawFilter = 'type:error';
+    const statisticsFilters: string[] = [];
+    const statisticsPath = `/api/v2/organizations/${e2eScenario.organizationId}/events/count`;
+
+    page.on('request', (eventRequest) => {
+        const url = new URL(eventRequest.url());
+        if (url.pathname === statisticsPath && url.searchParams.get('aggregations')?.includes('avg:value')) {
+            statisticsFilters.push(url.searchParams.get('filter') ?? '');
+        }
+    });
+
+    const response = await request.post(`/api/v2/organizations/${e2eScenario.organizationId}/saved-views`, {
+        data: {
+            filter: rawFilter,
+            name: viewName,
+            organization_id: e2eScenario.organizationId,
+            show_chart: true,
+            show_stats: true,
+            slug: viewSlug,
+            time: '[now-7d TO now]',
+            view_type: 'sessions'
+        },
+        headers: { Authorization: `Bearer ${e2eScenario.userToken}` }
+    });
+    expect(response.status(), await response.text()).toBe(201);
+
+    await page.goto(`/next/sessions/${viewSlug}`);
+    await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
+    const rawFilterButton = page
+        .getByRole('button', { name: new RegExp(`^Raw Filter\\s+${escapeRegExp(rawFilter)}`) })
+        .filter({ visible: true })
+        .first();
+    await expect(rawFilterButton).toBeVisible();
+    await expect.poll(() => statisticsFilters).toContain(`type:session AND (${rawFilter})`);
+
+    await rawFilterButton.focus();
+    await page.keyboard.press('Enter');
+    await page.getByRole('button', { name: 'Remove filter' }).click();
+    await expect(page).toHaveURL(/[?&]filters=(?:&|$)/);
+    await expect(rawFilterButton).toHaveCount(0);
+    await expect.poll(() => statisticsFilters).toContain('type:session');
+
+    await page.reload();
+    await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
+    await expect(rawFilterButton).toHaveCount(0);
+    await expect(page).toHaveURL(/[?&]filters=(?:&|$)/);
+});
+
 async function captureEvidence(page: Page, fileName: string): Promise<void> {
     const outputDirectory = process.env.DOGFOOD_OUTPUT;
     if (!outputDirectory) return;
