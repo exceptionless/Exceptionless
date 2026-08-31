@@ -34,8 +34,6 @@ public partial class SavedViewHandler(
     IHttpContextAccessor httpContextAccessor)
 {
     private const int MaxViewsPerOrganization = 100;
-    private const string PredefinedSavedViewsContentHashDataKey = "@@PredefinedSavedViewsContentHash";
-    private const string PredefinedSavedViewsDataKey = "@@PredefinedSavedViewsVersion";
 
     private HttpContext HttpContext => httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is unavailable.");
 
@@ -618,14 +616,14 @@ public partial class SavedViewHandler(
                 return;
             }
 
-            bool createMissing = forceCreateMissing || !HasCreatedPredefinedSavedViews(organization);
+            bool createMissing = forceCreateMissing || !PredefinedSavedViewsDataSeed.HasCreatedPredefinedSavedViews(organization);
             var upsertResult = await UpsertPredefinedSavedViewsForOrganizationAsync(organizationId, definitions, createMissing);
             savedViews = upsertResult.SavedViews;
 
             if (!upsertResult.HasSkippedCustomizations)
             {
                 organization.Data ??= new DataDictionary();
-                organization.Data[PredefinedSavedViewsContentHashDataKey] = definitionsContentHash;
+                organization.Data[PredefinedSavedViewsDataSeed.PredefinedSavedViewsContentHashDataKey] = definitionsContentHash;
                 await organizationRepository.SaveAsync(organization, o => o.Cache().ImmediateConsistency());
             }
         }, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(15));
@@ -716,21 +714,10 @@ public partial class SavedViewHandler(
             ?? existingViews.FirstOrDefault(view => view.UserId is null && String.IsNullOrWhiteSpace(view.PredefinedKey) && String.Equals(view.Name.Trim(), definition.Name, StringComparison.OrdinalIgnoreCase));
     }
 
-    private static bool HasCreatedPredefinedSavedViews(Organization organization)
-    {
-        if (organization.Data is null)
-            return false;
-
-        return organization.Data.ContainsKey(PredefinedSavedViewsContentHashDataKey)
-            || organization.Data.TryGetValue(PredefinedSavedViewsDataKey, out object? versionValue)
-                && Int32.TryParse(versionValue?.ToString(), out int version)
-                && version > 0;
-    }
-
     private static bool HasSynchronizedPredefinedSavedViews(Organization organization, string definitionsContentHash)
     {
         return organization.Data is not null
-            && organization.Data.TryGetValue(PredefinedSavedViewsContentHashDataKey, out object? contentHash)
+            && organization.Data.TryGetValue(PredefinedSavedViewsDataSeed.PredefinedSavedViewsContentHashDataKey, out object? contentHash)
             && String.Equals(contentHash?.ToString(), definitionsContentHash, StringComparison.Ordinal);
     }
 

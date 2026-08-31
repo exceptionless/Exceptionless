@@ -781,10 +781,16 @@
     onDestroy(() => debouncedRefetch.cancel());
 
     function onPersistentEventChanged(message: WebSocketMessageValue<'PersistentEventChanged'>) {
-        if (message.id && message.change_type === ChangeType.Removed) {
+        if (message.change_type !== ChangeType.Removed || (message.organization_id && message.organization_id !== organization.current)) {
+            return;
+        }
+
+        if (message.id) {
             removeTableSelection(table, message.id);
             removeTableData(table, (document) => document.id === message.id);
         }
+
+        debouncedRefetch();
     }
 
     useEventListener(document, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT, () => debouncedRefetch());
