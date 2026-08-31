@@ -14435,6 +14435,12 @@
               "string"
             ]
           },
+          "predefined_key": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "filter": {
             "type": [
               "null",

@@ -157,7 +157,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Message</Table.Head>
                 <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.StringTrigger changed={filterChanged} term="message" value={message} /></Table.Cell>
-                <Table.Cell>{message}</Table.Cell>
+                <Table.Cell class="wrap-anywhere whitespace-normal">{message}</Table.Cell>
             </Table.Row>
         {/if}
         {#if version}
