@@ -110,6 +110,36 @@
         "showChart": true
     },
     {
+        "key": "sessions:all",
+        "name": "All",
+        "slug": "all",
+        "viewType": "sessions",
+        "filter": "type:session",
+        "time": "[now-7d TO now]",
+        "sort": "-date",
+        "filterDefinitions": [
+            {
+                "type": "date",
+                "term": "date",
+                "value": "[now-7d TO now]"
+            },
+            {
+                "type": "project",
+                "value": []
+            },
+            {
+                "type": "type",
+                "value": ["session"],
+                "hidden": true
+            }
+        ],
+        "columns": {
+            "summary": { "autoFill": true }
+        },
+        "showStats": true,
+        "showChart": true
+    },
+    {
         "key": "stacks:all",
         "name": "All",
         "slug": "all",

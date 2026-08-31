@@ -64,6 +64,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "events", "All"));
         Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "events", "Logs"));
         Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "events", "Errors"));
+        Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "sessions", "All"));
         Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "stacks", "All"));
         Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "stacks", "Most Frequent Errors"));
         Assert.Contains(seededSystemViews, view => IsPredefinedSavedView(view, "stacks", "Most Frequent 404s"));
@@ -133,6 +134,12 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         Assert.Equal("type:log (status:open OR status:regressed)", logs.Filter);
         var filterDefinitions = logs.FilterDefinitions ?? throw new Xunit.Sdk.XunitException("Expected FilterDefinitions to be non-null.");
         Assert.Equal(JsonValueKind.Array, filterDefinitions.ValueKind);
+
+        var sessions = definitions.FirstOrDefault(view => String.Equals(view.Key, "sessions:all", StringComparison.OrdinalIgnoreCase));
+        Assert.NotNull(sessions);
+        Assert.Equal("sessions", sessions.ViewType);
+        Assert.Equal("type:session", sessions.Filter);
+        Assert.Equal("-date", sessions.Sort);
     }
 
     [Fact]
@@ -158,6 +165,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
 
         Assert.NotNull(predefinedViews);
         var logs = predefinedViews.First(view => IsPredefinedSavedView(view, "events", "Logs"));
+        var allSessions = predefinedViews.First(view => IsPredefinedSavedView(view, "sessions", "All"));
         var allStacks = predefinedViews.First(view => IsPredefinedSavedView(view, "stacks", "All"));
         var savedLogs = await _savedViewRepository.GetByIdAsync(logs.Id);
         Assert.NotNull(savedLogs);
@@ -165,6 +173,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         savedLogs.Filter = "type:error";
         savedLogs.Slug = "custom-logs";
         await _savedViewRepository.SaveAsync(savedLogs, o => o.ImmediateConsistency());
+        await _savedViewRepository.RemoveAsync(allSessions.Id, o => o.ImmediateConsistency());
         await _savedViewRepository.RemoveAsync(allStacks.Id, o => o.ImmediateConsistency());
 
         var testUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
@@ -222,6 +231,16 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
             view => String.Equals(view.PredefinedKey, "stacks:all", StringComparison.OrdinalIgnoreCase));
         Assert.True(IsPredefinedSavedView(recreatedAllStacksView, "stacks", "All"));
         Assert.Equal(PredefinedSavedViewContentHasher.GetContentHash(recreatedAllStacksView), recreatedAllStacksView.PredefinedContentHash);
+
+        var recreatedAllSessions = await _savedViewRepository.GetByViewAsync(
+            SampleDataService.TEST_ORG_ID,
+            "sessions",
+            o => o.ImmediateConsistency());
+        var recreatedAllSessionsView = Assert.Single(
+            recreatedAllSessions.Documents,
+            view => String.Equals(view.PredefinedKey, "sessions:all", StringComparison.OrdinalIgnoreCase));
+        Assert.True(IsPredefinedSavedView(recreatedAllSessionsView, "sessions", "All"));
+        Assert.Equal(PredefinedSavedViewContentHasher.GetContentHash(recreatedAllSessionsView), recreatedAllSessionsView.PredefinedContentHash);
 
         var unchangedPrivateLogs = await _savedViewRepository.GetByIdAsync(privateLogs.Id);
         Assert.NotNull(unchangedPrivateLogs);
@@ -705,6 +724,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
 
     [Theory]
     [InlineData("events")]
+    [InlineData("sessions")]
     [InlineData("stacks")]
     [InlineData("stream")]
     public async Task PostAsync_WithValidView_Succeeds(string view)
@@ -2436,11 +2456,13 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     [Theory]
     [InlineData("events", "project")]
     [InlineData("events", "tags")]
+    [InlineData("sessions", "duration")]
+    [InlineData("sessions", "user")]
     [InlineData("stacks", "project")]
     [InlineData("stacks", "tags")]
     [InlineData("stream", "project")]
     [InlineData("stream", "tags")]
-    public Task PostAsync_ProjectAndTagColumnsForSupportedViews_Succeeds(string viewType, string column)
+    public Task PostAsync_ViewSpecificColumns_Succeeds(string viewType, string column)
     {
         // Arrange & Act & Assert
         return SendRequestAsync(r => r

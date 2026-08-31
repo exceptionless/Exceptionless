@@ -13,7 +13,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers;
 public class ForcePredefinedSavedViewsWorkItemHandler : WorkItemHandlerBase
 {
     private const int SavedViewPageLimit = 1000;
-    private static readonly string[] ValidViewTypes = ["events", "stacks", "stream"];
+    private static readonly string[] ValidViewTypes = ["events", "sessions", "stacks", "stream"];
 
     private readonly ISavedViewRepository _savedViewRepository;
     private readonly ILockProvider _lockProvider;
