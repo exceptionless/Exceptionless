@@ -92,6 +92,7 @@ public sealed class AddSessionsPredefinedSavedViewMigrationTests : IntegrationTe
             String.Equals(view.PredefinedKey, AddSessionsPredefinedSavedView.PredefinedKey, StringComparison.OrdinalIgnoreCase));
         Assert.Equal("sessions", sessionsView.ViewType);
         Assert.Equal("All", sessionsView.Name);
+        Assert.Null(sessionsView.Filter);
         Assert.Equal(PredefinedSavedViewContentHasher.GetContentHash(sessionsView), sessionsView.PredefinedContentHash);
 
         var migratedOrganizationViews = await _savedViewRepository.GetByViewAsync(

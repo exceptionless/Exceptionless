@@ -22,7 +22,6 @@
         StatusFilter,
         StringFilter,
         TagFilter,
-        TypeFilter,
         VersionFilter
     } from '$features/events/components/filters';
     import {
@@ -47,6 +46,7 @@
     import { defaultSessionColumnVisibility, getSessionColumns } from '$features/sessions/components/session-table-columns';
     import SessionsDashboardChart from '$features/sessions/components/sessions-dashboard-chart.svelte';
     import SessionsStatsDashboard from '$features/sessions/components/sessions-stats-dashboard.svelte';
+    import { getSessionQueryFilter, getSessionViewFilters, normalizeSessionSavedView } from '$features/sessions/saved-view-invariants';
     import * as agg from '$features/shared/api/aggregations';
     import { createPageSizePreference, getSharedTableOptions, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
     import { fillDateSeries } from '$features/shared/utils/charts.js';
@@ -74,9 +74,8 @@
     };
 
     const ACTIVE_SESSION_END_TERM = 'data.sessionend';
-    const DEFAULT_FILTER = 'type:session';
     const DEFAULT_TIME_RANGE = '[now-7d TO now]';
-    const DEFAULT_FILTERS = [new DateFilter('date', DEFAULT_TIME_RANGE), new ProjectFilter([]), new TypeFilter(['session'])];
+    const DEFAULT_FILTERS = [new DateFilter('date', DEFAULT_TIME_RANGE), new ProjectFilter([])];
     const PAGE_SIZE_PREFERENCE_KEY = 'event-stack-list-page-size';
     const pageSizePreference = createPageSizePreference(PAGE_SIZE_PREFERENCE_KEY);
     const DEFAULT_PARAMS = {
@@ -124,10 +123,6 @@
 
     function filterCacheKey(filter: null | string): string {
         return buildFilterCacheKey(organization.current, page.url.pathname, filter);
-    }
-
-    function getSessionsStatsFilter(filter: null | string | undefined): string {
-        return filter ? `${DEFAULT_FILTER} AND (${filter})` : DEFAULT_FILTER;
     }
 
     function getQueryTime(params: ListFilterQueryParams = queryParams): null | string {
@@ -188,10 +183,6 @@
             queryFilters.push(new TagFilter(splitQueryParam(params.tag) as never[]));
         }
 
-        if (params.type) {
-            queryFilters.push(new TypeFilter(splitQueryParam(params.type) as never[]));
-        }
-
         if (params.version) {
             queryFilters.push(new VersionFilter('version', params.version));
         }
@@ -224,7 +215,7 @@
         return savedViewsState.activeSavedView?.sort ?? undefined;
     }
 
-    updateFilterCache(filterCacheKey(DEFAULT_FILTER), DEFAULT_FILTERS);
+    updateFilterCache(filterCacheKey(null), DEFAULT_FILTERS);
     const queryParams = createQueryParameters({
         defaults: DEFAULT_PARAMS,
         history: 'push',
@@ -256,16 +247,17 @@
     let showChart = $state(true);
     const savedViewsState = useSavedViews({
         applyFilters: (draftFilters, options) => {
-            updateFilters(draftFilters, {
+            const sessionFilters = getSessionViewFilters(draftFilters);
+            updateFilters(sessionFilters, {
                 clearPagination: false,
                 history: options?.history
             });
-            filters = draftFilters;
+            filters = sessionFilters;
         },
         baseHref: resolve('/(app)/sessions'),
         defaultAutoFillColumnId: 'summary',
         defaultColumnVisibility: defaultSessionColumnVisibility,
-        defaultFilter: DEFAULT_FILTER,
+        defaultFilter: null,
         defaultTime: DEFAULT_TIME_RANGE,
         filterCacheKey,
         getAvailableColumnIds: () =>
@@ -282,6 +274,7 @@
         getShowStats: () => showStats,
         getSort: getEffectiveSort,
         getTime: getQueryTime,
+        normalizeSavedView: normalizeSessionSavedView,
         queryParams,
         setColumnOrder: (value) => table.setColumnOrder(value),
         setColumnSizing: (value) => table.setColumnSizing(value),
@@ -319,7 +312,7 @@
             if (previousOrganizationId === undefined) {
                 return;
             }
-            updateFilterCache(filterCacheKey(DEFAULT_FILTER), DEFAULT_FILTERS);
+            updateFilterCache(filterCacheKey(null), DEFAULT_FILTERS);
             queryParams.update(DEFAULT_PARAMS);
             reset();
         },
@@ -342,7 +335,7 @@
     function getCurrentFiltersWithoutTime(params: SessionListFilterQueryParams = getSessionListFilterQueryParams()): FacetedFilter.IFilter[] {
         const savedViewFilters = getSavedViewFilters();
         const queryFilters = getQueryFilters(params) ?? [];
-        const serializedExpressionFilters = params.filters != null && params.filters ? deserializeFilters(params.filters) : [];
+        const serializedExpressionFilters = params.filters != null && params.filters ? getSessionViewFilters(deserializeFilters(params.filters)) : [];
         const rawExpressionFilters =
             params.filter != null && params.filter
                 ? getFiltersFromCache(filterCacheKey(params.filter), params.filter).filter((filter) => filter.type !== 'date')
@@ -361,7 +354,7 @@
             return [...expressionFilters, ...queryFilters];
         }
 
-        const filter = savedViewsState.activeSavedView?.filter ?? DEFAULT_FILTER;
+        const filter = savedViewsState.activeSavedView?.filter ?? null;
         return getFiltersFromCache(filterCacheKey(filter), filter).filter((currentFilter) => currentFilter.type !== 'date');
     }
 
@@ -375,7 +368,7 @@
             return deserializeFilters(savedView.filter_definitions);
         }
 
-        const filter = savedView.filter ?? DEFAULT_FILTER;
+        const filter = savedView.filter ?? null;
         return getFiltersFromCache(filterCacheKey(filter), filter);
     }
 
@@ -416,10 +409,6 @@
 
         if (params.tag === '') {
             removedKeys.push('tag');
-        }
-
-        if (params.type === '') {
-            removedKeys.push('type');
         }
 
         if (params.version === '') {
@@ -481,6 +470,10 @@
     }
 
     function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter): void {
+        if (addedOrUpdated.type === 'type') {
+            return;
+        }
+
         const isNew = !filters?.some((filter) => filter.id === addedOrUpdated.id);
         const updatedFilters = filterChanged(filters ?? [], addedOrUpdated);
         updateFilters(updatedFilters);
@@ -497,14 +490,15 @@
     }
 
     function updateFilters(updatedFilters: FacetedFilter.IFilter[], options: { clearPagination?: boolean; history?: 'push' | 'replace' } = {}): void {
+        const sessionFilters = getSessionViewFilters(updatedFilters);
         const shouldClearPagination = options.clearPagination ?? true;
-        const filter = toFilter(updatedFilters.filter((currentFilter) => currentFilter.type !== 'date'));
-        const expressionFilters = updatedFilters.filter((currentFilter) => currentFilter.type !== 'date' && !isQueryParamFilter(currentFilter));
-        const time = ((updatedFilters.find((currentFilter) => currentFilter.type === 'date') as DateFilter | undefined)?.value as string | undefined) ?? null;
+        const filter = toFilter(sessionFilters.filter((currentFilter) => currentFilter.type !== 'date'));
+        const expressionFilters = sessionFilters.filter((currentFilter) => currentFilter.type !== 'date' && !isQueryParamFilter(currentFilter));
+        const time = ((sessionFilters.find((currentFilter) => currentFilter.type === 'date') as DateFilter | undefined)?.value as string | undefined) ?? null;
         const baseTime = savedViewsState.activeSavedView?.time ?? DEFAULT_TIME_RANGE;
         const savedViewFilters = getSavedViewFilters();
         const baseQueryFilterParams = getQueryFilterParams(savedViewFilters ?? []);
-        const queryFilterParams = getQueryFilterParamDeltas(getQueryFilterParams(updatedFilters), baseQueryFilterParams);
+        const queryFilterParams = getQueryFilterParamDeltas(getQueryFilterParams(sessionFilters), baseQueryFilterParams);
         const baseExpressionFilters = savedViewFilters?.filter((currentFilter) => currentFilter.type !== 'date' && !isQueryParamFilter(currentFilter)) ?? [];
         const serializedExpressionFilters = serializeFilters(expressionFilters);
         const serializedBaseExpressionFilters = serializeFilters(baseExpressionFilters);
@@ -531,7 +525,7 @@
             queryFilterParams.stack !== queryParams.stack ||
             queryFilterParams.status !== queryParams.status ||
             queryFilterParams.tag !== queryParams.tag ||
-            queryFilterParams.type !== queryParams.type ||
+            queryParams.type != null ||
             queryFilterParams.version !== queryParams.version;
         const effectiveQueryWillChange = (filter || null) !== getEffectiveFilter() || time !== getQueryTime();
         const shouldClearPaginationForFilter = shouldClearPagination && effectiveQueryWillChange;
@@ -540,7 +534,7 @@
         if (effectiveQueryWillChange) {
             table.resetRowSelection();
         }
-        updateFilterCache(filterCacheKey(filter), updatedFilters);
+        updateFilterCache(filterCacheKey(filter), sessionFilters);
         if (paginationWillChange || urlQueryWillChange) {
             isInternalFilterUpdate = true;
         }
@@ -562,7 +556,7 @@
                 status: queryFilterParams.status,
                 tag: queryFilterParams.tag,
                 time: newTimeParam,
-                type: queryFilterParams.type,
+                type: null,
                 version: queryFilterParams.version
             },
             {
@@ -597,7 +591,6 @@
         const stackFilter = currentFilters.find((filter): filter is StringFilter => filter.type === 'string' && filter.key === 'string-stack');
         const statusFilter = currentFilters.find((filter): filter is StatusFilter => filter.type === 'status');
         const tagFilter = currentFilters.find((filter): filter is TagFilter => filter.type === 'tag');
-        const typeFilter = currentFilters.find((filter): filter is TypeFilter => filter.type === 'type');
         const versionFilter = currentFilters.find((filter): filter is VersionFilter => filter instanceof VersionFilter && filter.term === 'version');
 
         return {
@@ -610,7 +603,6 @@
             stack: stackFilter?.value?.trim() ? stackFilter.value : null,
             status: statusFilter?.value.length ? statusFilter.value.join(',') : null,
             tag: tagFilter?.value.length ? tagFilter.value.join(',') : null,
-            type: typeFilter?.value.length ? typeFilter.value.join(',') : null,
             version: versionFilter?.value?.trim() ? versionFilter.value : null
         };
     }
@@ -633,7 +625,6 @@
             stack: getDelta(currentParams.stack, baseParams.stack),
             status: getDelta(currentParams.status, baseParams.status),
             tag: getDelta(currentParams.tag, baseParams.tag),
-            type: getDelta(currentParams.type, baseParams.type),
             version: getDelta(currentParams.version, baseParams.version)
         };
     }
@@ -650,7 +641,7 @@
         if (filter.type === 'version' && filter instanceof VersionFilter && filter.term !== 'version') {
             return false;
         }
-        return ['level', 'project', 'reference', 'session', 'status', 'tag', 'type', 'version'].includes(filter.type);
+        return ['level', 'project', 'reference', 'session', 'status', 'tag', 'version'].includes(filter.type);
     }
 
     const viewActive = $derived(
@@ -705,7 +696,7 @@
             queryParams.before = value ?? null;
         },
         get filter() {
-            return getEffectiveFilter() ?? undefined;
+            return getSessionQueryFilter(getEffectiveFilter());
         },
         set filter(value) {
             queryParams.filter = value ?? null;
@@ -847,7 +838,7 @@
                 return `avg:value cardinality:user date:(date${DEFAULT_OFFSET ? `^${DEFAULT_OFFSET}` : ''} cardinality:user)`;
             },
             get filter() {
-                return getSessionsStatsFilter(eventsQueryParameters.filter);
+                return eventsQueryParameters.filter;
             },
             get time() {
                 return eventsQueryParameters.time;
@@ -906,7 +897,7 @@
         <H3 class="my-0 shrink-0">{pageTitle}</H3>
         <div class="order-3 flex w-full flex-wrap items-start gap-1.5 md:order-none md:w-auto md:min-w-0 md:flex-1">
             <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
-                <OrganizationDefaultsFacetedFilterBuilder />
+                <OrganizationDefaultsFacetedFilterBuilder includeTypeFacet={false} />
             </FacetedFilter.Root>
         </div>
         <div class="ml-auto flex shrink-0 items-start gap-2">

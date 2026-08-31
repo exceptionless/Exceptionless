@@ -31,8 +31,15 @@ test('Sessions saved views persist active state, display settings, filters, and 
 
         await page.goto('/next/sessions?time=all');
         await expect(page.getByRole('heading', { name: 'Sessions' })).toBeVisible();
+        await expect(page.getByRole('button', { name: /^Type\b/ })).toHaveCount(0);
         await expect(getVisibleRow(page, name, identity)).toBeVisible({ timeout: 30_000 });
         await expect(page.getByRole('columnheader')).toHaveText(['', 'Summary', 'Duration', 'User', 'Date']);
+
+        await page.getByRole('button', { name: /^Manage filters/ }).click();
+        const filterSearch = page.getByPlaceholder('Search...').filter({ visible: true });
+        await filterSearch.fill('Type');
+        await expect(page.getByText('Type', { exact: true })).toHaveCount(0);
+        await page.keyboard.press('Escape');
     });
 
     await test.step('represent View Active as a reload-safe URL override', async () => {
@@ -139,11 +146,13 @@ test('Sessions saved views persist active state, display settings, filters, and 
         });
         const savedViews = (await savedViewsResponse.json()) as { filter_definitions?: string; name: string }[];
         const savedView = savedViews.find((view) => view.name === viewName);
-        expect(JSON.parse(savedView?.filter_definitions ?? '[]')).toContainEqual({
+        const savedFilterDefinitions = JSON.parse(savedView?.filter_definitions ?? '[]') as { hidden?: boolean; term?: string; type: string }[];
+        expect(savedFilterDefinitions).toContainEqual({
             hidden: true,
             term: 'data.sessionend',
             type: 'boolean'
         });
+        expect(savedFilterDefinitions).not.toContainEqual(expect.objectContaining({ type: 'type' }));
     });
 
     await test.step('temporary changes remain in the URL and Reset to Saved restores active state', async () => {
@@ -218,6 +227,48 @@ test('Sessions legacy raw-filter views keep URL removals and session-scoped stat
     await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
     await expect(rawFilterButton).toHaveCount(0);
     await expect(page).toHaveURL(/[?&]filters=(?:&|$)/);
+});
+
+test('Sessions ignore legacy structured Type filters and Type URL parameters', async ({ e2eScenario, page, request }) => {
+    const suffix = e2eScenario.run.slice(-32);
+    const viewName = `E2E Structured Sessions ${suffix}`;
+    const viewSlug = savedViewSlug(viewName);
+    const sessionFilters: string[] = [];
+    const sessionsPath = `/api/v2/organizations/${e2eScenario.organizationId}/events/sessions`;
+
+    page.on('request', (eventRequest) => {
+        const url = new URL(eventRequest.url());
+        if (url.pathname === sessionsPath) {
+            sessionFilters.push(url.searchParams.get('filter') ?? '');
+        }
+    });
+
+    const response = await request.post(`/api/v2/organizations/${e2eScenario.organizationId}/saved-views`, {
+        data: {
+            filter: 'type:error',
+            filter_definitions: JSON.stringify([{ hidden: true, type: 'type', value: ['error'] }]),
+            name: viewName,
+            organization_id: e2eScenario.organizationId,
+            show_chart: true,
+            show_stats: true,
+            slug: viewSlug,
+            time: '[now-7d TO now]',
+            view_type: 'sessions'
+        },
+        headers: { Authorization: `Bearer ${e2eScenario.userToken}` }
+    });
+    expect(response.status(), await response.text()).toBe(201);
+
+    await page.goto(`/next/sessions/${viewSlug}?type=log`);
+    await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Type\b/ })).toHaveCount(0);
+    await expect(page.getByLabel('Unsaved view changes')).toHaveCount(0);
+    await expect.poll(() => sessionFilters).toContain('type:session');
+
+    await page.getByRole('button', { name: /^Manage filters/ }).click();
+    const filterSearch = page.getByPlaceholder('Search...').filter({ visible: true });
+    await filterSearch.fill('Type');
+    await expect(page.getByText('Type', { exact: true })).toHaveCount(0);
 });
 
 async function captureEvidence(page: Page, fileName: string): Promise<void> {

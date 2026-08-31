@@ -114,7 +114,6 @@
         "name": "All",
         "slug": "all",
         "viewType": "sessions",
-        "filter": "type:session",
         "time": "[now-7d TO now]",
         "sort": "-date",
         "filterDefinitions": [
@@ -126,11 +125,6 @@
             {
                 "type": "project",
                 "value": []
-            },
-            {
-                "type": "type",
-                "value": ["session"],
-                "hidden": true
             }
         ],
         "columns": {

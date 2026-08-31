@@ -138,8 +138,11 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         var sessions = definitions.FirstOrDefault(view => String.Equals(view.Key, "sessions:all", StringComparison.OrdinalIgnoreCase));
         Assert.NotNull(sessions);
         Assert.Equal("sessions", sessions.ViewType);
-        Assert.Equal("type:session", sessions.Filter);
+        Assert.Null(sessions.Filter);
         Assert.Equal("-date", sessions.Sort);
+        var sessionsFilterDefinitions = sessions.FilterDefinitions ?? throw new Xunit.Sdk.XunitException("Expected Sessions FilterDefinitions to be non-null.");
+        Assert.DoesNotContain(sessionsFilterDefinitions.EnumerateArray(), definition =>
+            definition.TryGetProperty("type", out var type) && String.Equals(type.GetString(), "type", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
