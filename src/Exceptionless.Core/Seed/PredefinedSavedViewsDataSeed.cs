@@ -170,7 +170,7 @@ public class PredefinedSavedViewsDataSeed : IDataSeed
         return Path.Combine(AppContext.BaseDirectory, "Seed", seedFileName);
     }
 
-    private static SavedView CreateSavedView(PredefinedSavedViewDefinition definition)
+    internal static SavedView CreateSavedView(PredefinedSavedViewDefinition definition)
     {
         var savedView = new SavedView
         {

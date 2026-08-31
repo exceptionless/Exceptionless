@@ -51,4 +51,16 @@ public sealed class MigrationRegistrationTests : TestWithServices
         Assert.Equal(MigrationType.VersionedAndResumable, migration.MigrationType);
         Assert.Equal(8, migration.Version);
     }
+
+    [Fact]
+    public void MigrationRegistration_SessionsPredefinedSavedViewMigration_IsRegisteredAsVersionedAndResumable()
+    {
+        var migration = GetService<IEnumerable<IMigration>>()
+            .DistinctBy(item => item.GetType())
+            .SingleOrDefault(item => item is AddSessionsPredefinedSavedView);
+
+        Assert.NotNull(migration);
+        Assert.Equal(MigrationType.VersionedAndResumable, migration.MigrationType);
+        Assert.Equal(9, migration.Version);
+    }
 }

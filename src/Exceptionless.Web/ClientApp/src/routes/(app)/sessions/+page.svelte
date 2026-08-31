@@ -791,6 +791,22 @@
     useEventListener(document, 'refresh', handleRefresh);
     useEventListener(document, 'PersistentEventChanged', (event) => onPersistentEventChanged((event as CustomEvent).detail));
 
+    let lastEmptyResponseAt = 0;
+    $effect(() => {
+        const dataUpdatedAt = sessionsQuery.dataUpdatedAt;
+        if (
+            sessionsQuery.isPlaceholderData ||
+            dataUpdatedAt === lastEmptyResponseAt ||
+            sessionsQuery.data?.data?.length !== 0 ||
+            table.store.state.pagination.pageIndex === 0
+        ) {
+            return;
+        }
+
+        lastEmptyResponseAt = dataUpdatedAt;
+        untrack(() => table.previousPage());
+    });
+
     let lastProblem: unknown;
     $effect(() => {
         const problem = sessionsQuery.error ?? sessionsQuery.data?.problem;
