@@ -15,7 +15,7 @@
     import * as Table from '$comp/ui/table';
     import { getAdminProductTourUsageQuery } from '$features/admin/api.svelte';
     import { getUtcMonthKey } from '$features/admin/assistant-usage';
-    import { getOutcomeShare, getRate, getStartSourceShare, type ProductTourUsageRange } from '$features/admin/product-tour-usage';
+    import { getGuideOutcomeRate, getRate, getStartSourceShare, type ProductTourUsageRange } from '$features/admin/product-tour-usage';
 
     const currentMonth = getUtcMonthKey();
     let selectedMonth = $state(currentMonth);
@@ -166,7 +166,7 @@
                 <Card.Root>
                     <Card.Header>
                         <Card.Title>Guides</Card.Title>
-                        <Card.Description>Guide outcomes use completed plus dismissed events. Entry-point percentages use starts.</Card.Description>
+                        <Card.Description>Guide outcome and entry-point percentages use starts as the denominator.</Card.Description>
                     </Card.Header>
                     <Card.Content class="px-0">
                         <div class="hidden overflow-x-auto md:block">
@@ -188,8 +188,8 @@
                                                 >{title(tour.name)} <span class="text-muted-foreground font-normal">v{tour.version}</span></Table.Cell
                                             >
                                             <Table.Cell class="text-right"><Number value={tour.started} /></Table.Cell>
-                                            {@render RateCell(tour.completed, getOutcomeShare(tour, 'completed'))}
-                                            {@render RateCell(tour.dismissed, getOutcomeShare(tour, 'dismissed'))}
+                                            {@render RateCell(tour.completed, getGuideOutcomeRate(tour, 'completed'))}
+                                            {@render RateCell(tour.dismissed, getGuideOutcomeRate(tour, 'dismissed'))}
                                             <Table.Cell>{@render SourceMix(tour)}</Table.Cell>
                                             {@render LastRun(tour.last_run_utc)}
                                         </Table.Row>
@@ -270,8 +270,8 @@
         </div>
         <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
             {@render Metric('Started', tour.started)}
-            {@render Metric('Completed', tour.completed, getOutcomeShare(tour, 'completed'))}
-            {@render Metric('Dismissed', tour.dismissed, getOutcomeShare(tour, 'dismissed'))}
+            {@render Metric('Completed', tour.completed, getGuideOutcomeRate(tour, 'completed'))}
+            {@render Metric('Dismissed', tour.dismissed, getGuideOutcomeRate(tour, 'dismissed'))}
         </div>
         <div class="mt-4">
             <p class="text-muted-foreground mb-2 text-xs font-medium">Entry points</p>

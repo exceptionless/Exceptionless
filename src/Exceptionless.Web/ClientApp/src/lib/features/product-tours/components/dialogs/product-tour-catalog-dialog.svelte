@@ -14,10 +14,11 @@
         items: ProductTourListItem[];
         onStart: (name: ProductTourName) => Promise<void>;
         open?: boolean;
+        ready: boolean;
         resumableTourName?: ProductTourName;
     }
 
-    let { activeTourName, items, onStart, open = $bindable(false), resumableTourName }: Props = $props();
+    let { activeTourName, items, onStart, open = $bindable(false), ready, resumableTourName }: Props = $props();
 </script>
 
 <Dialog.Root bind:open>
@@ -48,7 +49,7 @@
                             <p class="text-muted-foreground mt-2 text-xs">{item.currentAvailability.reason}</p>
                         {/if}
                     </div>
-                    <Button disabled={!item.currentAvailability.available} onclick={() => onStart(item.name)} variant="outline">
+                    <Button disabled={!ready || !item.currentAvailability.available} onclick={() => onStart(item.name)} variant="outline">
                         {resumableTourName === item.name
                             ? 'Continue'
                             : activeTourName === item.name || (item.progress?.status === ProductTourStatus.Completed && item.progress.version >= item.version)

@@ -7,8 +7,8 @@ export type ProductTourUsageRange =
           month: string;
       };
 
-export function getOutcomeShare(value: { completed: number; dismissed: number }, outcome: 'completed' | 'dismissed'): null | number {
-    return getRate(value[outcome], value.completed + value.dismissed);
+export function getGuideOutcomeRate(value: { completed: number; dismissed: number; started: number }, outcome: 'completed' | 'dismissed'): null | number {
+    return getRate(value[outcome], value.started);
 }
 
 export function getProductTourUsageParams(range: ProductTourUsageRange): Record<string, boolean | string> {
