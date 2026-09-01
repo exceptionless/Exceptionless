@@ -82,10 +82,9 @@
         }
     });
     const projects = $derived(projectsQuery.data?.data ?? []);
-    const configuredProjectOnPage = $derived(
+    const projectConfigurePage = $derived(
         projects.some(
             (project) =>
-                project.is_configured &&
                 project.id &&
                 pathname ===
                     resolve('/(app)/project/[projectId]/configure', {
@@ -215,7 +214,7 @@
 
     $effect(() => {
         const active = checkpoint;
-        if (active?.tourName === 'project-configure' && active.checkpointName === 'wait-for-event' && configuredProjectOnPage) {
+        if (active?.tourName === 'project-configure' && active.checkpointName === 'event-received' && projectConfigurePage) {
             if (attemptedProjectCompletion !== active) {
                 attemptedProjectCompletion = active;
                 actions.completeAfterDomainSuccess(active);
@@ -429,6 +428,7 @@
     bind:open={catalogOpen}
     {items}
     onStart={(name) => startTour(name, catalogSource)}
+    ready={hostStateSettled && !!currentUser}
     resumableTourName={checkpoint && isActiveTourRenderable(checkpoint) ? checkpoint.tourName : undefined}
 />
 

@@ -5,7 +5,7 @@ export const PRODUCT_TOUR_CHECKPOINTS = {
     'app-overview': ['navigation', 'command-search', 'saved-views', 'exie', 'help'],
     'event-investigate': ['filter-errors', 'choose-error', 'stack-summary', 'stack-triage', 'event-occurrence', 'tab-overview', 'filter-stack-events'],
     'exie-overview': ['open-exie', 'exie-context'],
-    'project-configure': ['organization-name', 'project-name', 'choose-platform', 'sdk-instructions', 'wait-for-event'],
+    'project-configure': ['organization-name', 'project-name', 'choose-platform', 'sdk-instructions', 'wait-for-event', 'event-received'],
     'saved-view-create': ['open-view-menu', 'review-settings', 'name-view', 'private-view', 'save-view', 'view-created']
 } as const;
 
