@@ -27,6 +27,7 @@ export const StackStatusSchema = zodEnum([
   "ignored",
   "discarded",
 ]);
+export const ProductTourUsageIntervalSchema = zodEnum(["day", "month"]);
 export const ProductTourStatusSchema = union([literal(1), literal(2)]);
 export const ProductTourLaunchSourceSchema = zodEnum([
   "welcome",
@@ -635,6 +636,17 @@ export const ProblemDetailsSchema = object({
 });
 export type ProblemDetailsFormData = Infer<typeof ProblemDetailsSchema>;
 
+export const ProductTourActivitySchema = object({
+  date_utc: iso.datetime(),
+  shown: int(),
+  started: int(),
+  completed: int(),
+  dismissed: int(),
+});
+export type ProductTourActivityFormData = Infer<
+  typeof ProductTourActivitySchema
+>;
+
 export const ProductTourProgressSchema = object({
   status: ProductTourStatusSchema,
   version: int32(),
@@ -661,6 +673,7 @@ export const ProductTourSummarySchema = object({
   dismissed: int(),
   last_run_utc: iso.datetime().nullable(),
   start_sources: array(lazy(() => ProductTourStartSourceSchema)),
+  activity: array(lazy(() => ProductTourActivitySchema)),
 });
 export type ProductTourSummaryFormData = Infer<typeof ProductTourSummarySchema>;
 
@@ -668,6 +681,7 @@ export const ProductTourUsageResponseSchema = object({
   utc_start: iso.datetime().nullable(),
   utc_end: iso.datetime(),
   tours: array(lazy(() => ProductTourSummarySchema)),
+  interval: ProductTourUsageIntervalSchema,
 });
 export type ProductTourUsageResponseFormData = Infer<
   typeof ProductTourUsageResponseSchema

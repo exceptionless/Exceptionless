@@ -58,7 +58,7 @@ Authorization: Bearer {{token}}
 GET {{apiUrl}}/admin/product-tour-usage
 Authorization: Bearer {{token}}
 
-### Product Tour Usage (available retained history)
+### Product Tour Usage (available retained history; monthly activity for ranges longer than one month)
 GET {{apiUrl}}/admin/product-tour-usage?history=true
 Authorization: Bearer {{token}}
 
@@ -125,6 +125,7 @@ Content-Type: application/json
 }
 
 ### Product Tour Usage
+# Includes weighted daily activity alongside unchanged per-guide totals.
 GET {{apiUrl}}/admin/product-tour-usage?month=2026-08-01
 Authorization: Bearer {{token}}
 

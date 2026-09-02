@@ -179,6 +179,17 @@ public class AdminHandler(
                         .GroupBy(bucket => bucket.Source.LaunchSource)
                         .Select(group => new ProductTourStartSource(group.Key, group.Sum(bucket => bucket.Count)))
                         .OrderBy(source => source.Source)
+                        .ToArray(),
+                    buckets
+                        .SelectMany(bucket => bucket.Activity.Select(period => (period.DateUtc, period.Count, bucket.Source.Event)))
+                        .GroupBy(period => period.DateUtc)
+                        .OrderBy(group => group.Key)
+                        .Select(group => new ProductTourActivity(
+                            group.Key,
+                            group.Where(period => period.Event == ProductTourTelemetryEvent.Shown).Sum(period => period.Count),
+                            group.Where(period => period.Event == ProductTourTelemetryEvent.Started).Sum(period => period.Count),
+                            group.Where(period => period.Event == ProductTourTelemetryEvent.Completed).Sum(period => period.Count),
+                            group.Where(period => period.Event == ProductTourTelemetryEvent.Dismissed).Sum(period => period.Count)))
                         .ToArray());
             }))
             .OrderBy(tour => tour.Name, StringComparer.Ordinal)
@@ -188,7 +199,8 @@ public class AdminHandler(
         return new ProductTourUsageResponse(
             utcStart,
             utcEnd,
-            tours);
+            tours,
+            usage.Interval);
     }
 
     [HandlerEndpoint(HandlerMethod.Get, "migrations", Group = "Admin")]

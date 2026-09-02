@@ -33,6 +33,7 @@ export interface ProductTourContext {
     organizationId?: string;
     pathname: string;
     projects: Pick<ViewProject, 'id' | 'is_configured'>[];
+    search?: string;
 }
 export interface ProductTourDefinition<Name extends ProductTourName = ProductTourName> {
     availability: (context: ProductTourContext) => ProductTourAvailability;

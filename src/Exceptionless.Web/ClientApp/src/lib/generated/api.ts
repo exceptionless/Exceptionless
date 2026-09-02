@@ -7,6 +7,11 @@ export enum StackStatus {
   Discarded = "discarded",
 }
 
+export enum ProductTourUsageInterval {
+  Day = "day",
+  Month = "month",
+}
+
 export enum ProductTourStatus {
   Completed = 1,
   Dismissed = 2,
@@ -512,6 +517,19 @@ export interface ProblemDetails {
   instance?: null | string;
 }
 
+export interface ProductTourActivity {
+  /** @format date-time */
+  date_utc: string;
+  /** @format int64 */
+  shown: number;
+  /** @format int64 */
+  started: number;
+  /** @format int64 */
+  completed: number;
+  /** @format int64 */
+  dismissed: number;
+}
+
 export interface ProductTourProgress {
   status: ProductTourStatus;
   /** @format int32 */
@@ -540,6 +558,7 @@ export interface ProductTourSummary {
   /** @format date-time */
   last_run_utc?: null | string;
   start_sources: ProductTourStartSource[];
+  activity: ProductTourActivity[];
 }
 
 export interface ProductTourUsageResponse {
@@ -548,6 +567,7 @@ export interface ProductTourUsageResponse {
   /** @format date-time */
   utc_end: string;
   tours: ProductTourSummary[];
+  interval: ProductTourUsageInterval;
 }
 
 export interface ResetPasswordModel {

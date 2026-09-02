@@ -166,21 +166,29 @@
 </Card.Root>
 
 {#if projectConfigureCheckpoint}
-    <ProductTourSpotlight
-        checkpoint={projectConfigureCheckpoint}
-        description={projectConfigureCheckpoint.checkpointName === 'organization-name'
-            ? 'Name the organization that will own your projects and error data.'
-            : 'Name the application or service that will send events. The guide advances only after setup succeeds.'}
-        onDismiss={tourActions.dismiss}
-        onNext={projectConfigureCheckpoint.checkpointName === 'organization-name'
-            ? (checkpoint) => {
-                  productTourCheckpoint.advance(checkpoint, 'project-name');
-              }
-            : undefined}
-        side="top"
-        target={projectConfigureCheckpoint.checkpointName === 'organization-name'
-            ? "[data-tour='setup-organization-name']"
-            : "[data-tour='project-setup-form']"}
-        title={projectConfigureCheckpoint.checkpointName === 'organization-name' ? 'Name your organization' : 'Name your first project'}
-    />
+    {#key projectConfigureCheckpoint.checkpointName}
+        <ProductTourSpotlight
+            checkpoint={projectConfigureCheckpoint}
+            showProgress={false}
+            description={projectConfigureCheckpoint.checkpointName === 'organization-name'
+                ? 'Give your workspace a name. Your projects and events belong to this organization.'
+                : 'Name your application or service, then submit the form to continue setup.'}
+            onDismiss={tourActions.dismiss}
+            onPrevious={projectConfigureCheckpoint.checkpointName === 'project-name'
+                ? (checkpoint) => {
+                      productTourCheckpoint.advance(checkpoint, 'organization-name');
+                  }
+                : undefined}
+            onNext={projectConfigureCheckpoint.checkpointName === 'organization-name'
+                ? (checkpoint) => {
+                      productTourCheckpoint.advance(checkpoint, 'project-name');
+                  }
+                : undefined}
+            side="top"
+            target={projectConfigureCheckpoint.checkpointName === 'organization-name'
+                ? "[data-tour='setup-organization-name']"
+                : "[data-tour='project-setup-form']"}
+            title={projectConfigureCheckpoint.checkpointName === 'organization-name' ? 'Name your organization' : 'Name your first project'}
+        />
+    {/key}
 {/if}

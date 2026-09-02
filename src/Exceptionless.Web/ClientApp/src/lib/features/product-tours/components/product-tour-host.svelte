@@ -18,9 +18,9 @@
     import { shouldOfferProductTourAnnouncement, shouldOfferProductTourWelcome } from '../eligibility';
     import { productTourCheckpoint } from '../state.svelte';
     import ProductTourCatalogDialog from './dialogs/product-tour-catalog-dialog.svelte';
-    import ProductTourWelcomeDialog from './dialogs/product-tour-welcome-dialog.svelte';
     import ProductTourFeatureAnnouncement from './product-tour-feature-announcement.svelte';
     import ProductTourShellSpotlight from './product-tour-shell-spotlight.svelte';
+    import ProductTourWelcome from './product-tour-welcome.svelte';
 
     interface Props {
         assistantAccess?: AssistantAccess;
@@ -248,7 +248,11 @@
         }
     });
 
-    export function openCatalog(source: ProductTourLaunchSource = 'catalog'): void {
+    export async function openCatalog(source: ProductTourLaunchSource = 'catalog'): Promise<void> {
+        const active = checkpoint;
+        if (active?.tourName === 'app-overview' && active.checkpointName === 'help' && !(await actions.complete(active))) {
+            return;
+        }
         closeOverlays();
         checkErrorAvailability = true;
         catalogSource = source;
@@ -261,7 +265,7 @@
         }
         const item = getItem(name);
         if (!item.currentAvailability.available) {
-            openCatalog(source);
+            await openCatalog(source);
             return;
         }
 
@@ -278,7 +282,10 @@
 
         closeOverlays();
         catalogOpen = false;
-        const start = item.start(context);
+        const start = item.start({
+            ...context,
+            search: window.location.search
+        });
         const next = productTourCheckpoint.start(name, start.checkpointName, source, currentUser.id, item.version, organizationId);
         void track('started', name, item.version, source);
 
@@ -329,7 +336,7 @@
         welcomeHandled = true;
         automaticSurface = undefined;
         void track('completed', 'app-welcome', WELCOME_VERSION, 'welcome');
-        openCatalog('catalog');
+        await openCatalog('catalog');
     }
 
     async function onWelcomeSkip(): Promise<void> {
@@ -404,7 +411,7 @@
     }
 </script>
 
-<ProductTourWelcomeDialog
+<ProductTourWelcome
     busy={progressMutation.isPending}
     open={welcomeOpen}
     onBrowse={onWelcomeBrowse}

@@ -221,6 +221,7 @@
     async function openSaveDialog() {
         await tick();
         isSaveDialogOpen = true;
+        savedViewCreateTour?.openingSaveDialog();
     }
 
     async function openRenameDialog() {
@@ -419,7 +420,7 @@
                     Save
                 </DropdownMenu.Item>
             {/if}
-            <DropdownMenu.Item disabled={saving} onclick={openSaveDialog}>
+            <DropdownMenu.Item data-tour="saved-view-save-as" disabled={saving} onclick={openSaveDialog}>
                 <Plus class="mr-2 size-4" aria-hidden="true" />
                 Save As...
             </DropdownMenu.Item>
@@ -515,8 +516,9 @@
 <SavedViewCreateTour
     bind:this={savedViewCreateTour}
     closeMenu={() => (isMenuOpen = false)}
+    {isMenuOpen}
     openMenu={() => (isMenuOpen = true)}
-    openSaveDialog={() => (isSaveDialogOpen = true)}
+    {openSaveDialog}
 />
 
 {#if isRenameDialogOpen && activeView}

@@ -59,6 +59,24 @@
     const client = useFetchClient();
     const queryClient = useQueryClient();
     const currentOrganizationId = $derived(organizations.find((organizationItem) => organizationItem.id === organization.current)?.id);
+    let helpOpen = $state(false);
+    let guidedToursItem = $state<HTMLElement | null>(null);
+    let focusGuidedTours = false;
+
+    $effect(() => {
+        if (!open) {
+            focusGuidedTours = false;
+        }
+    });
+
+    export function showGuidedTours(): void {
+        focusGuidedTours = true;
+        open = true;
+    }
+
+    export function getGuidedToursTarget(): HTMLElement | undefined {
+        return open && helpOpen ? (guidedToursItem ?? undefined) : undefined;
+    }
 
     function getUnreadCountLabel(unreadCount: number): string {
         return unreadCount > 99 ? '99+' : unreadCount.toString();
@@ -165,6 +183,13 @@
                     {/snippet}
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Content
+                    onOpenAutoFocus={(event) => {
+                        if (focusGuidedTours) {
+                            event.preventDefault();
+                            helpOpen = true;
+                            guidedToursItem?.focus();
+                        }
+                    }}
                     class="w-(--bits-dropdown-menu-anchor-width) min-w-56 rounded-lg"
                     side={sidebar.isMobile ? 'bottom' : 'right'}
                     align="end"
@@ -233,13 +258,22 @@
                             </DropdownMenu.Item>
                         {/if}
                     </DropdownMenu.Group>
-                    <DropdownMenu.Sub>
-                        <DropdownMenu.SubTrigger>
+                    <DropdownMenu.Sub bind:open={helpOpen}>
+                        <DropdownMenu.SubTrigger class="data-[state=open]:bg-accent data-[state=open]:text-accent-foreground">
                             <BookOpen />
                             Help
                         </DropdownMenu.SubTrigger>
-                        <DropdownMenu.SubContent>
-                            <DropdownMenu.Item onSelect={onGuidedToursClick}>
+                        <DropdownMenu.SubContent
+                            side={sidebar.isMobile ? 'top' : 'right'}
+                            align={sidebar.isMobile ? 'end' : 'start'}
+                            onOpenAutoFocus={(event) => {
+                                if (focusGuidedTours) {
+                                    event.preventDefault();
+                                    guidedToursItem?.focus();
+                                }
+                            }}
+                        >
+                            <DropdownMenu.Item bind:ref={guidedToursItem} data-tour="guided-tours-menu-item" onSelect={onGuidedToursClick}>
                                 <Compass />
                                 <span class="w-full">Guided Tours…</span>
                             </DropdownMenu.Item>

@@ -79,6 +79,10 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         Assert.Equal(1, welcome.Count);
 
         Assert.All(result.Buckets, item => Assert.True(ProductTours.IsValid(item.Source.TourName, item.Source.Version)));
+        Assert.Equal(ProductTourUsageInterval.Day, result.Interval);
+        Assert.All(result.Buckets, bucket => Assert.Equal(bucket.Count, bucket.Activity.Sum(period => period.Count)));
+        var catalogStarts = Assert.Single(overview, bucket => bucket.Source.Event == ProductTourTelemetryEvent.Started && bucket.Source.LaunchSource == ProductTourLaunchSource.Catalog);
+        Assert.Equal(2, Assert.Single(catalogStarts.Activity, period => period.DateUtc == month.AddDays(1)).Count);
     }
 
     [Fact]
@@ -97,6 +101,8 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
 
         // Assert
         Assert.Equal(2, result.Buckets.Sum(bucket => bucket.Count));
+        Assert.Equal(ProductTourUsageInterval.Month, result.Interval);
+        Assert.Contains(result.Buckets.SelectMany(bucket => bucket.Activity), period => period.DateUtc == month.AddMonths(-1) && period.Count == 1);
     }
 
     [Fact]

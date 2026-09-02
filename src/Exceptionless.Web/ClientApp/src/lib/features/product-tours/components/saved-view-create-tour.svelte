@@ -7,14 +7,27 @@
 
     interface Props {
         closeMenu: () => void;
+        isMenuOpen: boolean;
         openMenu: () => void;
-        openSaveDialog: () => void;
+        openSaveDialog: () => Promise<void>;
     }
 
-    let { closeMenu, openMenu, openSaveDialog }: Props = $props();
+    let { closeMenu, isMenuOpen, openMenu, openSaveDialog }: Props = $props();
     let completionPending = $state(false);
     const actions = createProductTourActions();
     const checkpoint = $derived(productTourCheckpoint.current?.tourName === 'saved-view-create' ? productTourCheckpoint.current : undefined);
+
+    $effect(() => {
+        if (isMenuOpen && checkpoint?.checkpointName === 'open-view-menu') {
+            productTourCheckpoint.advance(checkpoint, 'review-settings');
+        }
+    });
+
+    export function openingSaveDialog(): void {
+        if (checkpoint?.checkpointName === 'review-settings') {
+            productTourCheckpoint.advance(checkpoint, 'name-view');
+        }
+    }
 
     export function validateSave(isPrivate: boolean): boolean {
         if (!checkpoint) {
@@ -22,7 +35,7 @@
         }
 
         if (checkpoint.checkpointName !== 'save-view') {
-            toast.error('Continue the guide before creating the practice view.');
+            toast.error('Complete the guide steps before saving your view.');
             return false;
         }
 
@@ -30,7 +43,7 @@
             return true;
         }
 
-        toast.error('Enable Private before creating the guided practice view.');
+        toast.error('Turn on Private so only you can see this view.');
         return false;
     }
 
@@ -72,32 +85,37 @@
 {#if checkpoint?.checkpointName === 'open-view-menu'}
     <ProductTourSpotlight
         {checkpoint}
-        description="Open View settings to review what a reusable saved view can remember."
+        description="Open View to review the settings you can save."
+        continueLabel="Open View"
         onDismiss={actions.dismiss}
-        onNext={(active) => {
-            openMenu();
-            productTourCheckpoint.advance(active, 'review-settings');
-        }}
+        onNext={openMenu}
         target="[data-tour='saved-view-trigger']"
         title="Open View settings"
     />
 {:else if checkpoint?.checkpointName === 'review-settings'}
     <ProductTourSpotlight
         {checkpoint}
-        description="Review the filters, date range, display choices, and columns. The guide will not change them for you."
+        continueLabel="Save As…"
         onDismiss={actions.dismiss}
-        onNext={(active) => {
+        onPrevious={(active) => {
             closeMenu();
-            openSaveDialog();
-            productTourCheckpoint.advance(active, 'name-view');
+            productTourCheckpoint.advance(active, 'open-view-menu');
         }}
-        target="[data-tour='saved-view-settings']"
-        title="Configure what the view remembers"
-    />
+        onNext={async () => {
+            closeMenu();
+            await openSaveDialog();
+        }}
+        target="[data-tour='saved-view-save-as']"
+        title="Save your current view"
+    >
+        {#snippet description()}
+            Select <strong>Save As…</strong> to name a copy of your current filters and layout. Your existing view stays unchanged.
+        {/snippet}
+    </ProductTourSpotlight>
 {:else if checkpoint?.checkpointName === 'name-view'}
     <ProductTourSpotlight
         {checkpoint}
-        description="Choose a meaningful name for the current filters, time range, display options, and columns."
+        description="Choose a name that will help you recognize this view later."
         onDismiss={actions.dismiss}
         onNext={(active) => {
             productTourCheckpoint.advance(active, 'private-view');
@@ -108,8 +126,11 @@
 {:else if checkpoint?.checkpointName === 'private-view'}
     <ProductTourSpotlight
         {checkpoint}
-        description="Enable Private so this guided practice view is visible only to you."
+        description="Keep Private turned on so only you can see this view."
         onDismiss={actions.dismiss}
+        onPrevious={(active) => {
+            productTourCheckpoint.advance(active, 'name-view');
+        }}
         onNext={(active) => {
             productTourCheckpoint.advance(active, 'save-view');
         }}
@@ -119,16 +140,22 @@
 {:else if checkpoint?.checkpointName === 'save-view'}
     <ProductTourSpotlight
         {checkpoint}
-        description="Create the saved view when you are ready. The guide finishes after the view is successfully created and loaded."
         onDismiss={actions.dismiss}
+        onPrevious={(active) => {
+            productTourCheckpoint.advance(active, 'private-view');
+        }}
         target="[data-tour='saved-view-submit']"
         title="Create the saved view"
-    />
+    >
+        {#snippet description()}
+            Select <strong>Save</strong> in the form to create your view and finish the guide.
+        {/snippet}
+    </ProductTourSpotlight>
 {:else if checkpoint?.checkpointName === 'view-created' && !completionPending}
     <ProductTourSpotlight
         {checkpoint}
         continueLabel="Retry guide completion"
-        description="The view was created and loaded, but guide progress could not be saved. Continue to retry."
+        description="Your view is saved. Retry saving your guide progress; this will not create another view."
         onDismiss={actions.dismiss}
         onNext={retry}
         target="[data-tour='saved-view-trigger']"
