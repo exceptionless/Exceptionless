@@ -140,18 +140,8 @@ test('saved view navigation order is personal, persistent, and resettable', asyn
     await expect(privateViewLink).toBeVisible();
     await expectSavedViewBefore(sharedViewLink, privateViewLink);
 
-    await page.getByRole('button', { name: 'Reorder Events views' }).click();
-    const dialog = page.getByRole('dialog', { name: 'Reorder Events Views' });
-    await expect(dialog).toBeVisible();
-    await expect(dialog.getByText(privateViewName, { exact: true }).locator('..').getByText('Private', { exact: true })).toBeVisible();
-    await expect(dialog.getByText(sharedViewName, { exact: true }).locator('..').getByText('Shared', { exact: true })).toBeVisible();
-
-    const movePrivateUp = dialog.getByRole('button', { name: `Move ${privateViewName} up` });
-    while (await movePrivateUp.isEnabled()) {
-        await movePrivateUp.click();
-    }
-    await dialog.getByRole('button', { name: 'Save order' }).click();
-    await expect(dialog).toBeHidden();
+    await privateViewLink.locator('..').dragTo(sharedViewLink.locator('..'));
+    await expect(page.getByText('Events view order saved.')).toBeVisible();
     await expectSavedViewBefore(privateViewLink, sharedViewLink);
 
     await page.reload();
@@ -169,6 +159,10 @@ test('saved view navigation order is personal, persistent, and resettable', asyn
     ).toBeDefined();
 
     await page.getByRole('button', { name: 'Reorder Events views' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Reorder Events Views' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByText(privateViewName, { exact: true }).locator('..').getByText('Private', { exact: true })).toBeVisible();
+    await expect(dialog.getByText(sharedViewName, { exact: true }).locator('..').getByText('Shared', { exact: true })).toBeVisible();
     await dialog.getByRole('button', { name: 'Reset to alphabetical' }).click();
     await expect(dialog).toBeHidden();
     await expectSavedViewBefore(sharedViewLink, privateViewLink);
