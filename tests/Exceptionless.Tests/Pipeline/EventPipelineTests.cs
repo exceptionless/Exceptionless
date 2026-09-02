@@ -17,8 +17,10 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Extensions;
+using Foundatio.Repositories.Utility;
 using Foundatio.Serializer;
 using Foundatio.Storage;
+using Foundatio.Utility;
 using McSherry.SemanticVersioning;
 using Xunit;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
@@ -30,6 +32,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     private readonly EventPipeline _pipeline;
     private readonly EventData _eventData;
     private readonly IEventRepository _eventRepository;
+    private readonly StackData _stackData;
     private readonly IStackRepository _stackRepository;
     private readonly OrganizationData _organizationData;
     private readonly IOrganizationRepository _organizationRepository;
@@ -45,6 +48,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     {
         _eventData = GetService<EventData>();
         _eventRepository = GetService<IEventRepository>();
+        _stackData = GetService<StackData>();
         _stackRepository = GetService<IStackRepository>();
         _organizationData = GetService<OrganizationData>();
         _organizationRepository = GetService<IOrganizationRepository>();
@@ -623,6 +627,55 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         stack = await _stackRepository.GetByIdAsync(ev.StackId, o => o.Cache());
         Assert.NotNull(stack);
         Assert.Equal(new[] { Tag1, Tag2 }, stack.Tags.ToArray());
+    }
+
+    [Fact]
+    public async Task RunAsync_WithRedirectedStackId_PersistsEventAndTagsOnCanonicalStack()
+    {
+        // Arrange
+        const string RedirectedTag = "redirected-pipeline-tag";
+        var target = _stackData.GenerateStack(
+            generateId: true,
+            organizationId: TestConstants.OrganizationId,
+            projectId: TestConstants.ProjectId);
+        var source = target.DeepClone();
+        source.Id = ObjectId.GenerateNewId().ToString();
+        await _stackRepository.AddAsync([target, source], o => o.ImmediateConsistency());
+        await _stackRepository.SetDuplicateStackRedirectAsync(source, target.Id, isDeleted: true);
+
+        var ev = _eventData.GenerateEvent(
+            stackId: source.Id,
+            projectId: TestConstants.ProjectId,
+            organizationId: TestConstants.OrganizationId,
+            generateTags: false,
+            generateData: false,
+            occurrenceDate: DateTime.UtcNow);
+        ev.Tags ??= [];
+        ev.Tags.Add(RedirectedTag);
+
+        // Act
+        var context = await _pipeline.RunAsync(
+            ev,
+            _organizationData.GenerateSampleOrganization(_billingManager, _plans),
+            _projectData.GenerateSampleProject());
+        await RefreshDataAsync();
+
+        // Assert
+        Assert.False(context.HasError, context.ErrorMessage);
+        Assert.Equal(target.Id, context.Stack?.Id);
+
+        var storedEvent = await _eventRepository.GetByIdAsync(ev.Id);
+        var updatedTarget = await _stackRepository.GetByIdAsync(target.Id, o => o.ImmediateConsistency());
+        var redirectTombstone = await _stackRepository.GetByIdAsync(
+            source.Id,
+            o => o.IncludeSoftDeletes().ImmediateConsistency());
+        Assert.NotNull(storedEvent);
+        Assert.Equal(target.Id, storedEvent.StackId);
+        Assert.NotNull(updatedTarget);
+        Assert.Contains(RedirectedTag, updatedTarget.Tags);
+        Assert.NotNull(redirectTombstone);
+        Assert.Equal(target.Id, redirectTombstone.RedirectToStackId);
+        Assert.DoesNotContain(RedirectedTag, redirectTombstone.Tags);
     }
 
     [Fact]
