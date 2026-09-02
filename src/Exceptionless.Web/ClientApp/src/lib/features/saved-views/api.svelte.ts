@@ -260,19 +260,22 @@ export function putUserSavedViewDefault(request: { route: { organizationId: stri
 export function putUserSavedViewOrder(request: { route: { organizationId: string | undefined } }) {
     const queryClient = useQueryClient();
 
-    return createMutation<UpdateSavedViewOrder, ProblemDetails, UpdateUserSavedViewOrder>(() => ({
+    return createMutation<{ order: UpdateSavedViewOrder; organizationId: string | undefined }, ProblemDetails, UpdateUserSavedViewOrder>(() => ({
         enabled: () => !!accessToken.current && !!request.route.organizationId,
         mutationFn: async ({ saved_view_ids, view_type }: UpdateUserSavedViewOrder) => {
             const client = useFetchClient();
-            const response = await client.putJSON<UpdateSavedViewOrder>(`organizations/${request.route.organizationId}/saved-view-order/${view_type}`, {
+            const organizationId = request.route.organizationId;
+            const response = await client.putJSON<UpdateSavedViewOrder>(`organizations/${organizationId}/saved-view-order/${view_type}`, {
                 saved_view_ids
             });
-            return response.data!;
+            return {
+                order: response.data!,
+                organizationId
+            };
         },
-        onSuccess: (data: UpdateSavedViewOrder, variables: UpdateUserSavedViewOrder) => {
-            const organizationId = request.route.organizationId;
+        onSuccess: ({ order, organizationId }, variables: UpdateUserSavedViewOrder) => {
             if (organizationId) {
-                setCurrentUserSavedViewOrder(queryClient, organizationId, variables.view_type, data.saved_view_ids);
+                setCurrentUserSavedViewOrder(queryClient, organizationId, variables.view_type, order.saved_view_ids);
             }
         }
     }));

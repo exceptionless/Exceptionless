@@ -3435,6 +3435,16 @@
               }
             }
           },
+          "400": {
+            "description": "The request body is malformed or omits the saved view identifiers.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "409": {
             "description": "The saved view preferences could not be updated due to a concurrent request.",
             "content": {

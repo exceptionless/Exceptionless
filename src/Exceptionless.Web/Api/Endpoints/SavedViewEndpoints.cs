@@ -99,6 +99,7 @@ public static class SavedViewEndpoints
             => (await mediator.InvokeAsync<Result<UpdateSavedViewOrder>>(new SavedViewMessages.UpdateUserSavedViewOrder(organizationId, viewType, savedViewOrder))).ToHttpResult(resultMapper))
         .Accepts<UpdateSavedViewOrder>("application/json", "application/*+json")
         .Produces<UpdateSavedViewOrder>()
+        .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
@@ -112,6 +113,7 @@ public static class SavedViewEndpoints
             },
             ResponseDescriptions = new() {
                 ["200"] = "The personal saved view order was updated.",
+                ["400"] = "The request body is malformed or omits the saved view identifiers.",
                 ["409"] = "The saved view preferences could not be updated due to a concurrent request.",
                 ["404"] = "The organization could not be found.",
                 ["422"] = "The dashboard view type or saved view identifiers are invalid.",
