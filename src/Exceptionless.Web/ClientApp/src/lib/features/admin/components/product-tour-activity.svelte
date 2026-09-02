@@ -2,14 +2,14 @@
     import type { ProductTourSummary, ProductTourUsageInterval } from '$generated/api';
 
     import Number from '$comp/formatters/number.svelte';
-    import Percentage from '$comp/formatters/percentage.svelte';
     import * as Chart from '$comp/ui/chart';
     import * as Table from '$comp/ui/table';
     import { scaleUtc } from 'd3-scale';
     import { curveLinear } from 'd3-shape';
-    import { LineChart } from 'layerchart';
+    import { LineChart, Points, Spline } from 'layerchart';
 
-    import { getProductTourActivity, getRate } from '../product-tour-usage';
+    import { getProductTourActivity } from '../product-tour-usage';
+    import ProductTourTotals from './product-tour-totals.svelte';
 
     let { end, interval, start, tour }: { end: string; interval: ProductTourUsageInterval; start?: null | string; tour: ProductTourSummary } = $props();
     const prompt = $derived(tour.kind === 'prompt');
@@ -17,7 +17,7 @@
     const config = $derived({
         completed: {
             color: 'var(--chart-1)',
-            label: prompt ? 'Engaged' : 'Completed'
+            label: prompt ? 'Accepted' : 'Completed'
         },
         dismissed: {
             color: 'var(--chart-5)',
@@ -55,28 +55,11 @@
 </script>
 
 <div class="flex flex-col gap-4">
-    <dl class="grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Selected guide totals">
-        {#if !prompt}
-            <div>
-                <dt class="text-muted-foreground text-xs">Recorded events</dt>
-                <dd class="text-xl font-semibold"><Number value={total} /></dd>
-            </div>
-        {/if}
-        {#each keys as key (key)}
-            {@const rate = key === 'shown' || (!prompt && key === 'started') ? undefined : getRate(tour[key], prompt ? tour.shown : tour.started)}
-            <div>
-                <dt class="text-muted-foreground text-xs">{config[key].label}</dt>
-                <dd class="text-xl font-semibold"><Number value={tour[key]} /></dd>
-                {#if rate !== undefined}<dd class="text-muted-foreground text-xs">
-                        {#if rate === null}—{:else}<Percentage percent={rate * 100} />{/if} of {prompt ? 'shown' : 'starts'}
-                    </dd>{/if}
-            </div>
-        {/each}
-    </dl>
-    <p class="text-muted-foreground text-xs">{interval === 'day' ? 'Daily' : 'Monthly'} activity · UTC · Counts are events, not unique users.</p>
+    <ProductTourTotals {tour} />
     {#if total === 0}
-        <p class="text-muted-foreground flex h-40 items-center justify-center text-sm">No activity recorded for this guide in this period.</p>
+        <p class="text-muted-foreground text-sm">No activity recorded in this period. Try another period or check that browser telemetry is configured.</p>
     {:else}
+        <p class="text-muted-foreground text-xs">{interval === 'day' ? 'Daily' : 'Monthly'} activity · UTC</p>
         <Chart.Container
             {config}
             class="h-40 w-full"
@@ -91,16 +74,22 @@
                 axis
                 legend
                 props={{
-                    spline: {
-                        curve: curveLinear,
-                        strokeWidth: 2
-                    },
                     xAxis: {
                         format: dateLabel,
-                        ticks: 4
+                        ticks: data.filter((_, index) => index % Math.max(1, Math.ceil((data.length - 1) / 4)) === 0).map((period) => period.date)
+                    },
+                    yAxis: {
+                        format: (value) => String(value),
+                        ticks: (scale) => scale.ticks?.(3).filter((value: number) => globalThis.Number.isInteger(value))
                     }
                 }}
             >
+                {#snippet marks({ context })}
+                    {#each context.series.visibleSeries as item (item.key)}
+                        <Spline seriesKey={item.key} curve={curveLinear} strokeWidth={2} />
+                        <Points seriesKey={item.key} r={3} fill={item.color} />
+                    {/each}
+                {/snippet}
                 {#snippet tooltip()}<Chart.Tooltip labelFormatter={dateLabel} indicator="line" />{/snippet}
             </LineChart>
         </Chart.Container>

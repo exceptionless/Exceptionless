@@ -1,7 +1,6 @@
 <script lang="ts">
     import type { ProductTourSummary } from '$generated/api';
 
-    import DateTime from '$comp/formatters/date-time.svelte';
     import Number from '$comp/formatters/number.svelte';
     import Percentage from '$comp/formatters/percentage.svelte';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
@@ -17,6 +16,7 @@
     import ProductTourActivity from '$features/admin/components/product-tour-activity.svelte';
     import ProductTourPeriod from '$features/admin/components/product-tour-period.svelte';
     import { getGuideOutcomeRate, getRate, getStartSourceShare, type ProductTourUsageRange } from '$features/admin/product-tour-usage';
+    import { productTourCatalog } from '$features/product-tours/catalog';
 
     const currentMonth = getUtcMonthKey();
     let range = $state<ProductTourUsageRange>({
@@ -29,6 +29,18 @@
     const activeTour = $derived(usage?.tours.find((tour) => `${tour.name}:${tour.version}` === selectedTour));
 
     function title(value: string): string {
+        const guide = productTourCatalog.find((tour) => tour.name === value);
+        if (guide) {
+            return guide.title;
+        }
+
+        if (value === 'app-welcome') {
+            return 'Welcome invitation';
+        }
+
+        if (value === 'exie-announcement') {
+            return 'Exie invitation';
+        }
         return value
             .split('-')
             .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -36,7 +48,20 @@
     }
 
     function formatSource(source: string): string {
-        return source === 'welcome' ? 'Welcome' : title(source);
+        switch (source) {
+            case 'catalog':
+                return 'Guided Tours menu';
+            case 'command-palette':
+                return 'Command palette';
+            case 'feature-announcement':
+                return 'Exie invitation';
+            case 'help-menu':
+                return 'Help menu';
+            case 'welcome':
+                return 'Welcome invitation';
+            default:
+                return title(source);
+        }
     }
 
     function promptEngagement(tour: ProductTourSummary): null | number {
@@ -54,7 +79,7 @@
 
 <div class="flex flex-col gap-4">
     <Muted>See which guides people start, finish, or dismiss.</Muted>
-    <div class="flex items-center justify-between gap-2" aria-label="Usage filters">
+    <div class="flex items-center gap-2" aria-label="Usage filters">
         <Select.Root type="single" bind:value={selectedTour}>
             <Select.Trigger aria-label="Guide or invitation" class="min-w-0 flex-1 sm:max-w-60">
                 <span class="truncate">{activeTour ? `${title(activeTour.name)} · v${activeTour.version}` : 'Choose a guide'}</span>
@@ -102,22 +127,26 @@
 
             {#if activeTour && usage}
                 <Card.Root>
-                    <Card.Header>
-                        <Card.Title>{title(activeTour.name)}</Card.Title>
-                        <Card.Description
-                            >{activeTour.kind === 'prompt'
-                                ? 'Invitation outcomes as a share of times shown.'
-                                : 'Completion and dismissal rates use starts, not matched users.'}</Card.Description
-                        >
-                    </Card.Header>
-                    <Card.Content>
+                    <Card.Content class="pt-4">
                         <ProductTourActivity tour={activeTour} interval={usage.interval} start={usage.utc_start} end={usage.utc_end} />
                     </Card.Content>
-                    <Card.Footer class="flex flex-wrap items-center justify-between gap-2">
-                        <div class="text-muted-foreground text-xs">Started from {@render SourceMix(activeTour)}</div>
-                        {#if activeTour.last_run_utc}<p class="text-muted-foreground text-xs">Last event <TimeAgo value={activeTour.last_run_utc} /></p>{/if}
-                    </Card.Footer>
+                    {#if activeTour.start_sources.length > 0 || activeTour.last_run_utc}
+                        <Card.Footer class="flex flex-wrap items-center justify-between gap-2">
+                            {#if activeTour.start_sources.length > 0}<div class="flex flex-col gap-1 text-xs">
+                                    <p class="text-muted-foreground">How people opened this guide</p>
+                                    {@render SourceMix(activeTour)}
+                                </div>{/if}
+                            {#if activeTour.last_run_utc}<p class="text-muted-foreground text-xs">
+                                    Last activity <TimeAgo value={activeTour.last_run_utc} />
+                                </p>{/if}
+                        </Card.Footer>
+                    {/if}
                 </Card.Root>
+                <p class="text-muted-foreground text-xs">
+                    Counts are events, not unique people. Rates compare events in this period{activeTour.kind === 'prompt'
+                        ? '; accepted includes starting a guide or browsing guides'
+                        : ''}.
+                </p>
             {/if}
 
             <details class="group">
@@ -139,7 +168,7 @@
                                                 <Table.Head class="pl-4">Invitation</Table.Head>
                                                 <Table.Head class="text-right">Shown</Table.Head>
                                                 <Table.Head class="text-right">Started</Table.Head>
-                                                <Table.Head class="text-right">Engaged</Table.Head>
+                                                <Table.Head class="text-right">Accepted</Table.Head>
                                                 <Table.Head class="text-right">Dismissed</Table.Head>
                                                 <Table.Head>Last event</Table.Head>
                                             </Table.Row>
@@ -173,7 +202,7 @@
                         <Card.Root>
                             <Card.Header>
                                 <Card.Title>Guides</Card.Title>
-                                <Card.Description>Guide outcome and entry-point percentages use starts as the denominator.</Card.Description>
+                                <Card.Description>Completions and dismissals are shown as a percentage of starts in this period.</Card.Description>
                             </Card.Header>
                             <Card.Content class="px-0">
                                 <div class="hidden overflow-x-auto md:block">
@@ -184,7 +213,7 @@
                                                 <Table.Head class="text-right">Started</Table.Head>
                                                 <Table.Head class="text-right">Completed</Table.Head>
                                                 <Table.Head class="text-right">Dismissed</Table.Head>
-                                                <Table.Head>Entry points</Table.Head>
+                                                <Table.Head>Opened from</Table.Head>
                                                 <Table.Head>Last event</Table.Head>
                                             </Table.Row>
                                         </Table.Header>
@@ -214,13 +243,6 @@
                     {/if}
                 </div>
             </details>
-            {#if usage}
-                <p class="text-muted-foreground text-xs">
-                    Retained data: {#if usage.utc_start}<DateTime value={usage.utc_start} />{:else}earliest available event{/if} – <DateTime
-                        value={usage.utc_end}
-                    />. Periods use UTC; these bounds use your local time.
-                </p>
-            {/if}
         {/if}
     {/if}
 </div>
@@ -228,9 +250,7 @@
 {#snippet RateCell(value: number, rate: null | number)}
     <Table.Cell class="text-right">
         <Number {value} />
-        <span class="text-muted-foreground ml-1 text-xs"
-            >({#if rate === null}—{:else}<Percentage percent={rate * 100} />{/if})</span
-        >
+        {#if rate !== null}<span class="text-muted-foreground ml-1 text-xs">(<Percentage percent={rate * 100} />)</span>{/if}
     </Table.Cell>
 {/snippet}
 
@@ -246,15 +266,15 @@
 
 {#snippet SourceMix(tour: ProductTourSummary)}
     {#if tour.started === 0 || tour.start_sources.length === 0}
-        <span class="text-muted-foreground">—</span>
+        <span class="text-muted-foreground">No starts recorded</span>
     {:else}
-        <div class="flex flex-wrap gap-1">
+        <div class="flex flex-wrap gap-x-4 gap-y-1">
             {#each tour.start_sources as source (source.source)}
-                <Badge variant="outline">
+                <span>
                     {formatSource(source.source)}
                     <Number value={source.count} />
                     (<Percentage percent={(getStartSourceShare(source, tour.started) ?? 0) * 100} />)
-                </Badge>
+                </span>
             {/each}
         </div>
     {/if}
@@ -269,7 +289,7 @@
         <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
             {@render Metric('Shown', tour.shown)}
             {@render Metric('Started', tour.started, promptStart(tour))}
-            {@render Metric('Engaged', tour.completed, promptEngagement(tour))}
+            {@render Metric('Accepted', tour.completed, promptEngagement(tour))}
             {@render Metric('Dismissed', tour.dismissed, promptDismissal(tour))}
         </div>
         {#if tour.last_run_utc}
@@ -290,7 +310,7 @@
             {@render Metric('Dismissed', tour.dismissed, getGuideOutcomeRate(tour, 'dismissed'))}
         </div>
         <div class="mt-4">
-            <p class="text-muted-foreground mb-2 text-xs font-medium">Entry points</p>
+            <p class="text-muted-foreground mb-2 text-xs font-medium">Opened from</p>
             {@render SourceMix(tour)}
         </div>
         {#if tour.last_run_utc}
@@ -304,9 +324,7 @@
         <div class="text-muted-foreground text-xs">{label}</div>
         <div class="font-medium">
             <Number {value} />
-            {#if rate !== undefined}<span class="text-muted-foreground text-xs"
-                    >({#if rate === null}—{:else}<Percentage percent={rate * 100} />{/if})</span
-                >{/if}
+            {#if rate !== undefined && rate !== null}<span class="text-muted-foreground text-xs">(<Percentage percent={rate * 100} />)</span>{/if}
         </div>
     </div>
 {/snippet}
