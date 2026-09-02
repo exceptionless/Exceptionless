@@ -31,7 +31,7 @@
 
                 <A variant="ghost" class="mr-14 ml-2 flex md:min-w-62.5 lg:ml-3 dark:text-white" href={resolve('/')}>
                     {#if isMediumScreenQuery.current}
-                        <Logo class="absolute top-1 mr-3 h-14" />
+                        <Logo class="absolute top-1.5 mr-3 h-12" />
                     {:else}
                         <img alt="Exceptionless Logo" class="mr-3 h-8" src={logoSmall} />
                     {/if}
