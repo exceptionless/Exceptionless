@@ -2,6 +2,7 @@
     import type { ProductTourSummary, ProductTourUsageInterval } from '$generated/api';
 
     import Number from '$comp/formatters/number.svelte';
+    import TimeAgo from '$comp/formatters/time-ago.svelte';
     import * as Chart from '$comp/ui/chart';
     import * as Table from '$comp/ui/table';
     import { scaleUtc } from 'd3-scale';
@@ -41,6 +42,23 @@
     );
     const total = $derived(tour.shown + tour.started + tour.completed + tour.dismissed);
 
+    function sourceLabel(source: string): string {
+        switch (source) {
+            case 'catalog':
+                return 'Guided Tours menu';
+            case 'command-palette':
+                return 'Command palette';
+            case 'feature-announcement':
+                return 'Exie invitation';
+            case 'help-menu':
+                return 'Help menu';
+            case 'welcome':
+                return 'Welcome invitation';
+            default:
+                return source;
+        }
+    }
+
     function dateLabel(value: unknown): string {
         if (!(value instanceof Date)) {
             return '';
@@ -55,15 +73,13 @@
 </script>
 
 <div class="flex flex-col gap-4">
-    <ProductTourTotals {tour} />
     {#if total === 0}
-        <p class="text-muted-foreground text-sm">No activity recorded in this period. Try another period or check that browser telemetry is configured.</p>
+        <p class="text-muted-foreground text-sm">No recorded activity in this period.</p>
     {:else}
-        <p class="text-muted-foreground text-xs">{interval === 'day' ? 'Daily' : 'Monthly'} activity · UTC</p>
         <Chart.Container
             {config}
             class="h-40 w-full"
-            aria-label={`${interval === 'day' ? 'Daily' : 'Monthly'} guide activity. Exact values are in the activity table below.`}
+            aria-label={`${interval === 'day' ? 'Daily' : 'Monthly'} ${prompt ? 'invitation' : 'guide'} activity. Open View details for totals and exact values.`}
         >
             <LineChart
                 {data}
@@ -71,6 +87,12 @@
                 xScale={scaleUtc()}
                 {series}
                 yDomain={[0, null]}
+                padding={{
+                    bottom: 48,
+                    left: 32,
+                    right: 32,
+                    top: 8
+                }}
                 axis
                 legend
                 props={{
@@ -94,7 +116,24 @@
             </LineChart>
         </Chart.Container>
         <details>
-            <summary class="text-muted-foreground cursor-pointer text-xs">View activity table</summary>
+            <summary class="text-muted-foreground cursor-pointer text-xs">View details</summary>
+            <div class="my-4 space-y-3">
+                <ProductTourTotals {tour} />
+                <p class="text-muted-foreground text-xs">Counts are events, not unique people. Rates compare events in this period.</p>
+                {#if tour.start_sources.length > 0}
+                    <div class="text-xs">
+                        <p class="text-muted-foreground mb-1">How people opened this guide</p>
+                        <ul class="flex flex-wrap gap-x-4 gap-y-1">
+                            {#each tour.start_sources as source (source.source)}
+                                <li>{sourceLabel(source.source)}: <Number value={source.count} /></li>
+                            {/each}
+                        </ul>
+                    </div>
+                {/if}
+                {#if tour.last_run_utc}
+                    <p class="text-muted-foreground text-xs">Last activity <TimeAgo value={tour.last_run_utc} /></p>
+                {/if}
+            </div>
             <Table.Root aria-label="Guide activity by date">
                 <Table.Header
                     ><Table.Row
