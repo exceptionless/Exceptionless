@@ -161,10 +161,11 @@ test('saved view navigation order is personal, persistent, and resettable', asyn
     const currentUserResponse = await request.get('/api/v2/users/me', { headers: authorizationHeaders });
     expect(currentUserResponse.ok()).toBe(true);
     const currentUser = (await currentUserResponse.json()) as {
-        organization_preferences: { organization_id: string; saved_view_order?: Record<string, string[]> }[];
+        saved_view_orders: { organization_id: string; saved_view_ids: string[]; view_type: string }[];
     };
     expect(
-        currentUser.organization_preferences.find((preference) => preference.organization_id === e2eScenario.organizationId)?.saved_view_order?.events
+        currentUser.saved_view_orders.find((preference) => preference.organization_id === e2eScenario.organizationId && preference.view_type === 'events')
+            ?.saved_view_ids
     ).toBeDefined();
 
     await page.getByRole('button', { name: 'Reorder Events views' }).click();
@@ -177,10 +178,10 @@ test('saved view navigation order is personal, persistent, and resettable', asyn
 
     const resetCurrentUserResponse = await request.get('/api/v2/users/me', { headers: authorizationHeaders });
     const resetCurrentUser = (await resetCurrentUserResponse.json()) as {
-        organization_preferences: { organization_id: string; saved_view_order?: Record<string, string[]> }[];
+        saved_view_orders: { organization_id: string; saved_view_ids: string[]; view_type: string }[];
     };
     expect(
-        resetCurrentUser.organization_preferences.find((preference) => preference.organization_id === e2eScenario.organizationId)?.saved_view_order?.events
+        resetCurrentUser.saved_view_orders.find((preference) => preference.organization_id === e2eScenario.organizationId && preference.view_type === 'events')
     ).toBeUndefined();
 
     expect(failedApiRequests).toEqual([]);

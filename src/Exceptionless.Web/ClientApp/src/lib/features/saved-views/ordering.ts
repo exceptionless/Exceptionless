@@ -1,9 +1,9 @@
-import type { UserOrganizationPreference } from '$generated/api';
+import type { UserSavedViewOrderPreference } from '$generated/api';
 
 import type { SavedView } from './models';
 
 export function getPersonalSavedViewOrder(
-    organizationPreferences: null | undefined | UserOrganizationPreference[],
+    savedViewOrders: null | undefined | UserSavedViewOrderPreference[],
     organizationId: string | undefined,
     viewType: string
 ): string[] {
@@ -12,12 +12,12 @@ export function getPersonalSavedViewOrder(
     }
 
     const orderedIds: string[] = [];
-    for (const preference of organizationPreferences ?? []) {
-        if (preference.organization_id !== organizationId) {
+    for (const preference of savedViewOrders ?? []) {
+        if (preference.organization_id !== organizationId || preference.view_type !== viewType) {
             continue;
         }
 
-        for (const savedViewId of preference.saved_view_order?.[viewType] ?? []) {
+        for (const savedViewId of preference.saved_view_ids) {
             if (!orderedIds.includes(savedViewId)) {
                 orderedIds.push(savedViewId);
             }

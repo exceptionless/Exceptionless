@@ -1488,12 +1488,12 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
 
         var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
         Assert.NotNull(user);
-        var preference = Assert.Single(user.OrganizationPreferences, preference => preference.OrganizationId == SampleDataService.TEST_ORG_ID);
-        Assert.Equal([privateView.Id, sharedView.Id], preference.SavedViewOrder["events"]);
+        var preference = Assert.Single(user.SavedViewOrders, preference => preference.OrganizationId == SampleDataService.TEST_ORG_ID && preference.ViewType == "events");
+        Assert.Equal([privateView.Id, sharedView.Id], preference.SavedViewIds);
     }
 
     [Fact]
-    public async Task PutSavedViewDefaults_DuplicateOrganizationPreferences_MergesEverySavedViewOrderIdentifier()
+    public async Task PutSavedViewOrder_DuplicatePreferences_ReplacesSectionOrder()
     {
         var firstView = await CreateSavedViewAsync("First Legacy Ordered View", "status:open", "events");
         var secondView = await CreateSavedViewAsync("Second Legacy Ordered View", "status:regressed", "events");
@@ -1502,30 +1502,32 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
 
         var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
         Assert.NotNull(user);
-        user.OrganizationPreferences.Add(new UserOrganizationPreference
+        user.SavedViewOrders.Add(new UserSavedViewOrderPreference
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
-            SavedViewOrder = new() { ["events"] = [firstView.Id] }
+            ViewType = "events",
+            SavedViewIds = [firstView.Id]
         });
-        user.OrganizationPreferences.Add(new UserOrganizationPreference
+        user.SavedViewOrders.Add(new UserSavedViewOrderPreference
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
-            SavedViewOrder = new() { ["events"] = [firstView.Id, secondView.Id] }
+            ViewType = "events",
+            SavedViewIds = [firstView.Id, secondView.Id]
         });
         await _userRepository.SaveAsync(user, o => o.Cache());
 
         await SendRequestAsync(r => r
             .Put()
             .AsGlobalAdminUser()
-            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-defaults", "user")
-            .Content(new UpdateSavedViewDefault { SavedViewId = null })
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-order", "events")
+            .Content(new UpdateSavedViewOrder { SavedViewIds = [secondView.Id, firstView.Id] })
             .StatusCodeShouldBeOk()
         );
 
         user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
         Assert.NotNull(user);
-        var preference = Assert.Single(user.OrganizationPreferences, preference => preference.OrganizationId == SampleDataService.TEST_ORG_ID);
-        Assert.Equal([firstView.Id, secondView.Id], preference.SavedViewOrder["events"]);
+        var preference = Assert.Single(user.SavedViewOrders, preference => preference.OrganizationId == SampleDataService.TEST_ORG_ID && preference.ViewType == "events");
+        Assert.Equal([secondView.Id, firstView.Id], preference.SavedViewIds);
     }
 
     [Fact]
@@ -1558,9 +1560,9 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
 
         var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
         Assert.NotNull(user);
-        var preference = Assert.Single(user.OrganizationPreferences, preference => preference.OrganizationId == SampleDataService.TEST_ORG_ID);
-        Assert.Null(preference.DefaultSavedViewId);
-        Assert.Equal([sharedView.Id], preference.SavedViewOrder["stacks"]);
+        Assert.DoesNotContain(user.OrganizationPreferences, preference => preference.OrganizationId == SampleDataService.TEST_ORG_ID);
+        var preference = Assert.Single(user.SavedViewOrders, preference => preference.OrganizationId == SampleDataService.TEST_ORG_ID && preference.ViewType == "stacks");
+        Assert.Equal([sharedView.Id], preference.SavedViewIds);
     }
 
     [Fact]
@@ -3142,15 +3144,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
             .Select(preference => new UserOrganizationPreference
             {
                 OrganizationId = preference.GetProperty("organization_id").GetString()!,
-                DefaultSavedViewId = preference.TryGetProperty("default_saved_view_id", out var defaultSavedViewId)
-                    ? defaultSavedViewId.GetString()
-                    : null,
-                SavedViewOrder = preference.TryGetProperty("saved_view_order", out var savedViewOrder)
-                    ? savedViewOrder.EnumerateObject().ToDictionary(
-                        property => property.Name,
-                        property => property.Value.EnumerateArray().Select(value => value.GetString()!).ToList(),
-                        StringComparer.Ordinal)
-                    : []
+                DefaultSavedViewId = preference.GetProperty("default_saved_view_id").GetString()!
             })
             .ToList();
     }

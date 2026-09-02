@@ -22,7 +22,7 @@ describe('setCurrentUserSavedViewDefault', () => {
 
         expect(queryClient.getQueryData<ViewCurrentUser>(queryKeys.me())?.organization_preferences).toEqual([
             { default_saved_view_id: 'other-view-id', organization_id: 'other-organization-id' },
-            { default_saved_view_id: 'new-view-id', organization_id: 'organization-id', saved_view_order: {} }
+            { default_saved_view_id: 'new-view-id', organization_id: 'organization-id' }
         ]);
     });
 
@@ -39,15 +39,21 @@ describe('setCurrentUserSavedViewDefault', () => {
         expect(queryClient.getQueryData<ViewCurrentUser>(queryKeys.me())?.organization_preferences).toEqual([]);
     });
 
-    it('preserves saved view ordering when the default changes or clears', () => {
+    it('preserves separate saved view ordering when the default changes or clears', () => {
         const queryClient = new QueryClient();
         const currentUser = {
             id: 'user-id',
             organization_preferences: [
                 {
                     default_saved_view_id: 'old-view-id',
+                    organization_id: 'organization-id'
+                }
+            ],
+            saved_view_orders: [
+                {
                     organization_id: 'organization-id',
-                    saved_view_order: { events: ['private-view-id', 'shared-view-id'] }
+                    saved_view_ids: ['private-view-id', 'shared-view-id'],
+                    view_type: 'events'
                 }
             ]
         } as unknown as ViewCurrentUser;
@@ -55,39 +61,13 @@ describe('setCurrentUserSavedViewDefault', () => {
 
         setCurrentUserSavedViewDefault(queryClient, 'organization-id', null);
 
-        expect(queryClient.getQueryData<ViewCurrentUser>(queryKeys.me())?.organization_preferences).toEqual([
+        const updatedUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
+        expect(updatedUser?.organization_preferences).toEqual([]);
+        expect(updatedUser?.saved_view_orders).toEqual([
             {
-                default_saved_view_id: null,
                 organization_id: 'organization-id',
-                saved_view_order: { events: ['private-view-id', 'shared-view-id'] }
-            }
-        ]);
-    });
-
-    it('merges saved view identifiers from duplicate organization preferences', () => {
-        const queryClient = new QueryClient();
-        const currentUser = {
-            id: 'user-id',
-            organization_preferences: [
-                {
-                    organization_id: 'organization-id',
-                    saved_view_order: { events: ['first-view-id', 'shared-view-id'] }
-                },
-                {
-                    organization_id: 'organization-id',
-                    saved_view_order: { events: ['shared-view-id', 'second-view-id'] }
-                }
-            ]
-        } as unknown as ViewCurrentUser;
-        queryClient.setQueryData(queryKeys.me(), currentUser);
-
-        setCurrentUserSavedViewDefault(queryClient, 'organization-id', 'home-view-id');
-
-        expect(queryClient.getQueryData<ViewCurrentUser>(queryKeys.me())?.organization_preferences).toEqual([
-            {
-                default_saved_view_id: 'home-view-id',
-                organization_id: 'organization-id',
-                saved_view_order: { events: ['first-view-id', 'shared-view-id', 'second-view-id'] }
+                saved_view_ids: ['private-view-id', 'shared-view-id'],
+                view_type: 'events'
             }
         ]);
     });
@@ -101,9 +81,12 @@ describe('setCurrentUserSavedViewOrder', () => {
             organization_preferences: [
                 {
                     default_saved_view_id: 'home-view-id',
-                    organization_id: 'organization-id',
-                    saved_view_order: { stacks: ['stack-view-id'] }
+                    organization_id: 'organization-id'
                 }
+            ],
+            saved_view_orders: [
+                { organization_id: 'organization-id', saved_view_ids: ['stack-view-id'], view_type: 'stacks' },
+                { organization_id: 'other-organization-id', saved_view_ids: ['other-view-id'], view_type: 'events' }
             ]
         } as unknown as ViewCurrentUser;
         queryClient.setQueryData(queryKeys.me(), currentUser);
@@ -113,11 +96,16 @@ describe('setCurrentUserSavedViewOrder', () => {
         expect(queryClient.getQueryData<ViewCurrentUser>(queryKeys.me())?.organization_preferences).toEqual([
             {
                 default_saved_view_id: 'home-view-id',
+                organization_id: 'organization-id'
+            }
+        ]);
+        expect(queryClient.getQueryData<ViewCurrentUser>(queryKeys.me())?.saved_view_orders).toEqual([
+            { organization_id: 'organization-id', saved_view_ids: ['stack-view-id'], view_type: 'stacks' },
+            { organization_id: 'other-organization-id', saved_view_ids: ['other-view-id'], view_type: 'events' },
+            {
                 organization_id: 'organization-id',
-                saved_view_order: {
-                    events: ['private-view-id', 'shared-view-id'],
-                    stacks: ['stack-view-id']
-                }
+                saved_view_ids: ['private-view-id', 'shared-view-id'],
+                view_type: 'events'
             }
         ]);
     });

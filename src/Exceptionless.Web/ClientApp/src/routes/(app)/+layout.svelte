@@ -629,7 +629,7 @@
                 return route;
             }
 
-            const orderedIds = getPersonalSavedViewOrder(meQuery.data?.organization_preferences, organization.current, viewKey);
+            const orderedIds = getPersonalSavedViewOrder(meQuery.data?.saved_view_orders, organization.current, viewKey);
             const orderedViews = resolvePersonalSavedViewOrder(viewSavedViews, orderedIds);
 
             const children = [

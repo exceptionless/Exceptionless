@@ -736,6 +736,7 @@ export interface User {
   password_reset_token_expiration: string;
   o_auth_accounts: OAuthAccount[];
   organization_preferences: UserOrganizationPreference[];
+  saved_view_orders: UserSavedViewOrderPreference[];
   /** Gets or sets the users Full Name. */
   full_name: string;
   /** @format email */
@@ -767,8 +768,14 @@ export interface UserOrganizationPreference {
   /** @pattern ^[a-fA-F0-9]{24}$ */
   organization_id: string;
   /** @pattern ^[a-fA-F0-9]{24}$ */
-  default_saved_view_id?: null | string;
-  saved_view_order: Record<string, string[]>;
+  default_saved_view_id: string;
+}
+
+export interface UserSavedViewOrderPreference {
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  organization_id: string;
+  view_type: string;
+  saved_view_ids: string[];
 }
 
 export interface ViewCurrentUser {
@@ -776,6 +783,7 @@ export interface ViewCurrentUser {
   has_local_account: boolean;
   o_auth_accounts: OAuthAccount[];
   organization_preferences: UserOrganizationPreference[];
+  saved_view_orders: UserSavedViewOrderPreference[];
   /** @pattern ^[a-fA-F0-9]{24}$ */
   id: string;
   organization_ids: string[];

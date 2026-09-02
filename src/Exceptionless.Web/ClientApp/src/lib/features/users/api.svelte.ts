@@ -1,5 +1,4 @@
 import type { WebSocketMessageValue } from '$features/websockets/models';
-import type { UserOrganizationPreference } from '$generated/api';
 import type { WorkInProgressResult } from '$shared/models';
 
 import { setUserIdentity } from '$features/auth/exceptionless-session';
@@ -278,9 +277,17 @@ export function setCurrentUserSavedViewDefault(queryClient: QueryClient, organiz
         return;
     }
 
-    const preference = mergeOrganizationPreferences(currentUser.organization_preferences, organizationId);
-    preference.default_saved_view_id = savedViewId;
-    setCurrentUserOrganizationPreference(queryClient, currentUser, preference);
+    const organizationPreferences = currentUser.organization_preferences.filter((preference) => preference.organization_id !== organizationId);
+    if (savedViewId) {
+        organizationPreferences.push({
+            default_saved_view_id: savedViewId,
+            organization_id: organizationId
+        });
+    }
+
+    setCurrentUser(queryClient, currentUser, {
+        organization_preferences: organizationPreferences
+    });
 }
 
 export function setCurrentUserSavedViewOrder(queryClient: QueryClient, organizationId: string, viewType: string, savedViewIds: string[]): void {
@@ -289,14 +296,20 @@ export function setCurrentUserSavedViewOrder(queryClient: QueryClient, organizat
         return;
     }
 
-    const preference = mergeOrganizationPreferences(currentUser.organization_preferences, organizationId);
+    const savedViewOrders = (currentUser.saved_view_orders ?? []).filter(
+        (preference) => preference.organization_id !== organizationId || preference.view_type !== viewType
+    );
     if (savedViewIds.length > 0) {
-        preference.saved_view_order[viewType] = [...savedViewIds];
-    } else {
-        delete preference.saved_view_order[viewType];
+        savedViewOrders.push({
+            organization_id: organizationId,
+            saved_view_ids: [...savedViewIds],
+            view_type: viewType
+        });
     }
 
-    setCurrentUserOrganizationPreference(queryClient, currentUser, preference);
+    setCurrentUser(queryClient, currentUser, {
+        saved_view_orders: savedViewOrders
+    });
 }
 
 export function uploadUserAvatar(request: UserAvatarRequest) {
@@ -323,44 +336,10 @@ export function uploadUserAvatar(request: UserAvatarRequest) {
     }));
 }
 
-function mergeOrganizationPreferences(organizationPreferences: UserOrganizationPreference[], organizationId: string): UserOrganizationPreference {
-    const matches = organizationPreferences.filter((preference) => preference.organization_id === organizationId);
-    const defaultSavedViewId = matches
-        .map((preference) => preference.default_saved_view_id)
-        .filter((savedViewId): savedViewId is string => !!savedViewId)
-        .sort()[0];
-    const savedViewOrder: Record<string, string[]> = {};
-
-    for (const preference of matches) {
-        for (const [viewType, savedViewIds] of Object.entries(preference.saved_view_order ?? {})) {
-            const mergedIds = savedViewOrder[viewType] ?? [];
-            for (const savedViewId of savedViewIds) {
-                if (!mergedIds.includes(savedViewId)) {
-                    mergedIds.push(savedViewId);
-                }
-            }
-            savedViewOrder[viewType] = mergedIds;
-        }
-    }
-
-    return {
-        default_saved_view_id: defaultSavedViewId,
-        organization_id: organizationId,
-        saved_view_order: savedViewOrder
-    };
-}
-
-function setCurrentUserOrganizationPreference(queryClient: QueryClient, currentUser: ViewCurrentUser, preference: UserOrganizationPreference): void {
-    const organizationPreferences = currentUser.organization_preferences.filter(
-        (existingPreference) => existingPreference.organization_id !== preference.organization_id
-    );
-    if (preference.default_saved_view_id || Object.keys(preference.saved_view_order).length > 0) {
-        organizationPreferences.push(preference);
-    }
-
+function setCurrentUser(queryClient: QueryClient, currentUser: ViewCurrentUser, changes: Partial<ViewCurrentUser>): void {
     const updatedUser = {
         ...currentUser,
-        organization_preferences: organizationPreferences
+        ...changes
     };
     queryClient.setQueryData(queryKeys.me(), updatedUser);
     queryClient.setQueryData(queryKeys.id(currentUser.id), updatedUser);

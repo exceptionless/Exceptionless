@@ -1,4 +1,4 @@
-import type { UserOrganizationPreference } from '$generated/api';
+import type { UserSavedViewOrderPreference } from '$generated/api';
 
 import { describe, expect, it } from 'vitest';
 
@@ -18,21 +18,29 @@ function savedView(id: string, name: string, userId?: string): SavedView {
 }
 
 describe('getPersonalSavedViewOrder', () => {
-    it('combines legacy duplicate organization preferences without repeating identifiers', () => {
+    it('combines duplicate order preferences without repeating identifiers', () => {
         const preferences = [
             {
                 organization_id: 'organization-id',
-                saved_view_order: { events: ['private-view', 'shared-view'] }
+                saved_view_ids: ['private-view', 'shared-view'],
+                view_type: 'events'
             },
             {
                 organization_id: 'organization-id',
-                saved_view_order: { events: ['shared-view', 'new-view'] }
+                saved_view_ids: ['shared-view', 'new-view'],
+                view_type: 'events'
             },
             {
                 organization_id: 'other-organization',
-                saved_view_order: { events: ['other-view'] }
+                saved_view_ids: ['other-view'],
+                view_type: 'events'
+            },
+            {
+                organization_id: 'organization-id',
+                saved_view_ids: ['other-section-view'],
+                view_type: 'stacks'
             }
-        ] as UserOrganizationPreference[];
+        ] as UserSavedViewOrderPreference[];
 
         expect(getPersonalSavedViewOrder(preferences, 'organization-id', 'events')).toEqual(['private-view', 'shared-view', 'new-view']);
     });

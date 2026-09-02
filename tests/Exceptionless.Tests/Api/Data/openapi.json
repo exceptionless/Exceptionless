@@ -13835,6 +13835,7 @@
           "password_reset_token_expiration",
           "o_auth_accounts",
           "organization_preferences",
+          "saved_view_orders",
           "email_notifications_enabled",
           "is_email_address_verified",
           "verify_email_address_token_expiration",
@@ -13892,6 +13893,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/UserOrganizationPreference"
+            }
+          },
+          "saved_view_orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserSavedViewOrderPreference"
             }
           },
           "full_name": {
@@ -13976,7 +13983,7 @@
       "UserOrganizationPreference": {
         "required": [
           "organization_id",
-          "saved_view_order"
+          "default_saved_view_id"
         ],
         "type": "object",
         "properties": {
@@ -13990,18 +13997,31 @@
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
-            "type": [
-              "null",
-              "string"
-            ]
+            "type": "string"
+          }
+        }
+      },
+      "UserSavedViewOrderPreference": {
+        "required": [
+          "view_type",
+          "organization_id",
+          "saved_view_ids"
+        ],
+        "type": "object",
+        "properties": {
+          "organization_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
           },
-          "saved_view_order": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
+          "view_type": {
+            "type": "string"
+          },
+          "saved_view_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
             }
           }
         }
@@ -14011,6 +14031,7 @@
           "has_local_account",
           "o_auth_accounts",
           "organization_preferences",
+          "saved_view_orders",
           "id",
           "organization_ids",
           "full_name",
@@ -14042,6 +14063,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/UserOrganizationPreference"
+            }
+          },
+          "saved_view_orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserSavedViewOrderPreference"
             }
           },
           "id": {
