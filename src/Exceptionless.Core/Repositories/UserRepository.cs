@@ -17,15 +17,15 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         AddRequiredField(u => u.EmailAddress, u => u.OrganizationIds);
     }
 
-    public async Task<bool> SetSavedViewOrdersAsync(User user, CommandOptionsDescriptor<User>? options = null)
+    public Task<bool> SetSavedViewOrdersAsync(User user, CommandOptionsDescriptor<User>? options = null)
     {
-        bool modified = await PatchAsync(
-            user.Id,
-            new PartialPatch(new { saved_view_orders = user.SavedViewOrders }),
-            options);
-
-        await Cache.RemoveAsync(EmailCacheKey(user.EmailAddress));
-        return modified;
+        var savedViewOrders = user.SavedViewOrders.ToList();
+        return PatchAsync(user.Id, new ActionPatch<User>(currentUser =>
+        {
+            currentUser.SavedViewOrders.Clear();
+            foreach (var savedViewOrder in savedViewOrders)
+                currentUser.SavedViewOrders.Add(savedViewOrder);
+        }), options);
     }
 
     public async Task<User?> GetByEmailAddressAsync(string emailAddress)
