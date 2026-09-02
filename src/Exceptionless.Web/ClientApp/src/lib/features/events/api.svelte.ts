@@ -502,6 +502,7 @@ export function getOrganizationSessionsCountQuery(request: GetOrganizationSessio
 export function getOrganizationSessionsQuery(request: GetOrganizationSessionsRequest) {
     return createQuery<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>, ProblemDetails>(() => {
         const organizationId = request.route.organizationId;
+        const enabled = !!accessToken.current && !!organizationId && (request.enabled?.() ?? true);
         const params = request.params
             ? {
                   ...request.params
@@ -509,8 +510,9 @@ export function getOrganizationSessionsQuery(request: GetOrganizationSessionsReq
             : undefined;
 
         return {
-            enabled: () => !!accessToken.current && !!organizationId && (request.enabled?.() ?? true),
-            placeholderData: keepPreviousData,
+            enabled,
+            placeholderData: (previousData, previousQuery) =>
+                retainPreviousOrganizationQueryData(previousData, previousQuery?.queryKey, organizationId, enabled),
             queryFn: async () => {
                 const client = useFetchClient();
                 return await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organizationId}/events/sessions`, {
@@ -643,6 +645,15 @@ export function getStackEventsQuery(request: GetStackEventsRequest) {
         },
         queryKey: queryKeys.stackEvents(request.route.stackId, request.params)
     }));
+}
+
+export function retainPreviousOrganizationQueryData<T>(
+    previousData: T | undefined,
+    previousQueryKey: readonly unknown[] | undefined,
+    organizationId: string | undefined,
+    enabled: boolean
+): T | undefined {
+    return enabled && previousQueryKey?.[2] === organizationId ? previousData : undefined;
 }
 
 export function schedulePersistentEventDeleteReconciliation(queryClient: QueryClient, eventTarget: EventTarget = document) {

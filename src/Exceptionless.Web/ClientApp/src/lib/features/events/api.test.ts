@@ -15,6 +15,7 @@ import {
     PERSISTENT_EVENT_DELETE_RECONCILE_EVENT,
     PERSISTENT_EVENT_DELETE_RECONCILE_RETRY_DELAY,
     queryKeys,
+    retainPreviousOrganizationQueryData,
     schedulePersistentEventDeleteReconciliation
 } from './api.svelte';
 
@@ -26,6 +27,17 @@ vi.mock('@foundatiofx/fetchclient', () => ({
 
 afterEach(() => {
     vi.useRealTimers();
+});
+
+describe('retainPreviousOrganizationQueryData', () => {
+    const previousData = { data: [{ id: 'session-id' }] };
+    const previousQueryKey = queryKeys.organizationsSessions('organization-a', { page: 1 });
+
+    it('retains data only for enabled query changes within the same organization', () => {
+        expect(retainPreviousOrganizationQueryData(previousData, previousQueryKey, 'organization-a', true)).toBe(previousData);
+        expect(retainPreviousOrganizationQueryData(previousData, previousQueryKey, 'organization-b', true)).toBeUndefined();
+        expect(retainPreviousOrganizationQueryData(previousData, previousQueryKey, 'organization-a', false)).toBeUndefined();
+    });
 });
 
 describe('createOrganizationEventNotificationRefresher', () => {
