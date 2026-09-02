@@ -10,6 +10,8 @@ namespace Exceptionless.Core.Seed;
 
 public class PredefinedSavedViewsDataSeed : IDataSeed
 {
+    public const string PredefinedSavedViewsContentHashDataKey = "@@PredefinedSavedViewsContentHash";
+    public const string PredefinedSavedViewsDataKey = "@@PredefinedSavedViewsVersion";
     public const string SystemOrganizationId = "000000000000000000000001";
     public const string SystemUserId = "000000000000000000000001";
     public const string SeedFileName = "predefined-saved-views.json";
@@ -46,7 +48,7 @@ public class PredefinedSavedViewsDataSeed : IDataSeed
             if (existingResults.Total == 0)
             {
                 // First-time seed: create all views from definitions.
-                var savedViews = definitions.Select(CreateSavedView).ToList();
+                var savedViews = definitions.Select(definition => CreateSavedView(definition)).ToList();
                 await _savedViewRepository.AddAsync(savedViews, o => o.Cache().ImmediateConsistency());
                 _logger.LogInformation("Seeded {Count} predefined saved views", savedViews.Count);
                 return;
@@ -170,15 +172,30 @@ public class PredefinedSavedViewsDataSeed : IDataSeed
         return Path.Combine(AppContext.BaseDirectory, "Seed", seedFileName);
     }
 
-    private static SavedView CreateSavedView(PredefinedSavedViewDefinition definition)
+    public static bool HasCreatedPredefinedSavedViews(Organization organization)
+    {
+        if (organization.Data is null)
+            return false;
+
+        return organization.Data.ContainsKey(PredefinedSavedViewsContentHashDataKey)
+            || organization.Data.TryGetValue(PredefinedSavedViewsDataKey, out object? versionValue)
+                && Int32.TryParse(versionValue?.ToString(), out int version)
+                && version > 0;
+    }
+
+    internal static SavedView CreateSavedView(
+        PredefinedSavedViewDefinition definition,
+        string organizationId = SystemOrganizationId,
+        string createdByUserId = SystemUserId,
+        string? slug = null)
     {
         var savedView = new SavedView
         {
-            OrganizationId = SystemOrganizationId,
-            CreatedByUserId = SystemUserId,
+            OrganizationId = organizationId,
+            CreatedByUserId = createdByUserId,
             PredefinedKey = definition.Key,
             Name = definition.Name,
-            Slug = definition.Slug,
+            Slug = slug ?? definition.Slug,
             ViewType = definition.ViewType,
             Filter = definition.Filter,
             Time = definition.Time,

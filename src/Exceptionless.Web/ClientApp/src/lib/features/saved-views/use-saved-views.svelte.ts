@@ -82,6 +82,7 @@ export interface UseSavedViewsOptions {
     getShowStats?: () => boolean;
     getSort?: () => null | string | undefined;
     getTime?: () => null | string | undefined;
+    normalizeSavedView?: (view: SavedView) => SavedView;
     queryParams: SavedViewQueryParams;
     setColumnOrder?: (order: ColumnOrderState) => void;
     setColumnSizing?: (sizing: ColumnSizingState) => void;
@@ -466,8 +467,17 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
     });
 
-    const activeSavedView = $derived.by(() => {
+    const savedViews = $derived.by(() => {
         const views = savedViewsListQuery.data;
+        if (!views || !options.normalizeSavedView) {
+            return views;
+        }
+
+        return views.map((view) => options.normalizeSavedView!(view));
+    });
+
+    const activeSavedView = $derived.by(() => {
+        const views = savedViews;
         if (!views) {
             return undefined;
         }
@@ -1195,7 +1205,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             activeSavedView,
             isLoading: savedViewsListQuery.isLoading,
             savedViewKey: options.slug ?? options.queryParams.saved,
-            savedViews: savedViewsListQuery.data
+            savedViews
         })
     );
 
@@ -1274,20 +1284,21 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
     }
 
     function handleSavedViewUpdated(view: SavedView) {
+        const normalizedView = options.normalizeSavedView?.(view) ?? view;
         const identity =
-            getDraftIdentity(view) ??
-            (view.organization_id && view.updated_by_user_id
+            getDraftIdentity(normalizedView) ??
+            (normalizedView.organization_id && normalizedView.updated_by_user_id
                 ? {
-                      organizationId: view.organization_id,
-                      savedViewId: view.id,
-                      userId: view.updated_by_user_id
+                      organizationId: normalizedView.organization_id,
+                      savedViewId: normalizedView.id,
+                      userId: normalizedView.updated_by_user_id
                   }
                 : undefined);
         if (identity) {
             clearSavedViewDraft(identity);
         }
 
-        if (activeSavedView?.id !== view.id) {
+        if (activeSavedView?.id !== normalizedView.id) {
             return;
         }
 
@@ -1298,11 +1309,11 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
         activeFilterOverrideBaselines = {};
         activeSortOverride = undefined;
-        hydratedColumnOrder = options.getColumnOrder ? resolveSavedViewColumnOrder(view, options.getColumnOrder()) : undefined;
-        hydratedSavedView = view;
-        hydratedSavedViewSignature = getSavedViewStateSignature(view);
-        hydratedSavedViewId = view.id;
-        serverHydratedSavedViewId = view.id;
+        hydratedColumnOrder = options.getColumnOrder ? resolveSavedViewColumnOrder(normalizedView, options.getColumnOrder()) : undefined;
+        hydratedSavedView = normalizedView;
+        hydratedSavedViewSignature = getSavedViewStateSignature(normalizedView);
+        hydratedSavedViewId = normalizedView.id;
+        serverHydratedSavedViewId = normalizedView.id;
     }
 
     async function handleClearSavedView(): Promise<void> {
@@ -1348,7 +1359,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return isModified;
         },
         get savedViews() {
-            return savedViewsListQuery.data ?? [];
+            return savedViews ?? [];
         },
         setAutoFillColumnId(columnId: AutoFillColumnSelection) {
             autoFillColumnId = columnId;

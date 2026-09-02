@@ -15,6 +15,7 @@ import {
     PERSISTENT_EVENT_DELETE_RECONCILE_EVENT,
     PERSISTENT_EVENT_DELETE_RECONCILE_RETRY_DELAY,
     queryKeys,
+    retainPreviousOrganizationQueryData,
     schedulePersistentEventDeleteReconciliation
 } from './api.svelte';
 
@@ -26,6 +27,17 @@ vi.mock('@foundatiofx/fetchclient', () => ({
 
 afterEach(() => {
     vi.useRealTimers();
+});
+
+describe('retainPreviousOrganizationQueryData', () => {
+    const previousData = { data: [{ id: 'session-id' }] };
+    const previousQueryKey = queryKeys.organizationsSessions('organization-a', { page: 1 });
+
+    it('retains data only for enabled query changes within the same organization', () => {
+        expect(retainPreviousOrganizationQueryData(previousData, previousQueryKey, 'organization-a', true)).toBe(previousData);
+        expect(retainPreviousOrganizationQueryData(previousData, previousQueryKey, 'organization-b', true)).toBeUndefined();
+        expect(retainPreviousOrganizationQueryData(previousData, previousQueryKey, 'organization-a', false)).toBeUndefined();
+    });
 });
 
 describe('createOrganizationEventNotificationRefresher', () => {
@@ -87,6 +99,8 @@ describe('createOrganizationEventNotificationRefresher', () => {
         expect(firstInvalidation?.refetchType).toBe('active');
         expect(firstInvalidation?.predicate?.({ queryKey: queryKeys.organizationsEvents('organization-id') } as never)).toBe(true);
         expect(firstInvalidation?.predicate?.({ queryKey: queryKeys.organizationsCount('organization-id') } as never)).toBe(true);
+        expect(firstInvalidation?.predicate?.({ queryKey: queryKeys.organizationsSessions('organization-id') } as never)).toBe(true);
+        expect(firstInvalidation?.predicate?.({ queryKey: queryKeys.sessionsCount('organization-id') } as never)).toBe(true);
         expect(firstInvalidation?.predicate?.({ queryKey: queryKeys.organizationsEvents('other-organization-id') } as never)).toBe(false);
         expect(firstInvalidation?.predicate?.({ queryKey: queryKeys.id('event-id') } as never)).toBe(false);
 
@@ -195,6 +209,8 @@ describe('invalidatePersistentEventQueries', () => {
         const broadInvalidation = invalidateSpy.mock.calls.find(([filters]) => filters?.queryKey === queryKeys.type)?.[0];
         expect(broadInvalidation?.predicate?.({ queryKey: queryKeys.organizationsEvents('organization-id') } as never)).toBe(false);
         expect(broadInvalidation?.predicate?.({ queryKey: queryKeys.organizationsCount('organization-id') } as never)).toBe(false);
+        expect(broadInvalidation?.predicate?.({ queryKey: queryKeys.organizationsSessions('organization-id') } as never)).toBe(false);
+        expect(broadInvalidation?.predicate?.({ queryKey: queryKeys.sessionsCount('organization-id') } as never)).toBe(false);
         expect(broadInvalidation?.predicate?.({ queryKey: queryKeys.id('event-id') } as never)).toBe(true);
     });
 });

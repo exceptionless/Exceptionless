@@ -563,6 +563,7 @@
 
     const viewToHref: Record<string, string> = {
         events: resolve('/(app)/event'),
+        sessions: resolve('/(app)/sessions'),
         stacks: resolve('/(app)/stack'),
         stream: resolve('/(app)/stream')
     };
