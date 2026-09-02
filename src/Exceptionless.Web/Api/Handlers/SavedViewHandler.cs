@@ -187,7 +187,7 @@ public partial class SavedViewHandler(
                 });
             }
 
-            await userRepository.SaveAsync(user, o => o.Cache());
+            await userRepository.SetSavedViewOrdersAsync(user, o => o.Cache());
         }, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(15));
 
         if (!lockAcquired)

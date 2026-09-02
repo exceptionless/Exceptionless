@@ -1472,6 +1472,11 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         });
         Assert.NotNull(sharedView);
         Assert.NotNull(privateView);
+
+        var cachedUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(cachedUser);
+        Assert.DoesNotContain(cachedUser.SavedViewOrders, preference => preference.OrganizationId == SampleDataService.TEST_ORG_ID && preference.ViewType == "events");
+
         var result = await SendRequestAsAsync<UpdateSavedViewOrder>(r => r
             .Put()
             .AsGlobalAdminUser()
