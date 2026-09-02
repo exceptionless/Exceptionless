@@ -119,6 +119,7 @@ public class Bootstrapper
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IQueueBehavior<WorkItemData>, WorkItemDuplicateDetectionQueueBehavior>());
 
         services.AddSingleton<IConnectionMapping, ConnectionMapping>();
+        services.AddSingleton<IConnectionLeaseStore, ConnectionLeaseStore>();
         services.AddSingleton<MessageService>();
         services.AddStartupAction<MessageService>();
         services.AddSingleton<IMessageBus>(s => new InMemoryMessageBus(new InMemoryMessageBusOptions
@@ -279,8 +280,8 @@ public class Bootstrapper
         if (String.IsNullOrEmpty(appOptions.StorageOptions.Provider))
             logger.LogWarning("Distributed storage is NOT enabled on {MachineName}", Environment.MachineName);
 
-        if (!appOptions.EnableWebSockets)
-            logger.LogWarning("Web Sockets is NOT enabled on {MachineName}", Environment.MachineName);
+        if (!appOptions.EnablePush)
+            logger.LogWarning("Real-time push (SSE) is NOT enabled on {MachineName}", Environment.MachineName);
 
         if (String.IsNullOrEmpty(appOptions.EmailOptions.SmtpHost))
             logger.LogWarning("Emails will NOT be sent until the SmtpHost is configured on {MachineName}", Environment.MachineName);
@@ -327,7 +328,7 @@ public class Bootstrapper
         logger.LogInformation(
             "Startup services: event submission {EventSubmission}; WebSockets {WebSockets}; jobs in process {JobsInProcess}; email {Email}; account creation {AccountCreation}; index configuration {IndexConfiguration}",
             GetStatus(!options.EventSubmissionDisabled),
-            GetStatus(options.EnableWebSockets),
+            GetStatus(options.EnablePush),
             GetStatus(options.RunJobsInProcess),
             GetStatus(!String.IsNullOrWhiteSpace(options.EmailOptions.SmtpHost)),
             GetStatus(options.AuthOptions.EnableAccountCreation),
