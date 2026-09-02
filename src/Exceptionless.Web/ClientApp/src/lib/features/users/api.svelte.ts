@@ -333,9 +333,13 @@ function mergeOrganizationPreferences(organizationPreferences: UserOrganizationP
 
     for (const preference of matches) {
         for (const [viewType, savedViewIds] of Object.entries(preference.saved_view_order ?? {})) {
-            if (!savedViewOrder[viewType] && savedViewIds.length > 0) {
-                savedViewOrder[viewType] = [...savedViewIds];
+            const mergedIds = savedViewOrder[viewType] ?? [];
+            for (const savedViewId of savedViewIds) {
+                if (!mergedIds.includes(savedViewId)) {
+                    mergedIds.push(savedViewId);
+                }
             }
+            savedViewOrder[viewType] = mergedIds;
         }
     }
 

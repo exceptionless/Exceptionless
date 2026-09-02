@@ -121,15 +121,19 @@ public partial class SavedViewHandler(
         if (await organizationRepository.GetByIdAsync(message.OrganizationId) is null)
             return Result.NotFound("Organization not found.");
 
-        var accessibleViews = await repository.GetByViewForUserAsync(
-            message.OrganizationId,
-            message.ViewType,
-            GetCurrentUserId(),
-            o => o.PageLimit(MaxViewsPerOrganization));
-        var accessibleIds = accessibleViews.Documents.Select(savedView => savedView.Id).ToHashSet(StringComparer.Ordinal);
+        string currentUserId = GetCurrentUserId();
+        IReadOnlyCollection<SavedView> requestedViews = message.Order.SavedViewIds.Count > 0
+            ? await repository.GetByIdsAsync(message.Order.SavedViewIds.ToArray(), o => o.Cache(false))
+            : [];
+        var accessibleIds = requestedViews
+            .Where(savedView => String.Equals(savedView.OrganizationId, message.OrganizationId, StringComparison.Ordinal)
+                && String.Equals(savedView.ViewType, message.ViewType, StringComparison.Ordinal)
+                && (String.IsNullOrEmpty(savedView.UserId) || String.Equals(savedView.UserId, currentUserId, StringComparison.Ordinal)))
+            .Select(savedView => savedView.Id)
+            .ToHashSet(StringComparer.Ordinal);
         var normalizedIds = message.Order.SavedViewIds.Where(accessibleIds.Contains).ToList();
 
-        var user = await userRepository.GetByIdAsync(GetCurrentUserId(), o => o.Cache(false));
+        var user = await userRepository.GetByIdAsync(currentUserId, o => o.Cache(false));
         if (user is null)
             return Result.NotFound("User not found.");
 
@@ -562,8 +566,17 @@ public partial class SavedViewHandler(
         {
             foreach (var (viewType, savedViewIds) in preference.SavedViewOrder ?? [])
             {
-                if (!merged.SavedViewOrder.ContainsKey(viewType) && savedViewIds.Count > 0)
-                    merged.SavedViewOrder[viewType] = [.. savedViewIds];
+                if (!merged.SavedViewOrder.TryGetValue(viewType, out var mergedIds))
+                {
+                    mergedIds = [];
+                    merged.SavedViewOrder[viewType] = mergedIds;
+                }
+
+                foreach (string savedViewId in savedViewIds)
+                {
+                    if (!mergedIds.Contains(savedViewId, StringComparer.Ordinal))
+                        mergedIds.Add(savedViewId);
+                }
             }
         }
 

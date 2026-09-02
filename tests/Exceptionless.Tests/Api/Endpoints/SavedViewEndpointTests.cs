@@ -1457,7 +1457,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task PutSavedViewOrder_SharedAndPrivateViews_PersistsAccessiblePersonalOrder()
+    public async Task PutSavedViewOrder_SharedAndPrivateViews_ImmediatelyPersistsAccessiblePersonalOrder()
     {
         var sharedView = await CreateSavedViewAsync("Shared Ordered View", "status:open", "events");
         var privateView = await CreateSavedViewAsync("Private Ordered View", "status:regressed", "events", isPrivate: true);
@@ -1472,8 +1472,6 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         });
         Assert.NotNull(sharedView);
         Assert.NotNull(privateView);
-        await RefreshDataAsync();
-
         var result = await SendRequestAsAsync<UpdateSavedViewOrder>(r => r
             .Put()
             .AsGlobalAdminUser()
@@ -1492,6 +1490,42 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         Assert.NotNull(user);
         var preference = Assert.Single(user.OrganizationPreferences, preference => preference.OrganizationId == SampleDataService.TEST_ORG_ID);
         Assert.Equal([privateView.Id, sharedView.Id], preference.SavedViewOrder["events"]);
+    }
+
+    [Fact]
+    public async Task PutSavedViewDefaults_DuplicateOrganizationPreferences_MergesEverySavedViewOrderIdentifier()
+    {
+        var firstView = await CreateSavedViewAsync("First Legacy Ordered View", "status:open", "events");
+        var secondView = await CreateSavedViewAsync("Second Legacy Ordered View", "status:regressed", "events");
+        Assert.NotNull(firstView);
+        Assert.NotNull(secondView);
+
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(user);
+        user.OrganizationPreferences.Add(new UserOrganizationPreference
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            SavedViewOrder = new() { ["events"] = [firstView.Id] }
+        });
+        user.OrganizationPreferences.Add(new UserOrganizationPreference
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            SavedViewOrder = new() { ["events"] = [firstView.Id, secondView.Id] }
+        });
+        await _userRepository.SaveAsync(user, o => o.Cache());
+
+        await SendRequestAsync(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-defaults", "user")
+            .Content(new UpdateSavedViewDefault { SavedViewId = null })
+            .StatusCodeShouldBeOk()
+        );
+
+        user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(user);
+        var preference = Assert.Single(user.OrganizationPreferences, preference => preference.OrganizationId == SampleDataService.TEST_ORG_ID);
+        Assert.Equal([firstView.Id, secondView.Id], preference.SavedViewOrder["events"]);
     }
 
     [Fact]

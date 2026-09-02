@@ -63,6 +63,34 @@ describe('setCurrentUserSavedViewDefault', () => {
             }
         ]);
     });
+
+    it('merges saved view identifiers from duplicate organization preferences', () => {
+        const queryClient = new QueryClient();
+        const currentUser = {
+            id: 'user-id',
+            organization_preferences: [
+                {
+                    organization_id: 'organization-id',
+                    saved_view_order: { events: ['first-view-id', 'shared-view-id'] }
+                },
+                {
+                    organization_id: 'organization-id',
+                    saved_view_order: { events: ['shared-view-id', 'second-view-id'] }
+                }
+            ]
+        } as unknown as ViewCurrentUser;
+        queryClient.setQueryData(queryKeys.me(), currentUser);
+
+        setCurrentUserSavedViewDefault(queryClient, 'organization-id', 'home-view-id');
+
+        expect(queryClient.getQueryData<ViewCurrentUser>(queryKeys.me())?.organization_preferences).toEqual([
+            {
+                default_saved_view_id: 'home-view-id',
+                organization_id: 'organization-id',
+                saved_view_order: { events: ['first-view-id', 'shared-view-id', 'second-view-id'] }
+            }
+        ]);
+    });
 });
 
 describe('setCurrentUserSavedViewOrder', () => {
