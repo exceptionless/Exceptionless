@@ -3348,6 +3348,16 @@
               }
             }
           },
+          "409": {
+            "description": "The saved view preferences could not be updated due to a concurrent request.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "404": {
             "description": "The organization could not be found.",
             "content": {
@@ -3421,6 +3431,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/UpdateSavedViewOrder"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The saved view preferences could not be updated due to a concurrent request.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }

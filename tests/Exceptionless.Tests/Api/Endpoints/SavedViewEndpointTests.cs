@@ -1937,6 +1937,19 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         // Arrange — create an organization-wide view and a private view for the test organization user
         var testUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
         Assert.NotNull(testUser);
+        testUser.SavedViewOrders.Add(new UserSavedViewOrderPreference
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            ViewType = "events",
+            SavedViewIds = ["000000000000000000000101"]
+        });
+        testUser.SavedViewOrders.Add(new UserSavedViewOrderPreference
+        {
+            OrganizationId = SampleDataService.FREE_ORG_ID,
+            ViewType = "events",
+            SavedViewIds = ["000000000000000000000102"]
+        });
+        await _userRepository.SaveAsync(testUser, o => o.ImmediateConsistency().Cache());
 
         var organizationWideView = await _savedViewRepository.AddAsync(new SavedView
         {
@@ -1974,6 +1987,10 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         // Assert — private view is gone, organization-wide view remains
         Assert.Null(await _savedViewRepository.GetByIdAsync(privateView.Id));
         Assert.NotNull(await _savedViewRepository.GetByIdAsync(organizationWideView.Id));
+        testUser = await _userRepository.GetByIdAsync(testUser.Id, o => o.Cache(false));
+        Assert.NotNull(testUser);
+        Assert.DoesNotContain(testUser.SavedViewOrders, preference => preference.OrganizationId == SampleDataService.TEST_ORG_ID);
+        Assert.Contains(testUser.SavedViewOrders, preference => preference.OrganizationId == SampleDataService.FREE_ORG_ID);
     }
 
     [Fact]
@@ -1982,6 +1999,19 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         // Arrange
         var testUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
         Assert.NotNull(testUser);
+        testUser.SavedViewOrders.Add(new UserSavedViewOrderPreference
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            ViewType = "stacks",
+            SavedViewIds = ["000000000000000000000103"]
+        });
+        testUser.SavedViewOrders.Add(new UserSavedViewOrderPreference
+        {
+            OrganizationId = SampleDataService.FREE_ORG_ID,
+            ViewType = "stacks",
+            SavedViewIds = ["000000000000000000000104"]
+        });
+        await _userRepository.SaveAsync(testUser, o => o.ImmediateConsistency().Cache());
 
         await _savedViewRepository.AddAsync(new SavedView
         {
@@ -2019,6 +2049,10 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         // Assert
         long countAfter = await _savedViewRepository.CountByOrganizationIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.Equal(0, countAfter);
+        testUser = await _userRepository.GetByIdAsync(testUser.Id, o => o.Cache(false));
+        Assert.NotNull(testUser);
+        Assert.DoesNotContain(testUser.SavedViewOrders, preference => preference.OrganizationId == SampleDataService.TEST_ORG_ID);
+        Assert.Contains(testUser.SavedViewOrders, preference => preference.OrganizationId == SampleDataService.FREE_ORG_ID);
     }
 
     [Fact]
