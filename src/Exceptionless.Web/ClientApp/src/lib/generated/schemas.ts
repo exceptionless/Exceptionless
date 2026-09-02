@@ -807,6 +807,13 @@ export type UpdateSavedViewDefaultFormData = Infer<
   typeof UpdateSavedViewDefaultSchema
 >;
 
+export const UpdateSavedViewOrderSchema = object({
+  saved_view_ids: array(string()),
+});
+export type UpdateSavedViewOrderFormData = Infer<
+  typeof UpdateSavedViewOrderSchema
+>;
+
 export const UpdateTokenSchema = object({
   is_disabled: boolean().optional(),
   notes: string().min(1, "Notes is required").nullable().optional(),
@@ -888,7 +895,10 @@ export const UserOrganizationPreferenceSchema = object({
     .regex(/^[a-fA-F0-9]{24}$/, "Organization id has invalid format"),
   default_saved_view_id: string()
     .length(24, "Default saved view id must be exactly 24 characters")
-    .regex(/^[a-fA-F0-9]{24}$/, "Default saved view id has invalid format"),
+    .regex(/^[a-fA-F0-9]{24}$/, "Default saved view id has invalid format")
+    .nullable()
+    .optional(),
+  saved_view_order: record(string(), array(string())),
 });
 export type UserOrganizationPreferenceFormData = Infer<
   typeof UserOrganizationPreferenceSchema

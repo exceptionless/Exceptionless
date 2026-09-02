@@ -1,4 +1,5 @@
 import type { WebSocketMessageValue } from '$features/websockets/models';
+import type { UserOrganizationPreference } from '$generated/api';
 import type { WorkInProgressResult } from '$shared/models';
 
 import { setUserIdentity } from '$features/auth/exceptionless-session';
@@ -277,20 +278,25 @@ export function setCurrentUserSavedViewDefault(queryClient: QueryClient, organiz
         return;
     }
 
-    const organizationPreferences = currentUser.organization_preferences.filter((preference) => preference.organization_id !== organizationId);
-    if (savedViewId) {
-        organizationPreferences.push({
-            default_saved_view_id: savedViewId,
-            organization_id: organizationId
-        });
+    const preference = mergeOrganizationPreferences(currentUser.organization_preferences, organizationId);
+    preference.default_saved_view_id = savedViewId;
+    setCurrentUserOrganizationPreference(queryClient, currentUser, preference);
+}
+
+export function setCurrentUserSavedViewOrder(queryClient: QueryClient, organizationId: string, viewType: string, savedViewIds: string[]): void {
+    const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
+    if (!currentUser) {
+        return;
     }
 
-    const updatedUser = {
-        ...currentUser,
-        organization_preferences: organizationPreferences
-    };
-    queryClient.setQueryData(queryKeys.me(), updatedUser);
-    queryClient.setQueryData(queryKeys.id(currentUser.id), updatedUser);
+    const preference = mergeOrganizationPreferences(currentUser.organization_preferences, organizationId);
+    if (savedViewIds.length > 0) {
+        preference.saved_view_order[viewType] = [...savedViewIds];
+    } else {
+        delete preference.saved_view_order[viewType];
+    }
+
+    setCurrentUserOrganizationPreference(queryClient, currentUser, preference);
 }
 
 export function uploadUserAvatar(request: UserAvatarRequest) {
@@ -315,4 +321,43 @@ export function uploadUserAvatar(request: UserAvatarRequest) {
             }
         }
     }));
+}
+
+function mergeOrganizationPreferences(organizationPreferences: UserOrganizationPreference[], organizationId: string): UserOrganizationPreference {
+    const matches = organizationPreferences.filter((preference) => preference.organization_id === organizationId);
+    const defaultSavedViewId = matches
+        .map((preference) => preference.default_saved_view_id)
+        .filter((savedViewId): savedViewId is string => !!savedViewId)
+        .sort()[0];
+    const savedViewOrder: Record<string, string[]> = {};
+
+    for (const preference of matches) {
+        for (const [viewType, savedViewIds] of Object.entries(preference.saved_view_order ?? {})) {
+            if (!savedViewOrder[viewType] && savedViewIds.length > 0) {
+                savedViewOrder[viewType] = [...savedViewIds];
+            }
+        }
+    }
+
+    return {
+        default_saved_view_id: defaultSavedViewId,
+        organization_id: organizationId,
+        saved_view_order: savedViewOrder
+    };
+}
+
+function setCurrentUserOrganizationPreference(queryClient: QueryClient, currentUser: ViewCurrentUser, preference: UserOrganizationPreference): void {
+    const organizationPreferences = currentUser.organization_preferences.filter(
+        (existingPreference) => existingPreference.organization_id !== preference.organization_id
+    );
+    if (preference.default_saved_view_id || Object.keys(preference.saved_view_order).length > 0) {
+        organizationPreferences.push(preference);
+    }
+
+    const updatedUser = {
+        ...currentUser,
+        organization_preferences: organizationPreferences
+    };
+    queryClient.setQueryData(queryKeys.me(), updatedUser);
+    queryClient.setQueryData(queryKeys.id(currentUser.id), updatedUser);
 }

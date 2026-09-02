@@ -673,6 +673,10 @@ export interface UpdateSavedViewDefault {
   saved_view_id?: null | string;
 }
 
+export interface UpdateSavedViewOrder {
+  saved_view_ids: string[];
+}
+
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
 export interface UpdateToken {
   is_disabled: boolean;
@@ -763,7 +767,8 @@ export interface UserOrganizationPreference {
   /** @pattern ^[a-fA-F0-9]{24}$ */
   organization_id: string;
   /** @pattern ^[a-fA-F0-9]{24}$ */
-  default_saved_view_id: string;
+  default_saved_view_id?: null | string;
+  saved_view_order: Record<string, string[]>;
 }
 
 export interface ViewCurrentUser {

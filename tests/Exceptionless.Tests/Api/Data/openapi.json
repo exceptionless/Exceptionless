@@ -3371,6 +3371,83 @@
         }
       }
     },
+    "/api/v2/organizations/{organizationId}/saved-view-order/{viewType}": {
+      "put": {
+        "tags": [
+          "SavedView"
+        ],
+        "summary": "Update the current user\u0027s saved view order",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "description": "The identifier of the organization.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "viewType",
+            "in": "path",
+            "description": "The dashboard view type (events, sessions, stacks, or stream).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "The ordered saved view identifiers for one dashboard section. An empty list resets the section to alphabetical order.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSavedViewOrder"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSavedViewOrder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The personal saved view order was updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateSavedViewOrder"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The organization could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The dashboard view type or saved view identifiers are invalid.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/organizations/{organizationId}/saved-view-defaults/organization": {
       "put": {
         "tags": [
@@ -13628,6 +13705,21 @@
           }
         }
       },
+      "UpdateSavedViewOrder": {
+        "required": [
+          "saved_view_ids"
+        ],
+        "type": "object",
+        "properties": {
+          "saved_view_ids": {
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "UpdateToken": {
         "type": "object",
         "properties": {
@@ -13884,7 +13976,7 @@
       "UserOrganizationPreference": {
         "required": [
           "organization_id",
-          "default_saved_view_id"
+          "saved_view_order"
         ],
         "type": "object",
         "properties": {
@@ -13898,7 +13990,19 @@
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "saved_view_order": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
           }
         }
       },

@@ -8,6 +8,8 @@
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import * as Sidebar from '$comp/ui/sidebar';
     import { useSidebar } from '$comp/ui/sidebar';
+    import SavedViewOrderDialog from '$features/saved-views/components/saved-view-order-dialog.svelte';
+    import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
     import Settings from '@lucide/svelte/icons/settings-2';
     import Wrench from '@lucide/svelte/icons/wrench';
@@ -66,10 +68,11 @@
     type Props = ComponentProps<typeof Sidebar.Root> & {
         footer?: Snippet;
         header?: Snippet;
+        onSavedViewOrderChange: (viewType: string, savedViewIds: string[]) => Promise<void>;
         routes: NavigationItem[];
     };
 
-    let { footer, header, routes, ...props }: Props = $props();
+    let { footer, header, onSavedViewOrderChange, routes, ...props }: Props = $props();
     const dashboardRoutes = $derived(routes.filter((route) => route.group === 'Dashboards'));
 
     const settingsRoutes = $derived(routes.filter((route) => route.group === 'Settings'));
@@ -100,6 +103,32 @@
     let hoverMenuCloseTimeout = $state<ReturnType<typeof setTimeout> | undefined>(undefined);
     let expandedRouteHrefs = $state<Record<string, boolean>>({});
     let settingsExpanded = $state<boolean | undefined>(undefined);
+    let savedViewOrderRoute = $state<NavigationItem>();
+    let savedViewOrderDialogOpen = $state(false);
+
+    const savedViewsForOrderDialog = $derived(
+        (savedViewOrderRoute?.children ?? [])
+            .filter((child) => !!child.savedView)
+            .map((child) => ({
+                id: child.savedView!.id,
+                name: child.title,
+                user_id: child.savedView!.isPrivate ? 'current-user' : undefined
+            }))
+    );
+
+    function openSavedViewOrderDialog(event: MouseEvent, route: NavigationItem): void {
+        event.stopPropagation();
+        savedViewOrderRoute = route;
+        savedViewOrderDialogOpen = true;
+    }
+
+    async function saveSavedViewOrder(savedViewIds: string[]): Promise<void> {
+        if (!savedViewOrderRoute?.view) {
+            return;
+        }
+
+        await onSavedViewOrderChange(savedViewOrderRoute.view, savedViewIds);
+    }
 
     function onMenuClick() {
         if (sidebar.isMobile) {
@@ -296,6 +325,16 @@
                                             </Sidebar.MenuButton>
                                         {/snippet}
                                     </Collapsible.Trigger>
+                                    {#if route.view && (route.children ?? []).some((child) => !!child.savedView)}
+                                        <Sidebar.MenuAction
+                                            showOnHover
+                                            aria-label={`Reorder ${route.title} views`}
+                                            title={`Reorder ${route.title} views`}
+                                            onclick={(event) => openSavedViewOrderDialog(event, route)}
+                                        >
+                                            <ArrowUpDown />
+                                        </Sidebar.MenuAction>
+                                    {/if}
                                     <Collapsible.Content>
                                         <Sidebar.MenuSub>
                                             {#each route.children as savedItem (savedItem.href)}
@@ -420,3 +459,12 @@
         {/if}
     </Sidebar.Footer>
 </Sidebar.Root>
+
+{#if savedViewOrderRoute}
+    <SavedViewOrderDialog
+        bind:open={savedViewOrderDialogOpen}
+        onSave={saveSavedViewOrder}
+        savedViews={savedViewsForOrderDialog}
+        title={savedViewOrderRoute.title}
+    />
+{/if}

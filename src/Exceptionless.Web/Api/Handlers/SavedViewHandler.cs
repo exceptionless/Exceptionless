@@ -102,20 +102,47 @@ public partial class SavedViewHandler(
         if (user is null)
             return Result.NotFound("User not found.");
 
-        foreach (var preference in user.OrganizationPreferences.Where(preference => String.Equals(preference.OrganizationId, message.OrganizationId, StringComparison.Ordinal)).ToList())
-            user.OrganizationPreferences.Remove(preference);
-
-        if (message.Default.SavedViewId is not null)
-        {
-            user.OrganizationPreferences.Add(new UserOrganizationPreference
-            {
-                OrganizationId = message.OrganizationId,
-                DefaultSavedViewId = message.Default.SavedViewId
-            });
-        }
+        var preference = MergeOrganizationPreferences(user, message.OrganizationId);
+        preference.DefaultSavedViewId = message.Default.SavedViewId;
+        SaveOrganizationPreference(user, preference);
 
         await userRepository.SaveAsync(user, o => o.Cache());
         return message.Default;
+    }
+
+    public async Task<Result<UpdateSavedViewOrder>> Handle(UpdateUserSavedViewOrder message)
+    {
+        if (!HttpContext.Request.CanAccessOrganization(message.OrganizationId))
+            return Result.NotFound("Organization not found.");
+
+        if (!NewSavedView.ValidViewTypes.Contains(message.ViewType))
+            return Result.Invalid(ValidationError.Create("view_type", $"View type must be one of: {String.Join(", ", NewSavedView.ValidViewTypes)}."));
+
+        if (await organizationRepository.GetByIdAsync(message.OrganizationId) is null)
+            return Result.NotFound("Organization not found.");
+
+        var accessibleViews = await repository.GetByViewForUserAsync(
+            message.OrganizationId,
+            message.ViewType,
+            GetCurrentUserId(),
+            o => o.PageLimit(MaxViewsPerOrganization));
+        var accessibleIds = accessibleViews.Documents.Select(savedView => savedView.Id).ToHashSet(StringComparer.Ordinal);
+        var normalizedIds = message.Order.SavedViewIds.Where(accessibleIds.Contains).ToList();
+
+        var user = await userRepository.GetByIdAsync(GetCurrentUserId(), o => o.Cache(false));
+        if (user is null)
+            return Result.NotFound("User not found.");
+
+        var preference = MergeOrganizationPreferences(user, message.OrganizationId);
+        if (normalizedIds.Count > 0)
+            preference.SavedViewOrder[message.ViewType] = normalizedIds;
+        else
+            preference.SavedViewOrder.Remove(message.ViewType);
+
+        SaveOrganizationPreference(user, preference);
+        await userRepository.SaveAsync(user, o => o.Cache());
+
+        return new UpdateSavedViewOrder { SavedViewIds = normalizedIds };
     }
 
     public async Task<Result<UpdateSavedViewDefault>> Handle(UpdateOrganizationSavedViewDefault message)
@@ -515,6 +542,46 @@ public partial class SavedViewHandler(
     }
 
     private List<ViewSavedView> MapToViewModels(IEnumerable<SavedView> models) => models.Select(MapToViewModel).ToList();
+
+    private static UserOrganizationPreference MergeOrganizationPreferences(User user, string organizationId)
+    {
+        var preferences = user.OrganizationPreferences
+            .Where(preference => String.Equals(preference.OrganizationId, organizationId, StringComparison.Ordinal))
+            .ToList();
+        var merged = new UserOrganizationPreference
+        {
+            OrganizationId = organizationId,
+            DefaultSavedViewId = preferences
+                .Select(preference => preference.DefaultSavedViewId)
+                .Where(savedViewId => !String.IsNullOrWhiteSpace(savedViewId))
+                .Order(StringComparer.Ordinal)
+                .FirstOrDefault()
+        };
+
+        foreach (var preference in preferences)
+        {
+            foreach (var (viewType, savedViewIds) in preference.SavedViewOrder ?? [])
+            {
+                if (!merged.SavedViewOrder.ContainsKey(viewType) && savedViewIds.Count > 0)
+                    merged.SavedViewOrder[viewType] = [.. savedViewIds];
+            }
+        }
+
+        return merged;
+    }
+
+    private static void SaveOrganizationPreference(User user, UserOrganizationPreference preference)
+    {
+        foreach (var existing in user.OrganizationPreferences
+            .Where(existing => String.Equals(existing.OrganizationId, preference.OrganizationId, StringComparison.Ordinal))
+            .ToList())
+        {
+            user.OrganizationPreferences.Remove(existing);
+        }
+
+        if (preference.DefaultSavedViewId is not null || preference.SavedViewOrder.Count > 0)
+            user.OrganizationPreferences.Add(preference);
+    }
 
     private async Task ClearDefaultReferencesAsync(IReadOnlyCollection<SavedView> deletedSavedViews)
     {

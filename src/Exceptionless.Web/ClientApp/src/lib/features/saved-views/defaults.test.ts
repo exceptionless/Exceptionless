@@ -116,6 +116,7 @@ describe('getSavedViewDefaultHref', () => {
 function preference(defaultSavedViewId: string): UserOrganizationPreference {
     return {
         default_saved_view_id: defaultSavedViewId,
-        organization_id: 'organization-id'
+        organization_id: 'organization-id',
+        saved_view_order: {}
     };
 }

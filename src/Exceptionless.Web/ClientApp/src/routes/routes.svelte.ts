@@ -9,6 +9,7 @@ import { routes as authRoutes } from './(auth)/routes.svelte';
 
 export type NavigationChild = {
     href: string;
+    savedView?: SavedViewNavigationMetadata;
     title: string;
 };
 
@@ -29,6 +30,11 @@ export type NavigationItemContext = {
     authenticated: boolean;
     impersonating?: boolean;
     user?: ViewCurrentUser;
+};
+
+export type SavedViewNavigationMetadata = {
+    id: string;
+    isPrivate: boolean;
 };
 
 export function routes(): NavigationItem[] {

@@ -3,12 +3,12 @@ import type { WebSocketMessageValue } from '$features/websockets/models';
 
 import { accessToken } from '$features/auth/index.svelte';
 import { setOrganizationDefaultSavedView } from '$features/organizations/api.svelte';
-import { setCurrentUserSavedViewDefault } from '$features/users/api.svelte';
+import { setCurrentUserSavedViewDefault, setCurrentUserSavedViewOrder } from '$features/users/api.svelte';
 import { ChangeType } from '$features/websockets/models';
 import { type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, type QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
-import type { NewSavedView, SavedView, UpdateSavedView, UpdateSavedViewDefault } from './models';
+import type { NewSavedView, SavedView, UpdateSavedView, UpdateSavedViewDefault, UpdateSavedViewOrder } from './models';
 
 export const SAVED_VIEW_REFRESH_DELAY_MS = 1500;
 export const SAVED_VIEW_QUERY_STALE_TIME_MS = 60 * 1000;
@@ -89,6 +89,10 @@ export const queryKeys = {
 };
 
 let deletedSavedViewIds = $state<string[]>([]);
+
+type UpdateUserSavedViewOrder = UpdateSavedViewOrder & {
+    view_type: string;
+};
 
 export function deletePredefinedSavedView(request: { route: { id: string | undefined } }) {
     return createMutation<void, ProblemDetails, void>(() => ({
@@ -251,6 +255,27 @@ export function putOrganizationSavedViewDefault(request: { route: { organization
 
 export function putUserSavedViewDefault(request: { route: { organizationId: string | undefined } }) {
     return putSavedViewDefault(request, 'user');
+}
+
+export function putUserSavedViewOrder(request: { route: { organizationId: string | undefined } }) {
+    const queryClient = useQueryClient();
+
+    return createMutation<UpdateSavedViewOrder, ProblemDetails, UpdateUserSavedViewOrder>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.organizationId,
+        mutationFn: async ({ saved_view_ids, view_type }: UpdateUserSavedViewOrder) => {
+            const client = useFetchClient();
+            const response = await client.putJSON<UpdateSavedViewOrder>(`organizations/${request.route.organizationId}/saved-view-order/${view_type}`, {
+                saved_view_ids
+            });
+            return response.data!;
+        },
+        onSuccess: (data: UpdateSavedViewOrder, variables: UpdateUserSavedViewOrder) => {
+            const organizationId = request.route.organizationId;
+            if (organizationId) {
+                setCurrentUserSavedViewOrder(queryClient, organizationId, variables.view_type, data.saved_view_ids);
+            }
+        }
+    }));
 }
 
 export function removeSavedViewFromCaches(queryClient: QueryClient, savedView: SavedView, organizationId: string | undefined = savedView.organization_id) {

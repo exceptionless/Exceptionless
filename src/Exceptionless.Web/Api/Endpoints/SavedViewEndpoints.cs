@@ -92,6 +92,28 @@ public static class SavedViewEndpoints
             }
         });
 
+        group.MapPut("organizations/{organizationId:objectid}/saved-view-order/{viewType}", async (string organizationId, string viewType,
+            IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] UpdateSavedViewOrder savedViewOrder)
+            => (await mediator.InvokeAsync<Result<UpdateSavedViewOrder>>(new SavedViewMessages.UpdateUserSavedViewOrder(organizationId, viewType, savedViewOrder))).ToHttpResult(resultMapper))
+        .Accepts<UpdateSavedViewOrder>("application/json", "application/*+json")
+        .Produces<UpdateSavedViewOrder>()
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .WithSummary("Update the current user's saved view order")
+        .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The ordered saved view identifiers for one dashboard section. An empty list resets the section to alphabetical order.",
+            RequestBodyRequired = true,
+            ParameterDescriptions = new() {
+                ["organizationId"] = "The identifier of the organization.",
+                ["viewType"] = "The dashboard view type (events, sessions, stacks, or stream).",
+            },
+            ResponseDescriptions = new() {
+                ["200"] = "The personal saved view order was updated.",
+                ["404"] = "The organization could not be found.",
+                ["422"] = "The dashboard view type or saved view identifiers are invalid.",
+            }
+        });
+
         group.MapPut("organizations/{organizationId:objectid}/saved-view-defaults/organization", async (string organizationId, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper,
             [FromBody] UpdateSavedViewDefault savedViewDefault)
             => (await mediator.InvokeAsync<Result<UpdateSavedViewDefault>>(new SavedViewMessages.UpdateOrganizationSavedViewDefault(organizationId, savedViewDefault))).ToHttpResult(resultMapper))

@@ -9,5 +9,7 @@ public sealed record UserOrganizationPreference
     public string OrganizationId { get; set; } = null!;
 
     [ObjectId]
-    public string DefaultSavedViewId { get; set; } = null!;
+    public string? DefaultSavedViewId { get; set; }
+
+    public Dictionary<string, List<string>> SavedViewOrder { get; set; } = [];
 }

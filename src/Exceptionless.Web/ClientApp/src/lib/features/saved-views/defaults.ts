@@ -31,6 +31,7 @@ export function resolveSavedViewDefaults(options: ResolveSavedViewDefaultsOption
             (options.organizationPreferences ?? [])
                 .filter((preference) => preference.organization_id === options.organizationId)
                 .map((preference) => preference.default_saved_view_id)
+                .filter((savedViewId): savedViewId is string => !!savedViewId)
         )
     ].sort();
     const userDefault = userDefaultIds.map((savedViewId) => savedViewsById.get(savedViewId)).find((savedView) => !!savedView);
