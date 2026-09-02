@@ -2,6 +2,7 @@
     import type { ProductTourUsageRange } from '$features/admin/product-tour-usage';
     import type { ProductTourSummary } from '$generated/api';
 
+    import TimeAgo from '$comp/formatters/time-ago.svelte';
     import { Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
@@ -40,20 +41,16 @@
     }
 </script>
 
-<div class="space-y-6">
+<div class="flex flex-col gap-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
-        <Muted>Recorded guide activity across your installation</Muted>
+        <Muted>Guide activity · {range.kind === 'history' ? 'Monthly' : 'Daily'} · UTC</Muted>
         <div class="flex items-center gap-2" aria-label="Usage filters">
             <ProductTourPeriod bind:range />
             <Button variant="outline" size="icon" aria-label="Refresh tour activity" disabled={usageQuery.isFetching} onclick={() => usageQuery.refetch()}>
-                <RefreshCw class="size-4" />
+                <RefreshCw />
             </Button>
         </div>
     </div>
-    <p class="text-muted-foreground text-sm">
-        Charts show recorded events. Saved completion badges can include earlier, unrecorded activity.
-        {range.kind === 'history' ? 'History is grouped by month.' : 'This month is grouped by day.'} Dates use UTC.
-    </p>
 
     {#if usageQuery.isError}
         <Card.Root>
@@ -73,24 +70,23 @@
     {:else}
         {@render TourCards(guides)}
         {#if invitations.length > 0}
-            <details>
-                <summary class="cursor-pointer text-sm font-medium">Invitation activity</summary>
-                <p class="text-muted-foreground my-4 text-sm">
-                    Welcome and feature invitations offer a guide. Shown counts the invitation appearing—not the guide running. Accepted means starting a guide
-                    or browsing guides.
-                </p>
+            <section aria-labelledby="invitation-activity-title" class="flex flex-col gap-4">
+                <h2 id="invitation-activity-title" class="text-sm font-medium">Invitations</h2>
                 {@render TourCards(invitations)}
-            </details>
+            </section>
         {/if}
     {/if}
 </div>
 
 {#snippet TourCards(tours: ProductTourSummary[])}
-    <div class="grid items-start gap-4 lg:grid-cols-2">
+    <div class="grid gap-4 lg:grid-cols-2">
         {#each tours as tour (`${tour.name}:${tour.version}`)}
             <Card.Root aria-label={`${title(tour.name)} usage`}>
-                <Card.Header>
+                <Card.Header class="flex flex-row flex-wrap items-center justify-between gap-x-3 gap-y-1">
                     <Card.Title>{title(tour.name)} <span class="text-muted-foreground text-xs font-normal">v{tour.version}</span></Card.Title>
+                    {#if tour.last_run_utc}
+                        <Card.Description class="whitespace-nowrap">Last event <TimeAgo value={tour.last_run_utc} /></Card.Description>
+                    {/if}
                 </Card.Header>
                 <Card.Content>
                     {#if usage}
