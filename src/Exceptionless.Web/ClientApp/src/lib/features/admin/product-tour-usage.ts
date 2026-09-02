@@ -9,10 +9,6 @@ export type ProductTourUsageRange =
           month: string;
       };
 
-export function getGuideOutcomeRate(value: { completed: number; dismissed: number; started: number }, outcome: 'completed' | 'dismissed'): null | number {
-    return getRate(value[outcome], value.started);
-}
-
 export function getProductTourActivity(
     activity: ProductTourActivity[],
     interval: ProductTourUsageInterval,
@@ -51,12 +47,4 @@ export function getProductTourUsageParams(range: ProductTourUsageRange): Record<
     }
 
     return { month: `${range.month}-01` };
-}
-
-export function getRate(numerator: number, denominator: number): null | number {
-    return denominator > 0 ? numerator / denominator : null;
-}
-
-export function getStartSourceShare(source: { count: number }, started: number): null | number {
-    return getRate(source.count, started);
 }

@@ -1,7 +1,7 @@
 import type { ProductTourSummary } from '$generated/api';
 
 import { ProductTourKind, ProductTourLaunchSource, ProductTourUsageInterval } from '$generated/api';
-import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
+import { cleanup, render, screen } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ProductTourActivity from './product-tour-activity.svelte';
@@ -35,23 +35,17 @@ afterEach(() => {
 });
 
 describe('ProductTourActivity', () => {
-    it('leads with the chart and keeps exact totals and rows behind details', async () => {
+    it('shows the chart without disclosures while preserving screen-reader access to values', () => {
         // Act
         render(ProductTourActivity, { end: '2026-02-01T00:00:00Z', interval: ProductTourUsageInterval.Month, start: '2026-01-01T00:00:00Z', tour });
 
         // Assert
         expect(screen.getByLabelText(/Monthly guide activity/)).toBeTruthy();
-        const details = screen.getByText('View details').closest('details');
-        expect(details?.open).toBe(false);
-        expect(details?.contains(screen.getByRole('table', { hidden: true }))).toBe(true);
-
-        // Act
-        await fireEvent.click(screen.getByText('View details'));
-
-        // Assert
-        expect(details?.open).toBe(true);
-        expect(screen.getByText('100.0% of starts')).toBeTruthy();
-        expect(screen.getByText(/Command palette:/)).toBeTruthy();
+        expect(screen.queryByText('View details')).toBeNull();
+        const table = screen.getByRole('table', { name: 'Guide activity by date' });
+        expect(table.closest('.sr-only')).not.toBeNull();
+        expect(table.textContent).toContain('Jan 2026');
+        expect(table.closest('details')).toBeNull();
     });
 
     it('shows a collection empty state instead of zero-valued completion metrics', () => {
