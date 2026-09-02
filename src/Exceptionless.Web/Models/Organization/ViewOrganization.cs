@@ -1,4 +1,5 @@
 ﻿using Exceptionless.Core.Attributes;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories.Models;
@@ -75,13 +76,15 @@ public static class ViewOrganizationExtensions
 
     public static void EnsureUsage(this ViewOrganization organization, TimeProvider timeProvider)
     {
-        var startDate = timeProvider.GetUtcNow().UtcDateTime.SubtractMonths(11).StartOfMonth();
+        var endDateUtc = timeProvider.GetUtcNow().UtcDateTime.StartOfMonth();
+        var startDateUtc = endDateUtc.SubtractMonths(11);
+        var organizationCreatedMonthUtc = organization.CreatedUtc.ToUniversalTime().StartOfMonth();
+        startDateUtc = organizationCreatedMonthUtc > startDateUtc ? organizationCreatedMonthUtc : startDateUtc;
 
-        while (startDate <= timeProvider.GetUtcNow().UtcDateTime.StartOfMonth())
-        {
-            organization.GetUsage(startDate, timeProvider);
-            startDate = startDate.AddMonths(1).StartOfMonth();
-        }
+        organization.Usage = organization.Usage.MaterializeMonthlyUsage(
+            startDateUtc,
+            endDateUtc,
+            organization.GetMaxEventsPerMonthWithBonus(timeProvider));
     }
 
     public static UsageInfo GetCurrentUsage(this ViewOrganization organization, TimeProvider timeProvider)
@@ -91,19 +94,7 @@ public static class ViewOrganizationExtensions
 
     public static UsageInfo GetUsage(this ViewOrganization organization, DateTime date, TimeProvider timeProvider)
     {
-        var startOfMonth = date.ToUniversalTime().StartOfMonth();
-        var usage = organization.Usage.FirstOrDefault(o => o.Date.Year == startOfMonth.Year && o.Date.Month == startOfMonth.Month);
-        if (usage is not null)
-            return usage;
-
-        usage = new UsageInfo
-        {
-            Date = startOfMonth,
-            Limit = organization.GetMaxEventsPerMonthWithBonus(timeProvider)
-        };
-        organization.Usage.Add(usage);
-
-        return usage;
+        return organization.Usage.GetOrAddMonthlyUsage(date, organization.GetMaxEventsPerMonthWithBonus(timeProvider));
     }
 
     public static int GetMaxEventsPerMonthWithBonus(this ViewOrganization organization, TimeProvider timeProvider)
