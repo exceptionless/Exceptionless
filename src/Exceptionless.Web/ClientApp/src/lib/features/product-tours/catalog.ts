@@ -25,8 +25,8 @@ function requireOrganization(context: ProductTourContext) {
 export const productTourCatalog: readonly ProductTourDefinition[] = [
     {
         availability: requireApplicationShell,
-        description: 'Learn navigation, command search, saved views, Exie, and where to get help.',
-        keywords: ['navigation', 'ui', 'search', 'command', 'help', 'saved views'],
+        description: 'Navigate stacks and events, use the command palette, and reopen saved views.',
+        keywords: ['navigation', 'ui', 'search', 'command palette', 'help', 'saved views', 'stacks', 'occurrences'],
         name: 'app-overview',
         start: () => ({ checkpointName: 'navigation', route: resolve('/') }),
         title: 'Explore Exceptionless',
@@ -34,12 +34,21 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
     },
     {
         availability: () => ({ available: true }),
-        description: 'Create or resume a project, connect an SDK, and wait for its first real event.',
+        description: 'Continue an unfinished project, or create one and send its first event.',
         keywords: ['add project', 'configure', 'sdk', 'api key', 'first event'],
         name: 'project-configure',
         start: (context) => {
             if (!context.organizationId) {
                 return { checkpointName: 'organization-name', route: resolve('/(app)/organization/add') };
+            }
+
+            const currentProject = context.projects.find(
+                (project) => project.id && context.pathname === resolve('/(app)/project/[projectId]/configure', { projectId: project.id })
+            );
+            if (currentProject) {
+                const search = new URLSearchParams(context.search);
+                search.set('redirect', 'true');
+                return { checkpointName: 'choose-platform', route: `${context.pathname}?${search}` };
             }
 
             const unconfiguredProject = context.projects.find((project) => !project.is_configured);
@@ -57,7 +66,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
     },
     {
         availability: requireOrganization,
-        description: 'Save the current Events configuration as a private view that only you can see.',
+        description: 'Save your event filters and layout in a view only you can see.',
         keywords: ['saved view', 'filter', 'columns', 'private', 'dashboard'],
         name: 'saved-view-create',
         start: () => ({ checkpointName: 'open-view-menu', route: resolve('/(app)/event') }),
@@ -66,8 +75,8 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
     },
     {
         availability: requireError,
-        description: 'Open a real error, assess its stack and status, then inspect the occurrence.',
-        keywords: ['error report', 'event details', 'exception', 'filter', 'stack', 'triage'],
+        description: 'Understand stacks, review status, and inspect individual event occurrences.',
+        keywords: ['error report', 'event details', 'occurrences', 'exception', 'filter', 'stack', 'triage'],
         name: 'event-investigate',
         start: () => ({ checkpointName: 'filter-errors', route: `${resolve('/(app)/event')}?time=all&type=error` }),
         title: 'Investigate an error',
@@ -83,7 +92,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
                 ? { available: true }
                 : { available: false, reason: context.assistantAccess.message ?? 'Exie requires access.' };
         },
-        description: 'See how Exie uses the current page as context without sending a prompt.',
+        description: 'Explore the AI assistant. This guide does not send an AI request.',
         keywords: ['exie', 'assistant', 'ai', 'help', 'investigate'],
         name: 'exie-overview',
         start: () => ({ checkpointName: 'open-exie', route: resolve('/') }),

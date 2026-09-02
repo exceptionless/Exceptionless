@@ -3,6 +3,13 @@
     import ProductTourSpotlight from '$features/product-tours/components/product-tour-spotlight.svelte';
     import { productTourCheckpoint } from '$features/product-tours/state.svelte';
 
+    interface Props {
+        firstErrorId?: string;
+        onOpenError: (eventId: string) => void;
+    }
+
+    let { firstErrorId, onOpenError }: Props = $props();
+
     const actions = createProductTourActions();
     const checkpoint = $derived(productTourCheckpoint.current?.tourName === 'event-investigate' ? productTourCheckpoint.current : undefined);
 </script>
@@ -10,7 +17,7 @@
 {#if checkpoint?.checkpointName === 'filter-errors'}
     <ProductTourSpotlight
         {checkpoint}
-        description="Errors are selected. Narrow the list by project, status, date, version, tags, or search terms when you need a specific incident."
+        description="This list shows errors. Use the filters or search to find the one you want to investigate."
         onDismiss={actions.dismiss}
         onNext={(current) => {
             productTourCheckpoint.advance(current, 'choose-error');
@@ -19,11 +26,26 @@
         title="Start with the right errors"
     />
 {:else if checkpoint?.checkpointName === 'choose-error'}
-    <ProductTourSpotlight
-        {checkpoint}
-        description="Choose a real error row. The guide continues only after its detail sheet loads."
-        onDismiss={actions.dismiss}
-        target="[data-tour='event-list']"
-        title="Open a real error"
-    />
+    {#key firstErrorId}
+        <ProductTourSpotlight
+            {checkpoint}
+            continueLabel="Open first error"
+            description={firstErrorId
+                ? 'Open the first error below, or select another row. The guide continues in the details panel.'
+                : 'No errors are ready to open in this list. Adjust the filters or wait for the results to load.'}
+            onDismiss={actions.dismiss}
+            onPrevious={(current) => {
+                productTourCheckpoint.advance(current, 'filter-errors');
+            }}
+            onNext={firstErrorId
+                ? () => {
+                      if (firstErrorId) {
+                          onOpenError(firstErrorId);
+                      }
+                  }
+                : undefined}
+            target="[data-tour='event-list']"
+            title="Open an error"
+        />
+    {/key}
 {/if}

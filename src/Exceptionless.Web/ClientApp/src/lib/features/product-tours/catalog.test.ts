@@ -61,6 +61,36 @@ describe('product tour catalog', () => {
         });
     });
 
+    it('keeps the current project and SDK when starting from Client Setup', () => {
+        // Arrange
+        const definition = productTourCatalog.find((tour) => tour.name === 'project-configure')!;
+        const currentContext = context({
+            pathname: '/next/project/current-project/configure',
+            projects: [
+                { id: 'other-project', is_configured: false },
+                { id: 'current-project', is_configured: true }
+            ],
+            search: '?type=dotnet-legacy-mvc'
+        });
+
+        // Act
+        const start = definition.start(currentContext);
+
+        // Assert
+        expect(start).toEqual({ checkpointName: 'choose-platform', route: '/next/project/current-project/configure?type=dotnet-legacy-mvc&redirect=true' });
+    });
+
+    it('does not carry another page SDK selection into project setup', () => {
+        // Arrange
+        const definition = productTourCatalog.find((tour) => tour.name === 'project-configure')!;
+
+        // Act
+        const start = definition.start(context({ projects: [{ id: 'project-id', is_configured: false }], search: '?type=error' }));
+
+        // Assert
+        expect(start).toEqual({ checkpointName: 'choose-platform', route: '/next/project/project-id/configure?redirect=true' });
+    });
+
     it('requires actual Exie access', () => {
         const item = getProductTourItems(context({ assistantAccess: { enabled: true, has_access: false, upgrade_required: true } })).find(
             (tour) => tour.name === 'exie-overview'

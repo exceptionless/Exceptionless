@@ -5,20 +5,21 @@ import { toast } from 'svelte-sonner';
 
 import type { ProductTourCheckpoint, ProductTourKey, ProductTourLaunchSource } from './types';
 
+import { tryUseProductTourControls } from './controls.svelte';
 import { productTourCheckpoint } from './state.svelte';
 import { buildProductTourTelemetryEvent, type ProductTourTelemetryEvent } from './telemetry';
 
-const COMPLETION_NEXT_STEPS: Record<ProductTourCheckpoint['tourName'], string> = {
-    'app-overview': 'Next: open Guided Tours from Help whenever you want a focused workflow.',
-    'event-investigate': 'Next: save a useful Events view for the investigation you repeat most.',
-    'exie-overview': 'Next: open Exie from a real event when you want help investigating it.',
-    'project-configure': 'Next: open the received event and investigate its stack.',
-    'saved-view-create': 'Next: reuse the saved view from the application navigation.'
+const COMPLETION_MESSAGES: Record<Exclude<ProductTourCheckpoint['tourName'], 'app-overview'>, string> = {
+    'event-investigate': 'You’ve explored an error and its occurrences',
+    'exie-overview': 'You’re ready to ask Exie a question',
+    'project-configure': 'Your project received its first event',
+    'saved-view-create': 'Your saved view is ready'
 };
 
 const domainCompletionRequests = new WeakSet<ProductTourCheckpoint>();
 
 export function createProductTourActions() {
+    const controls = tryUseProductTourControls();
     const progressMutation = putCurrentUserProductTour();
 
     async function complete(checkpoint: ProductTourCheckpoint): Promise<boolean> {
@@ -46,6 +47,7 @@ export function createProductTourActions() {
             .then(() => {
                 if (productTourCheckpoint.clear(checkpoint)) {
                     void track('completed', checkpoint.tourName, checkpoint.version, checkpoint.source);
+                    showCompletion(checkpoint);
                 }
             })
             .catch(() => {
@@ -75,11 +77,24 @@ export function createProductTourActions() {
         }
         void track(status === ProductTourStatus.Completed ? 'completed' : 'dismissed', checkpoint.tourName, checkpoint.version, checkpoint.source);
         if (status === ProductTourStatus.Completed) {
-            toast.success('Guide complete', {
-                description: COMPLETION_NEXT_STEPS[checkpoint.tourName]
-            });
+            showCompletion(checkpoint);
         }
         return true;
+    }
+
+    function showCompletion(checkpoint: ProductTourCheckpoint): void {
+        // The overview hands off to the Help menu; a toast would cover that menu.
+        if (checkpoint.tourName !== 'app-overview') {
+            toast.success(COMPLETION_MESSAGES[checkpoint.tourName], {
+                action: controls
+                    ? {
+                          label: 'Browse guides',
+                          onClick: controls.openCatalog
+                      }
+                    : undefined,
+                description: 'For more guides, select your name in the sidebar → Help → Guided Tours.'
+            });
+        }
     }
 
     return {

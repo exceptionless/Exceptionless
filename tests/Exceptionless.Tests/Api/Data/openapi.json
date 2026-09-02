@@ -13366,6 +13366,38 @@
           }
         }
       },
+      "ProductTourActivity": {
+        "required": [
+          "date_utc",
+          "shown",
+          "started",
+          "completed",
+          "dismissed"
+        ],
+        "type": "object",
+        "properties": {
+          "date_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "shown": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "started": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "completed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dismissed": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "ProductTourKind": {
         "enum": [
           "guide",
@@ -13445,7 +13477,8 @@
           "completed",
           "dismissed",
           "last_run_utc",
-          "start_sources"
+          "start_sources",
+          "activity"
         ],
         "type": "object",
         "properties": {
@@ -13487,14 +13520,31 @@
             "items": {
               "$ref": "#/components/schemas/ProductTourStartSource"
             }
+          },
+          "activity": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductTourActivity"
+            }
           }
         }
+      },
+      "ProductTourUsageInterval": {
+        "enum": [
+          "day",
+          "month"
+        ],
+        "x-enumNames": [
+          "Day",
+          "Month"
+        ]
       },
       "ProductTourUsageResponse": {
         "required": [
           "utc_start",
           "utc_end",
-          "tours"
+          "tours",
+          "interval"
         ],
         "type": "object",
         "properties": {
@@ -13514,6 +13564,9 @@
             "items": {
               "$ref": "#/components/schemas/ProductTourSummary"
             }
+          },
+          "interval": {
+            "$ref": "#/components/schemas/ProductTourUsageInterval"
           }
         }
       },

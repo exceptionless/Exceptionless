@@ -131,10 +131,15 @@
 {#if projectConfigureCheckpoint?.checkpointName === 'project-name'}
     <ProductTourSpotlight
         checkpoint={projectConfigureCheckpoint}
-        description="Name the application or service that will send events. Continue by submitting this form; the guide advances only after creation succeeds."
+        showProgress={false}
         onDismiss={tourActions.dismiss}
         side="top"
         target="[data-tour='project-setup-form']"
         title="Name your project"
-    />
+    >
+        {#snippet description()}
+            This is <strong>Add Project</strong>, available under Settings → Projects. Name the application or service that will send events, then select
+            <strong>Continue to Client Setup</strong> in the form.
+        {/snippet}
+    </ProductTourSpotlight>
 {/if}

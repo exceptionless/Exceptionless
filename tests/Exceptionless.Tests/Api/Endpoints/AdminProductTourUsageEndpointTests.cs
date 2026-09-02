@@ -1,6 +1,7 @@
 using Exceptionless.Core;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Extensions;
@@ -65,6 +66,7 @@ public sealed class AdminProductTourUsageEndpointTests : IntegrationTestsBase
         Assert.NotNull(response);
         Assert.Equal(month, response.UtcStart);
         Assert.Equal(month.AddMonths(1), response.UtcEnd);
+        Assert.Equal(ProductTourUsageInterval.Day, response.Interval);
         Assert.Equal(ProductTours.Definitions.Values.Sum(definition => definition.CurrentVersion), response.Tours.Count);
 
         var overview = Assert.Single(response.Tours, tour => String.Equals(tour.Name, ProductTours.AppOverview, StringComparison.Ordinal));
@@ -86,6 +88,11 @@ public sealed class AdminProductTourUsageEndpointTests : IntegrationTestsBase
         Assert.Equal(1, welcome.Dismissed);
         Assert.Equal(1, Assert.Single(welcome.StartSources).Count);
         Assert.Equal(ProductTourLaunchSource.Welcome, welcome.StartSources.Single().Source);
+        var welcomeDay = Assert.Single(welcome.Activity, period => period.DateUtc == month.AddDays(1));
+        Assert.Equal(2, welcomeDay.Shown);
+        Assert.Equal(1, welcomeDay.Started);
+        Assert.Equal(1, welcomeDay.Completed);
+        Assert.Equal(overview.Started, overview.Activity.Sum(period => period.Started));
         Assert.DoesNotContain(response.Tours, tour => tour.Started > 0 && (tour.Name is "unknown" or "ignored-tour"));
     }
 
@@ -112,6 +119,7 @@ public sealed class AdminProductTourUsageEndpointTests : IntegrationTestsBase
         Assert.NotNull(response);
         Assert.Equal(now.SubtractDays(_appOptions.MaximumRetentionDays), response.UtcStart);
         Assert.Equal(now, response.UtcEnd);
+        Assert.Equal(ProductTourUsageInterval.Month, response.Interval);
         var overview = Assert.Single(response.Tours, tour => String.Equals(tour.Name, ProductTours.AppOverview, StringComparison.Ordinal));
         Assert.Equal(1, overview.Started);
     }
@@ -153,6 +161,7 @@ public sealed class AdminProductTourUsageEndpointTests : IntegrationTestsBase
             Assert.Equal(0, tour.Completed);
             Assert.Equal(0, tour.Dismissed);
             Assert.Empty(tour.StartSources);
+            Assert.Empty(tour.Activity);
             Assert.Null(tour.LastRunUtc);
         });
     }

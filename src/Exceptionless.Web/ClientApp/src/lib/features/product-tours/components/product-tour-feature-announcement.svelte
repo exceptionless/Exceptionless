@@ -28,7 +28,7 @@
                     <Alert.Title>New: Meet Exie</Alert.Title>
                     <p class="text-muted-foreground mt-1 text-sm">
                         {hasAccess
-                            ? 'See how Exie uses the page you are viewing as context for investigations.'
+                            ? 'Take a short guide to Exie, your AI assistant for investigating errors.'
                             : (message ?? 'Exie is available with an eligible organization plan.')}
                     </p>
                 </div>

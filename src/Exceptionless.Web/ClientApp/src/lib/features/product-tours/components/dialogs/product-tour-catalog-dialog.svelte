@@ -3,11 +3,13 @@
     import { Button } from '$comp/ui/button';
     import * as Dialog from '$comp/ui/dialog';
     import { ProductTourStatus } from '$features/users/models';
-    import Compass from '@lucide/svelte/icons/compass';
+    import Bookmark from '@lucide/svelte/icons/bookmark';
+    import Bot from '@lucide/svelte/icons/bot';
+    import Folder from '@lucide/svelte/icons/folder';
+    import Layers from '@lucide/svelte/icons/layers';
+    import PanelLeft from '@lucide/svelte/icons/panel-left';
 
     import type { ProductTourListItem, ProductTourName } from '../../types';
-
-    import { PRODUCT_TOUR_CHECKPOINTS } from '../../types';
 
     interface Props {
         activeTourName?: ProductTourName;
@@ -19,45 +21,57 @@
     }
 
     let { activeTourName, items, onStart, open = $bindable(false), ready, resumableTourName }: Props = $props();
+    const id = $props.id();
+    const icons = {
+        'app-overview': PanelLeft,
+        'event-investigate': Layers,
+        'exie-overview': Bot,
+        'project-configure': Folder,
+        'saved-view-create': Bookmark
+    };
 </script>
 
 <Dialog.Root bind:open>
     <Dialog.Content class="max-h-[85vh] overflow-y-auto sm:max-w-2xl" data-product-tour-overlay>
         <Dialog.Header>
             <Dialog.Title>Guided Tours</Dialog.Title>
-            <Dialog.Description>Learn Exceptionless with short guides that use your real data.</Dialog.Description>
+            <Dialog.Description>Choose a short, step-by-step guide. Guides use your workspace, not sample data.</Dialog.Description>
         </Dialog.Header>
 
-        <div class="grid gap-3 py-2 sm:grid-cols-2">
+        <ul aria-label="Available guides" class="divide-border divide-y">
             {#each items as item (item.name)}
-                <section aria-label={item.title} class="border-border bg-card flex min-h-44 flex-col gap-3 rounded-lg border p-4">
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg">
-                            <Compass aria-hidden="true" class="size-5" />
+                {@const Icon = icons[item.name]}
+                {@const completed = item.progress?.status === ProductTourStatus.Completed && item.progress.version >= item.version}
+                {@const actionLabel = resumableTourName === item.name ? 'Continue' : activeTourName === item.name || completed ? 'Restart' : 'Start'}
+                <li>
+                    <section aria-label={item.title} class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-2 py-3 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
+                        <Icon aria-hidden="true" class="text-muted-foreground mt-0.5 size-5" />
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                <h3 class="text-sm font-semibold">{item.title}</h3>
+                                {#if completed}
+                                    <Badge variant="secondary">Completed</Badge>
+                                {/if}
+                            </div>
+                            <p class="text-muted-foreground mt-1 text-sm">{item.description}</p>
+                            {#if !item.currentAvailability.available}
+                                <p class="text-muted-foreground mt-1 text-xs" id={`${id}-${item.name}-reason`}>{item.currentAvailability.reason}</p>
+                            {/if}
                         </div>
-                        {#if item.progress?.status === ProductTourStatus.Completed && item.progress.version >= item.version}
-                            <Badge variant="secondary">Completed</Badge>
-                        {/if}
-                    </div>
-                    <div class="flex-1">
-                        <h3 class="font-semibold">{item.title}</h3>
-                        <p class="text-muted-foreground mt-1 text-sm">{item.description}</p>
-                        <p class="text-muted-foreground mt-2 text-xs">
-                            {item.name === 'app-overview' ? 'Up to ' : ''}{PRODUCT_TOUR_CHECKPOINTS[item.name].length} steps
-                        </p>
-                        {#if !item.currentAvailability.available}
-                            <p class="text-muted-foreground mt-2 text-xs">{item.currentAvailability.reason}</p>
-                        {/if}
-                    </div>
-                    <Button disabled={!ready || !item.currentAvailability.available} onclick={() => onStart(item.name)} variant="outline">
-                        {resumableTourName === item.name
-                            ? 'Continue'
-                            : activeTourName === item.name || (item.progress?.status === ProductTourStatus.Completed && item.progress.version >= item.version)
-                              ? 'Restart'
-                              : 'Start'}
-                    </Button>
-                </section>
+                        <Button
+                            aria-describedby={!item.currentAvailability.available ? `${id}-${item.name}-reason` : undefined}
+                            aria-label={`${actionLabel} ${item.title}`}
+                            class="col-start-2 min-w-20 justify-self-start sm:col-start-3 sm:row-start-1 sm:self-center pointer-coarse:min-h-11"
+                            disabled={!ready || !item.currentAvailability.available}
+                            onclick={() => onStart(item.name)}
+                            size="sm"
+                            variant="outline"
+                        >
+                            {actionLabel}
+                        </Button>
+                    </section>
+                </li>
             {/each}
-        </div>
+        </ul>
     </Dialog.Content>
 </Dialog.Root>

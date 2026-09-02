@@ -97,9 +97,11 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         string sourceField = InferField(ev => ev.Source);
         string countField = InferField(ev => ev.Count);
         string dateField = InferField(ev => ev.Date);
+        bool daily = utcStart.HasValue && utcEnd <= utcStart.Value.AddMonths(1);
+        string interval = daily ? "1d" : "1M";
 
         var aggregation = await CountAsync(query => ApplyProductTourUsageFilter(query, projectId, utcStart, utcEnd, allSources)
-            .AggregationsExpression($"terms:({sourceField}~{allSources.Length} sum:{countField}~1 max:{dateField})"));
+            .AggregationsExpression($"terms:({sourceField}~{allSources.Length} sum:{countField}~1 max:{dateField} date:({dateField}~{interval} sum:{countField}~1))"));
 
         var sourceBuckets = aggregation.Aggregations.Terms<string>($"terms_{sourceField}")?.Buckets ?? [];
         var usage = sourceBuckets
@@ -107,11 +109,14 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
                 ? new ProductTourUsageBucket(
                     source,
                     Convert.ToInt64(bucket.Aggregations.Sum($"sum_{countField}")?.Value ?? bucket.Total.GetValueOrDefault()),
-                    bucket.Aggregations.Max<DateTime>($"max_{dateField}")?.Value)
+                    bucket.Aggregations.Max<DateTime>($"max_{dateField}")?.Value,
+                    (bucket.Aggregations.DateHistogram($"date_{dateField}")?.Buckets ?? [])
+                        .Select(period => new ProductTourUsagePeriod(period.Date, Convert.ToInt64(period.Aggregations.Sum($"sum_{countField}")?.Value ?? period.Total.GetValueOrDefault())))
+                        .ToArray())
                 : null)
             .OfType<ProductTourUsageBucket>()
             .ToArray();
-        return new ProductTourUsageResult(usage);
+        return new ProductTourUsageResult(usage, daily ? ProductTourUsageInterval.Day : ProductTourUsageInterval.Month);
     }
 
     private static IRepositoryQuery<PersistentEvent> ApplyProductTourUsageFilter(

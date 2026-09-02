@@ -38,6 +38,7 @@
     import { premiumPage } from '$features/organizations/premium-page.svelte';
     import { getUtcMonthKey, ORGANIZATION_USAGE_ROLLOVER_CHECK_INTERVAL_MS } from '$features/organizations/utils';
     import ProductTourHost from '$features/product-tours/components/product-tour-host.svelte';
+    import { setProductTourControls } from '$features/product-tours/controls.svelte';
     import { isProductTourSetupRoute } from '$features/product-tours/eligibility';
     import { productTourCheckpoint } from '$features/product-tours/state.svelte';
     import { invalidateProjectQueries } from '$features/projects/api.svelte';
@@ -98,6 +99,18 @@
     let isImpersonateOrganizationOpen = $state(false);
     let isUserMenuOpen = $state(false);
     let productToursComponent = $state<ProductTourHost>();
+    let sidebarUserComponent = $state<SidebarUser>();
+
+    setProductTourControls({
+        closeOverlays: closeProductTourOverlays,
+        getGuidedToursTarget: () => sidebarUserComponent?.getGuidedToursTarget(),
+        openCatalog: () => openGuidedTours('catalog'),
+        showGuidedToursMenu: async () => {
+            closeProductTourOverlays();
+            await tick();
+            sidebarUserComponent?.showGuidedTours();
+        }
+    });
 
     // Auto-reset premium page state on navigation so pages don't need cleanup
     beforeNavigate(() => {
@@ -244,7 +257,7 @@
     }
 
     function openGuidedTours(source: ProductTourLaunchSource): void {
-        productToursComponent?.openCatalog(source);
+        void productToursComponent?.openCatalog(source);
     }
 
     async function stopImpersonating(): Promise<void> {
@@ -740,6 +753,7 @@
 
         {#snippet footer()}
             <SidebarUser
+                bind:this={sidebarUserComponent}
                 {isChatEnabled}
                 isLoading={meQuery.isLoading}
                 user={meQuery.data}

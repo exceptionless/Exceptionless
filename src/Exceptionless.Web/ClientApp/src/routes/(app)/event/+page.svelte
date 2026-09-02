@@ -1051,4 +1051,11 @@
     onError={handleEventError}
 />
 
-<InvestigationListTour />
+<InvestigationListTour
+    firstErrorId={eventsQuery.isFetching || isSavedViewRoutePending
+        ? undefined
+        : table.getRowModel().rows.find((row) => row.original.type === 'error')?.original.id}
+    onOpenError={(eventId) => {
+        selectedEventId = eventId;
+    }}
+/>

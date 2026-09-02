@@ -1,20 +1,24 @@
 <script lang="ts">
     import { driver, type Driver } from 'driver.js';
-    import { onMount } from 'svelte';
+    import { mount, onMount, type Snippet, tick, unmount } from 'svelte';
     import { toast } from 'svelte-sonner';
 
     import type { ProductTourCheckpoint } from '../types';
 
     import { productTourCheckpoint } from '../state.svelte';
     import { PRODUCT_TOUR_CHECKPOINTS } from '../types';
+    import ProductTourDescription, { type ProductTourShortcut } from './product-tour-description.svelte';
     import 'driver.js/dist/driver.css';
 
     interface Props {
         checkpoint: ProductTourCheckpoint;
         continueLabel?: string;
-        description: string;
+        description: Snippet | string;
         onDismiss: (checkpoint: ProductTourCheckpoint) => Promise<boolean>;
         onNext?: (checkpoint: ProductTourCheckpoint) => Promise<void> | void;
+        onPrevious?: (checkpoint: ProductTourCheckpoint) => void;
+        shortcuts?: ProductTourShortcut[];
+        showProgress?: boolean;
         side?: 'bottom' | 'left' | 'right' | 'top';
         stepCount?: number;
         stepNumber?: number;
@@ -22,12 +26,55 @@
         title: string;
     }
 
-    let { checkpoint, continueLabel = 'Continue', description, onDismiss, onNext, side, stepCount, stepNumber, target, title }: Props = $props();
+    let {
+        checkpoint,
+        continueLabel = 'Continue',
+        description,
+        onDismiss,
+        onNext,
+        onPrevious,
+        shortcuts,
+        showProgress = true,
+        side,
+        stepCount,
+        stepNumber,
+        target,
+        title
+    }: Props = $props();
     let activeDriver: Driver | undefined;
+    let descriptionContent: ReturnType<typeof mount> | undefined;
     let dismissing = false;
     let returnFocus: HTMLElement | null = null;
 
     onMount(() => {
+        let cancelled = false;
+        let resizeObserver: ResizeObserver | undefined;
+        let frame: number | undefined;
+        void tick().then(() => {
+            if (cancelled) {
+                return;
+            }
+            initialize();
+            const element = activeDriver?.getActiveElement();
+            if (element) {
+                resizeObserver = new ResizeObserver(() => activeDriver?.refresh());
+                resizeObserver.observe(element);
+            }
+            frame = requestAnimationFrame(() => activeDriver?.refresh());
+        });
+
+        return () => {
+            cancelled = true;
+            resizeObserver?.disconnect();
+            if (frame !== undefined) {
+                cancelAnimationFrame(frame);
+            }
+            window.removeEventListener('keydown', onKeyDown, true);
+            destroy();
+        };
+    });
+
+    function initialize(): void {
         const element = typeof target === 'string' ? document.querySelector(target) : target;
         if (!element) {
             productTourCheckpoint.clear(checkpoint);
@@ -41,6 +88,8 @@
         const totalSteps = stepCount ?? checkpoints.length;
         const instance = driver({
             allowClose: true,
+            // Handle keys on keydown so an Escape that closes another overlay cannot end the resumed guide on keyup.
+            allowKeyboardControl: false,
             animate: !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
             disableActiveInteraction: false,
             onCloseClick: () => {
@@ -50,27 +99,38 @@
                 void dismiss();
             },
             onPopoverRender: (popover) => {
-                popover.closeButton.textContent = 'End guide';
+                popover.wrapper.style.display = 'grid';
                 popover.closeButton.setAttribute('aria-label', 'End guide');
                 popover.closeButton.setAttribute('title', 'End guide');
-                popover.progress.textContent = `Step ${currentStepNumber} of ${totalSteps}`;
+                popover.progress.textContent = showProgress ? `Step ${currentStepNumber} of ${totalSteps}` : '';
+                popover.description.replaceChildren();
+                popover.description.style.display = 'block';
+                descriptionContent = mount(ProductTourDescription, {
+                    props: {
+                        description,
+                        shortcuts
+                    },
+                    target: popover.description
+                });
             },
             overlayClickBehavior: () => {},
             popoverClass: 'product-tour-popover',
-            showProgress: true,
+            showProgress,
             smoothScroll: !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
             steps: [
                 {
                     element,
                     popover: {
-                        description,
+                        disableButtons: [],
                         doneBtnText: continueLabel,
                         onNextClick: onNext
                             ? async () => {
                                   await onNext(checkpoint);
                               }
                             : undefined,
-                        showButtons: onNext ? ['close', 'next'] : ['close'],
+                        onPrevClick: onPrevious ? () => onPrevious(checkpoint) : undefined,
+                        prevBtnText: 'Back',
+                        showButtons: ['close', ...(onPrevious ? ['previous' as const] : []), ...(onNext ? ['next' as const] : [])],
                         side,
                         title
                     }
@@ -79,9 +139,27 @@
         });
         activeDriver = instance;
         instance.drive();
+        window.addEventListener('keydown', onKeyDown, true);
+    }
 
-        return destroyImmediately;
-    });
+    function onKeyDown(event: KeyboardEvent): void {
+        if (event.defaultPrevented || event.repeat || !activeDriver) {
+            return;
+        }
+
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            void dismiss();
+        } else if (event.target instanceof HTMLButtonElement && event.target.closest('.product-tour-popover')) {
+            if (event.key === 'ArrowLeft' && onPrevious) {
+                event.preventDefault();
+                onPrevious(checkpoint);
+            } else if (event.key === 'ArrowRight' && onNext) {
+                event.preventDefault();
+                void onNext(checkpoint);
+            }
+        }
+    }
 
     async function dismiss(): Promise<void> {
         if (dismissing || !activeDriver) {
@@ -99,6 +177,10 @@
     function destroy(): void {
         const instance = activeDriver;
         activeDriver = undefined;
+        if (descriptionContent) {
+            void unmount(descriptionContent);
+            descriptionContent = undefined;
+        }
         instance?.setConfig({
             ...instance.getConfig(),
             onDestroyStarted: undefined
@@ -106,14 +188,13 @@
         instance?.destroy();
         queueMicrotask(() => returnFocus?.focus());
     }
-
-    function destroyImmediately(): void {
-        destroy();
-    }
 </script>
 
 <style>
     :global(.product-tour-popover.driver-popover) {
+        grid-template-columns: minmax(0, 1fr) auto;
+        column-gap: 0.5rem;
+        padding: 0.75rem;
         max-width: min(24rem, calc(100vw - 2rem));
         border: 1px solid var(--border);
         border-radius: var(--radius-lg);
@@ -123,10 +204,17 @@
     }
 
     :global(.product-tour-popover .driver-popover-title) {
+        grid-column: 1;
+        grid-row: 1;
+        align-self: center;
         color: var(--popover-foreground);
         font-size: 1rem;
         font-weight: 600;
-        padding-right: 5.5rem;
+    }
+
+    :global(.product-tour-popover .driver-popover-description),
+    :global(.product-tour-popover .driver-popover-footer) {
+        grid-column: 1 / -1;
     }
 
     :global(.product-tour-popover .driver-popover-description),
@@ -135,9 +223,10 @@
     }
 
     :global(.product-tour-popover .driver-popover-close-btn),
+    :global(.product-tour-popover .driver-popover-prev-btn),
     :global(.product-tour-popover .driver-popover-next-btn) {
-        min-width: 2.75rem;
-        min-height: 2.75rem;
+        min-width: 2rem;
+        min-height: 2rem;
         border-color: var(--border);
         border-radius: var(--radius-md);
         background: var(--background);
@@ -146,12 +235,47 @@
         text-shadow: none;
     }
 
+    :global(.product-tour-popover .driver-popover-prev-btn) {
+        border-color: transparent;
+        background: transparent;
+        color: var(--muted-foreground);
+        padding: 0.375rem 0.75rem;
+    }
+
+    :global(.product-tour-popover .driver-popover-prev-btn:hover) {
+        background: var(--accent);
+        color: var(--accent-foreground);
+    }
+
     :global(.product-tour-popover .driver-popover-close-btn) {
-        top: 0.25rem;
-        right: 0.25rem;
-        width: auto;
-        padding: 0.5rem;
-        font-size: 0.75rem;
+        position: static;
+        grid-column: 2;
+        grid-row: 1;
+        align-self: start;
+        width: 2rem;
+        height: 2rem;
+        background: transparent;
+        color: var(--muted-foreground);
+        font-size: 1.25rem;
+    }
+
+    :global(.product-tour-popover .driver-popover-next-btn) {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.8125rem;
+    }
+
+    :global(.product-tour-popover .driver-popover-close-btn:hover) {
+        background: var(--accent);
+        color: var(--accent-foreground);
+    }
+
+    @media (pointer: coarse) {
+        :global(.product-tour-popover .driver-popover-close-btn),
+        :global(.product-tour-popover .driver-popover-prev-btn),
+        :global(.product-tour-popover .driver-popover-next-btn) {
+            min-width: 2.75rem;
+            min-height: 2.75rem;
+        }
     }
 
     :global(.product-tour-popover button:focus-visible) {
