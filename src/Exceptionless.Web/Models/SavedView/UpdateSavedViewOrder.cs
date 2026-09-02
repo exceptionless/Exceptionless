@@ -8,7 +8,7 @@ public sealed record UpdateSavedViewOrder : IValidatableObject
 {
     [Required]
     [MaxLength(100)]
-    public IReadOnlyList<string> SavedViewIds { get; init; } = [];
+    public required IReadOnlyList<string> SavedViewIds { get; init; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {

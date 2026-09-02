@@ -1586,6 +1586,34 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PutSavedViewOrder_MissingIdentifiers_ReturnsBadRequestWithoutClearingOrder()
+    {
+        var savedView = await CreateSavedViewAsync("Preserved Ordered View", "status:open", "events");
+        Assert.NotNull(savedView);
+
+        await SendRequestAsync(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-order", "events")
+            .Content(new UpdateSavedViewOrder { SavedViewIds = [savedView.Id] })
+            .StatusCodeShouldBeOk()
+        );
+
+        await SendRequestAsync(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-order", "events")
+            .Content("{}", "application/json")
+            .StatusCodeShouldBeBadRequest()
+        );
+
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(user);
+        var preference = Assert.Single(user.SavedViewOrders, preference => preference.OrganizationId == SampleDataService.TEST_ORG_ID && preference.ViewType == "events");
+        Assert.Equal([savedView.Id], preference.SavedViewIds);
+    }
+
+    [Fact]
     public async Task PutOrganizationSavedViewDefault_PrivateView_ReturnsUnprocessableEntity()
     {
         var privateView = await CreateSavedViewAsync("Private Organization Home", "status:open", "events", isPrivate: true);
