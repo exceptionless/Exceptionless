@@ -11,7 +11,7 @@ Please follow this section to set up Exceptionless in a Kubernetes environment. 
 
 ## Instructions
 
-Please note that we recommend you use Kubernetes for running in production.
+Please note that we recommend you use Kubernetes for running in production. Configure durable, highly available Redis and Elasticsearch services for a production installation. The chart's bundled single-replica dependencies are intended for evaluation and do not provide a zero-downtime or durable production topology.
 
 1. Follow the steps [here](https://github.com/exceptionless/Exceptionless/blob/master/k8s/ex-setup.ps1) for how to create it in AKS
 2. View the configuration settings below for more information on configuring Exceptionless.
@@ -29,22 +29,29 @@ _Please note that if you are specifying configuration via `docker-compose`, then
 
 ## ConnectionStrings
 
-```yaml
-# connection string used for any provider specifying Redis.
-EX_ConnectionStrings__Redis: localhost:6379,abortConnect=false
+See [Infrastructure Configuration](/docs/self-hosting/configuration) for the technology priority table, RabbitMQ examples, compatibility controls, Aspire naming, and rollout guidance. Existing Helm values remain supported without changes.
 
-EX_ConnectionStrings__Cache: provider=redis;
-EX_ConnectionStrings__Elasticsearch: server=http://10.0.0.4:9200;
-EX_ConnectionStrings__Email: smtps://user%40domain.com:password@smtp.domain.com:465
-EX_ConnectionStrings__MessageBus: provider=redis;
-EX_ConnectionStrings__Metrics: provider=statsd;server=localhost
-EX_ConnectionStrings__Queue: provider=redis;
-EX_ConnectionStrings__Storage: provider=azurestorage;
+The current chart renders explicit legacy selectors for Cache, MessageBus, Queue, and Storage. Those selectors intentionally override automatic technology selection. Adding `EX_ConnectionStrings__RabbitMQ` under `config` alone therefore does not switch MessageBus. Use the existing Helm value:
+
+```yaml
+messagebus:
+  connectionString: 'provider=rabbitmq;server="amqps://user:password@rabbitmq:5671/%2F"'
 ```
 
-You can append values to any connection string using a `;`. For example, you can control many shards and replicas each Elasticsearch index should be created with by appending to the `EX_ConnectionStrings__Elasticsearch` connection string. For a Elasticsearch cluster (3 nodes, two masters), you would append `shards=3;replicas=1`.
+Keep every selector and effective endpoint unchanged during a rolling image upgrade. Changing a selector, provider, or endpoint is a separate infrastructure migration and requires a bridge or dual-read/write process, or a quiesce-and-drain maintenance window. Do not use `local` for a distributed role when multiple replicas may run; each replica would receive isolated in-memory state.
 
-The `provider` value determines what implementations to use for the various abstractions. We've made it easier to reuse a single connection string by automatically looking up a connection string by the provider name and adding any key value pairs to the current connection string (as shown above with redis).
+```yaml
+# Redis automatically supplies Cache, MessageBus, and Queue when a higher-priority
+# technology for a role is not configured.
+EX_ConnectionStrings__Redis: localhost:6379,abortConnect=false
+
+EX_ConnectionStrings__Elasticsearch: server=http://10.0.0.4:9200;
+EX_ConnectionStrings__Email: smtps://user%40domain.com:password@smtp.domain.com:465
+EX_ConnectionStrings__AzureQueues: DefaultEndpointsProtocol=https;AccountName=example;AccountKey=secret
+EX_ConnectionStrings__AzureStorage: DefaultEndpointsProtocol=https;AccountName=example;AccountKey=secret
+```
+
+Structured connection strings support provider-specific key-value options. For example, you can control how many shards and replicas each Elasticsearch index should be created with by appending `shards=3;replicas=1` to `EX_ConnectionStrings__Elasticsearch`. Redis and RabbitMQ use their native complete connection-string formats.
 
 ## General Configuration
 
