@@ -32,7 +32,7 @@ public class ProductTourActivityHandler(
         return Result.NoContent();
     }
 
-    public async Task<Result> Handle(RecordProductTourActivity message, CancellationToken cancellationToken)
+    public async Task<Result> Handle(RecordProductTourActivity message)
     {
         var activity = message.Activity;
         if (!ProductTours.IsValid(message.TourName, activity.Version))
@@ -82,13 +82,14 @@ public class ProductTourActivityHandler(
 
         // Do not use the SDK or copy HTTP metadata: these events need no identifying context.
         using var stream = new MemoryStream(serializer.SerializeToBytes(ev));
+        // Once accepted, this small server-side write must finish even if navigation closes the request.
         var entry = await eventPostService.EnqueueAsync(new EventPost(appOptions.EnableArchive)
         {
             ApiVersion = 2,
             MediaType = "application/json",
             ProjectId = project.Id,
             OrganizationId = project.OrganizationId
-        }, stream, cancellationToken);
+        }, stream);
         return String.IsNullOrEmpty(entry)
             ? Result.Unavailable("Guided-tour activity could not be queued.")
             : Result.Accepted();

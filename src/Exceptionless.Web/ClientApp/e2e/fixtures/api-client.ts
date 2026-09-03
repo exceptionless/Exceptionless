@@ -286,10 +286,11 @@ export class E2EApiClient {
         throw new Error(`Timed out waiting for ${path} email sent to ${email}`);
     }
 
-    async signup(name: string, email: string, password: string): Promise<string> {
+    async signup(name: string, email: string, password: string, inviteToken?: string): Promise<string> {
         const response = await this.request.post(this.url('auth/signup'), {
             data: {
                 email,
+                invite_token: inviteToken,
                 name,
                 password
             }
@@ -324,6 +325,32 @@ export class E2EApiClient {
             async () => !(await this.getCurrentUser(token)),
             timeoutMs,
             'Timed out waiting for generated E2E user to be inaccessible after deletion'
+        );
+    }
+
+    async waitForInvitationListed(token: string, organizationId: string, inviteToken: string): Promise<void> {
+        await waitForCondition(
+            async () => {
+                const response = await this.request.get(this.url('organizations'), {
+                    headers: this.authHeaders(token),
+                    params: { filter: `id:${organizationId}` }
+                });
+                await expectStatus(response, [200], 'find indexed invitation');
+                const organizations = await readJson(response);
+                return (
+                    Array.isArray(organizations) &&
+                    organizations.some((value) => {
+                        const organization = toRecord(value, 'organization');
+                        return (
+                            organization.id === organizationId &&
+                            Array.isArray(organization.invites) &&
+                            organization.invites.some((invite) => toRecord(invite, 'invitation').token === inviteToken)
+                        );
+                    })
+                );
+            },
+            30_000,
+            'Timed out waiting for the test invitation to be indexed'
         );
     }
 

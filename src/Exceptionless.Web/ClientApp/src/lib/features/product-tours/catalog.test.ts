@@ -7,6 +7,7 @@ import { getProductTourItems, getRecommendedProductTourName, productTourCatalog 
 function context(overrides: Partial<ProductTourContext> = {}): ProductTourContext {
     return {
         errorEventAvailability: 'available',
+        isProjectConfigurePage: false,
         isSetupPage: false,
         organizationId: 'organization-id',
         pathname: '/next',
@@ -65,6 +66,7 @@ describe('product tour catalog', () => {
         // Arrange
         const definition = productTourCatalog.find((tour) => tour.name === 'project-configure')!;
         const currentContext = context({
+            isProjectConfigurePage: true,
             pathname: '/next/project/current-project/configure',
             projects: [
                 { id: 'other-project', is_configured: false },
@@ -89,6 +91,25 @@ describe('product tour catalog', () => {
 
         // Assert
         expect(start).toEqual({ checkpointName: 'choose-platform', route: '/next/project/project-id/configure?redirect=true' });
+    });
+
+    it('keeps Client Setup when the organization project list has not caught up', () => {
+        // Arrange
+        const definition = productTourCatalog.find((tour) => tour.name === 'project-configure')!;
+
+        // Act
+        const start = definition.start(
+            context({
+                isProjectConfigurePage: true,
+                organizationId: undefined,
+                pathname: '/next/project/current-project/configure',
+                projects: [],
+                search: '?type=dotnet-legacy-mvc'
+            })
+        );
+
+        // Assert
+        expect(start).toEqual({ checkpointName: 'choose-platform', route: '/next/project/current-project/configure?type=dotnet-legacy-mvc&redirect=true' });
     });
 
     it('requires actual Exie access', () => {

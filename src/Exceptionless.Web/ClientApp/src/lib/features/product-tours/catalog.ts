@@ -38,17 +38,14 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
         keywords: ['add project', 'configure', 'sdk', 'api key', 'first event'],
         name: 'project-configure',
         start: (context) => {
-            if (!context.organizationId) {
-                return { checkpointName: 'organization-name', route: resolve('/(app)/organization/add') };
-            }
-
-            const currentProject = context.projects.find(
-                (project) => project.id && context.pathname === resolve('/(app)/project/[projectId]/configure', { projectId: project.id })
-            );
-            if (currentProject) {
+            if (context.isProjectConfigurePage) {
                 const search = new URLSearchParams(context.search);
                 search.set('redirect', 'true');
                 return { checkpointName: 'choose-platform', route: `${context.pathname}?${search}` };
+            }
+
+            if (!context.organizationId) {
+                return { checkpointName: 'organization-name', route: resolve('/(app)/organization/add') };
             }
 
             const unconfiguredProject = context.projects.find((project) => !project.is_configured);

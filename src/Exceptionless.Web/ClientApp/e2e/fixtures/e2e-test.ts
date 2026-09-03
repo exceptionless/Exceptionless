@@ -48,6 +48,8 @@ interface E2EFixtures {
     e2eSecondaryOrganization: E2ESecondaryOrganization;
     e2eSecondaryProject: E2ESecondaryProject;
     e2eUseGeneratedUser: boolean;
+    e2eUseInvitedUser: boolean;
+    e2eUserInvitation: undefined | { organizationId: string; token: string };
     effectDepthGuard: void;
 }
 
@@ -60,7 +62,7 @@ export const test = base.extend<E2EFixtures>({
 
     e2eDismissProductTourWelcome: [true, { option: true }],
 
-    e2eScenario: async ({ e2eApi, e2eCleanupPassword, e2eDismissProductTourWelcome, e2eUseGeneratedUser, page }, use, testInfo) => {
+    e2eScenario: async ({ e2eApi, e2eCleanupPassword, e2eDismissProductTourWelcome, e2eUseGeneratedUser, e2eUserInvitation, page }, use, testInfo) => {
         const run = createRunName(e2eApi.environment.runId, testInfo);
         const userName = `Playwright User ${run}`;
         const email = `playwright-${run}@exceptionless.test`.toLowerCase();
@@ -75,16 +77,20 @@ export const test = base.extend<E2EFixtures>({
         let generatedUserSignupAttempted = false;
 
         try {
-            if (!e2eUseGeneratedUser && !e2eApi.environment.isProduction && e2eApi.environment.email && e2eApi.environment.password) {
+            if (!e2eUseGeneratedUser && !e2eUserInvitation && !e2eApi.environment.isProduction && e2eApi.environment.email && e2eApi.environment.password) {
                 userToken = await e2eApi.login();
             } else {
                 generatedUserSignupAttempted = true;
-                userToken = await e2eApi.signup(userName, email, E2E_TEST_PASSWORD);
+                userToken = await e2eApi.signup(userName, email, E2E_TEST_PASSWORD, e2eUserInvitation?.token);
                 createdUser = true;
             }
 
             const organization = await e2eApi.createOrganization(userToken, organizationName);
             organizationId = organization.id;
+            if (e2eUserInvitation) {
+                await e2eApi.deleteOrganizationUser(userToken, e2eUserInvitation.organizationId, email);
+                await e2eApi.waitForOrganizationNotListed(userToken, e2eUserInvitation.organizationId);
+            }
             const project = await e2eApi.createProject(userToken, organization.id, projectName);
             projectId = project.id;
             const projectToken = await e2eApi.getProjectDefaultToken(userToken, project.id);
@@ -237,6 +243,32 @@ export const test = base.extend<E2EFixtures>({
     },
 
     e2eUseGeneratedUser: [false, { option: true }],
+
+    e2eUseInvitedUser: [false, { option: true }],
+
+    e2eUserInvitation: async ({ e2eApi, e2eUseInvitedUser }, use, testInfo) => {
+        if (!e2eUseInvitedUser) {
+            await use(undefined);
+            return;
+        }
+        if (e2eApi.environment.isProduction) {
+            throw new Error('Invited test users require local Mailpit.');
+        }
+
+        const run = createRunName(e2eApi.environment.runId, testInfo);
+        const email = `playwright-${run}@exceptionless.test`.toLowerCase();
+        const ownerToken = await e2eApi.login();
+        const organization = await e2eApi.createOrganization(ownerToken, `${E2E_ORGANIZATION_NAME_PREFIX} Invitations ${run}`);
+        try {
+            await e2eApi.inviteOrganizationUser(ownerToken, organization.id, email);
+            const inviteToken = await e2eApi.pollForMailToken(email, 'signup');
+            await e2eApi.waitForInvitationListed(ownerToken, organization.id, inviteToken);
+            await use({ organizationId: organization.id, token: inviteToken });
+        } finally {
+            await e2eApi.deleteOrganization(ownerToken, organization.id);
+            await e2eApi.waitForOrganizationDeleted(ownerToken, organization.id);
+        }
+    },
 
     effectDepthGuard: [
         async ({ page }, use) => {

@@ -15,7 +15,14 @@ describe('ProductTourCatalogDialog', () => {
     it('distinguishes guides and preserves restart, continue, and unavailable actions', async () => {
         // Arrange
         const items = getProductTourItems(
-            { errorEventAvailability: 'empty', isSetupPage: false, organizationId: 'organization', pathname: '/next', projects: [] },
+            {
+                errorEventAvailability: 'empty',
+                isProjectConfigurePage: false,
+                isSetupPage: false,
+                organizationId: 'organization',
+                pathname: '/next',
+                projects: []
+            },
             { 'app-overview': { status: ProductTourStatus.Completed, version: 1 } }
         );
         const onStart = vi.fn(async () => {});
@@ -44,7 +51,13 @@ describe('ProductTourCatalogDialog', () => {
 
     it('keeps the picker focused on outcomes without step counts or documentation detours', () => {
         // Arrange
-        const items = getProductTourItems({ errorEventAvailability: 'empty', isSetupPage: false, pathname: '/next', projects: [] });
+        const items = getProductTourItems({
+            errorEventAvailability: 'empty',
+            isProjectConfigurePage: false,
+            isSetupPage: false,
+            pathname: '/next',
+            projects: []
+        });
         const onStart = vi.fn();
 
         // Act
