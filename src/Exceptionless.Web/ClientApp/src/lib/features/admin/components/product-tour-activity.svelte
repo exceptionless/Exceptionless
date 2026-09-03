@@ -18,19 +18,19 @@
     const data = $derived(getProductTourActivity(tour.activity ?? [], interval, start, end));
     const config = $derived({
         completed: {
-            color: 'var(--chart-1)',
+            color: 'color-mix(in srgb, var(--chart-1) var(--tour-chart-strength), black)',
             label: prompt ? 'Accepted' : 'Completed'
         },
         dismissed: {
-            color: 'var(--chart-6)',
+            color: 'color-mix(in srgb, var(--chart-6) var(--tour-chart-strength), black)',
             label: 'Dismissed'
         },
         shown: {
-            color: 'var(--chart-5)',
+            color: 'color-mix(in srgb, var(--chart-5) var(--tour-chart-strength), black)',
             label: 'Shown'
         },
         started: {
-            color: 'var(--chart-3)',
+            color: 'color-mix(in srgb, var(--chart-3) var(--tour-chart-strength), black)',
             label: 'Started'
         }
     } satisfies Chart.ChartConfig);
@@ -88,7 +88,7 @@
     }
 </script>
 
-<div class="flex flex-col gap-4">
+<div class="flex flex-col gap-4 [--tour-chart-strength:70%] dark:[--tour-chart-strength:100%]">
     {#if total === 0}
         <p class="text-muted-foreground flex h-48 items-center justify-center text-sm">No recorded activity in this period.</p>
     {:else}
@@ -149,7 +149,7 @@
                         {/if}
                     {/each}
                 {/snippet}
-                {#snippet tooltip()}<Chart.Tooltip labelFormatter={dateLabel} indicator="line" />{/snippet}
+                {#snippet tooltip()}<Chart.Tooltip role="tooltip" labelFormatter={dateLabel} indicator="line" />{/snippet}
             </LineChart>
         </Chart.Container>
         {#if commonExit}
