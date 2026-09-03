@@ -7,6 +7,7 @@ describe('product tour usage helpers', () => {
     it('maps each immutable range to the API query parameters', () => {
         expect(getProductTourUsageParams({ kind: 'month', month: '2026-08' })).toEqual({ month: '2026-08-01' });
         expect(getProductTourUsageParams({ kind: 'history' })).toEqual({ history: true });
+        expect(getProductTourUsageParams({ days: 30, kind: 'days' })).toEqual({ days: 30 });
     });
 
     it('fills missing UTC days without inventing future activity', () => {

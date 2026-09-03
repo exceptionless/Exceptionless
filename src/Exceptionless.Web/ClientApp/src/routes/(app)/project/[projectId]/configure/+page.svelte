@@ -14,6 +14,7 @@
     import { organization } from '$features/organizations/context.svelte';
     import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
     import { createProductTourActions } from '$features/product-tours/actions.svelte';
+    import { createProductTourActivity } from '$features/product-tours/api.svelte';
     import ProductTourSpotlight from '$features/product-tours/components/product-tour-spotlight.svelte';
     import { productTourCheckpoint } from '$features/product-tours/state.svelte';
     import { getProjectDefaultTokenQuery, patchToken } from '$features/tokens/api.svelte';
@@ -53,6 +54,7 @@
     let isProjectTypeOpen = $state(false);
     let openEnableTokenDialog = $state(false);
     const tourActions = createProductTourActions();
+    const trackTourActivity = createProductTourActivity();
     const projectConfigureCheckpoint = $derived(productTourCheckpoint.current?.tourName === 'project-configure' ? productTourCheckpoint.current : undefined);
 
     const enableTokenMutation = patchToken({
@@ -245,6 +247,12 @@
     });
 
     const isCommandLine = $derived(selectedProjectType?.platform === 'Command Line');
+    $effect(() => {
+        const checkpoint = projectConfigureCheckpoint;
+        if (checkpoint?.checkpointName === 'sdk-instructions' && selectedProjectType && productTourCheckpoint.markReached(checkpoint)) {
+            void trackTourActivity('step-reached', checkpoint.tourName, checkpoint.version, checkpoint.source, checkpoint.checkpointName);
+        }
+    });
     const isDotNet = $derived(selectedProjectType?.platform === '.NET');
     const isDotNetLegacy = $derived(selectedProjectType?.platform === '.NET Legacy');
     const isJavaScript = $derived(selectedProjectType?.platform === 'JavaScript');

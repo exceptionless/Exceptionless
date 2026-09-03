@@ -160,6 +160,7 @@ public static class AdminEndpoints
         IMediator mediator,
         IMediatorResultMapper<HttpIResult> resultMapper,
         DateTime? month = null,
-        bool history = false)
-        => (await mediator.InvokeAsync<Result<object>>(new GetAdminProductTourUsage(month, history))).ToHttpResult(resultMapper);
+        bool history = false,
+        int? days = null)
+        => (await mediator.InvokeAsync<Result<object>>(new GetAdminProductTourUsage(month, history, days))).ToHttpResult(resultMapper);
 }

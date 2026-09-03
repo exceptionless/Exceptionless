@@ -5,6 +5,8 @@
 
     import type { ProductTourListItem } from '../types';
 
+    import ProductTourPrivacyLink from './product-tour-privacy-link.svelte';
+
     interface Props {
         busy?: boolean;
         onBrowse: () => Promise<void>;
@@ -44,5 +46,6 @@
             <Button disabled={busy} onclick={onStart} size="sm">{recommended.name === 'project-configure' ? 'Continue setup' : recommended.title}</Button>
             <Button disabled={busy} onclick={onBrowse} size="sm" variant="ghost">Browse guides</Button>
         </div>
+        <ProductTourPrivacyLink />
     </Alert.Root>
 {/if}

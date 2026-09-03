@@ -19,6 +19,7 @@ export type ProductTourCheckpoint<Name extends ProductTourName = ProductTourName
     ? {
           checkpointName: ProductTourCheckpointName<Name>;
           organizationId?: string;
+          reachedSteps?: string[];
           source: ProductTourLaunchSource;
           tourName: Name;
           userId: string;

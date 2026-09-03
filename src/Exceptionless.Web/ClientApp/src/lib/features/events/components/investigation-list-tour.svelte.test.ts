@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import InvestigationListTour from './investigation-list-tour.svelte';
+vi.mock('$features/product-tours/api.svelte', () => ({ createProductTourActivity: () => vi.fn() }));
 
 vi.mock('$features/product-tours/actions.svelte', () => ({
     createProductTourActions: () => ({ dismiss: vi.fn() })

@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProductTourCheckpoint } from '../types';
 
 import ProductTourSpotlight from './product-tour-spotlight.svelte';
+vi.mock('../api.svelte', () => ({ createProductTourActivity: () => vi.fn() }));
 
 const checkpoint: ProductTourCheckpoint = { checkpointName: 'command-search', source: 'catalog', tourName: 'app-overview', userId: 'user', version: 1 };
 

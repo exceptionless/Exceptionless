@@ -81,6 +81,21 @@ public sealed class ThrottlingMiddlewareTests : TestWithServices
     }
 
     [Fact]
+    public async Task Invoke_ProductTourActivity_UsesExistingRequestLimit()
+    {
+        // Arrange
+        var middleware = CreateMiddleware(_ => throw new InvalidOperationException("A throttled request must not reach the endpoint."), GetService<ICacheClient>(), maxRequests: 0);
+        var context = CreateContext("/api/v2/users/me/product-tours/app-overview/activity");
+        context.Request.Method = HttpMethods.Post;
+
+        // Act
+        await middleware.Invoke(context);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status429TooManyRequests, context.Response.StatusCode);
+    }
+
+    [Fact]
     public async Task Invoke_V1ProjectConfigurationPath_DoesNotThrottleRequest()
     {
         // Arrange

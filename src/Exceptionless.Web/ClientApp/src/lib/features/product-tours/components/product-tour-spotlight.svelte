@@ -5,6 +5,7 @@
 
     import type { ProductTourCheckpoint } from '../types';
 
+    import { createProductTourActivity } from '../api.svelte';
     import { productTourCheckpoint } from '../state.svelte';
     import { PRODUCT_TOUR_CHECKPOINTS } from '../types';
     import ProductTourDescription, { type ProductTourShortcut } from './product-tour-description.svelte';
@@ -42,6 +43,7 @@
         title
     }: Props = $props();
     let activeDriver: Driver | undefined;
+    const track = createProductTourActivity();
     let descriptionContent: ReturnType<typeof mount> | undefined;
     let dismissing = false;
     let returnFocus: HTMLElement | null = null;
@@ -139,6 +141,9 @@
         });
         activeDriver = instance;
         instance.drive();
+        if (productTourCheckpoint.markReached(checkpoint)) {
+            void track('step-reached', checkpoint.tourName, checkpoint.version, checkpoint.source, checkpoint.checkpointName);
+        }
         window.addEventListener('keydown', onKeyDown, true);
     }
 
@@ -186,7 +191,9 @@
             onDestroyStarted: undefined
         });
         instance?.destroy();
-        queueMicrotask(() => returnFocus?.focus());
+        if (!productTourCheckpoint.current && returnFocus?.isConnected) {
+            returnFocus.focus();
+        }
     }
 </script>
 

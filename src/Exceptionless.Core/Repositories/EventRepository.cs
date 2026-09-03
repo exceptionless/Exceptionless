@@ -84,7 +84,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         return FindAsync(q => q.Project(projectId).FieldEquals(e => e.ReferenceId, referenceId).SortDescending(e => e.Date), o => o.PageLimit(10));
     }
 
-    public async Task<ProductTourUsageResult> GetProductTourUsageAsync(string projectId, DateTime? utcStart, DateTime utcEnd)
+    public async Task<ProductTourUsageResult> GetProductTourUsageAsync(string projectId, DateTime? utcStart, DateTime utcEnd, ProductTourUsageInterval? usageInterval = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(projectId);
         if (utcStart.HasValue && utcEnd <= utcStart)
@@ -97,11 +97,13 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         string sourceField = InferField(ev => ev.Source);
         string countField = InferField(ev => ev.Count);
         string dateField = InferField(ev => ev.Date);
-        bool daily = utcStart.HasValue && utcEnd <= utcStart.Value.AddMonths(1);
+        string tagsField = InferField(ev => ev.Tags);
+        int stepCount = ProductTours.Steps.Values.SelectMany(steps => steps).Distinct(StringComparer.Ordinal).Count();
+        bool daily = usageInterval.HasValue ? usageInterval is ProductTourUsageInterval.Day : utcStart.HasValue && utcEnd <= utcStart.Value.AddMonths(1);
         string interval = daily ? "1d" : "1M";
 
         var aggregation = await CountAsync(query => ApplyProductTourUsageFilter(query, projectId, utcStart, utcEnd, allSources)
-            .AggregationsExpression($"terms:({sourceField}~{allSources.Length} sum:{countField}~1 max:{dateField} date:({dateField}~{interval} sum:{countField}~1))"));
+            .AggregationsExpression($"terms:({sourceField}~{allSources.Length} sum:{countField}~1 max:{dateField} date:({dateField}~{interval} sum:{countField}~1) terms:({tagsField}~{stepCount} @include:/{ProductTours.StepTagPrefix}.*/ sum:{countField}~1))"));
 
         var sourceBuckets = aggregation.Aggregations.Terms<string>($"terms_{sourceField}")?.Buckets ?? [];
         var usage = sourceBuckets
@@ -113,6 +115,12 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
                     (bucket.Aggregations.DateHistogram($"date_{dateField}")?.Buckets ?? [])
                         .Select(period => new ProductTourUsagePeriod(period.Date, Convert.ToInt64(period.Aggregations.Sum($"sum_{countField}")?.Value ?? period.Total.GetValueOrDefault())))
                         .ToArray())
+                {
+                    Steps = (bucket.Aggregations.Terms<string>($"terms_{tagsField}")?.Buckets ?? [])
+                        .Where(step => step.Key.StartsWith(ProductTours.StepTagPrefix, StringComparison.Ordinal))
+                        .Select(step => new ProductTourStepCount(step.Key[ProductTours.StepTagPrefix.Length..], Convert.ToInt64(step.Aggregations.Sum($"sum_{countField}")?.Value ?? step.Total.GetValueOrDefault())))
+                        .ToArray()
+                }
                 : null)
             .OfType<ProductTourUsageBucket>()
             .ToArray();

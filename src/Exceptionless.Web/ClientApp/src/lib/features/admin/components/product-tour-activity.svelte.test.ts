@@ -1,7 +1,7 @@
 import type { ProductTourSummary } from '$generated/api';
 
 import { ProductTourKind, ProductTourLaunchSource, ProductTourUsageInterval } from '$generated/api';
-import { cleanup, render, screen } from '@testing-library/svelte';
+import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ProductTourActivity from './product-tour-activity.svelte';
@@ -15,10 +15,12 @@ const tour: ProductTourSummary = {
     shown: 0,
     start_sources: [{ count: 1, source: ProductTourLaunchSource.CommandPalette }],
     started: 1,
+    steps: [],
     version: 1
 };
 
 beforeEach(() => {
+    Object.defineProperty(Element.prototype, 'animate', { configurable: true, value: vi.fn(() => ({ cancel() {}, finished: Promise.resolve() })) });
     vi.stubGlobal(
         'ResizeObserver',
         class {
@@ -32,9 +34,34 @@ beforeEach(() => {
 afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
+    Reflect.deleteProperty(Element.prototype, 'animate');
 });
 
 describe('ProductTourActivity', () => {
+    it('makes exact daily counts keyboard accessible without relying on color', async () => {
+        // Arrange
+        render(ProductTourActivity, { end: '2026-01-03T00:00:00Z', interval: ProductTourUsageInterval.Day, start: '2026-01-01T00:00:00Z', tour });
+        const chart = screen.getByRole('slider');
+
+        // Act
+        await fireEvent.keyDown(chart, { key: 'Home' });
+
+        // Assert
+        expect(chart.getAttribute('aria-valuenow')).toBe('0');
+        expect(chart.getAttribute('aria-valuetext')).toContain('Completed: 1');
+        await fireEvent.keyDown(chart, { key: 'ArrowRight' });
+        expect(chart.getAttribute('aria-valuenow')).toBe('1');
+        expect(chart.getAttribute('aria-valuetext')).toContain('Completed: 0');
+    });
+
+    it('labels invitation acceptance without a redundant started series', () => {
+        // Act
+        render(ProductTourActivity, { end: '2026-02-01T00:00:00Z', interval: ProductTourUsageInterval.Month, tour: { ...tour, kind: ProductTourKind.Prompt } });
+
+        // Assert
+        expect(screen.getByLabelText('Period totals').textContent).toContain('Accepted');
+        expect(screen.getByLabelText('Period totals').textContent).not.toContain('Started');
+    });
     it('shows the chart without disclosures while preserving screen-reader access to values', () => {
         // Act
         render(ProductTourActivity, { end: '2026-02-01T00:00:00Z', interval: ProductTourUsageInterval.Month, start: '2026-01-01T00:00:00Z', tour });

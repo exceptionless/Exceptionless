@@ -15,13 +15,15 @@
     const currentMonth = getUtcMonthKey();
     let month = $state(untrack(() => (range.kind === 'month' ? range.month : currentMonth)));
     const label = $derived(
-        range.kind === 'history'
-            ? 'Available history'
-            : new Date(`${range.month}-01T00:00:00Z`).toLocaleDateString(undefined, {
-                  month: 'long',
-                  timeZone: 'UTC',
-                  year: 'numeric'
-              })
+        range.kind === 'days'
+            ? `Last ${range.days} days`
+            : range.kind === 'history'
+              ? 'Available history'
+              : new Date(`${range.month}-01T00:00:00Z`).toLocaleDateString(undefined, {
+                    month: 'long',
+                    timeZone: 'UTC',
+                    year: 'numeric'
+                })
     );
 
     function selectMonth(): void {
@@ -42,6 +44,17 @@
         {/snippet}
     </Popover.Trigger>
     <Popover.Content align="end" class="w-64">
+        <Button
+            class="mb-3 w-full"
+            variant="ghost"
+            onclick={() => {
+                range = {
+                    days: 30,
+                    kind: 'days'
+                };
+                open = false;
+            }}>Last 30 days</Button
+        >
         <form
             class="flex flex-col gap-3"
             onsubmit={(event) => {

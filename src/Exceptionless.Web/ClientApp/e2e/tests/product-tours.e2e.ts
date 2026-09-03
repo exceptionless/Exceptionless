@@ -412,6 +412,69 @@ async function expectProductTourSession(page: Page, present: boolean): Promise<v
     }
 }
 
+test('privacy opt-out preserves completion and storage denial keeps guides usable', async ({ e2eScenario, page }, testInfo) => {
+    // Arrange
+    const activities: { action: string; step?: string }[] = [];
+    const oversized = await page.request.post('/api/v2/users/me/product-tours/app-overview/activity', {
+        data: JSON.stringify({ action: 'started', source: 'catalog', version: 1 }) + ' '.repeat(2048),
+        headers: { Authorization: `Bearer ${e2eScenario.userToken}`, 'Content-Type': 'application/json' }
+    });
+    expect(oversized.status()).toBe(413);
+    page.on('request', (request) => {
+        if (request.method() === 'POST' && request.url().includes('/product-tours/app-overview/activity')) {
+            activities.push(request.postDataJSON());
+        }
+    });
+    await page.goto('/next/stack');
+    await startTourFromCommand(page, 'Explore Exceptionless');
+    const tour = page.locator('.driver-popover');
+    await expect(tour.getByText('Your workspace navigation')).toBeVisible();
+    await expect.poll(() => activities.filter((activity) => activity.step === 'navigation')).toHaveLength(1);
+    await tour.getByRole('button', { name: 'Continue' }).click();
+    await expect(tour.getByText('Use the command palette')).toBeVisible();
+    await tour.getByRole('button', { name: 'Back' }).click();
+    await expect(tour.getByText('Your workspace navigation')).toBeVisible();
+    expect(activities.filter((activity) => activity.step === 'navigation')).toHaveLength(1);
+    const dismissed = page.waitForResponse(isSuccessfulTourProgress('app-overview'));
+    await tour.getByRole('button', { name: 'End guide' }).click();
+    await dismissed;
+
+    // Act
+    await page.goto('/next/account/manage#guided-tour-privacy');
+    const preference = page.getByRole('switch', { name: 'Help improve guided tours' });
+    await expect(preference).toBeChecked();
+    const saved = page.waitForResponse((response) => response.url().endsWith('/users/me/product-tour-analytics') && response.status() === 204);
+    await preference.focus();
+    await page.keyboard.press('Space');
+    await saved;
+    await expect(preference).not.toBeChecked();
+    await page.screenshot({ path: testInfo.outputPath('guide-privacy.png') });
+    const before = activities.length;
+    await page.addInitScript(() =>
+        Object.defineProperty(window, 'sessionStorage', {
+            get() {
+                throw new DOMException('Storage denied', 'SecurityError');
+            }
+        })
+    );
+    await page.goto('/next/stack');
+    await startTourFromCommand(page, 'Explore Exceptionless');
+    for (const title of ['Your workspace navigation', 'Use the command palette', 'Find your saved views']) {
+        await expect(tour.getByText(title)).toBeVisible();
+        await tour.getByRole('button', { name: 'Continue' }).click();
+    }
+    await expect(tour.getByText('Find your next guide')).toBeVisible();
+    const completed = page.waitForResponse(isSuccessfulTourProgress('app-overview'));
+    await tour.getByRole('button', { name: 'Browse guides' }).click();
+    const response = await completed;
+
+    // Assert
+    expect(await response.json()).toMatchObject({ status: 1, version: 1 });
+    expect(activities).toHaveLength(before);
+    await expect(page.getByRole('dialog', { name: 'Guided Tours' })).toBeVisible();
+    expect(e2eScenario.email).toContain('@exceptionless.test');
+});
+
 function isSuccessfulTourProgress(tourName: string) {
     return (response: Response): boolean => {
         const path = new URL(response.url()).pathname;

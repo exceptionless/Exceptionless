@@ -19,7 +19,12 @@ public enum ProductTourUsageInterval
     Month
 }
 
-public sealed record ProductTourUsageBucket(ProductTourUsageSource Source, long Count, DateTime? LastUtc, IReadOnlyCollection<ProductTourUsagePeriod> Activity);
+public sealed record ProductTourUsageBucket(ProductTourUsageSource Source, long Count, DateTime? LastUtc, IReadOnlyCollection<ProductTourUsagePeriod> Activity)
+{
+    public IReadOnlyCollection<ProductTourStepCount> Steps { get; init; } = [];
+}
+
+public sealed record ProductTourStepCount(string Step, long Count);
 
 public sealed record ProductTourUsagePeriod(DateTime DateUtc, long Count);
 

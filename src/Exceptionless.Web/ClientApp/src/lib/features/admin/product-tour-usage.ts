@@ -2,6 +2,10 @@ import type { ProductTourActivity, ProductTourUsageInterval } from '$generated/a
 
 export type ProductTourUsageRange =
     | {
+          days: number;
+          kind: 'days';
+      }
+    | {
           kind: 'history';
       }
     | {
@@ -41,7 +45,10 @@ export function getProductTourActivity(
     return result;
 }
 
-export function getProductTourUsageParams(range: ProductTourUsageRange): Record<string, boolean | string> {
+export function getProductTourUsageParams(range: ProductTourUsageRange): Record<string, boolean | number | string> {
+    if (range.kind === 'days') {
+        return { days: range.days };
+    }
     if (range.kind === 'history') {
         return { history: true };
     }

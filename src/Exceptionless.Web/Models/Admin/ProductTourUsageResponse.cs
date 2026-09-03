@@ -7,7 +7,10 @@ public sealed record ProductTourUsageResponse(
     DateTime? UtcStart,
     DateTime UtcEnd,
     IReadOnlyCollection<ProductTourSummary> Tours,
-    ProductTourUsageInterval Interval);
+    ProductTourUsageInterval Interval)
+{
+    public bool CollectionAvailable { get; init; }
+}
 
 public sealed record ProductTourSummary(
     string Name,
@@ -19,7 +22,12 @@ public sealed record ProductTourSummary(
     long Dismissed,
     DateTime? LastRunUtc,
     IReadOnlyCollection<ProductTourStartSource> StartSources,
-    IReadOnlyCollection<ProductTourActivity> Activity);
+    IReadOnlyCollection<ProductTourActivity> Activity)
+{
+    public IReadOnlyCollection<ProductTourStepActivity> Steps { get; init; } = [];
+}
+
+public sealed record ProductTourStepActivity(string Step, long Reached, long Dismissed);
 
 public sealed record ProductTourStartSource(ProductTourLaunchSource Source, long Count);
 

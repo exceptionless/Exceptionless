@@ -4,6 +4,8 @@
     import Sparkles from '@lucide/svelte/icons/sparkles';
     import X from '@lucide/svelte/icons/x';
 
+    import ProductTourPrivacyLink from './product-tour-privacy-link.svelte';
+
     interface Props {
         busy?: boolean;
         hasAccess: boolean;
@@ -40,6 +42,7 @@
                 <Button disabled={busy} onclick={onStart} size="sm">{hasAccess ? 'See how it works' : 'View access options'}</Button>
                 <Button disabled={busy} onclick={onDismiss} size="sm" variant="outline">Dismiss</Button>
             </div>
+            <ProductTourPrivacyLink />
         </div>
     </Alert.Root>
 {/if}
