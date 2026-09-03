@@ -50,6 +50,8 @@ test('synthetic activity charts support keyboard, compact ranges, and light/dark
     await page.keyboard.press('ArrowRight');
     await expect(chart).toHaveAttribute('aria-valuenow', '1');
     await expect(chart).toHaveAttribute('aria-valuetext', /Started: 9/);
+    await expect(page.getByRole('tooltip')).toBeVisible();
+    await expect(page.getByRole('tooltip').getByText('9', { exact: true })).toBeVisible();
     await page.keyboard.press('Tab');
     await page.getByRole('button', { name: 'Steps and entry points' }).first().click();
     await expect(page.getByRole('list', { name: 'Guide entry points' })).toContainText('100%');
