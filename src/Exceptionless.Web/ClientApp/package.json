@@ -47,7 +47,7 @@
         "@sveltejs/kit": "^2.70.3",
         "@sveltejs/vite-plugin-svelte": "^7.3.0",
         "@tailwindcss/vite": "^4.3.3",
-        "@tanstack/eslint-plugin-query": "^5.102.3",
+        "@tanstack/eslint-plugin-query": "^5.102.7",
         "@testing-library/jest-dom": "^7.0.1",
         "@testing-library/svelte": "^5.4.2",
         "@types/eslint": "^9.6.1",
