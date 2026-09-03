@@ -427,13 +427,13 @@
                                 <Sidebar.MenuItem {...collapsibleProps}>
                                     <Collapsible.Trigger>
                                         {#snippet child({ props: triggerProps })}
-                                            <Sidebar.MenuButton {...triggerProps}>
+                                            <Sidebar.MenuButton {...triggerProps} class="group-has-data-[sidebar=menu-action]/menu-item:pr-14">
                                                 {#snippet child({ props: buttonProps })}
                                                     <button type="button" title={route.title} {...buttonProps}>
                                                         <Icon />
                                                         <span>{route.title}</span>
                                                         <ChevronRight
-                                                            class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
+                                                            class="absolute right-1 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
                                                         />
                                                     </button>
                                                 {/snippet}
@@ -444,6 +444,7 @@
                                         <Sidebar.MenuAction
                                             showOnHover
                                             aria-label={`Reorder ${route.title} views`}
+                                            class="right-7"
                                             title={`Reorder ${route.title} views`}
                                             onclick={(event) => openSavedViewOrderDialog(event, route)}
                                         >

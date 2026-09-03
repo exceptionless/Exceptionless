@@ -60,6 +60,7 @@
                 xScale={scaleUtc()}
                 yDomain={[0, Math.max(1, Math.max(...data.map((d) => Math.max(d.sessions, d.users))))]}
                 {series}
+                seriesLayout="overlap"
                 axis={false}
                 grid={false}
                 brush={{
