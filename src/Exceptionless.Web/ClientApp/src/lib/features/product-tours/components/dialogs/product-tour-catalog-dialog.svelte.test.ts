@@ -1,11 +1,17 @@
 import { ProductTourStatus } from '$features/users/models';
-import { fireEvent, render, screen } from '@testing-library/svelte';
-import { describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getProductTourItems } from '../../catalog';
 import ProductTourCatalogDialog from './product-tour-catalog-dialog.svelte';
 
 describe('ProductTourCatalogDialog', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(async () => {
+        cleanup();
+        await vi.runOnlyPendingTimersAsync();
+        vi.useRealTimers();
+    });
     it('distinguishes guides and preserves restart, continue, and unavailable actions', async () => {
         // Arrange
         const items = getProductTourItems(
@@ -48,7 +54,8 @@ describe('ProductTourCatalogDialog', () => {
         for (const item of items) {
             expect(screen.getByText(item.description)).toBeTruthy();
         }
-        expect(screen.queryAllByRole('link')).toHaveLength(0);
+        expect(screen.getByRole('link', { name: 'Usage settings' }).getAttribute('href')).toContain('/account/manage#guided-tour-privacy');
+        expect(screen.queryAllByRole('link')).toHaveLength(1);
         expect(screen.queryByText(/\d+ steps/)).toBeNull();
         expect(onStart).not.toHaveBeenCalled();
     });

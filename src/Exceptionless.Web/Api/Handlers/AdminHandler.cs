@@ -141,6 +141,11 @@ public class AdminHandler(
         if (message.History && message.Month.HasValue)
             return Result.Invalid(ValidationError.Create("month", "Month cannot be specified when requesting available history."));
 
+        if (message.Days.HasValue && (message.Days is < 1 or > 90 || message.History || message.Month.HasValue))
+        {
+            return Result.Invalid(ValidationError.Create("days", "Choose 1–90 days without month or history."));
+        }
+
         DateTime utcEnd = timeProvider.GetUtcNow().UtcDateTime;
         DateTime monthStart = (message.Month ?? utcEnd).ToUniversalTime().StartOfMonth();
         DateTime? utcStart = message.History
@@ -148,10 +153,16 @@ public class AdminHandler(
                 ? utcEnd.SubtractDays(appOptions.MaximumRetentionDays)
                 : null
             : monthStart;
-        if (!message.History)
+        if (message.Days.HasValue)
+        {
+            utcStart = utcEnd.Date.AddDays(1 - message.Days.Value);
+        }
+        else if (!message.History)
             utcEnd = monthStart.AddMonths(1);
 
-        var usage = await eventRepository.GetProductTourUsageAsync(appOptions.InternalProjectId, utcStart, utcEnd);
+        var project = await projectRepository.GetByIdAsync(appOptions.InternalProjectId, options => options.Cache());
+        var usage = await eventRepository.GetProductTourUsageAsync(appOptions.InternalProjectId, utcStart, utcEnd,
+            message.History ? ProductTourUsageInterval.Month : ProductTourUsageInterval.Day);
         var bucketsByTour = usage.Buckets
             .GroupBy(bucket => (bucket.Source.TourName, bucket.Source.Version))
             .ToDictionary(group => group.Key);
@@ -187,17 +198,29 @@ public class AdminHandler(
                             group.Where(period => period.Event == ProductTourTelemetryEvent.Started).Sum(period => period.Count),
                             group.Where(period => period.Event == ProductTourTelemetryEvent.Completed).Sum(period => period.Count),
                             group.Where(period => period.Event == ProductTourTelemetryEvent.Dismissed).Sum(period => period.Count)))
-                        .ToArray());
+                        .ToArray())
+                {
+                    Steps = buckets.SelectMany(bucket => bucket.Steps.Select(step => (step.Step, step.Count, bucket.Source.Event)))
+                        .GroupBy(step => step.Step, StringComparer.Ordinal)
+                        .OrderBy(group => group.Key, StringComparer.Ordinal)
+                        .Select(group => new ProductTourStepActivity(group.Key,
+                            group.Where(step => step.Event is ProductTourTelemetryEvent.StepReached).Sum(step => step.Count),
+                            group.Where(step => step.Event is ProductTourTelemetryEvent.Dismissed).Sum(step => step.Count)))
+                        .ToArray()
+                };
             }))
             .OrderBy(tour => tour.Name, StringComparer.Ordinal)
             .ThenBy(tour => tour.Version)
             .ToArray();
 
         return new ProductTourUsageResponse(
-            utcStart,
+            message.History ? usage.Buckets.SelectMany(bucket => bucket.Activity).Where(period => period.Count > 0).Select(period => (DateTime?)period.DateUtc).Min() : utcStart,
             utcEnd,
             tours,
-            usage.Interval);
+            usage.Interval)
+        {
+            CollectionAvailable = project is { IsDeleted: false }
+        };
     }
 
     [HandlerEndpoint(HandlerMethod.Get, "migrations", Group = "Admin")]

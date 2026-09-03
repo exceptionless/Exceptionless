@@ -26,9 +26,11 @@ public record ViewCurrentUser : ViewUser
         HasLocalAccount = !String.IsNullOrWhiteSpace(user.Password);
         OAuthAccounts = user.OAuthAccounts;
         ProductTours = new Dictionary<string, ProductTourProgress>(user.ProductTours, StringComparer.Ordinal);
+        ProductTourAnalyticsEnabled = user.ProductTourAnalyticsEnabled;
     }
 
     public string? Hash { get; set; }
+    public bool ProductTourAnalyticsEnabled { get; set; } = true;
     public bool HasLocalAccount { get; set; }
     public ICollection<OAuthAccount> OAuthAccounts { get; set; }
     public ICollection<UserOrganizationPreference> OrganizationPreferences { get; set; }

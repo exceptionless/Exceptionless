@@ -13,7 +13,8 @@
 
     import type { ProductTourCheckpoint, ProductTourContext, ProductTourLaunchSource, ProductTourListItem, ProductTourName } from '../types';
 
-    import { createProductTourActions, track } from '../actions.svelte';
+    import { createProductTourActions } from '../actions.svelte';
+    import { createProductTourActivity } from '../api.svelte';
     import { getProductTourItems, getRecommendedProductTourName } from '../catalog';
     import { shouldOfferProductTourAnnouncement, shouldOfferProductTourWelcome } from '../eligibility';
     import { productTourCheckpoint } from '../state.svelte';
@@ -73,6 +74,7 @@
     let attemptedProjectCompletion: ProductTourCheckpoint | undefined;
 
     const actions = createProductTourActions();
+    const track = createProductTourActivity();
     const progressMutation = putCurrentUserProductTour();
     const projectsQuery = getOrganizationProjectsQuery({
         route: {
@@ -173,7 +175,11 @@
         if (automaticSurfaceUserId !== currentUser.id) {
             automaticSurface = undefined;
             automaticSurfaceUserId = currentUser.id;
-            automaticSurfaceClaimed = sessionStorage.getItem(getAutomaticSurfaceKey(currentUser.id)) === 'shown';
+            try {
+                automaticSurfaceClaimed = sessionStorage.getItem(getAutomaticSurfaceKey(currentUser.id)) === 'shown';
+            } catch {
+                automaticSurfaceClaimed = false;
+            }
             welcomeHandled = false;
             return;
         }
@@ -276,8 +282,8 @@
             return;
         }
 
-        if (active && !(await actions.dismiss(active))) {
-            return;
+        if (active) {
+            productTourCheckpoint.clear(active);
         }
 
         closeOverlays();
@@ -324,7 +330,6 @@
         }
         welcomeHandled = true;
         automaticSurface = undefined;
-        void track('started', 'app-welcome', WELCOME_VERSION, 'welcome');
         void track('completed', 'app-welcome', WELCOME_VERSION, 'welcome');
         await startTour(recommended.name, 'welcome');
     }
@@ -353,7 +358,6 @@
             return;
         }
         automaticSurface = undefined;
-        void track('started', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
         void track('completed', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
         if (assistantAccess?.has_access) {
             await startTour('exie-overview', 'feature-announcement');
@@ -381,7 +385,11 @@
 
         automaticSurface = surface;
         automaticSurfaceClaimed = true;
-        sessionStorage.setItem(getAutomaticSurfaceKey(currentUser.id), 'shown');
+        try {
+            sessionStorage.setItem(getAutomaticSurfaceKey(currentUser.id), 'shown');
+        } catch {
+            // Keep the in-memory claim when browser storage is unavailable.
+        }
     }
 
     function getAutomaticSurfaceKey(userId: string): string {

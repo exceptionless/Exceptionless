@@ -449,6 +449,14 @@
               "type": "boolean",
               "default": false
             }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -4080,6 +4088,126 @@
           },
           "404": {
             "description": "The current user could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/users/me/product-tours/{tourName}/activity": {
+      "post": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Record optional guided-tour activity without identifying context",
+        "parameters": [
+          {
+            "name": "tourName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "maxLength": 64,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostProductTourActivity"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          },
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/users/me/product-tour-analytics": {
+      "put": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Update current user guided-tour analytics preference",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProductTourAnalytics"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -13258,6 +13386,51 @@
           }
         }
       },
+      "PostProductTourActivity": {
+        "required": [
+          "action",
+          "source",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          },
+          "action": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProductTourTelemetryEvent"
+              }
+            ]
+          },
+          "source": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProductTourLaunchSource"
+              }
+            ]
+          },
+          "step": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
       "PredefinedSavedViewDefinition": {
         "required": [
           "key",
@@ -13467,6 +13640,27 @@
           "Dismissed"
         ]
       },
+      "ProductTourStepActivity": {
+        "required": [
+          "step",
+          "reached",
+          "dismissed"
+        ],
+        "type": "object",
+        "properties": {
+          "step": {
+            "type": "string"
+          },
+          "reached": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dismissed": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "ProductTourSummary": {
         "required": [
           "name",
@@ -13478,7 +13672,8 @@
           "dismissed",
           "last_run_utc",
           "start_sources",
-          "activity"
+          "activity",
+          "steps"
         ],
         "type": "object",
         "properties": {
@@ -13526,8 +13721,24 @@
             "items": {
               "$ref": "#/components/schemas/ProductTourActivity"
             }
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductTourStepActivity"
+            }
           }
         }
+      },
+      "ProductTourTelemetryEvent": {
+        "enum": [
+          "completed",
+          "dismissed",
+          "shown",
+          "started",
+          "step-reached",
+          null
+        ]
       },
       "ProductTourUsageInterval": {
         "enum": [
@@ -13544,7 +13755,8 @@
           "utc_start",
           "utc_end",
           "tours",
-          "interval"
+          "interval",
+          "collection_available"
         ],
         "type": "object",
         "properties": {
@@ -13567,6 +13779,9 @@
           },
           "interval": {
             "$ref": "#/components/schemas/ProductTourUsageInterval"
+          },
+          "collection_available": {
+            "type": "boolean"
           }
         }
       },
@@ -13978,6 +14193,21 @@
           }
         }
       },
+      "UpdateProductTourAnalytics": {
+        "required": [
+          "enabled"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
       "UpdateProductTourProgress": {
         "required": [
           "status",
@@ -14233,6 +14463,7 @@
           "organization_preferences",
           "saved_view_orders",
           "product_tours",
+          "product_tour_analytics_enabled",
           "email_notifications_enabled",
           "is_email_address_verified",
           "verify_email_address_token_expiration",
@@ -14303,6 +14534,9 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/ProductTourProgress"
             }
+          },
+          "product_tour_analytics_enabled": {
+            "type": "boolean"
           },
           "full_name": {
             "type": "string",
@@ -14431,6 +14665,7 @@
       },
       "ViewCurrentUser": {
         "required": [
+          "product_tour_analytics_enabled",
           "has_local_account",
           "o_auth_accounts",
           "organization_preferences",
@@ -14453,6 +14688,9 @@
               "null",
               "string"
             ]
+          },
+          "product_tour_analytics_enabled": {
+            "type": "boolean"
           },
           "has_local_account": {
             "type": "boolean"

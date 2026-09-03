@@ -27,6 +27,7 @@ public record User : IIdentity, IHaveDates, IValidatableObject
     public ICollection<UserOrganizationPreference> OrganizationPreferences { get; init; } = new Collection<UserOrganizationPreference>();
     public ICollection<UserSavedViewOrderPreference> SavedViewOrders { get; init; } = new Collection<UserSavedViewOrderPreference>();
     public IDictionary<string, ProductTourProgress> ProductTours { get; init; } = new Dictionary<string, ProductTourProgress>(StringComparer.Ordinal);
+    public bool ProductTourAnalyticsEnabled { get; set; } = true;
 
     /// <summary>
     /// Gets or sets the users Full Name.

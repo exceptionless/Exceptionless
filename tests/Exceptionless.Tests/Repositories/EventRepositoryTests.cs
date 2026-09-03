@@ -37,6 +37,37 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetProductTourUsageAsync_StepsAcrossFebruary_PreservesCoalescedCountsWithDailyBuckets()
+    {
+        // Arrange
+        var start = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc);
+        await CreateDataAsync(builder =>
+        {
+            foreach (var action in new[] { ProductTourTelemetryEvent.StepReached, ProductTourTelemetryEvent.Dismissed })
+            {
+                builder.Event().Organization(TestConstants.OrganizationId).Project(_appOptions.InternalProjectId)
+                    .Type(Event.KnownTypes.FeatureUsage)
+                    .Source(ProductTours.CreateTelemetrySource(action, ProductTours.AppOverview, 1, ProductTourLaunchSource.Catalog))
+                    .Date(start.AddDays(28))
+                    .Mutate(ev => { ev.Count = 3; ev.Tags = [ProductTours.StepTagPrefix + "navigation"]; });
+            }
+        });
+
+        // Act
+        var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, start, start.AddDays(30), ProductTourUsageInterval.Day);
+
+        // Assert
+        Assert.Equal(ProductTourUsageInterval.Day, result.Interval);
+        Assert.Equal(2, result.Buckets.Count);
+        Assert.All(result.Buckets, bucket =>
+        {
+            Assert.Equal(3, bucket.Count);
+            Assert.Equal(new ProductTourStepCount("navigation", 3), Assert.Single(bucket.Steps));
+            Assert.Equal(start.AddDays(28), Assert.Single(bucket.Activity, period => period.Count > 0).DateUtc);
+        });
+    }
+
+    [Fact]
     public async Task GetProductTourUsageAsync_KnownSources_ReturnsPerTourAggregations()
     {
         // Arrange

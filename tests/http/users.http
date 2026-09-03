@@ -36,6 +36,27 @@ Content-Type: application/json
     "status": 1
 }
 
+### Record Optional Product Tour Activity (no identity or request context)
+POST {{apiUrl}}/users/me/product-tours/app-overview/activity
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "version": 1,
+    "action": "step-reached",
+    "source": "catalog",
+    "step": "navigation"
+}
+
+### Stop Future Product Tour Analytics (progress is unaffected)
+PUT {{apiUrl}}/users/me/product-tour-analytics
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "enabled": false
+}
+
 ### Get OAuth Grants
 GET {{apiUrl}}/users/me/oauth-grants
 Authorization: Bearer {{token}}

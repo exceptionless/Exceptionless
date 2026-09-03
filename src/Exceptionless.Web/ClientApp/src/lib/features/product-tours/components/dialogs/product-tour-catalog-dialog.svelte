@@ -11,6 +11,8 @@
 
     import type { ProductTourListItem, ProductTourName } from '../../types';
 
+    import ProductTourPrivacyLink from '../product-tour-privacy-link.svelte';
+
     interface Props {
         activeTourName?: ProductTourName;
         items: ProductTourListItem[];
@@ -73,5 +75,6 @@
                 </li>
             {/each}
         </ul>
+        <ProductTourPrivacyLink />
     </Dialog.Content>
 </Dialog.Root>

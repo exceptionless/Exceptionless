@@ -2726,6 +2726,34 @@
   },
   {
     "method": "PUT",
+    "route": "/api/v2/users/me/product-tour-analytics",
+    "displayName": "HTTP: PUT api/v2/users/me/product-tour-analytics",
+    "tags": [
+      "User"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "POST",
+    "route": "/api/v2/users/me/product-tours/{tourName:maxlength(64)}/activity",
+    "displayName": "HTTP: POST api/v2/users/me/product-tours/{tourName:maxlength(64)}/activity",
+    "tags": [
+      "User"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "PUT",
     "route": "/api/v2/users/me/product-tours/{tourName:regex(^[a-z0-9]\u002B(?:-[a-z0-9]\u002B)*$):maxlength(64)}",
     "displayName": "HTTP: PUT api/v2/users/me/product-tours/{tourName:regex(^[a-z0-9]\u002B(?:-[a-z0-9]\u002B)*$):maxlength(64)}",
     "tags": [

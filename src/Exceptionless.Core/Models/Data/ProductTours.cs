@@ -6,6 +6,16 @@ namespace Exceptionless.Core.Models.Data;
 
 public static class ProductTours
 {
+    public const string StepTagPrefix = "product-tour-step:";
+
+    public static FrozenDictionary<string, string[]> Steps { get; } = new Dictionary<string, string[]>(StringComparer.Ordinal)
+    {
+        [AppOverview] = ["navigation", "command-search", "saved-views", "exie", "help"],
+        [EventInvestigate] = ["filter-errors", "choose-error", "stack-summary", "stack-triage", "event-occurrence", "tab-overview", "filter-stack-events"],
+        [ExieOverview] = ["open-exie", "exie-context"],
+        [ProjectConfigure] = ["organization-name", "project-name", "choose-platform", "sdk-instructions", "wait-for-event", "event-received"],
+        [SavedViewCreate] = ["open-view-menu", "review-settings", "name-view", "private-view", "save-view", "view-created"]
+    }.ToFrozenDictionary(StringComparer.Ordinal);
     public const string AppOverview = "app-overview";
     public const string AppWelcome = "app-welcome";
     public const string ExieAnnouncement = "exie-announcement";
@@ -47,6 +57,7 @@ public static class ProductTours
         ProductTourTelemetryEvent.Dismissed => "dismissed",
         ProductTourTelemetryEvent.Shown => "shown",
         ProductTourTelemetryEvent.Started => "started",
+        ProductTourTelemetryEvent.StepReached => "step-reached",
         _ => throw new ArgumentOutOfRangeException(nameof(telemetryEvent), telemetryEvent, "Unknown product tour telemetry event.")
     };
 
@@ -88,7 +99,10 @@ public enum ProductTourTelemetryEvent
     Shown,
     [JsonStringEnumMemberName("started")]
     [EnumMember(Value = "started")]
-    Started
+    Started,
+    [JsonStringEnumMemberName("step-reached")]
+    [EnumMember(Value = "step-reached")]
+    StepReached
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter))]

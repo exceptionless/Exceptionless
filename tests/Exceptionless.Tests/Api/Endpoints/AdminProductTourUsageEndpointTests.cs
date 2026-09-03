@@ -117,7 +117,7 @@ public sealed class AdminProductTourUsageEndpointTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(response);
-        Assert.Equal(now.SubtractDays(_appOptions.MaximumRetentionDays), response.UtcStart);
+        Assert.Equal(retainedEvent.StartOfMonth(), response.UtcStart);
         Assert.Equal(now, response.UtcEnd);
         Assert.Equal(ProductTourUsageInterval.Month, response.Interval);
         var overview = Assert.Single(response.Tours, tour => String.Equals(tour.Name, ProductTours.AppOverview, StringComparison.Ordinal));
@@ -134,6 +134,45 @@ public sealed class AdminProductTourUsageEndpointTests : IntegrationTestsBase
             .QueryString("month", "2026-08-01")
             .QueryString("history", "true")
             .StatusCodeShouldBeUnprocessableEntity());
+    }
+
+    [Fact]
+    public async Task GetProductTourUsageAsync_RollingDaysAcrossFebruary_UsesDailyUtcBoundaries()
+    {
+        // Arrange
+        var now = new DateTime(2026, 3, 2, 12, 30, 0, DateTimeKind.Utc);
+        TimeProvider.SetUtcNow(now);
+        var start = now.Date.AddDays(-29);
+        var source = ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Started, ProductTours.AppOverview, 1, ProductTourLaunchSource.Catalog);
+        await CreateDataAsync(builder =>
+        {
+            AddUsage(builder, source, start.AddTicks(-1), "outside");
+            AddUsage(builder, source, start, "boundary");
+            AddUsage(builder, source, now.AddMinutes(-1), "today");
+        });
+
+        // Act
+        var response = await SendRequestAsAsync<ProductTourUsageResponse>(request => request.AsGlobalAdminUser()
+            .AppendPaths("admin", "product-tour-usage").QueryString("days", "30").StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(response);
+        Assert.Equal(start, response.UtcStart);
+        Assert.Equal(now, response.UtcEnd);
+        Assert.Equal(ProductTourUsageInterval.Day, response.Interval);
+        Assert.False(response.CollectionAvailable);
+        Assert.Equal(2, Assert.Single(response.Tours, tour => String.Equals(tour.Name, ProductTours.AppOverview, StringComparison.Ordinal)).Started);
+    }
+
+    [Theory]
+    [InlineData("0", "false")]
+    [InlineData("91", "false")]
+    [InlineData("30", "true")]
+    public Task GetProductTourUsageAsync_InvalidRollingRange_ReturnsValidationProblem(string days, string history)
+    {
+        // Act & Assert
+        return SendRequestAsync(request => request.AsGlobalAdminUser().AppendPaths("admin", "product-tour-usage")
+            .QueryString("days", days).QueryString("history", history).StatusCodeShouldBeUnprocessableEntity());
     }
 
     [Fact]

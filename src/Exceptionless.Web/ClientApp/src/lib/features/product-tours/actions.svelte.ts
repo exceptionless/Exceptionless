@@ -1,13 +1,12 @@
-import { submitFeatureUsage } from '$features/auth/exceptionless-session';
 import { putCurrentUserProductTour } from '$features/users/api.svelte';
 import { ProductTourStatus } from '$features/users/models';
 import { toast } from 'svelte-sonner';
 
-import type { ProductTourCheckpoint, ProductTourKey, ProductTourLaunchSource } from './types';
+import type { ProductTourCheckpoint } from './types';
 
+import { createProductTourActivity } from './api.svelte';
 import { tryUseProductTourControls } from './controls.svelte';
 import { productTourCheckpoint } from './state.svelte';
-import { buildProductTourTelemetryEvent, type ProductTourTelemetryEvent } from './telemetry';
 
 const COMPLETION_MESSAGES: Record<Exclude<ProductTourCheckpoint['tourName'], 'app-overview'>, string> = {
     'event-investigate': 'You’ve explored an error and its occurrences',
@@ -21,8 +20,12 @@ const domainCompletionRequests = new WeakSet<ProductTourCheckpoint>();
 export function createProductTourActions() {
     const controls = tryUseProductTourControls();
     const progressMutation = putCurrentUserProductTour();
+    const track = createProductTourActivity();
 
     async function complete(checkpoint: ProductTourCheckpoint): Promise<boolean> {
+        if (productTourCheckpoint.markReached(checkpoint)) {
+            void track('step-reached', checkpoint.tourName, checkpoint.version, checkpoint.source, checkpoint.checkpointName);
+        }
         return finish(checkpoint, ProductTourStatus.Completed);
     }
 
@@ -36,6 +39,9 @@ export function createProductTourActions() {
         }
 
         domainCompletionRequests.add(checkpoint);
+        if (productTourCheckpoint.markReached(checkpoint)) {
+            void track('step-reached', checkpoint.tourName, checkpoint.version, checkpoint.source, checkpoint.checkpointName);
+        }
         void progressMutation
             .mutateAsync({
                 progress: {
@@ -75,7 +81,13 @@ export function createProductTourActions() {
         if (!productTourCheckpoint.clear(checkpoint)) {
             return false;
         }
-        void track(status === ProductTourStatus.Completed ? 'completed' : 'dismissed', checkpoint.tourName, checkpoint.version, checkpoint.source);
+        void track(
+            status === ProductTourStatus.Completed ? 'completed' : 'dismissed',
+            checkpoint.tourName,
+            checkpoint.version,
+            checkpoint.source,
+            checkpoint.checkpointName
+        );
         if (status === ProductTourStatus.Completed) {
             showCompletion(checkpoint);
         }
@@ -102,12 +114,4 @@ export function createProductTourActions() {
         completeAfterDomainSuccess,
         dismiss
     };
-}
-
-export async function track(event: ProductTourTelemetryEvent, name: ProductTourKey, version: number, source: ProductTourLaunchSource): Promise<void> {
-    try {
-        await submitFeatureUsage(buildProductTourTelemetryEvent(event, name, version, source));
-    } catch (error) {
-        console.warn('Unable to submit product tour telemetry.', error);
-    }
 }

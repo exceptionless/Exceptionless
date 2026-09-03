@@ -4,6 +4,7 @@
 
     import TimeAgo from '$comp/formatters/time-ago.svelte';
     import { Muted } from '$comp/typography';
+    import * as Alert from '$comp/ui/alert';
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import { Skeleton } from '$comp/ui/skeleton';
@@ -14,7 +15,8 @@
     import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 
     let range = $state<ProductTourUsageRange>({
-        kind: 'history'
+        days: 30,
+        kind: 'days'
     });
     const usageQuery = getAdminProductTourUsageQuery(() => range);
     const usage = $derived(usageQuery.data);
@@ -41,7 +43,7 @@
     }
 </script>
 
-<div class="flex flex-col gap-6">
+<div class="@container flex flex-col gap-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <Muted>Guide activity · {range.kind === 'history' ? 'Monthly' : 'Daily'} · UTC</Muted>
         <div class="flex items-center gap-2" aria-label="Usage filters">
@@ -52,6 +54,15 @@
         </div>
     </div>
 
+    {#if usage && !usage.collection_available}
+        <Alert.Root>
+            <Alert.Title>Guide activity collection is unavailable</Alert.Title>
+            <Alert.Description
+                >The internal storage project is unavailable. Guides and saved progress still work; the charts show previously recorded activity.</Alert.Description
+            >
+        </Alert.Root>
+    {/if}
+
     {#if usageQuery.isError}
         <Card.Root>
             <Card.Content class="pt-6">
@@ -60,7 +71,7 @@
             </Card.Content>
         </Card.Root>
     {:else if usageQuery.isPending}
-        <div class="grid gap-4 lg:grid-cols-2">
+        <div class="grid gap-4 @3xl:grid-cols-2">
             {#each [0, 1, 2, 3] as index (index)}
                 <Skeleton class="h-56 rounded-xl" aria-label={`Loading guide activity ${index + 1}`} />
             {/each}
@@ -79,7 +90,7 @@
 </div>
 
 {#snippet TourCards(tours: ProductTourSummary[])}
-    <div class="grid gap-4 lg:grid-cols-2">
+    <div class="grid gap-4 @3xl:grid-cols-2">
         {#each tours as tour (`${tour.name}:${tour.version}`)}
             <Card.Root aria-label={`${title(tour.name)} usage`}>
                 <Card.Header class="flex flex-row flex-wrap items-center justify-between gap-x-3 gap-y-1">
