@@ -4,7 +4,7 @@ import { E2E_TEST_PASSWORD, expect, test } from '../fixtures/e2e-test';
 import { seedRepresentativeEvent } from '../support/event-data';
 import { createRepresentativeEvent } from '../support/synthetic-event';
 
-test.use({ actionTimeout: 15_000, e2eUseGeneratedUser: true });
+test.use({ actionTimeout: 15_000, e2eUseInvitedUser: true });
 
 test.describe('first-run welcome', () => {
     test.use({ e2eDismissProductTourWelcome: false });
@@ -212,6 +212,9 @@ test.describe('shell and identity checkpoints', () => {
 
 test('project guide preserves the current SDK selection', async ({ e2eScenario, page }) => {
     // Arrange
+    await page.route('**/api/v2/organizations/*/projects*', async (route) => {
+        await route.fulfill({ json: [] });
+    });
     await page.goto(`/next/project/${e2eScenario.projectId}/configure?type=dotnet-legacy-mvc`);
     await expect(page.locator('[data-tour="project-configure-platform"]')).toContainText('ASP.NET MVC');
 
@@ -250,33 +253,33 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
 
         expect(projectId).toBeTruthy();
 
-        await page.locator('[data-tour="project-configure-platform"]').click();
-        await page.getByRole('option', { name: 'Browser applications' }).click();
-        await expect(page.getByText('Waiting for your first event')).toBeVisible();
-        await expect(page.locator('.driver-popover')).toHaveCount(0);
-        await expect(page.locator('.driver-overlay')).toHaveCount(0);
-        await expect(page.locator('[data-tour="project-sdk-instructions"]')).toBeVisible();
-        await expect(page.getByRole('button', { exact: true, name: 'End guide' })).toBeVisible();
-
-        const instructionButtons = page.locator('[data-tour="project-sdk-instructions"]').getByRole('button');
-        const reachedButtons = new Set<number>();
-        await page.locator('[data-tour="project-configure-platform"]').focus();
-        for (let tab = 0; tab < 40 && reachedButtons.size < (await instructionButtons.count()); tab++) {
-            await page.keyboard.press('Tab');
-            const focusedIndex = await instructionButtons.evaluateAll((buttons) => buttons.indexOf(document.activeElement as HTMLButtonElement));
-            if (focusedIndex >= 0) {
-                reachedButtons.add(focusedIndex);
-            }
-        }
-        expect(reachedButtons.size).toBe(await instructionButtons.count());
-
-        let projectProgressRequests = 0;
         const projectProgressRoute = (url: URL) => url.pathname === '/api/v2/users/me/product-tours/project-configure';
-        await page.route(projectProgressRoute, async (route) => {
-            projectProgressRequests += 1;
-            await route.fulfill({ json: { title: 'Injected progress failure' }, status: 500 });
-        });
         try {
+            await page.locator('[data-tour="project-configure-platform"]').click();
+            await page.getByRole('option', { name: 'Browser applications' }).click();
+            await expect(page.getByText('Waiting for your first event')).toBeVisible();
+            await expect(page.locator('.driver-popover')).toHaveCount(0);
+            await expect(page.locator('.driver-overlay')).toHaveCount(0);
+            await expect(page.locator('[data-tour="project-sdk-instructions"]')).toBeVisible();
+            await expect(page.getByRole('button', { exact: true, name: 'End guide' })).toBeVisible();
+
+            const instructionButtons = page.locator('[data-tour="project-sdk-instructions"]').getByRole('button');
+            const reachedButtons = new Set<number>();
+            await page.locator('[data-tour="project-configure-platform"]').focus();
+            for (let tab = 0; tab < 40 && reachedButtons.size < (await instructionButtons.count()); tab++) {
+                const focusedIndex = await instructionButtons.evaluateAll((buttons) => buttons.indexOf(document.activeElement as HTMLButtonElement));
+                if (focusedIndex >= 0) {
+                    reachedButtons.add(focusedIndex);
+                }
+                await page.keyboard.press('Tab');
+            }
+            expect(reachedButtons.size).toBe(await instructionButtons.count());
+
+            let projectProgressRequests = 0;
+            await page.route(projectProgressRoute, async (route) => {
+                projectProgressRequests += 1;
+                await route.fulfill({ json: { title: 'Injected progress failure' }, status: 500 });
+            });
             const token = await e2eApi.getProjectDefaultToken(e2eScenario.userToken, projectId!);
             await e2eApi.submitEvent(
                 projectId!,

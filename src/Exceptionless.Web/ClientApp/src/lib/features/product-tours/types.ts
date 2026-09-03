@@ -30,6 +30,7 @@ export type ProductTourCheckpointName<Name extends ProductTourName = ProductTour
 export interface ProductTourContext {
     assistantAccess?: AssistantAccess;
     errorEventAvailability: 'available' | 'empty' | 'error' | 'loading';
+    isProjectConfigurePage: boolean;
     isSetupPage: boolean;
     organizationId?: string;
     pathname: string;

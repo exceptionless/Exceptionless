@@ -4,6 +4,7 @@
 
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
+    import { page } from '$app/state';
     import { getOrganizationEventsQuery } from '$features/events/api.svelte';
     import { getOrganizationProjectsQuery } from '$features/projects/api.svelte';
     import { putCurrentUserProductTour } from '$features/users/api.svelte';
@@ -84,16 +85,7 @@
         }
     });
     const projects = $derived(projectsQuery.data?.data ?? []);
-    const projectConfigurePage = $derived(
-        projects.some(
-            (project) =>
-                project.id &&
-                pathname ===
-                    resolve('/(app)/project/[projectId]/configure', {
-                        projectId: project.id
-                    })
-        )
-    );
+    const projectConfigurePage = $derived(page.route.id === '/(app)/project/[projectId]/configure');
     const errorEventsQuery = getOrganizationEventsQuery({
         enabled: () => checkErrorAvailability,
         params: {
@@ -121,6 +113,7 @@
     const context = $derived<ProductTourContext>({
         assistantAccess,
         errorEventAvailability,
+        isProjectConfigurePage: projectConfigurePage,
         isSetupPage,
         organizationId,
         pathname,

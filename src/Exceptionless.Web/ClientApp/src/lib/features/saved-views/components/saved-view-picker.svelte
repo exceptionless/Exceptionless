@@ -287,7 +287,9 @@
             const result = await createMutation.mutateAsync(body);
             isSaveDialogOpen = false;
             onLoadView(result);
-            void tour?.created();
+            if (tour) {
+                await tour.created();
+            }
             toast.success(`Saved view "${result.name}" created.`);
         } catch (error) {
             toast.error(getErrorMessage(error, 'Failed to save view. Please try again.'));
