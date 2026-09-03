@@ -65,13 +65,15 @@
                 {series}
                 yDomain={[0, null]}
                 padding={{
-                    bottom: 48,
+                    bottom: 20,
                     left: 32,
                     right: 32,
-                    top: 8
+                    top: prompt ? 48 : 32
                 }}
                 axis
-                legend
+                legend={{
+                    placement: 'top-left'
+                }}
                 props={{
                     xAxis: {
                         format: dateLabel,
@@ -85,8 +87,10 @@
             >
                 {#snippet marks({ context })}
                     {#each context.series.visibleSeries as item (item.key)}
-                        <Spline seriesKey={item.key} curve={curveLinear} strokeWidth={2} />
-                        <Points seriesKey={item.key} r={3} fill={item.color} />
+                        <Spline seriesKey={item.key} curve={curveLinear} strokeWidth={1.5} />
+                        {#if data.length === 1}
+                            <Points seriesKey={item.key} r={3} fill={item.color} />
+                        {/if}
                     {/each}
                 {/snippet}
                 {#snippet tooltip()}<Chart.Tooltip labelFormatter={dateLabel} indicator="line" />{/snippet}
