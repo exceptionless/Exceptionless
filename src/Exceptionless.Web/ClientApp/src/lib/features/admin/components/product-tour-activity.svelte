@@ -2,9 +2,7 @@
     import type { ProductTourSummary, ProductTourUsageInterval } from '$generated/api';
 
     import Number from '$comp/formatters/number.svelte';
-    import { Button } from '$comp/ui/button';
     import * as Chart from '$comp/ui/chart';
-    import * as Popover from '$comp/ui/popover';
     import * as Table from '$comp/ui/table';
     import { scaleUtc } from 'd3-scale';
     import { curveLinear } from 'd3-shape';
@@ -42,9 +40,6 @@
         }))
     );
     const total = $derived(tour.shown + tour.started + tour.completed + tour.dismissed);
-    const commonExit = $derived(
-        tour.steps?.filter((step) => step.dismissed > 0).toSorted((a, b) => b.dismissed - a.dismissed || a.step.localeCompare(b.step))[0]
-    );
     let context = $state<ChartState>();
     let keyboardIndex = $state<number>();
     const selectedIndex = $derived(Math.max(0, Math.min(keyboardIndex ?? data.length - 1, data.length - 1)));
@@ -123,7 +118,7 @@
                 {series}
                 yDomain={[0, null]}
                 padding={{
-                    bottom: 20,
+                    bottom: 36,
                     left: 32,
                     right: 32,
                     top: 8
@@ -133,10 +128,16 @@
                 props={{
                     xAxis: {
                         format: dateLabel,
+                        tickLabelProps: {
+                            dy: 20
+                        },
                         ticks: data.filter((_, index) => index % Math.max(1, Math.ceil((data.length - 1) / 4)) === 0).map((period) => period.date)
                     },
                     yAxis: {
                         format: (value) => String(value),
+                        tickLabelProps: {
+                            dx: -8
+                        },
                         ticks: (scale) => scale.ticks?.(3).filter((value: number) => globalThis.Number.isInteger(value))
                     }
                 }}
@@ -152,40 +153,6 @@
                 {#snippet tooltip()}<Chart.Tooltip role="tooltip" labelFormatter={dateLabel} indicator="line" />{/snippet}
             </LineChart>
         </Chart.Container>
-        {#if commonExit}
-            <p class="text-muted-foreground text-xs">Most common exit: {commonExit.step.replaceAll('-', ' ')} · <Number value={commonExit.dismissed} /></p>
-        {/if}
-        {#if !prompt && (tour.steps?.length || tour.start_sources.length)}
-            <Popover.Root>
-                <Popover.Trigger>
-                    {#snippet child({ props })}
-                        <Button {...props} variant="ghost" size="sm" class="text-muted-foreground w-fit">Steps and entry points</Button>
-                    {/snippet}
-                </Popover.Trigger>
-                <Popover.Content align="start" class="max-h-80 overflow-y-auto text-sm">
-                    {#if tour.steps?.length}
-                        <h3 class="mb-2 font-medium">Steps reached · exits</h3>
-                        <ul class="space-y-1" aria-label="Guide steps reached and explicit exits">
-                            {#each tour.steps as step (step.step)}
-                                <li>
-                                    {step.step.replaceAll('-', ' ')}: <Number value={step.reached} /> reached; <Number value={step.dismissed} /> closed here.
-                                </li>
-                            {/each}
-                        </ul>
-                    {/if}
-                    {#if tour.start_sources.length}
-                        <h3 class="mt-3 mb-2 font-medium">Share of starts</h3>
-                        <ul class="space-y-1" aria-label="Guide entry points">
-                            {#each tour.start_sources as source (source.source)}
-                                <li>
-                                    {source.source.replaceAll('-', ' ')}: <Number value={source.count} /> ({Math.round((source.count / tour.started) * 100)}%)
-                                </li>
-                            {/each}
-                        </ul>
-                    {/if}
-                </Popover.Content>
-            </Popover.Root>
-        {/if}
         <div class="sr-only">
             <p id={keyboardHelpId}>Use Left and Right arrows to inspect dates, or Home and End to jump to the first and last date. Dates are UTC.</p>
             <Table.Root aria-label="Guide activity by date">
