@@ -9,6 +9,7 @@
     import * as Card from '$comp/ui/card';
     import { Skeleton } from '$comp/ui/skeleton';
     import { getAdminProductTourUsageQuery } from '$features/admin/api.svelte';
+    import ProductTourActivityInfo from '$features/admin/components/product-tour-activity-info.svelte';
     import ProductTourActivity from '$features/admin/components/product-tour-activity.svelte';
     import ProductTourPeriod from '$features/admin/components/product-tour-period.svelte';
     import { productTourCatalog } from '$features/product-tours/catalog';
@@ -94,7 +95,10 @@
         {#each tours as tour (`${tour.name}:${tour.version}`)}
             <Card.Root aria-label={`${title(tour.name)} usage`}>
                 <Card.Header class="flex flex-row flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                    <Card.Title>{title(tour.name)} <span class="text-muted-foreground text-xs font-normal">v{tour.version}</span></Card.Title>
+                    <div class="flex items-center gap-1">
+                        <Card.Title>{title(tour.name)} <span class="text-muted-foreground text-xs font-normal">v{tour.version}</span></Card.Title>
+                        <ProductTourActivityInfo {tour} title={title(tour.name)} />
+                    </div>
                     {#if tour.last_run_utc}
                         <Card.Description class="whitespace-nowrap">Last event <TimeAgo value={tour.last_run_utc} /></Card.Description>
                     {/if}

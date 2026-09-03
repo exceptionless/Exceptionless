@@ -53,9 +53,16 @@ test('synthetic activity charts support keyboard, compact ranges, and light/dark
     await expect(page.getByRole('tooltip')).toBeVisible();
     await expect(page.getByRole('tooltip').getByText('9', { exact: true })).toBeVisible();
     await page.keyboard.press('Tab');
-    await page.getByRole('button', { name: 'Steps and entry points' }).first().click();
-    await expect(page.getByRole('list', { name: 'Guide entry points' })).toContainText('100%');
+    await expect(page.getByText('Most common exit:', { exact: false })).not.toBeVisible();
+    await expect(page.getByRole('button', { name: 'Steps and entry points' })).toHaveCount(0);
+    const details = page.getByRole('button', { name: 'Explore Exceptionless activity details' });
+    await details.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('dialog', { exact: true, name: 'Explore Exceptionless' })).toBeVisible();
+    await expect(page.getByRole('list', { name: 'Guide entry points' })).toContainText('100.0%');
+    await expect(page.getByText('Most common exit: navigation')).toBeVisible();
     await page.keyboard.press('Escape');
+    await expect(details).toBeFocused();
     await page.getByRole('button', { name: 'Usage period: Last 30 days' }).click();
     await page.getByRole('button', { exact: true, name: 'Available history' }).click();
     await expect(page.getByRole('button', { name: 'Usage period: Available history' })).toBeVisible();
@@ -79,7 +86,31 @@ test('synthetic activity charts support keyboard, compact ranges, and light/dark
             document.documentElement.classList.toggle('light', theme === 'light');
         }, theme);
         await expect(chart).toBeVisible();
+        await expect
+            .poll(async () => {
+                const labels = await chart.locator('.lc-axis-tick-label').evaluateAll((elements) =>
+                    elements.map((element) => ({
+                        bounds: element.getBoundingClientRect().toJSON(),
+                        text: element.textContent
+                    }))
+                );
+                const zero = labels.find((label) => label.text === '0');
+                const firstDate = labels.find((label) => label.text?.match(/[A-Za-z]/));
+                return zero && firstDate ? firstDate.bounds.top - zero.bounds.bottom : 0;
+            })
+            .toBeGreaterThanOrEqual(6);
         await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
         await page.screenshot({ animations: 'disabled', path: testInfo.outputPath(`synthetic-chart-${theme}-${width}.png`) });
+        await details.click();
+        const popover = page.getByRole('dialog', { exact: true, name: 'Explore Exceptionless' });
+        await expect(popover).toBeVisible();
+        await expect
+            .poll(async () => {
+                const bounds = await popover.boundingBox();
+                return bounds !== null && bounds.x >= 16 && bounds.x + bounds.width <= width - 16;
+            })
+            .toBe(true);
+        await page.screenshot({ animations: 'disabled', path: testInfo.outputPath(`synthetic-details-${theme}-${width}.png`) });
+        await page.keyboard.press('Escape');
     }
 });
