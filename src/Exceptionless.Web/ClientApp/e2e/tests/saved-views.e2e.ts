@@ -140,7 +140,13 @@ test('saved view navigation order is personal, persistent, and resettable', asyn
     await expect(privateViewLink).toBeVisible();
     await expectSavedViewBefore(sharedViewLink, privateViewLink);
 
-    await privateViewLink.locator('..').dragTo(sharedViewLink.locator('..'));
+    await sharedViewLink.click();
+    await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(savedViewSlug(sharedViewName))}(?:[?#]|$)`));
+    await page.goto('/next/event');
+    await expect(privateViewLink).toBeVisible({ timeout: 30_000 });
+
+    await expect(privateViewLink).toHaveAttribute('draggable', 'true');
+    await privateViewLink.dragTo(sharedViewLink);
     await expect(page.getByText('Events view order saved.')).toBeVisible();
     await expectSavedViewBefore(privateViewLink, sharedViewLink);
 

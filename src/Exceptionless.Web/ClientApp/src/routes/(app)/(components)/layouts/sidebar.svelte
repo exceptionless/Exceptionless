@@ -11,7 +11,6 @@
     import SavedViewOrderDialog from '$features/saved-views/components/saved-view-order-dialog.svelte';
     import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
-    import GripVertical from '@lucide/svelte/icons/grip-vertical';
     import Settings from '@lucide/svelte/icons/settings-2';
     import Wrench from '@lucide/svelte/icons/wrench';
     import { onDestroy } from 'svelte';
@@ -456,21 +455,13 @@
                                         <Sidebar.MenuSub>
                                             {#each getOrderedRouteChildren(route) as savedItem (savedItem.href)}
                                                 <Sidebar.MenuSubItem
-                                                    class={[
-                                                        savedItem.savedView &&
-                                                            'group/saved-view [&_[data-sidebar=menu-sub-button]]:cursor-grab [&_[data-sidebar=menu-sub-button]]:active:cursor-grabbing',
-                                                        draggedSavedView?.savedViewId === savedItem.savedView?.id && 'opacity-50'
-                                                    ]}
+                                                    class={draggedSavedView?.savedViewId === savedItem.savedView?.id ? 'opacity-50' : undefined}
                                                     data-saved-view-id={savedItem.savedView?.id}
-                                                    draggable={!!savedItem.savedView && savingSavedViewOrderType !== route.view}
-                                                    ondragstart={(event) =>
-                                                        savedItem.savedView && handleSavedViewDragStart(event, route, savedItem.savedView.id)}
                                                     ondragover={(event) => savedItem.savedView && handleSavedViewDragOver(event, route, savedItem.savedView.id)}
                                                     ondrop={(event) => {
                                                         event.preventDefault();
                                                         void persistDraggedSavedViewOrder(route);
                                                     }}
-                                                    ondragend={() => handleSavedViewDragEnd(route)}
                                                 >
                                                     <Sidebar.MenuSubButton isActive={isChildItemActive(savedItem, route.href)}>
                                                         {#snippet child({ props: subProps })}
@@ -479,12 +470,12 @@
                                                                 href={savedItem.href}
                                                                 title={savedItem.title}
                                                                 onclick={onMenuClick}
-                                                                draggable={savedItem.savedView ? false : undefined}
+                                                                draggable={!!savedItem.savedView && savingSavedViewOrderType !== route.view}
+                                                                ondragstart={(event) =>
+                                                                    savedItem.savedView && handleSavedViewDragStart(event, route, savedItem.savedView.id)}
+                                                                ondragend={() => handleSavedViewDragEnd(route)}
                                                                 {...subProps}
                                                             >
-                                                                {#if savedItem.savedView}
-                                                                    <GripVertical class="text-muted-foreground/60" aria-hidden="true" />
-                                                                {/if}
                                                                 <span class="truncate">{savedItem.title}</span>
                                                             </A>
                                                         {/snippet}
