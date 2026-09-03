@@ -274,7 +274,6 @@ public class StackHandler(
             .Project(stack.ProjectId)
             .Tag("Promote")
             .Identity(currentUser.EmailAddress)
-            .Property("User", currentUser)
             .SetHttpContext(httpContext));
 
         var project = await GetProjectAsync(stack.ProjectId, httpContext);
@@ -335,7 +334,7 @@ public class StackHandler(
         foreach (var projectStacks in list.GroupBy(ev => ev.ProjectId))
         {
             var stack = projectStacks.First();
-            using var _ = _logger.BeginScope(new ExceptionlessState().Organization(stack.OrganizationId).Project(stack.ProjectId).Tag("Delete").Identity(currentUser.EmailAddress).Property("User", currentUser).SetHttpContext(httpContext));
+            using var _ = _logger.BeginScope(new ExceptionlessState().Organization(stack.OrganizationId).Project(stack.ProjectId).Tag("Delete").Identity(currentUser.EmailAddress).SetHttpContext(httpContext));
             _logger.LogInformation("User {User} deleted {RemovedCount} stacks in project ({ProjectId})", currentUser.Id, projectStacks.Count(), stack.ProjectId);
         }
 
@@ -425,7 +424,7 @@ public class StackHandler(
         catch (ApplicationException ex)
         {
             var currentUser = httpContext.Request.GetUser();
-            using (_logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Page = page, Limit = limit }).Tag("Search").Identity(currentUser?.EmailAddress).Property("User", currentUser).SetHttpContext(httpContext)))
+            using (_logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Page = page, Limit = limit }).Tag("Search").Identity(currentUser?.EmailAddress).SetHttpContext(httpContext)))
                 _logger.LogError(ex, "An error has occurred. Please check your search filter");
 
             throw;

@@ -203,8 +203,7 @@ public class OrganizationHandler(
         if (!options.StripeOptions.EnableBilling)
             return Result.NotFound("Organization not found.");
 
-        using var _ = _logger.BeginScope(new ExceptionlessState().Tag("Invoice").Identity(GetCurrentUser(message.Context).EmailAddress)
-            .Property("User", GetCurrentUser(message.Context)).SetHttpContext(message.Context));
+        using var _ = _logger.BeginScope(new ExceptionlessState().Tag("Invoice").Identity(GetCurrentUser(message.Context).EmailAddress).SetHttpContext(message.Context));
 
         string invoiceId = message.Id;
         if (!invoiceId.StartsWith("in_", StringComparison.Ordinal))
@@ -357,7 +356,7 @@ public class OrganizationHandler(
             return Result.NotFound("Organization not found.");
 
         using var _ = _logger.BeginScope(new ExceptionlessState().Tag("Change Plan").Organization(message.Id)
-            .Identity(GetCurrentUser(message.Context).EmailAddress).Property("User", GetCurrentUser(message.Context)).SetHttpContext(message.Context));
+            .Identity(GetCurrentUser(message.Context).EmailAddress).SetHttpContext(message.Context));
 
         if (!options.StripeOptions.EnableBilling)
             return Result.NotFound("Organization not found.");
@@ -880,7 +879,7 @@ public class OrganizationHandler(
         var user = GetCurrentUser(httpContext);
         foreach (var organization in organizations)
         {
-            using var _ = _logger.BeginScope(new ExceptionlessState().Organization(organization.Id).Tag("Delete").Identity(user.EmailAddress).Property("User", user).SetHttpContext(httpContext));
+            using var _ = _logger.BeginScope(new ExceptionlessState().Organization(organization.Id).Tag("Delete").Identity(user.EmailAddress).SetHttpContext(httpContext));
             _logger.UserDeletingOrganization(user.Id, organization.Name, organization.Id);
             await organizationService.SoftDeleteOrganizationAsync(organization, user.Id);
         }
