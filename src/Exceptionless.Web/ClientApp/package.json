@@ -85,7 +85,7 @@
         "@shikijs/themes": "^4.4.3",
         "@stripe/stripe-js": "^9.14.0",
         "@tanstack/svelte-form": "^1.33.5",
-        "@tanstack/svelte-query": "^6.1.43",
+        "@tanstack/svelte-query": "^6.1.47",
         "@tanstack/svelte-query-devtools": "^6.1.43",
         "@tanstack/svelte-table": "^9.1.2",
         "@types/d3-scale": "^4.0.9",
