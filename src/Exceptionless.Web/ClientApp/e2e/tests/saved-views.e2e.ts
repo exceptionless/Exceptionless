@@ -146,7 +146,18 @@ test('saved view navigation order is personal, persistent, and resettable', asyn
     await expect(privateViewLink).toBeVisible({ timeout: 30_000 });
 
     await expect(privateViewLink).toHaveAttribute('draggable', 'true');
-    await privateViewLink.dragTo(sharedViewLink);
+    const privateViewBox = await privateViewLink.boundingBox();
+    const sharedViewBox = await sharedViewLink.boundingBox();
+    if (!privateViewBox || !sharedViewBox) {
+        throw new Error('Saved view links must have visible bounding boxes');
+    }
+
+    await page.mouse.move(privateViewBox.x + privateViewBox.width / 2, privateViewBox.y + privateViewBox.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(privateViewBox.x + privateViewBox.width / 2, privateViewBox.y - 8, { steps: 4 });
+    await page.mouse.move(sharedViewBox.x + sharedViewBox.width / 2, sharedViewBox.y + sharedViewBox.height / 2, { steps: 12 });
+    await expectSavedViewBefore(sharedViewLink, privateViewLink);
+    await page.mouse.up();
     await expect(page.getByText('Events view order saved.')).toBeVisible();
     await expectSavedViewBefore(privateViewLink, sharedViewLink);
 

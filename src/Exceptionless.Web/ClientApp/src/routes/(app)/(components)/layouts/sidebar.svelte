@@ -166,10 +166,6 @@
             savedViewId,
             viewType: route.view
         };
-        pendingSavedViewOrders = {
-            ...pendingSavedViewOrders,
-            [route.view]: getSavedViewIds(route)
-        };
 
         if (event.dataTransfer) {
             event.dataTransfer.effectAllowed = 'move';
@@ -186,38 +182,37 @@
         if (event.dataTransfer) {
             event.dataTransfer.dropEffect = 'move';
         }
+    }
 
-        const savedViewIds = [...(pendingSavedViewOrders[route.view] ?? getSavedViewIds(route))];
-        const currentIndex = savedViewIds.indexOf(draggedSavedView.savedViewId);
+    function getDroppedSavedViewIds(route: NavigationItem, draggedSavedViewId: string, targetSavedViewId: string): string[] {
+        const savedViewIds = getSavedViewIds(route);
+        const currentIndex = savedViewIds.indexOf(draggedSavedViewId);
         const targetIndex = savedViewIds.indexOf(targetSavedViewId);
         if (currentIndex < 0 || targetIndex < 0) {
-            return;
+            return savedViewIds;
         }
 
         const [movedSavedViewId] = savedViewIds.splice(currentIndex, 1);
         if (!movedSavedViewId) {
-            return;
+            return savedViewIds;
         }
 
         savedViewIds.splice(targetIndex, 0, movedSavedViewId);
-        pendingSavedViewOrders = {
-            ...pendingSavedViewOrders,
-            [route.view]: savedViewIds
-        };
+        return savedViewIds;
     }
 
     function clearPendingSavedViewOrder(viewType: string): void {
         pendingSavedViewOrders = Object.fromEntries(Object.entries(pendingSavedViewOrders).filter(([key]) => key !== viewType));
     }
 
-    async function persistDraggedSavedViewOrder(route: NavigationItem): Promise<void> {
+    async function persistDraggedSavedViewOrder(route: NavigationItem, targetSavedViewId: string): Promise<void> {
         if (!route.view || draggedSavedView?.viewType !== route.view) {
             return;
         }
 
         const viewType = route.view;
         const currentSavedViewIds = getSavedViewIds(route);
-        const savedViewIds = pendingSavedViewOrders[viewType] ?? currentSavedViewIds;
+        const savedViewIds = getDroppedSavedViewIds(route, draggedSavedView.savedViewId, targetSavedViewId);
         const orderChanged = savedViewIds.some((savedViewId, index) => savedViewId !== currentSavedViewIds[index]);
         draggedSavedView = undefined;
         if (!orderChanged) {
@@ -225,6 +220,10 @@
             return;
         }
 
+        pendingSavedViewOrders = {
+            ...pendingSavedViewOrders,
+            [viewType]: savedViewIds
+        };
         savingSavedViewOrderType = viewType;
         try {
             await onSavedViewOrderChange(viewType, savedViewIds);
@@ -460,7 +459,9 @@
                                                     ondragover={(event) => savedItem.savedView && handleSavedViewDragOver(event, route, savedItem.savedView.id)}
                                                     ondrop={(event) => {
                                                         event.preventDefault();
-                                                        void persistDraggedSavedViewOrder(route);
+                                                        if (savedItem.savedView) {
+                                                            void persistDraggedSavedViewOrder(route, savedItem.savedView.id);
+                                                        }
                                                     }}
                                                 >
                                                     <Sidebar.MenuSubButton isActive={isChildItemActive(savedItem, route.href)}>
