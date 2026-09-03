@@ -465,11 +465,8 @@ public class OrganizationHandler(
                 organization.CardLast4 = model.Last4;
                 await repository.SaveAsync(organization, o => o.ImmediateConsistency().Cache());
 
-                var subscriptionOptions = new SubscriptionCreateOptions
-                {
-                    Customer = customer.Id,
-                    Items = [new SubscriptionItemOptions { Price = model.PlanId }]
-                };
+                var subscriptionOptions = CreateMonthAlignedSubscriptionOptions(customer.Id);
+                subscriptionOptions.Items.Add(new SubscriptionItemOptions { Price = model.PlanId });
 
                 if (isPaymentMethod)
                     subscriptionOptions.DefaultPaymentMethod = model.StripeToken;
@@ -485,8 +482,12 @@ public class OrganizationHandler(
             }
             else
             {
-                var update = new SubscriptionUpdateOptions { Items = [] };
-                var create = new SubscriptionCreateOptions { Customer = organization.StripeCustomerId, Items = [] };
+                var update = new SubscriptionUpdateOptions
+                {
+                    Items = [],
+                    ProrationBehavior = "create_prorations"
+                };
+                var create = CreateMonthAlignedSubscriptionOptions(organization.StripeCustomerId);
                 bool cardUpdated = false;
 
                 var customerUpdateOptions = new CustomerUpdateOptions { Description = organization.Name };
@@ -623,6 +624,23 @@ public class OrganizationHandler(
         }
 
         return new ChangePlanResult { Success = true };
+    }
+
+    private static SubscriptionCreateOptions CreateMonthAlignedSubscriptionOptions(string customerId)
+    {
+        return new SubscriptionCreateOptions
+        {
+            Customer = customerId,
+            Items = [],
+            BillingCycleAnchorConfig = new SubscriptionBillingCycleAnchorConfigOptions
+            {
+                DayOfMonth = 1,
+                Hour = 0,
+                Minute = 0,
+                Second = 0
+            },
+            ProrationBehavior = "create_prorations"
+        };
     }
 
     public async Task<Result<User>> Handle(AddOrganizationUser message)
