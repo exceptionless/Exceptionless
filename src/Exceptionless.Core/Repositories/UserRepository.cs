@@ -17,6 +17,17 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         AddRequiredField(u => u.EmailAddress, u => u.OrganizationIds);
     }
 
+    public Task<bool> SetSavedViewOrdersAsync(User user, CommandOptionsDescriptor<User>? options = null)
+    {
+        var savedViewOrders = user.SavedViewOrders.ToList();
+        return PatchAsync(user.Id, new ActionPatch<User>(currentUser =>
+        {
+            currentUser.SavedViewOrders.Clear();
+            foreach (var savedViewOrder in savedViewOrders)
+                currentUser.SavedViewOrders.Add(savedViewOrder);
+        }), options);
+    }
+
     public async Task<User?> GetByEmailAddressAsync(string emailAddress)
     {
         if (String.IsNullOrWhiteSpace(emailAddress))

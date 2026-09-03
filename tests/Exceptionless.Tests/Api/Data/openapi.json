@@ -3348,6 +3348,16 @@
               }
             }
           },
+          "409": {
+            "description": "The saved view preferences could not be updated due to a concurrent request.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "404": {
             "description": "The organization could not be found.",
             "content": {
@@ -3360,6 +3370,103 @@
           },
           "422": {
             "description": "The saved view is not accessible in this organization.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/organizations/{organizationId}/saved-view-order/{viewType}": {
+      "put": {
+        "tags": [
+          "SavedView"
+        ],
+        "summary": "Update the current user\u0027s saved view order",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "description": "The identifier of the organization.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "viewType",
+            "in": "path",
+            "description": "The dashboard view type (events, sessions, stacks, or stream).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "The ordered saved view identifiers for one dashboard section. An empty list resets the section to alphabetical order.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSavedViewOrder"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSavedViewOrder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The personal saved view order was updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateSavedViewOrder"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request body is malformed or omits the saved view identifiers.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The saved view preferences could not be updated due to a concurrent request.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The organization could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The dashboard view type or saved view identifiers are invalid.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -13628,6 +13735,21 @@
           }
         }
       },
+      "UpdateSavedViewOrder": {
+        "required": [
+          "saved_view_ids"
+        ],
+        "type": "object",
+        "properties": {
+          "saved_view_ids": {
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "UpdateToken": {
         "type": "object",
         "properties": {
@@ -13743,6 +13865,7 @@
           "password_reset_token_expiration",
           "o_auth_accounts",
           "organization_preferences",
+          "saved_view_orders",
           "email_notifications_enabled",
           "is_email_address_verified",
           "verify_email_address_token_expiration",
@@ -13800,6 +13923,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/UserOrganizationPreference"
+            }
+          },
+          "saved_view_orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserSavedViewOrderPreference"
             }
           },
           "full_name": {
@@ -13902,11 +14031,37 @@
           }
         }
       },
+      "UserSavedViewOrderPreference": {
+        "required": [
+          "view_type",
+          "organization_id",
+          "saved_view_ids"
+        ],
+        "type": "object",
+        "properties": {
+          "organization_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
+          },
+          "view_type": {
+            "type": "string"
+          },
+          "saved_view_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "ViewCurrentUser": {
         "required": [
           "has_local_account",
           "o_auth_accounts",
           "organization_preferences",
+          "saved_view_orders",
           "id",
           "organization_ids",
           "full_name",
@@ -13938,6 +14093,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/UserOrganizationPreference"
+            }
+          },
+          "saved_view_orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserSavedViewOrderPreference"
             }
           },
           "id": {

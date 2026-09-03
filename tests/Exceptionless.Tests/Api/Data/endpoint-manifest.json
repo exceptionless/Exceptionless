@@ -1509,6 +1509,20 @@
     "authenticationSchemes": []
   },
   {
+    "method": "PUT",
+    "route": "/api/v2/organizations/{organizationId:objectid}/saved-view-order/{viewType}",
+    "displayName": "HTTP: PUT api/v2/organizations/{organizationId:objectid}/saved-view-order/{viewType}",
+    "tags": [
+      "SavedView"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
     "method": "GET",
     "route": "/api/v2/organizations/{organizationId:objectid}/saved-views",
     "displayName": "HTTP: GET api/v2/organizations/{organizationId:objectid}/saved-views",

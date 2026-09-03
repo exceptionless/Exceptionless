@@ -706,6 +706,8 @@ public class OrganizationHandler(
             user.OrganizationIds.Remove(organization.Id);
             foreach (var preference in user.OrganizationPreferences.Where(preference => String.Equals(preference.OrganizationId, organization.Id, StringComparison.Ordinal)).ToList())
                 user.OrganizationPreferences.Remove(preference);
+            foreach (var preference in user.SavedViewOrders.Where(preference => String.Equals(preference.OrganizationId, organization.Id, StringComparison.Ordinal)).ToList())
+                user.SavedViewOrders.Remove(preference);
             await userRepository.SaveAsync(user, o => o.Cache());
             await messagePublisher.PublishAsync(new UserMembershipChanged
             {

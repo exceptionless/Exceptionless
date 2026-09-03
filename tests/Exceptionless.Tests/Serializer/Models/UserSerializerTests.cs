@@ -128,6 +128,36 @@ public class UserSerializerTests : TestWithServices
     }
 
     [Fact]
+    public void Deserialize_User_PreservesSavedViewOrders()
+    {
+        var original = new User
+        {
+            Id = "user123",
+            FullName = "Saved View User",
+            EmailAddress = "saved-views@example.com",
+            IsEmailAddressVerified = true,
+            SavedViewOrders =
+            [
+                new UserSavedViewOrderPreference
+                {
+                    OrganizationId = "organization-id",
+                    ViewType = "events",
+                    SavedViewIds = ["private-view-id", "shared-view-id"]
+                }
+            ]
+        };
+
+        string? json = _serializer.SerializeToString(original);
+        var deserialized = _serializer.Deserialize<User>(json);
+
+        Assert.NotNull(deserialized);
+        var preference = Assert.Single(deserialized.SavedViewOrders);
+        Assert.Equal("organization-id", preference.OrganizationId);
+        Assert.Equal("events", preference.ViewType);
+        Assert.Equal(["private-view-id", "shared-view-id"], preference.SavedViewIds);
+    }
+
+    [Fact]
     public void Deserialize_User_PreservesAllCollectionsTogether()
     {
         // Arrange - Tests all collections at once to ensure no interference

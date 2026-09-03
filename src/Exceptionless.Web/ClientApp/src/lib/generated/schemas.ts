@@ -807,6 +807,13 @@ export type UpdateSavedViewDefaultFormData = Infer<
   typeof UpdateSavedViewDefaultSchema
 >;
 
+export const UpdateSavedViewOrderSchema = object({
+  saved_view_ids: array(string()),
+});
+export type UpdateSavedViewOrderFormData = Infer<
+  typeof UpdateSavedViewOrderSchema
+>;
+
 export const UpdateTokenSchema = object({
   is_disabled: boolean().optional(),
   notes: string().min(1, "Notes is required").nullable().optional(),
@@ -854,6 +861,7 @@ export const UserSchema = object({
   password_reset_token_expiration: iso.datetime(),
   o_auth_accounts: array(lazy(() => OAuthAccountSchema)),
   organization_preferences: array(lazy(() => UserOrganizationPreferenceSchema)),
+  saved_view_orders: array(lazy(() => UserSavedViewOrderPreferenceSchema)),
   full_name: string().min(1, "Full name is required"),
   email_address: email(),
   avatar_file_name: string()
@@ -894,11 +902,23 @@ export type UserOrganizationPreferenceFormData = Infer<
   typeof UserOrganizationPreferenceSchema
 >;
 
+export const UserSavedViewOrderPreferenceSchema = object({
+  organization_id: string()
+    .length(24, "Organization id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "Organization id has invalid format"),
+  view_type: string().min(1, "View type is required"),
+  saved_view_ids: array(string()),
+});
+export type UserSavedViewOrderPreferenceFormData = Infer<
+  typeof UserSavedViewOrderPreferenceSchema
+>;
+
 export const ViewCurrentUserSchema = object({
   hash: string().min(1, "Hash is required").nullable().optional(),
   has_local_account: boolean(),
   o_auth_accounts: array(lazy(() => OAuthAccountSchema)),
   organization_preferences: array(lazy(() => UserOrganizationPreferenceSchema)),
+  saved_view_orders: array(lazy(() => UserSavedViewOrderPreferenceSchema)),
   id: string()
     .length(24, "Id must be exactly 24 characters")
     .regex(/^[a-fA-F0-9]{24}$/, "Id has invalid format"),

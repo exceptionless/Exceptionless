@@ -1,5 +1,5 @@
-import type { NewSavedView, SavedViewColumnSettings, UpdateSavedView, UpdateSavedViewDefault, ViewSavedView } from '$generated/api';
+import type { NewSavedView, SavedViewColumnSettings, UpdateSavedView, UpdateSavedViewDefault, UpdateSavedViewOrder, ViewSavedView } from '$generated/api';
 
 export type SavedView = ViewSavedView;
 
-export type { NewSavedView, SavedViewColumnSettings, UpdateSavedView, UpdateSavedViewDefault };
+export type { NewSavedView, SavedViewColumnSettings, UpdateSavedView, UpdateSavedViewDefault, UpdateSavedViewOrder };

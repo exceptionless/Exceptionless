@@ -37,7 +37,8 @@
     import { premiumPage } from '$features/organizations/premium-page.svelte';
     import { getUtcMonthKey, ORGANIZATION_USAGE_ROLLOVER_CHECK_INTERVAL_MS } from '$features/organizations/utils';
     import { invalidateProjectQueries } from '$features/projects/api.svelte';
-    import { getSavedViewsQuery, invalidateSavedViewQueries, isSavedViewDeleted } from '$features/saved-views/api.svelte';
+    import { getSavedViewsQuery, invalidateSavedViewQueries, isSavedViewDeleted, putUserSavedViewOrder } from '$features/saved-views/api.svelte';
+    import { getPersonalSavedViewOrder, resolvePersonalSavedViewOrder } from '$features/saved-views/ordering';
     import { savedViewHref } from '$features/saved-views/slugs';
     import { appKeyboardShortcuts, isKeyboardShortcut } from '$features/shared/keyboard-shortcuts';
     import { createProjectStackNotificationRefresher, invalidateStackQueries, type ProjectStackNotificationRefresher } from '$features/stacks/api.svelte';
@@ -560,6 +561,20 @@
             }
         }
     });
+    const savedViewOrderMutation = putUserSavedViewOrder({
+        route: {
+            get organizationId() {
+                return organization.current;
+            }
+        }
+    });
+
+    async function saveSavedViewOrder(viewType: string, savedViewIds: string[]): Promise<void> {
+        await savedViewOrderMutation.mutateAsync({
+            saved_view_ids: savedViewIds,
+            view_type: viewType
+        });
+    }
 
     const viewToHref: Record<string, string> = {
         events: resolve('/(app)/event'),
@@ -614,11 +629,16 @@
                 return route;
             }
 
-            const sortedViews = [...viewSavedViews].sort((a, b) => a.name.localeCompare(b.name));
+            const orderedIds = getPersonalSavedViewOrder(meQuery.data?.saved_view_orders, organization.current, viewKey);
+            const orderedViews = resolvePersonalSavedViewOrder(viewSavedViews, orderedIds);
 
             const children = [
-                ...sortedViews.map((savedView) => ({
+                ...orderedViews.map((savedView) => ({
                     href: buildSavedViewHref(savedView),
+                    savedView: {
+                        id: savedView.id,
+                        isPrivate: !!savedView.user_id
+                    },
                     title: savedView.name
                 })),
                 ...(route.children ?? [])
@@ -683,7 +703,7 @@
         openCommand={openCommandPalette}
         toggleAssistant={() => void toggleAssistantPanel()}
     />
-    <Sidebar routes={filteredRoutes}>
+    <Sidebar routes={filteredRoutes} onSavedViewOrderChange={saveSavedViewOrder}>
         {#snippet header()}
             <SidebarOrganizationSwitcher
                 bind:impersonateDialogOpen={isImpersonateOrganizationOpen}

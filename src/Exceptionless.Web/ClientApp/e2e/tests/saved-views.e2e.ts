@@ -1,4 +1,4 @@
-import type { Page, Request } from '@playwright/test';
+import type { Locator, Page, Request } from '@playwright/test';
 
 import { expect, test } from '../fixtures/e2e-test';
 import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
@@ -91,6 +91,109 @@ test('home navigation honors personal and organization saved views and survives 
         await page.goto('/next/');
         await expect(page).toHaveURL(/\/next\/stack\/all(?:[?#]|$)/);
     });
+
+    expect(failedApiRequests).toEqual([]);
+});
+
+test('saved view navigation order is personal, persistent, and resettable', async ({ e2eScenario, page, request }) => {
+    const failedApiRequests = captureFailedApiRequests(page);
+    const suffix = e2eScenario.run.slice(-24);
+    const sharedViewName = `AAA Shared ${suffix}`;
+    const privateViewName = `ZZZ Private ${suffix}`;
+    const authorizationHeaders = { Authorization: `Bearer ${e2eScenario.userToken}` };
+    const savedViewsPath = `/api/v2/organizations/${e2eScenario.organizationId}/saved-views`;
+
+    for (const [name, isPrivate] of [
+        [sharedViewName, false],
+        [privateViewName, true]
+    ] as const) {
+        const response = await request.post(savedViewsPath, {
+            data: {
+                filter: 'type:error',
+                is_private: isPrivate,
+                name,
+                organization_id: e2eScenario.organizationId,
+                slug: savedViewSlug(name),
+                view_type: 'events'
+            },
+            headers: authorizationHeaders
+        });
+        expect(response.status()).toBe(201);
+    }
+
+    await expect
+        .poll(
+            async () => {
+                const response = await request.get(`${savedViewsPath}/events`, { headers: authorizationHeaders });
+                const names = response.ok() ? ((await response.json()) as { name: string }[]).map((savedView) => savedView.name) : [];
+                return names.includes(sharedViewName) && names.includes(privateViewName);
+            },
+            { timeout: 30_000 }
+        )
+        .toBe(true);
+
+    await page.goto('/next/event');
+    const sidebar = page.locator('[data-sidebar="sidebar"]');
+    const sharedViewLink = sidebar.getByRole('link', { exact: true, name: sharedViewName });
+    const privateViewLink = sidebar.getByRole('link', { exact: true, name: privateViewName });
+    await expect(sharedViewLink).toBeVisible({ timeout: 30_000 });
+    await expect(privateViewLink).toBeVisible();
+    await expectSavedViewBefore(sharedViewLink, privateViewLink);
+
+    await sharedViewLink.click();
+    await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(savedViewSlug(sharedViewName))}(?:[?#]|$)`));
+    await page.goto('/next/event');
+    await expect(privateViewLink).toBeVisible({ timeout: 30_000 });
+
+    await expect(privateViewLink).toHaveAttribute('draggable', 'true');
+    const privateViewBox = await privateViewLink.boundingBox();
+    const sharedViewBox = await sharedViewLink.boundingBox();
+    if (!privateViewBox || !sharedViewBox) {
+        throw new Error('Saved view links must have visible bounding boxes');
+    }
+
+    await page.mouse.move(privateViewBox.x + privateViewBox.width / 2, privateViewBox.y + privateViewBox.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(privateViewBox.x + privateViewBox.width / 2, privateViewBox.y - 8, { steps: 4 });
+    await page.mouse.move(sharedViewBox.x + sharedViewBox.width / 2, sharedViewBox.y + sharedViewBox.height / 2, { steps: 12 });
+    await expectSavedViewBefore(sharedViewLink, privateViewLink);
+    await page.mouse.up();
+    await expect(page.getByText('Events view order saved.')).toBeVisible();
+    await expectSavedViewBefore(privateViewLink, sharedViewLink);
+
+    await page.reload();
+    await expect(privateViewLink).toBeVisible({ timeout: 30_000 });
+    await expectSavedViewBefore(privateViewLink, sharedViewLink);
+
+    const currentUserResponse = await request.get('/api/v2/users/me', { headers: authorizationHeaders });
+    expect(currentUserResponse.ok()).toBe(true);
+    const currentUser = (await currentUserResponse.json()) as {
+        saved_view_orders: { organization_id: string; saved_view_ids: string[]; view_type: string }[];
+    };
+    expect(
+        currentUser.saved_view_orders.find((preference) => preference.organization_id === e2eScenario.organizationId && preference.view_type === 'events')
+            ?.saved_view_ids
+    ).toBeDefined();
+
+    await page.getByRole('button', { name: 'Reorder Events views' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Reorder Events Views' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByText(privateViewName, { exact: true }).locator('..').getByText('Private', { exact: true })).toBeVisible();
+    await expect(dialog.getByText(sharedViewName, { exact: true }).locator('..').getByText('Shared', { exact: true })).toBeVisible();
+    await dialog.getByRole('button', { name: 'Reset to alphabetical' }).click();
+    await expect(dialog).toBeHidden();
+    await expectSavedViewBefore(sharedViewLink, privateViewLink);
+    await page.reload();
+    await expect(sharedViewLink).toBeVisible({ timeout: 30_000 });
+    await expectSavedViewBefore(sharedViewLink, privateViewLink);
+
+    const resetCurrentUserResponse = await request.get('/api/v2/users/me', { headers: authorizationHeaders });
+    const resetCurrentUser = (await resetCurrentUserResponse.json()) as {
+        saved_view_orders: { organization_id: string; saved_view_ids: string[]; view_type: string }[];
+    };
+    expect(
+        resetCurrentUser.saved_view_orders.find((preference) => preference.organization_id === e2eScenario.organizationId && preference.view_type === 'events')
+    ).toBeUndefined();
 
     expect(failedApiRequests).toEqual([]);
 });
@@ -1092,6 +1195,16 @@ async function expectColumnBefore(page: Page, firstColumn: string, secondColumn:
             const firstIndex = headings.findIndex((heading) => heading.trim().startsWith(firstColumn));
             const secondIndex = headings.findIndex((heading) => heading.trim().startsWith(secondColumn));
             return firstIndex >= 0 && secondIndex >= 0 && firstIndex < secondIndex;
+        })
+        .toBe(true);
+}
+
+async function expectSavedViewBefore(first: Locator, second: Locator): Promise<void> {
+    await expect
+        .poll(async () => {
+            const firstBox = await first.boundingBox();
+            const secondBox = await second.boundingBox();
+            return !!firstBox && !!secondBox && firstBox.y < secondBox.y;
         })
         .toBe(true);
 }

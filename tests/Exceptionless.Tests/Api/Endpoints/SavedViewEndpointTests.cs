@@ -1457,6 +1457,163 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PutSavedViewOrder_SharedAndPrivateViews_ImmediatelyPersistsAccessiblePersonalOrder()
+    {
+        var sharedView = await CreateSavedViewAsync("Shared Ordered View", "status:open", "events");
+        var privateView = await CreateSavedViewAsync("Private Ordered View", "status:regressed", "events", isPrivate: true);
+        var inaccessiblePrivateView = await _savedViewRepository.AddAsync(new SavedView
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            UserId = TestConstants.UserId2,
+            Name = "Other User Private Ordered View",
+            Slug = "other-user-private-ordered-view",
+            ViewType = "events",
+            CreatedByUserId = TestConstants.UserId2
+        });
+        Assert.NotNull(sharedView);
+        Assert.NotNull(privateView);
+
+        var cachedUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(cachedUser);
+        Assert.DoesNotContain(cachedUser.SavedViewOrders, preference => preference.OrganizationId == SampleDataService.TEST_ORG_ID && preference.ViewType == "events");
+
+        var result = await SendRequestAsAsync<UpdateSavedViewOrder>(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-order", "events")
+            .Content(new UpdateSavedViewOrder
+            {
+                SavedViewIds = [privateView.Id, inaccessiblePrivateView.Id, sharedView.Id]
+            })
+            .StatusCodeShouldBeOk()
+        );
+
+        Assert.NotNull(result);
+        Assert.Equal([privateView.Id, sharedView.Id], result.SavedViewIds);
+
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(user);
+        var preference = Assert.Single(user.SavedViewOrders, preference => preference.OrganizationId == SampleDataService.TEST_ORG_ID && preference.ViewType == "events");
+        Assert.Equal([privateView.Id, sharedView.Id], preference.SavedViewIds);
+    }
+
+    [Fact]
+    public async Task PutSavedViewOrder_DuplicatePreferences_ReplacesSectionOrder()
+    {
+        var firstView = await CreateSavedViewAsync("First Legacy Ordered View", "status:open", "events");
+        var secondView = await CreateSavedViewAsync("Second Legacy Ordered View", "status:regressed", "events");
+        Assert.NotNull(firstView);
+        Assert.NotNull(secondView);
+
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(user);
+        user.SavedViewOrders.Add(new UserSavedViewOrderPreference
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            ViewType = "events",
+            SavedViewIds = [firstView.Id]
+        });
+        user.SavedViewOrders.Add(new UserSavedViewOrderPreference
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            ViewType = "events",
+            SavedViewIds = [firstView.Id, secondView.Id]
+        });
+        await _userRepository.SaveAsync(user, o => o.Cache());
+
+        await SendRequestAsync(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-order", "events")
+            .Content(new UpdateSavedViewOrder { SavedViewIds = [secondView.Id, firstView.Id] })
+            .StatusCodeShouldBeOk()
+        );
+
+        user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(user);
+        var preference = Assert.Single(user.SavedViewOrders, preference => preference.OrganizationId == SampleDataService.TEST_ORG_ID && preference.ViewType == "events");
+        Assert.Equal([secondView.Id, firstView.Id], preference.SavedViewIds);
+    }
+
+    [Fact]
+    public async Task PutSavedViewDefaults_ExistingSavedViewOrder_PreservesOrderWhenDefaultChangesOrClears()
+    {
+        var sharedView = await CreateSavedViewAsync("Ordered Home View", "status:open", "stacks");
+        Assert.NotNull(sharedView);
+
+        await SendRequestAsync(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-order", "stacks")
+            .Content(new UpdateSavedViewOrder { SavedViewIds = [sharedView.Id] })
+            .StatusCodeShouldBeOk()
+        );
+        await SendRequestAsync(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-defaults", "user")
+            .Content(new UpdateSavedViewDefault { SavedViewId = sharedView.Id })
+            .StatusCodeShouldBeOk()
+        );
+        await SendRequestAsync(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-defaults", "user")
+            .Content(new UpdateSavedViewDefault { SavedViewId = null })
+            .StatusCodeShouldBeOk()
+        );
+
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(user);
+        Assert.DoesNotContain(user.OrganizationPreferences, preference => preference.OrganizationId == SampleDataService.TEST_ORG_ID);
+        var preference = Assert.Single(user.SavedViewOrders, preference => preference.OrganizationId == SampleDataService.TEST_ORG_ID && preference.ViewType == "stacks");
+        Assert.Equal([sharedView.Id], preference.SavedViewIds);
+    }
+
+    [Fact]
+    public async Task PutSavedViewOrder_DuplicateIdentifiers_ReturnsUnprocessableEntity()
+    {
+        var savedView = await CreateSavedViewAsync("Duplicate Ordered View", "status:open", "events");
+        Assert.NotNull(savedView);
+
+        await SendRequestAsync(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-order", "events")
+            .Content(new UpdateSavedViewOrder { SavedViewIds = [savedView.Id, savedView.Id] })
+            .StatusCodeShouldBeUnprocessableEntity()
+        );
+    }
+
+    [Fact]
+    public async Task PutSavedViewOrder_MissingIdentifiers_ReturnsBadRequestWithoutClearingOrder()
+    {
+        var savedView = await CreateSavedViewAsync("Preserved Ordered View", "status:open", "events");
+        Assert.NotNull(savedView);
+
+        await SendRequestAsync(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-order", "events")
+            .Content(new UpdateSavedViewOrder { SavedViewIds = [savedView.Id] })
+            .StatusCodeShouldBeOk()
+        );
+
+        await SendRequestAsync(r => r
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-view-order", "events")
+            .Content("{}", "application/json")
+            .StatusCodeShouldBeBadRequest()
+        );
+
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(user);
+        var preference = Assert.Single(user.SavedViewOrders, preference => preference.OrganizationId == SampleDataService.TEST_ORG_ID && preference.ViewType == "events");
+        Assert.Equal([savedView.Id], preference.SavedViewIds);
+    }
+
+    [Fact]
     public async Task PutOrganizationSavedViewDefault_PrivateView_ReturnsUnprocessableEntity()
     {
         var privateView = await CreateSavedViewAsync("Private Organization Home", "status:open", "events", isPrivate: true);
@@ -1813,6 +1970,19 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         // Arrange — create an organization-wide view and a private view for the test organization user
         var testUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
         Assert.NotNull(testUser);
+        testUser.SavedViewOrders.Add(new UserSavedViewOrderPreference
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            ViewType = "events",
+            SavedViewIds = ["000000000000000000000101"]
+        });
+        testUser.SavedViewOrders.Add(new UserSavedViewOrderPreference
+        {
+            OrganizationId = SampleDataService.FREE_ORG_ID,
+            ViewType = "events",
+            SavedViewIds = ["000000000000000000000102"]
+        });
+        await _userRepository.SaveAsync(testUser, o => o.ImmediateConsistency().Cache());
 
         var organizationWideView = await _savedViewRepository.AddAsync(new SavedView
         {
@@ -1850,6 +2020,10 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         // Assert — private view is gone, organization-wide view remains
         Assert.Null(await _savedViewRepository.GetByIdAsync(privateView.Id));
         Assert.NotNull(await _savedViewRepository.GetByIdAsync(organizationWideView.Id));
+        testUser = await _userRepository.GetByIdAsync(testUser.Id, o => o.Cache(false));
+        Assert.NotNull(testUser);
+        Assert.DoesNotContain(testUser.SavedViewOrders, preference => preference.OrganizationId == SampleDataService.TEST_ORG_ID);
+        Assert.Contains(testUser.SavedViewOrders, preference => preference.OrganizationId == SampleDataService.FREE_ORG_ID);
     }
 
     [Fact]
@@ -1858,6 +2032,19 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         // Arrange
         var testUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
         Assert.NotNull(testUser);
+        testUser.SavedViewOrders.Add(new UserSavedViewOrderPreference
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID,
+            ViewType = "stacks",
+            SavedViewIds = ["000000000000000000000103"]
+        });
+        testUser.SavedViewOrders.Add(new UserSavedViewOrderPreference
+        {
+            OrganizationId = SampleDataService.FREE_ORG_ID,
+            ViewType = "stacks",
+            SavedViewIds = ["000000000000000000000104"]
+        });
+        await _userRepository.SaveAsync(testUser, o => o.ImmediateConsistency().Cache());
 
         await _savedViewRepository.AddAsync(new SavedView
         {
@@ -1895,6 +2082,10 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         // Assert
         long countAfter = await _savedViewRepository.CountByOrganizationIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.Equal(0, countAfter);
+        testUser = await _userRepository.GetByIdAsync(testUser.Id, o => o.Cache(false));
+        Assert.NotNull(testUser);
+        Assert.DoesNotContain(testUser.SavedViewOrders, preference => preference.OrganizationId == SampleDataService.TEST_ORG_ID);
+        Assert.Contains(testUser.SavedViewOrders, preference => preference.OrganizationId == SampleDataService.FREE_ORG_ID);
     }
 
     [Fact]

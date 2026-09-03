@@ -285,12 +285,31 @@ export function setCurrentUserSavedViewDefault(queryClient: QueryClient, organiz
         });
     }
 
-    const updatedUser = {
-        ...currentUser,
+    setCurrentUser(queryClient, currentUser, {
         organization_preferences: organizationPreferences
-    };
-    queryClient.setQueryData(queryKeys.me(), updatedUser);
-    queryClient.setQueryData(queryKeys.id(currentUser.id), updatedUser);
+    });
+}
+
+export function setCurrentUserSavedViewOrder(queryClient: QueryClient, organizationId: string, viewType: string, savedViewIds: string[]): void {
+    const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
+    if (!currentUser) {
+        return;
+    }
+
+    const savedViewOrders = (currentUser.saved_view_orders ?? []).filter(
+        (preference) => preference.organization_id !== organizationId || preference.view_type !== viewType
+    );
+    if (savedViewIds.length > 0) {
+        savedViewOrders.push({
+            organization_id: organizationId,
+            saved_view_ids: [...savedViewIds],
+            view_type: viewType
+        });
+    }
+
+    setCurrentUser(queryClient, currentUser, {
+        saved_view_orders: savedViewOrders
+    });
 }
 
 export function uploadUserAvatar(request: UserAvatarRequest) {
@@ -315,4 +334,13 @@ export function uploadUserAvatar(request: UserAvatarRequest) {
             }
         }
     }));
+}
+
+function setCurrentUser(queryClient: QueryClient, currentUser: ViewCurrentUser, changes: Partial<ViewCurrentUser>): void {
+    const updatedUser = {
+        ...currentUser,
+        ...changes
+    };
+    queryClient.setQueryData(queryKeys.me(), updatedUser);
+    queryClient.setQueryData(queryKeys.id(currentUser.id), updatedUser);
 }
