@@ -9,6 +9,7 @@ using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models;
+using Exceptionless.Web.Models.Admin;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Serializer;
@@ -189,5 +190,39 @@ public sealed class ProductTourActivityEndpointTests(ITestOutputHelper output, A
             .Content(new PostProductTourActivity { Version = 1, Action = ProductTourTelemetryEvent.Started, Source = ProductTourLaunchSource.Catalog })
             .ExpectedStatus(System.Net.HttpStatusCode.ServiceUnavailable));
         Assert.Equal(System.Net.HttpStatusCode.ServiceUnavailable, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task RecordProductTourActivity_InternalOrganizationOverLimit_ReportsUnavailableWithoutQueuing()
+    {
+        // Arrange
+        var organizationRepository = GetService<IOrganizationRepository>();
+        var organization = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        organization.MaxEventsPerMonth = 1;
+        organization.BonusEventsPerMonth = 0;
+        await organizationRepository.SaveAsync(organization);
+        var project = await GetService<IProjectRepository>().AddAsync(new Project
+        {
+            Id = GetService<AppOptions>().InternalProjectId,
+            OrganizationId = organization.Id,
+            Name = "Guide activity",
+            NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1).AddHours(1).Ticks
+        });
+        var usage = GetService<UsageService>();
+        await usage.IncrementTotalAsync(organization.Id, project.Id, 2);
+        Assert.Equal(0, await usage.GetEventsLeftAsync(organization.Id));
+
+        // Act
+        await SendRequestAsync(request => request.Post().AsTestOrganizationUser().AppendPath("users/me/product-tours/app-overview/activity")
+            .Content(new PostProductTourActivity { Version = 1, Action = ProductTourTelemetryEvent.Started, Source = ProductTourLaunchSource.Catalog })
+            .ExpectedStatus(System.Net.HttpStatusCode.ServiceUnavailable));
+        var report = await SendRequestAsAsync<ProductTourUsageResponse>(request => request.AsGlobalAdminUser()
+            .AppendPath("admin/product-tour-usage").QueryString("days", "30").StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(report);
+        Assert.False(report.CollectionAvailable);
+        Assert.Equal(0, (await GetService<IQueue<EventPost>>().GetQueueStatsAsync()).Enqueued);
     }
 }

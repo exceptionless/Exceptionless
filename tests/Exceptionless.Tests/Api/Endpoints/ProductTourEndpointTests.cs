@@ -90,6 +90,44 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
         Assert.Equal(replacement, persistedUser.ProductTours["exie-overview"]);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(999)]
+    public async Task UpdateCurrentUserProductTourAsync_UnknownStoredStatus_ReplacesWithCompleted(int storedStatus)
+    {
+        // Arrange
+        var currentUser = await GetTestOrganizationUserAsync();
+        currentUser.ProductTours[ProductTours.AppOverview] = new ProductTourProgress
+        {
+            Status = (ProductTourStatus)storedStatus,
+            Version = 1
+        };
+        await _userRepository.SaveAsync(currentUser, options => options.Cache().ImmediateConsistency());
+
+        // Act
+        var progress = await UpdateProgressAsync(ProductTours.AppOverview, ProductTourStatus.Completed, 1);
+
+        // Assert
+        Assert.Equal(ProductTourStatus.Completed, progress.Status);
+        var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, options => options.Cache(false));
+        Assert.NotNull(persistedUser);
+        Assert.Equal(progress, persistedUser.ProductTours[ProductTours.AppOverview]);
+    }
+
+    [Fact]
+    public async Task UpdateCurrentUserProductTourAsync_DismissedProgress_PreservesCompletedForSameVersion()
+    {
+        // Arrange
+        await UpdateProgressAsync(ProductTours.AppOverview, ProductTourStatus.Completed, 1);
+
+        // Act
+        var progress = await UpdateProgressAsync(ProductTours.AppOverview, ProductTourStatus.Dismissed, 1);
+
+        // Assert
+        Assert.Equal(ProductTourStatus.Completed, progress.Status);
+        Assert.Equal(1, progress.Version);
+    }
+
     [Fact]
     public async Task UpdateCurrentUserProductTourAsync_ConcurrentUpdatesPreserveBothTourKeys()
     {

@@ -17,6 +17,8 @@ namespace Exceptionless.Web.Api.Handlers;
 public class ProductTourActivityHandler(
     IUserRepository userRepository,
     IProjectRepository projectRepository,
+    IOrganizationRepository organizationRepository,
+    UsageService usageService,
     EventPostService eventPostService,
     AppOptions appOptions,
     ISerializer serializer,
@@ -65,6 +67,12 @@ public class ProductTourActivityHandler(
 
         var project = await projectRepository.GetByIdAsync(appOptions.InternalProjectId, options => options.Cache());
         if (project is null || project.IsDeleted)
+        {
+            return Result.Unavailable("Guided-tour activity storage is unavailable.");
+        }
+
+        var organization = await organizationRepository.GetByIdAsync(project.OrganizationId, options => options.Cache());
+        if (organization is null || organization.IsDeleted || await usageService.GetEventsLeftAsync(organization.Id) < 1)
         {
             return Result.Unavailable("Guided-tour activity storage is unavailable.");
         }
