@@ -40,7 +40,12 @@ afterEach(() => {
 describe('ProductTourActivity', () => {
     it('makes exact daily counts keyboard accessible without relying on color', async () => {
         // Arrange
-        render(ProductTourActivity, { end: '2026-01-03T00:00:00Z', interval: ProductTourUsageInterval.Day, start: '2026-01-01T00:00:00Z', tour });
+        render(ProductTourActivity, {
+            end: '2026-01-03T00:00:00Z',
+            interval: ProductTourUsageInterval.Day,
+            start: '2026-01-01T00:00:00Z',
+            tour: { ...tour, activity: [...tour.activity, { completed: 0, date_utc: '2026-01-02T00:00:00Z', dismissed: 0, shown: 0, started: 0 }] }
+        });
         const chart = screen.getByRole('slider');
 
         // Act

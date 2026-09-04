@@ -117,11 +117,12 @@ public sealed class AdminProductTourUsageEndpointTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(response);
-        Assert.Equal(retainedEvent.StartOfMonth(), response.UtcStart);
         Assert.Equal(now, response.UtcEnd);
-        Assert.Equal(ProductTourUsageInterval.Month, response.Interval);
+        Assert.Equal(ProductTourUsageInterval.Auto, response.Interval);
         var overview = Assert.Single(response.Tours, tour => String.Equals(tour.Name, ProductTours.AppOverview, StringComparison.Ordinal));
         Assert.Equal(1, overview.Started);
+        Assert.Equal(Assert.Single(overview.Activity, period => period.Started > 0).DateUtc, response.UtcStart);
+        Assert.InRange(overview.Activity.Count, 80, 201);
     }
 
     [Fact]

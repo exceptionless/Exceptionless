@@ -15,13 +15,20 @@ test('synthetic activity charts support keyboard, compact ranges, and light/dark
         started: 8 + (index % 7)
     }));
     const sum = (key: 'completed' | 'dismissed' | 'shown' | 'started') => activity.reduce((total, day) => total + day[key], 0);
-    await page.route('**/api/v2/admin/product-tour-usage*', (route) =>
-        route.fulfill({
+    await page.route('**/api/v2/admin/product-tour-usage*', (route) => {
+        const history = new URL(route.request().url()).searchParams.get('history') === 'true';
+        const periods = history
+            ? activity.map((period, index) => ({
+                  ...period,
+                  date_utc: new Date(today.getTime() - (30 - index) * 6 * 3_600_000).toISOString()
+              }))
+            : activity;
+        return route.fulfill({
             json: {
                 collection_available: true,
-                interval: 'day',
+                interval: history ? 'auto' : 'day',
                 tours: ['app-overview', 'project-configure', 'saved-view-create', 'app-welcome'].map((name) => ({
-                    activity,
+                    activity: periods,
                     completed: sum('completed'),
                     dismissed: sum('dismissed'),
                     kind: name === 'app-welcome' ? 'prompt' : 'guide',
@@ -34,10 +41,10 @@ test('synthetic activity charts support keyboard, compact ranges, and light/dark
                     version: 1
                 })),
                 utc_end: new Date().toISOString(),
-                utc_start: activity[0].date_utc
+                utc_start: periods[0].date_utc
             }
-        })
-    );
+        });
+    });
 
     // Act & Assert
     await page.goto('/next/system/product-tours');
@@ -66,8 +73,15 @@ test('synthetic activity charts support keyboard, compact ranges, and light/dark
     await page.getByRole('button', { name: 'Usage period: Last 30 days' }).click();
     await page.getByRole('button', { exact: true, name: 'Available history' }).click();
     await expect(page.getByRole('button', { name: 'Usage period: Available history' })).toBeVisible();
-    await page.getByRole('button', { name: 'Usage period: Available history' }).click();
-    await page.getByRole('button', { exact: true, name: 'Last 30 days' }).click();
+    await expect(page.getByText('Guide activity · UTC', { exact: true })).toBeVisible();
+    await expect(chart).toHaveAttribute('aria-valuemax', '29');
+    await chart.focus();
+    await page.keyboard.press('Home');
+    await expect(chart).toHaveAttribute('aria-valuetext', /Started: 8.*Completed: 3/);
+    await page.keyboard.press('ArrowRight');
+    await expect(chart).toHaveAttribute('aria-valuetext', /Started: 9/);
+    await expect(page.getByRole('tooltip').getByText('9', { exact: true })).toBeVisible();
+    await page.keyboard.press('Tab');
     await page.evaluate(() => {
         const label = document.createElement('div');
         label.textContent = 'SYNTHETIC LOCAL FIXTURE — NOT CUSTOMER ACTIVITY';

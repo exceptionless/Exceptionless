@@ -1,4 +1,3 @@
-import { ProductTourUsageInterval } from '$generated/api';
 import { describe, expect, it } from 'vitest';
 
 import { getProductTourActivity, getProductTourUsageParams } from './product-tour-usage';
@@ -10,48 +9,54 @@ describe('product tour usage helpers', () => {
         expect(getProductTourUsageParams({ days: 30, kind: 'days' })).toEqual({ days: 30 });
     });
 
-    it('fills missing UTC days without inventing future activity', () => {
+    it('preserves exact server buckets across a month boundary, including empty and subdaily periods', () => {
         // Arrange
-        const activity = [{ completed: 0, date_utc: '2026-08-02T00:00:00Z', dismissed: 0, shown: 2, started: 1 }];
+        const activity = [
+            { completed: 0, date_utc: '2026-08-31T12:00:00Z', dismissed: 0, shown: 2, started: 1 },
+            { completed: 0, date_utc: '2026-08-31T18:00:00Z', dismissed: 0, shown: 0, started: 0 },
+            { completed: 1, date_utc: '2026-09-01T00:00:00Z', dismissed: 0, shown: 3, started: 2 }
+        ];
 
         // Act
-        const data = getProductTourActivity(
-            activity,
-            ProductTourUsageInterval.Day,
-            '2026-08-01T00:00:00Z',
-            '2026-09-01T00:00:00Z',
-            new Date('2026-08-03T12:00:00Z')
-        );
+        const data = getProductTourActivity(activity, '2026-08-31T12:00:00Z', '2026-09-02T00:00:00Z', new Date('2026-09-03T00:00:00Z'));
 
         // Assert
-        expect(data).toHaveLength(3);
-        expect(data.map((period) => period.shown)).toEqual([0, 2, 0]);
-        expect(data[0]?.date.toISOString()).toBe('2026-08-01T00:00:00.000Z');
+        expect(data).toEqual(activity.map((period) => ({ ...period, date: new Date(period.date_utc) })));
     });
 
-    it('keeps monthly history buckets at UTC month starts', () => {
+    it('trims padding before retained activity and after now without generating new buckets', () => {
         // Arrange
-        const activity = [{ completed: 3, date_utc: '2026-02-01T00:00:00Z', dismissed: 1, shown: 0, started: 5 }];
+        const activity = [1, 3, 5, 7].map((day) => ({
+            completed: 0,
+            date_utc: `2026-08-0${day}T00:00:00Z`,
+            dismissed: 0,
+            shown: 0,
+            started: 0
+        }));
 
         // Act
-        const data = getProductTourActivity(
-            activity,
-            ProductTourUsageInterval.Month,
-            '2026-01-31T15:00:00Z',
-            '2026-04-01T00:00:00Z',
-            new Date('2026-05-01T00:00:00Z')
-        );
+        const data = getProductTourActivity(activity, '2026-08-03T00:00:00Z', '2026-09-01T00:00:00Z', new Date('2026-08-06T12:00:00Z'));
 
         // Assert
-        expect(data.map((period) => period.date.getUTCMonth())).toEqual([0, 1, 2]);
-        expect(data.map((period) => period.started)).toEqual([0, 5, 0]);
+        expect(data.map((period) => period.date_utc)).toEqual(['2026-08-03T00:00:00Z', '2026-08-05T00:00:00Z']);
+    });
+
+    it('excludes the upper date boundary', () => {
+        // Arrange
+        const activity = [
+            { completed: 0, date_utc: '2026-02-01T00:00:00Z', dismissed: 0, shown: 0, started: 5 },
+            { completed: 0, date_utc: '2026-03-01T00:00:00Z', dismissed: 0, shown: 0, started: 0 }
+        ];
+
+        // Act
+        const data = getProductTourActivity(activity, null, '2026-03-01T00:00:00Z', new Date('2026-04-01T00:00:00Z'));
+
+        // Assert
+        expect(data).toHaveLength(1);
+        expect(data[0]?.started).toBe(5);
     });
 
     it('does not invent a start date for empty unlimited history', () => {
-        // Act
-        const data = getProductTourActivity([], ProductTourUsageInterval.Month, null, '2026-04-01T00:00:00Z');
-
-        // Assert
-        expect(data).toEqual([]);
+        expect(getProductTourActivity([], null, '2026-04-01T00:00:00Z')).toEqual([]);
     });
 });

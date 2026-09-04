@@ -10,6 +10,7 @@ export enum StackStatus {
 export enum ProductTourUsageInterval {
   Day = "day",
   Month = "month",
+  Auto = "auto",
 }
 
 export enum ProductTourTelemetryEvent {

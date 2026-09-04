@@ -58,7 +58,7 @@ Authorization: Bearer {{token}}
 GET {{apiUrl}}/admin/product-tour-usage?days=30
 Authorization: Bearer {{token}}
 
-### Product Tour Usage (available retained history; monthly activity for ranges longer than one month)
+### Product Tour Usage (available retained history; automatic range-based buckets, monthly when retention is unlimited)
 GET {{apiUrl}}/admin/product-tour-usage?history=true
 Authorization: Bearer {{token}}
 

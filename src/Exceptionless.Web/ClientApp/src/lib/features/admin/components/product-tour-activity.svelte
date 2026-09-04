@@ -13,7 +13,10 @@
     let { end, interval, start, tour }: { end: string; interval: ProductTourUsageInterval; start?: null | string; tour: ProductTourSummary } = $props();
     const prompt = $derived(tour.kind === 'prompt');
     const keyboardHelpId = $props.id();
-    const data = $derived(getProductTourActivity(tour.activity ?? [], interval, start, end));
+    const data = $derived(getProductTourActivity(tour.activity ?? [], start, end));
+    const subdaily = $derived(data[0] && data[1] && data[1].date.getTime() - data[0].date.getTime() < 86_400_000);
+    const lastPeriod = $derived(data.at(-1));
+    const withinDay = $derived(subdaily && data[0] && lastPeriod && lastPeriod.date.getTime() - data[0].date.getTime() < 86_400_000);
     const config = $derived({
         completed: {
             color: 'color-mix(in srgb, var(--chart-1) var(--tour-chart-strength), black)',
@@ -45,7 +48,7 @@
     const selectedIndex = $derived(Math.max(0, Math.min(keyboardIndex ?? data.length - 1, data.length - 1)));
     const selectedPeriod = $derived(data[selectedIndex]);
     const keyboardValue = $derived(
-        selectedPeriod ? `${dateLabel(selectedPeriod.date)}. ${keys.map((key) => `${config[key].label}: ${selectedPeriod[key]}`).join('. ')}` : 'No activity'
+        selectedPeriod ? `${periodLabel(selectedPeriod.date)}. ${keys.map((key) => `${config[key].label}: ${selectedPeriod[key]}`).join('. ')}` : 'No activity'
     );
 
     function showSelectedPeriod(): void {
@@ -71,14 +74,27 @@
     }
 
     function dateLabel(value: unknown): string {
+        if (value instanceof Date && withinDay) {
+            return value.toLocaleTimeString(undefined, {
+                hour: 'numeric',
+                minute: '2-digit',
+                timeZone: 'UTC'
+            });
+        }
+        return periodLabel(value, false);
+    }
+
+    function periodLabel(value: unknown, includeTime = true): string {
         if (!(value instanceof Date)) {
             return '';
         }
-        return value.toLocaleDateString(undefined, {
-            day: interval === 'day' ? 'numeric' : undefined,
+        return value.toLocaleString(undefined, {
+            day: interval !== 'month' ? 'numeric' : undefined,
+            hour: subdaily && includeTime ? 'numeric' : undefined,
+            minute: subdaily && includeTime ? '2-digit' : undefined,
             month: 'short',
             timeZone: 'UTC',
-            year: interval === 'month' ? 'numeric' : undefined
+            year: interval === 'month' || data[0]?.date.getUTCFullYear() !== lastPeriod?.date.getUTCFullYear() ? 'numeric' : undefined
         });
     }
 </script>
@@ -100,7 +116,7 @@
             class="focus-visible:outline-ring h-48 w-full rounded-sm focus-visible:outline focus-visible:outline-2"
             role="slider"
             tabindex={0}
-            aria-label={`${interval === 'day' ? 'Daily' : 'Monthly'} ${prompt ? 'invitation' : 'guide'} activity.`}
+            aria-label={`${interval === 'day' ? 'Daily' : interval === 'month' ? 'Monthly' : 'Recorded'} ${prompt ? 'invitation' : 'guide'} activity.`}
             aria-describedby={keyboardHelpId}
             aria-valuemin={0}
             aria-valuemax={Math.max(0, data.length - 1)}
@@ -150,7 +166,7 @@
                         {/if}
                     {/each}
                 {/snippet}
-                {#snippet tooltip()}<Chart.Tooltip role="tooltip" labelFormatter={dateLabel} indicator="line" />{/snippet}
+                {#snippet tooltip()}<Chart.Tooltip role="tooltip" labelFormatter={(value) => periodLabel(value)} indicator="line" />{/snippet}
             </LineChart>
         </Chart.Container>
         <div class="sr-only">
@@ -164,7 +180,7 @@
                 >
                 <Table.Body
                     >{#each data as period (period.date_utc)}<Table.Row
-                            ><Table.Cell>{dateLabel(period.date)}</Table.Cell>{#each keys as key (key)}<Table.Cell class="text-right"
+                            ><Table.Cell>{periodLabel(period.date)}</Table.Cell>{#each keys as key (key)}<Table.Cell class="text-right"
                                     ><Number value={period[key]} /></Table.Cell
                                 >{/each}</Table.Row
                         >{/each}</Table.Body
