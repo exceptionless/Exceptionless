@@ -193,6 +193,11 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     public DateTime? LastEventDateUtc { get; set; }
 
     /// <summary>
+    /// Most recent five-minute usage bucket durably applied to this organization.
+    /// </summary>
+    public DateTime? LastAppliedUsageBucketUtc { get; set; }
+
+    /// <summary>
     /// Optional data entries that contain additional configuration information for this organization.
     /// </summary>
     public DataDictionary? Data { get; set; }

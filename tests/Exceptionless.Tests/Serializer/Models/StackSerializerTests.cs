@@ -1,4 +1,6 @@
+using System.Text.Json;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Serialization;
 using Foundatio.Serializer;
 using Xunit;
 
@@ -31,7 +33,9 @@ public class StackSerializerTests : TestWithServices
             SignatureHash = "abc123",
             FirstOccurrence = FixedDateTime,
             LastOccurrence = FixedDateTime,
-            TotalOccurrences = 42
+            TotalOccurrences = 42,
+            IngestionFirstEventId = "event123",
+            IngestionStackUsageSequence = 123456
         };
 
         // Act
@@ -46,6 +50,30 @@ public class StackSerializerTests : TestWithServices
         Assert.Equal(Event.KnownTypes.Error, deserialized.Type);
         Assert.Equal("abc123", deserialized.SignatureHash);
         Assert.Equal(42, deserialized.TotalOccurrences);
+        Assert.Equal("event123", deserialized.IngestionFirstEventId);
+        Assert.Equal(123456, deserialized.IngestionStackUsageSequence);
+        Assert.Contains("\"ingestion_stack_usage_sequence\":123456", json);
+    }
+
+    [Fact]
+    public void ConfigureExceptionlessApiDefaults_InternalIngestionFields_AreExcluded()
+    {
+        var stack = new Stack
+        {
+            Id = "stack123",
+            OrganizationId = "org456",
+            ProjectId = "proj789",
+            Type = Event.KnownTypes.Error,
+            SignatureHash = "abc123",
+            IngestionFirstEventId = "event123",
+            IngestionStackUsageSequence = 123456
+        };
+        var options = new JsonSerializerOptions().ConfigureExceptionlessApiDefaults();
+
+        string json = JsonSerializer.Serialize(stack, options);
+
+        Assert.DoesNotContain("ingestion_first_event_id", json);
+        Assert.DoesNotContain("ingestion_stack_usage_sequence", json);
     }
 
     [Fact]

@@ -53,6 +53,11 @@ public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISup
     public DateTime? LastEventDateUtc { get; set; }
 
     /// <summary>
+    /// Most recent five-minute usage bucket durably applied to this project.
+    /// </summary>
+    public DateTime? LastAppliedUsageBucketUtc { get; set; }
+
+    /// <summary>
     /// Optional data entries that contain additional configuration information for this project.
     /// </summary>
     public DataDictionary? Data { get; set; }
