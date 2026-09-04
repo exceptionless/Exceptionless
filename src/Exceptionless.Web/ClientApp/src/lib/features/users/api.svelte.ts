@@ -277,7 +277,7 @@ export function postEmailAddress(request: PostEmailAddressRequest) {
 
 export function putCurrentUserProductTour() {
     const queryClient = useQueryClient();
-    return createMutation<ProductTourProgress, ProblemDetails, PutCurrentUserProductTourRequest>(() => ({
+    return createMutation<ProductTourProgress, ProblemDetails, PutCurrentUserProductTourRequest, string | undefined>(() => ({
         enabled: () => !!accessToken.current,
         mutationFn: async ({ progress, tourName }) => {
             const client = useFetchClient();
@@ -290,9 +290,10 @@ export function putCurrentUserProductTour() {
             return response.data!;
         },
         mutationKey: queryKeys.productTour(undefined),
-        onSuccess: (progress, { tourName }) => {
+        onMutate: () => queryClient.getQueryData<ViewCurrentUser>(queryKeys.me())?.id,
+        onSuccess: (progress, { tourName }, userId) => {
             const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
-            if (!currentUser) {
+            if (!currentUser || currentUser.id !== userId) {
                 return;
             }
 
