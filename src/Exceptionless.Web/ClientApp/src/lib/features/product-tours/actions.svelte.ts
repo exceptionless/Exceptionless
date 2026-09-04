@@ -65,6 +65,10 @@ export function createProductTourActions() {
     }
 
     async function finish(checkpoint: ProductTourCheckpoint, status: ProductTourStatus): Promise<boolean> {
+        if (productTourCheckpoint.current !== checkpoint) {
+            return false;
+        }
+
         try {
             await progressMutation.mutateAsync({
                 progress: {

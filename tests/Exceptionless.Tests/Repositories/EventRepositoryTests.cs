@@ -42,10 +42,15 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         // Arrange
         var start = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         string[] sources = ProductTours.Definitions.Values
-            .SelectMany(definition => Enum.GetValues<ProductTourTelemetryEvent>()
-                .SelectMany(action => Enum.GetValues<ProductTourLaunchSource>()
-                    .Select(source => ProductTours.CreateTelemetrySource(action, definition.Name, definition.CurrentVersion, source))))
+            .SelectMany(definition => Enumerable.Range(1, definition.CurrentVersion)
+                .SelectMany(version => Enum.GetValues<ProductTourTelemetryEvent>()
+                    .SelectMany(action => Enum.GetValues<ProductTourLaunchSource>()
+                        .Select(source => ProductTours.CreateTelemetrySource(action, definition.Name, version, source)))))
             .ToArray();
+        int stepCount = ProductTours.Steps.Values.SelectMany(steps => steps).Distinct(StringComparer.Ordinal).Count();
+        // Include the source bucket and the parser's padded end-date bucket. Catalog/version growth
+        // must stay within Elasticsearch's default search.max_buckets before it reaches production.
+        Assert.InRange((long)sources.Length * (1 + 91 + stepCount), 1, 65_536);
         await CreateDataAsync(builder =>
         {
             foreach (string source in sources)
