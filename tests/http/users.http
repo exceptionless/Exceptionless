@@ -37,6 +37,7 @@ Content-Type: application/json
 }
 
 ### Record Optional Product Tour Activity (no identity or request context)
+# Returns 503 when the internal storage project/organization is unavailable or its event allowance is exhausted.
 POST {{apiUrl}}/users/me/product-tours/app-overview/activity
 Authorization: Bearer {{token}}
 Content-Type: application/json

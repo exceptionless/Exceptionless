@@ -9,6 +9,7 @@ using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Api.Messages;
@@ -43,6 +44,7 @@ public class AdminHandler(
     IMigrationStateRepository migrationStateRepository,
     MigrationRerunService migrationRerunService,
     SampleDataService sampleDataService,
+    UsageService usageService,
     TimeProvider timeProvider,
     ILoggerFactory loggerFactory)
 {
@@ -164,6 +166,10 @@ public class AdminHandler(
             utcEnd = monthStart.AddMonths(1);
 
         var project = await projectRepository.GetByIdAsync(appOptions.InternalProjectId, options => options.Cache());
+        var organization = project is { IsDeleted: false }
+            ? await organizationRepository.GetByIdAsync(project.OrganizationId, options => options.Cache())
+            : null;
+        bool collectionAvailable = organization is { IsDeleted: false } && await usageService.GetEventsLeftAsync(organization.Id) > 0;
         var usage = await eventRepository.GetProductTourUsageAsync(appOptions.InternalProjectId, utcStart, utcEnd,
             message.History ? ProductTourUsageInterval.Month : ProductTourUsageInterval.Day);
         var bucketsByTour = usage.Buckets
@@ -222,7 +228,7 @@ public class AdminHandler(
             tours,
             usage.Interval)
         {
-            CollectionAvailable = project is { IsDeleted: false }
+            CollectionAvailable = collectionAvailable
         };
     }
 

@@ -37,6 +37,43 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetProductTourUsageAsync_AllSourcesOverNinetyDays_PreservesLargeCounts()
+    {
+        // Arrange
+        var start = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        string[] sources = ProductTours.Definitions.Values
+            .SelectMany(definition => Enum.GetValues<ProductTourTelemetryEvent>()
+                .SelectMany(action => Enum.GetValues<ProductTourLaunchSource>()
+                    .Select(source => ProductTours.CreateTelemetrySource(action, definition.Name, definition.CurrentVersion, source))))
+            .ToArray();
+        await CreateDataAsync(builder =>
+        {
+            foreach (string source in sources)
+            {
+                foreach (var date in new[] { start, start.AddDays(89) })
+                {
+                    builder.Event().Organization(TestConstants.OrganizationId).Project(_appOptions.InternalProjectId)
+                        .Type(Event.KnownTypes.FeatureUsage).Source(source).Date(date)
+                        .Mutate(ev => ev.Count = Int32.MaxValue);
+                }
+            }
+        });
+
+        // Act
+        var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, start, start.AddDays(90), ProductTourUsageInterval.Day);
+
+        // Assert
+        Assert.Equal(sources.Length, result.Buckets.Count);
+        Assert.All(result.Buckets, bucket =>
+        {
+            Assert.Equal(2L * Int32.MaxValue, bucket.Count);
+            Assert.Equal(bucket.Count, bucket.Activity.Sum(period => period.Count));
+            Assert.Equal(2, bucket.Activity.Count(period => period.Count > 0));
+            Assert.InRange(bucket.Activity.Count, 2, 90);
+        });
+    }
+
+    [Fact]
     public async Task GetProductTourUsageAsync_StepsAcrossFebruary_PreservesCoalescedCountsWithDailyBuckets()
     {
         // Arrange
