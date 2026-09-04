@@ -1,6 +1,6 @@
 services:
   elasticsearch:
-    image: exceptionless/elasticsearch:8.19.15
+    image: exceptionless/elasticsearch:9.5.0
     environment:
       node.name: elasticsearch
       cluster.name: exceptionless
@@ -11,6 +11,8 @@ services:
     ports:
       - 9200:9200
     volumes:
+      # Complete the Elasticsearch 8.19 upgrade preflight before reusing this volume with Elasticsearch 9.
+      # See https://exceptionless.com/docs/self-hosting/upgrading-self-hosted-instance
       - esdata:/usr/share/elasticsearch/data
     healthcheck:
       test:
@@ -26,7 +28,7 @@ services:
   kibana:
     depends_on:
       - elasticsearch
-    image: docker.elastic.co/kibana/kibana:8.19.15
+    image: docker.elastic.co/kibana/kibana:9.5.0
     environment:
       xpack.security.enabled: "false"
     ports:
