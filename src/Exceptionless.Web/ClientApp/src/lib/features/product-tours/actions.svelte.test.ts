@@ -69,7 +69,7 @@ describe('product tour completion', () => {
         expect(mocks.openCatalog).not.toHaveBeenCalled();
     });
 
-    it('does not show a completion action for dismissal or a stale checkpoint', async () => {
+    it('does not submit completion for a dismissed checkpoint', async () => {
         // Arrange
         const checkpoint = productTourCheckpoint.start('app-overview', 'help', 'catalog', 'user', 1);
         const actions = createProductTourActions();
@@ -80,8 +80,24 @@ describe('product tour completion', () => {
 
         // Assert
         expect(completed).toBe(false);
+        expect(mocks.mutateAsync).toHaveBeenCalledOnce();
         expect(mocks.success).not.toHaveBeenCalled();
         expect(mocks.openCatalog).not.toHaveBeenCalled();
+    });
+
+    it('does not submit dismissal after another guide replaces the checkpoint', async () => {
+        // Arrange
+        const previous = productTourCheckpoint.start('app-overview', 'help', 'catalog', 'user', 1);
+        const current = productTourCheckpoint.start('saved-view-create', 'open-view-menu', 'catalog', 'user', 1);
+
+        // Act
+        const dismissed = await createProductTourActions().dismiss(previous);
+
+        // Assert
+        expect(dismissed).toBe(false);
+        expect(productTourCheckpoint.current).toBe(current);
+        expect(mocks.mutateAsync).not.toHaveBeenCalled();
+        expect(mocks.submitFeatureUsage).not.toHaveBeenCalled();
     });
 
     it('offers the next guide once after a first event succeeds', async () => {
