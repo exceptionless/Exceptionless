@@ -61,8 +61,17 @@ export function putProductTourAnalytics() {
         },
         mutationKey: ['product-tours', 'analytics'],
         onError: (_error, _enabled, context) => {
-            if (context?.previous) {
-                queryClient.setQueryData(userQueryKeys.me(), context.previous);
+            const previous = context?.previous;
+            if (previous) {
+                queryClient.setQueryData<ViewCurrentUser>(userQueryKeys.me(), (user) => {
+                    if (!user || user.id !== previous.id) {
+                        return user;
+                    }
+                    return {
+                        ...user,
+                        product_tour_analytics_enabled: previous.product_tour_analytics_enabled
+                    };
+                });
             }
         },
         onMutate: async (enabled) => {
