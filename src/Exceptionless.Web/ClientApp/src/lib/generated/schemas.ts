@@ -27,7 +27,7 @@ export const StackStatusSchema = zodEnum([
   "ignored",
   "discarded",
 ]);
-export const ProductTourUsageIntervalSchema = zodEnum(["day", "month"]);
+export const ProductTourUsageIntervalSchema = zodEnum(["day", "month", "auto"]);
 export const ProductTourTelemetryEventSchema = zodEnum([
   "completed",
   "dismissed",

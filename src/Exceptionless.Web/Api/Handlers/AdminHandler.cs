@@ -168,7 +168,7 @@ public class AdminHandler(
             : null;
         bool collectionAvailable = organization is { IsDeleted: false } && await usageService.GetEventsLeftAsync(organization.Id) > 0;
         var usage = await eventRepository.GetProductTourUsageAsync(appOptions.InternalProjectId, utcStart, utcEnd,
-            message.History ? ProductTourUsageInterval.Month : ProductTourUsageInterval.Day);
+            message.History ? ProductTourUsageInterval.Auto : ProductTourUsageInterval.Day);
         var bucketsByTour = usage.Buckets
             .GroupBy(bucket => (bucket.Source.TourName, bucket.Source.Version))
             .ToDictionary(group => group.Key);

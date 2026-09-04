@@ -36,8 +36,10 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         _serializer = GetService<ITextSerializer>();
     }
 
-    [Fact]
-    public async Task GetProductTourUsageAsync_AllSourcesOverNinetyDays_PreservesLargeCounts()
+    [Theory]
+    [InlineData(ProductTourUsageInterval.Day)]
+    [InlineData(ProductTourUsageInterval.Auto)]
+    public async Task GetProductTourUsageAsync_AllSourcesOverNinetyDays_PreservesLargeCounts(ProductTourUsageInterval interval)
     {
         // Arrange
         var start = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -50,7 +52,8 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         int stepCount = ProductTours.Steps.Values.SelectMany(steps => steps).Distinct(StringComparer.Ordinal).Count();
         // Include the source bucket and the parser's padded end-date bucket. Catalog/version growth
         // must stay within Elasticsearch's default search.max_buckets before it reaches production.
-        Assert.InRange((long)sources.Length * (1 + 91 + stepCount), 1, 65_536);
+        int maximumPeriods = interval is ProductTourUsageInterval.Auto ? 201 : 90;
+        Assert.InRange((long)sources.Length * (1 + maximumPeriods + 1 + stepCount), 1, 65_536);
         await CreateDataAsync(builder =>
         {
             foreach (string source in sources)
@@ -65,7 +68,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         });
 
         // Act
-        var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, start, start.AddDays(90), ProductTourUsageInterval.Day);
+        var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, start, start.AddDays(90), interval);
 
         // Assert
         Assert.Equal(sources.Length, result.Buckets.Count);
@@ -74,8 +77,43 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
             Assert.Equal(2L * Int32.MaxValue, bucket.Count);
             Assert.Equal(bucket.Count, bucket.Activity.Sum(period => period.Count));
             Assert.Equal(2, bucket.Activity.Count(period => period.Count > 0));
-            Assert.InRange(bucket.Activity.Count, 2, 90);
+            Assert.InRange(bucket.Activity.Count, 2, maximumPeriods);
         });
+    }
+
+    [Theory]
+    [InlineData(5)]
+    [InlineData(180)]
+    [InlineData(1095)]
+    public async Task GetProductTourUsageAsync_AutomaticInterval_UsesDateFilterAndPreservesEmptyBuckets(int days)
+    {
+        // Arrange
+        var start = new DateTime(2026, 8, 31, 12, 0, 0, DateTimeKind.Utc);
+        var end = start.AddDays(days);
+        TimeProvider.SetUtcNow(end.AddDays(1));
+        await CreateDataAsync(builder =>
+        {
+            foreach (var date in new[] { start.AddTicks(-1), start, end.AddHours(-1), end })
+            {
+                builder.Event().Organization(TestConstants.OrganizationId).Project(_appOptions.InternalProjectId)
+                    .Type(Event.KnownTypes.FeatureUsage)
+                    .Source(ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Started, ProductTours.AppOverview, 1, ProductTourLaunchSource.Catalog))
+                    .Date(date).Mutate(ev => ev.Count = 3);
+            }
+        });
+
+        // Act
+        var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, start, end, ProductTourUsageInterval.Auto);
+
+        // Assert
+        Assert.Equal(ProductTourUsageInterval.Auto, result.Interval);
+        var bucket = Assert.Single(result.Buckets);
+        Assert.Equal(6, bucket.Count);
+        Assert.Equal(bucket.Count, bucket.Activity.Sum(period => period.Count));
+        Assert.InRange(bucket.Activity.Count, 80, 201);
+        Assert.Equal(2, bucket.Activity.Count(period => period.Count > 0));
+        Assert.Contains(bucket.Activity, period => period.Count == 0);
+        Assert.All(bucket.Activity, period => Assert.True(period.DateUtc < end));
     }
 
     [Fact]
@@ -158,8 +196,10 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         Assert.Equal(2, Assert.Single(catalogStarts.Activity, period => period.DateUtc == month.AddDays(1)).Count);
     }
 
-    [Fact]
-    public async Task GetProductTourUsageAsync_WithoutDates_ReturnsAllUsage()
+    [Theory]
+    [InlineData(null)]
+    [InlineData(ProductTourUsageInterval.Auto)]
+    public async Task GetProductTourUsageAsync_WithoutDates_ReturnsAllUsage(ProductTourUsageInterval? interval)
     {
         // Arrange
         var month = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -170,7 +210,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         });
 
         // Act
-        var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, null, month.AddMonths(1));
+        var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, null, month.AddMonths(1), interval);
 
         // Assert
         Assert.Equal(2, result.Buckets.Sum(bucket => bucket.Count));

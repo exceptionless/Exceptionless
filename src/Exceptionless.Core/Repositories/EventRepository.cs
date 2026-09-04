@@ -99,11 +99,21 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         string dateField = InferField(ev => ev.Date);
         string tagsField = InferField(ev => ev.Tags);
         int stepCount = ProductTours.Steps.Values.SelectMany(steps => steps).Distinct(StringComparer.Ordinal).Count();
-        bool daily = usageInterval.HasValue ? usageInterval is ProductTourUsageInterval.Day : utcStart.HasValue && utcEnd <= utcStart.Value.AddMonths(1);
-        string interval = daily ? "1d" : "1M";
+        var interval = usageInterval ?? (utcStart.HasValue && utcEnd <= utcStart.Value.AddMonths(1) ? ProductTourUsageInterval.Day : ProductTourUsageInterval.Month);
+        // Without a bounded date filter the parser defaults to daily buckets, which can be
+        // unbounded on installations with unlimited retention. Preserve monthly history there.
+        if (interval is ProductTourUsageInterval.Auto && !utcStart.HasValue)
+            interval = ProductTourUsageInterval.Month;
+        string proximity = interval switch
+        {
+            ProductTourUsageInterval.Day => "~1d",
+            ProductTourUsageInterval.Month => "~1M",
+            ProductTourUsageInterval.Auto => String.Empty,
+            _ => throw new ArgumentOutOfRangeException(nameof(usageInterval))
+        };
 
         var aggregation = await CountAsync(query => ApplyProductTourUsageFilter(query, projectId, utcStart, utcEnd, allSources)
-            .AggregationsExpression($"terms:({sourceField}~{allSources.Length} sum:{countField}~1 max:{dateField} date:({dateField}~{interval} sum:{countField}~1) terms:({tagsField}~{stepCount} @include:/{ProductTours.StepTagPrefix}.*/ sum:{countField}~1))"));
+            .AggregationsExpression($"terms:({sourceField}~{allSources.Length} sum:{countField}~1 max:{dateField} date:({dateField}{proximity} sum:{countField}~1) terms:({tagsField}~{stepCount} @include:/{ProductTours.StepTagPrefix}.*/ sum:{countField}~1))"));
 
         var sourceBuckets = aggregation.Aggregations.Terms<string>($"terms_{sourceField}")?.Buckets ?? [];
         var usage = sourceBuckets
@@ -125,7 +135,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
                 : null)
             .OfType<ProductTourUsageBucket>()
             .ToArray();
-        return new ProductTourUsageResult(usage, daily ? ProductTourUsageInterval.Day : ProductTourUsageInterval.Month);
+        return new ProductTourUsageResult(usage, interval);
     }
 
     private static IRepositoryQuery<PersistentEvent> ApplyProductTourUsageFilter(
@@ -138,7 +148,8 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         query = query
             .Project(projectId)
             .FieldEquals(ev => ev.Type, Event.KnownTypes.FeatureUsage)
-            .FieldEquals(ev => ev.Source, sources);
+            .FieldEquals(ev => ev.Source, sources)
+            .FieldLessThan(ev => ev.Date, utcEnd);
 
         if (utcStart.HasValue)
             return query.DateRange(utcStart, utcEnd, (PersistentEvent ev) => ev.Date).Index(utcStart, utcEnd);

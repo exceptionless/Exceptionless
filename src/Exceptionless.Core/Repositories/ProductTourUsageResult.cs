@@ -16,7 +16,10 @@ public enum ProductTourUsageInterval
     Day,
     [JsonStringEnumMemberName("month")]
     [EnumMember(Value = "month")]
-    Month
+    Month,
+    [JsonStringEnumMemberName("auto")]
+    [EnumMember(Value = "auto")]
+    Auto
 }
 
 public sealed record ProductTourUsageBucket(ProductTourUsageSource Source, long Count, DateTime? LastUtc, IReadOnlyCollection<ProductTourUsagePeriod> Activity)

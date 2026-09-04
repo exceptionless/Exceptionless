@@ -13743,11 +13743,13 @@
       "ProductTourUsageInterval": {
         "enum": [
           "day",
-          "month"
+          "month",
+          "auto"
         ],
         "x-enumNames": [
           "Day",
-          "Month"
+          "Month",
+          "Auto"
         ]
       },
       "ProductTourUsageResponse": {
