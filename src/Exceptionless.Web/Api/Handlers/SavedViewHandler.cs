@@ -372,7 +372,7 @@ public partial class SavedViewHandler(
 
         original.UpdatedByUserId = GetCurrentUserId();
 
-        await repository.SaveAsync(original, o => o.Cache());
+        await repository.SaveAsync(original, o => o.Cache().ImmediateConsistency());
         return MapToViewModel(original);
     }
 
