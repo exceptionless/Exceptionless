@@ -84,7 +84,7 @@
             }
         }
     });
-    const projects = $derived(projectsQuery.data?.data ?? []);
+    const projects = $derived(projectsQuery.data?.data ?? undefined);
     const projectConfigurePage = $derived(page.route.id === '/(app)/project/[projectId]/configure');
     const errorEventsQuery = getOrganizationEventsQuery({
         enabled: () => checkErrorAvailability,
@@ -109,7 +109,7 @@
                 ? 'available'
                 : 'empty'
     );
-    const hostStateSettled = $derived(stateSettled && (!organizationId || projectsQuery.isSuccess));
+    const hostStateSettled = $derived(stateSettled && (!organizationId || projectsQuery.isSuccess || projectsQuery.isError));
     const context = $derived<ProductTourContext>({
         assistantAccess,
         errorEventAvailability,
@@ -196,7 +196,7 @@
     });
 
     $effect(() => {
-        if (!hostStateSettled) {
+        if (!stateSettled) {
             return;
         }
 

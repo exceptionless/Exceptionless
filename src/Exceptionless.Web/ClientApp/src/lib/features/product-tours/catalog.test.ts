@@ -51,6 +51,34 @@ describe('product tour catalog', () => {
         expect(getProductTourItems(context()).every((item) => item.version > 0)).toBe(true);
     });
 
+    it('does not mistake an unavailable project list for an empty organization', () => {
+        // Arrange
+        const currentContext = context({ projects: undefined });
+
+        // Act
+        const items = getProductTourItems(currentContext);
+
+        // Assert
+        expect(items.find((item) => item.name === 'project-configure')?.currentAvailability).toEqual({
+            available: false,
+            reason: 'Projects could not be loaded. Try again shortly.'
+        });
+        expect(items.find((item) => item.name === 'app-overview')?.currentAvailability.available).toBe(true);
+        expect(items.find((item) => item.name === 'saved-view-create')?.currentAvailability.available).toBe(true);
+        expect(getRecommendedProductTourName(currentContext)).toBe('app-overview');
+    });
+
+    it.each([{ isProjectConfigurePage: true }, { organizationId: undefined }])('allows setup without a project lookup when %o', (overrides) => {
+        // Arrange
+        const currentContext = context({ projects: undefined, ...overrides });
+
+        // Act
+        const projectGuide = getProductTourItems(currentContext).find((item) => item.name === 'project-configure');
+
+        // Assert
+        expect(projectGuide?.currentAvailability.available).toBe(true);
+    });
+
     it('starts project setup from domain state', () => {
         const definition = productTourCatalog.find((tour) => tour.name === 'project-configure')!;
 

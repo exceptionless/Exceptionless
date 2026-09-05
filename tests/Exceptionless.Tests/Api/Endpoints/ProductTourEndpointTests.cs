@@ -50,6 +50,30 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task UpdateCurrentUserProductTourAsync_UnchangedProgress_PreservesRecentMembership()
+    {
+        // Arrange
+        var currentUser = await GetTestOrganizationUserAsync();
+        await UpdateProgressAsync(ProductTours.AppWelcome, ProductTourStatus.Dismissed, 1);
+        var user = await _userRepository.GetByIdAsync(currentUser.Id, options => options.Cache(false));
+        Assert.NotNull(user);
+        const string organizationId = "000000000000000000000099";
+        user.OrganizationIds.Add(organizationId);
+        await _userRepository.SaveAsync(user, options => options.Cache());
+
+        // Act
+        await UpdateProgressAsync(ProductTours.AppWelcome, ProductTourStatus.Dismissed, 1);
+
+        // Assert
+        var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, options => options.Cache(false));
+        var cachedUser = await _userRepository.GetByIdAsync(currentUser.Id, options => options.Cache());
+        Assert.NotNull(persistedUser);
+        Assert.NotNull(cachedUser);
+        Assert.Contains(organizationId, persistedUser.OrganizationIds);
+        Assert.Contains(organizationId, cachedUser.OrganizationIds);
+    }
+
+    [Fact]
     public async Task UpdateCurrentUserProductTourAsync_OlderProgress_PreservesStoredValue()
     {
         // Arrange

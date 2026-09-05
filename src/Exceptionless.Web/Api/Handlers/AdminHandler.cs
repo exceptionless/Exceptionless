@@ -82,7 +82,7 @@ public class AdminHandler(
     public async Task<Result<object>> Handle(GetAdminAssistantUsage message)
     {
         var requestedMonth = message.Month ?? timeProvider.GetUtcNow().UtcDateTime;
-        var month = requestedMonth.ToUniversalTime().StartOfMonth();
+        var month = new DateTime(requestedMonth.Year, requestedMonth.Month, 1, 0, 0, 0, DateTimeKind.Utc);
         var results = await organizationRepository.FindAsync(
             query => query.FieldEquals(organization => organization.AssistantUsage.First().Date, month),
             options => options.SearchAfterPaging().PageLimit(500));
