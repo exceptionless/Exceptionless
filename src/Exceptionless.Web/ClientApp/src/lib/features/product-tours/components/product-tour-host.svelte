@@ -267,6 +267,7 @@
             return;
         }
 
+        automaticSurface = undefined;
         const active = productTourCheckpoint.current;
         if (active?.tourName === name && isActiveTourRenderable(active)) {
             closeOverlays();
