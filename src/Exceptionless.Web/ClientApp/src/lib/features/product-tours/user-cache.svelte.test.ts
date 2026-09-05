@@ -4,8 +4,6 @@ import { putCurrentUserProductTour, queryKeys } from '$features/users/api.svelte
 import { MutationObserver, type MutationObserverOptions, QueryClient } from '@tanstack/svelte-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { putProductTourAnalytics } from './api.svelte';
-
 const mocks = vi.hoisted(() => ({ putJSON: vi.fn(), useQueryClient: vi.fn() }));
 vi.mock('$env/dynamic/public', () => ({ env: {} }));
 vi.mock('@foundatiofx/fetchclient', async (importOriginal) => ({
@@ -31,63 +29,6 @@ describe('guided-tour user cache concurrency', () => {
         queryClient.setQueryData(queryKeys.me(), user('first-user'));
     });
 
-    it.each([false, true])('keeps the acknowledged preference without refetching the user (enabled: %s)', async (enabled) => {
-        // Arrange
-        mocks.putJSON.mockResolvedValue(undefined);
-        const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
-
-        // Act
-        await putProductTourAnalytics().mutateAsync(enabled);
-
-        // Assert
-        expect(queryClient.getQueryData<ViewCurrentUser>(queryKeys.me())?.product_tour_analytics_enabled).toBe(enabled);
-        expect(invalidate).not.toHaveBeenCalled();
-        expect(queryClient.getQueryState(queryKeys.me())?.isInvalidated).toBe(false);
-    });
-
-    it('preserves progress saved while a preference update fails', async () => {
-        // Arrange
-        const request = Promise.withResolvers<void>();
-        mocks.putJSON.mockReturnValue(request.promise);
-        const pending = putProductTourAnalytics()
-            .mutateAsync(false)
-            .catch(() => undefined);
-        await vi.waitFor(() => expect(mocks.putJSON).toHaveBeenCalledOnce());
-        queryClient.setQueryData<ViewCurrentUser>(queryKeys.me(), (current) => ({
-            ...current!,
-            product_tours: { 'app-overview': { status: 1, version: 1 } }
-        }));
-
-        // Act
-        request.reject(new Error('Unavailable'));
-        await pending;
-
-        // Assert
-        expect(queryClient.getQueryData<ViewCurrentUser>(queryKeys.me())).toMatchObject({
-            product_tour_analytics_enabled: true,
-            product_tours: { 'app-overview': { status: 1, version: 1 } }
-        });
-    });
-
-    it('does not restore the previous account when its preference update fails', async () => {
-        // Arrange
-        const request = Promise.withResolvers<void>();
-        mocks.putJSON.mockReturnValue(request.promise);
-        const pending = putProductTourAnalytics()
-            .mutateAsync(false)
-            .catch(() => undefined);
-        await vi.waitFor(() => expect(mocks.putJSON).toHaveBeenCalledOnce());
-        const nextUser = user('second-user');
-        queryClient.setQueryData(queryKeys.me(), nextUser);
-
-        // Act
-        request.reject(new Error('Unavailable'));
-        await pending;
-
-        // Assert
-        expect(queryClient.getQueryData(queryKeys.me())).toEqual(nextUser);
-    });
-
     it.each([false, true])('applies delayed completion only to its original account (account changed: %s)', async (changeAccount) => {
         // Arrange
         const progress: ProductTourProgress = { status: 1, version: 1 };
@@ -95,7 +36,7 @@ describe('guided-tour user cache concurrency', () => {
         mocks.putJSON.mockReturnValue(request.promise);
         const pending = putCurrentUserProductTour().mutateAsync({ progress, tourName: 'app-overview' });
         await vi.waitFor(() => expect(mocks.putJSON).toHaveBeenCalledOnce());
-        const currentUser = { ...user(changeAccount ? 'second-user' : 'first-user'), product_tour_analytics_enabled: false };
+        const currentUser = { ...user(changeAccount ? 'second-user' : 'first-user'), full_name: 'Updated name' };
         queryClient.setQueryData(queryKeys.me(), currentUser);
 
         // Act
@@ -111,5 +52,5 @@ describe('guided-tour user cache concurrency', () => {
 });
 
 function user(id: string): ViewCurrentUser {
-    return { id, product_tour_analytics_enabled: true, product_tours: {} } as ViewCurrentUser;
+    return { id, product_tours: {} } as ViewCurrentUser;
 }

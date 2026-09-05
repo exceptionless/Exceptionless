@@ -84,7 +84,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         return FindAsync(q => q.Project(projectId).FieldEquals(e => e.ReferenceId, referenceId).SortDescending(e => e.Date), o => o.PageLimit(10));
     }
 
-    public async Task<ProductTourUsageResult> GetProductTourUsageAsync(string projectId, DateTime? utcStart, DateTime utcEnd, ProductTourUsageInterval? usageInterval = null)
+    public async Task<ProductTourUsageResult> GetProductTourUsageAsync(string projectId, DateTime? utcStart, DateTime utcEnd)
     {
         ArgumentException.ThrowIfNullOrEmpty(projectId);
         if (utcStart.HasValue && utcEnd <= utcStart)
@@ -97,23 +97,22 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         string sourceField = InferField(ev => ev.Source);
         string countField = InferField(ev => ev.Count);
         string dateField = InferField(ev => ev.Date);
-        string tagsField = InferField(ev => ev.Tags);
-        int stepCount = ProductTours.Steps.Values.SelectMany(steps => steps).Distinct(StringComparer.Ordinal).Count();
-        var interval = usageInterval ?? (utcStart.HasValue && utcEnd <= utcStart.Value.AddMonths(1) ? ProductTourUsageInterval.Day : ProductTourUsageInterval.Month);
-        // Without a bounded date filter the parser defaults to daily buckets, which can be
-        // unbounded on installations with unlimited retention. Preserve monthly history there.
-        if (interval is ProductTourUsageInterval.Auto && !utcStart.HasValue)
-            interval = ProductTourUsageInterval.Month;
-        string proximity = interval switch
+        if (!utcStart.HasValue)
         {
-            ProductTourUsageInterval.Day => "~1d",
-            ProductTourUsageInterval.Month => "~1M",
-            ProductTourUsageInterval.Auto => String.Empty,
-            _ => throw new ArgumentOutOfRangeException(nameof(usageInterval))
-        };
+            DateTime? retainedStart = _options.MaximumRetentionDays > 0
+                ? _timeProvider.GetUtcNow().UtcDateTime.SubtractDays(_options.MaximumRetentionDays)
+                : null;
+            var bounds = await CountAsync(query => ApplyProductTourUsageFilter(query, projectId, retainedStart, utcEnd, allSources)
+                .AggregationsExpression($"min:{dateField}"));
+            utcStart = bounds.Aggregations.Min<DateTime>($"min_{dateField}")?.Value;
+            if (!utcStart.HasValue)
+            {
+                return new ProductTourUsageResult([]);
+            }
+        }
 
         var aggregation = await CountAsync(query => ApplyProductTourUsageFilter(query, projectId, utcStart, utcEnd, allSources)
-            .AggregationsExpression($"terms:({sourceField}~{allSources.Length} sum:{countField}~1 max:{dateField} date:({dateField}{proximity} sum:{countField}~1) terms:({tagsField}~{stepCount} @include:/{ProductTours.StepTagPrefix}.*/ sum:{countField}~1))"));
+            .AggregationsExpression($"terms:({sourceField}~{allSources.Length} sum:{countField}~1 max:{dateField} date:({dateField} sum:{countField}~1))"));
 
         var sourceBuckets = aggregation.Aggregations.Terms<string>($"terms_{sourceField}")?.Buckets ?? [];
         var usage = sourceBuckets
@@ -126,16 +125,10 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
                         .Where(period => period.Date < utcEnd)
                         .Select(period => new ProductTourUsagePeriod(period.Date, Convert.ToInt64(period.Aggregations.Sum($"sum_{countField}")?.Value ?? period.Total.GetValueOrDefault())))
                         .ToArray())
-                {
-                    Steps = (bucket.Aggregations.Terms<string>($"terms_{tagsField}")?.Buckets ?? [])
-                        .Where(step => step.Key.StartsWith(ProductTours.StepTagPrefix, StringComparison.Ordinal))
-                        .Select(step => new ProductTourStepCount(step.Key[ProductTours.StepTagPrefix.Length..], Convert.ToInt64(step.Aggregations.Sum($"sum_{countField}")?.Value ?? step.Total.GetValueOrDefault())))
-                        .ToArray()
-                }
                 : null)
             .OfType<ProductTourUsageBucket>()
             .ToArray();
-        return new ProductTourUsageResult(usage, interval);
+        return new ProductTourUsageResult(usage);
     }
 
     private static IRepositoryQuery<PersistentEvent> ApplyProductTourUsageFilter(

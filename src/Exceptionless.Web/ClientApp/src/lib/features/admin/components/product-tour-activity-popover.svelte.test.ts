@@ -15,7 +15,6 @@ const tour: ProductTourSummary = {
     shown: 0,
     start_sources: [{ count: 4, source: ProductTourLaunchSource.CommandPalette }],
     started: 4,
-    steps: [{ dismissed: 1, reached: 4, step: 'navigation' }],
     version: 1
 };
 
@@ -32,26 +31,24 @@ describe('ProductTourActivityPopover', () => {
 
         // Assert
         expect(screen.getByRole('dialog', { name: 'Explore Exceptionless' })).toBeTruthy();
-        expect(screen.getByText(/Most common exit: navigation/)).toBeTruthy();
         expect(screen.getByRole('list', { name: 'Guide entry points' }).textContent).toContain('100.0%');
-        expect(screen.getByRole('list', { name: 'Guide steps reached and explicit exits' }).textContent).toContain('4 reached; 1 closed here');
     });
 
     it('explains missing diagnostics without inventing step counts', async () => {
         // Arrange
-        render(ProductTourActivityPopover, { title: 'Explore Exceptionless', tour: { ...tour, start_sources: [], steps: [] } });
+        render(ProductTourActivityPopover, { title: 'Explore Exceptionless', tour: { ...tour, start_sources: [] } });
 
         // Act
         await fireEvent.click(screen.getByRole('button'));
 
         // Assert
-        expect(screen.getByText('No step or entry-point activity recorded in this period.')).toBeTruthy();
+        expect(screen.getByText('No entry-point activity recorded in this period.')).toBeTruthy();
         expect(screen.queryByText(/Most common exit/)).toBeNull();
     });
 
     it('explains invitation acceptance without presenting guide steps', async () => {
         // Arrange
-        render(ProductTourActivityPopover, { title: 'Welcome invitation', tour: { ...tour, kind: ProductTourKind.Prompt, steps: [] } });
+        render(ProductTourActivityPopover, { title: 'Welcome invitation', tour: { ...tour, kind: ProductTourKind.Prompt } });
 
         // Act
         await fireEvent.click(screen.getByRole('button'));

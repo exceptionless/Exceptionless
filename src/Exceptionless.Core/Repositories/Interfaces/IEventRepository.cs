@@ -13,7 +13,7 @@ public interface IEventRepository : IRepositoryOwnedByOrganizationAndProject<Per
     Task<bool> UpdateSessionStartLastActivityAsync(string id, DateTime lastActivityUtc, bool isSessionEnd = false, bool hasError = false, bool sendNotifications = true);
     Task<long> RemoveAllAsync(string organizationId, string? clientIpAddress, DateTime? utcStart, DateTime? utcEnd, CommandOptionsDescriptor<PersistentEvent>? options = null);
     Task<long> RemoveAllByStackIdsAsync(string[] stackIds);
-    Task<ProductTourUsageResult> GetProductTourUsageAsync(string projectId, DateTime? utcStart, DateTime utcEnd, ProductTourUsageInterval? usageInterval = null);
+    Task<ProductTourUsageResult> GetProductTourUsageAsync(string projectId, DateTime? utcStart, DateTime utcEnd);
 }
 
 public static class EventRepositoryExtensions

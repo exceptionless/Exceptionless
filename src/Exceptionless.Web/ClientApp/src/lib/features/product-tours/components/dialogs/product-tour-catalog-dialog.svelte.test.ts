@@ -67,8 +67,7 @@ describe('ProductTourCatalogDialog', () => {
         for (const item of items) {
             expect(screen.getByText(item.description)).toBeTruthy();
         }
-        expect(screen.getByRole('link', { name: 'Usage settings' }).getAttribute('href')).toContain('/account/manage#guided-tour-privacy');
-        expect(screen.queryAllByRole('link')).toHaveLength(1);
+        expect(screen.queryAllByRole('link')).toHaveLength(0);
         expect(screen.queryByText(/\d+ steps/)).toBeNull();
         expect(onStart).not.toHaveBeenCalled();
     });

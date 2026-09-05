@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { ProductTourSummary, ProductTourUsageInterval } from '$generated/api';
+    import type { ProductTourSummary } from '$generated/api';
 
     import Number from '$comp/formatters/number.svelte';
     import * as Typography from '$comp/typography';
@@ -12,7 +12,7 @@
 
     import { getProductTourActivity } from '../product-tour-usage';
 
-    let { end, interval, start, tour }: { end: string; interval: ProductTourUsageInterval; start?: null | string; tour: ProductTourSummary } = $props();
+    let { end, start, tour }: { end: string; start?: null | string; tour: ProductTourSummary } = $props();
     const prompt = $derived(tour.kind === 'prompt');
     const keyboardHelpId = $props.id();
     const data = $derived(getProductTourActivity(tour.activity ?? [], start, end));
@@ -106,7 +106,7 @@
             class="focus-visible:outline-ring h-48 w-full rounded-sm focus-visible:outline focus-visible:outline-2"
             role="slider"
             tabindex={0}
-            aria-label={`${interval === 'day' ? 'Daily' : interval === 'month' ? 'Monthly' : 'Recorded'} ${prompt ? 'invitation' : 'guide'} activity.`}
+            aria-label={`Recorded ${prompt ? 'invitation' : 'guide'} activity.`}
             aria-describedby={keyboardHelpId}
             aria-valuemin={0}
             aria-valuemax={Math.max(0, data.length - 1)}

@@ -4,9 +4,9 @@ import { getProductTourActivity, getProductTourUsageParams } from './product-tou
 
 describe('product tour usage helpers', () => {
     it('maps each immutable range to the API query parameters', () => {
-        expect(getProductTourUsageParams({ kind: 'month', month: '2026-08' })).toEqual({ month: '2026-08-01' });
-        expect(getProductTourUsageParams({ kind: 'history' })).toEqual({ history: true });
-        expect(getProductTourUsageParams({ days: 30, kind: 'days' })).toEqual({ days: 30 });
+        expect(getProductTourUsageParams({ kind: 'month', month: '2026-08' })).toEqual({ end: '2026-09-01T00:00:00.000Z', start: '2026-08-01T00:00:00.000Z' });
+        expect(getProductTourUsageParams({ kind: 'history' })).toEqual({});
+        expect(getProductTourUsageParams({ days: 30, kind: 'days' }, new Date('2026-03-02T12:00:00Z'))).toEqual({ start: '2026-02-01T00:00:00.000Z' });
     });
 
     it('preserves exact server buckets across a month boundary, including empty and subdaily periods', () => {
@@ -54,6 +54,17 @@ describe('product tour usage helpers', () => {
         // Assert
         expect(data).toHaveLength(1);
         expect(data[0]?.started).toBe(5);
+    });
+
+    it('keeps activity in a histogram bucket that begins before the requested start', () => {
+        // Arrange
+        const activity = [{ completed: 0, date_utc: '2026-08-03T00:00:00Z', dismissed: 0, shown: 0, started: 1 }];
+
+        // Act
+        const data = getProductTourActivity(activity, '2026-08-03T01:00:00Z', '2026-08-04T00:00:00Z', new Date('2026-08-05T00:00:00Z'));
+
+        // Assert
+        expect(data[0]?.started).toBe(1);
     });
 
     it('does not invent a start date for empty unlimited history', () => {

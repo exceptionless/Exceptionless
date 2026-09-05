@@ -27,14 +27,6 @@ export const StackStatusSchema = zodEnum([
   "ignored",
   "discarded",
 ]);
-export const ProductTourUsageIntervalSchema = zodEnum(["day", "month", "auto"]);
-export const ProductTourTelemetryEventSchema = zodEnum([
-  "completed",
-  "dismissed",
-  "shown",
-  "started",
-  "step-reached",
-]);
 export const ProductTourStatusSchema = union([literal(1), literal(2)]);
 export const ProductTourLaunchSourceSchema = zodEnum([
   "welcome",
@@ -612,22 +604,6 @@ export const PersistentEventSchema = object({
 });
 export type PersistentEventFormData = Infer<typeof PersistentEventSchema>;
 
-export const PostProductTourActivitySchema = object({
-  version: int32()
-    .min(1, "Version must be at least 1")
-    .max(2147483647, "Version must be at most 2147483647"),
-  action: ProductTourTelemetryEventSchema,
-  source: ProductTourLaunchSourceSchema,
-  step: string()
-    .min(1, "Step is required")
-    .max(64, "Step must be at most 64 characters")
-    .nullable()
-    .optional(),
-});
-export type PostProductTourActivityFormData = Infer<
-  typeof PostProductTourActivitySchema
->;
-
 export const PredefinedSavedViewDefinitionSchema = object({
   key: string().min(1, "Key is required"),
   name: string().min(1, "Name is required"),
@@ -686,15 +662,6 @@ export type ProductTourStartSourceFormData = Infer<
   typeof ProductTourStartSourceSchema
 >;
 
-export const ProductTourStepActivitySchema = object({
-  step: string().min(1, "Step is required"),
-  reached: int(),
-  dismissed: int(),
-});
-export type ProductTourStepActivityFormData = Infer<
-  typeof ProductTourStepActivitySchema
->;
-
 export const ProductTourSummarySchema = object({
   name: string().min(1, "Name is required"),
   version: int32(),
@@ -706,7 +673,6 @@ export const ProductTourSummarySchema = object({
   last_run_utc: iso.datetime().nullable(),
   start_sources: array(lazy(() => ProductTourStartSourceSchema)),
   activity: array(lazy(() => ProductTourActivitySchema)),
-  steps: array(lazy(() => ProductTourStepActivitySchema)),
 });
 export type ProductTourSummaryFormData = Infer<typeof ProductTourSummarySchema>;
 
@@ -714,7 +680,6 @@ export const ProductTourUsageResponseSchema = object({
   utc_start: iso.datetime().nullable(),
   utc_end: iso.datetime(),
   tours: array(lazy(() => ProductTourSummarySchema)),
-  interval: ProductTourUsageIntervalSchema,
   collection_available: boolean(),
 });
 export type ProductTourUsageResponseFormData = Infer<
@@ -863,13 +828,6 @@ export type UpdateEventSubmissionSettingsFormData = Infer<
   typeof UpdateEventSubmissionSettingsSchema
 >;
 
-export const UpdateProductTourAnalyticsSchema = object({
-  enabled: boolean().nullable(),
-});
-export type UpdateProductTourAnalyticsFormData = Infer<
-  typeof UpdateProductTourAnalyticsSchema
->;
-
 export const UpdateProductTourProgressSchema = object({
   status: ProductTourStatusSchema,
   version: int32()
@@ -978,7 +936,6 @@ export const UserSchema = object({
     string(),
     lazy(() => ProductTourProgressSchema),
   ),
-  product_tour_analytics_enabled: boolean(),
   full_name: string().min(1, "Full name is required"),
   email_address: email(),
   avatar_file_name: string()
@@ -1032,7 +989,6 @@ export type UserSavedViewOrderPreferenceFormData = Infer<
 
 export const ViewCurrentUserSchema = object({
   hash: string().min(1, "Hash is required").nullable().optional(),
-  product_tour_analytics_enabled: boolean(),
   has_local_account: boolean(),
   o_auth_accounts: array(lazy(() => OAuthAccountSchema)),
   organization_preferences: array(lazy(() => UserOrganizationPreferenceSchema)),

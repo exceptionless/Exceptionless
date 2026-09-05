@@ -23,16 +23,22 @@ export function getProductTourActivity(
     const startDate = start ? new Date(start) : undefined;
     return activity
         .map((period) => ({ ...period, date: new Date(period.date_utc) }))
-        .filter((period) => (!startDate || period.date >= startDate) && period.date < endDate);
+        .filter(
+            (period) =>
+                (!startDate || period.date >= startDate || period.shown + period.started + period.completed + period.dismissed > 0) && period.date < endDate
+        );
 }
 
-export function getProductTourUsageParams(range: ProductTourUsageRange): Record<string, boolean | number | string> {
+export function getProductTourUsageParams(range: ProductTourUsageRange, now = new Date()): Record<string, string> {
     if (range.kind === 'days') {
-        return { days: range.days };
+        const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1 - range.days));
+        return { start: start.toISOString() };
     }
     if (range.kind === 'history') {
-        return { history: true };
+        return {};
     }
 
-    return { month: `${range.month}-01` };
+    const start = new Date(`${range.month}-01T00:00:00Z`);
+    const end = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1));
+    return { end: end.toISOString(), start: start.toISOString() };
 }

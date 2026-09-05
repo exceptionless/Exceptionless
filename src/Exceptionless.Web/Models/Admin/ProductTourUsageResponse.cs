@@ -1,13 +1,11 @@
 using Exceptionless.Core.Models.Data;
-using Exceptionless.Core.Repositories;
 
 namespace Exceptionless.Web.Models.Admin;
 
 public sealed record ProductTourUsageResponse(
     DateTime? UtcStart,
     DateTime UtcEnd,
-    IReadOnlyCollection<ProductTourSummary> Tours,
-    ProductTourUsageInterval Interval)
+    IReadOnlyCollection<ProductTourSummary> Tours)
 {
     public bool CollectionAvailable { get; init; }
 }
@@ -22,12 +20,7 @@ public sealed record ProductTourSummary(
     long Dismissed,
     DateTime? LastRunUtc,
     IReadOnlyCollection<ProductTourStartSource> StartSources,
-    IReadOnlyCollection<ProductTourActivity> Activity)
-{
-    public IReadOnlyCollection<ProductTourStepActivity> Steps { get; init; } = [];
-}
-
-public sealed record ProductTourStepActivity(string Step, long Reached, long Dismissed);
+    IReadOnlyCollection<ProductTourActivity> Activity);
 
 public sealed record ProductTourStartSource(ProductTourLaunchSource Source, long Count);
 

@@ -36,10 +36,8 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         _serializer = GetService<ITextSerializer>();
     }
 
-    [Theory]
-    [InlineData(ProductTourUsageInterval.Day)]
-    [InlineData(ProductTourUsageInterval.Auto)]
-    public async Task GetProductTourUsageAsync_AllSourcesOverNinetyDays_PreservesLargeCounts(ProductTourUsageInterval interval)
+    [Fact]
+    public async Task GetProductTourUsageAsync_AllSourcesOverNinetyDays_PreservesLargeCounts()
     {
         // Arrange
         var start = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -49,11 +47,10 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
                     .SelectMany(action => Enum.GetValues<ProductTourLaunchSource>()
                         .Select(source => ProductTours.CreateTelemetrySource(action, definition.Name, version, source)))))
             .ToArray();
-        int stepCount = ProductTours.Steps.Values.SelectMany(steps => steps).Distinct(StringComparer.Ordinal).Count();
         // Include the source bucket and the parser's padded end-date bucket. Catalog/version growth
         // must stay within Elasticsearch's default search.max_buckets before it reaches production.
-        int maximumPeriods = interval is ProductTourUsageInterval.Auto ? 201 : 90;
-        Assert.InRange((long)sources.Length * (1 + maximumPeriods + 1 + stepCount), 1, 65_536);
+        int maximumPeriods = 201;
+        Assert.InRange((long)sources.Length * (1 + maximumPeriods + 1), 1, 65_536);
         await CreateDataAsync(builder =>
         {
             foreach (string source in sources)
@@ -68,7 +65,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         });
 
         // Act
-        var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, start, start.AddDays(90), interval);
+        var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, start, start.AddDays(90));
 
         // Assert
         Assert.Equal(sources.Length, result.Buckets.Count);
@@ -103,10 +100,9 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         });
 
         // Act
-        var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, start, end, ProductTourUsageInterval.Auto);
+        var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, start, end);
 
         // Assert
-        Assert.Equal(ProductTourUsageInterval.Auto, result.Interval);
         var bucket = Assert.Single(result.Buckets);
         Assert.Equal(6, bucket.Count);
         Assert.Equal(bucket.Count, bucket.Activity.Sum(period => period.Count));
@@ -117,33 +113,31 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetProductTourUsageAsync_StepsAcrossFebruary_PreservesCoalescedCountsWithDailyBuckets()
+    public async Task GetProductTourUsageAsync_ActivityAcrossFebruary_PreservesCoalescedCounts()
     {
         // Arrange
         var start = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc);
         await CreateDataAsync(builder =>
         {
-            foreach (var action in new[] { ProductTourTelemetryEvent.StepReached, ProductTourTelemetryEvent.Dismissed })
+            foreach (var action in new[] { ProductTourTelemetryEvent.Started, ProductTourTelemetryEvent.Dismissed })
             {
                 builder.Event().Organization(TestConstants.OrganizationId).Project(_appOptions.InternalProjectId)
                     .Type(Event.KnownTypes.FeatureUsage)
                     .Source(ProductTours.CreateTelemetrySource(action, ProductTours.AppOverview, 1, ProductTourLaunchSource.Catalog))
                     .Date(start.AddDays(28))
-                    .Mutate(ev => { ev.Count = 3; ev.Tags = [ProductTours.StepTagPrefix + "navigation"]; });
+                    .Mutate(ev => ev.Count = 3);
             }
         });
 
         // Act
-        var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, start, start.AddDays(30), ProductTourUsageInterval.Day);
+        var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, start, start.AddDays(30));
 
         // Assert
-        Assert.Equal(ProductTourUsageInterval.Day, result.Interval);
         Assert.Equal(2, result.Buckets.Count);
         Assert.All(result.Buckets, bucket =>
         {
             Assert.Equal(3, bucket.Count);
-            Assert.Equal(new ProductTourStepCount("navigation", 3), Assert.Single(bucket.Steps));
-            Assert.Equal(start.AddDays(28), Assert.Single(bucket.Activity, period => period.Count > 0).DateUtc);
+            Assert.InRange(Assert.Single(bucket.Activity, period => period.Count > 0).DateUtc, start.AddDays(27), start.AddDays(28));
         });
     }
 
@@ -190,16 +184,13 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         Assert.Equal(1, welcome.Count);
 
         Assert.All(result.Buckets, item => Assert.True(ProductTours.IsValid(item.Source.TourName, item.Source.Version)));
-        Assert.Equal(ProductTourUsageInterval.Day, result.Interval);
         Assert.All(result.Buckets, bucket => Assert.Equal(bucket.Count, bucket.Activity.Sum(period => period.Count)));
         var catalogStarts = Assert.Single(overview, bucket => bucket.Source.Event == ProductTourTelemetryEvent.Started && bucket.Source.LaunchSource == ProductTourLaunchSource.Catalog);
-        Assert.Equal(2, Assert.Single(catalogStarts.Activity, period => period.DateUtc == month.AddDays(1)).Count);
+        Assert.InRange(Assert.Single(catalogStarts.Activity, period => period.Count == 2).DateUtc, month, month.AddDays(1));
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData(ProductTourUsageInterval.Auto)]
-    public async Task GetProductTourUsageAsync_WithoutDates_ReturnsAllUsage(ProductTourUsageInterval? interval)
+    [Fact]
+    public async Task GetProductTourUsageAsync_WithoutDates_ReturnsAllUsage()
     {
         // Arrange
         var month = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -210,12 +201,46 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         });
 
         // Act
-        var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, null, month.AddMonths(1), interval);
+        var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, null, month.AddMonths(1));
 
         // Assert
         Assert.Equal(2, result.Buckets.Sum(bucket => bucket.Count));
-        Assert.Equal(ProductTourUsageInterval.Month, result.Interval);
-        Assert.Contains(result.Buckets.SelectMany(bucket => bucket.Activity), period => period.DateUtc == month.AddMonths(-1) && period.Count == 1);
+        Assert.Contains(result.Buckets.SelectMany(bucket => bucket.Activity), period => period.DateUtc <= month.AddMonths(-1) && period.Count == 1);
+    }
+
+    [Fact]
+    public async Task GetProductTourUsageAsync_History_UsesRetainedActivityBoundsForAutomaticBuckets()
+    {
+        // Arrange
+        var first = new DateTime(2026, 8, 1, 12, 0, 0, DateTimeKind.Utc);
+        var end = first.AddDays(7);
+        TimeProvider.SetUtcNow(end);
+        string source = ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Started, ProductTours.AppOverview, 1, ProductTourLaunchSource.Catalog);
+        await CreateDataAsync(builder =>
+        {
+            AddProductTourUsage(builder, source, first, "first");
+            AddProductTourUsage(builder, source, end.AddSeconds(-1), "last");
+        });
+
+        // Act
+        var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, null, end);
+
+        // Assert
+        var bucket = Assert.Single(result.Buckets);
+        Assert.Equal(2, bucket.Count);
+        Assert.Equal(bucket.Count, bucket.Activity.Sum(period => period.Count));
+        Assert.InRange(bucket.Activity.Count, 80, 201);
+        Assert.All(bucket.Activity, period => Assert.InRange(period.DateUtc, first.AddDays(-1), end));
+    }
+
+    [Fact]
+    public async Task GetProductTourUsageAsync_EmptyHistory_DoesNotInventDateBounds()
+    {
+        // Act
+        var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, null, TimeProvider.GetUtcNow().UtcDateTime);
+
+        // Assert
+        Assert.Empty(result.Buckets);
     }
 
     [Fact]

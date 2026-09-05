@@ -25,11 +25,10 @@ describe('product-tour session persistence', () => {
         expect(() => clearProductTourSession(unavailable)).not.toThrow();
     });
 
-    it('preserves reached steps without adding identity to activity', () => {
+    it('round-trips only the current functional checkpoint', () => {
         // Arrange
         const checkpoint = {
             checkpointName: 'navigation',
-            reachedSteps: ['navigation'],
             source: 'catalog',
             tourName: 'app-overview',
             userId: 'user',
@@ -47,9 +46,9 @@ describe('product-tour session persistence', () => {
         };
 
         // Act
-        writeProductTourSession({ ...checkpoint, reachedSteps: [...checkpoint.reachedSteps] }, storage);
+        writeProductTourSession(checkpoint, storage);
 
         // Assert
-        expect(readProductTourSession(storage)?.reachedSteps).toEqual(['navigation']);
+        expect(readProductTourSession(storage)).toEqual(checkpoint);
     });
 });

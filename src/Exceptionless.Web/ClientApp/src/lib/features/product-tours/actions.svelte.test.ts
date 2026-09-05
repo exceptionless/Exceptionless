@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
     submitFeatureUsage: vi.fn(),
     success: vi.fn()
 }));
-vi.mock('./api.svelte', () => ({ createProductTourActivity: () => mocks.submitFeatureUsage }));
+vi.mock('./activity', () => ({ submitProductTourActivity: mocks.submitFeatureUsage }));
 vi.mock('$features/users/api.svelte', () => ({ putCurrentUserProductTour: () => ({ mutateAsync: mocks.mutateAsync }) }));
 vi.mock('./controls.svelte', () => ({ tryUseProductTourControls: () => ({ openCatalog: mocks.openCatalog }) }));
 vi.mock('svelte-sonner', () => ({ toast: { error: mocks.error, success: mocks.success } }));
@@ -107,9 +107,7 @@ describe('product tour completion', () => {
         const actions = createProductTourActions();
 
         // Act
-        actions.completeAfterDomainSuccess(checkpoint);
-        actions.completeAfterDomainSuccess(checkpoint);
-        await vi.waitFor(() => expect(productTourCheckpoint.current).toBeUndefined());
+        await Promise.all([actions.completeAfterDomainSuccess(checkpoint), actions.completeAfterDomainSuccess(checkpoint)]);
 
         // Assert
         expect(mocks.mutateAsync).toHaveBeenCalledOnce();
@@ -121,13 +119,33 @@ describe('product tour completion', () => {
         );
     });
 
+    it('does not submit a second outcome while progress is being saved', async () => {
+        // Arrange
+        const checkpoint = productTourCheckpoint.start('app-overview', 'help', 'catalog', 'user', 1);
+        const pending = Promise.withResolvers<void>();
+        mocks.mutateAsync.mockReturnValue(pending.promise);
+        const actions = createProductTourActions();
+
+        // Act
+        const completion = actions.complete(checkpoint);
+        const dismissed = await actions.dismiss(checkpoint);
+        pending.resolve();
+        const completed = await completion;
+
+        // Assert
+        expect(dismissed).toBe(false);
+        expect(completed).toBe(true);
+        expect(mocks.mutateAsync).toHaveBeenCalledOnce();
+        expect(mocks.submitFeatureUsage).toHaveBeenCalledExactlyOnceWith('completed', 'app-overview', 1, 'catalog');
+    });
+
     it('preserves a domain-success checkpoint for retry when progress saving fails', async () => {
         // Arrange
         const checkpoint = productTourCheckpoint.start('project-configure', 'event-received', 'catalog', 'user', 1);
         mocks.mutateAsync.mockRejectedValueOnce(new Error('Unavailable'));
 
         // Act
-        createProductTourActions().completeAfterDomainSuccess(checkpoint);
+        await createProductTourActions().completeAfterDomainSuccess(checkpoint);
         await vi.waitFor(() => expect(mocks.error).toHaveBeenCalledOnce());
 
         // Assert

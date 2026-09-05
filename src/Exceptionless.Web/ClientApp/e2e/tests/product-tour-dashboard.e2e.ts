@@ -45,7 +45,6 @@ test('empty activity stays distinct from an unavailable collector', async ({ e2e
         route.fulfill({
             json: {
                 collection_available: collectionAvailable,
-                interval: 'day',
                 tours: [
                     {
                         activity: [],
@@ -56,7 +55,6 @@ test('empty activity stays distinct from an unavailable collector', async ({ e2e
                         shown: 0,
                         start_sources: [],
                         started: 0,
-                        steps: [],
                         version: 1
                     }
                 ],
@@ -93,7 +91,7 @@ test('synthetic activity charts support keyboard, compact ranges, and light/dark
     }));
     const sum = (key: 'completed' | 'dismissed' | 'shown' | 'started') => activity.reduce((total, day) => total + day[key], 0);
     await page.route('**/api/v2/admin/product-tour-usage*', (route) => {
-        const history = new URL(route.request().url()).searchParams.get('history') === 'true';
+        const history = !new URL(route.request().url()).searchParams.has('start');
         const periods = history
             ? activity.map((period, index) => ({
                   ...period,
@@ -103,7 +101,6 @@ test('synthetic activity charts support keyboard, compact ranges, and light/dark
         return route.fulfill({
             json: {
                 collection_available: true,
-                interval: history ? 'auto' : 'day',
                 tours: ['app-overview', 'project-configure', 'saved-view-create', 'app-welcome'].map((name) => ({
                     activity: periods,
                     completed: sum('completed'),
@@ -114,7 +111,6 @@ test('synthetic activity charts support keyboard, compact ranges, and light/dark
                     shown: sum('shown'),
                     start_sources: [{ count: sum('started'), source: 'catalog' }],
                     started: sum('started'),
-                    steps: [{ dismissed: 3, reached: 20, step: 'navigation' }],
                     version: 1
                 })),
                 utc_end: new Date().toISOString(),
@@ -144,7 +140,6 @@ test('synthetic activity charts support keyboard, compact ranges, and light/dark
     await page.keyboard.press('Enter');
     await expect(page.getByRole('dialog', { exact: true, name: 'Explore Exceptionless' })).toBeVisible();
     await expect(page.getByRole('list', { name: 'Guide entry points' })).toContainText('100.0%');
-    await expect(page.getByText('Most common exit: navigation')).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(details).toBeFocused();
     await page.getByRole('button', { name: 'Usage period: Last 30 days' }).click();

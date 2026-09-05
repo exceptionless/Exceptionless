@@ -4,7 +4,7 @@ import { toast } from 'svelte-sonner';
 
 import type { ProductTourCheckpoint } from './models';
 
-import { createProductTourActivity } from './api.svelte';
+import { submitProductTourActivity } from './activity';
 import { tryUseProductTourControls } from './controls.svelte';
 import { productTourCheckpoint } from './state.svelte';
 
@@ -15,60 +15,34 @@ const COMPLETION_MESSAGES: Record<Exclude<ProductTourCheckpoint['tourName'], 'ap
     'saved-view-create': 'Your saved view is ready'
 };
 
-const domainCompletionRequests = new WeakSet<ProductTourCheckpoint>();
+const progressRequests = new WeakSet<ProductTourCheckpoint>();
 
 export function createProductTourActions() {
     const controls = tryUseProductTourControls();
     const progressMutation = putCurrentUserProductTour();
-    const track = createProductTourActivity();
 
     async function complete(checkpoint: ProductTourCheckpoint): Promise<boolean> {
-        if (productTourCheckpoint.markReached(checkpoint)) {
-            void track('step-reached', checkpoint.tourName, checkpoint.version, checkpoint.source, checkpoint.checkpointName);
-        }
-        return finish(checkpoint, ProductTourStatus.Completed);
+        return await finish(checkpoint, ProductTourStatus.Completed);
     }
 
     async function dismiss(checkpoint: ProductTourCheckpoint): Promise<boolean> {
-        return finish(checkpoint, ProductTourStatus.Dismissed);
+        return await finish(checkpoint, ProductTourStatus.Dismissed);
     }
 
-    function completeAfterDomainSuccess(checkpoint: ProductTourCheckpoint): void {
-        if (productTourCheckpoint.current !== checkpoint || domainCompletionRequests.has(checkpoint)) {
-            return;
-        }
-
-        domainCompletionRequests.add(checkpoint);
-        if (productTourCheckpoint.markReached(checkpoint)) {
-            void track('step-reached', checkpoint.tourName, checkpoint.version, checkpoint.source, checkpoint.checkpointName);
-        }
-        void progressMutation
-            .mutateAsync({
-                progress: {
-                    status: ProductTourStatus.Completed,
-                    version: checkpoint.version
-                },
-                tourName: checkpoint.tourName
-            })
-            .then(() => {
-                if (productTourCheckpoint.clear(checkpoint)) {
-                    void track('completed', checkpoint.tourName, checkpoint.version, checkpoint.source);
-                    showCompletion(checkpoint);
-                }
-            })
-            .catch(() => {
-                toast.error('Setup succeeded, but guided-tour progress could not be saved.');
-            })
-            .finally(() => {
-                domainCompletionRequests.delete(checkpoint);
-            });
+    async function completeAfterDomainSuccess(checkpoint: ProductTourCheckpoint): Promise<void> {
+        await finish(checkpoint, ProductTourStatus.Completed, 'Setup succeeded, but guided-tour progress could not be saved.');
     }
 
-    async function finish(checkpoint: ProductTourCheckpoint, status: ProductTourStatus): Promise<boolean> {
-        if (productTourCheckpoint.current !== checkpoint) {
+    async function finish(
+        checkpoint: ProductTourCheckpoint,
+        status: ProductTourStatus,
+        errorMessage = 'We could not save your guided-tour progress. Please try again.'
+    ): Promise<boolean> {
+        if (productTourCheckpoint.current !== checkpoint || progressRequests.has(checkpoint)) {
             return false;
         }
 
+        progressRequests.add(checkpoint);
         try {
             await progressMutation.mutateAsync({
                 progress: {
@@ -78,19 +52,20 @@ export function createProductTourActions() {
                 tourName: checkpoint.tourName
             });
         } catch {
-            toast.error('We could not save your guided-tour progress. Please try again.');
+            toast.error(errorMessage);
             return false;
+        } finally {
+            progressRequests.delete(checkpoint);
         }
 
         if (!productTourCheckpoint.clear(checkpoint)) {
             return false;
         }
-        void track(
+        await submitProductTourActivity(
             status === ProductTourStatus.Completed ? 'completed' : 'dismissed',
             checkpoint.tourName,
             checkpoint.version,
-            checkpoint.source,
-            checkpoint.checkpointName
+            checkpoint.source
         );
         if (status === ProductTourStatus.Completed) {
             showCompletion(checkpoint);

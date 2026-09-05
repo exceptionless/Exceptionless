@@ -7,20 +7,6 @@ export enum StackStatus {
   Discarded = "discarded",
 }
 
-export enum ProductTourUsageInterval {
-  Day = "day",
-  Month = "month",
-  Auto = "auto",
-}
-
-export enum ProductTourTelemetryEvent {
-  Completed = "completed",
-  Dismissed = "dismissed",
-  Shown = "shown",
-  Started = "started",
-  StepReached = "step-reached",
-}
-
 export enum ProductTourStatus {
   Completed = 1,
   Dismissed = 2,
@@ -503,18 +489,6 @@ export interface PersistentEvent {
   reference_id?: null | string;
 }
 
-export interface PostProductTourActivity {
-  /**
-   * @format int32
-   * @min 1
-   * @max 2147483647
-   */
-  version: number;
-  action?: null | ProductTourTelemetryEvent;
-  source?: null | ProductTourLaunchSource;
-  step?: null | string;
-}
-
 export interface PredefinedSavedViewDefinition {
   key: string;
   name: string;
@@ -563,14 +537,6 @@ export interface ProductTourStartSource {
   count: number;
 }
 
-export interface ProductTourStepActivity {
-  step: string;
-  /** @format int64 */
-  reached: number;
-  /** @format int64 */
-  dismissed: number;
-}
-
 export interface ProductTourSummary {
   name: string;
   /** @format int32 */
@@ -588,7 +554,6 @@ export interface ProductTourSummary {
   last_run_utc?: null | string;
   start_sources: ProductTourStartSource[];
   activity: ProductTourActivity[];
-  steps: ProductTourStepActivity[];
 }
 
 export interface ProductTourUsageResponse {
@@ -597,7 +562,6 @@ export interface ProductTourUsageResponse {
   /** @format date-time */
   utc_end: string;
   tours: ProductTourSummary[];
-  interval: ProductTourUsageInterval;
   collection_available: boolean;
 }
 
@@ -755,10 +719,6 @@ export interface UpdateEventSubmissionSettings {
   enabled?: null | boolean;
 }
 
-export interface UpdateProductTourAnalytics {
-  enabled?: null | boolean;
-}
-
 export interface UpdateProductTourProgress {
   status?: null | ProductTourStatus;
   /**
@@ -859,7 +819,6 @@ export interface User {
   organization_preferences: UserOrganizationPreference[];
   saved_view_orders: UserSavedViewOrderPreference[];
   product_tours: Record<string, ProductTourProgress>;
-  product_tour_analytics_enabled: boolean;
   /** Gets or sets the users Full Name. */
   full_name: string;
   /** @format email */
@@ -903,7 +862,6 @@ export interface UserSavedViewOrderPreference {
 
 export interface ViewCurrentUser {
   hash?: null | string;
-  product_tour_analytics_enabled: boolean;
   has_local_account: boolean;
   o_auth_accounts: OAuthAccount[];
   organization_preferences: UserOrganizationPreference[];

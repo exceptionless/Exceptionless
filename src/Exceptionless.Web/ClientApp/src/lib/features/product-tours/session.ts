@@ -28,7 +28,6 @@ export function readProductTourSession(storage?: Pick<Storage, 'getItem' | 'remo
 
         return {
             checkpointName: candidate.checkpointName,
-            ...(candidate.reachedSteps ? { reachedSteps: candidate.reachedSteps } : {}),
             organizationId: candidate.organizationId,
             source: candidate.source,
             tourName: candidate.tourName,
@@ -69,14 +68,6 @@ function isProductTourCheckpoint(value: unknown): value is ProductTourCheckpoint
     }
 
     const checkpoints: readonly string[] = PRODUCT_TOUR_CHECKPOINTS[value.tourName];
-    if (
-        value.reachedSteps !== undefined &&
-        (!Array.isArray(value.reachedSteps) ||
-            value.reachedSteps.length > checkpoints.length ||
-            !value.reachedSteps.every((step) => typeof step === 'string' && checkpoints.includes(step)))
-    ) {
-        return false;
-    }
     if (typeof value.checkpointName !== 'string' || !checkpoints.includes(value.checkpointName)) {
         return false;
     }
