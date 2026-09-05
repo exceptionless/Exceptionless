@@ -38,8 +38,7 @@ Content-Type: application/json
 
 ### Record Optional Product Tour Activity (no identity or request context)
 # Returns 503 when the internal storage project/organization is unavailable or its event allowance is exhausted.
-# Requests are limited to 2 KB and 100 activity submissions per user per 15-minute window (413/429).
-# Activity throttling does not limit saved progress or changes to the analytics preference.
+# Requests are limited to 2 KB (413) and use the existing global API throttle (429).
 POST {{apiUrl}}/users/me/product-tours/app-overview/activity
 Authorization: Bearer {{token}}
 Content-Type: application/json
