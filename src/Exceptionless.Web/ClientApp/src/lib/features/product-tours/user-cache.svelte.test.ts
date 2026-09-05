@@ -31,6 +31,20 @@ describe('guided-tour user cache concurrency', () => {
         queryClient.setQueryData(queryKeys.me(), user('first-user'));
     });
 
+    it.each([false, true])('keeps the acknowledged preference without refetching the user (enabled: %s)', async (enabled) => {
+        // Arrange
+        mocks.putJSON.mockResolvedValue(undefined);
+        const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
+
+        // Act
+        await putProductTourAnalytics().mutateAsync(enabled);
+
+        // Assert
+        expect(queryClient.getQueryData<ViewCurrentUser>(queryKeys.me())?.product_tour_analytics_enabled).toBe(enabled);
+        expect(invalidate).not.toHaveBeenCalled();
+        expect(queryClient.getQueryState(queryKeys.me())?.isInvalidated).toBe(false);
+    });
+
     it('preserves progress saved while a preference update fails', async () => {
         // Arrange
         const request = Promise.withResolvers<void>();
