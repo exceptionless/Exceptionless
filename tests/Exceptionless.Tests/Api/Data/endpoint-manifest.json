@@ -525,6 +525,18 @@
   },
   {
     "method": "GET",
+    "route": "/api/v2/admin/product-tour-usage",
+    "displayName": "HTTP: GET api/v2/admin/product-tour-usage =\u003E GetProductTourUsageAsync",
+    "tags": [],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
     "route": "/api/v2/admin/requeue",
     "displayName": "HTTP: GET /api/v2/admin/requeue",
     "tags": [
@@ -2702,6 +2714,20 @@
     "method": "DELETE",
     "route": "/api/v2/users/me/oauth-grants/{id:minlength(1)}",
     "displayName": "HTTP: DELETE api/v2/users/me/oauth-grants/{id:minlength(1)}",
+    "tags": [
+      "User"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "PUT",
+    "route": "/api/v2/users/me/product-tours/{tourName:regex(^[a-z0-9]\u002B(?:-[a-z0-9]\u002B)*$):maxlength(64)}",
+    "displayName": "HTTP: PUT api/v2/users/me/product-tours/{tourName:regex(^[a-z0-9]\u002B(?:-[a-z0-9]\u002B)*$):maxlength(64)}",
     "tags": [
       "User"
     ],

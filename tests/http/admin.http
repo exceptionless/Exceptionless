@@ -54,6 +54,14 @@ Authorization: Bearer {{token}}
 GET {{apiUrl}}/admin/assistant-usage
 Authorization: Bearer {{token}}
 
+### Product Tour Usage (explicit UTC range)
+GET {{apiUrl}}/admin/product-tour-usage?start=2026-08-01T00:00:00Z&end=2026-08-31T00:00:00Z
+Authorization: Bearer {{token}}
+
+### Product Tour Usage (available retained history; automatic range-based buckets)
+GET {{apiUrl}}/admin/product-tour-usage
+Authorization: Bearer {{token}}
+
 ### Get Exie Settings
 GET {{apiUrl}}/admin/assistant-settings
 Authorization: Bearer {{token}}
@@ -115,6 +123,16 @@ Content-Type: application/json
 {
     "enabled": null
 }
+
+### Product Tour Usage
+# Includes weighted activity in automatic date buckets alongside per-guide totals.
+GET {{apiUrl}}/admin/product-tour-usage?start=2026-08-01T00:00:00Z&end=2026-09-01T00:00:00Z
+Authorization: Bearer {{token}}
+
+###
+
+GET {{apiUrl}}/admin/product-tour-usage
+Authorization: Bearer {{token}}
 
 ### Suspend
 POST {{apiUrl}}/organizations/{{organizationId}}/suspend?code=1

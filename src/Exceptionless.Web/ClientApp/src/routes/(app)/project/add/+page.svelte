@@ -11,6 +11,9 @@
     import { Spinner } from '$comp/ui/spinner';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing';
     import { organization } from '$features/organizations/context.svelte';
+    import { createProductTourActions } from '$features/product-tours/actions.svelte';
+    import ProductTourSpotlight from '$features/product-tours/components/product-tour-spotlight.svelte';
+    import { productTourCheckpoint } from '$features/product-tours/state.svelte';
     import { postProject } from '$features/projects/api.svelte';
     import { type NewProjectFormData, NewProjectSchema } from '$features/projects/schemas';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
@@ -21,6 +24,8 @@
 
     let toastId = $state<number | string>();
     const createProject = postProject();
+    const tourActions = createProductTourActions();
+    const projectConfigureCheckpoint = $derived(productTourCheckpoint.current?.tourName === 'project-configure' ? productTourCheckpoint.current : undefined);
 
     const form = createForm(() => ({
         defaultValues: {
@@ -37,6 +42,10 @@
                         ...value,
                         organization_id: organization.current ?? value.organization_id
                     } as NewProject);
+                    const checkpoint = projectConfigureCheckpoint;
+                    if (checkpoint) {
+                        productTourCheckpoint.advance(checkpoint, 'choose-platform');
+                    }
                     toastId = toast.success('Project added successfully');
                     await goto(
                         resolve('/(app)/project/[projectId]/configure', {
@@ -75,6 +84,7 @@
         <Muted>Create a project, then configure a client to send your first event.</Muted>
     </div>
     <form
+        data-tour="project-setup-form"
         onsubmit={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -91,6 +101,7 @@
                 <Field.Field data-invalid={ariaInvalid(field)}>
                     <Field.Label for={field.name}>Project Name</Field.Label>
                     <Input
+                        data-tour="project-name"
                         id={field.name}
                         name={field.name}
                         placeholder="Enter project name"
@@ -116,3 +127,19 @@
         </form.Subscribe>
     </form>
 </div>
+
+{#if projectConfigureCheckpoint?.checkpointName === 'project-name'}
+    <ProductTourSpotlight
+        checkpoint={projectConfigureCheckpoint}
+        showProgress={false}
+        onDismiss={tourActions.dismiss}
+        side="top"
+        target="[data-tour='project-setup-form']"
+        title="Name your project"
+    >
+        {#snippet description()}
+            This is <strong>Add Project</strong>, available under Settings → Projects. Name the application or service that will send events, then select
+            <strong>Continue to Client Setup</strong> in the form.
+        {/snippet}
+    </ProductTourSpotlight>
+{/if}

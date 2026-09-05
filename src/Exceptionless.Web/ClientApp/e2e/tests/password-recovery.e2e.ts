@@ -3,38 +3,45 @@ import { E2E_TEST_PASSWORD, expect, test } from '../fixtures/e2e-test';
 const RESET_PASSWORD = `${E2E_TEST_PASSWORD}-reset`;
 
 test.skip(process.env.E2E_ENV === 'production', 'Password recovery requires local Mailpit.');
-test.use({ e2eCleanupPassword: RESET_PASSWORD, e2eUseGeneratedUser: true });
+test.use({ e2eCleanupPassword: RESET_PASSWORD, e2eUseInvitedUser: true });
 
-test('user can reset a forgotten password and log in @signup', async ({ e2eApi, e2eScenario, page }) => {
-    await test.step('request a password reset through the UI', async () => {
-        await page.goto('/next/forgot-password');
-        await page.getByLabel('Email', { exact: true }).fill(e2eScenario.email);
-        await page.getByRole('button', { name: 'Send Reset Email' }).click();
+test('user can reset a forgotten password and log in @signup', async ({ browser, e2eApi, e2eScenario }) => {
+    const recoveryContext = await browser.newContext({ baseURL: e2eApi.environment.appUrl, ignoreHTTPSErrors: true });
+    const page = await recoveryContext.newPage();
 
-        await expect(page).toHaveURL(/\/next\/login(?:[?#]|$)/);
-        await expect(page.getByText('Please check your inbox for the password reset email.')).toBeVisible();
-    });
+    try {
+        await test.step('request a password reset through the UI', async () => {
+            await page.goto('/next/forgot-password');
+            await page.getByLabel('Email', { exact: true }).fill(e2eScenario.email);
+            await page.getByRole('button', { name: 'Send Reset Email' }).click();
 
-    const resetToken = await test.step('read the reset link from local mail', async () => {
-        return await e2eApi.pollForMailToken(e2eScenario.email, 'reset-password');
-    });
+            await expect(page).toHaveURL(/\/next\/login(?:[?#]|$)/);
+            await expect(page.getByText('Please check your inbox for the password reset email.')).toBeVisible();
+        });
 
-    await test.step('change the password through the emailed route', async () => {
-        await page.goto(`/next/reset-password/${encodeURIComponent(resetToken)}`);
-        await page.getByLabel('New Password', { exact: true }).fill(RESET_PASSWORD);
-        await page.getByLabel('Confirm Password', { exact: true }).fill(RESET_PASSWORD);
-        await page.getByRole('button', { name: 'Change Password' }).click();
+        const resetToken = await test.step('read the reset link from local mail', async () => {
+            return await e2eApi.pollForMailToken(e2eScenario.email, 'reset-password');
+        });
 
-        await expect(page).toHaveURL(/\/next\/login(?:[?#]|$)/);
-        await expect(page.getByText('You have successfully changed your password.')).toBeVisible();
-    });
+        await test.step('change the password through the emailed route', async () => {
+            await page.goto(`/next/reset-password/${encodeURIComponent(resetToken)}`);
+            await page.getByLabel('New Password', { exact: true }).fill(RESET_PASSWORD);
+            await page.getByLabel('Confirm Password', { exact: true }).fill(RESET_PASSWORD);
+            await page.getByRole('button', { name: 'Change Password' }).click();
 
-    await test.step('log in with the new password', async () => {
-        await page.getByLabel('Email', { exact: true }).fill(e2eScenario.email);
-        await page.getByPlaceholder('Enter password').fill(RESET_PASSWORD);
-        await page.getByRole('button', { exact: true, name: 'Login' }).click();
+            await expect(page).toHaveURL(/\/next\/login(?:[?#]|$)/);
+            await expect(page.getByText('You have successfully changed your password.')).toBeVisible();
+        });
 
-        await expect(page.getByRole('heading', { name: 'All' })).toBeVisible({ timeout: 30_000 });
-        await expect(page).toHaveURL(/\/next\/stack\/all(?:[?#]|$)/);
-    });
+        await test.step('log in with the new password', async () => {
+            await page.getByLabel('Email', { exact: true }).fill(e2eScenario.email);
+            await page.getByPlaceholder('Enter password').fill(RESET_PASSWORD);
+            await page.getByRole('button', { exact: true, name: 'Login' }).click();
+
+            await expect(page.getByRole('heading', { name: 'All' })).toBeVisible({ timeout: 30_000 });
+            await expect(page).toHaveURL(/\/next\/stack\/all(?:[?#]|$)/);
+        });
+    } finally {
+        await recoveryContext.close();
+    }
 });

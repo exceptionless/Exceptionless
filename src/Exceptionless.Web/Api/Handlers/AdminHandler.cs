@@ -3,10 +3,12 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Api.Messages;
@@ -17,6 +19,7 @@ using Foundatio.Messaging;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
+using Foundatio.Repositories.Models;
 using Foundatio.Storage;
 using Foundatio.Mediator;
 
@@ -38,6 +41,7 @@ public class AdminHandler(
     BillingPlans plans,
     IMigrationStateRepository migrationStateRepository,
     SampleDataService sampleDataService,
+    UsageService usageService,
     TimeProvider timeProvider,
     ILoggerFactory loggerFactory)
 {
@@ -134,6 +138,71 @@ public class AdminHandler(
             rows.Take(limit).ToArray());
     }
 
+    public async Task<Result<object>> Handle(GetAdminProductTourUsage message)
+    {
+        DateTime utcEnd = message.End?.ToUniversalTime() ?? timeProvider.GetUtcNow().UtcDateTime;
+        DateTime? utcStart = message.Start?.ToUniversalTime();
+        if (utcStart.HasValue && utcStart >= utcEnd)
+        {
+            return Result.Invalid(ValidationError.Create("start", "Start must be earlier than end."));
+        }
+
+        var project = await projectRepository.GetByIdAsync(appOptions.InternalProjectId, options => options.Cache());
+        var organization = project is { IsDeleted: false }
+            ? await organizationRepository.GetByIdAsync(project.OrganizationId, options => options.Cache())
+            : null;
+        bool collectionAvailable = organization is { IsDeleted: false } && await usageService.GetEventsLeftAsync(organization.Id) > 0;
+        var usage = await eventRepository.GetProductTourUsageAsync(appOptions.InternalProjectId, utcStart, utcEnd);
+        var bucketsByTour = usage.Buckets
+            .GroupBy(bucket => (bucket.Source.TourName, bucket.Source.Version))
+            .ToDictionary(group => group.Key);
+        var tours = ProductTours.Definitions.Values
+            .SelectMany(definition => Enumerable.Range(1, definition.CurrentVersion).Select(version =>
+            {
+                IEnumerable<ProductTourUsageBucket> buckets = bucketsByTour.TryGetValue((definition.Name, version), out var matchingBuckets)
+                    ? matchingBuckets
+                    : [];
+
+                return new ProductTourSummary(
+                    definition.Name,
+                    version,
+                    definition.Kind,
+                    SumEvent(buckets, ProductTourTelemetryEvent.Shown),
+                    SumEvent(buckets, ProductTourTelemetryEvent.Started),
+                    SumEvent(buckets, ProductTourTelemetryEvent.Completed),
+                    SumEvent(buckets, ProductTourTelemetryEvent.Dismissed),
+                    buckets.Select(bucket => bucket.LastUtc).Max(),
+                    buckets
+                        .Where(bucket => bucket.Source.Event is ProductTourTelemetryEvent.Started)
+                        .GroupBy(bucket => bucket.Source.LaunchSource)
+                        .Select(group => new ProductTourStartSource(group.Key, group.Sum(bucket => bucket.Count)))
+                        .OrderBy(source => source.Source)
+                        .ToArray(),
+                    buckets
+                        .SelectMany(bucket => bucket.Activity.Select(period => (period.DateUtc, period.Count, bucket.Source.Event)))
+                        .GroupBy(period => period.DateUtc)
+                        .OrderBy(group => group.Key)
+                        .Select(group => new ProductTourActivity(
+                            group.Key,
+                            group.Where(period => period.Event == ProductTourTelemetryEvent.Shown).Sum(period => period.Count),
+                            group.Where(period => period.Event == ProductTourTelemetryEvent.Started).Sum(period => period.Count),
+                            group.Where(period => period.Event == ProductTourTelemetryEvent.Completed).Sum(period => period.Count),
+                            group.Where(period => period.Event == ProductTourTelemetryEvent.Dismissed).Sum(period => period.Count)))
+                        .ToArray());
+            }))
+            .OrderBy(tour => tour.Name, StringComparer.Ordinal)
+            .ThenBy(tour => tour.Version)
+            .ToArray();
+
+        return new ProductTourUsageResponse(
+            !message.Start.HasValue ? usage.Buckets.SelectMany(bucket => bucket.Activity).Where(period => period.Count > 0).Select(period => (DateTime?)period.DateUtc).Min() : utcStart,
+            utcEnd,
+            tours)
+        {
+            CollectionAvailable = collectionAvailable
+        };
+    }
+
     [HandlerEndpoint(HandlerMethod.Get, "migrations", Group = "Admin")]
     public async Task<Result<object>> Handle(GetAdminMigrations message)
     {
@@ -170,6 +239,11 @@ public class AdminHandler(
             httpContext.Request.Headers,
             IpAddress = httpContext.Request.GetClientIpAddress()
         });
+    }
+
+    private static long SumEvent(IEnumerable<ProductTourUsageBucket> buckets, ProductTourTelemetryEvent telemetryEvent)
+    {
+        return buckets.Where(bucket => bucket.Source.Event == telemetryEvent).Sum(bucket => bucket.Count);
     }
 
     [HandlerEndpoint(HandlerMethod.Get, "assemblies", Group = "Admin")]

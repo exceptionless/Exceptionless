@@ -22,6 +22,7 @@ export interface E2EOrganization {
 
 export interface E2EProject {
     id: string;
+    is_configured?: boolean;
     name: string;
     organization_id?: string;
 }
@@ -285,10 +286,11 @@ export class E2EApiClient {
         throw new Error(`Timed out waiting for ${path} email sent to ${email}`);
     }
 
-    async signup(name: string, email: string, password: string): Promise<string> {
+    async signup(name: string, email: string, password: string, inviteToken?: string): Promise<string> {
         const response = await this.request.post(this.url('auth/signup'), {
             data: {
                 email,
+                invite_token: inviteToken,
                 name,
                 password
             }
@@ -309,11 +311,46 @@ export class E2EApiClient {
         await expectStatus(response, [202], 'submit event');
     }
 
+    async updateProductTour(token: string, tourName: string, version: number, status: 1 | 2): Promise<void> {
+        const response = await this.request.put(this.url(`users/me/product-tours/${tourName}`), {
+            data: { status, version },
+            headers: this.authHeaders(token)
+        });
+
+        await expectStatus(response, [200], 'update product tour');
+    }
+
     async waitForCurrentUserDeleted(token: string, timeoutMs = 30_000): Promise<void> {
         await waitForCondition(
             async () => !(await this.getCurrentUser(token)),
             timeoutMs,
             'Timed out waiting for generated E2E user to be inaccessible after deletion'
+        );
+    }
+
+    async waitForInvitationListed(token: string, organizationId: string, inviteToken: string): Promise<void> {
+        await waitForCondition(
+            async () => {
+                const response = await this.request.get(this.url('organizations'), {
+                    headers: this.authHeaders(token),
+                    params: { filter: `id:${organizationId}` }
+                });
+                await expectStatus(response, [200], 'find indexed invitation');
+                const organizations = await readJson(response);
+                return (
+                    Array.isArray(organizations) &&
+                    organizations.some((value) => {
+                        const organization = toRecord(value, 'organization');
+                        return (
+                            organization.id === organizationId &&
+                            Array.isArray(organization.invites) &&
+                            organization.invites.some((invite) => toRecord(invite, 'invitation').token === inviteToken)
+                        );
+                    })
+                );
+            },
+            30_000,
+            'Timed out waiting for the test invitation to be indexed'
         );
     }
 
@@ -460,6 +497,7 @@ function toProject(value: unknown): E2EProject {
 
     return {
         id: getRequiredString(record, 'id', 'project response'),
+        is_configured: typeof record.is_configured === 'boolean' ? record.is_configured : undefined,
         name: getRequiredString(record, 'name', 'project response'),
         organization_id: getOptionalString(record, 'organization_id')
     };

@@ -59,6 +59,7 @@ type RenderOptions = {
     isImpersonating?: boolean;
     openChat?: () => void;
     openExie?: () => Promise<void> | void;
+    openGuidedTours?: () => void;
     openImpersonateOrganization?: () => Promise<void> | void;
     organizations?: Array<{ id: string; name: string }>;
     stopImpersonating?: () => Promise<void> | void;
@@ -81,6 +82,7 @@ function renderCommandPalette(routes: NavigationItem[] = [], options: RenderOpti
         open: true,
         openChat: options.openChat ?? vi.fn(),
         openExie: options.openExie ?? vi.fn(),
+        openGuidedTours: options.openGuidedTours ?? vi.fn(),
         openImpersonateOrganization: options.openImpersonateOrganization ?? vi.fn(),
         openKeyboardShortcuts: vi.fn(),
         openOrganizationSwitcher: vi.fn(),
@@ -317,5 +319,21 @@ describe('NavigationCommand project actions', () => {
         await fireEvent.click(screen.getByText('Log Out'));
         await waitFor(() => expect(logout).toHaveBeenCalledOnce());
         expect(goto).toHaveBeenCalledWith('/next/login');
+    });
+});
+
+describe('NavigationCommand guided tours', () => {
+    it('opens the guided-tour catalog from one command', async () => {
+        vi.useFakeTimers();
+        const openGuidedTours = vi.fn();
+        try {
+            const catalogPalette = renderCommandPalette([], { openGuidedTours });
+            await fireEvent.click(screen.getByText('Guided Tours…'));
+            expect(openGuidedTours).toHaveBeenCalled();
+            catalogPalette.unmount();
+            await vi.runAllTimersAsync();
+        } finally {
+            vi.useRealTimers();
+        }
     });
 });

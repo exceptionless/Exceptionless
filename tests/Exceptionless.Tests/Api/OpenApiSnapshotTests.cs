@@ -61,6 +61,17 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.True(projectsPost.TryGetProperty("requestBody", out _));
         AssertResponseCodes(projectsPost, "201");
 
+        Assert.True(paths.TryGetProperty("/api/v2/users/me/product-tours/{tourName}", out var productTourPath));
+        Assert.True(productTourPath.TryGetProperty("put", out var productTourPut));
+        Assert.True(productTourPut.TryGetProperty("requestBody", out _));
+        AssertResponseCodes(productTourPut, "200", "404", "422");
+        AssertResponseSchema(productTourPut, "200", "ProductTourProgress");
+
+        Assert.True(paths.TryGetProperty("/api/v2/admin/product-tour-usage", out var productTourUsagePath));
+        Assert.True(productTourUsagePath.TryGetProperty("get", out var productTourUsageGet));
+        AssertResponseCodes(productTourUsageGet, "200", "400", "401", "403", "422");
+        AssertResponseSchema(productTourUsageGet, "200", "ProductTourUsageResponse");
+
         Assert.True(paths.TryGetProperty("/api/v2/assistant/chat", out var assistantChatPath));
         Assert.True(assistantChatPath.TryGetProperty("post", out var assistantChatPost));
         AssertResponseCodes(assistantChatPost, "200", "400", "401", "403", "404", "426", "429", "503");
@@ -100,6 +111,12 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.True(schemas.TryGetProperty("NewProject", out _));
         Assert.True(schemas.TryGetProperty("SavedViewColumnSettings", out var savedViewColumnSettings));
         Assert.True(schemas.TryGetProperty("TokenResult", out _));
+        Assert.True(schemas.TryGetProperty("ProductTourProgress", out _));
+        Assert.True(schemas.TryGetProperty("UpdateProductTourProgress", out _));
+        Assert.True(schemas.TryGetProperty("ProductTourKind", out _));
+        Assert.True(schemas.TryGetProperty("ProductTourStartSource", out _));
+        Assert.True(schemas.TryGetProperty("ProductTourSummary", out _));
+        Assert.True(schemas.TryGetProperty("ProductTourUsageResponse", out _));
         Assert.True(schemas.TryGetProperty("ViewOrganization", out _));
 
         var savedViewColumnProperties = savedViewColumnSettings.GetProperty("properties");
@@ -167,6 +184,7 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         AssertDictionaryValueSchema(document.RootElement, "ViewSavedView", "columns", "SavedViewColumnSettings");
         AssertRequiredJsonRequestBody(paths, "/api/v2/users/{id}", "patch", "UpdateUser");
         AssertRequiredJsonRequestBody(paths, "/api/v2/users/{id}", "put", "UpdateUser");
+        AssertRequiredJsonRequestBody(paths, "/api/v2/users/me/product-tours/{tourName}", "put", "UpdateProductTourProgress", "application/json");
 
         AssertRequestContentTypes(paths, "/api/v1/error", "post", "application/json", "text/plain");
         AssertRequestContentTypes(paths, "/api/v1/events", "post", "application/json", "text/plain");
@@ -290,6 +308,20 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
             Assert.True(responses.TryGetProperty(statusCode, out _), $"Expected response status code '{statusCode}'.");
     }
 
+    private static void AssertResponseSchema(JsonElement operation, string statusCode, string expectedSchema)
+    {
+        string? schema = operation
+            .GetProperty("responses")
+            .GetProperty(statusCode)
+            .GetProperty("content")
+            .GetProperty("application/json")
+            .GetProperty("schema")
+            .GetProperty("$ref")
+            .GetString();
+
+        Assert.Equal($"#/components/schemas/{expectedSchema}", schema);
+    }
+
     private static void AssertPathResponseCodes(JsonElement paths, string path, string method, params string[] expectedStatusCodes)
     {
         var operation = paths.GetProperty(path).GetProperty(method);
@@ -364,13 +396,14 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.Equal(expectedContentTypes.Order(), content.EnumerateObject().Select(property => property.Name).Order());
     }
 
-    private static void AssertRequiredJsonRequestBody(JsonElement paths, string path, string method, string expectedSchema)
+    private static void AssertRequiredJsonRequestBody(JsonElement paths, string path, string method, string expectedSchema, params string[] expectedContentTypes)
     {
         var requestBody = paths.GetProperty(path).GetProperty(method).GetProperty("requestBody");
         Assert.True(requestBody.GetProperty("required").GetBoolean());
 
         var content = requestBody.GetProperty("content");
-        Assert.Equal(["application/*+json", "application/json"], content.EnumerateObject().Select(property => property.Name).Order());
+        string[] contentTypes = expectedContentTypes.Length > 0 ? expectedContentTypes : ["application/*+json", "application/json"];
+        Assert.Equal(contentTypes.Order(), content.EnumerateObject().Select(property => property.Name).Order());
 
         foreach (var mediaType in content.EnumerateObject())
             Assert.Equal($"#/components/schemas/{expectedSchema}", mediaType.Value.GetProperty("schema").GetProperty("$ref").GetString());

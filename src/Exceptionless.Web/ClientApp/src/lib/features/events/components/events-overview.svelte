@@ -31,6 +31,7 @@
 
     import { getSessionId } from '../utils';
     import { shouldResetActiveEventTab } from './events-overview-tab-state';
+    import InvestigationDetailTour from './tours/investigation-detail.svelte';
     import Environment from './views/environment.svelte';
     import Error from './views/error.svelte';
     import ExtendedData from './views/extended-data.svelte';
@@ -61,6 +62,7 @@
         onNavigate,
         prepareStackAssistantContext
     }: Props = $props();
+    let tourStackId = $state<string>();
 
     function getTabs(event?: null | PersistentEvent, project?: ViewProject): TabType[] {
         if (!event) {
@@ -333,11 +335,13 @@
 
 <section>
     <h4 class="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">Stack</h4>
+    <InvestigationDetailTour event={tourStackId === event?.stack_id ? event : undefined} />
     {#if event?.stack_id}
         <StackCard
             {assistantResource}
             {filterChanged}
             id={event.stack_id}
+            onLoaded={(stack) => (tourStackId = stack.id)}
             prepareAssistantContext={assistantResource === 'event' ? prepareEventAssistantContext : prepareStackAssistantContext}
         ></StackCard>
     {/if}
@@ -355,6 +359,7 @@
             {#if event?.stack_id}
                 <Button
                     aria-label="Show all events"
+                    data-tour="stack-events"
                     onclick={() => filterChanged(new EventsFacetedFilter.StringFilter('stack', event!.stack_id))}
                     size="icon-sm"
                     title="Show all events"
@@ -381,7 +386,7 @@
         </div>
     </div>
 
-    <Table.Root>
+    <Table.Root data-tour="event-occurrence">
         <Table.Body>
             <Table.Row class="group">
                 {#if event}
@@ -417,6 +422,7 @@
                 >
                     {#each tabs as tab (tab)}
                         <Tabs.Trigger
+                            data-tour={tab === 'Overview' ? 'event-overview' : undefined}
                             aria-label={isPromotedTab(tab) ? `${tab}. Drag to reorder custom tab.` : undefined}
                             class={[
                                 'dark:data-[state=active]:bg-background flex-none shrink-0 px-3 py-1.5 data-[state=active]:shadow-xs dark:data-[state=active]:border-transparent',

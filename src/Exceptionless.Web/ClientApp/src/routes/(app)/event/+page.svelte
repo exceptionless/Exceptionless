@@ -46,6 +46,7 @@
     import EventsBulkActionsDropdownMenu from '$features/events/components/table/events-bulk-actions-dropdown-menu.svelte';
     import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
     import { defaultEventColumnVisibility, getColumns } from '$features/events/components/table/options.svelte';
+    import InvestigationListTour from '$features/events/components/tours/investigation-list.svelte';
     import { filterUsesPremiumFeatures } from '$features/events/premium-filter';
     import { organization } from '$features/organizations/context.svelte';
     import { premiumPage } from '$features/organizations/premium-page.svelte';
@@ -77,7 +78,6 @@
         redirectToEventsWithFilter,
         serializeTimeQueryParam
     } from '../redirect-to-events.svelte';
-
     let selectedEventId: null | string = $state(null);
 
     function handleEventError(problem: ProblemDetails) {
@@ -960,7 +960,7 @@
 <div class="flex flex-col">
     <div class="mb-4 flex flex-wrap items-start gap-2">
         <H3 class="my-0 shrink-0">{pageTitle}</H3>
-        <div class="order-3 flex w-full flex-wrap items-start gap-1.5 md:order-none md:w-auto md:min-w-0 md:flex-1">
+        <div class="order-3 flex w-full flex-wrap items-start gap-1.5 md:order-none md:w-auto md:min-w-0 md:flex-1" data-tour="event-filters">
             <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
                 <OrganizationDefaultsFacetedFilterBuilder />
             </FacetedFilter.Root>
@@ -1018,25 +1018,27 @@
             />
         {/if}
 
-        <EventsDataTable
-            autoFillColumnId={savedViewsState.autoFillColumnId}
-            bind:limit={eventsQueryParameters.limit!}
-            isLoading={isSavedViewRoutePending || eventsQuery.isFetching}
-            onAutoFillColumnResized={() => savedViewsState.setAutoFillColumnId(null)}
-            {rowClick}
-            {rowHref}
-            {table}
-            wrappedColumnIds={savedViewsState.wrappedColumnIds}
-        >
-            {#snippet footerChildren()}
-                <div class="flex min-w-0 items-center gap-3">
-                    <EventsBulkActionsDropdownMenu {table} />
-                    <DataTable.Selection {table} />
-                </div>
+        <div data-tour="event-list">
+            <EventsDataTable
+                autoFillColumnId={savedViewsState.autoFillColumnId}
+                bind:limit={eventsQueryParameters.limit!}
+                isLoading={isSavedViewRoutePending || eventsQuery.isFetching}
+                onAutoFillColumnResized={() => savedViewsState.setAutoFillColumnId(null)}
+                {rowClick}
+                {rowHref}
+                {table}
+                wrappedColumnIds={savedViewsState.wrappedColumnIds}
+            >
+                {#snippet footerChildren()}
+                    <div class="flex min-w-0 items-center gap-3">
+                        <EventsBulkActionsDropdownMenu {table} />
+                        <DataTable.Selection {table} />
+                    </div>
 
-                <DataTable.Pager bind:value={eventsQueryParameters.limit!} {table} variant="floating" />
-            {/snippet}
-        </EventsDataTable>
+                    <DataTable.Pager bind:value={eventsQueryParameters.limit!} {table} variant="floating" />
+                {/snippet}
+            </EventsDataTable>
+        </div>
     </div>
 </div>
 
@@ -1047,4 +1049,13 @@
         selectedEventId = null;
     }}
     onError={handleEventError}
+/>
+
+<InvestigationListTour
+    firstErrorId={eventsQuery.isFetching || isSavedViewRoutePending
+        ? undefined
+        : table.getRowModel().rows.find((row) => row.original.type === 'error')?.original.id}
+    onOpenError={(eventId) => {
+        selectedEventId = eventId;
+    }}
 />

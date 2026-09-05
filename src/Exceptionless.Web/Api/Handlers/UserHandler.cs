@@ -3,6 +3,7 @@ using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Api.Infrastructure;
@@ -14,8 +15,9 @@ using Exceptionless.Web.Models;
 using Exceptionless.Web.Models.OAuth;
 using Exceptionless.Web.Utility;
 using Foundatio.Caching;
-using Foundatio.Repositories;
 using Foundatio.Mediator;
+using Foundatio.Repositories;
+using Foundatio.Repositories.Exceptions;
 
 namespace Exceptionless.Web.Api.Handlers;
 
@@ -47,6 +49,32 @@ public class UserHandler(
         {
             AvatarUrl = GetUserAvatarUrl(currentUser.Id, currentUser.AvatarFileName)
         };
+    }
+
+    public async Task<Result<ProductTourProgress>> Handle(UpdateCurrentUserProductTour message)
+    {
+        if (!ProductTours.IsKnown(message.TourName))
+            return Result.Invalid(ValidationError.Create("tour_name", "Unknown product tour."));
+
+        if (!ProductTours.IsValid(message.TourName, message.Progress.Version))
+            return Result.Invalid(ValidationError.Create("version", "The product tour version is not supported."));
+
+        try
+        {
+            var progress = await repository.UpdateProductTourProgressAsync(
+                GetCurrentUserId(),
+                message.TourName,
+                new ProductTourProgress
+                {
+                    Status = message.Progress.Status!.Value,
+                    Version = message.Progress.Version
+                });
+            return progress;
+        }
+        catch (DocumentNotFoundException)
+        {
+            return Result.NotFound("User not found.");
+        }
     }
 
     public async Task<Result<IReadOnlyCollection<ViewOAuthGrant>>> Handle(GetCurrentUserOAuthGrants message)

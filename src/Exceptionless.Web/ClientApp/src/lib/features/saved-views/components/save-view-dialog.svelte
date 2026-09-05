@@ -19,6 +19,7 @@
     } from '../slugs';
 
     interface Props {
+        defaultPrivate?: boolean;
         duplicateView?: SavedView;
         onClose: () => void;
         onLoadView: (view: SavedView) => void;
@@ -28,7 +29,7 @@
         saving: boolean;
     }
 
-    let { duplicateView, onClose, onLoadView, onSave, open = $bindable(), savedViews, saving }: Props = $props();
+    let { defaultPrivate = false, duplicateView, onClose, onLoadView, onSave, open = $bindable(), savedViews, saving }: Props = $props();
 
     let saveName = $state('');
     let saveSlug = $state('');
@@ -87,7 +88,7 @@
             saveName = '';
             saveSlug = '';
             isSlugDirty = false;
-            isPrivate = false;
+            isPrivate = defaultPrivate;
             attemptedSubmit = false;
         }
     });
@@ -115,7 +116,14 @@
     }
 </script>
 
-<Dialog.Root bind:open>
+<Dialog.Root
+    bind:open
+    onOpenChange={(nextOpen) => {
+        if (!nextOpen) {
+            onClose();
+        }
+    }}
+>
     <Dialog.Content class="sm:max-w-100">
         <Dialog.Header>
             <Dialog.Title>Save View</Dialog.Title>
@@ -146,6 +154,7 @@
             <div class="flex flex-col gap-2">
                 <Label for="view-name">Name</Label>
                 <Input
+                    data-tour="saved-view-name"
                     id="view-name"
                     bind:value={saveName}
                     placeholder="e.g., Production Errors"
@@ -177,7 +186,7 @@
                     <p id="view-slug-error" class="text-destructive text-sm">{visibleSlugError}</p>
                 {/if}
             </div>
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between" data-tour="saved-view-private">
                 <div>
                     <Label for="view-private" class="text-sm">Private</Label>
                     <Muted>Only visible to you</Muted>
@@ -185,8 +194,8 @@
                 <Switch id="view-private" bind:checked={isPrivate} />
             </div>
             <Dialog.Footer>
-                <Button variant="outline" onclick={onClose}>Cancel</Button>
-                <Button type="submit" disabled={!canSave}>
+                <Button variant="outline" onclick={() => (open = false)}>Cancel</Button>
+                <Button data-tour="saved-view-submit" type="submit" disabled={!canSave}>
                     {saving ? 'Saving...' : 'Save'}
                 </Button>
             </Dialog.Footer>

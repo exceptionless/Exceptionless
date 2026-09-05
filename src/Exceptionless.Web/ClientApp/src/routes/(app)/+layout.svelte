@@ -1,5 +1,6 @@
 <script lang="ts">
     import type { AssistantPromptRequest } from '$features/assistant/models';
+    import type { ProductTourLaunchSource } from '$features/product-tours/models';
     import type { SavedView } from '$features/saved-views/models';
     import type { Snippet } from 'svelte';
 
@@ -36,6 +37,10 @@
     import { organization, showOrganizationNotifications } from '$features/organizations/context.svelte';
     import { premiumPage } from '$features/organizations/premium-page.svelte';
     import { getUtcMonthKey, ORGANIZATION_USAGE_ROLLOVER_CHECK_INTERVAL_MS } from '$features/organizations/utils';
+    import ProductTourHost from '$features/product-tours/components/product-tour-host.svelte';
+    import { setProductTourControls } from '$features/product-tours/controls.svelte';
+    import { isProductTourSetupRoute } from '$features/product-tours/eligibility';
+    import { productTourCheckpoint } from '$features/product-tours/state.svelte';
     import { invalidateProjectQueries } from '$features/projects/api.svelte';
     import { getSavedViewsQuery, invalidateSavedViewQueries, isSavedViewDeleted, putUserSavedViewOrder } from '$features/saved-views/api.svelte';
     import { getPersonalSavedViewOrder, resolvePersonalSavedViewOrder } from '$features/saved-views/ordering';
@@ -93,6 +98,19 @@
     let isOrganizationSwitcherOpen = $state(false);
     let isImpersonateOrganizationOpen = $state(false);
     let isUserMenuOpen = $state(false);
+    let productToursComponent = $state<ProductTourHost>();
+    let sidebarUserComponent = $state<SidebarUser>();
+
+    setProductTourControls({
+        closeOverlays: closeProductTourOverlays,
+        getGuidedToursTarget: () => sidebarUserComponent?.getGuidedToursTarget(),
+        openCatalog: () => openGuidedTours('catalog'),
+        showGuidedToursMenu: async () => {
+            closeProductTourOverlays();
+            await tick();
+            sidebarUserComponent?.showGuidedTours();
+        }
+    });
 
     // Auto-reset premium page state on navigation so pages don't need cleanup
     beforeNavigate(() => {
@@ -227,6 +245,19 @@
         isUserMenuOpen = false;
         await tick();
         isImpersonateOrganizationOpen = true;
+    }
+
+    function closeProductTourOverlays(): void {
+        isAssistantOpen = false;
+        isCommandOpen = false;
+        isImpersonateOrganizationOpen = false;
+        isKeyboardShortcutsOpen = false;
+        isOrganizationSwitcherOpen = false;
+        isUserMenuOpen = false;
+    }
+
+    function openGuidedTours(source: ProductTourLaunchSource): void {
+        void productToursComponent?.openCatalog(source);
     }
 
     async function stopImpersonating(): Promise<void> {
@@ -375,6 +406,7 @@
         void page.url.pathname;
 
         if (!currentToken) {
+            productTourCheckpoint.clear();
             queryClient.cancelQueries();
             queryClient.invalidateQueries();
             gotoLogin();
@@ -485,7 +517,6 @@
 
     const organizationsQuery = getOrganizationsQuery({});
     const organizations = $derived(organizationsQuery.data?.data ?? []);
-
     const impersonatingOrganizationId = $derived.by(() => {
         // Only consider impersonation if user data is loaded and user has organizations
         const userOrganizationIds = meQuery.data?.organization_ids;
@@ -664,6 +695,10 @@
 
     const setupPath = resolve('/(app)/organization/add');
     const isSetupPage = $derived(page.url.pathname === setupPath);
+    const suppressAutomaticProductTours = $derived(isProductTourSetupRoute(page.route.id));
+    const isAnyProductTourOverlayOpen = $derived(
+        isAssistantOpen || isCommandOpen || isImpersonateOrganizationOpen || isKeyboardShortcutsOpen || isOrganizationSwitcherOpen || isUserMenuOpen
+    );
 
     $effect(() => {
         if (assistantAccessQuery.isSuccess && !isAssistantEnabled) {
@@ -718,6 +753,7 @@
 
         {#snippet footer()}
             <SidebarUser
+                bind:this={sidebarUserComponent}
                 {isChatEnabled}
                 isLoading={meQuery.isLoading}
                 user={meQuery.data}
@@ -725,6 +761,7 @@
                 {organizations}
                 {openChat}
                 {openKeyboardShortcuts}
+                openGuidedTours={() => openGuidedTours('help-menu')}
                 {intercomUnreadCount}
                 bind:open={isUserMenuOpen}
             />
@@ -751,6 +788,7 @@
                     {openKeyboardShortcuts}
                     {openOrganizationSwitcher}
                     {openUserMenu}
+                    openGuidedTours={() => openGuidedTours('command-palette')}
                     {organizations}
                     resetKey={commandResetKey}
                     routes={filteredRoutes}
@@ -808,6 +846,23 @@
 {/snippet}
 
 {#if isAuthenticated}
+    <ProductTourHost
+        {assistantAccess}
+        bind:this={productToursComponent}
+        closeOverlays={closeProductTourOverlays}
+        currentUser={meQuery.data}
+        isAnyOverlayOpen={isAnyProductTourOverlayOpen}
+        {isImpersonating}
+        isMobile={sidebar.isMobile}
+        isSetupPage={suppressAutomaticProductTours}
+        openAssistant={openAssistantPanel}
+        organizationId={organization.current}
+        pathname={page.url.pathname}
+        setMobileNavigationOpen={(open) => (sidebar.isMobile ? sidebar.setOpenMobile(open) : sidebar.setOpen(open))}
+        stateSettled={meQuery.isSuccess &&
+            organizationsQuery.isSuccess &&
+            (!organization.current || assistantAccessQuery.isSuccess || assistantAccessQuery.isError)}
+    />
     <IntercomShell
         appId={intercomAppId || undefined}
         bootOptions={intercomBootOptions}

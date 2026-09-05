@@ -41,7 +41,8 @@ export default ts.config(
     },
     {
         rules: {
-            '@tanstack/query/exhaustive-deps': 'off'
+            '@tanstack/query/exhaustive-deps': 'off',
+            curly: ['error', 'all']
         }
     },
     {
@@ -52,7 +53,6 @@ export default ts.config(
         rules: {
             '@stylistic/brace-style': ['error', '1tbs', { allowSingleLine: false }],
             '@stylistic/object-curly-newline': ['error', { ObjectExpression: { minProperties: 1 } }],
-            curly: ['error', 'all'],
             'padding-line-between-statements': ['error', { blankLine: 'always', next: ['if', 'while', 'for', 'do'], prev: 'block-like' }]
         }
     },

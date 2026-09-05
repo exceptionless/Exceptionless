@@ -428,6 +428,69 @@
         }
       }
     },
+    "/api/v2/admin/product-tour-usage": {
+      "get": {
+        "tags": [
+          "AdminEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductTourUsageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    },
     "/.well-known/oauth-authorization-server": {
       "get": {
         "tags": [
@@ -3937,6 +4000,80 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/WorkInProgressResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The current user could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/users/me/product-tours/{tourName}": {
+      "put": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Update current user product tour progress",
+        "parameters": [
+          {
+            "name": "tourName",
+            "in": "path",
+            "description": "The stable product tour name.",
+            "required": true,
+            "schema": {
+              "maxLength": 64,
+              "pattern": "^[a-z0-9]\u002B(?:-[a-z0-9]\u002B)*$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "The versioned product tour outcome.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProductTourProgress"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductTourProgress"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request body is missing or malformed.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The product tour progress is invalid.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -13229,6 +13366,200 @@
           }
         }
       },
+      "ProductTourActivity": {
+        "required": [
+          "date_utc",
+          "shown",
+          "started",
+          "completed",
+          "dismissed"
+        ],
+        "type": "object",
+        "properties": {
+          "date_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "shown": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "started": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "completed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dismissed": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ProductTourKind": {
+        "enum": [
+          "guide",
+          "prompt"
+        ],
+        "x-enumNames": [
+          "Guide",
+          "Prompt"
+        ]
+      },
+      "ProductTourLaunchSource": {
+        "enum": [
+          "welcome",
+          "catalog",
+          "command-palette",
+          "feature-announcement",
+          "help-menu"
+        ],
+        "x-enumNames": [
+          "Welcome",
+          "Catalog",
+          "CommandPalette",
+          "FeatureAnnouncement",
+          "HelpMenu"
+        ]
+      },
+      "ProductTourProgress": {
+        "required": [
+          "status",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ProductTourStatus"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ProductTourStartSource": {
+        "required": [
+          "source",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "source": {
+            "$ref": "#/components/schemas/ProductTourLaunchSource"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ProductTourStatus": {
+        "enum": [
+          1,
+          2
+        ],
+        "type": "integer",
+        "x-enumNames": [
+          "Completed",
+          "Dismissed"
+        ]
+      },
+      "ProductTourSummary": {
+        "required": [
+          "name",
+          "version",
+          "kind",
+          "shown",
+          "started",
+          "completed",
+          "dismissed",
+          "last_run_utc",
+          "start_sources",
+          "activity"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ProductTourKind"
+          },
+          "shown": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "started": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "completed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dismissed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "last_run_utc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "start_sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductTourStartSource"
+            }
+          },
+          "activity": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductTourActivity"
+            }
+          }
+        }
+      },
+      "ProductTourUsageResponse": {
+        "required": [
+          "utc_start",
+          "utc_end",
+          "tours",
+          "collection_available"
+        ],
+        "type": "object",
+        "properties": {
+          "utc_start": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "utc_end": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "tours": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductTourSummary"
+            }
+          },
+          "collection_available": {
+            "type": "boolean"
+          }
+        }
+      },
       "ResetPasswordModel": {
         "required": [
           "password_reset_token",
@@ -13637,6 +13968,31 @@
           }
         }
       },
+      "UpdateProductTourProgress": {
+        "required": [
+          "status",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProductTourStatus"
+              }
+            ]
+          },
+          "version": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "UpdateProject": {
         "type": "object",
         "properties": {
@@ -13866,6 +14222,7 @@
           "o_auth_accounts",
           "organization_preferences",
           "saved_view_orders",
+          "product_tours",
           "email_notifications_enabled",
           "is_email_address_verified",
           "verify_email_address_token_expiration",
@@ -13929,6 +14286,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/UserSavedViewOrderPreference"
+            }
+          },
+          "product_tours": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ProductTourProgress"
             }
           },
           "full_name": {
@@ -14062,6 +14425,7 @@
           "o_auth_accounts",
           "organization_preferences",
           "saved_view_orders",
+          "product_tours",
           "id",
           "organization_ids",
           "full_name",
@@ -14099,6 +14463,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/UserSavedViewOrderPreference"
+            }
+          },
+          "product_tours": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ProductTourProgress"
             }
           },
           "id": {

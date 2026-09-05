@@ -1,7 +1,9 @@
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Validation;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
 using User = Exceptionless.Core.Models.User;
@@ -76,6 +78,41 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
             throw new Exception("Caching of paged queries is not allowed");
 
         return FindAsync(q => q.FieldEquals(u => u.OrganizationIds, organizationId).SortAscending(u => u.EmailAddress), o => commandOptions);
+    }
+
+    public async Task<ProductTourProgress> UpdateProductTourProgressAsync(string userId, string tourName, ProductTourProgress progress)
+    {
+        const string script = """
+            if (ctx._source.product_tours == null) {
+              ctx._source.product_tours = [:];
+            }
+
+            def current = ctx._source.product_tours[params.tourName];
+            if (current != null && (current.version > params.version ||
+                (current.version == params.version && (current.status == params.completedStatus || current.status == params.status)))) {
+              ctx.op = 'none';
+            } else {
+              ctx._source.product_tours[params.tourName] = ['status': params.status, 'version': params.version];
+            }
+            """;
+        var patch = new ScriptPatch(script.TrimScript())
+        {
+            Params = new Dictionary<string, object>
+            {
+                ["completedStatus"] = (int)ProductTourStatus.Completed,
+                ["status"] = (int)progress.Status,
+                ["tourName"] = tourName,
+                ["version"] = progress.Version
+            }
+        };
+
+        await PatchAsync(userId, patch, options => options.Cache());
+
+        var user = await GetByIdAsync(userId, options => options.Cache(false));
+        if (user is null || !user.ProductTours.TryGetValue(tourName, out var storedProgress))
+            throw new DocumentNotFoundException(userId);
+
+        return storedProgress;
     }
 
     protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<User>> findHits, ICommandOptions options, bool isDirtyRead)

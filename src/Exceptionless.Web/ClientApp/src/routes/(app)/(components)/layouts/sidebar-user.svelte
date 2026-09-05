@@ -23,6 +23,7 @@
     import Braces from '@lucide/svelte/icons/braces';
     import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
     import Help from '@lucide/svelte/icons/circle-help';
+    import Compass from '@lucide/svelte/icons/compass';
     import CreditCard from '@lucide/svelte/icons/credit-card';
     import LogOut from '@lucide/svelte/icons/log-out';
     import Plus from '@lucide/svelte/icons/plus';
@@ -36,6 +37,7 @@
         isLoading: boolean;
         open?: boolean;
         openChat: () => void;
+        openGuidedTours: () => void;
         openKeyboardShortcuts: () => Promise<void> | void;
         organizations?: ViewOrganization[];
         user: undefined | ViewCurrentUser;
@@ -48,6 +50,7 @@
         isLoading,
         open = $bindable(false),
         openChat,
+        openGuidedTours,
         openKeyboardShortcuts,
         organizations = [],
         user
@@ -56,6 +59,24 @@
     const client = useFetchClient();
     const queryClient = useQueryClient();
     const currentOrganizationId = $derived(organizations.find((organizationItem) => organizationItem.id === organization.current)?.id);
+    let helpOpen = $state(false);
+    let guidedToursItem = $state<HTMLElement | null>(null);
+    let focusGuidedTours = false;
+
+    $effect(() => {
+        if (!open) {
+            focusGuidedTours = false;
+        }
+    });
+
+    export function showGuidedTours(): void {
+        focusGuidedTours = true;
+        open = true;
+    }
+
+    export function getGuidedToursTarget(): HTMLElement | undefined {
+        return open && helpOpen ? (guidedToursItem ?? undefined) : undefined;
+    }
 
     function getUnreadCountLabel(unreadCount: number): string {
         return unreadCount > 99 ? '99+' : unreadCount.toString();
@@ -75,6 +96,12 @@
     function onKeyboardShortcutsClick() {
         onMenuClick();
         void openKeyboardShortcuts();
+    }
+
+    function onGuidedToursClick(): void {
+        onMenuClick();
+        open = false;
+        openGuidedTours();
     }
 
     function navigateTo(href: string): void {
@@ -131,7 +158,12 @@
             <DropdownMenu.Root bind:open>
                 <DropdownMenu.Trigger>
                     {#snippet child({ props })}
-                        <Sidebar.MenuButton size="lg" class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground" {...props}>
+                        <Sidebar.MenuButton
+                            size="lg"
+                            class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                            data-tour="help-menu"
+                            {...props}
+                        >
                             <Avatar.Root class="size-8 rounded-lg" title="Profile Image">
                                 {#await gravatar.src}
                                     <Avatar.Fallback class="rounded-lg">{gravatar.initials}</Avatar.Fallback>
@@ -151,6 +183,13 @@
                     {/snippet}
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Content
+                    onOpenAutoFocus={(event) => {
+                        if (focusGuidedTours) {
+                            event.preventDefault();
+                            helpOpen = true;
+                            guidedToursItem?.focus();
+                        }
+                    }}
                     class="w-(--bits-dropdown-menu-anchor-width) min-w-56 rounded-lg"
                     side={sidebar.isMobile ? 'bottom' : 'right'}
                     align="end"
@@ -219,12 +258,25 @@
                             </DropdownMenu.Item>
                         {/if}
                     </DropdownMenu.Group>
-                    <DropdownMenu.Sub>
-                        <DropdownMenu.SubTrigger>
+                    <DropdownMenu.Sub bind:open={helpOpen}>
+                        <DropdownMenu.SubTrigger class="data-[state=open]:bg-accent data-[state=open]:text-accent-foreground">
                             <BookOpen />
                             Help
                         </DropdownMenu.SubTrigger>
-                        <DropdownMenu.SubContent>
+                        <DropdownMenu.SubContent
+                            side={sidebar.isMobile ? 'top' : 'right'}
+                            align={sidebar.isMobile ? 'end' : 'start'}
+                            onOpenAutoFocus={(event) => {
+                                if (focusGuidedTours) {
+                                    event.preventDefault();
+                                    guidedToursItem?.focus();
+                                }
+                            }}
+                        >
+                            <DropdownMenu.Item bind:ref={guidedToursItem} data-tour="guided-tours-menu-item" onSelect={onGuidedToursClick}>
+                                <Compass />
+                                <span class="w-full">Guided Tours…</span>
+                            </DropdownMenu.Item>
                             {#if isChatEnabled}
                                 <DropdownMenu.Item class="gap-2 p-2" onSelect={onChatClick}>
                                     <Help />

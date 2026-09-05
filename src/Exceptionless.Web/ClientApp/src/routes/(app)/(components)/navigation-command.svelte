@@ -24,6 +24,7 @@
     import Building2 from '@lucide/svelte/icons/building-2';
     import CircleHelp from '@lucide/svelte/icons/circle-help';
     import CircleUserRound from '@lucide/svelte/icons/circle-user-round';
+    import Compass from '@lucide/svelte/icons/compass';
     import Eye from '@lucide/svelte/icons/eye';
     import EyeOff from '@lucide/svelte/icons/eye-off';
     import Keyboard from '@lucide/svelte/icons/keyboard';
@@ -63,6 +64,7 @@
         open: boolean;
         openChat: () => void;
         openExie: () => Promise<void> | void;
+        openGuidedTours: () => void;
         openImpersonateOrganization: () => Promise<void> | void;
         openKeyboardShortcuts: () => Promise<void> | void;
         openOrganizationSwitcher: () => Promise<void> | void;
@@ -93,6 +95,7 @@
         open = $bindable(),
         openChat,
         openExie,
+        openGuidedTours,
         openImpersonateOrganization,
         openKeyboardShortcuts,
         openOrganizationSwitcher,
@@ -415,6 +418,11 @@
         openChat();
     }
 
+    function openGuidedTourCatalog(): void {
+        closeCommandWindow();
+        openGuidedTours();
+    }
+
     function toggleTheme(): void {
         closeCommandWindow();
         toggleMode();
@@ -556,6 +564,13 @@
                 bind:selectedActionId={selectedProjectActionId}
             />
             {#if !selectingProject}
+                <Command.Group heading="Guided Tours">
+                    <Command.Item value="Browse Guided Tours help onboarding guides" onSelect={openGuidedTourCatalog}>
+                        <Compass />
+                        <span>Guided Tours…</span>
+                    </Command.Item>
+                </Command.Group>
+                <Command.Separator />
                 {#if isExieEnabled}
                     <Command.Group heading="Exie" value="Exie Assistant">
                         <Command.Item value="Ask Exie open assistant AI chat" onSelect={() => void openExieAssistant()}>

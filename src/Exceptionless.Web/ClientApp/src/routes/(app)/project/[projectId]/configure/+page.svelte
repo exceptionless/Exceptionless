@@ -6,12 +6,16 @@
     import { A, CodeBlock, Muted, P } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Select from '$comp/ui/select';
+    import { Spinner } from '$comp/ui/spinner';
     import { env } from '$env/dynamic/public';
     import { ProjectFilter } from '$features/events/components/filters';
     import { getIntercom } from '$features/intercom';
     import { openSupportChat } from '$features/intercom/chat';
     import { organization } from '$features/organizations/context.svelte';
     import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
+    import { createProductTourActions } from '$features/product-tours/actions.svelte';
+    import ProductTourSpotlight from '$features/product-tours/components/product-tour-spotlight.svelte';
+    import { productTourCheckpoint } from '$features/product-tours/state.svelte';
     import { getProjectDefaultTokenQuery, patchToken } from '$features/tokens/api.svelte';
     import EnableTokenDialog from '$features/tokens/components/dialogs/enable-token-dialog.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
@@ -37,7 +41,6 @@
             }
         }
     });
-
     const apiKey = $derived(defaultTokenQuery.data?.id || 'YOUR_API_KEY');
     const serverUrl = (env.PUBLIC_EXCEPTIONLESS_SERVER_URL || '').trim();
     const showServerUrl = env.PUBLIC_EXCEPTIONLESS_CLIENT_SETUP_SHOW_SERVER_URL !== 'false';
@@ -47,7 +50,10 @@
     const isTokenSuspended = $derived(defaultTokenQuery.data?.is_suspended ?? false);
 
     let toastId = $state<number | string>();
+    let isProjectTypeOpen = $state(false);
     let openEnableTokenDialog = $state(false);
+    const tourActions = createProductTourActions();
+    const projectConfigureCheckpoint = $derived(productTourCheckpoint.current?.tourName === 'project-configure' ? productTourCheckpoint.current : undefined);
 
     const enableTokenMutation = patchToken({
         route: {
@@ -229,6 +235,12 @@
                 queryParams.type = null;
                 selectedProjectType = null;
             }
+        }
+    });
+
+    $effect(() => {
+        if (projectConfigureCheckpoint?.checkpointName === 'choose-platform' && projectTypes.some((projectType) => projectType.id === queryParams.type)) {
+            productTourCheckpoint.advance(projectConfigureCheckpoint, 'sdk-instructions');
         }
     });
 
@@ -419,7 +431,16 @@ public partial class App : Application {
         const message = (event as CustomEvent<WebSocketMessageValue<'PersistentEventChanged'>>).detail;
 
         if (queryParams.redirect && message.project_id === projectId && message.change_type !== ChangeType.Removed) {
-            toast.success('First event received. Opening Events...');
+            if (projectConfigureCheckpoint && projectConfigureCheckpoint.checkpointName !== 'event-received') {
+                const eventReceivedCheckpoint = productTourCheckpoint.advance(projectConfigureCheckpoint, 'event-received');
+                if (eventReceivedCheckpoint) {
+                    tourActions.completeAfterDomainSuccess(eventReceivedCheckpoint);
+                }
+            }
+
+            if (!projectConfigureCheckpoint) {
+                toast.success('First event received. Opening Events...');
+            }
             await redirectToEventsWithFilter(organization.current, new ProjectFilter([projectId]));
         }
     });
@@ -462,26 +483,42 @@ public partial class App : Application {
     {/if}
 
     {#if queryParams.redirect}
-        <Notification>
-            <NotificationTitle>Waiting for your first event</NotificationTitle>
+        <Notification data-tour="project-first-event">
+            <NotificationTitle class="flex items-center gap-2">
+                <Spinner aria-hidden="true" class="shrink-0 motion-reduce:animate-none" />
+                Waiting for your first event
+            </NotificationTitle>
             <NotificationDescription>
-                <P>Send an event from your app. When it arrives, we'll open the project Events page automatically.</P>
+                {#if projectConfigureCheckpoint}
+                    <P>Follow the instructions below, then send an event from your application. When it arrives, this guide completes and Events opens.</P>
+                    {#if projectConfigureCheckpoint.checkpointName !== 'choose-platform'}
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            class="mt-2"
+                            onclick={() => projectConfigureCheckpoint && tourActions.dismiss(projectConfigureCheckpoint)}>End guide</Button
+                        >
+                    {/if}
+                {:else}
+                    <P>Send an event from your app. When it arrives, we'll open the project Events page automatically.</P>
+                {/if}
             </NotificationDescription>
         </Notification>
     {/if}
 
-    <ol class="my-6 ml-6 list-decimal [&>li]:mt-2">
+    <ol class="my-6 ml-6 list-decimal [&>li]:mt-2" data-tour="project-sdk-instructions">
         <li>
             <P>Choose your project type.</P>
             <Select.Root
                 type="single"
                 bind:value={queryParams.type as string | undefined}
+                onOpenChange={(open) => (isProjectTypeOpen = open)}
                 onValueChange={(value) => {
                     selectedProjectType = projectTypes.find((P) => P.id === value) || null;
                     queryParams.type = value;
                 }}
             >
-                <Select.Trigger class="w-full">
+                <Select.Trigger class="w-full" data-tour="project-configure-platform">
                     <span
                         >{#if selectedProjectType}
                             {selectedProjectType.platform}: {selectedProjectType.label}
@@ -767,6 +804,17 @@ public partial class App : Application {
             {/if}
         {/if}
     </ol>
+
+    {#if projectConfigureCheckpoint?.checkpointName === 'choose-platform' && !isProjectTypeOpen}
+        <ProductTourSpotlight
+            checkpoint={projectConfigureCheckpoint}
+            description="Choose your application's language or platform to see the setup instructions."
+            showProgress={false}
+            onDismiss={tourActions.dismiss}
+            target="[data-tour='project-configure-platform']"
+            title="Choose your language or platform"
+        />
+    {/if}
 
     {#if selectedProjectType}
         <P

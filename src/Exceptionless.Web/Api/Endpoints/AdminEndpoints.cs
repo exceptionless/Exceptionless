@@ -87,6 +87,15 @@ public static class AdminEndpoints
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status403Forbidden);
 
+        endpoints.MapGet("api/v2/admin/product-tour-usage", GetProductTourUsageAsync)
+            .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
+            .AddEndpointFilter<AutoValidationEndpointFilter>()
+            .Produces<ProductTourUsageResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden);
+
         group.MapPost("change-plan", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string organizationId, string planId)
             => (await mediator.InvokeAsync<Result<object>>(new AdminChangePlan(organizationId, planId, httpContext))).ToHttpResult(resultMapper));
 
@@ -130,4 +139,11 @@ public static class AdminEndpoints
         bool configuredEnabled = !appOptions.EventSubmissionDisabled;
         return new EventSubmissionSettings(enabledOverride ?? configuredEnabled, configuredEnabled, enabledOverride.HasValue);
     }
+
+    private static async Task<HttpIResult> GetProductTourUsageAsync(
+        IMediator mediator,
+        IMediatorResultMapper<HttpIResult> resultMapper,
+        DateTime? start = null,
+        DateTime? end = null)
+        => (await mediator.InvokeAsync<Result<object>>(new GetAdminProductTourUsage(start, end))).ToHttpResult(resultMapper);
 }

@@ -27,6 +27,15 @@ export const StackStatusSchema = zodEnum([
   "ignored",
   "discarded",
 ]);
+export const ProductTourStatusSchema = union([literal(1), literal(2)]);
+export const ProductTourLaunchSourceSchema = zodEnum([
+  "welcome",
+  "catalog",
+  "command-palette",
+  "feature-announcement",
+  "help-menu",
+]);
+export const ProductTourKindSchema = zodEnum(["guide", "prompt"]);
 export const BillingStatusSchema = union([
   literal(0),
   literal(1),
@@ -626,6 +635,57 @@ export const ProblemDetailsSchema = object({
 });
 export type ProblemDetailsFormData = Infer<typeof ProblemDetailsSchema>;
 
+export const ProductTourActivitySchema = object({
+  date_utc: iso.datetime(),
+  shown: int(),
+  started: int(),
+  completed: int(),
+  dismissed: int(),
+});
+export type ProductTourActivityFormData = Infer<
+  typeof ProductTourActivitySchema
+>;
+
+export const ProductTourProgressSchema = object({
+  status: ProductTourStatusSchema,
+  version: int32(),
+});
+export type ProductTourProgressFormData = Infer<
+  typeof ProductTourProgressSchema
+>;
+
+export const ProductTourStartSourceSchema = object({
+  source: ProductTourLaunchSourceSchema,
+  count: int(),
+});
+export type ProductTourStartSourceFormData = Infer<
+  typeof ProductTourStartSourceSchema
+>;
+
+export const ProductTourSummarySchema = object({
+  name: string().min(1, "Name is required"),
+  version: int32(),
+  kind: ProductTourKindSchema,
+  shown: int(),
+  started: int(),
+  completed: int(),
+  dismissed: int(),
+  last_run_utc: iso.datetime().nullable(),
+  start_sources: array(lazy(() => ProductTourStartSourceSchema)),
+  activity: array(lazy(() => ProductTourActivitySchema)),
+});
+export type ProductTourSummaryFormData = Infer<typeof ProductTourSummarySchema>;
+
+export const ProductTourUsageResponseSchema = object({
+  utc_start: iso.datetime().nullable(),
+  utc_end: iso.datetime(),
+  tours: array(lazy(() => ProductTourSummarySchema)),
+  collection_available: boolean(),
+});
+export type ProductTourUsageResponseFormData = Infer<
+  typeof ProductTourUsageResponseSchema
+>;
+
 export const ResetPasswordModelSchema = object({
   password_reset_token: string().length(
     40,
@@ -768,6 +828,16 @@ export type UpdateEventSubmissionSettingsFormData = Infer<
   typeof UpdateEventSubmissionSettingsSchema
 >;
 
+export const UpdateProductTourProgressSchema = object({
+  status: ProductTourStatusSchema,
+  version: int32()
+    .min(1, "Version must be at least 1")
+    .max(2147483647, "Version must be at most 2147483647"),
+});
+export type UpdateProductTourProgressFormData = Infer<
+  typeof UpdateProductTourProgressSchema
+>;
+
 export const UpdateProjectSchema = object({
   name: string().min(1, "Name is required").optional(),
   delete_bot_data_enabled: boolean().optional(),
@@ -862,6 +932,10 @@ export const UserSchema = object({
   o_auth_accounts: array(lazy(() => OAuthAccountSchema)),
   organization_preferences: array(lazy(() => UserOrganizationPreferenceSchema)),
   saved_view_orders: array(lazy(() => UserSavedViewOrderPreferenceSchema)),
+  product_tours: record(
+    string(),
+    lazy(() => ProductTourProgressSchema),
+  ),
   full_name: string().min(1, "Full name is required"),
   email_address: email(),
   avatar_file_name: string()
@@ -919,6 +993,10 @@ export const ViewCurrentUserSchema = object({
   o_auth_accounts: array(lazy(() => OAuthAccountSchema)),
   organization_preferences: array(lazy(() => UserOrganizationPreferenceSchema)),
   saved_view_orders: array(lazy(() => UserSavedViewOrderPreferenceSchema)),
+  product_tours: record(
+    string(),
+    lazy(() => ProductTourProgressSchema),
+  ),
   id: string()
     .length(24, "Id must be exactly 24 characters")
     .regex(/^[a-fA-F0-9]{24}$/, "Id has invalid format"),

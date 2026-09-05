@@ -15,6 +15,7 @@
     import { serializeFilters } from '$features/events/components/filters/helpers.svelte';
     import { getOrganizationQuery, getOrganizationsQuery } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import SavedViewCreateTour from '$features/product-tours/components/saved-view-create-tour.svelte';
     import { supportsColumnWrapping } from '$features/shared/components/data-table/column-meta';
     import { getMeQuery } from '$features/users/api.svelte';
     import Building2 from '@lucide/svelte/icons/building-2';
@@ -120,6 +121,7 @@
     let isColumnDialogOpen = $state(false);
     let isMenuOpen = $state(false);
     let viewToDelete = $state<null | SavedView>(null);
+    let savedViewCreateTour = $state<SavedViewCreateTour>();
 
     const organizationId = $derived(organization.current);
     const activeView = $derived(activeSavedView);
@@ -219,6 +221,7 @@
     async function openSaveDialog() {
         await tick();
         isSaveDialogOpen = true;
+        savedViewCreateTour?.openingSaveDialog();
     }
 
     async function openRenameDialog() {
@@ -259,6 +262,11 @@
             return;
         }
 
+        const tour = savedViewCreateTour;
+        if (tour && !tour.validateSave(isPrivate)) {
+            return;
+        }
+
         const filterDefinitions = serializeFilters(filters);
         const body: NewSavedView = {
             columns: getSavedColumnSettings(),
@@ -279,6 +287,9 @@
             const result = await createMutation.mutateAsync(body);
             isSaveDialogOpen = false;
             onLoadView(result);
+            if (tour) {
+                await tour.created();
+            }
             toast.success(`Saved view "${result.name}" created.`);
         } catch (error) {
             toast.error(getErrorMessage(error, 'Failed to save view. Please try again.'));
@@ -393,7 +404,7 @@
 <DropdownMenu.Root bind:open={isMenuOpen}>
     <DropdownMenu.Trigger>
         {#snippet child({ props })}
-            <Button {...props} class="relative gap-x-1.5 px-3" size="lg" variant="outline" title="Manage View Settings">
+            <Button {...props} class="relative gap-x-1.5 px-3" data-tour="saved-view-trigger" size="lg" variant="outline" title="Manage View Settings">
                 <SlidersHorizontal class="size-4" aria-hidden="true" />
                 <span>View</span>
                 {#if isModified}
@@ -402,7 +413,7 @@
             </Button>
         {/snippet}
     </DropdownMenu.Trigger>
-    <DropdownMenu.Content align="end" class="w-64">
+    <DropdownMenu.Content align="end" class="w-64" data-tour="saved-view-settings">
         <DropdownMenu.Group>
             <DropdownMenu.Label>Saved View</DropdownMenu.Label>
             {#if activeView}
@@ -411,7 +422,7 @@
                     Save
                 </DropdownMenu.Item>
             {/if}
-            <DropdownMenu.Item disabled={saving} onclick={openSaveDialog}>
+            <DropdownMenu.Item data-tour="saved-view-save-as" disabled={saving} onclick={openSaveDialog}>
                 <Plus class="mr-2 size-4" aria-hidden="true" />
                 Save As...
             </DropdownMenu.Item>
@@ -494,14 +505,23 @@
 {#if isSaveDialogOpen}
     <SaveViewDialog
         bind:open={isSaveDialogOpen}
+        defaultPrivate={savedViewCreateTour?.shouldDefaultPrivate()}
         {duplicateView}
         {savedViews}
         {saving}
         onSave={handleSave}
-        onClose={() => (isSaveDialogOpen = false)}
+        onClose={() => savedViewCreateTour?.closed()}
         {onLoadView}
     />
 {/if}
+
+<SavedViewCreateTour
+    bind:this={savedViewCreateTour}
+    closeMenu={() => (isMenuOpen = false)}
+    {isMenuOpen}
+    openMenu={() => (isMenuOpen = true)}
+    {openSaveDialog}
+/>
 
 {#if isRenameDialogOpen && activeView}
     <RenameViewDialog

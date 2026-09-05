@@ -4,6 +4,7 @@ import { expect, test } from '../fixtures/e2e-test';
 
 test('dashboard charts stay mounted while list data refreshes', async ({ e2eApi, page }) => {
     const userToken = await e2eApi.login();
+    await e2eApi.updateProductTour(userToken, 'app-welcome', 1, 2);
     const organizations = await e2eApi.getOrganizations(userToken);
     const organizationId = organizations[0]?.id;
     expect(organizationId).toBeTruthy();
@@ -16,9 +17,9 @@ test('dashboard charts stay mounted while list data refreshes', async ({ e2eApi,
         { organizationId, token: userToken }
     );
 
-    await verifyChartRefresh(page, '/next/stack', (route) => isOrganizationEventListRequest(route, organizationId!, 'stack_frequent'));
-    await verifyChartRefresh(page, '/next/event', (route) => isOrganizationEventListRequest(route, organizationId!, 'summary'));
-    await verifyChartRefresh(page, '/next/sessions', (route) => {
+    await verifyChartRefresh(page, '/next/stack/all', (route) => isOrganizationEventListRequest(route, organizationId!, 'stack_frequent'));
+    await verifyChartRefresh(page, '/next/event/all', (route) => isOrganizationEventListRequest(route, organizationId!, 'summary'));
+    await verifyChartRefresh(page, '/next/sessions/all', (route) => {
         return new URL(route.request().url()).pathname === `/api/v2/organizations/${organizationId}/events/sessions`;
     });
 });

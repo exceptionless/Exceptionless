@@ -15,6 +15,9 @@
     import { postOrganization } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
     import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
+    import { createProductTourActions } from '$features/product-tours/actions.svelte';
+    import ProductTourSpotlight from '$features/product-tours/components/product-tour-spotlight.svelte';
+    import { productTourCheckpoint } from '$features/product-tours/state.svelte';
     import { postProject } from '$features/projects/api.svelte';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
@@ -32,6 +35,8 @@
     let toastId = $state<number | string>();
     const createOrganization = postOrganization();
     const createProject = postProject();
+    const tourActions = createProductTourActions();
+    const projectConfigureCheckpoint = $derived(productTourCheckpoint.current?.tourName === 'project-configure' ? productTourCheckpoint.current : undefined);
     const CREATE_ERROR_MESSAGE = 'Error creating setup. Please try again.';
 
     useHideOrganizationNotifications();
@@ -56,6 +61,11 @@
                         name: value.project_name,
                         organization_id: createdOrganization.id
                     } as NewProject);
+
+                    const checkpoint = projectConfigureCheckpoint;
+                    if (checkpoint) {
+                        productTourCheckpoint.advance(checkpoint, 'choose-platform', createdOrganization.id);
+                    }
 
                     toastId = toast.success('Project added successfully');
                     await goto(
@@ -92,6 +102,7 @@
     </Card.Header>
     <Card.Content>
         <form
+            data-tour="project-setup-form"
             onsubmit={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -108,6 +119,7 @@
                     <Field.Field data-invalid={ariaInvalid(field)}>
                         <Field.Label for={field.name}>Organization Name</Field.Label>
                         <Input
+                            data-tour="setup-organization-name"
                             id={field.name}
                             name={field.name}
                             placeholder="Enter organization name"
@@ -125,6 +137,7 @@
                     <Field.Field data-invalid={ariaInvalid(field)}>
                         <Field.Label for={field.name}>Project Name</Field.Label>
                         <Input
+                            data-tour="project-name"
                             id={field.name}
                             name={field.name}
                             placeholder="Enter project name"
@@ -151,3 +164,31 @@
         </form>
     </Card.Content>
 </Card.Root>
+
+{#if projectConfigureCheckpoint}
+    {#key projectConfigureCheckpoint.checkpointName}
+        <ProductTourSpotlight
+            checkpoint={projectConfigureCheckpoint}
+            showProgress={false}
+            description={projectConfigureCheckpoint.checkpointName === 'organization-name'
+                ? 'Give your workspace a name. Your projects and events belong to this organization.'
+                : 'Name your application or service, then submit the form to continue setup.'}
+            onDismiss={tourActions.dismiss}
+            onPrevious={projectConfigureCheckpoint.checkpointName === 'project-name'
+                ? (checkpoint) => {
+                      productTourCheckpoint.advance(checkpoint, 'organization-name');
+                  }
+                : undefined}
+            onNext={projectConfigureCheckpoint.checkpointName === 'organization-name'
+                ? (checkpoint) => {
+                      productTourCheckpoint.advance(checkpoint, 'project-name');
+                  }
+                : undefined}
+            side="top"
+            target={projectConfigureCheckpoint.checkpointName === 'organization-name'
+                ? "[data-tour='setup-organization-name']"
+                : "[data-tour='project-setup-form']"}
+            title={projectConfigureCheckpoint.checkpointName === 'organization-name' ? 'Name your organization' : 'Name your first project'}
+        />
+    {/key}
+{/if}

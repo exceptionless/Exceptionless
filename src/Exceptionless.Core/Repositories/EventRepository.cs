@@ -1,10 +1,12 @@
 ﻿using Elastic.Clients.Elasticsearch.QueryDsl;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Validation;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Repositories;
@@ -80,6 +82,85 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
     public Task<FindResults<PersistentEvent>> GetByReferenceIdAsync(string projectId, string referenceId)
     {
         return FindAsync(q => q.Project(projectId).FieldEquals(e => e.ReferenceId, referenceId).SortDescending(e => e.Date), o => o.PageLimit(10));
+    }
+
+    public async Task<ProductTourUsageResult> GetProductTourUsageAsync(string projectId, DateTime? utcStart, DateTime utcEnd)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(projectId);
+        if (utcStart.HasValue && utcEnd <= utcStart)
+            throw new ArgumentOutOfRangeException(nameof(utcEnd), "The end date must be later than the start date.");
+
+        var sourcesByName = ProductTours.Definitions.Values
+            .SelectMany(definition => CreateProductTourSources(definition.Name, definition.CurrentVersion))
+            .ToDictionary(source => source.Raw, StringComparer.Ordinal);
+        string[] allSources = sourcesByName.Keys.ToArray();
+        string sourceField = InferField(ev => ev.Source);
+        string countField = InferField(ev => ev.Count);
+        string dateField = InferField(ev => ev.Date);
+        if (!utcStart.HasValue)
+        {
+            DateTime? retainedStart = _options.MaximumRetentionDays > 0
+                ? _timeProvider.GetUtcNow().UtcDateTime.SubtractDays(_options.MaximumRetentionDays)
+                : null;
+            var bounds = await CountAsync(query => ApplyProductTourUsageFilter(query, projectId, retainedStart, utcEnd, allSources)
+                .AggregationsExpression($"min:{dateField}"));
+            utcStart = bounds.Aggregations.Min<DateTime>($"min_{dateField}")?.Value;
+            if (!utcStart.HasValue)
+            {
+                return new ProductTourUsageResult([]);
+            }
+        }
+
+        var aggregation = await CountAsync(query => ApplyProductTourUsageFilter(query, projectId, utcStart, utcEnd, allSources)
+            .AggregationsExpression($"terms:({sourceField}~{allSources.Length} sum:{countField}~1 max:{dateField} date:({dateField} sum:{countField}~1))"));
+
+        var sourceBuckets = aggregation.Aggregations.Terms<string>($"terms_{sourceField}")?.Buckets ?? [];
+        var usage = sourceBuckets
+            .Select(bucket => sourcesByName.TryGetValue(bucket.Key, out var source)
+                ? new ProductTourUsageBucket(
+                    source,
+                    Convert.ToInt64(bucket.Aggregations.Sum($"sum_{countField}")?.Value ?? bucket.Total.GetValueOrDefault()),
+                    bucket.Aggregations.Max<DateTime>($"max_{dateField}")?.Value,
+                    (bucket.Aggregations.DateHistogram($"date_{dateField}")?.Buckets ?? [])
+                        .Where(period => period.Date < utcEnd)
+                        .Select(period => new ProductTourUsagePeriod(period.Date, Convert.ToInt64(period.Aggregations.Sum($"sum_{countField}")?.Value ?? period.Total.GetValueOrDefault())))
+                        .ToArray())
+                : null)
+            .OfType<ProductTourUsageBucket>()
+            .ToArray();
+        return new ProductTourUsageResult(usage);
+    }
+
+    private static IRepositoryQuery<PersistentEvent> ApplyProductTourUsageFilter(
+        IRepositoryQuery<PersistentEvent> query,
+        string projectId,
+        DateTime? utcStart,
+        DateTime utcEnd,
+        string[] sources)
+    {
+        query = query
+            .Project(projectId)
+            .FieldEquals(ev => ev.Type, Event.KnownTypes.FeatureUsage)
+            .FieldEquals(ev => ev.Source, sources)
+            .FieldLessThan(ev => ev.Date, utcEnd);
+
+        if (utcStart.HasValue)
+            return query.DateRange(utcStart, utcEnd, (PersistentEvent ev) => ev.Date).Index(utcStart, utcEnd);
+
+        return query.DateRange(null, utcEnd, (PersistentEvent ev) => ev.Date);
+    }
+
+    private static ProductTourUsageSource[] CreateProductTourSources(string tourName, int currentVersion)
+    {
+        return Enumerable.Range(1, currentVersion)
+            .SelectMany(version => Enum.GetValues<ProductTourTelemetryEvent>().SelectMany(telemetryEvent => Enum.GetValues<ProductTourLaunchSource>().Select(launchSource =>
+                new ProductTourUsageSource(
+                    ProductTours.CreateTelemetrySource(telemetryEvent, tourName, version, launchSource),
+                    telemetryEvent,
+                    tourName,
+                    version,
+                    launchSource))))
+            .ToArray();
     }
 
     public async Task<PreviousAndNextEventIdResult> GetPreviousAndNextEventIdsAsync(PersistentEvent ev, AppFilter? systemFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null)

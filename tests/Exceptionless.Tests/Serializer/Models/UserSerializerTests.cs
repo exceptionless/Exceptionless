@@ -1,4 +1,5 @@
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
 using Foundatio.Serializer;
 using Xunit;
 
@@ -236,6 +237,62 @@ public class UserSerializerTests : TestWithServices
         Assert.Equal(2, user.Roles.Count);
         Assert.Contains("user", user.Roles);
         Assert.Contains("client", user.Roles);
+    }
+
+    [Fact]
+    public void Deserialize_User_PreservesProductTourProgress()
+    {
+        // Arrange
+        var original = new User
+        {
+            Id = "tour-user",
+            FullName = "Tour User",
+            EmailAddress = "tour@example.com",
+            IsEmailAddressVerified = true,
+            ProductTours = new Dictionary<string, ProductTourProgress>(StringComparer.Ordinal)
+            {
+                ["app-welcome"] = new()
+                {
+                    Version = 1,
+                    Status = ProductTourStatus.Dismissed
+                },
+                ["app-overview"] = new()
+                {
+                    Version = 2,
+                    Status = ProductTourStatus.Completed
+                }
+            }
+        };
+
+        // Act
+        string? json = _serializer.SerializeToString(original);
+        var deserialized = _serializer.Deserialize<User>(json);
+
+        // Assert
+        Assert.Contains("\"status\":2", json);
+        Assert.NotNull(deserialized);
+        Assert.Equal(2, deserialized.ProductTours.Count);
+        Assert.Equal(ProductTourStatus.Dismissed, deserialized.ProductTours["app-welcome"].Status);
+        Assert.Equal(2, deserialized.ProductTours["app-overview"].Version);
+        Assert.Equal(ProductTourStatus.Completed, deserialized.ProductTours["app-overview"].Status);
+    }
+
+    [Fact]
+    public void Deserialize_LegacyUserWithoutProductTours_ReturnsEmptyCollection()
+    {
+        const string json = """
+            {
+                "id": "legacy-user",
+                "full_name": "Legacy User",
+                "email_address": "legacy@example.com",
+                "is_email_address_verified": true
+            }
+            """;
+
+        var user = _serializer.Deserialize<User>(json);
+
+        Assert.NotNull(user);
+        Assert.Empty(user.ProductTours);
     }
 
     [Fact]

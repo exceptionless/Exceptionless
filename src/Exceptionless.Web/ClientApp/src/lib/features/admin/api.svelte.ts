@@ -13,10 +13,13 @@ import type {
     OAuthApplication,
     OAuthApplicationRequest,
     PredefinedSavedViewDefinition,
+    ProductTourUsageResponse,
     UpdateAssistantEnabledSettingsRequest,
     UpdateAssistantSettingsRequest,
     UpdateEventSubmissionSettingsRequest
 } from './models';
+
+import { getProductTourUsageParams, type ProductTourUsageRange } from './product-tour-usage';
 
 export type GetOAuthApplicationsParams = {
     criteria?: string;
@@ -44,6 +47,7 @@ export const queryKeys = {
     migrations: ['admin', 'migrations'] as const,
     oauthApplication: (id: string | undefined) => [...queryKeys.oauthApplications, id] as const,
     oauthApplications: ['admin', 'oauth-applications'] as const,
+    productTourUsage: (range: ProductTourUsageRange) => ['admin', 'product-tour-usage', range] as const,
     snapshots: ['admin', 'elasticsearch', 'snapshots'] as const,
     stats: ['admin', 'stats'] as const
 };
@@ -108,6 +112,30 @@ export function getAdminAssistantUsageQuery(month: () => string) {
         queryKey: queryKeys.assistantUsage(month()),
         staleTime: 60 * 1000
     }));
+}
+
+export function getAdminProductTourUsageQuery(range: () => ProductTourUsageRange) {
+    return createQuery<ProductTourUsageResponse, ProblemDetails>(() => {
+        const selectedRange = range();
+
+        return {
+            queryFn: async ({ signal }: { signal: AbortSignal }) => {
+                const client = useFetchClient();
+                const response = await client.getJSON<ProductTourUsageResponse>('admin/product-tour-usage', {
+                    params: getProductTourUsageParams(selectedRange),
+                    signal
+                });
+
+                if (!response.ok) {
+                    throw response.problem;
+                }
+
+                return response.data!;
+            },
+            queryKey: queryKeys.productTourUsage(selectedRange),
+            staleTime: 60 * 1000
+        };
+    });
 }
 
 export function getAdminStatsQuery() {
