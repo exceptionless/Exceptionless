@@ -399,6 +399,7 @@ test('switching saved views preserves each view temporary filter overrides acros
         .toBe(true);
 
     await page.goto(`/next/event/${firstViewSlug}`);
+    await expect(page.getByRole('heading', { name: firstViewName })).toBeVisible();
     const dateFilter = page.getByRole('button', { name: /^Date/ }).filter({ visible: true }).first();
     await dateFilter.click();
     await page.getByRole('button', { name: 'Last 90 days' }).click();
