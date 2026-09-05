@@ -6,10 +6,6 @@ export function isProductTourSetupRoute(routeId: null | string): boolean {
     return !!routeId && SETUP_ROUTE_IDS.has(routeId);
 }
 
-export function shouldOfferProductTourAnnouncement(progress: ProductTourProgress | undefined, announcementVersion: number): boolean {
-    return !progress || progress.version < announcementVersion;
-}
-
-export function shouldOfferProductTourWelcome(progress: ProductTourProgress | undefined, welcomeVersion: number): boolean {
-    return !progress || progress.version < welcomeVersion;
+export function shouldOfferProductTourInvitation(progress: ProductTourProgress | undefined, version: number): boolean {
+    return !progress || progress.version < version;
 }
