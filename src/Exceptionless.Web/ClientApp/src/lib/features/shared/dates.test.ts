@@ -1,6 +1,57 @@
 import { describe, expect, it } from 'vitest';
 
-import { getDifferenceInSeconds, getRelativeTimeFormatUnit, getSetIntervalTime } from './dates';
+import { formatDateLabel, getDifferenceInSeconds, getRelativeTimeFormatUnit, getSetIntervalTime } from './dates';
+
+describe('formatDateLabel', () => {
+    it('preserves local date and relative-label behavior without a timezone override', () => {
+        // Arrange
+        const current = new Date(2026, 0, 2, 12);
+
+        // Act / Assert
+        expect(formatDateLabel(new Date(2026, 0, 2), current)).toBe('Today');
+        expect(formatDateLabel(new Date(2026, 0, 1), current)).toBe('Yesterday');
+        expect(formatDateLabel(new Date(2026, 0, 2, 14, 30), current)).toContain('Today at ');
+    });
+
+    it('uses the requested timezone for relative days and year boundaries', () => {
+        // Arrange
+        const date = new Date('2025-12-31T23:00:00Z');
+        const current = new Date('2026-01-01T12:00:00Z');
+
+        // Act
+        const label = formatDateLabel(date, current, { timeZone: 'Pacific/Auckland' });
+
+        // Assert
+        expect(label).toContain('Yesterday at ');
+        const absoluteLabel = formatDateLabel(date, current, { includeRelative: false, timeZone: 'Pacific/Auckland' });
+        expect(absoluteLabel).not.toContain('2025');
+        expect(absoluteLabel).not.toContain('2026');
+    });
+
+    it('uses the requested timezone to determine midnight', () => {
+        // Arrange
+        const date = new Date('2026-01-01T00:00:00Z');
+
+        // Act
+        const label = formatDateLabel(date, new Date('2026-01-02T12:00:00Z'), { includeRelative: false, month: 'short', timeZone: 'UTC' });
+
+        // Assert
+        expect(label).toBe(new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(date));
+    });
+
+    it('preserves time when local midnight is not midnight in the requested timezone', () => {
+        // Arrange
+        const date = new Date(2026, 0, 1);
+        const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone === 'Asia/Kolkata' ? 'UTC' : 'Asia/Kolkata';
+
+        // Act
+        const label = formatDateLabel(date, new Date(2026, 0, 2), { includeRelative: false, month: 'short', timeZone });
+
+        // Assert
+        expect(label).toContain(' at ');
+        expect(label).toContain(new Intl.DateTimeFormat(undefined, { hour: 'numeric', hour12: true, minute: '2-digit', timeZone }).format(date));
+    });
+});
 
 const Time = {
     days: (n: number) => n * 60 * 60 * 24,
