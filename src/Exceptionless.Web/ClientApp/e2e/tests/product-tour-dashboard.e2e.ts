@@ -2,7 +2,7 @@ import type { ProductTourUsageResponse } from '../../src/lib/generated/api';
 
 import { expect, test } from '../fixtures/e2e-test';
 
-test('real dashboard matches repository totals across daily, month, and history filters', async ({ e2eApi, page }, testInfo) => {
+test('real dashboard matches repository totals across rolling, month, and history ranges', async ({ e2eApi, page }, testInfo) => {
     // Arrange: use the real local API, including its empty/unavailable-storage response.
     const token = await e2eApi.login();
     await page.addInitScript((token) => localStorage.setItem('satellizer_token', token), token);

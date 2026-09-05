@@ -74,20 +74,11 @@ public enum ProductTourKind
     Prompt
 }
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum ProductTourTelemetryEvent
 {
-    [JsonStringEnumMemberName("completed")]
-    [EnumMember(Value = "completed")]
     Completed,
-    [JsonStringEnumMemberName("dismissed")]
-    [EnumMember(Value = "dismissed")]
     Dismissed,
-    [JsonStringEnumMemberName("shown")]
-    [EnumMember(Value = "shown")]
     Shown,
-    [JsonStringEnumMemberName("started")]
-    [EnumMember(Value = "started")]
     Started
 }
 
