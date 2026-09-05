@@ -34,7 +34,7 @@ export interface ProductTourContext {
     isSetupPage: boolean;
     organizationId?: string;
     pathname: string;
-    projects: Pick<ViewProject, 'id' | 'is_configured'>[];
+    projects?: Pick<ViewProject, 'id' | 'is_configured'>[];
     search?: string;
 }
 export interface ProductTourDefinition<Name extends ProductTourName = ProductTourName> {

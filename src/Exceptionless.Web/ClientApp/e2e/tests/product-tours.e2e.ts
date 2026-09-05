@@ -176,12 +176,14 @@ test.describe('shell and identity checkpoints', () => {
             await page.keyboard.press('Escape');
         });
 
-        await test.step('an organization change clears an active checkpoint without recording progress', async () => {
+        await test.step('an organization change clears an active checkpoint even when projects fail to load', async () => {
             await mockAssistantAccess(page);
             await page.reload();
             await startTourFromCommand(page, 'Meet Exie');
             await expectProductTourSession(page, true);
             const writesBeforeSwitch = progressWrites.length;
+            const projectsRoute = `**/api/v2/organizations/${e2eSecondaryOrganization.organizationId}/projects*`;
+            await page.route(projectsRoute, (route) => route.fulfill({ json: { title: 'Injected project lookup failure' }, status: 500 }));
 
             const identityTab = await page.context().newPage();
             await identityTab.goto('/next/stack');
@@ -191,6 +193,15 @@ test.describe('shell and identity checkpoints', () => {
             await identityTab.close();
             await expectProductTourSession(page, false);
             expect(progressWrites).toHaveLength(writesBeforeSwitch);
+            await page.getByRole('button', { name: 'Search Exceptionless' }).click();
+            await page.getByRole('dialog').getByText('Guided Tours…', { exact: true }).click();
+            const catalog = page.getByRole('dialog', { name: 'Guided Tours' });
+            await expect(catalog.getByRole('button', { exact: true, name: 'Restart Explore Exceptionless' })).toBeEnabled();
+            await expect(catalog.getByRole('button', { exact: true, name: 'Start Configure a project' })).toBeDisabled();
+            await expect(catalog.getByText('Projects could not be loaded. Try again shortly.', { exact: true })).toBeVisible();
+            await page.keyboard.press('Escape');
+            await page.unroute(projectsRoute);
+            await page.reload();
         });
 
         await test.step('logout clears an active checkpoint without recording progress', async () => {

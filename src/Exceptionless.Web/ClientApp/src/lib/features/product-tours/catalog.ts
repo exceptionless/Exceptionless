@@ -33,7 +33,10 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
         version: 1
     },
     {
-        availability: () => ({ available: true }),
+        availability: (context) =>
+            context.isProjectConfigurePage || !context.organizationId || context.projects
+                ? { available: true }
+                : { available: false, reason: 'Projects could not be loaded. Try again shortly.' },
         description: 'Continue an unfinished project, or create one and send its first event.',
         keywords: ['add project', 'configure', 'sdk', 'api key', 'first event'],
         name: 'project-configure',
@@ -48,7 +51,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
                 return { checkpointName: 'organization-name', route: resolve('/(app)/organization/add') };
             }
 
-            const unconfiguredProject = context.projects.find((project) => !project.is_configured);
+            const unconfiguredProject = context.projects?.find((project) => !project.is_configured);
             if (unconfiguredProject?.id) {
                 return {
                     checkpointName: 'choose-platform',
@@ -109,7 +112,7 @@ export function getProductTourItems(context: ProductTourContext, progress: Recor
 }
 
 export function getRecommendedProductTourName(context: ProductTourContext): ProductTourName {
-    return !context.organizationId || context.projects.length === 0 || context.projects.some((project) => !project.is_configured)
+    return !context.organizationId || context.projects?.length === 0 || context.projects?.some((project) => !project.is_configured)
         ? 'project-configure'
         : 'app-overview';
 }

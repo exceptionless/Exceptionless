@@ -21,13 +21,59 @@ test('real dashboard matches repository totals across daily, month, and history 
         const usage: ProductTourUsageResponse = await response.json();
         const overview = usage.tours.find((tour) => tour.name === 'app-overview');
         expect(overview).toBeDefined();
-        const totals = page.getByLabel('Explore Exceptionless usage', { exact: true }).getByRole('list', { name: 'Period totals' });
-        await expect(totals).toContainText(`Started ${overview!.started}`);
-        await expect(totals).toContainText(`Completed ${overview!.completed}`);
-        await expect(totals).toContainText(`Dismissed ${overview!.dismissed}`);
+        const card = page.getByLabel('Explore Exceptionless usage', { exact: true });
+        if (overview!.shown + overview!.started + overview!.completed + overview!.dismissed === 0) {
+            await expect(card.getByText('No recorded activity in this period.', { exact: true })).toBeVisible();
+        } else {
+            const totals = card.getByRole('list', { name: 'Period totals' });
+            await expect(totals).toContainText(`Started ${overview!.started}`);
+            await expect(totals).toContainText(`Completed ${overview!.completed}`);
+            await expect(totals).toContainText(`Dismissed ${overview!.dismissed}`);
+        }
         await expect(page.getByText('Guide activity', { exact: true })).toBeVisible();
         await expect(page.getByText('Failed to load guided-tour usage. Please try again.')).toHaveCount(0);
         await page.screenshot({ animations: 'disabled', path: testInfo.outputPath(`local-api-${period.toLowerCase().replaceAll(' ', '-')}.png`) });
+    }
+});
+
+test('empty activity stays distinct from an unavailable collector', async ({ e2eApi, page }) => {
+    // Arrange: isolated empty response; no changes to local storage or retained events.
+    const token = await e2eApi.login();
+    await page.addInitScript((token) => localStorage.setItem('satellizer_token', token), token);
+    let collectionAvailable = true;
+    await page.route('**/api/v2/admin/product-tour-usage*', (route) =>
+        route.fulfill({
+            json: {
+                collection_available: collectionAvailable,
+                interval: 'day',
+                tours: [
+                    {
+                        activity: [],
+                        completed: 0,
+                        dismissed: 0,
+                        kind: 'guide',
+                        name: 'app-overview',
+                        shown: 0,
+                        start_sources: [],
+                        started: 0,
+                        steps: [],
+                        version: 1
+                    }
+                ],
+                utc_end: new Date().toISOString(),
+                utc_start: null
+            }
+        })
+    );
+
+    // Act & Assert
+    for (const available of [true, false]) {
+        collectionAvailable = available;
+        await page.goto('/next/system/product-tours');
+        const card = page.getByLabel('Explore Exceptionless usage', { exact: true });
+        await expect(card.getByText('No recorded activity in this period.', { exact: true })).toBeVisible();
+        await expect(card.getByRole('slider')).toHaveCount(0);
+        await expect(page.getByText('Guide activity collection is unavailable', { exact: true })).toHaveCount(available ? 0 : 1);
     }
 });
 

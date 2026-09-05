@@ -32,6 +32,11 @@ test('home navigation honors personal and organization saved views and survives 
         await openViewMenu(page);
         await page.getByRole('menuitem', { name: 'Save As...' }).click();
         const dialog = page.getByRole('dialog', { name: 'Save View' });
+        await expect(dialog.getByRole('switch', { exact: true, name: 'Private' })).not.toBeChecked();
+        await dialog.getByRole('button', { exact: true, name: 'Cancel' }).click();
+        await expect(dialog).toBeHidden();
+        await openViewMenu(page);
+        await page.getByRole('menuitem', { name: 'Save As...' }).click();
         await dialog.getByLabel('Name', { exact: true }).fill(viewName);
         await dialog.getByRole('button', { name: 'Save' }).click();
         await expect(dialog).toBeHidden({ timeout: 30_000 });
