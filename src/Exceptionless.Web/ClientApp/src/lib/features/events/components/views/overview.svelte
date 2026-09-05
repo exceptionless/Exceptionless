@@ -187,9 +187,15 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">URL</Table.Head>
                 <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.StringTrigger changed={filterChanged} term="path" value={requestUrlPath} /></Table.Cell>
-                <Table.Cell class="flex items-center gap-x-1"
-                    >{requestUrl}<Button href={requestUrl} rel="noopener noreferrer" size="sm" target="_blank" title="Open in new window" variant="ghost"
-                        ><ExternalLink /></Button
+                <Table.Cell class="wrap-anywhere whitespace-normal"
+                    >{requestUrl}<Button
+                        class="ml-1"
+                        href={requestUrl}
+                        rel="noopener noreferrer"
+                        size="sm"
+                        target="_blank"
+                        title="Open in new window"
+                        variant="ghost"><ExternalLink /></Button
                     ></Table.Cell
                 >
             </Table.Row>

@@ -441,11 +441,10 @@ export function getProjectQuery(request: GetProjectRequest) {
 
         return {
             enabled: () => !!accessToken.current && !!id,
-            queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            // Like event and stack reads, finish across remounts so the next observer can reuse the result.
+            queryFn: async () => {
                 const client = useFetchClient();
-                const response = await client.getJSON<ViewProject>(`projects/${id}`, {
-                    signal
-                });
+                const response = await client.getJSON<ViewProject>(`projects/${id}`);
 
                 return response.data!;
             },
