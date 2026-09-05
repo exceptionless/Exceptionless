@@ -2,7 +2,7 @@ import type { ProductTourProgress } from '$features/users/models';
 
 import { resolve } from '$app/paths';
 
-import type { ProductTourContext, ProductTourDefinition, ProductTourListItem, ProductTourName } from './types';
+import type { ProductTourContext, ProductTourDefinition, ProductTourListItem, ProductTourName } from './models';
 
 function requireApplicationShell(context: ProductTourContext) {
     return context.isSetupPage || !context.organizationId
@@ -11,10 +11,18 @@ function requireApplicationShell(context: ProductTourContext) {
 }
 
 function requireError(context: ProductTourContext) {
-    if (!context.organizationId) return { available: false, reason: 'Create an organization and project first.' };
-    if (context.errorEventAvailability === 'loading') return { available: false, reason: 'Checking for an accessible error report…' };
-    if (context.errorEventAvailability === 'error') return { available: false, reason: 'Error reports could not be checked. Try again shortly.' };
-    if (context.errorEventAvailability === 'empty') return { available: false, reason: 'Send an error report before starting this guide.' };
+    if (!context.organizationId) {
+        return { available: false, reason: 'Create an organization and project first.' };
+    }
+    if (context.errorEventAvailability === 'loading') {
+        return { available: false, reason: 'Checking for an accessible error report…' };
+    }
+    if (context.errorEventAvailability === 'error') {
+        return { available: false, reason: 'Error reports could not be checked. Try again shortly.' };
+    }
+    if (context.errorEventAvailability === 'empty') {
+        return { available: false, reason: 'Send an error report before starting this guide.' };
+    }
     return { available: true };
 }
 

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import type { ProductTourCheckpoint } from './types';
+import type { ProductTourCheckpoint } from './models';
 
 import { productTourCheckpoint } from './state.svelte';
 

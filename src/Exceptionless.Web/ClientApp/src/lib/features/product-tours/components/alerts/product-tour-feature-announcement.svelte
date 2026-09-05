@@ -1,10 +1,11 @@
 <script lang="ts">
+    import * as Typography from '$comp/typography';
     import * as Alert from '$comp/ui/alert';
     import { Button } from '$comp/ui/button';
     import Sparkles from '@lucide/svelte/icons/sparkles';
     import X from '@lucide/svelte/icons/x';
 
-    import ProductTourPrivacyLink from './product-tour-privacy-link.svelte';
+    import ProductTourPrivacyLink from '../product-tour-privacy-link.svelte';
 
     interface Props {
         busy?: boolean;
@@ -28,11 +29,11 @@
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <Alert.Title>New: Meet Exie</Alert.Title>
-                    <p class="text-muted-foreground mt-1 text-sm">
+                    <Typography.Muted class="mt-1">
                         {hasAccess
                             ? 'Take a short guide to Exie, your AI assistant for investigating errors.'
                             : (message ?? 'Exie is available with an eligible organization plan.')}
-                    </p>
+                    </Typography.Muted>
                 </div>
                 <Button aria-label="Dismiss Exie announcement" class="-mt-1 -mr-1 size-11" disabled={busy} onclick={onDismiss} size="icon" variant="ghost">
                     <X aria-hidden="true" class="size-4" />

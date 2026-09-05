@@ -1,4 +1,5 @@
 <script lang="ts">
+    import * as Typography from '$comp/typography';
     import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
     import * as Dialog from '$comp/ui/dialog';
@@ -9,7 +10,7 @@
     import Layers from '@lucide/svelte/icons/layers';
     import PanelLeft from '@lucide/svelte/icons/panel-left';
 
-    import type { ProductTourListItem, ProductTourName } from '../../types';
+    import type { ProductTourListItem, ProductTourName } from '../../models';
 
     import ProductTourPrivacyLink from '../product-tour-privacy-link.svelte';
 
@@ -50,14 +51,14 @@
                         <Icon aria-hidden="true" class="text-muted-foreground mt-0.5 size-5" />
                         <div class="min-w-0">
                             <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                <h3 class="text-sm font-semibold">{item.title}</h3>
+                                <Typography.H3 class="text-sm">{item.title}</Typography.H3>
                                 {#if completed}
                                     <Badge variant="secondary">Completed</Badge>
                                 {/if}
                             </div>
-                            <p class="text-muted-foreground mt-1 text-sm">{item.description}</p>
+                            <Typography.Muted class="mt-1">{item.description}</Typography.Muted>
                             {#if !item.currentAvailability.available}
-                                <p class="text-muted-foreground mt-1 text-xs" id={`${id}-${item.name}-reason`}>{item.currentAvailability.reason}</p>
+                                <Typography.Muted class="mt-1 text-xs" id={`${id}-${item.name}-reason`}>{item.currentAvailability.reason}</Typography.Muted>
                             {/if}
                         </div>
                         <Button

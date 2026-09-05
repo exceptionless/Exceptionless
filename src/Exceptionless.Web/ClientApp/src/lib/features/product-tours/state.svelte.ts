@@ -1,4 +1,4 @@
-import type { ProductTourCheckpoint, ProductTourCheckpointName, ProductTourLaunchSource, ProductTourName } from './types';
+import type { ProductTourCheckpoint, ProductTourCheckpointName, ProductTourLaunchSource, ProductTourName } from './models';
 
 import { clearProductTourSession, readProductTourSession, writeProductTourSession } from './session';
 

@@ -1,11 +1,12 @@
 <script lang="ts">
+    import * as Typography from '$comp/typography';
     import * as Alert from '$comp/ui/alert';
     import { Button } from '$comp/ui/button';
     import X from '@lucide/svelte/icons/x';
 
-    import type { ProductTourListItem } from '../types';
+    import type { ProductTourListItem } from '../../models';
 
-    import ProductTourPrivacyLink from './product-tour-privacy-link.svelte';
+    import ProductTourPrivacyLink from '../product-tour-privacy-link.svelte';
 
     interface Props {
         busy?: boolean;
@@ -36,7 +37,7 @@
         role="region"
     >
         <div class="flex items-center justify-between gap-2">
-            <Alert.Title><h2>Welcome to Exceptionless</h2></Alert.Title>
+            <Alert.Title><Typography.H2 class="border-0 pb-0 text-sm font-medium">Welcome to Exceptionless</Typography.H2></Alert.Title>
             <Button aria-label="Close welcome" class="-my-2 -mr-2 size-11 shrink-0" disabled={busy} onclick={onDismiss} size="icon" variant="ghost">
                 <X aria-hidden="true" />
             </Button>

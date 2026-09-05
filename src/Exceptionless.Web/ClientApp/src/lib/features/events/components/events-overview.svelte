@@ -31,7 +31,7 @@
 
     import { getSessionId } from '../utils';
     import { shouldResetActiveEventTab } from './events-overview-tab-state';
-    import InvestigationDetailTour from './investigation-detail-tour.svelte';
+    import InvestigationDetailTour from './tours/investigation-detail.svelte';
     import Environment from './views/environment.svelte';
     import Error from './views/error.svelte';
     import ExtendedData from './views/extended-data.svelte';

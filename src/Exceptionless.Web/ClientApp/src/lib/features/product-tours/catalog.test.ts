@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { ProductTourContext } from './types';
+import type { ProductTourContext } from './models';
 
 import { getProductTourItems, getRecommendedProductTourName, productTourCatalog } from './catalog';
 

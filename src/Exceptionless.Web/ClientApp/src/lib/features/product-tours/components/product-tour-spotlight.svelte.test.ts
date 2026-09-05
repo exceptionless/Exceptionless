@@ -2,7 +2,7 @@ import { appKeyboardShortcuts } from '$features/shared/keyboard-shortcuts';
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { ProductTourCheckpoint } from '../types';
+import type { ProductTourCheckpoint } from '../models';
 
 import ProductTourSpotlight from './product-tour-spotlight.svelte';
 vi.mock('../api.svelte', () => ({ createProductTourActivity: () => vi.fn() }));

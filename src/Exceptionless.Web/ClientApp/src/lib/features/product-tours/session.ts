@@ -1,6 +1,6 @@
-import type { ProductTourCheckpoint, ProductTourLaunchSource, ProductTourName } from './types';
+import type { ProductTourCheckpoint, ProductTourLaunchSource, ProductTourName } from './models';
 
-import { PRODUCT_TOUR_CHECKPOINTS, PRODUCT_TOUR_LAUNCH_SOURCES } from './types';
+import { PRODUCT_TOUR_CHECKPOINTS, PRODUCT_TOUR_LAUNCH_SOURCES } from './models';
 
 const SESSION_KEY = 'exceptionless.product-tour';
 const SOURCES = new Set<string>(PRODUCT_TOUR_LAUNCH_SOURCES);
@@ -16,7 +16,9 @@ export function clearProductTourSession(storage?: Pick<Storage, 'removeItem'>): 
 export function readProductTourSession(storage?: Pick<Storage, 'getItem' | 'removeItem'>): ProductTourCheckpoint | undefined {
     try {
         const value = (storage ?? sessionStorage).getItem(SESSION_KEY);
-        if (!value) return undefined;
+        if (!value) {
+            return undefined;
+        }
 
         const candidate: unknown = JSON.parse(value);
         if (!isProductTourCheckpoint(candidate)) {
@@ -56,10 +58,15 @@ function isProductTourCheckpoint(value: unknown): value is ProductTourCheckpoint
         typeof value.version !== 'number' ||
         !Number.isSafeInteger(value.version) ||
         value.version < 1
-    )
+    ) {
         return false;
-    if (value.organizationId !== undefined && typeof value.organizationId !== 'string') return false;
-    if (!isProductTourLaunchSource(value.source) || !isProductTourName(value.tourName)) return false;
+    }
+    if (value.organizationId !== undefined && typeof value.organizationId !== 'string') {
+        return false;
+    }
+    if (!isProductTourLaunchSource(value.source) || !isProductTourName(value.tourName)) {
+        return false;
+    }
 
     const checkpoints: readonly string[] = PRODUCT_TOUR_CHECKPOINTS[value.tourName];
     if (
@@ -70,7 +77,9 @@ function isProductTourCheckpoint(value: unknown): value is ProductTourCheckpoint
     ) {
         return false;
     }
-    if (typeof value.checkpointName !== 'string' || !checkpoints.includes(value.checkpointName)) return false;
+    if (typeof value.checkpointName !== 'string' || !checkpoints.includes(value.checkpointName)) {
+        return false;
+    }
     return true;
 }
 

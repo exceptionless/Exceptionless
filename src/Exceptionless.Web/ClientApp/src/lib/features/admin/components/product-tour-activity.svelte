@@ -2,8 +2,10 @@
     import type { ProductTourSummary, ProductTourUsageInterval } from '$generated/api';
 
     import Number from '$comp/formatters/number.svelte';
+    import * as Typography from '$comp/typography';
     import * as Chart from '$comp/ui/chart';
     import * as Table from '$comp/ui/table';
+    import { formatDateLabel } from '$features/shared/dates';
     import { scaleUtc } from 'd3-scale';
     import { curveLinear } from 'd3-shape';
     import { type ChartState, LineChart, Points, Spline } from 'layerchart';
@@ -14,9 +16,6 @@
     const prompt = $derived(tour.kind === 'prompt');
     const keyboardHelpId = $props.id();
     const data = $derived(getProductTourActivity(tour.activity ?? [], start, end));
-    const subdaily = $derived(data[0] && data[1] && data[1].date.getTime() - data[0].date.getTime() < 86_400_000);
-    const lastPeriod = $derived(data.at(-1));
-    const withinDay = $derived(subdaily && data[0] && lastPeriod && lastPeriod.date.getTime() - data[0].date.getTime() < 86_400_000);
     const config = $derived({
         completed: {
             color: 'color-mix(in srgb, var(--chart-1) var(--tour-chart-strength), black)',
@@ -48,7 +47,7 @@
     const selectedIndex = $derived(Math.max(0, Math.min(keyboardIndex ?? data.length - 1, data.length - 1)));
     const selectedPeriod = $derived(data[selectedIndex]);
     const keyboardValue = $derived(
-        selectedPeriod ? `${periodLabel(selectedPeriod.date)}. ${keys.map((key) => `${config[key].label}: ${selectedPeriod[key]}`).join('. ')}` : 'No activity'
+        selectedPeriod ? `${formatPeriod(selectedPeriod.date)}. ${keys.map((key) => `${config[key].label}: ${selectedPeriod[key]}`).join('. ')}` : 'No activity'
     );
 
     function showSelectedPeriod(): void {
@@ -64,44 +63,35 @@
             return;
         }
         event.preventDefault();
-        keyboardIndex =
-            event.key === 'Home'
-                ? 0
-                : event.key === 'End'
-                  ? data.length - 1
-                  : Math.max(0, Math.min(data.length - 1, selectedIndex + (event.key === 'ArrowRight' ? 1 : -1)));
+        switch (event.key) {
+            case 'ArrowLeft':
+                keyboardIndex = Math.max(0, selectedIndex - 1);
+                break;
+            case 'ArrowRight':
+                keyboardIndex = Math.min(data.length - 1, selectedIndex + 1);
+                break;
+            case 'End':
+                keyboardIndex = data.length - 1;
+                break;
+            case 'Home':
+                keyboardIndex = 0;
+                break;
+        }
         showSelectedPeriod();
     }
 
-    function dateLabel(value: unknown): string {
-        if (value instanceof Date && withinDay) {
-            return value.toLocaleTimeString(undefined, {
-                hour: 'numeric',
-                minute: '2-digit',
-                timeZone: 'UTC'
-            });
-        }
-        return periodLabel(value, false);
-    }
-
-    function periodLabel(value: unknown, includeTime = true): string {
-        if (!(value instanceof Date)) {
-            return '';
-        }
-        return value.toLocaleString(undefined, {
-            day: interval !== 'month' ? 'numeric' : undefined,
-            hour: subdaily && includeTime ? 'numeric' : undefined,
-            minute: subdaily && includeTime ? '2-digit' : undefined,
+    function formatPeriod(value: Date): string {
+        return formatDateLabel(value, undefined, {
+            includeRelative: false,
             month: 'short',
-            timeZone: 'UTC',
-            year: interval === 'month' || data[0]?.date.getUTCFullYear() !== lastPeriod?.date.getUTCFullYear() ? 'numeric' : undefined
+            timeZone: 'UTC'
         });
     }
 </script>
 
 <div class="flex flex-col gap-4 [--tour-chart-strength:70%] dark:[--tour-chart-strength:100%]">
     {#if total === 0}
-        <p class="text-muted-foreground flex h-48 items-center justify-center text-sm">No recorded activity in this period.</p>
+        <Typography.Muted class="flex h-48 items-center justify-center">No recorded activity in this period.</Typography.Muted>
     {:else}
         <ul class="flex flex-wrap gap-x-4 gap-y-1 text-xs" aria-label="Period totals">
             {#each keys as key (key)}
@@ -143,14 +133,12 @@
                 legend={false}
                 props={{
                     xAxis: {
-                        format: dateLabel,
                         tickLabelProps: {
                             dy: 20
                         },
-                        ticks: data.filter((_, index) => index % Math.max(1, Math.ceil((data.length - 1) / 4)) === 0).map((period) => period.date)
+                        ticks: 4
                     },
                     yAxis: {
-                        format: (value) => String(value),
                         tickLabelProps: {
                             dx: -8
                         },
@@ -166,11 +154,17 @@
                         {/if}
                     {/each}
                 {/snippet}
-                {#snippet tooltip()}<Chart.Tooltip role="tooltip" labelFormatter={(value) => periodLabel(value)} indicator="line" />{/snippet}
+                {#snippet tooltip()}<Chart.Tooltip
+                        role="tooltip"
+                        labelFormatter={(value) => (value instanceof Date ? formatPeriod(value) : '')}
+                        indicator="line"
+                    />{/snippet}
             </LineChart>
         </Chart.Container>
         <div class="sr-only">
-            <p id={keyboardHelpId}>Use Left and Right arrows to inspect dates, or Home and End to jump to the first and last date. Dates are UTC.</p>
+            <Typography.P id={keyboardHelpId}
+                >Use Left and Right arrows to inspect dates, or Home and End to jump to the first and last date. Dates are UTC.</Typography.P
+            >
             <Table.Root aria-label="Guide activity by date">
                 <Table.Header
                     ><Table.Row
@@ -180,7 +174,7 @@
                 >
                 <Table.Body
                     >{#each data as period (period.date_utc)}<Table.Row
-                            ><Table.Cell>{periodLabel(period.date)}</Table.Cell>{#each keys as key (key)}<Table.Cell class="text-right"
+                            ><Table.Cell>{formatPeriod(period.date)}</Table.Cell>{#each keys as key (key)}<Table.Cell class="text-right"
                                     ><Number value={period[key]} /></Table.Cell
                                 >{/each}</Table.Row
                         >{/each}</Table.Body

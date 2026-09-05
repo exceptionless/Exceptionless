@@ -1,5 +1,6 @@
 import type { AssistantAccess } from '$features/assistant/models';
 import type { ViewProject } from '$features/projects/models';
+import type { KeyboardShortcut } from '$features/shared/keyboard-shortcuts';
 import type { ProductTourProgress } from '$features/users/models';
 export const PRODUCT_TOUR_CHECKPOINTS = {
     'app-overview': ['navigation', 'command-search', 'saved-views', 'exie', 'help'],
@@ -56,6 +57,11 @@ export interface ProductTourListItem<Name extends ProductTourName = ProductTourN
 }
 
 export type ProductTourName = keyof typeof PRODUCT_TOUR_CHECKPOINTS;
+
+export interface ProductTourShortcut {
+    label: string;
+    shortcut: KeyboardShortcut;
+}
 
 export interface ProductTourStart<Name extends ProductTourName = ProductTourName> {
     checkpointName: ProductTourCheckpointName<Name>;

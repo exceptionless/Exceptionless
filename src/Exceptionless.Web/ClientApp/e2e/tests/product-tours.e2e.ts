@@ -384,7 +384,9 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
         let progressRequests = 0;
         const countSavedViewCreation = (request: Request) => {
             const path = new URL(request.url()).pathname;
-            if (request.method() === 'POST' && /^\/api\/v2\/organizations\/[^/]+\/saved-views$/.test(path)) createRequests += 1;
+            if (request.method() === 'POST' && /^\/api\/v2\/organizations\/[^/]+\/saved-views$/.test(path)) {
+                createRequests += 1;
+            }
         };
         const progressRoute = (url: URL) => url.pathname === '/api/v2/users/me/product-tours/saved-view-create';
         page.on('request', countSavedViewCreation);
@@ -458,7 +460,9 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
         await mockAssistantAccess(page);
         let chatRequests = 0;
         const countChatRequest = (request: Request) => {
-            if (new URL(request.url()).pathname === '/api/v2/assistant/chat') chatRequests += 1;
+            if (new URL(request.url()).pathname === '/api/v2/assistant/chat') {
+                chatRequests += 1;
+            }
         };
         page.on('request', countChatRequest);
 
