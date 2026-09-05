@@ -46,7 +46,7 @@
 
 <div class="@container flex flex-col gap-6">
     <div class="flex flex-wrap items-center justify-between gap-3">
-        <Muted>Guide activity · {usage?.interval === 'month' ? 'Monthly · ' : usage?.interval === 'day' ? 'Daily · ' : ''}UTC</Muted>
+        <Muted>Guide activity</Muted>
         <div class="flex items-center gap-2" aria-label="Usage filters">
             <ProductTourPeriod bind:range />
             <Button variant="outline" size="icon" aria-label="Refresh tour activity" disabled={usageQuery.isFetching} onclick={() => usageQuery.refetch()}>

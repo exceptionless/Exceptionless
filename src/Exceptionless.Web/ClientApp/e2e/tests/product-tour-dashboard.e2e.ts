@@ -1,4 +1,35 @@
+import type { ProductTourUsageResponse } from '../../src/lib/generated/api';
+
 import { expect, test } from '../fixtures/e2e-test';
+
+test('real dashboard matches repository totals across daily, month, and history filters', async ({ e2eApi, page }, testInfo) => {
+    // Arrange: use the real local API, including its empty/unavailable-storage response.
+    const token = await e2eApi.login();
+    await page.addInitScript((token) => localStorage.setItem('satellizer_token', token), token);
+
+    // Act & Assert
+    for (const period of ['Last 30 days', 'Show month', 'Available history']) {
+        const pending = page.waitForResponse((response) => new URL(response.url()).pathname === '/api/v2/admin/product-tour-usage');
+        if (period === 'Last 30 days') {
+            await page.goto('/next/system/product-tours');
+        } else {
+            await page.getByRole('button', { name: /^Usage period:/ }).click();
+            await page.getByRole('button', { exact: true, name: period }).click();
+        }
+        const response = await pending;
+        expect(response.status()).toBe(200);
+        const usage: ProductTourUsageResponse = await response.json();
+        const overview = usage.tours.find((tour) => tour.name === 'app-overview');
+        expect(overview).toBeDefined();
+        const totals = page.getByLabel('Explore Exceptionless usage', { exact: true }).getByRole('list', { name: 'Period totals' });
+        await expect(totals).toContainText(`Started ${overview!.started}`);
+        await expect(totals).toContainText(`Completed ${overview!.completed}`);
+        await expect(totals).toContainText(`Dismissed ${overview!.dismissed}`);
+        await expect(page.getByText('Guide activity', { exact: true })).toBeVisible();
+        await expect(page.getByText('Failed to load guided-tour usage. Please try again.')).toHaveCount(0);
+        await page.screenshot({ animations: 'disabled', path: testInfo.outputPath(`local-api-${period.toLowerCase().replaceAll(' ', '-')}.png`) });
+    }
+});
 
 test('synthetic activity charts support keyboard, compact ranges, and light/dark layouts', async ({ e2eApi, page }, testInfo) => {
     // Arrange: isolated response fixture; no synthetic events are written to storage.
@@ -73,7 +104,7 @@ test('synthetic activity charts support keyboard, compact ranges, and light/dark
     await page.getByRole('button', { name: 'Usage period: Last 30 days' }).click();
     await page.getByRole('button', { exact: true, name: 'Available history' }).click();
     await expect(page.getByRole('button', { name: 'Usage period: Available history' })).toBeVisible();
-    await expect(page.getByText('Guide activity · UTC', { exact: true })).toBeVisible();
+    await expect(page.getByText('Guide activity', { exact: true })).toBeVisible();
     await expect(chart).toHaveAttribute('aria-valuemax', '29');
     await chart.focus();
     await page.keyboard.press('Home');

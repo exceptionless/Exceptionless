@@ -183,6 +183,38 @@ public sealed class ProductTourActivityEndpointTests(ITestOutputHelper output, A
     }
 
     [Fact]
+    public async Task RecordProductTourActivity_RepeatedRequests_ThrottlesOnlyActivityForThatUserAndWindow()
+    {
+        // Arrange: missing storage keeps this boundary test from writing 100 events.
+        TimeProvider.SetUtcNow(new DateTimeOffset(2026, 9, 4, 12, 0, 0, TimeSpan.Zero));
+        var activity = new PostProductTourActivity { Version = 1, Action = ProductTourTelemetryEvent.Started, Source = ProductTourLaunchSource.Catalog };
+        for (int i = 0; i < 100; i++)
+        {
+            await SendRequestAsync(request => request.Post().AsTestOrganizationUser().AppendPath("users/me/product-tours/app-overview/activity")
+                .Content(activity).ExpectedStatus(System.Net.HttpStatusCode.ServiceUnavailable));
+        }
+
+        // Act & Assert
+        await SendRequestAsync(request => request.Post().AsTestOrganizationUser().AppendPath("users/me/product-tours/app-overview/activity")
+            .Content(activity).ExpectedStatus(System.Net.HttpStatusCode.TooManyRequests));
+        await SendRequestAsync(request => request.Post().AsFreeOrganizationUser().AppendPath("users/me/product-tours/app-overview/activity")
+            .Content(activity).ExpectedStatus(System.Net.HttpStatusCode.ServiceUnavailable));
+        await SendRequestAsync(request => request.Put().AsTestOrganizationUser().AppendPath("users/me/product-tours/app-overview")
+            .Content(new UpdateProductTourProgress { Status = ProductTourStatus.Completed, Version = 1 }).StatusCodeShouldBeOk());
+        await SendRequestAsync(request => request.Put().AsTestOrganizationUser().AppendPath("users/me/product-tour-analytics")
+            .Content(new UpdateProductTourAnalytics { Enabled = false }).StatusCodeShouldBeNoContent());
+        await SendRequestAsync(request => request.Post().AsTestOrganizationUser().AppendPath("users/me/product-tours/app-overview/activity")
+            .Content(activity).StatusCodeShouldBeNoContent());
+        await SendRequestAsync(request => request.Put().AsTestOrganizationUser().AppendPath("users/me/product-tour-analytics")
+            .Content(new UpdateProductTourAnalytics { Enabled = true }).StatusCodeShouldBeNoContent());
+
+        TimeProvider.Advance(TimeSpan.FromMinutes(15));
+        await SendRequestAsync(request => request.Post().AsTestOrganizationUser().AppendPath("users/me/product-tours/app-overview/activity")
+            .Content(activity).ExpectedStatus(System.Net.HttpStatusCode.ServiceUnavailable));
+        Assert.Equal(0, (await GetService<IQueue<EventPost>>().GetQueueStatsAsync()).Enqueued);
+    }
+
+    [Fact]
     public async Task RecordProductTourActivity_MissingInternalProject_ReturnsUnavailable()
     {
         // Act & Assert
