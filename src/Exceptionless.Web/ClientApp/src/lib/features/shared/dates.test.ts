@@ -39,10 +39,10 @@ describe('formatDateLabel', () => {
         expect(label).toBe(new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(date));
     });
 
-    it('preserves time when local midnight is not midnight in the requested timezone', () => {
+    it('preserves the time and minutes in a timezone with a half-hour offset', () => {
         // Arrange
-        const date = new Date(2026, 0, 1);
-        const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone === 'Asia/Kolkata' ? 'UTC' : 'Asia/Kolkata';
+        const date = new Date('2026-01-01T00:00:00Z');
+        const timeZone = 'Asia/Kolkata';
 
         // Act
         const label = formatDateLabel(date, new Date(2026, 0, 2), { includeRelative: false, month: 'short', timeZone });
