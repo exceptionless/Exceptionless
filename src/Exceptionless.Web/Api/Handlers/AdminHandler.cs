@@ -150,6 +150,9 @@ public class AdminHandler(
 
         DateTime utcEnd = timeProvider.GetUtcNow().UtcDateTime;
         DateTime monthStart = (message.Month ?? utcEnd).ToUniversalTime().StartOfMonth();
+        if (monthStart >= DateTime.MaxValue.StartOfMonth())
+            return Result.Invalid(ValidationError.Create("month", "The month must have a representable end date."));
+
         DateTime? utcStart = message.History
             ? appOptions.MaximumRetentionDays > 0
                 ? utcEnd.SubtractDays(appOptions.MaximumRetentionDays)

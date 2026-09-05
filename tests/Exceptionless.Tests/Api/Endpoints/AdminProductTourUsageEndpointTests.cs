@@ -207,6 +207,16 @@ public sealed class AdminProductTourUsageEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public Task GetProductTourUsageAsync_MonthWithoutRepresentableEnd_ReturnsValidationError()
+    {
+        // Act & Assert
+        return SendRequestAsync(request => request.AsGlobalAdminUser()
+            .AppendPaths("admin", "product-tour-usage")
+            .QueryString("month", "9999-12-01T00:00:00Z")
+            .StatusCodeShouldBeUnprocessableEntity());
+    }
+
+    [Fact]
     public Task GetProductTourUsageAsync_AsOrganizationUser_ReturnsForbidden()
     {
         // Act & Assert
