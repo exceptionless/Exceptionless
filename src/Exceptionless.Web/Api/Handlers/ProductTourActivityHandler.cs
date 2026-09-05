@@ -4,12 +4,9 @@ using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
-using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Api.Messages;
-using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models;
-using Foundatio.Caching;
 using Foundatio.Mediator;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
@@ -25,14 +22,9 @@ public class ProductTourActivityHandler(
     EventPostService eventPostService,
     AppOptions appOptions,
     ISerializer serializer,
-    ICacheClient cacheClient,
     TimeProvider timeProvider,
     IHttpContextAccessor httpContextAccessor)
 {
-    private const int ActivityRequestLimit = 100;
-    private static readonly TimeSpan ActivityRequestWindow = TimeSpan.FromMinutes(15);
-    private readonly ScopedCacheClient _cache = new(cacheClient, "ProductTourActivity");
-
     private HttpContext HttpContext => httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is unavailable.");
 
     public async Task<Result> Handle(UpdateCurrentUserProductTourAnalytics message)
@@ -71,14 +63,6 @@ public class ProductTourActivityHandler(
         if (!user.ProductTourAnalyticsEnabled)
         {
             return Result.NoContent();
-        }
-
-        // Bound writes into the shared internal project independently of the general API limit.
-        var windowStart = timeProvider.GetUtcNow().UtcDateTime.Floor(ActivityRequestWindow);
-        long attempts = await _cache.IncrementAsync($"{user.Id}:{windowStart.Ticks}", 1, windowStart.Add(ActivityRequestWindow));
-        if (attempts > ActivityRequestLimit)
-        {
-            return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.RateLimit, "Too many guided-tour activity requests. Please try later."));
         }
 
         var project = await projectRepository.GetByIdAsync(appOptions.InternalProjectId, options => options.Cache());
