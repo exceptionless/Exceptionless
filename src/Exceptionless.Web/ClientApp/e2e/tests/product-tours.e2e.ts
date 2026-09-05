@@ -9,6 +9,64 @@ test.use({ actionTimeout: 15_000, e2eUseInvitedUser: true });
 test.describe('first-run welcome', () => {
     test.use({ e2eDismissProductTourWelcome: false });
 
+    for (const [tourName, dismissLabel] of [
+        ['app-welcome', 'Close welcome'],
+        ['exie-announcement', 'Dismiss Exie announcement']
+    ] as const) {
+        test(`${tourName} stays dismissed with analytics off and session storage unavailable`, async ({ e2eApi, e2eScenario, page }) => {
+            // Arrange
+            const preference = await page.request.put('/api/v2/users/me/product-tour-analytics', {
+                data: { enabled: false },
+                headers: { Authorization: `Bearer ${e2eScenario.userToken}` }
+            });
+            expect(preference.status()).toBe(204);
+            if (tourName === 'exie-announcement') {
+                await e2eApi.updateProductTour(e2eScenario.userToken, 'app-welcome', 1, 2);
+            }
+            await mockAssistantAccess(page);
+            const activities: string[] = [];
+            page.on('request', (request) => {
+                if (request.method() === 'POST' && /\/product-tours\/[^/]+\/activity$/.test(new URL(request.url()).pathname)) {
+                    activities.push(request.url());
+                }
+            });
+            await page.goto('/next/stack');
+            const dismiss = page.getByRole('button', { name: dismissLabel });
+            await expect(dismiss).toBeVisible();
+
+            // Act
+            const persisted = page.waitForResponse(isSuccessfulTourProgress(tourName));
+            await dismiss.click();
+            expect(await (await persisted).json()).toMatchObject({ status: 2, version: 1 });
+            await page.addInitScript(() =>
+                Object.defineProperty(window, 'sessionStorage', {
+                    get() {
+                        throw new DOMException('Storage denied', 'SecurityError');
+                    }
+                })
+            );
+            const reloadedUser = page.waitForResponse((response) => new URL(response.url()).pathname === '/api/v2/users/me' && response.status() === 200);
+            const reloadedProjects = page.waitForResponse(
+                (response) => new URL(response.url()).pathname === `/api/v2/organizations/${e2eScenario.organizationId}/projects` && response.status() === 200
+            );
+            await page.reload();
+
+            // Assert
+            expect(await (await reloadedUser).json()).toMatchObject({
+                product_tour_analytics_enabled: false,
+                product_tours: { [tourName]: { status: 2, version: 1 } }
+            });
+            await reloadedProjects;
+            await expect(page.getByRole('button', { name: 'Search Exceptionless' })).toBeVisible();
+            if (tourName === 'app-welcome') {
+                // A different, unseen invitation remains eligible; analytics opt-out is not a hide-all-guides preference.
+                await expect(page.getByRole('button', { name: 'Dismiss Exie announcement' })).toBeVisible();
+            }
+            await expect(dismiss).toBeHidden();
+            expect(activities).toHaveLength(0);
+        });
+    }
+
     test('Browse Guides persists before the catalog opens', async ({ e2eScenario, page }, testInfo) => {
         await test.step(`show the first-run prompt for ${e2eScenario.email}`, async () => {
             await page.goto('/next/stack');
@@ -462,6 +520,7 @@ test('privacy opt-out preserves completion and storage denial keeps guides usabl
     await page.keyboard.press('Space');
     await saved;
     await expect(preference).not.toBeChecked();
+    await expect(preference).toBeEnabled();
     await page.screenshot({ path: testInfo.outputPath('guide-privacy.png') });
     const before = activities.length;
     await page.addInitScript(() =>

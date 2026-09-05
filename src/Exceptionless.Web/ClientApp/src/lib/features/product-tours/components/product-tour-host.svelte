@@ -17,7 +17,7 @@
     import { createProductTourActions } from '../actions.svelte';
     import { createProductTourActivity } from '../api.svelte';
     import { getProductTourItems, getRecommendedProductTourName } from '../catalog';
-    import { shouldOfferProductTourAnnouncement, shouldOfferProductTourWelcome } from '../eligibility';
+    import { shouldOfferProductTourInvitation } from '../eligibility';
     import { productTourCheckpoint } from '../state.svelte';
     import ProductTourCatalogDialog from './dialogs/product-tour-catalog-dialog.svelte';
     import ProductTourFeatureAnnouncement from './product-tour-feature-announcement.svelte';
@@ -133,7 +133,7 @@
             !isImpersonating &&
             !isSetupPage &&
             !pathname.startsWith(SYSTEM_PATH) &&
-            shouldOfferProductTourWelcome(currentUser.product_tours?.['app-welcome'], WELCOME_VERSION)
+            shouldOfferProductTourInvitation(currentUser.product_tours?.['app-welcome'], WELCOME_VERSION)
         )
     );
     const exieAnnouncementOpen = $derived(
@@ -148,8 +148,8 @@
             !checkpoint &&
             !catalogOpen &&
             !isAnyOverlayOpen &&
-            !shouldOfferProductTourWelcome(currentUser.product_tours?.['app-welcome'], WELCOME_VERSION) &&
-            shouldOfferProductTourAnnouncement(currentUser.product_tours?.['exie-announcement'], EXIE_ANNOUNCEMENT_VERSION)
+            !shouldOfferProductTourInvitation(currentUser.product_tours?.['app-welcome'], WELCOME_VERSION) &&
+            shouldOfferProductTourInvitation(currentUser.product_tours?.['exie-announcement'], EXIE_ANNOUNCEMENT_VERSION)
         )
     );
 
@@ -181,7 +181,7 @@
             return;
         }
 
-        if (shouldOfferProductTourWelcome(currentUser.product_tours?.['app-welcome'], WELCOME_VERSION) && !pathname.startsWith(SYSTEM_PATH)) {
+        if (shouldOfferProductTourInvitation(currentUser.product_tours?.['app-welcome'], WELCOME_VERSION) && !pathname.startsWith(SYSTEM_PATH)) {
             claimAutomaticSurface('welcome');
             return;
         }
@@ -189,7 +189,7 @@
         if (
             assistantAccess?.enabled &&
             (pathname.startsWith(EVENT_PATH) || pathname.startsWith(STACK_PATH)) &&
-            shouldOfferProductTourAnnouncement(currentUser.product_tours?.['exie-announcement'], EXIE_ANNOUNCEMENT_VERSION)
+            shouldOfferProductTourInvitation(currentUser.product_tours?.['exie-announcement'], EXIE_ANNOUNCEMENT_VERSION)
         ) {
             claimAutomaticSurface('exie-announcement');
         }

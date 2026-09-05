@@ -25,8 +25,8 @@
             <Field.FieldContent>
                 <Field.Label for="product-tour-analytics">Help improve guided tours</Field.Label>
                 <Field.FieldDescription id="product-tour-analytics-description">
-                    Share guide starts, steps reached, completions, and dismissals. We use this only to improve guided tours. Your progress is saved even when
-                    this is off. Turning this off stops future collection, not previously recorded activity.
+                    Share guide starts, steps reached, completions, and dismissals to help us improve guided tours. Completed and dismissed guides are still
+                    remembered when this is off; it does not change which invitations you see. Previously shared activity is not deleted.
                 </Field.FieldDescription>
             </Field.FieldContent>
             <Switch
