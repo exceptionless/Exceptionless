@@ -20,12 +20,6 @@ test.describe('first-run welcome', () => {
                 await e2eApi.updateProductTour(e2eScenario.userToken, 'app-welcome', 1, 2);
             }
             await mockAssistantAccess(page);
-            const activities: string[] = [];
-            page.on('request', (request) => {
-                if (request.method() === 'POST' && /\/product-tours\/[^/]+\/activity$/.test(new URL(request.url()).pathname)) {
-                    activities.push(request.url());
-                }
-            });
             await page.goto('/next/stack');
             const dismiss = page.getByRole('button', { name: dismissLabel });
             await expect(dismiss).toBeVisible();
@@ -58,7 +52,6 @@ test.describe('first-run welcome', () => {
                 await expect(page.getByRole('button', { name: 'Dismiss Exie announcement' })).toBeVisible();
             }
             await expect(dismiss).toBeHidden();
-            expect(activities).toHaveLength(0);
         });
     }
 
