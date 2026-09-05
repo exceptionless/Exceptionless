@@ -182,11 +182,12 @@ test('synthetic activity charts support keyboard, compact ranges, and light/dark
                 const labels = await chart.locator('.lc-axis-tick-label').evaluateAll((elements) =>
                     elements.map((element) => ({
                         bounds: element.getBoundingClientRect().toJSON(),
+                        placement: element.closest('.lc-axis')?.getAttribute('data-placement'),
                         text: element.textContent
                     }))
                 );
-                const zero = labels.find((label) => label.text === '0');
-                const firstDate = labels.find((label) => label.text?.match(/[A-Za-z]/));
+                const zero = labels.find((label) => label.placement === 'left' && label.text === '0');
+                const firstDate = labels.find((label) => label.placement === 'bottom');
                 return zero && firstDate ? firstDate.bounds.top - zero.bounds.bottom : 0;
             })
             .toBeGreaterThanOrEqual(6);

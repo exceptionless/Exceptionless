@@ -74,6 +74,9 @@ public sealed class ProductTourActivityEndpointTests(ITestOutputHelper output, A
         // Arrange
         var user = await GetService<IUserRepository>().GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
         Assert.NotNull(user);
+        var cached = await GetService<IUserRepository>().GetByIdAsync(user.Id, options => options.Cache());
+        Assert.NotNull(cached);
+        Assert.True(cached.ProductTourAnalyticsEnabled);
 
         // Act
         await Task.WhenAll(
@@ -86,11 +89,35 @@ public sealed class ProductTourActivityEndpointTests(ITestOutputHelper output, A
             .StatusCodeShouldBeNoContent());
 
         // Assert
-        var persisted = await GetService<IUserRepository>().GetByIdAsync(user.Id, options => options.Cache(false));
+        var persisted = await GetService<IUserRepository>().GetByIdAsync(user.Id, options => options.Cache());
         Assert.NotNull(persisted);
         Assert.False(persisted.ProductTourAnalyticsEnabled);
         Assert.Equal(ProductTourStatus.Completed, persisted.ProductTours[ProductTours.AppOverview].Status);
         Assert.Equal(0, (await GetService<IQueue<EventPost>>().GetQueueStatsAsync()).Enqueued);
+    }
+
+    [Fact]
+    public async Task UpdateCurrentUserProductTourAnalytics_CachedPreference_ReflectsEachChange()
+    {
+        // Arrange
+        var repository = GetService<IUserRepository>();
+        var user = await repository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+        var cached = await repository.GetByIdAsync(user.Id, options => options.Cache());
+        Assert.NotNull(cached);
+        Assert.True(cached.ProductTourAnalyticsEnabled);
+
+        foreach (bool enabled in new[] { false, true })
+        {
+            // Act
+            await SendRequestAsync(request => request.Put().AsTestOrganizationUser().AppendPath("users/me/product-tour-analytics")
+                .Content(new UpdateProductTourAnalytics { Enabled = enabled }).StatusCodeShouldBeNoContent());
+
+            // Assert
+            cached = await repository.GetByIdAsync(user.Id, options => options.Cache());
+            Assert.NotNull(cached);
+            Assert.Equal(enabled, cached.ProductTourAnalyticsEnabled);
+        }
     }
 
     [Fact]

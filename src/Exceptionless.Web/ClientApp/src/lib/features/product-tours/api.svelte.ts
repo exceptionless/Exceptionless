@@ -90,10 +90,6 @@ export function putProductTourAnalytics() {
             return {
                 previous
             };
-        },
-        onSettled: () =>
-            queryClient.invalidateQueries({
-                queryKey: userQueryKeys.me()
-            })
+        }
     }));
 }

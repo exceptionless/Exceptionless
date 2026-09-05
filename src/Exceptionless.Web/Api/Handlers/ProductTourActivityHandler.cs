@@ -53,8 +53,7 @@ public class ProductTourActivityHandler(
             return Result.Invalid(ValidationError.Create("step", "A reached step is required."));
         }
 
-        // Re-read the preference so a stale browser or authentication cache cannot bypass opt-out.
-        var user = await userRepository.GetByIdAsync(HttpContext.Request.GetUser().Id, options => options.Cache(false));
+        var user = await userRepository.GetByIdAsync(HttpContext.Request.GetUser().Id, options => options.Cache());
         if (user is null)
         {
             return Result.NotFound("User not found.");
