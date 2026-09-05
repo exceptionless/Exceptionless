@@ -8,6 +8,7 @@
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import { Skeleton } from '$comp/ui/skeleton';
+    import { env } from '$env/dynamic/public';
     import { getAdminProductTourUsageQuery } from '$features/admin/api.svelte';
     import ProductTourActivityPopover from '$features/admin/components/product-tour-activity-popover.svelte';
     import ProductTourActivity from '$features/admin/components/product-tour-activity.svelte';
@@ -54,6 +55,16 @@
             </Button>
         </div>
     </div>
+
+    {#if !env.PUBLIC_EXCEPTIONLESS_API_KEY}
+        <Alert.Root>
+            <Alert.Title>Application telemetry is not configured</Alert.Title>
+            <Alert.Description>
+                Guide activity uses the application's Exceptionless client. Configure application telemetry to collect new activity. Saved guide progress is
+                unaffected.
+            </Alert.Description>
+        </Alert.Root>
+    {/if}
 
     {#if usage && !usage.collection_available}
         <Alert.Root>
@@ -105,7 +116,7 @@
                 </Card.Header>
                 <Card.Content>
                     {#if usage}
-                        <ProductTourActivity {tour} interval={usage.interval} start={usage.utc_start} end={usage.utc_end} />
+                        <ProductTourActivity {tour} start={usage.utc_start} end={usage.utc_end} />
                     {/if}
                 </Card.Content>
             </Card.Root>

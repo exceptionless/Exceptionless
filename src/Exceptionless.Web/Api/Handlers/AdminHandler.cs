@@ -140,38 +140,19 @@ public class AdminHandler(
 
     public async Task<Result<object>> Handle(GetAdminProductTourUsage message)
     {
-        if (message.History && message.Month.HasValue)
-            return Result.Invalid(ValidationError.Create("month", "Month cannot be specified when requesting available history."));
-
-        if (message.Days.HasValue && (message.Days is < 1 or > 90 || message.History || message.Month.HasValue))
+        DateTime utcEnd = message.End?.ToUniversalTime() ?? timeProvider.GetUtcNow().UtcDateTime;
+        DateTime? utcStart = message.Start?.ToUniversalTime();
+        if (utcStart.HasValue && utcStart >= utcEnd)
         {
-            return Result.Invalid(ValidationError.Create("days", "Choose 1–90 days without month or history."));
+            return Result.Invalid(ValidationError.Create("start", "Start must be earlier than end."));
         }
-
-        DateTime utcEnd = timeProvider.GetUtcNow().UtcDateTime;
-        DateTime monthStart = (message.Month ?? utcEnd).ToUniversalTime().StartOfMonth();
-        if (monthStart >= DateTime.MaxValue.StartOfMonth())
-            return Result.Invalid(ValidationError.Create("month", "The month must have a representable end date."));
-
-        DateTime? utcStart = message.History
-            ? appOptions.MaximumRetentionDays > 0
-                ? utcEnd.SubtractDays(appOptions.MaximumRetentionDays)
-                : null
-            : monthStart;
-        if (message.Days.HasValue)
-        {
-            utcStart = utcEnd.Date.AddDays(1 - message.Days.Value);
-        }
-        else if (!message.History)
-            utcEnd = monthStart.AddMonths(1);
 
         var project = await projectRepository.GetByIdAsync(appOptions.InternalProjectId, options => options.Cache());
         var organization = project is { IsDeleted: false }
             ? await organizationRepository.GetByIdAsync(project.OrganizationId, options => options.Cache())
             : null;
         bool collectionAvailable = organization is { IsDeleted: false } && await usageService.GetEventsLeftAsync(organization.Id) > 0;
-        var usage = await eventRepository.GetProductTourUsageAsync(appOptions.InternalProjectId, utcStart, utcEnd,
-            message.History ? ProductTourUsageInterval.Auto : ProductTourUsageInterval.Day);
+        var usage = await eventRepository.GetProductTourUsageAsync(appOptions.InternalProjectId, utcStart, utcEnd);
         var bucketsByTour = usage.Buckets
             .GroupBy(bucket => (bucket.Source.TourName, bucket.Source.Version))
             .ToDictionary(group => group.Key);
@@ -207,26 +188,16 @@ public class AdminHandler(
                             group.Where(period => period.Event == ProductTourTelemetryEvent.Started).Sum(period => period.Count),
                             group.Where(period => period.Event == ProductTourTelemetryEvent.Completed).Sum(period => period.Count),
                             group.Where(period => period.Event == ProductTourTelemetryEvent.Dismissed).Sum(period => period.Count)))
-                        .ToArray())
-                {
-                    Steps = buckets.SelectMany(bucket => bucket.Steps.Select(step => (step.Step, step.Count, bucket.Source.Event)))
-                        .GroupBy(step => step.Step, StringComparer.Ordinal)
-                        .OrderBy(group => group.Key, StringComparer.Ordinal)
-                        .Select(group => new ProductTourStepActivity(group.Key,
-                            group.Where(step => step.Event is ProductTourTelemetryEvent.StepReached).Sum(step => step.Count),
-                            group.Where(step => step.Event is ProductTourTelemetryEvent.Dismissed).Sum(step => step.Count)))
-                        .ToArray()
-                };
+                        .ToArray());
             }))
             .OrderBy(tour => tour.Name, StringComparer.Ordinal)
             .ThenBy(tour => tour.Version)
             .ToArray();
 
         return new ProductTourUsageResponse(
-            message.History ? usage.Buckets.SelectMany(bucket => bucket.Activity).Where(period => period.Count > 0).Select(period => (DateTime?)period.DateUtc).Min() : utcStart,
+            !message.Start.HasValue ? usage.Buckets.SelectMany(bucket => bucket.Activity).Where(period => period.Count > 0).Select(period => (DateTime?)period.DateUtc).Min() : utcStart,
             utcEnd,
-            tours,
-            usage.Interval)
+            tours)
         {
             CollectionAvailable = collectionAvailable
         };

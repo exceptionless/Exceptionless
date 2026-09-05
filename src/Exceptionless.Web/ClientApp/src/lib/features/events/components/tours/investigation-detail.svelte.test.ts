@@ -8,7 +8,7 @@ import InvestigationDetailTour from './investigation-detail.svelte';
 
 const actions = vi.hoisted(() => ({ complete: vi.fn(), dismiss: vi.fn() }));
 vi.mock('$features/product-tours/actions.svelte', () => ({ createProductTourActions: () => actions }));
-vi.mock('$features/product-tours/api.svelte', () => ({ createProductTourActivity: () => vi.fn() }));
+vi.mock('$features/product-tours/activity', () => ({ submitProductTourActivity: vi.fn() }));
 
 const event: PersistentEvent = {
     created_utc: '2026-09-01T00:00:00Z',

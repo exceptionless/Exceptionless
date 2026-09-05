@@ -59,14 +59,14 @@ public sealed class AdminProductTourUsageEndpointTests : IntegrationTestsBase
         var response = await SendRequestAsAsync<ProductTourUsageResponse>(request => request
             .AsGlobalAdminUser()
             .AppendPaths("admin", "product-tour-usage")
-            .QueryString("month", "2026-08-01")
+            .QueryString("start", "2026-08-01T00:00:00Z")
+            .QueryString("end", "2026-09-01T00:00:00Z")
             .StatusCodeShouldBeOk());
 
         // Assert
         Assert.NotNull(response);
         Assert.Equal(month, response.UtcStart);
         Assert.Equal(month.AddMonths(1), response.UtcEnd);
-        Assert.Equal(ProductTourUsageInterval.Day, response.Interval);
         Assert.Equal(ProductTours.Definitions.Values.Sum(definition => definition.CurrentVersion), response.Tours.Count);
 
         var overview = Assert.Single(response.Tours, tour => String.Equals(tour.Name, ProductTours.AppOverview, StringComparison.Ordinal));
@@ -88,7 +88,7 @@ public sealed class AdminProductTourUsageEndpointTests : IntegrationTestsBase
         Assert.Equal(1, welcome.Dismissed);
         Assert.Equal(1, Assert.Single(welcome.StartSources).Count);
         Assert.Equal(ProductTourLaunchSource.Welcome, welcome.StartSources.Single().Source);
-        var welcomeDay = Assert.Single(welcome.Activity, period => period.DateUtc == month.AddDays(1));
+        var welcomeDay = Assert.Single(welcome.Activity, period => period.Shown > 0);
         Assert.Equal(2, welcomeDay.Shown);
         Assert.Equal(1, welcomeDay.Started);
         Assert.Equal(1, welcomeDay.Completed);
@@ -112,13 +112,11 @@ public sealed class AdminProductTourUsageEndpointTests : IntegrationTestsBase
         var response = await SendRequestAsAsync<ProductTourUsageResponse>(request => request
             .AsGlobalAdminUser()
             .AppendPaths("admin", "product-tour-usage")
-            .QueryString("history", "true")
             .StatusCodeShouldBeOk());
 
         // Assert
         Assert.NotNull(response);
         Assert.Equal(now, response.UtcEnd);
-        Assert.Equal(ProductTourUsageInterval.Auto, response.Interval);
         var overview = Assert.Single(response.Tours, tour => String.Equals(tour.Name, ProductTours.AppOverview, StringComparison.Ordinal));
         Assert.Equal(1, overview.Started);
         Assert.Equal(Assert.Single(overview.Activity, period => period.Started > 0).DateUtc, response.UtcStart);
@@ -126,19 +124,19 @@ public sealed class AdminProductTourUsageEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public Task GetProductTourUsageAsync_WithMonthAndHistory_ReturnsValidationProblem()
+    public Task GetProductTourUsageAsync_ReversedBounds_ReturnsValidationProblem()
     {
         // Act & Assert
         return SendRequestAsync(request => request
             .AsGlobalAdminUser()
             .AppendPaths("admin", "product-tour-usage")
-            .QueryString("month", "2026-08-01")
-            .QueryString("history", "true")
+            .QueryString("start", "2026-10-01T00:00:00Z")
+            .QueryString("end", "2026-09-01T00:00:00Z")
             .StatusCodeShouldBeUnprocessableEntity());
     }
 
     [Fact]
-    public async Task GetProductTourUsageAsync_RollingDaysAcrossFebruary_UsesDailyUtcBoundaries()
+    public async Task GetProductTourUsageAsync_RangeAcrossFebruary_PreservesUtcBoundaries()
     {
         // Arrange
         var now = new DateTime(2026, 3, 2, 12, 30, 0, DateTimeKind.Utc);
@@ -154,30 +152,28 @@ public sealed class AdminProductTourUsageEndpointTests : IntegrationTestsBase
 
         // Act
         var response = await SendRequestAsAsync<ProductTourUsageResponse>(request => request.AsGlobalAdminUser()
-            .AppendPaths("admin", "product-tour-usage").QueryString("days", "30").StatusCodeShouldBeOk());
+            .AppendPaths("admin", "product-tour-usage").QueryString("start", start.ToString("O")).StatusCodeShouldBeOk());
 
         // Assert
         Assert.NotNull(response);
         Assert.Equal(start, response.UtcStart);
         Assert.Equal(now, response.UtcEnd);
-        Assert.Equal(ProductTourUsageInterval.Day, response.Interval);
         Assert.False(response.CollectionAvailable);
         Assert.Equal(2, Assert.Single(response.Tours, tour => String.Equals(tour.Name, ProductTours.AppOverview, StringComparison.Ordinal)).Started);
     }
 
     [Theory]
-    [InlineData("0", "false")]
-    [InlineData("91", "false")]
-    [InlineData("30", "true")]
-    public Task GetProductTourUsageAsync_InvalidRollingRange_ReturnsValidationProblem(string days, string history)
+    [InlineData("2026-09-01", "2026-09-01")]
+    [InlineData("2026-10-01", "2026-09-01")]
+    public Task GetProductTourUsageAsync_InvalidDateRange_ReturnsValidationProblem(string start, string end)
     {
         // Act & Assert
         return SendRequestAsync(request => request.AsGlobalAdminUser().AppendPaths("admin", "product-tour-usage")
-            .QueryString("days", days).QueryString("history", history).StatusCodeShouldBeUnprocessableEntity());
+            .QueryString("start", start).QueryString("end", end).StatusCodeShouldBeUnprocessableEntity());
     }
 
     [Fact]
-    public async Task GetProductTourUsageAsync_WithoutMonth_UsesCurrentUtcMonthAndReturnsZeroRows()
+    public async Task GetProductTourUsageAsync_WithoutBounds_ReturnsEmptyHistoryWithoutInventingStart()
     {
         // Arrange
         var now = new DateTime(2026, 9, 17, 12, 0, 0, DateTimeKind.Utc);
@@ -191,8 +187,8 @@ public sealed class AdminProductTourUsageEndpointTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(response);
-        Assert.Equal(now.StartOfMonth(), response.UtcStart);
-        Assert.Equal(now.StartOfMonth().AddMonths(1), response.UtcEnd);
+        Assert.Null(response.UtcStart);
+        Assert.Equal(now, response.UtcEnd);
         Assert.Equal(ProductTours.Definitions.Values.Sum(definition => definition.CurrentVersion), response.Tours.Count);
         Assert.All(response.Tours, tour =>
         {
@@ -207,12 +203,12 @@ public sealed class AdminProductTourUsageEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public Task GetProductTourUsageAsync_MonthWithoutRepresentableEnd_ReturnsValidationError()
+    public Task GetProductTourUsageAsync_StartAfterDefaultEnd_ReturnsValidationError()
     {
         // Act & Assert
         return SendRequestAsync(request => request.AsGlobalAdminUser()
             .AppendPaths("admin", "product-tour-usage")
-            .QueryString("month", "9999-12-01T00:00:00Z")
+            .QueryString("start", "9999-12-01T00:00:00Z")
             .StatusCodeShouldBeUnprocessableEntity());
     }
 

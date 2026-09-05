@@ -143,8 +143,7 @@ public static class AdminEndpoints
     private static async Task<HttpIResult> GetProductTourUsageAsync(
         IMediator mediator,
         IMediatorResultMapper<HttpIResult> resultMapper,
-        DateTime? month = null,
-        bool history = false,
-        int? days = null)
-        => (await mediator.InvokeAsync<Result<object>>(new GetAdminProductTourUsage(month, history, days))).ToHttpResult(resultMapper);
+        DateTime? start = null,
+        DateTime? end = null)
+        => (await mediator.InvokeAsync<Result<object>>(new GetAdminProductTourUsage(start, end))).ToHttpResult(resultMapper);
 }

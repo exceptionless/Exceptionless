@@ -1,7 +1,7 @@
 import type { ProductTourSummary } from '$generated/api';
 
 import { formatDateLabel } from '$features/shared/dates';
-import { ProductTourKind, ProductTourLaunchSource, ProductTourUsageInterval } from '$generated/api';
+import { ProductTourKind, ProductTourLaunchSource } from '$generated/api';
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -16,7 +16,6 @@ const tour: ProductTourSummary = {
     shown: 0,
     start_sources: [{ count: 1, source: ProductTourLaunchSource.CommandPalette }],
     started: 1,
-    steps: [],
     version: 1
 };
 
@@ -43,7 +42,6 @@ describe('ProductTourActivity', () => {
         // Arrange
         render(ProductTourActivity, {
             end: '2026-01-03T00:00:00Z',
-            interval: ProductTourUsageInterval.Day,
             start: '2026-01-01T00:00:00Z',
             tour: { ...tour, activity: [...tour.activity, { completed: 0, date_utc: '2026-01-02T00:00:00Z', dismissed: 0, shown: 0, started: 0 }] }
         });
@@ -62,7 +60,7 @@ describe('ProductTourActivity', () => {
 
     it('labels invitation acceptance without a redundant started series', () => {
         // Act
-        render(ProductTourActivity, { end: '2026-02-01T00:00:00Z', interval: ProductTourUsageInterval.Month, tour: { ...tour, kind: ProductTourKind.Prompt } });
+        render(ProductTourActivity, { end: '2026-02-01T00:00:00Z', tour: { ...tour, kind: ProductTourKind.Prompt } });
 
         // Assert
         expect(screen.getByLabelText('Period totals').textContent).toContain('Accepted');
@@ -70,10 +68,10 @@ describe('ProductTourActivity', () => {
     });
     it('shows the chart without disclosures while preserving screen-reader access to values', () => {
         // Act
-        render(ProductTourActivity, { end: '2026-02-01T00:00:00Z', interval: ProductTourUsageInterval.Month, start: '2026-01-01T00:00:00Z', tour });
+        render(ProductTourActivity, { end: '2026-02-01T00:00:00Z', start: '2026-01-01T00:00:00Z', tour });
 
         // Assert
-        expect(screen.getByLabelText(/Monthly guide activity/)).toBeTruthy();
+        expect(screen.getByLabelText(/Recorded guide activity/)).toBeTruthy();
         expect(screen.queryByText('View details')).toBeNull();
         const table = screen.getByRole('table', { name: 'Guide activity by date' });
         expect(table.closest('.sr-only')).not.toBeNull();
@@ -88,7 +86,7 @@ describe('ProductTourActivity', () => {
         const empty = { ...tour, activity: [], completed: 0, start_sources: [], started: 0 };
 
         // Act
-        render(ProductTourActivity, { end: '2026-02-01T00:00:00Z', interval: ProductTourUsageInterval.Month, tour: empty });
+        render(ProductTourActivity, { end: '2026-02-01T00:00:00Z', tour: empty });
 
         // Assert
         expect(screen.getByText('No recorded activity in this period.')).toBeTruthy();

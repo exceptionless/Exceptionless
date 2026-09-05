@@ -59,28 +59,6 @@ public static class UserEndpoints
             }
         });
 
-        group.MapPost("users/me/product-tours/{tourName:maxlength(64)}/activity", async (string tourName, PostProductTourActivity activity, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
-            => (await mediator.InvokeAsync<Result>(new UserMessages.RecordProductTourActivity(tourName, activity))).ToHttpResult(resultMapper))
-            .Accepts<PostProductTourActivity>(false, "application/json")
-            .WithMetadata(new RequestSizeLimitAttribute(2048))
-            .Produces(StatusCodes.Status202Accepted)
-            .Produces(StatusCodes.Status204NoContent)
-            .ProducesProblem(StatusCodes.Status400BadRequest)
-            .ProducesProblem(StatusCodes.Status413PayloadTooLarge)
-            .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
-            .ProducesProblem(StatusCodes.Status404NotFound)
-            .ProducesProblem(StatusCodes.Status429TooManyRequests)
-            .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
-            .WithSummary("Record optional guided-tour activity without identifying context");
-
-        group.MapPut("users/me/product-tour-analytics", async (UpdateProductTourAnalytics settings, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
-            => (await mediator.InvokeAsync<Result>(new UserMessages.UpdateCurrentUserProductTourAnalytics(settings))).ToHttpResult(resultMapper))
-            .Accepts<UpdateProductTourAnalytics>(false, "application/json")
-            .Produces(StatusCodes.Status204NoContent)
-            .ProducesProblem(StatusCodes.Status400BadRequest)
-            .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
-            .WithSummary("Update current user guided-tour analytics preference");
-
         group.MapGet("users/me/oauth-grants", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result<IReadOnlyCollection<ViewOAuthGrant>>>(new UserMessages.GetCurrentUserOAuthGrants())).ToHttpResult(resultMapper))
         .Produces<IReadOnlyCollection<ViewOAuthGrant>>()

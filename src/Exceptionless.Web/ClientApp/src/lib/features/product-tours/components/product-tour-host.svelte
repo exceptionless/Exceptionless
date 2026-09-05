@@ -15,7 +15,7 @@
     import type { ProductTourCheckpoint, ProductTourContext, ProductTourLaunchSource, ProductTourListItem, ProductTourName } from '../models';
 
     import { createProductTourActions } from '../actions.svelte';
-    import { createProductTourActivity } from '../api.svelte';
+    import { submitProductTourActivity } from '../activity';
     import { getProductTourItems, getRecommendedProductTourName } from '../catalog';
     import { shouldOfferProductTourInvitation } from '../eligibility';
     import { productTourCheckpoint } from '../state.svelte';
@@ -75,7 +75,6 @@
     let attemptedProjectCompletion: ProductTourCheckpoint | undefined;
 
     const actions = createProductTourActions();
-    const track = createProductTourActivity();
     const progressMutation = putCurrentUserProductTour();
     const projectsQuery = getOrganizationProjectsQuery({
         route: {
@@ -231,7 +230,7 @@
         const impression = `${currentUser.id}:${WELCOME_VERSION}`;
         if (welcomeOpen && lastTrackedWelcomeImpression !== impression) {
             lastTrackedWelcomeImpression = impression;
-            void track('shown', 'app-welcome', WELCOME_VERSION, 'welcome');
+            void submitProductTourActivity('shown', 'app-welcome', WELCOME_VERSION, 'welcome');
         }
     });
 
@@ -243,7 +242,7 @@
         const impression = `${currentUser.id}:${EXIE_ANNOUNCEMENT_VERSION}`;
         if (exieAnnouncementOpen && lastTrackedAnnouncementImpression !== impression) {
             lastTrackedAnnouncementImpression = impression;
-            void track('shown', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
+            void submitProductTourActivity('shown', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
         }
     });
 
@@ -286,7 +285,7 @@
             search: window.location.search
         });
         const next = productTourCheckpoint.start(name, start.checkpointName, source, currentUser.id, item.version, organizationId);
-        void track('started', name, item.version, source);
+        await submitProductTourActivity('started', name, item.version, source);
 
         const destination = start.route;
         if (`${pathname}${window.location.search}` !== destination) {
@@ -323,7 +322,7 @@
         }
         welcomeHandled = true;
         automaticSurface = undefined;
-        void track('completed', 'app-welcome', WELCOME_VERSION, 'welcome');
+        await submitProductTourActivity('completed', 'app-welcome', WELCOME_VERSION, 'welcome');
         await startTour(recommended.name, 'welcome');
     }
 
@@ -333,7 +332,7 @@
         }
         welcomeHandled = true;
         automaticSurface = undefined;
-        void track('completed', 'app-welcome', WELCOME_VERSION, 'welcome');
+        await submitProductTourActivity('completed', 'app-welcome', WELCOME_VERSION, 'welcome');
         await openCatalog('catalog');
     }
 
@@ -343,7 +342,7 @@
         }
         welcomeHandled = true;
         automaticSurface = undefined;
-        void track('dismissed', 'app-welcome', WELCOME_VERSION, 'welcome');
+        await submitProductTourActivity('dismissed', 'app-welcome', WELCOME_VERSION, 'welcome');
     }
 
     async function onExieAnnouncementStart(): Promise<void> {
@@ -351,7 +350,7 @@
             return;
         }
         automaticSurface = undefined;
-        void track('completed', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
+        await submitProductTourActivity('completed', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
         if (assistantAccess?.has_access) {
             await startTour('exie-overview', 'feature-announcement');
         } else {
@@ -364,7 +363,7 @@
             return;
         }
         automaticSurface = undefined;
-        void track('dismissed', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
+        await submitProductTourActivity('dismissed', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
     }
 
     function getItem<Name extends ProductTourName>(name: Name): ProductTourListItem<Name> {

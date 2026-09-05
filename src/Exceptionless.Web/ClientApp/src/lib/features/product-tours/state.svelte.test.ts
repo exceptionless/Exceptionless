@@ -16,19 +16,17 @@ const checkpoint: ProductTourCheckpoint = {
 describe('product tour checkpoint store', () => {
     beforeEach(() => productTourCheckpoint.clear());
 
-    it('counts a step once across back navigation and starts a new count on replay', () => {
+    it('preserves the current checkpoint across forward and back navigation', () => {
         // Arrange
         const first = productTourCheckpoint.start('app-overview', 'navigation', 'catalog', 'user', 1);
 
         // Act & Assert
-        expect(productTourCheckpoint.markReached(first)).toBe(true);
-        expect(productTourCheckpoint.markReached(first)).toBe(false);
         const second = productTourCheckpoint.advance(first, 'command-search')!;
-        expect(productTourCheckpoint.markReached(second)).toBe(true);
+        expect(productTourCheckpoint.current).toBe(second);
         const back = productTourCheckpoint.advance(second, 'navigation')!;
-        expect(productTourCheckpoint.markReached(back)).toBe(false);
+        expect(back.checkpointName).toBe('navigation');
         const replay = productTourCheckpoint.start('app-overview', 'navigation', 'catalog', 'user', 1);
-        expect(productTourCheckpoint.markReached(replay)).toBe(true);
+        expect(productTourCheckpoint.current).toBe(replay);
     });
 
     it('does not let stale work advance or clear a newer tour', () => {

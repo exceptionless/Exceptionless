@@ -11,7 +11,6 @@
     import { Spinner } from '$comp/ui/spinner';
     import { logout } from '$features/auth/api.svelte';
     import { validateEmailAvailability } from '$features/auth/validators';
-    import ProductTourPrivacySettings from '$features/product-tours/components/product-tour-privacy-settings.svelte';
     import { getProfileImageFileError } from '$features/shared/profile-images';
     import {
         deleteCurrentUser,
@@ -211,7 +210,6 @@
 </script>
 
 <div class="space-y-6">
-    <ProductTourPrivacySettings />
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
         <div class="flex items-center gap-3">
             <Input

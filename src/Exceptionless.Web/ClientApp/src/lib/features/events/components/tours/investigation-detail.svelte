@@ -16,6 +16,7 @@
     let advancedEventId = $state('');
 
     const actions = createProductTourActions();
+    const firstDetailCheckpoint = 'stack-summary';
     const checkpoint = $derived(productTourCheckpoint.current?.tourName === 'event-investigate' ? productTourCheckpoint.current : undefined);
     const steps = PRODUCT_TOUR_CHECKPOINTS['event-investigate'];
     const stepIndex = $derived(checkpoint ? steps.indexOf(checkpoint.checkpointName) : -1);
@@ -33,7 +34,7 @@
                     target: '[data-tour="stack-events"]',
                     title: 'Compare every occurrence'
                 };
-            case 'stack-summary':
+            case firstDetailCheckpoint:
                 return {
                     description: 'A stack groups similar events. Check its event count and users affected.',
                     target: '[data-tour="stack-metrics"]',
@@ -64,7 +65,7 @@
         advancedEventId = event.id;
         const active = checkpoint;
         if (active?.checkpointName === 'choose-error' && hasErrorOrSimpleError(event)) {
-            productTourCheckpoint.advance(active, 'stack-summary');
+            productTourCheckpoint.advance(active, firstDetailCheckpoint);
         }
     });
 
@@ -84,7 +85,7 @@
 
     function back(): void {
         const previous = steps[stepIndex - 1];
-        if (checkpoint && previous && stepIndex > steps.indexOf('stack-summary')) {
+        if (checkpoint && previous && stepIndex > steps.indexOf(firstDetailCheckpoint)) {
             productTourCheckpoint.advance(checkpoint, previous);
         }
     }
@@ -97,7 +98,7 @@
             continueLabel={checkpoint.checkpointName === 'filter-stack-events' ? 'Finish guide' : 'Continue'}
             description={copy.description}
             onNext={continueTour}
-            onPrevious={stepIndex > steps.indexOf('stack-summary') ? back : undefined}
+            onPrevious={stepIndex > steps.indexOf(firstDetailCheckpoint) ? back : undefined}
             onDismiss={actions.dismiss}
             target={copy.target}
             title={copy.title}

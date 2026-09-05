@@ -30,15 +30,6 @@ class ProductTourCheckpointStore {
         return true;
     }
 
-    markReached(expected: ProductTourCheckpoint): boolean {
-        if (this.current !== expected || expected.reachedSteps?.includes(expected.checkpointName)) {
-            return false;
-        }
-        expected.reachedSteps = [...(expected.reachedSteps ?? []), expected.checkpointName];
-        writeProductTourSession(expected);
-        return true;
-    }
-
     restore(userId: string, organizationId?: string): ProductTourCheckpoint | undefined {
         if (this.current) {
             return this.current;

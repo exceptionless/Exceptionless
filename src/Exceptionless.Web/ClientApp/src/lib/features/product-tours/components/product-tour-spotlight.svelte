@@ -5,7 +5,6 @@
 
     import type { ProductTourCheckpoint, ProductTourShortcut } from '../models';
 
-    import { createProductTourActivity } from '../api.svelte';
     import { PRODUCT_TOUR_CHECKPOINTS } from '../models';
     import { productTourCheckpoint } from '../state.svelte';
     import ProductTourDescription from './product-tour-description.svelte';
@@ -43,7 +42,6 @@
         title
     }: Props = $props();
     let activeDriver: Driver | undefined;
-    const track = createProductTourActivity();
     let descriptionContent: ReturnType<typeof mount> | undefined;
     let dismissing = false;
     let returnFocus: HTMLElement | null = null;
@@ -141,9 +139,6 @@
         });
         activeDriver = instance;
         instance.drive();
-        if (productTourCheckpoint.markReached(checkpoint)) {
-            void track('step-reached', checkpoint.tourName, checkpoint.version, checkpoint.source, checkpoint.checkpointName);
-        }
         window.addEventListener('keydown', onKeyDown, true);
     }
 

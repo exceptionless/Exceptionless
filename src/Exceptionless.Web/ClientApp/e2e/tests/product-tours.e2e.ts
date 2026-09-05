@@ -13,13 +13,9 @@ test.describe('first-run welcome', () => {
         ['app-welcome', 'Close welcome'],
         ['exie-announcement', 'Dismiss Exie announcement']
     ] as const) {
-        test(`${tourName} stays dismissed with analytics off and session storage unavailable`, async ({ e2eApi, e2eScenario, page }) => {
+        test(`${tourName} stays dismissed when telemetry and session storage are unavailable`, async ({ e2eApi, e2eScenario, page }) => {
             // Arrange
-            const preference = await page.request.put('/api/v2/users/me/product-tour-analytics', {
-                data: { enabled: false },
-                headers: { Authorization: `Bearer ${e2eScenario.userToken}` }
-            });
-            expect(preference.status()).toBe(204);
+            await page.route('**/api/v2/events', (route) => route.abort());
             if (tourName === 'exie-announcement') {
                 await e2eApi.updateProductTour(e2eScenario.userToken, 'app-welcome', 1, 2);
             }
@@ -53,13 +49,12 @@ test.describe('first-run welcome', () => {
 
             // Assert
             expect(await (await reloadedUser).json()).toMatchObject({
-                product_tour_analytics_enabled: false,
                 product_tours: { [tourName]: { status: 2, version: 1 } }
             });
             await reloadedProjects;
             await expect(page.getByRole('button', { name: 'Search Exceptionless' })).toBeVisible();
             if (tourName === 'app-welcome') {
-                // A different, unseen invitation remains eligible; analytics opt-out is not a hide-all-guides preference.
+                // A different, unseen invitation remains eligible; saved outcomes do not hide unrelated guides.
                 await expect(page.getByRole('button', { name: 'Dismiss Exie announcement' })).toBeVisible();
             }
             await expect(dismiss).toBeHidden();
@@ -488,45 +483,10 @@ async function expectProductTourSession(page: Page, present: boolean): Promise<v
     }
 }
 
-test('privacy opt-out preserves completion and storage denial keeps guides usable', async ({ e2eScenario, page }, testInfo) => {
+test('completion survives unavailable telemetry and session storage', async ({ e2eScenario, page }) => {
     // Arrange
-    const activities: { action: string; step?: string }[] = [];
-    const oversized = await page.request.post('/api/v2/users/me/product-tours/app-overview/activity', {
-        data: JSON.stringify({ action: 'started', source: 'catalog', version: 1 }) + ' '.repeat(2048),
-        headers: { Authorization: `Bearer ${e2eScenario.userToken}`, 'Content-Type': 'application/json' }
-    });
-    expect(oversized.status()).toBe(413);
-    page.on('request', (request) => {
-        if (request.method() === 'POST' && request.url().includes('/product-tours/app-overview/activity')) {
-            activities.push(request.postDataJSON());
-        }
-    });
-    await page.goto('/next/stack');
-    await startTourFromCommand(page, 'Explore Exceptionless');
+    await page.route('**/api/v2/events', (route) => route.abort());
     const tour = page.locator('.driver-popover');
-    await expect(tour.getByText('Your workspace navigation')).toBeVisible();
-    await expect.poll(() => activities.filter((activity) => activity.step === 'navigation')).toHaveLength(1);
-    await tour.getByRole('button', { name: 'Continue' }).click();
-    await expect(tour.getByText('Use the command palette')).toBeVisible();
-    await tour.getByRole('button', { name: 'Back' }).click();
-    await expect(tour.getByText('Your workspace navigation')).toBeVisible();
-    expect(activities.filter((activity) => activity.step === 'navigation')).toHaveLength(1);
-    const dismissed = page.waitForResponse(isSuccessfulTourProgress('app-overview'));
-    await tour.getByRole('button', { name: 'End guide' }).click();
-    await dismissed;
-
-    // Act
-    await page.goto('/next/account/manage#guided-tour-privacy');
-    const preference = page.getByRole('switch', { name: 'Help improve guided tours' });
-    await expect(preference).toBeChecked();
-    const saved = page.waitForResponse((response) => response.url().endsWith('/users/me/product-tour-analytics') && response.status() === 204);
-    await preference.focus();
-    await page.keyboard.press('Space');
-    await saved;
-    await expect(preference).not.toBeChecked();
-    await expect(preference).toBeEnabled();
-    await page.screenshot({ path: testInfo.outputPath('guide-privacy.png') });
-    const before = activities.length;
     await page.addInitScript(() =>
         Object.defineProperty(window, 'sessionStorage', {
             get() {
@@ -547,7 +507,6 @@ test('privacy opt-out preserves completion and storage denial keeps guides usabl
 
     // Assert
     expect(await response.json()).toMatchObject({ status: 1, version: 1 });
-    expect(activities).toHaveLength(before);
     await expect(page.getByRole('dialog', { name: 'Guided Tours' })).toBeVisible();
     expect(e2eScenario.email).toContain('@exceptionless.test');
 });
