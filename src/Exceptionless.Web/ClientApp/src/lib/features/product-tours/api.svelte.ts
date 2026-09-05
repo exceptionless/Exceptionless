@@ -4,7 +4,7 @@ import { queryKeys as userQueryKeys } from '$features/users/api.svelte';
 import { ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, useQueryClient } from '@tanstack/svelte-query';
 
-import type { ProductTourKey, ProductTourLaunchSource } from './types';
+import type { ProductTourKey, ProductTourLaunchSource } from './models';
 
 export function createProductTourActivity() {
     const queryClient = useQueryClient();

@@ -1,12 +1,12 @@
 <script lang="ts">
     import { createProductTourActions } from '$features/product-tours/actions.svelte';
     import ProductTourSpotlight from '$features/product-tours/components/product-tour-spotlight.svelte';
+    import { PRODUCT_TOUR_CHECKPOINTS } from '$features/product-tours/models';
     import { productTourCheckpoint } from '$features/product-tours/state.svelte';
-    import { PRODUCT_TOUR_CHECKPOINTS } from '$features/product-tours/types';
 
-    import type { PersistentEvent } from '../models';
+    import type { PersistentEvent } from '../../models';
 
-    import { hasErrorOrSimpleError } from '../persistent-event';
+    import { hasErrorOrSimpleError } from '../../persistent-event';
 
     interface Props {
         event?: PersistentEvent;

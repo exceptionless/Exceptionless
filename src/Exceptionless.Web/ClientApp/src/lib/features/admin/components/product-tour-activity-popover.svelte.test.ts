@@ -4,7 +4,7 @@ import { ProductTourKind, ProductTourLaunchSource } from '$generated/api';
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import ProductTourActivityInfo from './product-tour-activity-info.svelte';
+import ProductTourActivityPopover from './product-tour-activity-popover.svelte';
 
 const tour: ProductTourSummary = {
     activity: [],
@@ -21,10 +21,10 @@ const tour: ProductTourSummary = {
 
 afterEach(cleanup);
 
-describe('ProductTourActivityInfo', () => {
+describe('ProductTourActivityPopover', () => {
     it('keeps diagnostic counts behind a named info button', async () => {
         // Arrange
-        render(ProductTourActivityInfo, { title: 'Explore Exceptionless', tour });
+        render(ProductTourActivityPopover, { title: 'Explore Exceptionless', tour });
         expect(screen.queryByText(/Most common exit/)).toBeNull();
 
         // Act
@@ -39,7 +39,7 @@ describe('ProductTourActivityInfo', () => {
 
     it('explains missing diagnostics without inventing step counts', async () => {
         // Arrange
-        render(ProductTourActivityInfo, { title: 'Explore Exceptionless', tour: { ...tour, start_sources: [], steps: [] } });
+        render(ProductTourActivityPopover, { title: 'Explore Exceptionless', tour: { ...tour, start_sources: [], steps: [] } });
 
         // Act
         await fireEvent.click(screen.getByRole('button'));
@@ -51,7 +51,7 @@ describe('ProductTourActivityInfo', () => {
 
     it('explains invitation acceptance without presenting guide steps', async () => {
         // Arrange
-        render(ProductTourActivityInfo, { title: 'Welcome invitation', tour: { ...tour, kind: ProductTourKind.Prompt, steps: [] } });
+        render(ProductTourActivityPopover, { title: 'Welcome invitation', tour: { ...tour, kind: ProductTourKind.Prompt, steps: [] } });
 
         // Act
         await fireEvent.click(screen.getByRole('button'));

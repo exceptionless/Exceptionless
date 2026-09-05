@@ -1,6 +1,6 @@
 <script lang="ts">
     import type { AssistantPromptRequest } from '$features/assistant/models';
-    import type { ProductTourLaunchSource } from '$features/product-tours/types';
+    import type { ProductTourLaunchSource } from '$features/product-tours/models';
     import type { SavedView } from '$features/saved-views/models';
     import type { Snippet } from 'svelte';
 

@@ -3,12 +3,12 @@
     import { mount, onMount, type Snippet, tick, unmount } from 'svelte';
     import { toast } from 'svelte-sonner';
 
-    import type { ProductTourCheckpoint } from '../types';
+    import type { ProductTourCheckpoint, ProductTourShortcut } from '../models';
 
     import { createProductTourActivity } from '../api.svelte';
+    import { PRODUCT_TOUR_CHECKPOINTS } from '../models';
     import { productTourCheckpoint } from '../state.svelte';
-    import { PRODUCT_TOUR_CHECKPOINTS } from '../types';
-    import ProductTourDescription, { type ProductTourShortcut } from './product-tour-description.svelte';
+    import ProductTourDescription from './product-tour-description.svelte';
     import 'driver.js/dist/driver.css';
 
     interface Props {

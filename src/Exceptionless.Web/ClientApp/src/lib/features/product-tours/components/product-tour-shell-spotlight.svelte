@@ -4,8 +4,7 @@
     import { appKeyboardShortcuts } from '$features/shared/keyboard-shortcuts';
     import { onDestroy, onMount, tick, untrack } from 'svelte';
 
-    import type { ProductTourCheckpoint, ProductTourCheckpointName } from '../types';
-    import type { ProductTourShortcut } from './product-tour-description.svelte';
+    import type { ProductTourCheckpoint, ProductTourCheckpointName, ProductTourShortcut } from '../models';
 
     import { createProductTourActions } from '../actions.svelte';
     import { tryUseProductTourControls } from '../controls.svelte';

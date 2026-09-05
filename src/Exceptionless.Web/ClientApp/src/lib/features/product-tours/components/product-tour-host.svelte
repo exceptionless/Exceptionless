@@ -12,17 +12,17 @@
     import { onMount } from 'svelte';
     import { toast } from 'svelte-sonner';
 
-    import type { ProductTourCheckpoint, ProductTourContext, ProductTourLaunchSource, ProductTourListItem, ProductTourName } from '../types';
+    import type { ProductTourCheckpoint, ProductTourContext, ProductTourLaunchSource, ProductTourListItem, ProductTourName } from '../models';
 
     import { createProductTourActions } from '../actions.svelte';
     import { createProductTourActivity } from '../api.svelte';
     import { getProductTourItems, getRecommendedProductTourName } from '../catalog';
     import { shouldOfferProductTourInvitation } from '../eligibility';
     import { productTourCheckpoint } from '../state.svelte';
+    import ProductTourFeatureAnnouncement from './alerts/product-tour-feature-announcement.svelte';
+    import ProductTourWelcome from './alerts/product-tour-welcome.svelte';
     import ProductTourCatalogDialog from './dialogs/product-tour-catalog-dialog.svelte';
-    import ProductTourFeatureAnnouncement from './product-tour-feature-announcement.svelte';
     import ProductTourShellSpotlight from './product-tour-shell-spotlight.svelte';
-    import ProductTourWelcome from './product-tour-welcome.svelte';
 
     interface Props {
         assistantAccess?: AssistantAccess;

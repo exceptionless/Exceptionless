@@ -1,5 +1,6 @@
 import type { ProductTourSummary } from '$generated/api';
 
+import { formatDateLabel } from '$features/shared/dates';
 import { ProductTourKind, ProductTourLaunchSource, ProductTourUsageInterval } from '$generated/api';
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -76,7 +77,9 @@ describe('ProductTourActivity', () => {
         expect(screen.queryByText('View details')).toBeNull();
         const table = screen.getByRole('table', { name: 'Guide activity by date' });
         expect(table.closest('.sr-only')).not.toBeNull();
-        expect(table.textContent).toContain('Jan 2026');
+        expect(table.textContent).toContain(
+            formatDateLabel(new Date(tour.activity[0]!.date_utc), undefined, { includeRelative: false, month: 'short', timeZone: 'UTC' })
+        );
         expect(table.closest('details')).toBeNull();
     });
 

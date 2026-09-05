@@ -273,7 +273,9 @@ test('Sessions ignore legacy structured Type filters and Type URL parameters', a
 
 async function captureEvidence(page: Page, fileName: string): Promise<void> {
     const outputDirectory = process.env.DOGFOOD_OUTPUT;
-    if (!outputDirectory) return;
+    if (!outputDirectory) {
+        return;
+    }
 
     const resolvedDirectory = path.resolve(outputDirectory);
     mkdirSync(resolvedDirectory, { recursive: true });

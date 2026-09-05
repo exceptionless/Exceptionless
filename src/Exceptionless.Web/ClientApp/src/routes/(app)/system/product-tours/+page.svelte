@@ -3,13 +3,13 @@
     import type { ProductTourSummary } from '$generated/api';
 
     import TimeAgo from '$comp/formatters/time-ago.svelte';
-    import { Muted } from '$comp/typography';
+    import { H2, Muted, P } from '$comp/typography';
     import * as Alert from '$comp/ui/alert';
     import { Button } from '$comp/ui/button';
     import * as Card from '$comp/ui/card';
     import { Skeleton } from '$comp/ui/skeleton';
     import { getAdminProductTourUsageQuery } from '$features/admin/api.svelte';
-    import ProductTourActivityInfo from '$features/admin/components/product-tour-activity-info.svelte';
+    import ProductTourActivityPopover from '$features/admin/components/product-tour-activity-popover.svelte';
     import ProductTourActivity from '$features/admin/components/product-tour-activity.svelte';
     import ProductTourPeriod from '$features/admin/components/product-tour-period.svelte';
     import { productTourCatalog } from '$features/product-tours/catalog';
@@ -67,7 +67,7 @@
     {#if usageQuery.isError}
         <Card.Root>
             <Card.Content class="pt-6">
-                <p class="text-destructive text-sm">Failed to load guided-tour usage. Please try again.</p>
+                <P class="text-destructive text-sm">Failed to load guided-tour usage. Please try again.</P>
                 <Button class="mt-3" variant="outline" onclick={() => usageQuery.refetch()}>Retry</Button>
             </Card.Content>
         </Card.Root>
@@ -78,12 +78,12 @@
             {/each}
         </div>
     {:else if usage?.tours.length === 0}
-        <p class="text-muted-foreground text-sm">No guided-tour activity was recorded in this period.</p>
+        <Muted>No guided-tour activity was recorded in this period.</Muted>
     {:else}
         {@render TourCards(guides)}
         {#if invitations.length > 0}
             <section aria-labelledby="invitation-activity-title" class="flex flex-col gap-4">
-                <h2 id="invitation-activity-title" class="text-sm font-medium">Invitations</h2>
+                <H2 id="invitation-activity-title" class="border-0 pb-0 text-sm font-medium">Invitations</H2>
                 {@render TourCards(invitations)}
             </section>
         {/if}
@@ -97,7 +97,7 @@
                 <Card.Header class="flex flex-row flex-wrap items-center justify-between gap-x-3 gap-y-1">
                     <div class="flex items-center gap-1">
                         <Card.Title>{title(tour.name)} <span class="text-muted-foreground text-xs font-normal">v{tour.version}</span></Card.Title>
-                        <ProductTourActivityInfo {tour} title={title(tour.name)} />
+                        <ProductTourActivityPopover {tour} title={title(tour.name)} />
                     </div>
                     {#if tour.last_run_utc}
                         <Card.Description class="whitespace-nowrap">Last event <TimeAgo value={tour.last_run_utc} /></Card.Description>

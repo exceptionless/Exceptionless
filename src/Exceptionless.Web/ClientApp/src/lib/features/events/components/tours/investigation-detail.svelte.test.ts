@@ -2,9 +2,9 @@ import { productTourCheckpoint } from '$features/product-tours/state.svelte';
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { PersistentEvent } from '../models';
+import type { PersistentEvent } from '../../models';
 
-import InvestigationDetailTour from './investigation-detail-tour.svelte';
+import InvestigationDetailTour from './investigation-detail.svelte';
 
 const actions = vi.hoisted(() => ({ complete: vi.fn(), dismiss: vi.fn() }));
 vi.mock('$features/product-tours/actions.svelte', () => ({ createProductTourActions: () => actions }));

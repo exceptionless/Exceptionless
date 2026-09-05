@@ -2,7 +2,7 @@ import { putCurrentUserProductTour } from '$features/users/api.svelte';
 import { ProductTourStatus } from '$features/users/models';
 import { toast } from 'svelte-sonner';
 
-import type { ProductTourCheckpoint } from './types';
+import type { ProductTourCheckpoint } from './models';
 
 import { createProductTourActivity } from './api.svelte';
 import { tryUseProductTourControls } from './controls.svelte';
