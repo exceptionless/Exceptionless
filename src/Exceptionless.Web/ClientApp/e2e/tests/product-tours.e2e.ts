@@ -55,6 +55,33 @@ test.describe('first-run welcome', () => {
         });
     }
 
+    test('a manual guide does not compete with or accept the pending welcome', async ({ e2eScenario, page }) => {
+        // Arrange
+        const welcome = page.getByRole('region', { name: 'Welcome to Exceptionless' });
+        await test.step(`show the pending welcome for ${e2eScenario.email}`, async () => {
+            await page.goto('/next/stack/all');
+            await expect(welcome).toBeVisible();
+        });
+        const invitationWrites: Request[] = [];
+        page.on('request', (request) => {
+            if (request.method() === 'PUT' && new URL(request.url()).pathname.endsWith('/product-tours/app-welcome')) {
+                invitationWrites.push(request);
+            }
+        });
+
+        // Act
+        await startTourFromCommand(page, 'Explore Exceptionless');
+
+        // Assert
+        const guide = page.locator('.driver-popover');
+        await expect(guide.getByText('Your workspace navigation')).toBeVisible();
+        await expect(welcome).toBeHidden();
+        await guide.getByRole('button', { name: 'End guide' }).click();
+        await expect(guide).toBeHidden();
+        await expect(welcome).toBeHidden();
+        expect(invitationWrites).toEqual([]);
+    });
+
     test('Browse Guides persists before the catalog opens', async ({ e2eScenario, page }, testInfo) => {
         await test.step(`show the first-run prompt for ${e2eScenario.email}`, async () => {
             await page.goto('/next/stack');
