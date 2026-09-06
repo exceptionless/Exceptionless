@@ -103,6 +103,7 @@ public static class AdminEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
             .WithSummary("Rerun a supported completed migration");
 
         group.MapGet("migrations/reruns/{operationId}", async (string operationId, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)

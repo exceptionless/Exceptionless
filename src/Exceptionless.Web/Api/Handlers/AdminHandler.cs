@@ -208,6 +208,10 @@ public class AdminHandler(
         {
             return Result.Conflict(ex.Message);
         }
+        catch (MigrationRerunUnavailableException ex)
+        {
+            return Result.Unavailable(ex.Message);
+        }
         catch (InvalidOperationException ex)
         {
             return Result.Invalid(ValidationError.Create("version", ex.Message));

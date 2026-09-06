@@ -24,6 +24,10 @@ public sealed class RerunMigrationWorkItemHandler(
         {
             throw;
         }
+        catch (MigrationRerunCleanupPendingException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             var operation = await migrationRerunService.GetOperationAsync(workItem.OperationId);

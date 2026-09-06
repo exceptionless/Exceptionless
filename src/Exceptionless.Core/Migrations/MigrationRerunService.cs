@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Migrations;
 
 public sealed class MigrationRerunService(
+    AppOptions appOptions,
     MigrationManager migrationManager,
     IMigrationStateRepository migrationStateRepository,
     ICacheClient cache,
@@ -41,8 +42,10 @@ public sealed class MigrationRerunService(
         if (state?.CompletedUtc is null)
             throw new InvalidOperationException($"Migration '{migrationId}' must be completed before it can be rerun.");
 
+        EnsureUserInterfaceRerunAvailable(source);
+
         string operationId = Guid.NewGuid().ToString("N");
-        if (!await cache.AddAsync(GetActiveOperationCacheKey(migrationId), operationId, OperationRetention))
+        if (!await TryReserveMigrationAsync(migrationId, operationId))
             throw new MigrationRerunAlreadyActiveException(migrationId);
 
         var operation = new MigrationRerunOperation
@@ -69,7 +72,7 @@ public sealed class MigrationRerunService(
         }
         catch
         {
-            await cache.RemoveAsync(GetActiveOperationCacheKey(migrationId));
+            await RemoveActiveOperationAsync(operation);
             throw;
         }
     }
@@ -87,7 +90,7 @@ public sealed class MigrationRerunService(
         operation.CompletedUtc = timeProvider.GetUtcNow().UtcDateTime;
         operation.ErrorMessage = exception.Message.Length > 1000 ? exception.Message[..1000] : exception.Message;
         await SaveOperationAsync(operation);
-        await cache.RemoveAsync(GetActiveOperationCacheKey(operation.MigrationId));
+        await RemoveActiveOperationAsync(operation);
         _logger.LogError(
             exception,
             "Failed to dispatch migration rerun {MigrationRerunOperationId} for migration {MigrationId}",
@@ -101,6 +104,7 @@ public sealed class MigrationRerunService(
             ?? throw new KeyNotFoundException($"Migration rerun operation '{operationId}' was not found.");
         if (IsTerminal(operation.Status))
         {
+            await RemoveActiveOperationAsync(operation);
             return operation;
         }
 
@@ -190,8 +194,52 @@ public sealed class MigrationRerunService(
         {
             if (IsTerminal(operation.Status))
             {
-                await cache.RemoveAsync(GetActiveOperationCacheKey(operation.MigrationId));
+                await RemoveActiveOperationAsync(operation);
             }
+        }
+    }
+
+    private void EnsureUserInterfaceRerunAvailable(MigrationRerunSource source)
+    {
+        if (source != MigrationRerunSource.UserInterface || appOptions.RunJobsInProcess)
+            return;
+
+        bool hasDistributedCache = String.Equals(appOptions.CacheOptions.Provider, "redis", StringComparison.OrdinalIgnoreCase);
+        bool hasDistributedQueue = !String.IsNullOrWhiteSpace(appOptions.QueueOptions.Provider);
+        if (!hasDistributedCache || !hasDistributedQueue)
+        {
+            throw new MigrationRerunUnavailableException(
+                "Migration reruns from the System UI require a distributed cache and queue when jobs run outside the web process. Configure Redis-backed cache and a distributed queue, run jobs in the web process, or use the Migration --rerun command.");
+        }
+    }
+
+    private async Task<bool> TryReserveMigrationAsync(string migrationId, string operationId)
+    {
+        string activeOperationCacheKey = GetActiveOperationCacheKey(migrationId);
+        if (await cache.AddAsync(activeOperationCacheKey, operationId, OperationRetention))
+            return true;
+
+        string? activeOperationId = await cache.GetAsync<string?>(activeOperationCacheKey, null);
+        if (String.IsNullOrWhiteSpace(activeOperationId))
+            return false;
+
+        var activeOperation = await GetOperationAsync(activeOperationId);
+        if (activeOperation is null || !IsTerminal(activeOperation.Status))
+            return false;
+
+        await RemoveActiveOperationAsync(activeOperation);
+        return await cache.AddAsync(activeOperationCacheKey, operationId, OperationRetention);
+    }
+
+    private async Task RemoveActiveOperationAsync(MigrationRerunOperation operation)
+    {
+        try
+        {
+            await cache.RemoveIfEqualAsync(GetActiveOperationCacheKey(operation.MigrationId), operation.Id);
+        }
+        catch (Exception ex)
+        {
+            throw new MigrationRerunCleanupPendingException(operation.Id, ex);
         }
     }
 
@@ -231,3 +279,8 @@ public sealed class MigrationRerunAlreadyActiveException(string migrationId)
 
 public sealed class MigrationRerunRecoveryPendingException(string operationId)
     : Exception($"Migration rerun operation '{operationId}' is still running and will be retried.");
+
+public sealed class MigrationRerunCleanupPendingException(string operationId, Exception innerException)
+    : Exception($"Migration rerun operation '{operationId}' completed but its active-operation marker could not be removed and will be retried.", innerException);
+
+public sealed class MigrationRerunUnavailableException(string message) : Exception(message);

@@ -1,5 +1,7 @@
+using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Models;
@@ -924,12 +926,23 @@ public class AdminEndpointTests : IntegrationTestsBase
         });
 
         // Act
-        var result = await SendRequestAsAsync<WorkInProgressResult>(request => request
-            .Post()
-            .AsGlobalAdminUser()
-            .AppendPaths("admin", "migrations", "5", "rerun")
-            .Content(new RerunMigrationRequest("RERUN 5"))
-            .StatusCodeShouldBeAccepted());
+        var appOptions = GetService<AppOptions>();
+        bool runJobsInProcess = appOptions.RunJobsInProcess;
+        WorkInProgressResult? result;
+        try
+        {
+            appOptions.RunJobsInProcess = true;
+            result = await SendRequestAsAsync<WorkInProgressResult>(request => request
+                .Post()
+                .AsGlobalAdminUser()
+                .AppendPaths("admin", "migrations", "5", "rerun")
+                .Content(new RerunMigrationRequest("RERUN 5"))
+                .StatusCodeShouldBeAccepted());
+        }
+        finally
+        {
+            appOptions.RunJobsInProcess = runJobsInProcess;
+        }
 
         // Assert
         Assert.NotNull(result);
@@ -960,6 +973,29 @@ public class AdminEndpointTests : IntegrationTestsBase
         operation = await GetService<MigrationRerunService>().GetOperationAsync(operation.Id);
         Assert.NotNull(operation);
         Assert.Equal(MigrationRerunStatus.Completed, operation.Status);
+    }
+
+    [Fact]
+    public async Task RerunMigrationAsync_WithOutOfProcessJobsAndInMemoryInfrastructure_ReturnsServiceUnavailable()
+    {
+        // Arrange
+        var migrationStateRepository = GetService<IMigrationStateRepository>();
+        await migrationStateRepository.AddAsync(new MigrationState
+        {
+            Id = "5",
+            Version = 5,
+            MigrationType = MigrationType.VersionedAndResumable,
+            StartedUtc = DateTime.UtcNow.AddMinutes(-1),
+            CompletedUtc = DateTime.UtcNow
+        });
+
+        // Act / Assert
+        await SendRequestAsync(request => request
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "migrations", "5", "rerun")
+            .Content(new RerunMigrationRequest("RERUN 5"))
+            .ExpectedStatus(HttpStatusCode.ServiceUnavailable));
     }
 
     [Fact]

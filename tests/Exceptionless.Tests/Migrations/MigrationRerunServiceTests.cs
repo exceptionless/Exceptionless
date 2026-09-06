@@ -1,3 +1,4 @@
+using Exceptionless.Core;
 using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Models.WorkItems;
@@ -40,12 +41,111 @@ public sealed class MigrationRerunServiceTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task QueueAsync_UserInterfaceWithOutOfProcessJobsAndInMemoryInfrastructure_ThrowsUnavailable()
+    {
+        // Arrange
+        await ConfigureCompletedMigrationAsync();
+
+        // Act / Assert
+        await Assert.ThrowsAsync<MigrationRerunUnavailableException>(() =>
+            GetService<MigrationRerunService>().QueueAsync(
+                CancellableMigrationVersion.ToString(),
+                MigrationRerunSource.UserInterface,
+                null,
+                TestCancellationToken));
+    }
+
+    [Fact]
     public async Task RunAsync_CancelledUserInterfaceOperation_RemainsRetryable()
     {
         // Arrange
+        var migration = await ConfigureCompletedMigrationAsync();
+
+        var rerunService = GetService<MigrationRerunService>();
+        var appOptions = GetService<AppOptions>();
+        bool runJobsInProcess = appOptions.RunJobsInProcess;
+        MigrationRerunOperation operation;
+        try
+        {
+            appOptions.RunJobsInProcess = true;
+            operation = await rerunService.QueueAsync(
+                CancellableMigrationVersion.ToString(),
+                MigrationRerunSource.UserInterface,
+                null,
+                TestCancellationToken);
+        }
+        finally
+        {
+            appOptions.RunJobsInProcess = runJobsInProcess;
+        }
+        using var cancellationTokenSource = new CancellationTokenSource();
+
+        // Act
+        var interruptedRun = rerunService.RunAsync(operation.Id, cancellationTokenSource.Token);
+        await migration.Started.WaitAsync(TestCancellationToken);
+        await cancellationTokenSource.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => interruptedRun);
+
+        operation = (await rerunService.GetOperationAsync(operation.Id))!;
+        Assert.NotNull(operation);
+        Assert.Equal(MigrationRerunStatus.Running, operation.Status);
+        Assert.Null(operation.CompletedUtc);
+        Assert.Equal(1, operation.AttemptCount);
+        await Assert.ThrowsAsync<MigrationRerunAlreadyActiveException>(() => rerunService.QueueAsync(
+            CancellableMigrationVersion.ToString(),
+            MigrationRerunSource.CommandLine,
+            null,
+            TestCancellationToken));
+
+        migration.CompleteImmediately = true;
+        operation = await rerunService.RunAsync(operation.Id, TestCancellationToken);
+
+        // Assert
+        Assert.Equal(MigrationRerunStatus.Completed, operation.Status);
+        Assert.Equal(2, operation.AttemptCount);
+    }
+
+    [Fact]
+    public async Task RunAsync_RedeliveredTerminalOperation_RemovesStaleActiveMarker()
+    {
+        // Arrange
+        var migration = await ConfigureCompletedMigrationAsync();
+        migration.CompleteImmediately = true;
+        var rerunService = GetService<MigrationRerunService>();
+        var operation = await rerunService.QueueAsync(
+            CancellableMigrationVersion.ToString(),
+            MigrationRerunSource.CommandLine,
+            null,
+            TestCancellationToken);
+        operation = await rerunService.RunAsync(operation.Id, TestCancellationToken);
+        var cache = GetService<Foundatio.Caching.ICacheClient>();
+        Assert.True(await cache.AddAsync(
+            $"migration-rerun:active:{CancellableMigrationVersion}",
+            operation.Id,
+            TimeSpan.FromDays(7)));
+
+        // Act
+        var redeliveredOperation = await rerunService.RunAsync(operation.Id, TestCancellationToken);
+        var nextOperation = await rerunService.QueueAsync(
+            CancellableMigrationVersion.ToString(),
+            MigrationRerunSource.CommandLine,
+            null,
+            TestCancellationToken);
+
+        // Assert
+        Assert.Equal(MigrationRerunStatus.Completed, redeliveredOperation.Status);
+        Assert.Equal(1, redeliveredOperation.AttemptCount);
+        Assert.Equal(MigrationRerunStatus.Queued, nextOperation.Status);
+        await rerunService.FailQueuedOperationAsync(nextOperation.Id, new InvalidOperationException("Test cleanup"));
+    }
+
+    private async Task<CancellableRerunnableMigration> ConfigureCompletedMigrationAsync()
+    {
         var migration = GetService<CancellableRerunnableMigration>();
         migration.Reset();
-        GetService<MigrationManager>().Migrations.Add(migration);
+        var migrationManager = GetService<MigrationManager>();
+        if (!migrationManager.Migrations.Contains(migration))
+            migrationManager.Migrations.Add(migration);
 
         var completedUtc = DateTime.UtcNow.AddDays(-1);
         await GetService<IMigrationStateRepository>().AddAsync(new MigrationState
@@ -57,37 +157,7 @@ public sealed class MigrationRerunServiceTests : IntegrationTestsBase
             CompletedUtc = completedUtc
         });
 
-        var rerunService = GetService<MigrationRerunService>();
-        var operation = await rerunService.QueueAsync(
-            CancellableMigrationVersion.ToString(),
-            MigrationRerunSource.UserInterface,
-            null,
-            TestCancellationToken);
-        using var cancellationTokenSource = new CancellationTokenSource();
-
-        // Act
-        var interruptedRun = rerunService.RunAsync(operation.Id, cancellationTokenSource.Token);
-        await migration.Started.WaitAsync(TestCancellationToken);
-        await cancellationTokenSource.CancelAsync();
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => interruptedRun);
-
-        operation = await rerunService.GetOperationAsync(operation.Id);
-        Assert.NotNull(operation);
-        Assert.Equal(MigrationRerunStatus.Running, operation.Status);
-        Assert.Null(operation.CompletedUtc);
-        Assert.Equal(1, operation.AttemptCount);
-        await Assert.ThrowsAsync<MigrationRerunAlreadyActiveException>(() => rerunService.QueueAsync(
-            CancellableMigrationVersion.ToString(),
-            MigrationRerunSource.UserInterface,
-            null,
-            TestCancellationToken));
-
-        migration.CompleteImmediately = true;
-        operation = await rerunService.RunAsync(operation.Id, TestCancellationToken);
-
-        // Assert
-        Assert.Equal(MigrationRerunStatus.Completed, operation.Status);
-        Assert.Equal(2, operation.AttemptCount);
+        return migration;
     }
 }
 

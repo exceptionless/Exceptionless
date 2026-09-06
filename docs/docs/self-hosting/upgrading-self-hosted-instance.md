@@ -23,6 +23,8 @@ Only migrations explicitly marked as safe to rerun can be started again. Create 
 - In the System UI, open **System → Migrations**, choose the migration's action menu, and select **Rerun migration**. The confirmation dialog shows the exact phrase you must enter.
 - From the job image or CLI, run `dotnet Exceptionless.Job.dll Migration --rerun <id>`, using the migration ID shown in the System UI. Pass the same Elasticsearch, Redis, and other configuration used by the normal migration job.
 
+A split deployment that runs jobs outside the web process must configure a distributed queue and Redis-backed cache to use the System UI action. If those services are unavailable, use the CLI command from the job instance instead.
+
 A rerun does not change the recorded current migration version or the original migration completion timestamp. Its outcome is reported separately in the UI and application logs.
 
 ## Upgrading from v7 to v7.1

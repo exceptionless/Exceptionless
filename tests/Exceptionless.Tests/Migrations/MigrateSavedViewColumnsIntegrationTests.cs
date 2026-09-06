@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Elastic.Clients.Elasticsearch;
+using Exceptionless.Core;
 using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
@@ -210,7 +211,18 @@ public sealed class MigrateSavedViewColumnsIntegrationTests : IntegrationTestsBa
         });
 
         var rerunService = GetService<MigrationRerunService>();
-        var operation = await rerunService.QueueAsync("5", MigrationRerunSource.UserInterface, null, TestCancellationToken);
+        var appOptions = GetService<AppOptions>();
+        bool runJobsInProcess = appOptions.RunJobsInProcess;
+        MigrationRerunOperation operation;
+        try
+        {
+            appOptions.RunJobsInProcess = true;
+            operation = await rerunService.QueueAsync("5", MigrationRerunSource.UserInterface, null, TestCancellationToken);
+        }
+        finally
+        {
+            appOptions.RunJobsInProcess = runJobsInProcess;
+        }
         operation.Status = MigrationRerunStatus.Running;
         operation.StartedUtc = DateTime.UtcNow.AddHours(-1);
         operation.AttemptCount = 1;
