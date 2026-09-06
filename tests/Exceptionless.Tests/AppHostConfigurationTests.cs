@@ -10,8 +10,8 @@ public class AppHostConfigurationTests
     [Fact]
     public async Task CreateAsync_WithSeparateElasticsearchAndKibanaOverrides_UsesIndependentImageTags()
     {
-        const string elasticsearchImageTag = "9.5.0-sha256-candidate";
-        const string kibanaImageTag = "9.5.0";
+        const string elasticsearchImageTag = "9.5.3-sha256-candidate";
+        const string kibanaImageTag = "9.5.3";
         var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.Exceptionless_AppHost>(
             [
                 $"--Elasticsearch:ImageTag={elasticsearchImageTag}",
