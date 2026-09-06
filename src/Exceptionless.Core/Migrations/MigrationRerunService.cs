@@ -60,9 +60,19 @@ public sealed class MigrationRerunService(
         // Persist the operation before publishing its active marker. This ordering guarantees that
         // a marker without an operation record is stale and can be safely reclaimed.
         await SaveOperationAsync(operation);
-        if (!await TryReserveMigrationAsync(migrationId, operationId))
+        var reservation = await TryReserveMigrationAsync(migrationId, operationId);
+        if (!reservation.IsReserved)
         {
             await cache.RemoveAsync(GetOperationCacheKey(operation.Id));
+            if (reservation.ActiveOperation?.Status == MigrationRerunStatus.Queued)
+            {
+                _logger.LogInformation(
+                    "Reusing queued migration rerun {MigrationRerunOperationId} for migration {MigrationId} so it can be dispatched again",
+                    reservation.ActiveOperation.Id,
+                    reservation.ActiveOperation.MigrationId);
+                return reservation.ActiveOperation;
+            }
+
             throw new MigrationRerunAlreadyActiveException(migrationId);
         }
 
@@ -215,26 +225,26 @@ public sealed class MigrationRerunService(
         }
     }
 
-    private async Task<bool> TryReserveMigrationAsync(string migrationId, string operationId)
+    private async Task<(bool IsReserved, MigrationRerunOperation? ActiveOperation)> TryReserveMigrationAsync(string migrationId, string operationId)
     {
         string activeOperationCacheKey = GetActiveOperationCacheKey(migrationId);
         if (await cache.AddAsync(activeOperationCacheKey, operationId, ActiveOperationRetention))
-            return true;
+            return (true, null);
 
         string? activeOperationId = await cache.GetAsync<string?>(activeOperationCacheKey, null);
         if (String.IsNullOrWhiteSpace(activeOperationId))
-            return await cache.AddAsync(activeOperationCacheKey, operationId, ActiveOperationRetention);
+            return (await cache.AddAsync(activeOperationCacheKey, operationId, ActiveOperationRetention), null);
 
         var activeOperation = await GetOperationAsync(activeOperationId);
         if (activeOperation is not null && !IsTerminal(activeOperation.Status))
-            return false;
+            return (false, activeOperation);
 
         if (activeOperation is null)
             await RemoveActiveReservationAsync(migrationId, activeOperationId);
         else
             await RemoveActiveOperationAsync(activeOperation);
 
-        return await cache.AddAsync(activeOperationCacheKey, operationId, ActiveOperationRetention);
+        return (await cache.AddAsync(activeOperationCacheKey, operationId, ActiveOperationRetention), null);
     }
 
     private Task RemoveActiveOperationAsync(MigrationRerunOperation operation)

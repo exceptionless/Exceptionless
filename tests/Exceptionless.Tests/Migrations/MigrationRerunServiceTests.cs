@@ -80,6 +80,31 @@ public sealed class MigrationRerunServiceTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task QueueAsync_ExistingQueuedOperation_ReturnsItForRedispatch()
+    {
+        // Arrange
+        await ConfigureCompletedMigrationAsync();
+        var rerunService = GetService<MigrationRerunService>();
+        var queuedOperation = await rerunService.QueueAsync(
+            CancellableMigrationVersion.ToString(),
+            MigrationRerunSource.CommandLine,
+            null,
+            TestCancellationToken);
+
+        // Act
+        var redispatchedOperation = await rerunService.QueueAsync(
+            CancellableMigrationVersion.ToString(),
+            MigrationRerunSource.CommandLine,
+            null,
+            TestCancellationToken);
+
+        // Assert
+        Assert.Equal(queuedOperation.Id, redispatchedOperation.Id);
+        Assert.Equal(MigrationRerunStatus.Queued, redispatchedOperation.Status);
+        await rerunService.FailQueuedOperationAsync(queuedOperation.Id, new InvalidOperationException("Test cleanup"));
+    }
+
+    [Fact]
     public async Task RunAsync_CancelledUserInterfaceOperation_RemainsRetryable()
     {
         // Arrange

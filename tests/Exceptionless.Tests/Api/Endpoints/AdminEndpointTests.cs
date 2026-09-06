@@ -929,10 +929,17 @@ public class AdminEndpointTests : IntegrationTestsBase
         var appOptions = GetService<AppOptions>();
         bool runJobsInProcess = appOptions.RunJobsInProcess;
         WorkInProgressResult? result;
+        WorkInProgressResult? redispatchedResult;
         try
         {
             appOptions.RunJobsInProcess = true;
             result = await SendRequestAsAsync<WorkInProgressResult>(request => request
+                .Post()
+                .AsGlobalAdminUser()
+                .AppendPaths("admin", "migrations", "5", "rerun")
+                .Content(new RerunMigrationRequest("RERUN 5"))
+                .StatusCodeShouldBeAccepted());
+            redispatchedResult = await SendRequestAsAsync<WorkInProgressResult>(request => request
                 .Post()
                 .AsGlobalAdminUser()
                 .AppendPaths("admin", "migrations", "5", "rerun")
@@ -946,7 +953,9 @@ public class AdminEndpointTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(result);
+        Assert.NotNull(redispatchedResult);
         Assert.Single(result.Workers);
+        Assert.Equal(result.Workers, redispatchedResult.Workers);
         var operation = await GetService<MigrationRerunService>().GetOperationAsync(result.Workers[0]);
         Assert.NotNull(operation);
         Assert.Equal(MigrationRerunStatus.Queued, operation.Status);
