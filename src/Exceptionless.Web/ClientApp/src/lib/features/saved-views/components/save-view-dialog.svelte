@@ -5,6 +5,7 @@
     import { Input } from '$comp/ui/input';
     import { Label } from '$comp/ui/label';
     import { Switch } from '$comp/ui/switch';
+    import { untrack } from 'svelte';
 
     import type { SavedView } from '../models';
 
@@ -88,7 +89,7 @@
             saveName = '';
             saveSlug = '';
             isSlugDirty = false;
-            isPrivate = defaultPrivate;
+            isPrivate = untrack(() => defaultPrivate);
             attemptedSubmit = false;
         }
     });
