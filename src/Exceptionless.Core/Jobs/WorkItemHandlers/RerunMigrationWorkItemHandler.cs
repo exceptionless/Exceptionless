@@ -20,6 +20,10 @@ public sealed class RerunMigrationWorkItemHandler(
         {
             throw;
         }
+        catch (MigrationRerunRecoveryPendingException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             Log.LogWarning(ex, "Migration rerun operation {MigrationRerunOperationId} failed and will not be retried automatically", workItem.OperationId);

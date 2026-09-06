@@ -5,6 +5,7 @@ using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Seed;
+using Foundatio.Caching;
 using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
@@ -183,6 +184,44 @@ public sealed class MigrateSavedViewColumnsIntegrationTests : IntegrationTestsBa
         var duplicateResult = await rerunService.RunAsync(operation.Id, TestCancellationToken);
         Assert.Equal(MigrationRerunStatus.Completed, duplicateResult.Status);
         Assert.Equal(1, duplicateResult.AttemptCount);
+    }
+
+    [Fact]
+    public async Task RunAsync_RedeliveredRunningOperation_ResumesAndCompletes()
+    {
+        // Arrange
+        var completedUtc = DateTime.UtcNow.AddDays(-1);
+        var migrationStateRepository = GetService<IMigrationStateRepository>();
+        await migrationStateRepository.AddAsync(new MigrationState
+        {
+            Id = "5",
+            Version = 5,
+            MigrationType = MigrationType.VersionedAndResumable,
+            StartedUtc = completedUtc.AddMinutes(-1),
+            CompletedUtc = completedUtc
+        });
+        await migrationStateRepository.AddAsync(new MigrationState
+        {
+            Id = "9",
+            Version = 9,
+            MigrationType = MigrationType.VersionedAndResumable,
+            StartedUtc = completedUtc,
+            CompletedUtc = completedUtc
+        });
+
+        var rerunService = GetService<MigrationRerunService>();
+        var operation = await rerunService.QueueAsync("5", MigrationRerunSource.UserInterface, null, TestCancellationToken);
+        operation.Status = MigrationRerunStatus.Running;
+        operation.StartedUtc = DateTime.UtcNow.AddHours(-1);
+        operation.AttemptCount = 1;
+        await GetService<ICacheClient>().SetAsync($"migration-rerun:operation:{operation.Id}", operation, TimeSpan.FromDays(7));
+
+        // Act
+        operation = await rerunService.RunAsync(operation.Id, TestCancellationToken);
+
+        // Assert
+        Assert.Equal(MigrationRerunStatus.Completed, operation.Status);
+        Assert.Equal(2, operation.AttemptCount);
     }
 
     [Fact]

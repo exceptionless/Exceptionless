@@ -955,6 +955,11 @@ public class AdminEndpointTests : IntegrationTestsBase
 
         var queueStats = await _workItemQueue.GetQueueStatsAsync();
         Assert.Equal(1, queueStats.Enqueued);
+
+        await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
+        operation = await GetService<MigrationRerunService>().GetOperationAsync(operation.Id);
+        Assert.NotNull(operation);
+        Assert.Equal(MigrationRerunStatus.Completed, operation.Status);
     }
 
     [Fact]

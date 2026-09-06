@@ -101,6 +101,7 @@ public class Bootstrapper
             handlers.Register<ReindexWorkItem>(s.GetRequiredService<ReindexWorkItemHandler>);
             handlers.Register<RemoveBotEventsWorkItem>(s.GetRequiredService<RemoveBotEventsWorkItemHandler>);
             handlers.Register<RemoveStacksWorkItem>(s.GetRequiredService<RemoveStacksWorkItemHandler>);
+            handlers.Register<RerunMigrationWorkItem>(s.GetRequiredService<RerunMigrationWorkItemHandler>);
             handlers.Register<ResetProjectDataWorkItem>(s.GetRequiredService<ResetProjectDataWorkItemHandler>);
             handlers.Register<SetLocationFromGeoWorkItem>(s.GetRequiredService<SetLocationFromGeoWorkItemHandler>);
             handlers.Register<SetProjectIsConfiguredWorkItem>(s.GetRequiredService<SetProjectIsConfiguredWorkItemHandler>);

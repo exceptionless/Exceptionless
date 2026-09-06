@@ -99,8 +99,10 @@ public sealed class MigrationRerunService(
     {
         var operation = await GetOperationAsync(operationId)
             ?? throw new KeyNotFoundException($"Migration rerun operation '{operationId}' was not found.");
-        if (operation.Status != MigrationRerunStatus.Queued)
+        if (operation.Status is MigrationRerunStatus.Completed or MigrationRerunStatus.Failed or MigrationRerunStatus.Cancelled)
+        {
             return operation;
+        }
 
         var migration = GetRerunnableMigration(operation.MigrationId);
 
@@ -110,6 +112,11 @@ public sealed class MigrationRerunService(
             cancellationToken);
         if (migrationLock is null)
         {
+            if (operation.Status == MigrationRerunStatus.Running)
+            {
+                throw new MigrationRerunRecoveryPendingException(operation.Id);
+            }
+
             var exception = new InvalidOperationException("Another migration is currently running. Try the rerun again after it completes.");
             await FailQueuedOperationAsync(operation.Id, exception);
             throw exception;
@@ -204,3 +211,6 @@ public sealed class MigrationRerunService(
 
 public sealed class MigrationRerunAlreadyActiveException(string migrationId)
     : Exception($"Migration '{migrationId}' already has a queued or running rerun.");
+
+public sealed class MigrationRerunRecoveryPendingException(string operationId)
+    : Exception($"Migration rerun operation '{operationId}' is still running and will be retried.");
