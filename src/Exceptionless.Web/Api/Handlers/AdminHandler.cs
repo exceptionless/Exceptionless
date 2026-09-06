@@ -212,7 +212,7 @@ public class AdminHandler(
         {
             return Result.Unavailable(ex.Message);
         }
-        catch (InvalidOperationException ex)
+        catch (MigrationRerunValidationException ex)
         {
             return Result.Invalid(ValidationError.Create("version", ex.Message));
         }

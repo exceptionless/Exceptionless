@@ -1010,6 +1010,27 @@ public class AdminEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task RerunMigrationAsync_WithIncompleteMigration_ReturnsValidationError()
+    {
+        // Arrange
+        await GetService<IMigrationStateRepository>().AddAsync(new MigrationState
+        {
+            Id = "5",
+            Version = 5,
+            MigrationType = MigrationType.VersionedAndResumable,
+            StartedUtc = DateTime.UtcNow
+        });
+
+        // Act / Assert
+        await SendRequestAsync(request => request
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "migrations", "5", "rerun")
+            .Content(new RerunMigrationRequest("RERUN 5"))
+            .StatusCodeShouldBeUnprocessableEntity());
+    }
+
+    [Fact]
     public Task RerunMigrationAsync_AsNonAdmin_ReturnsForbidden()
     {
         return SendRequestAsync(request => request

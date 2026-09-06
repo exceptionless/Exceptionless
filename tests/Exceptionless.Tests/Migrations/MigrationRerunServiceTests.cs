@@ -2,6 +2,7 @@ using Exceptionless.Core;
 using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Models.WorkItems;
+using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Repositories.Migrations;
@@ -53,6 +54,29 @@ public sealed class MigrationRerunServiceTests : IntegrationTestsBase
                 MigrationRerunSource.UserInterface,
                 null,
                 TestCancellationToken));
+    }
+
+    [Fact]
+    public async Task QueueAsync_ActiveMarkerWithoutOperation_ReclaimsReservation()
+    {
+        // Arrange
+        await ConfigureCompletedMigrationAsync();
+        var cache = GetService<ICacheClient>();
+        string activeOperationCacheKey = $"migration-rerun:active:{CancellableMigrationVersion}";
+        Assert.True(await cache.AddAsync(activeOperationCacheKey, "missing-operation", TimeSpan.FromDays(7)));
+        var rerunService = GetService<MigrationRerunService>();
+
+        // Act
+        var operation = await rerunService.QueueAsync(
+            CancellableMigrationVersion.ToString(),
+            MigrationRerunSource.CommandLine,
+            null,
+            TestCancellationToken);
+
+        // Assert
+        Assert.Equal(MigrationRerunStatus.Queued, operation.Status);
+        Assert.Equal(operation.Id, await cache.GetAsync<string?>(activeOperationCacheKey, null));
+        await rerunService.FailQueuedOperationAsync(operation.Id, new InvalidOperationException("Test cleanup"));
     }
 
     [Fact]
@@ -118,7 +142,7 @@ public sealed class MigrationRerunServiceTests : IntegrationTestsBase
             null,
             TestCancellationToken);
         operation = await rerunService.RunAsync(operation.Id, TestCancellationToken);
-        var cache = GetService<Foundatio.Caching.ICacheClient>();
+        var cache = GetService<ICacheClient>();
         Assert.True(await cache.AddAsync(
             $"migration-rerun:active:{CancellableMigrationVersion}",
             operation.Id,

@@ -16,7 +16,8 @@ public sealed class MigrationRerunService(
     ILoggerFactory loggerFactory)
 {
     private const string MigrationLockName = "migration-manager";
-    private static readonly TimeSpan OperationRetention = TimeSpan.FromDays(7);
+    private static readonly TimeSpan ActiveOperationRetention = TimeSpan.FromDays(7);
+    private static readonly TimeSpan OperationRetention = ActiveOperationRetention.Add(TimeSpan.FromMinutes(5));
     private static readonly TimeSpan MigrationLockDuration = TimeSpan.FromMinutes(30);
     private readonly ILogger _logger = loggerFactory.CreateLogger<MigrationRerunService>();
 
@@ -40,14 +41,11 @@ public sealed class MigrationRerunService(
         var migration = GetRerunnableMigration(migrationId);
         var state = await migrationStateRepository.GetByIdAsync(migrationId);
         if (state?.CompletedUtc is null)
-            throw new InvalidOperationException($"Migration '{migrationId}' must be completed before it can be rerun.");
+            throw new MigrationRerunValidationException($"Migration '{migrationId}' must be completed before it can be rerun.");
 
         EnsureUserInterfaceRerunAvailable(source);
 
         string operationId = Guid.NewGuid().ToString("N");
-        if (!await TryReserveMigrationAsync(migrationId, operationId))
-            throw new MigrationRerunAlreadyActiveException(migrationId);
-
         var operation = new MigrationRerunOperation
         {
             Id = operationId,
@@ -59,22 +57,22 @@ public sealed class MigrationRerunService(
             RequestedUtc = timeProvider.GetUtcNow().UtcDateTime
         };
 
-        try
+        // Persist the operation before publishing its active marker. This ordering guarantees that
+        // a marker without an operation record is stale and can be safely reclaimed.
+        await SaveOperationAsync(operation);
+        if (!await TryReserveMigrationAsync(migrationId, operationId))
         {
-            await SaveOperationAsync(operation);
-            _logger.LogInformation(
-                "Queued migration rerun {MigrationRerunOperationId} for migration {MigrationId}. Source: {MigrationRerunSource} RequestedByUserId: {RequestedByUserId}",
-                operation.Id,
-                operation.MigrationId,
-                operation.Source,
-                operation.RequestedByUserId);
-            return operation;
+            await cache.RemoveAsync(GetOperationCacheKey(operation.Id));
+            throw new MigrationRerunAlreadyActiveException(migrationId);
         }
-        catch
-        {
-            await RemoveActiveOperationAsync(operation);
-            throw;
-        }
+
+        _logger.LogInformation(
+            "Queued migration rerun {MigrationRerunOperationId} for migration {MigrationId}. Source: {MigrationRerunSource} RequestedByUserId: {RequestedByUserId}",
+            operation.Id,
+            operation.MigrationId,
+            operation.Source,
+            operation.RequestedByUserId);
+        return operation;
     }
 
     public Task<MigrationRerunOperation?> GetOperationAsync(string operationId)
@@ -216,30 +214,37 @@ public sealed class MigrationRerunService(
     private async Task<bool> TryReserveMigrationAsync(string migrationId, string operationId)
     {
         string activeOperationCacheKey = GetActiveOperationCacheKey(migrationId);
-        if (await cache.AddAsync(activeOperationCacheKey, operationId, OperationRetention))
+        if (await cache.AddAsync(activeOperationCacheKey, operationId, ActiveOperationRetention))
             return true;
 
         string? activeOperationId = await cache.GetAsync<string?>(activeOperationCacheKey, null);
         if (String.IsNullOrWhiteSpace(activeOperationId))
-            return false;
+            return await cache.AddAsync(activeOperationCacheKey, operationId, ActiveOperationRetention);
 
         var activeOperation = await GetOperationAsync(activeOperationId);
-        if (activeOperation is null || !IsTerminal(activeOperation.Status))
+        if (activeOperation is not null && !IsTerminal(activeOperation.Status))
             return false;
 
-        await RemoveActiveOperationAsync(activeOperation);
-        return await cache.AddAsync(activeOperationCacheKey, operationId, OperationRetention);
+        if (activeOperation is null)
+            await RemoveActiveReservationAsync(migrationId, activeOperationId);
+        else
+            await RemoveActiveOperationAsync(activeOperation);
+
+        return await cache.AddAsync(activeOperationCacheKey, operationId, ActiveOperationRetention);
     }
 
-    private async Task RemoveActiveOperationAsync(MigrationRerunOperation operation)
+    private Task RemoveActiveOperationAsync(MigrationRerunOperation operation)
+        => RemoveActiveReservationAsync(operation.MigrationId, operation.Id);
+
+    private async Task RemoveActiveReservationAsync(string migrationId, string operationId)
     {
         try
         {
-            await cache.RemoveIfEqualAsync(GetActiveOperationCacheKey(operation.MigrationId), operation.Id);
+            await cache.RemoveIfEqualAsync(GetActiveOperationCacheKey(migrationId), operationId);
         }
         catch (Exception ex)
         {
-            throw new MigrationRerunCleanupPendingException(operation.Id, ex);
+            throw new MigrationRerunCleanupPendingException(operationId, ex);
         }
     }
 
@@ -251,7 +256,7 @@ public sealed class MigrationRerunService(
         if (migration is null)
             throw new KeyNotFoundException($"Migration '{migrationId}' was not found.");
         if (migration is not IRerunnableMigration)
-            throw new InvalidOperationException($"Migration '{migrationId}' does not support reruns.");
+            throw new MigrationRerunValidationException($"Migration '{migrationId}' does not support reruns.");
 
         return migration;
     }
@@ -284,3 +289,5 @@ public sealed class MigrationRerunCleanupPendingException(string operationId, Ex
     : Exception($"Migration rerun operation '{operationId}' completed but its active-operation marker could not be removed and will be retried.", innerException);
 
 public sealed class MigrationRerunUnavailableException(string message) : Exception(message);
+
+public sealed class MigrationRerunValidationException(string message) : Exception(message);
