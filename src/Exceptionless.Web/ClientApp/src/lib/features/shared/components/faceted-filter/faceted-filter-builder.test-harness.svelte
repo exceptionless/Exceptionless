@@ -1,6 +1,7 @@
 <script lang="ts">
     import * as Tooltip from '$comp/ui/tooltip';
     import DateFacetedFilterBuilder from '$features/events/components/filters/date-faceted-filter-builder.svelte';
+    import KeywordFacetedFilterBuilder from '$features/events/components/filters/keyword-faceted-filter-builder.svelte';
 
     import type { IFilter } from './models';
 
@@ -12,5 +13,6 @@
 <Tooltip.Provider>
     <FacetedFilterBuilder {filters} {changed} {remove}>
         <DateFacetedFilterBuilder term="date" title="Date" />
+        <KeywordFacetedFilterBuilder />
     </FacetedFilterBuilder>
 </Tooltip.Provider>

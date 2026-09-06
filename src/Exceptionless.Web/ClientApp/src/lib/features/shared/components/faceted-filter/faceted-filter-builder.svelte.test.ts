@@ -1,4 +1,4 @@
-import { DateFilter } from '$features/events/components/filters/models.svelte';
+import { DateFilter, KeywordFilter } from '$features/events/components/filters/models.svelte';
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -7,6 +7,24 @@ import type { IFilter } from './models';
 import Harness from './faceted-filter-builder.test-harness.svelte';
 
 describe('faceted filter initialization', () => {
+    it('keeps duplicate raw filters distinct when another filter is added', async () => {
+        // Arrange
+        const local = new KeywordFilter('error.type:Local');
+        const remote = new KeywordFilter('error.type:Remote');
+        const view = render(Harness, { changed: vi.fn(), filters: [local], remove: vi.fn() });
+        const original = await screen.findByRole('button', { name: /^Raw Filter.*error\.type:Local/ });
+
+        // Act
+        await view.rerender({ filters: [local, remote] });
+
+        // Assert
+        expect(screen.getByRole('button', { name: /^Raw Filter.*error\.type:Local/ })).toBe(original);
+        expect(screen.getByRole('button', { name: /^Raw Filter.*error\.type:Remote/ })).not.toBe(original);
+
+        await view.rerender({ filters: [new KeywordFilter('error.type:Local'), new KeywordFilter('error.type:Remote')] });
+        expect(screen.getAllByRole('button', { name: /^Raw Filter/ })).toHaveLength(2);
+    });
+
     it('opens a newly added filter after the parent supplies it', async () => {
         // Arrange
         const changed = vi.fn<(filter: IFilter) => void>();
