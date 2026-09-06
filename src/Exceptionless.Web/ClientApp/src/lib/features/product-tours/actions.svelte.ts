@@ -61,7 +61,7 @@ export function createProductTourActions() {
         if (!productTourCheckpoint.clear(checkpoint)) {
             return false;
         }
-        await submitProductTourActivity(
+        void submitProductTourActivity(
             status === ProductTourStatus.Completed ? 'completed' : 'dismissed',
             checkpoint.tourName,
             checkpoint.version,

@@ -1,6 +1,4 @@
 <script lang="ts">
-    import { toast } from 'svelte-sonner';
-
     import { createProductTourActions } from '../actions.svelte';
     import { productTourCheckpoint } from '../state.svelte';
     import ProductTourSpotlight from './product-tour-spotlight.svelte';
@@ -29,31 +27,13 @@
         }
     }
 
-    export function validateSave(isPrivate: boolean): boolean {
-        if (!checkpoint) {
-            return true;
-        }
-
-        if (checkpoint.checkpointName !== 'save-view') {
-            toast.error('Complete the guide steps before saving your view.');
-            return false;
-        }
-
-        if (isPrivate) {
-            return true;
-        }
-
-        toast.error('Turn on Private so only you can see this view.');
-        return false;
-    }
-
     export function shouldDefaultPrivate(): boolean {
         return Boolean(checkpoint);
     }
 
     export async function created(): Promise<void> {
         const active = checkpoint;
-        if (!active || active.checkpointName !== 'save-view') {
+        if (!active) {
             return;
         }
 

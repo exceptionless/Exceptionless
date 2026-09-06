@@ -314,6 +314,26 @@ test('project guide preserves the current SDK selection', async ({ e2eScenario, 
     expect(new URL(page.url()).pathname).toBe(`/next/project/${e2eScenario.projectId}/configure`);
 });
 
+test('a saved-view guide allows submitting the form before finishing its steps', async ({ e2eScenario, page }) => {
+    // Arrange
+    await page.goto('/next/event');
+    await startTourFromCommand(page, 'Create a saved view');
+    const guide = page.locator('.driver-popover');
+    await guide.getByRole('button', { name: 'Open View' }).click();
+    await guide.getByRole('button', { name: 'Save As…' }).click();
+    const name = page.getByLabel('Name', { exact: true });
+    await name.fill(`Early Save ${e2eScenario.run}`);
+    const completed = page.waitForResponse(isSuccessfulTourProgress('saved-view-create'));
+
+    // Act
+    await name.press('Enter');
+
+    // Assert
+    await completed;
+    await expectProductTourSession(page, false);
+    await expect(page.getByText('Your saved view is ready', { exact: true })).toBeVisible();
+});
+
 test('domain workflows advance only on real success', async ({ e2eApi, e2eScenario, page }) => {
     test.setTimeout(300_000);
 

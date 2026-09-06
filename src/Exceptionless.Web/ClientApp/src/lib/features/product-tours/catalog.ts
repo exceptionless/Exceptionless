@@ -33,6 +33,7 @@ function requireOrganization(context: ProductTourContext) {
 export const productTourCatalog: readonly ProductTourDefinition[] = [
     {
         availability: requireApplicationShell,
+        canResume: () => true,
         description: 'Navigate stacks and events, use the command palette, and reopen saved views.',
         keywords: ['navigation', 'ui', 'search', 'command palette', 'help', 'saved views', 'stacks', 'occurrences'],
         name: 'app-overview',
@@ -45,6 +46,15 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
             context.isProjectConfigurePage || !context.organizationId || context.projects
                 ? { available: true }
                 : { available: false, reason: 'Projects could not be loaded. Try again shortly.' },
+        canResume: (checkpoint, routeId) => {
+            if (checkpoint === 'organization-name') {
+                return routeId === '/(app)/organization/add';
+            }
+            if (checkpoint === 'project-name') {
+                return routeId === '/(app)/organization/add' || routeId === '/(app)/project/add';
+            }
+            return routeId === '/(app)/project/[projectId]/configure';
+        },
         description: 'Continue an unfinished project, or create one and send its first event.',
         keywords: ['add project', 'configure', 'sdk', 'api key', 'first event'],
         name: 'project-configure',
@@ -74,6 +84,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
     },
     {
         availability: requireOrganization,
+        canResume: (checkpoint, routeId) => routeId === '/(app)/event' && (checkpoint === 'open-view-menu' || checkpoint === 'view-created'),
         description: 'Save your event filters and layout in a view only you can see.',
         keywords: ['saved view', 'filter', 'columns', 'private', 'dashboard'],
         name: 'saved-view-create',
@@ -83,6 +94,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
     },
     {
         availability: requireError,
+        canResume: (checkpoint, routeId) => routeId === '/(app)/event' && (checkpoint === 'filter-errors' || checkpoint === 'choose-error'),
         description: 'Understand stacks, review status, and inspect individual event occurrences.',
         keywords: ['error report', 'event details', 'occurrences', 'exception', 'filter', 'stack', 'triage'],
         name: 'event-investigate',
@@ -100,6 +112,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
                 ? { available: true }
                 : { available: false, reason: context.assistantAccess.message ?? 'Exie requires access.' };
         },
+        canResume: (checkpoint) => checkpoint === 'open-exie',
         description: 'Explore the AI assistant. This guide does not send an AI request.',
         keywords: ['exie', 'assistant', 'ai', 'help', 'investigate'],
         name: 'exie-overview',

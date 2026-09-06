@@ -17,6 +17,30 @@ function context(overrides: Partial<ProductTourContext> = {}): ProductTourContex
 }
 
 describe('product tour catalog', () => {
+    it('resumes project setup using route identity rather than path substrings', () => {
+        // Arrange
+        const guide = productTourCatalog.find((tour) => tour.name === 'project-configure')!;
+
+        // Act / Assert
+        expect(guide.canResume('organization-name', '/(app)/organization/add')).toBe(true);
+        expect(guide.canResume('project-name', '/(app)/project/add')).toBe(true);
+        expect(guide.canResume('sdk-instructions', '/(app)/project/[projectId]/configure')).toBe(true);
+        expect(guide.canResume('sdk-instructions', '/(app)/project/add')).toBe(false);
+        expect(guide.canResume('sdk-instructions', null)).toBe(false);
+    });
+
+    it('does not resume dialog or detail checkpoints on their parent list', () => {
+        // Arrange
+        const savedView = productTourCatalog.find((tour) => tour.name === 'saved-view-create')!;
+        const investigation = productTourCatalog.find((tour) => tour.name === 'event-investigate')!;
+
+        // Act / Assert
+        expect(savedView.canResume('open-view-menu', '/(app)/event')).toBe(true);
+        expect(savedView.canResume('name-view', '/(app)/event')).toBe(false);
+        expect(investigation.canResume('choose-error', '/(app)/event')).toBe(true);
+        expect(investigation.canResume('stack-summary', '/(app)/event')).toBe(false);
+    });
+
     it('contains only durable metadata for the five named tours', () => {
         expect(productTourCatalog.map((tour) => tour.name)).toEqual([
             'app-overview',

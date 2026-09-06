@@ -5,6 +5,7 @@ import ProductTourWelcome from './product-tour-welcome.svelte';
 
 const recommended = {
     availability: vi.fn(() => ({ available: true })),
+    canResume: () => true,
     currentAvailability: { available: true },
     description: 'Learn navigation and search.',
     keywords: ['navigation'],

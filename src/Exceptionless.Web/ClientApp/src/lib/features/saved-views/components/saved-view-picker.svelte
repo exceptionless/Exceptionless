@@ -263,10 +263,6 @@
         }
 
         const tour = savedViewCreateTour;
-        if (tour && !tour.validateSave(isPrivate)) {
-            return;
-        }
-
         const filterDefinitions = serializeFilters(filters);
         const body: NewSavedView = {
             columns: getSavedColumnSettings(),

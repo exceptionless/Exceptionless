@@ -41,8 +41,6 @@
 
     const EVENT_PATH = resolve('/(app)/event');
     const EXIE_ANNOUNCEMENT_VERSION = 1;
-    const ORGANIZATION_ADD_PATH = resolve('/(app)/organization/add');
-    const PROJECT_ADD_PATH = resolve('/(app)/project/add');
     const STACK_PATH = resolve('/(app)/stack');
     const SYSTEM_PATH = resolve('/(app)/system');
     const WELCOME_VERSION = 1;
@@ -64,14 +62,10 @@
 
     let catalogOpen = $state(false);
     let catalogSource = $state<ProductTourLaunchSource>('catalog');
-    let checkErrorAvailability = $state(false);
-    let automaticSurface = $state<'exie-announcement' | 'welcome'>();
+    let automaticSurface = $state<'exie-announcement' | 'handled' | 'welcome'>();
     let automaticSurfaceReady = $state(false);
-    let automaticSurfaceClaimed = $state(false);
     let automaticSurfaceUserId = $state<string>();
-    let lastTrackedAnnouncementImpression = $state('');
-    let lastTrackedWelcomeImpression = $state('');
-    let welcomeHandled = $state(false);
+    let lastTrackedImpression = '';
     let attemptedProjectCompletion: ProductTourCheckpoint | undefined;
 
     const actions = createProductTourActions();
@@ -86,7 +80,7 @@
     const projects = $derived(projectsQuery.data?.data ?? undefined);
     const projectConfigurePage = $derived(page.route.id === '/(app)/project/[projectId]/configure');
     const errorEventsQuery = getOrganizationEventsQuery({
-        enabled: () => checkErrorAvailability,
+        enabled: () => catalogOpen,
         params: {
             filter: 'type:error',
             limit: 1,
@@ -100,7 +94,7 @@
         }
     });
     const errorEventAvailability = $derived<ProductTourContext['errorEventAvailability']>(
-        !organizationId || !checkErrorAvailability || errorEventsQuery.isPending
+        !organizationId || !catalogOpen || errorEventsQuery.isPending
             ? 'loading'
             : errorEventsQuery.isError
               ? 'error'
@@ -126,7 +120,7 @@
             hostStateSettled &&
             automaticSurface === 'welcome' &&
             currentUser &&
-            !welcomeHandled &&
+            !checkpoint &&
             !catalogOpen &&
             !isAnyOverlayOpen &&
             !isImpersonating &&
@@ -160,7 +154,6 @@
         if (!automaticSurfaceReady || !currentUser) {
             automaticSurface = undefined;
             automaticSurfaceUserId = undefined;
-            automaticSurfaceClaimed = false;
             return;
         }
 
@@ -168,15 +161,14 @@
             automaticSurface = undefined;
             automaticSurfaceUserId = currentUser.id;
             try {
-                automaticSurfaceClaimed = sessionStorage.getItem(getAutomaticSurfaceKey(currentUser.id)) === 'shown';
+                automaticSurface = sessionStorage.getItem(getAutomaticSurfaceKey(currentUser.id)) === 'shown' ? 'handled' : undefined;
             } catch {
-                automaticSurfaceClaimed = false;
+                automaticSurface = undefined;
             }
-            welcomeHandled = false;
             return;
         }
 
-        if (automaticSurfaceClaimed || !hostStateSettled || isImpersonating || isSetupPage) {
+        if (automaticSurface || !hostStateSettled || isImpersonating || isSetupPage || checkpoint) {
             return;
         }
 
@@ -227,22 +219,15 @@
             return;
         }
 
-        const impression = `${currentUser.id}:${WELCOME_VERSION}`;
-        if (welcomeOpen && lastTrackedWelcomeImpression !== impression) {
-            lastTrackedWelcomeImpression = impression;
-            void submitProductTourActivity('shown', 'app-welcome', WELCOME_VERSION, 'welcome');
-        }
-    });
-
-    $effect(() => {
-        if (!currentUser) {
+        const invitation = welcomeOpen ? 'app-welcome' : exieAnnouncementOpen ? 'exie-announcement' : undefined;
+        if (!invitation) {
             return;
         }
-
-        const impression = `${currentUser.id}:${EXIE_ANNOUNCEMENT_VERSION}`;
-        if (exieAnnouncementOpen && lastTrackedAnnouncementImpression !== impression) {
-            lastTrackedAnnouncementImpression = impression;
-            void submitProductTourActivity('shown', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
+        const version = invitation === 'app-welcome' ? WELCOME_VERSION : EXIE_ANNOUNCEMENT_VERSION;
+        const impression = `${currentUser.id}:${invitation}:${version}`;
+        if (lastTrackedImpression !== impression) {
+            lastTrackedImpression = impression;
+            void submitProductTourActivity('shown', invitation, version, invitation === 'app-welcome' ? 'welcome' : 'feature-announcement');
         }
     });
 
@@ -252,12 +237,11 @@
             return;
         }
         closeOverlays();
-        checkErrorAvailability = true;
         catalogSource = source;
         catalogOpen = true;
     }
 
-    export async function startTour<Name extends ProductTourName>(name: Name, source: ProductTourLaunchSource = 'catalog'): Promise<void> {
+    export async function startTour(name: ProductTourName, source: ProductTourLaunchSource = 'catalog'): Promise<void> {
         if (!currentUser) {
             return;
         }
@@ -267,7 +251,7 @@
             return;
         }
 
-        automaticSurface = undefined;
+        automaticSurface = 'handled';
         const active = productTourCheckpoint.current;
         if (active?.tourName === name && isActiveTourRenderable(active)) {
             closeOverlays();
@@ -286,7 +270,7 @@
             search: window.location.search
         });
         const next = productTourCheckpoint.start(name, start.checkpointName, source, currentUser.id, item.version, organizationId);
-        await submitProductTourActivity('started', name, item.version, source);
+        void submitProductTourActivity('started', name, item.version, source);
 
         const destination = start.route;
         if (`${pathname}${window.location.search}` !== destination) {
@@ -321,9 +305,8 @@
         if (!(await recordPreference('app-welcome', WELCOME_VERSION, ProductTourStatus.Completed))) {
             return;
         }
-        welcomeHandled = true;
-        automaticSurface = undefined;
-        await submitProductTourActivity('completed', 'app-welcome', WELCOME_VERSION, 'welcome');
+        automaticSurface = 'handled';
+        void submitProductTourActivity('completed', 'app-welcome', WELCOME_VERSION, 'welcome');
         await startTour(recommended.name, 'welcome');
     }
 
@@ -331,9 +314,8 @@
         if (!(await recordPreference('app-welcome', WELCOME_VERSION, ProductTourStatus.Completed))) {
             return;
         }
-        welcomeHandled = true;
-        automaticSurface = undefined;
-        await submitProductTourActivity('completed', 'app-welcome', WELCOME_VERSION, 'welcome');
+        automaticSurface = 'handled';
+        void submitProductTourActivity('completed', 'app-welcome', WELCOME_VERSION, 'welcome');
         await openCatalog('catalog');
     }
 
@@ -341,17 +323,16 @@
         if (!(await recordPreference('app-welcome', WELCOME_VERSION, ProductTourStatus.Dismissed))) {
             return;
         }
-        welcomeHandled = true;
-        automaticSurface = undefined;
-        await submitProductTourActivity('dismissed', 'app-welcome', WELCOME_VERSION, 'welcome');
+        automaticSurface = 'handled';
+        void submitProductTourActivity('dismissed', 'app-welcome', WELCOME_VERSION, 'welcome');
     }
 
     async function onExieAnnouncementStart(): Promise<void> {
         if (!(await recordPreference('exie-announcement', EXIE_ANNOUNCEMENT_VERSION, ProductTourStatus.Completed))) {
             return;
         }
-        automaticSurface = undefined;
-        await submitProductTourActivity('completed', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
+        automaticSurface = 'handled';
+        void submitProductTourActivity('completed', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
         if (assistantAccess?.has_access) {
             await startTour('exie-overview', 'feature-announcement');
         } else {
@@ -363,12 +344,12 @@
         if (!(await recordPreference('exie-announcement', EXIE_ANNOUNCEMENT_VERSION, ProductTourStatus.Dismissed))) {
             return;
         }
-        automaticSurface = undefined;
-        await submitProductTourActivity('dismissed', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
+        automaticSurface = 'handled';
+        void submitProductTourActivity('dismissed', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
     }
 
-    function getItem<Name extends ProductTourName>(name: Name): ProductTourListItem<Name> {
-        return items.find((item) => item.name === name)! as ProductTourListItem<Name>;
+    function getItem(name: ProductTourName): ProductTourListItem {
+        return items.find((item) => item.name === name)!;
     }
 
     function claimAutomaticSurface(surface: 'exie-announcement' | 'welcome'): void {
@@ -377,7 +358,6 @@
         }
 
         automaticSurface = surface;
-        automaticSurfaceClaimed = true;
         try {
             sessionStorage.setItem(getAutomaticSurfaceKey(currentUser.id), 'shown');
         } catch {
@@ -390,25 +370,7 @@
     }
 
     function isActiveTourRenderable(active: NonNullable<typeof checkpoint>): boolean {
-        switch (active.tourName) {
-            case 'app-overview':
-                return true;
-            case 'event-investigate':
-                return pathname.startsWith(EVENT_PATH) && (active.checkpointName === 'filter-errors' || active.checkpointName === 'choose-error');
-            case 'exie-overview':
-                return active.checkpointName === 'open-exie';
-            case 'project-configure':
-                if (active.checkpointName === 'organization-name') {
-                    return pathname === ORGANIZATION_ADD_PATH;
-                }
-
-                if (active.checkpointName === 'project-name') {
-                    return pathname === ORGANIZATION_ADD_PATH || pathname === PROJECT_ADD_PATH;
-                }
-                return pathname.startsWith(PROJECT_ADD_PATH.slice(0, -3)) && pathname.endsWith('/configure');
-            case 'saved-view-create':
-                return pathname.startsWith(EVENT_PATH) && (active.checkpointName === 'open-view-menu' || active.checkpointName === 'view-created');
-        }
+        return getItem(active.tourName).canResume(active.checkpointName, page.route.id);
     }
 </script>
 

@@ -39,6 +39,7 @@ export interface ProductTourContext {
 }
 export interface ProductTourDefinition<Name extends ProductTourName = ProductTourName> {
     availability: (context: ProductTourContext) => ProductTourAvailability;
+    canResume: (checkpointName: ProductTourCheckpointName<Name>, routeId: null | string) => boolean;
     description: string;
     keywords: readonly string[];
     name: Name;

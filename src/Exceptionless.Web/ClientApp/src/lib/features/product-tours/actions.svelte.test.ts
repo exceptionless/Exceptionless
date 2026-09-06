@@ -16,6 +16,20 @@ vi.mock('./controls.svelte', () => ({ tryUseProductTourControls: () => ({ openCa
 vi.mock('svelte-sonner', () => ({ toast: { error: mocks.error, success: mocks.success } }));
 
 describe('product tour completion', () => {
+    it('finishes saved progress without waiting for telemetry', async () => {
+        // Arrange
+        const checkpoint = productTourCheckpoint.start('saved-view-create', 'view-created', 'catalog', 'user', 1);
+        mocks.submitFeatureUsage.mockReturnValue(new Promise<void>(() => {}));
+
+        // Act
+        const completed = await createProductTourActions().complete(checkpoint);
+
+        // Assert
+        expect(completed).toBe(true);
+        expect(productTourCheckpoint.current).toBeUndefined();
+        expect(mocks.success).toHaveBeenCalledOnce();
+    });
+
     afterEach(() => {
         productTourCheckpoint.clear();
         vi.resetAllMocks();
