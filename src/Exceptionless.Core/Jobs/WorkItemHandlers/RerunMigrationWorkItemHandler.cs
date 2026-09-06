@@ -14,7 +14,10 @@ public sealed class RerunMigrationWorkItemHandler(
         var workItem = context.GetData<RerunMigrationWorkItem>()!;
         try
         {
-            await migrationRerunService.RunAsync(workItem.OperationId, context.CancellationToken);
+            await migrationRerunService.RunAsync(
+                workItem.OperationId,
+                context.CancellationToken,
+                retryOnCancellation: true);
         }
         catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
         {

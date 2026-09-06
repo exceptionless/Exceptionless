@@ -1,4 +1,3 @@
-using Exceptionless.Core;
 using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Models.WorkItems;
@@ -105,32 +104,24 @@ public sealed class MigrationRerunServiceTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task RunAsync_CancelledUserInterfaceOperation_RemainsRetryable()
+    public async Task RunAsync_CancelledWorkItemOperation_RemainsRetryableRegardlessOfSource()
     {
         // Arrange
         var migration = await ConfigureCompletedMigrationAsync();
 
         var rerunService = GetService<MigrationRerunService>();
-        var appOptions = GetService<AppOptions>();
-        bool runJobsInProcess = appOptions.RunJobsInProcess;
-        MigrationRerunOperation operation;
-        try
-        {
-            appOptions.RunJobsInProcess = true;
-            operation = await rerunService.QueueAsync(
-                CancellableMigrationVersion.ToString(),
-                MigrationRerunSource.UserInterface,
-                null,
-                TestCancellationToken);
-        }
-        finally
-        {
-            appOptions.RunJobsInProcess = runJobsInProcess;
-        }
+        var operation = await rerunService.QueueAsync(
+            CancellableMigrationVersion.ToString(),
+            MigrationRerunSource.CommandLine,
+            null,
+            TestCancellationToken);
         using var cancellationTokenSource = new CancellationTokenSource();
 
         // Act
-        var interruptedRun = rerunService.RunAsync(operation.Id, cancellationTokenSource.Token);
+        var interruptedRun = rerunService.RunAsync(
+            operation.Id,
+            cancellationTokenSource.Token,
+            retryOnCancellation: true);
         await migration.Started.WaitAsync(TestCancellationToken);
         await cancellationTokenSource.CancelAsync();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => interruptedRun);

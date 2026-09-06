@@ -106,7 +106,10 @@ public sealed class MigrationRerunService(
             operation.MigrationId);
     }
 
-    public async Task<MigrationRerunOperation> RunAsync(string operationId, CancellationToken cancellationToken = default)
+    public async Task<MigrationRerunOperation> RunAsync(
+        string operationId,
+        CancellationToken cancellationToken = default,
+        bool retryOnCancellation = false)
     {
         var operation = await GetOperationAsync(operationId)
             ?? throw new KeyNotFoundException($"Migration rerun operation '{operationId}' was not found.");
@@ -170,7 +173,7 @@ public sealed class MigrationRerunService(
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            if (operation.Source == MigrationRerunSource.CommandLine)
+            if (!retryOnCancellation)
             {
                 operation.Status = MigrationRerunStatus.Cancelled;
                 operation.CompletedUtc = timeProvider.GetUtcNow().UtcDateTime;
