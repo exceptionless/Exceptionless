@@ -139,6 +139,7 @@ public sealed class MigrationRerunService(
             operation.Source,
             operation.RequestedByUserId);
 
+        bool terminalStatePersisted = false;
         try
         {
             await migration.RunAsync(new MigrationContext(
@@ -149,6 +150,7 @@ public sealed class MigrationRerunService(
             operation.Status = MigrationRerunStatus.Completed;
             operation.CompletedUtc = timeProvider.GetUtcNow().UtcDateTime;
             await SaveOperationAsync(operation);
+            terminalStatePersisted = true;
             _logger.LogInformation(
                 "Completed migration rerun {MigrationRerunOperationId} for migration {MigrationId} in {MigrationRerunDuration}",
                 operation.Id,
@@ -163,6 +165,7 @@ public sealed class MigrationRerunService(
                 operation.Status = MigrationRerunStatus.Cancelled;
                 operation.CompletedUtc = timeProvider.GetUtcNow().UtcDateTime;
                 await SaveOperationAsync(operation);
+                terminalStatePersisted = true;
             }
             else
             {
@@ -180,6 +183,7 @@ public sealed class MigrationRerunService(
             operation.CompletedUtc = timeProvider.GetUtcNow().UtcDateTime;
             operation.ErrorMessage = ex.Message.Length > 1000 ? ex.Message[..1000] : ex.Message;
             await SaveOperationAsync(operation);
+            terminalStatePersisted = true;
             _logger.LogError(
                 ex,
                 "Failed migration rerun {MigrationRerunOperationId} for migration {MigrationId} after {MigrationRerunDuration}",
@@ -190,7 +194,7 @@ public sealed class MigrationRerunService(
         }
         finally
         {
-            if (IsTerminal(operation.Status))
+            if (terminalStatePersisted)
             {
                 await RemoveActiveOperationAsync(operation);
             }
@@ -286,7 +290,7 @@ public sealed class MigrationRerunRecoveryPendingException(string operationId)
     : Exception($"Migration rerun operation '{operationId}' is still running and will be retried.");
 
 public sealed class MigrationRerunCleanupPendingException(string operationId, Exception innerException)
-    : Exception($"Migration rerun operation '{operationId}' completed but its active-operation marker could not be removed and will be retried.", innerException);
+    : Exception($"Migration rerun operation '{operationId}' reached a terminal state but its active-operation marker could not be removed and will be retried.", innerException);
 
 public sealed class MigrationRerunUnavailableException(string message) : Exception(message);
 
