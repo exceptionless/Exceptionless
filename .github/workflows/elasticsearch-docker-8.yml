@@ -40,7 +40,13 @@ jobs:
         with:
           platforms: linux/amd64,linux/arm64
       - name: Build custom Elasticsearch 8.x docker image
-        working-directory: build/docker/elasticsearch/8.x
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
-          VERSION=$(sed -n 's/.*elasticsearch:\([^ ]*\).*/\1/p' Dockerfile)
-          docker buildx build --platform linux/amd64,linux/arm64 --output "type=image,push=true" --file ./Dockerfile . --tag exceptionless/elasticsearch:$VERSION --tag exceptionless/elasticsearch:latest
+          VERSION=$(sed -n 's/.*elasticsearch:\([^ ]*\).*/\1/p' build/docker/elasticsearch/8.x/Dockerfile)
+          IMAGE_SHA=$(git ls-files -- build/docker/elasticsearch/8.x .github/workflows/elasticsearch-docker-8.yml | sort | xargs sha256sum | sha256sum | cut -d " " -f 1)
+          TAGS=(--tag "exceptionless/elasticsearch:$VERSION-sha256-$IMAGE_SHA")
+          if [[ "$GITHUB_REF" == "refs/heads/$DEFAULT_BRANCH" ]]; then
+            TAGS+=(--tag "exceptionless/elasticsearch:$VERSION" --tag "exceptionless/elasticsearch:latest")
+          fi
+          docker buildx build --platform linux/amd64,linux/arm64 --output "type=image,push=true" --file build/docker/elasticsearch/8.x/Dockerfile build/docker/elasticsearch/8.x "${TAGS[@]}"
