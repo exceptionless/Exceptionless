@@ -42,7 +42,7 @@
             {/if}
         {:else}
             <Typography.P class="leading-normal not-first:mt-0"
-                >Shown counts invitation displays; Accepted counts invitations used to open a guide.</Typography.P
+                >Shown counts invitation displays; Accepted counts choosing to start or browse guides, or open Exie.</Typography.P
             >
         {/if}
     </Popover.Content>

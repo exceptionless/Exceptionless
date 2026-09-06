@@ -54,7 +54,7 @@ describe('ProductTourActivityPopover', () => {
         await fireEvent.click(screen.getByRole('button'));
 
         // Assert
-        expect(screen.getByText(/Accepted counts invitations used to open a guide/)).toBeTruthy();
+        expect(screen.getByText(/Accepted counts choosing to start or browse guides, or open Exie/)).toBeTruthy();
         expect(screen.queryByRole('list', { name: 'Guide entry points' })).toBeNull();
     });
 });
