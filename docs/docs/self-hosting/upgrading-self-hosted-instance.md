@@ -8,6 +8,68 @@ title: "Upgrading"
 
 **If you are upgrading from v1 or [v2](https://github.com/exceptionless/Exceptionless/releases/tag/v2.0.0) you will need to upgrade to [v3.0](https://github.com/exceptionless/Exceptionless/releases/tag/v3.0.0) before upgrading to the latest release.**
 
+## Upgrading from v8 to v9
+
+Exceptionless v9 uses Elasticsearch 9. Do not point an Elasticsearch 9 node at an existing data volume until the cluster has been prepared with Elasticsearch 8.19. Elasticsearch 9 can fail to start when incompatible indices created before Elasticsearch 8 remain.
+
+Use this upgrade path for an existing self-hosted installation:
+
+1. Take a current Elasticsearch snapshot or other verified backup and test that it can be restored. Elasticsearch does not support downgrading a data directory after it has been upgraded.
+2. Upgrade Elasticsearch and Kibana to the latest 8.19.x patch release first, using the existing data volume. Do not start Elasticsearch 9 yet.
+3. Stop the Exceptionless app and job services, but leave Elasticsearch and Kibana 8.19 running. This prevents writes while legacy indices are reindexed. All-in-one installations must use the Elasticsearch-only procedure below; killing the app process is insufficient because its supervisor restarts it.
+4. Open Kibana's **Upgrade Assistant** and resolve every critical issue. Reindex every active Exceptionless index created before Elasticsearch 8. Delete only indices you have confirmed are no longer needed; do not mark active Exceptionless indices as read-only.
+5. If this data volume previously ran Elasticsearch 7, temporarily disable the GeoIP downloader while still on Elasticsearch 8.19. Elasticsearch deletes its downloaded `.geoip_databases` system index when this setting is disabled; Exceptionless data is not affected.
+
+   ```bash
+   curl -fsS -X PUT "http://localhost:9200/_cluster/settings" \
+     -H "Content-Type: application/json" \
+     -d '{"persistent":{"ingest.geoip.downloader.enabled":false}}'
+   ```
+
+6. Confirm that the deprecation API reports no critical issues:
+
+   ```bash
+   curl -fsS "http://localhost:9200/_migration/deprecations?pretty"
+   ```
+
+7. Stop Elasticsearch and Kibana 8.19 without deleting their data volume. Update the Elasticsearch and Kibana images to the v9 versions, start them, and verify cluster health before restarting the Exceptionless app and jobs. In Docker Compose, do not run `docker compose down -v` because `-v` deletes the data volume.
+8. After Elasticsearch 9 is healthy, restore the default GeoIP downloader behavior:
+
+   ```bash
+   curl -fsS -X PUT "http://localhost:9200/_cluster/settings" \
+     -H "Content-Type: application/json" \
+     -d '{"persistent":{"ingest.geoip.downloader.enabled":null}}'
+   ```
+
+See Elastic's [prepare-to-upgrade guide](https://www.elastic.co/docs/deploy-manage/upgrade/prepare-to-upgrade) for the supported 8.x to 9.x upgrade requirements and Upgrade Assistant details.
+
+### All-in-one: keep Elasticsearch running without the app
+
+For `samples/docker-compose.all-in-one.yml`, run these commands from the existing deployment directory with its existing Compose project name and environment. Do not create a new project or change the volume mapping: that can silently select an empty data volume. Take and restore-test the snapshot first. Stop external Exceptionless jobs, ingestion consumers, and other writers too.
+
+1. Pin `exceptionless` to an approved **8.x all-in-one application image containing Elasticsearch 8.19.21**, and `kibana` to `docker.elastic.co/kibana/kibana:8.19.21`. Do not use `latest` or an Elasticsearch 9 image during preparation. Keep the original volume, security settings, and resource limits.
+2. Stop both existing containers without removing their volumes:
+
+   ```powershell
+   docker compose -f docker-compose.all-in-one.yml stop kibana exceptionless
+   ```
+
+3. Start only Elasticsearch from the all-in-one image in a dedicated foreground terminal. Overriding the entrypoint bypasses the supervisor entirely, so neither the app nor its in-process jobs start. `--service-ports` and `--use-aliases` preserve the service's ports and Kibana's `exceptionless` hostname; `--no-deps` prevents other services from starting.
+
+   ```powershell
+   docker compose -f docker-compose.all-in-one.yml run --rm --no-deps --service-ports --use-aliases --entrypoint /usr/local/bin/docker-entrypoint.sh exceptionless eswrapper
+   ```
+
+   Verify `GET /` reports 8.19.21 and the expected cluster UUID, and check cluster health, index counts, and representative records before doing maintenance. Confirm no application process is running. Never start the regular `exceptionless` service while this maintenance container holds its data volume.
+4. In another terminal, start only Kibana and complete steps 4–6 above, keeping all application writers stopped:
+
+   ```powershell
+   docker compose -f docker-compose.all-in-one.yml up -d --no-deps kibana
+   ```
+
+5. Stop Kibana, then press Ctrl+C in the maintenance terminal and wait for Elasticsearch to exit cleanly. Pin the approved v9 all-in-one image and matching Kibana version. Repeat the Elasticsearch-only command to perform the 9 upgrade and verify health before any app startup; perform step 8 above against this node.
+6. Stop that Elasticsearch-only container cleanly. Only after the migration checks pass, start the regular all-in-one service and matching Kibana with `docker compose -f docker-compose.all-in-one.yml up -d`. Resume external writers after application verification. Never use `down -v`, run two nodes against the same volume, or restart an 8.x image against a volume already opened by 9.
+
 ## Upgrading from v7.1 to v8
 
 We simplified the self hosting process by integrating the UI into the existing app images. As such `exceptionless/ui` docker images are deprecated and we recommend using `exceptionless/app`.
