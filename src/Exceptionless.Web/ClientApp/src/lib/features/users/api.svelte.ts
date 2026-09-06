@@ -18,6 +18,8 @@ import type {
     ViewUser
 } from './models';
 
+import { ProductTourStatus } from './models';
+
 export async function invalidateUserQueries(queryClient: QueryClient, message: WebSocketMessageValue<'UserChanged'>) {
     const { id } = message;
     if (id) {
@@ -294,6 +296,15 @@ export function putCurrentUserProductTour() {
         onSuccess: (progress, { tourName }, userId) => {
             const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
             if (!currentUser || currentUser.id !== userId) {
+                return;
+            }
+
+            const storedProgress = currentUser.product_tours?.[tourName];
+            if (
+                storedProgress &&
+                (storedProgress.version > progress.version ||
+                    (storedProgress.version === progress.version && storedProgress.status === ProductTourStatus.Completed))
+            ) {
                 return;
             }
 

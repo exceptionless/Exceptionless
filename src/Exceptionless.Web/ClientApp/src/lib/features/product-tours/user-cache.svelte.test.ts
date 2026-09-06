@@ -29,6 +29,22 @@ describe('guided-tour user cache concurrency', () => {
         queryClient.setQueryData(queryKeys.me(), user('first-user'));
     });
 
+    it.each([{ status: 1, version: 1 }, { status: 2, version: 2 }])('accepts forward progress: %o', async (progress) => {
+        // Arrange
+        queryClient.setQueryData(queryKeys.me(), {
+            ...user('first-user'),
+            product_tours: { 'app-overview': { status: 2, version: 1 } }
+        });
+        mocks.putJSON.mockResolvedValue({ data: progress, ok: true });
+
+        // Act
+        await putCurrentUserProductTour().mutateAsync({ progress, tourName: 'app-overview' });
+
+        // Assert
+        expect(queryClient.getQueryData<ViewCurrentUser>(queryKeys.me())?.product_tours?.['app-overview']).toEqual(progress);
+        expect(queryClient.getQueryData<ViewCurrentUser>(queryKeys.id('first-user'))?.product_tours?.['app-overview']).toEqual(progress);
+    });
+
     it.each([false, true])('applies delayed completion only to its original account (account changed: %s)', async (changeAccount) => {
         // Arrange
         const progress: ProductTourProgress = { status: 1, version: 1 };
@@ -48,6 +64,25 @@ describe('guided-tour user cache concurrency', () => {
             ...currentUser,
             product_tours: changeAccount ? {} : { 'app-overview': progress }
         });
+    });
+    it.each([
+        { status: 1, version: 1 },
+        { status: 2, version: 2 }
+    ])('preserves newer cached progress when an older response arrives: %o', async (stored) => {
+        // Arrange
+        const progress: ProductTourProgress = { status: 2, version: 1 };
+        const request = Promise.withResolvers<{ data: ProductTourProgress; ok: boolean }>();
+        mocks.putJSON.mockReturnValue(request.promise);
+        const pending = putCurrentUserProductTour().mutateAsync({ progress, tourName: 'app-overview' });
+        await vi.waitFor(() => expect(mocks.putJSON).toHaveBeenCalledOnce());
+        queryClient.setQueryData(queryKeys.me(), { ...user('first-user'), product_tours: { 'app-overview': stored } });
+
+        // Act
+        request.resolve({ data: progress, ok: true });
+        await pending;
+
+        // Assert
+        expect(queryClient.getQueryData<ViewCurrentUser>(queryKeys.me())?.product_tours?.['app-overview']).toEqual(stored);
     });
 });
 
