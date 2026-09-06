@@ -435,6 +435,30 @@
   },
   {
     "method": "GET",
+    "route": "/api/v2/admin/migrations/reruns/{operationId}",
+    "displayName": "HTTP: GET api/v2/admin/migrations/reruns/{operationId}",
+    "tags": [],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "POST",
+    "route": "/api/v2/admin/migrations/{version:int}/rerun",
+    "displayName": "HTTP: POST api/v2/admin/migrations/{version:int}/rerun",
+    "tags": [],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
     "route": "/api/v2/admin/oauth-applications",
     "displayName": "HTTP: GET api/v2/admin/oauth-applications",
     "tags": [],

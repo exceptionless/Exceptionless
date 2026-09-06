@@ -2,6 +2,7 @@ using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
+using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Queues.Models;
@@ -10,6 +11,7 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Api.Messages;
+using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models.Admin;
 using Foundatio.Jobs;
@@ -37,6 +39,7 @@ public class AdminHandler(
     BillingManager billingManager,
     BillingPlans plans,
     IMigrationStateRepository migrationStateRepository,
+    MigrationRerunService migrationRerunService,
     SampleDataService sampleDataService,
     TimeProvider timeProvider,
     ILoggerFactory loggerFactory)
@@ -148,9 +151,18 @@ public class AdminHandler(
                 break;
         }
 
+        var rerunnableMigrationIds = migrationRerunService.GetRerunnableMigrationIds();
         var states = migrationStates
             .OrderByDescending(s => s.Version)
             .ThenByDescending(s => s.StartedUtc)
+            .Select(state => new MigrationStateResponse(
+                state.Id,
+                state.MigrationType,
+                state.Version,
+                state.StartedUtc,
+                state.CompletedUtc,
+                state.ErrorMessage,
+                state.CompletedUtc.HasValue && rerunnableMigrationIds.Contains(state.Id)))
             .ToArray();
 
         int currentVersion = states
@@ -160,6 +172,70 @@ public class AdminHandler(
             .Max();
 
         return new MigrationsResponse(currentVersion, states);
+    }
+
+    public async Task<Result<WorkInProgressResult>> Handle(AdminRerunMigration message)
+    {
+        string migrationId = message.Version.ToString();
+        string expectedConfirmation = $"RERUN {message.Version}";
+        if (!String.Equals(message.Confirmation?.Trim(), expectedConfirmation, StringComparison.Ordinal))
+            return Result.Invalid(ValidationError.Create("confirmation", $"Enter '{expectedConfirmation}' to confirm the migration rerun."));
+
+        try
+        {
+            var operation = await migrationRerunService.QueueAsync(
+                migrationId,
+                MigrationRerunSource.UserInterface,
+                message.Context.Request.GetUser().Id,
+                message.Context.RequestAborted);
+            try
+            {
+                await workItemQueue.EnqueueAsync(new RerunMigrationWorkItem { OperationId = operation.Id });
+            }
+            catch (Exception ex)
+            {
+                await migrationRerunService.FailQueuedOperationAsync(operation.Id, ex);
+                throw;
+            }
+
+            return new WorkInProgressResult([operation.Id]);
+        }
+        catch (KeyNotFoundException)
+        {
+            return Result.NotFound($"Migration '{migrationId}' was not found.");
+        }
+        catch (MigrationRerunAlreadyActiveException ex)
+        {
+            return Result.Conflict(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Result.Invalid(ValidationError.Create("version", ex.Message));
+        }
+    }
+
+    public async Task<Result<MigrationRerunOperationResponse>> Handle(GetAdminMigrationRerun message)
+    {
+        var operation = await migrationRerunService.GetOperationAsync(message.OperationId);
+        return operation is null
+            ? Result.NotFound("Migration rerun operation not found.")
+            : ToResponse(operation);
+    }
+
+    private static MigrationRerunOperationResponse ToResponse(MigrationRerunOperation operation)
+    {
+        return new MigrationRerunOperationResponse(
+            operation.Id,
+            operation.MigrationId,
+            operation.Version,
+            operation.Source.ToString(),
+            operation.Status.ToString(),
+            operation.RequestedByUserId,
+            operation.RequestedUtc,
+            operation.StartedUtc,
+            operation.CompletedUtc,
+            operation.AttemptCount,
+            operation.ErrorMessage);
     }
 
     public Task<Result<object>> Handle(GetAdminEcho message)

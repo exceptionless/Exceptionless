@@ -10,6 +10,7 @@ using Exceptionless.Core.Geo;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Mail;
+using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Plugins;
@@ -144,6 +145,7 @@ public class Bootstrapper
         services.AddSingleton<IEventRepository, EventRepository>();
         services.AddSingleton<IMigrationStateRepository, MigrationStateRepository>();
         services.AddSingleton<MigrationManager>();
+        services.AddSingleton<MigrationRerunService>();
         services.AddSingleton<MigrationIndex>(s => s.GetRequiredService<ExceptionlessElasticConfiguration>().Migrations);
         services.AddSingleton<IOrganizationRepository, OrganizationRepository>();
         services.AddSingleton<IOAuthApplicationRepository, OAuthApplicationRepository>();

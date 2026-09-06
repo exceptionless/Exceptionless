@@ -1,18 +1,21 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Api.Handlers;
+using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Models.Admin;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Migrations;
 using Foundatio.Repositories.Utility;
 using Foundatio.Storage;
 using Xunit;
@@ -904,6 +907,76 @@ public class AdminEndpointTests : IntegrationTestsBase
 
         // Assert
         Assert.Equal("7.4s", duration);
+    }
+
+    [Fact]
+    public async Task RerunMigrationAsync_AsGlobalAdmin_QueuesSupportedCompletedMigration()
+    {
+        // Arrange
+        var migrationStateRepository = GetService<IMigrationStateRepository>();
+        await migrationStateRepository.AddAsync(new MigrationState
+        {
+            Id = "5",
+            Version = 5,
+            MigrationType = MigrationType.VersionedAndResumable,
+            StartedUtc = DateTime.UtcNow.AddMinutes(-1),
+            CompletedUtc = DateTime.UtcNow
+        });
+
+        // Act
+        var result = await SendRequestAsAsync<WorkInProgressResult>(request => request
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "migrations", "5", "rerun")
+            .Content(new RerunMigrationRequest("RERUN 5"))
+            .StatusCodeShouldBeAccepted());
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Single(result.Workers);
+        var operation = await GetService<MigrationRerunService>().GetOperationAsync(result.Workers[0]);
+        Assert.NotNull(operation);
+        Assert.Equal(MigrationRerunStatus.Queued, operation.Status);
+        Assert.Equal(MigrationRerunSource.UserInterface, operation.Source);
+        Assert.False(String.IsNullOrWhiteSpace(operation.RequestedByUserId));
+        var status = await SendRequestAsAsync<MigrationRerunOperationResponse>(request => request
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "migrations", "reruns", operation.Id)
+            .StatusCodeShouldBeOk());
+        Assert.NotNull(status);
+        Assert.Equal("Queued", status.Status);
+
+        var migrations = await SendRequestAsAsync<MigrationsResponse>(request => request
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "migrations")
+            .StatusCodeShouldBeOk());
+        Assert.NotNull(migrations);
+        Assert.True(Assert.Single(migrations.States, state => state.Id == "5").CanRerun);
+
+        var queueStats = await _workItemQueue.GetQueueStatsAsync();
+        Assert.Equal(1, queueStats.Enqueued);
+    }
+
+    [Fact]
+    public Task RerunMigrationAsync_WithInvalidConfirmation_ReturnsValidationError()
+    {
+        return SendRequestAsync(request => request
+            .Post()
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "migrations", "5", "rerun")
+            .Content(new RerunMigrationRequest("5"))
+            .StatusCodeShouldBeUnprocessableEntity());
+    }
+
+    [Fact]
+    public Task RerunMigrationAsync_AsNonAdmin_ReturnsForbidden()
+    {
+        return SendRequestAsync(request => request
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("admin", "migrations", "5", "rerun")
+            .Content(new RerunMigrationRequest("RERUN 5"))
+            .StatusCodeShouldBeForbidden());
     }
 
     [Fact]
