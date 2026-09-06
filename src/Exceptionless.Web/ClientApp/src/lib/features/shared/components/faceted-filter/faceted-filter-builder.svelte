@@ -28,7 +28,7 @@
 
     const CREATE_KEYWORD_FILTER_COMMAND_ITEM = 'CREATE_KEYWORD_FILTER_COMMAND_ITEM';
     let open = $state(false);
-    let lastOpenFilterId = $state<string>();
+    let lastOpenFilterKey = $state<string>();
     let search = $state('');
     let showHiddenFilters = $state(false);
 
@@ -37,6 +37,10 @@
     let facets: FacetedFilter<IFilter>[] = $state([]);
 
     $effect.pre(() => {
+        if (facets.some((facet) => facet.filter.key === lastOpenFilterKey) && !filters.some((filter) => filter.key === lastOpenFilterKey)) {
+            lastOpenFilterKey = undefined;
+        }
+
         if (builderContext.size === 0) {
             facets = [];
             return;
@@ -51,7 +55,7 @@
 
                 const f = builder.create(filter);
                 // Reuse existing facet to preserve open state and avoid component recreation
-                const existing = facets.find((facet) => facet.filter.id === f.id);
+                const existing = facets.find((facet) => facet.filter.key === f.key);
                 if (existing) {
                     existing.filter = f;
                     existing.component = builder.component;
@@ -62,15 +66,15 @@
                 return {
                     component: builder.component,
                     filter: f,
-                    open: lastOpenFilterId === f.id,
+                    open: lastOpenFilterKey === f.key,
                     title: builder.title
                 };
             })
             .filter((f): f is FacetedFilter<IFilter> => !!f);
 
         // Only replace the array if the set of facets actually changed
-        const idsMatch = newFacets.length === facets.length && newFacets.every((f, i) => f.filter.id === facets[i]?.filter.id);
-        if (!idsMatch) {
+        const keysMatch = newFacets.length === facets.length && newFacets.every((f, i) => f.filter.key === facets[i]?.filter.key);
+        if (!keysMatch) {
             facets = newFacets;
         }
     });
@@ -105,20 +109,20 @@
                 showHiddenFilters = true;
             }
 
-            const existingFacet = facets.find((facet) => facet.filter.id === existingFilter.id);
+            const existingFacet = facets.find((facet) => facet.filter.key === existingFilter.key);
             if (existingFacet) {
                 existingFacet.open = true;
             }
 
             open = false;
-            lastOpenFilterId = existingFilter.id;
+            lastOpenFilterKey = existingFilter.key;
             return;
         }
 
         changed(filter);
 
         open = false;
-        lastOpenFilterId = filter.id;
+        lastOpenFilterKey = filter.key;
     }
 
     function filterChanged(filter: IFilter) {
@@ -126,15 +130,15 @@
     }
 
     function filterRemoved(filter: IFilter) {
-        if (lastOpenFilterId === filter.id) {
-            lastOpenFilterId = undefined;
+        if (lastOpenFilterKey === filter.key) {
+            lastOpenFilterKey = undefined;
         }
 
         remove(filter);
     }
 
     function onRemoveAll() {
-        lastOpenFilterId = undefined;
+        lastOpenFilterKey = undefined;
         remove();
     }
 
@@ -165,7 +169,7 @@
         if (existingKeywordFilter) {
             open = false;
             search = '';
-            lastOpenFilterId = existingKeywordFilter.id;
+            lastOpenFilterKey = existingKeywordFilter.key;
             return;
         }
 
@@ -177,7 +181,7 @@
 
             open = false;
             search = '';
-            lastOpenFilterId = filter.id;
+            lastOpenFilterKey = filter.key;
         }
     }
 
@@ -198,7 +202,7 @@
     {@render children()}
 {/if}
 
-{#each visibleFacets as facet (facet.filter.id)}
+{#each visibleFacets as facet (facet.filter.key)}
     {@const Facet = facet.component}
     <div class:opacity-70={facet.filter.hidden}>
         <Facet
@@ -208,7 +212,7 @@
             bind:open={
                 () => facet.open,
                 (isOpen) => {
-                    lastOpenFilterId = isOpen ? facet.filter.id : undefined;
+                    lastOpenFilterKey = isOpen ? facet.filter.key : undefined;
                     facet.open = isOpen;
                 }
             }
