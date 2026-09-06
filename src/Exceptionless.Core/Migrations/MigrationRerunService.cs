@@ -99,7 +99,7 @@ public sealed class MigrationRerunService(
     {
         var operation = await GetOperationAsync(operationId)
             ?? throw new KeyNotFoundException($"Migration rerun operation '{operationId}' was not found.");
-        if (operation.Status is MigrationRerunStatus.Completed or MigrationRerunStatus.Failed or MigrationRerunStatus.Cancelled)
+        if (IsTerminal(operation.Status))
         {
             return operation;
         }
@@ -156,9 +156,20 @@ public sealed class MigrationRerunService(
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            operation.Status = MigrationRerunStatus.Cancelled;
-            operation.CompletedUtc = timeProvider.GetUtcNow().UtcDateTime;
-            await SaveOperationAsync(operation);
+            if (operation.Source == MigrationRerunSource.CommandLine)
+            {
+                operation.Status = MigrationRerunStatus.Cancelled;
+                operation.CompletedUtc = timeProvider.GetUtcNow().UtcDateTime;
+                await SaveOperationAsync(operation);
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "Migration rerun {MigrationRerunOperationId} for migration {MigrationId} was interrupted and will resume when the work item is redelivered",
+                    operation.Id,
+                    operation.MigrationId);
+            }
+
             throw;
         }
         catch (Exception ex)
@@ -177,7 +188,10 @@ public sealed class MigrationRerunService(
         }
         finally
         {
-            await cache.RemoveAsync(GetActiveOperationCacheKey(operation.MigrationId));
+            if (IsTerminal(operation.Status))
+            {
+                await cache.RemoveAsync(GetActiveOperationCacheKey(operation.MigrationId));
+            }
         }
     }
 
@@ -204,6 +218,9 @@ public sealed class MigrationRerunService(
     {
         return cache.SetAsync(GetOperationCacheKey(operation.Id), operation, OperationRetention);
     }
+
+    private static bool IsTerminal(MigrationRerunStatus status)
+        => status is MigrationRerunStatus.Completed or MigrationRerunStatus.Failed or MigrationRerunStatus.Cancelled;
 
     private static string GetActiveOperationCacheKey(string migrationId) => $"migration-rerun:active:{migrationId}";
     private static string GetOperationCacheKey(string operationId) => $"migration-rerun:operation:{operationId}";

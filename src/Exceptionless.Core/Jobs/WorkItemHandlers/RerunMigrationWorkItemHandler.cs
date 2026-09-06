@@ -26,6 +26,13 @@ public sealed class RerunMigrationWorkItemHandler(
         }
         catch (Exception ex)
         {
+            var operation = await migrationRerunService.GetOperationAsync(workItem.OperationId);
+            if (operation?.Status != MigrationRerunStatus.Failed)
+            {
+                Log.LogWarning(ex, "Migration rerun operation {MigrationRerunOperationId} was interrupted before a failure was recorded and will be retried", workItem.OperationId);
+                throw;
+            }
+
             Log.LogWarning(ex, "Migration rerun operation {MigrationRerunOperationId} failed and will not be retried automatically", workItem.OperationId);
         }
     }
