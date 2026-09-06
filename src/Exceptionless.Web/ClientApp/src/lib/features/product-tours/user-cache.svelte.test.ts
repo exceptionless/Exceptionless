@@ -29,7 +29,10 @@ describe('guided-tour user cache concurrency', () => {
         queryClient.setQueryData(queryKeys.me(), user('first-user'));
     });
 
-    it.each([{ status: 1, version: 1 }, { status: 2, version: 2 }])('accepts forward progress: %o', async (progress) => {
+    it.each([
+        { status: 1, version: 1 },
+        { status: 2, version: 2 }
+    ])('accepts forward progress: %o', async (progress) => {
         // Arrange
         queryClient.setQueryData(queryKeys.me(), {
             ...user('first-user'),
