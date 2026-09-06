@@ -2,17 +2,19 @@
 
 Status: proposed; no production changes have been made. Inventory observations below are from September 6, 2026. This is an operator-run migration, not an application-startup migration.
 
+**Stack PR #2511 is an experiment only, not the production implementation or a planned production release.** Its queries, endpoint changes, and lookup schema are proof-of-concept evidence, not an approved architecture. The proper stack/event query refactor still needs to be designed and implemented in the Foundatio.Repositories PR, then integrated into Exceptionless through a separately reviewed application change. Neither the Elasticsearch 9 server upgrade nor index-format maintenance depends on shipping #2511.
+
 ## Separate the three changes
 
 | Change | Release boundary | Required data work |
 | --- | --- | --- |
 | Run Elasticsearch 9 with existing application queries | Base PR [#2416](https://github.com/exceptionless/Exceptionless/pull/2416) alone | Resolve unsupported pre-8 indexes before starting 9; do not rewrite all 8-created indexes |
 | Recreate indexes in the current server's index format | Explicit maintenance after the server upgrade stabilizes | Selected retained indexes, independently of application schema versions |
-| Enable ES\|QL stack/event filtering and cursor-based stack summaries | Experimental PR [#2511](https://github.com/exceptionless/Exceptionless/pull/2511), separately deployed | Convert the canonical stack index to lookup mode, validate mixed-generation event sources, and benchmark production-scale queries |
+| Properly refactor stack/event queries and stack pagination | Future repositories-led implementation and separately reviewed Exceptionless integration; [#2511](https://github.com/exceptionless/Exceptionless/pull/2511) is experimental evidence only | Determine index/migration requirements from the approved repository design; validate mixed-generation event sources and production-scale queries |
 
 An Elasticsearch server version, `index.version.created`, the repository's schema version, and `index.mode` are different things. A force merge or server restart is not an index recreation. Do not bump the daily event schema version just to trigger a cluster-wide rewrite.
 
-The base PR retains the application query/index schema behavior and the Elasticsearch 8 client compatibility bridge; it must run independently of the experimental query services. There is no application-level legacy/JOIN switch. Deploy the base application release first, then the JOIN release only after its prerequisites pass.
+The base PR retains the application query/index schema behavior and the Elasticsearch 8 client compatibility bridge; it must run independently of the experimental query services. There is no application-level legacy/JOIN switch. Deploy the base application release independently. Do not deploy the experiment; any future query release must use the approved repositories implementation and satisfy its own migration and validation gates.
 
 Elastic permits the supported previous-major index format on the next major. The documented LOOKUP JOIN constraint applies to the lookup-side index, not a blanket requirement to recreate every source event index. Confirm the exact expression joins used by the experiment against real 8-created event partitions on the target server before treating this as a production guarantee.
 
@@ -70,7 +72,7 @@ Measure normal and peak ingestion, search latency, disk growth, merge I/O, queue
 3. Reindex any writable pre-8 application indexes **on Elasticsearch 8** before starting 9. Delete expired data only under the existing retention policy and explicit operator approval. Archive/read-only options are not replacements for writable Exceptionless indexes. Let Elastic's tooling own system-index migrations.
 4. Restore a current snapshot to an isolated rehearsal cluster with matching topology/settings. Verify restore permissions, encryption keys, repository access, and recovery time. Restrict network access and apply production-data handling controls.
 5. Run the base application on the rehearsed 8 cluster, upgrade that cluster to the target 9 patch, and rerun ingest, event/stack queries, stack status changes, jobs, saved views, aliases, retention, and deletion checks. Include existing records with old/missing fields and all retained creation versions.
-6. Separately create a lookup stack index in the rehearsal environment and test the experimental expression JOIN against **unchanged 8-created event indexes**. Compare status/deleted-stack filtering, tenant isolation, counts/charts, date boundaries, forward/backward cursors, and hydrated result identity. This is a correctness gate, not a throughput benchmark.
+6. As separate experimental research, create a lookup stack index in the rehearsal environment and test the experimental expression JOIN against **unchanged 8-created event indexes**. Compare status/deleted-stack filtering, tenant isolation, counts/charts, date boundaries, forward/backward cursors, and hydrated result identity. These findings inform the repositories PR; they neither approve the experiment for production nor block the independent base upgrade. Repeat correctness and performance validation against the eventual repository implementation.
 
 No production load tests or reindex experiments are authorized by this plan.
 
@@ -80,7 +82,7 @@ No production load tests or reindex experiments are authorized by this plan.
 2. Approve rollback RPO/RTO and the treatment of writes accepted after the backup boundary. Take a fresh successful snapshot and verify the restore procedure. If replay of post-snapshot events is required, demonstrate durable queue retention/replay and idempotency first; do not assume the current pipeline can recreate every stack/status mutation.
 3. Upgrade the monitoring cluster and supporting components in the supported order before the monitored production cluster where required. Keep Kibana matched to its Elasticsearch version. Follow the ECK rolling-upgrade procedure; do not hand-delete pods or change shard allocation independently of the operator without an approved runbook.
 4. Upgrade one production node at a time. Because all four nodes have the same roles, confirm voting quorum and recovery capacity with one node unavailable. Wait for each node's shard recovery and health before proceeding. Halt on sustained unassigned shards, disk watermark pressure, write/search errors, queue growth, or latency outside the agreed SLO.
-5. Validate the base application against the upgraded cluster and keep the JOIN release undeployed. Do not run compatibility reindexing during this initial stabilization window.
+5. Validate the base application against the upgraded cluster with its existing queries. Do not deploy #2511 or run compatibility reindexing during this initial stabilization window.
 
 Rollback is **not** a downgrade of the upgraded disks or reverting the ECK version field. Recover on an older-version cluster from the pre-upgrade snapshot, with the approved replay/data-loss procedure. Preserve that recovery path until the upgrade has been accepted.
 
@@ -100,6 +102,8 @@ Important constraints of that implementation:
 
 Before adoption, finish review/release of #307, consume the approved package in a separate maintenance change, and test its failure/recovery cases with Exceptionless. Do not hide it in `ConfigureIndexesAsync` or add an unconditional global schema bump.
 
+The reviewed #307 scope is index-format maintenance. This plan does not claim that it already contains the proper stack query refactor. That query design and implementation remain work to resolve in the repositories PR, independently of the reindex primitive.
+
 For each candidate:
 
 1. Start with a small representative partition, then a larger/high-field-count partition. Measure sustained copy throughput **with** the intended production workload and throttle on the rehearsal cluster.
@@ -111,14 +115,18 @@ For each candidate:
 
 Sizing worksheet: `copy duration ≈ primary source bytes / measured effective source-byte throughput`, plus refresh, validation, replica recovery, and cutover. Alternatively use exact documents divided by measured documents/second for matching document distributions. Estimate the **write-pause duration**, queue accumulation (`arrival rate × pause duration`), and catch-up time separately. Do not estimate from raw disk bandwidth or promise a universal 2× free-space rule.
 
-## Phase 4: canonical stack lookup conversion and JOIN rollout
+## Phase 4: future repositories-led query refactor, not deployment of #2511
 
-The experiment defines the canonical stack schema as version 2 with `index.mode=lookup` and one primary shard. Do not deploy it and allow ordinary startup to initiate an unplanned production schema migration.
+First settle the production query design in the Foundatio.Repositories PR: repository-level filtering/JOIN composition, grouped stack queries and counts, sorting/cursor semantics, result contracts, and index lifecycle support. Exceptionless should consume that capability rather than promote the experiment's application-side ES|QL service into the production architecture. Retain the intended endpoint ownership: stacks come from stacks endpoints, events from events endpoints, without application-side filtering joins.
+
+Review and release that repository implementation, then create a separately reviewed Exceptionless integration and migration plan. #2511 is only a source of feasibility evidence and regression scenarios. Passing its tests is not approval to merge or deploy it as the production refactor.
+
+The experiment defines stack schema version 2 with `index.mode=lookup` and one primary shard. These are provisional choices, not production migration instructions. The following requirements apply **only if the approved repositories design retains that lookup topology**; revise them if the design changes. Do not initiate this conversion through ordinary startup.
 
 1. Measure the current stack primary size, document cardinality, growth, update rate, largest tenant, and heap needed by representative joins. The single lookup primary is a hard capacity/throughput constraint; replicas can distribute reads but do not shard primary writes. Establish whether this design fits the forecast, not just today's sample.
-2. Use a dedicated, reviewed schema-conversion maintenance operation that creates the experiment's exact lookup mapping/settings and copies existing stack documents without changing IDs or relationships. It must handle partial copies, missing/default fields, retained aliases, and rollback. #307's format upgrade is not this operation. Avoid copying stacks twice merely to reach current format and then lookup mode.
+2. Use a dedicated, reviewed schema-conversion maintenance operation that creates the approved repository implementation's mapping/settings and copies existing stack documents without changing IDs or relationships. It must handle partial copies, missing/default fields, retained aliases, and rollback. #307's currently reviewed format upgrade is not this operation. Avoid copying stacks twice merely to reach current format and then lookup mode.
 3. Pause ingestion consumers and all stack-mutating APIs/jobs/maintenance, drain in-flight writes, snapshot, copy and verify, then perform an explicit atomic alias cutover. Rehearse full outage/recovery behavior; do not assume the existing generic schema reindexer's catch-up pass proves no missed deletes or concurrent status changes.
-4. Before allowing traffic, verify the actual lookup mode, mapping, one-primary setting, complete stack IDs/counts, aliases, replica health, and existing-record semantics. Deploy the experimental application only after migration success. Keep the base release available as an application rollback candidate, but rehearse its writes against the new mapping; application rollback does not revert the index conversion.
+4. Before allowing traffic, verify the actual lookup mode, mapping, one-primary setting, complete stack IDs/counts, aliases, replica health, and existing-record semantics. Deploy only the separately approved repository-backed application implementation after migration success, never the experimental PR. Keep the base release available as an application rollback candidate, but rehearse its writes against the new mapping; application rollback does not revert the index conversion.
 5. Benchmark representative tenant/time-range/skew combinations for event status filtering and stack grouping/count/charts/paging. Capture p50/p95/p99 latency, CPU, heap/breakers, I/O, concurrent ingestion impact, and cursor correctness under changes. Cursor pagination does not remove the cost of filtering/grouping the qualifying event population, and it is not a point-in-time snapshot.
 6. Require correctness and SLO acceptance before the JOIN production rollout. If the canonical one-primary stack index does not fit, stop and redesign the lookup topology; do not deploy on the strength of tiny local benchmarks.
 
@@ -128,7 +136,7 @@ The experiment defines the canonical stack schema as version 2 with `index.mode=
 - Approved source/target patches, image digests, ECK/component compatibility, and rehearsal evidence.
 - Retention-based completion deadline versus retained event partitions that must be copied.
 - Additional capacity and acceptable per-index/global write outage, including queue/replay limits.
-- Adoption of #307 plus a separate reviewed lookup-mode migration implementation.
+- Adoption of #307's reindex capability where needed; completion of the proper stack/event query refactor in the repositories PR, followed by separately reviewed Exceptionless integration and any required schema migration. #2511 is not a production deliverable.
 - Restore-tested RPO/RTO, cutover/abort thresholds, and named operator/approval owner for each stage.
 
 References: Elastic's [upgrade preparation](https://www.elastic.co/docs/deploy-manage/upgrade/prepare-to-upgrade), [rolling upgrade and rollback guidance](https://www.elastic.co/docs/deploy-manage/upgrade/deployment-or-cluster/elasticsearch), [LOOKUP JOIN constraints](https://www.elastic.co/docs/reference/query-languages/esql/esql-lookup-join), and [snapshot compatibility](https://www.elastic.co/docs/deploy-manage/tools/snapshot-and-restore).
