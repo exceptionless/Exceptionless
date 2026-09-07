@@ -18,8 +18,6 @@ import type {
     ViewUser
 } from './models';
 
-import { ProductTourStatus } from './models';
-
 export async function invalidateUserQueries(queryClient: QueryClient, message: WebSocketMessageValue<'UserChanged'>) {
     const { id } = message;
     if (id) {
@@ -279,7 +277,7 @@ export function postEmailAddress(request: PostEmailAddressRequest) {
 
 export function putCurrentUserProductTour() {
     const queryClient = useQueryClient();
-    return createMutation<ProductTourProgress, ProblemDetails, PutCurrentUserProductTourRequest, string | undefined>(() => ({
+    return createMutation<ProductTourProgress, ProblemDetails, PutCurrentUserProductTourRequest>(() => ({
         enabled: () => !!accessToken.current,
         mutationFn: async ({ progress, tourName }) => {
             const client = useFetchClient();
@@ -292,31 +290,10 @@ export function putCurrentUserProductTour() {
             return response.data!;
         },
         mutationKey: queryKeys.productTour(undefined),
-        onMutate: () => queryClient.getQueryData<ViewCurrentUser>(queryKeys.me())?.id,
-        onSuccess: (progress, { tourName }, userId) => {
-            const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
-            if (!currentUser || currentUser.id !== userId) {
-                return;
-            }
-
-            const storedProgress = currentUser.product_tours?.[tourName];
-            if (
-                storedProgress &&
-                (storedProgress.version > progress.version ||
-                    (storedProgress.version === progress.version && storedProgress.status === ProductTourStatus.Completed))
-            ) {
-                return;
-            }
-
-            const updatedUser = {
-                ...currentUser,
-                product_tours: {
-                    ...currentUser.product_tours,
-                    [tourName]: progress
-                }
-            };
-            queryClient.setQueryData(queryKeys.me(), updatedUser);
-            queryClient.setQueryData(queryKeys.id(currentUser.id), updatedUser);
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({
+                queryKey: queryKeys.type
+            });
         }
     }));
 }
