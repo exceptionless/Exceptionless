@@ -13,13 +13,6 @@ IResourceBuilder<ParameterResource>? assistantApiKey = !String.IsNullOrWhiteSpac
 bool servicesOnly = HasArgument("--services-only");
 bool ciE2E = HasArgument("--ci-e2e");
 bool includeDevTools = !ciE2E;
-int elasticsearchPort = GetPort("Elasticsearch:Port", 9200);
-string elasticsearchImageTag = builder.Configuration["Elasticsearch:ImageTag"] ?? ElasticsearchContainerImageTags.Tag;
-string kibanaImageTag = builder.Configuration["Elasticsearch:KibanaImageTag"] ?? ElasticsearchContainerImageTags.Tag;
-string elasticsearchContainerName = builder.Configuration["Elasticsearch:ContainerName"] ?? "Exceptionless-Elasticsearch";
-string elasticsearchDataVolume = builder.Configuration["Elasticsearch:DataVolume"] ?? "exceptionless.data.v1";
-string kibanaContainerName = builder.Configuration["Elasticsearch:KibanaContainerName"] ?? "Exceptionless-Kibana";
-int kibanaPort = GetPort("Elasticsearch:KibanaPort", 5601);
 int oldAppHttpPort = worktreePorts?.OldAppHttp ?? 7120;
 int oldAppPort = worktreePorts?.OldAppHttps ?? 7121;
 int oldAppLiveReloadPort = worktreePorts?.OldAppLiveReload ?? 35729;
@@ -31,9 +24,8 @@ const int DefaultApiHttpsPort = 7111;
 string exceptionlessServerUrl = worktreePorts?.ApiHttpsUrl ?? $"https://api-ex.dev.localhost:{DefaultApiHttpsPort}";
 const string SharedEmailConnectionString = "smtp://localhost:1026";
 
-var elastic = builder.AddElasticsearch("Elasticsearch", port: elasticsearchPort)
-    .WithImageTag(elasticsearchImageTag)
-    .WithDataVolume(elasticsearchDataVolume)
+var elastic = builder.AddElasticsearch("Elasticsearch", port: 9200)
+    .WithDataVolume("exceptionless.data.v1")
     .WithEndpointProxySupport(false);
 
 var storage = builder.AddAzureStorage("Storage")
@@ -78,17 +70,15 @@ var mail = builder.AddContainer("Mail", "axllent/mailpit")
 var ownedElastic = elastic;
 elastic = ownedElastic
     .WithLifetime(ContainerLifetime.Persistent)
-    .WithContainerName(elasticsearchContainerName);
+    .WithContainerName("Exceptionless-Elasticsearch");
 
 if (!servicesOnly && includeDevTools)
 {
     elastic = elastic.WithKibana(b => b
-        .WithImageTag(kibanaImageTag)
         .WithLifetime(ContainerLifetime.Persistent)
         .WithEndpointProxySupport(false)
-        .WithContainerName(kibanaContainerName)
-        .WithParentRelationship(ownedElastic),
-        port: kibanaPort);
+        .WithContainerName("Exceptionless-Kibana")
+        .WithParentRelationship(ownedElastic));
 }
 
 var ownedCache = cache;
@@ -252,15 +242,3 @@ if (!servicesOnly)
 await builder.Build().RunAsync();
 
 bool HasArgument(string name) => args.Any(arg => StringComparer.OrdinalIgnoreCase.Equals(arg, name) || StringComparer.OrdinalIgnoreCase.Equals(arg, name.TrimStart('-')));
-
-int GetPort(string key, int defaultValue)
-{
-    string? value = builder.Configuration[key];
-    if (String.IsNullOrWhiteSpace(value))
-        return defaultValue;
-
-    if (!Int32.TryParse(value, out int port) || port is < 1 or > 65535)
-        throw new InvalidOperationException($"Configuration value '{key}' must be a valid TCP port.");
-
-    return port;
-}
