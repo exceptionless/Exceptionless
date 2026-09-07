@@ -105,9 +105,8 @@
         closeOverlays: closeProductTourOverlays,
         getGuidedToursTarget: () => sidebarUserComponent?.getGuidedToursTarget(),
         openCatalog: () => openGuidedTours('catalog'),
-        showGuidedToursMenu: async () => {
+        showGuidedToursMenu: () => {
             closeProductTourOverlays();
-            await tick();
             sidebarUserComponent?.showGuidedTours();
         }
     });

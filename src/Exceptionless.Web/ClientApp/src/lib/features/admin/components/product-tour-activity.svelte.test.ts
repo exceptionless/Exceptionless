@@ -41,8 +41,6 @@ describe('ProductTourActivity', () => {
     it('makes exact daily counts keyboard accessible without relying on color', async () => {
         // Arrange
         render(ProductTourActivity, {
-            end: '2026-01-03T00:00:00Z',
-            start: '2026-01-01T00:00:00Z',
             tour: { ...tour, activity: [...tour.activity, { completed: 0, date_utc: '2026-01-02T00:00:00Z', dismissed: 0, shown: 0, started: 0 }] }
         });
         const chart = screen.getByRole('slider');
@@ -60,7 +58,7 @@ describe('ProductTourActivity', () => {
 
     it('labels invitation acceptance without a redundant started series', () => {
         // Act
-        render(ProductTourActivity, { end: '2026-02-01T00:00:00Z', tour: { ...tour, kind: ProductTourKind.Prompt } });
+        render(ProductTourActivity, { tour: { ...tour, kind: ProductTourKind.Prompt } });
 
         // Assert
         expect(screen.getByLabelText('Period totals').textContent).toContain('Accepted');
@@ -68,7 +66,7 @@ describe('ProductTourActivity', () => {
     });
     it('shows the chart without disclosures while preserving screen-reader access to values', () => {
         // Act
-        render(ProductTourActivity, { end: '2026-02-01T00:00:00Z', start: '2026-01-01T00:00:00Z', tour });
+        render(ProductTourActivity, { tour });
 
         // Assert
         expect(screen.getByLabelText(/Recorded guide activity/)).toBeTruthy();
@@ -86,7 +84,7 @@ describe('ProductTourActivity', () => {
         const empty = { ...tour, activity: [], completed: 0, start_sources: [], started: 0 };
 
         // Act
-        render(ProductTourActivity, { end: '2026-02-01T00:00:00Z', tour: empty });
+        render(ProductTourActivity, { tour: empty });
 
         // Assert
         expect(screen.getByText('No recorded activity in this period.')).toBeTruthy();

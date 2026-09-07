@@ -93,15 +93,17 @@
             }
         }
     });
-    const errorEventAvailability = $derived<ProductTourContext['errorEventAvailability']>(
-        !organizationId || !catalogOpen || errorEventsQuery.isPending
-            ? 'loading'
-            : errorEventsQuery.isError
-              ? 'error'
-              : (errorEventsQuery.data?.data?.length ?? 0) > 0
-                ? 'available'
-                : 'empty'
-    );
+    const errorEventAvailability = $derived.by((): ProductTourContext['errorEventAvailability'] => {
+        if (!organizationId || !catalogOpen || errorEventsQuery.isPending) {
+            return 'loading';
+        }
+
+        if (errorEventsQuery.isError) {
+            return 'error';
+        }
+
+        return errorEventsQuery.data?.data?.length ? 'available' : 'empty';
+    });
     const hostStateSettled = $derived(stateSettled && (!organizationId || projectsQuery.isSuccess || projectsQuery.isError));
     const context = $derived<ProductTourContext>({
         assistantAccess,
@@ -165,6 +167,7 @@
             } catch {
                 automaticSurface = undefined;
             }
+
             return;
         }
 
@@ -223,6 +226,7 @@
         if (!invitation) {
             return;
         }
+
         const version = invitation === 'app-welcome' ? WELCOME_VERSION : EXIE_ANNOUNCEMENT_VERSION;
         const impression = `${currentUser.id}:${invitation}:${version}`;
         if (lastTrackedImpression !== impression) {
@@ -236,6 +240,7 @@
         if (active?.tourName === 'app-overview' && active.checkpointName === 'help' && !(await actions.complete(active))) {
             return;
         }
+
         closeOverlays();
         catalogSource = source;
         catalogOpen = true;
@@ -245,6 +250,7 @@
         if (!currentUser) {
             return;
         }
+
         const item = getItem(name);
         if (!item.currentAvailability.available) {
             await openCatalog(source);
@@ -286,6 +292,7 @@
         if (progressMutation.isPending) {
             return false;
         }
+
         try {
             await progressMutation.mutateAsync({
                 progress: {
@@ -305,6 +312,7 @@
         if (!(await recordPreference('app-welcome', WELCOME_VERSION, ProductTourStatus.Completed))) {
             return;
         }
+
         automaticSurface = 'handled';
         void submitProductTourActivity('completed', 'app-welcome', WELCOME_VERSION, 'welcome');
         await startTour(recommended.name, 'welcome');
@@ -314,6 +322,7 @@
         if (!(await recordPreference('app-welcome', WELCOME_VERSION, ProductTourStatus.Completed))) {
             return;
         }
+
         automaticSurface = 'handled';
         void submitProductTourActivity('completed', 'app-welcome', WELCOME_VERSION, 'welcome');
         await openCatalog('catalog');
@@ -323,6 +332,7 @@
         if (!(await recordPreference('app-welcome', WELCOME_VERSION, ProductTourStatus.Dismissed))) {
             return;
         }
+
         automaticSurface = 'handled';
         void submitProductTourActivity('dismissed', 'app-welcome', WELCOME_VERSION, 'welcome');
     }
@@ -331,6 +341,7 @@
         if (!(await recordPreference('exie-announcement', EXIE_ANNOUNCEMENT_VERSION, ProductTourStatus.Completed))) {
             return;
         }
+
         automaticSurface = 'handled';
         void submitProductTourActivity('completed', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
         if (assistantAccess?.has_access) {
@@ -344,6 +355,7 @@
         if (!(await recordPreference('exie-announcement', EXIE_ANNOUNCEMENT_VERSION, ProductTourStatus.Dismissed))) {
             return;
         }
+
         automaticSurface = 'handled';
         void submitProductTourActivity('dismissed', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
     }

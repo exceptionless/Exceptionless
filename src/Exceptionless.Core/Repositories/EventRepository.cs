@@ -90,6 +90,17 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         if (utcStart.HasValue && utcEnd <= utcStart)
             throw new ArgumentOutOfRangeException(nameof(utcEnd), "The end date must be later than the start date.");
 
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
+        if (utcEnd > now)
+        {
+            utcEnd = now;
+        }
+
+        if (utcStart >= utcEnd)
+        {
+            return new ProductTourUsageResult([]);
+        }
+
         var sourcesByName = ProductTours.Definitions.Values
             .SelectMany(definition => CreateProductTourSources(definition.Name, definition.CurrentVersion))
             .ToDictionary(source => source.Raw, StringComparer.Ordinal);
@@ -122,7 +133,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
                     Convert.ToInt64(bucket.Aggregations.Sum($"sum_{countField}")?.Value ?? bucket.Total.GetValueOrDefault()),
                     bucket.Aggregations.Max<DateTime>($"max_{dateField}")?.Value,
                     (bucket.Aggregations.DateHistogram($"date_{dateField}")?.Buckets ?? [])
-                        .Where(period => period.Date < utcEnd)
+                        .Where(period => period.Date < utcEnd && (period.Date >= utcStart || period.Total > 0))
                         .Select(period => new ProductTourUsagePeriod(period.Date, Convert.ToInt64(period.Aggregations.Sum($"sum_{countField}")?.Value ?? period.Total.GetValueOrDefault())))
                         .ToArray())
                 : null)

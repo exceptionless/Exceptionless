@@ -2,7 +2,7 @@
     import type { ProductTourSummary } from '$generated/api';
 
     import Number from '$comp/formatters/number.svelte';
-    import * as Typography from '$comp/typography';
+    import { Muted, P } from '$comp/typography';
     import * as Chart from '$comp/ui/chart';
     import * as Table from '$comp/ui/table';
     import { formatDateLabel } from '$features/shared/dates';
@@ -10,12 +10,15 @@
     import { curveLinear } from 'd3-shape';
     import { type ChartState, LineChart, Points, Spline } from 'layerchart';
 
-    import { getProductTourActivity } from '../product-tour-usage';
-
-    let { end, start, tour }: { end: string; start?: null | string; tour: ProductTourSummary } = $props();
+    let { tour }: { tour: ProductTourSummary } = $props();
     const prompt = $derived(tour.kind === 'prompt');
     const keyboardHelpId = $props.id();
-    const data = $derived(getProductTourActivity(tour.activity ?? [], start, end));
+    const data = $derived(
+        tour.activity.map((period) => ({
+            ...period,
+            date: new Date(period.date_utc)
+        }))
+    );
     const config = $derived({
         completed: {
             color: 'color-mix(in srgb, var(--chart-1) var(--tour-chart-strength), black)',
@@ -91,7 +94,7 @@
 
 <div class="flex flex-col gap-4 [--tour-chart-strength:70%] dark:[--tour-chart-strength:100%]">
     {#if total === 0}
-        <Typography.Muted class="flex h-48 items-center justify-center">No recorded activity in this period.</Typography.Muted>
+        <Muted class="flex h-48 items-center justify-center">No recorded activity in this period.</Muted>
     {:else}
         <ul class="flex flex-wrap gap-x-4 gap-y-1 text-xs" aria-label="Period totals">
             {#each keys as key (key)}
@@ -162,9 +165,7 @@
             </LineChart>
         </Chart.Container>
         <div class="sr-only">
-            <Typography.P id={keyboardHelpId}
-                >Use Left and Right arrows to inspect dates, or Home and End to jump to the first and last date. Dates are UTC.</Typography.P
-            >
+            <P id={keyboardHelpId}>Use Left and Right arrows to inspect dates, or Home and End to jump to the first and last date. Dates are UTC.</P>
             <Table.Root aria-label="Guide activity by date">
                 <Table.Header
                     ><Table.Row

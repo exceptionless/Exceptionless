@@ -31,6 +31,10 @@ describe('product tour session', () => {
         JSON.stringify({ ...checkpoint, checkpointName: 'unknown-step' }),
         JSON.stringify({ ...checkpoint, source: 'unknown-source' }),
         JSON.stringify({ ...checkpoint, version: 0 }),
+        JSON.stringify({ ...checkpoint, version: Number.MAX_SAFE_INTEGER + 1 }),
+        JSON.stringify({ ...checkpoint, version: 1.5 }),
+        JSON.stringify({ ...checkpoint, checkpointName: 'navigation' }),
+        JSON.stringify({ ...checkpoint, tourName: '__proto__' }),
         JSON.stringify({ ...checkpoint, userId: 42 })
     ])('clears malformed or unknown stored state: %s', (value) => {
         sessionStorage.setItem('exceptionless.product-tour', value);

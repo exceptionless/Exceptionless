@@ -13,7 +13,6 @@
     }
 
     let { event }: Props = $props();
-    let advancedEventId = $state('');
 
     const actions = createProductTourActions();
     const firstDetailCheckpoint = 'stack-summary';
@@ -58,13 +57,8 @@
     });
 
     $effect(() => {
-        if (!event || event.id === advancedEventId) {
-            return;
-        }
-
-        advancedEventId = event.id;
         const active = checkpoint;
-        if (active?.checkpointName === 'choose-error' && hasErrorOrSimpleError(event)) {
+        if (active?.checkpointName === 'choose-error' && event && hasErrorOrSimpleError(event)) {
             productTourCheckpoint.advance(active, firstDetailCheckpoint);
         }
     });

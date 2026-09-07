@@ -86,6 +86,19 @@ describe('InvestigationDetailTour', () => {
         expect(screen.queryByRole('region', { name: 'Guide' })).toBeNull();
     });
 
+    it('advances an already-open error after selection and on a later guide run', async () => {
+        // Arrange
+        productTourCheckpoint.start('event-investigate', 'filter-errors', 'catalog', 'user', 1);
+        render(InvestigationDetailTour, { event });
+
+        // Act and assert
+        for (let run = 0; run < 2; run++) {
+            productTourCheckpoint.start('event-investigate', 'choose-error', 'catalog', 'user', 1);
+            await screen.findByText('Understand the grouped issue');
+            expect(productTourCheckpoint.current?.checkpointName).toBe('stack-summary');
+        }
+    });
+
     it('goes back through detail steps without reopening events or saving progress', async () => {
         // Arrange
         productTourCheckpoint.start('event-investigate', 'stack-triage', 'catalog', 'user', 1);

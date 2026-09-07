@@ -234,6 +234,52 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetProductTourUsageAsync_FutureEnd_ExcludesFutureEventsAndPadding()
+    {
+        // Arrange
+        var start = new DateTime(2026, 8, 1, 12, 0, 0, DateTimeKind.Utc);
+        var now = start.AddDays(2);
+        TimeProvider.SetUtcNow(now.AddDays(2));
+        string source = ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Started, ProductTours.AppOverview, 1, ProductTourLaunchSource.Catalog);
+        await CreateDataAsync(builder =>
+        {
+            AddProductTourUsage(builder, source, start, "first");
+            AddProductTourUsage(builder, source, now.AddDays(1), "future");
+        });
+        TimeProvider.Restore();
+        TimeProvider.SetUtcNow(now);
+
+        // Act
+        var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, start, now.AddMonths(1));
+
+        // Assert
+        var bucket = Assert.Single(result.Buckets);
+        Assert.Equal(1, bucket.Count);
+        Assert.Equal(bucket.Count, bucket.Activity.Sum(period => period.Count));
+        Assert.All(bucket.Activity, period => Assert.True(period.DateUtc < now && (period.DateUtc >= start || period.Count > 0)));
+        Assert.Empty((await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, now.AddDays(1), now.AddMonths(1))).Buckets);
+    }
+
+    [Fact]
+    public async Task GetProductTourUsageAsync_ExtremeRange_UsesBoundedAutomaticBuckets()
+    {
+        // Arrange
+        var now = new DateTime(2026, 8, 1, 12, 0, 0, DateTimeKind.Utc);
+        TimeProvider.SetUtcNow(now);
+        string source = ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Started, ProductTours.AppOverview, 1, ProductTourLaunchSource.Catalog);
+        await CreateDataAsync(builder => AddProductTourUsage(builder, source, now.AddDays(-1), "recent"));
+
+        // Act
+        var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, DateTime.MinValue, DateTime.MaxValue);
+
+        // Assert
+        var bucket = Assert.Single(result.Buckets);
+        Assert.Equal(1, bucket.Count);
+        Assert.InRange(bucket.Activity.Count, 1, 201);
+        Assert.Equal(bucket.Count, bucket.Activity.Sum(period => period.Count));
+    }
+
+    [Fact]
     public async Task GetProductTourUsageAsync_EmptyHistory_DoesNotInventDateBounds()
     {
         // Act

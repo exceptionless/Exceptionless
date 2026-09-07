@@ -2,7 +2,7 @@
     import type { AssistantAccess } from '$features/assistant/models';
 
     import { appKeyboardShortcuts } from '$features/shared/keyboard-shortcuts';
-    import { onDestroy, onMount, tick, untrack } from 'svelte';
+    import { onDestroy, onMount, untrack } from 'svelte';
 
     import type { ProductTourCheckpoint, ProductTourCheckpointName, ProductTourShortcut } from '../models';
 
@@ -120,18 +120,20 @@
     const isHelpStep = currentCheckpoint.tourName === 'app-overview' && currentCheckpoint.checkpointName === 'help';
     const helpTarget = $derived(isHelpStep ? controls?.getGuidedToursTarget() : undefined);
 
-    onMount(async () => {
+    onMount(() => {
+        if (currentCheckpoint.tourName === 'app-overview' && currentCheckpoint.checkpointName === 'exie' && !currentAssistantAccess?.has_access) {
+            productTourCheckpoint.advance(currentCheckpoint, 'help');
+            return;
+        }
+
         if (isMobile || spotlight?.mobileNavigation) {
             setMobileNavigationOpen(spotlight?.mobileNavigation ?? false);
         }
 
-        if (isMobile && spotlight?.mobileNavigation) {
-            await tick();
+        if (isHelpStep) {
+            controls?.showGuidedToursMenu();
         }
 
-        if (isHelpStep) {
-            await controls?.showGuidedToursMenu();
-        }
         targetReady = true;
     });
 
@@ -158,7 +160,7 @@
             if (helpTarget) {
                 controls?.openCatalog();
             } else {
-                await controls?.showGuidedToursMenu();
+                controls?.showGuidedToursMenu();
             }
         } else {
             await actions.complete(currentCheckpoint);
@@ -171,6 +173,7 @@
             if (isHelpStep) {
                 controls?.closeOverlays();
             }
+
             productTourCheckpoint.advance(currentCheckpoint, previous.checkpointName);
         }
     }
@@ -180,6 +183,7 @@
         if (dismissed && isHelpStep) {
             controls?.closeOverlays();
         }
+
         return dismissed;
     }
 </script>

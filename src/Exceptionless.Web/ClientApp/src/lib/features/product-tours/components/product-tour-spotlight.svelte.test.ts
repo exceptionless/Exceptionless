@@ -96,4 +96,28 @@ describe('ProductTourSpotlight', () => {
         await fireEvent.keyDown(window, { key: 'Escape' });
         expect(onDismiss).toHaveBeenCalledExactlyOnceWith(checkpoint);
     });
+
+    it('disconnects its observer and keyboard listener when unmounted', async () => {
+        // Arrange
+        const disconnect = vi.fn();
+        const onDismiss = vi.fn(async () => true);
+        vi.stubGlobal(
+            'ResizeObserver',
+            class {
+                disconnect = disconnect;
+                observe() {}
+            }
+        );
+        const view = render(ProductTourSpotlight, { props: { checkpoint, description: 'Search', onDismiss, target, title: 'Search' } });
+        await screen.findByText('Search', { selector: '.driver-popover-title' });
+
+        // Act
+        view.unmount();
+        await fireEvent.keyDown(window, { key: 'Escape' });
+
+        // Assert
+        expect(disconnect).toHaveBeenCalledOnce();
+        expect(onDismiss).not.toHaveBeenCalled();
+        expect(document.querySelector('.product-tour-popover')).toBeNull();
+    });
 });

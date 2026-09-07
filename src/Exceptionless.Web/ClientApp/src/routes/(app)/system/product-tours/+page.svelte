@@ -116,7 +116,7 @@
                 </Card.Header>
                 <Card.Content>
                     {#if usage}
-                        <ProductTourActivity {tour} start={usage.utc_start} end={usage.utc_end} />
+                        <ProductTourActivity {tour} />
                     {/if}
                 </Card.Content>
             </Card.Root>

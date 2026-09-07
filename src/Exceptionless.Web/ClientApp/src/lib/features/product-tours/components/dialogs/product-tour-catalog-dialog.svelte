@@ -1,5 +1,5 @@
 <script lang="ts">
-    import * as Typography from '$comp/typography';
+    import { H3, Muted } from '$comp/typography';
     import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
     import * as Dialog from '$comp/ui/dialog';
@@ -49,14 +49,14 @@
                         <Icon aria-hidden="true" class="text-muted-foreground mt-0.5 size-5" />
                         <div class="min-w-0">
                             <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                <Typography.H3 class="text-sm">{item.title}</Typography.H3>
+                                <H3 class="text-sm">{item.title}</H3>
                                 {#if completed}
                                     <Badge variant="secondary">Completed</Badge>
                                 {/if}
                             </div>
-                            <Typography.Muted class="mt-1">{item.description}</Typography.Muted>
+                            <Muted class="mt-1">{item.description}</Muted>
                             {#if !item.currentAvailability.available}
-                                <Typography.Muted class="mt-1 text-xs" id={`${id}-${item.name}-reason`}>{item.currentAvailability.reason}</Typography.Muted>
+                                <Muted class="mt-1 text-xs" id={`${id}-${item.name}-reason`}>{item.currentAvailability.reason}</Muted>
                             {/if}
                         </div>
                         <Button

@@ -88,10 +88,9 @@ public sealed class AdminProductTourUsageEndpointTests : IntegrationTestsBase
         Assert.Equal(1, welcome.Dismissed);
         Assert.Equal(1, Assert.Single(welcome.StartSources).Count);
         Assert.Equal(ProductTourLaunchSource.Welcome, welcome.StartSources.Single().Source);
-        var welcomeDay = Assert.Single(welcome.Activity, period => period.Shown > 0);
-        Assert.Equal(2, welcomeDay.Shown);
-        Assert.Equal(1, welcomeDay.Started);
-        Assert.Equal(1, welcomeDay.Completed);
+        Assert.Equal(welcome.Shown, welcome.Activity.Sum(period => period.Shown));
+        Assert.Equal(welcome.Started, welcome.Activity.Sum(period => period.Started));
+        Assert.Equal(welcome.Completed, welcome.Activity.Sum(period => period.Completed));
         Assert.Equal(overview.Started, overview.Activity.Sum(period => period.Started));
         Assert.DoesNotContain(response.Tours, tour => tour.Started > 0 && (tour.Name is "unknown" or "ignored-tour"));
     }

@@ -26,6 +26,24 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task UpdateProductTourProgressAsync_CachedUser_ReturnsLatestProgress()
+    {
+        // Arrange
+        var user = await GetTestOrganizationUserAsync();
+        await _userRepository.GetByIdAsync(user.Id, options => options.Cache());
+
+        // Act
+        var progress = await _userRepository.UpdateProductTourProgressAsync(user.Id, ProductTours.AppOverview,
+            new ProductTourProgress { Status = ProductTourStatus.Completed, Version = 1 });
+
+        // Assert
+        var cachedUser = await _userRepository.GetByIdAsync(user.Id, options => options.Cache());
+        Assert.NotNull(cachedUser);
+        Assert.Equal(ProductTourStatus.Completed, progress.Status);
+        Assert.Equal(progress, cachedUser.ProductTours[ProductTours.AppOverview]);
+    }
+
+    [Fact]
     public async Task UpdateCurrentUserProductTourAsync_NewProgress_PersistsAndReturnsProgress()
     {
         // Arrange

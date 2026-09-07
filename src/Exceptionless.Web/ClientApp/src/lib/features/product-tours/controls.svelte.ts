@@ -4,7 +4,7 @@ interface ProductTourControls {
     closeOverlays: () => void;
     getGuidedToursTarget: () => HTMLElement | undefined;
     openCatalog: () => void;
-    showGuidedToursMenu: () => Promise<void>;
+    showGuidedToursMenu: () => void;
 }
 
 const PRODUCT_TOUR_CONTROLS_CONTEXT_KEY = Symbol.for('exceptionless-product-tour-controls');

@@ -1,6 +1,6 @@
 <script lang="ts">
     import { driver, type Driver } from 'driver.js';
-    import { mount, onMount, type Snippet, tick, unmount } from 'svelte';
+    import { mount, onMount, type Snippet, unmount } from 'svelte';
     import { toast } from 'svelte-sonner';
 
     import type { ProductTourCheckpoint, ProductTourShortcut } from '../models';
@@ -47,29 +47,24 @@
     let returnFocus: HTMLElement | null = null;
 
     onMount(() => {
-        let cancelled = false;
-        let resizeObserver: ResizeObserver | undefined;
-        let frame: number | undefined;
-        void tick().then(() => {
-            if (cancelled) {
-                return;
-            }
-            initialize();
-            const element = activeDriver?.getActiveElement();
-            if (element) {
-                resizeObserver = new ResizeObserver(() => activeDriver?.refresh());
-                resizeObserver.observe(element);
-            }
-            frame = requestAnimationFrame(() => activeDriver?.refresh());
+        const controller = new AbortController();
+        initialize();
+        window.addEventListener('keydown', onKeyDown, {
+            capture: true,
+            signal: controller.signal
         });
+        const resizeObserver = new ResizeObserver(() => activeDriver?.refresh());
+        const element = activeDriver?.getActiveElement();
+        if (element) {
+            resizeObserver.observe(element);
+        }
+
+        const frame = requestAnimationFrame(() => activeDriver?.refresh());
 
         return () => {
-            cancelled = true;
-            resizeObserver?.disconnect();
-            if (frame !== undefined) {
-                cancelAnimationFrame(frame);
-            }
-            window.removeEventListener('keydown', onKeyDown, true);
+            controller.abort();
+            resizeObserver.disconnect();
+            cancelAnimationFrame(frame);
             destroy();
         };
     });
@@ -139,7 +134,6 @@
         });
         activeDriver = instance;
         instance.drive();
-        window.addEventListener('keydown', onKeyDown, true);
     }
 
     function onKeyDown(event: KeyboardEvent): void {
@@ -181,6 +175,7 @@
             void unmount(descriptionContent);
             descriptionContent = undefined;
         }
+
         instance?.setConfig({
             ...instance.getConfig(),
             onDestroyStarted: undefined

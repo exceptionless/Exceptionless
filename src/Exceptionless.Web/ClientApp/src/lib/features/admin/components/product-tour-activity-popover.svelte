@@ -3,7 +3,7 @@
 
     import Number from '$comp/formatters/number.svelte';
     import Percentage from '$comp/formatters/percentage.svelte';
-    import * as Typography from '$comp/typography';
+    import { H3, H4, Muted, P } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import * as Popover from '$comp/ui/popover';
     import Info from '@lucide/svelte/icons/info';
@@ -21,12 +21,12 @@
         {/snippet}
     </Popover.Trigger>
     <Popover.Content align="start" collisionPadding={16} class="max-h-80 max-w-[calc(100vw-2rem)] overflow-y-auto" role="dialog" aria-labelledby={headingId}>
-        <Typography.H3 id={headingId} class="text-sm font-medium">{title}</Typography.H3>
-        <Typography.Muted class="text-xs">Activity in the selected period, not unique people.</Typography.Muted>
+        <H3 id={headingId} class="text-sm font-medium">{title}</H3>
+        <Muted class="text-xs">Activity in the selected period, not unique people.</Muted>
         {#if tour.kind === 'guide'}
             {#if tour.start_sources.length}
                 <section class="flex flex-col gap-1">
-                    <Typography.H4 class="text-sm font-medium">Opened from</Typography.H4>
+                    <H4 class="text-sm font-medium">Opened from</H4>
                     <ul class="flex flex-col gap-1" aria-label="Guide entry points">
                         {#each tour.start_sources as source (source.source)}
                             <li>
@@ -38,12 +38,10 @@
                 </section>
             {/if}
             {#if !tour.start_sources.length}
-                <Typography.P class="leading-normal not-first:mt-0">No entry-point activity recorded in this period.</Typography.P>
+                <P class="leading-normal not-first:mt-0">No entry-point activity recorded in this period.</P>
             {/if}
         {:else}
-            <Typography.P class="leading-normal not-first:mt-0"
-                >Shown counts invitation displays; Accepted counts choosing to start or browse guides, or open Exie.</Typography.P
-            >
+            <P class="leading-normal not-first:mt-0">Shown counts invitation displays; Accepted counts choosing to start or browse guides, or open Exie.</P>
         {/if}
     </Popover.Content>
 </Popover.Root>

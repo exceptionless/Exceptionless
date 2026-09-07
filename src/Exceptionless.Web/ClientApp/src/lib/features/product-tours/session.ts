@@ -1,9 +1,21 @@
-import type { ProductTourCheckpoint, ProductTourLaunchSource, ProductTourName } from './models';
+import { number, object, string, enum as zodEnum } from 'zod';
+
+import type { ProductTourCheckpoint, ProductTourName } from './models';
 
 import { PRODUCT_TOUR_CHECKPOINTS, PRODUCT_TOUR_LAUNCH_SOURCES } from './models';
 
 const SESSION_KEY = 'exceptionless.product-tour';
-const SOURCES = new Set<string>(PRODUCT_TOUR_LAUNCH_SOURCES);
+const checkpointSchema = object({
+    checkpointName: string(),
+    organizationId: string().optional(),
+    source: zodEnum(PRODUCT_TOUR_LAUNCH_SOURCES),
+    tourName: zodEnum(Object.keys(PRODUCT_TOUR_CHECKPOINTS) as ProductTourName[]),
+    userId: string().min(1),
+    version: number().int().positive()
+}).refine((value) => {
+    const checkpoints: readonly string[] = PRODUCT_TOUR_CHECKPOINTS[value.tourName];
+    return checkpoints.includes(value.checkpointName);
+});
 
 export function clearProductTourSession(storage?: Pick<Storage, 'removeItem'>): void {
     try {
@@ -20,20 +32,13 @@ export function readProductTourSession(storage?: Pick<Storage, 'getItem' | 'remo
             return undefined;
         }
 
-        const candidate: unknown = JSON.parse(value);
-        if (!isProductTourCheckpoint(candidate)) {
+        const candidate = checkpointSchema.safeParse(JSON.parse(value));
+        if (!candidate.success) {
             clearProductTourSession(storage);
             return undefined;
         }
 
-        return {
-            checkpointName: candidate.checkpointName,
-            organizationId: candidate.organizationId,
-            source: candidate.source,
-            tourName: candidate.tourName,
-            userId: candidate.userId,
-            version: candidate.version
-        } as ProductTourCheckpoint;
+        return candidate.data as ProductTourCheckpoint;
     } catch {
         clearProductTourSession(storage);
         return undefined;
@@ -46,42 +51,4 @@ export function writeProductTourSession(checkpoint: ProductTourCheckpoint, stora
     } catch {
         // Persistence is best effort; the in-memory checkpoint remains usable.
     }
-}
-
-function isProductTourCheckpoint(value: unknown): value is ProductTourCheckpoint {
-    if (
-        !isRecord(value) ||
-        typeof value.userId !== 'string' ||
-        !value.userId ||
-        typeof value.tourName !== 'string' ||
-        typeof value.version !== 'number' ||
-        !Number.isSafeInteger(value.version) ||
-        value.version < 1
-    ) {
-        return false;
-    }
-    if (value.organizationId !== undefined && typeof value.organizationId !== 'string') {
-        return false;
-    }
-    if (!isProductTourLaunchSource(value.source) || !isProductTourName(value.tourName)) {
-        return false;
-    }
-
-    const checkpoints: readonly string[] = PRODUCT_TOUR_CHECKPOINTS[value.tourName];
-    if (typeof value.checkpointName !== 'string' || !checkpoints.includes(value.checkpointName)) {
-        return false;
-    }
-    return true;
-}
-
-function isProductTourLaunchSource(value: unknown): value is ProductTourLaunchSource {
-    return typeof value === 'string' && SOURCES.has(value);
-}
-
-function isProductTourName(value: string): value is ProductTourName {
-    return Object.hasOwn(PRODUCT_TOUR_CHECKPOINTS, value);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
