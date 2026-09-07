@@ -39,6 +39,7 @@ public sealed class OrganizationIndex : VersionedIndex<Organization>
                     .Keyword("token")
                     .Text("email_address", t => t.Analyzer(KEYWORD_LOWERCASE_ANALYZER))))
                 .Date(e => e.LastEventDateUtc)
+                .Date(e => e.LastAppliedUsageBucketUtc)
                 .Object(e => e.AssistantUsage, usage => usage.Properties(new Properties
                 {
                     [new PropertyName((AssistantUsageInfo e) => e.Date)] = new DateProperty(),
@@ -57,7 +58,7 @@ public sealed class OrganizationIndex : VersionedIndex<Organization>
                     [new PropertyName((AssistantUsageInfo e) => e.BlockedByTokenLimit)] = new LongNumberProperty(),
                     [new PropertyName((AssistantUsageInfo e) => e.BlockedByCostLimit)] = new LongNumberProperty(),
                     [new PropertyName((AssistantUsageInfo e) => e.LastUsedUtc)] = new DateProperty()
-                }))
+                 }))
                 .AddUsageMappings());
     }
 

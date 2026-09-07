@@ -1,5 +1,7 @@
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
+using System.Text.Json.Serialization;
 using Exceptionless.Core.Attributes;
 using Exceptionless.Core.Extensions;
 using Foundatio.Repositories.Models;
@@ -40,6 +42,32 @@ public class PersistentEvent : Event, IOwnedByOrganizationAndProjectAndStackWith
     /// Whether the event resulted in the creation of a new stack.
     /// </summary>
     public bool IsFirstOccurrence { get; set; }
+
+    /// <summary>
+    /// Whether this occurrence caused a fixed stack to regress.
+    /// </summary>
+    [ReadOnly(true)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool IsRegression { get; set; }
+
+    /// <summary>
+    /// Records that this occurrence was selected to regress the fixed stack generation
+    /// observed during ingestion. This makes a retry independent of the replay payload.
+    /// </summary>
+    [ReadOnly(true)]
+    [ApiIgnore]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool IngestionIsRegressionCandidate { get; set; }
+
+    [ReadOnly(true)]
+    [ApiIgnore]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public string? IngestionRegressionFixedInVersion { get; set; }
+
+    [ReadOnly(true)]
+    [ApiIgnore]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public DateTime IngestionRegressionDateFixed { get; set; }
 
     /// <summary>
     /// The date that the event was created in the system.

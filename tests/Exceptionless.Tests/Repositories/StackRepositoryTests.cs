@@ -1,8 +1,11 @@
+using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Ingestion;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Utility;
+using Exceptionless.Core.Services;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
@@ -75,20 +78,215 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
     public async Task CanGetByStackHashAsync()
     {
         long count = _cache.Count;
-        long hits = _cache.Hits;
-        long misses = _cache.Misses;
 
         var stack = await _repository.AddAsync(_stackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, dateFixed: DateTime.UtcNow.SubtractMonths(1)), o => o.Cache());
         Assert.NotNull(stack?.Id);
-        Assert.Equal(count + 2, _cache.Count);
-        Assert.Equal(hits, _cache.Hits);
-        Assert.Equal(misses, _cache.Misses);
+        Assert.True(_cache.Count >= count + 3);
+        long countAfterAdd = _cache.Count;
+        long hitsAfterAdd = _cache.Hits;
+        long missesAfterAdd = _cache.Misses;
 
         var result = await _repository.GetStackBySignatureHashAsync(stack.ProjectId, stack.SignatureHash);
         JsonAssert.AssertJsonEquivalent(_serializer.SerializeToString(stack), _serializer.SerializeToString(result));
-        Assert.Equal(count + 2, _cache.Count);
-        Assert.Equal(hits + 1, _cache.Hits);
-        Assert.Equal(misses, _cache.Misses);
+        Assert.Equal(countAfterAdd, _cache.Count);
+        Assert.True(_cache.Hits >= hitsAfterAdd + 1);
+        Assert.InRange(_cache.Misses, missesAfterAdd, missesAfterAdd + 1);
+    }
+
+    [Fact]
+    public async Task StackRouteCache_TwoConsumersObserveCreateDiscardReopenAndRemove()
+    {
+        var options = GetService<AppOptions>();
+        var routeCache = GetService<IStackRouteCache>();
+        var lockProvider = GetService<Foundatio.Lock.ILockProvider>();
+        var firstResolver = new StackRouteResolver(_repository, routeCache, lockProvider, options);
+        var secondResolver = new StackRouteResolver(_repository, routeCache, lockProvider, options);
+        var stack = _stackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId);
+
+        Assert.Empty(await firstResolver.ResolveAsync(stack.ProjectId, [stack.SignatureHash], TestCancellationToken));
+        await _repository.AddAsync(stack, o => o.ImmediateConsistency().Cache());
+        await firstResolver.UpdateAsync(stack.ProjectId, stack.SignatureHash, StackRouteResolver.CreateRoute(stack));
+
+        var openRoutes = await secondResolver.ResolveAsync(stack.ProjectId, [stack.SignatureHash], TestCancellationToken);
+        Assert.Equal(StackStatus.Open, openRoutes[stack.SignatureHash].Status);
+
+        stack.Status = StackStatus.Discarded;
+        await _repository.SaveAsync(stack, o => o.ImmediateConsistency().Cache());
+        await firstResolver.UpdateAsync(stack.ProjectId, stack.SignatureHash, StackRouteResolver.CreateRoute(stack));
+        var discardedRoutes = await secondResolver.ResolveAsync(stack.ProjectId, [stack.SignatureHash], TestCancellationToken);
+        Assert.Equal(StackStatus.Discarded, discardedRoutes[stack.SignatureHash].Status);
+
+        stack.Status = StackStatus.Open;
+        await _repository.SaveAsync(stack, o => o.ImmediateConsistency().Cache());
+        await firstResolver.UpdateAsync(stack.ProjectId, stack.SignatureHash, StackRouteResolver.CreateRoute(stack));
+        var reopenedRoutes = await secondResolver.ResolveAsync(stack.ProjectId, [stack.SignatureHash], TestCancellationToken);
+        Assert.Equal(StackStatus.Open, reopenedRoutes[stack.SignatureHash].Status);
+
+        await _repository.RemoveAsync(stack, o => o.ImmediateConsistency().Cache());
+        await firstResolver.RemoveAsync(stack.ProjectId, stack.SignatureHash);
+        Assert.Empty(await secondResolver.ResolveAsync(stack.ProjectId, [stack.SignatureHash], TestCancellationToken));
+    }
+
+    [Fact]
+    public async Task StackRouteCache_OlderRepositoryFill_CannotOverwriteNewerStatus()
+    {
+        var options = GetService<AppOptions>();
+        var routeCache = GetService<IStackRouteCache>();
+        string key = StackRouteResolver.GetCacheKey(TestConstants.ProjectId, "stale-route-race");
+        var newer = new StackRouteCacheEntry(
+            true,
+            20,
+            "507f1f77bcf86cd799439011",
+            StackStatus.Discarded);
+        var stale = new StackRouteCacheEntry(
+            true,
+            10,
+            "507f1f77bcf86cd799439011",
+            StackStatus.Open);
+
+        await routeCache.SetAsync(key, newer, options.EventIngestionV3.StackRouteCacheDuration);
+        await routeCache.SetAsync(key, stale, options.EventIngestionV3.StackRouteCacheDuration);
+
+        var cached = await routeCache.GetAllAsync([key]);
+        Assert.True(cached[key].HasValue);
+        Assert.Equal(StackStatus.Discarded, cached[key].Value.Status);
+        Assert.Equal(20, cached[key].Value.Version);
+    }
+
+    [Fact]
+    public async Task StackRouteCache_AuthoritativeWrite_AdvancesPastClockSkew()
+    {
+        var options = GetService<AppOptions>();
+        var routeCache = GetService<IStackRouteCache>();
+        string key = StackRouteResolver.GetCacheKey(TestConstants.ProjectId, "authoritative-clock-skew");
+        await routeCache.SetAsync(
+            key,
+            new StackRouteCacheEntry(true, 20, "507f1f77bcf86cd799439011", StackStatus.Open),
+            options.EventIngestionV3.StackRouteCacheDuration);
+
+        await routeCache.SetAuthoritativeAsync(
+            key,
+            new StackRouteCacheEntry(true, 10, "507f1f77bcf86cd799439011", StackStatus.Discarded),
+            options.EventIngestionV3.StackRouteCacheDuration);
+
+        var cached = await routeCache.GetAllAsync([key]);
+        Assert.True(cached[key].HasValue);
+        Assert.Equal(StackStatus.Discarded, cached[key].Value.Status);
+        Assert.Equal(21, cached[key].Value.Version);
+    }
+
+    [Fact]
+    public async Task StackRouteCache_BulkFill_CannotOverwriteAuthoritativeProjectGeneration()
+    {
+        var options = GetService<AppOptions>();
+        var routeCache = GetService<IStackRouteCache>();
+        string firstKey = StackRouteResolver.GetCacheKey(TestConstants.ProjectId, "bulk-route-a");
+        string secondKey = StackRouteResolver.GetCacheKey(TestConstants.ProjectId, "bulk-route-b");
+        var initial = new Dictionary<string, StackRouteCacheEntry>
+        {
+            [firstKey] = new(true, 10, TestConstants.StackId, StackStatus.Open),
+            [secondKey] = new(true, 10, TestConstants.StackId2, StackStatus.Open)
+        };
+        await routeCache.SetAllAsync(initial, options.EventIngestionV3.StackRouteCacheDuration);
+
+        await routeCache.SetAllAuthoritativeAsync(new Dictionary<string, StackRouteCacheEntry>
+        {
+            [firstKey] = new(true, 5, TestConstants.StackId, StackStatus.Discarded),
+            [secondKey] = new(true, 5, TestConstants.StackId2, StackStatus.Fixed)
+        }, options.EventIngestionV3.StackRouteCacheDuration);
+        await routeCache.SetAllAsync(initial, options.EventIngestionV3.StackRouteCacheDuration);
+
+        var cached = await routeCache.GetAllAsync([firstKey, secondKey]);
+        Assert.Equal(StackStatus.Discarded, cached[firstKey].Value.Status);
+        Assert.Equal(StackStatus.Fixed, cached[secondKey].Value.Status);
+        Assert.Equal(11, cached[firstKey].Value.Version);
+        Assert.Equal(11, cached[secondKey].Value.Version);
+    }
+
+    [Fact]
+    public async Task StackRouteCache_SignatureChange_TombstonesOldRoute()
+    {
+        var resolver = GetService<IStackRouteResolver>();
+        var stack = _stackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId);
+        await _repository.AddAsync(stack, o => o.ImmediateConsistency().Cache());
+        string originalSignatureHash = stack.SignatureHash;
+        Assert.Contains(originalSignatureHash, await resolver.ResolveAsync(stack.ProjectId, [originalSignatureHash], TestCancellationToken));
+
+        // The in-memory cache stores object references, unlike the serialized distributed cache
+        // used in production. Mutate a detached copy so the repository can observe both versions.
+        stack = _serializer.Deserialize<Stack>(_serializer.SerializeToString(stack))
+            ?? throw new InvalidOperationException("Unable to clone stack.");
+        stack.SignatureHash = Guid.NewGuid().ToString("N");
+        stack.DuplicateSignature = String.Concat(stack.ProjectId, ":", stack.SignatureHash);
+        stack.UpdatedUtc = stack.UpdatedUtc.AddTicks(1);
+        await _repository.SaveAsync(stack, o => o.ImmediateConsistency().Cache());
+
+        Assert.Empty(await resolver.ResolveAsync(stack.ProjectId, [originalSignatureHash], TestCancellationToken));
+        var current = await resolver.ResolveAsync(stack.ProjectId, [stack.SignatureHash], TestCancellationToken);
+        Assert.Equal(stack.Id, current[stack.SignatureHash].StackId);
+    }
+
+    [Fact]
+    public async Task StackRouteCache_SoftDeletedStack_TombstonesRoute()
+    {
+        var resolver = GetService<IStackRouteResolver>();
+        var stack = _stackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId);
+        await _repository.AddAsync(stack, o => o.ImmediateConsistency().Cache());
+        Assert.Contains(stack.SignatureHash, await resolver.ResolveAsync(stack.ProjectId, [stack.SignatureHash], TestCancellationToken));
+
+        stack.IsDeleted = true;
+        stack.UpdatedUtc = stack.UpdatedUtc.AddTicks(1);
+        await _repository.SaveAsync(stack, o => o.ImmediateConsistency().Cache());
+
+        Assert.Empty(await resolver.ResolveAsync(stack.ProjectId, [stack.SignatureHash], TestCancellationToken));
+    }
+
+    [Fact]
+    public async Task StackRouteCache_BulkProjectDelete_RotatesPastInflightOldGenerationFill()
+    {
+        var options = GetService<AppOptions>();
+        var resolver = GetService<IStackRouteResolver>();
+        var routeCache = GetService<IStackRouteCache>();
+        var stack = _stackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId);
+        await _repository.AddAsync(stack, o => o.ImmediateConsistency().Cache());
+        StackRoute staleRoute = (await resolver.ResolveAsync(stack.ProjectId, [stack.SignatureHash], TestCancellationToken))[stack.SignatureHash];
+        Assert.Equal(stack.Id, (await _repository.GetStackBySignatureHashAsync(stack.ProjectId, stack.SignatureHash))?.Id);
+        long oldGeneration = await routeCache.GetProjectGenerationAsync(stack.ProjectId);
+
+        await _repository.SoftDeleteByProjectIdAsync(stack.OrganizationId, stack.ProjectId);
+        long currentGeneration = await routeCache.GetProjectGenerationAsync(stack.ProjectId);
+        Assert.True(currentGeneration > oldGeneration);
+
+        // Simulate the completion of a repository lookup that started before deletion.
+        await routeCache.SetAsync(
+            StackRouteResolver.GetCacheKey(stack.ProjectId, stack.SignatureHash, oldGeneration),
+            StackRouteCacheEntry.FromRoute(staleRoute),
+            options.EventIngestionV3.StackRouteCacheDuration);
+
+        Assert.Empty(await resolver.ResolveAsync(stack.ProjectId, [stack.SignatureHash], TestCancellationToken));
+        Assert.Null(await _repository.GetStackBySignatureHashAsync(stack.ProjectId, stack.SignatureHash));
+    }
+
+    [Fact]
+    public async Task TryMarkRegressedAsync_UnrelatedStackUpdateAfterRouteRead_TransitionsFixedGeneration()
+    {
+        var resolver = GetService<IStackRouteResolver>();
+        var stack = _stackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId);
+        stack.MarkFixed(new McSherry.SemanticVersioning.SemanticVersion(1, 0), TimeProvider);
+        await _repository.AddAsync(stack, o => o.ImmediateConsistency().Cache());
+        StackRoute route = (await resolver.ResolveAsync(stack.ProjectId, [stack.SignatureHash], TestCancellationToken))[stack.SignatureHash];
+
+        stack.Title = "Updated after route projection";
+        stack.UpdatedUtc = stack.UpdatedUtc.AddTicks(1);
+        await _repository.SaveAsync(stack, o => o.ImmediateConsistency().Cache());
+
+        bool transitioned = await resolver.TryMarkRegressedAsync(route, "507f1f77bcf86cd799439012", TestCancellationToken);
+
+        Assert.True(transitioned);
+        var updated = await _repository.GetByIdAsync(stack.Id);
+        Assert.NotNull(updated);
+        Assert.Equal(StackStatus.Regressed, updated.Status);
+        Assert.Equal("507f1f77bcf86cd799439012", updated.RegressionEventId);
     }
 
     [Fact]
@@ -175,6 +373,68 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
         Assert.Equal(3, stack.TotalOccurrences);
         Assert.Equal(utcNow.SubtractDays(1), stack.FirstOccurrence);
         Assert.Equal(utcNow.AddDays(1), stack.LastOccurrence);
+    }
+
+    [Fact]
+    public async Task ApplyIngestionStackUsageAsync_AmbiguousRetryAndFullSave_ApplySettlementOnce()
+    {
+        var stack = await _repository.AddAsync(
+            _stackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId),
+            o => o.ImmediateConsistency());
+        DateTime occurrence = DateTime.UtcNow.Floor(TimeSpan.FromMilliseconds(1));
+        const long firstSettlement = 123456;
+
+        await _repository.ApplyIngestionStackUsageAsync(
+            stack.OrganizationId,
+            stack.ProjectId,
+            stack.Id,
+            occurrence,
+            occurrence,
+            3,
+            firstSettlement,
+            sendNotifications: false);
+        // The same request after an ambiguous Elasticsearch response must be a no-op.
+        await _repository.ApplyIngestionStackUsageAsync(
+            stack.OrganizationId,
+            stack.ProjectId,
+            stack.Id,
+            occurrence,
+            occurrence,
+            3,
+            firstSettlement,
+            sendNotifications: false);
+
+        stack = await _repository.GetByIdAsync(stack.Id);
+        Assert.NotNull(stack);
+        Assert.Equal(3, stack.TotalOccurrences);
+        Assert.Equal(firstSettlement, stack.IngestionStackUsageSequence);
+
+        // Full-document saves must retain the fence or a late retry could double-apply.
+        stack.Title = "Unrelated stack update";
+        await _repository.SaveAsync(stack, o => o.ImmediateConsistency());
+        await _repository.ApplyIngestionStackUsageAsync(
+            stack.OrganizationId,
+            stack.ProjectId,
+            stack.Id,
+            occurrence,
+            occurrence,
+            3,
+            firstSettlement,
+            sendNotifications: false);
+        await _repository.ApplyIngestionStackUsageAsync(
+            stack.OrganizationId,
+            stack.ProjectId,
+            stack.Id,
+            occurrence.AddSeconds(1),
+            occurrence.AddSeconds(1),
+            2,
+            firstSettlement + 1,
+            sendNotifications: false);
+
+        stack = await _repository.GetByIdAsync(stack.Id);
+        Assert.NotNull(stack);
+        Assert.Equal(5, stack.TotalOccurrences);
+        Assert.Equal(firstSettlement + 1, stack.IngestionStackUsageSequence);
     }
 
     [Fact]

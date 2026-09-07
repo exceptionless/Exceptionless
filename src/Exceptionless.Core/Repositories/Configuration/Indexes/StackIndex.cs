@@ -63,10 +63,13 @@ public sealed class StackIndex : VersionedIndex<Stack>
                 .Boolean(Alias.IsFixed)
                 .Keyword(e => e.FixedInVersion, k => k.IgnoreAbove(1024))
                     .FieldAlias(Alias.FixedInVersion, a => a.Path(f => f.FixedInVersion))
+                .Keyword(e => e.RegressionEventId)
+                .Keyword(e => e.IngestionFirstEventId)
                 .Boolean(e => e.OccurrencesAreCritical)
                     .FieldAlias(Alias.OccurrencesAreCritical, a => a.Path(f => f.OccurrencesAreCritical))
                 .IntegerNumber(e => e.TotalOccurrences)
                     .FieldAlias(Alias.TotalOccurrences, a => a.Path(f => f.TotalOccurrences))
+                .LongNumber(e => e.IngestionStackUsageSequence)
             );
     }
 

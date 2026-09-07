@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Exceptionless.Core.Repositories;
 using Foundatio.Caching;
 using Microsoft.Extensions.Logging;
@@ -15,13 +16,25 @@ public class StackService
     private readonly ILogger<UsageService> _logger;
     private readonly IStackRepository _stackRepository;
     private readonly ICacheClient _cache;
+    private readonly IIngestionStackUsageStore _ingestionStackUsageStore;
     private readonly TimeProvider _timeProvider;
     private readonly TimeSpan _expireTimeout = TimeSpan.FromHours(12);
+    private readonly int _bulkBatchSize;
+    private readonly int _maximumStackUsageConcurrency;
 
-    public StackService(IStackRepository stackRepository, ICacheClient cache, TimeProvider timeProvider, ILoggerFactory loggerFactory)
+    public StackService(
+        IStackRepository stackRepository,
+        ICacheClient cache,
+        IIngestionStackUsageStore ingestionStackUsageStore,
+        AppOptions options,
+        TimeProvider timeProvider,
+        ILoggerFactory loggerFactory)
     {
         _stackRepository = stackRepository;
         _cache = cache;
+        _ingestionStackUsageStore = ingestionStackUsageStore;
+        _bulkBatchSize = Math.Max(options.BulkBatchSize, 1);
+        _maximumStackUsageConcurrency = Math.Clamp(Math.Max(options.EventIngestionV3.MaximumStackUsageConcurrency, 1), 1, 64);
         _timeProvider = timeProvider;
         _logger = loggerFactory.CreateLogger<UsageService>() ?? NullLogger<UsageService>.Instance;
     }
@@ -32,7 +45,9 @@ public class StackService
         ArgumentException.ThrowIfNullOrEmpty(projectId);
         ArgumentException.ThrowIfNullOrEmpty(stackId);
         if (count <= 0)
+        {
             return;
+        }
 
         await Task.WhenAll(
             _cache.ListAddAsync(GetStackOccurrenceSetCacheKey(), new StackUsageKey(organizationId, projectId, stackId)),
@@ -44,69 +59,146 @@ public class StackService
 
     public async Task SaveStackUsagesAsync(bool sendNotifications = true, CancellationToken cancellationToken = default)
     {
+        await SaveLegacyStackUsagesAsync(sendNotifications, cancellationToken);
+        await SaveIngestionStackUsagesAsync(sendNotifications, cancellationToken);
+    }
+
+    internal async Task SaveLegacyStackUsagesAsync(bool sendNotifications = true, CancellationToken cancellationToken = default)
+    {
         string occurrenceSetCacheKey = GetStackOccurrenceSetCacheKey();
         var stackUsageSet = await _cache.GetListAsync<StackUsageKey>(occurrenceSetCacheKey);
-        if (!stackUsageSet.HasValue)
-            return;
-
-        foreach (var usage in stackUsageSet.Value)
+        if (stackUsageSet.HasValue)
         {
-            if (cancellationToken.IsCancellationRequested)
-                break;
-
-            string organizationId = usage.OrganizationId;
-            string projectId = usage.ProjectId;
-            string stackId = usage.StackId;
-
-            var removeFromSetTask = _cache.ListRemoveAsync(occurrenceSetCacheKey, new StackUsageKey(organizationId, projectId, stackId));
-            string countCacheKey = GetStackOccurrenceCountCacheKey(stackId);
-            var countTask = _cache.GetAsync<long>(countCacheKey, 0);
-            string minDateCacheKey = GetStackOccurrenceMinDateCacheKey(stackId);
-            var minDateTask = _cache.GetUnixTimeMillisecondsAsync(minDateCacheKey, _timeProvider.GetUtcNow().UtcDateTime);
-            string maxDateCacheKey = GetStackOccurrenceMaxDateCacheKey(stackId);
-            var maxDateTask = _cache.GetUnixTimeMillisecondsAsync(maxDateCacheKey, _timeProvider.GetUtcNow().UtcDateTime);
-
-            await Task.WhenAll(
-                removeFromSetTask,
-                countTask,
-                minDateTask,
-                maxDateTask
-            );
-
-            int occurrenceCount = (int)countTask.Result;
-            if (occurrenceCount <= 0)
+            foreach (var usage in stackUsageSet.Value)
             {
-                await _cache.RemoveAllAsync([minDateCacheKey, maxDateCacheKey]);
-                continue;
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+
+                string organizationId = usage.OrganizationId;
+                string projectId = usage.ProjectId;
+                string stackId = usage.StackId;
+
+                var removeFromSetTask = _cache.ListRemoveAsync(occurrenceSetCacheKey, new StackUsageKey(organizationId, projectId, stackId));
+                string countCacheKey = GetStackOccurrenceCountCacheKey(stackId);
+                var countTask = _cache.GetAsync<long>(countCacheKey, 0);
+                string minDateCacheKey = GetStackOccurrenceMinDateCacheKey(stackId);
+                var minDateTask = _cache.GetUnixTimeMillisecondsAsync(minDateCacheKey, _timeProvider.GetUtcNow().UtcDateTime);
+                string maxDateCacheKey = GetStackOccurrenceMaxDateCacheKey(stackId);
+                var maxDateTask = _cache.GetUnixTimeMillisecondsAsync(maxDateCacheKey, _timeProvider.GetUtcNow().UtcDateTime);
+
+                await Task.WhenAll(
+                    removeFromSetTask,
+                    countTask,
+                    minDateTask,
+                    maxDateTask
+                );
+
+                int occurrenceCount = (int)countTask.Result;
+                if (occurrenceCount <= 0)
+                {
+                    await _cache.RemoveAllAsync([minDateCacheKey, maxDateCacheKey]);
+                    continue;
+                }
+
+                await Task.WhenAll(
+                    _cache.RemoveAllAsync([minDateCacheKey, maxDateCacheKey]),
+                    _cache.DecrementAsync(countCacheKey, occurrenceCount, _expireTimeout)
+                );
+
+                var occurrenceMinDate = minDateTask.Result;
+                var occurrenceMaxDate = maxDateTask.Result;
+                bool shouldRetry = false;
+                try
+                {
+                    if (!await _stackRepository.IncrementEventCounterAsync(organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate, occurrenceCount, sendNotifications))
+                    {
+                        shouldRetry = true;
+                        await IncrementStackUsageAsync(organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate, occurrenceCount);
+                    }
+                    else
+                    {
+                        _logger.LogTrace("Increment event count {OccurrenceCount} for organization:{OrganizationId} project:{ProjectId} stack:{StackId} with Min Date:{OccurrenceMinDate} Max Date:{OccurrenceMaxDate}", occurrenceCount, organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error incrementing event count for organization: {OrganizationId} project:{ProjectId} stack:{StackId}", organizationId, projectId, stackId);
+                    if (!shouldRetry)
+                    {
+                        await IncrementStackUsageAsync(organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate, occurrenceCount);
+                    }
+                }
             }
+        }
 
-            await Task.WhenAll(
-                _cache.RemoveAllAsync([minDateCacheKey, maxDateCacheKey]),
-                _cache.DecrementAsync(countCacheKey, occurrenceCount, _expireTimeout)
-            );
+    }
 
-            var occurrenceMinDate = minDateTask.Result;
-            var occurrenceMaxDate = maxDateTask.Result;
-            bool shouldRetry = false;
-            try
+    public async Task SaveIngestionStackUsagesAsync(bool sendNotifications = true, CancellationToken cancellationToken = default)
+    {
+        var claims = await _ingestionStackUsageStore.ClaimPendingAsync(_bulkBatchSize, cancellationToken);
+        if (claims.Count == 0)
+        {
+            return;
+        }
+
+        var acknowledged = new ConcurrentBag<StackUsageClaim>();
+        try
+        {
+            await Parallel.ForEachAsync(
+                claims,
+                new ParallelOptions
+                {
+                    CancellationToken = cancellationToken,
+                    MaxDegreeOfParallelism = _maximumStackUsageConcurrency
+                },
+                async (claim, claimCancellationToken) =>
+                {
+                    try
+                    {
+                        claimCancellationToken.ThrowIfCancellationRequested();
+                        await _stackRepository.ApplyIngestionStackUsageAsync(
+                            claim.OrganizationId,
+                            claim.ProjectId,
+                            claim.StackId,
+                            claim.MinimumOccurrenceDateUtc,
+                            claim.MaximumOccurrenceDateUtc,
+                            claim.Count,
+                            claim.SettlementSequence,
+                            sendNotifications);
+                        acknowledged.Add(claim);
+                        _logger.LogTrace(
+                            "Applied V3 stack-usage settlement {SettlementSequence} with {OccurrenceCount} occurrences for organization:{OrganizationId} project:{ProjectId} stack:{StackId} with Min Date:{OccurrenceMinDate} Max Date:{OccurrenceMaxDate}",
+                            claim.SettlementSequence,
+                            claim.Count,
+                            claim.OrganizationId,
+                            claim.ProjectId,
+                            claim.StackId,
+                            claim.MinimumOccurrenceDateUtc,
+                            claim.MaximumOccurrenceDateUtc);
+                    }
+                    catch (OperationCanceledException) when (claimCancellationToken.IsCancellationRequested)
+                    {
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(
+                            ex,
+                            "Error applying V3 stack-usage settlement {SettlementSequence} for organization:{OrganizationId} project:{ProjectId} stack:{StackId}",
+                            claim.SettlementSequence,
+                            claim.OrganizationId,
+                            claim.ProjectId,
+                            claim.StackId);
+                    }
+                });
+        }
+        finally
+        {
+            if (!acknowledged.IsEmpty)
             {
-                if (!await _stackRepository.IncrementEventCounterAsync(organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate, occurrenceCount, sendNotifications))
-                {
-                    shouldRetry = true;
-                    await IncrementStackUsageAsync(organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate, occurrenceCount);
-                }
-                else
-                {
-                    _logger.LogTrace("Increment event count {OccurrenceCount} for organization:{OrganizationId} project:{ProjectId} stack:{StackId} with Min Date:{OccurrenceMinDate} Max Date:{OccurrenceMaxDate}", occurrenceCount, organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error incrementing event count for organization: {OrganizationId} project:{ProjectId} stack:{StackId}", organizationId, projectId, stackId);
-                if (!shouldRetry)
-                {
-                    await IncrementStackUsageAsync(organizationId, projectId, stackId, occurrenceMinDate, occurrenceMaxDate, occurrenceCount);
-                }
+                await _ingestionStackUsageStore.AcknowledgeAsync(acknowledged.ToArray(), CancellationToken.None);
             }
         }
     }

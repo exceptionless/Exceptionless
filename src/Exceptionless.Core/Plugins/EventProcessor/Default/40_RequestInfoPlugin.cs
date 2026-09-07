@@ -11,18 +11,8 @@ namespace Exceptionless.Core.Plugins.EventProcessor;
 [Priority(40)]
 public sealed class RequestInfoPlugin : EventProcessorPluginBase
 {
-    public const int MAX_VALUE_LENGTH = 1000;
-    public static readonly List<string> DefaultExclusions =
-    [
-        "*VIEWSTATE*",
-        "*EVENTVALIDATION*",
-        "*ASPX*",
-        "__RequestVerificationToken",
-        "ASP.NET_SessionId",
-        "__LastErrorId",
-        "WAWebSiteID",
-        "ARRAffinity"
-    ];
+    public const int MAX_VALUE_LENGTH = RequestInfoExtensions.MaximumDataValueLength;
+    public static readonly List<string> DefaultExclusions = [.. RequestInfoExtensions.DefaultDataExclusions];
 
     private readonly UserAgentParser _parser;
     private readonly ITextSerializer _serializer;
