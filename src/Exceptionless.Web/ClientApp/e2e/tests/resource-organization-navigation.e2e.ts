@@ -12,19 +12,30 @@ test('organization deep links select the destination organization', async ({ e2e
     expect(e2eScenario.organizationId).not.toBe(e2eSecondaryOrganization.organizationId);
 });
 
-for (const resource of ['project', 'stack', 'event', 'stack event', 'project stack'] as const) {
+for (const resource of ['project', 'stack', 'event', 'stack event', 'project stack', 'mismatched project stack'] as const) {
     test(`${resource} deep links select the destination organization`, async ({ e2eApi, e2eScenario, e2eSecondaryOrganization, page }) => {
         const event = resource === 'project' ? undefined : await seedRepresentativeEvent(e2eApi, e2eScenario.userToken, e2eSecondaryOrganization);
-        const href =
-            resource === 'project'
-                ? `/next/project/${e2eSecondaryOrganization.projectId}/settings`
-                : resource === 'project stack'
-                  ? `/next/project/${e2eSecondaryOrganization.projectId}/stacks/${event!.stack_id}`
-                  : resource === 'stack'
-                    ? `/next/stack/${event!.stack_id}`
-                    : resource === 'event'
-                      ? `/next/event/${event!.id}`
-                      : `/next/stack/${event!.stack_id}/event/${event!.id}`;
+        let href: string;
+        switch (resource) {
+            case 'event':
+                href = `/next/event/${event!.id}`;
+                break;
+            case 'mismatched project stack':
+                href = `/next/project/${e2eScenario.projectId}/stacks/${event!.stack_id}`;
+                break;
+            case 'project':
+                href = `/next/project/${e2eSecondaryOrganization.projectId}/settings`;
+                break;
+            case 'project stack':
+                href = `/next/project/${e2eSecondaryOrganization.projectId}/stacks/${event!.stack_id}`;
+                break;
+            case 'stack':
+                href = `/next/stack/${event!.stack_id}`;
+                break;
+            case 'stack event':
+                href = `/next/stack/${event!.stack_id}/event/${event!.id}`;
+                break;
+        }
 
         await page.goto(href);
         await expectOrganization(page, e2eSecondaryOrganization.organizationId);

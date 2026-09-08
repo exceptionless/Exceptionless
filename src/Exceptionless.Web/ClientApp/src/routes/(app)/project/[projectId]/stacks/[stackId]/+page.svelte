@@ -6,13 +6,36 @@
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing';
+    import { buildStackDetailsHref } from '$features/events/components/summary';
     import { organization } from '$features/organizations/context.svelte';
+    import { getStackQuery } from '$features/stacks/api.svelte';
     import StackDetails from '$features/stacks/components/stack-details.svelte';
     import { toast } from 'svelte-sonner';
 
     import { getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../../../../redirect-to-events.svelte.js';
 
+    const projectId = $derived(page.params.projectId || '');
     const stackId = $derived(page.params.stackId || '');
+    const stackQuery = getStackQuery({
+        route: {
+            get id() {
+                return stackId;
+            }
+        }
+    });
+
+    $effect(() => {
+        if (stackQuery.isError) {
+            handleError(stackQuery.error);
+            return;
+        }
+
+        if (stackQuery.isSuccess && stackQuery.data.project_id !== projectId) {
+            void goto(buildStackDetailsHref(stackQuery.data.id), {
+                replaceState: true
+            });
+        }
+    });
 
     async function filterChanged(addedOrUpdated: IFilter) {
         await redirectToEventsWithFilter(organization.current, addedOrUpdated, getEventsNavigationOptionsForFilter(addedOrUpdated));
@@ -29,7 +52,7 @@
     async function handleDeleted() {
         await goto(
             resolve('/(app)/project/[projectId]/stacks', {
-                projectId: page.params.projectId || ''
+                projectId
             })
         );
     }
@@ -39,4 +62,6 @@
     });
 </script>
 
-<StackDetails {filterChanged} {handleError} onDeleted={handleDeleted} {stackId} />
+{#if stackQuery.isSuccess && stackQuery.data.project_id === projectId}
+    <StackDetails {filterChanged} {handleError} onDeleted={handleDeleted} {stackId} />
+{/if}
