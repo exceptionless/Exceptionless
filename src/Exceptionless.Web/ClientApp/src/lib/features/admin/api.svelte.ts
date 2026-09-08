@@ -48,7 +48,7 @@ export const queryKeys = {
     migrations: ['admin', 'migrations'] as const,
     oauthApplication: (id: string | undefined) => [...queryKeys.oauthApplications, id] as const,
     oauthApplications: ['admin', 'oauth-applications'] as const,
-    productTourUsage: (range: { end?: string; start?: string }) => ['admin', 'product-tour-usage', range] as const,
+    productTourUsage: (time: string) => ['admin', 'product-tour-usage', time] as const,
     snapshots: ['admin', 'elasticsearch', 'snapshots'] as const,
     stats: ['admin', 'stats'] as const
 };
@@ -115,15 +115,17 @@ export function getAdminAssistantUsageQuery(month: () => string) {
     }));
 }
 
-export function getAdminProductTourUsageQuery(range: () => { end?: string; start?: string }) {
+export function getAdminProductTourUsageQuery(time: () => string) {
     return createQuery<ProductTourUsageResponse, ProblemDetails>(() => {
-        const selectedRange = range();
+        const selectedTime = time();
 
         return {
             queryFn: async ({ signal }: { signal: AbortSignal }) => {
                 const client = useFetchClient();
                 const response = await client.getJSON<ProductTourUsageResponse>('admin/product-tour-usage', {
-                    params: selectedRange,
+                    params: {
+                        time: selectedTime
+                    },
                     signal
                 });
 
@@ -133,7 +135,7 @@ export function getAdminProductTourUsageQuery(range: () => { end?: string; start
 
                 return response.data!;
             },
-            queryKey: queryKeys.productTourUsage(selectedRange),
+            queryKey: queryKeys.productTourUsage(selectedTime),
             staleTime: 60 * 1000
         };
     });

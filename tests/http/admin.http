@@ -58,6 +58,14 @@ Authorization: Bearer {{token}}
 GET {{apiUrl}}/admin/product-tour-usage?start=2026-08-01T00:00:00Z&end=2026-08-31T00:00:00Z
 Authorization: Bearer {{token}}
 
+### Product Tour Usage (30 calendar days including today, resolved on the server)
+GET {{apiUrl}}/admin/product-tour-usage?time=[now-29d/d%20TO%20now]
+Authorization: Bearer {{token}}
+
+### Product Tour Usage (calendar month, exclusive end)
+GET {{apiUrl}}/admin/product-tour-usage?time=[2026-08-01%7C%7C/M%20TO%202026-08-01%7C%7C%2B1M/M}
+Authorization: Bearer {{token}}
+
 ### Product Tour Usage (available retained history; automatic range-based buckets)
 GET {{apiUrl}}/admin/product-tour-usage
 Authorization: Bearer {{token}}

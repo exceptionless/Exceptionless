@@ -145,6 +145,23 @@ public class AdminHandler(
     {
         DateTime utcEnd = message.End?.ToUniversalTime() ?? timeProvider.GetUtcNow().UtcDateTime;
         DateTime? utcStart = message.Start?.ToUniversalTime();
+        if (!String.IsNullOrEmpty(message.Time))
+        {
+            if (message.Start.HasValue || message.End.HasValue)
+            {
+                return Result.Invalid(ValidationError.Create("time", "Specify time or start/end, not both."));
+            }
+
+            var range = DateTimeRange.Parse(message.Time, timeProvider.GetUtcNow());
+            if (range.UtcStart == DateTime.MinValue && range.UtcEnd == DateTime.MaxValue)
+            {
+                return Result.Invalid(ValidationError.Create("time", "Specify a valid date range."));
+            }
+
+            utcStart = range.UtcStart == DateTime.MinValue ? null : range.UtcStart;
+            utcEnd = range.UtcEnd == DateTime.MaxValue ? utcEnd : range.UtcEnd;
+        }
+
         if (utcStart.HasValue && utcStart >= utcEnd)
         {
             return Result.Invalid(ValidationError.Create("start", "Start must be earlier than end."));
@@ -198,7 +215,7 @@ public class AdminHandler(
             .ToArray();
 
         return new ProductTourUsageResponse(
-            !message.Start.HasValue ? usage.Buckets.SelectMany(bucket => bucket.Activity).Where(period => period.Count > 0).Select(period => (DateTime?)period.DateUtc).Min() : utcStart,
+            !utcStart.HasValue ? usage.Buckets.SelectMany(bucket => bucket.Activity).Where(period => period.Count > 0).Select(period => (DateTime?)period.DateUtc).Min() : utcStart,
             utcEnd,
             tours)
         {

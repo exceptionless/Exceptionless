@@ -449,6 +449,13 @@
               "type": "string",
               "format": "date-time"
             }
+          },
+          {
+            "name": "time",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {

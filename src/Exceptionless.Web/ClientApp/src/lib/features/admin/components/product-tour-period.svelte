@@ -4,22 +4,20 @@
     import { Input } from '$comp/ui/input';
     import * as Popover from '$comp/ui/popover';
     import Calendar from '@lucide/svelte/icons/calendar';
-    import { untrack } from 'svelte';
-
-    import type { ProductTourUsageRange } from '../product-tour-usage';
 
     import { getUtcMonthKey } from '../assistant-usage';
 
-    let { range = $bindable() }: { range: ProductTourUsageRange } = $props();
+    let { time = $bindable() }: { time: string } = $props();
     let open = $state(false);
     const currentMonth = getUtcMonthKey();
-    let month = $state(untrack(() => (range.kind === 'month' ? range.month : currentMonth)));
+    let month = $state(currentMonth);
+    let selectedMonth = $state(currentMonth);
     const label = $derived(
-        range.kind === 'days'
-            ? `Last ${range.days} days`
-            : range.kind === 'history'
+        time === '[now-29d/d TO now]'
+            ? 'Last 30 days'
+            : !time
               ? 'Available history'
-              : new Date(`${range.month}-01T00:00:00Z`).toLocaleDateString(undefined, {
+              : new Date(`${selectedMonth}-01T00:00:00Z`).toLocaleDateString(undefined, {
                     month: 'long',
                     timeZone: 'UTC',
                     year: 'numeric'
@@ -27,10 +25,8 @@
     );
 
     function selectMonth(): void {
-        range = {
-            kind: 'month',
-            month
-        };
+        selectedMonth = month;
+        time = `[${month}-01||/M TO ${month}-01||+1M/M}`;
         open = false;
     }
 </script>
@@ -48,10 +44,7 @@
             class="mb-3 w-full"
             variant="ghost"
             onclick={() => {
-                range = {
-                    days: 30,
-                    kind: 'days'
-                };
+                time = '[now-29d/d TO now]';
                 open = false;
             }}>Last 30 days</Button
         >
@@ -72,9 +65,7 @@
             <Button
                 variant="ghost"
                 onclick={() => {
-                    range = {
-                        kind: 'history'
-                    };
+                    time = '';
                     open = false;
                 }}>Available history</Button
             >

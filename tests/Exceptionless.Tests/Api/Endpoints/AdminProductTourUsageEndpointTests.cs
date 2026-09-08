@@ -95,6 +95,55 @@ public sealed class AdminProductTourUsageEndpointTests : IntegrationTestsBase
         Assert.DoesNotContain(response.Tours, tour => tour.Started > 0 && (tour.Name is "unknown" or "ignored-tour"));
     }
 
+    [Theory]
+    [InlineData("2026-03-02T12:00:00Z", "[now-29d/d TO now]", "2026-02-01T00:00:00Z", "2026-03-02T12:00:00Z")]
+    [InlineData("2024-03-01T23:59:00Z", "[now-29d/d TO now]", "2024-02-01T00:00:00Z", "2024-03-01T23:59:00Z")]
+    [InlineData("2026-01-15T00:00:00Z", "[now-29d/d TO now]", "2025-12-17T00:00:00Z", "2026-01-15T00:00:00Z")]
+    [InlineData("2026-03-02T12:00:00Z", "[2026-02-01||/M TO 2026-02-01||+1M/M}", "2026-02-01T00:00:00Z", "2026-03-01T00:00:00Z")]
+    [InlineData("2024-03-02T12:00:00Z", "[2024-02-01||/M TO 2024-02-01||+1M/M}", "2024-02-01T00:00:00Z", "2024-03-01T00:00:00Z")]
+    public async Task GetProductTourUsageAsync_TimeExpression_ResolvesBoundsOnServer(string now, string time, string start, string end)
+    {
+        // Arrange
+        TimeProvider.SetUtcNow(DateTimeOffset.Parse(now));
+        var utcStart = DateTimeOffset.Parse(start).UtcDateTime;
+        var utcEnd = DateTimeOffset.Parse(end).UtcDateTime;
+        string source = ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Started, ProductTours.AppOverview, 1, ProductTourLaunchSource.Catalog);
+        await CreateDataAsync(builder =>
+        {
+            AddUsage(builder, source, utcStart.AddSeconds(-1), "before");
+            AddUsage(builder, source, utcStart, "included");
+            AddUsage(builder, source, utcEnd, "after");
+        });
+
+        // Act
+        var response = await SendRequestAsAsync<ProductTourUsageResponse>(request => request.AsGlobalAdminUser()
+            .AppendPath("admin/product-tour-usage").QueryString("time", time).StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(response);
+        Assert.Equal(utcStart, response.UtcStart);
+        Assert.Equal(utcEnd, response.UtcEnd);
+        Assert.Equal(1, Assert.Single(response.Tours, tour => String.Equals(tour.Name, ProductTours.AppOverview, StringComparison.Ordinal)).Started);
+    }
+
+    [Theory]
+    [InlineData("invalid", null)]
+    [InlineData("[2026-02-30 TO now]", null)]
+    [InlineData("[now-29d/d TO now]", "2026-01-01T00:00:00Z")]
+    public Task GetProductTourUsageAsync_InvalidOrMixedTimeExpression_ReturnsValidationProblem(string time, string? start)
+    {
+        // Act & Assert
+        return SendRequestAsync(request =>
+        {
+            request.AsGlobalAdminUser().AppendPath("admin/product-tour-usage")
+                .QueryString("time", time).StatusCodeShouldBeUnprocessableEntity();
+            if (start is not null)
+            {
+                request.QueryString("start", start);
+            }
+        });
+    }
+
     [Fact]
     public async Task GetProductTourUsageAsync_History_ReturnsConfiguredAvailableRange()
     {

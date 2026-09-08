@@ -1,5 +1,4 @@
 <script lang="ts">
-    import type { ProductTourUsageRange } from '$features/admin/product-tour-usage';
     import type { ProductTourSummary } from '$generated/api';
 
     import TimeAgo from '$comp/formatters/time-ago.svelte';
@@ -13,15 +12,11 @@
     import ProductTourActivityPopover from '$features/admin/components/product-tour-activity-popover.svelte';
     import ProductTourActivity from '$features/admin/components/product-tour-activity.svelte';
     import ProductTourPeriod from '$features/admin/components/product-tour-period.svelte';
-    import { getProductTourUsageParams } from '$features/admin/product-tour-usage';
     import { productTourCatalog } from '$features/product-tours/catalog';
     import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 
-    let range = $state<ProductTourUsageRange>({
-        days: 30,
-        kind: 'days'
-    });
-    const usageQuery = getAdminProductTourUsageQuery(() => getProductTourUsageParams(range));
+    let time = $state('[now-29d/d TO now]');
+    const usageQuery = getAdminProductTourUsageQuery(() => time);
     const usage = $derived(usageQuery.data);
     const guides = $derived(usage?.tours.filter((tour) => tour.kind === 'guide') ?? []);
     const invitations = $derived(usage?.tours.filter((tour) => tour.kind === 'prompt') ?? []);
@@ -50,7 +45,7 @@
     <div class="flex flex-wrap items-center justify-between gap-3">
         <Muted>Guide activity</Muted>
         <div class="flex items-center gap-2" aria-label="Usage filters">
-            <ProductTourPeriod bind:range />
+            <ProductTourPeriod bind:time />
             <Button variant="outline" size="icon" aria-label="Refresh tour activity" disabled={usageQuery.isFetching} onclick={() => usageQuery.refetch()}>
                 <RefreshCw />
             </Button>

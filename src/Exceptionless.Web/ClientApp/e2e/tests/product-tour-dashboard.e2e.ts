@@ -16,8 +16,10 @@ test('real dashboard matches repository totals across rolling, month, and histor
             }
 
             return period === 'Available history'
-                ? !url.searchParams.has('start')
-                : url.searchParams.has('start') && url.searchParams.has('end') === (period === 'Show month');
+                ? !url.searchParams.get('time')
+                : period === 'Last 30 days'
+                  ? url.searchParams.get('time') === '[now-29d/d TO now]'
+                  : !!url.searchParams.get('time')?.includes('||+1M/M}');
         });
         if (period === 'Last 30 days') {
             await page.goto('/next/system/product-tours');
@@ -100,7 +102,7 @@ test('synthetic activity charts support keyboard, compact ranges, and light/dark
     }));
     const sum = (key: 'completed' | 'dismissed' | 'shown' | 'started') => activity.reduce((total, day) => total + day[key], 0);
     await page.route('**/api/v2/admin/product-tour-usage*', (route) => {
-        const history = !new URL(route.request().url()).searchParams.has('start');
+        const history = !new URL(route.request().url()).searchParams.get('time');
         const periods = history
             ? activity.map((period, index) => ({
                   ...period,
