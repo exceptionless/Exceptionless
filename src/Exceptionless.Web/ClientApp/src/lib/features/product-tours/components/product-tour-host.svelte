@@ -410,7 +410,7 @@
     bind:open={catalogOpen}
     {items}
     onStart={(name) => startTour(name, catalogSource)}
-    ready={hostStateSettled && !!currentUser}
+    ready={stateSettled && !!currentUser}
     resumableTourName={checkpoint && isActiveTourRenderable(checkpoint) ? checkpoint.tourName : undefined}
 />
 

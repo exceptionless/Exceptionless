@@ -119,6 +119,13 @@
     let targetReady = $state(false);
     const isHelpStep = currentCheckpoint.tourName === 'app-overview' && currentCheckpoint.checkpointName === 'help';
     const helpTarget = $derived(isHelpStep ? controls?.getGuidedToursTarget() : undefined);
+    const navigationReady = $derived(!isMobile || !spotlight?.mobileNavigation || !!controls?.getNavigationTarget());
+
+    $effect(() => {
+        if (isHelpStep && targetReady && navigationReady) {
+            controls?.showGuidedToursMenu();
+        }
+    });
 
     onMount(() => {
         if (currentCheckpoint.tourName === 'app-overview' && currentCheckpoint.checkpointName === 'exie' && !currentAssistantAccess?.has_access) {
@@ -128,10 +135,6 @@
 
         if (isMobile || spotlight?.mobileNavigation) {
             setMobileNavigationOpen(spotlight?.mobileNavigation ?? false);
-        }
-
-        if (isHelpStep) {
-            controls?.showGuidedToursMenu();
         }
 
         targetReady = true;
@@ -188,7 +191,7 @@
     }
 </script>
 
-{#if spotlight && targetReady && (!isAnyOverlayOpen || helpTarget || checkpoint.tourName === 'exie-overview')}
+{#if spotlight && targetReady && navigationReady && (!isAnyOverlayOpen || helpTarget || checkpoint.tourName === 'exie-overview')}
     {#key helpTarget}
         <ProductTourSpotlight
             checkpoint={currentCheckpoint}

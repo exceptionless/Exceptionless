@@ -100,10 +100,12 @@
     let isUserMenuOpen = $state(false);
     let productToursComponent = $state<ProductTourHost>();
     let sidebarUserComponent = $state<SidebarUser>();
+    let sidebarElement = $state<HTMLDivElement | null>(null);
 
     setProductTourControls({
         closeOverlays: closeProductTourOverlays,
         getGuidedToursTarget: () => sidebarUserComponent?.getGuidedToursTarget(),
+        getNavigationTarget: () => sidebarElement ?? undefined,
         openCatalog: () => openGuidedTours('catalog'),
         showGuidedToursMenu: () => {
             closeProductTourOverlays();
@@ -737,7 +739,7 @@
         openCommand={openCommandPalette}
         toggleAssistant={() => void toggleAssistantPanel()}
     />
-    <Sidebar routes={filteredRoutes} onSavedViewOrderChange={saveSavedViewOrder}>
+    <Sidebar bind:ref={sidebarElement} routes={filteredRoutes} onSavedViewOrderChange={saveSavedViewOrder}>
         {#snippet header()}
             <SidebarOrganizationSwitcher
                 bind:impersonateDialogOpen={isImpersonateOrganizationOpen}

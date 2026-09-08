@@ -3,6 +3,7 @@ import { getContext, setContext } from 'svelte';
 interface ProductTourControls {
     closeOverlays: () => void;
     getGuidedToursTarget: () => HTMLElement | undefined;
+    getNavigationTarget: () => HTMLElement | undefined;
     openCatalog: () => void;
     showGuidedToursMenu: () => void;
 }

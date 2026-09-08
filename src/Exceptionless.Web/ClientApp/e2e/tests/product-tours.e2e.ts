@@ -256,7 +256,11 @@ test.describe('shell and identity checkpoints', () => {
             await expectProductTourSession(page, true);
             const writesBeforeSwitch = progressWrites.length;
             const projectsRoute = `**/api/v2/organizations/${e2eSecondaryOrganization.organizationId}/projects*`;
-            await page.route(projectsRoute, (route) => route.fulfill({ json: { title: 'Injected project lookup failure' }, status: 500 }));
+            const projectLookup = Promise.withResolvers<void>();
+            await page.route(projectsRoute, async (route) => {
+                await projectLookup.promise;
+                await route.fulfill({ json: { title: 'Injected project lookup failure' }, status: 500 });
+            });
 
             const identityTab = await page.context().newPage();
             await identityTab.goto('/next/stack');
@@ -269,7 +273,12 @@ test.describe('shell and identity checkpoints', () => {
             await page.getByRole('button', { name: 'Search Exceptionless' }).click();
             await page.getByRole('dialog').getByText('Guided Tours…', { exact: true }).click();
             const catalog = page.getByRole('dialog', { name: 'Guided Tours' });
-            await expect(catalog.getByRole('button', { exact: true, name: 'Restart Explore Exceptionless' })).toBeEnabled();
+            try {
+                // Shell guides do not depend on the pending project lookup.
+                await expect(catalog.getByRole('button', { exact: true, name: 'Restart Explore Exceptionless' })).toBeEnabled();
+            } finally {
+                projectLookup.resolve();
+            }
             await expect(catalog.getByRole('button', { exact: true, name: 'Start Configure a project' })).toBeDisabled();
             await expect(catalog.getByText('Projects could not be loaded. Try again shortly.', { exact: true })).toBeVisible();
             await page.keyboard.press('Escape');

@@ -73,7 +73,7 @@
         routes: NavigationItem[];
     };
 
-    let { footer, header, onSavedViewOrderChange, routes, ...props }: Props = $props();
+    let { footer, header, onSavedViewOrderChange, ref = $bindable(null), routes, ...props }: Props = $props();
     const dashboardRoutes = $derived(routes.filter((route) => route.group === 'Dashboards'));
 
     const settingsRoutes = $derived(routes.filter((route) => route.group === 'Settings'));
@@ -359,7 +359,7 @@
     });
 </script>
 
-<Sidebar.Root collapsible="icon" data-tour="app-navigation" {...props}>
+<Sidebar.Root bind:ref collapsible="icon" data-tour="app-navigation" {...props}>
     <Sidebar.Header class={!sidebar.isMobile ? 'mt-16' : ''}>
         {#if header}
             {@render header()}
