@@ -7,6 +7,7 @@ using Exceptionless.Web.Models;
 using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Exceptions;
+using Foundatio.Repositories.Models;
 using Xunit;
 
 namespace Exceptionless.Tests.Api.Endpoints;
@@ -59,6 +60,34 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
         Assert.Equal(ProductTourStatus.Completed, progress.Status);
         Assert.Equal(progress, cachedUser.ProductTours[ProductTours.AppOverview]);
         Assert.Equal(progress, cachedByEmail.ProductTours[ProductTours.AppOverview]);
+    }
+
+    [Fact]
+    public async Task UpdateProductTourProgressAsync_CacheRepopulatedAfterPatch_ReturnsLatestProgress()
+    {
+        // Arrange
+        var user = await GetTestOrganizationUserAsync();
+        await _userRepository.GetByIdAsync(user.Id, options => options.Cache());
+        var cache = GetService<ICacheClient>();
+        string cacheKey = $"User:{user.Id}";
+        var staleEntry = await cache.GetAsync<ICollection<FindHit<User>>>(cacheKey);
+        Assert.True(staleEntry.HasValue);
+        var repository = Assert.IsType<UserRepository>(_userRepository);
+
+        // Simulate an earlier read populating the cache after the patch invalidated it.
+        using var subscription = repository.BeforeGet.AddHandler(async (_, _) =>
+        {
+            Assert.False((await cache.GetAsync<ICollection<FindHit<User>>>(cacheKey)).HasValue);
+            await cache.SetAsync(cacheKey, staleEntry.Value);
+        });
+
+        // Act
+        var progress = await _userRepository.UpdateProductTourProgressAsync(user.Id, ProductTours.AppOverview,
+            new ProductTourProgress { Status = ProductTourStatus.Completed, Version = 1 });
+
+        // Assert
+        Assert.Equal(ProductTourStatus.Completed, progress.Status);
+        Assert.Equal(1, progress.Version);
     }
 
     [Fact]

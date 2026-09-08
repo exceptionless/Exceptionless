@@ -106,11 +106,14 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
             }
         };
 
-        await PatchAsync(userId, patch, options => options.Cache());
+        await PatchAsync(userId, patch);
 
-        var user = await GetByIdAsync(userId, options => options.Cache());
+        // An in-flight read can repopulate stale cache entries after patch invalidation.
+        var user = await GetByIdAsync(userId, options => options.Cache(false));
         if (user is null || !user.ProductTours.TryGetValue(tourName, out var storedProgress))
             throw new DocumentNotFoundException(userId);
+
+        await AddDocumentsToCacheAsync(user, ConfigureOptions(new CommandOptions<User>().Cache()), isDirtyRead: false);
 
         return storedProgress;
     }
