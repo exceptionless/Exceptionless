@@ -1,5 +1,6 @@
 <script lang="ts">
     import { resolve } from '$app/paths';
+    import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
     import Currency from '$comp/formatters/currency.svelte';
     import DateTime from '$comp/formatters/date-time.svelte';
@@ -12,7 +13,6 @@
     import { ChangePlanDialog } from '$features/billing';
     import { getInvoiceStatusLabel } from '$features/billing/invoice';
     import { getInvoicesQuery, getOrganizationQuery } from '$features/organizations/api.svelte';
-    import { organization } from '$features/organizations/context.svelte';
     import GlobalUser from '$features/users/components/global-user.svelte';
     import { createQueryParameters } from '$shared/query-params';
     import CreditCard from '@lucide/svelte/icons/credit-card';
@@ -22,7 +22,7 @@
     const organizationQuery = getOrganizationQuery({
         route: {
             get id() {
-                return organization.current;
+                return page.params.organizationId;
             }
         }
     });
@@ -30,7 +30,7 @@
     const invoicesQuery = getInvoicesQuery({
         route: {
             get organizationId() {
-                return organization.current!;
+                return page.params.organizationId!;
             }
         }
     });

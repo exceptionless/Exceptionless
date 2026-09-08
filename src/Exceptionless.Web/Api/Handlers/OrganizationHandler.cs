@@ -203,8 +203,7 @@ public class OrganizationHandler(
         if (!options.StripeOptions.EnableBilling)
             return Result.NotFound("Organization not found.");
 
-        using var _ = _logger.BeginScope(new ExceptionlessState().Tag("Invoice").Identity(GetCurrentUser(message.Context).EmailAddress)
-            .Property("User", GetCurrentUser(message.Context)).SetHttpContext(message.Context));
+        using var _ = _logger.BeginScope(new ExceptionlessState().Tag("Invoice").Identity(GetCurrentUser(message.Context).EmailAddress).SetHttpContext(message.Context));
 
         string invoiceId = message.Id;
         if (!invoiceId.StartsWith("in_", StringComparison.Ordinal))
@@ -357,7 +356,7 @@ public class OrganizationHandler(
             return Result.NotFound("Organization not found.");
 
         using var _ = _logger.BeginScope(new ExceptionlessState().Tag("Change Plan").Organization(message.Id)
-            .Identity(GetCurrentUser(message.Context).EmailAddress).Property("User", GetCurrentUser(message.Context)).SetHttpContext(message.Context));
+            .Identity(GetCurrentUser(message.Context).EmailAddress).SetHttpContext(message.Context));
 
         if (!options.StripeOptions.EnableBilling)
             return Result.NotFound("Organization not found.");
@@ -666,7 +665,7 @@ public class OrganizationHandler(
                     DateAdded = timeProvider.GetUtcNow().UtcDateTime
                 };
                 organization.Invites.Add(invite);
-                await repository.SaveAsync(organization, o => o.Cache());
+                await repository.SaveAsync(organization, o => o.ImmediateConsistency().Cache());
             }
 
             await mailer.SendOrganizationInviteAsync(GetCurrentUser(message.Context), organization, invite);
@@ -706,6 +705,8 @@ public class OrganizationHandler(
             user.OrganizationIds.Remove(organization.Id);
             foreach (var preference in user.OrganizationPreferences.Where(preference => String.Equals(preference.OrganizationId, organization.Id, StringComparison.Ordinal)).ToList())
                 user.OrganizationPreferences.Remove(preference);
+            foreach (var preference in user.SavedViewOrders.Where(preference => String.Equals(preference.OrganizationId, organization.Id, StringComparison.Ordinal)).ToList())
+                user.SavedViewOrders.Remove(preference);
             await userRepository.SaveAsync(user, o => o.Cache());
             await messagePublisher.PublishAsync(new UserMembershipChanged
             {
@@ -878,7 +879,7 @@ public class OrganizationHandler(
         var user = GetCurrentUser(httpContext);
         foreach (var organization in organizations)
         {
-            using var _ = _logger.BeginScope(new ExceptionlessState().Organization(organization.Id).Tag("Delete").Identity(user.EmailAddress).Property("User", user).SetHttpContext(httpContext));
+            using var _ = _logger.BeginScope(new ExceptionlessState().Organization(organization.Id).Tag("Delete").Identity(user.EmailAddress).SetHttpContext(httpContext));
             _logger.UserDeletingOrganization(user.Id, organization.Name, organization.Id);
             await organizationService.SoftDeleteOrganizationAsync(organization, user.Id);
         }

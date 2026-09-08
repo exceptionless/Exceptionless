@@ -19,6 +19,7 @@ public record ViewCurrentUser : ViewUser
         IsActive = user.IsActive;
         Roles = user.Roles;
         OrganizationPreferences = user.OrganizationPreferences;
+        SavedViewOrders = user.SavedViewOrders;
 
         Hash = HMACSHA256HashString(user.Id, options);
         HasLocalAccount = !String.IsNullOrWhiteSpace(user.Password);
@@ -29,6 +30,7 @@ public record ViewCurrentUser : ViewUser
     public bool HasLocalAccount { get; set; }
     public ICollection<OAuthAccount> OAuthAccounts { get; set; }
     public ICollection<UserOrganizationPreference> OrganizationPreferences { get; set; }
+    public ICollection<UserSavedViewOrderPreference> SavedViewOrders { get; set; }
 
     private static string? HMACSHA256HashString(string value, IntercomOptions options)
     {

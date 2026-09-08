@@ -100,6 +100,17 @@ describe('getSavedViewDefaultHref', () => {
 
         expect(getSavedViewDefaultHref(defaults, savedViews)).toBe('/next/stream?saved=stream-default');
     });
+
+    it('builds Sessions saved view links for a configured home view', () => {
+        const savedViews = [savedView({ id: 'sessions-default', slug: 'active', view_type: 'sessions' })];
+        const defaults = resolveSavedViewDefaults({
+            organizationId: 'organization-id',
+            organizationPreferences: [preference('sessions-default')],
+            savedViews
+        });
+
+        expect(getSavedViewDefaultHref(defaults, savedViews)).toBe('/next/sessions/active');
+    });
 });
 
 function preference(defaultSavedViewId: string): UserOrganizationPreference {

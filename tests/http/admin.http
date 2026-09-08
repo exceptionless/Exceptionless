@@ -167,6 +167,20 @@ Authorization: Bearer {{token}}
 GET {{apiUrl}}/admin/migrations
 Authorization: Bearer {{token}}
 
+### Rerun Migration
+# @name rerunMigration
+POST {{apiUrl}}/admin/migrations/5/rerun
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "confirmation": "RERUN 5"
+}
+
+### Get Migration Rerun Status
+GET {{apiUrl}}/admin/migrations/reruns/{{rerunMigration.response.body.$.workers[0]}}
+Authorization: Bearer {{token}}
+
 ### Elasticsearch Cluster Info
 GET {{apiUrl}}/admin/elasticsearch
 Authorization: Bearer {{token}}

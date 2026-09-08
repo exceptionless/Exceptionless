@@ -8,6 +8,7 @@ public record GetSavedViewsByOrganization(string OrganizationId, int Page, int L
 public record GetSavedViewsByView(string OrganizationId, string ViewType, int Page, int Limit);
 public record GetSavedViewById(string Id);
 public record UpdateUserSavedViewDefault(string OrganizationId, UpdateSavedViewDefault Default);
+public record UpdateUserSavedViewOrder(string OrganizationId, string ViewType, UpdateSavedViewOrder Order);
 public record UpdateOrganizationSavedViewDefault(string OrganizationId, UpdateSavedViewDefault Default);
 public record CreateSavedView(string OrganizationId, NewSavedView SavedView);
 public record CreatePredefinedSavedViews(string OrganizationId);

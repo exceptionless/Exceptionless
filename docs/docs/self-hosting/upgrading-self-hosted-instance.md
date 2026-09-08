@@ -16,6 +16,17 @@ We also upgraded to Elasticsearch 8 in the base images. One requirement of upgra
 
 You may also need to update the connection strings. In v8.2.7 we updated the Redis Connection String to remove the `server=` prefix.
 
+## Rerunning a completed migration
+
+Only migrations explicitly marked as safe to rerun can be started again. Create an Elasticsearch snapshot and stop older Exceptionless app and job instances before proceeding.
+
+- In the System UI, open **System → Migrations**, choose the migration's action menu, and select **Rerun migration**. The confirmation dialog shows the exact phrase you must enter.
+- From the job image or CLI, run `dotnet Exceptionless.Job.dll Migration --rerun <id>`, using the migration ID shown in the System UI. Pass the same Elasticsearch, Redis, and other configuration used by the normal migration job.
+
+A split deployment that runs jobs outside the web process must configure a distributed queue and Redis-backed cache to use the System UI action. If those services are unavailable, use the CLI command from the job instance instead.
+
+A rerun does not change the recorded current migration version or the original migration completion timestamp. Its outcome is reported separately in the UI and application logs.
+
 ## Upgrading from v7 to v7.1
 
 We made some changes to email configuration. Yoy wukk now be required to set the `EX_SmtpFrom` config map/environment variable in order to send email. The value should be in the following format: `"Exceptionless <noreply@YOUR_CUSTOM_DOMAIN_NAME>"`

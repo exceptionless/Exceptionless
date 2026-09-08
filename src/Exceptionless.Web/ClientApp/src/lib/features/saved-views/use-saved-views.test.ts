@@ -201,6 +201,12 @@ describe('useSavedViews', () => {
             // Assert
             expect(href).toBe('/next/event/legacy-saved-view');
         });
+
+        it('builds Sessions saved-view URLs on the Sessions route', () => {
+            const savedView = buildSavedView({ id: 'view-1', name: 'Active Sessions', slug: 'active', view_type: 'sessions' });
+
+            expect(savedViewHref(savedView)).toBe('/next/sessions/active');
+        });
     });
 
     describe('saved view slug resolution', () => {

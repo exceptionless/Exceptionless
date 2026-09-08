@@ -96,6 +96,22 @@ public static class AdminEndpoints
         group.MapPost("generate-sample-events", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, int eventCount = 250, int daysBack = 7)
             => (await mediator.InvokeAsync<Result<object>>(new AdminGenerateSampleEvents(eventCount, daysBack))).ToHttpResult(resultMapper));
 
+        group.MapPost("migrations/{version:int}/rerun", async (int version, HttpContext httpContext, [FromBody] RerunMigrationRequest request, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
+            => (await mediator.InvokeAsync<Result<WorkInProgressResult>>(new AdminRerunMigration(version, request.Confirmation, httpContext))).ToHttpResult(resultMapper))
+            .Accepts<RerunMigrationRequest>("application/json", "application/*+json")
+            .Produces<WorkInProgressResult>(StatusCodes.Status202Accepted)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
+            .WithSummary("Rerun a supported completed migration");
+
+        group.MapGet("migrations/reruns/{operationId}", async (string operationId, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
+            => (await mediator.InvokeAsync<Result<MigrationRerunOperationResponse>>(new GetAdminMigrationRerun(operationId))).ToHttpResult(resultMapper))
+            .Produces<MigrationRerunOperationResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .WithSummary("Get migration rerun status");
+
         return endpoints;
     }
 

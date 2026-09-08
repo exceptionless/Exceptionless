@@ -1,5 +1,7 @@
+import type { WorkInProgressResult } from '$generated/api';
+
 import { invalidateAssistantAccessQueries } from '$features/assistant/api.svelte';
-import { type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
+import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 
 import type {
@@ -9,6 +11,7 @@ import type {
     AdminStats,
     ElasticsearchInfo,
     ElasticsearchSnapshotsResponse,
+    MigrationRerunOperation,
     MigrationsResponse,
     OAuthApplication,
     OAuthApplicationRequest,
@@ -17,6 +20,17 @@ import type {
     UpdateAssistantSettingsRequest,
     UpdateEventSubmissionSettingsRequest
 } from './models';
+
+export type GetOAuthApplicationsParams = {
+    criteria?: string;
+    limit?: number;
+    organization?: string;
+    page?: number;
+};
+
+export type GetOAuthApplicationsRequest = {
+    params?: GetOAuthApplicationsParams;
+};
 
 export type RunMaintenanceJobParams = {
     name: string;
@@ -31,6 +45,7 @@ export const queryKeys = {
     elasticsearch: ['admin', 'elasticsearch'] as const,
     eventSubmissionSettings: ['admin', 'event-submission-settings'] as const,
     migrations: ['admin', 'migrations'] as const,
+    oauthApplication: (id: string | undefined) => [...queryKeys.oauthApplications, id] as const,
     oauthApplications: ['admin', 'oauth-applications'] as const,
     snapshots: ['admin', 'elasticsearch', 'snapshots'] as const,
     stats: ['admin', 'stats'] as const
@@ -162,6 +177,29 @@ export function getEventSubmissionSettingsQuery() {
     }));
 }
 
+export function getMigrationRerunQuery(operationId: () => string | undefined) {
+    return createQuery<MigrationRerunOperation, ProblemDetails>(() => ({
+        enabled: () => !!operationId(),
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<MigrationRerunOperation>(`admin/migrations/reruns/${operationId()}`, {
+                signal
+            });
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+
+            return response.data!;
+        },
+        queryKey: [...queryKeys.migrations, 'rerun', operationId()],
+        refetchInterval: (query) => {
+            const status = query.state.data?.status;
+            return status === 'Completed' || status === 'Failed' || status === 'Cancelled' ? false : 2000;
+        }
+    }));
+}
+
 export function getMigrationsQuery() {
     return createQuery<MigrationsResponse, ProblemDetails>(() => ({
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
@@ -177,11 +215,12 @@ export function getMigrationsQuery() {
     }));
 }
 
-export function getOAuthApplicationsQuery() {
-    return createQuery<OAuthApplication[], ProblemDetails>(() => ({
+export function getOAuthApplicationQuery(id: () => string | undefined) {
+    return createQuery<OAuthApplication, ProblemDetails>(() => ({
+        enabled: () => !!id(),
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
-            const response = await client.getJSON<OAuthApplication[]>('admin/oauth-applications', {
+            const response = await client.getJSON<OAuthApplication>(`admin/oauth-applications/${id()}`, {
                 signal
             });
 
@@ -189,9 +228,38 @@ export function getOAuthApplicationsQuery() {
                 throw response.problem;
             }
 
-            return response.data ?? [];
+            return response.data!;
         },
-        queryKey: queryKeys.oauthApplications,
+        queryKey: queryKeys.oauthApplication(id()),
+        staleTime: 30 * 1000
+    }));
+}
+
+export function getOAuthApplicationsQuery(request: GetOAuthApplicationsRequest = {}) {
+    return createQuery<FetchClientResponse<OAuthApplication[]>, ProblemDetails>(() => ({
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<OAuthApplication[]>('admin/oauth-applications', {
+                params: {
+                    ...request.params
+                },
+                signal
+            });
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+
+            return response;
+        },
+        queryKey: [
+            ...queryKeys.oauthApplications,
+            {
+                params: {
+                    ...request.params
+                }
+            }
+        ],
         staleTime: 30 * 1000
     }));
 }
@@ -227,6 +295,23 @@ export function postForceUpdatePredefinedSavedViewsMutation() {
             if (!response.ok) {
                 throw response.problem;
             }
+        }
+    }));
+}
+
+export function postMigrationRerunMutation() {
+    return createMutation<WorkInProgressResult, ProblemDetails, { confirmation: string; version: number }>(() => ({
+        mutationFn: async ({ confirmation, version }) => {
+            const client = useFetchClient();
+            const response = await client.postJSON<WorkInProgressResult>(`admin/migrations/${version}/rerun`, {
+                confirmation
+            });
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+
+            return response.data!;
         }
     }));
 }

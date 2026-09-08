@@ -21,6 +21,7 @@ public record ViewSavedView : IIdentity, IHaveDates
     [ObjectId]
     public string? UpdatedByUserId { get; set; }
 
+    public string? PredefinedKey { get; set; }
     public string? Filter { get; set; }
     public string? FilterDefinitions { get; set; }
     public Dictionary<string, SavedViewColumnSettings>? Columns { get; set; }

@@ -1,9 +1,10 @@
 <script lang="ts">
     interface Props {
         includeDateFacets?: boolean;
+        includeTypeFacet?: boolean;
     }
 
-    const { includeDateFacets = true }: Props = $props();
+    const { includeDateFacets = true, includeTypeFacet = true }: Props = $props();
     import * as FacetedFilter from './index';
 
     type KnownTermsFilterConfig = {
@@ -238,7 +239,9 @@
 {/each}
 
 <FacetedFilter.TagBuilder priority={70} />
-<FacetedFilter.TypeBuilder priority={50} />
+{#if includeTypeFacet}
+    <FacetedFilter.TypeBuilder priority={50} />
+{/if}
 
 {#each eventsVersionFilters as { priority, term, title } (term)}
     <FacetedFilter.VersionBuilder {priority} {term} {title} />

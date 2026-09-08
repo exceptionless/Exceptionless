@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Migrations;
 
-public sealed class MigrateSavedViewColumns : MigrationBase
+public sealed class MigrateSavedViewColumns : MigrationBase, IRerunnableMigration
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

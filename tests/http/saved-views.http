@@ -95,6 +95,24 @@ Content-Type: application/json
     "saved_view_id": null
 }
 
+### Set personal saved view order
+PUT {{apiUrl}}/organizations/{{organizationId}}/saved-view-order/events
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "saved_view_ids": ["{{savedViewId}}"]
+}
+
+### Reset personal saved view order
+PUT {{apiUrl}}/organizations/{{organizationId}}/saved-view-order/events
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "saved_view_ids": []
+}
+
 ### Set organization saved view default
 PUT {{apiUrl}}/organizations/{{organizationId}}/saved-view-defaults/organization
 Authorization: Bearer {{token}}

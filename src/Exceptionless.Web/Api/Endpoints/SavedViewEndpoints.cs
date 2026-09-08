@@ -76,6 +76,7 @@ public static class SavedViewEndpoints
             => (await mediator.InvokeAsync<Result<UpdateSavedViewDefault>>(new SavedViewMessages.UpdateUserSavedViewDefault(organizationId, savedViewDefault))).ToHttpResult(resultMapper))
         .Accepts<UpdateSavedViewDefault>("application/json", "application/*+json")
         .Produces<UpdateSavedViewDefault>()
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Update the current user's saved view default")
@@ -87,8 +88,35 @@ public static class SavedViewEndpoints
             },
             ResponseDescriptions = new() {
                 ["200"] = "The personal saved view default was updated.",
+                ["409"] = "The saved view preferences could not be updated due to a concurrent request.",
                 ["404"] = "The organization could not be found.",
                 ["422"] = "The saved view is not accessible in this organization.",
+            }
+        });
+
+        group.MapPut("organizations/{organizationId:objectid}/saved-view-order/{viewType}", async (string organizationId, string viewType,
+            IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] UpdateSavedViewOrder savedViewOrder)
+            => (await mediator.InvokeAsync<Result<UpdateSavedViewOrder>>(new SavedViewMessages.UpdateUserSavedViewOrder(organizationId, viewType, savedViewOrder))).ToHttpResult(resultMapper))
+        .Accepts<UpdateSavedViewOrder>("application/json", "application/*+json")
+        .Produces<UpdateSavedViewOrder>()
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status409Conflict)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .WithSummary("Update the current user's saved view order")
+        .WithMetadata(new EndpointDocumentation {
+            RequestBodyDescription = "The ordered saved view identifiers for one dashboard section. An empty list resets the section to alphabetical order.",
+            RequestBodyRequired = true,
+            ParameterDescriptions = new() {
+                ["organizationId"] = "The identifier of the organization.",
+                ["viewType"] = "The dashboard view type (events, sessions, stacks, or stream).",
+            },
+            ResponseDescriptions = new() {
+                ["200"] = "The personal saved view order was updated.",
+                ["400"] = "The request body is malformed or omits the saved view identifiers.",
+                ["409"] = "The saved view preferences could not be updated due to a concurrent request.",
+                ["404"] = "The organization could not be found.",
+                ["422"] = "The dashboard view type or saved view identifiers are invalid.",
             }
         });
 
