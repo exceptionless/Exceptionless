@@ -89,7 +89,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
 
             def current = ctx._source.product_tours[params.tourName];
             if (current != null && (current.version > params.version ||
-                (current.version == params.version && (current.status == params.completedStatus || current.status == params.status)))) {
+                (current.version == params.version && (current.status == params.completedStatus || current.status == 'completed' || current.status == params.status)))) {
               ctx.op = 'none';
             } else {
               ctx._source.product_tours[params.tourName] = ['status': params.status, 'version': params.version];

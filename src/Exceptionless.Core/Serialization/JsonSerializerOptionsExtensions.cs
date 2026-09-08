@@ -26,7 +26,10 @@ public static class JsonSerializerOptionsExtensions
     /// <returns>The configured options for chaining.</returns>
     public static JsonSerializerOptions ConfigureExceptionlessDefaults(this JsonSerializerOptions options)
     {
-        return ConfigureExceptionlessDefaults(options, skipEmptyCollections: true);
+        ConfigureExceptionlessDefaults(options, skipEmptyCollections: true);
+        // Decode legacy persisted statuses without changing the API's numeric enum contract.
+        options.Converters.Add(new ProductTourStatusConverter());
+        return options;
     }
 
     /// <summary>

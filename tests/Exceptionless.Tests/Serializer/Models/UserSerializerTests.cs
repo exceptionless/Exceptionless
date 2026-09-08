@@ -296,6 +296,31 @@ public class UserSerializerTests : TestWithServices
         Assert.Empty(user.ProductTours);
     }
 
+    [Theory]
+    [InlineData("completed", ProductTourStatus.Completed)]
+    [InlineData("dismissed", ProductTourStatus.Dismissed)]
+    public void Deserialize_LegacyStringTourStatus_PreservesProgressAndWritesNumericStatus(string legacyStatus, ProductTourStatus status)
+    {
+        // Arrange
+        /* language=json */
+        string json = $$"""
+            {
+                "id": "legacy-user",
+                "full_name": "Legacy User",
+                "email_address": "legacy@example.com",
+                "product_tours": { "app-overview": { "version": 1, "status": "{{legacyStatus}}", "updated_utc": "2026-08-01T00:00:00Z" } }
+            }
+            """;
+
+        // Act
+        var user = _serializer.Deserialize<User>(json);
+
+        // Assert
+        Assert.NotNull(user);
+        Assert.Equal(status, user.ProductTours["app-overview"].Status);
+        Assert.Contains($"\"status\":{(int)status}", _serializer.SerializeToString(user));
+    }
+
     [Fact]
     public void Deserialize_SnakeCaseJson_PreservesOAuthAccounts()
     {
