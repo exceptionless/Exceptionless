@@ -103,12 +103,14 @@ export const queryKeys = {
     organizations: (id: string | undefined) => [...queryKeys.type, 'organizations', id] as const,
     organizationsCount: (id: string | undefined, params?: GetOrganizationCountRequest['params']) => [...queryKeys.organizations(id), 'count', params] as const,
     organizationsEvents: (id: string | undefined, params?: GetEventsParams) => [...queryKeys.organizations(id), 'events', params] as const,
+    organizationsSessions: (id: string | undefined, params?: GetEventsParams) => [...queryKeys.organizations(id), 'sessions', 'list', params] as const,
     projects: (id: string | undefined) => [...queryKeys.type, 'projects', id] as const,
     projectsCount: (id: string | undefined, params?: GetProjectCountRequest['params']) => [...queryKeys.projects(id), 'count', params] as const,
     sessionEvents: (id: string | undefined, projectId?: string | undefined, params?: GetSessionEventsRequest['params']) =>
         [...queryKeys.type, 'sessions', 'session', id, projectId, params] as const,
     sessions: (id: string | undefined) => [...queryKeys.type, 'sessions', 'organizations', id] as const,
-    sessionsCount: (id: string | undefined, params?: GetOrganizationSessionsCountRequest['params']) => [...queryKeys.sessions(id), 'count', params] as const,
+    sessionsCount: (id: string | undefined, params?: GetOrganizationSessionsCountRequest['params']) =>
+        [...queryKeys.organizations(id), 'sessions', 'count', params] as const,
     stackEvents: (id: string | undefined, params?: GetStackEventsRequest['params']) => [...queryKeys.stacks(id), 'events', params] as const,
     stacks: (id: string | undefined) => [...queryKeys.type, 'stacks', id] as const,
     stacksCount: (id: string | undefined, params?: GetStackCountRequest['params']) => [...queryKeys.stacks(id), 'count', params] as const,
@@ -201,12 +203,21 @@ export interface GetOrganizationEventsRequest {
 }
 
 export interface GetOrganizationSessionsCountRequest {
+    enabled?: () => boolean;
     params?: {
         aggregations?: string;
         filter?: string;
         offset?: string;
         time?: string;
     };
+    route: {
+        organizationId: string | undefined;
+    };
+}
+
+export interface GetOrganizationSessionsRequest {
+    enabled?: () => boolean;
+    params?: GetEventsParams;
     route: {
         organizationId: string | undefined;
     };
@@ -466,7 +477,7 @@ export function getOrganizationSessionsCountQuery(request: GetOrganizationSessio
     const queryClient = useQueryClient();
 
     return createQuery<CountResult, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.organizationId,
+        enabled: () => !!accessToken.current && !!request.route.organizationId && (request.enabled?.() ?? true),
         queryClient,
         queryFn: async () => {
             const client = useFetchClient();
@@ -483,8 +494,35 @@ export function getOrganizationSessionsCountQuery(request: GetOrganizationSessio
 
             return response.data!;
         },
-        queryKey: queryKeys.sessionsCount(request.route.organizationId, request.params)
+        queryKey: queryKeys.sessionsCount(request.route.organizationId, request.params),
+        staleTime: ORGANIZATION_EVENT_QUERY_STALE_TIME_MS
     }));
+}
+
+export function getOrganizationSessionsQuery(request: GetOrganizationSessionsRequest) {
+    return createQuery<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>, ProblemDetails>(() => {
+        const organizationId = request.route.organizationId;
+        const enabled = !!accessToken.current && !!organizationId && (request.enabled?.() ?? true);
+        const params = request.params
+            ? {
+                  ...request.params
+              }
+            : undefined;
+
+        return {
+            enabled,
+            placeholderData: (previousData, previousQuery) =>
+                retainPreviousOrganizationQueryData(previousData, previousQuery?.queryKey, organizationId, enabled),
+            queryFn: async () => {
+                const client = useFetchClient();
+                return await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organizationId}/events/sessions`, {
+                    params: params as Record<string, unknown>
+                });
+            },
+            queryKey: queryKeys.organizationsSessions(organizationId, params),
+            staleTime: ORGANIZATION_EVENT_QUERY_STALE_TIME_MS
+        };
+    });
 }
 
 export function getProjectCountQuery(request: GetProjectCountRequest) {
@@ -609,6 +647,15 @@ export function getStackEventsQuery(request: GetStackEventsRequest) {
     }));
 }
 
+export function retainPreviousOrganizationQueryData<T>(
+    previousData: T | undefined,
+    previousQueryKey: readonly unknown[] | undefined,
+    organizationId: string | undefined,
+    enabled: boolean
+): T | undefined {
+    return enabled && previousQueryKey?.[2] === organizationId ? previousData : undefined;
+}
+
 export function schedulePersistentEventDeleteReconciliation(queryClient: QueryClient, eventTarget: EventTarget = document) {
     const invalidateQueryBackedDetails = () =>
         queryClient.invalidateQueries({
@@ -636,7 +683,11 @@ export function schedulePersistentEventDeleteReconciliation(queryClient: QueryCl
 }
 
 function isOrganizationEventDashboardQueryKey(queryKey: readonly unknown[]): boolean {
-    return queryKey[0] === queryKeys.type[0] && queryKey[1] === 'organizations' && (queryKey[3] === 'count' || queryKey[3] === 'events');
+    return (
+        queryKey[0] === queryKeys.type[0] &&
+        queryKey[1] === 'organizations' &&
+        (queryKey[3] === 'count' || queryKey[3] === 'events' || queryKey[3] === 'sessions')
+    );
 }
 
 function isOrganizationEventsQueryKey(queryKey: readonly unknown[]): boolean {

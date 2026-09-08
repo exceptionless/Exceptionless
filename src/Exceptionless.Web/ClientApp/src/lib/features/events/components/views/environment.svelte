@@ -27,7 +27,7 @@
                 <Table.Cell class="w-4 pr-0"
                     ><EventsFacetedFilter.StringTrigger changed={filterChanged} term="machine" value={environment.machine_name} /></Table.Cell
                 >
-                <Table.Cell class="flex items-center">{environment.machine_name}</Table.Cell>
+                <Table.Cell>{environment.machine_name}</Table.Cell>
             </Table.Row>
         {/if}
         {#if environment.ip_address}

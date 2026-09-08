@@ -24,6 +24,9 @@
     {:else}
         <DataTable.Toolbar {table} />
     {/if}
+    <DataTable.Footer {table} class="w-full">
+        <DataTable.Pager bind:value={limit} {table} />
+    </DataTable.Footer>
     <DataTable.Body {table}>
         {#if isLoading}
             <DelayedRender>
@@ -33,7 +36,4 @@
             <DataTable.Empty {table} />
         {/if}
     </DataTable.Body>
-    <DataTable.Footer {table} class="w-full">
-        <DataTable.Pager bind:value={limit} {table} />
-    </DataTable.Footer>
 </DataTable.Root>

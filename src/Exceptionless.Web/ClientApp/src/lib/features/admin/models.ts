@@ -1,4 +1,11 @@
-import type { CountResult } from '$generated/api';
+import type {
+    AssistantModelSettings,
+    CountResult,
+    EventSubmissionSettings,
+    UpdateAssistantEnabledSettings,
+    UpdateAssistantSettings,
+    UpdateEventSubmissionSettings
+} from '$generated/api';
 
 export enum MigrationType {
     Versioned = 0,
@@ -30,6 +37,8 @@ export type AdminAssistantOrganizationUsage = {
     turns: number;
 };
 
+export type AdminAssistantSettings = AssistantModelSettings;
+
 export type AdminAssistantUsage = {
     active_organizations: number;
     completion_tokens: number;
@@ -39,6 +48,8 @@ export type AdminAssistantUsage = {
     prompt_tokens: number;
     turns: number;
 };
+
+export type AdminEventSubmissionSettings = EventSubmissionSettings;
 
 export type AdminStats = {
     events: CountResult;
@@ -111,12 +122,27 @@ export type MaintenanceAction = {
 };
 
 export type MaintenanceActionCategory = 'Billing' | 'Configuration' | 'Elasticsearch' | 'Maintenance' | 'Security' | 'Users';
+export type MigrationRerunOperation = {
+    attempt_count: number;
+    completed_utc?: null | string;
+    error_message?: null | string;
+    id: string;
+    migration_id: string;
+    requested_by_user_id?: null | string;
+    requested_utc: string;
+    source: 'CommandLine' | 'UserInterface';
+    started_utc?: null | string;
+    status: 'Cancelled' | 'Completed' | 'Failed' | 'Queued' | 'Running';
+    version: number;
+};
+
 export type MigrationsResponse = {
     current_version: number;
     states: MigrationState[];
 };
 
 export type MigrationState = {
+    can_rerun: boolean;
     completed_utc?: null | string;
     error_message?: null | string;
     id: string;
@@ -135,10 +161,16 @@ export type OAuthApplication = {
     is_disabled: boolean;
     name: string;
     notes?: null | string;
+    organizations: OAuthApplicationOrganization[];
     redirect_uris: string[];
     scopes: string[];
     updated_by_user_id?: null | string;
     updated_utc: string;
+};
+
+export type OAuthApplicationOrganization = {
+    id: string;
+    name: string;
 };
 
 export type OAuthApplicationRequest = {
@@ -170,6 +202,10 @@ export type ShardMetric = {
     label: string;
     value: number;
 };
+
+export type UpdateAssistantEnabledSettingsRequest = UpdateAssistantEnabledSettings;
+export type UpdateAssistantSettingsRequest = UpdateAssistantSettings;
+export type UpdateEventSubmissionSettingsRequest = UpdateEventSubmissionSettings;
 
 export const maintenanceActions: MaintenanceAction[] = [
     {

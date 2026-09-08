@@ -1,16 +1,36 @@
-import { type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
+import type { WorkInProgressResult } from '$generated/api';
+
+import { invalidateAssistantAccessQueries } from '$features/assistant/api.svelte';
+import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 
 import type {
+    AdminAssistantSettings,
     AdminAssistantUsage,
+    AdminEventSubmissionSettings,
     AdminStats,
     ElasticsearchInfo,
     ElasticsearchSnapshotsResponse,
+    MigrationRerunOperation,
     MigrationsResponse,
     OAuthApplication,
     OAuthApplicationRequest,
-    PredefinedSavedViewDefinition
+    PredefinedSavedViewDefinition,
+    UpdateAssistantEnabledSettingsRequest,
+    UpdateAssistantSettingsRequest,
+    UpdateEventSubmissionSettingsRequest
 } from './models';
+
+export type GetOAuthApplicationsParams = {
+    criteria?: string;
+    limit?: number;
+    organization?: string;
+    page?: number;
+};
+
+export type GetOAuthApplicationsRequest = {
+    params?: GetOAuthApplicationsParams;
+};
 
 export type RunMaintenanceJobParams = {
     name: string;
@@ -20,9 +40,12 @@ export type RunMaintenanceJobParams = {
 };
 
 export const queryKeys = {
+    assistantSettings: ['admin', 'assistant-settings'] as const,
     assistantUsage: (month: string) => ['admin', 'assistant-usage', month] as const,
     elasticsearch: ['admin', 'elasticsearch'] as const,
+    eventSubmissionSettings: ['admin', 'event-submission-settings'] as const,
     migrations: ['admin', 'migrations'] as const,
+    oauthApplication: (id: string | undefined) => [...queryKeys.oauthApplications, id] as const,
     oauthApplications: ['admin', 'oauth-applications'] as const,
     snapshots: ['admin', 'elasticsearch', 'snapshots'] as const,
     stats: ['admin', 'stats'] as const
@@ -45,6 +68,25 @@ export function deleteOAuthApplicationMutation() {
                 queryKey: queryKeys.oauthApplications
             });
         }
+    }));
+}
+
+export function getAdminAssistantSettingsQuery() {
+    return createQuery<AdminAssistantSettings, ProblemDetails>(() => ({
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<AdminAssistantSettings>('admin/assistant-settings', {
+                signal
+            });
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+
+            return response.data!;
+        },
+        queryKey: queryKeys.assistantSettings,
+        staleTime: 30 * 1000
     }));
 }
 
@@ -116,6 +158,48 @@ export function getElasticsearchSnapshotsQuery() {
     }));
 }
 
+export function getEventSubmissionSettingsQuery() {
+    return createQuery<AdminEventSubmissionSettings, ProblemDetails>(() => ({
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<AdminEventSubmissionSettings>('admin/event-submission-settings', {
+                signal
+            });
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+
+            return response.data!;
+        },
+        queryKey: queryKeys.eventSubmissionSettings,
+        staleTime: 30 * 1000
+    }));
+}
+
+export function getMigrationRerunQuery(operationId: () => string | undefined) {
+    return createQuery<MigrationRerunOperation, ProblemDetails>(() => ({
+        enabled: () => !!operationId(),
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<MigrationRerunOperation>(`admin/migrations/reruns/${operationId()}`, {
+                signal
+            });
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+
+            return response.data!;
+        },
+        queryKey: [...queryKeys.migrations, 'rerun', operationId()],
+        refetchInterval: (query) => {
+            const status = query.state.data?.status;
+            return status === 'Completed' || status === 'Failed' || status === 'Cancelled' ? false : 2000;
+        }
+    }));
+}
+
 export function getMigrationsQuery() {
     return createQuery<MigrationsResponse, ProblemDetails>(() => ({
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
@@ -131,11 +215,12 @@ export function getMigrationsQuery() {
     }));
 }
 
-export function getOAuthApplicationsQuery() {
-    return createQuery<OAuthApplication[], ProblemDetails>(() => ({
+export function getOAuthApplicationQuery(id: () => string | undefined) {
+    return createQuery<OAuthApplication, ProblemDetails>(() => ({
+        enabled: () => !!id(),
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient();
-            const response = await client.getJSON<OAuthApplication[]>('admin/oauth-applications', {
+            const response = await client.getJSON<OAuthApplication>(`admin/oauth-applications/${id()}`, {
                 signal
             });
 
@@ -143,9 +228,38 @@ export function getOAuthApplicationsQuery() {
                 throw response.problem;
             }
 
-            return response.data ?? [];
+            return response.data!;
         },
-        queryKey: queryKeys.oauthApplications,
+        queryKey: queryKeys.oauthApplication(id()),
+        staleTime: 30 * 1000
+    }));
+}
+
+export function getOAuthApplicationsQuery(request: GetOAuthApplicationsRequest = {}) {
+    return createQuery<FetchClientResponse<OAuthApplication[]>, ProblemDetails>(() => ({
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<OAuthApplication[]>('admin/oauth-applications', {
+                params: {
+                    ...request.params
+                },
+                signal
+            });
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+
+            return response;
+        },
+        queryKey: [
+            ...queryKeys.oauthApplications,
+            {
+                params: {
+                    ...request.params
+                }
+            }
+        ],
         staleTime: 30 * 1000
     }));
 }
@@ -185,6 +299,23 @@ export function postForceUpdatePredefinedSavedViewsMutation() {
     }));
 }
 
+export function postMigrationRerunMutation() {
+    return createMutation<WorkInProgressResult, ProblemDetails, { confirmation: string; version: number }>(() => ({
+        mutationFn: async ({ confirmation, version }) => {
+            const client = useFetchClient();
+            const response = await client.postJSON<WorkInProgressResult>(`admin/migrations/${version}/rerun`, {
+                confirmation
+            });
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+
+            return response.data!;
+        }
+    }));
+}
+
 export function postOAuthApplicationMutation() {
     const queryClient = useQueryClient();
 
@@ -203,6 +334,67 @@ export function postOAuthApplicationMutation() {
             queryClient.invalidateQueries({
                 queryKey: queryKeys.oauthApplications
             });
+        }
+    }));
+}
+
+export function putAdminAssistantEnabledSettingsMutation() {
+    const queryClient = useQueryClient();
+
+    return createMutation<AdminAssistantSettings, ProblemDetails, UpdateAssistantEnabledSettingsRequest>(() => ({
+        mutationFn: async (request) => {
+            const client = useFetchClient();
+            const response = await client.putJSON<AdminAssistantSettings>('admin/assistant-settings/enabled', request);
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+
+            return response.data!;
+        },
+        onSuccess: async (settings) => {
+            queryClient.setQueryData(queryKeys.assistantSettings, settings);
+            await invalidateAssistantAccessQueries(queryClient);
+        }
+    }));
+}
+
+export function putAdminAssistantSettingsMutation() {
+    const queryClient = useQueryClient();
+
+    return createMutation<AdminAssistantSettings, ProblemDetails, UpdateAssistantSettingsRequest>(() => ({
+        mutationFn: async (request) => {
+            const client = useFetchClient();
+            const response = await client.putJSON<AdminAssistantSettings>('admin/assistant-settings', request);
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+
+            return response.data!;
+        },
+        onSuccess: (settings) => {
+            queryClient.setQueryData(queryKeys.assistantSettings, settings);
+        }
+    }));
+}
+
+export function putEventSubmissionSettingsMutation() {
+    const queryClient = useQueryClient();
+
+    return createMutation<AdminEventSubmissionSettings, ProblemDetails, UpdateEventSubmissionSettingsRequest>(() => ({
+        mutationFn: async (request) => {
+            const client = useFetchClient();
+            const response = await client.putJSON<AdminEventSubmissionSettings>('admin/event-submission-settings', request);
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+
+            return response.data!;
+        },
+        onSuccess: (settings) => {
+            queryClient.setQueryData(queryKeys.eventSubmissionSettings, settings);
         }
     }));
 }

@@ -148,7 +148,7 @@
                 Add Reference Link
             </DropdownMenu.Item>
             <DropdownMenu.Item onclick={() => (openStackingInformationDialog = true)} title="View the values used to group events into this stack">
-                <ListTree />
+                <ListTree class="mr-2 size-4" />
                 View Stacking Information
             </DropdownMenu.Item>
             <DropdownMenu.Separator />

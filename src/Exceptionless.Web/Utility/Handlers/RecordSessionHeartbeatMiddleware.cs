@@ -1,5 +1,6 @@
 ﻿using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Services;
 using Exceptionless.Web.Extensions;
 using Foundatio.Caching;
 
@@ -9,17 +10,19 @@ public sealed class RecordSessionHeartbeatMiddleware
 {
     private readonly ICacheClient _cache;
     private readonly AppOptions _appOptions;
+    private readonly SystemSettingsService _systemSettingsService;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger _logger;
     private readonly RequestDelegate _next;
     private static readonly PathString _heartbeatPath = new("/api/v2/events/session/heartbeat");
 
-    public RecordSessionHeartbeatMiddleware(RequestDelegate next, ICacheClient cache, AppOptions appOptions,
+    public RecordSessionHeartbeatMiddleware(RequestDelegate next, ICacheClient cache, AppOptions appOptions, SystemSettingsService systemSettingsService,
         TimeProvider timeProvider, ILogger<ProjectConfigMiddleware> logger)
     {
         _next = next;
         _cache = cache;
         _appOptions = appOptions;
+        _systemSettingsService = systemSettingsService;
         _timeProvider = timeProvider;
         _logger = logger;
     }
@@ -47,7 +50,7 @@ public sealed class RecordSessionHeartbeatMiddleware
             return;
         }
 
-        if (_appOptions.EventSubmissionDisabled || !context.Request.Query.TryGetValue("id", out var id) || String.IsNullOrEmpty(id))
+        if (!await _systemSettingsService.IsEventSubmissionEnabledAsync() || !context.Request.Query.TryGetValue("id", out var id) || String.IsNullOrEmpty(id))
         {
             context.Response.StatusCode = StatusCodes.Status200OK;
             return;

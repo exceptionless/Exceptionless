@@ -79,7 +79,11 @@ Content-Type: application/json
 }
 
 ### List OAuth Applications
-GET {{apiUrl}}/admin/oauth-applications
+GET {{apiUrl}}/admin/oauth-applications?page=1&limit=20&criteria=Codex&organization=Acme
+Authorization: Bearer {{login.response.body.token}}
+
+### Get OAuth Application
+GET {{apiUrl}}/admin/oauth-applications/{{oauthApplicationId}}
 Authorization: Bearer {{login.response.body.token}}
 
 ### Update OAuth Application

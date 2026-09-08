@@ -25,6 +25,7 @@
   </Folder>
   <Project Path="src/Exceptionless.AppHost/Exceptionless.AppHost.csproj" />
   <Project Path="src/Exceptionless.Core/Exceptionless.Core.csproj" />
+  <Project Path="src/Exceptionless.EmailTemplates/Exceptionless.EmailTemplates.csproj" />
   <Project Path="src/Exceptionless.Insulation/Exceptionless.Insulation.csproj" />
   <Project Path="src/Exceptionless.Job/Exceptionless.Job.csproj" />
   <Project Path="src/Exceptionless.Web/Exceptionless.Web.csproj" />

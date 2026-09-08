@@ -1,0 +1,66 @@
+@namespace Exceptionless.EmailTemplates.Templates
+@inherits EmailTemplateComponent<EventNoticeEmail>
+
+<EmailLayout Model="Model">
+    <EmailSection>
+        <p style="@EmailStyles.Lead">
+            @if (Model.IsNew)
+            {
+                <text>A new @(Model.IsCritical ? "critical " : String.Empty)event has occurred in the "@Model.ProjectName" project.</text>
+            }
+            else if (Model.IsRegression)
+            {
+                <text>@(Model.IsCritical ? "A critical" : "An") event has regressed in the "@Model.ProjectName" project.</text>
+            }
+            else
+            {
+                <text>@(Model.IsCritical ? "A critical" : "An") event has reoccurred for the @Model.TotalOccurrences time in the "@Model.ProjectName" project.</text>
+            }
+        </p>
+        <EmailButton Url="@Model.Action!.Url">View Event Details</EmailButton>
+
+        @if (Model.Fields.Count > 0)
+        {
+            <EmailCallout>
+                @foreach (var item in Model.Fields.Select((field, index) => (field, index)))
+                {
+                    @if (item.index > 0)
+                    {
+                        <hr style="border-color:@EmailStyles.Background" />
+                    }
+                    <p style="@EmailStyles.Paragraph"><strong>@item.field.Key</strong><br /><span style="word-break:break-all;word-wrap:break-word">@item.field.Value</span></p>
+                }
+            </EmailCallout>
+        }
+
+        @if (Model.User is not null)
+        {
+            <h4 style="@EmailStyles.Heading4">User Info</h4>
+            <EmailCallout>
+                @if (!String.IsNullOrEmpty(Model.User.DisplayName))
+                {
+                    <p style="@EmailStyles.Paragraph">
+                        <strong>Name</strong><br />
+                        @if (!String.IsNullOrEmpty(Model.User.EmailUrl))
+                        {
+                            <a href="@Model.User.EmailUrl" style="@EmailStyles.Link">@Model.User.DisplayName</a>
+                        }
+                        else
+                        {
+                            <span style="word-break:break-all;word-wrap:break-word">@Model.User.DisplayName</span>
+                        }
+                    </p>
+                    @if (!String.IsNullOrEmpty(Model.User.Description))
+                    {
+                        <hr style="border-color:@EmailStyles.Background" />
+                    }
+                }
+                @if (!String.IsNullOrEmpty(Model.User.Description))
+                {
+                    <p style="@EmailStyles.Paragraph"><strong>Description</strong><br /><span style="word-break:break-all;word-wrap:break-word">@Model.User.Description</span></p>
+                }
+            </EmailCallout>
+        }
+    </EmailSection>
+    <ActionsFooter Links="Model.OtherActions" />
+</EmailLayout>

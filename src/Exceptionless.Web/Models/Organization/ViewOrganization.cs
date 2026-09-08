@@ -12,6 +12,8 @@ public record ViewOrganization : IIdentity, IData, IHaveDates
     public DateTime CreatedUtc { get; set; }
     public DateTime UpdatedUtc { get; set; }
     public string Name { get; set; } = null!;
+    [ObjectId]
+    public string? DefaultSavedViewId { get; set; }
     public string? IconUrl { get; set; }
     public string PlanId { get; set; } = null!;
     public string PlanName { get; set; } = null!;

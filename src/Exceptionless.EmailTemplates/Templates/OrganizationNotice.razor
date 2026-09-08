@@ -1,0 +1,24 @@
+@namespace Exceptionless.EmailTemplates.Templates
+@inherits EmailTemplateComponent<OrganizationNoticeEmail>
+
+<EmailLayout Model="Model">
+    <EmailSection>
+        <p style="@EmailStyles.Lead">
+            @if (Model.IsOverMonthlyLimit)
+            {
+                <text>@Model.OrganizationName has reached its monthly plan limit. Upgrade now to continue receiving events.</text>
+            }
+            else if (Model.IsOverHourlyLimit)
+            {
+                <text>Events are currently being throttled for @Model.OrganizationName until @Model.ThrottledUntil UTC to prevent using up your plan limit in a small window of time. Upgrade now to increase your limits.</text>
+            }
+        </p>
+        <EmailButton Url="@Model.UpgradeUrl">Upgrade Plan</EmailButton>
+        <p style="@EmailStyles.Paragraph">
+            <a href="@Model.LearnMoreUrl" style="@EmailStyles.Link">@(Model.IsOverMonthlyLimit ? "Learn more about what happens when the plan limit is reached." : "Learn more about being throttled.")</a>
+            You can also view the <a href="@Model.FrequentEventsUrl" style="@EmailStyles.Link">most frequent events</a> to see an overall picture of the events that are being counted against your plan limits.
+        </p>
+        <p style="@EmailStyles.Paragraph">Please send us an email at <a href="mailto:support@exceptionless.io" style="@EmailStyles.Link">support@exceptionless.io</a> if you have any questions or concerns.</p>
+    </EmailSection>
+    <ActionsFooter Links="Model.OtherActions" />
+</EmailLayout>

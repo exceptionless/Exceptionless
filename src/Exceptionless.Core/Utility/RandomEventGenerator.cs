@@ -178,7 +178,7 @@ public class RandomEventGenerator
     private List<Error>? _randomErrors;
     private List<SimpleError>? _randomSimpleErrors;
 
-    private Error GenerateError(int maxNesting = 3, int currentLevel = 0)
+    internal Error GenerateError(int maxNesting = 3, int currentLevel = 0)
     {
         var error = new Error
         {
@@ -191,18 +191,15 @@ public class RandomEventGenerator
 
         error.Data = GenerateErrorData();
 
-        var stack = new StackFrameCollection();
-        for (int i = 0; i < RandomData.GetInt(2, 8); i++)
-            stack.Add(GenerateStackFrame());
-        error.StackTrace = stack;
+        error.StackTrace = GenerateStackTrace(currentLevel == 0);
 
-        if (currentLevel < maxNesting && RandomData.GetBool())
+        if (currentLevel < maxNesting && (currentLevel == 0 || RandomData.GetBool()))
             error.Inner = GenerateError(maxNesting, currentLevel + 1);
 
         return error;
     }
 
-    private SimpleError GenerateSimpleError(int maxNesting = 3, int currentLevel = 0)
+    internal SimpleError GenerateSimpleError(int maxNesting = 3, int currentLevel = 0)
     {
         var error = new SimpleError
         {
@@ -212,23 +209,201 @@ public class RandomEventGenerator
 
         error.Data = GenerateErrorData();
 
-        error.StackTrace = RandomData.GetString();
+        error.StackTrace = GenerateSimpleStackTrace();
 
-        if (currentLevel < maxNesting && RandomData.GetBool())
+        if (currentLevel < maxNesting && (currentLevel == 0 || RandomData.GetBool()))
             error.Inner = GenerateSimpleError(maxNesting, currentLevel + 1);
 
         return error;
     }
 
-    private static StackFrame GenerateStackFrame()
+    private static StackFrameCollection GenerateStackTrace(bool isOuterError)
     {
-        return new StackFrame
+        var stackTrace = new StackFrameCollection();
+        int frameCount = isOuterError ? RandomData.GetInt(18, 32) : RandomData.GetInt(4, 8);
+
+        for (int i = 0; i < frameCount; i++)
+            stackTrace.Add(GenerateStackFrame(i));
+
+        return stackTrace;
+    }
+
+    private static StackFrame GenerateStackFrame(int index)
+    {
+        return (index % 7) switch
         {
-            DeclaringNamespace = Namespaces.Random(),
-            DeclaringType = TypeNames.Random(),
-            Name = MethodNames.Random(),
-            Parameters = [new Parameter { Type = "String", Name = "path" }]
+            0 => new StackFrame
+            {
+                DeclaringNamespace = "Exceptionless.Core.Pipeline",
+                DeclaringType = "EventPipeline",
+                Name = "RunAsync",
+                GenericArguments = ["TEvent", "TContext"],
+                Parameters =
+                [
+                    new Parameter
+                    {
+                        TypeNamespace = "System.Collections.Generic",
+                        Type = "IReadOnlyCollection",
+                        Name = "events",
+                        GenericArguments = ["TEvent"]
+                    },
+                    new Parameter
+                    {
+                        TypeNamespace = "System.Threading",
+                        Type = "CancellationToken",
+                        Name = "cancellationToken"
+                    }
+                ],
+                FileName = "/src/Exceptionless.Core/Pipeline/EventPipeline.cs",
+                LineNumber = 84 + index,
+                Column = 13,
+                Data = new DataDictionary { ["ILOffset"] = 128 + index }
+            },
+            1 => new StackFrame
+            {
+                DeclaringNamespace = "Exceptionless.Core.Services",
+                DeclaringType = "StackRollupService+<ProcessAsync>d__14",
+                Name = "MoveNext",
+                FileName = "/src/Exceptionless.Core/Services/StackRollupService.cs",
+                LineNumber = 156 + index,
+                Column = 17,
+                Data = new DataDictionary { ["ILOffset"] = 64 + index }
+            },
+            2 => new StackFrame
+            {
+                DeclaringNamespace = "Foundatio.Repositories",
+                DeclaringType = "ElasticRepositoryBase",
+                Name = "FindAsync",
+                GenericArguments = ["TDocument"],
+                Parameters =
+                [
+                    new Parameter
+                    {
+                        TypeNamespace = "Foundatio.Repositories.Models",
+                        Type = "RepositoryQuery",
+                        Name = "query",
+                        GenericArguments = ["TDocument"]
+                    },
+                    new Parameter
+                    {
+                        TypeNamespace = "System.Threading",
+                        Type = "CancellationToken",
+                        Name = "cancellationToken"
+                    }
+                ],
+                FileName = "/_/src/Foundatio.Repositories/Repositories/ElasticRepositoryBase.cs",
+                LineNumber = 312 + index,
+                Column = 21,
+                Data = new DataDictionary { ["ILOffset"] = 92 + index }
+            },
+            3 => new StackFrame
+            {
+                DeclaringNamespace = "Microsoft.AspNetCore.Mvc.Infrastructure",
+                DeclaringType = "ControllerActionInvoker",
+                Name = "InvokeActionMethodAsync",
+                Parameters =
+                [
+                    new Parameter
+                    {
+                        TypeNamespace = "Microsoft.AspNetCore.Mvc.Abstractions",
+                        Type = "ActionContext",
+                        Name = "actionContext"
+                    },
+                    new Parameter
+                    {
+                        TypeNamespace = "System.Collections.Generic",
+                        Type = "IDictionary",
+                        Name = "arguments",
+                        GenericArguments = ["String", "Object"]
+                    }
+                ],
+                FileName = "/_/src/Mvc/Mvc.Core/src/Infrastructure/ControllerActionInvoker.cs",
+                LineNumber = 429 + index,
+                Column = 9,
+                Data = new DataDictionary { ["NativeOffset"] = 24 + index }
+            },
+            4 => new StackFrame
+            {
+                DeclaringNamespace = "Microsoft.AspNetCore.Routing",
+                DeclaringType = "EndpointMiddleware",
+                Name = "Invoke",
+                Parameters =
+                [
+                    new Parameter
+                    {
+                        TypeNamespace = "Microsoft.AspNetCore.Http",
+                        Type = "HttpContext",
+                        Name = "httpContext"
+                    }
+                ],
+                FileName = "/_/src/Http/Routing/src/EndpointMiddleware.cs",
+                LineNumber = 101 + index,
+                Column = 13,
+                ModuleId = 7,
+                Data = new DataDictionary { ["ILOffset"] = 48 + index }
+            },
+            5 => new StackFrame
+            {
+                DeclaringNamespace = "System.Threading",
+                DeclaringType = "ExecutionContext",
+                Name = "RunInternal",
+                Parameters =
+                [
+                    new Parameter
+                    {
+                        TypeNamespace = "System.Threading",
+                        Type = "ExecutionContext",
+                        Name = "executionContext"
+                    },
+                    new Parameter
+                    {
+                        TypeNamespace = "System.Threading",
+                        Type = "ContextCallback",
+                        Name = "callback"
+                    },
+                    new Parameter { TypeNamespace = "System", Type = "Object", Name = "state" }
+                ],
+                FileName = "/_/src/libraries/System.Private.CoreLib/src/System/Threading/ExecutionContext.cs",
+                LineNumber = 179 + index,
+                Column = 13,
+                ModuleId = 1,
+                Data = new DataDictionary { ["NativeOffset"] = 16 + index }
+            },
+            _ => new StackFrame
+            {
+                DeclaringNamespace = "System.Runtime.CompilerServices",
+                DeclaringType = "AsyncTaskMethodBuilder",
+                Name = "Start",
+                GenericArguments = ["TStateMachine"],
+                Parameters =
+                [
+                    new Parameter
+                    {
+                        Type = "TStateMachine",
+                        Name = "stateMachine",
+                        GenericArguments = ["TStateMachine"]
+                    }
+                ],
+                FileName = "/_/src/libraries/System.Private.CoreLib/src/System/Runtime/CompilerServices/AsyncTaskMethodBuilderT.cs",
+                LineNumber = 38 + index,
+                Column = 9,
+                ModuleId = 1,
+                Data = new DataDictionary { ["ILOffset"] = 32 + index }
+            }
         };
+    }
+
+    private static string GenerateSimpleStackTrace()
+    {
+        return """
+               at Exceptionless.Core.Pipeline.EventPipeline.RunAsync[TEvent,TContext](IReadOnlyCollection`1 events, CancellationToken cancellationToken) in /src/Exceptionless.Core/Pipeline/EventPipeline.cs:line 84
+               at Exceptionless.Core.Services.StackRollupService.<ProcessAsync>d__14.MoveNext() in /src/Exceptionless.Core/Services/StackRollupService.cs:line 157
+               at Foundatio.Repositories.ElasticRepositoryBase.FindAsync[TDocument](RepositoryQuery`1 query, CancellationToken cancellationToken) in /_/src/Foundatio.Repositories/Repositories/ElasticRepositoryBase.cs:line 314
+               at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeActionMethodAsync(ActionContext actionContext, IDictionary`2 arguments) in /_/src/Mvc/Mvc.Core/src/Infrastructure/ControllerActionInvoker.cs:line 432
+               at Microsoft.AspNetCore.Routing.EndpointMiddleware.Invoke(HttpContext httpContext) in /_/src/Http/Routing/src/EndpointMiddleware.cs:line 105
+               at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state) in /_/src/libraries/System.Private.CoreLib/src/System/Threading/ExecutionContext.cs:line 184
+               at System.Runtime.CompilerServices.AsyncTaskMethodBuilder.Start[TStateMachine](TStateMachine stateMachine) in /_/src/libraries/System.Private.CoreLib/src/System/Runtime/CompilerServices/AsyncTaskMethodBuilderT.cs:line 44
+               """;
     }
 
     private static void AddSampleExtendedData(Event ev, string? identity)
@@ -469,22 +644,4 @@ public class RandomEventGenerator
         "Authentication", "Search", "Billing", "Notification", "Import"
     ];
 
-    private static readonly List<string> Namespaces =
-    [
-        "System", "System.IO", "System.Net.Http",
-        "Exceptionless.Core.Pipeline", "Exceptionless.Core.Services",
-        "Foundatio.Jobs", "Foundatio.Repositories"
-    ];
-
-    private static readonly List<string> TypeNames =
-    [
-        "EventPipeline", "UsageService", "StackRepository",
-        "EventPostsJob", "OrganizationController", "BillingManager"
-    ];
-
-    private static readonly List<string> MethodNames =
-    [
-        "ProcessAsync", "RunAsync", "GetByIdAsync",
-        "SaveAsync", "HandleItemAsync", "ValidateAsync"
-    ];
 }

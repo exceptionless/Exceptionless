@@ -84,9 +84,9 @@ public partial record SavedView : IOwnedByOrganizationWithIdentity, IHaveDates
     /// <summary>Schema version for future filter definition migrations.</summary>
     public int Version { get; set; } = 1;
 
-    /// <summary>Dashboard page identifier: "events", "stacks", or "stream".</summary>
+    /// <summary>Dashboard page identifier: "events", "sessions", "stacks", or "stream".</summary>
     [Required]
-    [RegularExpression("^(events|stacks|stream)$")]
+    [RegularExpression("^(events|sessions|stacks|stream)$")]
     public string ViewType { get; set; } = null!;
 
     // Timestamps

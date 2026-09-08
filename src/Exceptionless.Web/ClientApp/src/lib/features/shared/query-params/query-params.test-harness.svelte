@@ -20,4 +20,15 @@
 <button onclick={() => (queryParameters.filter = 'a')}>Alpha</button>
 <button onclick={() => (queryParameters.filter = 'a b')}>Spaced</button>
 <button onclick={() => (queryParameters.filter = null)}>Clear</button>
+<button
+    onclick={() =>
+        queryParameters.update(
+            {
+                filter: 'hydrated'
+            },
+            {
+                history: 'replace'
+            }
+        )}>Hydrate</button
+>
 <output>{queryParameters.filter}</output>

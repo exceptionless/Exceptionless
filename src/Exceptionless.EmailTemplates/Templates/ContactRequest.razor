@@ -1,0 +1,42 @@
+@namespace Exceptionless.EmailTemplates.Templates
+@inherits EmailTemplateComponent<ContactRequestEmail>
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>@Model.Subject</title>
+</head>
+<body style="color:@EmailStyles.Dark;font-family:Helvetica,Arial,sans-serif;line-height:1.5">
+    <h1 style="font-size:22px;font-weight:400">@Model.Subject</h1>
+    <dl>
+        <dt>Name</dt><dd>@Model.Name</dd>
+        <dt>Email</dt><dd>@Model.EmailAddress</dd>
+        @if (!String.IsNullOrEmpty(Model.Company))
+        {
+            <dt>Company</dt><dd>@Model.Company</dd>
+        }
+        <dt>Subject</dt><dd>@Model.RequestSubject</dd>
+    </dl>
+    <h2 style="font-size:18px;font-weight:400">Message</h2>
+    @foreach (string line in Model.MessageLines)
+    {
+        <p>@line</p>
+    }
+    <hr />
+    <dl>
+        @if (!String.IsNullOrEmpty(Model.ClientIpAddress))
+        {
+            <dt>IP address</dt><dd>@Model.ClientIpAddress</dd>
+        }
+        @if (!String.IsNullOrEmpty(Model.UserAgent))
+        {
+            <dt>User agent</dt><dd>@Model.UserAgent</dd>
+        }
+        @if (!String.IsNullOrEmpty(Model.Referrer))
+        {
+            <dt>Referrer</dt><dd>@Model.Referrer</dd>
+        }
+    </dl>
+</body>
+</html>

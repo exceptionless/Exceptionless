@@ -64,7 +64,7 @@
         )?.focus();
     }
 
-    function onOrganizationSelected(organization: ViewOrganization): void {
+    async function onOrganizationSelected(organization: ViewOrganization): Promise<void> {
         if (sidebar.isMobile) {
             sidebar.toggle();
         }
@@ -74,16 +74,17 @@
         }
 
         currentOrganizationId = organization.id;
+        await goto(resolve('/'));
     }
 
     async function handleImpersonate(organization: ViewOrganization): Promise<void> {
-        await goto(resolve('/(app)/stack'));
         currentOrganizationId = organization.id;
+        await goto(resolve('/'));
     }
 
     async function stopImpersonating(): Promise<void> {
-        await goto(resolve('/(app)/stack'));
         currentOrganizationId = organizations[0]?.id;
+        await goto(resolve('/'));
     }
 
     async function navigateTo(href: string): Promise<void> {
@@ -164,7 +165,7 @@
                         {#if organizations.length > 0}
                             {#each organizations as organization (organization.name)}
                                 <DropdownMenu.Item
-                                    onSelect={() => onOrganizationSelected(organization)}
+                                    onSelect={() => void onOrganizationSelected(organization)}
                                     data-current-organization={organization.id === currentOrganizationId && !isImpersonating ? 'true' : undefined}
                                     class="gap-2 p-2"
                                 >

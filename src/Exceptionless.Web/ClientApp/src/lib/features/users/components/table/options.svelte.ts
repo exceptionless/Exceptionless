@@ -67,12 +67,12 @@ export function getColumns<TUser extends ViewUser>(organizationId: string): Colu
 export function getTableOptions<TUser extends ViewUser>(
     queryParameters: GetOrganizationUsersParams,
     queryResponse: CreateQueryResult<FetchClientResponse<TUser[]>, ProblemDetails>,
-    organizationId: string
+    organizationId: (() => string) | string
 ) {
     return getSharedTableOptions<TUser>({
         columnPersistenceKey: 'users-column-visibility',
         get columns() {
-            return getColumns<TUser>(organizationId);
+            return getColumns<TUser>(typeof organizationId === 'function' ? organizationId() : organizationId);
         },
         paginationStrategy: 'offset',
         get queryData() {

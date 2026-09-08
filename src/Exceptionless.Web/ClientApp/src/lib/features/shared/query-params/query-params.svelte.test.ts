@@ -72,6 +72,16 @@ describe('createQueryParameters', () => {
         expect(window.location.search).toBe('?filter=second');
     });
 
+    it('allows hydration updates to replace even when user edits use push history', async () => {
+        render(QueryParametersTestHarness);
+
+        await fireEvent.click(screen.getByRole('button', { name: 'Hydrate' }));
+
+        expect(navigation.pushState).not.toHaveBeenCalled();
+        expect(navigation.replaceState).toHaveBeenCalledOnce();
+        expect(navigation.replaceState).toHaveBeenCalledWith('/?filter=hydrated', pageState);
+    });
+
     it('replaces a detail sheet entry when a filter adds push-history state', async () => {
         // Arrange
         const detailEntry = { key: 'event', value: 'abc123' };

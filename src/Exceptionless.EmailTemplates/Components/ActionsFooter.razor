@@ -1,0 +1,17 @@
+@if (Links.Count > 0)
+{
+    <EmailSection Padding="0 16px 16px">
+        <h5 style="@EmailStyles.Heading5">Other Actions</h5>
+        <ul style="margin-top:0">
+            @foreach (var link in Links)
+            {
+                <li style="margin-left:5px;margin-top:5px"><a href="@link.Url" target="_blank" style="@EmailStyles.ActionLink">@link.Text</a></li>
+            }
+        </ul>
+    </EmailSection>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public required IReadOnlyCollection<EmailLink> Links { get; set; }
+}

@@ -12,15 +12,17 @@ public sealed class OverageMiddleware
     private readonly UsageService _usageService;
     private readonly IOrganizationRepository _organizationRepository;
     private readonly AppOptions _appOptions;
+    private readonly SystemSettingsService _systemSettingsService;
     private readonly ILogger _logger;
     private readonly RequestDelegate _next;
 
-    public OverageMiddleware(RequestDelegate next, UsageService usageService, IOrganizationRepository organizationRepository, AppOptions appOptions, ILogger<OverageMiddleware> logger)
+    public OverageMiddleware(RequestDelegate next, UsageService usageService, IOrganizationRepository organizationRepository, AppOptions appOptions, SystemSettingsService systemSettingsService, ILogger<OverageMiddleware> logger)
     {
         _next = next;
         _usageService = usageService;
         _organizationRepository = organizationRepository;
         _appOptions = appOptions;
+        _systemSettingsService = systemSettingsService;
         _logger = logger;
     }
 
@@ -39,7 +41,7 @@ public sealed class OverageMiddleware
             return;
         }
 
-        if (_appOptions.EventSubmissionDisabled)
+        if (!await _systemSettingsService.IsEventSubmissionEnabledAsync())
         {
             context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
             return;

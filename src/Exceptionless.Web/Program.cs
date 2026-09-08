@@ -194,6 +194,7 @@ public partial class Program
             builder.Services.AddScoped<AssistantToolContext>();
             builder.Services.AddScoped<AssistantAccessService>();
             builder.Services.AddScoped<AssistantConversationService>();
+            builder.Services.AddSingleton<AssistantModelSettingsService>();
             builder.Services.AddScoped<AssistantUsageService>();
             builder.Services.AddScoped<ExceptionlessMcpTools>();
             builder.Services.AddScoped<AssistantService>();

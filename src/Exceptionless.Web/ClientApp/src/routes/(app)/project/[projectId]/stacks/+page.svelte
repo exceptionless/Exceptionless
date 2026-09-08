@@ -125,6 +125,7 @@
     watch(
         [() => queryParams.filter],
         ([filter]) => {
+            table.resetRowSelection();
             filters = sanitizeStackFilters(getFiltersFromCache(filterCacheKey(filter), filter), true);
         },
         {
@@ -167,6 +168,10 @@
     function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {
         const sanitizedFilters = sanitizeStackFilters(updatedFilters);
         const filter = toFilter(sanitizedFilters);
+        if (queryParams.filter !== filter) {
+            table.resetRowSelection();
+        }
+
         updateFilterCache(filterCacheKey(filter), sanitizedFilters);
         queryParams.page = 1;
         queryParams.filter = filter;
@@ -268,7 +273,7 @@
 <div class="flex flex-col">
     <div class="mb-4 flex flex-wrap items-start gap-2">
         <Muted class="w-full shrink-0">Manage project stacks, including restoring ignored or discarded stacks</Muted>
-        <div class="flex min-w-0 flex-1 flex-wrap items-start gap-2">
+        <div class="order-3 flex w-full flex-wrap items-start gap-1.5 md:order-none md:w-auto md:min-w-0 md:flex-1">
             <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
                 <StackFacetedFilterBuilder includeProject={false} />
             </FacetedFilter.Root>
@@ -286,7 +291,7 @@
                 <DataTable.Selection {table} />
             </div>
 
-            <DataTable.Pager bind:value={queryParams.limit!} {table} />
+            <DataTable.Pager bind:value={queryParams.limit!} {table} variant="floating" />
         {/snippet}
     </StacksDataTable>
 </div>

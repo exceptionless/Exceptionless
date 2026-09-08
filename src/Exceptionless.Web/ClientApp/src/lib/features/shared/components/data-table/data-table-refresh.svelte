@@ -9,6 +9,8 @@
     import * as Table from '$comp/ui/table';
     import { type RowData, type StockFeatures, type Table as SvelteTable } from '@tanstack/svelte-table';
 
+    import { getDataTableLayoutContext } from './data-table-layout-context.svelte';
+
     interface Props {
         children?: Snippet;
         refresh: () => Promise<void>;
@@ -16,10 +18,13 @@
     }
 
     let { children, refresh, table }: Props = $props();
+
+    const dataTableLayout = getDataTableLayoutContext();
+    const columnCount = $derived(table.getVisibleLeafColumns().length + (dataTableLayout?.getFillerColumnCount() ?? 0));
 </script>
 
 <Table.Row class="text-center">
-    <Table.Cell colspan={table.getVisibleLeafColumns().length}>
+    <Table.Cell colspan={columnCount}>
         {#if children}
             {@render children()}
         {:else}

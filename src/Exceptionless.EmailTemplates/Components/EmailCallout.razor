@@ -1,0 +1,16 @@
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:@BackgroundColor;border:1px solid @BorderColor;border-radius:3px;margin:16px 0 21px;width:100%">
+    <tr>
+        <td style="padding:10px">@ChildContent</td>
+    </tr>
+</table>
+
+@code {
+    [Parameter]
+    public string BackgroundColor { get; set; } = EmailStyles.White;
+
+    [Parameter]
+    public string BorderColor { get; set; } = EmailStyles.Border;
+
+    [Parameter, EditorRequired]
+    public required RenderFragment ChildContent { get; set; }
+}

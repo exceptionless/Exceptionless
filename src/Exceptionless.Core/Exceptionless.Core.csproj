@@ -1,27 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <None Remove="Mail\Templates\contact-request.html" />
-    <None Remove="Mail\Templates\event-notice.html" />
-    <None Remove="Mail\Templates\organization-added.html" />
-    <None Remove="Mail\Templates\organization-invited.html" />
-    <None Remove="Mail\Templates\organization-notice.html" />
-    <None Remove="Mail\Templates\organization-payment-failed.html" />
-    <None Remove="Mail\Templates\project-daily-summary.html" />
-    <None Remove="Mail\Templates\user-email-verify.html" />
-    <None Remove="Mail\Templates\user-password-reset.html" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Mail\Templates\contact-request.html" />
-    <EmbeddedResource Include="Mail\Templates\event-notice.html" />
-    <EmbeddedResource Include="Mail\Templates\organization-added.html" />
-    <EmbeddedResource Include="Mail\Templates\organization-invited.html" />
-    <EmbeddedResource Include="Mail\Templates\organization-notice.html" />
-    <EmbeddedResource Include="Mail\Templates\organization-payment-failed.html" />
-    <EmbeddedResource Include="Mail\Templates\project-daily-summary.html" />
-    <EmbeddedResource Include="Mail\Templates\user-email-verify.html" />
-    <EmbeddedResource Include="Mail\Templates\user-password-reset.html" />
-  </ItemGroup>
-  <ItemGroup>
     <None Update="Seed\predefined-saved-views.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
@@ -29,7 +7,6 @@
     <PackageReference Include="Exceptionless.RandomData" Version="2.0.1" />
     <PackageReference Include="Foundatio.Extensions.Hosting" Version="13.0.2" />
     <PackageReference Include="MiniValidation" Version="0.10.0" />
-    <PackageReference Include="Handlebars.Net" Version="2.4.3" />
     <PackageReference Include="McSherry.SemanticVersioning" Version="1.5.0" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.11" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.11" />
@@ -40,5 +17,6 @@
     <PackageReference Include="UAParser" Version="3.1.47" />
     <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="8.0.2-preview.elasticsearch-mapping-issue-investigation.0.3" Condition="'$(ReferenceFoundatioRepositoriesSource)' == '' OR '$(ReferenceFoundatioRepositoriesSource)' == 'false'" />
     <ProjectReference Include="..\..\..\..\Foundatio\Foundatio.Repositories\src\Foundatio.Repositories.Elasticsearch\Foundatio.Repositories.Elasticsearch.csproj" Condition="'$(ReferenceFoundatioRepositoriesSource)' == 'true'" />
+    <ProjectReference Include="..\Exceptionless.EmailTemplates\Exceptionless.EmailTemplates.csproj" />
   </ItemGroup>
 </Project>

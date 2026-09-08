@@ -35,6 +35,107 @@ export const BillingStatusSchema = union([
   literal(4),
 ]);
 
+export const AdminAssistantOrganizationUsageSchema = object({
+  organization_id: string().min(1, "Organization id is required"),
+  organization_name: string().min(1, "Organization name is required"),
+  plan_id: string().min(1, "Plan id is required"),
+  last_used_utc: iso.datetime(),
+  turns: int(),
+  completed: int(),
+  failed: int(),
+  cancelled: int(),
+  provider_requests: int(),
+  tool_calls: int(),
+  prompt_tokens: int(),
+  completion_tokens: int(),
+  cost_usd: number(),
+  blocked_by_concurrency: int(),
+  blocked_by_rate_limit: int(),
+  blocked_by_token_limit: int(),
+  blocked_by_cost_limit: int(),
+  monthly_token_limit: int().nullable(),
+  monthly_cost_limit_usd: number().nullable(),
+  token_utilization: number().nullable(),
+  cost_utilization: number().nullable(),
+});
+export type AdminAssistantOrganizationUsageFormData = Infer<
+  typeof AdminAssistantOrganizationUsageSchema
+>;
+
+export const AdminAssistantUsageResponseSchema = object({
+  month: iso.datetime(),
+  active_organizations: int(),
+  turns: int(),
+  prompt_tokens: int(),
+  completion_tokens: int(),
+  cost_usd: number(),
+  organizations: array(lazy(() => AdminAssistantOrganizationUsageSchema)),
+});
+export type AdminAssistantUsageResponseFormData = Infer<
+  typeof AdminAssistantUsageResponseSchema
+>;
+
+export const AssistantAccessResponseSchema = object({
+  enabled: boolean(),
+  has_access: boolean(),
+  upgrade_required: boolean(),
+  message: string().min(1, "Message is required").nullable().optional(),
+  minimum_plan_id: string()
+    .min(1, "Minimum plan id is required")
+    .nullable()
+    .optional(),
+});
+export type AssistantAccessResponseFormData = Infer<
+  typeof AssistantAccessResponseSchema
+>;
+
+export const AssistantChatMessageSchema = object({
+  role: string().min(1, "Role is required"),
+  content: string().min(1, "Content is required"),
+  is_suggested_action: boolean().nullable().optional(),
+  suggested_action_label: string()
+    .min(1, "Suggested action label is required")
+    .nullable()
+    .optional(),
+  suggested_action_path: string()
+    .min(1, "Suggested action path is required")
+    .nullable()
+    .optional(),
+});
+export type AssistantChatMessageFormData = Infer<
+  typeof AssistantChatMessageSchema
+>;
+
+export const AssistantChatRequestSchema = object({
+  messages: array(lazy(() => AssistantChatMessageSchema)),
+  organization_id: string()
+    .min(1, "Organization id is required")
+    .nullable()
+    .optional(),
+  project_id: string().min(1, "Project id is required").nullable().optional(),
+  path: string().min(1, "Path is required").nullable().optional(),
+  conversation_id: string()
+    .min(1, "Conversation id is required")
+    .nullable()
+    .optional(),
+});
+export type AssistantChatRequestFormData = Infer<
+  typeof AssistantChatRequestSchema
+>;
+
+export const AssistantModelSettingsSchema = object({
+  model: string().min(1, "Model is required"),
+  configured_model: string().min(1, "Configured model is required"),
+  is_overridden: boolean(),
+  enabled: boolean(),
+  configured_enabled: boolean(),
+  is_enabled_overridden: boolean(),
+  is_configured: boolean(),
+});
+export type AssistantModelSettingsFormData = Infer<
+  typeof AssistantModelSettingsSchema
+>;
+
 export const BillingPlanSchema = object({
   id: string().min(1, "Id is required"),
   name: string().min(1, "Name is required"),
@@ -96,6 +197,15 @@ export const CountResultSchema = object({
 });
 export type CountResultFormData = Infer<typeof CountResultSchema>;
 
+export const EventSubmissionSettingsSchema = object({
+  enabled: boolean(),
+  configured_enabled: boolean(),
+  is_overridden: boolean(),
+});
+export type EventSubmissionSettingsFormData = Infer<
+  typeof EventSubmissionSettingsSchema
+>;
+
 export const ExternalAuthInfoSchema = object({
   clientId: string().min(1, "Client id is required"),
   code: string().min(1, "Code is required"),
@@ -106,6 +216,18 @@ export const ExternalAuthInfoSchema = object({
     .optional(),
 });
 export type ExternalAuthInfoFormData = Infer<typeof ExternalAuthInfoSchema>;
+
+export const HttpValidationProblemDetailsSchema = object({
+  type: string().min(1, "Type is required").nullable().optional(),
+  title: string().min(1, "Title is required").nullable().optional(),
+  status: int32().nullable().optional(),
+  detail: string().min(1, "Detail is required").nullable().optional(),
+  instance: string().min(1, "Instance is required").nullable().optional(),
+  errors: record(string(), array(string())),
+});
+export type HttpValidationProblemDetailsFormData = Infer<
+  typeof HttpValidationProblemDetailsSchema
+>;
 
 export const IAggregateSchema = object({
   data: record(string(), unknown()).optional(),
@@ -608,6 +730,24 @@ export const TokenResultSchema = object({
 });
 export type TokenResultFormData = Infer<typeof TokenResultSchema>;
 
+export const UpdateAssistantEnabledSettingsSchema = object({
+  enabled: boolean().nullable().optional(),
+});
+export type UpdateAssistantEnabledSettingsFormData = Infer<
+  typeof UpdateAssistantEnabledSettingsSchema
+>;
+
+export const UpdateAssistantSettingsSchema = object({
+  model: string()
+    .min(1, "Model is required")
+    .max(200, "Model must be at most 200 characters")
+    .nullable()
+    .optional(),
+});
+export type UpdateAssistantSettingsFormData = Infer<
+  typeof UpdateAssistantSettingsSchema
+>;
+
 export const UpdateEmailAddressResultSchema = object({
   is_verified: boolean(),
 });
@@ -620,6 +760,13 @@ export const UpdateEventSchema = object({
   description: string().min(1, "Description is required").nullable().optional(),
 });
 export type UpdateEventFormData = Infer<typeof UpdateEventSchema>;
+
+export const UpdateEventSubmissionSettingsSchema = object({
+  enabled: boolean().nullable().optional(),
+});
+export type UpdateEventSubmissionSettingsFormData = Infer<
+  typeof UpdateEventSubmissionSettingsSchema
+>;
 
 export const UpdateProjectSchema = object({
   name: string().min(1, "Name is required").optional(),
@@ -648,6 +795,24 @@ export const UpdateSavedViewSchema = object({
   show_chart: boolean().nullable().optional(),
 });
 export type UpdateSavedViewFormData = Infer<typeof UpdateSavedViewSchema>;
+
+export const UpdateSavedViewDefaultSchema = object({
+  saved_view_id: string()
+    .length(24, "Saved view id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "Saved view id has invalid format")
+    .nullable()
+    .optional(),
+});
+export type UpdateSavedViewDefaultFormData = Infer<
+  typeof UpdateSavedViewDefaultSchema
+>;
+
+export const UpdateSavedViewOrderSchema = object({
+  saved_view_ids: array(string()),
+});
+export type UpdateSavedViewOrderFormData = Infer<
+  typeof UpdateSavedViewOrderSchema
+>;
 
 export const UpdateTokenSchema = object({
   is_disabled: boolean().optional(),
@@ -695,6 +860,8 @@ export const UserSchema = object({
     .optional(),
   password_reset_token_expiration: iso.datetime(),
   o_auth_accounts: array(lazy(() => OAuthAccountSchema)),
+  organization_preferences: array(lazy(() => UserOrganizationPreferenceSchema)),
+  saved_view_orders: array(lazy(() => UserSavedViewOrderPreferenceSchema)),
   full_name: string().min(1, "Full name is required"),
   email_address: email(),
   avatar_file_name: string()
@@ -723,10 +890,35 @@ export const UserDescriptionSchema = object({
 });
 export type UserDescriptionFormData = Infer<typeof UserDescriptionSchema>;
 
+export const UserOrganizationPreferenceSchema = object({
+  organization_id: string()
+    .length(24, "Organization id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "Organization id has invalid format"),
+  default_saved_view_id: string()
+    .length(24, "Default saved view id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "Default saved view id has invalid format"),
+});
+export type UserOrganizationPreferenceFormData = Infer<
+  typeof UserOrganizationPreferenceSchema
+>;
+
+export const UserSavedViewOrderPreferenceSchema = object({
+  organization_id: string()
+    .length(24, "Organization id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "Organization id has invalid format"),
+  view_type: string().min(1, "View type is required"),
+  saved_view_ids: array(string()),
+});
+export type UserSavedViewOrderPreferenceFormData = Infer<
+  typeof UserSavedViewOrderPreferenceSchema
+>;
+
 export const ViewCurrentUserSchema = object({
   hash: string().min(1, "Hash is required").nullable().optional(),
   has_local_account: boolean(),
   o_auth_accounts: array(lazy(() => OAuthAccountSchema)),
+  organization_preferences: array(lazy(() => UserOrganizationPreferenceSchema)),
+  saved_view_orders: array(lazy(() => UserSavedViewOrderPreferenceSchema)),
   id: string()
     .length(24, "Id must be exactly 24 characters")
     .regex(/^[a-fA-F0-9]{24}$/, "Id has invalid format"),
@@ -773,6 +965,11 @@ export const ViewOrganizationSchema = object({
   created_utc: iso.datetime(),
   updated_utc: iso.datetime(),
   name: string().min(1, "Name is required"),
+  default_saved_view_id: string()
+    .length(24, "Default saved view id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "Default saved view id has invalid format")
+    .nullable()
+    .optional(),
   icon_url: url().nullable().optional(),
   plan_id: string().min(1, "Plan id is required"),
   plan_name: string().min(1, "Plan name is required"),
@@ -859,6 +1056,10 @@ export const ViewSavedViewSchema = object({
   updated_by_user_id: string()
     .length(24, "Updated by user id must be exactly 24 characters")
     .regex(/^[a-fA-F0-9]{24}$/, "Updated by user id has invalid format")
+    .nullable()
+    .optional(),
+  predefined_key: string()
+    .min(1, "Predefined key is required")
     .nullable()
     .optional(),
   filter: string().min(1, "Filter is required").nullable().optional(),

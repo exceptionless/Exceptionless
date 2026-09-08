@@ -1,0 +1,13 @@
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%">
+    <tr>
+        <td style="padding:@Padding;word-wrap:break-word">@ChildContent</td>
+    </tr>
+</table>
+
+@code {
+    [Parameter]
+    public string Padding { get; set; } = "5px 16px 16px";
+
+    [Parameter, EditorRequired]
+    public required RenderFragment ChildContent { get; set; }
+}

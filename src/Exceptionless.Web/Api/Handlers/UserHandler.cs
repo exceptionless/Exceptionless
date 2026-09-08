@@ -214,7 +214,7 @@ public class UserHandler(
         if (user is null)
             return Result.NotFound("User not found.");
 
-        using var _ = _logger.BeginScope(new ExceptionlessState().Property("User", user).SetHttpContext(HttpContext));
+        using var _ = _logger.BeginScope(new ExceptionlessState().Identity(user.EmailAddress).SetHttpContext(HttpContext));
 
         string email = message.Email.Trim().ToLowerInvariant();
         var currentUser = HttpContext.Request.GetUser();

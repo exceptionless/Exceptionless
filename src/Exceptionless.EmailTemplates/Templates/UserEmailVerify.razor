@@ -1,0 +1,11 @@
+@namespace Exceptionless.EmailTemplates.Templates
+@inherits EmailTemplateComponent<UserEmailVerifyEmail>
+
+<EmailLayout Model="Model">
+    <EmailSection>
+        <h1 style="@EmailStyles.Heading1">Hello @Model.UserFullName,</h1>
+        <p style="@EmailStyles.Lead">We're ready to activate your account. All we need to do is make sure this is your email address.</p>
+        <EmailButton Url="@Model.Action!.Url">Verify Address</EmailButton>
+        <p style="@EmailStyles.Paragraph">If you didn't create an Exceptionless account, just delete this email and everything will go back to the way it was.</p>
+    </EmailSection>
+</EmailLayout>

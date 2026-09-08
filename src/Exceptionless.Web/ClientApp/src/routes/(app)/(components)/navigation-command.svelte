@@ -397,7 +397,7 @@
     async function switchToOrganization(organizationItem: ViewOrganization): Promise<void> {
         closeCommandWindow();
         organization.current = organizationItem.id;
-        await goto(resolve('/(app)/stack'));
+        await goto(resolve('/'));
     }
 
     async function openImpersonateOrganizationDialog(): Promise<void> {

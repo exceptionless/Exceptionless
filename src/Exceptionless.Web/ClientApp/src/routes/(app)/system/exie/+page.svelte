@@ -81,7 +81,7 @@
     ]);
 </script>
 
-<div class="space-y-6">
+<div class="flex flex-col gap-6">
     <div class="flex flex-wrap items-end justify-between gap-4">
         <Muted>Monthly Exie usage, provider cost, and plan-limit health across all organizations</Muted>
         <label class="flex flex-col gap-1 text-sm font-medium">

@@ -64,6 +64,53 @@ public class RandomEventGeneratorTests : TestWithServices
             referenceId.All(Char.IsLetterOrDigit));
     }
 
+    [Fact]
+    public void GenerateError_WithStructuredError_CreatesRichNestedStackTrace()
+    {
+        // Arrange
+        var generator = new Exceptionless.Core.Utility.RandomEventGenerator(System.TimeProvider.System);
+
+        // Act
+        var error = generator.GenerateError();
+
+        // Assert
+        Assert.NotNull(error.Inner);
+        Assert.NotNull(error.StackTrace);
+        Assert.InRange(error.StackTrace.Count, 18, 32);
+        Assert.Contains(error.StackTrace, frame =>
+            frame.GenericArguments is { Count: > 0 } &&
+            frame.Parameters is { Count: > 1 } &&
+            frame.Parameters.Any(parameter =>
+                !String.IsNullOrEmpty(parameter.TypeNamespace) &&
+                parameter.GenericArguments is { Count: > 0 }));
+        Assert.Contains(error.StackTrace, frame =>
+            !String.IsNullOrEmpty(frame.FileName) &&
+            frame.LineNumber.HasValue &&
+            frame.Column.HasValue);
+        Assert.Contains(error.StackTrace, frame => frame.DeclaringType?.Contains('+') == true);
+        Assert.Contains(error.StackTrace, frame => frame.ModuleId.HasValue);
+        Assert.Contains(error.StackTrace, frame => frame.Data?.ContainsKey("ILOffset") == true);
+        Assert.Contains(error.StackTrace, frame => frame.Data?.ContainsKey("NativeOffset") == true);
+    }
+
+    [Fact]
+    public void GenerateSimpleError_WithSimpleError_CreatesRealisticNestedStackTrace()
+    {
+        // Arrange
+        var generator = new Exceptionless.Core.Utility.RandomEventGenerator(System.TimeProvider.System);
+
+        // Act
+        var error = generator.GenerateSimpleError();
+
+        // Assert
+        Assert.NotNull(error.Inner);
+        string stackTrace = Assert.IsType<string>(error.StackTrace);
+        Assert.Contains("EventPipeline.RunAsync", stackTrace);
+        Assert.Contains("CancellationToken cancellationToken", stackTrace);
+        Assert.Contains("EventPipeline.cs:line 84", stackTrace);
+        Assert.True(stackTrace.Split('\n').Length >= 7);
+    }
+
     private string? GetErrorSignature(Event ev)
     {
         if (ev.Data is null)

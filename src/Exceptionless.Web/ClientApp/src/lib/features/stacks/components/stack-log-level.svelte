@@ -13,5 +13,5 @@
 </script>
 
 {#if stack.type === 'log' && source}
-    <ProjectLogLevel projectId={stack.project_id} {source} />
+    <ProjectLogLevel iconOnly projectId={stack.project_id} {source} />
 {/if}

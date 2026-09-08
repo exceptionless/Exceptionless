@@ -5,6 +5,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
 using Exceptionless.Web.Assistant;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -74,6 +75,23 @@ public sealed class AssistantAccessServiceTests
         Assert.NotNull(access);
         Assert.False(access.Enabled);
         Assert.Equal(AssistantAccessReason.NotConfigured, access.Reason);
+    }
+
+    [Fact]
+    public async Task GetAccessAsync_RuntimeOverrideDisabled_HidesAssistant()
+    {
+        var options = CreateOptions(new Dictionary<string, string?> { ["Assistant:ApiKey"] = "test-key" });
+        var repository = DispatchProxy.Create<IOrganizationRepository, OrganizationRepositoryProxy>();
+        var proxy = (OrganizationRepositoryProxy)(object)repository;
+        var settings = new SystemSettings { AssistantEnabled = false };
+        var service = new AssistantAccessService(options, new BillingPlans(options), repository, CreateSystemSettingsService(options, settings));
+
+        var access = await service.GetAccessAsync(CreateRequest("organization-id"), "organization-id");
+
+        Assert.False(access.Enabled);
+        Assert.False(access.HasAccess);
+        Assert.Equal(AssistantAccessReason.Disabled, access.Reason);
+        Assert.Equal(0, proxy.GetByIdCallCount);
     }
 
     [Fact]
@@ -162,7 +180,7 @@ public sealed class AssistantAccessServiceTests
         var repository = DispatchProxy.Create<IOrganizationRepository, OrganizationRepositoryProxy>();
         var proxy = (OrganizationRepositoryProxy)(object)repository;
         proxy.Organization = new Organization { Id = "organization-id", Name = "Test", PlanId = "EX_FREE" };
-        var service = new AssistantAccessService(options, new BillingPlans(options), repository);
+        var service = new AssistantAccessService(options, new BillingPlans(options), repository, CreateSystemSettingsService(options));
         var request = CreateRequest("different-organization-id");
 
         var access = await service.GetAccessAsync(request, "organization-id");
@@ -183,7 +201,7 @@ public sealed class AssistantAccessServiceTests
         var repository = DispatchProxy.Create<IOrganizationRepository, OrganizationRepositoryProxy>();
         var proxy = (OrganizationRepositoryProxy)(object)repository;
         proxy.Organization = new Organization { Id = "organization-id", Name = "Test", PlanId = "EX_FREE", IsSuspended = true };
-        var service = new AssistantAccessService(options, new BillingPlans(options), repository);
+        var service = new AssistantAccessService(options, new BillingPlans(options), repository, CreateSystemSettingsService(options));
         var request = CreateRequest("organization-id");
 
         var access = await service.GetAccessAsync(request, "organization-id");
@@ -205,7 +223,7 @@ public sealed class AssistantAccessServiceTests
         var proxy = (OrganizationRepositoryProxy)(object)repository;
         proxy.Organization = new Organization { Id = "organization-id", Name = "Test", PlanId = "EX_FREE" };
         var billingPlans = new BillingPlans(options);
-        var service = new AssistantAccessService(options, billingPlans, repository);
+        var service = new AssistantAccessService(options, billingPlans, repository, CreateSystemSettingsService(options));
         var request = CreateRequest("organization-id");
 
         var access = await service.GetAccessAsync(request, "organization-id");
@@ -222,6 +240,15 @@ public sealed class AssistantAccessServiceTests
         Assert.Equal(turnsPerMinute, options.MaximumTurnsPerMinute);
         Assert.Equal(monthlyTokens, options.MaximumMonthlyTokens);
         Assert.Equal(monthlyCost, options.MaximumMonthlyCostUsd);
+    }
+
+    private static SystemSettingsService CreateSystemSettingsService(AppOptions appOptions, SystemSettings? settings = null)
+    {
+        return new SystemSettingsService(
+            () => Task.FromResult(settings),
+            _ => Task.CompletedTask,
+            appOptions,
+            TimeProvider.System);
     }
 
     private static AppOptions CreateOptions(Dictionary<string, string?>? values = null)
