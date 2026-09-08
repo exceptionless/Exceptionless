@@ -63,7 +63,20 @@ export class E2EApiClient {
         });
 
         await expectStatus(response, [201], 'create project');
-        return toProject(await readJson(response));
+        const project = toProject(await readJson(response));
+        await waitForCondition(
+            async () => {
+                const listed = await this.request.get(this.url(`organizations/${organizationId}/projects`), {
+                    headers: this.authHeaders(token)
+                });
+                await expectStatus(listed, [200], 'list projects');
+                const projects = await readJson(listed);
+                return Array.isArray(projects) && projects.some((item) => toProject(item).id === project.id);
+            },
+            30_000,
+            `Timed out waiting for E2E project ${project.id} to appear in the projects list`
+        );
+        return project;
     }
 
     async deleteCurrentUser(token: string): Promise<number> {

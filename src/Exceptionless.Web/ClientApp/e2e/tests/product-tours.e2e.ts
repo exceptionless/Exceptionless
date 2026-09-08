@@ -28,6 +28,7 @@ test.describe('first-run welcome', () => {
             const persisted = page.waitForResponse(isSuccessfulTourProgress(tourName));
             await dismiss.click();
             expect(await (await persisted).json()).toMatchObject({ status: 2, version: 1 });
+            await expect(dismiss).toBeHidden();
             await page.addInitScript(() =>
                 Object.defineProperty(window, 'sessionStorage', {
                     get() {
@@ -35,17 +36,18 @@ test.describe('first-run welcome', () => {
                     }
                 })
             );
-            const reloadedUser = page.waitForResponse((response) => new URL(response.url()).pathname === '/api/v2/users/me' && response.status() === 200);
+            const reloadedUser = page
+                .waitForResponse((response) => new URL(response.url()).pathname === '/api/v2/users/me' && response.status() === 200)
+                .then((response) => response.json());
             const reloadedProjects = page.waitForResponse(
                 (response) => new URL(response.url()).pathname === `/api/v2/organizations/${e2eScenario.organizationId}/projects` && response.status() === 200
             );
-            await page.reload();
+            const [, currentUser] = await Promise.all([page.reload(), reloadedUser, reloadedProjects]);
 
             // Assert
-            expect(await (await reloadedUser).json()).toMatchObject({
+            expect(currentUser).toMatchObject({
                 product_tours: { [tourName]: { status: 2, version: 1 } }
             });
-            await reloadedProjects;
             await expect(page.getByRole('button', { name: 'Search Exceptionless' })).toBeVisible();
             if (tourName === 'app-welcome') {
                 // A different, unseen invitation remains eligible; saved outcomes do not hide unrelated guides.
