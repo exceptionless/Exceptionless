@@ -4,6 +4,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models;
+using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Exceptions;
 using Xunit;
@@ -37,10 +38,18 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
             new ProductTourProgress { Status = ProductTourStatus.Completed, Version = 1 });
 
         // Assert
+        var cache = Assert.IsType<InMemoryCacheClient>(GetService<ICacheClient>());
+        long hits = cache.Hits;
+        long misses = cache.Misses;
         var cachedUser = await _userRepository.GetByIdAsync(user.Id, options => options.Cache());
+        var cachedByEmail = await _userRepository.GetByEmailAddressAsync(user.EmailAddress);
         Assert.NotNull(cachedUser);
+        Assert.NotNull(cachedByEmail);
+        Assert.Equal(misses, cache.Misses);
+        Assert.Equal(hits + 2, cache.Hits);
         Assert.Equal(ProductTourStatus.Completed, progress.Status);
         Assert.Equal(progress, cachedUser.ProductTours[ProductTours.AppOverview]);
+        Assert.Equal(progress, cachedByEmail.ProductTours[ProductTours.AppOverview]);
     }
 
     [Fact]

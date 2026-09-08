@@ -108,10 +108,11 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
 
         await PatchAsync(userId, patch, options => options.Cache());
 
-        // Concurrent authentication reads can repopulate an older cache entry after the patch invalidates it.
-        var user = await GetByIdAsync(userId, options => options.Cache(false));
+        var user = await GetByIdAsync(userId);
         if (user is null || !user.ProductTours.TryGetValue(tourName, out var storedProgress))
             throw new DocumentNotFoundException(userId);
+
+        await AddDocumentsToCacheAsync(user, ConfigureOptions(new CommandOptions<User>().Cache()), isDirtyRead: false);
 
         return storedProgress;
     }
