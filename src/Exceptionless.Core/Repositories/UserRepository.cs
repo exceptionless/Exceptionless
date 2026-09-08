@@ -113,6 +113,8 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         if (user is null || !user.ProductTours.TryGetValue(tourName, out var storedProgress))
             throw new DocumentNotFoundException(userId);
 
+        // Workaround to refresh ID/email caches from the authoritative read; concurrent cache fills can still race.
+        // Revisit when https://github.com/FoundatioFx/Foundatio.Repositories/issues/323 is resolved.
         await AddDocumentsToCacheAsync(user, ConfigureOptions(new CommandOptions<User>().Cache()), isDirtyRead: false);
 
         return storedProgress;
