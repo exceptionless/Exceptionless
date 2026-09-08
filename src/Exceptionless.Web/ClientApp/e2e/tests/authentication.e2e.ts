@@ -50,3 +50,37 @@ test('user can recover from a failed login, restore the session, and log out', a
         await authenticationContext.close();
     }
 });
+
+test('login restores the full notification settings link and selected project', async ({ browser, e2eApi, e2eScenario, e2eSecondaryProject }) => {
+    const context = await browser.newContext({ baseURL: e2eApi.environment.appUrl, ignoreHTTPSErrors: true });
+    const page = await context.newPage();
+    const destination = `/next/account/notifications?project=${e2eSecondaryProject.projectId}&from=email%2Bnotification%26settings#project-notifications`;
+
+    try {
+        await test.step('preserve the complete destination when authentication is required', async () => {
+            await page.goto(destination);
+            await expect(page.getByRole('button', { exact: true, name: 'Login' })).toBeVisible();
+            await expect.poll(() => new URL(page.url()).searchParams.get('redirect')).toBe(destination);
+        });
+
+        await test.step('return to the requested project after login', async () => {
+            await page.getByLabel('Email', { exact: true }).fill(e2eScenario.email);
+            await page.getByPlaceholder('Enter password').fill(E2E_TEST_PASSWORD);
+            await page.getByRole('button', { exact: true, name: 'Login' }).click();
+
+            await expect(page).toHaveURL(new URL(destination, e2eApi.environment.appUrl).href);
+            await expect(page.getByRole('heading', { exact: true, name: 'Project Notifications' })).toBeVisible();
+            await expect(page.getByRole('button', { exact: true, name: e2eSecondaryProject.projectName })).toBeVisible();
+        });
+
+        await test.step('preserve the same destination after the session expires', async () => {
+            await page.evaluate(() => localStorage.setItem('satellizer_token', 'expired-navigation-test-token'));
+            await page.reload();
+
+            await expect(page.getByRole('button', { exact: true, name: 'Login' })).toBeVisible();
+            await expect.poll(() => new URL(page.url()).searchParams.get('redirect')).toBe(destination);
+        });
+    } finally {
+        await context.close();
+    }
+});
