@@ -122,12 +122,27 @@ export type MaintenanceAction = {
 };
 
 export type MaintenanceActionCategory = 'Billing' | 'Configuration' | 'Elasticsearch' | 'Maintenance' | 'Security' | 'Users';
+export type MigrationRerunOperation = {
+    attempt_count: number;
+    completed_utc?: null | string;
+    error_message?: null | string;
+    id: string;
+    migration_id: string;
+    requested_by_user_id?: null | string;
+    requested_utc: string;
+    source: 'CommandLine' | 'UserInterface';
+    started_utc?: null | string;
+    status: 'Cancelled' | 'Completed' | 'Failed' | 'Queued' | 'Running';
+    version: number;
+};
+
 export type MigrationsResponse = {
     current_version: number;
     states: MigrationState[];
 };
 
 export type MigrationState = {
+    can_rerun: boolean;
     completed_utc?: null | string;
     error_message?: null | string;
     id: string;
