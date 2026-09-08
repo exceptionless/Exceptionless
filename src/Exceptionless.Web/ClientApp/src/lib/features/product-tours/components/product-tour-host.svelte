@@ -185,6 +185,17 @@
         }
 
         const active = productTourCheckpoint.current ?? productTourCheckpoint.restore(currentUser.id, organizationId);
+        if (
+            active?.userId === currentUser.id &&
+            active.tourName === 'project-configure' &&
+            !active.organizationId &&
+            organizationId &&
+            pathname === resolve('/(app)/organization/add')
+        ) {
+            productTourCheckpoint.advance(active, active.checkpointName, organizationId);
+            return;
+        }
+
         if (active && (active.userId !== currentUser.id || active.organizationId !== organizationId)) {
             productTourCheckpoint.clear(active);
         }

@@ -6,6 +6,114 @@ import { createRepresentativeEvent } from '../support/synthetic-event';
 
 test.use({ actionTimeout: 15_000, e2eUseInvitedUser: true });
 
+test('first organization keeps the project guide while project creation is pending @signup', async ({ e2eApi, page }) => {
+    // Arrange: a new account has no organization to scope its checkpoint to yet.
+    const name = `Tour setup ${e2eApi.environment.runId}`;
+    const token = await e2eApi.signup(name, `tour-setup-${e2eApi.environment.runId}@exceptionless.test`, E2E_TEST_PASSWORD);
+    let releaseProject!: () => void;
+    const projectPending = new Promise<void>((resolve) => {
+        releaseProject = resolve;
+    });
+    let releaseOrganizationRefresh!: () => void;
+    const organizationRefreshPending = new Promise<void>((resolve) => {
+        releaseOrganizationRefresh = resolve;
+    });
+    let holdOrganizationRefresh = false;
+    let organizationId: string | undefined;
+    let projectId: string | undefined;
+    let projectCreated: Promise<Response> | undefined;
+    try {
+        const user = await e2eApi.getCurrentUser(token);
+        expect(user).toBeDefined();
+        await page.addInitScript(
+            ({ token, userId }) => {
+                localStorage.setItem('satellizer_token', token);
+                sessionStorage.setItem(
+                    'exceptionless.product-tour',
+                    JSON.stringify({
+                        checkpointName: 'project-name',
+                        source: 'catalog',
+                        tourName: 'project-configure',
+                        userId,
+                        version: 1
+                    })
+                );
+            },
+            { token, userId: user!.id }
+        );
+        await page.route(
+            (url) => url.pathname === '/api/v2/organizations',
+            async (route) => {
+                if (holdOrganizationRefresh && route.request().method() === 'GET') {
+                    await organizationRefreshPending;
+                }
+                await route.continue();
+            }
+        );
+        await page.route(
+            (url) => url.pathname === '/api/v2/projects',
+            async (route) => {
+                if (route.request().method() === 'POST') {
+                    organizationId = route.request().postDataJSON().organization_id;
+                    await projectPending;
+                    const response = await route.fetch();
+                    projectId = (await response.json()).id;
+                    await route.fulfill({ response });
+                    return;
+                }
+                await route.continue();
+            }
+        );
+        await page.goto('/next/organization/add');
+        const guide = page.locator('.driver-popover');
+        await expect(guide.getByText('Name your first project')).toBeVisible();
+        await page.getByLabel('Organization Name', { exact: true }).fill(name);
+        await page.getByLabel('Project Name', { exact: true }).fill(name);
+
+        // Act: hold the project request across the organization context change.
+        holdOrganizationRefresh = true;
+        const organizationCreated = page.waitForResponse(
+            (response) => new URL(response.url()).pathname === '/api/v2/organizations' && response.request().method() === 'POST'
+        );
+        const creating = page.waitForRequest((request) => new URL(request.url()).pathname === '/api/v2/projects' && request.method() === 'POST');
+        projectCreated = page.waitForResponse((response) => new URL(response.url()).pathname === '/api/v2/projects' && response.request().method() === 'POST');
+        await page.getByRole('button', { exact: true, name: 'Continue' }).click();
+        organizationId = (await (await organizationCreated).json()).id;
+        await expect
+            .poll(() => page.evaluate(() => JSON.parse(sessionStorage.getItem('exceptionless.product-tour') ?? 'null')?.organizationId))
+            .toBe(organizationId);
+        releaseOrganizationRefresh();
+        const request = await creating;
+        organizationId = request.postDataJSON().organization_id;
+
+        // Assert: the host must not discard the first-organization checkpoint.
+        await expect
+            .poll(() => page.evaluate(() => JSON.parse(sessionStorage.getItem('exceptionless.product-tour') ?? 'null')?.organizationId))
+            .toBe(organizationId);
+        releaseProject();
+        await page.waitForURL(/\/next\/project\/[^/]+\/configure/);
+        await expect(guide.getByText('Choose your language or platform')).toBeVisible();
+    } finally {
+        releaseOrganizationRefresh();
+        releaseProject();
+        if (projectCreated) {
+            const response = await projectCreated;
+            if (response.ok()) {
+                projectId = (await response.json()).id;
+            }
+        }
+        await page.unrouteAll({ behavior: 'wait' });
+        if (projectId) {
+            await e2eApi.deleteProject(token, projectId);
+            await e2eApi.waitForProjectDeleted(token, projectId);
+        }
+        if (organizationId) {
+            await e2eApi.deleteOrganization(token, organizationId);
+        }
+        await e2eApi.deleteCurrentUser(token);
+    }
+});
+
 test.describe('first-run welcome', () => {
     test.use({ e2eDismissProductTourWelcome: false });
 
