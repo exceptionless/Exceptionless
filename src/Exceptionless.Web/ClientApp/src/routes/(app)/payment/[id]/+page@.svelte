@@ -26,12 +26,13 @@
     });
 
     $effect(() => {
-        if (!accessToken.current || !organization.current || invoiceQuery.isError) {
+        if (!accessToken.current || invoiceQuery.isError) {
             void goto(resolve('/'));
+            return;
         }
 
-        if (invoiceQuery.isSuccess && invoiceQuery.data?.organization_id !== organization.current) {
-            void goto(resolve('/'));
+        if (invoiceQuery.isSuccess && invoiceQuery.data?.organization_id) {
+            organization.current = invoiceQuery.data.organization_id;
         }
     });
 </script>

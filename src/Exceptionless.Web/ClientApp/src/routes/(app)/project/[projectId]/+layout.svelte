@@ -63,7 +63,7 @@
             goto(resolve('/(app)/project/list'));
         }
 
-        if (projectQuery.isSuccess && projectQuery.data.organization_id !== organization.current) {
+        if (projectQuery.isSuccess) {
             organization.current = projectQuery.data.organization_id;
         }
     });
