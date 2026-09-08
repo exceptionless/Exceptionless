@@ -9,7 +9,16 @@ test('real dashboard matches repository totals across rolling, month, and histor
 
     // Act & Assert
     for (const period of ['Last 30 days', 'Show month', 'Available history']) {
-        const pending = page.waitForResponse((response) => new URL(response.url()).pathname === '/api/v2/admin/product-tour-usage');
+        const pending = page.waitForResponse((response) => {
+            const url = new URL(response.url());
+            if (url.pathname !== '/api/v2/admin/product-tour-usage') {
+                return false;
+            }
+
+            return period === 'Available history'
+                ? !url.searchParams.has('start')
+                : url.searchParams.has('start') && url.searchParams.has('end') === (period === 'Show month');
+        });
         if (period === 'Last 30 days') {
             await page.goto('/next/system/product-tours');
         } else {
@@ -128,6 +137,10 @@ test('synthetic activity charts support keyboard, compact ranges, and light/dark
     await expect(chart).toHaveAttribute('aria-valuenow', '0');
     await expect(chart).toHaveAttribute('aria-valuetext', /Started: 8.*Completed: 3.*Dismissed: 0/);
     await page.keyboard.press('ArrowRight');
+    await expect(chart).toHaveAttribute('aria-valuenow', '1');
+    await page.keyboard.press('ArrowDown');
+    await expect(chart).toHaveAttribute('aria-valuenow', '0');
+    await page.keyboard.press('ArrowUp');
     await expect(chart).toHaveAttribute('aria-valuenow', '1');
     await expect(chart).toHaveAttribute('aria-valuetext', /Started: 9/);
     await expect(page.getByRole('tooltip')).toBeVisible();

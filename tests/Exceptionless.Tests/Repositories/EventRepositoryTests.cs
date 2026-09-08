@@ -234,6 +234,40 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetProductTourUsageAsync_History_IncludesEntireFirstRetainedDay()
+    {
+        // Arrange
+        var utcNow = new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc);
+        TimeProvider.SetUtcNow(utcNow);
+        int maximumRetentionDays = _appOptions.MaximumRetentionDays;
+        _appOptions.MaximumRetentionDays = 7;
+        try
+        {
+            var cutoff = utcNow.Date.SubtractDays(7);
+            string source = ProductTours.CreateTelemetrySource(ProductTourTelemetryEvent.Started, ProductTours.AppOverview, 1, ProductTourLaunchSource.Catalog);
+            await CreateDataAsync(builder =>
+            {
+                AddProductTourUsage(builder, source, cutoff.AddSeconds(-1), "expired");
+                AddProductTourUsage(builder, source, cutoff, "midnight");
+                AddProductTourUsage(builder, source, cutoff.AddHours(1), "retained");
+            });
+
+            // Act
+            var result = await _repository.GetProductTourUsageAsync(_appOptions.InternalProjectId, null, utcNow);
+
+            // Assert
+            var bucket = Assert.Single(result.Buckets);
+            Assert.Equal(2, bucket.Count);
+            Assert.Equal(2, bucket.Activity.Sum(period => period.Count));
+            Assert.Equal(cutoff, bucket.Activity.First(period => period.Count > 0).DateUtc);
+        }
+        finally
+        {
+            _appOptions.MaximumRetentionDays = maximumRetentionDays;
+        }
+    }
+
+    [Fact]
     public async Task GetProductTourUsageAsync_FutureEnd_ExcludesFutureEventsAndPadding()
     {
         // Arrange

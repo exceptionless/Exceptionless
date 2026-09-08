@@ -13,6 +13,7 @@
     import ProductTourActivityPopover from '$features/admin/components/product-tour-activity-popover.svelte';
     import ProductTourActivity from '$features/admin/components/product-tour-activity.svelte';
     import ProductTourPeriod from '$features/admin/components/product-tour-period.svelte';
+    import { getProductTourUsageParams } from '$features/admin/product-tour-usage';
     import { productTourCatalog } from '$features/product-tours/catalog';
     import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 
@@ -20,7 +21,7 @@
         days: 30,
         kind: 'days'
     });
-    const usageQuery = getAdminProductTourUsageQuery(() => range);
+    const usageQuery = getAdminProductTourUsageQuery(() => getProductTourUsageParams(range));
     const usage = $derived(usageQuery.data);
     const guides = $derived(usage?.tours.filter((tour) => tour.kind === 'guide') ?? []);
     const invitations = $derived(usage?.tours.filter((tour) => tour.kind === 'prompt') ?? []);

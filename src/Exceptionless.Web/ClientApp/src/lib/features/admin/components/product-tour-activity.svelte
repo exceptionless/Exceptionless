@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { ProductTourSummary } from '$generated/api';
 
+    import DateTime from '$comp/formatters/date-time.svelte';
     import Number from '$comp/formatters/number.svelte';
     import { Muted, P } from '$comp/typography';
     import * as Chart from '$comp/ui/chart';
@@ -11,6 +12,11 @@
     import { type ChartState, LineChart, Points, Spline } from 'layerchart';
 
     let { tour }: { tour: ProductTourSummary } = $props();
+    const dateOptions: Intl.DateTimeFormatOptions = {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+        timeZone: 'UTC'
+    };
     const prompt = $derived(tour.kind === 'prompt');
     const keyboardHelpId = $props.id();
     const data = $derived(
@@ -44,7 +50,7 @@
             ...config[key]
         }))
     );
-    const total = $derived(tour.shown + tour.started + tour.completed + tour.dismissed);
+    const total = $derived(keys.reduce((sum, key) => sum + tour[key], 0));
     let context = $state<ChartState>();
     let keyboardIndex = $state<number>();
     const selectedIndex = $derived(Math.max(0, Math.min(keyboardIndex ?? data.length - 1, data.length - 1)));
@@ -62,15 +68,17 @@
     }
 
     function inspectDate(event: KeyboardEvent): void {
-        if (!['ArrowLeft', 'ArrowRight', 'End', 'Home'].includes(event.key)) {
+        if (!['ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'End', 'Home'].includes(event.key)) {
             return;
         }
         event.preventDefault();
         switch (event.key) {
+            case 'ArrowDown':
             case 'ArrowLeft':
                 keyboardIndex = Math.max(0, selectedIndex - 1);
                 break;
             case 'ArrowRight':
+            case 'ArrowUp':
                 keyboardIndex = Math.min(data.length - 1, selectedIndex + 1);
                 break;
             case 'End':
@@ -157,15 +165,11 @@
                         {/if}
                     {/each}
                 {/snippet}
-                {#snippet tooltip()}<Chart.Tooltip
-                        role="tooltip"
-                        labelFormatter={(value) => (value instanceof Date ? formatPeriod(value) : '')}
-                        indicator="line"
-                    />{/snippet}
+                {#snippet tooltip()}<Chart.Tooltip role="tooltip" labelFormatter={() => tooltipDate} indicator="line" />{/snippet}
             </LineChart>
         </Chart.Container>
         <div class="sr-only">
-            <P id={keyboardHelpId}>Use Left and Right arrows to inspect dates, or Home and End to jump to the first and last date. Dates are UTC.</P>
+            <P id={keyboardHelpId}>Use arrow keys to inspect dates, or Home and End to jump to the first and last date. Dates are UTC.</P>
             <Table.Root aria-label="Guide activity by date">
                 <Table.Header
                     ><Table.Row
@@ -175,8 +179,8 @@
                 >
                 <Table.Body
                     >{#each data as period (period.date_utc)}<Table.Row
-                            ><Table.Cell>{formatPeriod(period.date)}</Table.Cell>{#each keys as key (key)}<Table.Cell class="text-right"
-                                    ><Number value={period[key]} /></Table.Cell
+                            ><Table.Cell><DateTime value={period.date} options={dateOptions} /></Table.Cell>{#each keys as key (key)}<Table.Cell
+                                    class="text-right"><Number value={period[key]} /></Table.Cell
                                 >{/each}</Table.Row
                         >{/each}</Table.Body
                 >
@@ -184,3 +188,7 @@
         </div>
     {/if}
 </div>
+
+{#snippet tooltipDate()}
+    <DateTime value={context?.tooltip.data?.date} options={dateOptions} />
+{/snippet}

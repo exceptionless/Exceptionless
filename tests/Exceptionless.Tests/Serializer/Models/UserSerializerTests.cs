@@ -280,7 +280,7 @@ public class UserSerializerTests : TestWithServices
     [Fact]
     public void Deserialize_LegacyUserWithoutProductTours_ReturnsEmptyCollection()
     {
-        // lang=json
+        /* language=json */
         const string json = """
             {
                 "id": "legacy-user",

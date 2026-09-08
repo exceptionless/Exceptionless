@@ -289,6 +289,30 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public Task UpdateCurrentUserProductTourAsync_MissingStatus_ReturnsUnprocessableEntity()
+    {
+        // Act & Assert
+        return SendRequestAsync(request => request
+            .Put()
+            .AsTestOrganizationUser()
+            .AppendPaths("users", "me", "product-tours", "app-overview")
+            .Content(new { Version = 1 })
+            .StatusCodeShouldBeUnprocessableEntity());
+    }
+
+    [Fact]
+    public Task UpdateCurrentUserProductTourAsync_NullStatus_ReturnsUnprocessableEntity()
+    {
+        // Act & Assert
+        return SendRequestAsync(request => request
+            .Put()
+            .AsTestOrganizationUser()
+            .AppendPaths("users", "me", "product-tours", "app-overview")
+            .Content(new Dictionary<string, object?> { ["status"] = null, ["version"] = 1 })
+            .StatusCodeShouldBeUnprocessableEntity());
+    }
+
+    [Fact]
     public Task UpdateCurrentUserProductTourAsync_UndefinedStatus_ReturnsUnprocessableEntity()
     {
         // Act & Assert

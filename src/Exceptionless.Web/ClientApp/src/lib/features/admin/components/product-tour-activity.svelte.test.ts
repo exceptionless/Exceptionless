@@ -1,6 +1,5 @@
 import type { ProductTourSummary } from '$generated/api';
 
-import { formatDateLabel } from '$features/shared/dates';
 import { ProductTourKind, ProductTourLaunchSource } from '$generated/api';
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -54,6 +53,14 @@ describe('ProductTourActivity', () => {
         await fireEvent.keyDown(chart, { key: 'ArrowRight' });
         expect(chart.getAttribute('aria-valuenow')).toBe('1');
         expect(chart.getAttribute('aria-valuetext')).toContain('Completed: 0');
+        await fireEvent.keyDown(chart, { key: 'ArrowDown' });
+        expect(chart.getAttribute('aria-valuenow')).toBe('0');
+        await fireEvent.keyDown(chart, { key: 'ArrowDown' });
+        expect(chart.getAttribute('aria-valuenow')).toBe('0');
+        await fireEvent.keyDown(chart, { key: 'ArrowUp' });
+        expect(chart.getAttribute('aria-valuenow')).toBe('1');
+        await fireEvent.keyDown(chart, { key: 'ArrowUp' });
+        expect(chart.getAttribute('aria-valuenow')).toBe('1');
     });
 
     it('labels invitation acceptance without a redundant started series', () => {
@@ -63,6 +70,15 @@ describe('ProductTourActivity', () => {
         // Assert
         expect(screen.getByLabelText('Period totals').textContent).toContain('Accepted');
         expect(screen.getByLabelText('Period totals').textContent).not.toContain('Started');
+    });
+
+    it('shows an empty state when an invitation only has historical started activity', () => {
+        // Act
+        render(ProductTourActivity, { tour: { ...tour, completed: 0, kind: ProductTourKind.Prompt } });
+
+        // Assert
+        expect(screen.getByText('No recorded activity in this period.')).toBeTruthy();
+        expect(screen.queryByRole('slider')).toBeNull();
     });
     it('shows the chart without disclosures while preserving screen-reader access to values', () => {
         // Act
@@ -74,7 +90,7 @@ describe('ProductTourActivity', () => {
         const table = screen.getByRole('table', { name: 'Guide activity by date' });
         expect(table.closest('.sr-only')).not.toBeNull();
         expect(table.textContent).toContain(
-            formatDateLabel(new Date(tour.activity[0]!.date_utc), undefined, { includeRelative: false, month: 'short', timeZone: 'UTC' })
+            new Date(tour.activity[0]!.date_utc).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' })
         );
         expect(table.closest('details')).toBeNull();
     });

@@ -87,18 +87,20 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
     public async Task<ProductTourUsageResult> GetProductTourUsageAsync(string projectId, DateTime? utcStart, DateTime utcEnd)
     {
         ArgumentException.ThrowIfNullOrEmpty(projectId);
-        if (utcStart.HasValue && utcEnd <= utcStart)
-            throw new ArgumentOutOfRangeException(nameof(utcEnd), "The end date must be later than the start date.");
-
-        var now = _timeProvider.GetUtcNow().UtcDateTime;
-        if (utcEnd > now)
+        if (utcStart.HasValue && utcEnd.IsBeforeOrEqual(utcStart.Value))
         {
-            utcEnd = now;
+            throw new ArgumentOutOfRangeException(nameof(utcEnd), "The end date must be later than the start date.");
         }
 
-        if (utcStart >= utcEnd)
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        if (utcStart.HasValue && utcStart.Value.IsAfterOrEqual(utcNow))
         {
             return new ProductTourUsageResult([]);
+        }
+
+        if (utcEnd.IsAfter(utcNow))
+        {
+            utcEnd = utcNow;
         }
 
         var sourcesByName = ProductTours.Definitions.Values
@@ -111,7 +113,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         if (!utcStart.HasValue)
         {
             DateTime? retainedStart = _options.MaximumRetentionDays > 0
-                ? _timeProvider.GetUtcNow().UtcDateTime.SubtractDays(_options.MaximumRetentionDays)
+                ? utcNow.Date.SubtractDays(_options.MaximumRetentionDays)
                 : null;
             var bounds = await CountAsync(query => ApplyProductTourUsageFilter(query, projectId, retainedStart, utcEnd, allSources)
                 .AggregationsExpression($"min:{dateField}"));
@@ -133,7 +135,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
                     Convert.ToInt64(bucket.Aggregations.Sum($"sum_{countField}")?.Value ?? bucket.Total.GetValueOrDefault()),
                     bucket.Aggregations.Max<DateTime>($"max_{dateField}")?.Value,
                     (bucket.Aggregations.DateHistogram($"date_{dateField}")?.Buckets ?? [])
-                        .Where(period => period.Date < utcEnd && (period.Date >= utcStart || period.Total > 0))
+                        .Where(period => period.Date.IsBefore(utcEnd) && (period.Date.IsAfterOrEqual(utcStart.Value) || period.Total > 0))
                         .Select(period => new ProductTourUsagePeriod(period.Date, Convert.ToInt64(period.Aggregations.Sum($"sum_{countField}")?.Value ?? period.Total.GetValueOrDefault())))
                         .ToArray())
                 : null)

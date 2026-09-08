@@ -117,34 +117,19 @@
     const items = $derived(getProductTourItems(context, currentUser?.product_tours));
     const recommended = $derived(items.find((item) => item.name === getRecommendedProductTourName(context)) ?? items[0]!);
     const checkpoint = $derived(productTourCheckpoint.current);
-    const welcomeOpen = $derived(
-        !!(
-            hostStateSettled &&
-            automaticSurface === 'welcome' &&
-            currentUser &&
-            !checkpoint &&
-            !catalogOpen &&
-            !isAnyOverlayOpen &&
-            !isImpersonating &&
-            !isSetupPage &&
-            !pathname.startsWith(SYSTEM_PATH) &&
-            shouldOfferProductTourInvitation(currentUser.product_tours?.['app-welcome'], WELCOME_VERSION)
-        )
+    const canShowInvitation = $derived(
+        hostStateSettled && !!currentUser && !checkpoint && !catalogOpen && !isAnyOverlayOpen && !isImpersonating && !isSetupPage
     );
+    const welcomeEligible = $derived(shouldOfferProductTourInvitation(currentUser?.product_tours?.['app-welcome'], WELCOME_VERSION));
+    const welcomeOpen = $derived(canShowInvitation && automaticSurface === 'welcome' && !pathname.startsWith(SYSTEM_PATH) && welcomeEligible);
     const exieAnnouncementOpen = $derived(
         !!(
-            hostStateSettled &&
+            canShowInvitation &&
             automaticSurface === 'exie-announcement' &&
-            currentUser &&
             assistantAccess?.enabled &&
             (pathname.startsWith(EVENT_PATH) || pathname.startsWith(STACK_PATH)) &&
-            !isSetupPage &&
-            !isImpersonating &&
-            !checkpoint &&
-            !catalogOpen &&
-            !isAnyOverlayOpen &&
-            !shouldOfferProductTourInvitation(currentUser.product_tours?.['app-welcome'], WELCOME_VERSION) &&
-            shouldOfferProductTourInvitation(currentUser.product_tours?.['exie-announcement'], EXIE_ANNOUNCEMENT_VERSION)
+            !welcomeEligible &&
+            shouldOfferProductTourInvitation(currentUser?.product_tours?.['exie-announcement'], EXIE_ANNOUNCEMENT_VERSION)
         )
     );
 
@@ -175,7 +160,7 @@
             return;
         }
 
-        if (shouldOfferProductTourInvitation(currentUser.product_tours?.['app-welcome'], WELCOME_VERSION) && !pathname.startsWith(SYSTEM_PATH)) {
+        if (welcomeEligible && !pathname.startsWith(SYSTEM_PATH)) {
             claimAutomaticSurface('welcome');
             return;
         }
@@ -301,6 +286,13 @@
                 },
                 tourName: name
             });
+            automaticSurface = 'handled';
+            void submitProductTourActivity(
+                status === ProductTourStatus.Completed ? 'completed' : 'dismissed',
+                name,
+                version,
+                name === 'app-welcome' ? 'welcome' : 'feature-announcement'
+            );
             return true;
         } catch {
             toast.error('We could not save your guided-tour preference. Please try again.');
@@ -313,8 +305,6 @@
             return;
         }
 
-        automaticSurface = 'handled';
-        void submitProductTourActivity('completed', 'app-welcome', WELCOME_VERSION, 'welcome');
         await startTour(recommended.name, 'welcome');
     }
 
@@ -323,18 +313,11 @@
             return;
         }
 
-        automaticSurface = 'handled';
-        void submitProductTourActivity('completed', 'app-welcome', WELCOME_VERSION, 'welcome');
         await openCatalog('catalog');
     }
 
     async function onWelcomeSkip(): Promise<void> {
-        if (!(await recordPreference('app-welcome', WELCOME_VERSION, ProductTourStatus.Dismissed))) {
-            return;
-        }
-
-        automaticSurface = 'handled';
-        void submitProductTourActivity('dismissed', 'app-welcome', WELCOME_VERSION, 'welcome');
+        await recordPreference('app-welcome', WELCOME_VERSION, ProductTourStatus.Dismissed);
     }
 
     async function onExieAnnouncementStart(): Promise<void> {
@@ -342,8 +325,6 @@
             return;
         }
 
-        automaticSurface = 'handled';
-        void submitProductTourActivity('completed', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
         if (assistantAccess?.has_access) {
             await startTour('exie-overview', 'feature-announcement');
         } else {
@@ -352,12 +333,7 @@
     }
 
     async function onExieAnnouncementDismiss(): Promise<void> {
-        if (!(await recordPreference('exie-announcement', EXIE_ANNOUNCEMENT_VERSION, ProductTourStatus.Dismissed))) {
-            return;
-        }
-
-        automaticSurface = 'handled';
-        void submitProductTourActivity('dismissed', 'exie-announcement', EXIE_ANNOUNCEMENT_VERSION, 'feature-announcement');
+        await recordPreference('exie-announcement', EXIE_ANNOUNCEMENT_VERSION, ProductTourStatus.Dismissed);
     }
 
     function getItem(name: ProductTourName): ProductTourListItem {
