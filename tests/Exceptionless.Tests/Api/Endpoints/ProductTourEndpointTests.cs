@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories;
@@ -8,7 +7,6 @@ using Exceptionless.Web.Models;
 using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Exceptions;
-using Foundatio.Repositories.Models;
 using Xunit;
 
 namespace Exceptionless.Tests.Api.Endpoints;
@@ -28,36 +26,10 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
         await GetService<SampleDataService>().CreateDataAsync();
     }
 
-    [Theory]
-    [InlineData("completed", ProductTourStatus.Dismissed, ProductTourStatus.Completed)]
-    [InlineData("dismissed", ProductTourStatus.Completed, ProductTourStatus.Completed)]
-    [InlineData("dismissed", ProductTourStatus.Dismissed, ProductTourStatus.Dismissed)]
-    public async Task UpdateCurrentUserProductTourAsync_LegacyStringStatus_PreservesCompletionPrecedence(string legacyStatus, ProductTourStatus requestedStatus, ProductTourStatus expectedStatus)
-    {
-        // Arrange
-        var user = await GetTestOrganizationUserAsync();
-        await _userRepository.PatchAsync(user.Id, new PartialPatch(new
-        {
-            product_tours = new Dictionary<string, object>
-            {
-                [ProductTours.AppOverview] = new { status = legacyStatus, version = 1 }
-            }
-        }), options => options.Cache());
-
-        // Act: authentication must also deserialize the legacy user document.
-        var progress = await UpdateProgressAsync(ProductTours.AppOverview, requestedStatus, 1);
-
-        // Assert
-        Assert.Equal(expectedStatus, progress.Status);
-        var currentUser = await SendRequestAsAsync<JsonElement>(request => request.AsTestOrganizationUser()
-            .AppendPaths("users", "me").StatusCodeShouldBeOk());
-        Assert.Equal((int)expectedStatus, currentUser.GetProperty("product_tours").GetProperty(ProductTours.AppOverview).GetProperty("status").GetInt32());
-    }
-
     [Fact]
     public Task UpdateCurrentUserProductTourAsync_StringRequestStatus_ReturnsBadRequest()
     {
-        // Act & Assert: legacy storage decoding does not change the numeric request contract.
+        // Act & Assert
         return SendRequestAsync(request => request.Put().AsTestOrganizationUser()
             .AppendPaths("users", "me", "product-tours", ProductTours.AppOverview)
             .Content(new { Status = "completed", Version = 1 }).StatusCodeShouldBeBadRequest());

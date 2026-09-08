@@ -89,7 +89,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
 
             def current = ctx._source.product_tours[params.tourName];
             if (current != null && (current.version > params.version ||
-                (current.version == params.version && (current.status == params.completedStatus || current.status == 'completed' || current.status == params.status)))) {
+                (current.version == params.version && (current.status == params.completedStatus || current.status == params.status)))) {
               ctx.op = 'none';
             } else {
               ctx._source.product_tours[params.tourName] = ['status': params.status, 'version': params.version];
@@ -108,11 +108,9 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
 
         await PatchAsync(userId, patch, options => options.Cache());
 
-        var user = await GetByIdAsync(userId);
+        var user = await GetByIdAsync(userId, options => options.Cache());
         if (user is null || !user.ProductTours.TryGetValue(tourName, out var storedProgress))
             throw new DocumentNotFoundException(userId);
-
-        await AddDocumentsToCacheAsync(user, ConfigureOptions(new CommandOptions<User>().Cache()), isDirtyRead: false);
 
         return storedProgress;
     }
