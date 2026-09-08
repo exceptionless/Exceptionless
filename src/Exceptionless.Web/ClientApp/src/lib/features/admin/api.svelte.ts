@@ -1,3 +1,5 @@
+import type { WorkInProgressResult } from '$generated/api';
+
 import { invalidateAssistantAccessQueries } from '$features/assistant/api.svelte';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
@@ -9,6 +11,7 @@ import type {
     AdminStats,
     ElasticsearchInfo,
     ElasticsearchSnapshotsResponse,
+    MigrationRerunOperation,
     MigrationsResponse,
     OAuthApplication,
     OAuthApplicationRequest,
@@ -174,6 +177,29 @@ export function getEventSubmissionSettingsQuery() {
     }));
 }
 
+export function getMigrationRerunQuery(operationId: () => string | undefined) {
+    return createQuery<MigrationRerunOperation, ProblemDetails>(() => ({
+        enabled: () => !!operationId(),
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<MigrationRerunOperation>(`admin/migrations/reruns/${operationId()}`, {
+                signal
+            });
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+
+            return response.data!;
+        },
+        queryKey: [...queryKeys.migrations, 'rerun', operationId()],
+        refetchInterval: (query) => {
+            const status = query.state.data?.status;
+            return status === 'Completed' || status === 'Failed' || status === 'Cancelled' ? false : 2000;
+        }
+    }));
+}
+
 export function getMigrationsQuery() {
     return createQuery<MigrationsResponse, ProblemDetails>(() => ({
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
@@ -269,6 +295,23 @@ export function postForceUpdatePredefinedSavedViewsMutation() {
             if (!response.ok) {
                 throw response.problem;
             }
+        }
+    }));
+}
+
+export function postMigrationRerunMutation() {
+    return createMutation<WorkInProgressResult, ProblemDetails, { confirmation: string; version: number }>(() => ({
+        mutationFn: async ({ confirmation, version }) => {
+            const client = useFetchClient();
+            const response = await client.postJSON<WorkInProgressResult>(`admin/migrations/${version}/rerun`, {
+                confirmation
+            });
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+
+            return response.data!;
         }
     }));
 }
