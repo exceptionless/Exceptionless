@@ -160,6 +160,25 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         Assert.Contains(organizations, organization => organization.Id == expectedOrganizationId);
     }
 
+    [Theory]
+    [InlineData("NSW")]
+    [InlineData("nsw")]
+    [InlineData("  NSW  ")]
+    public async Task GetForAdminsAsync_WithNameCriteria_ReturnsMatchingOrganization(string criteria)
+    {
+        var organization = new Organization { Name = "NSW Planning Team", PlanId = _plans.FreePlan.Id };
+        await _organizationRepository.AddAsync(organization, options => options.ImmediateConsistency());
+
+        var organizations = await SendRequestAsAsync<IReadOnlyCollection<ViewOrganization>>(request => request
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "organizations")
+            .QueryString("criteria", criteria)
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(organizations);
+        Assert.Equal(organization.Id, Assert.Single(organizations).Id);
+    }
+
     [Fact]
     public async Task GetIconAsync_WithExistingIcon_ReturnsImage()
     {
