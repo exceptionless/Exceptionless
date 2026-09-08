@@ -13,7 +13,7 @@
     let month = $state(currentMonth);
     let selectedMonth = $state(currentMonth);
     const label = $derived(
-        time === '[now-29d/d TO now]'
+        time === '[now-30d TO now]'
             ? 'Last 30 days'
             : !time
               ? 'Available history'
@@ -44,7 +44,7 @@
             class="mb-3 w-full"
             variant="ghost"
             onclick={() => {
-                time = '[now-29d/d TO now]';
+                time = '[now-30d TO now]';
                 open = false;
             }}>Last 30 days</Button
         >

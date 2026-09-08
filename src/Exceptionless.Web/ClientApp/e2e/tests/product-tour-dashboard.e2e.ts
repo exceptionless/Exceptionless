@@ -18,7 +18,7 @@ test('real dashboard matches repository totals across rolling, month, and histor
             return period === 'Available history'
                 ? !url.searchParams.get('time')
                 : period === 'Last 30 days'
-                  ? url.searchParams.get('time') === '[now-29d/d TO now]'
+                  ? url.searchParams.get('time') === '[now-30d TO now]'
                   : !!url.searchParams.get('time')?.includes('||+1M/M}');
         });
         if (period === 'Last 30 days') {

@@ -96,9 +96,9 @@ public sealed class AdminProductTourUsageEndpointTests : IntegrationTestsBase
     }
 
     [Theory]
-    [InlineData("2026-03-02T12:00:00Z", "[now-29d/d TO now]", "2026-02-01T00:00:00Z", "2026-03-02T12:00:00Z")]
-    [InlineData("2024-03-01T23:59:00Z", "[now-29d/d TO now]", "2024-02-01T00:00:00Z", "2024-03-01T23:59:00Z")]
-    [InlineData("2026-01-15T00:00:00Z", "[now-29d/d TO now]", "2025-12-17T00:00:00Z", "2026-01-15T00:00:00Z")]
+    [InlineData("2026-03-02T12:00:00Z", "[now-30d TO now]", "2026-01-31T12:00:00Z", "2026-03-02T12:00:00Z")]
+    [InlineData("2024-03-01T23:59:00Z", "[now-30d TO now]", "2024-01-31T23:59:00Z", "2024-03-01T23:59:00Z")]
+    [InlineData("2026-01-15T00:00:00Z", "[now-30d TO now]", "2025-12-16T00:00:00Z", "2026-01-15T00:00:00Z")]
     [InlineData("2026-03-02T12:00:00Z", "[2026-02-01||/M TO 2026-02-01||+1M/M}", "2026-02-01T00:00:00Z", "2026-03-01T00:00:00Z")]
     [InlineData("2024-03-02T12:00:00Z", "[2024-02-01||/M TO 2024-02-01||+1M/M}", "2024-02-01T00:00:00Z", "2024-03-01T00:00:00Z")]
     public async Task GetProductTourUsageAsync_TimeExpression_ResolvesBoundsOnServer(string now, string time, string start, string end)
@@ -129,7 +129,7 @@ public sealed class AdminProductTourUsageEndpointTests : IntegrationTestsBase
     [Theory]
     [InlineData("invalid", null)]
     [InlineData("[2026-02-30 TO now]", null)]
-    [InlineData("[now-29d/d TO now]", "2026-01-01T00:00:00Z")]
+    [InlineData("[now-30d TO now]", "2026-01-01T00:00:00Z")]
     public Task GetProductTourUsageAsync_InvalidOrMixedTimeExpression_ReturnsValidationProblem(string time, string? start)
     {
         // Act & Assert

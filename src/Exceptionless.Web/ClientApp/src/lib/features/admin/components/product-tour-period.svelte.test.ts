@@ -6,7 +6,7 @@ import ProductTourPeriod from './product-tour-period.svelte';
 describe('ProductTourPeriod', () => {
     it('edits the selected month inside the popover rather than adding a toolbar input', async () => {
         // Arrange
-        render(ProductTourPeriod, { time: '[now-29d/d TO now]' });
+        render(ProductTourPeriod, { time: '[now-30d TO now]' });
         expect(screen.queryByLabelText('Month (UTC)')).toBeNull();
 
         // Act
@@ -19,7 +19,7 @@ describe('ProductTourPeriod', () => {
 
     it('switches history back to the remembered month using the same trigger', async () => {
         // Arrange
-        render(ProductTourPeriod, { time: '[now-29d/d TO now]' });
+        render(ProductTourPeriod, { time: '[now-30d TO now]' });
         await fireEvent.click(screen.getByRole('button', { name: 'Usage period: Last 30 days' }));
         await fireEvent.input(screen.getByLabelText('Month (UTC)'), { target: { value: '2020-08' } });
         await fireEvent.click(screen.getByRole('button', { name: 'Show month' }));

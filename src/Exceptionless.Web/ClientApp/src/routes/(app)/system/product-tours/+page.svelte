@@ -15,7 +15,7 @@
     import { productTourCatalog } from '$features/product-tours/catalog';
     import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 
-    let time = $state('[now-29d/d TO now]');
+    let time = $state('[now-30d TO now]');
     const usageQuery = getAdminProductTourUsageQuery(() => time);
     const usage = $derived(usageQuery.data);
     const guides = $derived(usage?.tours.filter((tour) => tour.kind === 'guide') ?? []);
