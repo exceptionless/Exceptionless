@@ -995,6 +995,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         var invite = Assert.Single(organization.Invites, i => String.Equals(i.EmailAddress, emailAddress.ToLowerInvariant(), StringComparison.Ordinal));
         Assert.False(String.IsNullOrEmpty(invite.Token));
         Assert.True(invite.DateAdded > DateTime.MinValue);
+        Assert.NotNull(await _organizationRepository.GetByInviteTokenAsync(invite.Token));
     }
 
     [Fact]

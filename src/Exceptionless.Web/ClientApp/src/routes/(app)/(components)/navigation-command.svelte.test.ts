@@ -274,7 +274,7 @@ describe('NavigationCommand project actions', () => {
         await fireEvent.click(screen.getByText('Switch to Other Organization'));
 
         expect(organizationState.current).toBe('other-organization-id');
-        await waitFor(() => expect(goto).toHaveBeenCalledWith('/next/stack'));
+        await waitFor(() => expect(goto).toHaveBeenCalledWith('/next/'));
     });
 
     it('opens support chat', async () => {

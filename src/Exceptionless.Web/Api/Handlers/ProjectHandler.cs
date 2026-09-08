@@ -416,7 +416,7 @@ public class ProjectHandler(
         if (project is null)
             return Result.NotFound("Project not found.");
 
-        using var _ = _logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id).Property("Code", message.Code).Tag("Slack").Identity(GetCurrentUser(message.Context).EmailAddress).Property("User", GetCurrentUser(message.Context)).SetHttpContext(message.Context));
+        using var _ = _logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id).Tag("Slack").Identity(GetCurrentUser(message.Context).EmailAddress).SetHttpContext(message.Context));
 
         if (project.Data is not null && project.Data.ContainsKey(Project.KnownDataKeys.SlackToken))
             return new NotModifiedResponse();
@@ -447,7 +447,7 @@ public class ProjectHandler(
             return Result.NotFound("Project not found.");
 
         var token = project.GetSlackToken(serializer, _logger);
-        using var _ = _logger.BeginScope(new ExceptionlessState().Property("Token", token).Tag("Slack").Identity(GetCurrentUser(message.Context).EmailAddress).Property("User", GetCurrentUser(message.Context)).SetHttpContext(message.Context));
+        using var _ = _logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id).Tag("Slack").Identity(GetCurrentUser(message.Context).EmailAddress).SetHttpContext(message.Context));
 
         if (token is not null)
             await slackService.RevokeAccessTokenAsync(token.AccessToken);
@@ -589,7 +589,7 @@ public class ProjectHandler(
         var user = GetCurrentUser(httpContext);
         foreach (var project in projects)
         {
-            using var _ = _logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id).Tag("Delete").Identity(user.EmailAddress).Property("User", user).SetHttpContext(httpContext));
+            using var _ = _logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id).Tag("Delete").Identity(user.EmailAddress).SetHttpContext(httpContext));
             _logger.UserDeletingProject(user.Id, project.Name);
             await tokenRepository.RemoveAllByProjectIdAsync(project.OrganizationId, project.Id);
         }

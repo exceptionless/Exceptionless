@@ -57,9 +57,9 @@ test('stack effects stay bounded through background, paging, and navigation chao
 
     await test.step('load the stack page with one page of results', async () => {
         const response = page.waitForResponse((candidate) => isStackListResponse(candidate, e2eScenario.organizationId));
-        await page.goto('/next/stack?limit=5');
+        await page.goto('/next/stack/all?limit=5');
         expect((await response).ok()).toBe(true);
-        await expect(page.getByRole('heading', { name: 'Stacks' })).toBeVisible();
+        await expect(page.getByRole('heading', { exact: true, name: 'All' })).toBeVisible();
         await expect(page.locator('tbody tr:visible').first()).toBeVisible();
         await expect(page.getByRole('button', { name: 'Go to next page' })).toBeEnabled();
     });
@@ -87,8 +87,8 @@ test('stack effects stay bounded through background, paging, and navigation chao
         }
 
         expect(failedDetailRequests).toEqual([]);
-        await page.goto('/next/stack?limit=5');
-        await expect(page.getByRole('heading', { name: 'Stacks' })).toBeVisible();
+        await page.goto('/next/stack/all?limit=5');
+        await expect(page.getByRole('heading', { exact: true, name: 'All' })).toBeVisible();
     });
 
     await measureAction(diagnostics, 'stack timeline drag', async () => {

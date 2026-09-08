@@ -298,7 +298,7 @@ public class AuthHandler(
     {
         var httpContext = message.Context;
         var user = httpContext.Request.GetUser();
-        using var _ = logger.BeginScope(new ExceptionlessState().Tag("External Login").Tag(message.ProviderName).Identity(user.EmailAddress).Property("User", user).Property("Provider User Id", message.ProviderUserId?.Value).SetHttpContext(httpContext));
+        using var _ = logger.BeginScope(new ExceptionlessState().Tag("External Login").Tag(message.ProviderName).Identity(user.EmailAddress).Property("Provider User Id", message.ProviderUserId?.Value).SetHttpContext(httpContext));
 
         if (String.IsNullOrWhiteSpace(message.ProviderName) || String.IsNullOrWhiteSpace(message.ProviderUserId?.Value))
         {
@@ -334,7 +334,7 @@ public class AuthHandler(
         var httpContext = message.Context;
         var model = message.Model;
         var user = httpContext.Request.GetUser();
-        using var _ = logger.BeginScope(new ExceptionlessState().Tag("Change Password").Identity(user.EmailAddress).Property("User", user).Property("Password Length", model.Password?.Length ?? 0).SetHttpContext(httpContext));
+        using var _ = logger.BeginScope(new ExceptionlessState().Tag("Change Password").Identity(user.EmailAddress).Property("Password Length", model.Password?.Length ?? 0).SetHttpContext(httpContext));
 
         if (!String.IsNullOrWhiteSpace(user.Password))
         {
@@ -436,7 +436,7 @@ public class AuthHandler(
         var httpContext = message.Context;
         var model = message.Model;
         var user = await userRepository.GetByPasswordResetTokenAsync(model.PasswordResetToken);
-        using var _ = logger.BeginScope(new ExceptionlessState().Tag("Reset Password").Identity(user?.EmailAddress).Property("User", user).Property("Password Length", model.Password?.Length ?? 0).SetHttpContext(httpContext));
+        using var _ = logger.BeginScope(new ExceptionlessState().Tag("Reset Password").Identity(user?.EmailAddress).Property("Password Length", model.Password?.Length ?? 0).SetHttpContext(httpContext));
 
         if (user is null)
         {
@@ -496,7 +496,7 @@ public class AuthHandler(
         user.ResetPasswordResetToken();
         await userRepository.SaveAsync(user, o => o.Cache());
 
-        using (logger.BeginScope(new ExceptionlessState().Tag("Cancel Reset Password").Identity(user.EmailAddress).Property("User", user).SetHttpContext(httpContext)))
+        using (logger.BeginScope(new ExceptionlessState().Tag("Cancel Reset Password").Identity(user.EmailAddress).SetHttpContext(httpContext)))
             logger.UserCanceledResetPassword(user.EmailAddress);
 
         return Result.Success();
@@ -527,7 +527,7 @@ public class AuthHandler(
         }
         catch (Exception ex)
         {
-            logger.LogCritical(ex, "External login failed Code={AuthCode} RedirectUri={AuthRedirectUri}: {Message}", authInfo.Code, authInfo.RedirectUri, ex.Message);
+            logger.LogCritical(ex, "External login failed RedirectUri={AuthRedirectUri}: {Message}", authInfo.RedirectUri, ex.Message);
             throw;
         }
 
@@ -561,7 +561,7 @@ public class AuthHandler(
         ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.Email);
 
         var existingUser = await userRepository.GetUserByOAuthProviderAsync(userInfo.ProviderName, userInfo.Id);
-        using var _ = logger.BeginScope(new ExceptionlessState().Tag("External Login").Property("User Info", userInfo).Property("ExistingUser", existingUser).SetHttpContext(httpContext));
+        using var _ = logger.BeginScope(new ExceptionlessState().Tag("External Login").Tag(userInfo.ProviderName).Identity(userInfo.Email).SetHttpContext(httpContext));
 
         if (String.IsNullOrWhiteSpace(inviteToken) && httpContext.User.IsUserAuthType())
         {
@@ -636,12 +636,12 @@ public class AuthHandler(
         if (String.IsNullOrWhiteSpace(token))
             return;
 
-        using var _ = logger.BeginScope(new ExceptionlessState().Tag("Invite").Identity(user.EmailAddress).Property("User", user).SetHttpContext(httpContext));
+        using var _ = logger.BeginScope(new ExceptionlessState().Tag("Invite").Identity(user.EmailAddress).SetHttpContext(httpContext));
         var organization = await organizationRepository.GetByInviteTokenAsync(token);
         var invite = organization?.GetInvite(token);
         if (organization is null || invite is null)
         {
-            logger.UnableToAddInvitedUserInvalidToken(user.EmailAddress, token);
+            logger.UnableToAddInvitedUserInvalidToken(user.EmailAddress);
             return;
         }
 

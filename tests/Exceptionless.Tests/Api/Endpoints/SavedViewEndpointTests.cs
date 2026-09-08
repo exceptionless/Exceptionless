@@ -1366,6 +1366,43 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         Assert.Equal("status:regressed", updated.Filter);
     }
 
+    [Theory]
+    [InlineData("saved-views")]
+    [InlineData("saved-views/events")]
+    public async Task PatchAsync_UpdateColumns_ImmediatelyVisibleInLists(string listPath)
+    {
+        // Arrange
+        var created = await CreateSavedViewAsync("Column Reload", "status:open", "events");
+        Assert.NotNull(created);
+        await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, listPath)
+            .StatusCodeShouldBeOk());
+
+        // Act
+        await SendRequestAsync(r => r
+            .Patch()
+            .AsGlobalAdminUser()
+            .AppendPaths("saved-views", created.Id)
+            .Content(new UpdateSavedView
+            {
+                Columns = new Dictionary<string, SavedViewColumnSettings>
+                {
+                    ["date"] = new() { Visible = true, AutoFill = true }
+                }
+            })
+            .StatusCodeShouldBeOk());
+
+        // Assert: a browser reload must see the write without a test-only refresh.
+        var views = await SendRequestAsAsync<List<ViewSavedView>>(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, listPath)
+            .StatusCodeShouldBeOk());
+        Assert.NotNull(views);
+        var reloaded = Assert.Single(views, view => String.Equals(view.Id, created.Id, StringComparison.Ordinal));
+        Assert.True(reloaded.Columns?["date"].AutoFill);
+    }
+
     [Fact]
     public async Task PatchAsync_UpdateTime_UpdatesTimeString()
     {
