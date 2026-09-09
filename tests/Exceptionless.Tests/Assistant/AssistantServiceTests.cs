@@ -1186,6 +1186,8 @@ public sealed class AssistantServiceTests
         });
 
         Assert.Equal("provider_http_error", exception.FailureCode);
+        var providerEntry = Assert.Single(logger.Entries, entry => entry.Properties.ContainsKey("ProviderOutcome"));
+        Assert.Equal(exception.FailureCode, providerEntry.Properties["ProviderOutcome"]);
         Assert.Equal(429, diagnostics.Provider?.StatusCode);
         Assert.Contains(logger.Entries, entry => entry.Properties.TryGetValue("StatusCode", out var status) && status is 429);
         Assert.All(logger.Entries, entry =>

@@ -77,7 +77,7 @@ internal sealed class AssistantProviderDiagnostics(
     {
         string outcome = exception switch
         {
-            AssistantProviderException when StatusCode is >= 400 => "http_error",
+            AssistantProviderException when StatusCode is >= 400 => "provider_http_error",
             AssistantProviderException => "provider_error",
             OperationCanceledException => GetCancellationOutcome(),
             HttpRequestException => "provider_transport_error",
@@ -110,7 +110,7 @@ internal sealed class AssistantProviderDiagnostics(
         _activity?.Dispose();
     }
 
-    public void Dispose() => Finish(StatusCode is >= 400 ? "http_error"
+    public void Dispose() => Finish(StatusCode is >= 400 ? "provider_http_error"
         : _receivedError || FinishReason == "error" ? "provider_error"
         : cancellationToken.IsCancellationRequested ? GetCancellationOutcome() : "interrupted");
 
