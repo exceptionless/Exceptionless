@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { submitFeatureUsage } = vi.hoisted(() => ({
-    submitFeatureUsage: vi.fn(() => Promise.resolve())
+const { submitFeatureUsage, submitLog } = vi.hoisted(() => ({
+    submitFeatureUsage: vi.fn(() => Promise.resolve()),
+    submitLog: vi.fn(() => Promise.resolve())
 }));
-vi.mock('$features/auth/exceptionless-session', () => ({ submitFeatureUsage }));
+vi.mock('$features/auth/exceptionless-session', () => ({ submitFeatureUsage, submitLog }));
 
 import { AssistantTurnTelemetry, trackAssistantEvent } from './assistant-telemetry';
 
@@ -18,6 +19,7 @@ const context = {
 describe('Exie session telemetry', () => {
     beforeEach(() => {
         submitFeatureUsage.mockReset();
+        submitLog.mockReset();
     });
 
     it('records one prompt and one response outcome without conversation or tool content', () => {
@@ -31,6 +33,7 @@ describe('Exie session telemetry', () => {
         expect(turn.finish()).toBe('completed');
         expect(turn.finish()).toBeUndefined();
         expect(submitFeatureUsage).toHaveBeenCalledTimes(2);
+        expect(submitLog).not.toHaveBeenCalled();
         expect(submitFeatureUsage).toHaveBeenNthCalledWith(1, 'assistant.MessageSent', {
             exie: expect.objectContaining({ ...context, message_characters: 25, prompt_source: 'composer', role: 'user' })
         });
@@ -50,9 +53,8 @@ describe('Exie session telemetry', () => {
         turn.observe({ type: 'done' });
         expect(turn.finish()).toBe('failed');
         expect(submitFeatureUsage).toHaveBeenLastCalledWith('assistant.ResponseFailed', {
-            exie: expect.objectContaining({ reason: 'stream_error' })
+            exie: expect.objectContaining({ error_message: 'Exie took too long.', reason: 'stream_error' })
         });
-        expect(JSON.stringify(submitFeatureUsage.mock.calls)).not.toContain('Exie took too long.');
         expect(JSON.stringify(submitFeatureUsage.mock.calls)).not.toContain('Partial answer');
     });
 
@@ -78,9 +80,11 @@ describe('Exie session telemetry', () => {
         });
     });
 
-    it('counts long messages without storing text or individual streamed chunks', () => {
+    it('bounds full logging while keeping accurate message counts and emitting one assembled response', () => {
         const content = 'x'.repeat(20_000);
         const turn = new AssistantTurnTelemetry(context, content.length, 'retry', { previous_conversation_id: 'previous-conversation' });
+        turn.enableFullLogging(content);
+        turn.enableFullLogging(content);
         turn.observe({ text: content, type: 'text_delta' });
         turn.observe({ type: 'done' });
         turn.finish();
@@ -92,14 +96,23 @@ describe('Exie session telemetry', () => {
         });
         expect(submitFeatureUsage).toHaveBeenCalledTimes(2);
         expect(JSON.stringify(submitFeatureUsage.mock.calls)).not.toContain('xxx');
+        expect(submitLog).toHaveBeenCalledTimes(2);
+        expect(submitLog).toHaveBeenNthCalledWith(1, 'assistant.Prompt', content.slice(0, 16_384), {
+            exie: expect.objectContaining({ ...context, message_characters: 20_000, message_truncated: true, prompt_source: 'retry' })
+        });
+        expect(submitLog).toHaveBeenLastCalledWith('assistant.Response', content.slice(0, 16_384), {
+            exie: expect.objectContaining({ ...context, message_characters: 20_000, message_truncated: true, outcome: 'completed' })
+        });
     });
 
     it('keeps chat interactions working when telemetry cannot be submitted', async () => {
         submitFeatureUsage.mockRejectedValueOnce(new Error('offline'));
         submitFeatureUsage.mockRejectedValueOnce(new Error('offline'));
+        submitLog.mockRejectedValueOnce(new Error('offline'));
         expect(() => trackAssistantEvent('assistant.ResponseHelpful', context)).not.toThrow();
-        expect(() => new AssistantTurnTelemetry(context, 11, 'composer')).not.toThrow();
+        expect(() => new AssistantTurnTelemetry(context, 11, 'composer').enableFullLogging('Investigate')).not.toThrow();
         await Promise.resolve();
         expect(submitFeatureUsage).toHaveBeenCalledTimes(2);
+        expect(submitLog).toHaveBeenCalledOnce();
     });
 });

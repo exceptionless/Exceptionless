@@ -20,6 +20,8 @@ GET {{apiUrl}}/assistant/access?organization_id={{organizationId}}
 Authorization: Bearer {{login.response.body.$.token}}
 
 ### Stream an assistant response
+# X-Exie-Full-Logging: true enables prompt/response session logs for this turn.
+# A missing or false header keeps transcript logging off. Usage and error events continue.
 POST {{apiUrl}}/assistant/chat
 Authorization: Bearer {{login.response.body.$.token}}
 Content-Type: application/json

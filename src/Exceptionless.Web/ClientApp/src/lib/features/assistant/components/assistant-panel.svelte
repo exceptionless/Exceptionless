@@ -295,12 +295,16 @@
                     ? ((await response.json()) as { detail?: string; title?: string })
                     : undefined;
                 const message = problem?.detail ?? problem?.title ?? `The assistant returned status ${response.status}.`;
-                telemetry.fail(`http_${response.status}`);
+                telemetry.fail(message, `http_${response.status}`);
                 throw new Error(message);
             }
 
             if (!response.body) {
                 throw new Error('The assistant returned an empty response.');
+            }
+
+            if (response.headers.get('X-Exie-Full-Logging') === 'true') {
+                telemetry.enableFullLogging(userMessage.content);
             }
 
             await readAssistantStream(response.body, async (event) => {
@@ -317,7 +321,7 @@
             }
 
             errorMessage = error instanceof Error ? error.message : 'Exie could not complete this request.';
-            telemetry.fail('request_error');
+            telemetry.fail(errorMessage, 'request_error');
         } finally {
             const outcome = telemetry.finish(controller.signal.aborted ? 'user_stopped' : undefined, {
                 is_visible: mode === 'page' || open

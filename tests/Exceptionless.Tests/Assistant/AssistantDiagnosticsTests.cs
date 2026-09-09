@@ -142,8 +142,10 @@ public sealed class AssistantDiagnosticsTests
         Assert.Equal(1, Assert.Single(recorder.Records).Increment.Failed);
     }
 
-    [Fact]
-    public async Task WriteResponseAsync_Success_RecordsCompletionAndFirstTextWithoutLoggingAnswer()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task WriteResponseAsync_Success_RecordsCompletionAndFirstTextWithoutLoggingAnswer(bool fullLoggingEnabled)
     {
         var logger = new RecordingAssistantLogger();
         var time = new FakeTimeProvider();
@@ -154,8 +156,9 @@ public sealed class AssistantDiagnosticsTests
         time.Advance(TimeSpan.FromSeconds(3));
         await AssistantEndpoints.WriteResponseAsync(context,
             StreamEvents([AssistantStreamEvent.TextDelta("private answer"), AssistantStreamEvent.Done()]),
-            CreateUsageService(cache, recorder), "organization-id", diagnostics, TestContext.Current.CancellationToken);
+            CreateUsageService(cache, recorder), "organization-id", diagnostics, TestContext.Current.CancellationToken, fullLoggingEnabled);
 
+        Assert.Equal(fullLoggingEnabled ? "true" : "false", context.Response.Headers[AssistantEndpoints.FullLoggingHeaderName]);
         var entry = Assert.Single(logger.Entries);
         Assert.Equal("completed", entry.Properties["Outcome"]);
         Assert.Equal("none", entry.Properties["FailureReason"]);

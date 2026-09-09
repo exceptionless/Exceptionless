@@ -7,7 +7,12 @@
     import { Separator } from '$comp/ui/separator';
     import { Spinner } from '$comp/ui/spinner';
     import { Switch } from '$comp/ui/switch';
-    import { getAdminAssistantSettingsQuery, putAdminAssistantEnabledSettingsMutation, putAdminAssistantSettingsMutation } from '$features/admin/api.svelte';
+    import {
+        getAdminAssistantSettingsQuery,
+        putAdminAssistantEnabledSettingsMutation,
+        putAdminAssistantFullLoggingSettingsMutation,
+        putAdminAssistantSettingsMutation
+    } from '$features/admin/api.svelte';
     import { type AssistantSettingsFormData, AssistantSettingsSchema } from '$features/admin/schemas';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
@@ -16,9 +21,12 @@
 
     const settingsQuery = getAdminAssistantSettingsQuery();
     const updateEnabledSettings = putAdminAssistantEnabledSettingsMutation();
+    const updateFullLoggingSettings = putAdminAssistantFullLoggingSettingsMutation();
     const updateSettings = putAdminAssistantSettingsMutation();
     let assistantEnabled = $state(false);
+    let fullLoggingEnabled = $state(false);
     let loadedAvailabilityKey = $state<null | string>(null);
+    let loadedFullLoggingEnabled = $state<boolean>();
     let loadedSettingsKey = $state<null | string>(null);
     const settings = $derived(settingsQuery.data);
     const availabilityKey = $derived(
@@ -63,6 +71,15 @@
     });
 
     $effect(() => {
+        if (!settings || loadedFullLoggingEnabled === settings.full_logging_enabled) {
+            return;
+        }
+
+        loadedFullLoggingEnabled = settings.full_logging_enabled;
+        fullLoggingEnabled = settings.full_logging_enabled;
+    });
+
+    $effect(() => {
         if (!settings || loadedSettingsKey === settingsKey) {
             return;
         }
@@ -104,6 +121,18 @@
             toast.success('Exie availability reset to the deployment default.');
         } catch {
             toast.error('Failed to reset Exie availability.');
+        }
+    }
+
+    async function saveFullLogging() {
+        try {
+            const saved = await updateFullLoggingSettings.mutateAsync({
+                enabled: fullLoggingEnabled
+            });
+            fullLoggingEnabled = saved.full_logging_enabled;
+            toast.success(saved.full_logging_enabled ? 'Exie full logging is enabled.' : 'Exie full logging is disabled.');
+        } catch {
+            toast.error('Failed to update Exie full logging.');
         }
     }
 </script>
@@ -153,6 +182,30 @@
                 onclick={saveAvailability}
             >
                 {updateEnabledSettings.isPending ? 'Saving...' : 'Save'}
+            </Button>
+        </div>
+    </Field.Field>
+
+    <Separator />
+
+    <Field.Field orientation="responsive" class="gap-4 p-4">
+        <Field.Content>
+            <Field.Label for="assistant-full-logging">Full logging</Field.Label>
+            <Field.Description>
+                Record submitted prompts and responses in session events for all organizations. Usage and error diagnostics remain available when off. Changes
+                apply to new turns.
+            </Field.Description>
+        </Field.Content>
+        <div class="flex flex-wrap items-center justify-end gap-2">
+            <Switch id="assistant-full-logging" bind:checked={fullLoggingEnabled} disabled={updateFullLoggingSettings.isPending} />
+            <Button
+                type="button"
+                size="sm"
+                aria-label="Save Exie full logging"
+                disabled={updateFullLoggingSettings.isPending || fullLoggingEnabled === settings?.full_logging_enabled}
+                onclick={saveFullLogging}
+            >
+                {updateFullLoggingSettings.isPending ? 'Saving...' : 'Save'}
             </Button>
         </div>
     </Field.Field>

@@ -3,6 +3,7 @@ import type {
     CountResult,
     EventSubmissionSettings,
     UpdateAssistantEnabledSettings,
+    UpdateAssistantFullLoggingSettings,
     UpdateAssistantSettings,
     UpdateEventSubmissionSettings
 } from '$generated/api';
@@ -204,6 +205,7 @@ export type ShardMetric = {
 };
 
 export type UpdateAssistantEnabledSettingsRequest = UpdateAssistantEnabledSettings;
+export type UpdateAssistantFullLoggingSettingsRequest = UpdateAssistantFullLoggingSettings;
 export type UpdateAssistantSettingsRequest = UpdateAssistantSettings;
 export type UpdateEventSubmissionSettingsRequest = UpdateEventSubmissionSettings;
 

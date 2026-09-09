@@ -105,6 +105,7 @@ export interface AssistantModelSettings {
   configured_enabled: boolean;
   is_enabled_overridden: boolean;
   is_configured: boolean;
+  full_logging_enabled: boolean;
 }
 
 export interface BillingPlan {
@@ -627,6 +628,10 @@ export interface TokenResult {
 
 export interface UpdateAssistantEnabledSettings {
   enabled?: null | boolean;
+}
+
+export interface UpdateAssistantFullLoggingSettings {
+  enabled: boolean;
 }
 
 export interface UpdateAssistantSettings {

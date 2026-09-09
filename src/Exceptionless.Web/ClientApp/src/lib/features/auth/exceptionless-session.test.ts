@@ -14,7 +14,7 @@ vi.mock('@exceptionless/browser', async () => {
     return { Exceptionless: new ExceptionlessClient(config) };
 });
 
-import { setUserIdentity, submitFeatureUsage } from './exceptionless-session';
+import { setUserIdentity, submitFeatureUsage, submitLog } from './exceptionless-session';
 
 describe('Exceptionless session events', () => {
     beforeEach(() => {
@@ -47,5 +47,14 @@ describe('Exceptionless session events', () => {
         await submitFeatureUsage('project.Created');
         expect(Exceptionless.config.services.queue.enqueue).toHaveBeenCalledOnce();
         expect(Exceptionless.config.services.queue.enqueue).toHaveBeenCalledWith(expect.objectContaining({ source: 'project.Created', type: 'usage' }));
+    });
+
+    it('attaches explicitly enabled transcript logs to the existing session', async () => {
+        await setUserIdentity('exie-test-user');
+        const properties = { exie: { conversation_id: 'conversation-1', role: 'user' } };
+        await submitLog('assistant.Prompt', 'Why did checkout fail?', properties);
+        const events = vi.mocked(Exceptionless.config.services.queue.enqueue).mock.calls.map(([event]) => event);
+        expect(events.at(-1)).toMatchObject({ data: properties, message: 'Why did checkout fail?', source: 'assistant.Prompt', type: 'log' });
+        expect(events.at(-1)?.data?.['@user']).toMatchObject({ identity: 'exie-test-user' });
     });
 });

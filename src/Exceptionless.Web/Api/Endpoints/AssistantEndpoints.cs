@@ -4,6 +4,7 @@ using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Serialization;
+using Exceptionless.Core.Services;
 using Exceptionless.Web.Assistant;
 using Microsoft.AspNetCore.Mvc;
 using HttpResults = Microsoft.AspNetCore.Http.Results;
@@ -12,6 +13,7 @@ namespace Exceptionless.Web.Api.Endpoints;
 
 public static class AssistantEndpoints
 {
+    internal const string FullLoggingHeaderName = "X-Exie-Full-Logging";
     private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web).ConfigureExceptionlessApiDefaults();
 
     public static IEndpointRouteBuilder MapAssistantEndpoints(this IEndpointRouteBuilder endpoints)
@@ -26,6 +28,7 @@ public static class AssistantEndpoints
 
         endpoints.MapPost("api/v2/assistant/chat", StreamChatAsync)
             .WithName("StreamAssistantChat")
+            .WithDescription("The X-Exie-Full-Logging response header indicates whether the browser should record prompts and responses for this turn. Missing or false disables conversation logging.")
             .RequireAuthorization(AuthorizationRoles.UserPolicy)
             .WithMetadata(new RequestSizeLimitAttribute(256 * 1024))
             .Produces(StatusCodes.Status200OK, contentType: "application/x-ndjson")
@@ -46,6 +49,7 @@ public static class AssistantEndpoints
         AssistantAccessService assistantAccessService,
         AssistantUsageService assistantUsageService,
         AssistantService assistantService,
+        SystemSettingsService systemSettingsService,
         TimeProvider timeProvider,
         ILogger<AssistantService> logger)
     {
@@ -96,12 +100,13 @@ public static class AssistantEndpoints
         httpContext.Response.ContentType = "application/x-ndjson";
         httpContext.Response.Headers.CacheControl = "no-store";
         httpContext.Response.Headers.Append("X-Accel-Buffering", "no");
+        bool fullLoggingEnabled = await systemSettingsService.IsAssistantFullLoggingEnabledAsync();
 
         using var turnCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(httpContext.RequestAborted);
         turnCancellationSource.CancelAfter(TimeSpan.FromSeconds(AssistantLimits.MaximumTurnDurationSeconds));
         using var diagnostics = new AssistantTurnDiagnostics(logger, timeProvider, organizationId!, request.ConversationId!, httpContext.TraceIdentifier, httpContext.RequestAborted);
         var response = assistantService.StreamAsync(request, userId, planOptions, diagnostics, turnCancellationSource.Token);
-        await WriteResponseAsync(httpContext, response, assistantUsageService, organizationId!, diagnostics, turnCancellationSource.Token);
+        await WriteResponseAsync(httpContext, response, assistantUsageService, organizationId!, diagnostics, turnCancellationSource.Token, fullLoggingEnabled);
 
         return HttpResults.Empty;
     }
@@ -112,8 +117,10 @@ public static class AssistantEndpoints
         AssistantUsageService assistantUsageService,
         string organizationId,
         AssistantTurnDiagnostics diagnostics,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool fullLoggingEnabled = false)
     {
+        httpContext.Response.Headers[FullLoggingHeaderName] = fullLoggingEnabled ? "true" : "false";
         bool responseFailed = false;
         try
         {

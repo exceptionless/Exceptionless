@@ -43,6 +43,12 @@ public sealed class AssistantModelSettingsService
         return CreateResponse(settings);
     }
 
+    public async Task<AssistantModelSettings> SetFullLoggingEnabledAsync(bool enabled, string userId)
+    {
+        var settings = await _systemSettingsService.UpdateAsync(userId, value => value.AssistantFullLoggingEnabled = enabled);
+        return CreateResponse(settings);
+    }
+
     private AssistantModelSettings CreateResponse(SystemSettings? settings)
     {
         string configuredModel = _appOptions.AssistantOptions.Model;
@@ -58,7 +64,8 @@ public sealed class AssistantModelSettingsService
             enabledOverride ?? configuredEnabled,
             configuredEnabled,
             enabledOverride.HasValue,
-            _appOptions.AssistantOptions.IsConfigured);
+            _appOptions.AssistantOptions.IsConfigured,
+            settings?.AssistantFullLoggingEnabled ?? false);
     }
 }
 
@@ -69,4 +76,5 @@ public sealed record AssistantModelSettings(
     bool Enabled,
     bool ConfiguredEnabled,
     bool IsEnabledOverridden,
-    bool IsConfigured);
+    bool IsConfigured,
+    bool FullLoggingEnabled = false);

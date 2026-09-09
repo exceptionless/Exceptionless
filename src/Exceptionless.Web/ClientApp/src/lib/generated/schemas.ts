@@ -131,6 +131,7 @@ export const AssistantModelSettingsSchema = object({
   configured_enabled: boolean(),
   is_enabled_overridden: boolean(),
   is_configured: boolean(),
+  full_logging_enabled: boolean(),
 });
 export type AssistantModelSettingsFormData = Infer<
   typeof AssistantModelSettingsSchema
@@ -735,6 +736,13 @@ export const UpdateAssistantEnabledSettingsSchema = object({
 });
 export type UpdateAssistantEnabledSettingsFormData = Infer<
   typeof UpdateAssistantEnabledSettingsSchema
+>;
+
+export const UpdateAssistantFullLoggingSettingsSchema = object({
+  enabled: boolean(),
+});
+export type UpdateAssistantFullLoggingSettingsFormData = Infer<
+  typeof UpdateAssistantFullLoggingSettingsSchema
 >;
 
 export const UpdateAssistantSettingsSchema = object({

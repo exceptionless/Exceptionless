@@ -58,6 +58,24 @@ Authorization: Bearer {{token}}
 GET {{apiUrl}}/admin/assistant-settings
 Authorization: Bearer {{token}}
 
+### Enable Full Exie Conversation Logging
+PUT {{apiUrl}}/admin/assistant-settings/full-logging
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "enabled": true
+}
+
+### Disable Full Exie Conversation Logging (Usage and Error Diagnostics Continue)
+PUT {{apiUrl}}/admin/assistant-settings/full-logging
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "enabled": false
+}
+
 ### Set Exie Model Override
 PUT {{apiUrl}}/admin/assistant-settings
 Authorization: Bearer {{token}}

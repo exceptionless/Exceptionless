@@ -7,8 +7,11 @@ vi.mock('$features/billing/stripe.svelte', () => ({ isStripeEnabled: () => true 
 vi.mock('katex/dist/katex.min.css', () => ({}));
 const goto = vi.hoisted(() => vi.fn(() => Promise.resolve()));
 const submitFeatureUsage = vi.hoisted(() => vi.fn<(feature: string, properties?: Record<string, unknown>) => Promise<void>>().mockResolvedValue(undefined));
+const submitLog = vi.hoisted(() =>
+    vi.fn<(source: string, message: string, properties?: Record<string, unknown>) => Promise<void>>().mockResolvedValue(undefined)
+);
 vi.mock('$app/navigation', () => ({ goto }));
-vi.mock('$features/auth/exceptionless-session', () => ({ submitFeatureUsage }));
+vi.mock('$features/auth/exceptionless-session', () => ({ submitFeatureUsage, submitLog }));
 
 import AssistantPanel from './assistant-panel.svelte';
 
@@ -63,7 +66,7 @@ describe('AssistantPanel', () => {
             conversation_id: prompt.conversation_id
         });
         expect(submitFeatureUsage.mock.calls.filter(([feature]) => feature === 'assistant.ResponseHelpful')).toHaveLength(1);
-        const telemetry = JSON.stringify(submitFeatureUsage.mock.calls);
+        const telemetry = JSON.stringify([...submitFeatureUsage.mock.calls, ...submitLog.mock.calls]);
         expect(telemetry).not.toContain('My question');
         expect(telemetry).not.toContain('The answer');
     });
@@ -93,7 +96,53 @@ describe('AssistantPanel', () => {
         expect(retried.conversation_id).toMatch(/^[0-9a-f]{32}$/);
         expect(JSON.parse(fetchMock.mock.calls[1]?.[1]?.body as string).conversation_id).toBe(retried.conversation_id);
         expect(submitFeatureUsage.mock.calls.filter(([feature]) => feature === 'assistant.ResponseFailed')).toHaveLength(1);
-        expect(JSON.stringify(submitFeatureUsage.mock.calls)).not.toContain('Provider timed out');
+        expect(failed.error_message).toBe('Provider timed out');
+    });
+
+    it.each([undefined, 'false', 'true'])('records full chat text only when the current response enables it (%s)', async (flag) => {
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(
+                async () =>
+                    new Response('{"type":"text_delta","text":"Full answer"}\n{"type":"done"}\n', {
+                        headers: flag === undefined ? {} : { 'X-Exie-Full-Logging': flag }
+                    })
+            )
+        );
+        render(AssistantPanel, {
+            props: { open: true, organizationId: 'organization-1', promptRequest: { id: 'request-1', prompt: 'Full question' } }
+        });
+        await waitFor(() => expect(eventData('assistant.ResponseCompleted').outcome).toBe('completed'));
+        if (flag === 'true') {
+            expect(submitLog).toHaveBeenCalledWith('assistant.Prompt', 'Full question', expect.anything());
+            expect(submitLog).toHaveBeenCalledWith('assistant.Response', 'Full answer', expect.anything());
+            expect(submitLog).toHaveBeenCalledTimes(2);
+        } else {
+            expect(submitLog).not.toHaveBeenCalled();
+        }
+    });
+
+    it('stops recording transcript text when full logging is disabled for the next turn', async () => {
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce(
+                new Response('{"type":"text_delta","text":"First answer"}\n{"type":"done"}\n', { headers: { 'X-Exie-Full-Logging': 'true' } })
+            )
+            .mockResolvedValueOnce(
+                new Response('{"type":"text_delta","text":"Second answer"}\n{"type":"done"}\n', { headers: { 'X-Exie-Full-Logging': 'false' } })
+            );
+        vi.stubGlobal('fetch', fetchMock);
+        render(AssistantPanel, {
+            props: { open: true, organizationId: 'organization-1', promptRequest: { id: 'request-1', prompt: 'First question' } }
+        });
+        await screen.findByText('First answer');
+        const composer = screen.getByRole('textbox', { name: 'Message Exie' });
+        await screen.findByRole('button', { name: 'Send message' });
+        await fireEvent.input(composer, { target: { value: 'Second question' } });
+        await fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
+        await waitFor(() => expect(eventData('assistant.ResponseCompleted', 1).outcome).toBe('completed'));
+        expect(submitLog).toHaveBeenCalledTimes(2);
+        expect(JSON.stringify(submitLog.mock.calls)).not.toContain('Second');
     });
 
     it('records closing while waiting without cancelling a response that finishes in the background', async () => {

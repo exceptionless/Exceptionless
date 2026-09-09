@@ -17,6 +17,7 @@ import type {
     OAuthApplicationRequest,
     PredefinedSavedViewDefinition,
     UpdateAssistantEnabledSettingsRequest,
+    UpdateAssistantFullLoggingSettingsRequest,
     UpdateAssistantSettingsRequest,
     UpdateEventSubmissionSettingsRequest
 } from './models';
@@ -355,6 +356,26 @@ export function putAdminAssistantEnabledSettingsMutation() {
         onSuccess: async (settings) => {
             queryClient.setQueryData(queryKeys.assistantSettings, settings);
             await invalidateAssistantAccessQueries(queryClient);
+        }
+    }));
+}
+
+export function putAdminAssistantFullLoggingSettingsMutation() {
+    const queryClient = useQueryClient();
+
+    return createMutation<AdminAssistantSettings, ProblemDetails, UpdateAssistantFullLoggingSettingsRequest>(() => ({
+        mutationFn: async (request) => {
+            const client = useFetchClient();
+            const response = await client.putJSON<AdminAssistantSettings>('admin/assistant-settings/full-logging', request);
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+
+            return response.data!;
+        },
+        onSuccess: (settings) => {
+            queryClient.setQueryData(queryKeys.assistantSettings, settings);
         }
     }));
 }
