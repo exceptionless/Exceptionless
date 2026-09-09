@@ -250,7 +250,7 @@
         });
         const expectedUserId = currentUser.id;
         const expectedOrganizationId = organizationId;
-        const next = productTourCheckpoint.start(name, start.checkpointName, source, currentUser.id, undefined, organizationId);
+        const next = productTourCheckpoint.start(name, start.checkpointName, source, currentUser.id, organizationId);
         const expectedGeneration = productTourCheckpoint.generation;
 
         const destination = start.route;

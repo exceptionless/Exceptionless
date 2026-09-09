@@ -1,12 +1,10 @@
 ﻿using Elastic.Clients.Elasticsearch.QueryDsl;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Validation;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories;
-using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Repositories;

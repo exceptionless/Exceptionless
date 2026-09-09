@@ -78,6 +78,7 @@
         redirectToEventsWithFilter,
         serializeTimeQueryParam
     } from '../redirect-to-events.svelte';
+
     let selectedEventId: null | string = $state(null);
 
     function handleEventError(problem: ProblemDetails) {

@@ -146,5 +146,4 @@ public static class AdminEndpoints
         bool configuredEnabled = !appOptions.EventSubmissionDisabled;
         return new EventSubmissionSettings(enabledOverride ?? configuredEnabled, configuredEnabled, enabledOverride.HasValue);
     }
-
 }

@@ -1,9 +1,7 @@
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Validation;
 using Foundatio.Repositories;
-using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
 using User = Exceptionless.Core.Models.User;
@@ -12,18 +10,6 @@ namespace Exceptionless.Core.Repositories;
 
 public class UserRepository : RepositoryBase<User>, IUserRepository
 {
-    private const string RecordProductTourScript = """
-        if (ctx._source.product_tours == null) {
-            ctx._source.product_tours = new HashMap();
-        }
-
-        if (ctx._source.product_tours[params.field] == null) {
-            ctx._source.product_tours[params.field] = params.recordedUtc;
-        } else {
-            ctx.op = 'none';
-        }
-        """;
-
     public UserRepository(ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, AppOptions options)
         : base(configuration.Users, validator, options)
     {
@@ -90,27 +76,6 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
             throw new Exception("Caching of paged queries is not allowed");
 
         return FindAsync(q => q.FieldEquals(u => u.OrganizationIds, organizationId).SortAscending(u => u.EmailAddress), o => commandOptions);
-    }
-
-    public async Task<ProductTourState> RecordProductTourAsync(string userId, string field, DateTime recordedUtc)
-    {
-        await PatchAsync(userId, new ScriptPatch(RecordProductTourScript)
-        {
-            Params = new Dictionary<string, object>
-            {
-                ["field"] = field,
-                ["recordedUtc"] = recordedUtc
-            }
-        });
-
-        // An in-flight read can repopulate stale cache entries after patch invalidation.
-        var user = await GetByIdAsync(userId, options => options.ImmediateConsistency().Cache(false));
-        if (user is null)
-            throw new DocumentNotFoundException(userId);
-
-        // Refresh both ID and email caches from the authoritative read.
-        await AddDocumentsToCacheAsync(user, ConfigureOptions(new CommandOptions<User>().Cache()), isDirtyRead: false);
-        return user.ProductTours;
     }
 
     protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<User>> findHits, ICommandOptions options, bool isDirtyRead)

@@ -23,8 +23,6 @@ export type ProductTourCheckpoint<Name extends ProductTourName = ProductTourName
           source: ProductTourLaunchSource;
           tourName: Name;
           userId: string;
-          /** @deprecated Only retained for source compatibility with existing tests. */
-          version?: number;
       }
     : never;
 export type ProductTourCheckpointName<Name extends ProductTourName = ProductTourName> = (typeof PRODUCT_TOUR_CHECKPOINTS)[Name][number];

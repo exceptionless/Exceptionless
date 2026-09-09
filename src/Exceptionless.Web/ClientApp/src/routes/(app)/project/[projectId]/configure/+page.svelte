@@ -41,6 +41,7 @@
             }
         }
     });
+
     const apiKey = $derived(defaultTokenQuery.data?.id || 'YOUR_API_KEY');
     const serverUrl = (env.PUBLIC_EXCEPTIONLESS_SERVER_URL || '').trim();
     const showServerUrl = env.PUBLIC_EXCEPTIONLESS_CLIENT_SETUP_SHOW_SERVER_URL !== 'false';

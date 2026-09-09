@@ -15,13 +15,6 @@ const COMPLETION_MESSAGES: Record<Exclude<ProductTourCheckpoint['tourName'], 'ap
 };
 
 const progressRequests = new WeakSet<ProductTourCheckpoint>();
-const RECORD_NAMES: Record<ProductTourCheckpoint['tourName'], string> = {
-    'app-overview': 'app-overview',
-    'event-investigate': 'event-investigate',
-    'exie-overview': 'exie-overview',
-    'project-configure': 'project-configure',
-    'saved-view-create': 'saved-view-create'
-};
 const STATE_KEYS: Record<
     ProductTourCheckpoint['tourName'],
     'app_overview' | 'event_investigate' | 'exie_overview' | 'project_configure' | 'saved_view_create'
@@ -63,7 +56,7 @@ export function createProductTourActions() {
         if (action === 'completed') {
             void Promise.resolve(
                 progressMutation.mutateAsync({
-                    recordName: RECORD_NAMES[checkpoint.tourName],
+                    recordName: checkpoint.tourName,
                     stateKey: STATE_KEYS[checkpoint.tourName],
                     userId: checkpoint.userId
                 })

@@ -13292,7 +13292,7 @@
             ],
             "format": "date-time"
           },
-          "exie_overview": {
+          "app_welcome": {
             "type": [
               "null",
               "string"
@@ -13300,6 +13300,20 @@
             "format": "date-time"
           },
           "event_investigate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "exie_announcement": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "exie_overview": {
             "type": [
               "null",
               "string"
@@ -13314,20 +13328,6 @@
             "format": "date-time"
           },
           "saved_view_create": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
-          },
-          "app_welcome": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
-          },
-          "exie_announcement": {
             "type": [
               "null",
               "string"
@@ -13985,6 +13985,7 @@
           "o_auth_accounts",
           "organization_preferences",
           "saved_view_orders",
+          "product_tours",
           "email_notifications_enabled",
           "is_email_address_verified",
           "verify_email_address_token_expiration",
@@ -14051,14 +14052,7 @@
             }
           },
           "product_tours": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/ProductTourState"
-              }
-            ]
+            "$ref": "#/components/schemas/ProductTourState"
           },
           "full_name": {
             "type": "string",

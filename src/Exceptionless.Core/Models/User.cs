@@ -1,6 +1,5 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
-using System.Diagnostics.CodeAnalysis;
 using Exceptionless.Core.Attributes;
 using Exceptionless.Core.Models.Data;
 using Foundatio.Repositories.Models;
@@ -27,14 +26,7 @@ public record User : IIdentity, IHaveDates, IValidatableObject
     public ICollection<OAuthAccount> OAuthAccounts { get; init; } = new Collection<OAuthAccount>();
     public ICollection<UserOrganizationPreference> OrganizationPreferences { get; init; } = new Collection<UserOrganizationPreference>();
     public ICollection<UserSavedViewOrderPreference> SavedViewOrders { get; init; } = new Collection<UserSavedViewOrderPreference>();
-    private ProductTourState? _productTours = new();
-
-    [AllowNull]
-    public ProductTourState ProductTours
-    {
-        get => _productTours ??= new();
-        init => _productTours = value ?? new();
-    }
+    public ProductTourState ProductTours { get; init; } = new();
 
     /// <summary>
     /// Gets or sets the users Full Name.

@@ -498,17 +498,17 @@ export interface ProductTourState {
   /** @format date-time */
   app_overview?: null | string;
   /** @format date-time */
-  exie_overview?: null | string;
+  app_welcome?: null | string;
   /** @format date-time */
   event_investigate?: null | string;
+  /** @format date-time */
+  exie_announcement?: null | string;
+  /** @format date-time */
+  exie_overview?: null | string;
   /** @format date-time */
   project_configure?: null | string;
   /** @format date-time */
   saved_view_create?: null | string;
-  /** @format date-time */
-  app_welcome?: null | string;
-  /** @format date-time */
-  exie_announcement?: null | string;
 }
 
 export interface RecordProductTourResult {
@@ -759,7 +759,7 @@ export interface User {
   o_auth_accounts: OAuthAccount[];
   organization_preferences: UserOrganizationPreference[];
   saved_view_orders: UserSavedViewOrderPreference[];
-  product_tours?: null | ProductTourState;
+  product_tours: ProductTourState;
   /** Gets or sets the users Full Name. */
   full_name: string;
   /** @format email */

@@ -299,7 +299,6 @@ public class UserSerializerTests : TestWithServices
 
     [Theory]
     [InlineData("{\"id\":\"legacy-user\",\"full_name\":\"Legacy User\",\"email_address\":\"legacy@example.com\",\"is_email_address_verified\":true}")]
-    [InlineData("{\"id\":\"legacy-user\",\"full_name\":\"Legacy User\",\"email_address\":\"legacy@example.com\",\"is_email_address_verified\":true,\"product_tours\":null}")]
     public void Deserialize_UserWithoutProductTours_ReturnsEmptyState(string json)
     {
         var user = _serializer.Deserialize<User>(json);

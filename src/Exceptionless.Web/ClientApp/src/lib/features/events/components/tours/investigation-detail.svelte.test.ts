@@ -51,7 +51,7 @@ describe('InvestigationDetailTour', () => {
 
     it('uses a spotlight on the actual control at every detail step', async () => {
         // Arrange
-        productTourCheckpoint.start('event-investigate', 'choose-error', 'catalog', 'user', 1);
+        productTourCheckpoint.start('event-investigate', 'choose-error', 'catalog', 'user');
         render(InvestigationDetailTour, { event });
         await screen.findByText('Understand the grouped issue');
 
@@ -76,7 +76,7 @@ describe('InvestigationDetailTour', () => {
 
     it('does not advance for a non-error event', () => {
         // Arrange
-        productTourCheckpoint.start('event-investigate', 'choose-error', 'catalog', 'user', 1);
+        productTourCheckpoint.start('event-investigate', 'choose-error', 'catalog', 'user');
 
         // Act
         render(InvestigationDetailTour, { event: { ...event, data: {}, type: 'log' } });
@@ -88,12 +88,12 @@ describe('InvestigationDetailTour', () => {
 
     it('advances an already-open error after selection and on a later guide run', async () => {
         // Arrange
-        productTourCheckpoint.start('event-investigate', 'filter-errors', 'catalog', 'user', 1);
+        productTourCheckpoint.start('event-investigate', 'filter-errors', 'catalog', 'user');
         render(InvestigationDetailTour, { event });
 
         // Act and assert
         for (let run = 0; run < 2; run++) {
-            productTourCheckpoint.start('event-investigate', 'choose-error', 'catalog', 'user', 1);
+            productTourCheckpoint.start('event-investigate', 'choose-error', 'catalog', 'user');
             await screen.findByText('Understand the grouped issue');
             expect(productTourCheckpoint.current?.checkpointName).toBe('stack-summary');
         }
@@ -101,7 +101,7 @@ describe('InvestigationDetailTour', () => {
 
     it('goes back through detail steps without reopening events or saving progress', async () => {
         // Arrange
-        productTourCheckpoint.start('event-investigate', 'stack-triage', 'catalog', 'user', 1);
+        productTourCheckpoint.start('event-investigate', 'stack-triage', 'catalog', 'user');
         render(InvestigationDetailTour, { event });
 
         // Act
@@ -117,7 +117,7 @@ describe('InvestigationDetailTour', () => {
 
     it('retains an accessible end-guide action', async () => {
         // Arrange
-        productTourCheckpoint.start('event-investigate', 'stack-summary', 'catalog', 'user', 1);
+        productTourCheckpoint.start('event-investigate', 'stack-summary', 'catalog', 'user');
         render(InvestigationDetailTour, { event });
 
         // Act

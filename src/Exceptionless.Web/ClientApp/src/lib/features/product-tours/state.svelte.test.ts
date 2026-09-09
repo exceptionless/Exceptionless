@@ -9,8 +9,7 @@ const checkpoint: ProductTourCheckpoint = {
     organizationId: 'organization-id',
     source: 'catalog',
     tourName: 'app-overview',
-    userId: 'user-id',
-    version: 1
+    userId: 'user-id'
 };
 
 describe('product tour checkpoint store', () => {
@@ -18,14 +17,14 @@ describe('product tour checkpoint store', () => {
 
     it('preserves the current checkpoint across forward and back navigation', () => {
         // Arrange
-        const first = productTourCheckpoint.start('app-overview', 'navigation', 'catalog', 'user', 1);
+        const first = productTourCheckpoint.start('app-overview', 'navigation', 'catalog', 'user');
 
         // Act & Assert
         const second = productTourCheckpoint.advance(first, 'command-search')!;
         expect(productTourCheckpoint.current).toBe(second);
         const back = productTourCheckpoint.advance(second, 'navigation')!;
         expect(back.checkpointName).toBe('navigation');
-        const replay = productTourCheckpoint.start('app-overview', 'navigation', 'catalog', 'user', 1);
+        const replay = productTourCheckpoint.start('app-overview', 'navigation', 'catalog', 'user');
         expect(productTourCheckpoint.current).toBe(replay);
     });
 
@@ -43,17 +42,9 @@ describe('product tour checkpoint store', () => {
             checkpoint.checkpointName,
             checkpoint.source,
             checkpoint.userId,
-            checkpoint.version,
             checkpoint.organizationId
         );
-        const second = productTourCheckpoint.start(
-            checkpoint.tourName,
-            checkpoint.checkpointName,
-            'help-menu',
-            checkpoint.userId,
-            checkpoint.version,
-            checkpoint.organizationId
-        );
+        const second = productTourCheckpoint.start(checkpoint.tourName, checkpoint.checkpointName, 'help-menu', checkpoint.userId, checkpoint.organizationId);
 
         expect(productTourCheckpoint.advance(first, 'command-search')).toBeUndefined();
         expect(productTourCheckpoint.clear(first)).toBe(false);
@@ -61,14 +52,7 @@ describe('product tour checkpoint store', () => {
     });
 
     it('clears a checkpoint restored for another identity', () => {
-        productTourCheckpoint.start(
-            checkpoint.tourName,
-            checkpoint.checkpointName,
-            checkpoint.source,
-            checkpoint.userId,
-            checkpoint.version,
-            checkpoint.organizationId
-        );
+        productTourCheckpoint.start(checkpoint.tourName, checkpoint.checkpointName, checkpoint.source, checkpoint.userId, checkpoint.organizationId);
         productTourCheckpoint.clear();
         sessionStorage.setItem('exceptionless.product-tour', JSON.stringify(checkpoint));
 

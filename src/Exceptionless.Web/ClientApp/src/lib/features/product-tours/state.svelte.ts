@@ -59,7 +59,6 @@ class ProductTourCheckpointStore {
         checkpointName: ProductTourCheckpointName<Name>,
         source: ProductTourLaunchSource,
         userId: string,
-        _legacyVersion?: number,
         organizationId?: string
     ): ProductTourCheckpoint<Name> {
         const checkpoint = {

@@ -387,14 +387,13 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.Equal(expectedContentTypes.Order(), content.EnumerateObject().Select(property => property.Name).Order());
     }
 
-    private static void AssertRequiredJsonRequestBody(JsonElement paths, string path, string method, string expectedSchema, params string[] expectedContentTypes)
+    private static void AssertRequiredJsonRequestBody(JsonElement paths, string path, string method, string expectedSchema)
     {
         var requestBody = paths.GetProperty(path).GetProperty(method).GetProperty("requestBody");
         Assert.True(requestBody.GetProperty("required").GetBoolean());
 
         var content = requestBody.GetProperty("content");
-        string[] contentTypes = expectedContentTypes.Length > 0 ? expectedContentTypes : ["application/*+json", "application/json"];
-        Assert.Equal(contentTypes.Order(), content.EnumerateObject().Select(property => property.Name).Order());
+        Assert.Equal(["application/*+json", "application/json"], content.EnumerateObject().Select(property => property.Name).Order());
 
         foreach (var mediaType in content.EnumerateObject())
             Assert.Equal($"#/components/schemas/{expectedSchema}", mediaType.Value.GetProperty("schema").GetProperty("$ref").GetString());

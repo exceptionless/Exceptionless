@@ -518,6 +518,7 @@
 
     const organizationsQuery = getOrganizationsQuery({});
     const organizations = $derived(organizationsQuery.data?.data ?? []);
+
     const impersonatingOrganizationId = $derived.by(() => {
         // Only consider impersonation if user data is loaded and user has organizations
         const userOrganizationIds = meQuery.data?.organization_ids;

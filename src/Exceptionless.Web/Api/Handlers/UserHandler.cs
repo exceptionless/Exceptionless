@@ -17,7 +17,6 @@ using Exceptionless.Web.Utility;
 using Foundatio.Caching;
 using Foundatio.Mediator;
 using Foundatio.Repositories;
-using Foundatio.Repositories.Exceptions;
 
 namespace Exceptionless.Web.Api.Handlers;
 
@@ -66,23 +65,19 @@ public class UserHandler(
         if (!ProductTourNames.Contains(message.TourName, StringComparer.Ordinal))
             return Result.Invalid(ValidationError.Create("tour_name", "The product tour name is not supported."));
 
-        string currentUserId = GetCurrentUserId();
-        DateTime utcNow = timeProvider.GetUtcNow().UtcDateTime;
-
-        ProductTourState state;
-        try
-        {
-            state = await repository.RecordProductTourAsync(currentUserId, GetProductTourField(message.TourName), utcNow);
-        }
-        catch (DocumentNotFoundException)
-        {
+        var currentUser = await GetModelAsync(GetCurrentUserId());
+        if (currentUser is null)
             return Result.NotFound("User not found.");
+
+        DateTime? recordedUtc = GetProductTourDate(currentUser.ProductTours, message.TourName);
+        if (!recordedUtc.HasValue)
+        {
+            recordedUtc = timeProvider.GetUtcNow().UtcDateTime;
+            SetProductTourDate(currentUser.ProductTours, message.TourName, recordedUtc.Value);
+            await repository.SaveAsync(currentUser, o => o.Cache());
         }
 
-        DateTime? recordedUtc = GetProductTourDate(state, message.TourName);
-        return recordedUtc.HasValue
-            ? new RecordProductTourResult(recordedUtc.Value)
-            : Result.Error("Unable to record product tour.");
+        return new RecordProductTourResult(recordedUtc.Value);
     }
 
     private static DateTime? GetProductTourDate(ProductTourState state, string tourName) => tourName switch
@@ -97,17 +92,35 @@ public class UserHandler(
         _ => null
     };
 
-    private static string GetProductTourField(string tourName) => tourName switch
+    private static void SetProductTourDate(ProductTourState state, string tourName, DateTime recordedUtc)
     {
-        ProductTours.AppOverview => "app_overview",
-        ProductTours.ExieOverview => "exie_overview",
-        ProductTours.EventInvestigate => "event_investigate",
-        ProductTours.ProjectConfigure => "project_configure",
-        ProductTours.SavedViewCreate => "saved_view_create",
-        ProductTours.AppWelcome => "app_welcome",
-        ProductTours.ExieAnnouncement => "exie_announcement",
-        _ => throw new InvalidOperationException("Unknown product tour name.")
-    };
+        switch (tourName)
+        {
+            case ProductTours.AppOverview:
+                state.AppOverview = recordedUtc;
+                break;
+            case ProductTours.ExieOverview:
+                state.ExieOverview = recordedUtc;
+                break;
+            case ProductTours.EventInvestigate:
+                state.EventInvestigate = recordedUtc;
+                break;
+            case ProductTours.ProjectConfigure:
+                state.ProjectConfigure = recordedUtc;
+                break;
+            case ProductTours.SavedViewCreate:
+                state.SavedViewCreate = recordedUtc;
+                break;
+            case ProductTours.AppWelcome:
+                state.AppWelcome = recordedUtc;
+                break;
+            case ProductTours.ExieAnnouncement:
+                state.ExieAnnouncement = recordedUtc;
+                break;
+            default:
+                throw new InvalidOperationException("Unknown product tour name.");
+        }
+    }
 
     public async Task<Result<IReadOnlyCollection<ViewOAuthGrant>>> Handle(GetCurrentUserOAuthGrants message)
     {

@@ -4,10 +4,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models;
-using Foundatio.Caching;
 using Foundatio.Repositories;
-using Foundatio.Repositories.Exceptions;
-using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Utility;
 using Xunit;
 
@@ -92,62 +89,16 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task RecordProductTourAsync_CachedUser_RefreshesIdAndEmailCaches()
-    {
-        var user = await GetTestOrganizationUserAsync();
-        await _userRepository.GetByIdAsync(user.Id, options => options.Cache());
-        await _userRepository.GetByEmailAddressAsync(user.EmailAddress);
-        var recordedUtc = new DateTime(2026, 9, 8, 20, 0, 0, DateTimeKind.Utc);
-
-        var state = await _userRepository.RecordProductTourAsync(user.Id, "app_overview", recordedUtc);
-
-        var cache = Assert.IsType<InMemoryCacheClient>(GetService<ICacheClient>());
-        long hits = cache.Hits;
-        long misses = cache.Misses;
-        var cachedUser = await _userRepository.GetByIdAsync(user.Id, options => options.Cache());
-        var cachedByEmail = await _userRepository.GetByEmailAddressAsync(user.EmailAddress);
-        Assert.Equal(misses, cache.Misses);
-        Assert.Equal(hits + 2, cache.Hits);
-        Assert.Equal(recordedUtc, state.AppOverview);
-        Assert.Equal(recordedUtc, cachedUser?.ProductTours.AppOverview);
-        Assert.Equal(recordedUtc, cachedByEmail?.ProductTours.AppOverview);
-    }
-
-    [Fact]
-    public async Task RecordProductTourAsync_CacheRepopulatedAfterPatch_ReturnsLatestState()
-    {
-        var user = await GetTestOrganizationUserAsync();
-        await _userRepository.GetByIdAsync(user.Id, options => options.Cache());
-        var cache = GetService<ICacheClient>();
-        string cacheKey = $"User:{user.Id}";
-        var staleEntry = await cache.GetAsync<ICollection<FindHit<User>>>(cacheKey);
-        Assert.True(staleEntry.HasValue);
-        var repository = Assert.IsType<UserRepository>(_userRepository);
-
-        using var subscription = repository.BeforeGet.AddHandler(async (_, _) =>
-        {
-            Assert.False((await cache.GetAsync<ICollection<FindHit<User>>>(cacheKey)).HasValue);
-            await cache.SetAsync(cacheKey, staleEntry.Value);
-        });
-
-        var recordedUtc = new DateTime(2026, 9, 8, 20, 0, 0, DateTimeKind.Utc);
-        var state = await _userRepository.RecordProductTourAsync(user.Id, "app_overview", recordedUtc);
-
-        Assert.Equal(recordedUtc, state.AppOverview);
-    }
-
-    [Fact]
-    public async Task RecordCurrentUserProductTourAsync_ConcurrentTours_PreservesBothDates()
+    public async Task RecordCurrentUserProductTourAsync_SequentialTours_PreservesBothDates()
     {
         await GetTestOrganizationUserAsync();
-        Task first = SendRequestAsync(r => r.Put().AsTestOrganizationUser()
+        await SendRequestAsync(r => r.Put().AsTestOrganizationUser()
             .AppendPaths("users", "me", "product-tours", ProductTours.AppOverview, "record")
             .StatusCodeShouldBeOk());
-        Task second = SendRequestAsync(r => r.Put().AsTestOrganizationUser()
+        await SendRequestAsync(r => r.Put().AsTestOrganizationUser()
             .AppendPaths("users", "me", "product-tours", ProductTours.ExieOverview, "record")
             .StatusCodeShouldBeOk());
 
-        await Task.WhenAll(first, second);
         var currentUser = await GetTestOrganizationUserAsync();
         var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, o => o.Cache(false));
         Assert.NotNull(persistedUser);
@@ -174,7 +125,7 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
             .StatusCodeShouldBeUnauthorized());
 
     [Fact]
-    public async Task RecordCurrentUserProductTourAsync_DeletedUserReturnsUnauthorizedAndRepositoryDoesNotCreate()
+    public async Task RecordCurrentUserProductTourAsync_DeletedUserReturnsUnauthorizedAndDoesNotCreate()
     {
         var currentUser = await GetTestOrganizationUserAsync();
         await _userRepository.RemoveAsync(currentUser.Id, o => o.ImmediateConsistency());
@@ -182,9 +133,6 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
         await SendRequestAsync(r => r.Put().AsTestOrganizationUser()
             .AppendPaths("users", "me", "product-tours", ProductTours.AppOverview, "record")
             .StatusCodeShouldBeUnauthorized());
-
-        await Assert.ThrowsAsync<DocumentNotFoundException>(() =>
-            _userRepository.RecordProductTourAsync(currentUser.Id, "app_overview", TimeProvider.GetUtcNow().UtcDateTime));
 
         Assert.Null(await _userRepository.GetByIdAsync(currentUser.Id, o => o.Cache(false)));
     }

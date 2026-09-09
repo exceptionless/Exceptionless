@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Exceptionless.Core;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories;
@@ -17,7 +16,6 @@ namespace Exceptionless.Tests.Repositories;
 public sealed class EventRepositoryTests : IntegrationTestsBase
 {
     private readonly List<Tuple<string, DateTime>> _ids = new();
-    private readonly AppOptions _appOptions;
     private readonly Exceptionless.Helpers.RandomEventGenerator _randomEventGenerator;
     private readonly EventData _eventData;
     private readonly IEventRepository _repository;
@@ -27,7 +25,6 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
 
     public EventRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
-        _appOptions = GetService<AppOptions>();
         _randomEventGenerator = GetService<Exceptionless.Helpers.RandomEventGenerator>();
         _eventData = GetService<EventData>();
         _repository = GetService<IEventRepository>();
