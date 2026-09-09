@@ -213,6 +213,35 @@ public sealed class AssistantDiagnosticsTests
         Assert.Single(logger.Entries);
     }
 
+    [Theory]
+    [InlineData("client", "cancelled")]
+    [InlineData("turn", "turn_timeout")]
+    [InlineData("provider", "provider_timeout")]
+    public void RecordException_CancellationSource_RecordsExpectedProviderOutcome(string source, string expectedOutcome)
+    {
+        using var requestAborted = new CancellationTokenSource();
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(requestAborted.Token);
+        var logger = new RecordingAssistantLogger();
+        using var diagnostics = new AssistantTurnDiagnostics(logger, TimeProvider.System, "organization-id", "conversation-id", "request-id", requestAborted.Token);
+        using (var provider = diagnostics.StartProviderRequest(100, true, deadline.Token))
+        {
+            if (source == "client")
+            {
+                requestAborted.Cancel();
+            }
+            else if (source == "turn")
+            {
+                deadline.Cancel();
+            }
+            provider.RecordException(new OperationCanceledException("private cancellation detail"));
+        }
+
+        var entry = Assert.Single(logger.Entries);
+        Assert.Equal(expectedOutcome, entry.Properties["ProviderOutcome"]);
+        Assert.Equal(source == "client" ? LogLevel.Information : LogLevel.Warning, entry.Level);
+        Assert.DoesNotContain("private cancellation detail", entry.Message);
+    }
+
     [Fact]
     public void ObserveChunk_OutputLimit_RecordsGenerationAndReasoningWithoutContent()
     {

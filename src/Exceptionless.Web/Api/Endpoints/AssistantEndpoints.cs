@@ -99,7 +99,7 @@ public static class AssistantEndpoints
 
         using var turnCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(httpContext.RequestAborted);
         turnCancellationSource.CancelAfter(TimeSpan.FromSeconds(AssistantLimits.MaximumTurnDurationSeconds));
-        using var diagnostics = new AssistantTurnDiagnostics(logger, timeProvider, organizationId!, request.ConversationId!, httpContext.TraceIdentifier);
+        using var diagnostics = new AssistantTurnDiagnostics(logger, timeProvider, organizationId!, request.ConversationId!, httpContext.TraceIdentifier, httpContext.RequestAborted);
         var response = assistantService.StreamAsync(request, userId, planOptions, diagnostics, turnCancellationSource.Token);
         await WriteResponseAsync(httpContext, response, assistantUsageService, organizationId!, diagnostics, turnCancellationSource.Token);
 

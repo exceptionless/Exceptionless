@@ -11,14 +11,16 @@ internal sealed class AssistantTurnDiagnostics : IDisposable
     private readonly long _started;
     private readonly Activity? _activity;
     private readonly IDisposable? _scope;
+    private readonly CancellationToken _requestAborted;
     private bool _finished;
     private double? _firstTextDuration;
     private string? _failureCode;
 
-    public AssistantTurnDiagnostics(ILogger logger, TimeProvider timeProvider, string organizationId, string conversationId, string requestId)
+    public AssistantTurnDiagnostics(ILogger logger, TimeProvider timeProvider, string organizationId, string conversationId, string requestId, CancellationToken requestAborted = default)
     {
         _logger = logger;
         _timeProvider = timeProvider;
+        _requestAborted = requestAborted;
         _started = timeProvider.GetTimestamp();
         _activity = AppDiagnostics.AssistantActivitySource.StartActivity("assistant.turn");
         TurnId = Guid.NewGuid().ToString("N");
@@ -44,6 +46,7 @@ internal sealed class AssistantTurnDiagnostics : IDisposable
     public string ConversationId { get; }
     public string RequestId { get; }
     public string? TraceId { get; }
+    public bool IsClientDisconnected => _requestAborted.IsCancellationRequested;
     public string? Model { get; set; }
     public string Stage { get; set; } = "initializing";
     public int ProviderRequests { get; private set; }

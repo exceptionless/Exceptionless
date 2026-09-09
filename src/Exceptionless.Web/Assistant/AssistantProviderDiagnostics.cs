@@ -79,7 +79,7 @@ internal sealed class AssistantProviderDiagnostics(
         {
             AssistantProviderException when StatusCode is >= 400 => "http_error",
             AssistantProviderException => "provider_error",
-            OperationCanceledException => cancellationToken.IsCancellationRequested ? "cancelled" : "provider_timeout",
+            OperationCanceledException => GetCancellationOutcome(),
             HttpRequestException => "provider_transport_error",
             JsonException => "invalid_provider_response",
             IOException => "provider_stream_error",
@@ -112,7 +112,10 @@ internal sealed class AssistantProviderDiagnostics(
 
     public void Dispose() => Finish(StatusCode is >= 400 ? "http_error"
         : _receivedError || FinishReason == "error" ? "provider_error"
-        : cancellationToken.IsCancellationRequested ? "cancelled" : "interrupted");
+        : cancellationToken.IsCancellationRequested ? GetCancellationOutcome() : "interrupted");
+
+    private string GetCancellationOutcome() => turn.IsClientDisconnected ? "cancelled"
+        : cancellationToken.IsCancellationRequested ? "turn_timeout" : "provider_timeout";
 
     private static string? GetMetadata(JsonElement element, string name)
         => element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var property) && property.ValueKind == JsonValueKind.String
