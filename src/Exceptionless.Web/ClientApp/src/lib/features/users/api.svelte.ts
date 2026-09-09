@@ -1,3 +1,4 @@
+import type { ProductTourKey } from '$features/product-tours/models';
 import type { WebSocketMessageValue } from '$features/websockets/models';
 import type { WorkInProgressResult } from '$shared/models';
 
@@ -7,7 +8,7 @@ import { fetchApiJson } from '$features/shared/api/api.svelte';
 import { type FetchClientResponse, ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
-import type { OAuthGrant, ProductTourState, UpdateEmailAddressResult, UpdateUser, UpdateUserEmailAddress, ViewCurrentUser, ViewUser } from './models';
+import type { OAuthGrant, RecordProductTourResult, UpdateEmailAddressResult, UpdateUser, UpdateUserEmailAddress, ViewCurrentUser, ViewUser } from './models';
 
 export async function invalidateUserQueries(queryClient: QueryClient, message: WebSocketMessageValue<'UserChanged'>) {
     const { id } = message;
@@ -263,45 +264,22 @@ export function postEmailAddress(request: PostEmailAddressRequest) {
 
 export function putCurrentUserProductTour() {
     const queryClient = useQueryClient();
-    return createMutation<{ recorded_utc: string }, ProblemDetails, { recordName: string; stateKey: keyof ProductTourState; userId: string }>(() => ({
+    return createMutation<RecordProductTourResult, ProblemDetails, { tourName: ProductTourKey; userId: string }>(() => ({
         enabled: () => !!accessToken.current,
-        mutationFn: async ({ recordName, userId }) => {
-            const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
-            if (currentUser?.id !== userId) {
+        mutationFn: async ({ tourName, userId }) => {
+            if (queryClient.getQueryData<ViewCurrentUser>(queryKeys.me())?.id !== userId) {
                 throw new Error('The current user changed before the product tour preference was recorded.');
             }
 
-            const client = useFetchClient();
-            const response = await client.putJSON<{ recorded_utc: string }>(`users/me/product-tours/${recordName}/record`);
-
-            if (!response.ok) {
-                throw response.problem;
-            }
-
-            return response.data!;
-        },
-        mutationKey: queryKeys.productTour(),
-        onError: () => {
-            queryClient.invalidateQueries({
-                queryKey: queryKeys.me()
+            return await fetchApiJson<RecordProductTourResult>(`users/me/product-tours/${tourName}/record`, {
+                method: 'PUT'
             });
         },
-        onSuccess: (data, variables) => {
-            const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
-            if (!currentUser || currentUser.id !== variables.userId || !data?.recorded_utc) {
-                return;
-            }
-
-            const updatedUser = <ViewCurrentUser>{
-                ...currentUser,
-                product_tours: <ProductTourState>{
-                    ...(currentUser.product_tours ?? {}),
-                    [variables.stateKey]: data.recorded_utc
-                }
-            };
-            queryClient.setQueryData(queryKeys.me(), updatedUser);
-            queryClient.setQueryData(queryKeys.id(currentUser.id), updatedUser);
-        }
+        mutationKey: queryKeys.productTour(),
+        onSuccess: () =>
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.type
+            })
     }));
 }
 

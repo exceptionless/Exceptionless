@@ -1,11 +1,9 @@
 using Exceptionless.Core.Models.Data;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models;
 using Foundatio.Repositories;
-using Foundatio.Repositories.Utility;
 using Xunit;
 
 namespace Exceptionless.Tests.Api.Endpoints;
@@ -34,7 +32,7 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
 
         var result = await SendRequestAsAsync<RecordProductTourResult>(r => r
             .Put().AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", ProductTours.AppOverview, "record")
+            .AppendPaths("users", "me", "product-tours", ProductTourNames.AppOverview, "record")
             .StatusCodeShouldBeOk());
 
         Assert.NotNull(result);
@@ -52,13 +50,13 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
         TimeProvider.SetUtcNow(firstUtc);
         var first = await SendRequestAsAsync<RecordProductTourResult>(r => r
             .Put().AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", ProductTours.SavedViewCreate, "record")
+            .AppendPaths("users", "me", "product-tours", ProductTourNames.SavedViewCreate, "record")
             .StatusCodeShouldBeOk());
 
         TimeProvider.Advance(TimeSpan.FromMinutes(10));
         var second = await SendRequestAsAsync<RecordProductTourResult>(r => r
             .Put().AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", ProductTours.SavedViewCreate, "record")
+            .AppendPaths("users", "me", "product-tours", ProductTourNames.SavedViewCreate, "record")
             .StatusCodeShouldBeOk());
 
         Assert.NotNull(first);
@@ -76,7 +74,7 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
 
         var result = await SendRequestAsAsync<RecordProductTourResult>(r => r
             .Put().AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", ProductTours.AppOverview, "record")
+            .AppendPaths("users", "me", "product-tours", ProductTourNames.AppOverview, "record")
             .Content(new { recorded_utc = "2000-01-01T00:00:00Z", field = "full_name" })
             .StatusCodeShouldBeOk());
 
@@ -93,10 +91,10 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     {
         await GetTestOrganizationUserAsync();
         await SendRequestAsync(r => r.Put().AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", ProductTours.AppOverview, "record")
+            .AppendPaths("users", "me", "product-tours", ProductTourNames.AppOverview, "record")
             .StatusCodeShouldBeOk());
         await SendRequestAsync(r => r.Put().AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", ProductTours.ExieOverview, "record")
+            .AppendPaths("users", "me", "product-tours", ProductTourNames.ExieOverview, "record")
             .StatusCodeShouldBeOk());
 
         var currentUser = await GetTestOrganizationUserAsync();
@@ -115,13 +113,13 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     [Fact]
     public Task RecordCurrentUserProductTourAsync_OldRoute_ReturnsNotFound() =>
         SendRequestAsync(r => r.Put().AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", ProductTours.AppOverview)
+            .AppendPaths("users", "me", "product-tours", ProductTourNames.AppOverview)
             .StatusCodeShouldBeNotFound());
 
     [Fact]
     public Task RecordCurrentUserProductTourAsync_AnonymousUser_ReturnsUnauthorized() =>
         SendRequestAsync(r => r.Put()
-            .AppendPaths("users", "me", "product-tours", ProductTours.AppOverview, "record")
+            .AppendPaths("users", "me", "product-tours", ProductTourNames.AppOverview, "record")
             .StatusCodeShouldBeUnauthorized());
 
     [Fact]
@@ -131,7 +129,7 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
         await _userRepository.RemoveAsync(currentUser.Id, o => o.ImmediateConsistency());
 
         await SendRequestAsync(r => r.Put().AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", ProductTours.AppOverview, "record")
+            .AppendPaths("users", "me", "product-tours", ProductTourNames.AppOverview, "record")
             .StatusCodeShouldBeUnauthorized());
 
         Assert.Null(await _userRepository.GetByIdAsync(currentUser.Id, o => o.Cache(false)));

@@ -24,7 +24,7 @@ describe('InvestigationListTour', () => {
         target.dataset.tour = 'event-list';
         document.body.append(target);
         target.scrollIntoView = vi.fn();
-        productTourCheckpoint.start('event-investigate', 'choose-error', 'catalog', 'user');
+        productTourCheckpoint.start('event-investigate', 'choose-error', 'user');
     });
 
     afterEach(() => {

@@ -11,7 +11,6 @@
     }
 
     let { closeMenu, isMenuOpen, openMenu, openSaveDialog }: Props = $props();
-    let completionPending = $state(false);
     const actions = createProductTourActions();
     const checkpoint = $derived(productTourCheckpoint.current?.tourName === 'saved-view-create' ? productTourCheckpoint.current : undefined);
 
@@ -37,12 +36,7 @@
             return;
         }
 
-        const createdCheckpoint = productTourCheckpoint.advance(active, 'view-created');
-        if (createdCheckpoint) {
-            completionPending = true;
-            await actions.complete(createdCheckpoint);
-            completionPending = false;
-        }
+        await actions.complete(active);
     }
 
     export async function closed(): Promise<void> {
@@ -50,15 +44,6 @@
         if (active && ['name-view', 'private-view', 'save-view'].includes(active.checkpointName)) {
             await actions.dismiss(active);
         }
-    }
-
-    async function retry(): Promise<void> {
-        const active = checkpoint;
-        if (active?.checkpointName !== 'view-created') {
-            return;
-        }
-
-        await actions.complete(active);
     }
 </script>
 
@@ -131,14 +116,4 @@
             Select <strong>Save</strong> in the form to create your view and finish the guide.
         {/snippet}
     </ProductTourSpotlight>
-{:else if checkpoint?.checkpointName === 'view-created' && !completionPending}
-    <ProductTourSpotlight
-        {checkpoint}
-        continueLabel="Retry guide completion"
-        description="Your view is saved. Retry saving your guide progress; this will not create another view."
-        onDismiss={actions.dismiss}
-        onNext={retry}
-        target="[data-tour='saved-view-trigger']"
-        title="Finish the saved-view guide"
-    />
 {/if}

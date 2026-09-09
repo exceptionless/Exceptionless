@@ -72,7 +72,7 @@ describe('product tour catalog', () => {
     });
 
     it('maps every guide to a stable record and typed state field', () => {
-        expect(getProductTourItems(context()).every((item) => item.recordName && item.stateKey)).toBe(true);
+        expect(getProductTourItems(context()).every((item) => item.stateKey)).toBe(true);
     });
 
     it('does not mistake an unavailable project list for an empty organization', () => {

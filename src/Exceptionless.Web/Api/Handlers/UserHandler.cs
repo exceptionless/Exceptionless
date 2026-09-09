@@ -50,19 +50,9 @@ public class UserHandler(
         };
     }
 
-    private static readonly string[] ProductTourNames = [
-        ProductTours.AppOverview,
-        ProductTours.ExieOverview,
-        ProductTours.EventInvestigate,
-        ProductTours.ProjectConfigure,
-        ProductTours.SavedViewCreate,
-        ProductTours.AppWelcome,
-        ProductTours.ExieAnnouncement
-    ];
-
     public async Task<Result<RecordProductTourResult>> Handle(RecordCurrentUserProductTour message)
     {
-        if (!ProductTourNames.Contains(message.TourName, StringComparer.Ordinal))
+        if (!ProductTourNames.All.Contains(message.TourName, StringComparer.Ordinal))
             return Result.Invalid(ValidationError.Create("tour_name", "The product tour name is not supported."));
 
         var currentUser = await GetModelAsync(GetCurrentUserId());
@@ -82,13 +72,13 @@ public class UserHandler(
 
     private static DateTime? GetProductTourDate(ProductTourState state, string tourName) => tourName switch
     {
-        ProductTours.AppOverview => state.AppOverview,
-        ProductTours.ExieOverview => state.ExieOverview,
-        ProductTours.EventInvestigate => state.EventInvestigate,
-        ProductTours.ProjectConfigure => state.ProjectConfigure,
-        ProductTours.SavedViewCreate => state.SavedViewCreate,
-        ProductTours.AppWelcome => state.AppWelcome,
-        ProductTours.ExieAnnouncement => state.ExieAnnouncement,
+        ProductTourNames.AppOverview => state.AppOverview,
+        ProductTourNames.ExieOverview => state.ExieOverview,
+        ProductTourNames.EventInvestigate => state.EventInvestigate,
+        ProductTourNames.ProjectConfigure => state.ProjectConfigure,
+        ProductTourNames.SavedViewCreate => state.SavedViewCreate,
+        ProductTourNames.AppWelcome => state.AppWelcome,
+        ProductTourNames.ExieAnnouncement => state.ExieAnnouncement,
         _ => null
     };
 
@@ -96,25 +86,25 @@ public class UserHandler(
     {
         switch (tourName)
         {
-            case ProductTours.AppOverview:
+            case ProductTourNames.AppOverview:
                 state.AppOverview = recordedUtc;
                 break;
-            case ProductTours.ExieOverview:
+            case ProductTourNames.ExieOverview:
                 state.ExieOverview = recordedUtc;
                 break;
-            case ProductTours.EventInvestigate:
+            case ProductTourNames.EventInvestigate:
                 state.EventInvestigate = recordedUtc;
                 break;
-            case ProductTours.ProjectConfigure:
+            case ProductTourNames.ProjectConfigure:
                 state.ProjectConfigure = recordedUtc;
                 break;
-            case ProductTours.SavedViewCreate:
+            case ProductTourNames.SavedViewCreate:
                 state.SavedViewCreate = recordedUtc;
                 break;
-            case ProductTours.AppWelcome:
+            case ProductTourNames.AppWelcome:
                 state.AppWelcome = recordedUtc;
                 break;
-            case ProductTours.ExieAnnouncement:
+            case ProductTourNames.ExieAnnouncement:
                 state.ExieAnnouncement = recordedUtc;
                 break;
             default:

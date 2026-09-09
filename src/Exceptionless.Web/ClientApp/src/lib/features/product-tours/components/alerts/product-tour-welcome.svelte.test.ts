@@ -10,7 +10,6 @@ const recommended = {
     description: 'Learn navigation and search.',
     keywords: ['navigation'],
     name: 'app-overview' as const,
-    recordName: 'app-overview' as const,
     start: vi.fn(() => ({ checkpointName: 'navigation' as const, route: '/next' })),
     stateKey: 'app_overview' as const,
     title: 'Explore Exceptionless'
@@ -71,17 +70,13 @@ describe('ProductTourWelcome', () => {
         expect(screen.queryByRole('button', { name: 'Explore Exceptionless' })).toBeNull();
     });
 
-    it('does not dismiss unrelated Escape presses or allow actions while saving', async () => {
+    it('does not dismiss on Escape outside the welcome', async () => {
         const onDismiss = vi.fn();
-        render(ProductTourWelcome, { busy: true, onBrowse: vi.fn(), onDismiss, onStart: vi.fn(), open: true, recommended });
+        render(ProductTourWelcome, { onBrowse: vi.fn(), onDismiss, onStart: vi.fn(), open: true, recommended });
 
         await fireEvent.keyDown(document.body, { key: 'Escape' });
-        await fireEvent.keyDown(screen.getByRole('button', { name: 'Close welcome' }), { key: 'Escape' });
 
         expect(onDismiss).not.toHaveBeenCalled();
-        for (const button of screen.getAllByRole('button')) {
-            expect(button.hasAttribute('disabled')).toBe(true);
-        }
     });
 
     it('does not render when closed', () => {

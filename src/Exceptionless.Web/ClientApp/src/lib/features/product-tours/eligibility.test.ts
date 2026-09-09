@@ -3,9 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { isProductTourSetupRoute, shouldOfferProductTourInvitation } from './eligibility';
 
 describe('product tour setup routes', () => {
-    it.each(['/(app)/organization/add', '/(app)/project/add', '/(app)/project/[projectId]/configure'])('suppresses automatic tours on %s', (routeId) => {
-        expect(isProductTourSetupRoute(routeId)).toBe(true);
-    });
+    it.each(['/(app)/organization/add', '/(app)/project/add', '/(app)/project/[projectId]/configure'] as const)(
+        'suppresses automatic tours on %s',
+        (routeId) => {
+            expect(isProductTourSetupRoute(routeId)).toBe(true);
+        }
+    );
 
     it('allows automatic tours after setup', () => {
         expect(isProductTourSetupRoute('/(app)/stack')).toBe(false);

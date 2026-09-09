@@ -6,7 +6,6 @@
     import X from '@lucide/svelte/icons/x';
 
     interface Props {
-        busy?: boolean;
         hasAccess: boolean;
         message?: string;
         onDismiss: () => void;
@@ -14,7 +13,7 @@
         open?: boolean;
     }
 
-    let { busy = false, hasAccess, message, onDismiss, onStart, open = true }: Props = $props();
+    let { hasAccess, message, onDismiss, onStart, open = true }: Props = $props();
 </script>
 
 {#if open}
@@ -33,13 +32,13 @@
                             : (message ?? 'Exie is available with an eligible organization plan.')}
                     </Muted>
                 </div>
-                <Button aria-label="Dismiss Exie announcement" class="-mt-1 -mr-1 size-11" disabled={busy} onclick={onDismiss} size="icon" variant="ghost">
+                <Button aria-label="Dismiss Exie announcement" class="-mt-1 -mr-1 size-11" onclick={onDismiss} size="icon" variant="ghost">
                     <X aria-hidden="true" class="size-4" />
                 </Button>
             </div>
             <div class="mt-3 flex flex-wrap gap-2">
-                <Button disabled={busy} onclick={onStart} size="sm">{hasAccess ? 'See how it works' : 'View access options'}</Button>
-                <Button disabled={busy} onclick={onDismiss} size="sm" variant="outline">Dismiss</Button>
+                <Button onclick={onStart} size="sm">{hasAccess ? 'See how it works' : 'View access options'}</Button>
+                <Button onclick={onDismiss} size="sm" variant="outline">Dismiss</Button>
             </div>
         </div>
     </Alert.Root>

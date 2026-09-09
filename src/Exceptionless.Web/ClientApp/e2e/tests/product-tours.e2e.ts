@@ -6,113 +6,6 @@ import { createRepresentativeEvent } from '../support/synthetic-event';
 
 test.use({ actionTimeout: 15_000, e2eUseInvitedUser: true });
 
-test('first organization keeps the project guide while project creation is pending @signup', async ({ e2eApi, page }) => {
-    // Arrange: a new account has no organization to scope its checkpoint to yet.
-    const name = `Tour setup ${e2eApi.environment.runId}`;
-    const token = await e2eApi.signup(name, `tour-setup-${e2eApi.environment.runId}@exceptionless.test`, E2E_TEST_PASSWORD);
-    let releaseProject!: () => void;
-    const projectPending = new Promise<void>((resolve) => {
-        releaseProject = resolve;
-    });
-    let releaseOrganizationRefresh!: () => void;
-    const organizationRefreshPending = new Promise<void>((resolve) => {
-        releaseOrganizationRefresh = resolve;
-    });
-    let holdOrganizationRefresh = false;
-    let organizationId: string | undefined;
-    let projectId: string | undefined;
-    let projectCreated: Promise<Response> | undefined;
-    try {
-        const user = await e2eApi.getCurrentUser(token);
-        expect(user).toBeDefined();
-        await page.addInitScript(
-            ({ token, userId }) => {
-                localStorage.setItem('satellizer_token', token);
-                sessionStorage.setItem(
-                    'exceptionless.product-tour',
-                    JSON.stringify({
-                        checkpointName: 'project-name',
-                        source: 'catalog',
-                        tourName: 'project-configure',
-                        userId
-                    })
-                );
-            },
-            { token, userId: user!.id }
-        );
-        await page.route(
-            (url) => url.pathname === '/api/v2/organizations',
-            async (route) => {
-                if (holdOrganizationRefresh && route.request().method() === 'GET') {
-                    await organizationRefreshPending;
-                }
-                await route.continue();
-            }
-        );
-        await page.route(
-            (url) => url.pathname === '/api/v2/projects',
-            async (route) => {
-                if (route.request().method() === 'POST') {
-                    organizationId = route.request().postDataJSON().organization_id;
-                    await projectPending;
-                    const response = await route.fetch();
-                    projectId = (await response.json()).id;
-                    await route.fulfill({ response });
-                    return;
-                }
-                await route.continue();
-            }
-        );
-        await page.goto('/next/organization/add');
-        const guide = page.locator('.driver-popover');
-        await expect(guide.getByText('Name your first project')).toBeVisible();
-        await page.getByLabel('Organization Name', { exact: true }).fill(name);
-        await page.getByLabel('Project Name', { exact: true }).fill(name);
-
-        // Act: hold the project request across the organization context change.
-        holdOrganizationRefresh = true;
-        const organizationCreated = page.waitForResponse(
-            (response) => new URL(response.url()).pathname === '/api/v2/organizations' && response.request().method() === 'POST'
-        );
-        const creating = page.waitForRequest((request) => new URL(request.url()).pathname === '/api/v2/projects' && request.method() === 'POST');
-        projectCreated = page.waitForResponse((response) => new URL(response.url()).pathname === '/api/v2/projects' && response.request().method() === 'POST');
-        await page.getByRole('button', { exact: true, name: 'Continue' }).click();
-        organizationId = (await (await organizationCreated).json()).id;
-        await expect
-            .poll(() => page.evaluate(() => JSON.parse(sessionStorage.getItem('exceptionless.product-tour') ?? 'null')?.organizationId))
-            .toBe(organizationId);
-        releaseOrganizationRefresh();
-        const request = await creating;
-        organizationId = request.postDataJSON().organization_id;
-
-        // Assert: the host must not discard the first-organization checkpoint.
-        await expect
-            .poll(() => page.evaluate(() => JSON.parse(sessionStorage.getItem('exceptionless.product-tour') ?? 'null')?.organizationId))
-            .toBe(organizationId);
-        releaseProject();
-        await page.waitForURL(/\/next\/project\/[^/]+\/configure/);
-        await expect(guide.getByText('Choose your language or platform')).toBeVisible();
-    } finally {
-        releaseOrganizationRefresh();
-        releaseProject();
-        if (projectCreated) {
-            const response = await projectCreated;
-            if (response.ok()) {
-                projectId = (await response.json()).id;
-            }
-        }
-        await page.unrouteAll({ behavior: 'wait' });
-        if (projectId) {
-            await e2eApi.deleteProject(token, projectId);
-            await e2eApi.waitForProjectDeleted(token, projectId);
-        }
-        if (organizationId) {
-            await e2eApi.deleteOrganization(token, organizationId);
-        }
-        await e2eApi.deleteCurrentUser(token);
-    }
-});
-
 test.describe('first-run welcome', () => {
     test.use({ e2eDismissProductTourWelcome: false });
 
@@ -191,7 +84,7 @@ test.describe('first-run welcome', () => {
         expect(invitationWrites).toEqual([]);
     });
 
-    test('Browse Guides persists before the catalog opens', async ({ e2eScenario, page }, testInfo) => {
+    test('Browse Guides saves acknowledgment and opens the catalog', async ({ e2eScenario, page }, testInfo) => {
         await test.step(`show the first-run prompt for ${e2eScenario.email}`, async () => {
             await page.goto('/next/stack');
             await expect(page.getByRole('region', { name: 'Welcome to Exceptionless' })).toBeVisible();
@@ -268,7 +161,7 @@ test.describe('first-run welcome', () => {
 test.describe('shell and identity checkpoints', () => {
     test.use({ e2eDismissProductTourWelcome: false });
 
-    test('supports responsive resume and never carries checkpoints across identities', async ({ e2eApi, e2eScenario, e2eSecondaryOrganization, page }) => {
+    test('supports responsive guides and clears them on reload or identity changes', async ({ e2eApi, e2eScenario, e2eSecondaryOrganization, page }) => {
         test.setTimeout(240_000);
         const progressWrites: string[] = [];
         page.on('request', (request) => {
@@ -313,12 +206,13 @@ test.describe('shell and identity checkpoints', () => {
             await tour.getByRole('button', { name: 'Continue' }).click();
             await expect(tour.getByText('Use the command palette')).toBeVisible();
             await page.reload();
-            await expect(tour.getByText('Use the command palette')).toBeVisible();
-
-            const dismissed = page.waitForResponse(isSuccessfulTourProgress('app-overview'));
+            await expect(tour).toBeHidden();
+            await startTourFromCommand(page, 'Explore Exceptionless');
+            await expect(tour.getByText('Your workspace navigation')).toBeVisible();
+            const writesBeforeDismissal = progressWrites.length;
             await tour.getByRole('button', { name: 'End guide' }).click();
-            await dismissed;
-            await expectProductTourSession(page, false);
+            expect(progressWrites).toHaveLength(writesBeforeDismissal);
+            await expectActiveProductTour(page, false);
         });
 
         await test.step('every shell target remains visible on mobile', async () => {
@@ -350,7 +244,7 @@ test.describe('shell and identity checkpoints', () => {
             const completed = page.waitForResponse(isSuccessfulTourProgress('app-overview'));
             await tour.getByRole('button', { name: 'Browse guides' }).click();
             await completed;
-            await expectProductTourSession(page, false);
+            await expectActiveProductTour(page, false);
             await expect(page.getByRole('dialog', { exact: true, name: 'Guided Tours' })).toBeVisible();
             await page.keyboard.press('Escape');
         });
@@ -359,7 +253,7 @@ test.describe('shell and identity checkpoints', () => {
             await mockAssistantAccess(page);
             await page.reload();
             await startTourFromCommand(page, 'Meet Exie');
-            await expectProductTourSession(page, true);
+            await expectActiveProductTour(page, true);
             const writesBeforeSwitch = progressWrites.length;
             const projectsRoute = `**/api/v2/organizations/${e2eSecondaryOrganization.organizationId}/projects*`;
             const projectLookup = Promise.withResolvers<void>();
@@ -374,7 +268,7 @@ test.describe('shell and identity checkpoints', () => {
                 window.localStorage.setItem('organization', JSON.stringify(organizationId));
             }, e2eSecondaryOrganization.organizationId);
             await identityTab.close();
-            await expectProductTourSession(page, false);
+            await expectActiveProductTour(page, false);
             expect(progressWrites).toHaveLength(writesBeforeSwitch);
             await page.getByRole('button', { name: 'Search Exceptionless' }).click();
             await page.getByRole('dialog').getByText('Guided Tours…', { exact: true }).click();
@@ -395,13 +289,13 @@ test.describe('shell and identity checkpoints', () => {
         await test.step('logout clears an active checkpoint without recording progress', async () => {
             await page.setViewportSize({ height: 900, width: 1440 });
             await startTourFromCommand(page, 'Meet Exie');
-            await expectProductTourSession(page, true);
+            await expectActiveProductTour(page, true);
             const writesBeforeLogout = progressWrites.length;
 
             await page.getByRole('button', { name: new RegExp(e2eScenario.userName) }).dispatchEvent('click');
             await page.getByRole('menuitem', { name: 'Log Out' }).dispatchEvent('click');
             await expect(page).toHaveURL(/\/next\/login/);
-            await expectProductTourSession(page, false);
+            await expectActiveProductTour(page, false);
             expect(progressWrites).toHaveLength(writesBeforeLogout);
 
             e2eScenario.userToken = await e2eApi.login(e2eScenario.email, E2E_TEST_PASSWORD);
@@ -445,7 +339,7 @@ test('a saved-view guide allows submitting the form before finishing its steps',
 
     // Assert
     await completed;
-    await expectProductTourSession(page, false);
+    await expectActiveProductTour(page, false);
     await expect(page.getByText('Your saved view is ready', { exact: true })).toBeVisible();
 });
 
@@ -511,13 +405,13 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
                 })
             );
             await expect(page).toHaveURL(/\/next\/event/);
-            await expectProductTourSession(page, false);
+            await expectActiveProductTour(page, false);
             await expect.poll(() => projectProgressRequests).toBe(1);
             await expect.poll(async () => (await e2eApi.getProject(e2eScenario.userToken, projectId!))?.is_configured).toBe(true);
 
             await page.unroute(projectProgressRoute);
             await page.goto(`/next/project/${projectId}/configure`);
-            await expectProductTourSession(page, false);
+            await expectActiveProductTour(page, false);
             expect(projectProgressRequests).toBe(1);
         } finally {
             await page.unroute(projectProgressRoute);
@@ -552,7 +446,7 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
         try {
             await page.goto('/next/event');
             await startTourFromCommand(page, 'Create a saved view');
-            await expectProductTourSession(page, true);
+            await expectActiveProductTour(page, true);
             const tour = page.locator('.driver-popover');
             await tour.getByRole('button', { name: 'Open View' }).click();
             await expect(page.locator('[data-tour="saved-view-save-as"]')).toHaveClass(/driver-active-element/);
@@ -570,7 +464,7 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
             await page.reload();
             await expect(page.getByRole('button', { name: 'Retry guide completion' })).toHaveCount(0);
             await expect.poll(() => createRequests).toBe(1);
-            await expectProductTourSession(page, false);
+            await expectActiveProductTour(page, false);
             expect(progressRequests).toBe(1);
         } finally {
             page.off('request', countSavedViewCreation);
@@ -600,7 +494,7 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
         const completed = page.waitForResponse(isSuccessfulTourProgress('event-investigate'));
         await callout.getByRole('button', { name: 'Finish guide' }).click();
         await completed;
-        await expectProductTourSession(page, false);
+        await expectActiveProductTour(page, false);
         await page.reload();
         await expect(page.locator('.driver-popover')).toBeHidden();
     });
@@ -628,12 +522,12 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
     });
 });
 
-async function expectProductTourSession(page: Page, present: boolean): Promise<void> {
-    const assertion = expect.poll(() => page.evaluate(() => sessionStorage.getItem('exceptionless.product-tour')));
+async function expectActiveProductTour(page: Page, present: boolean): Promise<void> {
+    const guide = page.getByRole('button', { exact: true, name: 'End guide' });
     if (present) {
-        await assertion.not.toBeNull();
+        await expect(guide).toBeVisible();
     } else {
-        await assertion.toBeNull();
+        await expect(guide).toBeHidden();
     }
 }
 

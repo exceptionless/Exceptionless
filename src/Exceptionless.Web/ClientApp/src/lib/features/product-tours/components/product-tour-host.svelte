@@ -11,7 +11,7 @@
     import { onMount } from 'svelte';
     import { toast } from 'svelte-sonner';
 
-    import type { ProductTourCheckpoint, ProductTourContext, ProductTourLaunchSource, ProductTourListItem, ProductTourName } from '../models';
+    import type { ProductTourContext, ProductTourListItem, ProductTourName } from '../models';
 
     import { createProductTourActions } from '../actions.svelte';
     import { getProductTourItems, getRecommendedProductTourName } from '../catalog';
@@ -57,11 +57,9 @@
     }: Props = $props();
 
     let catalogOpen = $state(false);
-    let catalogSource = $state<ProductTourLaunchSource>('catalog');
     let automaticSurface = $state<'exie-announcement' | 'handled' | 'welcome'>();
     let automaticSurfaceReady = $state(false);
     let automaticSurfaceUserId = $state<string>();
-    let attemptedProjectCompletion: ProductTourCheckpoint | undefined;
 
     const actions = createProductTourActions();
     const progressMutation = putCurrentUserProductTour();
@@ -142,11 +140,6 @@
         if (automaticSurfaceUserId !== currentUser.id) {
             automaticSurface = undefined;
             automaticSurfaceUserId = currentUser.id;
-            try {
-                automaticSurface = sessionStorage.getItem(getAutomaticSurfaceKey(currentUser.id)) === 'shown' ? 'handled' : undefined;
-            } catch {
-                automaticSurface = undefined;
-            }
 
             return;
         }
@@ -156,7 +149,7 @@
         }
 
         if (welcomeEligible && !pathname.startsWith(SYSTEM_PATH)) {
-            claimAutomaticSurface('welcome');
+            automaticSurface = 'welcome';
             return;
         }
 
@@ -165,7 +158,7 @@
             (pathname.startsWith(EVENT_PATH) || pathname.startsWith(STACK_PATH)) &&
             shouldOfferProductTourInvitation(currentUser.product_tours?.exie_announcement)
         ) {
-            claimAutomaticSurface('exie-announcement');
+            automaticSurface = 'exie-announcement';
         }
     });
 
@@ -179,7 +172,7 @@
             return;
         }
 
-        const active = productTourCheckpoint.current ?? productTourCheckpoint.restore(currentUser.id, organizationId);
+        const active = productTourCheckpoint.current;
         if (
             active?.userId === currentUser.id &&
             active.tourName === 'project-configure' &&
@@ -196,37 +189,24 @@
         }
     });
 
-    $effect(() => {
-        const active = checkpoint;
-        if (active?.tourName === 'project-configure' && active.checkpointName === 'event-received' && projectConfigurePage) {
-            if (attemptedProjectCompletion !== active) {
-                attemptedProjectCompletion = active;
-                actions.completeAfterDomainSuccess(active);
-            }
-        } else {
-            attemptedProjectCompletion = undefined;
-        }
-    });
-
-    export async function openCatalog(source: ProductTourLaunchSource = 'catalog'): Promise<void> {
+    export async function openCatalog(): Promise<void> {
         const active = checkpoint;
         if (active?.tourName === 'app-overview' && active.checkpointName === 'help' && !(await actions.complete(active))) {
             return;
         }
 
         closeOverlays();
-        catalogSource = source;
         catalogOpen = true;
     }
 
-    export async function startTour(name: ProductTourName, source: ProductTourLaunchSource = 'catalog'): Promise<void> {
+    export async function startTour(name: ProductTourName): Promise<void> {
         if (!currentUser) {
             return;
         }
 
         const item = getItem(name);
         if (!item.currentAvailability.available) {
-            await openCatalog(source);
+            await openCatalog();
             return;
         }
 
@@ -250,20 +230,14 @@
         });
         const expectedUserId = currentUser.id;
         const expectedOrganizationId = organizationId;
-        const next = productTourCheckpoint.start(name, start.checkpointName, source, currentUser.id, organizationId);
-        const expectedGeneration = productTourCheckpoint.generation;
+        const next = productTourCheckpoint.start(name, start.checkpointName, currentUser.id, organizationId);
 
         const destination = start.route;
         if (`${pathname}${window.location.search}` !== destination) {
             await goto(destination);
         }
 
-        if (
-            productTourCheckpoint.generation !== expectedGeneration ||
-            productTourCheckpoint.current !== next ||
-            currentUser?.id !== expectedUserId ||
-            organizationId !== expectedOrganizationId
-        ) {
+        if (productTourCheckpoint.current !== next || currentUser?.id !== expectedUserId || organizationId !== expectedOrganizationId) {
             return;
         }
 
@@ -272,81 +246,63 @@
         }
     }
 
-    async function recordPreference(name: 'app-welcome' | 'exie-announcement', stateKey: 'app_welcome' | 'exie_announcement'): Promise<boolean> {
+    async function recordPreference(name: 'app-welcome' | 'exie-announcement'): Promise<boolean> {
         if (!currentUser) {
             return false;
         }
         const userId = currentUser.id;
         automaticSurface = 'handled';
-        void Promise.resolve(
-            progressMutation.mutateAsync({
-                recordName: name,
-                stateKey,
+        void progressMutation
+            .mutateAsync({
+                tourName: name,
                 userId
             })
-        ).catch(() => {
-            if (currentUser?.id === userId) {
-                toast.error('We could not save your guided-tour preference. Please try again.');
-            }
-        });
+            .catch(() => {
+                if (currentUser?.id === userId) {
+                    toast.error('We could not save your guided-tour preference. Please try again.');
+                }
+            });
         return true;
     }
 
     async function onWelcomeStart(): Promise<void> {
-        if (!(await recordPreference('app-welcome', 'app_welcome'))) {
+        if (!(await recordPreference('app-welcome'))) {
             return;
         }
 
-        await startTour(recommended.name, 'welcome');
+        await startTour(recommended.name);
     }
 
     async function onWelcomeBrowse(): Promise<void> {
-        if (!(await recordPreference('app-welcome', 'app_welcome'))) {
+        if (!(await recordPreference('app-welcome'))) {
             return;
         }
 
-        await openCatalog('catalog');
+        await openCatalog();
     }
 
     async function onWelcomeSkip(): Promise<void> {
-        await recordPreference('app-welcome', 'app_welcome');
+        await recordPreference('app-welcome');
     }
 
     async function onExieAnnouncementStart(): Promise<void> {
-        if (!(await recordPreference('exie-announcement', 'exie_announcement'))) {
+        if (!(await recordPreference('exie-announcement'))) {
             return;
         }
 
         if (assistantAccess?.has_access) {
-            await startTour('exie-overview', 'feature-announcement');
+            await startTour('exie-overview');
         } else {
             await openAssistant();
         }
     }
 
     async function onExieAnnouncementDismiss(): Promise<void> {
-        await recordPreference('exie-announcement', 'exie_announcement');
+        await recordPreference('exie-announcement');
     }
 
     function getItem(name: ProductTourName): ProductTourListItem {
         return items.find((item) => item.name === name)!;
-    }
-
-    function claimAutomaticSurface(surface: 'exie-announcement' | 'welcome'): void {
-        if (!currentUser) {
-            return;
-        }
-
-        automaticSurface = surface;
-        try {
-            sessionStorage.setItem(getAutomaticSurfaceKey(currentUser.id), 'shown');
-        } catch {
-            // Keep the in-memory claim when browser storage is unavailable.
-        }
-    }
-
-    function getAutomaticSurfaceKey(userId: string): string {
-        return `exceptionless.product-tour.automatic-surface.${userId}.welcome.announcement`;
     }
 
     function isActiveTourRenderable(active: NonNullable<typeof checkpoint>): boolean {
@@ -354,13 +310,12 @@
     }
 </script>
 
-<ProductTourWelcome busy={false} open={welcomeOpen} onBrowse={onWelcomeBrowse} onDismiss={onWelcomeSkip} onStart={onWelcomeStart} {recommended} />
+<ProductTourWelcome open={welcomeOpen} onBrowse={onWelcomeBrowse} onDismiss={onWelcomeSkip} onStart={onWelcomeStart} {recommended} />
 
 {#if exieAnnouncementOpen && assistantAccess}
     <ProductTourFeatureAnnouncement
         hasAccess={assistantAccess.has_access}
         message={assistantAccess.message}
-        busy={false}
         onDismiss={onExieAnnouncementDismiss}
         onStart={onExieAnnouncementStart}
     />
@@ -370,7 +325,7 @@
     activeTourName={checkpoint?.tourName}
     bind:open={catalogOpen}
     {items}
-    onStart={(name) => startTour(name, catalogSource)}
+    onStart={startTour}
     ready={stateSettled && !!currentUser}
     resumableTourName={checkpoint && isActiveTourRenderable(checkpoint) ? checkpoint.tourName : undefined}
 />

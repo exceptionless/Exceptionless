@@ -1,6 +1,5 @@
 <script lang="ts">
     import type { AssistantPromptRequest } from '$features/assistant/models';
-    import type { ProductTourLaunchSource } from '$features/product-tours/models';
     import type { SavedView } from '$features/saved-views/models';
     import type { Snippet } from 'svelte';
 
@@ -106,7 +105,7 @@
         closeOverlays: closeProductTourOverlays,
         getGuidedToursTarget: () => sidebarUserComponent?.getGuidedToursTarget(),
         getNavigationTarget: () => sidebarElement ?? undefined,
-        openCatalog: () => openGuidedTours('catalog'),
+        openCatalog: () => openGuidedTours(),
         showGuidedToursMenu: () => {
             closeProductTourOverlays();
             sidebarUserComponent?.showGuidedTours();
@@ -257,8 +256,8 @@
         isUserMenuOpen = false;
     }
 
-    function openGuidedTours(source: ProductTourLaunchSource): void {
-        void productToursComponent?.openCatalog(source);
+    function openGuidedTours(): void {
+        void productToursComponent?.openCatalog();
     }
 
     async function stopImpersonating(): Promise<void> {
@@ -763,7 +762,7 @@
                 {organizations}
                 {openChat}
                 {openKeyboardShortcuts}
-                openGuidedTours={() => openGuidedTours('help-menu')}
+                openGuidedTours={() => openGuidedTours()}
                 {intercomUnreadCount}
                 bind:open={isUserMenuOpen}
             />
@@ -790,7 +789,7 @@
                     {openKeyboardShortcuts}
                     {openOrganizationSwitcher}
                     {openUserMenu}
-                    openGuidedTours={() => openGuidedTours('command-palette')}
+                    openGuidedTours={() => openGuidedTours()}
                     {organizations}
                     resetKey={commandResetKey}
                     routes={filteredRoutes}

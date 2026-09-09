@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createProductTourActions } from './actions.svelte';
 import { productTourCheckpoint } from './state.svelte';
@@ -16,9 +16,11 @@ vi.mock('./controls.svelte', () => ({ tryUseProductTourControls: () => ({ openCa
 vi.mock('svelte-sonner', () => ({ toast: { error: mocks.error, success: mocks.success } }));
 
 describe('product tour completion', () => {
-    it('finishes saved progress without waiting for telemetry', async () => {
+    beforeEach(() => mocks.mutateAsync.mockResolvedValue(undefined));
+
+    it('finishes without waiting for telemetry', async () => {
         // Arrange
-        const checkpoint = productTourCheckpoint.start('saved-view-create', 'view-created', 'catalog', 'user');
+        const checkpoint = productTourCheckpoint.start('saved-view-create', 'save-view', 'user');
         mocks.submitFeatureUsage.mockReturnValue(new Promise<void>(() => {}));
 
         // Act
@@ -35,9 +37,9 @@ describe('product tour completion', () => {
         vi.resetAllMocks();
     });
 
-    it('offers an actionable next step only after progress is saved', async () => {
+    it('offers an actionable next step when the guide finishes', async () => {
         // Arrange
-        const checkpoint = productTourCheckpoint.start('event-investigate', 'filter-stack-events', 'catalog', 'user');
+        const checkpoint = productTourCheckpoint.start('event-investigate', 'filter-stack-events', 'user');
         const actions = createProductTourActions();
 
         // Act
@@ -57,7 +59,7 @@ describe('product tour completion', () => {
 
     it('leaves the overview menu handoff unobstructed by a completion toast', async () => {
         // Arrange
-        const checkpoint = productTourCheckpoint.start('app-overview', 'help', 'catalog', 'user');
+        const checkpoint = productTourCheckpoint.start('app-overview', 'help', 'user');
 
         // Act
         const completed = await createProductTourActions().complete(checkpoint);
@@ -69,7 +71,7 @@ describe('product tour completion', () => {
 
     it('closes immediately when persistence cannot be saved', async () => {
         // Arrange
-        const checkpoint = productTourCheckpoint.start('app-overview', 'help', 'catalog', 'user');
+        const checkpoint = productTourCheckpoint.start('app-overview', 'help', 'user');
         mocks.mutateAsync.mockRejectedValueOnce(new Error('Unavailable'));
 
         // Act
@@ -83,7 +85,7 @@ describe('product tour completion', () => {
 
     it('closes immediately when completion persistence never settles', async () => {
         // Arrange
-        const checkpoint = productTourCheckpoint.start('saved-view-create', 'view-created', 'catalog', 'user');
+        const checkpoint = productTourCheckpoint.start('saved-view-create', 'save-view', 'user');
         mocks.mutateAsync.mockReturnValue(new Promise<void>(() => {}));
 
         // Act
@@ -96,7 +98,7 @@ describe('product tour completion', () => {
 
     it('does not submit completion for a dismissed checkpoint', async () => {
         // Arrange
-        const checkpoint = productTourCheckpoint.start('app-overview', 'help', 'catalog', 'user');
+        const checkpoint = productTourCheckpoint.start('app-overview', 'help', 'user');
         const actions = createProductTourActions();
 
         // Act
@@ -112,8 +114,8 @@ describe('product tour completion', () => {
 
     it('does not submit dismissal after another guide replaces the checkpoint', async () => {
         // Arrange
-        const previous = productTourCheckpoint.start('app-overview', 'help', 'catalog', 'user');
-        const current = productTourCheckpoint.start('saved-view-create', 'open-view-menu', 'catalog', 'user');
+        const previous = productTourCheckpoint.start('app-overview', 'help', 'user');
+        const current = productTourCheckpoint.start('saved-view-create', 'open-view-menu', 'user');
 
         // Act
         const dismissed = await createProductTourActions().dismiss(previous);
@@ -127,12 +129,12 @@ describe('product tour completion', () => {
 
     it('offers the next guide once after a first event succeeds', async () => {
         // Arrange
-        const checkpoint = productTourCheckpoint.start('project-configure', 'event-received', 'catalog', 'user');
+        const checkpoint = productTourCheckpoint.start('project-configure', 'sdk-instructions', 'user');
         mocks.mutateAsync.mockResolvedValueOnce(undefined);
         const actions = createProductTourActions();
 
         // Act
-        await Promise.all([actions.completeAfterDomainSuccess(checkpoint), actions.completeAfterDomainSuccess(checkpoint)]);
+        await Promise.all([actions.complete(checkpoint), actions.complete(checkpoint)]);
 
         // Assert
         expect(mocks.mutateAsync).toHaveBeenCalledOnce();
@@ -146,7 +148,7 @@ describe('product tour completion', () => {
 
     it('does not submit a second outcome while progress is being saved', async () => {
         // Arrange
-        const checkpoint = productTourCheckpoint.start('app-overview', 'help', 'catalog', 'user');
+        const checkpoint = productTourCheckpoint.start('app-overview', 'help', 'user');
         const pending = Promise.withResolvers<void>();
         mocks.mutateAsync.mockReturnValue(pending.promise);
         const actions = createProductTourActions();
@@ -166,11 +168,11 @@ describe('product tour completion', () => {
 
     it('clears a domain-success checkpoint even when persistence fails', async () => {
         // Arrange
-        const checkpoint = productTourCheckpoint.start('project-configure', 'event-received', 'catalog', 'user');
+        const checkpoint = productTourCheckpoint.start('project-configure', 'sdk-instructions', 'user');
         mocks.mutateAsync.mockRejectedValueOnce(new Error('Unavailable'));
 
         // Act
-        await createProductTourActions().completeAfterDomainSuccess(checkpoint);
+        await createProductTourActions().complete(checkpoint);
 
         // Assert
         expect(productTourCheckpoint.current).toBeUndefined();

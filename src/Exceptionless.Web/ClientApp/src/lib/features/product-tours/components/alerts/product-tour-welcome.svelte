@@ -7,7 +7,6 @@
     import type { ProductTourListItem } from '../../models';
 
     interface Props {
-        busy?: boolean;
         onBrowse: () => Promise<void>;
         onDismiss: () => Promise<void>;
         onStart: () => Promise<void>;
@@ -15,10 +14,10 @@
         recommended: ProductTourListItem;
     }
 
-    let { busy = false, onBrowse, onDismiss, onStart, open = false, recommended }: Props = $props();
+    let { onBrowse, onDismiss, onStart, open = false, recommended }: Props = $props();
 
     async function onKeydown(event: KeyboardEvent): Promise<void> {
-        if (event.key === 'Escape' && !busy) {
+        if (event.key === 'Escape') {
             event.stopPropagation();
             await onDismiss();
         }
@@ -36,14 +35,14 @@
     >
         <div class="flex items-center justify-between gap-2">
             <Alert.Title><H2 class="border-0 pb-0 text-sm font-medium">Welcome to Exceptionless</H2></Alert.Title>
-            <Button aria-label="Close welcome" class="-my-2 -mr-2 size-11 shrink-0" disabled={busy} onclick={onDismiss} size="icon" variant="ghost">
+            <Button aria-label="Close welcome" class="-my-2 -mr-2 size-11 shrink-0" onclick={onDismiss} size="icon" variant="ghost">
                 <X aria-hidden="true" />
             </Button>
         </div>
         <Alert.Description class="mt-1">{recommended.description}</Alert.Description>
         <div class="mt-3 flex flex-wrap items-center gap-2">
-            <Button disabled={busy} onclick={onStart} size="sm">{recommended.name === 'project-configure' ? 'Continue setup' : recommended.title}</Button>
-            <Button disabled={busy} onclick={onBrowse} size="sm" variant="ghost">Browse guides</Button>
+            <Button onclick={onStart} size="sm">{recommended.name === 'project-configure' ? 'Continue setup' : recommended.title}</Button>
+            <Button onclick={onBrowse} size="sm" variant="ghost">Browse guides</Button>
         </div>
     </Alert.Root>
 {/if}

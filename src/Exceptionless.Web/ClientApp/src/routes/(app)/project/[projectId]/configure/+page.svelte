@@ -432,14 +432,10 @@ public partial class App : Application {
         const message = (event as CustomEvent<WebSocketMessageValue<'PersistentEventChanged'>>).detail;
 
         if (queryParams.redirect && message.project_id === projectId && message.change_type !== ChangeType.Removed) {
-            if (projectConfigureCheckpoint && projectConfigureCheckpoint.checkpointName !== 'event-received') {
-                const eventReceivedCheckpoint = productTourCheckpoint.advance(projectConfigureCheckpoint, 'event-received');
-                if (eventReceivedCheckpoint) {
-                    tourActions.completeAfterDomainSuccess(eventReceivedCheckpoint);
-                }
-            }
-
-            if (!projectConfigureCheckpoint) {
+            const checkpoint = projectConfigureCheckpoint;
+            if (checkpoint) {
+                await tourActions.complete(checkpoint);
+            } else {
                 toast.success('First event received. Opening Events...');
             }
             await redirectToEventsWithFilter(organization.current, new ProjectFilter([projectId]));

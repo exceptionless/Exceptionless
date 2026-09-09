@@ -17,7 +17,7 @@ describe('ProductTourShellSpotlight', () => {
         'resumes an unavailable Exie checkpoint at Help: %j',
         async (assistantAccess) => {
             // Arrange
-            productTourCheckpoint.start('app-overview', 'exie', 'catalog', 'user');
+            productTourCheckpoint.start('app-overview', 'exie', 'user');
 
             // Act
             render(ProductTourShellSpotlight, {

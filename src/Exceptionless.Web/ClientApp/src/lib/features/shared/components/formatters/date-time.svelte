@@ -1,10 +1,9 @@
 <script lang="ts">
     interface Props {
-        options?: Intl.DateTimeFormatOptions;
         value: Date | string | undefined;
     }
 
-    let { options, value }: Props = $props();
+    let { value }: Props = $props();
 
     function formatDate(input: Date | string | undefined) {
         if (!input) {
@@ -13,18 +12,15 @@
 
         const date = typeof input === 'string' ? new Date(input) : input;
 
-        return date.toLocaleString(
-            undefined,
-            options ?? {
-                day: 'numeric',
-                hour: 'numeric',
-                hour12: true,
-                minute: '2-digit',
-                month: 'short',
-                second: '2-digit',
-                year: 'numeric'
-            }
-        );
+        return date.toLocaleString(undefined, {
+            day: 'numeric',
+            hour: 'numeric',
+            hour12: true,
+            minute: '2-digit',
+            month: 'short',
+            second: '2-digit',
+            year: 'numeric'
+        });
     }
 </script>
 

@@ -14,18 +14,6 @@ const COMPLETION_MESSAGES: Record<Exclude<ProductTourCheckpoint['tourName'], 'ap
     'saved-view-create': 'Your saved view is ready'
 };
 
-const progressRequests = new WeakSet<ProductTourCheckpoint>();
-const STATE_KEYS: Record<
-    ProductTourCheckpoint['tourName'],
-    'app_overview' | 'event_investigate' | 'exie_overview' | 'project_configure' | 'saved_view_create'
-> = {
-    'app-overview': 'app_overview',
-    'event-investigate': 'event_investigate',
-    'exie-overview': 'exie_overview',
-    'project-configure': 'project_configure',
-    'saved-view-create': 'saved_view_create'
-};
-
 export function createProductTourActions() {
     const controls = tryUseProductTourControls();
     const progressMutation = putCurrentUserProductTour();
@@ -38,33 +26,18 @@ export function createProductTourActions() {
         return finish(checkpoint, 'dismissed');
     }
 
-    async function completeAfterDomainSuccess(checkpoint: ProductTourCheckpoint): Promise<void> {
-        finish(checkpoint, 'completed');
-    }
-
     async function finish(checkpoint: ProductTourCheckpoint, action: 'completed' | 'dismissed'): Promise<boolean> {
-        if (productTourCheckpoint.current !== checkpoint || progressRequests.has(checkpoint)) {
-            return false;
-        }
-
-        progressRequests.add(checkpoint);
         if (!productTourCheckpoint.clear(checkpoint)) {
-            progressRequests.delete(checkpoint);
             return false;
         }
 
         if (action === 'completed') {
-            void Promise.resolve(
-                progressMutation.mutateAsync({
-                    recordName: checkpoint.tourName,
-                    stateKey: STATE_KEYS[checkpoint.tourName],
+            void progressMutation
+                .mutateAsync({
+                    tourName: checkpoint.tourName,
                     userId: checkpoint.userId
                 })
-            )
-                .catch(() => undefined)
-                .finally(() => progressRequests.delete(checkpoint));
-        } else {
-            progressRequests.delete(checkpoint);
+                .catch(() => undefined);
         }
         void submitProductTourActivity(action, checkpoint.tourName);
         if (action === 'completed') {
@@ -90,7 +63,6 @@ export function createProductTourActions() {
 
     return {
         complete,
-        completeAfterDomainSuccess,
         dismiss
     };
 }

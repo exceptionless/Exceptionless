@@ -1,10 +1,7 @@
-import type { ProductTourCheckpoint, ProductTourCheckpointName, ProductTourLaunchSource, ProductTourName } from './models';
-
-import { clearProductTourSession, readProductTourSession, writeProductTourSession } from './session';
+import type { ProductTourCheckpoint, ProductTourCheckpointName, ProductTourName } from './models';
 
 class ProductTourCheckpointStore {
     current = $state.raw<ProductTourCheckpoint>();
-    generation = $state(0);
 
     advance<Name extends ProductTourCheckpoint['tourName']>(
         expected: ProductTourCheckpoint<Name>,
@@ -19,7 +16,8 @@ class ProductTourCheckpointStore {
             checkpointName,
             organizationId
         } as ProductTourCheckpoint<Name>;
-        return this.save(next);
+        this.current = next;
+        return next;
     }
 
     clear(expected?: ProductTourCheckpoint): boolean {
@@ -27,54 +25,23 @@ class ProductTourCheckpointStore {
             return false;
         }
 
-        if (this.current) {
-            this.current = undefined;
-            this.generation += 1;
-        }
-        clearProductTourSession();
+        this.current = undefined;
         return true;
-    }
-
-    restore(userId: string, organizationId?: string): ProductTourCheckpoint | undefined {
-        if (this.current) {
-            return this.current;
-        }
-
-        const stored = readProductTourSession();
-        if (!stored) {
-            return undefined;
-        }
-
-        if (stored.userId !== userId || stored.organizationId !== organizationId) {
-            clearProductTourSession();
-            return undefined;
-        }
-
-        this.current = stored;
-        return stored;
     }
 
     start<Name extends ProductTourName>(
         tourName: Name,
         checkpointName: ProductTourCheckpointName<Name>,
-        source: ProductTourLaunchSource,
         userId: string,
         organizationId?: string
     ): ProductTourCheckpoint<Name> {
         const checkpoint = {
             checkpointName,
             organizationId,
-            source,
             tourName,
             userId
         } as ProductTourCheckpoint<Name>;
-        this.generation += 1;
-        return this.save(checkpoint);
-    }
-
-    private save<Name extends ProductTourCheckpoint['tourName']>(checkpoint: ProductTourCheckpoint<Name>): ProductTourCheckpoint<Name> {
         this.current = checkpoint;
-        writeProductTourSession(checkpoint);
         return checkpoint;
     }
 }

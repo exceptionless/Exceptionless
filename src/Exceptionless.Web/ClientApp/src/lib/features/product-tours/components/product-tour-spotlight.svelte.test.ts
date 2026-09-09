@@ -7,7 +7,7 @@ import type { ProductTourCheckpoint } from '../models';
 import ProductTourSpotlight from './product-tour-spotlight.svelte';
 vi.mock('../activity', () => ({ submitProductTourActivity: vi.fn() }));
 
-const checkpoint: ProductTourCheckpoint = { checkpointName: 'command-search', source: 'catalog', tourName: 'app-overview', userId: 'user' };
+const checkpoint: ProductTourCheckpoint = { checkpointName: 'command-search', tourName: 'app-overview', userId: 'user' };
 
 describe('ProductTourSpotlight', () => {
     let target: HTMLButtonElement;

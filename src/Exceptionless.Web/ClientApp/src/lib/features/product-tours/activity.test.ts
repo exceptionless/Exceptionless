@@ -17,14 +17,6 @@ describe('product-tour activity', () => {
         expect(submitFeatureUsage).toHaveBeenCalledExactlyOnceWith(`product-tour.${action}.app-overview`);
     });
 
-    it('does not propagate telemetry failures into guide navigation', async () => {
-        // Arrange
-        submitFeatureUsage.mockRejectedValue(new Error('Unavailable'));
-
-        // Act & Assert
-        await expect(submitProductTourActivity('completed', 'app-overview')).resolves.toBeUndefined();
-    });
-
     it.each(['', 'synthetic-local-test-key'])('honors the existing SDK configuration (key: %s)', async (apiKey) => {
         // Arrange
         const client = new ExceptionlessClient();
