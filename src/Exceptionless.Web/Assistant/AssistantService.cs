@@ -223,12 +223,12 @@ public sealed class AssistantService(
                 throw;
             }
 
-            providerDiagnostics?.Complete(assistantContent.Length, toolCalls.Count, receivedDone);
             if (diagnostics is not null)
                 diagnostics.Stage = "response_validation";
 
             if (s_rawDsmlPattern.IsMatch(assistantContent.ToString()))
             {
+                providerDiagnostics?.Reject("malformed_response", assistantContent.Length, toolCalls.Count, receivedDone);
                 if (malformedResponseRetries < AssistantLimits.MaximumMalformedResponseRetries)
                 {
                     malformedResponseRetries++;
@@ -259,6 +259,11 @@ public sealed class AssistantService(
                 messages.Remove(malformedResponseCorrection);
                 malformedResponseCorrection = null;
             }
+
+            if (!allowTools && toolCalls.Count > 0)
+                providerDiagnostics?.Reject("tool_round_limit", assistantContent.Length, toolCalls.Count, receivedDone);
+            else
+                providerDiagnostics?.Complete(assistantContent.Length, toolCalls.Count, receivedDone);
 
             foreach (string text in assistantContentChunks)
             {

@@ -289,8 +289,8 @@
   },
   {
     "method": "PUT",
-    "route": "/api/v2/admin/assistant-settings/enabled",
-    "displayName": "HTTP: PUT api/v2/admin/assistant-settings/enabled",
+    "route": "/api/v2/admin/assistant-settings/conversation-sharing",
+    "displayName": "HTTP: PUT api/v2/admin/assistant-settings/conversation-sharing",
     "tags": [
       "AdminEndpoints"
     ],
@@ -303,8 +303,8 @@
   },
   {
     "method": "PUT",
-    "route": "/api/v2/admin/assistant-settings/full-logging",
-    "displayName": "HTTP: PUT api/v2/admin/assistant-settings/full-logging",
+    "route": "/api/v2/admin/assistant-settings/enabled",
+    "displayName": "HTTP: PUT api/v2/admin/assistant-settings/enabled",
     "tags": [
       "AdminEndpoints"
     ],
@@ -631,6 +631,30 @@
     "method": "POST",
     "route": "/api/v2/assistant/chat",
     "displayName": "HTTP: POST api/v2/assistant/chat =\u003E StreamChatAsync",
+    "tags": [],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
+    "route": "/api/v2/assistant/conversation-sharing",
+    "displayName": "HTTP: GET api/v2/assistant/conversation-sharing =\u003E GetConversationSharingAsync",
+    "tags": [],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "PUT",
+    "route": "/api/v2/assistant/conversation-sharing",
+    "displayName": "HTTP: PUT api/v2/assistant/conversation-sharing =\u003E SetConversationSharingAsync",
     "tags": [],
     "allowAnonymous": false,
     "authorizationPolicies": [

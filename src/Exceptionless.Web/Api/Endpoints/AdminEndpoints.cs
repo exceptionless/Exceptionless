@@ -60,11 +60,11 @@ public static class AdminEndpoints
             .WithTags(nameof(AdminEndpoints))
             .WithSummary("Update Exie assistant availability");
 
-        endpoints.MapPut("api/v2/admin/assistant-settings/full-logging", async (HttpContext httpContext, [FromBody] UpdateAssistantFullLoggingSettings request, AssistantModelSettingsService settingsService)
-            => HttpResults.Ok(await settingsService.SetFullLoggingEnabledAsync(request.Enabled, httpContext.Request.GetUser().Id)))
+        endpoints.MapPut("api/v2/admin/assistant-settings/conversation-sharing", async (HttpContext httpContext, [FromBody] UpdateAssistantConversationSharingSettings request, AssistantModelSettingsService settingsService)
+            => HttpResults.Ok(await settingsService.SetConversationSharingDefaultEnabledAsync(request.Enabled, httpContext.Request.GetUser().Id)))
             .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
             .AddEndpointFilter<AutoValidationEndpointFilter>()
-            .Accepts<UpdateAssistantFullLoggingSettings>("application/json", "application/*+json")
+            .Accepts<UpdateAssistantConversationSharingSettings>("application/json", "application/*+json")
             .Produces<AssistantModelSettings>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status403Forbidden)

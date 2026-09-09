@@ -58,8 +58,8 @@ Authorization: Bearer {{token}}
 GET {{apiUrl}}/admin/assistant-settings
 Authorization: Bearer {{token}}
 
-### Enable Full Exie Conversation Logging
-PUT {{apiUrl}}/admin/assistant-settings/full-logging
+### Enable Exie Conversation Sharing by Default (Saved User Choices Take Precedence)
+PUT {{apiUrl}}/admin/assistant-settings/conversation-sharing
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
@@ -67,8 +67,8 @@ Content-Type: application/json
     "enabled": true
 }
 
-### Disable Full Exie Conversation Logging (Usage and Error Diagnostics Continue)
-PUT {{apiUrl}}/admin/assistant-settings/full-logging
+### Disable Exie Conversation Sharing by Default (Usage and Error Diagnostics Continue)
+PUT {{apiUrl}}/admin/assistant-settings/conversation-sharing
 Authorization: Bearer {{token}}
 Content-Type: application/json
 

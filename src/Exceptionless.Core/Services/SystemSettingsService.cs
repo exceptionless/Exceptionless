@@ -93,9 +93,9 @@ public sealed class SystemSettingsService
         return settings?.EventSubmissionEnabled ?? !_appOptions.EventSubmissionDisabled;
     }
 
-    public async Task<bool> IsAssistantFullLoggingEnabledAsync()
+    public async Task<bool> IsAssistantConversationSharingDefaultEnabledAsync()
     {
         var settings = await _getSettingsAsync();
-        return settings?.AssistantFullLoggingEnabled ?? false;
+        return settings?.AssistantConversationSharingDefaultEnabled ?? false;
     }
 }

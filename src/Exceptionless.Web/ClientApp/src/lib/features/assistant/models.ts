@@ -1,3 +1,5 @@
+export type { AssistantConversationSharingSettings } from '$generated/api';
+
 export interface AssistantAccess {
     enabled: boolean;
     has_access: boolean;

@@ -43,6 +43,10 @@ export class AssistantTurnTelemetry {
         trackAssistantEvent('assistant.MessageSent', context, this.promptDetails);
     }
 
+    disableFullLogging(): void {
+        this.responseContent = undefined;
+    }
+
     enableFullLogging(prompt: string): void {
         if (this.finished || this.responseContent !== undefined) {
             return;

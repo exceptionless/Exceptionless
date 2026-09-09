@@ -24,7 +24,7 @@ public sealed class SystemSettingsIndex : VersionedIndex<SystemSettings>
                 .SetupDefaults()
                 .Keyword(settings => settings.AssistantModel)
                 .Boolean(settings => settings.AssistantEnabled)
-                .Boolean(settings => settings.AssistantFullLoggingEnabled)
+                .Boolean(settings => settings.AssistantConversationSharingDefaultEnabled)
                 .Boolean(settings => settings.EventSubmissionEnabled)
                 .Object(settings => settings.SystemNotification, notification => notification.Properties(properties => properties
                     .Date("date")

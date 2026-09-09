@@ -87,6 +87,8 @@ internal sealed class AssistantProviderDiagnostics(
         Finish(outcome);
     }
 
+    public void Reject(string reason, int outputCharacters, int toolCalls, bool receivedDone) => Finish(reason, outputCharacters, toolCalls, receivedDone);
+
     private void Finish(string outcome, int? outputCharacters = null, int? toolCalls = null, bool receivedDone = false)
     {
         if (_finished)

@@ -10,10 +10,20 @@ namespace Exceptionless.Tests.Assistant;
 
 public sealed class AssistantModelSettingsServiceTests
 {
+    [Fact]
+    public void LegacyUser_FollowsConversationSharingDefault()
+    {
+        var user = JsonSerializer.Deserialize<User>("{}");
+        Assert.NotNull(user);
+        Assert.Null(user.AssistantConversationSharingEnabled);
+        Assert.False(AssistantConversationSharingService.Resolve(user.AssistantConversationSharingEnabled, false).Enabled);
+        Assert.True(AssistantConversationSharingService.Resolve(user.AssistantConversationSharingEnabled, true).Enabled);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task SetFullLoggingEnabledAsync_NewAndLegacySettings_DefaultOffAndPreserveOtherSettings(bool hasLegacyRecord)
+    public async Task SetConversationSharingDefaultEnabledAsync_NewAndLegacySettings_DefaultOffAndPreserveOtherSettings(bool hasLegacyRecord)
     {
         var options = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?> { ["BaseURL"] = "https://localhost" }).Build());
@@ -25,17 +35,17 @@ public sealed class AssistantModelSettingsServiceTests
         }, options, TimeProvider.System);
         var service = new AssistantModelSettingsService(systemSettings, options);
 
-        Assert.False((await service.GetAsync()).FullLoggingEnabled);
-        Assert.False(await systemSettings.IsAssistantFullLoggingEnabledAsync());
+        Assert.False((await service.GetAsync()).ConversationSharingDefaultEnabled);
+        Assert.False(await systemSettings.IsAssistantConversationSharingDefaultEnabledAsync());
 
-        Assert.True((await service.SetFullLoggingEnabledAsync(true, "admin-user")).FullLoggingEnabled);
-        Assert.True(await systemSettings.IsAssistantFullLoggingEnabledAsync());
+        Assert.True((await service.SetConversationSharingDefaultEnabledAsync(true, "admin-user")).ConversationSharingDefaultEnabled);
+        Assert.True(await systemSettings.IsAssistantConversationSharingDefaultEnabledAsync());
         await service.SetModelAsync("example/model", "admin-user");
         await service.SetEnabledAsync(true, "admin-user");
-        Assert.True((await service.GetAsync()).FullLoggingEnabled);
+        Assert.True((await service.GetAsync()).ConversationSharingDefaultEnabled);
 
-        Assert.False((await service.SetFullLoggingEnabledAsync(false, "admin-user")).FullLoggingEnabled);
-        Assert.False(await systemSettings.IsAssistantFullLoggingEnabledAsync());
+        Assert.False((await service.SetConversationSharingDefaultEnabledAsync(false, "admin-user")).ConversationSharingDefaultEnabled);
+        Assert.False(await systemSettings.IsAssistantConversationSharingDefaultEnabledAsync());
         Assert.NotNull(persisted);
         Assert.Equal("example/model", persisted.AssistantModel);
         Assert.True(persisted.AssistantEnabled);

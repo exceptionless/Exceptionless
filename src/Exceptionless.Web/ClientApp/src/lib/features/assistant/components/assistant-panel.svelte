@@ -14,7 +14,14 @@
     import Minimize2 from '@lucide/svelte/icons/minimize-2';
     import { onDestroy, tick, untrack } from 'svelte';
 
-    import type { AssistantAccessState, AssistantChatMessage, AssistantFeedback, AssistantPromptRequest, AssistantSuggestedAction } from '../models';
+    import type {
+        AssistantAccessState,
+        AssistantChatMessage,
+        AssistantConversationSharingSettings,
+        AssistantFeedback,
+        AssistantPromptRequest,
+        AssistantSuggestedAction
+    } from '../models';
 
     import { createAssistantChatRequest } from '../assistant-request';
     import { type AssistantStreamEvent, readAssistantStream } from '../assistant-stream';
@@ -28,6 +35,7 @@
     } from '../assistant-telemetry';
     import { assistantToolResultFailed } from '../assistant-tool-result';
     import AssistantComposer from './assistant-composer.svelte';
+    import AssistantConversationSharing from './assistant-conversation-sharing.svelte';
     import AssistantMessage from './assistant-message.svelte';
     import AssistantUpgradeRequired from './assistant-upgrade-required.svelte';
 
@@ -35,11 +43,13 @@
         accessMessage?: string;
         accessState?: AssistantAccessState;
         collapseHref?: string;
+        conversationSharing?: AssistantConversationSharingSettings;
         expandHref?: string;
         minimumPlanId?: string;
         mode?: 'page' | 'sheet';
         onAccessChanged?: () => Promise<void> | void;
         onCollapse?: () => void;
+        onConversationSharingChange?: (enabled: boolean | null) => Promise<AssistantConversationSharingSettings>;
         onRetryAccess?: () => Promise<void> | void;
         open?: boolean;
         organizationId?: string;
@@ -52,11 +62,13 @@
         accessMessage,
         accessState = 'available',
         collapseHref,
+        conversationSharing,
         expandHref,
         minimumPlanId,
         mode = 'sheet',
         onAccessChanged,
         onCollapse,
+        onConversationSharingChange,
         onRetryAccess,
         open = $bindable(false),
         organizationId,
@@ -72,6 +84,12 @@
     let isStreaming = $state(false);
     let isNearBottom = $state(true);
     let showToolCalls = $state(false);
+    let sharingSettings = $state<AssistantConversationSharingSettings>();
+    let sharingSuppressed = $state(false);
+    let sharingError = $state<string>();
+    let isSavingSharing = $state(false);
+    let requestedSharing = $state<boolean | null>(null);
+    const isSharingEnabled = $derived(sharingSettings?.enabled === true && !sharingSuppressed);
     let showScrollToBottom = $state(false);
     let conversationElement = $state<HTMLDivElement>();
     let abortController: AbortController | undefined;
@@ -87,6 +105,35 @@
         'Which open stacks occurred most recently?',
         'Explain what I can investigate on this page.'
     ];
+    $effect(() => {
+        sharingSettings = conversationSharing;
+        if (conversationSharing?.enabled !== true) {
+            activeTurn?.disableFullLogging();
+        }
+    });
+
+    async function changeConversationSharing(enabled: boolean | null) {
+        if (!onConversationSharingChange || isSavingSharing) {
+            return;
+        }
+        sharingError = undefined;
+        requestedSharing = enabled;
+        isSavingSharing = true;
+        if (enabled !== true) {
+            sharingSuppressed = true;
+            activeTurn?.disableFullLogging();
+        }
+        try {
+            sharingSettings = await onConversationSharingChange(enabled);
+            sharingSuppressed = !sharingSettings.enabled;
+        } catch {
+            sharingError = sharingSuppressed
+                ? 'Could not save your choice. Sharing is paused on this page. Try again to save it for all devices.'
+                : 'Could not save your sharing choice. Please try again.';
+        } finally {
+            isSavingSharing = false;
+        }
+    }
     $effect(() => {
         if (open && conversationElement) {
             void scrollToLatest('auto', true);
@@ -303,7 +350,7 @@
                 throw new Error('The assistant returned an empty response.');
             }
 
-            if (response.headers.get('X-Exie-Full-Logging') === 'true') {
+            if (isSharingEnabled && response.headers.get('X-Exie-Full-Logging') === 'true') {
                 telemetry.enableFullLogging(userMessage.content);
             }
 
@@ -637,6 +684,14 @@
                     {showToolCalls}
                 />
                 <Muted class="text-center text-xs">AI can make mistakes. Check important changes.</Muted>
+                <AssistantConversationSharing
+                    checked={isSharingEnabled}
+                    error={sharingError}
+                    isSaving={isSavingSharing}
+                    onChange={changeConversationSharing}
+                    onRetry={() => changeConversationSharing(requestedSharing)}
+                    settings={onConversationSharingChange ? sharingSettings : undefined}
+                />
             </div>
         </div>
     {/if}

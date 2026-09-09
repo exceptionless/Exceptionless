@@ -1339,11 +1339,14 @@ public sealed class AssistantServiceTests
             .Build());
         var service = CreateAssistantService(handler, appOptions);
         var events = new List<AssistantStreamEvent>();
+        var logger = new RecordingAssistantLogger();
+        using var diagnostics = new AssistantTurnDiagnostics(logger, TimeProvider.System, "organization-id", "conversation-id", "request-id");
 
         await foreach (var item in service.StreamAsync(
             new AssistantChatRequest([new AssistantChatMessage("user", "Find recent errors")]),
             "user-id",
             CreatePlanOptions(),
+            diagnostics,
             TestContext.Current.CancellationToken))
         {
             events.Add(item);
@@ -1358,10 +1361,15 @@ public sealed class AssistantServiceTests
             },
             item => Assert.Equal("done", item.Type));
         Assert.DoesNotContain(events, item => item.Type == "text_delta");
+        var providerEntries = logger.Entries.Where(entry => entry.Properties.ContainsKey("ProviderOutcome")).ToArray();
+        Assert.Equal(2, providerEntries.Length);
+        Assert.All(providerEntries, entry => Assert.Equal("malformed_response", entry.Properties["ProviderOutcome"]));
     }
 
-    [Fact]
-    public async Task StreamAsync_ToolBudgetExhausted_RequestsFinalSynthesisWithoutTools()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StreamAsync_ToolBudgetExhausted_RequestsFinalSynthesisWithoutTools(bool providerIgnoresToolLimit)
     {
         const string toolCallResponse = """
             data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call-1","function":{"name":"unknown_tool","arguments":"{}"}}]}}]}
@@ -1373,7 +1381,7 @@ public sealed class AssistantServiceTests
             toolCallResponse,
             toolCallResponse.Replace("call-1", "call-2"),
             toolCallResponse.Replace("call-1", "call-3"),
-            """
+            providerIgnoresToolLimit ? toolCallResponse.Replace("call-1", "call-4") : """
             data: {"choices":[{"delta":{"content":"Here is the available result."}}]}
 
             data: [DONE]
@@ -1388,6 +1396,8 @@ public sealed class AssistantServiceTests
             .Build());
         var service = CreateAssistantService(handler, appOptions);
         var events = new List<AssistantStreamEvent>();
+        var logger = new RecordingAssistantLogger();
+        using var diagnostics = new AssistantTurnDiagnostics(logger, TimeProvider.System, "organization-id", "conversation-id", "request-id");
 
         await foreach (var item in service.StreamAsync(
             new AssistantChatRequest(
@@ -1395,6 +1405,7 @@ public sealed class AssistantServiceTests
                 OrganizationId: "organization-id"),
             "user-id",
             CreatePlanOptions(),
+            diagnostics,
             TestContext.Current.CancellationToken))
         {
             events.Add(item);
@@ -1404,9 +1415,19 @@ public sealed class AssistantServiceTests
         Assert.All(handler.RequestBodies.Take(3), body => Assert.Contains("\"tools\":", body));
         Assert.DoesNotContain("\"tools\":", handler.RequestBodies[3]);
         Assert.Contains("The tool budget is exhausted", handler.RequestBodies[3]);
-        Assert.Contains(events, item => item.Text == "Here is the available result.");
         Assert.Equal("done", events[^1].Type);
-        Assert.DoesNotContain(events, item => item.Type == "error");
+        var finalProviderEntry = logger.Entries.Last(entry => entry.Properties.ContainsKey("ProviderOutcome"));
+        if (providerIgnoresToolLimit)
+        {
+            Assert.Equal("tool_round_limit", Assert.Single(events, item => item.Type == "error").FailureCode);
+            Assert.Equal("tool_round_limit", finalProviderEntry.Properties["ProviderOutcome"]);
+        }
+        else
+        {
+            Assert.Contains(events, item => item.Text == "Here is the available result.");
+            Assert.DoesNotContain(events, item => item.Type == "error");
+            Assert.Equal("completed", finalProviderEntry.Properties["ProviderOutcome"]);
+        }
     }
 
     [Fact]

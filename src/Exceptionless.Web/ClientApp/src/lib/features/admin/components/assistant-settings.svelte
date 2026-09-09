@@ -9,8 +9,8 @@
     import { Switch } from '$comp/ui/switch';
     import {
         getAdminAssistantSettingsQuery,
+        putAdminAssistantConversationSharingSettingsMutation,
         putAdminAssistantEnabledSettingsMutation,
-        putAdminAssistantFullLoggingSettingsMutation,
         putAdminAssistantSettingsMutation
     } from '$features/admin/api.svelte';
     import { type AssistantSettingsFormData, AssistantSettingsSchema } from '$features/admin/schemas';
@@ -21,12 +21,12 @@
 
     const settingsQuery = getAdminAssistantSettingsQuery();
     const updateEnabledSettings = putAdminAssistantEnabledSettingsMutation();
-    const updateFullLoggingSettings = putAdminAssistantFullLoggingSettingsMutation();
+    const updateConversationSharingSettings = putAdminAssistantConversationSharingSettingsMutation();
     const updateSettings = putAdminAssistantSettingsMutation();
     let assistantEnabled = $state(false);
-    let fullLoggingEnabled = $state(false);
+    let conversationSharingDefaultEnabled = $state(false);
     let loadedAvailabilityKey = $state<null | string>(null);
-    let loadedFullLoggingEnabled = $state<boolean>();
+    let loadedConversationSharingDefaultEnabled = $state<boolean>();
     let loadedSettingsKey = $state<null | string>(null);
     const settings = $derived(settingsQuery.data);
     const availabilityKey = $derived(
@@ -71,12 +71,12 @@
     });
 
     $effect(() => {
-        if (!settings || loadedFullLoggingEnabled === settings.full_logging_enabled) {
+        if (!settings || loadedConversationSharingDefaultEnabled === settings.conversation_sharing_default_enabled) {
             return;
         }
 
-        loadedFullLoggingEnabled = settings.full_logging_enabled;
-        fullLoggingEnabled = settings.full_logging_enabled;
+        loadedConversationSharingDefaultEnabled = settings.conversation_sharing_default_enabled;
+        conversationSharingDefaultEnabled = settings.conversation_sharing_default_enabled;
     });
 
     $effect(() => {
@@ -124,15 +124,17 @@
         }
     }
 
-    async function saveFullLogging() {
+    async function saveConversationSharingDefault() {
         try {
-            const saved = await updateFullLoggingSettings.mutateAsync({
-                enabled: fullLoggingEnabled
+            const saved = await updateConversationSharingSettings.mutateAsync({
+                enabled: conversationSharingDefaultEnabled
             });
-            fullLoggingEnabled = saved.full_logging_enabled;
-            toast.success(saved.full_logging_enabled ? 'Exie full logging is enabled.' : 'Exie full logging is disabled.');
+            conversationSharingDefaultEnabled = saved.conversation_sharing_default_enabled;
+            toast.success(
+                saved.conversation_sharing_default_enabled ? 'Exie conversation sharing default is enabled.' : 'Exie conversation sharing default is disabled.'
+            );
         } catch {
-            toast.error('Failed to update Exie full logging.');
+            toast.error('Failed to update Exie conversation sharing default.');
         }
     }
 </script>
@@ -190,22 +192,26 @@
 
     <Field.Field orientation="responsive" class="gap-4 p-4">
         <Field.Content>
-            <Field.Label for="assistant-full-logging">Full logging</Field.Label>
+            <Field.Label for="assistant-conversation-sharing-default">Conversation sharing default</Field.Label>
             <Field.Description>
-                Record submitted prompts and responses in session events for all organizations. Usage and error diagnostics remain available when off. Changes
-                apply to new turns.
+                Choose whether users share Exie messages and replies by default to help improve the feature. Users can change this in Exie; their saved choice
+                always takes precedence. Usage and error diagnostics remain available either way.
             </Field.Description>
         </Field.Content>
         <div class="flex flex-wrap items-center justify-end gap-2">
-            <Switch id="assistant-full-logging" bind:checked={fullLoggingEnabled} disabled={updateFullLoggingSettings.isPending} />
+            <Switch
+                id="assistant-conversation-sharing-default"
+                bind:checked={conversationSharingDefaultEnabled}
+                disabled={updateConversationSharingSettings.isPending}
+            />
             <Button
                 type="button"
                 size="sm"
-                aria-label="Save Exie full logging"
-                disabled={updateFullLoggingSettings.isPending || fullLoggingEnabled === settings?.full_logging_enabled}
-                onclick={saveFullLogging}
+                aria-label="Save Exie conversation sharing default"
+                disabled={updateConversationSharingSettings.isPending || conversationSharingDefaultEnabled === settings?.conversation_sharing_default_enabled}
+                onclick={saveConversationSharingDefault}
             >
-                {updateFullLoggingSettings.isPending ? 'Saving...' : 'Save'}
+                {updateConversationSharingSettings.isPending ? 'Saving...' : 'Save'}
             </Button>
         </div>
     </Field.Field>

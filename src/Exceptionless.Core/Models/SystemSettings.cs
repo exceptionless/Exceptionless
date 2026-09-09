@@ -17,7 +17,7 @@ public sealed class SystemSettings : IIdentity, IHaveDates
 
     public bool? AssistantEnabled { get; set; }
 
-    public bool AssistantFullLoggingEnabled { get; set; }
+    public bool AssistantConversationSharingDefaultEnabled { get; set; }
 
     public bool? EventSubmissionEnabled { get; set; }
 

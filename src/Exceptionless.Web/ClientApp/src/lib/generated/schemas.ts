@@ -123,6 +123,15 @@ export type AssistantChatRequestFormData = Infer<
   typeof AssistantChatRequestSchema
 >;
 
+export const AssistantConversationSharingSettingsSchema = object({
+  enabled: boolean(),
+  default_enabled: boolean(),
+  is_overridden: boolean(),
+});
+export type AssistantConversationSharingSettingsFormData = Infer<
+  typeof AssistantConversationSharingSettingsSchema
+>;
+
 export const AssistantModelSettingsSchema = object({
   model: string().min(1, "Model is required"),
   configured_model: string().min(1, "Configured model is required"),
@@ -131,7 +140,7 @@ export const AssistantModelSettingsSchema = object({
   configured_enabled: boolean(),
   is_enabled_overridden: boolean(),
   is_configured: boolean(),
-  full_logging_enabled: boolean(),
+  conversation_sharing_default_enabled: boolean(),
 });
 export type AssistantModelSettingsFormData = Infer<
   typeof AssistantModelSettingsSchema
@@ -731,18 +740,25 @@ export const TokenResultSchema = object({
 });
 export type TokenResultFormData = Infer<typeof TokenResultSchema>;
 
+export const UpdateAssistantConversationSharingSchema = object({
+  enabled: boolean().nullable(),
+});
+export type UpdateAssistantConversationSharingFormData = Infer<
+  typeof UpdateAssistantConversationSharingSchema
+>;
+
+export const UpdateAssistantConversationSharingSettingsSchema = object({
+  enabled: boolean(),
+});
+export type UpdateAssistantConversationSharingSettingsFormData = Infer<
+  typeof UpdateAssistantConversationSharingSettingsSchema
+>;
+
 export const UpdateAssistantEnabledSettingsSchema = object({
   enabled: boolean().nullable().optional(),
 });
 export type UpdateAssistantEnabledSettingsFormData = Infer<
   typeof UpdateAssistantEnabledSettingsSchema
->;
-
-export const UpdateAssistantFullLoggingSettingsSchema = object({
-  enabled: boolean(),
-});
-export type UpdateAssistantFullLoggingSettingsFormData = Infer<
-  typeof UpdateAssistantFullLoggingSettingsSchema
 >;
 
 export const UpdateAssistantSettingsSchema = object({
@@ -878,6 +894,7 @@ export const UserSchema = object({
     .nullable()
     .optional(),
   email_notifications_enabled: boolean(),
+  assistant_conversation_sharing_enabled: boolean().nullable().optional(),
   is_email_address_verified: boolean(),
   verify_email_address_token: string()
     .min(1, "Verify email address token is required")

@@ -43,9 +43,9 @@ public sealed class AssistantModelSettingsService
         return CreateResponse(settings);
     }
 
-    public async Task<AssistantModelSettings> SetFullLoggingEnabledAsync(bool enabled, string userId)
+    public async Task<AssistantModelSettings> SetConversationSharingDefaultEnabledAsync(bool enabled, string userId)
     {
-        var settings = await _systemSettingsService.UpdateAsync(userId, value => value.AssistantFullLoggingEnabled = enabled);
+        var settings = await _systemSettingsService.UpdateAsync(userId, value => value.AssistantConversationSharingDefaultEnabled = enabled);
         return CreateResponse(settings);
     }
 
@@ -65,7 +65,7 @@ public sealed class AssistantModelSettingsService
             configuredEnabled,
             enabledOverride.HasValue,
             _appOptions.AssistantOptions.IsConfigured,
-            settings?.AssistantFullLoggingEnabled ?? false);
+            settings?.AssistantConversationSharingDefaultEnabled ?? false);
     }
 }
 
@@ -77,4 +77,4 @@ public sealed record AssistantModelSettings(
     bool ConfiguredEnabled,
     bool IsEnabledOverridden,
     bool IsConfigured,
-    bool FullLoggingEnabled = false);
+    bool ConversationSharingDefaultEnabled = false);

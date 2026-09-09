@@ -99,7 +99,13 @@ describe('AssistantPanel', () => {
         expect(failed.error_message).toBe('Provider timed out');
     });
 
-    it.each([undefined, 'false', 'true'])('records full chat text only when the current response enables it (%s)', async (flag) => {
+    it.each([
+        [undefined, true],
+        ['false', true],
+        ['true', true],
+        ['true', false],
+        ['true', undefined]
+    ] as const)('requires both server permission (%s) and the visible sharing choice (%s)', async (flag, enabled) => {
         vi.stubGlobal(
             'fetch',
             vi.fn(
@@ -110,10 +116,15 @@ describe('AssistantPanel', () => {
             )
         );
         render(AssistantPanel, {
-            props: { open: true, organizationId: 'organization-1', promptRequest: { id: 'request-1', prompt: 'Full question' } }
+            props: {
+                conversationSharing: enabled === undefined ? undefined : { default_enabled: true, enabled, is_overridden: !enabled },
+                open: true,
+                organizationId: 'organization-1',
+                promptRequest: { id: 'request-1', prompt: 'Full question' }
+            }
         });
         await waitFor(() => expect(eventData('assistant.ResponseCompleted').outcome).toBe('completed'));
-        if (flag === 'true') {
+        if (flag === 'true' && enabled) {
             expect(submitLog).toHaveBeenCalledWith('assistant.Prompt', 'Full question', expect.anything());
             expect(submitLog).toHaveBeenCalledWith('assistant.Response', 'Full answer', expect.anything());
             expect(submitLog).toHaveBeenCalledTimes(2);
@@ -133,7 +144,12 @@ describe('AssistantPanel', () => {
             );
         vi.stubGlobal('fetch', fetchMock);
         render(AssistantPanel, {
-            props: { open: true, organizationId: 'organization-1', promptRequest: { id: 'request-1', prompt: 'First question' } }
+            props: {
+                conversationSharing: { default_enabled: true, enabled: true, is_overridden: false },
+                open: true,
+                organizationId: 'organization-1',
+                promptRequest: { id: 'request-1', prompt: 'First question' }
+            }
         });
         await screen.findByText('First answer');
         const composer = screen.getByRole('textbox', { name: 'Message Exie' });
@@ -143,6 +159,76 @@ describe('AssistantPanel', () => {
         await waitFor(() => expect(eventData('assistant.ResponseCompleted', 1).outcome).toBe('completed'));
         expect(submitLog).toHaveBeenCalledTimes(2);
         expect(JSON.stringify(submitLog.mock.calls)).not.toContain('Second');
+    });
+
+    it('shows the inherited default and saves an explicit choice or a reset', async () => {
+        const save = vi
+            .fn()
+            .mockResolvedValueOnce({ default_enabled: false, enabled: true, is_overridden: true })
+            .mockResolvedValueOnce({ default_enabled: false, enabled: false, is_overridden: false });
+        render(AssistantPanel, {
+            props: {
+                conversationSharing: { default_enabled: false, enabled: false, is_overridden: false },
+                onConversationSharingChange: save,
+                open: true,
+                organizationId: 'organization-1'
+            }
+        });
+        expect(screen.getByText(/Default: off/)).toBeTruthy();
+        await fireEvent.click(screen.getByRole('switch', { name: 'Share conversations to improve Exie' }));
+        await waitFor(() => expect(save).toHaveBeenCalledWith(true));
+        await fireEvent.click(await screen.findByRole('button', { name: 'Use default (off)' }));
+        await waitFor(() => expect(save).toHaveBeenLastCalledWith(null));
+        await waitFor(() => expect(screen.getByRole('switch', { name: 'Share conversations to improve Exie' }).getAttribute('aria-checked')).toBe('false'));
+    });
+
+    it.each([false, true])('stops collecting the active reply and subsequent prompts when opting out (save fails: %s)', async (saveFails) => {
+        let controller!: ReadableStreamDefaultController<Uint8Array>;
+        const stream = new ReadableStream<Uint8Array>({
+            start(value) {
+                controller = value;
+            }
+        });
+        vi.stubGlobal(
+            'fetch',
+            vi
+                .fn()
+                .mockResolvedValueOnce(new Response(stream, { headers: { 'X-Exie-Full-Logging': 'true' } }))
+                .mockResolvedValueOnce(
+                    new Response('{"type":"text_delta","text":"Later answer"}\n{"type":"done"}\n', { headers: { 'X-Exie-Full-Logging': 'true' } })
+                )
+        );
+        const saved = { default_enabled: true, enabled: false, is_overridden: true };
+        const save = saveFails ? vi.fn().mockRejectedValueOnce(new Error('Offline')).mockResolvedValue(saved) : vi.fn().mockResolvedValue(saved);
+        render(AssistantPanel, {
+            props: {
+                conversationSharing: { default_enabled: true, enabled: true, is_overridden: false },
+                onConversationSharingChange: save,
+                open: true,
+                organizationId: 'organization-1',
+                promptRequest: { id: 'sharing-request', prompt: 'Initial question' }
+            }
+        });
+        await waitFor(() => expect(submitLog).toHaveBeenCalledWith('assistant.Prompt', 'Initial question', expect.anything()));
+        controller.enqueue(new TextEncoder().encode('{"type":"text_delta","text":"Active reply"}\n'));
+        await screen.findByText('Active reply');
+        await fireEvent.click(screen.getByRole('switch', { name: 'Share conversations to improve Exie' }));
+        await waitFor(() => expect(save).toHaveBeenCalledWith(false));
+        if (saveFails) await screen.findByText(/Sharing is paused on this page/);
+        controller.enqueue(new TextEncoder().encode('{"type":"done"}\n'));
+        controller.close();
+        await waitFor(() => expect(eventData('assistant.ResponseCompleted').outcome).toBe('completed'));
+        await fireEvent.input(screen.getByRole('textbox', { name: 'Message Exie' }), { target: { value: 'Later question' } });
+        await fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
+        await waitFor(() => expect(eventData('assistant.ResponseCompleted', 1).outcome).toBe('completed'));
+        expect(submitLog).toHaveBeenCalledTimes(1);
+        expect(JSON.stringify(submitLog.mock.calls)).not.toContain('Active reply');
+        expect(JSON.stringify(submitLog.mock.calls)).not.toContain('Later');
+        if (saveFails) {
+            await fireEvent.click(screen.getByRole('button', { name: 'Retry saving' }));
+            await waitFor(() => expect(save).toHaveBeenCalledTimes(2));
+            expect(save).toHaveBeenLastCalledWith(false);
+        }
     });
 
     it('records closing while waiting without cancelling a response that finishes in the background', async () => {

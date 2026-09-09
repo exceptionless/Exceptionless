@@ -9,7 +9,12 @@
     import { useSidebar } from '$comp/ui/sidebar';
     import { env } from '$env/dynamic/public';
     import { resolveAssistantAccessState } from '$features/assistant/access-state';
-    import { getAssistantAccessQuery, invalidateAssistantAccessQueries } from '$features/assistant/api.svelte';
+    import {
+        getAssistantAccessQuery,
+        getAssistantConversationSharingQuery,
+        invalidateAssistantAccessQueries,
+        putAssistantConversationSharingMutation
+    } from '$features/assistant/api.svelte';
     import { setAssistantControls } from '$features/assistant/controls.svelte';
     import { assistantPageContext, type AssistantResourceContext } from '$features/assistant/page-context.svelte';
     import { getIntercomTokenQuery } from '$features/auth/api.svelte';
@@ -268,6 +273,12 @@
         )
     );
     let isAssistantEnabled = $derived(assistantAccessState !== 'disabled');
+    const assistantConversationSharingQuery = getAssistantConversationSharingQuery({
+        get enabled() {
+            return assistantAccessState === 'available' && (isAssistantOpen || isAssistantPage);
+        }
+    });
+    const updateAssistantConversationSharing = putAssistantConversationSharingMutation();
 
     setAssistantControls({
         ask: (prompt) => void askAssistant(prompt),
@@ -765,6 +776,11 @@
                         accessMessage={assistantAccess?.message}
                         accessState={assistantAccessState}
                         collapseHref={isAssistantPage ? assistantReturnHref : undefined}
+                        conversationSharing={assistantConversationSharingQuery.data}
+                        onConversationSharingChange={(enabled) =>
+                            updateAssistantConversationSharing.mutateAsync({
+                                enabled
+                            })}
                         expandHref={!isAssistantPage ? assistantExpandHref : undefined}
                         bind:open={isAssistantOpen}
                         minimumPlanId={assistantAccess?.minimum_plan_id}

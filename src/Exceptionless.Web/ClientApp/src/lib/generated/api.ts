@@ -97,6 +97,12 @@ export interface AssistantChatRequest {
   conversation_id?: null | string;
 }
 
+export interface AssistantConversationSharingSettings {
+  enabled: boolean;
+  default_enabled: boolean;
+  is_overridden: boolean;
+}
+
 export interface AssistantModelSettings {
   model: string;
   configured_model: string;
@@ -105,7 +111,7 @@ export interface AssistantModelSettings {
   configured_enabled: boolean;
   is_enabled_overridden: boolean;
   is_configured: boolean;
-  full_logging_enabled: boolean;
+  conversation_sharing_default_enabled: boolean;
 }
 
 export interface BillingPlan {
@@ -626,12 +632,16 @@ export interface TokenResult {
   token: string;
 }
 
-export interface UpdateAssistantEnabledSettings {
+export interface UpdateAssistantConversationSharing {
   enabled?: null | boolean;
 }
 
-export interface UpdateAssistantFullLoggingSettings {
+export interface UpdateAssistantConversationSharingSettings {
   enabled: boolean;
+}
+
+export interface UpdateAssistantEnabledSettings {
+  enabled?: null | boolean;
 }
 
 export interface UpdateAssistantSettings {
@@ -748,6 +758,7 @@ export interface User {
   email_address: string;
   avatar_file_name?: null | string;
   email_notifications_enabled: boolean;
+  assistant_conversation_sharing_enabled?: null | boolean;
   is_email_address_verified: boolean;
   verify_email_address_token?: null | string;
   /** @format date-time */

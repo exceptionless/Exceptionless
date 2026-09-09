@@ -4,7 +4,6 @@ using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Serialization;
-using Exceptionless.Core.Services;
 using Exceptionless.Web.Assistant;
 using Microsoft.AspNetCore.Mvc;
 using HttpResults = Microsoft.AspNetCore.Http.Results;
@@ -18,6 +17,22 @@ public static class AssistantEndpoints
 
     public static IEndpointRouteBuilder MapAssistantEndpoints(this IEndpointRouteBuilder endpoints)
     {
+        endpoints.MapGet("api/v2/assistant/conversation-sharing", GetConversationSharingAsync)
+            .WithName("GetAssistantConversationSharing")
+            .RequireAuthorization(AuthorizationRoles.UserPolicy)
+            .Produces<AssistantConversationSharingSettings>()
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status404NotFound);
+
+        endpoints.MapPut("api/v2/assistant/conversation-sharing", SetConversationSharingAsync)
+            .WithName("SetAssistantConversationSharing")
+            .WithDescription("Saves the current user's choice. Null follows the admin default; true and false remain explicit choices when the default changes.")
+            .RequireAuthorization(AuthorizationRoles.UserPolicy)
+            .Produces<AssistantConversationSharingSettings>()
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status404NotFound);
+
         endpoints.MapGet("api/v2/assistant/access", GetAccessAsync)
             .WithName("GetAssistantAccess")
             .RequireAuthorization(AuthorizationRoles.UserPolicy)
@@ -49,7 +64,7 @@ public static class AssistantEndpoints
         AssistantAccessService assistantAccessService,
         AssistantUsageService assistantUsageService,
         AssistantService assistantService,
-        SystemSettingsService systemSettingsService,
+        AssistantConversationSharingService conversationSharingService,
         TimeProvider timeProvider,
         ILogger<AssistantService> logger)
     {
@@ -100,7 +115,7 @@ public static class AssistantEndpoints
         httpContext.Response.ContentType = "application/x-ndjson";
         httpContext.Response.Headers.CacheControl = "no-store";
         httpContext.Response.Headers.Append("X-Accel-Buffering", "no");
-        bool fullLoggingEnabled = await systemSettingsService.IsAssistantFullLoggingEnabledAsync();
+        bool fullLoggingEnabled = (await conversationSharingService.GetAsync(userId))?.Enabled == true;
 
         using var turnCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(httpContext.RequestAborted);
         turnCancellationSource.CancelAfter(TimeSpan.FromSeconds(AssistantLimits.MaximumTurnDurationSeconds));
@@ -185,6 +200,26 @@ public static class AssistantEndpoints
     {
         var access = await assistantAccessService.GetAccessAsync(httpContext.Request, organizationId);
         return HttpResults.Ok(access.ToResponse());
+    }
+
+    private static async Task<IResult> GetConversationSharingAsync(HttpContext httpContext, AssistantConversationSharingService service)
+    {
+        string? userId = httpContext.User.GetUserId();
+        if (String.IsNullOrWhiteSpace(userId))
+            return HttpResults.Unauthorized();
+
+        var settings = await service.GetAsync(userId);
+        return settings is null ? HttpResults.NotFound() : HttpResults.Ok(settings);
+    }
+
+    private static async Task<IResult> SetConversationSharingAsync(UpdateAssistantConversationSharing request, HttpContext httpContext, AssistantConversationSharingService service)
+    {
+        string? userId = httpContext.User.GetUserId();
+        if (String.IsNullOrWhiteSpace(userId))
+            return HttpResults.Unauthorized();
+
+        var settings = await service.SetAsync(userId, request.Enabled);
+        return settings is null ? HttpResults.NotFound() : HttpResults.Ok(settings);
     }
 
     internal static IResult? MapAccessFailure(AssistantAccessDecision access) => access.Reason switch

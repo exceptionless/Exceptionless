@@ -229,40 +229,40 @@ public class AdminEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task AssistantFullLoggingSettingsAsync_AsGlobalAdmin_PersistsBothStatesWithoutChangingOtherSettings()
+    public async Task AssistantConversationSharingSettingsAsync_AsGlobalAdmin_PersistsBothStatesWithoutChangingOtherSettings()
     {
         var initial = await SendRequestAsAsync<AssistantModelSettingsResponse>(request => request
             .AsGlobalAdminUser().AppendPaths("admin", "assistant-settings").StatusCodeShouldBeOk());
         Assert.NotNull(initial);
-        Assert.False(initial.FullLoggingEnabled);
+        Assert.False(initial.ConversationSharingDefaultEnabled);
 
         foreach (bool enabled in new[] { true, false })
         {
             var updated = await SendRequestAsAsync<AssistantModelSettingsResponse>(request => request
-                .Put().AsGlobalAdminUser().AppendPaths("admin", "assistant-settings", "full-logging")
-                .Content(new UpdateAssistantFullLoggingSettings { Enabled = enabled }).StatusCodeShouldBeOk());
+                .Put().AsGlobalAdminUser().AppendPaths("admin", "assistant-settings", "conversation-sharing")
+                .Content(new UpdateAssistantConversationSharingSettings { Enabled = enabled }).StatusCodeShouldBeOk());
             Assert.NotNull(updated);
-            Assert.Equal(enabled, updated.FullLoggingEnabled);
+            Assert.Equal(enabled, updated.ConversationSharingDefaultEnabled);
 
             await GetService<ICacheClient>().RemoveAllAsync();
             var persisted = await SendRequestAsAsync<AssistantModelSettingsResponse>(request => request
                 .AsGlobalAdminUser().AppendPaths("admin", "assistant-settings").StatusCodeShouldBeOk());
             Assert.NotNull(persisted);
-            Assert.Equal(enabled, persisted.FullLoggingEnabled);
+            Assert.Equal(enabled, persisted.ConversationSharingDefaultEnabled);
             Assert.Equal(initial.Model, persisted.Model);
             Assert.Equal(initial.Enabled, persisted.Enabled);
         }
     }
 
     [Fact]
-    public Task AssistantFullLoggingSettingsAsync_AsOrganizationUser_ReturnsForbidden() => SendRequestAsync(request => request
-        .Put().AsTestOrganizationUser().AppendPaths("admin", "assistant-settings", "full-logging")
-        .Content(new UpdateAssistantFullLoggingSettings { Enabled = true }).StatusCodeShouldBeForbidden());
+    public Task AssistantConversationSharingSettingsAsync_AsOrganizationUser_ReturnsForbidden() => SendRequestAsync(request => request
+        .Put().AsTestOrganizationUser().AppendPaths("admin", "assistant-settings", "conversation-sharing")
+        .Content(new UpdateAssistantConversationSharingSettings { Enabled = true }).StatusCodeShouldBeForbidden());
 
     [Fact]
-    public Task AssistantFullLoggingSettingsAsync_AsAnonymous_ReturnsUnauthorized() => SendRequestAsync(request => request
-        .Put().AsAnonymousUser().AppendPaths("admin", "assistant-settings", "full-logging")
-        .Content(new UpdateAssistantFullLoggingSettings { Enabled = true }).StatusCodeShouldBeUnauthorized());
+    public Task AssistantConversationSharingSettingsAsync_AsAnonymous_ReturnsUnauthorized() => SendRequestAsync(request => request
+        .Put().AsAnonymousUser().AppendPaths("admin", "assistant-settings", "conversation-sharing")
+        .Content(new UpdateAssistantConversationSharingSettings { Enabled = true }).StatusCodeShouldBeUnauthorized());
 
     [Fact]
     public async Task EventSubmissionSettingsAsync_AsGlobalAdmin_UpdatesAndClearsRuntimeOverride()
@@ -1392,6 +1392,6 @@ public class AdminEndpointTests : IntegrationTestsBase
         bool ConfiguredEnabled,
         bool IsEnabledOverridden,
         bool IsConfigured,
-        bool FullLoggingEnabled);
+        bool ConversationSharingDefaultEnabled);
     private sealed record RequeueResult([property: JsonPropertyName("enqueued")] int Enqueued);
 }
