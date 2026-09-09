@@ -281,18 +281,18 @@
     }
 
     :global(.product-tour-popover .driver-popover-arrow-side-top) {
-        border-bottom-color: var(--popover);
-    }
-
-    :global(.product-tour-popover .driver-popover-arrow-side-right) {
-        border-left-color: var(--popover);
-    }
-
-    :global(.product-tour-popover .driver-popover-arrow-side-bottom) {
         border-top-color: var(--popover);
     }
 
-    :global(.product-tour-popover .driver-popover-arrow-side-left) {
+    :global(.product-tour-popover .driver-popover-arrow-side-right) {
         border-right-color: var(--popover);
+    }
+
+    :global(.product-tour-popover .driver-popover-arrow-side-bottom) {
+        border-bottom-color: var(--popover);
+    }
+
+    :global(.product-tour-popover .driver-popover-arrow-side-left) {
+        border-left-color: var(--popover);
     }
 </style>
