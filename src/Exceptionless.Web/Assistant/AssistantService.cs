@@ -403,7 +403,7 @@ public sealed class AssistantService(
                     }
                     catch (Exception ex)
                     {
-                        diagnostics?.RecordToolException(ex, timeProvider.GetElapsedTime(toolStarted).TotalMilliseconds);
+                        diagnostics?.RecordToolException(ex, timeProvider.GetElapsedTime(toolStarted).TotalMilliseconds, cancellationToken);
                         throw;
                     }
                 }

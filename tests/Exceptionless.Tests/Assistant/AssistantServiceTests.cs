@@ -1085,9 +1085,10 @@ public sealed class AssistantServiceTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task StreamAsync_ToolThrows_RecordsToolOutcomeAndDuration(bool cancelled)
+    [InlineData("exception", "failed", "tool_execution_error")]
+    [InlineData("client", "cancelled", "client_disconnected")]
+    [InlineData("turn", "failed", "turn_timeout")]
+    public async Task StreamAsync_ToolThrows_RecordsToolOutcomeAndDuration(string failure, string outcome, string reason)
     {
         var activitySource = AppDiagnostics.AssistantActivitySource;
         using var activityListener = new ActivityListener
@@ -1097,7 +1098,9 @@ public sealed class AssistantServiceTests
         };
         ActivitySource.AddActivityListener(activityListener);
         var logger = new RecordingAssistantLogger();
-        using var diagnostics = new AssistantTurnDiagnostics(logger, TimeProvider.System, "organization-id", "conversation-id", "request-id");
+        using var requestAborted = new CancellationTokenSource();
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(requestAborted.Token, TestContext.Current.CancellationToken);
+        using var diagnostics = new AssistantTurnDiagnostics(logger, TimeProvider.System, "organization-id", "conversation-id", "request-id", requestAborted.Token);
         var measurements = new List<Dictionary<string, object?>>();
         using var meterListener = new MeterListener
         {
@@ -1128,22 +1131,24 @@ public sealed class AssistantServiceTests
             .AddInMemoryCollection(new Dictionary<string, string?> { ["BaseURL"] = "https://localhost", ["Assistant:ApiKey"] = "test-key" })
             .Build());
         var service = CreateAssistantService(handler, options);
-        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-
         var exception = await Record.ExceptionAsync(async () =>
         {
             await foreach (var item in service.StreamAsync(
                 new AssistantChatRequest([new AssistantChatMessage("user", "Find my errors")]),
                 "user-id", CreatePlanOptions(), diagnostics, cancellation.Token))
             {
-                if (cancelled && item.Type == "tool_call")
+                if (failure == "client" && item.Type == "tool_call")
+                {
+                    requestAborted.Cancel();
+                }
+                else if (failure == "turn" && item.Type == "tool_call")
                 {
                     cancellation.Cancel();
                 }
             }
         });
 
-        if (cancelled)
+        if (failure != "exception")
         {
             Assert.IsAssignableFrom<OperationCanceledException>(exception);
         }
@@ -1152,11 +1157,11 @@ public sealed class AssistantServiceTests
             Assert.IsType<InvalidOperationException>(exception);
         }
         Assert.Equal(1, diagnostics.ToolCalls);
-        Assert.Equal(cancelled ? 0 : 1, diagnostics.ToolFailures);
-        Assert.Equal(cancelled ? "operation_cancelled" : "tool_execution_error", diagnostics.LastToolError);
+        Assert.Equal(failure == "client" ? 0 : 1, diagnostics.ToolFailures);
+        Assert.Equal(reason, diagnostics.LastToolError);
         var measurement = Assert.Single(measurements);
         Assert.Equal("search_stacks", measurement["tool"]);
-        Assert.Equal(cancelled ? "cancelled" : "failed", measurement["outcome"]);
+        Assert.Equal(outcome, measurement["outcome"]);
         Assert.Equal(diagnostics.LastToolError, measurement["reason"]);
     }
 

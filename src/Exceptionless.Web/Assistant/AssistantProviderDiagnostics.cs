@@ -114,8 +114,11 @@ internal sealed class AssistantProviderDiagnostics(
         : _receivedError || FinishReason == "error" ? "provider_error"
         : cancellationToken.IsCancellationRequested ? GetCancellationOutcome() : "interrupted");
 
-    private string GetCancellationOutcome() => turn.IsClientDisconnected ? "cancelled"
-        : cancellationToken.IsCancellationRequested ? "turn_timeout" : "provider_timeout";
+    private string GetCancellationOutcome()
+    {
+        string reason = turn.GetCancellationReason(cancellationToken, "provider_timeout");
+        return reason == "client_disconnected" ? "cancelled" : reason;
+    }
 
     private static string? GetMetadata(JsonElement element, string name)
         => element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var property) && property.ValueKind == JsonValueKind.String

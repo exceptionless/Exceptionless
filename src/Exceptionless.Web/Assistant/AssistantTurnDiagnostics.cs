@@ -58,6 +58,9 @@ internal sealed class AssistantTurnDiagnostics : IDisposable
     public string? LastToolError { get; private set; }
     public AssistantProviderDiagnostics? Provider { get; private set; }
 
+    public string GetCancellationReason(CancellationToken cancellationToken, string operationReason)
+        => IsClientDisconnected ? "client_disconnected" : cancellationToken.IsCancellationRequested ? "turn_timeout" : operationReason;
+
     public AssistantProviderDiagnostics StartProviderRequest(int inputCharacters, bool allowTools, CancellationToken cancellationToken)
     {
         Stage = "provider_request";
@@ -103,11 +106,11 @@ internal sealed class AssistantTurnDiagnostics : IDisposable
             new("tool", LastTool), new("outcome", failed ? "failed" : "completed"), new("reason", errorCode ?? "none"));
     }
 
-    public void RecordToolException(Exception exception, double durationMilliseconds)
+    public void RecordToolException(Exception exception, double durationMilliseconds, CancellationToken cancellationToken)
     {
-        bool cancelled = exception is OperationCanceledException;
+        LastToolError = exception is OperationCanceledException ? GetCancellationReason(cancellationToken, "operation_cancelled") : "tool_execution_error";
+        bool cancelled = LastToolError == "client_disconnected";
         string outcome = cancelled ? "cancelled" : "failed";
-        LastToolError = cancelled ? "operation_cancelled" : "tool_execution_error";
         if (!cancelled)
         {
             ToolFailures++;
