@@ -28,7 +28,7 @@ The `Exceptionless.Web.Assistant` logging override retains Information-level tur
 
 Provider summaries include the generation ID (from `X-Generation-Id` or the stream), resolved model, provider, HTTP status, normalized finish reason, token counts including reasoning tokens when supplied, and whether final usage and `[DONE]` arrived. Thrown transport, parsing, stream, and timeout errors record explicit provider outcomes before propagating to the turn handler. Provider outcomes distinguish browser disconnects (`cancelled`), the shared turn deadline (`turn_timeout`), and provider-only cancellation (`provider_timeout`). See the [OpenRouter streaming contract](https://openrouter.ai/docs/api/reference/streaming). A request can return HTTP 200 and subsequently fail inside the stream, so HTTP error rates alone do not measure Exie reliability. Generation IDs can be used for provider-side investigation without logging the conversation.
 
-Server diagnostics deliberately exclude prompts, answer text, reasoning text, tool arguments/results, raw provider error bodies, and exception messages. Exception type and stack trace remain available. Tool names and error codes used as metric dimensions come from a fixed allowlist; organization, conversation, generation, and model identifiers are restricted to logs/traces. Browser session events separately capture the user-visible conversation, as described below.
+Server diagnostics deliberately exclude prompts, answer text, reasoning text, tool arguments/results, raw provider error bodies, and exception messages. Exception type and stack trace remain available. Tool names and error codes used as metric dimensions come from a fixed allowlist; organization, conversation, generation, and model identifiers are restricted to logs/traces. Browser session events record usage metadata without conversation content, as described below.
 
 | Failure reason | Investigation |
 | --- | --- |
@@ -69,11 +69,11 @@ dotnet tests/Exceptionless.Tests/bin/Debug/net10.0/Exceptionless.Tests.dll --fil
 
 The Svelte app submits Exie events through the existing Exceptionless browser client. They share the signed-in user's session, client configuration, queue, tags, and event exclusions. They go to the app's configured telemetry project. Starting a conversation does not create a separate user session.
 
-Each submitted prompt produces an `assistant.MessageSent` log event. The assembled response produces one `assistant.ResponseCompleted`, `assistant.ResponseFailed`, or `assistant.ResponseCancelled` log event. The log message contains the prompt, answer, or partial answer; a failure without answer text uses the error displayed to the user. Native log summaries make these messages readable in the existing session timeline. Messages are capped at 16,384 characters, with length and truncation metadata. Drafts, individual streamed chunks, reasoning, and raw tool arguments/results are not submitted.
+Each submitted prompt produces an `assistant.MessageSent` feature usage event. A turn produces one `assistant.ResponseCompleted`, `assistant.ResponseFailed`, or `assistant.ResponseCancelled` feature usage event. These events record character counts and outcomes, with no message text. Prompts, answers, drafts, reasoning, raw errors, tool arguments/results, and generated suggestion labels/destinations are not submitted. Suggestion events record only whether the action navigated or submitted a prompt.
 
 Events carry an `exie` extended-data object with `schema_version: 1`, conversation and message IDs, organization/project context, page path without query/fragment, and page/sheet mode. The conversation ID matches the server diagnostics. Turn summaries also include outcome, elapsed time, time to first text, tool counts/failures, and whether the chat was visible when the turn finished. Retries link the new server conversation back through `previous_conversation_id` and `retry_of_message_id`.
 
-Interactions remain feature usage events:
+Other feature usage events describe interactions:
 
 | Event source | Meaning |
 | --- | --- |
@@ -87,7 +87,7 @@ Filter the app telemetry project by `source:assistant.*`, then open an event's s
 
 These browser events are best effort. Page-leave events may be lost during unload, network failure, or a browser crash, and configured client filtering still applies. Use server metrics for operational failure rates; use session events to understand the user journey. A missing terminal event alone is not proof of cancellation or abandonment.
 
-Focused frontend tests exercise the real SDK builders with the queue intercepted, plus streamed success/failure, retries, feedback, context changes, and panel visibility. They do not submit events to a running collector:
+Focused frontend tests exercise the real SDK builders with the queue intercepted, verify that chat content is absent, and cover streamed success/failure, retries, feedback, context changes, and panel visibility. They do not submit events to a running collector:
 
 ```powershell
 Set-Location src/Exceptionless.Web/ClientApp

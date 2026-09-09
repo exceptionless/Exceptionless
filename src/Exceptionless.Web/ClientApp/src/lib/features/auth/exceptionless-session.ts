@@ -64,20 +64,6 @@ export async function submitFeatureUsage(feature: string, properties?: Record<st
     await event.submit();
 }
 
-/** Submits a readable log entry in the user's existing Exceptionless session. */
-export async function submitLog(source: string, message: string, properties?: Record<string, unknown>): Promise<void> {
-    const Exceptionless = await getExceptionless();
-    if (!Exceptionless) {
-        return;
-    }
-
-    const event = Exceptionless.createLog(source, message);
-    for (const [name, value] of Object.entries(properties ?? {})) {
-        event.setProperty(name, value);
-    }
-    await event.submit();
-}
-
 async function getExceptionless() {
     if (!browser) {
         return;

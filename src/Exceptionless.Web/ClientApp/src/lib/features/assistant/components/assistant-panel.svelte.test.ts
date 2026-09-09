@@ -6,14 +6,9 @@ vi.mock('$features/auth/index.svelte', () => ({ accessToken: { current: 'access-
 vi.mock('$features/billing/stripe.svelte', () => ({ isStripeEnabled: () => true }));
 vi.mock('katex/dist/katex.min.css', () => ({}));
 const goto = vi.hoisted(() => vi.fn(() => Promise.resolve()));
-const submitFeatureUsage = vi.hoisted(() =>
-    vi.fn<(feature: string, properties?: Record<string, unknown>, message?: string) => Promise<void>>().mockResolvedValue(undefined)
-);
+const submitFeatureUsage = vi.hoisted(() => vi.fn<(feature: string, properties?: Record<string, unknown>) => Promise<void>>().mockResolvedValue(undefined));
 vi.mock('$app/navigation', () => ({ goto }));
-const submitLog = vi.hoisted(() =>
-    vi.fn<(source: string, message: string, properties?: Record<string, unknown>) => Promise<void>>().mockResolvedValue(undefined)
-);
-vi.mock('$features/auth/exceptionless-session', () => ({ submitFeatureUsage, submitLog }));
+vi.mock('$features/auth/exceptionless-session', () => ({ submitFeatureUsage }));
 
 import AssistantPanel from './assistant-panel.svelte';
 
@@ -37,7 +32,7 @@ describe('AssistantPanel', () => {
         expect(screen.getByText('Bring Exie onto your team')).toBeTruthy();
     });
 
-    it('records the prompt, response, and feedback under the same conversation and message IDs', async () => {
+    it('correlates message outcomes and feedback without recording chat text', async () => {
         const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response('{"type":"text_delta","text":"The answer"}\n{"type":"done"}\n'));
         vi.stubGlobal('fetch', fetchMock);
         render(AssistantPanel, {
@@ -68,8 +63,9 @@ describe('AssistantPanel', () => {
             conversation_id: prompt.conversation_id
         });
         expect(submitFeatureUsage.mock.calls.filter(([feature]) => feature === 'assistant.ResponseHelpful')).toHaveLength(1);
-        expect(submitLog).toHaveBeenCalledWith('assistant.MessageSent', 'My question', expect.anything());
-        expect(submitLog).toHaveBeenCalledWith('assistant.ResponseCompleted', 'The answer', expect.anything());
+        const telemetry = JSON.stringify(submitFeatureUsage.mock.calls);
+        expect(telemetry).not.toContain('My question');
+        expect(telemetry).not.toContain('The answer');
     });
 
     it('links a retry to the failed response across the new server conversation', async () => {
@@ -96,7 +92,8 @@ describe('AssistantPanel', () => {
         expect(retried.conversation_id).not.toBe(failed.conversation_id);
         expect(retried.conversation_id).toMatch(/^[0-9a-f]{32}$/);
         expect(JSON.parse(fetchMock.mock.calls[1]?.[1]?.body as string).conversation_id).toBe(retried.conversation_id);
-        expect(submitLog.mock.calls.filter(([feature]) => feature === 'assistant.ResponseFailed')).toHaveLength(1);
+        expect(submitFeatureUsage.mock.calls.filter(([feature]) => feature === 'assistant.ResponseFailed')).toHaveLength(1);
+        expect(JSON.stringify(submitFeatureUsage.mock.calls)).not.toContain('Provider timed out');
     });
 
     it('records closing while waiting without cancelling a response that finishes in the background', async () => {
@@ -118,7 +115,7 @@ describe('AssistantPanel', () => {
         streamController!.enqueue(new TextEncoder().encode('{"type":"text_delta","text":"Background answer"}\n{"type":"done"}\n'));
         streamController!.close();
         await waitFor(() => expect(eventData('assistant.ResponseCompleted').is_visible).toBe(false));
-        expect(submitLog.mock.calls.some(([feature]) => feature === 'assistant.ResponseCancelled')).toBe(false);
+        expect(submitFeatureUsage.mock.calls.some(([feature]) => feature === 'assistant.ResponseCancelled')).toBe(false);
     });
 
     it('records one cancellation with the original organization when organization context changes', async () => {
@@ -143,8 +140,8 @@ describe('AssistantPanel', () => {
         await view.rerender({ open: true, organizationId: 'organization-2' });
         await waitFor(() => expect(eventData('assistant.ResponseCancelled').reason).toBe('organization_changed'));
         expect(eventData('assistant.ResponseCancelled')).toMatchObject({ organization_id: 'organization-1' });
-        expect(submitLog.mock.calls.filter(([feature]) => feature === 'assistant.ResponseCancelled')).toHaveLength(1);
-        expect(submitLog.mock.calls.some(([feature]) => feature === 'assistant.ResponseCompleted')).toBe(false);
+        expect(submitFeatureUsage.mock.calls.filter(([feature]) => feature === 'assistant.ResponseCancelled')).toHaveLength(1);
+        expect(submitFeatureUsage.mock.calls.some(([feature]) => feature === 'assistant.ResponseCompleted')).toBe(false);
         expect(screen.queryByText('Partial answer')).toBeNull();
     });
 
@@ -169,12 +166,12 @@ describe('AssistantPanel', () => {
         await screen.findByText('Partial answer');
         await fireEvent(window, new Event('pagehide'));
         expect(eventData('assistant.PageLeft')).toMatchObject({ is_streaming: true });
-        expect(submitLog.mock.calls.some(([feature]) => feature === 'assistant.ResponseCancelled')).toBe(false);
+        expect(submitFeatureUsage.mock.calls.some(([feature]) => feature === 'assistant.ResponseCancelled')).toBe(false);
 
         await fireEvent.click(screen.getByRole('button', { name: 'Stop generating' }));
         await screen.findByRole('button', { name: 'Send message' });
         expect(eventData('assistant.ResponseCancelled')).toMatchObject({ outcome: 'cancelled', reason: 'user_stopped' });
-        expect(submitLog.mock.calls.filter(([feature]) => feature === 'assistant.ResponseCancelled')).toHaveLength(1);
+        expect(submitFeatureUsage.mock.calls.filter(([feature]) => feature === 'assistant.ResponseCancelled')).toHaveLength(1);
         expect(screen.getByText('Partial answer')).toBeTruthy();
     });
 
@@ -383,11 +380,15 @@ describe('AssistantPanel', () => {
 
         await waitFor(() => expect(goto).toHaveBeenCalledWith(configureHref));
         expect(fetchMock).toHaveBeenCalledOnce();
+        expect(eventData('assistant.SuggestedActionSelected')).toMatchObject({ action_type: 'navigation' });
+        const telemetry = JSON.stringify(submitFeatureUsage.mock.calls);
+        expect(telemetry).not.toContain('Open Client Setup');
+        expect(telemetry).not.toContain('How do I configure');
+        expect(telemetry).not.toContain(configureHref);
     });
 });
 
 function eventData(feature: string, index = 0): Record<string, unknown> {
-    const properties =
-        submitFeatureUsage.mock.calls.filter(([name]) => name === feature)[index]?.[1] ?? submitLog.mock.calls.filter(([name]) => name === feature)[index]?.[2];
+    const properties = submitFeatureUsage.mock.calls.filter(([name]) => name === feature)[index]?.[1];
     return (properties?.exie ?? {}) as Record<string, unknown>;
 }

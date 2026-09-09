@@ -200,9 +200,7 @@
 
     async function handleSuggestedAction(action: AssistantSuggestedAction, message: AssistantChatMessage): Promise<void> {
         trackAssistantEvent('assistant.SuggestedActionSelected', getTelemetryContext(message), {
-            action_label: action.label,
-            action_type: action.href ? 'navigation' : 'prompt',
-            target_path: action.href?.split(/[?#]/)[0]
+            action_type: action.href ? 'navigation' : 'prompt'
         });
         if (action.href) {
             open = false;
@@ -269,7 +267,7 @@
                 ...getTelemetryContext(assistantMessage),
                 user_message_id: userMessage.id
             },
-            userMessage.content,
+            userMessage.content.length,
             source,
             {
                 ...details,
@@ -297,7 +295,7 @@
                     ? ((await response.json()) as { detail?: string; title?: string })
                     : undefined;
                 const message = problem?.detail ?? problem?.title ?? `The assistant returned status ${response.status}.`;
-                telemetry.fail(message, `http_${response.status}`);
+                telemetry.fail(`http_${response.status}`);
                 throw new Error(message);
             }
 
@@ -319,7 +317,7 @@
             }
 
             errorMessage = error instanceof Error ? error.message : 'Exie could not complete this request.';
-            telemetry.fail(errorMessage, 'request_error');
+            telemetry.fail('request_error');
         } finally {
             const outcome = telemetry.finish(controller.signal.aborted ? 'user_stopped' : undefined, {
                 is_visible: mode === 'page' || open
