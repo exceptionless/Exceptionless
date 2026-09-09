@@ -16,6 +16,7 @@ using Foundatio.Resilience;
 using Foundatio.Serializer;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -986,6 +987,72 @@ public sealed class AssistantServiceTests
             item => Assert.Equal("done", item.Type));
     }
 
+    [Theory]
+    [InlineData("length", "output_limit")]
+    [InlineData("content_filter", "content_filter")]
+    [InlineData("stop", "empty_response")]
+    public async Task StreamAsync_EmptyProviderAnswer_RecordsProviderReasonAndGeneration(string finishReason, string failureCode)
+    {
+        string payload = JsonSerializer.Serialize(new
+        {
+            id = "gen-empty-answer",
+            model = "resolved-model",
+            choices = new[] { new { delta = new { content = "" }, finish_reason = finishReason } },
+            usage = new { prompt_tokens = 100, completion_tokens = 2048, completion_tokens_details = new { reasoning_tokens = 2048 } }
+        });
+        var handler = new StubHttpMessageHandler($"data: {payload}\n\ndata: [DONE]\n\n");
+        var options = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["BaseURL"] = "https://localhost", ["Assistant:ApiKey"] = "test-key" })
+            .Build());
+        var logger = new RecordingAssistantLogger();
+        using var diagnostics = new AssistantTurnDiagnostics(logger, TimeProvider.System, "organization-id", "conversation-id", "request-id");
+        var service = CreateAssistantService(handler, options);
+        var events = new List<AssistantStreamEvent>();
+
+        await foreach (var item in service.StreamAsync(
+            new AssistantChatRequest([new AssistantChatMessage("user", "private question")]),
+            "user-id", CreatePlanOptions(), diagnostics, TestContext.Current.CancellationToken))
+            events.Add(item);
+
+        Assert.Equal(failureCode, Assert.Single(events, item => item.Type == "error").FailureCode);
+        Assert.Equal("gen-empty-answer", diagnostics.Provider?.GenerationId);
+        Assert.Equal("resolved-model", diagnostics.Provider?.Model);
+        Assert.Equal(2048, diagnostics.Provider?.ReasoningTokens);
+        Assert.Equal(1, diagnostics.ProviderRequests);
+        Assert.DoesNotContain(logger.Entries, entry => entry.Message.Contains("private question", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task StreamAsync_HttpRejection_RecordsStatusWithoutLoggingProviderErrorBody()
+    {
+        var handler = new RejectedHttpMessageHandler(HttpStatusCode.TooManyRequests);
+        var options = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["BaseURL"] = "https://localhost", ["Assistant:ApiKey"] = "test-key" })
+            .Build());
+        var logger = new RecordingAssistantLogger();
+        using var diagnostics = new AssistantTurnDiagnostics(logger, TimeProvider.System, "organization-id", "conversation-id", "request-id");
+        var service = CreateAssistantService(handler, options, logger: logger);
+
+        var exception = await Assert.ThrowsAsync<AssistantProviderException>(async () =>
+        {
+            await foreach (var _ in service.StreamAsync(
+                new AssistantChatRequest([new AssistantChatMessage("user", "private question")]),
+                "user-id", CreatePlanOptions(), diagnostics, TestContext.Current.CancellationToken))
+            {
+            }
+        });
+
+        Assert.Equal("provider_http_error", exception.FailureCode);
+        Assert.Equal(429, diagnostics.Provider?.StatusCode);
+        Assert.Contains(logger.Entries, entry => entry.Properties.TryGetValue("StatusCode", out var status) && status is 429);
+        Assert.All(logger.Entries, entry =>
+        {
+            Assert.DoesNotContain("Rejected", entry.Message);
+            Assert.DoesNotContain("private question", entry.Message);
+            Assert.DoesNotContain("test-key", entry.Message);
+        });
+    }
+
     [Fact]
     public async Task StreamAsync_RawDsmlResponse_RetriesWithoutEmittingMarkup()
     {
@@ -1229,7 +1296,8 @@ public sealed class AssistantServiceTests
         ICacheClient? cache = null,
         ILockProvider? lockProvider = null,
         AssistantUsageService? usageService = null,
-        AssistantModelSettingsService? modelSettingsService = null)
+        AssistantModelSettingsService? modelSettingsService = null,
+        ILogger<AssistantService>? logger = null)
     {
         cache ??= new InMemoryCacheClient(new InMemoryCacheClientOptions
         {
@@ -1256,7 +1324,7 @@ public sealed class AssistantServiceTests
             modelSettingsService,
             usageService,
             TimeProvider.System,
-            NullLogger<AssistantService>.Instance);
+            logger ?? NullLogger<AssistantService>.Instance);
     }
 
     private static AssistantModelSettingsService CreateAssistantModelSettingsService(AppOptions appOptions)

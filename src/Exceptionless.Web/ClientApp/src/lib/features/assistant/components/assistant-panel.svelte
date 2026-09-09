@@ -12,12 +12,20 @@
     import Eraser from '@lucide/svelte/icons/eraser';
     import Maximize2 from '@lucide/svelte/icons/maximize-2';
     import Minimize2 from '@lucide/svelte/icons/minimize-2';
-    import { tick, untrack } from 'svelte';
+    import { onDestroy, tick, untrack } from 'svelte';
 
     import type { AssistantAccessState, AssistantChatMessage, AssistantFeedback, AssistantPromptRequest, AssistantSuggestedAction } from '../models';
 
     import { createAssistantChatRequest } from '../assistant-request';
     import { type AssistantStreamEvent, readAssistantStream } from '../assistant-stream';
+    import {
+        type AssistantPromptSource,
+        type AssistantStopReason,
+        type AssistantTelemetryContext,
+        type AssistantTurnOutcome,
+        AssistantTurnTelemetry,
+        trackAssistantEvent
+    } from '../assistant-telemetry';
     import { assistantToolResultFailed } from '../assistant-tool-result';
     import AssistantComposer from './assistant-composer.svelte';
     import AssistantMessage from './assistant-message.svelte';
@@ -68,6 +76,10 @@
     let conversationElement = $state<HTMLDivElement>();
     let abortController: AbortController | undefined;
     let handledPromptRequestId: string | undefined;
+    let activeTurn: AssistantTurnTelemetry | undefined;
+    let lastOutcome: AssistantTurnOutcome | undefined;
+    let wasVisible = false;
+    let previousMode: 'page' | 'sheet' | undefined;
     let latestAssistantMessage = $derived(messages.filter((message) => message.role === 'assistant').at(-1));
 
     const suggestions = [
@@ -83,20 +95,53 @@
 
     $effect(() => {
         if (accessState !== 'available') {
-            untrack(stopStreaming);
+            untrack(() => stopStreaming('access_changed'));
         }
     });
 
     $effect(() => {
         const currentOrganizationId = organizationId;
         if (conversationOrganizationId !== currentOrganizationId) {
-            untrack(stopStreaming);
+            untrack(() => {
+                if (messages.length > 0) {
+                    trackConversationEvent('assistant.ConversationLeft', {
+                        reason: 'organization_changed'
+                    });
+                }
+                stopStreaming('organization_changed');
+            });
             messages = [];
             errorMessage = undefined;
             prompt = '';
             conversationId = crypto.randomUUID();
             conversationOrganizationId = currentOrganizationId;
+            lastOutcome = undefined;
         }
+    });
+
+    $effect(() => {
+        const visible = mode === 'page' || open;
+        const currentMode = mode;
+        untrack(() => {
+            if (visible !== wasVisible) {
+                trackConversationEvent(visible ? 'assistant.Opened' : 'assistant.Closed');
+            } else if (visible && currentMode !== previousMode) {
+                trackConversationEvent('assistant.ViewChanged', {
+                    previous_mode: previousMode
+                });
+            }
+            wasVisible = visible;
+            previousMode = currentMode;
+        });
+    });
+
+    onDestroy(() => {
+        if (wasVisible) {
+            trackConversationEvent('assistant.ConversationLeft', {
+                reason: 'component_unmounted'
+            });
+        }
+        stopStreaming('component_unmounted');
     });
 
     $effect(() => {
@@ -113,10 +158,12 @@
         }
 
         handledPromptRequestId = promptRequest.id;
-        void submitPrompt(promptRequest.prompt);
+        void submitPrompt(promptRequest.prompt, {
+            source: 'queued'
+        });
     });
 
-    async function submitPrompt(value = prompt, isSuggestedAction = false, suggestedActionLabel?: string, suggestedActionPath?: string): Promise<void> {
+    async function submitPrompt(value = prompt, options: { action?: AssistantSuggestedAction; source?: AssistantPromptSource } = {}): Promise<void> {
         const content = value.trim();
         if (!content || isStreaming) {
             return;
@@ -131,32 +178,42 @@
         errorMessage = undefined;
         const userMessage: AssistantChatMessage = {
             content,
+            conversationId,
             id: crypto.randomUUID(),
-            isSuggestedAction,
+            isSuggestedAction: options.source === 'suggested_action',
             role: 'user',
-            suggestedActionLabel,
-            suggestedActionPath,
+            suggestedActionLabel: options.action?.label,
+            suggestedActionPath: options.action?.sourcePath,
             tools: []
         };
         const assistantMessage: AssistantChatMessage = {
             content: '',
+            conversationId,
             id: crypto.randomUUID(),
             role: 'assistant',
             tools: []
         };
         const history = [...messages, userMessage];
         messages = [...history, assistantMessage];
-        await streamResponse(history, assistantMessage);
+        await streamResponse(history, assistantMessage, options.source ?? 'composer');
     }
 
-    async function handleSuggestedAction(action: AssistantSuggestedAction): Promise<void> {
+    async function handleSuggestedAction(action: AssistantSuggestedAction, message: AssistantChatMessage): Promise<void> {
+        trackAssistantEvent('assistant.SuggestedActionSelected', getTelemetryContext(message), {
+            action_label: action.label,
+            action_type: action.href ? 'navigation' : 'prompt',
+            target_path: action.href?.split(/[?#]/)[0]
+        });
         if (action.href) {
             open = false;
             await goto(action.href);
             return;
         }
 
-        await submitPrompt(action.prompt, true, action.label, action.sourcePath);
+        await submitPrompt(action.prompt, {
+            action,
+            source: 'suggested_action'
+        });
     }
 
     async function regenerateResponse(assistantMessageId: string): Promise<void> {
@@ -174,41 +231,74 @@
             return;
         }
 
+        const source = errorMessage ? 'retry' : 'regenerate';
+        const previousConversationId = conversationId;
+        trackAssistantEvent('assistant.ResponseRegenerated', getTelemetryContext(messages[assistantMessageIndex]), {
+            prompt_source: source
+        });
         errorMessage = undefined;
         const history = messages.slice(0, userMessageIndex + 1);
+        conversationId = crypto.randomUUID();
         const replacement: AssistantChatMessage = {
             content: '',
+            conversationId,
             id: crypto.randomUUID(),
             role: 'assistant',
             tools: []
         };
         messages = [...history, replacement];
-        conversationId = crypto.randomUUID();
-        await streamResponse(history, replacement);
+        await streamResponse(history, replacement, source, {
+            previous_conversation_id: previousConversationId,
+            retry_of_message_id: assistantMessageId
+        });
     }
 
-    async function streamResponse(history: AssistantChatMessage[], assistantMessage: AssistantChatMessage): Promise<void> {
+    async function streamResponse(
+        history: AssistantChatMessage[],
+        assistantMessage: AssistantChatMessage,
+        source: AssistantPromptSource,
+        details: Record<string, unknown> = {}
+    ): Promise<void> {
         isStreaming = true;
-        abortController = new AbortController();
-        await scrollToLatest('smooth', true);
+        const controller = new AbortController();
+        abortController = controller;
         const requestPath = path ?? `${page.url.pathname}${page.url.search}`;
+        const userMessage = history.at(-1)!;
+        const telemetry = new AssistantTurnTelemetry(
+            {
+                ...getTelemetryContext(assistantMessage),
+                user_message_id: userMessage.id
+            },
+            userMessage.content,
+            source,
+            {
+                ...details,
+                turn_index: history.filter((message) => message.role === 'user').length
+            }
+        );
+        activeTurn = telemetry;
+        lastOutcome = undefined;
+        const request = createAssistantChatRequest(history, conversationId, organizationId, requestPath, projectId);
 
         try {
+            await scrollToLatest('smooth', true);
             const response = await fetch('/api/v2/assistant/chat', {
-                body: JSON.stringify(createAssistantChatRequest(history, conversationId, organizationId, requestPath, projectId)),
+                body: JSON.stringify(request),
                 headers: {
                     Authorization: `Bearer ${accessToken.current}`,
                     'Content-Type': 'application/json'
                 },
                 method: 'POST',
-                signal: abortController.signal
+                signal: controller.signal
             });
 
             if (!response.ok) {
                 const problem = response.headers.get('content-type')?.includes('json')
                     ? ((await response.json()) as { detail?: string; title?: string })
                     : undefined;
-                throw new Error(problem?.detail ?? problem?.title ?? `The assistant returned status ${response.status}.`);
+                const message = problem?.detail ?? problem?.title ?? `The assistant returned status ${response.status}.`;
+                telemetry.fail(message, `http_${response.status}`);
+                throw new Error(message);
             }
 
             if (!response.body) {
@@ -216,19 +306,31 @@
             }
 
             await readAssistantStream(response.body, async (event) => {
+                if (controller.signal.aborted) {
+                    return;
+                }
+                telemetry.observe(event);
                 applyStreamEvent(assistantMessage.id, event, requestPath);
                 await scrollToLatest('auto');
             });
         } catch (error) {
-            if (error instanceof DOMException && error.name === 'AbortError') {
+            if (controller.signal.aborted || (error instanceof DOMException && error.name === 'AbortError')) {
                 return;
             }
 
             errorMessage = error instanceof Error ? error.message : 'Exie could not complete this request.';
+            telemetry.fail(errorMessage, 'request_error');
         } finally {
-            isStreaming = false;
-            abortController = undefined;
-            await scrollToLatest('auto');
+            const outcome = telemetry.finish(controller.signal.aborted ? 'user_stopped' : undefined, {
+                is_visible: mode === 'page' || open
+            });
+            if (abortController === controller) {
+                lastOutcome = outcome ?? lastOutcome;
+                activeTurn = undefined;
+                isStreaming = false;
+                abortController = undefined;
+                await scrollToLatest('auto');
+            }
         }
     }
 
@@ -300,7 +402,13 @@
         }
     }
 
-    function stopStreaming(): void {
+    function stopStreaming(reason: AssistantStopReason = 'user_stopped'): void {
+        const outcome = activeTurn?.finish(reason, {
+            is_visible: mode === 'page' || open
+        });
+        if (outcome) {
+            lastOutcome = outcome;
+        }
         abortController?.abort();
         if (!messages.some((message) => message.tools.some((tool) => tool.status === 'running'))) {
             return;
@@ -320,13 +428,15 @@
     }
 
     function clearConversation(): void {
-        stopStreaming();
+        trackConversationEvent('assistant.ConversationCleared');
+        stopStreaming('conversation_cleared');
         messages = [];
         conversationId = crypto.randomUUID();
         errorMessage = undefined;
         prompt = '';
         isNearBottom = true;
         showScrollToBottom = false;
+        lastOutcome = undefined;
     }
 
     function collapseToSidePanel(): void {
@@ -344,6 +454,19 @@
     }
 
     function setMessageFeedback(messageId: string, feedback: AssistantFeedback | undefined): void {
+        const message = messages.find((message) => message.id === messageId);
+        if (!message) {
+            return;
+        }
+        const feature =
+            feedback === 'helpful'
+                ? 'assistant.ResponseHelpful'
+                : feedback === 'not-helpful'
+                  ? 'assistant.ResponseNotHelpful'
+                  : 'assistant.ResponseFeedbackCleared';
+        trackAssistantEvent(feature, getTelemetryContext(message), {
+            feedback: feedback ?? 'cleared'
+        });
         messages = messages.map((message) =>
             message.id === messageId
                 ? {
@@ -352,6 +475,41 @@
                   }
                 : message
         );
+    }
+
+    function getTelemetryContext(message?: AssistantChatMessage): AssistantTelemetryContext {
+        return {
+            assistant_message_id: message?.role === 'assistant' ? message.id : undefined,
+            conversation_id: message?.conversationId ?? conversationId,
+            mode,
+            organization_id: conversationOrganizationId ?? organizationId,
+            path: (path ?? page.url.pathname).split(/[?#]/)[0],
+            project_id: projectId,
+            user_message_id: message?.role === 'user' ? message.id : undefined
+        };
+    }
+
+    function trackConversationEvent(feature: string, details: Record<string, unknown> = {}): void {
+        trackAssistantEvent(
+            feature,
+            {
+                ...(activeTurn?.context ?? getTelemetryContext(latestAssistantMessage)),
+                mode
+            },
+            {
+                ...details,
+                is_streaming: isStreaming,
+                last_feedback: latestAssistantMessage?.feedback,
+                last_outcome: lastOutcome,
+                message_count: messages.length
+            }
+        );
+    }
+
+    function handlePageHide(): void {
+        if (wasVisible || messages.length > 0) {
+            trackConversationEvent('assistant.PageLeft');
+        }
     }
 
     async function scrollToLatest(behavior: 'auto' | 'smooth' = 'smooth', force = false): Promise<void> {
@@ -369,6 +527,8 @@
         showScrollToBottom = false;
     }
 </script>
+
+<svelte:window onpagehide={handlePageHide} />
 
 {#snippet conversation()}
     <div class="relative min-h-0 flex-1">
@@ -399,7 +559,10 @@
                             {#each suggestions as suggestion (suggestion)}
                                 <Button
                                     class="h-auto justify-start px-3 py-2 text-left whitespace-normal"
-                                    onclick={() => void submitPrompt(suggestion)}
+                                    onclick={() =>
+                                        void submitPrompt(suggestion, {
+                                            source: 'starter'
+                                        })}
                                     variant="outline"
                                 >
                                     {suggestion}
@@ -414,9 +577,13 @@
                                 isLast={message === messages.at(-1)}
                                 isStreaming={isStreaming && message === messages.at(-1)}
                                 {message}
+                                onCopy={() =>
+                                    trackAssistantEvent('assistant.MessageCopied', getTelemetryContext(message), {
+                                        role: message.role
+                                    })}
                                 onFeedback={(feedback) => setMessageFeedback(message.id, feedback)}
                                 onRegenerate={() => regenerateResponse(message.id)}
-                                onSuggestedAction={(action) => void handleSuggestedAction(action)}
+                                onSuggestedAction={(action) => void handleSuggestedAction(action, message)}
                                 {showToolCalls}
                                 suggestionsDisabled={isStreaming}
                             />
@@ -455,7 +622,13 @@
                         {/if}
                     </Alert.Root>
                 {/if}
-                <AssistantComposer bind:value={prompt} {isStreaming} onStop={stopStreaming} onSubmit={(value) => void submitPrompt(value)} {showToolCalls} />
+                <AssistantComposer
+                    bind:value={prompt}
+                    {isStreaming}
+                    onStop={() => stopStreaming()}
+                    onSubmit={(value) => void submitPrompt(value)}
+                    {showToolCalls}
+                />
                 <Muted class="text-center text-xs">AI can make mistakes. Check important changes.</Muted>
             </div>
         </div>

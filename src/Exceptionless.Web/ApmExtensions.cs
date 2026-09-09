@@ -72,7 +72,7 @@ public static partial class ApmExtensions
                 });
 
                 b.AddHttpClientInstrumentation();
-                b.AddSource("Exceptionless", "Foundatio");
+                b.AddSource("Exceptionless", "Exceptionless.Core", "Foundatio");
 
                 if (config.EnableRedis)
                     b.AddRedisInstrumentation(c =>

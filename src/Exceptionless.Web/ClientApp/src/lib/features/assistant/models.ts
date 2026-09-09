@@ -10,6 +10,7 @@ export type AssistantAccessState = 'available' | 'disabled' | 'error' | 'loading
 
 export interface AssistantChatMessage {
     content: string;
+    conversationId?: string;
     feedback?: AssistantFeedback;
     id: string;
     isSuggestedAction?: boolean;

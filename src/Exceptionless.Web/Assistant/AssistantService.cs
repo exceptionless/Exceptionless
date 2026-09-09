@@ -36,14 +36,24 @@ public sealed class AssistantService(
     private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web).ConfigureExceptionlessApiDefaults();
     private static readonly Regex s_rawDsmlPattern = new(@"<\s*/?\s*[|｜]\s*DSML\s*[|｜]", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
 
-    public async IAsyncEnumerable<AssistantStreamEvent> StreamAsync(
+    public IAsyncEnumerable<AssistantStreamEvent> StreamAsync(
         AssistantChatRequest request,
         string userId,
         AssistantPlanOptions planOptions,
+        CancellationToken cancellationToken = default)
+        => StreamAsync(request, userId, planOptions, null, cancellationToken);
+
+    internal async IAsyncEnumerable<AssistantStreamEvent> StreamAsync(
+        AssistantChatRequest request,
+        string userId,
+        AssistantPlanOptions planOptions,
+        AssistantTurnDiagnostics? diagnostics,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var options = appOptions.AssistantOptions;
         string model = (await assistantModelSettingsService.GetAsync()).Model;
+        if (diagnostics is not null)
+            diagnostics.Model = model;
         AssistantConversationState? conversationState = null;
         if (!String.IsNullOrWhiteSpace(request.OrganizationId) && !String.IsNullOrWhiteSpace(request.ConversationId))
         {
@@ -71,10 +81,12 @@ public sealed class AssistantService(
         {
             if (completedToolRounds > 0)
             {
+                if (diagnostics is not null)
+                    diagnostics.Stage = "usage_check";
                 var usageDecision = await assistantUsageService.TryContinueTurnAsync(request.OrganizationId, planOptions);
                 if (!usageDecision.Allowed)
                 {
-                    yield return AssistantStreamEvent.Error(usageDecision.Message ?? "Exie reached this organization's usage limit.");
+                    yield return AssistantStreamEvent.Error(usageDecision.Message ?? "Exie reached this organization's usage limit.", "usage_limit");
                     yield return AssistantStreamEvent.Done();
                     yield break;
                 }
@@ -110,14 +122,18 @@ public sealed class AssistantService(
             if (providerInputCharacters > AssistantLimits.MaximumProviderInputCharacters)
             {
                 throw new AssistantProviderException(
-                    "This conversation contains too much context for one response. Clear the conversation or narrow the question.");
+                    "This conversation contains too much context for one response. Clear the conversation or narrow the question.") { FailureCode = "context_limit" };
             }
 
+            if (diagnostics is not null)
+                diagnostics.Stage = "usage_reservation";
             await using var providerRequest = await assistantUsageService.StartProviderRequestAsync(request.OrganizationId, providerInputCharacters);
-            using var response = await SendRequestAsync(messages, options, model, allowTools, request, cancellationToken);
+            using var providerDiagnostics = diagnostics?.StartProviderRequest(providerInputCharacters, allowTools, cancellationToken);
+            using var response = await SendRequestAsync(messages, options, model, allowTools, request, providerDiagnostics, cancellationToken);
             providerRequest.MarkAccepted();
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
             using var reader = new StreamReader(stream);
+            bool receivedDone = false;
 
             while (await reader.ReadLineAsync(cancellationToken) is { } line)
             {
@@ -125,10 +141,16 @@ public sealed class AssistantService(
                     continue;
 
                 string payload = line[5..].Trim();
-                if (payload.Length == 0 || payload == "[DONE]")
+                if (payload == "[DONE]")
+                {
+                    receivedDone = true;
+                    continue;
+                }
+                if (payload.Length == 0)
                     continue;
 
                 using var document = JsonDocument.Parse(payload);
+                providerDiagnostics?.ObserveChunk(document.RootElement);
                 if (document.RootElement.TryGetProperty("error", out var error))
                     throw new AssistantProviderException(GetProviderError(error));
 
@@ -186,11 +208,17 @@ public sealed class AssistantService(
                 }
             }
 
+            providerDiagnostics?.Complete(assistantContent.Length, toolCalls.Count, receivedDone);
+            if (diagnostics is not null)
+                diagnostics.Stage = "response_validation";
+
             if (s_rawDsmlPattern.IsMatch(assistantContent.ToString()))
             {
                 if (malformedResponseRetries < AssistantLimits.MaximumMalformedResponseRetries)
                 {
                     malformedResponseRetries++;
+                    if (diagnostics is not null)
+                        diagnostics.MalformedResponseRetries = malformedResponseRetries;
                     logger.LogWarning(
                         "Assistant provider returned raw DSML content for organization {OrganizationId}; retrying response",
                         request.OrganizationId);
@@ -206,7 +234,7 @@ public sealed class AssistantService(
                 logger.LogWarning(
                     "Assistant provider returned raw DSML content again for organization {OrganizationId}",
                     request.OrganizationId);
-                yield return AssistantStreamEvent.Error("Exie received a malformed response from the AI provider. Please try again.");
+                yield return AssistantStreamEvent.Error("Exie received a malformed response from the AI provider. Please try again.", "malformed_response");
                 yield return AssistantStreamEvent.Done();
                 yield break;
             }
@@ -226,7 +254,14 @@ public sealed class AssistantService(
             {
                 if (assistantContent.Length == 0)
                 {
-                    yield return AssistantStreamEvent.Error("Exie stopped before providing an answer. Please try again.");
+                    string failureCode = providerDiagnostics?.FinishReason switch
+                    {
+                        "length" => "output_limit",
+                        "content_filter" => "content_filter",
+                        "error" => "provider_error",
+                        _ => "empty_response"
+                    };
+                    yield return AssistantStreamEvent.Error("Exie stopped before providing an answer. Please try again.", failureCode);
                 }
                 else if (pendingSuggestedActions.Count > 0)
                 {
@@ -239,7 +274,7 @@ public sealed class AssistantService(
 
             if (!allowTools)
             {
-                yield return AssistantStreamEvent.Error("Exie could not finish using the available tool results. Try narrowing the question.");
+                yield return AssistantStreamEvent.Error("Exie could not finish using the available tool results. Try narrowing the question.", "tool_round_limit");
                 yield return AssistantStreamEvent.Done();
                 yield break;
             }
@@ -293,6 +328,8 @@ public sealed class AssistantService(
 
                 requireFinalAnswer = true;
                 completedToolRounds++;
+                if (diagnostics is not null)
+                    diagnostics.ToolRounds = completedToolRounds;
                 continue;
             }
 
@@ -316,8 +353,10 @@ public sealed class AssistantService(
             foreach (var toolCall in executableToolCalls)
             {
                 string arguments = toolCall.Arguments.ToString();
+                diagnostics?.StartTool(toolCall.Name);
                 yield return AssistantStreamEvent.ToolCall(toolCall.Id, toolCall.Name, arguments);
 
+                long toolStarted = timeProvider.GetTimestamp();
                 string result;
                 if (remainingToolCalls <= 0)
                 {
@@ -353,6 +392,7 @@ public sealed class AssistantService(
                     result = await ExecuteToolAsync(toolCall.Name, arguments, request, cancellationToken);
                 }
 
+                diagnostics?.RecordToolResult(result, timeProvider.GetElapsedTime(toolStarted).TotalMilliseconds);
                 if (toolCall.Name == GetProjectSetupTool)
                     configureHref = AssistantSuggestedActionParser.GetProjectSetupHref(result) ?? configureHref;
 
@@ -372,6 +412,8 @@ public sealed class AssistantService(
                 && !String.IsNullOrWhiteSpace(request.OrganizationId)
                 && !String.IsNullOrWhiteSpace(request.ConversationId))
             {
+                if (diagnostics is not null)
+                    diagnostics.Stage = "conversation_save";
                 await assistantConversationService.AppendToolResultsAsync(
                     userId,
                     request.OrganizationId,
@@ -381,10 +423,12 @@ public sealed class AssistantService(
             }
 
             completedToolRounds++;
+            if (diagnostics is not null)
+                diagnostics.ToolRounds = completedToolRounds;
         }
     }
 
-    private async Task<HttpResponseMessage> SendRequestAsync(List<object> messages, AssistantOptions options, string model, bool allowTools, AssistantChatRequest chatRequest, CancellationToken cancellationToken)
+    private async Task<HttpResponseMessage> SendRequestAsync(List<object> messages, AssistantOptions options, string model, bool allowTools, AssistantChatRequest chatRequest, AssistantProviderDiagnostics? diagnostics, CancellationToken cancellationToken)
     {
         var client = httpClientFactory.CreateClient(nameof(AssistantService));
         using var providerRequest = new HttpRequestMessage(HttpMethod.Post, options.Endpoint);
@@ -413,13 +457,15 @@ public sealed class AssistantService(
         providerRequest.Content = JsonContent.Create(payload);
 
         var response = await client.SendAsync(providerRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        diagnostics?.ObserveResponse(response);
         if (response.IsSuccessStatusCode)
             return response;
 
-        string detail = await response.Content.ReadAsStringAsync(cancellationToken);
-        logger.LogWarning("Assistant provider returned {StatusCode}: {Detail}", (int)response.StatusCode, detail);
+        // Provider error bodies can echo prompts or credentials. Status and generation ID
+        // provide diagnostic context without copying those bodies into application logs.
+        logger.LogWarning("Assistant provider returned HTTP {StatusCode} with generation {ProviderGenerationId}", (int)response.StatusCode, diagnostics?.GenerationId);
         response.Dispose();
-        throw new AssistantProviderException($"The AI provider returned status {(int)response.StatusCode}.");
+        throw new AssistantProviderException($"The AI provider returned status {(int)response.StatusCode}.") { FailureCode = "provider_http_error" };
     }
 
     private async Task<string> ExecuteToolAsync(
