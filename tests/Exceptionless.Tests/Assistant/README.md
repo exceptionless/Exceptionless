@@ -69,6 +69,8 @@ dotnet tests/Exceptionless.Tests/bin/Debug/net10.0/Exceptionless.Tests.dll --fil
 
 The Svelte app submits Exie events through the existing Exceptionless browser client. They share the signed-in user's session, client configuration, queue, tags, and event exclusions. They go to the app's configured telemetry project. Starting a conversation does not create a separate user session.
 
+Session starts wait for an identified user: anonymous SDK startup/resume session events are discarded, while ordinary errors, logs, and usage events remain enabled. The telemetry component owns the identity update so profile loading cannot race a second identity writer. Older session rows without identity or session metadata display **Anonymous session**.
+
 The Aspire development app automatically reports to the seeded **Exceptionless → Exceptionless** project (named **API** in older development data). It waits for the API to be ready and uses the browser's current origin through Vite's API proxy, including forwarded localhost ports. No `.env.local` setup is required. Override `PUBLIC_EXCEPTIONLESS_API_KEY` and `PUBLIC_EXCEPTIONLESS_TELEMETRY_SERVER_URL` in the AppHost environment to use another telemetry destination; an empty key disables automatic browser reporting. For a standalone frontend, set those values in `ClientApp/.env.local`, with an empty telemetry URL to use the current origin. The advertised client setup URL stays unchanged. Omitting the telemetry URL override preserves the existing server URL behavior; a browser local-storage server URL override still takes precedence. Keep local keys out of source control.
 
 Each submitted prompt produces an `assistant.MessageSent` feature usage event. A turn produces one `assistant.ResponseCompleted`, `assistant.ResponseFailed`, or `assistant.ResponseCancelled` feature usage event. These events record character counts and outcomes. Failure events retain the error displayed to the user in `error_message`, capped at 2,048 characters for diagnosis. Existing application error collection is unchanged.
@@ -87,7 +89,7 @@ Other feature usage events describe interactions:
 
 | Event source | Meaning |
 | --- | --- |
-| `assistant.Opened`, `assistant.Closed`, `assistant.ViewChanged` | Open, close, or switch between the panel and full page. Closing the panel does not cancel an ongoing response. |
+| `assistant.Opened`, `assistant.Closed`, `assistant.ViewChanged` | One open event when Exie becomes visible, including loading or reloading the full Exie page; one close when hidden. Switching panel/page mode emits a view change. Typing, other state updates, and opening the sharing menu do not emit opens. Closing the panel does not cancel an ongoing response. |
 | `assistant.ResponseHelpful`, `assistant.ResponseNotHelpful`, `assistant.ResponseFeedbackCleared` | Explicit feedback linked to the response. |
 | `assistant.ResponseRegenerated` | Retry or regenerate, linked to the previous response. |
 | `assistant.MessageCopied`, `assistant.SuggestedActionSelected` | Copy a message or act on an Exie suggestion. |

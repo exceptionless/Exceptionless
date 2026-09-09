@@ -35,6 +35,23 @@ describe('AssistantPanel', () => {
         expect(screen.getByText('Bring Exie onto your team')).toBeTruthy();
     });
 
+    it('records opens only when becoming visible, not when typing or changing views', async () => {
+        const props = { open: true, organizationId: 'organization-1', path: '/next/stack' };
+        const view = render(AssistantPanel, { props });
+        await screen.findByRole('textbox', { name: 'Message Exie' });
+        expect(submitFeatureUsage.mock.calls.filter(([feature]) => feature === 'assistant.Opened')).toHaveLength(1);
+
+        await fireEvent.input(screen.getByRole('textbox', { name: 'Message Exie' }), { target: { value: 'Unsent draft' } });
+        await view.rerender({ ...props, mode: 'page', path: '/next/event' });
+        await waitFor(() => expect(submitFeatureUsage).toHaveBeenCalledWith('assistant.ViewChanged', expect.anything()));
+        expect(submitFeatureUsage.mock.calls.filter(([feature]) => feature === 'assistant.Opened')).toHaveLength(1);
+
+        await view.rerender({ ...props, mode: 'sheet', open: false });
+        await waitFor(() => expect(submitFeatureUsage).toHaveBeenCalledWith('assistant.Closed', expect.anything()));
+        await view.rerender(props);
+        await waitFor(() => expect(submitFeatureUsage.mock.calls.filter(([feature]) => feature === 'assistant.Opened')).toHaveLength(2));
+    });
+
     it('correlates message outcomes and feedback without recording chat text', async () => {
         const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response('{"type":"text_delta","text":"The answer"}\n{"type":"done"}\n'));
         vi.stubGlobal('fetch', fetchMock);
