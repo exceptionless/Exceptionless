@@ -1,8 +1,17 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const paths = vi.hoisted(() => ({ base: '/next' }));
+
+vi.mock('$app/paths', () => ({ resolve: (path: string) => `${paths.base}${path}` }));
+vi.mock('$app/state', () => ({ page: { url: new URL('https://exceptionless.local/') } }));
 
 import type { AssistantToolActivity } from './models';
 
 import { addAssistantResourceLinks, normalizeAssistantUrl } from './assistant-links';
+
+beforeEach(() => {
+    paths.base = '/next';
+});
 
 function toolResult(items: unknown[]): AssistantToolActivity {
     return {
@@ -30,9 +39,40 @@ describe('normalizeAssistantUrl', () => {
         const source = 'https://example.com/next/assets/chart.png';
         expect(normalizeAssistantUrl(source, 'src')).toBe(source);
     });
+
+    it('only rewrites same-origin absolute links when the app is hosted at root', () => {
+        paths.base = '';
+
+        expect(normalizeAssistantUrl('https://exceptionless.local/stack/stack-id?mode=summary#event', 'href')).toBe('/stack/stack-id?mode=summary#event');
+        expect(normalizeAssistantUrl('https://docs.exceptionless.com/product/errors', 'href')).toBe('https://docs.exceptionless.com/product/errors');
+        expect(normalizeAssistantUrl('https://example.com/stack/stack-id', 'href')).toBe('https://example.com/stack/stack-id');
+        expect(normalizeAssistantUrl('/stack/stack-id', 'href')).toBe('/stack/stack-id');
+    });
+
+    it('does not confuse a similar prefix with the app base', () => {
+        expect(normalizeAssistantUrl('https://example.com/nextdoor/stack/stack-id', 'href')).toBe('https://example.com/nextdoor/stack/stack-id');
+    });
 });
 
 describe('addAssistantResourceLinks', () => {
+    it('links root-hosted resources while preserving existing URLs and markdown', () => {
+        paths.base = '';
+        const content = 'See /project/API and https://example.test/API, [API](/project/existing), and `API` before opening API.';
+
+        expect(addAssistantResourceLinks(content, [toolResult([{ name: 'API', webUrl: '/project/api?tab=settings#details' }])])).toBe(
+            'See /project/API and https://example.test/API, [API](/project/existing), and `API` before opening [API](/project/api?tab=settings#details).'
+        );
+    });
+
+    it.each(['https://example.com/stack/1', '//example.com/stack/1', '/\\example.com/stack/1', '/\t/example.com/stack/1'])(
+        'rejects external resource URL %s at root',
+        (webUrl) => {
+            paths.base = '';
+
+            expect(addAssistantResourceLinks('Investigate this title.', [toolResult([{ title: 'this title', webUrl }])])).toBe('Investigate this title.');
+        }
+    );
+
     it('links matching stack titles in tables and prose using tool-result web URLs', () => {
         const content = `| Type | Title |
 | --- | --- |

@@ -172,7 +172,7 @@
         }
 
         const url = new URL(value, page.url.origin);
-        if (url.origin !== page.url.origin || url.pathname === assistantPageHref || !url.pathname.startsWith('/next/')) {
+        if (url.origin !== page.url.origin || url.pathname === assistantPageHref || !url.pathname.startsWith(resolve('/'))) {
             return undefined;
         }
 
@@ -180,13 +180,26 @@
     }
 
     function getAssistantPath(context: AssistantResourceContext | undefined, fallback: string): string {
-        if (context?.eventId) {
-            return context.stackId
-                ? `/next/stack/${encodeURIComponent(context.stackId)}/event/${encodeURIComponent(context.eventId)}`
-                : `/next/event/${encodeURIComponent(context.eventId)}`;
+        if (context?.eventId && context.stackId) {
+            return resolve('/(app)/stack/[stackId=objectid]/event/[eventId=objectid]', {
+                eventId: encodeURIComponent(context.eventId),
+                stackId: encodeURIComponent(context.stackId)
+            });
         }
 
-        return context?.stackId ? `/next/stack/${encodeURIComponent(context.stackId)}` : fallback;
+        if (context?.eventId) {
+            return resolve('/(app)/event/[eventId=objectid]', {
+                eventId: encodeURIComponent(context.eventId)
+            });
+        }
+
+        if (context?.stackId) {
+            return resolve('/(app)/stack/[stackId=objectid]', {
+                stackId: encodeURIComponent(context.stackId)
+            });
+        }
+
+        return fallback;
     }
 
     async function openOrganizationSwitcher(): Promise<void> {
