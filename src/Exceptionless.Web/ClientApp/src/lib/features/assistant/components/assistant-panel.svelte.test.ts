@@ -38,10 +38,8 @@ describe('AssistantPanel', () => {
     });
 
     it('records the prompt, response, and feedback under the same conversation and message IDs', async () => {
-        vi.stubGlobal(
-            'fetch',
-            vi.fn(async () => new Response('{"type":"text_delta","text":"The answer"}\n{"type":"done"}\n'))
-        );
+        const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response('{"type":"text_delta","text":"The answer"}\n{"type":"done"}\n'));
+        vi.stubGlobal('fetch', fetchMock);
         render(AssistantPanel, {
             props: {
                 open: true,
@@ -56,6 +54,8 @@ describe('AssistantPanel', () => {
         await waitFor(() => expect(submitFeatureUsage).toHaveBeenCalledWith('assistant.ResponseHelpful', expect.anything()));
 
         const prompt = eventData('assistant.MessageSent');
+        expect(prompt.conversation_id).toMatch(/^[0-9a-f]{32}$/);
+        expect(JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string).conversation_id).toBe(prompt.conversation_id);
         expect(prompt).toMatchObject({ organization_id: 'organization-1', path: '/next/stack/stack-1', prompt_source: 'queued', role: 'user' });
         expect(eventData('assistant.ResponseCompleted')).toMatchObject({
             assistant_message_id: prompt.assistant_message_id,
@@ -94,6 +94,8 @@ describe('AssistantPanel', () => {
             retry_of_message_id: failed.assistant_message_id
         });
         expect(retried.conversation_id).not.toBe(failed.conversation_id);
+        expect(retried.conversation_id).toMatch(/^[0-9a-f]{32}$/);
+        expect(JSON.parse(fetchMock.mock.calls[1]?.[1]?.body as string).conversation_id).toBe(retried.conversation_id);
         expect(submitLog.mock.calls.filter(([feature]) => feature === 'assistant.ResponseFailed')).toHaveLength(1);
     });
 

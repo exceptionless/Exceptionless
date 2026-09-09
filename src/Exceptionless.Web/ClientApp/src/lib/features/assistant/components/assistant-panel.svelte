@@ -65,7 +65,7 @@
         promptRequest
     }: Props = $props();
     let messages = $state<AssistantChatMessage[]>([]);
-    let conversationId = $state(crypto.randomUUID());
+    let conversationId = $state(createConversationId());
     let conversationOrganizationId = $state<string>();
     let prompt = $state('');
     let errorMessage = $state<string>();
@@ -113,7 +113,7 @@
             messages = [];
             errorMessage = undefined;
             prompt = '';
-            conversationId = crypto.randomUUID();
+            conversationId = createConversationId();
             conversationOrganizationId = currentOrganizationId;
             lastOutcome = undefined;
         }
@@ -238,7 +238,7 @@
         });
         errorMessage = undefined;
         const history = messages.slice(0, userMessageIndex + 1);
-        conversationId = crypto.randomUUID();
+        conversationId = createConversationId();
         const replacement: AssistantChatMessage = {
             content: '',
             conversationId,
@@ -431,7 +431,7 @@
         trackConversationEvent('assistant.ConversationCleared');
         stopStreaming('conversation_cleared');
         messages = [];
-        conversationId = crypto.randomUUID();
+        conversationId = createConversationId();
         errorMessage = undefined;
         prompt = '';
         isNearBottom = true;
@@ -487,6 +487,11 @@
             project_id: projectId,
             user_message_id: message?.role === 'user' ? message.id : undefined
         };
+    }
+
+    function createConversationId(): string {
+        // Match the server's Guid.ToString("N") representation for exact log correlation.
+        return crypto.randomUUID().replaceAll('-', '');
     }
 
     function trackConversationEvent(feature: string, details: Record<string, unknown> = {}): void {
