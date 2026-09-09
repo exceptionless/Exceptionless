@@ -232,7 +232,7 @@ function getAssistantResourceLinks(tools: AssistantToolActivity[]): AssistantRes
 
 function isAssistantPath(value: string): boolean {
     const root = resolve('/');
-    return !value.startsWith('//') && !value.includes('\\') && (value === root.slice(0, -1) || value.startsWith(root));
+    return !value.startsWith('//') && !/[\\\s]/.test(value) && (value === root.slice(0, -1) || value.startsWith(root));
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -64,11 +64,14 @@ describe('addAssistantResourceLinks', () => {
         );
     });
 
-    it.each(['https://example.com/stack/1', '//example.com/stack/1', '/\\example.com/stack/1'])('rejects external resource URL %s at root', (webUrl) => {
-        paths.base = '';
+    it.each(['https://example.com/stack/1', '//example.com/stack/1', '/\\example.com/stack/1', '/\t/example.com/stack/1'])(
+        'rejects external resource URL %s at root',
+        (webUrl) => {
+            paths.base = '';
 
-        expect(addAssistantResourceLinks('Investigate this title.', [toolResult([{ title: 'this title', webUrl }])])).toBe('Investigate this title.');
-    });
+            expect(addAssistantResourceLinks('Investigate this title.', [toolResult([{ title: 'this title', webUrl }])])).toBe('Investigate this title.');
+        }
+    );
 
     it('links matching stack titles in tables and prose using tool-result web URLs', () => {
         const content = `| Type | Title |
