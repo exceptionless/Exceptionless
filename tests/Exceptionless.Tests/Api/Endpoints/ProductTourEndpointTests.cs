@@ -72,7 +72,7 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task RecordCurrentUserProductTourAsync_IgnoresClientTimestampAndPath()
+    public async Task RecordCurrentUserProductTourAsync_ClientTimestampAndPath_IgnoresClientValues()
     {
         // Arrange
         var currentUser = await GetTestOrganizationUserAsync();
@@ -151,7 +151,7 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task RecordCurrentUserProductTourAsync_DeletedUserReturnsUnauthorizedAndDoesNotCreate()
+    public async Task RecordCurrentUserProductTourAsync_DeletedUser_ReturnsUnauthorizedWithoutRecreatingUser()
     {
         // Arrange
         var currentUser = await GetTestOrganizationUserAsync();
