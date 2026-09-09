@@ -192,7 +192,9 @@ if (!servicesOnly)
         .WithBrowserLogs()
         .WithReference(api)
         .WithReference(oldApp)
+        .WithEnvironment("PUBLIC_EXCEPTIONLESS_API_KEY", builder.Configuration["PUBLIC_EXCEPTIONLESS_API_KEY"])
         .WithEnvironment("PUBLIC_EXCEPTIONLESS_SERVER_URL", exceptionlessServerUrl)
+        .WithEnvironment("PUBLIC_EXCEPTIONLESS_TELEMETRY_SERVER_URL", builder.Configuration["PUBLIC_EXCEPTIONLESS_TELEMETRY_SERVER_URL"] ?? String.Empty)
         .WithEnvironment("PORT", appPort.ToString())
         .WithEndpoint("http", e =>
         {
@@ -203,6 +205,7 @@ if (!servicesOnly)
             e.IsProxied = false;
         })
         .WithHttpsDeveloperCertificate()
+        .WaitFor(api)
         .WithUrlForEndpoint("http", u =>
         {
             u.DisplayText = "Open App";

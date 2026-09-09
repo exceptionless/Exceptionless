@@ -34,7 +34,8 @@ export const init: ClientInit = async () => {
 
     await Exceptionless.startup((c) => {
         c.apiKey = env.PUBLIC_EXCEPTIONLESS_API_KEY;
-        c.serverUrl = env.PUBLIC_EXCEPTIONLESS_SERVER_URL || window.location.origin;
+        c.serverUrl =
+            PUBLIC_EXCEPTIONLESS_SERVER_URL || (env.PUBLIC_EXCEPTIONLESS_TELEMETRY_SERVER_URL ?? env.PUBLIC_EXCEPTIONLESS_SERVER_URL) || window.location.origin;
         c.defaultTags.push('UI', 'Svelte');
 
         if (env.PUBLIC_APP_VERSION) {

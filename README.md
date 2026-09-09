@@ -42,6 +42,8 @@ After startup:
 1. Open `https://localhost:7121/` if a browser does not open automatically.
 2. In `Development` mode, a global administrator user `admin@exceptionless.test` with password `tester` is created automatically.
 
+   The Aspire Svelte app reports its browser errors, usage, and sessions to the seeded **Exceptionless → Exceptionless** project by default (named **API** in older development data). Telemetry uses the current browser origin, so forwarded localhost ports work without extra configuration. Exie conversation text still follows the user's chat-sharing preference. To override the telemetry destination, set `PUBLIC_EXCEPTIONLESS_API_KEY` and `PUBLIC_EXCEPTIONLESS_TELEMETRY_SERVER_URL` in the AppHost environment; an empty key disables automatic browser reporting.
+
 Notes:
 
 1. Running `Exceptionless.AppHost` starts the app and required infrastructure together.
