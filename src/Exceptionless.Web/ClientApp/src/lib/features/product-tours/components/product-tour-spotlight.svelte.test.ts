@@ -32,7 +32,9 @@ describe('ProductTourSpotlight', () => {
     });
 
     it('renders safe text and the shared Kbd component in the driver popover', async () => {
-        // Arrange / Act
+        // Arrange: beforeEach creates the spotlight target.
+
+        // Act
         render(ProductTourSpotlight, {
             props: {
                 checkpoint,
@@ -51,12 +53,18 @@ describe('ProductTourSpotlight', () => {
         expect(key.getAttribute('data-slot')).toBe('kbd');
         expect(screen.queryByRole('button', { name: 'Back' })).toBeNull();
         expect(screen.getByText('Step 2 of 5')).toBeTruthy();
+
+        // Act
         cleanup();
+
+        // Assert
         expect(document.querySelector('.product-tour-popover')).toBeNull();
     });
 
     it('omits progress when checkpoints include work outside the guide', async () => {
-        // Arrange / Act
+        // Arrange: beforeEach creates the spotlight target.
+
+        // Act
         render(ProductTourSpotlight, {
             props: { checkpoint, description: 'Choose a platform', onDismiss: vi.fn(async () => true), showProgress: false, target, title: 'Setup' }
         });
@@ -90,10 +98,16 @@ describe('ProductTourSpotlight', () => {
         const onDismiss = vi.fn(async () => true);
         render(ProductTourSpotlight, { props: { checkpoint, description: 'Search', onDismiss, target, title: 'Search' } });
 
-        // Act / Assert
+        // Act
         await fireEvent.keyUp(window, { key: 'Escape' });
+
+        // Assert
         expect(onDismiss).not.toHaveBeenCalled();
+
+        // Act
         await fireEvent.keyDown(window, { key: 'Escape' });
+
+        // Assert
         expect(onDismiss).toHaveBeenCalledExactlyOnceWith(checkpoint);
     });
 

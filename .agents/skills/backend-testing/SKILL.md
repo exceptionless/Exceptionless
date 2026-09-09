@@ -100,6 +100,13 @@ TimeProvider.SetUtcNow(new DateTimeOffset(2024, 1, 15, 12, 0, 0, TimeSpan.Zero))
 TimeProvider.Restore();
 ```
 
+## Test Structure
+
+- Every new or modified test must explicitly label `// Arrange`, `// Act`, and `// Assert` in that order. Check every changed test before finishing a review.
+- Arrange inputs, mocks, and prerequisites; Act runs the behavior under test; Assert checks the result. Keep behavior-changing calls out of Assert.
+- If setup comes entirely from a fixture or theory data, identify that in the Arrange comment. For multi-step scenarios, repeat labeled Act/Assert sections at each transition.
+- Keep fluent HTTP assertions and exception assertions in the existing project style; label a combined `// Act & Assert` section when execution and verification are inseparable. Do not add helper abstractions or redundant setup just to create sections.
+
 ## Test Principles
 
 - **Regression coverage** — Add a focused failing test first when a bug fix can be reproduced cheaply

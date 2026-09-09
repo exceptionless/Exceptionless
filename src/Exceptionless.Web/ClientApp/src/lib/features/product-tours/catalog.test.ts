@@ -21,12 +21,19 @@ describe('product tour catalog', () => {
         // Arrange
         const guide = productTourCatalog.find((tour) => tour.name === 'project-configure')!;
 
-        // Act / Assert
-        expect(guide.canResume('organization-name', '/(app)/organization/add')).toBe(true);
-        expect(guide.canResume('project-name', '/(app)/project/add')).toBe(true);
-        expect(guide.canResume('sdk-instructions', '/(app)/project/[projectId]/configure')).toBe(true);
-        expect(guide.canResume('sdk-instructions', '/(app)/project/add')).toBe(false);
-        expect(guide.canResume('sdk-instructions', null)).toBe(false);
+        // Act
+        const organization = guide.canResume('organization-name', '/(app)/organization/add');
+        const project = guide.canResume('project-name', '/(app)/project/add');
+        const sdk = guide.canResume('sdk-instructions', '/(app)/project/[projectId]/configure');
+        const wrongRoute = guide.canResume('sdk-instructions', '/(app)/project/add');
+        const missingRoute = guide.canResume('sdk-instructions', null);
+
+        // Assert
+        expect(organization).toBe(true);
+        expect(project).toBe(true);
+        expect(sdk).toBe(true);
+        expect(wrongRoute).toBe(false);
+        expect(missingRoute).toBe(false);
     });
 
     it('does not resume dialog or detail checkpoints on their parent list', () => {
@@ -34,45 +41,71 @@ describe('product tour catalog', () => {
         const savedView = productTourCatalog.find((tour) => tour.name === 'saved-view-create')!;
         const investigation = productTourCatalog.find((tour) => tour.name === 'event-investigate')!;
 
-        // Act / Assert
-        expect(savedView.canResume('open-view-menu', '/(app)/event')).toBe(true);
-        expect(savedView.canResume('name-view', '/(app)/event')).toBe(false);
-        expect(investigation.canResume('choose-error', '/(app)/event')).toBe(true);
-        expect(investigation.canResume('stack-summary', '/(app)/event')).toBe(false);
+        // Act
+        const viewMenu = savedView.canResume('open-view-menu', '/(app)/event');
+        const viewDialog = savedView.canResume('name-view', '/(app)/event');
+        const errorList = investigation.canResume('choose-error', '/(app)/event');
+        const errorDetail = investigation.canResume('stack-summary', '/(app)/event');
+
+        // Assert
+        expect(viewMenu).toBe(true);
+        expect(viewDialog).toBe(false);
+        expect(errorList).toBe(true);
+        expect(errorDetail).toBe(false);
     });
 
     it('contains only durable metadata for the five named tours', () => {
-        expect(productTourCatalog.map((tour) => tour.name)).toEqual([
-            'app-overview',
-            'project-configure',
-            'saved-view-create',
-            'event-investigate',
-            'exie-overview'
-        ]);
-        expect(productTourCatalog.every((tour) => tour.keywords.length > 0)).toBe(true);
-        expect(JSON.stringify(productTourCatalog)).not.toContain('data-tour');
+        // Arrange: the static catalog supplies the guide definitions.
+
+        // Act
+        const names = productTourCatalog.map((tour) => tour.name);
+        const hasKeywords = productTourCatalog.every((tour) => tour.keywords.length > 0);
+        const metadata = JSON.stringify(productTourCatalog);
+
+        // Assert
+        expect(names).toEqual(['app-overview', 'project-configure', 'saved-view-create', 'event-investigate', 'exie-overview']);
+        expect(hasKeywords).toBe(true);
+        expect(metadata).not.toContain('data-tour');
     });
 
     it('recommends setup until an organization has configured projects', () => {
-        expect(getRecommendedProductTourName(context({ organizationId: undefined }))).toBe('project-configure');
-        expect(getRecommendedProductTourName(context({ projects: [] }))).toBe('project-configure');
-        expect(getRecommendedProductTourName(context({ projects: [{ id: 'project-id', is_configured: false }] }))).toBe('project-configure');
-        expect(getRecommendedProductTourName(context({ projects: [{ id: 'project-id', is_configured: true }] }))).toBe('app-overview');
+        // Arrange
+        const noOrganization = context({ organizationId: undefined });
+        const noProjects = context({ projects: [] });
+        const unconfigured = context({ projects: [{ id: 'project-id', is_configured: false }] });
+        const configured = context({ projects: [{ id: 'project-id', is_configured: true }] });
+
+        // Act
+        const recommendations = [noOrganization, noProjects, unconfigured, configured].map(getRecommendedProductTourName);
+
+        // Assert
+        expect(recommendations).toEqual(['project-configure', 'project-configure', 'project-configure', 'app-overview']);
     });
 
     it('reports availability separately from catalog metadata', () => {
-        const items = getProductTourItems(
-            context({
-                assistantAccess: { enabled: false, has_access: false, upgrade_required: false },
-                errorEventAvailability: 'empty'
-            })
-        );
+        // Arrange
+        const currentContext = context({
+            assistantAccess: { enabled: false, has_access: false, upgrade_required: false },
+            errorEventAvailability: 'empty'
+        });
+
+        // Act
+        const items = getProductTourItems(currentContext);
+
+        // Assert
         expect(items.find((item) => item.name === 'exie-overview')?.currentAvailability.available).toBe(false);
         expect(items.find((item) => item.name === 'event-investigate')?.currentAvailability.available).toBe(false);
     });
 
     it('maps every guide to a stable record and typed state field', () => {
-        expect(getProductTourItems(context()).every((item) => item.stateKey)).toBe(true);
+        // Arrange
+        const currentContext = context();
+
+        // Act
+        const items = getProductTourItems(currentContext);
+
+        // Assert
+        expect(items.every((item) => item.stateKey)).toBe(true);
     });
 
     it('does not mistake an unavailable project list for an empty organization', () => {
@@ -81,6 +114,7 @@ describe('product tour catalog', () => {
 
         // Act
         const items = getProductTourItems(currentContext);
+        const recommended = getRecommendedProductTourName(currentContext);
 
         // Assert
         expect(items.find((item) => item.name === 'project-configure')?.currentAvailability).toEqual({
@@ -89,7 +123,7 @@ describe('product tour catalog', () => {
         });
         expect(items.find((item) => item.name === 'app-overview')?.currentAvailability.available).toBe(true);
         expect(items.find((item) => item.name === 'saved-view-create')?.currentAvailability.available).toBe(true);
-        expect(getRecommendedProductTourName(currentContext)).toBe('app-overview');
+        expect(recommended).toBe('app-overview');
     });
 
     it.each([{ isProjectConfigurePage: true }, { organizationId: undefined }])('allows setup without a project lookup when %o', (overrides) => {
@@ -104,11 +138,18 @@ describe('product tour catalog', () => {
     });
 
     it('starts project setup from domain state', () => {
+        // Arrange
         const definition = productTourCatalog.find((tour) => tour.name === 'project-configure')!;
 
-        expect(definition.start(context({ organizationId: undefined }))).toEqual({ checkpointName: 'organization-name', route: '/next/organization/add' });
-        expect(definition.start(context({ projects: [] }))).toEqual({ checkpointName: 'project-name', route: '/next/project/add' });
-        expect(definition.start(context({ projects: [{ id: 'project-id', is_configured: false }] }))).toEqual({
+        // Act
+        const organization = definition.start(context({ organizationId: undefined }));
+        const project = definition.start(context({ projects: [] }));
+        const platform = definition.start(context({ projects: [{ id: 'project-id', is_configured: false }] }));
+
+        // Assert
+        expect(organization).toEqual({ checkpointName: 'organization-name', route: '/next/organization/add' });
+        expect(project).toEqual({ checkpointName: 'project-name', route: '/next/project/add' });
+        expect(platform).toEqual({
             checkpointName: 'choose-platform',
             route: '/next/project/project-id/configure?redirect=true'
         });
@@ -165,9 +206,13 @@ describe('product tour catalog', () => {
     });
 
     it('requires actual Exie access', () => {
-        const item = getProductTourItems(context({ assistantAccess: { enabled: true, has_access: false, upgrade_required: true } })).find(
-            (tour) => tour.name === 'exie-overview'
-        );
+        // Arrange
+        const currentContext = context({ assistantAccess: { enabled: true, has_access: false, upgrade_required: true } });
+
+        // Act
+        const item = getProductTourItems(currentContext).find((tour) => tour.name === 'exie-overview');
+
+        // Assert
         expect(item?.currentAvailability.available).toBe(false);
     });
 });

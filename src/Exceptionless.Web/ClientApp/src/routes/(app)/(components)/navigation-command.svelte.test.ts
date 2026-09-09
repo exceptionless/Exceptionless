@@ -324,11 +324,16 @@ describe('NavigationCommand project actions', () => {
 
 describe('NavigationCommand guided tours', () => {
     it('opens the guided-tour catalog from one command', async () => {
+        // Arrange
         vi.useFakeTimers();
         const openGuidedTours = vi.fn();
         try {
             const catalogPalette = renderCommandPalette([], { openGuidedTours });
+
+            // Act
             await fireEvent.click(screen.getByText('Guided Tours…'));
+
+            // Assert
             expect(openGuidedTours).toHaveBeenCalled();
             catalogPalette.unmount();
             await vi.runAllTimersAsync();

@@ -1,3 +1,4 @@
+using System.Net;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
@@ -26,15 +27,18 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     [Fact]
     public async Task RecordCurrentUserProductTourAsync_NewTour_ReturnsAndPersistsServerTimestamp()
     {
+        // Arrange
         var currentUser = await GetTestOrganizationUserAsync();
         var utcNow = new DateTimeOffset(2026, 9, 8, 20, 0, 0, TimeSpan.Zero);
         TimeProvider.SetUtcNow(utcNow);
 
+        // Act
         var result = await SendRequestAsAsync<RecordProductTourResult>(r => r
             .Put().AsTestOrganizationUser()
             .AppendPaths("users", "me", "product-tours", ProductTourNames.AppOverview, "record")
             .StatusCodeShouldBeOk());
 
+        // Assert
         Assert.NotNull(result);
         Assert.Equal(utcNow.UtcDateTime, result.RecordedUtc);
         var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, o => o.Cache(false));
@@ -45,6 +49,7 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     [Fact]
     public async Task RecordCurrentUserProductTourAsync_RepeatedRequest_PreservesFirstTimestamp()
     {
+        // Arrange
         await GetTestOrganizationUserAsync();
         var firstUtc = new DateTimeOffset(2026, 9, 8, 20, 0, 0, TimeSpan.Zero);
         TimeProvider.SetUtcNow(firstUtc);
@@ -53,12 +58,14 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
             .AppendPaths("users", "me", "product-tours", ProductTourNames.SavedViewCreate, "record")
             .StatusCodeShouldBeOk());
 
+        // Act
         TimeProvider.Advance(TimeSpan.FromMinutes(10));
         var second = await SendRequestAsAsync<RecordProductTourResult>(r => r
             .Put().AsTestOrganizationUser()
             .AppendPaths("users", "me", "product-tours", ProductTourNames.SavedViewCreate, "record")
             .StatusCodeShouldBeOk());
 
+        // Assert
         Assert.NotNull(first);
         Assert.NotNull(second);
         Assert.Equal(first.RecordedUtc, second.RecordedUtc);
@@ -68,16 +75,19 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     [Fact]
     public async Task RecordCurrentUserProductTourAsync_IgnoresClientTimestampAndPath()
     {
+        // Arrange
         var currentUser = await GetTestOrganizationUserAsync();
         var serverUtc = new DateTimeOffset(2026, 9, 8, 20, 0, 0, TimeSpan.Zero);
         TimeProvider.SetUtcNow(serverUtc);
 
+        // Act
         var result = await SendRequestAsAsync<RecordProductTourResult>(r => r
             .Put().AsTestOrganizationUser()
             .AppendPaths("users", "me", "product-tours", ProductTourNames.AppOverview, "record")
             .Content(new { recorded_utc = "2000-01-01T00:00:00Z", field = "full_name" })
             .StatusCodeShouldBeOk());
 
+        // Assert
         Assert.NotNull(result);
         Assert.Equal(serverUtc.UtcDateTime, result.RecordedUtc);
         var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, o => o.Cache(false));
@@ -89,7 +99,10 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     [Fact]
     public async Task RecordCurrentUserProductTourAsync_SequentialTours_PreservesBothDates()
     {
+        // Arrange
         await GetTestOrganizationUserAsync();
+
+        // Act
         await SendRequestAsync(r => r.Put().AsTestOrganizationUser()
             .AppendPaths("users", "me", "product-tours", ProductTourNames.AppOverview, "record")
             .StatusCodeShouldBeOk());
@@ -97,6 +110,7 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
             .AppendPaths("users", "me", "product-tours", ProductTourNames.ExieOverview, "record")
             .StatusCodeShouldBeOk());
 
+        // Assert
         var currentUser = await GetTestOrganizationUserAsync();
         var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, o => o.Cache(false));
         Assert.NotNull(persistedUser);
@@ -105,33 +119,57 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public Task RecordCurrentUserProductTourAsync_UnknownTour_ReturnsUnprocessableEntity() =>
-        SendRequestAsync(r => r.Put().AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", "unknown-tour", "record")
-            .StatusCodeShouldBeUnprocessableEntity());
+    public async Task RecordCurrentUserProductTourAsync_UnknownTour_ReturnsUnprocessableEntity()
+    {
+        // Arrange: sample users are created by ResetDataAsync.
+
+        // Act
+        using var response = await SendRequestAsync(r => r.Put().AsTestOrganizationUser()
+            .AppendPaths("users", "me", "product-tours", "unknown-tour", "record"));
+
+        // Assert
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+    }
 
     [Fact]
-    public Task RecordCurrentUserProductTourAsync_OldRoute_ReturnsNotFound() =>
-        SendRequestAsync(r => r.Put().AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", ProductTourNames.AppOverview)
-            .StatusCodeShouldBeNotFound());
+    public async Task RecordCurrentUserProductTourAsync_OldRoute_ReturnsNotFound()
+    {
+        // Arrange: sample users are created by ResetDataAsync.
+
+        // Act
+        using var response = await SendRequestAsync(r => r.Put().AsTestOrganizationUser()
+            .AppendPaths("users", "me", "product-tours", ProductTourNames.AppOverview));
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
 
     [Fact]
-    public Task RecordCurrentUserProductTourAsync_AnonymousUser_ReturnsUnauthorized() =>
-        SendRequestAsync(r => r.Put()
-            .AppendPaths("users", "me", "product-tours", ProductTourNames.AppOverview, "record")
-            .StatusCodeShouldBeUnauthorized());
+    public async Task RecordCurrentUserProductTourAsync_AnonymousUser_ReturnsUnauthorized()
+    {
+        // Arrange: sample users are created by ResetDataAsync.
+
+        // Act
+        using var response = await SendRequestAsync(r => r.Put()
+            .AppendPaths("users", "me", "product-tours", ProductTourNames.AppOverview, "record"));
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
 
     [Fact]
     public async Task RecordCurrentUserProductTourAsync_DeletedUserReturnsUnauthorizedAndDoesNotCreate()
     {
+        // Arrange
         var currentUser = await GetTestOrganizationUserAsync();
         await _userRepository.RemoveAsync(currentUser.Id, o => o.ImmediateConsistency());
 
+        // Act
         await SendRequestAsync(r => r.Put().AsTestOrganizationUser()
             .AppendPaths("users", "me", "product-tours", ProductTourNames.AppOverview, "record")
             .StatusCodeShouldBeUnauthorized());
 
+        // Assert
         Assert.Null(await _userRepository.GetByIdAsync(currentUser.Id, o => o.Cache(false)));
     }
 

@@ -242,6 +242,7 @@ public class UserSerializerTests : TestWithServices
     [Fact]
     public void Serialize_UserWithProductTourState_UsesSnakeCaseDatesAndOmitsNulls()
     {
+        // Arrange
         var original = new User
         {
             Id = "tour-user",
@@ -255,8 +256,10 @@ public class UserSerializerTests : TestWithServices
             }
         };
 
+        // Act
         string? json = _serializer.SerializeToString(original);
 
+        // Assert
         Assert.Contains("\"product_tours\":{\"app_overview\":\"2024-01-15T12:00:00Z\",\"saved_view_create\":\"2024-01-15T12:01:00Z\"}", json);
         Assert.DoesNotContain("status", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("version", json, StringComparison.OrdinalIgnoreCase);
@@ -266,6 +269,7 @@ public class UserSerializerTests : TestWithServices
     [Fact]
     public void Deserialize_UserWithProductTourState_PreservesAllDates()
     {
+        // Arrange
         const string json = """
             {
                 "id": "tour-user",
@@ -284,8 +288,10 @@ public class UserSerializerTests : TestWithServices
             }
             """;
 
+        // Act
         var user = _serializer.Deserialize<User>(json);
 
+        // Assert
         Assert.NotNull(user);
         var state = Assert.IsType<ProductTourState>(user.ProductTours);
         Assert.Equal(FixedDateTime, state.AppOverview);
@@ -301,8 +307,12 @@ public class UserSerializerTests : TestWithServices
     [InlineData("{\"id\":\"legacy-user\",\"full_name\":\"Legacy User\",\"email_address\":\"legacy@example.com\",\"is_email_address_verified\":true}")]
     public void Deserialize_UserWithoutProductTours_ReturnsEmptyState(string json)
     {
+        // Arrange: InlineData supplies a legacy user with no product_tours field.
+
+        // Act
         var user = _serializer.Deserialize<User>(json);
 
+        // Assert
         Assert.NotNull(user);
         var state = Assert.IsType<ProductTourState>(user.ProductTours);
         Assert.Null(state.AppOverview);

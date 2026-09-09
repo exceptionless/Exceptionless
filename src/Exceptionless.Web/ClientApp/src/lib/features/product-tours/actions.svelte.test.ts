@@ -52,8 +52,12 @@ describe('product tour completion', () => {
             action: { label: 'Browse guides', onClick: mocks.openCatalog },
             description: 'For more guides, select your name in the sidebar → Help → Guided Tours.'
         });
+
+        // Act
         const options = mocks.success.mock.calls[0]![1];
         options.action.onClick();
+
+        // Assert
         expect(mocks.openCatalog).toHaveBeenCalledOnce();
     });
 

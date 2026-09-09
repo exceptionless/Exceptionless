@@ -10,6 +10,8 @@ describe('product-tour activity', () => {
     beforeEach(() => vi.resetAllMocks());
 
     it.each(['completed', 'dismissed'] as const)('uses the existing feature-usage pipeline for %s', async (action) => {
+        // Arrange: each case supplies an action; beforeEach resets the mocked usage pipeline.
+
         // Act
         await submitProductTourActivity(action, 'app-overview');
 

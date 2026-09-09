@@ -55,7 +55,6 @@ describe('InvestigationDetailTour', () => {
         render(InvestigationDetailTour, { event });
         await screen.findByText('Understand the grouped issue');
 
-        // Act and assert
         for (const [index, title] of [
             'Understand the grouped issue',
             'Review the issue status',
@@ -63,13 +62,21 @@ describe('InvestigationDetailTour', () => {
             'Begin with the overview',
             'Compare every occurrence'
         ].entries()) {
+            // Act
             await screen.findByText(title);
+
+            // Assert
             expect(targets[index]?.classList.contains('driver-active-element')).toBe(true);
             if (index < targets.length - 1) {
+                // Act
                 await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
             }
         }
+
+        // Act
         await fireEvent.click(screen.getByRole('button', { name: 'Finish guide' }));
+
+        // Assert
         expect(actions.complete).toHaveBeenCalledExactlyOnceWith(productTourCheckpoint.current);
         expect(actions.dismiss).not.toHaveBeenCalled();
     });
@@ -91,10 +98,12 @@ describe('InvestigationDetailTour', () => {
         productTourCheckpoint.start('event-investigate', 'filter-errors', 'user');
         render(InvestigationDetailTour, { event });
 
-        // Act and assert
         for (let run = 0; run < 2; run++) {
+            // Act
             productTourCheckpoint.start('event-investigate', 'choose-error', 'user');
             await screen.findByText('Understand the grouped issue');
+
+            // Assert
             expect(productTourCheckpoint.current?.checkpointName).toBe('stack-summary');
         }
     });

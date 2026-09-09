@@ -21,7 +21,10 @@ describe('faceted filter initialization', () => {
         expect(screen.getByRole('button', { name: /^Raw Filter.*error\.type:Local/ })).toBe(original);
         expect(screen.getByRole('button', { name: /^Raw Filter.*error\.type:Remote/ })).not.toBe(original);
 
+        // Act
         await view.rerender({ filters: [new KeywordFilter('error.type:Local'), new KeywordFilter('error.type:Remote')] });
+
+        // Assert
         expect(screen.getAllByRole('button', { name: /^Raw Filter/ })).toHaveLength(2);
     });
 
@@ -71,7 +74,11 @@ describe('faceted filter initialization', () => {
         // Assert
         await waitFor(() => expect(trigger.getAttribute('aria-expanded')).toBe('true'));
         expect(screen.getByRole('button', { name: /^Date/ })).toBe(trigger);
+
+        // Act
         await fireEvent.click(screen.getByRole('button', { name: 'Last 30 days' }));
+
+        // Assert
         expect(changed).toHaveBeenCalledWith(hydrated);
         expect(hydrated.value).toBe('[now-30d TO now]');
     });

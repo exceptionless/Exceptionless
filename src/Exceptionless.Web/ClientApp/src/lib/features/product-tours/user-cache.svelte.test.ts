@@ -49,10 +49,12 @@ describe('guided-tour user cache invalidation', () => {
     });
 
     it('does not issue a request after the account changes before mutation execution', async () => {
+        // Arrange
         const queryClient = new QueryClient();
         mocks.useQueryClient.mockReturnValue(queryClient);
         queryClient.setQueryData(queryKeys.me(), { id: 'new-user', product_tours: {} } as ViewCurrentUser);
 
+        // Act & Assert
         await expect(putCurrentUserProductTour().mutateAsync({ tourName: 'app-overview', userId: 'old-user' })).rejects.toThrow('current user changed');
         expect(mocks.fetchApiJson).not.toHaveBeenCalled();
         queryClient.clear();

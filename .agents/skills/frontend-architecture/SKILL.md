@@ -143,6 +143,8 @@ Do not copy architecture from the legacy Angular app into Svelte.
 
 ## Frontend Tests
 
+- Every new or modified test must explicitly label `// Arrange`, `// Act`, and `// Assert` in that order, including Vitest and Playwright tests. Check every changed test before finishing a review.
+- If setup is supplied by fixtures or parameterized cases, identify it in the Arrange comment. Repeat labeled Act/Assert sections for multi-step interactions; use `// Act & Assert` only when execution and verification are inseparable (such as a rejection assertion or a helper that exercises and verifies a browser flow). Do not add redundant setup or helpers just to create sections.
 - Unit/component tests use Vitest and Testing Library, colocated as `.test.ts` or `.spec.ts`.
 - Prefer accessible queries: `getByRole`, `getByLabelText`, then visible text; use test IDs only when semantics are not enough.
 - E2E tests use Playwright and must target local app URLs only. Prefer role/label selectors over CSS selectors.

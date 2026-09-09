@@ -19,16 +19,27 @@ describe('product tour checkpoint store', () => {
         // Arrange
         const first = productTourCheckpoint.start('app-overview', 'navigation', 'user');
 
-        // Act & Assert
+        // Act
         const second = productTourCheckpoint.advance(first, 'command-search')!;
+
+        // Assert
         expect(productTourCheckpoint.current).toBe(second);
+
+        // Act
         const back = productTourCheckpoint.advance(second, 'navigation')!;
+
+        // Assert
         expect(back.checkpointName).toBe('navigation');
+
+        // Act
         const replay = productTourCheckpoint.start('app-overview', 'navigation', 'user');
+
+        // Assert
         expect(productTourCheckpoint.current).toBe(replay);
     });
 
     it('does not retrigger an effect that clears an empty store', () => {
+        // Arrange
         let runs = 0;
         const dispose = $effect.root(() => {
             $effect(() => {
@@ -40,7 +51,10 @@ describe('product tour checkpoint store', () => {
         });
 
         try {
+            // Act
             flushSync();
+
+            // Assert
             expect(runs).toBe(1);
         } finally {
             dispose();
@@ -48,11 +62,17 @@ describe('product tour checkpoint store', () => {
     });
 
     it('does not let stale work advance or clear a newer tour', () => {
+        // Arrange
         const first = productTourCheckpoint.start(checkpoint.tourName, checkpoint.checkpointName, checkpoint.userId, checkpoint.organizationId);
         const second = productTourCheckpoint.start(checkpoint.tourName, checkpoint.checkpointName, checkpoint.userId, checkpoint.organizationId);
 
-        expect(productTourCheckpoint.advance(first, 'command-search')).toBeUndefined();
-        expect(productTourCheckpoint.clear(first)).toBe(false);
+        // Act
+        const advanced = productTourCheckpoint.advance(first, 'command-search');
+        const cleared = productTourCheckpoint.clear(first);
+
+        // Assert
+        expect(advanced).toBeUndefined();
+        expect(cleared).toBe(false);
         expect(productTourCheckpoint.current).toBe(second);
     });
 });
