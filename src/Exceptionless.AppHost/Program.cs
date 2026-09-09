@@ -119,6 +119,9 @@ if (!servicesOnly)
         .WithUrlForEndpoint("http", u => u.DisplayLocation = UrlDisplayLocation.DetailsOnly)
         .WithHttpHealthCheck("/health");
 
+    api.WithEnvironment("EX_ExceptionlessApiKey", builder.Configuration["ExceptionlessApiKey"])
+        .WithEnvironment("EX_ExceptionlessServerUrl", api.GetEndpoint("http"));
+
     if (assistantApiKey is not null)
     {
         api.WithEnvironment("EX_Assistant__ApiKey", assistantApiKey);
@@ -138,6 +141,9 @@ if (!servicesOnly)
         .WithReference(storageBlobs, "AzureStorage")
         .WithReference(storageQueues, "AzureQueues")
         .WithEnvironment("ConnectionStrings:Email", SharedEmailConnectionString)
+        .WithEnvironment("EX_ExceptionlessApiKey", builder.Configuration["ExceptionlessApiKey"])
+        .WithEnvironment("EX_ExceptionlessServerUrl", api.GetEndpoint("http"))
+        .WaitFor(api)
         .WaitFor(elastic)
         .WaitFor(cache)
         .WaitFor(mail)
