@@ -174,12 +174,16 @@ describe('AssistantPanel', () => {
                 organizationId: 'organization-1'
             }
         });
-        expect(screen.getByText(/Default: off/)).toBeTruthy();
+        expect(screen.queryByRole('switch', { name: 'Share conversations to improve Exie' })).toBeNull();
+        await fireEvent.click(screen.getByRole('button', { name: 'Chat sharing: Off' }));
+        expect(screen.getByText(/Using the default: off/)).toBeTruthy();
         await fireEvent.click(screen.getByRole('switch', { name: 'Share conversations to improve Exie' }));
         await waitFor(() => expect(save).toHaveBeenCalledWith(true));
         await fireEvent.click(await screen.findByRole('button', { name: 'Use default (off)' }));
         await waitFor(() => expect(save).toHaveBeenLastCalledWith(null));
         await waitFor(() => expect(screen.getByRole('switch', { name: 'Share conversations to improve Exie' }).getAttribute('aria-checked')).toBe('false'));
+        await fireEvent.click(screen.getByRole('button', { name: 'Chat sharing: Off' }));
+        await waitFor(() => expect(screen.queryByRole('switch', { name: 'Share conversations to improve Exie' })).toBeNull());
     });
 
     it.each([false, true])('stops collecting the active reply and subsequent prompts when opting out (save fails: %s)', async (saveFails) => {
@@ -212,9 +216,13 @@ describe('AssistantPanel', () => {
         await waitFor(() => expect(submitLog).toHaveBeenCalledWith('assistant.Prompt', 'Initial question', expect.anything()));
         controller.enqueue(new TextEncoder().encode('{"type":"text_delta","text":"Active reply"}\n'));
         await screen.findByText('Active reply');
+        await fireEvent.click(screen.getByRole('button', { name: 'Chat sharing: On' }));
         await fireEvent.click(screen.getByRole('switch', { name: 'Share conversations to improve Exie' }));
         await waitFor(() => expect(save).toHaveBeenCalledWith(false));
-        if (saveFails) await screen.findByText(/Sharing is paused on this page/);
+        if (saveFails) {
+            await screen.findByText(/Sharing is paused on this page/);
+            await fireEvent.click(screen.getByRole('button', { name: 'Chat sharing: Off · Not saved' }));
+        }
         controller.enqueue(new TextEncoder().encode('{"type":"done"}\n'));
         controller.close();
         await waitFor(() => expect(eventData('assistant.ResponseCompleted').outcome).toBe('completed'));
@@ -225,6 +233,7 @@ describe('AssistantPanel', () => {
         expect(JSON.stringify(submitLog.mock.calls)).not.toContain('Active reply');
         expect(JSON.stringify(submitLog.mock.calls)).not.toContain('Later');
         if (saveFails) {
+            await fireEvent.click(screen.getByRole('button', { name: 'Chat sharing: Off · Not saved' }));
             await fireEvent.click(screen.getByRole('button', { name: 'Retry saving' }));
             await waitFor(() => expect(save).toHaveBeenCalledTimes(2));
             expect(save).toHaveBeenLastCalledWith(false);

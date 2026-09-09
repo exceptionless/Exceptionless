@@ -683,15 +683,17 @@
                     onSubmit={(value) => void submitPrompt(value)}
                     {showToolCalls}
                 />
-                <Muted class="text-center text-xs">AI can make mistakes. Check important changes.</Muted>
-                <AssistantConversationSharing
-                    checked={isSharingEnabled}
-                    error={sharingError}
-                    isSaving={isSavingSharing}
-                    onChange={changeConversationSharing}
-                    onRetry={() => changeConversationSharing(requestedSharing)}
-                    settings={onConversationSharingChange ? sharingSettings : undefined}
-                />
+                <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                    <Muted class="text-xs">AI can make mistakes. Check important changes.</Muted>
+                    <AssistantConversationSharing
+                        checked={isSharingEnabled}
+                        error={sharingError}
+                        isSaving={isSavingSharing}
+                        onChange={changeConversationSharing}
+                        onRetry={() => changeConversationSharing(requestedSharing)}
+                        settings={onConversationSharingChange ? sharingSettings : undefined}
+                    />
+                </div>
             </div>
         </div>
     {/if}
