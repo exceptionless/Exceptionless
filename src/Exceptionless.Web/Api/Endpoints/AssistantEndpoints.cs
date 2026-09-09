@@ -93,6 +93,7 @@ public static class AssistantEndpoints
             OrganizationId = organizationId,
             ConversationId = conversationId ?? Guid.NewGuid().ToString("N")
         };
+        bool fullLoggingEnabled = (await conversationSharingService.GetAsync(userId))?.Enabled == true;
         var planOptions = access.PlanOptions!;
         await using var turnReservation = await assistantUsageService.TryStartTurnAsync(organizationId, planOptions);
         if (!turnReservation.Allowed)
@@ -115,7 +116,6 @@ public static class AssistantEndpoints
         httpContext.Response.ContentType = "application/x-ndjson";
         httpContext.Response.Headers.CacheControl = "no-store";
         httpContext.Response.Headers.Append("X-Accel-Buffering", "no");
-        bool fullLoggingEnabled = (await conversationSharingService.GetAsync(userId))?.Enabled == true;
 
         using var turnCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(httpContext.RequestAborted);
         turnCancellationSource.CancelAfter(TimeSpan.FromSeconds(AssistantLimits.MaximumTurnDurationSeconds));

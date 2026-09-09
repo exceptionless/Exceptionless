@@ -24,7 +24,7 @@
         <Field.Content class="gap-1">
             <Field.Label for={id} class="text-xs">Share conversations to improve Exie</Field.Label>
             <Field.Description class="text-xs">
-                Allow Exceptionless to review your submitted messages and replies.
+                Allow Exceptionless to review your submitted messages and replies. Usage and error diagnostics remain enabled when sharing is off.
                 {#if settings && !settings.is_overridden}Default: {settings.default_enabled ? 'on' : 'off'}. You can change this anytime.{/if}
             </Field.Description>
         </Field.Content>
