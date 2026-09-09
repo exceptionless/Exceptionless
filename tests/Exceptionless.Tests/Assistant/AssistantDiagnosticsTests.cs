@@ -166,9 +166,10 @@ public sealed class AssistantDiagnosticsTests
     public void Finish_FailedTurn_RecordsErrorSpanAndBoundedMetricTagsOnce()
     {
         var activities = new ConcurrentQueue<Activity>();
+        var activitySource = AppDiagnostics.ActivitySource;
         using var listener = new ActivityListener
         {
-            ShouldListenTo = source => source.Name == AppDiagnostics.ActivitySource.Name,
+            ShouldListenTo = source => source == activitySource,
             Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
             SampleUsingParentId = (ref ActivityCreationOptions<string> _) => ActivitySamplingResult.AllDataAndRecorded,
             ActivityStopped = activity => activities.Enqueue(activity)

@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -1020,6 +1022,113 @@ public sealed class AssistantServiceTests
         Assert.Equal(2048, diagnostics.Provider?.ReasoningTokens);
         Assert.Equal(1, diagnostics.ProviderRequests);
         Assert.DoesNotContain(logger.Entries, entry => entry.Message.Contains("private question", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task StreamAsync_ProviderStreamError_RecordsProviderErrorWithoutLoggingBody()
+    {
+        var handler = new StubHttpMessageHandler("""
+            data: {"id":"gen-stream-error","error":{"message":"private provider error"}}
+
+            """);
+        var options = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["BaseURL"] = "https://localhost", ["Assistant:ApiKey"] = "test-key" })
+            .Build());
+        var logger = new RecordingAssistantLogger();
+        using var diagnostics = new AssistantTurnDiagnostics(logger, TimeProvider.System, "organization-id", "conversation-id", "request-id");
+        var service = CreateAssistantService(handler, options);
+
+        var exception = await Assert.ThrowsAsync<AssistantProviderException>(async () =>
+        {
+            await foreach (var _ in service.StreamAsync(
+                new AssistantChatRequest([new AssistantChatMessage("user", "private question")]),
+                "user-id", CreatePlanOptions(), diagnostics, TestContext.Current.CancellationToken))
+            {
+            }
+        });
+
+        Assert.Equal("provider_error", exception.FailureCode);
+        var entry = Assert.Single(logger.Entries);
+        Assert.Equal("provider_error", entry.Properties["ProviderOutcome"]);
+        Assert.Equal(200, entry.Properties["ProviderStatusCode"]);
+        Assert.Equal("gen-stream-error", entry.Properties["ProviderGenerationId"]);
+        Assert.DoesNotContain("private provider error", entry.Message);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StreamAsync_ToolThrows_RecordsToolOutcomeAndDuration(bool cancelled)
+    {
+        var activitySource = AppDiagnostics.ActivitySource;
+        using var activityListener = new ActivityListener
+        {
+            ShouldListenTo = source => source == activitySource,
+            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded
+        };
+        ActivitySource.AddActivityListener(activityListener);
+        var logger = new RecordingAssistantLogger();
+        using var diagnostics = new AssistantTurnDiagnostics(logger, TimeProvider.System, "organization-id", "conversation-id", "request-id");
+        var measurements = new List<Dictionary<string, object?>>();
+        using var meterListener = new MeterListener
+        {
+            InstrumentPublished = (instrument, listener) =>
+            {
+                if (instrument.Name == "ex.assistant.tool.duration")
+                {
+                    listener.EnableMeasurementEvents(instrument);
+                }
+            }
+        };
+        meterListener.SetMeasurementEventCallback<double>((_, _, tags, _) =>
+        {
+            if (Activity.Current?.GetTagItem("assistant.turn.id") as string == diagnostics.TurnId)
+            {
+                measurements.Add(tags.ToArray().ToDictionary(tag => tag.Key, tag => tag.Value));
+            }
+        });
+        meterListener.Start();
+        // An array where a tool argument object is required throws during invocation.
+        var handler = new StubHttpMessageHandler("""
+            data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"tool-1","function":{"name":"search_stacks","arguments":"[]"}}]}}]}
+
+            data: [DONE]
+
+            """);
+        var options = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["BaseURL"] = "https://localhost", ["Assistant:ApiKey"] = "test-key" })
+            .Build());
+        var service = CreateAssistantService(handler, options);
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+
+        var exception = await Record.ExceptionAsync(async () =>
+        {
+            await foreach (var item in service.StreamAsync(
+                new AssistantChatRequest([new AssistantChatMessage("user", "Find my errors")]),
+                "user-id", CreatePlanOptions(), diagnostics, cancellation.Token))
+            {
+                if (cancelled && item.Type == "tool_call")
+                {
+                    cancellation.Cancel();
+                }
+            }
+        });
+
+        if (cancelled)
+        {
+            Assert.IsAssignableFrom<OperationCanceledException>(exception);
+        }
+        else
+        {
+            Assert.IsType<InvalidOperationException>(exception);
+        }
+        Assert.Equal(1, diagnostics.ToolCalls);
+        Assert.Equal(cancelled ? 0 : 1, diagnostics.ToolFailures);
+        Assert.Equal(cancelled ? "operation_cancelled" : "tool_execution_error", diagnostics.LastToolError);
+        var measurement = Assert.Single(measurements);
+        Assert.Equal("search_stacks", measurement["tool"]);
+        Assert.Equal(cancelled ? "cancelled" : "failed", measurement["outcome"]);
+        Assert.Equal(diagnostics.LastToolError, measurement["reason"]);
     }
 
     [Fact]

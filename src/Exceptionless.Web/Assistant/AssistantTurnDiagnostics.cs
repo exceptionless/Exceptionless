@@ -100,6 +100,23 @@ internal sealed class AssistantTurnDiagnostics : IDisposable
             new("tool", LastTool), new("outcome", failed ? "failed" : "completed"), new("reason", errorCode ?? "none"));
     }
 
+    public void RecordToolException(Exception exception, double durationMilliseconds)
+    {
+        bool cancelled = exception is OperationCanceledException;
+        string outcome = cancelled ? "cancelled" : "failed";
+        LastToolError = cancelled ? "operation_cancelled" : "tool_execution_error";
+        if (!cancelled)
+        {
+            ToolFailures++;
+        }
+
+        _logger.Log(cancelled ? LogLevel.Information : LogLevel.Warning,
+            "Assistant tool {ToolName} {ToolOutcome} with {ToolErrorCode} in {DurationMs} ms for turn {AssistantTurnId}: exception_type={ExceptionType}",
+            LastTool, outcome, LastToolError, durationMilliseconds, TurnId, exception.GetType().FullName);
+        AppDiagnostics.AssistantToolDuration.Record(durationMilliseconds,
+            new("tool", LastTool), new("outcome", outcome), new("reason", LastToolError));
+    }
+
     public void Finish(string outcome, string? failureCode = null, Exception? exception = null)
     {
         if (_finished)

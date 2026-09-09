@@ -14,6 +14,7 @@ internal sealed class AssistantProviderDiagnostics(
     private readonly long _started = timeProvider.GetTimestamp();
     private readonly Activity? _activity = AppDiagnostics.StartActivity("assistant.provider");
     private bool _finished;
+    private bool _receivedError;
 
     public string? GenerationId { get; private set; }
     public string? Model { get; private set; }
@@ -40,6 +41,7 @@ internal sealed class AssistantProviderDiagnostics(
         GenerationId = GetMetadata(chunk, "id") ?? GenerationId;
         Model = GetMetadata(chunk, "model") ?? Model;
         ProviderName = GetMetadata(chunk, "provider") ?? ProviderName;
+        _receivedError |= chunk.TryGetProperty("error", out _);
         if (chunk.TryGetProperty("usage", out var usage) && usage.ValueKind == JsonValueKind.Object)
         {
             UsageReceived = true;
@@ -59,7 +61,7 @@ internal sealed class AssistantProviderDiagnostics(
 
     public void Complete(int outputCharacters, int toolCalls, bool receivedDone)
     {
-        string outcome = FinishReason switch
+        string outcome = _receivedError ? "provider_error" : FinishReason switch
         {
             "length" => "output_limit",
             "content_filter" => "content_filter",
@@ -94,7 +96,7 @@ internal sealed class AssistantProviderDiagnostics(
     }
 
     public void Dispose() => Finish(StatusCode is >= 400 ? "http_error"
-        : FinishReason == "error" ? "provider_error"
+        : _receivedError || FinishReason == "error" ? "provider_error"
         : cancellationToken.IsCancellationRequested ? "cancelled" : "interrupted");
 
     private static string? GetMetadata(JsonElement element, string name)

@@ -44,7 +44,7 @@ Server diagnostics deliberately exclude prompts, answer text, reasoning text, to
 | `usage_limit`, `context_limit` | A turn reached an organization usage limit or the conversation context bound. |
 | `invalid_provider_response`, `response_write_error`, `tool_execution_error`, `internal_error` | Inspect the stage, exception type/stack, and correlated trace. |
 
-Returned tool errors are logged with the tool name and error code, even when the model recovers and completes the turn. Provider `output_limit` or `incomplete_stream` warnings can also accompany a completed turn when text was returned. Diagnostics preserve the existing response and accounting behavior; they do not automatically retry tools or change output budgets.
+Returned tool errors are logged with the tool name and error code, even when the model recovers and completes the turn. Thrown tool exceptions also increment tool failures and record duration; interrupted tool invocations record a separate `cancelled` duration with `operation_cancelled`. Provider error objects inside an HTTP 200 stream record `provider_error` even without a finish reason. Provider `output_limit` or `incomplete_stream` warnings can also accompany a completed turn when text was returned. Diagnostics preserve the existing response and accounting behavior; they do not automatically retry tools or change output budgets.
 
 The existing `ex.assistant.turn.outcomes` metric remains unchanged. Additional histograms provide immediate duration and outcome counts:
 

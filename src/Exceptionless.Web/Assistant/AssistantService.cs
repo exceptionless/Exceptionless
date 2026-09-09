@@ -389,7 +389,15 @@ public sealed class AssistantService(
                     if (toolCall.Name == SearchStacksTool)
                         remainingProjectSearches--;
 
-                    result = await ExecuteToolAsync(toolCall.Name, arguments, request, cancellationToken);
+                    try
+                    {
+                        result = await ExecuteToolAsync(toolCall.Name, arguments, request, cancellationToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        diagnostics?.RecordToolException(ex, timeProvider.GetElapsedTime(toolStarted).TotalMilliseconds);
+                        throw;
+                    }
                 }
 
                 diagnostics?.RecordToolResult(result, timeProvider.GetElapsedTime(toolStarted).TotalMilliseconds);
