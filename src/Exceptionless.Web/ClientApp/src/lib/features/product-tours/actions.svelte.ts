@@ -1,5 +1,4 @@
 import { putCurrentUserProductTour } from '$features/users/api.svelte';
-import { ProductTourStatus } from '$features/users/models';
 import { toast } from 'svelte-sonner';
 
 import type { ProductTourCheckpoint } from './models';
@@ -16,58 +15,66 @@ const COMPLETION_MESSAGES: Record<Exclude<ProductTourCheckpoint['tourName'], 'ap
 };
 
 const progressRequests = new WeakSet<ProductTourCheckpoint>();
+const RECORD_NAMES: Record<ProductTourCheckpoint['tourName'], string> = {
+    'app-overview': 'app-overview',
+    'event-investigate': 'event-investigate',
+    'exie-overview': 'exie-overview',
+    'project-configure': 'project-configure',
+    'saved-view-create': 'saved-view-create'
+};
+const STATE_KEYS: Record<
+    ProductTourCheckpoint['tourName'],
+    'app_overview' | 'event_investigate' | 'exie_overview' | 'project_configure' | 'saved_view_create'
+> = {
+    'app-overview': 'app_overview',
+    'event-investigate': 'event_investigate',
+    'exie-overview': 'exie_overview',
+    'project-configure': 'project_configure',
+    'saved-view-create': 'saved_view_create'
+};
 
 export function createProductTourActions() {
     const controls = tryUseProductTourControls();
     const progressMutation = putCurrentUserProductTour();
 
     async function complete(checkpoint: ProductTourCheckpoint): Promise<boolean> {
-        return await finish(checkpoint, ProductTourStatus.Completed);
+        return finish(checkpoint, 'completed');
     }
 
     async function dismiss(checkpoint: ProductTourCheckpoint): Promise<boolean> {
-        return await finish(checkpoint, ProductTourStatus.Dismissed);
+        return finish(checkpoint, 'dismissed');
     }
 
     async function completeAfterDomainSuccess(checkpoint: ProductTourCheckpoint): Promise<void> {
-        await finish(checkpoint, ProductTourStatus.Completed, 'Setup succeeded, but guided-tour progress could not be saved.');
+        finish(checkpoint, 'completed');
     }
 
-    async function finish(
-        checkpoint: ProductTourCheckpoint,
-        status: ProductTourStatus,
-        errorMessage = 'We could not save your guided-tour progress. Please try again.'
-    ): Promise<boolean> {
+    async function finish(checkpoint: ProductTourCheckpoint, action: 'completed' | 'dismissed'): Promise<boolean> {
         if (productTourCheckpoint.current !== checkpoint || progressRequests.has(checkpoint)) {
             return false;
         }
 
         progressRequests.add(checkpoint);
-        try {
-            await progressMutation.mutateAsync({
-                progress: {
-                    status,
-                    version: checkpoint.version
-                },
-                tourName: checkpoint.tourName
-            });
-        } catch {
-            toast.error(errorMessage);
-            return false;
-        } finally {
+        if (!productTourCheckpoint.clear(checkpoint)) {
             progressRequests.delete(checkpoint);
+            return false;
         }
 
-        if (!productTourCheckpoint.clear(checkpoint)) {
-            return false;
+        if (action === 'completed') {
+            void Promise.resolve(
+                progressMutation.mutateAsync({
+                    recordName: RECORD_NAMES[checkpoint.tourName],
+                    stateKey: STATE_KEYS[checkpoint.tourName],
+                    userId: checkpoint.userId
+                })
+            )
+                .catch(() => undefined)
+                .finally(() => progressRequests.delete(checkpoint));
+        } else {
+            progressRequests.delete(checkpoint);
         }
-        void submitProductTourActivity(
-            status === ProductTourStatus.Completed ? 'completed' : 'dismissed',
-            checkpoint.tourName,
-            checkpoint.version,
-            checkpoint.source
-        );
-        if (status === ProductTourStatus.Completed) {
+        void submitProductTourActivity(action, checkpoint.tourName);
+        if (action === 'completed') {
             showCompletion(checkpoint);
         }
         return true;

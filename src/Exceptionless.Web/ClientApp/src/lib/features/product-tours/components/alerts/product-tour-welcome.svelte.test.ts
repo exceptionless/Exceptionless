@@ -10,9 +10,10 @@ const recommended = {
     description: 'Learn navigation and search.',
     keywords: ['navigation'],
     name: 'app-overview' as const,
+    recordName: 'app-overview' as const,
     start: vi.fn(() => ({ checkpointName: 'navigation' as const, route: '/next' })),
-    title: 'Explore Exceptionless',
-    version: 1
+    stateKey: 'app_overview' as const,
+    title: 'Explore Exceptionless'
 };
 
 describe('ProductTourWelcome', () => {

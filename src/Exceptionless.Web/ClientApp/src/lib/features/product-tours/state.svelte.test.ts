@@ -29,6 +29,14 @@ describe('product tour checkpoint store', () => {
         expect(productTourCheckpoint.current).toBe(replay);
     });
 
+    it('does not mutate reactive state when clearing an already empty store', () => {
+        const generation = productTourCheckpoint.generation;
+
+        expect(productTourCheckpoint.clear()).toBe(true);
+        expect(productTourCheckpoint.generation).toBe(generation);
+        expect(productTourCheckpoint.current).toBeUndefined();
+    });
+
     it('does not let stale work advance or clear a newer tour', () => {
         const first = productTourCheckpoint.start(
             checkpoint.tourName,

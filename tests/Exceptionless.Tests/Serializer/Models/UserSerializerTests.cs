@@ -240,60 +240,74 @@ public class UserSerializerTests : TestWithServices
     }
 
     [Fact]
-    public void Deserialize_User_PreservesProductTourProgress()
+    public void Serialize_UserWithProductTourState_UsesSnakeCaseDatesAndOmitsNulls()
     {
-        // Arrange
         var original = new User
         {
             Id = "tour-user",
             FullName = "Tour User",
             EmailAddress = "tour@example.com",
             IsEmailAddressVerified = true,
-            ProductTours = new Dictionary<string, ProductTourProgress>(StringComparer.Ordinal)
+            ProductTours = new ProductTourState
             {
-                ["app-welcome"] = new()
-                {
-                    Version = 1,
-                    Status = ProductTourStatus.Dismissed
-                },
-                ["app-overview"] = new()
-                {
-                    Version = 2,
-                    Status = ProductTourStatus.Completed
-                }
+                AppOverview = FixedDateTime,
+                SavedViewCreate = FixedDateTime.AddMinutes(1)
             }
         };
 
-        // Act
         string? json = _serializer.SerializeToString(original);
-        var deserialized = _serializer.Deserialize<User>(json);
 
-        // Assert
-        Assert.Contains("\"status\":2", json);
-        Assert.NotNull(deserialized);
-        Assert.Equal(2, deserialized.ProductTours.Count);
-        Assert.Equal(ProductTourStatus.Dismissed, deserialized.ProductTours["app-welcome"].Status);
-        Assert.Equal(2, deserialized.ProductTours["app-overview"].Version);
-        Assert.Equal(ProductTourStatus.Completed, deserialized.ProductTours["app-overview"].Status);
+        Assert.Contains("\"product_tours\":{\"app_overview\":\"2024-01-15T12:00:00Z\",\"saved_view_create\":\"2024-01-15T12:01:00Z\"}", json);
+        Assert.DoesNotContain("status", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("version", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("event_investigate", json, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void Deserialize_LegacyUserWithoutProductTours_ReturnsEmptyCollection()
+    public void Deserialize_UserWithProductTourState_PreservesAllDates()
     {
-        /* language=json */
         const string json = """
             {
-                "id": "legacy-user",
-                "full_name": "Legacy User",
-                "email_address": "legacy@example.com",
-                "is_email_address_verified": true
+                "id": "tour-user",
+                "full_name": "Tour User",
+                "email_address": "tour@example.com",
+                "is_email_address_verified": true,
+                "product_tours": {
+                    "app_overview": "2024-01-15T12:00:00Z",
+                    "exie_overview": "2024-01-15T12:01:00Z",
+                    "event_investigate": "2024-01-15T12:02:00Z",
+                    "project_configure": "2024-01-15T12:03:00Z",
+                    "saved_view_create": "2024-01-15T12:04:00Z",
+                    "app_welcome": "2024-01-15T12:05:00Z",
+                    "exie_announcement": "2024-01-15T12:06:00Z"
+                }
             }
             """;
 
         var user = _serializer.Deserialize<User>(json);
 
         Assert.NotNull(user);
-        Assert.Empty(user.ProductTours);
+        var state = Assert.IsType<ProductTourState>(user.ProductTours);
+        Assert.Equal(FixedDateTime, state.AppOverview);
+        Assert.Equal(FixedDateTime.AddMinutes(1), state.ExieOverview);
+        Assert.Equal(FixedDateTime.AddMinutes(2), state.EventInvestigate);
+        Assert.Equal(FixedDateTime.AddMinutes(3), state.ProjectConfigure);
+        Assert.Equal(FixedDateTime.AddMinutes(4), state.SavedViewCreate);
+        Assert.Equal(FixedDateTime.AddMinutes(5), state.AppWelcome);
+        Assert.Equal(FixedDateTime.AddMinutes(6), state.ExieAnnouncement);
+    }
+
+    [Theory]
+    [InlineData("{\"id\":\"legacy-user\",\"full_name\":\"Legacy User\",\"email_address\":\"legacy@example.com\",\"is_email_address_verified\":true}")]
+    [InlineData("{\"id\":\"legacy-user\",\"full_name\":\"Legacy User\",\"email_address\":\"legacy@example.com\",\"is_email_address_verified\":true,\"product_tours\":null}")]
+    public void Deserialize_UserWithoutProductTours_ReturnsEmptyState(string json)
+    {
+        var user = _serializer.Deserialize<User>(json);
+
+        Assert.NotNull(user);
+        var state = Assert.IsType<ProductTourState>(user.ProductTours);
+        Assert.Null(state.AppOverview);
+        Assert.Null(state.ExieAnnouncement);
     }
 
     [Fact]

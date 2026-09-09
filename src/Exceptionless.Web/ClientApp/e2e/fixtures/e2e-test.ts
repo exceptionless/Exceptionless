@@ -95,7 +95,7 @@ export const test = base.extend<E2EFixtures>({
             projectId = project.id;
             const projectToken = await e2eApi.getProjectDefaultToken(userToken, project.id);
             if (e2eDismissProductTourWelcome) {
-                await e2eApi.updateProductTour(userToken, 'app-welcome', 1, 2);
+                await e2eApi.recordProductTour(userToken, 'app-welcome');
             }
 
             await page.addInitScript(

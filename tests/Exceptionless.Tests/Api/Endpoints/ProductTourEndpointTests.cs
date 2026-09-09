@@ -1,5 +1,5 @@
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
@@ -8,6 +8,7 @@ using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Utility;
 using Xunit;
 
 namespace Exceptionless.Tests.Api.Endpoints;
@@ -28,44 +29,93 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public Task UpdateCurrentUserProductTourAsync_StringRequestStatus_ReturnsBadRequest()
+    public async Task RecordCurrentUserProductTourAsync_NewTour_ReturnsAndPersistsServerTimestamp()
     {
-        // Act & Assert
-        return SendRequestAsync(request => request.Put().AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", ProductTours.AppOverview)
-            .Content(new { Status = "completed", Version = 1 }).StatusCodeShouldBeBadRequest());
+        var currentUser = await GetTestOrganizationUserAsync();
+        var utcNow = new DateTimeOffset(2026, 9, 8, 20, 0, 0, TimeSpan.Zero);
+        TimeProvider.SetUtcNow(utcNow);
+
+        var result = await SendRequestAsAsync<RecordProductTourResult>(r => r
+            .Put().AsTestOrganizationUser()
+            .AppendPaths("users", "me", "product-tours", ProductTours.AppOverview, "record")
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(result);
+        Assert.Equal(utcNow.UtcDateTime, result.RecordedUtc);
+        var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, o => o.Cache(false));
+        Assert.NotNull(persistedUser);
+        Assert.Equal(utcNow.UtcDateTime, persistedUser.ProductTours.AppOverview);
     }
 
     [Fact]
-    public async Task UpdateProductTourProgressAsync_CachedUser_ReturnsLatestProgress()
+    public async Task RecordCurrentUserProductTourAsync_RepeatedRequest_PreservesFirstTimestamp()
     {
-        // Arrange
+        await GetTestOrganizationUserAsync();
+        var firstUtc = new DateTimeOffset(2026, 9, 8, 20, 0, 0, TimeSpan.Zero);
+        TimeProvider.SetUtcNow(firstUtc);
+        var first = await SendRequestAsAsync<RecordProductTourResult>(r => r
+            .Put().AsTestOrganizationUser()
+            .AppendPaths("users", "me", "product-tours", ProductTours.SavedViewCreate, "record")
+            .StatusCodeShouldBeOk());
+
+        TimeProvider.Advance(TimeSpan.FromMinutes(10));
+        var second = await SendRequestAsAsync<RecordProductTourResult>(r => r
+            .Put().AsTestOrganizationUser()
+            .AppendPaths("users", "me", "product-tours", ProductTours.SavedViewCreate, "record")
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(first);
+        Assert.NotNull(second);
+        Assert.Equal(first.RecordedUtc, second.RecordedUtc);
+        Assert.Equal(firstUtc.UtcDateTime, second.RecordedUtc);
+    }
+
+    [Fact]
+    public async Task RecordCurrentUserProductTourAsync_IgnoresClientTimestampAndPath()
+    {
+        var currentUser = await GetTestOrganizationUserAsync();
+        var serverUtc = new DateTimeOffset(2026, 9, 8, 20, 0, 0, TimeSpan.Zero);
+        TimeProvider.SetUtcNow(serverUtc);
+
+        var result = await SendRequestAsAsync<RecordProductTourResult>(r => r
+            .Put().AsTestOrganizationUser()
+            .AppendPaths("users", "me", "product-tours", ProductTours.AppOverview, "record")
+            .Content(new { recorded_utc = "2000-01-01T00:00:00Z", field = "full_name" })
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(result);
+        Assert.Equal(serverUtc.UtcDateTime, result.RecordedUtc);
+        var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, o => o.Cache(false));
+        Assert.NotNull(persistedUser);
+        Assert.Equal(currentUser.FullName, persistedUser.FullName);
+        Assert.Equal(serverUtc.UtcDateTime, persistedUser.ProductTours.AppOverview);
+    }
+
+    [Fact]
+    public async Task RecordProductTourAsync_CachedUser_RefreshesIdAndEmailCaches()
+    {
         var user = await GetTestOrganizationUserAsync();
         await _userRepository.GetByIdAsync(user.Id, options => options.Cache());
+        await _userRepository.GetByEmailAddressAsync(user.EmailAddress);
+        var recordedUtc = new DateTime(2026, 9, 8, 20, 0, 0, DateTimeKind.Utc);
 
-        // Act
-        var progress = await _userRepository.UpdateProductTourProgressAsync(user.Id, ProductTours.AppOverview,
-            new ProductTourProgress { Status = ProductTourStatus.Completed, Version = 1 });
+        var state = await _userRepository.RecordProductTourAsync(user.Id, "app_overview", recordedUtc);
 
-        // Assert
         var cache = Assert.IsType<InMemoryCacheClient>(GetService<ICacheClient>());
         long hits = cache.Hits;
         long misses = cache.Misses;
         var cachedUser = await _userRepository.GetByIdAsync(user.Id, options => options.Cache());
         var cachedByEmail = await _userRepository.GetByEmailAddressAsync(user.EmailAddress);
-        Assert.NotNull(cachedUser);
-        Assert.NotNull(cachedByEmail);
         Assert.Equal(misses, cache.Misses);
         Assert.Equal(hits + 2, cache.Hits);
-        Assert.Equal(ProductTourStatus.Completed, progress.Status);
-        Assert.Equal(progress, cachedUser.ProductTours[ProductTours.AppOverview]);
-        Assert.Equal(progress, cachedByEmail.ProductTours[ProductTours.AppOverview]);
+        Assert.Equal(recordedUtc, state.AppOverview);
+        Assert.Equal(recordedUtc, cachedUser?.ProductTours.AppOverview);
+        Assert.Equal(recordedUtc, cachedByEmail?.ProductTours.AppOverview);
     }
 
     [Fact]
-    public async Task UpdateProductTourProgressAsync_CacheRepopulatedAfterPatch_ReturnsLatestProgress()
+    public async Task RecordProductTourAsync_CacheRepopulatedAfterPatch_ReturnsLatestState()
     {
-        // Arrange
         var user = await GetTestOrganizationUserAsync();
         await _userRepository.GetByIdAsync(user.Id, options => options.Cache());
         var cache = GetService<ICacheClient>();
@@ -74,318 +124,78 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
         Assert.True(staleEntry.HasValue);
         var repository = Assert.IsType<UserRepository>(_userRepository);
 
-        // Simulate an earlier read populating the cache after the patch invalidated it.
         using var subscription = repository.BeforeGet.AddHandler(async (_, _) =>
         {
             Assert.False((await cache.GetAsync<ICollection<FindHit<User>>>(cacheKey)).HasValue);
             await cache.SetAsync(cacheKey, staleEntry.Value);
         });
 
-        // Act
-        var progress = await _userRepository.UpdateProductTourProgressAsync(user.Id, ProductTours.AppOverview,
-            new ProductTourProgress { Status = ProductTourStatus.Completed, Version = 1 });
+        var recordedUtc = new DateTime(2026, 9, 8, 20, 0, 0, DateTimeKind.Utc);
+        var state = await _userRepository.RecordProductTourAsync(user.Id, "app_overview", recordedUtc);
 
-        // Assert
-        Assert.Equal(ProductTourStatus.Completed, progress.Status);
-        Assert.Equal(1, progress.Version);
+        Assert.Equal(recordedUtc, state.AppOverview);
     }
 
     [Fact]
-    public async Task UpdateCurrentUserProductTourAsync_NewProgress_PersistsAndReturnsProgress()
+    public async Task RecordCurrentUserProductTourAsync_ConcurrentTours_PreservesBothDates()
     {
-        // Arrange
-        var currentUser = await GetTestOrganizationUserAsync();
-
-        // Act
-        var progress = await SendRequestAsAsync<ProductTourProgress>(request => request
-            .Put()
-            .AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", "app-overview")
-            .Content(new UpdateProductTourProgress { Status = ProductTourStatus.Dismissed, Version = 1 })
+        await GetTestOrganizationUserAsync();
+        Task first = SendRequestAsync(r => r.Put().AsTestOrganizationUser()
+            .AppendPaths("users", "me", "product-tours", ProductTours.AppOverview, "record")
+            .StatusCodeShouldBeOk());
+        Task second = SendRequestAsync(r => r.Put().AsTestOrganizationUser()
+            .AppendPaths("users", "me", "product-tours", ProductTours.ExieOverview, "record")
             .StatusCodeShouldBeOk());
 
-        // Assert
-        Assert.NotNull(progress);
-        Assert.Equal(ProductTourStatus.Dismissed, progress.Status);
-        Assert.Equal(1, progress.Version);
-
-        var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, options => options.Cache(false));
+        await Task.WhenAll(first, second);
+        var currentUser = await GetTestOrganizationUserAsync();
+        var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, o => o.Cache(false));
         Assert.NotNull(persistedUser);
-        Assert.Equal(progress, persistedUser.ProductTours["app-overview"]);
+        Assert.NotNull(persistedUser.ProductTours.AppOverview);
+        Assert.NotNull(persistedUser.ProductTours.ExieOverview);
     }
 
     [Fact]
-    public async Task UpdateCurrentUserProductTourAsync_UnchangedProgress_PreservesRecentMembership()
-    {
-        // Arrange
-        var currentUser = await GetTestOrganizationUserAsync();
-        await UpdateProgressAsync(ProductTours.AppWelcome, ProductTourStatus.Dismissed, 1);
-        var user = await _userRepository.GetByIdAsync(currentUser.Id, options => options.Cache(false));
-        Assert.NotNull(user);
-        const string organizationId = "000000000000000000000099";
-        user.OrganizationIds.Add(organizationId);
-        await _userRepository.SaveAsync(user, options => options.Cache());
-
-        // Act
-        await UpdateProgressAsync(ProductTours.AppWelcome, ProductTourStatus.Dismissed, 1);
-
-        // Assert
-        var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, options => options.Cache(false));
-        var cachedUser = await _userRepository.GetByIdAsync(currentUser.Id, options => options.Cache());
-        Assert.NotNull(persistedUser);
-        Assert.NotNull(cachedUser);
-        Assert.Contains(organizationId, persistedUser.OrganizationIds);
-        Assert.Contains(organizationId, cachedUser.OrganizationIds);
-    }
-
-    [Fact]
-    public async Task UpdateCurrentUserProductTourAsync_OlderProgress_PreservesStoredValue()
-    {
-        // Arrange
-        var currentUser = await GetTestOrganizationUserAsync();
-        currentUser.ProductTours[ProductTours.ExieOverview] = new ProductTourProgress
-        {
-            Status = ProductTourStatus.Completed,
-            Version = 3
-        };
-        await _userRepository.SaveAsync(currentUser, options => options.Cache().ImmediateConsistency());
-
-        // Act
-        var replacement = await UpdateProgressAsync(ProductTours.ExieOverview, ProductTourStatus.Dismissed, 1);
-
-        // Assert
-        Assert.Equal(ProductTourStatus.Completed, replacement.Status);
-        Assert.Equal(3, replacement.Version);
-        var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, options => options.Cache(false));
-        Assert.NotNull(persistedUser);
-        Assert.Equal(replacement, persistedUser.ProductTours["exie-overview"]);
-    }
-
-    [Fact]
-    public async Task UpdateCurrentUserProductTourAsync_CompletedProgress_ReplacesDismissedProgressForSameVersion()
-    {
-        // Arrange
-        var currentUser = await GetTestOrganizationUserAsync();
-        await UpdateProgressAsync(ProductTours.ExieOverview, ProductTourStatus.Dismissed, 1);
-
-        // Act
-        var replacement = await UpdateProgressAsync(ProductTours.ExieOverview, ProductTourStatus.Completed, 1);
-
-        // Assert
-        Assert.Equal(ProductTourStatus.Completed, replacement.Status);
-        Assert.Equal(1, replacement.Version);
-        var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, options => options.Cache(false));
-        Assert.NotNull(persistedUser);
-        Assert.Equal(replacement, persistedUser.ProductTours["exie-overview"]);
-    }
-
-    [Theory]
-    [InlineData(0)]
-    [InlineData(999)]
-    public async Task UpdateCurrentUserProductTourAsync_UnknownStoredStatus_ReplacesWithCompleted(int storedStatus)
-    {
-        // Arrange
-        var currentUser = await GetTestOrganizationUserAsync();
-        currentUser.ProductTours[ProductTours.AppOverview] = new ProductTourProgress
-        {
-            Status = (ProductTourStatus)storedStatus,
-            Version = 1
-        };
-        await _userRepository.SaveAsync(currentUser, options => options.Cache().ImmediateConsistency());
-
-        // Act
-        var progress = await UpdateProgressAsync(ProductTours.AppOverview, ProductTourStatus.Completed, 1);
-
-        // Assert
-        Assert.Equal(ProductTourStatus.Completed, progress.Status);
-        var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, options => options.Cache(false));
-        Assert.NotNull(persistedUser);
-        Assert.Equal(progress, persistedUser.ProductTours[ProductTours.AppOverview]);
-    }
-
-    [Fact]
-    public async Task UpdateCurrentUserProductTourAsync_DismissedProgress_PreservesCompletedForSameVersion()
-    {
-        // Arrange
-        await UpdateProgressAsync(ProductTours.AppOverview, ProductTourStatus.Completed, 1);
-
-        // Act
-        var progress = await UpdateProgressAsync(ProductTours.AppOverview, ProductTourStatus.Dismissed, 1);
-
-        // Assert
-        Assert.Equal(ProductTourStatus.Completed, progress.Status);
-        Assert.Equal(1, progress.Version);
-    }
-
-    [Fact]
-    public async Task UpdateCurrentUserProductTourAsync_ConcurrentUpdatesPreserveBothTourKeys()
-    {
-        // Arrange
-        var currentUser = await GetTestOrganizationUserAsync();
-
-        // Act
-        await Task.WhenAll(
-            UpdateProgressAsync(ProductTours.AppOverview, ProductTourStatus.Completed, 1),
-            UpdateProgressAsync(ProductTours.SavedViewCreate, ProductTourStatus.Dismissed, 1));
-
-        // Assert
-        var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, options => options.Cache(false));
-        Assert.NotNull(persistedUser);
-        Assert.Equal(ProductTourStatus.Completed, persistedUser.ProductTours[ProductTours.AppOverview].Status);
-        Assert.Equal(ProductTourStatus.Dismissed, persistedUser.ProductTours[ProductTours.SavedViewCreate].Status);
-    }
-
-    [Fact]
-    public async Task UpdateCurrentUserProductTourAsync_ConcurrentDismissAndCompleteLeavesCompletedProgress()
-    {
-        // Arrange
-        var currentUser = await GetTestOrganizationUserAsync();
-
-        // Act
-        await Task.WhenAll(
-            UpdateProgressAsync(ProductTours.ExieOverview, ProductTourStatus.Dismissed, 1),
-            UpdateProgressAsync(ProductTours.ExieOverview, ProductTourStatus.Completed, 1));
-
-        // Assert
-        var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, options => options.Cache(false));
-        Assert.NotNull(persistedUser);
-        Assert.Equal(ProductTourStatus.Completed, persistedUser.ProductTours[ProductTours.ExieOverview].Status);
-    }
-
-    [Fact]
-    public async Task UpdateProductTourProgressAsync_MissingUser_ThrowsNotFound()
-    {
-        // Arrange
-        var currentUser = await GetTestOrganizationUserAsync();
-        await _userRepository.RemoveAsync(currentUser.Id, options => options.ImmediateConsistency());
-
-        // Act & Assert
-        await Assert.ThrowsAsync<DocumentNotFoundException>(() => _userRepository.UpdateProductTourProgressAsync(
-            currentUser.Id,
-            ProductTours.AppOverview,
-            new ProductTourProgress { Status = ProductTourStatus.Completed, Version = 1 }));
-    }
-
-    [Fact]
-    public async Task UpdateCurrentUserProductTourAsync_UnknownTourName_ReturnsUnprocessableEntity()
-    {
-        // Arrange
-        var currentUser = await GetTestOrganizationUserAsync();
-
-        // Act
-        await SendRequestAsync(request => request
-            .Put()
-            .AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", "unknown-tour")
-            .Content(new UpdateProductTourProgress { Status = ProductTourStatus.Completed, Version = 1 })
+    public Task RecordCurrentUserProductTourAsync_UnknownTour_ReturnsUnprocessableEntity() =>
+        SendRequestAsync(r => r.Put().AsTestOrganizationUser()
+            .AppendPaths("users", "me", "product-tours", "unknown-tour", "record")
             .StatusCodeShouldBeUnprocessableEntity());
 
-        // Assert
-        var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, options => options.Cache(false));
-        Assert.NotNull(persistedUser);
-        Assert.DoesNotContain("unknown-tour", persistedUser.ProductTours);
-    }
-
     [Fact]
-    public Task UpdateCurrentUserProductTourAsync_InvalidTourName_DoesNotMatchRoute()
-    {
-        // Act & Assert
-        return SendRequestAsync(request => request
-            .Put()
-            .AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", "Invalid--Tour")
-            .Content(new UpdateProductTourProgress { Status = ProductTourStatus.Completed, Version = 1 })
+    public Task RecordCurrentUserProductTourAsync_OldRoute_ReturnsNotFound() =>
+        SendRequestAsync(r => r.Put().AsTestOrganizationUser()
+            .AppendPaths("users", "me", "product-tours", ProductTours.AppOverview)
             .StatusCodeShouldBeNotFound());
-    }
 
     [Fact]
-    public Task UpdateCurrentUserProductTourAsync_AnonymousUser_ReturnsUnauthorized()
-    {
-        // Act & Assert
-        return SendRequestAsync(request => request
-            .Put()
-            .AppendPaths("users", "me", "product-tours", ProductTours.AppWelcome)
-            .Content(new UpdateProductTourProgress { Status = ProductTourStatus.Dismissed, Version = 1 })
+    public Task RecordCurrentUserProductTourAsync_AnonymousUser_ReturnsUnauthorized() =>
+        SendRequestAsync(r => r.Put()
+            .AppendPaths("users", "me", "product-tours", ProductTours.AppOverview, "record")
             .StatusCodeShouldBeUnauthorized());
-    }
 
     [Fact]
-    public Task UpdateCurrentUserProductTourAsync_MissingBody_ReturnsBadRequest()
+    public async Task RecordCurrentUserProductTourAsync_DeletedUserReturnsUnauthorizedAndRepositoryDoesNotCreate()
     {
-        // Act & Assert
-        return SendRequestAsync(request => request
-            .Put()
-            .AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", "app-overview")
-            .StatusCodeShouldBeBadRequest());
+        var currentUser = await GetTestOrganizationUserAsync();
+        await _userRepository.RemoveAsync(currentUser.Id, o => o.ImmediateConsistency());
+
+        await SendRequestAsync(r => r.Put().AsTestOrganizationUser()
+            .AppendPaths("users", "me", "product-tours", ProductTours.AppOverview, "record")
+            .StatusCodeShouldBeUnauthorized());
+
+        await Assert.ThrowsAsync<DocumentNotFoundException>(() =>
+            _userRepository.RecordProductTourAsync(currentUser.Id, "app_overview", TimeProvider.GetUtcNow().UtcDateTime));
+
+        Assert.Null(await _userRepository.GetByIdAsync(currentUser.Id, o => o.Cache(false)));
     }
 
-    [Theory]
-    [InlineData(0)]
-    [InlineData(-1)]
-    [InlineData(2)]
-    public Task UpdateCurrentUserProductTourAsync_UnsupportedVersion_ReturnsUnprocessableEntity(int version)
+    private async Task<ViewUser> GetTestOrganizationUserAsync()
     {
-        // Act & Assert
-        return SendRequestAsync(request => request
-            .Put()
+        var user = await SendRequestAsAsync<ViewUser>(r => r
             .AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", "app-overview")
-            .Content(new UpdateProductTourProgress { Status = ProductTourStatus.Completed, Version = version })
-            .StatusCodeShouldBeUnprocessableEntity());
-    }
-
-    [Fact]
-    public Task UpdateCurrentUserProductTourAsync_MissingStatus_ReturnsUnprocessableEntity()
-    {
-        // Act & Assert
-        return SendRequestAsync(request => request
-            .Put()
-            .AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", "app-overview")
-            .Content(new { Version = 1 })
-            .StatusCodeShouldBeUnprocessableEntity());
-    }
-
-    [Fact]
-    public Task UpdateCurrentUserProductTourAsync_NullStatus_ReturnsUnprocessableEntity()
-    {
-        // Act & Assert
-        return SendRequestAsync(request => request
-            .Put()
-            .AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", "app-overview")
-            .Content(new Dictionary<string, object?> { ["status"] = null, ["version"] = 1 })
-            .StatusCodeShouldBeUnprocessableEntity());
-    }
-
-    [Fact]
-    public Task UpdateCurrentUserProductTourAsync_UndefinedStatus_ReturnsUnprocessableEntity()
-    {
-        // Act & Assert
-        return SendRequestAsync(request => request
-            .Put()
-            .AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", "app-overview")
-            .Content(new { Status = 999, Version = 1 })
-            .StatusCodeShouldBeUnprocessableEntity());
-    }
-
-    private async Task<ProductTourProgress> UpdateProgressAsync(string tourName, ProductTourStatus status, int version)
-    {
-        var progress = await SendRequestAsAsync<ProductTourProgress>(request => request
-            .Put()
-            .AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", tourName)
-            .Content(new UpdateProductTourProgress { Status = status, Version = version })
+            .AppendPath("users/me")
             .StatusCodeShouldBeOk());
-
-        return Assert.IsType<ProductTourProgress>(progress);
-    }
-
-    private async Task<User> GetTestOrganizationUserAsync()
-    {
-        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
-        return Assert.IsType<User>(user);
+        Assert.NotNull(user);
+        return user;
     }
 }

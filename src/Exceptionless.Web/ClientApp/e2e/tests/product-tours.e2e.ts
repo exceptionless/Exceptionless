@@ -34,8 +34,7 @@ test('first organization keeps the project guide while project creation is pendi
                         checkpointName: 'project-name',
                         source: 'catalog',
                         tourName: 'project-configure',
-                        userId,
-                        version: 1
+                        userId
                     })
                 );
             },
@@ -125,7 +124,7 @@ test.describe('first-run welcome', () => {
             // Arrange
             await page.route('**/api/v2/events', (route) => route.abort());
             if (tourName === 'exie-announcement') {
-                await e2eApi.updateProductTour(e2eScenario.userToken, 'app-welcome', 1, 2);
+                await e2eApi.recordProductTour(e2eScenario.userToken, 'app-welcome');
             }
             await mockAssistantAccess(page);
             await page.goto('/next/stack');
@@ -135,7 +134,7 @@ test.describe('first-run welcome', () => {
             // Act
             const persisted = page.waitForResponse(isSuccessfulTourProgress(tourName));
             await dismiss.click();
-            expect(await (await persisted).json()).toMatchObject({ status: 2, version: 1 });
+            expect(await (await persisted).json()).toMatchObject({ recorded_utc: expect.any(String) });
             await expect(dismiss).toBeHidden();
             await page.addInitScript(() =>
                 Object.defineProperty(window, 'sessionStorage', {
@@ -154,7 +153,7 @@ test.describe('first-run welcome', () => {
 
             // Assert
             expect(currentUser).toMatchObject({
-                product_tours: { [tourName]: { status: 2, version: 1 } }
+                product_tours: { [tourName.replaceAll('-', '_')]: expect.any(String) }
             });
             await expect(page.getByRole('button', { name: 'Search Exceptionless' })).toBeVisible();
             if (tourName === 'app-welcome') {
@@ -174,7 +173,7 @@ test.describe('first-run welcome', () => {
         });
         const invitationWrites: Request[] = [];
         page.on('request', (request) => {
-            if (request.method() === 'PUT' && new URL(request.url()).pathname.endsWith('/product-tours/app-welcome')) {
+            if (request.method() === 'PUT' && new URL(request.url()).pathname.endsWith('/product-tours/app-welcome/record')) {
                 invitationWrites.push(request);
             }
         });
@@ -244,14 +243,14 @@ test.describe('first-run welcome', () => {
         await expect(welcome).toBeHidden();
     });
 
-    test('a failed close remains retryable and successful dismissal survives reload', async ({ e2eScenario, page }) => {
+    test('a failed close is non-blocking and stays dismissed for the session', async ({ e2eScenario, page }) => {
         // Arrange
         const welcome = page.getByRole('region', { name: 'Welcome to Exceptionless' });
         await test.step(`show the welcome for ${e2eScenario.email}`, async () => {
             await page.goto('/next/stack');
             await expect(welcome).toBeVisible();
         });
-        const progressRoute = '**/api/v2/users/me/product-tours/app-welcome';
+        const progressRoute = '**/api/v2/users/me/product-tours/app-welcome/record';
         await page.route(progressRoute, (route) => route.fulfill({ json: { title: 'Injected progress failure' }, status: 500 }));
 
         // Act
@@ -259,11 +258,8 @@ test.describe('first-run welcome', () => {
 
         // Assert
         await expect(page.getByText('We could not save your guided-tour preference. Please try again.')).toBeVisible();
-        await expect(welcome).toBeVisible();
+        await expect(welcome).toBeHidden();
         await page.unroute(progressRoute);
-        const persisted = page.waitForResponse(isSuccessfulTourProgress('app-welcome'));
-        await welcome.getByRole('button', { name: 'Close welcome' }).click();
-        await persisted;
         await page.reload();
         await expect(welcome).toBeHidden();
     });
@@ -476,7 +472,7 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
 
         expect(projectId).toBeTruthy();
 
-        const projectProgressRoute = (url: URL) => url.pathname === '/api/v2/users/me/product-tours/project-configure';
+        const projectProgressRoute = (url: URL) => url.pathname === '/api/v2/users/me/product-tours/project-configure/record';
         try {
             await page.locator('[data-tour="project-configure-platform"]').click();
             await page.getByRole('option', { name: 'Browser applications' }).click();
@@ -515,15 +511,14 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
                 })
             );
             await expect(page).toHaveURL(/\/next\/event/);
-            await expectProductTourSession(page, true);
+            await expectProductTourSession(page, false);
             await expect.poll(() => projectProgressRequests).toBe(1);
             await expect.poll(async () => (await e2eApi.getProject(e2eScenario.userToken, projectId!))?.is_configured).toBe(true);
 
             await page.unroute(projectProgressRoute);
-            const completed = page.waitForResponse(isSuccessfulTourProgress('project-configure'));
             await page.goto(`/next/project/${projectId}/configure`);
-            await completed;
             await expectProductTourSession(page, false);
+            expect(projectProgressRequests).toBe(1);
         } finally {
             await page.unroute(projectProgressRoute);
             if (createdProject) {
@@ -533,7 +528,7 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
         }
     });
 
-    await test.step('saved-view progress retry never repeats the successful POST', async () => {
+    await test.step('saved-view completion closes without blocking when persistence fails', async () => {
         let createRequests = 0;
         let progressRequests = 0;
         const countSavedViewCreation = (request: Request) => {
@@ -542,7 +537,7 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
                 createRequests += 1;
             }
         };
-        const progressRoute = (url: URL) => url.pathname === '/api/v2/users/me/product-tours/saved-view-create';
+        const progressRoute = (url: URL) => url.pathname === '/api/v2/users/me/product-tours/saved-view-create/record';
         page.on('request', countSavedViewCreation);
         await page.route(progressRoute, async (route) => {
             progressRequests += 1;
@@ -567,16 +562,16 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
             await page.getByRole('button', { name: 'Continue' }).click();
             await page.getByRole('button', { name: 'Continue' }).click();
             await page.getByRole('button', { exact: true, name: 'Save' }).click();
-            await expect(page.getByText('Retry guide completion')).toBeVisible();
+            await expect(page.getByText('Your saved view is ready', { exact: true })).toBeVisible();
+            await expect(page.locator('.driver-popover')).toHaveCount(0);
             expect(createRequests).toBe(1);
+            expect(progressRequests).toBe(1);
 
             await page.reload();
-            await expect(page.getByRole('button', { name: 'Retry guide completion' })).toBeVisible();
-            const completed = page.waitForResponse(isSuccessfulTourProgress('saved-view-create'));
-            await page.getByRole('button', { name: 'Retry guide completion' }).click();
-            await completed;
+            await expect(page.getByRole('button', { name: 'Retry guide completion' })).toHaveCount(0);
             await expect.poll(() => createRequests).toBe(1);
             await expectProductTourSession(page, false);
+            expect(progressRequests).toBe(1);
         } finally {
             page.off('request', countSavedViewCreation);
             await page.unroute(progressRoute);
@@ -665,7 +660,7 @@ test('completion survives unavailable telemetry and session storage', async ({ e
     const response = await completed;
 
     // Assert
-    expect(await response.json()).toMatchObject({ status: 1, version: 1 });
+    expect(await response.json()).toMatchObject({ recorded_utc: expect.any(String) });
     await expect(page.getByRole('dialog', { name: 'Guided Tours' })).toBeVisible();
     expect(e2eScenario.email).toContain('@exceptionless.test');
 });
@@ -673,7 +668,7 @@ test('completion survives unavailable telemetry and session storage', async ({ e
 function isSuccessfulTourProgress(tourName: string) {
     return (response: Response): boolean => {
         const path = new URL(response.url()).pathname;
-        return response.request().method() === 'PUT' && path === `/api/v2/users/me/product-tours/${tourName}` && response.status() === 200;
+        return response.request().method() === 'PUT' && path === `/api/v2/users/me/product-tours/${tourName}/record` && response.status() === 200;
     };
 }
 

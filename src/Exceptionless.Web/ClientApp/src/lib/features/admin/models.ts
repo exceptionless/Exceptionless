@@ -7,8 +7,6 @@ import type {
     UpdateEventSubmissionSettings
 } from '$generated/api';
 
-export type { ProductTourUsageResponse } from '$generated/api';
-
 export enum MigrationType {
     Versioned = 0,
     VersionedAndResumable = 1,

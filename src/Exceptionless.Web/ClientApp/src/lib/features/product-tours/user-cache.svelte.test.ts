@@ -1,7 +1,7 @@
-import type { ProductTourProgress, ViewCurrentUser } from '$generated/api';
+import type { ViewCurrentUser } from '$features/users/models';
 
 import { putCurrentUserProductTour, queryKeys } from '$features/users/api.svelte';
-import { MutationObserver, type MutationObserverOptions, QueryClient, QueryObserver } from '@tanstack/svelte-query';
+import { MutationObserver, type MutationObserverOptions, QueryClient } from '@tanstack/svelte-query';
 import { describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({ putJSON: vi.fn(), useQueryClient: vi.fn() }));
@@ -20,43 +20,46 @@ vi.mock('@tanstack/svelte-query', async (importOriginal) => ({
 }));
 
 describe('guided-tour user cache invalidation', () => {
-    it.each([false, true])('refetches authoritative progress without merging the response (account changed: %s)', async (changeAccount) => {
+    it.each([false, true])('only applies a record to the captured account (account changed: %s)', async (changeAccount) => {
         // Arrange
         vi.resetAllMocks();
         const queryClient = new QueryClient();
         mocks.useQueryClient.mockReturnValue(queryClient);
         const initial = { id: 'first-user', product_tours: {} } as ViewCurrentUser;
         const current = { ...initial, id: changeAccount ? 'second-user' : initial.id };
-        const serverUser = { ...current, product_tours: { 'app-overview': { status: 1, version: 1 } } } as ViewCurrentUser;
         queryClient.setQueryData(queryKeys.me(), initial);
         queryClient.setQueryData(queryKeys.id(initial.id), initial);
-        const refresh = Promise.withResolvers<ViewCurrentUser>();
-        const queryFn = vi.fn(() => refresh.promise);
-        const observer = new QueryObserver(queryClient, { queryFn, queryKey: queryKeys.me(), staleTime: Infinity });
-        const unsubscribe = observer.subscribe(() => {});
-        const request = Promise.withResolvers<{ data: ProductTourProgress; ok: boolean }>();
+        const request = Promise.withResolvers<{ data: { recorded_utc: string }; ok: boolean }>();
         mocks.putJSON.mockReturnValue(request.promise);
-        const progress: ProductTourProgress = { status: 2, version: 1 };
 
         try {
-            const pending = putCurrentUserProductTour().mutateAsync({ progress, tourName: 'app-overview' });
+            const pending = putCurrentUserProductTour().mutateAsync({ recordName: 'app-overview', stateKey: 'app_overview', userId: initial.id });
             await vi.waitFor(() => expect(mocks.putJSON).toHaveBeenCalledOnce());
+            expect(mocks.putJSON).toHaveBeenCalledWith('users/me/product-tours/app-overview/record');
             queryClient.setQueryData(queryKeys.me(), current);
 
             // Act
-            request.resolve({ data: progress, ok: true });
-            await vi.waitFor(() => expect(queryFn).toHaveBeenCalledOnce());
-            expect(queryClient.getQueryData(queryKeys.me())).toEqual(current);
-            refresh.resolve(serverUser);
+            request.resolve({ data: { recorded_utc: '2026-09-08T00:00:00Z' }, ok: true });
             await pending;
 
             // Assert
-            expect(queryClient.getQueryData(queryKeys.me())).toEqual(serverUser);
-            expect(queryClient.getQueryState(queryKeys.id(initial.id))?.isInvalidated).toBe(true);
-            expect(queryClient.getQueryData(queryKeys.id(initial.id))).toEqual(initial);
+            expect(queryClient.getQueryData(queryKeys.me())).toEqual(
+                changeAccount ? current : { ...initial, product_tours: { app_overview: '2026-09-08T00:00:00Z' } }
+            );
         } finally {
-            unsubscribe();
             queryClient.clear();
         }
+    });
+
+    it('does not issue a request after the account changes before mutation execution', async () => {
+        const queryClient = new QueryClient();
+        mocks.useQueryClient.mockReturnValue(queryClient);
+        queryClient.setQueryData(queryKeys.me(), { id: 'new-user', product_tours: {} } as ViewCurrentUser);
+
+        await expect(putCurrentUserProductTour().mutateAsync({ recordName: 'app-overview', stateKey: 'app_overview', userId: 'old-user' })).rejects.toThrow(
+            'current user changed'
+        );
+        expect(mocks.putJSON).not.toHaveBeenCalled();
+        queryClient.clear();
     });
 });

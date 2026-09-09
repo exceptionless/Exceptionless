@@ -67,7 +67,7 @@ describe('product tour completion', () => {
         expect(mocks.success).not.toHaveBeenCalled();
     });
 
-    it('keeps the last step available when progress cannot be saved', async () => {
+    it('closes immediately when persistence cannot be saved', async () => {
         // Arrange
         const checkpoint = productTourCheckpoint.start('app-overview', 'help', 'catalog', 'user', 1);
         mocks.mutateAsync.mockRejectedValueOnce(new Error('Unavailable'));
@@ -76,11 +76,22 @@ describe('product tour completion', () => {
         const completed = await createProductTourActions().complete(checkpoint);
 
         // Assert
-        expect(completed).toBe(false);
-        expect(productTourCheckpoint.current).toBe(checkpoint);
-        expect(mocks.error).toHaveBeenCalledOnce();
-        expect(mocks.success).not.toHaveBeenCalled();
+        expect(completed).toBe(true);
+        expect(productTourCheckpoint.current).toBeUndefined();
         expect(mocks.openCatalog).not.toHaveBeenCalled();
+    });
+
+    it('closes immediately when completion persistence never settles', async () => {
+        // Arrange
+        const checkpoint = productTourCheckpoint.start('saved-view-create', 'view-created', 'catalog', 'user', 1);
+        mocks.mutateAsync.mockReturnValue(new Promise<void>(() => {}));
+
+        // Act
+        const completed = await createProductTourActions().complete(checkpoint);
+
+        // Assert
+        expect(completed).toBe(true);
+        expect(productTourCheckpoint.current).toBeUndefined();
     });
 
     it('does not submit completion for a dismissed checkpoint', async () => {
@@ -94,7 +105,7 @@ describe('product tour completion', () => {
 
         // Assert
         expect(completed).toBe(false);
-        expect(mocks.mutateAsync).toHaveBeenCalledOnce();
+        expect(mocks.mutateAsync).not.toHaveBeenCalled();
         expect(mocks.success).not.toHaveBeenCalled();
         expect(mocks.openCatalog).not.toHaveBeenCalled();
     });
@@ -150,20 +161,19 @@ describe('product tour completion', () => {
         expect(dismissed).toBe(false);
         expect(completed).toBe(true);
         expect(mocks.mutateAsync).toHaveBeenCalledOnce();
-        expect(mocks.submitFeatureUsage).toHaveBeenCalledExactlyOnceWith('completed', 'app-overview', 1, 'catalog');
+        expect(mocks.submitFeatureUsage).toHaveBeenCalledExactlyOnceWith('completed', 'app-overview');
     });
 
-    it('preserves a domain-success checkpoint for retry when progress saving fails', async () => {
+    it('clears a domain-success checkpoint even when persistence fails', async () => {
         // Arrange
         const checkpoint = productTourCheckpoint.start('project-configure', 'event-received', 'catalog', 'user', 1);
         mocks.mutateAsync.mockRejectedValueOnce(new Error('Unavailable'));
 
         // Act
         await createProductTourActions().completeAfterDomainSuccess(checkpoint);
-        await vi.waitFor(() => expect(mocks.error).toHaveBeenCalledOnce());
 
         // Assert
-        expect(productTourCheckpoint.current).toBe(checkpoint);
-        expect(mocks.success).not.toHaveBeenCalled();
+        expect(productTourCheckpoint.current).toBeUndefined();
+        expect(mocks.success).toHaveBeenCalledOnce();
     });
 });

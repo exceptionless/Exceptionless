@@ -1,4 +1,5 @@
-import type { ViewCurrentUser, ViewOrganization } from '$lib/generated/api';
+import type { ViewCurrentUser } from '$features/users/models';
+import type { ViewOrganization } from '$lib/generated/api';
 
 import { getContext } from 'svelte';
 

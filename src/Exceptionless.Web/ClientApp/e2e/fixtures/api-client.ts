@@ -299,6 +299,14 @@ export class E2EApiClient {
         throw new Error(`Timed out waiting for ${path} email sent to ${email}`);
     }
 
+    async recordProductTour(token: string, tourName: string): Promise<void> {
+        const response = await this.request.put(this.url(`users/me/product-tours/${tourName}/record`), {
+            headers: this.authHeaders(token)
+        });
+
+        await expectStatus(response, [200], 'record product tour');
+    }
+
     async signup(name: string, email: string, password: string, inviteToken?: string): Promise<string> {
         const response = await this.request.post(this.url('auth/signup'), {
             data: {
@@ -322,15 +330,6 @@ export class E2EApiClient {
         });
 
         await expectStatus(response, [202], 'submit event');
-    }
-
-    async updateProductTour(token: string, tourName: string, version: number, status: 1 | 2): Promise<void> {
-        const response = await this.request.put(this.url(`users/me/product-tours/${tourName}`), {
-            data: { status, version },
-            headers: this.authHeaders(token)
-        });
-
-        await expectStatus(response, [200], 'update product tour');
     }
 
     async waitForCurrentUserDeleted(token: string, timeoutMs = 30_000): Promise<void> {

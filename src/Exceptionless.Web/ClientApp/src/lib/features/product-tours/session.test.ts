@@ -17,7 +17,7 @@ const unavailable = {
 describe('product-tour session persistence', () => {
     it('tolerates unavailable storage on read, write, and clear', () => {
         // Arrange
-        const checkpoint = { checkpointName: 'navigation', source: 'catalog', tourName: 'app-overview', userId: 'user', version: 1 } as const;
+        const checkpoint = { checkpointName: 'navigation', source: 'catalog', tourName: 'app-overview', userId: 'user' } as const;
 
         // Act & Assert
         expect(readProductTourSession(unavailable)).toBeUndefined();
@@ -31,8 +31,7 @@ describe('product-tour session persistence', () => {
             checkpointName: 'navigation',
             source: 'catalog',
             tourName: 'app-overview',
-            userId: 'user',
-            version: 1
+            userId: 'user'
         } as const;
         let value: null | string = null;
         const storage = {

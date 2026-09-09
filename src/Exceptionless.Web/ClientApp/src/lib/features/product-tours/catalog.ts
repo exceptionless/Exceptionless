@@ -1,4 +1,4 @@
-import type { ProductTourProgress } from '$features/users/models';
+import type { ProductTourState } from '$features/users/models';
 
 import { resolve } from '$app/paths';
 
@@ -37,9 +37,10 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
         description: 'Navigate stacks and events, use the command palette, and reopen saved views.',
         keywords: ['navigation', 'ui', 'search', 'command palette', 'help', 'saved views', 'stacks', 'occurrences'],
         name: 'app-overview',
+        recordName: 'app-overview',
         start: () => ({ checkpointName: 'navigation', route: resolve('/') }),
-        title: 'Explore Exceptionless',
-        version: 1
+        stateKey: 'app_overview',
+        title: 'Explore Exceptionless'
     },
     {
         availability: (context) =>
@@ -58,6 +59,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
         description: 'Continue an unfinished project, or create one and send its first event.',
         keywords: ['add project', 'configure', 'sdk', 'api key', 'first event'],
         name: 'project-configure',
+        recordName: 'project-configure',
         start: (context) => {
             if (context.isProjectConfigurePage) {
                 const search = new URLSearchParams(context.search);
@@ -79,8 +81,8 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
 
             return { checkpointName: 'project-name', route: resolve('/(app)/project/add') };
         },
-        title: 'Configure a project',
-        version: 1
+        stateKey: 'project_configure',
+        title: 'Configure a project'
     },
     {
         availability: requireOrganization,
@@ -88,9 +90,10 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
         description: 'Save your event filters and layout in a view only you can see.',
         keywords: ['saved view', 'filter', 'columns', 'private', 'dashboard'],
         name: 'saved-view-create',
+        recordName: 'saved-view-create',
         start: () => ({ checkpointName: 'open-view-menu', route: resolve('/(app)/event') }),
-        title: 'Create a saved view',
-        version: 1
+        stateKey: 'saved_view_create',
+        title: 'Create a saved view'
     },
     {
         availability: requireError,
@@ -98,9 +101,10 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
         description: 'Understand stacks, review status, and inspect individual event occurrences.',
         keywords: ['error report', 'event details', 'occurrences', 'exception', 'filter', 'stack', 'triage'],
         name: 'event-investigate',
+        recordName: 'event-investigate',
         start: () => ({ checkpointName: 'filter-errors', route: `${resolve('/(app)/event')}?time=all&type=error` }),
-        title: 'Investigate an error',
-        version: 1
+        stateKey: 'event_investigate',
+        title: 'Investigate an error'
     },
     {
         availability: (context) => {
@@ -116,18 +120,19 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
         description: 'Explore the AI assistant. This guide does not send an AI request.',
         keywords: ['exie', 'assistant', 'ai', 'help', 'investigate'],
         name: 'exie-overview',
+        recordName: 'exie-overview',
         start: () => ({ checkpointName: 'open-exie', route: resolve('/') }),
-        title: 'Meet Exie',
-        version: 1
+        stateKey: 'exie_overview',
+        title: 'Meet Exie'
     }
 ] as const;
 
-export function getProductTourItems(context: ProductTourContext, progress: Record<string, ProductTourProgress> = {}): ProductTourListItem[] {
+export function getProductTourItems(context: ProductTourContext, state: ProductTourState = {}): ProductTourListItem[] {
     return productTourCatalog.map((definition) => {
         return {
             ...definition,
             currentAvailability: definition.availability(context),
-            progress: progress[definition.name]
+            recordedAt: state[definition.stateKey]
         };
     });
 }

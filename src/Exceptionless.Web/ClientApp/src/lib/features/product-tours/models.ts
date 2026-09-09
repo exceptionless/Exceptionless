@@ -1,7 +1,7 @@
 import type { AssistantAccess } from '$features/assistant/models';
 import type { ViewProject } from '$features/projects/models';
 import type { KeyboardShortcut } from '$features/shared/keyboard-shortcuts';
-import type { ProductTourProgress } from '$features/users/models';
+import type { ProductTourState } from '$features/users/models';
 export const PRODUCT_TOUR_CHECKPOINTS = {
     'app-overview': ['navigation', 'command-search', 'saved-views', 'exie', 'help'],
     'event-investigate': ['filter-errors', 'choose-error', 'stack-summary', 'stack-triage', 'event-occurrence', 'tab-overview', 'filter-stack-events'],
@@ -23,7 +23,8 @@ export type ProductTourCheckpoint<Name extends ProductTourName = ProductTourName
           source: ProductTourLaunchSource;
           tourName: Name;
           userId: string;
-          version: number;
+          /** @deprecated Only retained for source compatibility with existing tests. */
+          version?: number;
       }
     : never;
 export type ProductTourCheckpointName<Name extends ProductTourName = ProductTourName> = (typeof PRODUCT_TOUR_CHECKPOINTS)[Name][number];
@@ -43,9 +44,10 @@ export interface ProductTourDefinition<Name extends ProductTourName = ProductTou
     description: string;
     keywords: readonly string[];
     name: Name;
+    recordName: ProductTourRecordName;
     start: (context: ProductTourContext) => ProductTourStart<Name>;
+    stateKey: keyof ProductTourState;
     title: string;
-    version: number;
 }
 export type ProductTourKey = 'app-welcome' | 'exie-announcement' | ProductTourName;
 
@@ -53,10 +55,13 @@ export type ProductTourLaunchSource = (typeof PRODUCT_TOUR_LAUNCH_SOURCES)[numbe
 
 export interface ProductTourListItem<Name extends ProductTourName = ProductTourName> extends ProductTourDefinition<Name> {
     currentAvailability: ProductTourAvailability;
-    progress?: ProductTourProgress;
+    recordedAt?: null | string;
 }
 
 export type ProductTourName = keyof typeof PRODUCT_TOUR_CHECKPOINTS;
+
+export type ProductTourRecordName =
+    'app-overview' | 'app-welcome' | 'event-investigate' | 'exie-announcement' | 'exie-overview' | 'project-configure' | 'saved-view-create';
 
 export interface ProductTourShortcut {
     label: string;

@@ -7,16 +7,7 @@ import { fetchApiJson } from '$features/shared/api/api.svelte';
 import { type FetchClientResponse, ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
-import type {
-    OAuthGrant,
-    ProductTourProgress,
-    UpdateEmailAddressResult,
-    UpdateProductTourProgress,
-    UpdateUser,
-    UpdateUserEmailAddress,
-    ViewCurrentUser,
-    ViewUser
-} from './models';
+import type { OAuthGrant, ProductTourState, UpdateEmailAddressResult, UpdateUser, UpdateUserEmailAddress, ViewCurrentUser, ViewUser } from './models';
 
 export async function invalidateUserQueries(queryClient: QueryClient, message: WebSocketMessageValue<'UserChanged'>) {
     const { id } = message;
@@ -50,7 +41,7 @@ export const queryKeys = {
     organization: (id: string | undefined) => [...queryKeys.type, 'organization', id] as const,
     patchUser: (id: string | undefined) => [...queryKeys.id(id), 'patch'] as const,
     postEmailAddress: (id: string | undefined) => [...queryKeys.idEmailAddress(id), 'update'] as const,
-    productTour: (tourName: string | undefined) => [...queryKeys.me(), 'product-tours', tourName] as const,
+    productTour: () => [...queryKeys.me(), 'product-tour'] as const,
     type: ['User'] as const
 };
 
@@ -76,11 +67,6 @@ export interface PostEmailAddressRequest {
     route: {
         id: string | undefined;
     };
-}
-
-export interface PutCurrentUserProductTourRequest {
-    progress: UpdateProductTourProgress;
-    tourName: string;
 }
 
 export interface ResendVerificationEmailRequest {
@@ -277,11 +263,16 @@ export function postEmailAddress(request: PostEmailAddressRequest) {
 
 export function putCurrentUserProductTour() {
     const queryClient = useQueryClient();
-    return createMutation<ProductTourProgress, ProblemDetails, PutCurrentUserProductTourRequest>(() => ({
+    return createMutation<{ recorded_utc: string }, ProblemDetails, { recordName: string; stateKey: keyof ProductTourState; userId: string }>(() => ({
         enabled: () => !!accessToken.current,
-        mutationFn: async ({ progress, tourName }) => {
+        mutationFn: async ({ recordName, userId }) => {
+            const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
+            if (currentUser?.id !== userId) {
+                throw new Error('The current user changed before the product tour preference was recorded.');
+            }
+
             const client = useFetchClient();
-            const response = await client.putJSON<ProductTourProgress>(`users/me/product-tours/${tourName}`, progress);
+            const response = await client.putJSON<{ recorded_utc: string }>(`users/me/product-tours/${recordName}/record`);
 
             if (!response.ok) {
                 throw response.problem;
@@ -289,11 +280,27 @@ export function putCurrentUserProductTour() {
 
             return response.data!;
         },
-        mutationKey: queryKeys.productTour(undefined),
-        onSuccess: async () => {
-            await queryClient.invalidateQueries({
-                queryKey: queryKeys.type
+        mutationKey: queryKeys.productTour(),
+        onError: () => {
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.me()
             });
+        },
+        onSuccess: (data, variables) => {
+            const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
+            if (!currentUser || currentUser.id !== variables.userId || !data?.recorded_utc) {
+                return;
+            }
+
+            const updatedUser = <ViewCurrentUser>{
+                ...currentUser,
+                product_tours: <ProductTourState>{
+                    ...(currentUser.product_tours ?? {}),
+                    [variables.stateKey]: data.recorded_utc
+                }
+            };
+            queryClient.setQueryData(queryKeys.me(), updatedUser);
+            queryClient.setQueryData(queryKeys.id(currentUser.id), updatedUser);
         }
     }));
 }

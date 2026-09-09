@@ -4,6 +4,7 @@ import { clearProductTourSession, readProductTourSession, writeProductTourSessio
 
 class ProductTourCheckpointStore {
     current = $state.raw<ProductTourCheckpoint>();
+    generation = $state(0);
 
     advance<Name extends ProductTourCheckpoint['tourName']>(
         expected: ProductTourCheckpoint<Name>,
@@ -25,7 +26,11 @@ class ProductTourCheckpointStore {
         if (expected && this.current !== expected) {
             return false;
         }
-        this.current = undefined;
+
+        if (this.current) {
+            this.current = undefined;
+            this.generation += 1;
+        }
         clearProductTourSession();
         return true;
     }
@@ -54,7 +59,7 @@ class ProductTourCheckpointStore {
         checkpointName: ProductTourCheckpointName<Name>,
         source: ProductTourLaunchSource,
         userId: string,
-        version: number,
+        _legacyVersion?: number,
         organizationId?: string
     ): ProductTourCheckpoint<Name> {
         const checkpoint = {
@@ -62,9 +67,9 @@ class ProductTourCheckpointStore {
             organizationId,
             source,
             tourName,
-            userId,
-            version
+            userId
         } as ProductTourCheckpoint<Name>;
+        this.generation += 1;
         return this.save(checkpoint);
     }
 

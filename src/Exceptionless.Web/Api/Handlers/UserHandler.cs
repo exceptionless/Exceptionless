@@ -51,31 +51,63 @@ public class UserHandler(
         };
     }
 
-    public async Task<Result<ProductTourProgress>> Handle(UpdateCurrentUserProductTour message)
+    private static readonly string[] ProductTourNames = [
+        ProductTours.AppOverview,
+        ProductTours.ExieOverview,
+        ProductTours.EventInvestigate,
+        ProductTours.ProjectConfigure,
+        ProductTours.SavedViewCreate,
+        ProductTours.AppWelcome,
+        ProductTours.ExieAnnouncement
+    ];
+
+    public async Task<Result<RecordProductTourResult>> Handle(RecordCurrentUserProductTour message)
     {
-        if (!ProductTours.IsKnown(message.TourName))
-            return Result.Invalid(ValidationError.Create("tour_name", "Unknown product tour."));
+        if (!ProductTourNames.Contains(message.TourName, StringComparer.Ordinal))
+            return Result.Invalid(ValidationError.Create("tour_name", "The product tour name is not supported."));
 
-        if (!ProductTours.IsValid(message.TourName, message.Progress.Version))
-            return Result.Invalid(ValidationError.Create("version", "The product tour version is not supported."));
+        string currentUserId = GetCurrentUserId();
+        DateTime utcNow = timeProvider.GetUtcNow().UtcDateTime;
 
+        ProductTourState state;
         try
         {
-            var progress = await repository.UpdateProductTourProgressAsync(
-                GetCurrentUserId(),
-                message.TourName,
-                new ProductTourProgress
-                {
-                    Status = message.Progress.Status!.Value,
-                    Version = message.Progress.Version
-                });
-            return progress;
+            state = await repository.RecordProductTourAsync(currentUserId, GetProductTourField(message.TourName), utcNow);
         }
         catch (DocumentNotFoundException)
         {
             return Result.NotFound("User not found.");
         }
+
+        DateTime? recordedUtc = GetProductTourDate(state, message.TourName);
+        return recordedUtc.HasValue
+            ? new RecordProductTourResult(recordedUtc.Value)
+            : Result.Error("Unable to record product tour.");
     }
+
+    private static DateTime? GetProductTourDate(ProductTourState state, string tourName) => tourName switch
+    {
+        ProductTours.AppOverview => state.AppOverview,
+        ProductTours.ExieOverview => state.ExieOverview,
+        ProductTours.EventInvestigate => state.EventInvestigate,
+        ProductTours.ProjectConfigure => state.ProjectConfigure,
+        ProductTours.SavedViewCreate => state.SavedViewCreate,
+        ProductTours.AppWelcome => state.AppWelcome,
+        ProductTours.ExieAnnouncement => state.ExieAnnouncement,
+        _ => null
+    };
+
+    private static string GetProductTourField(string tourName) => tourName switch
+    {
+        ProductTours.AppOverview => "app_overview",
+        ProductTours.ExieOverview => "exie_overview",
+        ProductTours.EventInvestigate => "event_investigate",
+        ProductTours.ProjectConfigure => "project_configure",
+        ProductTours.SavedViewCreate => "saved_view_create",
+        ProductTours.AppWelcome => "app_welcome",
+        ProductTours.ExieAnnouncement => "exie_announcement",
+        _ => throw new InvalidOperationException("Unknown product tour name.")
+    };
 
     public async Task<Result<IReadOnlyCollection<ViewOAuthGrant>>> Handle(GetCurrentUserOAuthGrants message)
     {

@@ -8,14 +8,12 @@
     import { getOrganizationEventsQuery } from '$features/events/api.svelte';
     import { getOrganizationProjectsQuery } from '$features/projects/api.svelte';
     import { putCurrentUserProductTour } from '$features/users/api.svelte';
-    import { ProductTourStatus } from '$features/users/models';
     import { onMount } from 'svelte';
     import { toast } from 'svelte-sonner';
 
     import type { ProductTourCheckpoint, ProductTourContext, ProductTourLaunchSource, ProductTourListItem, ProductTourName } from '../models';
 
     import { createProductTourActions } from '../actions.svelte';
-    import { submitProductTourActivity } from '../activity';
     import { getProductTourItems, getRecommendedProductTourName } from '../catalog';
     import { shouldOfferProductTourInvitation } from '../eligibility';
     import { productTourCheckpoint } from '../state.svelte';
@@ -40,10 +38,8 @@
     }
 
     const EVENT_PATH = resolve('/(app)/event');
-    const EXIE_ANNOUNCEMENT_VERSION = 1;
     const STACK_PATH = resolve('/(app)/stack');
     const SYSTEM_PATH = resolve('/(app)/system');
-    const WELCOME_VERSION = 1;
 
     let {
         assistantAccess,
@@ -65,7 +61,6 @@
     let automaticSurface = $state<'exie-announcement' | 'handled' | 'welcome'>();
     let automaticSurfaceReady = $state(false);
     let automaticSurfaceUserId = $state<string>();
-    let lastTrackedImpression = '';
     let attemptedProjectCompletion: ProductTourCheckpoint | undefined;
 
     const actions = createProductTourActions();
@@ -120,7 +115,7 @@
     const canShowInvitation = $derived(
         hostStateSettled && !!currentUser && !checkpoint && !catalogOpen && !isAnyOverlayOpen && !isImpersonating && !isSetupPage
     );
-    const welcomeEligible = $derived(shouldOfferProductTourInvitation(currentUser?.product_tours?.['app-welcome'], WELCOME_VERSION));
+    const welcomeEligible = $derived(shouldOfferProductTourInvitation(currentUser?.product_tours?.app_welcome));
     const welcomeOpen = $derived(canShowInvitation && automaticSurface === 'welcome' && !pathname.startsWith(SYSTEM_PATH) && welcomeEligible);
     const exieAnnouncementOpen = $derived(
         !!(
@@ -129,7 +124,7 @@
             assistantAccess?.enabled &&
             (pathname.startsWith(EVENT_PATH) || pathname.startsWith(STACK_PATH)) &&
             !welcomeEligible &&
-            shouldOfferProductTourInvitation(currentUser?.product_tours?.['exie-announcement'], EXIE_ANNOUNCEMENT_VERSION)
+            shouldOfferProductTourInvitation(currentUser?.product_tours?.exie_announcement)
         )
     );
 
@@ -168,7 +163,7 @@
         if (
             assistantAccess?.enabled &&
             (pathname.startsWith(EVENT_PATH) || pathname.startsWith(STACK_PATH)) &&
-            shouldOfferProductTourInvitation(currentUser.product_tours?.['exie-announcement'], EXIE_ANNOUNCEMENT_VERSION)
+            shouldOfferProductTourInvitation(currentUser.product_tours?.exie_announcement)
         ) {
             claimAutomaticSurface('exie-announcement');
         }
@@ -213,24 +208,6 @@
         }
     });
 
-    $effect(() => {
-        if (!currentUser) {
-            return;
-        }
-
-        const invitation = welcomeOpen ? 'app-welcome' : exieAnnouncementOpen ? 'exie-announcement' : undefined;
-        if (!invitation) {
-            return;
-        }
-
-        const version = invitation === 'app-welcome' ? WELCOME_VERSION : EXIE_ANNOUNCEMENT_VERSION;
-        const impression = `${currentUser.id}:${invitation}:${version}`;
-        if (lastTrackedImpression !== impression) {
-            lastTrackedImpression = impression;
-            void submitProductTourActivity('shown', invitation, version, invitation === 'app-welcome' ? 'welcome' : 'feature-announcement');
-        }
-    });
-
     export async function openCatalog(source: ProductTourLaunchSource = 'catalog'): Promise<void> {
         const active = checkpoint;
         if (active?.tourName === 'app-overview' && active.checkpointName === 'help' && !(await actions.complete(active))) {
@@ -271,12 +248,23 @@
             ...context,
             search: window.location.search
         });
-        const next = productTourCheckpoint.start(name, start.checkpointName, source, currentUser.id, item.version, organizationId);
-        void submitProductTourActivity('started', name, item.version, source);
+        const expectedUserId = currentUser.id;
+        const expectedOrganizationId = organizationId;
+        const next = productTourCheckpoint.start(name, start.checkpointName, source, currentUser.id, undefined, organizationId);
+        const expectedGeneration = productTourCheckpoint.generation;
 
         const destination = start.route;
         if (`${pathname}${window.location.search}` !== destination) {
             await goto(destination);
+        }
+
+        if (
+            productTourCheckpoint.generation !== expectedGeneration ||
+            productTourCheckpoint.current !== next ||
+            currentUser?.id !== expectedUserId ||
+            organizationId !== expectedOrganizationId
+        ) {
+            return;
         }
 
         if (next.tourName === 'exie-overview' && next.checkpointName === 'open-exie') {
@@ -284,35 +272,28 @@
         }
     }
 
-    async function recordPreference(name: 'app-welcome' | 'exie-announcement', version: number, status: ProductTourStatus): Promise<boolean> {
-        if (progressMutation.isPending) {
+    async function recordPreference(name: 'app-welcome' | 'exie-announcement', stateKey: 'app_welcome' | 'exie_announcement'): Promise<boolean> {
+        if (!currentUser) {
             return false;
         }
-
-        try {
-            await progressMutation.mutateAsync({
-                progress: {
-                    status,
-                    version
-                },
-                tourName: name
-            });
-            automaticSurface = 'handled';
-            void submitProductTourActivity(
-                status === ProductTourStatus.Completed ? 'completed' : 'dismissed',
-                name,
-                version,
-                name === 'app-welcome' ? 'welcome' : 'feature-announcement'
-            );
-            return true;
-        } catch {
-            toast.error('We could not save your guided-tour preference. Please try again.');
-            return false;
-        }
+        const userId = currentUser.id;
+        automaticSurface = 'handled';
+        void Promise.resolve(
+            progressMutation.mutateAsync({
+                recordName: name,
+                stateKey,
+                userId
+            })
+        ).catch(() => {
+            if (currentUser?.id === userId) {
+                toast.error('We could not save your guided-tour preference. Please try again.');
+            }
+        });
+        return true;
     }
 
     async function onWelcomeStart(): Promise<void> {
-        if (!(await recordPreference('app-welcome', WELCOME_VERSION, ProductTourStatus.Completed))) {
+        if (!(await recordPreference('app-welcome', 'app_welcome'))) {
             return;
         }
 
@@ -320,7 +301,7 @@
     }
 
     async function onWelcomeBrowse(): Promise<void> {
-        if (!(await recordPreference('app-welcome', WELCOME_VERSION, ProductTourStatus.Completed))) {
+        if (!(await recordPreference('app-welcome', 'app_welcome'))) {
             return;
         }
 
@@ -328,11 +309,11 @@
     }
 
     async function onWelcomeSkip(): Promise<void> {
-        await recordPreference('app-welcome', WELCOME_VERSION, ProductTourStatus.Dismissed);
+        await recordPreference('app-welcome', 'app_welcome');
     }
 
     async function onExieAnnouncementStart(): Promise<void> {
-        if (!(await recordPreference('exie-announcement', EXIE_ANNOUNCEMENT_VERSION, ProductTourStatus.Completed))) {
+        if (!(await recordPreference('exie-announcement', 'exie_announcement'))) {
             return;
         }
 
@@ -344,7 +325,7 @@
     }
 
     async function onExieAnnouncementDismiss(): Promise<void> {
-        await recordPreference('exie-announcement', EXIE_ANNOUNCEMENT_VERSION, ProductTourStatus.Dismissed);
+        await recordPreference('exie-announcement', 'exie_announcement');
     }
 
     function getItem(name: ProductTourName): ProductTourListItem {
@@ -365,7 +346,7 @@
     }
 
     function getAutomaticSurfaceKey(userId: string): string {
-        return `exceptionless.product-tour.automatic-surface.${userId}.welcome-v${WELCOME_VERSION}.announcement-v${EXIE_ANNOUNCEMENT_VERSION}`;
+        return `exceptionless.product-tour.automatic-surface.${userId}.welcome.announcement`;
     }
 
     function isActiveTourRenderable(active: NonNullable<typeof checkpoint>): boolean {
@@ -373,20 +354,13 @@
     }
 </script>
 
-<ProductTourWelcome
-    busy={progressMutation.isPending}
-    open={welcomeOpen}
-    onBrowse={onWelcomeBrowse}
-    onDismiss={onWelcomeSkip}
-    onStart={onWelcomeStart}
-    {recommended}
-/>
+<ProductTourWelcome busy={false} open={welcomeOpen} onBrowse={onWelcomeBrowse} onDismiss={onWelcomeSkip} onStart={onWelcomeStart} {recommended} />
 
 {#if exieAnnouncementOpen && assistantAccess}
     <ProductTourFeatureAnnouncement
         hasAccess={assistantAccess.has_access}
         message={assistantAccess.message}
-        busy={progressMutation.isPending}
+        busy={false}
         onDismiss={onExieAnnouncementDismiss}
         onStart={onExieAnnouncementStart}
     />

@@ -9,12 +9,12 @@ vi.mock('$features/auth/exceptionless-session', () => ({ submitFeatureUsage }));
 describe('product-tour activity', () => {
     beforeEach(() => vi.resetAllMocks());
 
-    it.each(['started', 'completed', 'dismissed', 'shown'] as const)('uses the existing feature-usage pipeline for %s', async (action) => {
+    it.each(['completed', 'dismissed'] as const)('uses the existing feature-usage pipeline for %s', async (action) => {
         // Act
-        await submitProductTourActivity(action, 'app-overview', 1, 'catalog');
+        await submitProductTourActivity(action, 'app-overview');
 
         // Assert
-        expect(submitFeatureUsage).toHaveBeenCalledExactlyOnceWith(`product-tour.${action}.app-overview.v1.catalog`);
+        expect(submitFeatureUsage).toHaveBeenCalledExactlyOnceWith(`product-tour.${action}.app-overview`);
     });
 
     it('does not propagate telemetry failures into guide navigation', async () => {
@@ -22,7 +22,7 @@ describe('product-tour activity', () => {
         submitFeatureUsage.mockRejectedValue(new Error('Unavailable'));
 
         // Act & Assert
-        await expect(submitProductTourActivity('completed', 'app-overview', 1, 'catalog')).resolves.toBeUndefined();
+        await expect(submitProductTourActivity('completed', 'app-overview')).resolves.toBeUndefined();
     });
 
     it.each(['', 'synthetic-local-test-key'])('honors the existing SDK configuration (key: %s)', async (apiKey) => {
@@ -33,12 +33,12 @@ describe('product-tour activity', () => {
         submitFeatureUsage.mockImplementation((feature: string) => client.submitFeatureUsage(feature));
 
         // Act
-        await submitProductTourActivity('started', 'app-overview', 1, 'catalog');
+        await submitProductTourActivity('completed', 'app-overview');
 
         // Assert
         expect(enqueue).toHaveBeenCalledTimes(apiKey ? 1 : 0);
         if (apiKey) {
-            expect(enqueue).toHaveBeenCalledWith(expect.objectContaining({ source: 'product-tour.started.app-overview.v1.catalog', type: 'usage' }));
+            expect(enqueue).toHaveBeenCalledWith(expect.objectContaining({ source: 'product-tour.completed.app-overview', type: 'usage' }));
         }
     });
 });

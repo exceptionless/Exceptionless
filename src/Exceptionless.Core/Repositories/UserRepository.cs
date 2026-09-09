@@ -12,6 +12,18 @@ namespace Exceptionless.Core.Repositories;
 
 public class UserRepository : RepositoryBase<User>, IUserRepository
 {
+    private const string RecordProductTourScript = """
+        if (ctx._source.product_tours == null) {
+            ctx._source.product_tours = new HashMap();
+        }
+
+        if (ctx._source.product_tours[params.field] == null) {
+            ctx._source.product_tours[params.field] = params.recordedUtc;
+        } else {
+            ctx.op = 'none';
+        }
+        """;
+
     public UserRepository(ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, AppOptions options)
         : base(configuration.Users, validator, options)
     {
@@ -80,44 +92,25 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         return FindAsync(q => q.FieldEquals(u => u.OrganizationIds, organizationId).SortAscending(u => u.EmailAddress), o => commandOptions);
     }
 
-    public async Task<ProductTourProgress> UpdateProductTourProgressAsync(string userId, string tourName, ProductTourProgress progress)
+    public async Task<ProductTourState> RecordProductTourAsync(string userId, string field, DateTime recordedUtc)
     {
-        const string script = """
-            if (ctx._source.product_tours == null) {
-              ctx._source.product_tours = [:];
-            }
-
-            def current = ctx._source.product_tours[params.tourName];
-            if (current != null && (current.version > params.version ||
-                (current.version == params.version && (current.status == params.completedStatus || current.status == params.status)))) {
-              ctx.op = 'none';
-            } else {
-              ctx._source.product_tours[params.tourName] = ['status': params.status, 'version': params.version];
-            }
-            """;
-        var patch = new ScriptPatch(script.TrimScript())
+        await PatchAsync(userId, new ScriptPatch(RecordProductTourScript)
         {
             Params = new Dictionary<string, object>
             {
-                ["completedStatus"] = (int)ProductTourStatus.Completed,
-                ["status"] = (int)progress.Status,
-                ["tourName"] = tourName,
-                ["version"] = progress.Version
+                ["field"] = field,
+                ["recordedUtc"] = recordedUtc
             }
-        };
-
-        await PatchAsync(userId, patch);
+        });
 
         // An in-flight read can repopulate stale cache entries after patch invalidation.
-        var user = await GetByIdAsync(userId, options => options.Cache(false));
-        if (user is null || !user.ProductTours.TryGetValue(tourName, out var storedProgress))
+        var user = await GetByIdAsync(userId, options => options.ImmediateConsistency().Cache(false));
+        if (user is null)
             throw new DocumentNotFoundException(userId);
 
-        // Workaround to refresh ID/email caches from the authoritative read; concurrent cache fills can still race.
-        // Revisit when https://github.com/FoundatioFx/Foundatio.Repositories/issues/323 is resolved.
+        // Refresh both ID and email caches from the authoritative read.
         await AddDocumentsToCacheAsync(user, ConfigureOptions(new CommandOptions<User>().Cache()), isDirtyRead: false);
-
-        return storedProgress;
+        return user.ProductTours;
     }
 
     protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<User>> findHits, ICommandOptions options, bool isDirtyRead)

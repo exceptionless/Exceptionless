@@ -7,24 +7,6 @@ export enum StackStatus {
   Discarded = "discarded",
 }
 
-export enum ProductTourStatus {
-  Completed = 1,
-  Dismissed = 2,
-}
-
-export enum ProductTourLaunchSource {
-  Welcome = "welcome",
-  Catalog = "catalog",
-  CommandPalette = "command-palette",
-  FeatureAnnouncement = "feature-announcement",
-  HelpMenu = "help-menu",
-}
-
-export enum ProductTourKind {
-  Guide = "guide",
-  Prompt = "prompt",
-}
-
 export enum BillingStatus {
   Trialing = 0,
   Active = 1,
@@ -512,57 +494,26 @@ export interface ProblemDetails {
   instance?: null | string;
 }
 
-export interface ProductTourActivity {
+export interface ProductTourState {
   /** @format date-time */
-  date_utc: string;
-  /** @format int64 */
-  shown: number;
-  /** @format int64 */
-  started: number;
-  /** @format int64 */
-  completed: number;
-  /** @format int64 */
-  dismissed: number;
+  app_overview?: null | string;
+  /** @format date-time */
+  exie_overview?: null | string;
+  /** @format date-time */
+  event_investigate?: null | string;
+  /** @format date-time */
+  project_configure?: null | string;
+  /** @format date-time */
+  saved_view_create?: null | string;
+  /** @format date-time */
+  app_welcome?: null | string;
+  /** @format date-time */
+  exie_announcement?: null | string;
 }
 
-export interface ProductTourProgress {
-  status: ProductTourStatus;
-  /** @format int32 */
-  version: number;
-}
-
-export interface ProductTourStartSource {
-  source: ProductTourLaunchSource;
-  /** @format int64 */
-  count: number;
-}
-
-export interface ProductTourSummary {
-  name: string;
-  /** @format int32 */
-  version: number;
-  kind: ProductTourKind;
-  /** @format int64 */
-  shown: number;
-  /** @format int64 */
-  started: number;
-  /** @format int64 */
-  completed: number;
-  /** @format int64 */
-  dismissed: number;
+export interface RecordProductTourResult {
   /** @format date-time */
-  last_run_utc?: null | string;
-  start_sources: ProductTourStartSource[];
-  activity: ProductTourActivity[];
-}
-
-export interface ProductTourUsageResponse {
-  /** @format date-time */
-  utc_start?: null | string;
-  /** @format date-time */
-  utc_end: string;
-  tours: ProductTourSummary[];
-  collection_available: boolean;
+  recorded_utc: string;
 }
 
 export interface ResetPasswordModel {
@@ -719,16 +670,6 @@ export interface UpdateEventSubmissionSettings {
   enabled?: null | boolean;
 }
 
-export interface UpdateProductTourProgress {
-  status?: null | ProductTourStatus;
-  /**
-   * @format int32
-   * @min 1
-   * @max 2147483647
-   */
-  version: number;
-}
-
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
 export interface UpdateProject {
   name: string;
@@ -818,7 +759,7 @@ export interface User {
   o_auth_accounts: OAuthAccount[];
   organization_preferences: UserOrganizationPreference[];
   saved_view_orders: UserSavedViewOrderPreference[];
-  product_tours: Record<string, ProductTourProgress>;
+  product_tours?: null | ProductTourState;
   /** Gets or sets the users Full Name. */
   full_name: string;
   /** @format email */
@@ -866,7 +807,7 @@ export interface ViewCurrentUser {
   o_auth_accounts: OAuthAccount[];
   organization_preferences: UserOrganizationPreference[];
   saved_view_orders: UserSavedViewOrderPreference[];
-  product_tours: Record<string, ProductTourProgress>;
+  product_tours: ProductTourState;
   /** @pattern ^[a-fA-F0-9]{24}$ */
   id: string;
   organization_ids: string[];

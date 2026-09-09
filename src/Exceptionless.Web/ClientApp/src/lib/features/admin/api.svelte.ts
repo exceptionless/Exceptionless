@@ -16,7 +16,6 @@ import type {
     OAuthApplication,
     OAuthApplicationRequest,
     PredefinedSavedViewDefinition,
-    ProductTourUsageResponse,
     UpdateAssistantEnabledSettingsRequest,
     UpdateAssistantSettingsRequest,
     UpdateEventSubmissionSettingsRequest
@@ -48,7 +47,6 @@ export const queryKeys = {
     migrations: ['admin', 'migrations'] as const,
     oauthApplication: (id: string | undefined) => [...queryKeys.oauthApplications, id] as const,
     oauthApplications: ['admin', 'oauth-applications'] as const,
-    productTourUsage: (time: string) => ['admin', 'product-tour-usage', time] as const,
     snapshots: ['admin', 'elasticsearch', 'snapshots'] as const,
     stats: ['admin', 'stats'] as const
 };
@@ -113,32 +111,6 @@ export function getAdminAssistantUsageQuery(month: () => string) {
         queryKey: queryKeys.assistantUsage(month()),
         staleTime: 60 * 1000
     }));
-}
-
-export function getAdminProductTourUsageQuery(time: () => string) {
-    return createQuery<ProductTourUsageResponse, ProblemDetails>(() => {
-        const selectedTime = time();
-
-        return {
-            queryFn: async ({ signal }: { signal: AbortSignal }) => {
-                const client = useFetchClient();
-                const response = await client.getJSON<ProductTourUsageResponse>('admin/product-tour-usage', {
-                    params: {
-                        time: selectedTime
-                    },
-                    signal
-                });
-
-                if (!response.ok) {
-                    throw response.problem;
-                }
-
-                return response.data!;
-            },
-            queryKey: queryKeys.productTourUsage(selectedTime),
-            staleTime: 60 * 1000
-        };
-    });
 }
 
 export function getAdminStatsQuery() {

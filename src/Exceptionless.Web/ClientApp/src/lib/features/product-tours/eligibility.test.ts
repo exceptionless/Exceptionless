@@ -1,4 +1,3 @@
-import { ProductTourStatus } from '$generated/api';
 import { describe, expect, it } from 'vitest';
 
 import { isProductTourSetupRoute, shouldOfferProductTourInvitation } from './eligibility';
@@ -16,16 +15,10 @@ describe('product tour setup routes', () => {
 
 describe('product tour invitation eligibility', () => {
     it('offers an invitation when no progress has been saved', () => {
-        expect(shouldOfferProductTourInvitation(undefined, 1)).toBe(true);
+        expect(shouldOfferProductTourInvitation(undefined)).toBe(true);
     });
 
-    it.each([ProductTourStatus.Completed, ProductTourStatus.Dismissed])('only offers a newer invitation after status %s', (status) => {
-        // Arrange
-        const progress = { status, version: 2 };
-
-        // Act / Assert
-        expect(shouldOfferProductTourInvitation(progress, 1)).toBe(false);
-        expect(shouldOfferProductTourInvitation(progress, 2)).toBe(false);
-        expect(shouldOfferProductTourInvitation(progress, 3)).toBe(true);
+    it('does not offer an invitation after it has been recorded', () => {
+        expect(shouldOfferProductTourInvitation('2026-09-08T00:00:00Z')).toBe(false);
     });
 });

@@ -9,8 +9,7 @@ const checkpoint: ProductTourCheckpoint = {
     organizationId: 'organization-id',
     source: 'command-palette',
     tourName: 'event-investigate',
-    userId: 'user-id',
-    version: 1
+    userId: 'user-id'
 };
 
 describe('product tour session', () => {

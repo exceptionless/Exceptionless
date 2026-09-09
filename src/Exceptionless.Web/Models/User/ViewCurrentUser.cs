@@ -25,7 +25,7 @@ public record ViewCurrentUser : ViewUser
         Hash = HMACSHA256HashString(user.Id, options);
         HasLocalAccount = !String.IsNullOrWhiteSpace(user.Password);
         OAuthAccounts = user.OAuthAccounts;
-        ProductTours = new Dictionary<string, ProductTourProgress>(user.ProductTours, StringComparer.Ordinal);
+        ProductTours = user.ProductTours;
     }
 
     public string? Hash { get; set; }
@@ -33,7 +33,7 @@ public record ViewCurrentUser : ViewUser
     public ICollection<OAuthAccount> OAuthAccounts { get; set; }
     public ICollection<UserOrganizationPreference> OrganizationPreferences { get; set; }
     public ICollection<UserSavedViewOrderPreference> SavedViewOrders { get; set; }
-    public IDictionary<string, ProductTourProgress> ProductTours { get; set; } = new Dictionary<string, ProductTourProgress>(StringComparer.Ordinal);
+    public ProductTourState ProductTours { get; set; } = new();
 
     private static string? HMACSHA256HashString(string value, IntercomOptions options)
     {

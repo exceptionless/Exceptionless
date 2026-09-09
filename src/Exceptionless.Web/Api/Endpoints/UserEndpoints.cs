@@ -38,23 +38,18 @@ public static class UserEndpoints
             }
         });
 
-        group.MapPut("users/me/product-tours/{tourName:regex(^[a-z0-9]+(?:-[a-z0-9]+)*$):maxlength(64)}", async (string tourName, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] UpdateProductTourProgress progress)
-            => (await mediator.InvokeAsync<Result<ProductTourProgress>>(new UserMessages.UpdateCurrentUserProductTour(tourName, progress))).ToHttpResult(resultMapper))
-        .Accepts<UpdateProductTourProgress>(false, "application/json")
-        .Produces<ProductTourProgress>()
-        .ProducesProblem(StatusCodes.Status400BadRequest)
+        group.MapPut("users/me/product-tours/{tourName:minlength(1):maxlength(64)}/record", async (string tourName, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
+            => (await mediator.InvokeAsync<Result<RecordProductTourResult>>(new UserMessages.RecordCurrentUserProductTour(tourName))).ToHttpResult(resultMapper))
+        .Produces<RecordProductTourResult>()
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .ProducesProblem(StatusCodes.Status404NotFound)
-        .WithSummary("Update current user product tour progress")
+        .WithSummary("Record current user product tour")
         .WithMetadata(new EndpointDocumentation {
-            RequestBodyDescription = "The versioned product tour outcome.",
-            RequestBodyRequired = true,
             ParameterDescriptions = new() {
-                ["tourName"] = "The stable product tour name.",
+                ["tourName"] = "The allowlisted product tour identifier.",
             },
             ResponseDescriptions = new() {
-                ["400"] = "The request body is missing or malformed.",
-                ["422"] = "The product tour progress is invalid.",
+                ["422"] = "The product tour name is invalid.",
                 ["404"] = "The current user could not be found.",
             }
         });

@@ -1,4 +1,3 @@
-import { ProductTourStatus } from '$features/users/models';
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -23,7 +22,7 @@ describe('ProductTourCatalogDialog', () => {
                 pathname: '/next',
                 projects: []
             },
-            { 'app-overview': { status: ProductTourStatus.Completed, version: 1 } }
+            { app_overview: '2026-09-08T00:00:00Z' }
         );
         const onStart = vi.fn(async () => {});
         render(ProductTourCatalogDialog, { items, onStart, open: true, ready: true, resumableTourName: 'saved-view-create' });

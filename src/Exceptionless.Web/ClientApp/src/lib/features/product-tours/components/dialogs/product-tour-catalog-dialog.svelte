@@ -3,7 +3,6 @@
     import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
     import * as Dialog from '$comp/ui/dialog';
-    import { ProductTourStatus } from '$features/users/models';
     import Bookmark from '@lucide/svelte/icons/bookmark';
     import Bot from '@lucide/svelte/icons/bot';
     import Folder from '@lucide/svelte/icons/folder';
@@ -42,7 +41,7 @@
         <ul aria-label="Available guides" class="divide-border divide-y">
             {#each items as item (item.name)}
                 {@const Icon = icons[item.name]}
-                {@const completed = item.progress?.status === ProductTourStatus.Completed && item.progress.version >= item.version}
+                {@const completed = !!item.recordedAt}
                 {@const actionLabel = resumableTourName === item.name ? 'Continue' : activeTourName === item.name || completed ? 'Restart' : 'Start'}
                 <li>
                     <section aria-label={item.title} class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-2 py-3 sm:grid-cols-[auto_minmax(0,1fr)_auto]">

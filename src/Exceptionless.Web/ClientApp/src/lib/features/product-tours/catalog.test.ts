@@ -71,8 +71,8 @@ describe('product tour catalog', () => {
         expect(items.find((item) => item.name === 'event-investigate')?.currentAvailability.available).toBe(false);
     });
 
-    it('defines a positive version for every tour', () => {
-        expect(getProductTourItems(context()).every((item) => item.version > 0)).toBe(true);
+    it('maps every guide to a stable record and typed state field', () => {
+        expect(getProductTourItems(context()).every((item) => item.recordName && item.stateKey)).toBe(true);
     });
 
     it('does not mistake an unavailable project list for an empty organization', () => {
