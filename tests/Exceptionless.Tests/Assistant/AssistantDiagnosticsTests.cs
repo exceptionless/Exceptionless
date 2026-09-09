@@ -35,10 +35,12 @@ public sealed class AssistantDiagnosticsTests
         using var host = builder.Build();
         _ = host.Services.GetRequiredService<TracerProvider>();
 
-        using var activity = AppDiagnostics.StartActivity("assistant.turn");
+        using var activity = AppDiagnostics.AssistantActivitySource.StartActivity("assistant.turn");
 
         Assert.NotNull(activity);
         Assert.True(activity.IsAllDataRequested);
+        using var pipelineActivity = AppDiagnostics.StartActivity("Event Pipeline");
+        Assert.Null(pipelineActivity);
     }
 
     [Theory]
@@ -166,7 +168,7 @@ public sealed class AssistantDiagnosticsTests
     public void Finish_FailedTurn_RecordsErrorSpanAndBoundedMetricTagsOnce()
     {
         var activities = new ConcurrentQueue<Activity>();
-        var activitySource = AppDiagnostics.ActivitySource;
+        var activitySource = AppDiagnostics.AssistantActivitySource;
         using var listener = new ActivityListener
         {
             ShouldListenTo = source => source == activitySource,

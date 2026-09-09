@@ -20,7 +20,7 @@ internal sealed class AssistantTurnDiagnostics : IDisposable
         _logger = logger;
         _timeProvider = timeProvider;
         _started = timeProvider.GetTimestamp();
-        _activity = AppDiagnostics.StartActivity("assistant.turn");
+        _activity = AppDiagnostics.AssistantActivitySource.StartActivity("assistant.turn");
         TurnId = Guid.NewGuid().ToString("N");
         OrganizationId = organizationId;
         ConversationId = conversationId;

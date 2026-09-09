@@ -129,83 +129,91 @@ public sealed class AssistantService(
                 diagnostics.Stage = "usage_reservation";
             await using var providerRequest = await assistantUsageService.StartProviderRequestAsync(request.OrganizationId, providerInputCharacters);
             using var providerDiagnostics = diagnostics?.StartProviderRequest(providerInputCharacters, allowTools, cancellationToken);
-            using var response = await SendRequestAsync(messages, options, model, allowTools, request, providerDiagnostics, cancellationToken);
-            providerRequest.MarkAccepted();
-            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            using var reader = new StreamReader(stream);
             bool receivedDone = false;
-
-            while (await reader.ReadLineAsync(cancellationToken) is { } line)
+            try
             {
-                if (!line.StartsWith("data:", StringComparison.Ordinal))
-                    continue;
+                using var response = await SendRequestAsync(messages, options, model, allowTools, request, providerDiagnostics, cancellationToken);
+                providerRequest.MarkAccepted();
+                await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                using var reader = new StreamReader(stream);
 
-                string payload = line[5..].Trim();
-                if (payload == "[DONE]")
+                while (await reader.ReadLineAsync(cancellationToken) is { } line)
                 {
-                    receivedDone = true;
-                    continue;
-                }
-                if (payload.Length == 0)
-                    continue;
-
-                using var document = JsonDocument.Parse(payload);
-                providerDiagnostics?.ObserveChunk(document.RootElement);
-                if (document.RootElement.TryGetProperty("error", out var error))
-                    throw new AssistantProviderException(GetProviderError(error));
-
-                if (!usageRecorded && TryGetProviderUsage(document.RootElement, out var usage))
-                {
-                    usageRecorded = true;
-                    try
-                    {
-                        await providerRequest.ReconcileAsync(usage);
-                    }
-                    catch (Exception ex)
-                    {
-                        // Disposal records the conservative reservation when detailed provider
-                        // accounting cannot be reconciled.
-                        logger.LogError(ex, "Unable to record assistant provider usage for organization {OrganizationId}", request.OrganizationId);
-                    }
-                }
-
-                if (!document.RootElement.TryGetProperty("choices", out var choices) || choices.GetArrayLength() == 0)
-                    continue;
-
-                var delta = choices[0].GetProperty("delta");
-                if (delta.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.String)
-                {
-                    string? text = content.GetString();
-                    if (!String.IsNullOrEmpty(text))
-                    {
-                        assistantContent.Append(text);
-                        assistantContentChunks.Add(text);
-                    }
-                }
-
-                if (!delta.TryGetProperty("tool_calls", out var toolCallUpdates))
-                    continue;
-
-                foreach (var update in toolCallUpdates.EnumerateArray())
-                {
-                    int index = update.GetProperty("index").GetInt32();
-                    if (!toolCalls.TryGetValue(index, out var pending))
-                    {
-                        pending = new PendingToolCall();
-                        toolCalls[index] = pending;
-                    }
-
-                    if (update.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String)
-                        pending.Id = id.GetString() ?? pending.Id;
-
-                    if (!update.TryGetProperty("function", out var function))
+                    if (!line.StartsWith("data:", StringComparison.Ordinal))
                         continue;
 
-                    if (function.TryGetProperty("name", out var name) && name.ValueKind == JsonValueKind.String)
-                        pending.Name += name.GetString();
-                    if (function.TryGetProperty("arguments", out var arguments) && arguments.ValueKind == JsonValueKind.String)
-                        pending.Arguments.Append(arguments.GetString());
+                    string payload = line[5..].Trim();
+                    if (payload == "[DONE]")
+                    {
+                        receivedDone = true;
+                        continue;
+                    }
+                    if (payload.Length == 0)
+                        continue;
+
+                    using var document = JsonDocument.Parse(payload);
+                    providerDiagnostics?.ObserveChunk(document.RootElement);
+                    if (document.RootElement.TryGetProperty("error", out var error))
+                        throw new AssistantProviderException(GetProviderError(error));
+
+                    if (!usageRecorded && TryGetProviderUsage(document.RootElement, out var usage))
+                    {
+                        usageRecorded = true;
+                        try
+                        {
+                            await providerRequest.ReconcileAsync(usage);
+                        }
+                        catch (Exception ex)
+                        {
+                            // Disposal records the conservative reservation when detailed provider
+                            // accounting cannot be reconciled.
+                            logger.LogError(ex, "Unable to record assistant provider usage for organization {OrganizationId}", request.OrganizationId);
+                        }
+                    }
+
+                    if (!document.RootElement.TryGetProperty("choices", out var choices) || choices.GetArrayLength() == 0)
+                        continue;
+
+                    var delta = choices[0].GetProperty("delta");
+                    if (delta.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.String)
+                    {
+                        string? text = content.GetString();
+                        if (!String.IsNullOrEmpty(text))
+                        {
+                            assistantContent.Append(text);
+                            assistantContentChunks.Add(text);
+                        }
+                    }
+
+                    if (!delta.TryGetProperty("tool_calls", out var toolCallUpdates))
+                        continue;
+
+                    foreach (var update in toolCallUpdates.EnumerateArray())
+                    {
+                        int index = update.GetProperty("index").GetInt32();
+                        if (!toolCalls.TryGetValue(index, out var pending))
+                        {
+                            pending = new PendingToolCall();
+                            toolCalls[index] = pending;
+                        }
+
+                        if (update.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String)
+                            pending.Id = id.GetString() ?? pending.Id;
+
+                        if (!update.TryGetProperty("function", out var function))
+                            continue;
+
+                        if (function.TryGetProperty("name", out var name) && name.ValueKind == JsonValueKind.String)
+                            pending.Name += name.GetString();
+                        if (function.TryGetProperty("arguments", out var arguments) && arguments.ValueKind == JsonValueKind.String)
+                            pending.Arguments.Append(arguments.GetString());
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                providerDiagnostics?.RecordException(ex);
+                throw;
             }
 
             providerDiagnostics?.Complete(assistantContent.Length, toolCalls.Count, receivedDone);

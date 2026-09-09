@@ -1056,11 +1056,40 @@ public sealed class AssistantServiceTests
     }
 
     [Theory]
+    [InlineData("transport", "provider_transport_error")]
+    [InlineData("stream", "provider_stream_error")]
+    [InlineData("json", "invalid_provider_response")]
+    [InlineData("timeout", "provider_timeout")]
+    public async Task StreamAsync_ProviderThrows_RecordsFailureCategory(string failure, string expectedOutcome)
+    {
+        var options = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["BaseURL"] = "https://localhost", ["Assistant:ApiKey"] = "test-key" })
+            .Build());
+        var logger = new RecordingAssistantLogger();
+        using var diagnostics = new AssistantTurnDiagnostics(logger, TimeProvider.System, "organization-id", "conversation-id", "request-id");
+        var service = CreateAssistantService(new FailingProviderHttpMessageHandler(failure), options);
+
+        var exception = await Record.ExceptionAsync(async () =>
+        {
+            await foreach (var _ in service.StreamAsync(
+                new AssistantChatRequest([new AssistantChatMessage("user", "private question")]),
+                "user-id", CreatePlanOptions(), diagnostics, TestContext.Current.CancellationToken))
+            {
+            }
+        });
+
+        Assert.NotNull(exception);
+        var entry = Assert.Single(logger.Entries);
+        Assert.Equal(expectedOutcome, entry.Properties["ProviderOutcome"]);
+        Assert.DoesNotContain("private", entry.Message);
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public async Task StreamAsync_ToolThrows_RecordsToolOutcomeAndDuration(bool cancelled)
     {
-        var activitySource = AppDiagnostics.ActivitySource;
+        var activitySource = AppDiagnostics.AssistantActivitySource;
         using var activityListener = new ActivityListener
         {
             ShouldListenTo = source => source == activitySource,
@@ -1489,6 +1518,24 @@ public sealed class AssistantServiceTests
                 Content = new StringContent(_responseContents.Dequeue(), Encoding.UTF8, "text/event-stream")
             };
         }
+    }
+
+    private sealed class FailingProviderHttpMessageHandler(string failure) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            => failure switch
+            {
+                "transport" => Task.FromException<HttpResponseMessage>(new HttpRequestException("private transport detail")),
+                "timeout" => Task.FromException<HttpResponseMessage>(new TaskCanceledException("private timeout detail")),
+                "stream" => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StreamContent(new FailingProviderStream()) }),
+                _ => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("data: invalid-json\n\n") })
+            };
+    }
+
+    private sealed class FailingProviderStream : MemoryStream
+    {
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            => ValueTask.FromException<int>(new IOException("private stream detail"));
     }
 
     private sealed class RejectedHttpMessageHandler(HttpStatusCode statusCode) : HttpMessageHandler

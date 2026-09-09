@@ -12,7 +12,7 @@ internal sealed class AssistantProviderDiagnostics(
     CancellationToken cancellationToken) : IDisposable
 {
     private readonly long _started = timeProvider.GetTimestamp();
-    private readonly Activity? _activity = AppDiagnostics.StartActivity("assistant.provider");
+    private readonly Activity? _activity = AppDiagnostics.AssistantActivitySource.StartActivity("assistant.provider");
     private bool _finished;
     private bool _receivedError;
 
@@ -71,6 +71,21 @@ internal sealed class AssistantProviderDiagnostics(
             _ => "completed"
         };
         Finish(outcome, outputCharacters, toolCalls, receivedDone);
+    }
+
+    public void RecordException(Exception exception)
+    {
+        string outcome = exception switch
+        {
+            AssistantProviderException when StatusCode is >= 400 => "http_error",
+            AssistantProviderException => "provider_error",
+            OperationCanceledException => cancellationToken.IsCancellationRequested ? "cancelled" : "provider_timeout",
+            HttpRequestException => "provider_transport_error",
+            JsonException => "invalid_provider_response",
+            IOException => "provider_stream_error",
+            _ => "internal_error"
+        };
+        Finish(outcome);
     }
 
     private void Finish(string outcome, int? outputCharacters = null, int? toolCalls = null, bool receivedDone = false)

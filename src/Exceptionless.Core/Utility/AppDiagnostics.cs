@@ -10,6 +10,7 @@ public static class AppDiagnostics
     internal static readonly AssemblyName AssemblyName = typeof(AppDiagnostics).Assembly.GetName();
     internal static readonly string? AssemblyVersion = typeof(AppDiagnostics).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? AssemblyName.Version?.ToString();
     internal static readonly ActivitySource ActivitySource = new(AssemblyName.Name ?? "Exceptionless", AssemblyVersion);
+    internal static readonly ActivitySource AssistantActivitySource = new("Exceptionless.Assistant", AssemblyVersion);
     internal static readonly Meter Meter = new("Exceptionless", AssemblyVersion);
     private static readonly string _metricsPrefix = "ex.";
 
