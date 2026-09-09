@@ -1204,10 +1204,13 @@ public sealed class AssistantServiceTests
         Assert.Equal(diagnostics.LastToolError, measurement["reason"]);
     }
 
-    [Fact]
-    public async Task StreamAsync_HttpRejection_RecordsStatusWithoutLoggingProviderErrorBody()
+    [Theory]
+    [InlineData(HttpStatusCode.TemporaryRedirect)]
+    [InlineData(HttpStatusCode.TooManyRequests)]
+    [InlineData(HttpStatusCode.InternalServerError)]
+    public async Task StreamAsync_HttpRejection_RecordsStatusWithoutLoggingProviderErrorBody(HttpStatusCode responseStatus)
     {
-        var handler = new RejectedHttpMessageHandler(HttpStatusCode.TooManyRequests);
+        var handler = new RejectedHttpMessageHandler(responseStatus);
         var options = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?> { ["BaseURL"] = "https://localhost", ["Assistant:ApiKey"] = "test-key" })
             .Build());
@@ -1227,8 +1230,8 @@ public sealed class AssistantServiceTests
         Assert.Equal("provider_http_error", exception.FailureCode);
         var providerEntry = Assert.Single(logger.Entries, entry => entry.Properties.ContainsKey("ProviderOutcome"));
         Assert.Equal(exception.FailureCode, providerEntry.Properties["ProviderOutcome"]);
-        Assert.Equal(429, diagnostics.Provider?.StatusCode);
-        Assert.Contains(logger.Entries, entry => entry.Properties.TryGetValue("StatusCode", out var status) && status is 429);
+        Assert.Equal((int)responseStatus, diagnostics.Provider?.StatusCode);
+        Assert.Contains(logger.Entries, entry => entry.Properties.TryGetValue("StatusCode", out var status) && status is int code && code == (int)responseStatus);
         Assert.All(logger.Entries, entry =>
         {
             Assert.DoesNotContain("Rejected", entry.Message);
