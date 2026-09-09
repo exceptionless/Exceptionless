@@ -6,6 +6,7 @@
     import X from '@lucide/svelte/icons/x';
 
     interface Props {
+        canUpgrade?: boolean;
         hasAccess: boolean;
         message?: string;
         onDismiss: () => void;
@@ -13,7 +14,7 @@
         open?: boolean;
     }
 
-    let { hasAccess, message, onDismiss, onStart, open = true }: Props = $props();
+    let { canUpgrade = false, hasAccess, message, onDismiss, onStart, open = true }: Props = $props();
 </script>
 
 {#if open}
@@ -37,7 +38,7 @@
                 </Button>
             </div>
             <div class="mt-3 flex flex-wrap gap-2">
-                <Button onclick={onStart} size="sm">{hasAccess ? 'See how it works' : 'View access options'}</Button>
+                <Button onclick={onStart} size="sm">{hasAccess ? 'See how it works' : canUpgrade ? 'Upgrade Plan' : 'Open Exie'}</Button>
                 <Button onclick={onDismiss} size="sm" variant="outline">Dismiss</Button>
             </div>
         </div>

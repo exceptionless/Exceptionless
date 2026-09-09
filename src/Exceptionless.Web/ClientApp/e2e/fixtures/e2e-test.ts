@@ -251,6 +251,7 @@ export const test = base.extend<E2EFixtures>({
             await use(undefined);
             return;
         }
+
         if (e2eApi.environment.isProduction) {
             throw new Error('Invited test users require local Mailpit.');
         }

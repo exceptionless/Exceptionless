@@ -28,8 +28,8 @@ describe('InvestigationDetailTour', () => {
         vi.stubGlobal(
             'ResizeObserver',
             class {
-                disconnect() {}
-                observe() {}
+                public disconnect() {}
+                public observe() {}
             }
         );
         targets = ['stack-metrics', 'stack-status', 'event-occurrence', 'event-overview', 'stack-events'].map((name) => {

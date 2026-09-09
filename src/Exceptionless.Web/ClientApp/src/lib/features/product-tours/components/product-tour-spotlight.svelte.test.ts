@@ -16,8 +16,8 @@ describe('ProductTourSpotlight', () => {
         vi.stubGlobal(
             'ResizeObserver',
             class {
-                disconnect() {}
-                observe() {}
+                public disconnect() {}
+                public observe() {}
             }
         );
         target = document.createElement('button');
@@ -118,8 +118,8 @@ describe('ProductTourSpotlight', () => {
         vi.stubGlobal(
             'ResizeObserver',
             class {
-                disconnect = disconnect;
-                observe() {}
+                public disconnect = disconnect;
+                public observe() {}
             }
         );
         const view = render(ProductTourSpotlight, { props: { checkpoint, description: 'Search', onDismiss, target, title: 'Search' } });

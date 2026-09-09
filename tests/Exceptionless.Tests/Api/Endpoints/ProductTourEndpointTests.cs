@@ -1,4 +1,3 @@
-using System.Net;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
@@ -119,42 +118,36 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task RecordCurrentUserProductTourAsync_UnknownTour_ReturnsUnprocessableEntity()
+    public Task RecordCurrentUserProductTourAsync_UnknownTour_ReturnsUnprocessableEntity()
     {
         // Arrange: sample users are created by ResetDataAsync.
 
-        // Act
-        using var response = await SendRequestAsync(r => r.Put().AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", "unknown-tour", "record"));
-
-        // Assert
-        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        // Act & Assert
+        return SendRequestAsync(r => r.Put().AsTestOrganizationUser()
+            .AppendPaths("users", "me", "product-tours", "unknown-tour", "record")
+            .StatusCodeShouldBeUnprocessableEntity());
     }
 
     [Fact]
-    public async Task RecordCurrentUserProductTourAsync_OldRoute_ReturnsNotFound()
+    public Task RecordCurrentUserProductTourAsync_OldRoute_ReturnsNotFound()
     {
         // Arrange: sample users are created by ResetDataAsync.
 
-        // Act
-        using var response = await SendRequestAsync(r => r.Put().AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", ProductTourNames.AppOverview));
-
-        // Assert
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        // Act & Assert
+        return SendRequestAsync(r => r.Put().AsTestOrganizationUser()
+            .AppendPaths("users", "me", "product-tours", ProductTourNames.AppOverview)
+            .StatusCodeShouldBeNotFound());
     }
 
     [Fact]
-    public async Task RecordCurrentUserProductTourAsync_AnonymousUser_ReturnsUnauthorized()
+    public Task RecordCurrentUserProductTourAsync_AnonymousUser_ReturnsUnauthorized()
     {
         // Arrange: sample users are created by ResetDataAsync.
 
-        // Act
-        using var response = await SendRequestAsync(r => r.Put()
-            .AppendPaths("users", "me", "product-tours", ProductTourNames.AppOverview, "record"));
-
-        // Assert
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        // Act & Assert
+        return SendRequestAsync(r => r.Put()
+            .AppendPaths("users", "me", "product-tours", ProductTourNames.AppOverview, "record")
+            .StatusCodeShouldBeUnauthorized());
     }
 
     [Fact]

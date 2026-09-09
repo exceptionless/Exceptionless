@@ -1,9 +1,9 @@
 import type { ProductTourCheckpoint, ProductTourCheckpointName, ProductTourName } from './models';
 
 class ProductTourCheckpointStore {
-    current = $state.raw<ProductTourCheckpoint>();
+    public current = $state.raw<ProductTourCheckpoint>();
 
-    advance<Name extends ProductTourCheckpoint['tourName']>(
+    public advance<Name extends ProductTourCheckpoint['tourName']>(
         expected: ProductTourCheckpoint<Name>,
         checkpointName: ProductTourCheckpointName<Name>,
         organizationId = expected.organizationId
@@ -11,6 +11,7 @@ class ProductTourCheckpointStore {
         if (this.current !== expected) {
             return undefined;
         }
+
         const next = {
             ...expected,
             checkpointName,
@@ -20,7 +21,7 @@ class ProductTourCheckpointStore {
         return next;
     }
 
-    clear(expected?: ProductTourCheckpoint): boolean {
+    public clear(expected?: ProductTourCheckpoint): boolean {
         if (expected && this.current !== expected) {
             return false;
         }
@@ -29,7 +30,7 @@ class ProductTourCheckpointStore {
         return true;
     }
 
-    start<Name extends ProductTourName>(
+    public start<Name extends ProductTourName>(
         tourName: Name,
         checkpointName: ProductTourCheckpointName<Name>,
         userId: string,

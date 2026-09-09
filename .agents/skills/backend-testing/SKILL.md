@@ -66,7 +66,7 @@ Key members: `GetService<T>()`, `CreateFluentClient()`, `SendRequestAsync()`, `R
 
 ## HTTP Test Pattern
 
-Use `SendRequestAsync` with `AppSendBuilder` for HTTP testing:
+Use `SendRequestAsync` with `AppSendBuilder` for HTTP testing. Always configure the expected response status with `StatusCodeShouldBe...`; the helper validates it before returning the response. Preserve that expectation when restructuring a test into Arrange/Act/Assert sections:
 
 ```csharp
 await SendRequestAsync(r => r

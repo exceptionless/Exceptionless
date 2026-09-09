@@ -12,7 +12,7 @@ export { DEFAULT_LIMIT } from './constants';
 export const DEFAULT_OFFSET = new SvelteDate().getTimezoneOffset() !== 0 ? new SvelteDate().getTimezoneOffset() * -1 + 'm' : undefined;
 
 export class FetchClientStatus {
-    isLoading = $state(false);
+    public isLoading = $state(false);
 
     constructor(target?: FetchClient | FetchClientProvider) {
         if (!target) {

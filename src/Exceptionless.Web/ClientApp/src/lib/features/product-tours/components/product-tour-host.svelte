@@ -5,10 +5,13 @@
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
+    import { invalidateAssistantAccessQueries } from '$features/assistant/api.svelte';
+    import { showChangePlanDialog } from '$features/billing/change-plan.svelte';
+    import { isStripeEnabled } from '$features/billing/stripe.svelte';
     import { getOrganizationEventsQuery } from '$features/events/api.svelte';
     import { getOrganizationProjectsQuery } from '$features/projects/api.svelte';
     import { putCurrentUserProductTour } from '$features/users/api.svelte';
-    import { onMount } from 'svelte';
+    import { useQueryClient } from '@tanstack/svelte-query';
     import { toast } from 'svelte-sonner';
 
     import type { ProductTourContext, ProductTourListItem, ProductTourName } from '../models';
@@ -58,10 +61,10 @@
 
     let catalogOpen = $state(false);
     let automaticSurface = $state<'exie-announcement' | 'handled' | 'welcome'>();
-    let automaticSurfaceReady = $state(false);
     let automaticSurfaceUserId = $state<string>();
 
     const actions = createProductTourActions();
+    const queryClient = useQueryClient();
     const progressMutation = putCurrentUserProductTour();
     const projectsQuery = getOrganizationProjectsQuery({
         route: {
@@ -113,6 +116,7 @@
     const canShowInvitation = $derived(
         hostStateSettled && !!currentUser && !checkpoint && !catalogOpen && !isAnyOverlayOpen && !isImpersonating && !isSetupPage
     );
+    const canUpgrade = $derived(!!organizationId && !!assistantAccess?.upgrade_required && isStripeEnabled());
     const welcomeEligible = $derived(shouldOfferProductTourInvitation(currentUser?.product_tours?.app_welcome));
     const welcomeOpen = $derived(canShowInvitation && automaticSurface === 'welcome' && !pathname.startsWith(SYSTEM_PATH) && welcomeEligible);
     const exieAnnouncementOpen = $derived(
@@ -126,12 +130,8 @@
         )
     );
 
-    onMount(() => {
-        automaticSurfaceReady = true;
-    });
-
     $effect(() => {
-        if (!automaticSurfaceReady || !currentUser) {
+        if (!currentUser) {
             automaticSurface = undefined;
             automaticSurfaceUserId = undefined;
             return;
@@ -140,8 +140,6 @@
         if (automaticSurfaceUserId !== currentUser.id) {
             automaticSurface = undefined;
             automaticSurfaceUserId = currentUser.id;
-
-            return;
         }
 
         if (automaticSurface || !hostStateSettled || isImpersonating || isSetupPage || checkpoint) {
@@ -292,6 +290,11 @@
 
         if (assistantAccess?.has_access) {
             await startTour('exie-overview');
+        } else if (canUpgrade && organizationId) {
+            showChangePlanDialog(organizationId, {
+                initialPlanId: assistantAccess?.minimum_plan_id,
+                onSuccess: () => invalidateAssistantAccessQueries(queryClient)
+            });
         } else {
             await openAssistant();
         }
@@ -314,6 +317,7 @@
 
 {#if exieAnnouncementOpen && assistantAccess}
     <ProductTourFeatureAnnouncement
+        {canUpgrade}
         hasAccess={assistantAccess.has_access}
         message={assistantAccess.message}
         onDismiss={onExieAnnouncementDismiss}

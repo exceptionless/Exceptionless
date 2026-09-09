@@ -15,13 +15,13 @@ export class CachedPersistedState<T> {
     /**
      * Get the cached value without triggering PersistedState's deserialize
      */
-    get current(): T {
+    public get current(): T {
         return this.#cached;
     }
     /**
      * Set the value, updating both the cache and PersistedState
      */
-    set current(newValue: T) {
+    public set current(newValue: T) {
         this.#cached = newValue;
         this.#persisted.current = newValue;
     }

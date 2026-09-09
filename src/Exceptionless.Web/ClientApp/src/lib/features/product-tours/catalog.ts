@@ -14,12 +14,15 @@ function requireError(context: ProductTourContext) {
     if (!context.organizationId) {
         return { available: false, reason: 'Create an organization and project first.' };
     }
+
     if (context.errorEventAvailability === 'loading') {
         return { available: false, reason: 'Checking for an accessible error report…' };
     }
+
     if (context.errorEventAvailability === 'error') {
         return { available: false, reason: 'Error reports could not be checked. Try again shortly.' };
     }
+
     if (context.errorEventAvailability === 'empty') {
         return { available: false, reason: 'Send an error report before starting this guide.' };
     }
@@ -50,6 +53,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
             if (checkpoint === 'organization-name') {
                 return routeId === '/(app)/organization/add';
             }
+
             if (checkpoint === 'project-name') {
                 return routeId === '/(app)/organization/add' || routeId === '/(app)/project/add';
             }

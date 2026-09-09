@@ -119,6 +119,7 @@ Do not copy architecture from the legacy Angular app into Svelte.
 
 - Use kebab-case for files and directories.
 - Always use braces for control flow statements.
+- Declare class member visibility explicitly (`public`, `protected`, or `private`); keep constructors without a redundant `public` modifier, matching the ESLint rule.
 - Use block-bodied arrow functions when the function body has statements.
 - Do not abbreviate identifiers: use `organization`, not `org`; `filter`, not `filt`.
 - Prefer named imports. Namespace imports are acceptable for shadcn composite components such as `Dialog`, `DropdownMenu`, `Field`, and `Card`.

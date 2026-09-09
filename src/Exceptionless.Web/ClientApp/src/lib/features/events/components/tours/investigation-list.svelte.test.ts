@@ -16,8 +16,8 @@ describe('InvestigationListTour', () => {
         vi.stubGlobal(
             'ResizeObserver',
             class {
-                disconnect() {}
-                observe() {}
+                public disconnect() {}
+                public observe() {}
             }
         );
         target = document.createElement('div');
