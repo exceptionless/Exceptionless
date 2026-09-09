@@ -151,62 +151,69 @@ public sealed class AssistantService(
                     if (payload.Length == 0)
                         continue;
 
-                    using var document = JsonDocument.Parse(payload);
-                    providerDiagnostics?.ObserveChunk(document.RootElement);
-                    if (document.RootElement.TryGetProperty("error", out var error))
-                        throw new AssistantProviderException(GetProviderError(error));
-
-                    if (!usageRecorded && TryGetProviderUsage(document.RootElement, out var usage))
+                    try
                     {
-                        usageRecorded = true;
-                        try
-                        {
-                            await providerRequest.ReconcileAsync(usage);
-                        }
-                        catch (Exception ex)
-                        {
-                            // Disposal records the conservative reservation when detailed provider
-                            // accounting cannot be reconciled.
-                            logger.LogError(ex, "Unable to record assistant provider usage for organization {OrganizationId}", request.OrganizationId);
-                        }
-                    }
+                        using var document = JsonDocument.Parse(payload);
+                        providerDiagnostics?.ObserveChunk(document.RootElement);
+                        if (document.RootElement.TryGetProperty("error", out var error))
+                            throw new AssistantProviderException(GetProviderError(error));
 
-                    if (!document.RootElement.TryGetProperty("choices", out var choices) || choices.GetArrayLength() == 0)
-                        continue;
-
-                    var delta = choices[0].GetProperty("delta");
-                    if (delta.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.String)
-                    {
-                        string? text = content.GetString();
-                        if (!String.IsNullOrEmpty(text))
+                        if (!usageRecorded && TryGetProviderUsage(document.RootElement, out var usage))
                         {
-                            assistantContent.Append(text);
-                            assistantContentChunks.Add(text);
-                        }
-                    }
-
-                    if (!delta.TryGetProperty("tool_calls", out var toolCallUpdates))
-                        continue;
-
-                    foreach (var update in toolCallUpdates.EnumerateArray())
-                    {
-                        int index = update.GetProperty("index").GetInt32();
-                        if (!toolCalls.TryGetValue(index, out var pending))
-                        {
-                            pending = new PendingToolCall();
-                            toolCalls[index] = pending;
+                            usageRecorded = true;
+                            try
+                            {
+                                await providerRequest.ReconcileAsync(usage);
+                            }
+                            catch (Exception ex)
+                            {
+                                // Disposal records the conservative reservation when detailed provider
+                                // accounting cannot be reconciled.
+                                logger.LogError(ex, "Unable to record assistant provider usage for organization {OrganizationId}", request.OrganizationId);
+                            }
                         }
 
-                        if (update.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String)
-                            pending.Id = id.GetString() ?? pending.Id;
-
-                        if (!update.TryGetProperty("function", out var function))
+                        if (!document.RootElement.TryGetProperty("choices", out var choices) || choices.GetArrayLength() == 0)
                             continue;
 
-                        if (function.TryGetProperty("name", out var name) && name.ValueKind == JsonValueKind.String)
-                            pending.Name += name.GetString();
-                        if (function.TryGetProperty("arguments", out var arguments) && arguments.ValueKind == JsonValueKind.String)
-                            pending.Arguments.Append(arguments.GetString());
+                        var delta = choices[0].GetProperty("delta");
+                        if (delta.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.String)
+                        {
+                            string? text = content.GetString();
+                            if (!String.IsNullOrEmpty(text))
+                            {
+                                assistantContent.Append(text);
+                                assistantContentChunks.Add(text);
+                            }
+                        }
+
+                        if (!delta.TryGetProperty("tool_calls", out var toolCallUpdates))
+                            continue;
+
+                        foreach (var update in toolCallUpdates.EnumerateArray())
+                        {
+                            int index = update.GetProperty("index").GetInt32();
+                            if (!toolCalls.TryGetValue(index, out var pending))
+                            {
+                                pending = new PendingToolCall();
+                                toolCalls[index] = pending;
+                            }
+
+                            if (update.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String)
+                                pending.Id = id.GetString() ?? pending.Id;
+
+                            if (!update.TryGetProperty("function", out var function))
+                                continue;
+
+                            if (function.TryGetProperty("name", out var name) && name.ValueKind == JsonValueKind.String)
+                                pending.Name += name.GetString();
+                            if (function.TryGetProperty("arguments", out var arguments) && arguments.ValueKind == JsonValueKind.String)
+                                pending.Arguments.Append(arguments.GetString());
+                        }
+                    }
+                    catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException or FormatException)
+                    {
+                        throw new JsonException("The AI provider returned an invalid response structure.", ex);
                     }
                 }
             }

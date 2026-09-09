@@ -9,6 +9,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Services;
+using Exceptionless.Web.Api.Endpoints;
 using Exceptionless.Web.Assistant;
 using Exceptionless.Web.Mcp;
 using Foundatio.Caching;
@@ -1082,6 +1083,44 @@ public sealed class AssistantServiceTests
         var entry = Assert.Single(logger.Entries);
         Assert.Equal(expectedOutcome, entry.Properties["ProviderOutcome"]);
         Assert.DoesNotContain("private", entry.Message);
+    }
+
+    [Theory]
+    [InlineData("[]")]
+    [InlineData("null")]
+    [InlineData("{\"choices\":{}}")]
+    [InlineData("{\"choices\":[{}]}")]
+    [InlineData("{\"choices\":[{\"delta\":[]}]}")]
+    [InlineData("{\"choices\":[{\"delta\":{\"tool_calls\":[{}]}}]}")]
+    [InlineData("{\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":2147483648}]}}]}")]
+    [InlineData("{\"usage\":{\"prompt_tokens\":\"private invalid token count\"}}")]
+    public async Task StreamAsync_InvalidProviderShape_RecordsProviderAndTurnFailure(string payload)
+    {
+        var options = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["BaseURL"] = "https://localhost", ["Assistant:ApiKey"] = "test-key" })
+            .Build());
+        var logger = new RecordingAssistantLogger();
+        using var diagnostics = new AssistantTurnDiagnostics(logger, TimeProvider.System, "organization-id", "conversation-id", "request-id");
+        using var cache = new InMemoryCacheClient();
+        var recorder = new RecordingAssistantUsageRecorder();
+        var usageService = new AssistantUsageService(cache, CreateLockProvider(cache, TimeProvider.System), recorder, options,
+            TimeProvider.System, NullLogger<AssistantUsageService>.Instance);
+        var service = CreateAssistantService(new StubHttpMessageHandler($"data: {payload}\n\ndata: [DONE]\n"), options, cache, usageService: usageService);
+        var context = new DefaultHttpContext();
+        using var response = new MemoryStream();
+        context.Response.Body = response;
+
+        await AssistantEndpoints.WriteResponseAsync(context,
+            service.StreamAsync(new AssistantChatRequest([new AssistantChatMessage("user", "private question")]),
+                "user-id", CreatePlanOptions(), diagnostics, TestContext.Current.CancellationToken),
+            usageService, "organization-id", diagnostics, TestContext.Current.CancellationToken);
+
+        var providerEntry = Assert.Single(logger.Entries, entry => entry.Properties.ContainsKey("ProviderOutcome"));
+        var turnEntry = Assert.Single(logger.Entries, entry => entry.Properties.ContainsKey("Outcome"));
+        Assert.Equal("invalid_provider_response", providerEntry.Properties["ProviderOutcome"]);
+        Assert.Equal("invalid_provider_response", turnEntry.Properties["FailureReason"]);
+        Assert.Equal("failed", turnEntry.Properties["Outcome"]);
+        Assert.All(logger.Entries, entry => Assert.DoesNotContain("private", entry.Message));
     }
 
     [Theory]
