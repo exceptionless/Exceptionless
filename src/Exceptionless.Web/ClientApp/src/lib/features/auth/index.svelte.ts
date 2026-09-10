@@ -115,8 +115,10 @@ export async function googleLogin(redirectUrl?: string, inviteToken?: null | str
 
 export async function gotoLogin() {
     const url = page.url;
-    const isAuthPath = url.pathname.startsWith('/next/login');
-    const redirect = url.pathname === resolve('/') || isAuthPath ? resolve('/(auth)/login') : `${resolve('/(auth)/login')}?redirect=${url.pathname}`;
+    const loginPath = resolve('/(auth)/login');
+    const isAuthPath = url.pathname === loginPath || url.pathname === `${loginPath}/`;
+    const returnUrl = `${url.pathname}${url.search}${url.hash}`;
+    const redirect = url.pathname === resolve('/') || isAuthPath ? loginPath : `${loginPath}?redirect=${encodeURIComponent(returnUrl)}`;
     await goto(redirect, {
         replaceState: true
     });
