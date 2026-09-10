@@ -27,7 +27,7 @@ public class Event : IData, IJsonOnDeserialized
             string? name = value?.Trim();
             _environment = String.IsNullOrEmpty(name) || name.Length > 64 || name.Any(Char.IsControl)
                 ? null
-                : name.ToLowerInvariant();
+                : name;
         }
     }
 

@@ -15,18 +15,18 @@ public sealed class EventEnvironmentTests : TestWithServices
     [InlineData("environment")]
     [InlineData("Environment")]
     [InlineData("ENVIRONMENT")]
-    public void Deserialize_DeploymentEnvironment_NormalizesNameAndPreservesRuntimeMetadata(string property)
+    public void Deserialize_DeploymentEnvironment_TrimsNameAndPreservesCasingAndRuntimeMetadata(string property)
     {
         var serializer = GetService<ITextSerializer>();
         var ev = serializer.Deserialize<Event>("""{"PROPERTY":" Production ","data":{"@environment":{"machine_name":"worker-1"},"environment":{"custom":true}}}""".Replace("PROPERTY", property));
 
         Assert.NotNull(ev);
-        Assert.Equal("production", ev.Environment);
+        Assert.Equal("Production", ev.Environment);
         Assert.Equal("worker-1", ev.GetEnvironmentInfo(serializer, _logger)?.MachineName);
         Assert.NotNull(ev.Data?["environment"]);
         string json = serializer.SerializeToString(ev)!;
-        Assert.Contains("\"environment\":\"production\"", json);
-        Assert.Equal("production", serializer.Deserialize<Event>(json)?.Environment);
+        Assert.Contains("\"environment\":\"Production\"", json);
+        Assert.Equal("Production", serializer.Deserialize<Event>(json)?.Environment);
     }
 
     [Theory]
@@ -56,13 +56,14 @@ public sealed class EventEnvironmentTests : TestWithServices
         Assert.DoesNotContain("environment", serializer.SerializeToString(new Event())!);
         Assert.Null(serializer.Deserialize<Event>("{}")?.Environment);
         Assert.Null(new Event { Environment = new string('x', 65) }.Environment);
-        Assert.Equal(new string('x', 64), new Event { Environment = new string('X', 64) }.Environment);
+        Assert.Equal(new string('X', 64), new Event { Environment = new string('X', 64) }.Environment);
     }
 
     [Fact]
     public void Equals_DifferentEnvironments_DistinguishesEvents()
     {
         Assert.NotEqual(new Event { Environment = "production", Data = null }, new Event { Environment = "staging", Data = null });
-        Assert.Equal(new Event { Environment = " Production ", Data = null }, new Event { Environment = "production", Data = null });
+        Assert.Equal(new Event { Environment = " Production ", Data = null }, new Event { Environment = "Production", Data = null });
+        Assert.NotEqual(new Event { Environment = "Production", Data = null }, new Event { Environment = "production", Data = null });
     }
 }

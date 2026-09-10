@@ -1,7 +1,6 @@
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
-using Foundatio.Parsers.ElasticQueries.Extensions;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Migrations;
 using Microsoft.Extensions.Logging;
@@ -26,7 +25,8 @@ public sealed class AddEventEnvironment : MigrationBase
             .AllowNoIndices(true)
             .IgnoreUnavailable(true)
             .Properties(properties => properties.Text(ev => ev.Environment,
-                text => text.Analyzer(EventIndex.LOWER_KEYWORD_ANALYZER).AddKeywordField())), context.CancellationToken);
+                text => text.Analyzer(EventIndex.LOWER_KEYWORD_ANALYZER)
+                    .Fields(fields => fields.Keyword("keyword", keyword => keyword.Normalizer("lowercase"))))), context.CancellationToken);
         _logger.LogRequest(response);
         if (!response.IsValidResponse)
         {

@@ -36,7 +36,7 @@ public sealed class AddEventEnvironmentMigrationTests : IntegrationTestsBase
             var properties = Assert.Single(mapping.Mappings).Value.Mappings.Properties!;
             var environment = Assert.IsType<TextProperty>(properties["environment"]);
             Assert.Equal("lowerkeyword", environment.Analyzer);
-            Assert.IsType<KeywordProperty>(environment.Fields!["keyword"]);
+            Assert.Equal("lowercase", Assert.IsType<KeywordProperty>(environment.Fields!["keyword"]).Normalizer);
             Assert.IsType<KeywordProperty>(properties["legacy_field"]);
         }
         finally

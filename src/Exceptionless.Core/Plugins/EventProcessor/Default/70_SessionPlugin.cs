@@ -125,7 +125,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
     {
         var identityGroups = contexts
             .OrderBy(c => c.Event.Date)
-            .GroupBy(c => (c.Event.ProjectId, c.Event.Environment, Identity: c.Event.GetUserIdentity(_serializer, _logger)?.Identity));
+            .GroupBy(c => (c.Event.ProjectId, Environment: c.Event.Environment?.ToLowerInvariant(), Identity: c.Event.GetUserIdentity(_serializer, _logger)?.Identity));
 
         foreach (var identityGroup in identityGroups)
         {

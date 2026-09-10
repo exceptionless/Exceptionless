@@ -533,7 +533,7 @@
           {
             "name": "environment",
             "in": "query",
-            "description": "The deployment environment (for example, production or staging). Names are trimmed, lowercased, and limited to 64 characters; missing or invalid names remain unspecified.",
+            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
             "schema": {
               "type": "string"
             }
@@ -704,7 +704,7 @@
           {
             "name": "environment",
             "in": "query",
-            "description": "The deployment environment (for example, production or staging). Names are trimmed, lowercased, and limited to 64 characters; missing or invalid names remain unspecified.",
+            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
             "schema": {
               "type": "string"
             }
@@ -875,7 +875,7 @@
           {
             "name": "environment",
             "in": "query",
-            "description": "The deployment environment (for example, production or staging). Names are trimmed, lowercased, and limited to 64 characters; missing or invalid names remain unspecified.",
+            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
             "schema": {
               "type": "string"
             }
@@ -1055,7 +1055,7 @@
           {
             "name": "environment",
             "in": "query",
-            "description": "The deployment environment (for example, production or staging). Names are trimmed, lowercased, and limited to 64 characters; missing or invalid names remain unspecified.",
+            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
             "schema": {
               "type": "string"
             }
@@ -10680,7 +10680,7 @@
           {
             "name": "environment",
             "in": "query",
-            "description": "The deployment environment (for example, production or staging). Names are trimmed, lowercased, and limited to 64 characters; missing or invalid names remain unspecified.",
+            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
             "schema": {
               "type": "string"
             }
@@ -10853,7 +10853,7 @@
           {
             "name": "environment",
             "in": "query",
-            "description": "The deployment environment (for example, production or staging). Names are trimmed, lowercased, and limited to 64 characters; missing or invalid names remain unspecified.",
+            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
             "schema": {
               "type": "string"
             }
@@ -11033,7 +11033,7 @@
           {
             "name": "environment",
             "in": "query",
-            "description": "The deployment environment (for example, production or staging). Names are trimmed, lowercased, and limited to 64 characters; missing or invalid names remain unspecified.",
+            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
             "schema": {
               "type": "string"
             }
@@ -11216,7 +11216,7 @@
           {
             "name": "environment",
             "in": "query",
-            "description": "The deployment environment (for example, production or staging). Names are trimmed, lowercased, and limited to 64 characters; missing or invalid names remain unspecified.",
+            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
             "schema": {
               "type": "string"
             }

@@ -41,7 +41,7 @@ Authorization: Bearer {{token}}
 GET {{apiUrl}}/events?filter=_missing_:environment
 Authorization: Bearer {{token}}
 
-### Submit a staging event (same stack across environments)
+### Submit a staging event (preserves casing; same stack across environments)
 POST {{apiUrl}}/events
 Authorization: Bearer {{clientToken}}
 Content-Type: application/json
@@ -50,7 +50,7 @@ Content-Type: application/json
   "type": "log",
   "source": "environment-example",
   "message": "Deployment complete",
-  "environment": "staging"
+  "environment": "Staging"
 }
 
 ###
@@ -152,7 +152,7 @@ Content-Type: application/json
 }
 
 ### GET Submit Random Parameters
-GET {{apiUrl}}/events/submit?access_token={{clientToken}}&environment=production&foo=bar&edit=&spam=eggs=ham&tags=blue&tags=red&message=foo
+GET {{apiUrl}}/events/submit?access_token={{clientToken}}&environment=Production&foo=bar&edit=&spam=eggs=ham&tags=blue&tags=red&message=foo
 
 ### Raygun Post
 POST {{apiUrl}}/events?access_token={{clientToken}}

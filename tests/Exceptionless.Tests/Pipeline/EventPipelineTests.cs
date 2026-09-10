@@ -91,13 +91,13 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
         var project = _projectData.GenerateSampleProject();
         var production = GenerateEvent(DateTimeOffset.Now.AddMinutes(-3), "same-user");
-        production.Environment = "production";
+        production.Environment = " Production ";
         var staging = GenerateEvent(DateTimeOffset.Now.AddMinutes(-2), "same-user");
         staging.Data![Event.KnownDataKeys.Error] = production.Data![Event.KnownDataKeys.Error];
         staging.Environment = "staging";
         var laterProduction = GenerateEvent(DateTimeOffset.Now.AddMinutes(-1), "same-user");
         laterProduction.Data![Event.KnownDataKeys.Error] = production.Data[Event.KnownDataKeys.Error];
-        laterProduction.Environment = "production";
+        laterProduction.Environment = "PRODUCTION";
 
         foreach (var ev in new[] { production, staging, laterProduction })
         {
@@ -109,10 +109,12 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.Equal(production.StackId, staging.StackId);
         Assert.Equal(production.GetSessionId(), laterProduction.GetSessionId());
         Assert.NotEqual(production.GetSessionId(), staging.GetSessionId());
+        Assert.Equal("Production", production.Environment);
+        Assert.Equal("PRODUCTION", laterProduction.Environment);
         await RefreshDataAsync();
         var sessions = await _eventRepository.FindAsync(query => query.FilterExpression("type:session"));
         Assert.Equal(2, sessions.Total);
-        Assert.Equal(new[] { "production", "staging" }, sessions.Documents.Select(ev => ev.Environment).Order().ToArray());
+        Assert.Equal(new[] { "Production", "staging" }, sessions.Documents.Select(ev => ev.Environment).Order(StringComparer.Ordinal).ToArray());
     }
 
     private async Task CreateAutoSessionInternalAsync(DateTimeOffset date)

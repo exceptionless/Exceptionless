@@ -12,12 +12,12 @@ namespace Exceptionless.Tests.Api.Endpoints;
 public partial class EventEndpointTests
 {
     [Theory]
-    [InlineData(" Production ", "production")]
+    [InlineData(" Production ", "Production")]
     [InlineData("preview-42", "preview-42")]
     [InlineData("   ", null)]
     [InlineData("bad\nenvironment", null)]
     [InlineData("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklm", null)]
-    public async Task GetSubmitEvent_EnvironmentParameter_PersistsNormalizedEnvironment(string environment, string? expected)
+    public async Task GetSubmitEvent_EnvironmentParameter_TrimsAndPreservesCasing(string environment, string? expected)
     {
         await SendRequestAsync(request => request
             .AsTestOrganizationClientUser().AppendPaths("events", "submit")
@@ -70,6 +70,7 @@ public partial class EventEndpointTests
         await CreateDataAsync(data =>
         {
             var production = data.Event().FreeProject().Mutate(ev => ev.Environment = " Production ");
+            data.Event().FreeProject().Stack(production).Mutate(ev => ev.Environment = "production");
             data.Event().FreeProject().Stack(production).Mutate(ev => ev.Environment = "staging");
             data.Event().FreeProject().Stack(production);
             data.Event().TestProject().Mutate(ev => ev.Environment = "private-environment");
@@ -78,17 +79,17 @@ public partial class EventEndpointTests
         var events = await SendRequestAsAsync<List<PersistentEvent>>(request => request
             .AsFreeOrganizationUser().AppendPath("events")
             .QueryString("filter", "environment:PRODUCTION").StatusCodeShouldBeOk());
-        Assert.Equal("production", Assert.Single(Assert.IsType<List<PersistentEvent>>(events)).Environment);
+        Assert.Equal(new[] { "Production", "production" }, Assert.IsType<List<PersistentEvent>>(events).Select(ev => ev.Environment).Order(StringComparer.Ordinal).ToArray());
 
         var summaries = await SendRequestAsAsync<List<EventSummaryModel>>(request => request
             .AsFreeOrganizationUser().AppendPath("events").QueryString("mode", "summary")
             .QueryString("filter", "environment:production").StatusCodeShouldBeOk());
-        Assert.Equal("production", Assert.Single(Assert.IsType<List<EventSummaryModel>>(summaries)).Environment);
+        Assert.Equal(new[] { "Production", "production" }, Assert.IsType<List<EventSummaryModel>>(summaries).Select(ev => ev.Environment).Order(StringComparer.Ordinal).ToArray());
 
         var stacks = await SendRequestAsAsync<List<StackSummaryModel>>(request => request
             .AsFreeOrganizationUser().AppendPath("events").QueryString("mode", "stack_frequent")
             .QueryString("filter", "environment:production").StatusCodeShouldBeOk());
-        Assert.Equal(1, Assert.Single(Assert.IsType<List<StackSummaryModel>>(stacks)).Total);
+        Assert.Equal(2, Assert.Single(Assert.IsType<List<StackSummaryModel>>(stacks)).Total);
 
         var missing = await SendRequestAsAsync<List<PersistentEvent>>(request => request
             .AsFreeOrganizationUser().AppendPath("events")
@@ -99,7 +100,8 @@ public partial class EventEndpointTests
             .AsFreeOrganizationUser().AppendPaths("events", "count")
             .QueryString("aggregations", "terms:(environment~100)").StatusCodeShouldBeOk());
         Assert.NotNull(count);
-        Assert.Equal(3, count.Total);
+        Assert.Equal(4, count.Total);
         Assert.Equal(new[] { "production", "staging" }, count.Aggregations.Terms<string>("terms_environment")!.Buckets.Select(bucket => bucket.Key).Order().ToArray());
+        Assert.Equal(2, count.Aggregations.Terms<string>("terms_environment")!.Buckets.Single(bucket => bucket.Key == "production").Total);
     }
 }
