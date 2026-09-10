@@ -99,17 +99,37 @@ public static class AssistantEndpoints
 
         using var turnCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(httpContext.RequestAborted);
         turnCancellationSource.CancelAfter(TimeSpan.FromSeconds(AssistantLimits.MaximumTurnDurationSeconds));
+        using var diagnostics = new AssistantTurnDiagnostics(logger, timeProvider, organizationId!, request.ConversationId!, httpContext.TraceIdentifier, httpContext.RequestAborted);
+        var response = assistantService.StreamAsync(request, userId, planOptions, diagnostics, turnCancellationSource.Token);
+        await WriteResponseAsync(httpContext, response, assistantUsageService, organizationId!, diagnostics, turnCancellationSource.Token);
+
+        return HttpResults.Empty;
+    }
+
+    internal static async Task WriteResponseAsync(
+        HttpContext httpContext,
+        IAsyncEnumerable<AssistantStreamEvent> response,
+        AssistantUsageService assistantUsageService,
+        string organizationId,
+        AssistantTurnDiagnostics diagnostics,
+        CancellationToken cancellationToken)
+    {
         bool responseFailed = false;
         try
         {
-            await foreach (var item in assistantService.StreamAsync(request, userId, planOptions, turnCancellationSource.Token))
+            await foreach (var item in response.WithCancellation(cancellationToken))
             {
+                diagnostics.Observe(item);
                 responseFailed |= item.Type == "error";
-                await JsonSerializer.SerializeAsync(httpContext.Response.Body, item, s_jsonOptions, turnCancellationSource.Token);
-                await httpContext.Response.WriteAsync("\n", turnCancellationSource.Token);
-                await httpContext.Response.Body.FlushAsync(turnCancellationSource.Token);
+                string stage = diagnostics.Stage;
+                diagnostics.Stage = "response_write";
+                await JsonSerializer.SerializeAsync(httpContext.Response.Body, item, s_jsonOptions, cancellationToken);
+                await httpContext.Response.WriteAsync("\n", cancellationToken);
+                await httpContext.Response.Body.FlushAsync(cancellationToken);
+                diagnostics.Stage = stage;
             }
 
+            diagnostics.Finish(responseFailed ? "failed" : "completed");
             if (responseFailed)
                 await assistantUsageService.RecordTurnFailedAsync(organizationId);
             else
@@ -118,10 +138,14 @@ public static class AssistantEndpoints
         catch (OperationCanceledException) when (httpContext.RequestAborted.IsCancellationRequested)
         {
             // The browser closing or stopping the stream is expected.
+            diagnostics.Finish("cancelled", "client_disconnected");
             await assistantUsageService.RecordTurnCancelledAsync(organizationId);
         }
         catch (OperationCanceledException)
         {
+            string failureCode = cancellationToken.IsCancellationRequested ? "turn_timeout"
+                : diagnostics.Stage is "provider_request" or "provider_stream" ? "provider_timeout" : "operation_cancelled";
+            diagnostics.Finish("failed", failureCode);
             await assistantUsageService.RecordTurnFailedAsync(organizationId);
             var error = AssistantStreamEvent.Error("Exie took too long to complete this response. Try narrowing the question.");
             await JsonSerializer.SerializeAsync(httpContext.Response.Body, error, s_jsonOptions, CancellationToken.None);
@@ -129,14 +153,22 @@ public static class AssistantEndpoints
         }
         catch (Exception ex)
         {
+            string failureCode = ex switch
+            {
+                AssistantProviderException providerException => providerException.FailureCode,
+                _ when diagnostics.Stage == "response_write" => "response_write_error",
+                _ when diagnostics.Stage == "tool_execution" => "tool_execution_error",
+                HttpRequestException when diagnostics.Stage is "provider_request" or "provider_stream" => "provider_transport_error",
+                JsonException when diagnostics.Stage == "provider_stream" => "invalid_provider_response",
+                IOException when diagnostics.Stage == "provider_stream" => "provider_stream_error",
+                _ => "internal_error"
+            };
+            diagnostics.Finish("failed", failureCode, ex);
             await assistantUsageService.RecordTurnFailedAsync(organizationId);
-            logger.LogError(ex, "Unable to stream an in-app assistant response");
             var error = AssistantStreamEvent.Error(ex is AssistantProviderException ? ex.Message : "Exie could not complete this request.");
             await JsonSerializer.SerializeAsync(httpContext.Response.Body, error, s_jsonOptions, CancellationToken.None);
             await httpContext.Response.WriteAsync("\n", CancellationToken.None);
         }
-
-        return HttpResults.Empty;
     }
 
     private static async Task<IResult> GetAccessAsync(

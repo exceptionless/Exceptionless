@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using Exceptionless.Core;
 using Exceptionless.Core.Models;
@@ -50,7 +51,7 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
 
     [Fact(Skip = "Set RUN_ASSISTANT_EVALS=true to run the billable assistant quality gate.", SkipUnless = nameof(EvaluationsEnabled))]
     [Trait("Category", "AssistantEvaluation")]
-    public async Task ProductionScenarios_MeetToolEfficiencyAndAnswerQualityGate()
+    public async Task CurrentEvent_MeetsToolEfficiencyAndAnswerQualityGate()
     {
         RequireEvaluationConfiguration();
 
@@ -63,6 +64,13 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
         Assert.DoesNotContain("get_stack", currentPage.ToolCalls);
         Assert.DoesNotContain("list_projects", currentPage.ToolCalls);
         Assert.DoesNotContain("search_stacks", currentPage.ToolCalls);
+    }
+
+    [Fact(Skip = "Set RUN_ASSISTANT_EVALS=true to run the billable assistant quality gate.", SkipUnless = nameof(EvaluationsEnabled))]
+    [Trait("Category", "AssistantEvaluation")]
+    public async Task ProjectTopErrors_MeetsToolEfficiencyAndAnswerQualityGate()
+    {
+        RequireEvaluationConfiguration();
 
         var projectTopErrors = await SendAssistantTurnAsync(
             "What are the top errors in this project in the last 24 hours? Link each result.",
@@ -72,6 +80,13 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
         Assert.Equal(1, projectTopErrors.ToolCalls.Count(call => call == "search_stacks"));
         Assert.DoesNotContain("list_projects", projectTopErrors.ToolCalls);
         Assert.Contains("/next/stack/", projectTopErrors.Text, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = "Set RUN_ASSISTANT_EVALS=true to run the billable assistant quality gate.", SkipUnless = nameof(EvaluationsEnabled))]
+    [Trait("Category", "AssistantEvaluation")]
+    public async Task OrganizationTopErrors_MeetsToolEfficiencyAndAnswerQualityGate()
+    {
+        RequireEvaluationConfiguration();
 
         var organizationTopErrors = await SendAssistantTurnAsync(
             "Across all projects in this organization, what are the top errors in the last 24 hours? Link each result.",
@@ -81,6 +96,13 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
         Assert.Equal(1, organizationTopErrors.ToolCalls.Count(call => call == "list_projects"));
         Assert.InRange(organizationTopErrors.ToolCalls.Count(call => call == "search_stacks"), 1, AssistantLimits.MaximumProjectsPerTurn);
         Assert.Contains("/next/stack/", organizationTopErrors.Text, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = "Set RUN_ASSISTANT_EVALS=true to run the billable assistant quality gate.", SkipUnless = nameof(EvaluationsEnabled))]
+    [Trait("Category", "AssistantEvaluation")]
+    public async Task ClientSetup_MeetsToolEfficiencyAndAnswerQualityGate()
+    {
+        RequireEvaluationConfiguration();
 
         var clientSetup = await SendAssistantTurnAsync(
             "How do I configure this project to start sending events?",
@@ -104,7 +126,8 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
     {
         using var client = CreateHttpClient();
         using var request = new HttpRequestMessage(HttpMethod.Post, "assistant/chat");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", SampleDataService.TEST_USER_API_KEY);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(
+            Encoding.UTF8.GetBytes($"{SampleDataService.TEST_ORG_USER_EMAIL}:{SampleDataService.TEST_ORG_USER_PASSWORD}")));
         request.Content = JsonContent.Create(new
         {
             conversation_id = Guid.NewGuid().ToString("N"),

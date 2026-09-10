@@ -10,6 +10,7 @@ public static class AppDiagnostics
     internal static readonly AssemblyName AssemblyName = typeof(AppDiagnostics).Assembly.GetName();
     internal static readonly string? AssemblyVersion = typeof(AppDiagnostics).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? AssemblyName.Version?.ToString();
     internal static readonly ActivitySource ActivitySource = new(AssemblyName.Name ?? "Exceptionless", AssemblyVersion);
+    internal static readonly ActivitySource AssistantActivitySource = new("Exceptionless.Assistant", AssemblyVersion);
     internal static readonly Meter Meter = new("Exceptionless", AssemblyVersion);
     private static readonly string _metricsPrefix = "ex.";
 
@@ -91,6 +92,9 @@ public static class AppDiagnostics
     internal static readonly Counter<int> EventsSubmitted = Meter.CreateCounter<int>("ex.events.submitted", description: "Events submitted to the pipeline to be processed");
     internal static readonly Counter<long> AssistantTurns = Meter.CreateCounter<long>("ex.assistant.turns", description: "Assistant turns accepted");
     internal static readonly Counter<long> AssistantTurnOutcomes = Meter.CreateCounter<long>("ex.assistant.turn.outcomes", description: "Assistant turn outcomes");
+    internal static readonly Histogram<double> AssistantTurnDuration = Meter.CreateHistogram<double>("ex.assistant.turn.duration", unit: "ms", description: "Assistant turn duration by outcome and failure reason");
+    internal static readonly Histogram<double> AssistantProviderDuration = Meter.CreateHistogram<double>("ex.assistant.provider.duration", unit: "ms", description: "Assistant provider request duration by outcome");
+    internal static readonly Histogram<double> AssistantToolDuration = Meter.CreateHistogram<double>("ex.assistant.tool.duration", unit: "ms", description: "Assistant tool duration by tool and outcome");
     internal static readonly Counter<long> AssistantTurnsBlocked = Meter.CreateCounter<long>("ex.assistant.turns.blocked", description: "Assistant turns blocked by a usage limit");
     internal static readonly Counter<long> AssistantProviderRequests = Meter.CreateCounter<long>("ex.assistant.provider.requests", description: "Assistant provider requests");
     internal static readonly Counter<long> AssistantToolCalls = Meter.CreateCounter<long>("ex.assistant.tool.calls", description: "Assistant tool calls");
