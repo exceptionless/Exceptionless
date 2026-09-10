@@ -13038,6 +13038,15 @@
             "additionalProperties": {},
             "description": "Used to store primitive data type custom data values for searching the event."
           },
+          "environment": {
+            "maxLength": 64,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The deployment environment, such as production, staging, or development.\nMissing or invalid names remain unspecified. Machine and runtime information is stored separately in data.@environment."
+          },
           "type": {
             "maxLength": 100,
             "minLength": 1,

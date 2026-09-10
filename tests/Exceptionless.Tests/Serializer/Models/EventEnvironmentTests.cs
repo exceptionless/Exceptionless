@@ -1,0 +1,68 @@
+using Exceptionless.Core;
+using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Plugins.EventParser;
+using Foundatio.Serializer;
+using Xunit;
+
+namespace Exceptionless.Tests.Serializer.Models;
+
+public sealed class EventEnvironmentTests : TestWithServices
+{
+    public EventEnvironmentTests(ITestOutputHelper output) : base(output) { }
+
+    [Theory]
+    [InlineData("environment")]
+    [InlineData("Environment")]
+    [InlineData("ENVIRONMENT")]
+    public void Deserialize_DeploymentEnvironment_NormalizesNameAndPreservesRuntimeMetadata(string property)
+    {
+        var serializer = GetService<ITextSerializer>();
+        var ev = serializer.Deserialize<Event>("""{"PROPERTY":" Production ","data":{"@environment":{"machine_name":"worker-1"},"environment":{"custom":true}}}""".Replace("PROPERTY", property));
+
+        Assert.NotNull(ev);
+        Assert.Equal("production", ev.Environment);
+        Assert.Equal("worker-1", ev.GetEnvironmentInfo(serializer, _logger)?.MachineName);
+        Assert.NotNull(ev.Data?["environment"]);
+        string json = serializer.SerializeToString(ev)!;
+        Assert.Contains("\"environment\":\"production\"", json);
+        Assert.Equal("production", serializer.Deserialize<Event>(json)?.Environment);
+    }
+
+    [Theory]
+    [InlineData("null")]
+    [InlineData("42")]
+    [InlineData("true")]
+    [InlineData("{\"name\":\"production\"}")]
+    [InlineData("[\"production\"]")]
+    [InlineData("\"   \"")]
+    [InlineData("\"production\\ninvalid\"")]
+    public void ParseEvents_InvalidEnvironment_PreservesSubmissionBatch(string environment)
+    {
+        var parser = GetService<JsonEventParserPlugin>();
+        var events = parser.ParseEvents($$"""[{"type":"error","message":"first","environment":{{environment}}},{"type":"log","message":"second","environment":"staging"}]""", 2, null);
+
+        Assert.NotNull(events);
+        Assert.Equal(2, events.Count);
+        Assert.Null(events[0].Environment);
+        Assert.Equal("first", events[0].Message);
+        Assert.Equal("staging", events[1].Environment);
+    }
+
+    [Fact]
+    public void Serialize_UnspecifiedEnvironment_OmitsProperty()
+    {
+        var serializer = GetService<ITextSerializer>();
+        Assert.DoesNotContain("environment", serializer.SerializeToString(new Event())!);
+        Assert.Null(serializer.Deserialize<Event>("{}")?.Environment);
+        Assert.Null(new Event { Environment = new string('x', 65) }.Environment);
+        Assert.Equal(new string('x', 64), new Event { Environment = new string('X', 64) }.Environment);
+    }
+
+    [Fact]
+    public void Equals_DifferentEnvironments_DistinguishesEvents()
+    {
+        Assert.NotEqual(new Event { Environment = "production", Data = null }, new Event { Environment = "staging", Data = null });
+        Assert.Equal(new Event { Environment = " Production ", Data = null }, new Event { Environment = "production", Data = null });
+    }
+}

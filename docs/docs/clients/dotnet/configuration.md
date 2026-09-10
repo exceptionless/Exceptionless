@@ -5,6 +5,8 @@ order: 1
 
 # Configuration
 
+Set a deployment environment once at startup, with optional per-event overrides. See [Environments](/docs/environments/) for configuration examples.
+
 There are a few ways to configure Exceptionless in your project. We'll cover them here or you can jump to app-specific examples: [Console App Example](/docs/clients/dotnet/guides/console-apps-example), [Web Server Example](/docs/clients/dotnet/guides/web-server-example).
 
 ---

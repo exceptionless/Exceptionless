@@ -12,19 +12,31 @@
     import Eye from '@lucide/svelte/icons/eye';
     import EyeOff from '@lucide/svelte/icons/eye-off';
     import { computeCommandScore } from 'bits-ui';
+    import { setContext } from 'svelte';
 
     import type { FacetedFilter, IFilter } from './models';
 
     import { builderContext, type FacetFilterBuilder } from './faceted-filter-builder-context.svelte';
+    import { type FilterScope, filterScopeKey } from './filter-scope';
 
     interface Props {
         changed: (filter: IFilter) => void;
         children?: Snippet;
         filters: IFilter[];
         remove: (filter?: IFilter) => void;
+        time?: null | string;
     }
 
-    let { changed, children, filters, remove }: Props = $props();
+    let { changed, children, filters, remove, time }: Props = $props();
+
+    setContext<FilterScope>(filterScopeKey, {
+        get filters() {
+            return filters;
+        },
+        get time() {
+            return time;
+        }
+    });
 
     const CREATE_KEYWORD_FILTER_COMMAND_ITEM = 'CREATE_KEYWORD_FILTER_COMMAND_ITEM';
     let open = $state(false);

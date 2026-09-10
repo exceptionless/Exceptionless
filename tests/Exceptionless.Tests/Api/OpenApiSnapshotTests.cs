@@ -96,6 +96,11 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
 
         // Assert
         Assert.True(schemas.TryGetProperty("Login", out _));
+        var persistentEvent = schemas.GetProperty("PersistentEvent");
+        var eventEnvironment = persistentEvent.GetProperty("properties").GetProperty("environment");
+        Assert.Contains(eventEnvironment.GetProperty("type").EnumerateArray(), type => type.GetString() == "string");
+        Assert.Equal(64, eventEnvironment.GetProperty("maxLength").GetInt32());
+        Assert.DoesNotContain(persistentEvent.GetProperty("required").EnumerateArray(), name => name.GetString() == "environment");
         Assert.True(schemas.TryGetProperty("Signup", out _));
         Assert.True(schemas.TryGetProperty("NewProject", out _));
         Assert.True(schemas.TryGetProperty("SavedViewColumnSettings", out var savedViewColumnSettings));

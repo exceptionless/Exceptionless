@@ -230,6 +230,7 @@
 {/each}
 
 <FacetedFilter.ProjectBuilder priority={10} />
+<FacetedFilter.EnvironmentBuilder />
 <FacetedFilter.ReferenceBuilder />
 <FacetedFilter.SessionBuilder />
 <FacetedFilter.StatusBuilder priority={50} />

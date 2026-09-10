@@ -125,11 +125,11 @@ public sealed class SessionPlugin : EventProcessorPluginBase
     {
         var identityGroups = contexts
             .OrderBy(c => c.Event.Date)
-            .GroupBy(c => c.Event.GetUserIdentity(_serializer, _logger)?.Identity);
+            .GroupBy(c => (c.Event.ProjectId, c.Event.Environment, Identity: c.Event.GetUserIdentity(_serializer, _logger)?.Identity));
 
         foreach (var identityGroup in identityGroups)
         {
-            if (String.IsNullOrEmpty(identityGroup.Key))
+            if (String.IsNullOrEmpty(identityGroup.Key.Identity))
                 continue;
 
             string projectId = identityGroup.First().Project.Id;
@@ -160,7 +160,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
                     ctx.IsCancelled = true;
                 });
 
-                string? sessionId = await GetIdentitySessionIdAsync(projectId, identityGroup.Key);
+                string? sessionId = await GetIdentitySessionIdAsync(projectId, identityGroup.Key.Identity, identityGroup.Key.Environment);
 
                 // if session end, without any session events, cancel
                 if (String.IsNullOrEmpty(sessionId) && session.Count == 1 && firstSessionEvent.Event.IsSessionEnd())
@@ -192,7 +192,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
                     }
 
                     if (!lastSessionEvent.Event.IsSessionEnd())
-                        await SetIdentitySessionIdAsync(projectId, identityGroup.Key, sessionId);
+                        await SetIdentitySessionIdAsync(projectId, identityGroup.Key.Identity, sessionId, identityGroup.Key.Environment);
                 }
                 else
                 {
@@ -217,7 +217,7 @@ public sealed class SessionPlugin : EventProcessorPluginBase
         return Task.CompletedTask;
     }
 
-    private static List<List<EventContext>> CreateSessionGroups(IGrouping<string?, EventContext> identityGroup)
+    private static List<List<EventContext>> CreateSessionGroups(IEnumerable<EventContext> identityGroup)
     {
         var sessions = new List<List<EventContext>>();
         var currentSession = new List<EventContext>();
@@ -259,14 +259,19 @@ public sealed class SessionPlugin : EventProcessorPluginBase
         return _cache.SetAsync<string>(GetSessionStartEventIdCacheKey(projectId, sessionId), eventId, TimeSpan.FromDays(1));
     }
 
-    private static string GetIdentitySessionIdCacheKey(string projectId, string identity)
+    private static string GetIdentitySessionIdCacheKey(string projectId, string identity, string? environment)
     {
+        if (environment is not null)
+        {
+            return String.Concat(projectId, ":environment:", environment.ToSHA1(), ":identity:", identity.ToSHA1());
+        }
+
         return String.Concat(projectId, ":identity:", identity.ToSHA1());
     }
 
-    private async Task<string?> GetIdentitySessionIdAsync(string projectId, string identity)
+    private async Task<string?> GetIdentitySessionIdAsync(string projectId, string identity, string? environment)
     {
-        string cacheKey = GetIdentitySessionIdCacheKey(projectId, identity);
+        string cacheKey = GetIdentitySessionIdCacheKey(projectId, identity, environment);
         string? sessionId = await _cache.GetAsync<string?>(cacheKey, null);
         if (!String.IsNullOrEmpty(sessionId))
         {
@@ -279,9 +284,9 @@ public sealed class SessionPlugin : EventProcessorPluginBase
         return sessionId;
     }
 
-    private Task<bool> SetIdentitySessionIdAsync(string projectId, string identity, string sessionId)
+    private Task<bool> SetIdentitySessionIdAsync(string projectId, string identity, string sessionId, string? environment)
     {
-        return _cache.SetAsync<string>(GetIdentitySessionIdCacheKey(projectId, identity), sessionId, _sessionTimeout);
+        return _cache.SetAsync<string>(GetIdentitySessionIdCacheKey(projectId, identity, environment), sessionId, _sessionTimeout);
     }
 
     private async Task<PersistentEvent> CreateSessionStartEventAsync(EventContext startContext, DateTime? lastActivityUtc, bool? isSessionEnd)

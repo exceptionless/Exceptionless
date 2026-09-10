@@ -785,6 +785,7 @@ public class EventHandler(
                             ProjectName = projectNames.GetValueOrDefault(e.ProjectId),
                             Tags = e.Tags?.OfType<string>().Order(StringComparer.OrdinalIgnoreCase).ToArray() ?? [],
                             Type = e.Type,
+                            Environment = e.Environment,
                             Version = e.GetVersion(),
                             Data = summaryData.Data
                         };
@@ -833,7 +834,7 @@ public class EventHandler(
                     string[] stackIds = stackTerms.Buckets.Skip(skip).Take(limit + 1).Select(t => t.Key).ToArray();
                     var stacks = (await stackRepository.GetByIdsAsync(stackIds)).Select(s => s.ApplyOffset(ti.Offset)).ToList();
 
-                    var stackSummaries = await GetStackSummariesAsync(stacks, stackTerms.Buckets, sf, ti);
+                    var stackSummaries = await GetStackSummariesAsync(stacks, stackTerms.Buckets, sf, ti, filter);
 
                     double? totalStackCount = countResponse.Aggregations.Cardinality("cardinality_stack_id")?.Value;
                     long? total = includeTotal && totalStackCount.HasValue ? Convert.ToInt64(totalStackCount.Value) : null;
@@ -915,14 +916,14 @@ public class EventHandler(
                 : o.SearchBeforeToken(before, serializer).SearchAfterToken(after, serializer).PageLimit(limit).TrackTotalHits(includeTotal));
     }
 
-    private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(List<Stack> stacks, IReadOnlyCollection<KeyedBucket<string>> stackTerms, AppFilter sf, TimeInfo ti)
+    private async Task<ICollection<StackSummaryModel>> GetStackSummariesAsync(List<Stack> stacks, IReadOnlyCollection<KeyedBucket<string>> stackTerms, AppFilter sf, TimeInfo ti, string? filter)
     {
         if (stacks.Count == 0)
             return new List<StackSummaryModel>(0);
 
         var projects = await projectRepository.GetByIdsAsync(stacks.Select(s => s.ProjectId).Distinct().ToArray(), o => o.Cache());
         var projectNames = projects.ToDictionary(p => p.Id, p => p.Name);
-        var totalUsers = await GetUserCountByProjectIdsAsync(stacks, sf, ti.Range.UtcStart, ti.Range.UtcEnd);
+        var totalUsers = await GetUserCountByProjectIdsAsync(stacks, sf, ti.Range.UtcStart, ti.Range.UtcEnd, filter);
         return stacks.Join(stackTerms, s => s.Id, tk => tk.Key, (stack, term) =>
         {
             var data = formattingPluginManager.GetStackSummaryData(stack);
@@ -948,9 +949,10 @@ public class EventHandler(
         }).ToList();
     }
 
-    private async Task<Dictionary<string, double>> GetUserCountByProjectIdsAsync(ICollection<Stack> stacks, AppFilter sf, DateTime utcStart, DateTime utcEnd)
+    private async Task<Dictionary<string, double>> GetUserCountByProjectIdsAsync(ICollection<Stack> stacks, AppFilter sf, DateTime utcStart, DateTime utcEnd, string? filter)
     {
-        using var scopedCacheClient = new ScopedCacheClient(cacheClient, $"Project:user-count:{utcStart.Floor(TimeSpan.FromMinutes(15)).Ticks}-{utcEnd.Floor(TimeSpan.FromMinutes(15)).Ticks}");
+        filter = await EventEnvironmentFilter.GetAsync(filter);
+        using var scopedCacheClient = new ScopedCacheClient(cacheClient, $"Project:user-count:{utcStart.Floor(TimeSpan.FromMinutes(15)).Ticks}-{utcEnd.Floor(TimeSpan.FromMinutes(15)).Ticks}:{filter?.ToSHA1()}");
         var projectIds = stacks.Select(s => s.ProjectId).Distinct().ToList();
         var cachedTotals = await scopedCacheClient.GetAllAsync<double>(projectIds);
 
@@ -958,7 +960,7 @@ public class EventHandler(
         if (totals.Count == projectIds.Count)
             return totals;
 
-        var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).DateRange(utcStart, utcEnd, (PersistentEvent e) => e.Date).Index(utcStart, utcEnd);
+        var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).FilterExpression(filter).EnforceEventStackFilter().DateRange(utcStart, utcEnd, (PersistentEvent e) => e.Date).Index(utcStart, utcEnd);
         var projects = cachedTotals
             .Where(kvp => !kvp.Value.HasValue && stacks.Contains(s => s.ProjectId == kvp.Key))
             .Select(kvp => new Project { Id = kvp.Key, OrganizationId = stacks.First(s => s.ProjectId == kvp.Key).OrganizationId })

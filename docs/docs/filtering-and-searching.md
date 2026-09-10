@@ -6,6 +6,7 @@ title: "Filtering & Searching"
 
 - [Filter by Organization \& Project](#filter-by-organization--project)
 - [Filter by Time Frame](#filter-by-time-frame)
+- [Filter by Environment](#filter-by-environment)
 - [Filter / Search by Specific Criteria](#filter--search-by-specific-criteria)
 - [Searchable Fields \& Requirements](#searchable-fields--requirements)
 - [Multiple Queries](#multiple-queries)
@@ -30,6 +31,10 @@ Click on the calendar icon in the header to select from multiple preset time fra
 
 ![Exceptionless Filter Time Frame](img/filter-by-timeframe.png)
 
+## Filter by Environment
+
+Choose **Manage filters → Environment** to select production, staging, development, or a custom name. Select **Unspecified** for events without this property, or clear the selection to include all environments. See [Environments](/docs/environments/) for client configuration and shared stack behavior.
+
 ## Filter / Search by Specific Criteria
 
 Click the magnifying glass to search by specific criteria.
@@ -53,6 +58,7 @@ View a complete list of searchable terms, examples, and FAQs below.
 | stack              | `stack:54d8315ce6bb2d0500bcc7b4`                                                                                     | true                         | Stack id                                      |
 | reference          | `reference:12345678`                                                                                                 | true                         | Reference id                                  |
 | session            | `session:12345678`                                                                                                   | true                         | Session id                                    |
+| environment        | `environment:production` or `_missing_:environment` | true | Deployment environment |
 | type               | `type:error`                                                                                                         | true                         | Event type                                    |
 | source             | `source:"my log source"` or `"my log source"`                                                                        | false                        | Event source                                  |
 | level              | `level:Error`                                                                                                        | true                         | Log level                                     |

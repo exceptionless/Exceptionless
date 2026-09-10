@@ -29,6 +29,30 @@ Authorization: Bearer {{token}}
 GET {{apiUrl}}/events?mode=stack_frequent&limit=10
 Authorization: Bearer {{token}}
 
+### Deployment environment (available on all plans)
+GET {{apiUrl}}/events?filter=environment:production&mode=summary
+Authorization: Bearer {{token}}
+
+### Environment names for this project
+GET {{apiUrl}}/projects/{{projectId}}/events/count?aggregations=terms:(environment~100)
+Authorization: Bearer {{token}}
+
+### Historical and unspecified environments
+GET {{apiUrl}}/events?filter=_missing_:environment
+Authorization: Bearer {{token}}
+
+### Submit a staging event (same stack across environments)
+POST {{apiUrl}}/events
+Authorization: Bearer {{clientToken}}
+Content-Type: application/json
+
+{
+  "type": "log",
+  "source": "environment-example",
+  "message": "Deployment complete",
+  "environment": "staging"
+}
+
 ###
 @eventId = {{allEvents.response.body.$[0].id}}
 @stackId = {{allEvents.response.body.$[0].stack_id}}
