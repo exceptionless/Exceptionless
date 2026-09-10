@@ -152,7 +152,7 @@ Content-Type: application/json
 }
 
 ### GET Submit Random Parameters
-GET {{apiUrl}}/events/submit?access_token={{clientToken}}&foo=bar&edit=&spam=eggs=ham&tags=blue&tags=red&message=foo
+GET {{apiUrl}}/events/submit?access_token={{clientToken}}&environment=production&foo=bar&edit=&spam=eggs=ham&tags=blue&tags=red&message=foo
 
 ### Raygun Post
 POST {{apiUrl}}/events?access_token={{clientToken}}

@@ -9,6 +9,8 @@ public sealed class EventEnvironmentFilterTests
     [InlineData(null, null)]
     [InlineData("type:error status:open", null)]
     [InlineData("type:error environment:production", "environment:production")]
+    [InlineData("type:error environment:(production OR staging)", "environment:(production OR staging)")]
+    [InlineData("type:error NOT environment:(production OR staging)", "NOT environment:(production OR staging)")]
     [InlineData("environment:production OR type:error", null)]
     [InlineData("type:error (environment:production OR environment:staging)", "(environment:production OR environment:staging)")]
     [InlineData("type:error (_missing_:environment OR environment:production)", "(_missing_:environment OR environment:production)")]

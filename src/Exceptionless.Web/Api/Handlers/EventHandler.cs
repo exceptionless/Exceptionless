@@ -472,6 +472,9 @@ public class EventHandler(
                 case "source":
                     ev.Source = kvp.Value.FirstOrDefault();
                     break;
+                case "environment":
+                    ev.Environment = kvp.Value.FirstOrDefault();
+                    break;
                 case "message":
                     ev.Message = kvp.Value.FirstOrDefault();
                     break;

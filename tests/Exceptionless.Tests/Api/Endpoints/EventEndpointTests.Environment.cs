@@ -1,7 +1,9 @@
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Jobs;
+using Exceptionless.Core.Models;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
+using Foundatio.Jobs;
 using Foundatio.Repositories.Models;
 using Xunit;
 
@@ -9,6 +11,30 @@ namespace Exceptionless.Tests.Api.Endpoints;
 
 public partial class EventEndpointTests
 {
+    [Theory]
+    [InlineData(" Production ", "production")]
+    [InlineData("preview-42", "preview-42")]
+    [InlineData("   ", null)]
+    [InlineData("bad\nenvironment", null)]
+    [InlineData("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklm", null)]
+    public async Task GetSubmitEvent_EnvironmentParameter_PersistsNormalizedEnvironment(string environment, string? expected)
+    {
+        await SendRequestAsync(request => request
+            .AsTestOrganizationClientUser().AppendPaths("events", "submit")
+            .QueryString("message", "GET environment submission")
+            .QueryString("reference", "get-environment-reference")
+            .QueryString("environment", environment).StatusCodeShouldBeOk());
+
+        await GetService<EventPostsJob>().RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        var ev = Assert.Single((await _eventRepository.GetAllAsync()).Documents,
+            item => item.ReferenceId == "get-environment-reference");
+        Assert.Equal(expected, ev.Environment);
+        Assert.NotNull(ev.Data);
+        Assert.False(ev.Data.ContainsKey("environment"));
+    }
+
     [Fact]
     public async Task GetStacks_EnvironmentFilter_ScopesUserCountsAndTheirCache()
     {
@@ -22,9 +48,11 @@ public partial class EventEndpointTests
             }
             data.Event().FreeProject().Type(Event.KnownTypes.Error).Stack(first).Mutate(ev => { ev.Environment = "staging"; ev.SetUserIdentity("staging-user"); });
             data.Event().FreeProject().Type(Event.KnownTypes.Log).Mutate(ev => { ev.Environment = "production"; ev.SetUserIdentity("unaffected-production-user"); });
+            data.Event().FreeProject().Type(Event.KnownTypes.Error).Stack(first).Mutate(ev => { ev.Environment = "development"; ev.SetUserIdentity("development-user"); });
+            data.Event().FreeProject().Type(Event.KnownTypes.Log).Mutate(ev => { ev.Environment = "development"; ev.SetUserIdentity("unaffected-development-user"); });
         });
 
-        foreach (var (filter, expected, totalUsers) in new[] { ("environment:production", 12, 13), ("environment:staging", 1, 1), ("environment:production", 12, 13), ("", 13, 14) })
+        foreach (var (filter, expected, totalUsers) in new[] { ("environment:production", 12, 13), ("environment:staging", 1, 1), ("environment:production", 12, 13), ("environment:(production OR staging)", 13, 14), ("", 14, 16) })
         {
             var stacks = await SendRequestAsAsync<List<StackSummaryModel>>(request => request
                 .AsFreeOrganizationUser().AppendPath("events").QueryString("mode", "stack_frequent")
