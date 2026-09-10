@@ -5,7 +5,7 @@
   <ItemGroup>
     <PackageReference Include="Exceptionless.DateTimeExtensions" Version="6.0.1" />
     <PackageReference Include="Exceptionless.RandomData" Version="2.0.1" />
-    <PackageReference Include="Foundatio.Extensions.Hosting" Version="13.0.2" />
+    <PackageReference Include="Foundatio.Extensions.Hosting" Version="13.0.4" />
     <PackageReference Include="MiniValidation" Version="0.10.0" />
     <PackageReference Include="McSherry.SemanticVersioning" Version="1.5.0" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.11" />
