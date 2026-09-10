@@ -146,6 +146,7 @@
             </div>
         {/if}
         <form
+            data-tour="saved-view-form"
             class="flex flex-col gap-4"
             onsubmit={(e) => {
                 e.preventDefault();

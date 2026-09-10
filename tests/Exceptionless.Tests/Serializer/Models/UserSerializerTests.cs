@@ -1,5 +1,5 @@
+using System.Text.Json;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Data;
 using Foundatio.Serializer;
 using Xunit;
 
@@ -240,7 +240,7 @@ public class UserSerializerTests : TestWithServices
     }
 
     [Fact]
-    public void Serialize_UserWithProductTourState_UsesSnakeCaseDatesAndOmitsNulls()
+    public void Serialize_UserWithProductTourState_PreservesUiDefinedKeys()
     {
         // Arrange
         var original = new User
@@ -249,10 +249,10 @@ public class UserSerializerTests : TestWithServices
             FullName = "Tour User",
             EmailAddress = "tour@example.com",
             IsEmailAddressVerified = true,
-            ProductTours = new ProductTourState
+            ProductTours = new Dictionary<string, JsonElement>
             {
-                AppOverview = FixedDateTime,
-                SavedViewCreate = FixedDateTime.AddMinutes(1)
+                ["app_overview"] = JsonSerializer.SerializeToElement(FixedDateTime),
+                ["future_guide_v2"] = JsonSerializer.SerializeToElement(FixedDateTime.AddMinutes(1))
             }
         };
 
@@ -260,7 +260,7 @@ public class UserSerializerTests : TestWithServices
         string? json = _serializer.SerializeToString(original);
 
         // Assert
-        Assert.Contains("\"product_tours\":{\"app_overview\":\"2024-01-15T12:00:00Z\",\"saved_view_create\":\"2024-01-15T12:01:00Z\"}", json);
+        Assert.Contains("\"product_tours\":{\"app_overview\":\"2024-01-15T12:00:00Z\",\"future_guide_v2\":\"2024-01-15T12:01:00Z\"}", json);
         Assert.DoesNotContain("status", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("version", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("event_investigate", json, StringComparison.OrdinalIgnoreCase);
@@ -293,14 +293,14 @@ public class UserSerializerTests : TestWithServices
 
         // Assert
         Assert.NotNull(user);
-        var state = Assert.IsType<ProductTourState>(user.ProductTours);
-        Assert.Equal(FixedDateTime, state.AppOverview);
-        Assert.Equal(FixedDateTime.AddMinutes(1), state.ExieOverview);
-        Assert.Equal(FixedDateTime.AddMinutes(2), state.EventInvestigate);
-        Assert.Equal(FixedDateTime.AddMinutes(3), state.ProjectConfigure);
-        Assert.Equal(FixedDateTime.AddMinutes(4), state.SavedViewCreate);
-        Assert.Equal(FixedDateTime.AddMinutes(5), state.AppWelcome);
-        Assert.Equal(FixedDateTime.AddMinutes(6), state.ExieAnnouncement);
+        var state = user.ProductTours;
+        Assert.Equal(FixedDateTime, state["app_overview"].GetDateTime());
+        Assert.Equal(FixedDateTime.AddMinutes(1), state["exie_overview"].GetDateTime());
+        Assert.Equal(FixedDateTime.AddMinutes(2), state["event_investigate"].GetDateTime());
+        Assert.Equal(FixedDateTime.AddMinutes(3), state["project_configure"].GetDateTime());
+        Assert.Equal(FixedDateTime.AddMinutes(4), state["saved_view_create"].GetDateTime());
+        Assert.Equal(FixedDateTime.AddMinutes(5), state["app_welcome"].GetDateTime());
+        Assert.Equal(FixedDateTime.AddMinutes(6), state["exie_announcement"].GetDateTime());
     }
 
     [Theory]
@@ -314,9 +314,38 @@ public class UserSerializerTests : TestWithServices
 
         // Assert
         Assert.NotNull(user);
-        var state = Assert.IsType<ProductTourState>(user.ProductTours);
-        Assert.Null(state.AppOverview);
-        Assert.Null(state.ExieAnnouncement);
+        var state = user.ProductTours;
+        Assert.Empty(state);
+    }
+
+    [Fact]
+    public void Deserialize_UserWithLegacyAndFutureTourState_PreservesOpaqueValuesOnSave()
+    {
+        // Arrange
+        const string json = """
+            {
+                "id": "tour-user",
+                "product_tours": {
+                    "app-overview": { "status": "completed", "version": 1, "updated_utc": "2024-01-15T12:00:00Z" },
+                    "future_guide_v2": "2024-01-15T12:01:00Z",
+                    "unknown_shape": { "step": 3 },
+                    "empty": null
+                }
+            }
+            """;
+
+        // Act
+        var user = _serializer.Deserialize<User>(json);
+        Assert.NotNull(user);
+        var roundTrip = _serializer.Deserialize<User>(_serializer.SerializeToString(user));
+
+        // Assert
+        Assert.NotNull(roundTrip);
+        Assert.Equal(4, roundTrip.ProductTours.Count);
+        Assert.Equal("completed", roundTrip.ProductTours["app-overview"].GetProperty("status").GetString());
+        Assert.Equal(FixedDateTime.AddMinutes(1), roundTrip.ProductTours["future_guide_v2"].GetDateTime());
+        Assert.Equal(3, roundTrip.ProductTours["unknown_shape"].GetProperty("step").GetInt32());
+        Assert.Equal(JsonValueKind.Null, roundTrip.ProductTours["empty"].ValueKind);
     }
 
     [Fact]

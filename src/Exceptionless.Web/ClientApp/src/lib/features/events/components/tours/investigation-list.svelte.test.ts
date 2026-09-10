@@ -11,6 +11,7 @@ vi.mock('$features/product-tours/actions.svelte', () => ({
 
 describe('InvestigationListTour', () => {
     let target: HTMLDivElement;
+    let filters: HTMLButtonElement;
 
     beforeEach(() => {
         vi.stubGlobal(
@@ -22,7 +23,12 @@ describe('InvestigationListTour', () => {
         );
         target = document.createElement('div');
         target.dataset.tour = 'event-list';
-        document.body.append(target);
+        target.innerHTML = '<table><tbody><tr tabindex="0"><td>Error</td></tr></tbody></table>';
+        target.querySelector('tr')!.scrollIntoView = vi.fn();
+        filters = document.createElement('button');
+        filters.dataset.tour = 'event-filters';
+        filters.scrollIntoView = vi.fn();
+        document.body.append(target, filters);
         target.scrollIntoView = vi.fn();
         productTourCheckpoint.start('event-investigate', 'choose-error', 'user');
     });
@@ -30,6 +36,7 @@ describe('InvestigationListTour', () => {
     afterEach(() => {
         cleanup();
         target.remove();
+        filters.remove();
         vi.unstubAllGlobals();
         productTourCheckpoint.clear();
     });
@@ -38,7 +45,7 @@ describe('InvestigationListTour', () => {
         // Arrange
         const onOpenError = vi.fn();
         render(InvestigationListTour, { firstErrorId: 'first-error', onOpenError });
-        const open = await screen.findByRole('button', { name: 'Open first error' });
+        const open = await screen.findByRole('button', { name: 'Open error' });
         expect(onOpenError).not.toHaveBeenCalled();
 
         // Act
@@ -53,12 +60,12 @@ describe('InvestigationListTour', () => {
         // Arrange
         const onOpenError = vi.fn();
         const component = render(InvestigationListTour, { onOpenError });
-        await screen.findByText('No errors are ready to open in this list. Adjust the filters or wait for the results to load.');
-        expect(screen.queryByRole('button', { name: 'Open first error' })).toBeNull();
+        await screen.findByText('There are no errors in this list yet. Try a different time range or project.');
+        expect(screen.queryByRole('button', { name: 'Open error' })).toBeNull();
 
         // Act
         await component.rerender({ firstErrorId: 'loaded-error', onOpenError });
-        await fireEvent.click(await screen.findByRole('button', { name: 'Open first error' }));
+        await fireEvent.click(await screen.findByRole('button', { name: 'Open error' }));
 
         // Assert
         expect(onOpenError).toHaveBeenCalledExactlyOnceWith('loaded-error');

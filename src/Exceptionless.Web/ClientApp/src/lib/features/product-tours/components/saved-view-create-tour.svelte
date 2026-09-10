@@ -41,7 +41,7 @@
 
     export async function closed(): Promise<void> {
         const active = checkpoint;
-        if (active && ['name-view', 'private-view', 'save-view'].includes(active.checkpointName)) {
+        if (active && active.checkpointName === 'name-view') {
             await actions.dismiss(active);
         }
     }
@@ -50,12 +50,12 @@
 {#if checkpoint?.checkpointName === 'open-view-menu'}
     <ProductTourSpotlight
         {checkpoint}
-        description="Open View to review the settings you can save."
+        description="Save the filters you use often so you can return to them in one click."
         continueLabel="Open View"
         onDismiss={actions.dismiss}
         onNext={openMenu}
         target="[data-tour='saved-view-trigger']"
-        title="Open View settings"
+        title="Keep a useful view"
     />
 {:else if checkpoint?.checkpointName === 'review-settings'}
     <ProductTourSpotlight
@@ -74,46 +74,16 @@
         title="Save your current view"
     >
         {#snippet description()}
-            Select <strong>Save As…</strong> to name a copy of your current filters and layout. Your existing view stays unchanged.
+            Choose <strong>Save As…</strong> to give your current view a name.
         {/snippet}
     </ProductTourSpotlight>
 {:else if checkpoint?.checkpointName === 'name-view'}
     <ProductTourSpotlight
         {checkpoint}
-        description="Choose a name that will help you recognize this view later."
+        description="Give this view a name, then select Save. Leave Private on if it’s just for you."
         onDismiss={actions.dismiss}
-        onNext={(active) => {
-            productTourCheckpoint.advance(active, 'private-view');
-        }}
-        target="[data-tour='saved-view-name']"
-        title="Name your view"
+        side="bottom"
+        target="[data-tour='saved-view-form']"
+        title="Name it and save"
     />
-{:else if checkpoint?.checkpointName === 'private-view'}
-    <ProductTourSpotlight
-        {checkpoint}
-        description="Keep Private turned on so only you can see this view."
-        onDismiss={actions.dismiss}
-        onPrevious={(active) => {
-            productTourCheckpoint.advance(active, 'name-view');
-        }}
-        onNext={(active) => {
-            productTourCheckpoint.advance(active, 'save-view');
-        }}
-        target="[data-tour='saved-view-private']"
-        title="Keep it private"
-    />
-{:else if checkpoint?.checkpointName === 'save-view'}
-    <ProductTourSpotlight
-        {checkpoint}
-        onDismiss={actions.dismiss}
-        onPrevious={(active) => {
-            productTourCheckpoint.advance(active, 'private-view');
-        }}
-        target="[data-tour='saved-view-submit']"
-        title="Create the saved view"
-    >
-        {#snippet description()}
-            Select <strong>Save</strong> in the form to create your view and finish the guide.
-        {/snippet}
-    </ProductTourSpotlight>
 {/if}

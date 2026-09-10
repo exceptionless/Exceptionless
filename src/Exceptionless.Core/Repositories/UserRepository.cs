@@ -17,6 +17,30 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         AddRequiredField(u => u.EmailAddress, u => u.OrganizationIds);
     }
 
+    public async Task RecordProductTourAsync(User user, string stateKey, DateTime recordedUtc)
+    {
+        const string script = """
+            if (ctx._source.product_tours == null) {
+                ctx._source.product_tours = [:];
+            }
+            if (ctx._source.product_tours[params.key] instanceof String) {
+                ctx.op = 'none';
+            } else {
+                ctx._source.product_tours[params.key] = params.recorded_utc;
+            }
+            """;
+
+        await PatchAsync(user.Id, new ScriptPatch(script)
+        {
+            Params = new Dictionary<string, object>
+            {
+                ["key"] = stateKey,
+                ["recorded_utc"] = recordedUtc.ToString("O")
+            }
+        });
+        await Cache.RemoveAsync(EmailCacheKey(user.EmailAddress));
+    }
+
     public Task<bool> SetSavedViewOrdersAsync(User user, CommandOptionsDescriptor<User>? options = null)
     {
         var savedViewOrders = user.SavedViewOrders.ToList();

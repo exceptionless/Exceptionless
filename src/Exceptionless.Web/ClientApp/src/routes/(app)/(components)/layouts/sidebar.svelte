@@ -378,7 +378,7 @@
                                 <DropdownMenu.Trigger>
                                     {#snippet child({ props })}
                                         <Sidebar.MenuItem onmouseenter={() => openHoverMenu(menuId)} onmouseleave={() => closeHoverMenu(menuId)}>
-                                            <Sidebar.MenuButton tooltipContent={route.title} {...props}>
+                                            <Sidebar.MenuButton data-tour={`navigation-${route.title.toLowerCase()}`} tooltipContent={route.title} {...props}>
                                                 <Icon />
                                                 <span>{route.title}</span>
                                             </Sidebar.MenuButton>
@@ -411,7 +411,11 @@
                             </DropdownMenu.Root>
                         {:else}
                             <Sidebar.MenuItem>
-                                <Sidebar.MenuButton isActive={isRouteActive(route)} tooltipContent={route.title}>
+                                <Sidebar.MenuButton
+                                    data-tour={`navigation-${route.title.toLowerCase()}`}
+                                    isActive={isRouteActive(route)}
+                                    tooltipContent={route.title}
+                                >
                                     {#snippet child({ props })}
                                         <A variant="ghost" href={route.href} title={route.title} onclick={onMenuClick} {...props}>
                                             <Icon />
@@ -427,7 +431,11 @@
                                 <Sidebar.MenuItem {...collapsibleProps}>
                                     <Collapsible.Trigger>
                                         {#snippet child({ props: triggerProps })}
-                                            <Sidebar.MenuButton {...triggerProps} class="group-has-data-[sidebar=menu-action]/menu-item:pr-14">
+                                            <Sidebar.MenuButton
+                                                data-tour={`navigation-${route.title.toLowerCase()}`}
+                                                {...triggerProps}
+                                                class="group-has-data-[sidebar=menu-action]/menu-item:pr-14"
+                                            >
                                                 {#snippet child({ props: buttonProps })}
                                                     <button type="button" title={route.title} {...buttonProps}>
                                                         <Icon />
@@ -491,7 +499,7 @@
                         </Collapsible.Root>
                     {:else}
                         <Sidebar.MenuItem>
-                            <Sidebar.MenuButton isActive={isRouteActive(route)}>
+                            <Sidebar.MenuButton data-tour={`navigation-${route.title.toLowerCase()}`} isActive={isRouteActive(route)}>
                                 {#snippet child({ props })}
                                     <A variant="ghost" href={route.href} title={route.title} onclick={onMenuClick} {...props}>
                                         <Icon />

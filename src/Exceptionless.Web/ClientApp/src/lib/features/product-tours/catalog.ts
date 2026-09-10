@@ -4,6 +4,8 @@ import { resolve } from '$app/paths';
 
 import type { ProductTourContext, ProductTourDefinition, ProductTourListItem, ProductTourName } from './models';
 
+import { getProductTourRecordedAt } from './eligibility';
+
 function requireApplicationShell(context: ProductTourContext) {
     return context.isSetupPage || !context.organizationId
         ? { available: false, reason: 'Finish organization setup to explore Exceptionless.' }
@@ -37,10 +39,10 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
     {
         availability: requireApplicationShell,
         canResume: () => true,
-        description: 'Navigate stacks and events, use the command palette, and reopen saved views.',
+        description: 'Find your way around in about a minute.',
         keywords: ['navigation', 'ui', 'search', 'command palette', 'help', 'saved views', 'stacks', 'occurrences'],
         name: 'app-overview',
-        start: () => ({ checkpointName: 'navigation', route: resolve('/') }),
+        start: () => ({ checkpointName: 'navigation', route: resolve('/(app)/event') }),
         stateKey: 'app_overview',
         title: 'Explore Exceptionless'
     },
@@ -59,7 +61,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
             }
             return routeId === '/(app)/project/[projectId]/configure';
         },
-        description: 'Continue an unfinished project, or create one and send its first event.',
+        description: 'Connect your app and start seeing errors here.',
         keywords: ['add project', 'configure', 'sdk', 'api key', 'first event'],
         name: 'project-configure',
         start: (context) => {
@@ -89,7 +91,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
     {
         availability: requireOrganization,
         canResume: (checkpoint, routeId) => routeId === '/(app)/event' && checkpoint === 'open-view-menu',
-        description: 'Save your event filters and layout in a view only you can see.',
+        description: 'Save a useful set of filters to come back to later.',
         keywords: ['saved view', 'filter', 'columns', 'private', 'dashboard'],
         name: 'saved-view-create',
         start: () => ({ checkpointName: 'open-view-menu', route: resolve('/(app)/event') }),
@@ -98,18 +100,18 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
     },
     {
         availability: requireError,
-        canResume: (checkpoint, routeId) => routeId === '/(app)/event' && (checkpoint === 'filter-errors' || checkpoint === 'choose-error'),
-        description: 'Understand stacks, review status, and inspect individual event occurrences.',
+        canResume: (checkpoint, routeId) => routeId === '/(app)/event' && checkpoint === 'choose-error',
+        description: 'Open an error, see its impact, and read what happened.',
         keywords: ['error report', 'event details', 'occurrences', 'exception', 'filter', 'stack', 'triage'],
         name: 'event-investigate',
-        start: () => ({ checkpointName: 'filter-errors', route: `${resolve('/(app)/event')}?time=all&type=error` }),
+        start: () => ({ checkpointName: 'choose-error', route: `${resolve('/(app)/event')}?time=all&type=error` }),
         stateKey: 'event_investigate',
         title: 'Investigate an error'
     },
     {
         availability: (context) => {
             if (!context.assistantAccess?.enabled) {
-                return { available: false, reason: 'Exie is not enabled by this Exceptionless installation.' };
+                return { available: false, reason: 'Exie is not available in this workspace.' };
             }
 
             return context.assistantAccess.has_access
@@ -117,7 +119,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
                 : { available: false, reason: context.assistantAccess.message ?? 'Exie requires access.' };
         },
         canResume: (checkpoint) => checkpoint === 'open-exie',
-        description: 'Explore the AI assistant. This guide does not send an AI request.',
+        description: 'Get help understanding errors and finding patterns.',
         keywords: ['exie', 'assistant', 'ai', 'help', 'investigate'],
         name: 'exie-overview',
         start: () => ({ checkpointName: 'open-exie', route: resolve('/') }),
@@ -131,7 +133,7 @@ export function getProductTourItems(context: ProductTourContext, state: ProductT
         return {
             ...definition,
             currentAvailability: definition.availability(context),
-            recordedAt: state[definition.stateKey]
+            recordedAt: getProductTourRecordedAt(state, definition.stateKey)
         };
     });
 }

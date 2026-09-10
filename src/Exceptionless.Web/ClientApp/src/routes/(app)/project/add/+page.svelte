@@ -138,8 +138,7 @@
         title="Name your project"
     >
         {#snippet description()}
-            This is <strong>Add Project</strong>, available under Settings → Projects. Name the application or service that will send events, then select
-            <strong>Continue to Client Setup</strong> in the form.
+            Give your app a name, then select <strong>Continue to Client Setup</strong> to connect it.
         {/snippet}
     </ProductTourSpotlight>
 {/if}

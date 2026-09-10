@@ -1,5 +1,4 @@
 using Exceptionless.Core.Authorization;
-using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Infrastructure;
@@ -46,7 +45,7 @@ public static class UserEndpoints
         .WithSummary("Record current user product tour")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
-                ["tourName"] = "The allowlisted product tour identifier.",
+                ["tourName"] = "A UI-defined product tour identifier using lowercase letters, digits, and hyphens (up to 64 characters).",
             },
             ResponseDescriptions = new() {
                 ["422"] = "The product tour name is invalid.",

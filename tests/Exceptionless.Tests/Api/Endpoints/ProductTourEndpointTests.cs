@@ -1,4 +1,4 @@
-using Exceptionless.Core.Models.Data;
+using System.Text.Json;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
@@ -34,7 +34,7 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
         // Act
         var result = await SendRequestAsAsync<RecordProductTourResult>(r => r
             .Put().AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", ProductTourNames.AppOverview, "record")
+            .AppendPaths("users", "me", "product-tours", "app-overview", "record")
             .StatusCodeShouldBeOk());
 
         // Assert
@@ -42,7 +42,7 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
         Assert.Equal(utcNow.UtcDateTime, result.RecordedUtc);
         var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, o => o.Cache(false));
         Assert.NotNull(persistedUser);
-        Assert.Equal(utcNow.UtcDateTime, persistedUser.ProductTours.AppOverview);
+        Assert.Equal(utcNow.UtcDateTime, persistedUser.ProductTours["app_overview"].GetDateTime());
     }
 
     [Fact]
@@ -54,14 +54,14 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
         TimeProvider.SetUtcNow(firstUtc);
         var first = await SendRequestAsAsync<RecordProductTourResult>(r => r
             .Put().AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", ProductTourNames.SavedViewCreate, "record")
+            .AppendPaths("users", "me", "product-tours", "saved-view-create", "record")
             .StatusCodeShouldBeOk());
 
         // Act
         TimeProvider.Advance(TimeSpan.FromMinutes(10));
         var second = await SendRequestAsAsync<RecordProductTourResult>(r => r
             .Put().AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", ProductTourNames.SavedViewCreate, "record")
+            .AppendPaths("users", "me", "product-tours", "saved-view-create", "record")
             .StatusCodeShouldBeOk());
 
         // Assert
@@ -82,7 +82,7 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
         // Act
         var result = await SendRequestAsAsync<RecordProductTourResult>(r => r
             .Put().AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", ProductTourNames.AppOverview, "record")
+            .AppendPaths("users", "me", "product-tours", "app-overview", "record")
             .Content(new { recorded_utc = "2000-01-01T00:00:00Z", field = "full_name" })
             .StatusCodeShouldBeOk());
 
@@ -92,7 +92,7 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
         var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, o => o.Cache(false));
         Assert.NotNull(persistedUser);
         Assert.Equal(currentUser.FullName, persistedUser.FullName);
-        Assert.Equal(serverUtc.UtcDateTime, persistedUser.ProductTours.AppOverview);
+        Assert.Equal(serverUtc.UtcDateTime, persistedUser.ProductTours["app_overview"].GetDateTime());
     }
 
     [Fact]
@@ -103,28 +103,63 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
 
         // Act
         await SendRequestAsync(r => r.Put().AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", ProductTourNames.AppOverview, "record")
+            .AppendPaths("users", "me", "product-tours", "app-overview", "record")
             .StatusCodeShouldBeOk());
         await SendRequestAsync(r => r.Put().AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", ProductTourNames.ExieOverview, "record")
+            .AppendPaths("users", "me", "product-tours", "exie-overview", "record")
             .StatusCodeShouldBeOk());
 
         // Assert
         var currentUser = await GetTestOrganizationUserAsync();
         var persistedUser = await _userRepository.GetByIdAsync(currentUser.Id, o => o.Cache(false));
         Assert.NotNull(persistedUser);
-        Assert.NotNull(persistedUser.ProductTours.AppOverview);
-        Assert.NotNull(persistedUser.ProductTours.ExieOverview);
+        Assert.True(persistedUser.ProductTours.ContainsKey("app_overview"));
+        Assert.True(persistedUser.ProductTours.ContainsKey("exie_overview"));
     }
 
     [Fact]
-    public Task RecordCurrentUserProductTourAsync_UnknownTour_ReturnsUnprocessableEntity()
+    public async Task RecordCurrentUserProductTourAsync_NewUiDefinedTours_PreservesConcurrentUpdatesAndLegacyState()
+    {
+        // Arrange
+        var currentUser = await GetTestOrganizationUserAsync();
+        var user = await _userRepository.GetByIdAsync(currentUser.Id);
+        Assert.NotNull(user);
+        var legacyState = JsonSerializer.SerializeToElement(new { status = "completed", updated_utc = "2024-01-15T12:00:00Z", version = 1 });
+        user.ProductTours["old-tour"] = legacyState;
+        await _userRepository.SaveAsync(user);
+        string[] tourNames = ["future-guide-1", "future-guide-2", "future-guide-3", "future-guide-4"];
+
+        // Act
+        await Task.WhenAll(tourNames.Select(name => SendRequestAsync(r => r.Put().AsTestOrganizationUser()
+            .AppendPaths("users", "me", "product-tours", name, "record")
+            .StatusCodeShouldBeOk())));
+
+        // Assert
+        var persistedUser = await _userRepository.GetByIdAsync(user.Id, o => o.Cache(false));
+        Assert.NotNull(persistedUser);
+        Assert.Equal(5, persistedUser.ProductTours.Count);
+        foreach (string name in tourNames)
+        {
+            Assert.True(persistedUser.ProductTours[name.Replace('-', '_')].TryGetDateTime(out _));
+        }
+        Assert.True(JsonElement.DeepEquals(legacyState, persistedUser.ProductTours["old-tour"]));
+
+        var cachedUser = await _userRepository.GetByEmailAddressAsync(user.EmailAddress);
+        Assert.NotNull(cachedUser);
+        Assert.Equal(5, cachedUser.ProductTours.Count);
+    }
+
+    [Theory]
+    [InlineData("tour.name")]
+    [InlineData("TourName")]
+    [InlineData("tour name")]
+    public Task RecordCurrentUserProductTourAsync_InvalidIdentifier_ReturnsUnprocessableEntity(string name)
     {
         // Arrange: sample users are created by ResetDataAsync.
 
         // Act & Assert
         return SendRequestAsync(r => r.Put().AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", "unknown-tour", "record")
+            .AppendPaths("users", "me", "product-tours", name, "record")
             .StatusCodeShouldBeUnprocessableEntity());
     }
 
@@ -135,7 +170,7 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
 
         // Act & Assert
         return SendRequestAsync(r => r.Put().AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", ProductTourNames.AppOverview)
+            .AppendPaths("users", "me", "product-tours", "app-overview")
             .StatusCodeShouldBeNotFound());
     }
 
@@ -146,7 +181,7 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
 
         // Act & Assert
         return SendRequestAsync(r => r.Put()
-            .AppendPaths("users", "me", "product-tours", ProductTourNames.AppOverview, "record")
+            .AppendPaths("users", "me", "product-tours", "app-overview", "record")
             .StatusCodeShouldBeUnauthorized());
     }
 
@@ -159,7 +194,7 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
 
         // Act
         await SendRequestAsync(r => r.Put().AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", ProductTourNames.AppOverview, "record")
+            .AppendPaths("users", "me", "product-tours", "app-overview", "record")
             .StatusCodeShouldBeUnauthorized());
 
         // Assert

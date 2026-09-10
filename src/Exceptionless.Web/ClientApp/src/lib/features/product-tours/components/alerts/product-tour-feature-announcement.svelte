@@ -29,7 +29,7 @@
                     <Alert.Title>New: Meet Exie</Alert.Title>
                     <Muted class="mt-1">
                         {hasAccess
-                            ? 'Take a short guide to Exie, your AI assistant for investigating errors.'
+                            ? 'See how Exie can help you understand errors and find patterns.'
                             : (message ?? 'Exie is available with an eligible organization plan.')}
                     </Muted>
                 </div>

@@ -3,7 +3,6 @@ using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Api.Infrastructure;
@@ -17,6 +16,7 @@ using Exceptionless.Web.Utility;
 using Foundatio.Caching;
 using Foundatio.Mediator;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Exceptions;
 
 namespace Exceptionless.Web.Api.Handlers;
 
@@ -52,64 +52,35 @@ public class UserHandler(
 
     public async Task<Result<RecordProductTourResult>> Handle(RecordCurrentUserProductTour message)
     {
-        if (!ProductTourNames.All.Contains(message.TourName, StringComparer.Ordinal))
-            return Result.Invalid(ValidationError.Create("tour_name", "The product tour name is not supported."));
+        if (message.TourName.Length is < 1 or > 64 || message.TourName.Any(c => !Char.IsAsciiLetterLower(c) && !Char.IsAsciiDigit(c) && c != '-'))
+        {
+            return Result.Invalid(ValidationError.Create("tour_name", "Use lowercase letters, digits, and hyphens for the product tour name."));
+        }
 
         var currentUser = await GetModelAsync(GetCurrentUserId());
         if (currentUser is null)
+        {
             return Result.NotFound("User not found.");
-
-        DateTime? recordedUtc = GetProductTourDate(currentUser.ProductTours, message.TourName);
-        if (!recordedUtc.HasValue)
-        {
-            recordedUtc = timeProvider.GetUtcNow().UtcDateTime;
-            SetProductTourDate(currentUser.ProductTours, message.TourName, recordedUtc.Value);
-            await repository.SaveAsync(currentUser, o => o.Cache());
         }
 
-        return new RecordProductTourResult(recordedUtc.Value);
-    }
-
-    private static DateTime? GetProductTourDate(ProductTourState state, string tourName) => tourName switch
-    {
-        ProductTourNames.AppOverview => state.AppOverview,
-        ProductTourNames.ExieOverview => state.ExieOverview,
-        ProductTourNames.EventInvestigate => state.EventInvestigate,
-        ProductTourNames.ProjectConfigure => state.ProjectConfigure,
-        ProductTourNames.SavedViewCreate => state.SavedViewCreate,
-        ProductTourNames.AppWelcome => state.AppWelcome,
-        ProductTourNames.ExieAnnouncement => state.ExieAnnouncement,
-        _ => null
-    };
-
-    private static void SetProductTourDate(ProductTourState state, string tourName, DateTime recordedUtc)
-    {
-        switch (tourName)
+        // Keep the existing JSON keys while letting the UI define new tour identifiers.
+        string stateKey = message.TourName.Replace('-', '_');
+        try
         {
-            case ProductTourNames.AppOverview:
-                state.AppOverview = recordedUtc;
-                break;
-            case ProductTourNames.ExieOverview:
-                state.ExieOverview = recordedUtc;
-                break;
-            case ProductTourNames.EventInvestigate:
-                state.EventInvestigate = recordedUtc;
-                break;
-            case ProductTourNames.ProjectConfigure:
-                state.ProjectConfigure = recordedUtc;
-                break;
-            case ProductTourNames.SavedViewCreate:
-                state.SavedViewCreate = recordedUtc;
-                break;
-            case ProductTourNames.AppWelcome:
-                state.AppWelcome = recordedUtc;
-                break;
-            case ProductTourNames.ExieAnnouncement:
-                state.ExieAnnouncement = recordedUtc;
-                break;
-            default:
-                throw new InvalidOperationException("Unknown product tour name.");
+            await repository.RecordProductTourAsync(currentUser, stateKey, timeProvider.GetUtcNow().UtcDateTime);
         }
+        catch (DocumentNotFoundException)
+        {
+            return Result.NotFound("User not found.");
+        }
+
+        currentUser = await repository.GetByIdAsync(currentUser.Id, o => o.Cache(false));
+        if (currentUser is null)
+        {
+            return Result.NotFound("User not found.");
+        }
+
+        return new RecordProductTourResult(currentUser.ProductTours[stateKey].GetDateTime());
     }
 
     public async Task<Result<IReadOnlyCollection<ViewOAuthGrant>>> Handle(GetCurrentUserOAuthGrants message)

@@ -331,7 +331,7 @@ describe('NavigationCommand guided tours', () => {
             const catalogPalette = renderCommandPalette([], { openGuidedTours });
 
             // Act
-            await fireEvent.click(screen.getByText('Guided Tours…'));
+            await fireEvent.click(screen.getByRole('option', { name: 'Guided Tours' }));
 
             // Assert
             expect(openGuidedTours).toHaveBeenCalled();

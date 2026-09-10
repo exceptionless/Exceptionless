@@ -3964,7 +3964,7 @@
           {
             "name": "tourName",
             "in": "path",
-            "description": "The allowlisted product tour identifier.",
+            "description": "A UI-defined product tour identifier using lowercase letters, digits, and hyphens (up to 64 characters).",
             "required": true,
             "schema": {
               "maxLength": 64,
@@ -13282,60 +13282,6 @@
           }
         }
       },
-      "ProductTourState": {
-        "type": "object",
-        "properties": {
-          "app_overview": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
-          },
-          "app_welcome": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
-          },
-          "event_investigate": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
-          },
-          "exie_announcement": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
-          },
-          "exie_overview": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
-          },
-          "project_configure": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
-          },
-          "saved_view_create": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
-          }
-        }
-      },
       "RecordProductTourResult": {
         "required": [
           "recorded_utc"
@@ -14052,7 +13998,7 @@
             }
           },
           "product_tours": {
-            "$ref": "#/components/schemas/ProductTourState"
+            "type": "object"
           },
           "full_name": {
             "type": "string",
@@ -14226,7 +14172,7 @@
             }
           },
           "product_tours": {
-            "$ref": "#/components/schemas/ProductTourState"
+            "type": "object"
           },
           "id": {
             "maxLength": 24,

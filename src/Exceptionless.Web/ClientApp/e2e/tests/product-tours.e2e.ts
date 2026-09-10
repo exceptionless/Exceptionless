@@ -76,7 +76,7 @@ test.describe('first-run welcome', () => {
 
         // Assert
         const guide = page.locator('.driver-popover');
-        await expect(guide.getByText('Your workspace navigation')).toBeVisible();
+        await expect(guide.getByText('Spot repeated problems')).toBeVisible();
         await expect(welcome).toBeHidden();
         await guide.getByRole('button', { name: 'End guide' }).click();
         await expect(guide).toBeHidden();
@@ -201,7 +201,7 @@ test.describe('shell and identity checkpoints', () => {
             const tour = page.locator('.driver-popover');
             // Assert
             await expect(page.locator('[data-tour="app-navigation"]')).toBeVisible();
-            await expect(tour.getByText('Your workspace navigation')).toBeVisible();
+            await expect(tour.getByText('Spot repeated problems')).toBeVisible();
 
             // Act
             await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -212,18 +212,18 @@ test.describe('shell and identity checkpoints', () => {
             const closeBounds = await closeButton.boundingBox();
             const titleBounds = await tour.locator('.driver-popover-title').boundingBox();
             const descriptionBounds = await tour.locator('.driver-popover-description').boundingBox();
-            const continueBounds = await tour.getByRole('button', { name: 'Continue' }).boundingBox();
+            const continueBounds = await tour.getByRole('button', { name: 'Next' }).boundingBox();
             expect(closeBounds).not.toBeNull();
             expect(titleBounds).not.toBeNull();
             expect(descriptionBounds).not.toBeNull();
-            expect(continueBounds?.height).toBe(32);
+            expect(continueBounds?.height).toBeGreaterThanOrEqual(32);
             expect(closeBounds?.height).toBe(32);
             expect(titleBounds!.x + titleBounds!.width).toBeLessThanOrEqual(closeBounds!.x);
             expect(closeBounds!.y + closeBounds!.height).toBeLessThanOrEqual(descriptionBounds!.y);
             // Act
-            await tour.getByRole('button', { name: 'Continue' }).click();
+            await tour.getByRole('button', { name: 'Next' }).click();
             // Assert
-            await expect(tour.getByText('Use the command palette')).toBeVisible();
+            await expect(tour.getByText('See each report')).toBeVisible();
             // Act
             await page.reload();
             // Assert
@@ -231,7 +231,7 @@ test.describe('shell and identity checkpoints', () => {
             // Act
             await startTourFromCommand(page, 'Explore Exceptionless');
             // Assert
-            await expect(tour.getByText('Your workspace navigation')).toBeVisible();
+            await expect(tour.getByText('Spot repeated problems')).toBeVisible();
             const writesBeforeDismissal = progressWrites.length;
             // Act
             await tour.getByRole('button', { name: 'End guide' }).click();
@@ -251,34 +251,29 @@ test.describe('shell and identity checkpoints', () => {
 
             // Assert
             for (const [title, target] of [
-                ['Your workspace navigation', '[data-tour="app-navigation"]'],
-                ['Use the command palette', '[data-tour="command-search"]'],
-                ['Find your saved views', '[data-tour="saved-view-navigation"]'],
-                ['Ask Exie with context', '[data-tour="exie-trigger"]'],
-                ['Find your next guide', '[data-tour="guided-tours-menu-item"]']
+                ['Spot repeated problems', '[data-tour="navigation-stacks"]'],
+                ['See each report', '[data-tour="navigation-events"]'],
+                ['Narrow your results', '[data-tour="event-filters"]'],
+                ['Keep a useful view', '[data-tour="saved-view-trigger"]'],
+                ['Get help from Exie', '[data-tour="exie-trigger"]'],
+                ['Search and take action', '[data-tour="command-search"]']
             ] as const) {
                 await expect(tour.getByText(title)).toBeVisible();
                 await expect(page.locator(target)).toBeVisible();
-                if (title !== 'Find your next guide') {
+                if (title !== 'Search and take action') {
                     // Act
-                    await tour.getByRole('button', { name: 'Continue' }).click();
+                    await tour.getByRole('button', { name: 'Next' }).click();
                 }
             }
 
             // Assert
-            const guidedTours = page.getByRole('menuitem', { exact: true, name: 'Guided Tours…' });
-            await expect(guidedTours).toBeVisible();
-            await expect(guidedTours).toHaveClass(/driver-active-element/);
-            await expect(page.getByRole('menuitem', { exact: true, name: 'Help' })).toHaveAttribute('data-state', 'open');
-            await expect(guidedTours).toBeInViewport();
+            await expectCalloutBesideTarget(page);
             const completed = page.waitForResponse(isSuccessfulTourProgress('app-overview'));
             // Act
-            await tour.getByRole('button', { name: 'Browse guides' }).click();
+            await tour.getByRole('button', { name: 'Done' }).click();
             await completed;
             // Assert
             await expectActiveProductTour(page, false);
-            await expect(page.getByRole('dialog', { exact: true, name: 'Guided Tours' })).toBeVisible();
-            await page.keyboard.press('Escape');
         });
 
         await test.step('an organization change clears an active checkpoint even when projects fail to load', async () => {
@@ -307,7 +302,7 @@ test.describe('shell and identity checkpoints', () => {
             expect(progressWrites).toHaveLength(writesBeforeSwitch);
             // Act
             await page.getByRole('button', { name: 'Search Exceptionless' }).click();
-            await page.getByRole('dialog').getByText('Guided Tours…', { exact: true }).click();
+            await page.getByRole('dialog').getByRole('option', { exact: true, name: 'Guided Tours' }).click();
             const catalog = page.getByRole('dialog', { name: 'Guided Tours' });
             try {
                 // Assert
@@ -507,12 +502,11 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
             await tour.getByRole('button', { name: 'Open View' }).click();
             // Assert
             await expect(page.locator('[data-tour="saved-view-save-as"]')).toHaveClass(/driver-active-element/);
+            await expectCalloutBesideTarget(page);
             // Act
             await tour.getByRole('button', { name: 'Save As…' }).click();
 
             await page.getByLabel('Name', { exact: true }).fill(`Tour View ${e2eScenario.run}`);
-            await page.getByRole('button', { name: 'Continue' }).click();
-            await page.getByRole('button', { name: 'Continue' }).click();
             await page.getByRole('button', { exact: true, name: 'Save' }).click();
             // Assert
             await expect(page.getByText('Your saved view is ready', { exact: true })).toBeVisible();
@@ -545,21 +539,21 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
         await expect(page.getByText(e2eScenario.message).first()).toBeVisible({ timeout: 30_000 });
         // Act
         await startTourFromCommand(page, 'Investigate an error');
-        await page.locator('.driver-popover').getByRole('button', { name: 'Continue' }).click();
-        await page.locator('.driver-popover').getByRole('button', { name: 'Open first error' }).click();
+        await page.locator('.driver-popover').getByRole('button', { name: 'Open error' }).click();
         const callout = page.locator('.driver-popover');
         // Assert
-        await expect(callout.getByText('Understand the grouped issue')).toBeVisible();
-        for (const title of ['Review the issue status', 'Inspect the occurrence', 'Begin with the overview', 'Compare every occurrence']) {
+        await expect(callout.getByText('See the impact')).toBeVisible();
+        for (const title of ['Read what happened', 'See related reports']) {
             // Act
-            await callout.getByRole('button', { name: 'Continue' }).click();
+            await callout.getByRole('button', { name: 'Next' }).click();
             // Assert
             await expect(callout.getByText(title)).toBeVisible();
         }
 
         const completed = page.waitForResponse(isSuccessfulTourProgress('event-investigate'));
         // Act
-        await callout.getByRole('button', { name: 'Finish guide' }).click();
+        await expectCalloutBesideTarget(page);
+        await page.locator('[data-tour="stack-events"]').click();
         await completed;
         // Assert
         await expectActiveProductTour(page, false);
@@ -587,12 +581,72 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
             const tour = page.locator('.driver-popover');
             await tour.getByRole('button', { name: 'Open Exie' }).click();
             // Assert
-            await expect(tour.getByText('You control every request')).toBeVisible();
+            await expect(tour.getByText('Ask your first question')).toBeVisible();
             expect(chatRequests).toBe(0);
         } finally {
             page.off('request', countChatRequest);
         }
     });
+});
+
+test('the error guide keeps the start of a wide report visible on mobile', async ({ e2eApi, e2eScenario, page }) => {
+    // Arrange
+    await seedRepresentativeEvent(e2eApi, e2eScenario.userToken, {
+        message: e2eScenario.message,
+        projectId: e2eScenario.projectId,
+        projectToken: e2eScenario.projectToken,
+        referenceId: e2eScenario.referenceId
+    });
+    await page.setViewportSize({ height: 844, width: 390 });
+    await page.goto('/next/event?time=all&type=error');
+    await expect(page.getByText(e2eScenario.message).first()).toBeVisible();
+
+    // Act
+    await startTourFromCommand(page, 'Investigate an error');
+    await expect(page.locator('.driver-popover-title')).toHaveText('Take a closer look');
+
+    // Assert: the row may extend past the right edge, but its report name must stay visible.
+    const row = page.locator('.driver-active-element');
+    await expect.poll(async () => (await row.boundingBox())?.x ?? -1).toBeGreaterThanOrEqual(0);
+    await page.locator('.driver-popover').getByRole('button', { name: 'Open error' }).click();
+    await expect(page.locator('.driver-popover-title')).toHaveText('See the impact');
+    await expectCalloutBesideTarget(page);
+});
+
+test('overview arrows stay beside each control on desktop and mobile', async ({ e2eScenario, page }) => {
+    // Arrange
+    await mockAssistantAccess(page);
+    await page.goto('/next/stack');
+    expect(e2eScenario.email).toContain('@exceptionless.test');
+    const titles = ['Spot repeated problems', 'See each report', 'Narrow your results', 'Keep a useful view', 'Get help from Exie', 'Search and take action'];
+
+    for (const viewport of [
+        { height: 900, width: 1440 },
+        { height: 844, width: 390 }
+    ]) {
+        await page.setViewportSize(viewport);
+        await page.emulateMedia({ reducedMotion: 'no-preference' });
+        await startTourFromCommand(page, 'Explore Exceptionless');
+        const tour = page.locator('.driver-popover');
+
+        for (const [index, title] of titles.entries()) {
+            // Assert: visibility alone misses detached cards and arrows.
+            await expect(tour.getByText(title, { exact: true })).toBeVisible();
+            await expect(tour.getByText(`Step ${index + 1} of 6`, { exact: true })).toBeVisible();
+            await expectCalloutBesideTarget(page);
+
+            // Act
+            await tour.getByRole('button', { exact: true, name: index === titles.length - 1 ? 'Done' : 'Next' }).click();
+        }
+        await expectActiveProductTour(page, false);
+    }
+
+    // Act & Assert: leaving by keyboard remains available with reduced motion.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await startTourFromCommand(page, 'Explore Exceptionless');
+    await expectCalloutBesideTarget(page);
+    await page.keyboard.press('Escape');
+    await expectActiveProductTour(page, false);
 });
 
 async function expectActiveProductTour(page: Page, present: boolean): Promise<void> {
@@ -602,6 +656,49 @@ async function expectActiveProductTour(page: Page, present: boolean): Promise<vo
     } else {
         await expect(guide).toBeHidden();
     }
+}
+
+async function expectCalloutBesideTarget(page: Page): Promise<void> {
+    await expect
+        .poll(() =>
+            page.evaluate(() => {
+                const target = document.querySelector('.driver-active-element');
+                const popover = document.querySelector<HTMLElement>('.driver-popover');
+                const arrow = popover?.querySelector<HTMLElement>('.driver-popover-arrow');
+                if (!target || !popover || !arrow) {
+                    return false;
+                }
+                const targetBounds = target.getBoundingClientRect();
+                const bounds = popover.getBoundingClientRect();
+                const arrowBounds = arrow.getBoundingClientRect();
+                const gap = Math.max(
+                    targetBounds.left - bounds.right,
+                    bounds.left - targetBounds.right,
+                    targetBounds.top - bounds.bottom,
+                    bounds.top - targetBounds.bottom
+                );
+                const verticalArrow = arrow.classList.contains('driver-popover-arrow-side-top') || arrow.classList.contains('driver-popover-arrow-side-bottom');
+                const arrowCenter = verticalArrow ? arrowBounds.left + arrowBounds.width / 2 : arrowBounds.top + arrowBounds.height / 2;
+                const targetStart = verticalArrow ? targetBounds.left : targetBounds.top;
+                const targetEnd = verticalArrow ? targetBounds.right : targetBounds.bottom;
+                return (
+                    bounds.left >= 0 &&
+                    bounds.top >= 0 &&
+                    bounds.right <= innerWidth &&
+                    bounds.bottom <= innerHeight &&
+                    targetBounds.left >= 0 &&
+                    targetBounds.top >= 0 &&
+                    targetBounds.right <= innerWidth &&
+                    targetBounds.bottom <= innerHeight &&
+                    gap >= 0 &&
+                    gap <= 24 &&
+                    getComputedStyle(arrow).display !== 'none' &&
+                    arrowCenter >= targetStart - 8 &&
+                    arrowCenter <= targetEnd + 8
+                );
+            })
+        )
+        .toBe(true);
 }
 
 test('completion survives unavailable telemetry and session storage', async ({ e2eScenario, page }) => {
@@ -615,21 +712,22 @@ test('completion survives unavailable telemetry and session storage', async ({ e
             }
         })
     );
+    await mockAssistantAccess(page);
     await page.goto('/next/stack');
     // Act
     await startTourFromCommand(page, 'Explore Exceptionless');
-    for (const title of ['Your workspace navigation', 'Use the command palette', 'Find your saved views']) {
+    for (const title of ['Spot repeated problems', 'See each report', 'Narrow your results', 'Keep a useful view', 'Get help from Exie']) {
         await expect(tour.getByText(title)).toBeVisible();
-        await tour.getByRole('button', { name: 'Continue' }).click();
+        await tour.getByRole('button', { name: 'Next' }).click();
     }
-    await expect(tour.getByText('Find your next guide')).toBeVisible();
+    await expect(tour.getByText('Search and take action')).toBeVisible();
     const completed = page.waitForResponse(isSuccessfulTourProgress('app-overview'));
-    await tour.getByRole('button', { name: 'Browse guides' }).click();
+    await tour.getByRole('button', { name: 'Done' }).click();
     const response = await completed;
 
     // Assert
     expect(await response.json()).toMatchObject({ recorded_utc: expect.any(String) });
-    await expect(page.getByRole('dialog', { name: 'Guided Tours' })).toBeVisible();
+    await expectActiveProductTour(page, false);
     expect(e2eScenario.email).toContain('@exceptionless.test');
 });
 
@@ -655,7 +753,7 @@ async function startTourFromCommand(page: Page, title: string): Promise<void> {
     }
 
     await page.getByRole('button', { name: 'Search Exceptionless' }).click();
-    await page.getByRole('dialog').getByText('Guided Tours…', { exact: true }).click();
+    await page.getByRole('dialog').getByRole('option', { exact: true, name: 'Guided Tours' }).click();
     const catalog = page.getByRole('dialog', { name: 'Guided Tours' });
     const tour = catalog.getByRole('region', { name: title });
     await tour.getByRole('button', { name: /^(Continue|Restart|Start) / }).click();

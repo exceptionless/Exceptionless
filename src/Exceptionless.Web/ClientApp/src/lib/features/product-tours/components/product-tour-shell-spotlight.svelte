@@ -1,10 +1,9 @@
 <script lang="ts">
     import type { AssistantAccess } from '$features/assistant/models';
 
-    import { appKeyboardShortcuts } from '$features/shared/keyboard-shortcuts';
     import { onDestroy, onMount, untrack } from 'svelte';
 
-    import type { ProductTourCheckpoint, ProductTourCheckpointName, ProductTourShortcut } from '../models';
+    import type { ProductTourCheckpoint, ProductTourCheckpointName } from '../models';
 
     import { createProductTourActions } from '../actions.svelte';
     import { tryUseProductTourControls } from '../controls.svelte';
@@ -24,7 +23,6 @@
         checkpointName: ProductTourCheckpointName;
         description: string;
         mobileNavigation?: boolean;
-        shortcuts?: ProductTourShortcut[];
         target: string;
         title: string;
     }
@@ -37,106 +35,76 @@
     const exieOverviewSteps: ShellStep[] = [
         {
             checkpointName: 'open-exie',
-            description: 'Open Exie to see which page details it can use to answer your question.',
+            description: 'Ask Exie to explain an error or help you find patterns in your app.',
             target: '[data-tour="exie-trigger"]',
-            title: 'Open Exie'
+            title: 'Get help from Exie'
         },
         {
             checkpointName: 'exie-context',
-            description: 'The guide does not send an AI request. Sending a message or choosing a suggested question counts as AI usage.',
-            target: '[data-tour="exie-panel"]',
-            title: 'You control every request'
+            description: 'Start with a question, or choose a suggestion. Exie can use the page you’re viewing to help.',
+            target: '[data-tour="exie-input"]',
+            title: 'Ask your first question'
         }
     ];
     const appOverviewSteps: ShellStep[] = [
         {
             checkpointName: 'navigation',
-            description: 'Use Stacks for grouped issues and Events for individual occurrences. Switch views in the sidebar.',
+            description: 'Stacks groups similar reports so you can see which problems happen most often.',
             mobileNavigation: true,
-            shortcuts: [
-                {
-                    label: 'Stacks',
-                    shortcut: appKeyboardShortcuts.stacks
-                },
-                {
-                    label: 'Events',
-                    shortcut: appKeyboardShortcuts.allEvents
-                }
-            ],
-            target: '[data-tour="app-navigation"]',
-            title: 'Your workspace navigation'
+            target: '[data-tour="navigation-stacks"]',
+            title: 'Spot repeated problems'
         },
         {
-            checkpointName: 'command-search',
-            description: 'Select Search at the top of the page to find pages, projects, events, and actions. Close it to return to this guide.',
-            shortcuts: [
-                {
-                    label: 'Search',
-                    shortcut: appKeyboardShortcuts.commandPalette
-                }
-            ],
-            target: '[data-tour="command-search"]',
-            title: 'Use the command palette'
+            checkpointName: 'events',
+            description: 'Events shows each error, log message, and activity your app sends. Open a report to see what happened.',
+            mobileNavigation: true,
+            target: '[data-tour="navigation-events"]',
+            title: 'See each report'
+        },
+        {
+            checkpointName: 'filters',
+            description: 'Choose a project, time range, or event type to focus on the reports you need.',
+            target: '[data-tour="event-filters"]',
+            title: 'Narrow your results'
         },
         {
             checkpointName: 'saved-views',
-            description: 'Expand Stacks or Events to find views. Choose one to restore saved filters and layout, or Continue to keep exploring.',
-            mobileNavigation: true,
-            target: '[data-tour="saved-view-navigation"]',
-            title: 'Find your saved views'
+            description: 'Use View to save the filters you use often. Your saved views appear in the sidebar.',
+            target: '[data-tour="saved-view-trigger"]',
+            title: 'Keep a useful view'
         },
         ...(currentAssistantAccess?.has_access
             ? [
                   {
                       checkpointName: 'exie' as const,
-                      description: 'Exie can help investigate this page or error. You choose whether to send an AI request.',
+                      description: 'Ask Exie to explain an error or help you find patterns in your app.',
                       target: '[data-tour="exie-trigger"]',
-                      title: 'Ask Exie with context'
+                      title: 'Get help from Exie'
                   }
               ]
             : []),
         {
-            checkpointName: 'help',
-            description: 'This is Guided Tours, under your name → Help. Open it whenever you want to try another guide or restart one.',
-            mobileNavigation: true,
-            shortcuts: [
-                {
-                    label: 'User menu',
-                    shortcut: appKeyboardShortcuts.userMenu
-                },
-                {
-                    label: 'All shortcuts',
-                    shortcut: appKeyboardShortcuts.keyboardShortcuts
-                }
-            ],
-            target: '[data-tour="help-menu"]',
-            title: 'Find your next guide'
+            checkpointName: 'command-search',
+            description: 'Use the command palette to find stacks and events, jump to pages and projects, and run app commands.',
+            target: '[data-tour="command-search"]',
+            title: 'Search and take action'
         }
     ];
     const steps = currentCheckpoint.tourName === 'app-overview' ? appOverviewSteps : exieOverviewSteps;
-    const spotlight = steps.find((step) => step.checkpointName === currentCheckpoint.checkpointName);
     const stepIndex = steps.findIndex((step) => step.checkpointName === currentCheckpoint.checkpointName);
+    const spotlight = steps[stepIndex];
     let targetReady = $state(false);
-    const isHelpStep = currentCheckpoint.tourName === 'app-overview' && currentCheckpoint.checkpointName === 'help';
-    const helpTarget = $derived(isHelpStep ? controls?.getGuidedToursTarget() : undefined);
     const navigationReady = $derived(!isMobile || !spotlight?.mobileNavigation || !!controls?.getNavigationTarget());
-
-    $effect(() => {
-        if (isHelpStep && targetReady && navigationReady) {
-            controls?.showGuidedToursMenu();
-        }
-    });
 
     onMount(() => {
         if (currentCheckpoint.tourName === 'app-overview' && currentCheckpoint.checkpointName === 'exie' && !currentAssistantAccess?.has_access) {
-            productTourCheckpoint.advance(currentCheckpoint, 'help');
+            productTourCheckpoint.advance(currentCheckpoint, 'command-search');
             return;
         }
 
         if (isMobile || spotlight?.mobileNavigation) {
             setMobileNavigationOpen(spotlight?.mobileNavigation ?? false);
         }
-
         targetReady = true;
     });
 
@@ -156,15 +124,6 @@
         const next = steps[stepIndex + 1];
         if (next) {
             productTourCheckpoint.advance(currentCheckpoint, next.checkpointName);
-            return;
-        }
-
-        if (isHelpStep) {
-            if (helpTarget) {
-                controls?.openCatalog();
-            } else {
-                controls?.showGuidedToursMenu();
-            }
         } else {
             await actions.complete(currentCheckpoint);
         }
@@ -173,47 +132,23 @@
     function back(): void {
         const previous = steps[stepIndex - 1];
         if (previous) {
-            if (isHelpStep) {
-                controls?.closeOverlays();
-            }
-
             productTourCheckpoint.advance(currentCheckpoint, previous.checkpointName);
         }
     }
-
-    async function dismiss(): Promise<boolean> {
-        const dismissed = await actions.dismiss(currentCheckpoint);
-        if (dismissed && isHelpStep) {
-            controls?.closeOverlays();
-        }
-
-        return dismissed;
-    }
 </script>
 
-{#if spotlight && targetReady && navigationReady && (!isAnyOverlayOpen || helpTarget || checkpoint.tourName === 'exie-overview')}
-    {#key helpTarget}
-        <ProductTourSpotlight
-            checkpoint={currentCheckpoint}
-            continueLabel={stepIndex === steps.length - 1
-                ? checkpoint.tourName === 'app-overview'
-                    ? helpTarget
-                        ? 'Browse guides'
-                        : 'Show me where'
-                    : 'Finish guide'
-                : checkpoint.tourName === 'exie-overview'
-                  ? 'Open Exie'
-                  : 'Continue'}
-            description={spotlight.description}
-            onDismiss={dismiss}
-            onNext={advance}
-            onPrevious={checkpoint.tourName === 'app-overview' && stepIndex > 0 ? back : undefined}
-            shortcuts={spotlight.shortcuts}
-            side={isHelpStep ? 'top' : undefined}
-            stepCount={steps.length}
-            stepNumber={stepIndex + 1}
-            target={helpTarget ?? spotlight.target}
-            title={spotlight.title}
-        />
-    {/key}
+{#if spotlight && targetReady && navigationReady && (!isAnyOverlayOpen || checkpoint.tourName === 'exie-overview')}
+    <ProductTourSpotlight
+        checkpoint={currentCheckpoint}
+        continueLabel={stepIndex === steps.length - 1 ? 'Done' : checkpoint.tourName === 'exie-overview' ? 'Open Exie' : 'Next'}
+        description={spotlight.description}
+        onDismiss={actions.dismiss}
+        onNext={advance}
+        onPrevious={stepIndex > 0 ? back : undefined}
+        side={spotlight.mobileNavigation && !isMobile ? 'right' : 'bottom'}
+        stepCount={steps.length}
+        stepNumber={stepIndex + 1}
+        target={spotlight.target}
+        title={spotlight.title}
+    />
 {/if}

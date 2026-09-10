@@ -1,8 +1,8 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Data;
 
 namespace Exceptionless.Web.Models;
 
@@ -33,7 +33,7 @@ public record ViewCurrentUser : ViewUser
     public ICollection<OAuthAccount> OAuthAccounts { get; set; }
     public ICollection<UserOrganizationPreference> OrganizationPreferences { get; set; }
     public ICollection<UserSavedViewOrderPreference> SavedViewOrders { get; set; }
-    public ProductTourState ProductTours { get; set; } = new();
+    public IDictionary<string, JsonElement> ProductTours { get; set; } = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
 
     private static string? HMACSHA256HashString(string value, IntercomOptions options)
     {

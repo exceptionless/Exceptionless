@@ -1,14 +1,12 @@
 import type { RouteId } from '$app/types';
 import type { AssistantAccess } from '$features/assistant/models';
 import type { ViewProject } from '$features/projects/models';
-import type { KeyboardShortcut } from '$features/shared/keyboard-shortcuts';
-import type { ProductTourState } from '$features/users/models';
 export const PRODUCT_TOUR_CHECKPOINTS = {
-    'app-overview': ['navigation', 'command-search', 'saved-views', 'exie', 'help'],
-    'event-investigate': ['filter-errors', 'choose-error', 'stack-summary', 'stack-triage', 'event-occurrence', 'tab-overview', 'filter-stack-events'],
+    'app-overview': ['navigation', 'events', 'filters', 'saved-views', 'exie', 'command-search'],
+    'event-investigate': ['choose-error', 'stack-summary', 'tab-overview', 'filter-stack-events'],
     'exie-overview': ['open-exie', 'exie-context'],
     'project-configure': ['organization-name', 'project-name', 'choose-platform', 'sdk-instructions'],
-    'saved-view-create': ['open-view-menu', 'review-settings', 'name-view', 'private-view', 'save-view']
+    'saved-view-create': ['open-view-menu', 'review-settings', 'name-view']
 } as const;
 
 export interface ProductTourAvailability {
@@ -41,7 +39,7 @@ export interface ProductTourDefinition<Name extends ProductTourName = ProductTou
     keywords: readonly string[];
     name: Name;
     start: (context: ProductTourContext) => ProductTourStart<Name>;
-    stateKey: keyof ProductTourState;
+    stateKey: string;
     title: string;
 }
 export type ProductTourKey = 'app-welcome' | 'exie-announcement' | ProductTourName;
@@ -52,11 +50,6 @@ export interface ProductTourListItem<Name extends ProductTourName = ProductTourN
 }
 
 export type ProductTourName = keyof typeof PRODUCT_TOUR_CHECKPOINTS;
-
-export interface ProductTourShortcut {
-    label: string;
-    shortcut: KeyboardShortcut;
-}
 
 export interface ProductTourStart<Name extends ProductTourName = ProductTourName> {
     checkpointName: ProductTourCheckpointName<Name>;

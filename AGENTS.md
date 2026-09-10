@@ -65,7 +65,8 @@ tests/                         # C# tests and HTTP samples
 - NuGet feeds are in `NuGet.Config` — don't add sources
 - Prefer additive documentation updates — don't replace strategic docs wholesale, extend them
 - **Backwards compatibility:** Never break existing public APIs, WebSocket message formats, config keys, or exported library interfaces without explicit user approval. Call out any breaking change as a BLOCKER in reviews.
-- **API contracts:** When an endpoint's route, response, or authorization changes, update `tests/http/*.http` and `tests/Exceptionless.Tests/Api/Data/openapi.json`, then run the focused endpoint tests and `OpenApiSnapshotTests`.
+- **API contracts:** When an endpoint's route, response, or authorization changes, update `tests/Exceptionless.Tests/Api/Data/openapi.json`, then run the focused endpoint tests and `OpenApiSnapshotTests`.
+- **HTTP examples:** `tests/http/*.http` contains curated, runnable examples of useful API workflows. Add or update an example only when it helps users accomplish a meaningful task. Do not require a sample for every endpoint or change, duplicate OpenAPI documentation, or use these files as automated contract tests.
 - **Abbreviations:** Never abbreviate `Organization` as `org` in code (variable names, parameters, method names, or comments). Always spell out `organization`.
 - **Fix what you cause or block:** Fix regressions caused by the change and failures that block its verification. Report unrelated pre-existing issues with evidence; do not expand scope without approval.
 

@@ -626,17 +626,6 @@ export const ProblemDetailsSchema = object({
 });
 export type ProblemDetailsFormData = Infer<typeof ProblemDetailsSchema>;
 
-export const ProductTourStateSchema = object({
-  app_overview: iso.datetime().nullable().optional(),
-  app_welcome: iso.datetime().nullable().optional(),
-  event_investigate: iso.datetime().nullable().optional(),
-  exie_announcement: iso.datetime().nullable().optional(),
-  exie_overview: iso.datetime().nullable().optional(),
-  project_configure: iso.datetime().nullable().optional(),
-  saved_view_create: iso.datetime().nullable().optional(),
-});
-export type ProductTourStateFormData = Infer<typeof ProductTourStateSchema>;
-
 export const RecordProductTourResultSchema = object({
   recorded_utc: iso.datetime(),
 });
@@ -880,7 +869,7 @@ export const UserSchema = object({
   o_auth_accounts: array(lazy(() => OAuthAccountSchema)),
   organization_preferences: array(lazy(() => UserOrganizationPreferenceSchema)),
   saved_view_orders: array(lazy(() => UserSavedViewOrderPreferenceSchema)),
-  product_tours: lazy(() => ProductTourStateSchema),
+  product_tours: record(string(), unknown()),
   full_name: string().min(1, "Full name is required"),
   email_address: email(),
   avatar_file_name: string()
@@ -938,7 +927,7 @@ export const ViewCurrentUserSchema = object({
   o_auth_accounts: array(lazy(() => OAuthAccountSchema)),
   organization_preferences: array(lazy(() => UserOrganizationPreferenceSchema)),
   saved_view_orders: array(lazy(() => UserSavedViewOrderPreferenceSchema)),
-  product_tours: lazy(() => ProductTourStateSchema),
+  product_tours: record(string(), unknown()),
   id: string()
     .length(24, "Id must be exactly 24 characters")
     .regex(/^[a-fA-F0-9]{24}$/, "Id has invalid format"),

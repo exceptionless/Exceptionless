@@ -24,7 +24,6 @@
     import Building2 from '@lucide/svelte/icons/building-2';
     import CircleHelp from '@lucide/svelte/icons/circle-help';
     import CircleUserRound from '@lucide/svelte/icons/circle-user-round';
-    import Compass from '@lucide/svelte/icons/compass';
     import Eye from '@lucide/svelte/icons/eye';
     import EyeOff from '@lucide/svelte/icons/eye-off';
     import Keyboard from '@lucide/svelte/icons/keyboard';
@@ -32,6 +31,7 @@
     import LogOut from '@lucide/svelte/icons/log-out';
     import Plus from '@lucide/svelte/icons/plus';
     import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+    import Route from '@lucide/svelte/icons/route';
     import Search from '@lucide/svelte/icons/search';
     import SunMoon from '@lucide/svelte/icons/sun-moon';
     import UserPlus from '@lucide/svelte/icons/user-plus';
@@ -566,8 +566,8 @@
             {#if !selectingProject}
                 <Command.Group heading="Guided Tours">
                     <Command.Item value="Browse Guided Tours help onboarding guides" onSelect={openGuidedTourCatalog}>
-                        <Compass />
-                        <span>Guided Tours…</span>
+                        <Route />
+                        <span>Guided Tours</span>
                     </Command.Item>
                 </Command.Group>
                 <Command.Separator />

@@ -98,18 +98,11 @@
     let isImpersonateOrganizationOpen = $state(false);
     let isUserMenuOpen = $state(false);
     let productToursComponent = $state<ProductTourHost>();
-    let sidebarUserComponent = $state<SidebarUser>();
     let sidebarElement = $state<HTMLDivElement | null>(null);
 
     setProductTourControls({
-        closeOverlays: closeProductTourOverlays,
-        getGuidedToursTarget: () => sidebarUserComponent?.getGuidedToursTarget(),
         getNavigationTarget: () => sidebarElement ?? undefined,
-        openCatalog: () => openGuidedTours(),
-        showGuidedToursMenu: () => {
-            closeProductTourOverlays();
-            sidebarUserComponent?.showGuidedTours();
-        }
+        openCatalog: () => openGuidedTours()
     });
 
     // Auto-reset premium page state on navigation so pages don't need cleanup
@@ -767,7 +760,6 @@
 
         {#snippet footer()}
             <SidebarUser
-                bind:this={sidebarUserComponent}
                 {isChatEnabled}
                 isLoading={meQuery.isLoading}
                 user={meQuery.data}

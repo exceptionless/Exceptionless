@@ -20,7 +20,7 @@ describe('product tour completion', () => {
 
     it('finishes without waiting for telemetry', async () => {
         // Arrange
-        const checkpoint = productTourCheckpoint.start('saved-view-create', 'save-view', 'user');
+        const checkpoint = productTourCheckpoint.start('saved-view-create', 'name-view', 'user');
         mocks.submitFeatureUsage.mockReturnValue(new Promise<void>(() => {}));
 
         // Act
@@ -50,7 +50,7 @@ describe('product tour completion', () => {
         expect(productTourCheckpoint.current).toBeUndefined();
         expect(mocks.success).toHaveBeenCalledExactlyOnceWith('You’ve explored an error and its occurrences', {
             action: { label: 'Browse guides', onClick: mocks.openCatalog },
-            description: 'For more guides, select your name in the sidebar → Help → Guided Tours.'
+            description: 'Find more tours in Search → Guided Tours.'
         });
 
         // Act
@@ -63,7 +63,7 @@ describe('product tour completion', () => {
 
     it('leaves the overview menu handoff unobstructed by a completion toast', async () => {
         // Arrange
-        const checkpoint = productTourCheckpoint.start('app-overview', 'help', 'user');
+        const checkpoint = productTourCheckpoint.start('app-overview', 'command-search', 'user');
 
         // Act
         const completed = await createProductTourActions().complete(checkpoint);
@@ -75,7 +75,7 @@ describe('product tour completion', () => {
 
     it('closes immediately when persistence cannot be saved', async () => {
         // Arrange
-        const checkpoint = productTourCheckpoint.start('app-overview', 'help', 'user');
+        const checkpoint = productTourCheckpoint.start('app-overview', 'command-search', 'user');
         mocks.mutateAsync.mockRejectedValueOnce(new Error('Unavailable'));
 
         // Act
@@ -89,7 +89,7 @@ describe('product tour completion', () => {
 
     it('closes immediately when completion persistence never settles', async () => {
         // Arrange
-        const checkpoint = productTourCheckpoint.start('saved-view-create', 'save-view', 'user');
+        const checkpoint = productTourCheckpoint.start('saved-view-create', 'name-view', 'user');
         mocks.mutateAsync.mockReturnValue(new Promise<void>(() => {}));
 
         // Act
@@ -102,7 +102,7 @@ describe('product tour completion', () => {
 
     it('does not submit completion for a dismissed checkpoint', async () => {
         // Arrange
-        const checkpoint = productTourCheckpoint.start('app-overview', 'help', 'user');
+        const checkpoint = productTourCheckpoint.start('app-overview', 'command-search', 'user');
         const actions = createProductTourActions();
 
         // Act
@@ -118,7 +118,7 @@ describe('product tour completion', () => {
 
     it('does not submit dismissal after another guide replaces the checkpoint', async () => {
         // Arrange
-        const previous = productTourCheckpoint.start('app-overview', 'help', 'user');
+        const previous = productTourCheckpoint.start('app-overview', 'command-search', 'user');
         const current = productTourCheckpoint.start('saved-view-create', 'open-view-menu', 'user');
 
         // Act
@@ -152,7 +152,7 @@ describe('product tour completion', () => {
 
     it('does not submit a second outcome while progress is being saved', async () => {
         // Arrange
-        const checkpoint = productTourCheckpoint.start('app-overview', 'help', 'user');
+        const checkpoint = productTourCheckpoint.start('app-overview', 'command-search', 'user');
         const pending = Promise.withResolvers<void>();
         mocks.mutateAsync.mockReturnValue(pending.promise);
         const actions = createProductTourActions();

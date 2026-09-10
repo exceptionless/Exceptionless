@@ -1,11 +1,8 @@
 import { getContext, setContext } from 'svelte';
 
 interface ProductTourControls {
-    closeOverlays: () => void;
-    getGuidedToursTarget: () => HTMLElement | undefined;
     getNavigationTarget: () => HTMLElement | undefined;
     openCatalog: () => void;
-    showGuidedToursMenu: () => void;
 }
 
 const PRODUCT_TOUR_CONTROLS_CONTEXT_KEY = Symbol.for('exceptionless-product-tour-controls');

@@ -5,6 +5,7 @@
     import * as Dialog from '$comp/ui/dialog';
     import Bookmark from '@lucide/svelte/icons/bookmark';
     import Bot from '@lucide/svelte/icons/bot';
+    import CircleCheck from '@lucide/svelte/icons/circle-check';
     import Folder from '@lucide/svelte/icons/folder';
     import Layers from '@lucide/svelte/icons/layers';
     import PanelLeft from '@lucide/svelte/icons/panel-left';
@@ -35,7 +36,7 @@
     <Dialog.Content class="max-h-[85vh] overflow-y-auto sm:max-w-2xl" data-product-tour-overlay>
         <Dialog.Header>
             <Dialog.Title>Guided Tours</Dialog.Title>
-            <Dialog.Description>Choose a short, step-by-step guide. Guides use your workspace, not sample data.</Dialog.Description>
+            <Dialog.Description>Take a quick look around, or get help with one task. You can stop and come back anytime.</Dialog.Description>
         </Dialog.Header>
 
         <ul aria-label="Available guides" class="divide-border divide-y">
@@ -50,7 +51,10 @@
                             <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
                                 <H3 class="text-sm">{item.title}</H3>
                                 {#if completed}
-                                    <Badge variant="secondary">Completed</Badge>
+                                    <Badge class="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" variant="secondary">
+                                        <CircleCheck aria-hidden="true" data-icon="inline-start" />
+                                        Completed
+                                    </Badge>
                                 {/if}
                             </div>
                             <Muted class="mt-1">{item.description}</Muted>

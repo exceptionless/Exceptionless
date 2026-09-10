@@ -18,7 +18,7 @@
 
     import { createProductTourActions } from '../actions.svelte';
     import { getProductTourItems, getRecommendedProductTourName } from '../catalog';
-    import { shouldOfferProductTourInvitation } from '../eligibility';
+    import { getProductTourRecordedAt, shouldOfferProductTourInvitation } from '../eligibility';
     import { productTourCheckpoint } from '../state.svelte';
     import ProductTourFeatureAnnouncement from './alerts/product-tour-feature-announcement.svelte';
     import ProductTourWelcome from './alerts/product-tour-welcome.svelte';
@@ -117,7 +117,7 @@
         hostStateSettled && !!currentUser && !checkpoint && !catalogOpen && !isAnyOverlayOpen && !isImpersonating && !isSetupPage
     );
     const canUpgrade = $derived(!!organizationId && !!assistantAccess?.upgrade_required && isStripeEnabled());
-    const welcomeEligible = $derived(shouldOfferProductTourInvitation(currentUser?.product_tours?.app_welcome));
+    const welcomeEligible = $derived(shouldOfferProductTourInvitation(getProductTourRecordedAt(currentUser?.product_tours, 'app_welcome', 'invitation')));
     const welcomeOpen = $derived(canShowInvitation && automaticSurface === 'welcome' && !pathname.startsWith(SYSTEM_PATH) && welcomeEligible);
     const exieAnnouncementOpen = $derived(
         !!(
@@ -126,7 +126,7 @@
             assistantAccess?.enabled &&
             (pathname.startsWith(EVENT_PATH) || pathname.startsWith(STACK_PATH)) &&
             !welcomeEligible &&
-            shouldOfferProductTourInvitation(currentUser?.product_tours?.exie_announcement)
+            shouldOfferProductTourInvitation(getProductTourRecordedAt(currentUser?.product_tours, 'exie_announcement', 'invitation'))
         )
     );
 
@@ -154,7 +154,7 @@
         if (
             assistantAccess?.enabled &&
             (pathname.startsWith(EVENT_PATH) || pathname.startsWith(STACK_PATH)) &&
-            shouldOfferProductTourInvitation(currentUser.product_tours?.exie_announcement)
+            shouldOfferProductTourInvitation(getProductTourRecordedAt(currentUser.product_tours, 'exie_announcement', 'invitation'))
         ) {
             automaticSurface = 'exie-announcement';
         }
@@ -189,7 +189,7 @@
 
     export async function openCatalog(): Promise<void> {
         const active = checkpoint;
-        if (active?.tourName === 'app-overview' && active.checkpointName === 'help' && !(await actions.complete(active))) {
+        if (active?.tourName === 'app-overview' && active.checkpointName === 'command-search' && !(await actions.complete(active))) {
             return;
         }
 

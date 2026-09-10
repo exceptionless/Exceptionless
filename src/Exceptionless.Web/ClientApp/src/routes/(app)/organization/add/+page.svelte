@@ -171,8 +171,8 @@
             checkpoint={projectConfigureCheckpoint}
             showProgress={false}
             description={projectConfigureCheckpoint.checkpointName === 'organization-name'
-                ? 'Give your workspace a name. Your projects and events belong to this organization.'
-                : 'Name your application or service, then submit the form to continue setup.'}
+                ? 'Choose a name for your team’s workspace.'
+                : 'Give your app a name, then continue to connect it.'}
             onDismiss={tourActions.dismiss}
             onPrevious={projectConfigureCheckpoint.checkpointName === 'project-name'
                 ? (checkpoint) => {

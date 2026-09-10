@@ -1,5 +1,4 @@
-import { appKeyboardShortcuts } from '$features/shared/keyboard-shortcuts';
-import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ProductTourCheckpoint } from '../models';
@@ -31,7 +30,7 @@ describe('ProductTourSpotlight', () => {
         vi.unstubAllGlobals();
     });
 
-    it('renders safe text and the shared Kbd component in the driver popover', async () => {
+    it('renders safe text and progress in the driver popover', async () => {
         // Arrange: beforeEach creates the spotlight target.
 
         // Act
@@ -40,7 +39,6 @@ describe('ProductTourSpotlight', () => {
                 checkpoint,
                 description: 'Search <not markup>',
                 onDismiss: vi.fn(async () => true),
-                shortcuts: [{ label: 'Search', shortcut: appKeyboardShortcuts.commandPalette }],
                 target,
                 title: 'Search'
             }
@@ -48,11 +46,8 @@ describe('ProductTourSpotlight', () => {
 
         // Assert
         expect(await screen.findByText('Search <not markup>')).toBeTruthy();
-        const key = screen.getByText('/');
-        expect(key.tagName).toBe('KBD');
-        expect(key.getAttribute('data-slot')).toBe('kbd');
         expect(screen.queryByRole('button', { name: 'Back' })).toBeNull();
-        expect(screen.getByText('Step 2 of 5')).toBeTruthy();
+        expect(screen.getByText('Step 6 of 6')).toBeTruthy();
 
         // Act
         cleanup();
@@ -111,7 +106,50 @@ describe('ProductTourSpotlight', () => {
         expect(onDismiss).toHaveBeenCalledExactlyOnceWith(checkpoint);
     });
 
-    it('disconnects its observer and keyboard listener when unmounted', async () => {
+    it('follows a moving target without a resize event', async () => {
+        // Arrange
+        let top = 80;
+        vi.spyOn(target, 'getBoundingClientRect').mockImplementation(() => new DOMRect(100, top, 100, 32));
+        render(ProductTourSpotlight, {
+            props: { checkpoint, description: 'Search', onDismiss: vi.fn(async () => true), side: 'bottom', target, title: 'Search' }
+        });
+        await screen.findByText('Search', { selector: '.driver-popover-title' });
+        await new Promise(requestAnimationFrame);
+        await new Promise(requestAnimationFrame);
+        const popover = document.querySelector<HTMLElement>('.product-tour-popover')!;
+        const originalPosition = popover.style.bottom;
+        const originalHighlight = document.querySelector('.driver-overlay path')?.getAttribute('d');
+
+        // Act: opening a menu moves its target without changing its size.
+        top = 220;
+
+        // Assert
+        await waitFor(() => expect(popover.style.bottom).not.toBe(originalPosition));
+        expect(document.querySelector('.driver-overlay path')?.getAttribute('d')).not.toBe(originalHighlight);
+    });
+
+    it('reattaches when a refreshed list replaces the target element', async () => {
+        // Arrange
+        target.dataset.tour = 'report';
+        render(ProductTourSpotlight, {
+            props: { checkpoint, description: 'Open this report', onDismiss: vi.fn(async () => true), target: '[data-tour="report"]', title: 'Report' }
+        });
+        await waitFor(() => expect(target.classList.contains('driver-active-element')).toBe(true));
+
+        // Act
+        const replacement = document.createElement('button');
+        replacement.dataset.tour = 'report';
+        replacement.scrollIntoView = vi.fn();
+        target.replaceWith(replacement);
+        target = replacement;
+
+        // Assert
+        await waitFor(() => expect(replacement.classList.contains('driver-active-element')).toBe(true));
+        expect(document.querySelectorAll('.product-tour-popover')).toHaveLength(1);
+        expect(screen.getByText('Open this report')).toBeTruthy();
+    });
+
+    it('removes its popover and keyboard listener when unmounted', async () => {
         // Arrange
         const disconnect = vi.fn();
         const onDismiss = vi.fn(async () => true);
@@ -130,7 +168,6 @@ describe('ProductTourSpotlight', () => {
         await fireEvent.keyDown(window, { key: 'Escape' });
 
         // Assert
-        expect(disconnect).toHaveBeenCalledOnce();
         expect(onDismiss).not.toHaveBeenCalled();
         expect(document.querySelector('.product-tour-popover')).toBeNull();
     });

@@ -63,6 +63,14 @@
         prepareStackAssistantContext
     }: Props = $props();
     let tourStackId = $state<string>();
+    let investigationTour: InvestigationDetailTour | undefined;
+
+    async function showAllEvents(): Promise<void> {
+        if (event?.stack_id) {
+            await investigationTour?.completeComparison();
+            filterChanged(new EventsFacetedFilter.StringFilter('stack', event.stack_id));
+        }
+    }
 
     function getTabs(event?: null | PersistentEvent, project?: ViewProject): TabType[] {
         if (!event) {
@@ -335,7 +343,7 @@
 
 <section>
     <h4 class="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">Stack</h4>
-    <InvestigationDetailTour event={tourStackId === event?.stack_id ? event : undefined} />
+    <InvestigationDetailTour bind:this={investigationTour} event={tourStackId === event?.stack_id ? event : undefined} onCompareEvents={showAllEvents} />
     {#if event?.stack_id}
         <StackCard
             {assistantResource}
@@ -357,14 +365,7 @@
                 </Button>
             {/if}
             {#if event?.stack_id}
-                <Button
-                    aria-label="Show all events"
-                    data-tour="stack-events"
-                    onclick={() => filterChanged(new EventsFacetedFilter.StringFilter('stack', event!.stack_id))}
-                    size="icon-sm"
-                    title="Show all events"
-                    variant="outline"
-                >
+                <Button aria-label="Show all events" data-tour="stack-events" onclick={showAllEvents} size="icon-sm" title="Show all events" variant="outline">
                     <EventsIcon class="size-4" />
                 </Button>
             {/if}

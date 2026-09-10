@@ -10,9 +10,10 @@
 
     interface Props {
         event?: PersistentEvent;
+        onCompareEvents: () => Promise<void>;
     }
 
-    let { event }: Props = $props();
+    let { event, onCompareEvents }: Props = $props();
 
     const actions = createProductTourActions();
     const firstDetailCheckpoint = 'stack-summary';
@@ -21,35 +22,23 @@
     const stepIndex = $derived(checkpoint ? steps.indexOf(checkpoint.checkpointName) : -1);
     const copy = $derived.by(() => {
         switch (checkpoint?.checkpointName) {
-            case 'event-occurrence':
-                return {
-                    description: 'An occurrence is one event. This is when it happened. Use the buttons beside Event to view JSON or browse older occurrences.',
-                    target: '[data-tour="event-occurrence"]',
-                    title: 'Inspect the occurrence'
-                };
             case 'filter-stack-events':
                 return {
-                    description: 'Select “Show all events” to compare occurrences of this stack. You can also finish this guide and keep exploring this event.',
+                    description: 'Use Show all events to see the other reports of this same problem.',
                     target: '[data-tour="stack-events"]',
-                    title: 'Compare every occurrence'
+                    title: 'See related reports'
                 };
             case firstDetailCheckpoint:
                 return {
-                    description: 'A stack groups similar events. Check its event count and users affected.',
+                    description: 'See how often this problem happens and how many people it affects.',
                     target: '[data-tour="stack-metrics"]',
-                    title: 'Understand the grouped issue'
-                };
-            case 'stack-triage':
-                return {
-                    description: 'Status changes affect everyone in the project. This guide does not change the status.',
-                    target: '[data-tour="stack-status"]',
-                    title: 'Review the issue status'
+                    title: 'See the impact'
                 };
             case 'tab-overview':
                 return {
-                    description: 'Select “Overview” to read the message and event details. Other tabs show more context.',
+                    description: 'Overview has the error message and details about where it happened.',
                     target: '[data-tour="event-overview"]',
-                    title: 'Begin with the overview'
+                    title: 'Read what happened'
                 };
             default:
                 return undefined;
@@ -63,6 +52,12 @@
         }
     });
 
+    export async function completeComparison(): Promise<void> {
+        if (checkpoint?.checkpointName === 'filter-stack-events') {
+            await actions.complete(checkpoint);
+        }
+    }
+
     async function continueTour(): Promise<void> {
         const active = checkpoint;
         if (!active) {
@@ -73,7 +68,7 @@
         if (next) {
             productTourCheckpoint.advance(active, next);
         } else {
-            await actions.complete(active);
+            await onCompareEvents();
         }
     }
 
@@ -89,11 +84,12 @@
     {#key checkpoint}
         <ProductTourSpotlight
             {checkpoint}
-            continueLabel={checkpoint.checkpointName === 'filter-stack-events' ? 'Finish guide' : 'Continue'}
+            continueLabel={checkpoint.checkpointName === 'filter-stack-events' ? 'Show all events' : 'Next'}
             description={copy.description}
             onNext={continueTour}
             onPrevious={stepIndex > steps.indexOf(firstDetailCheckpoint) ? back : undefined}
             onDismiss={actions.dismiss}
+            side="bottom"
             target={copy.target}
             title={copy.title}
         />

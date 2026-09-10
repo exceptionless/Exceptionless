@@ -47,7 +47,7 @@ export function createProductTourActions() {
     }
 
     function showCompletion(checkpoint: ProductTourCheckpoint): void {
-        // The overview hands off to the Help menu; a toast would cover that menu.
+        // The overview ends beside Search, where tours can be reopened.
         if (checkpoint.tourName !== 'app-overview') {
             toast.success(COMPLETION_MESSAGES[checkpoint.tourName], {
                 action: controls
@@ -56,7 +56,7 @@ export function createProductTourActions() {
                           onClick: controls.openCatalog
                       }
                     : undefined,
-                description: 'For more guides, select your name in the sidebar → Help → Guided Tours.'
+                description: 'Find more tours in Search → Guided Tours.'
             });
         }
     }

@@ -14,7 +14,7 @@ afterEach(() => {
 
 describe('ProductTourShellSpotlight', () => {
     it.each([undefined, { enabled: true, has_access: false, upgrade_required: true }])(
-        'resumes an unavailable Exie checkpoint at Help: %j',
+        'resumes an unavailable Exie checkpoint at Search: %j',
         async (assistantAccess) => {
             // Arrange
             productTourCheckpoint.start('app-overview', 'exie', 'user');
@@ -30,7 +30,7 @@ describe('ProductTourShellSpotlight', () => {
             });
 
             // Assert
-            await waitFor(() => expect(productTourCheckpoint.current?.checkpointName).toBe('help'));
+            await waitFor(() => expect(productTourCheckpoint.current?.checkpointName).toBe('command-search'));
             expect(productTourCheckpoint.current?.tourName).toBe('app-overview');
         }
     );
