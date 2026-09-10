@@ -97,7 +97,7 @@
         "layerchart": "^2.3.0",
         "mode-watcher": "^1.1.0",
         "oidc-client-ts": "^3.5.0",
-        "pretty-ms": "^9.3.0",
+        "pretty-ms": "^9.3.1",
         "runed": "^0.37.1",
         "shiki": "^4.4.3",
         "streamdown-svelte": "^3.0.6",
