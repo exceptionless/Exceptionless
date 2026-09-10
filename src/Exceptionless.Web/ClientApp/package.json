@@ -40,7 +40,7 @@
         "@playwright/test": "^1.62.1",
         "@storybook/addon-a11y": "^10.5.10",
         "@storybook/addon-docs": "^10.5.10",
-        "@storybook/addon-svelte-csf": "^5.1.2",
+        "@storybook/addon-svelte-csf": "^5.1.3",
         "@storybook/sveltekit": "^10.5.10",
         "@stylistic/eslint-plugin": "^5.10.0",
         "@sveltejs/adapter-static": "^3.0.10",
