@@ -79,3 +79,42 @@ test('stack, session, and stream filters retain names with no current events', a
         await expect(page.getByRole('button', { name: /^Environment\s+qa,east/ })).toBeVisible();
     }
 });
+
+test('environment choices use the saved view time range', async ({ e2eScenario, page, request }) => {
+    const time = '[now-7d TO now]';
+    for (const [route, viewType] of [
+        ['event', 'events'],
+        ['stack', 'stacks'],
+        ['sessions', 'sessions']
+    ]) {
+        const slug = `environment-time-${route}-${e2eScenario.run.slice(-20)}`
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-|-$/g, '');
+        const name = `Environment time ${route}`;
+        const response = await request.post(`/api/v2/organizations/${e2eScenario.organizationId}/saved-views`, {
+            data: {
+                filter: `project:${e2eScenario.projectId}`,
+                name,
+                organization_id: e2eScenario.organizationId,
+                slug,
+                time,
+                view_type: viewType
+            },
+            headers: { Authorization: `Bearer ${e2eScenario.userToken}` }
+        });
+        expect(response.status(), await response.text()).toBe(201);
+        await page.goto(`/next/${route}/${slug}`);
+        await expect(page.getByRole('heading', { exact: true, name })).toBeVisible();
+        expect(new URL(page.url()).searchParams.get('time')).toBeNull();
+        await page.getByRole('button', { name: 'Manage filters' }).click();
+        await page.getByPlaceholder('Search...').fill('Environment');
+        const facetRequest = page.waitForRequest((request) => {
+            const url = new URL(request.url());
+            return url.pathname.endsWith('/events/count') && url.searchParams.get('aggregations') === 'terms:(environment~100)';
+        });
+        await page.getByText('Environment', { exact: true }).click();
+        expect(new URL((await facetRequest).url()).searchParams.get('time')).toBe(time);
+        await page.keyboard.press('Escape');
+    }
+});
