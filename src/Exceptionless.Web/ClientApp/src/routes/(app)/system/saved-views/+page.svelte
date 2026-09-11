@@ -37,28 +37,20 @@
         return error instanceof ProblemDetails ? error.title : fallback;
     }
 
-    async function loadPredefinedSavedViews() {
-        toast.dismiss(toastId);
-
-        try {
-            predefinedJson = await predefinedSavedViews.mutateAsync();
-            savedPredefinedJson = predefinedJson;
-        } catch (error: unknown) {
-            toastId = toast.error(`An error occurred while loading predefined saved views: ${getErrorMessage(error, 'Please try again.')}`);
-        }
+    function handleCancelEdit() {
+        predefinedJson = savedPredefinedJson;
+        isEditing = false;
     }
 
-    async function loadOrganizationViews() {
-        if (!organizationId) {
-            return;
-        }
-
+    async function handleForceUpdatePredefined() {
         toast.dismiss(toastId);
 
         try {
-            predefinedJson = await organizationExport.mutateAsync(organizationId);
+            await forceUpdatePredefined.mutateAsync();
+            forceUpdateOpen = false;
+            toastId = toast.success('Force update of matching organization saved views was queued.');
         } catch (error: unknown) {
-            toastId = toast.error(`An error occurred while loading organization views: ${getErrorMessage(error, 'Please try again.')}`);
+            toastId = toast.error(`An error occurred while queuing the force update: ${getErrorMessage(error, 'Please try again.')}`);
         }
     }
 
@@ -85,20 +77,28 @@
         }
     }
 
-    function handleCancelEdit() {
-        predefinedJson = savedPredefinedJson;
-        isEditing = false;
-    }
+    async function loadOrganizationViews() {
+        if (!organizationId) {
+            return;
+        }
 
-    async function handleForceUpdatePredefined() {
         toast.dismiss(toastId);
 
         try {
-            await forceUpdatePredefined.mutateAsync();
-            forceUpdateOpen = false;
-            toastId = toast.success('Force update of matching organization saved views was queued.');
+            predefinedJson = await organizationExport.mutateAsync(organizationId);
         } catch (error: unknown) {
-            toastId = toast.error(`An error occurred while queuing the force update: ${getErrorMessage(error, 'Please try again.')}`);
+            toastId = toast.error(`An error occurred while loading organization views: ${getErrorMessage(error, 'Please try again.')}`);
+        }
+    }
+
+    async function loadPredefinedSavedViews() {
+        toast.dismiss(toastId);
+
+        try {
+            predefinedJson = await predefinedSavedViews.mutateAsync();
+            savedPredefinedJson = predefinedJson;
+        } catch (error: unknown) {
+            toastId = toast.error(`An error occurred while loading predefined saved views: ${getErrorMessage(error, 'Please try again.')}`);
         }
     }
 

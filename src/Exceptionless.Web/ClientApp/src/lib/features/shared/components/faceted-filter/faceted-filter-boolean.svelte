@@ -28,26 +28,8 @@
         updatedValue = value;
     });
 
-    function handleRadioChange(selectedValue: string) {
-        if (selectedValue === 'yes') {
-            updatedValue = true;
-        } else if (selectedValue === 'no') {
-            updatedValue = false;
-        } else if (selectedValue === 'no-value') {
-            updatedValue = undefined;
-        }
-
-        changed(updatedValue);
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            applyAndClose();
-        } else if (event.key === 'Escape') {
-            event.preventDefault();
-            cancelAndClose();
-        }
+    export function onClearFilter() {
+        updatedValue = undefined;
     }
 
     function applyAndClose() {
@@ -60,10 +42,26 @@
         open = false;
     }
 
-    function onOpenChange(isOpen: boolean) {
-        if (!isOpen) {
-            open = false;
+    function handleKeyDown(event: KeyboardEvent) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            applyAndClose();
+        } else if (event.key === 'Escape') {
+            event.preventDefault();
+            cancelAndClose();
         }
+    }
+
+    function handleRadioChange(selectedValue: string) {
+        if (selectedValue === 'yes') {
+            updatedValue = true;
+        } else if (selectedValue === 'no') {
+            updatedValue = false;
+        } else if (selectedValue === 'no-value') {
+            updatedValue = undefined;
+        }
+
+        changed(updatedValue);
     }
 
     function onEscapeKeydown(e: KeyboardEvent) {
@@ -71,8 +69,10 @@
         cancelAndClose();
     }
 
-    export function onClearFilter() {
-        updatedValue = undefined;
+    function onOpenChange(isOpen: boolean) {
+        if (!isOpen) {
+            open = false;
+        }
     }
 </script>
 

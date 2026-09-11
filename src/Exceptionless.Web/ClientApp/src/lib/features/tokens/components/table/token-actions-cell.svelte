@@ -47,20 +47,20 @@
         }
     });
 
-    async function updateDisabled(is_disabled: boolean) {
-        await updateToken.mutateAsync({
-            is_disabled,
-            notes: token.notes
-        });
-        toast.success(`Successfully ${is_disabled ? 'disabled' : 'enabled'} token`);
-    }
-
     function onEnableDisableClick() {
         if (token.is_disabled) {
             showEnableTokenDialog = true;
         } else {
             showDisableTokenDialog = true;
         }
+    }
+
+    async function updateDisabled(is_disabled: boolean) {
+        await updateToken.mutateAsync({
+            is_disabled,
+            notes: token.notes
+        });
+        toast.success(`Successfully ${is_disabled ? 'disabled' : 'enabled'} token`);
     }
 
     async function updateNotes(notes?: string) {

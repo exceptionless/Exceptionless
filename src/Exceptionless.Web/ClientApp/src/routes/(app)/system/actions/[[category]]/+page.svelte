@@ -73,11 +73,6 @@
 
     const destructiveCount = $derived(filteredActions.filter((a) => a.dangerous).length);
 
-    function handleRun(action: MaintenanceAction) {
-        selectedAction = action;
-        openDialog = true;
-    }
-
     async function handleConfirm(params: Parameters<typeof runJob.mutateAsync>[0]) {
         toast.dismiss(toastId);
         try {
@@ -88,6 +83,11 @@
             toastId = toast.error(`An error occurred while starting the job: ${message}`);
             throw error;
         }
+    }
+
+    function handleRun(action: MaintenanceAction) {
+        selectedAction = action;
+        openDialog = true;
     }
 </script>
 

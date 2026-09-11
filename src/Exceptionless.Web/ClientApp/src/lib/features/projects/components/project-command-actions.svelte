@@ -127,16 +127,23 @@
         }
     });
 
-    function selectAction(action: ProjectAction): void {
-        selectedActionId = action.id;
-        selectingProject = true;
-        onSearchReset();
+    function closeForProject(project: ViewProject): void {
+        organization.current = project.organization_id;
+        onSelect();
     }
 
-    function goBack(): void {
-        selectedActionId = undefined;
-        selectingProject = false;
-        onSearchReset();
+    async function generateProjectSampleData(project: ViewProject): Promise<void> {
+        closeForProject(project);
+        sampleDataProjectId = project.id;
+
+        try {
+            await generateSampleDataMutation.mutateAsync();
+            toast.success(`Sample data generation has been queued for "${project.name}". Events will appear shortly.`);
+        } catch {
+            toast.error(`Failed to generate sample data for "${project.name}". Please try again.`);
+        } finally {
+            sampleDataProjectId = undefined;
+        }
     }
 
     function getProjectHref(action: ProjectActionId, project: ViewProject): string | undefined {
@@ -172,28 +179,21 @@
         }
     }
 
-    function closeForProject(project: ViewProject): void {
-        organization.current = project.organization_id;
-        onSelect();
-    }
-
-    async function generateProjectSampleData(project: ViewProject): Promise<void> {
-        closeForProject(project);
-        sampleDataProjectId = project.id;
-
-        try {
-            await generateSampleDataMutation.mutateAsync();
-            toast.success(`Sample data generation has been queued for "${project.name}". Events will appear shortly.`);
-        } catch {
-            toast.error(`Failed to generate sample data for "${project.name}". Please try again.`);
-        } finally {
-            sampleDataProjectId = undefined;
-        }
+    function goBack(): void {
+        selectedActionId = undefined;
+        selectingProject = false;
+        onSearchReset();
     }
 
     function openResetProjectDataDialog(project: ViewProject): void {
         closeForProject(project);
         onReset(project);
+    }
+
+    function selectAction(action: ProjectAction): void {
+        selectedActionId = action.id;
+        selectingProject = true;
+        onSearchReset();
     }
 
     function selectProject(project: ViewProject): void {

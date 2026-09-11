@@ -19,34 +19,6 @@
     let wrapperElement = $state<HTMLDivElement | null>(null);
     let tableScrollContainer: HTMLDivElement | null = null;
 
-    function updateHorizontalOverflow(): void {
-        if (!tableScrollContainer) {
-            return;
-        }
-
-        horizontalScrollWidth = tableScrollContainer.scrollWidth;
-        hasHorizontalOverflow = horizontalScrollWidth > tableScrollContainer.clientWidth + 1;
-
-        const maximumScrollLeft = horizontalScrollWidth - tableScrollContainer.clientWidth;
-        horizontalScrollMaximum = Math.max(0, maximumScrollLeft);
-        horizontalScrollPosition = tableScrollContainer.scrollLeft;
-        canScrollLeft = hasHorizontalOverflow && tableScrollContainer.scrollLeft > 1;
-        canScrollRight = hasHorizontalOverflow && tableScrollContainer.scrollLeft < maximumScrollLeft - 1;
-
-        if (floatingScrollbarElement && floatingScrollbarElement.scrollLeft !== tableScrollContainer.scrollLeft) {
-            floatingScrollbarElement.scrollLeft = tableScrollContainer.scrollLeft;
-        }
-    }
-
-    function onFloatingScrollbarScroll(): void {
-        if (!floatingScrollbarElement || !tableScrollContainer) {
-            return;
-        }
-
-        tableScrollContainer.scrollLeft = floatingScrollbarElement.scrollLeft;
-        updateHorizontalOverflow();
-    }
-
     function onFloatingScrollbarKeydown(event: KeyboardEvent): void {
         if (!floatingScrollbarElement || !tableScrollContainer) {
             return;
@@ -79,6 +51,34 @@
         event.preventDefault();
         floatingScrollbarElement.scrollLeft = Math.min(horizontalScrollMaximum, Math.max(0, nextPosition));
         onFloatingScrollbarScroll();
+    }
+
+    function onFloatingScrollbarScroll(): void {
+        if (!floatingScrollbarElement || !tableScrollContainer) {
+            return;
+        }
+
+        tableScrollContainer.scrollLeft = floatingScrollbarElement.scrollLeft;
+        updateHorizontalOverflow();
+    }
+
+    function updateHorizontalOverflow(): void {
+        if (!tableScrollContainer) {
+            return;
+        }
+
+        horizontalScrollWidth = tableScrollContainer.scrollWidth;
+        hasHorizontalOverflow = horizontalScrollWidth > tableScrollContainer.clientWidth + 1;
+
+        const maximumScrollLeft = horizontalScrollWidth - tableScrollContainer.clientWidth;
+        horizontalScrollMaximum = Math.max(0, maximumScrollLeft);
+        horizontalScrollPosition = tableScrollContainer.scrollLeft;
+        canScrollLeft = hasHorizontalOverflow && tableScrollContainer.scrollLeft > 1;
+        canScrollRight = hasHorizontalOverflow && tableScrollContainer.scrollLeft < maximumScrollLeft - 1;
+
+        if (floatingScrollbarElement && floatingScrollbarElement.scrollLeft !== tableScrollContainer.scrollLeft) {
+            floatingScrollbarElement.scrollLeft = tableScrollContainer.scrollLeft;
+        }
     }
 
     onMount(() => {

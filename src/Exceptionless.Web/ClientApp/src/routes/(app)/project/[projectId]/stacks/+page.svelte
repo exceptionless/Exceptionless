@@ -139,6 +139,10 @@
         queryParams.sort ??= '-last';
     });
 
+    function handleTagClick(tag: string) {
+        onFilterChanged(new TagFilter([tag]));
+    }
+
     function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter) {
         if (!isStackFilterSupported(addedOrUpdated)) {
             toast.error(`"${describeStackFilter(addedOrUpdated)}" is not supported in stack management.`);
@@ -175,10 +179,6 @@
         updateFilterCache(filterCacheKey(filter), sanitizedFilters);
         queryParams.page = 1;
         queryParams.filter = filter;
-    }
-
-    function handleTagClick(tag: string) {
-        onFilterChanged(new TagFilter([tag]));
     }
 
     const stacksQueryParameters: GetProjectStacksParams = $state({
@@ -219,21 +219,6 @@
         }
     });
 
-    function rowHref(row: Stack): string {
-        return resolve('/(app)/project/[projectId]/stacks/[stackId]', {
-            projectId: projectId ?? '',
-            stackId: row.id
-        });
-    }
-
-    function rowClick(row: Stack): void {
-        selectedStackId = row.id;
-    }
-
-    async function handleStackFilterChanged(filter: IFilter): Promise<void> {
-        await redirectToEventsWithFilter(organization.current, filter, getEventsNavigationOptionsForFilter(filter));
-    }
-
     function handleStackError(problem: ProblemDetails): void {
         selectedStackId = undefined;
         if (!showBillingDialogOnUpgradeProblem(problem, organization.current)) {
@@ -241,12 +226,22 @@
         }
     }
 
-    const table = createTable(getTableOptions(stacksQueryParameters, stacksQuery, handleTagClick));
-
-    function reset() {
-        table.resetRowSelection();
-        table.setPageIndex(0);
+    async function handleStackFilterChanged(filter: IFilter): Promise<void> {
+        await redirectToEventsWithFilter(organization.current, filter, getEventsNavigationOptionsForFilter(filter));
     }
+
+    function rowClick(row: Stack): void {
+        selectedStackId = row.id;
+    }
+
+    function rowHref(row: Stack): string {
+        return resolve('/(app)/project/[projectId]/stacks/[stackId]', {
+            projectId: projectId ?? '',
+            stackId: row.id
+        });
+    }
+
+    const table = createTable(getTableOptions(stacksQueryParameters, stacksQuery, handleTagClick));
 
     async function handleRefresh() {
         table.resetRowSelection();
@@ -265,6 +260,11 @@
 
             removeTableSelection(table, message.id);
         }
+    }
+
+    function reset() {
+        table.resetRowSelection();
+        table.setPageIndex(0);
     }
 
     useEventListener(document, 'StackChanged', (event) => onStackChanged((event as CustomEvent).detail));

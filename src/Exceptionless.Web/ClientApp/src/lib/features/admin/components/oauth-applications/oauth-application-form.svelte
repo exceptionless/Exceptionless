@@ -107,6 +107,10 @@
         };
     }
 
+    function isScopeChecked(scopes: string[], scope: string) {
+        return scopes.includes(scope);
+    }
+
     function toRequest(value: OAuthApplicationFormData): OAuthApplicationRequest {
         return {
             client_id: value.client_id.trim(),
@@ -119,10 +123,6 @@
                 .filter(Boolean),
             scopes: value.scopes
         };
-    }
-
-    function isScopeChecked(scopes: string[], scope: string) {
-        return scopes.includes(scope);
     }
 </script>
 

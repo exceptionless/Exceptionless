@@ -72,14 +72,8 @@
         queryParams.page ??= 1;
     });
 
-    function setCriteria(value: string) {
-        applicationQueryParameters.page = 1;
-        applicationQueryParameters.criteria = value;
-    }
-
-    function setOrganization(value: string) {
-        applicationQueryParameters.page = 1;
-        applicationQueryParameters.organization = value;
+    async function rowClick(application: OAuthApplication) {
+        await goto(rowHref(application));
     }
 
     function rowHref(application: OAuthApplication) {
@@ -88,8 +82,14 @@
         });
     }
 
-    async function rowClick(application: OAuthApplication) {
-        await goto(rowHref(application));
+    function setCriteria(value: string) {
+        applicationQueryParameters.page = 1;
+        applicationQueryParameters.criteria = value;
+    }
+
+    function setOrganization(value: string) {
+        applicationQueryParameters.page = 1;
+        applicationQueryParameters.organization = value;
     }
 </script>
 

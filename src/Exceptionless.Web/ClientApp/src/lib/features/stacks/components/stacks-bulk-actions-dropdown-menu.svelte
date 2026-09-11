@@ -63,18 +63,13 @@
         }
     });
 
-    async function markOpen() {
-        try {
-            await changeStatus.mutateAsync(StackStatus.Open);
-        } catch (error) {
-            toast.error(getProblemMessage(error, 'Unable to change stack status.'));
-            return;
-        }
+    async function markDiscarded() {
+        await changeStatus.mutateAsync(StackStatus.Discarded);
 
         if (ids.length === 1) {
-            toast.success('Successfully marked stack as open.');
+            toast.success('Successfully marked stack as discarded.');
         } else {
-            toast.success(`Successfully marked ${Intl.NumberFormat().format(ids.length)} stacks as open.`);
+            toast.success(`Successfully marked ${Intl.NumberFormat().format(ids.length)} stacks as discarded.`);
         }
 
         table.resetRowSelection();
@@ -87,6 +82,40 @@
             toast.success('Successfully marked stack as fixed.');
         } else {
             toast.success(`Successfully marked ${Intl.NumberFormat().format(ids.length)} stacks as fixed.`);
+        }
+
+        table.resetRowSelection();
+    }
+
+    async function markIgnored() {
+        try {
+            await changeStatus.mutateAsync(StackStatus.Ignored);
+        } catch (error) {
+            toast.error(getProblemMessage(error, 'Unable to change stack status.'));
+            return;
+        }
+
+        if (ids.length === 1) {
+            toast.success('Successfully marked stack as ignored.');
+        } else {
+            toast.success(`Successfully marked ${Intl.NumberFormat().format(ids.length)} stacks as ignored.`);
+        }
+
+        table.resetRowSelection();
+    }
+
+    async function markOpen() {
+        try {
+            await changeStatus.mutateAsync(StackStatus.Open);
+        } catch (error) {
+            toast.error(getProblemMessage(error, 'Unable to change stack status.'));
+            return;
+        }
+
+        if (ids.length === 1) {
+            toast.success('Successfully marked stack as open.');
+        } else {
+            toast.success(`Successfully marked ${Intl.NumberFormat().format(ids.length)} stacks as open.`);
         }
 
         table.resetRowSelection();
@@ -121,35 +150,6 @@
             toast.success('Successfully marked stack as snoozed.');
         } else {
             toast.success(`Successfully marked ${Intl.NumberFormat().format(ids.length)} stacks as snoozed.`);
-        }
-
-        table.resetRowSelection();
-    }
-
-    async function markIgnored() {
-        try {
-            await changeStatus.mutateAsync(StackStatus.Ignored);
-        } catch (error) {
-            toast.error(getProblemMessage(error, 'Unable to change stack status.'));
-            return;
-        }
-
-        if (ids.length === 1) {
-            toast.success('Successfully marked stack as ignored.');
-        } else {
-            toast.success(`Successfully marked ${Intl.NumberFormat().format(ids.length)} stacks as ignored.`);
-        }
-
-        table.resetRowSelection();
-    }
-
-    async function markDiscarded() {
-        await changeStatus.mutateAsync(StackStatus.Discarded);
-
-        if (ids.length === 1) {
-            toast.success('Successfully marked stack as discarded.');
-        } else {
-            toast.success(`Successfully marked ${Intl.NumberFormat().format(ids.length)} stacks as discarded.`);
         }
 
         table.resetRowSelection();

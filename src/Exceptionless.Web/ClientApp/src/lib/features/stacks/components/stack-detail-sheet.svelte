@@ -36,6 +36,11 @@
               : '#'
     );
 
+    function handleClose(): void {
+        assistantPageContext.clearOverlay(assistantContextOwner);
+        onClose();
+    }
+
     function handleEventLoaded(event: PersistentEvent): void {
         currentEventDetails = {
             eventId: event.id,
@@ -57,11 +62,6 @@
                 stackId
             });
         }
-    }
-
-    function handleClose(): void {
-        assistantPageContext.clearOverlay(assistantContextOwner);
-        onClose();
     }
 
     $effect(() => {

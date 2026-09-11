@@ -33,8 +33,64 @@
         getFillerColumnCount
     });
 
+    function getCellClass(cell: Cell<StockFeatures, TData, unknown>) {
+        if (cell.column.id === 'select') {
+            return selectColumnClass;
+        }
+
+        const isOnlyDataColumn = getVisibleDataColumnCount() === 1;
+        const metaClass = isOnlyDataColumn ? removeWidthClasses(getMetaClass(cell.column.columnDef.meta)) : getMetaClass(cell.column.columnDef.meta);
+        const contentClass = isColumnWrapped(cell.column)
+            ? 'group/wrapped whitespace-normal break-words [&_.line-clamp-1]:line-clamp-none [&_.line-clamp-2]:line-clamp-none'
+            : 'truncate';
+        const classes = rowClick
+            ? ['cursor-pointer', contentClass, !isOnlyDataColumn && 'max-w-sm', metaClass]
+            : [contentClass, !isOnlyDataColumn && 'max-w-sm', metaClass];
+        return classes.filter(Boolean).join(' ');
+    }
+
+    function getClientPosition(event: MouseEvent | TouchEvent): number | undefined {
+        return event instanceof TouchEvent ? event.touches[0]?.clientX : event.clientX;
+    }
+
+    function getColumnStyle(column: Cell<StockFeatures, TData, unknown>['column'] | Header<StockFeatures, TData, unknown>['column']): string | undefined {
+        if (column.id === 'select') {
+            return `width: ${selectColumnWidth}px; min-width: ${selectColumnWidth}px; max-width: ${selectColumnWidth}px;`;
+        }
+
+        if (hasSelectColumn() && column.id === getFlexibleDataColumnId()) {
+            return 'width: 100%;';
+        }
+
+        if (!column.getCanResize() || getVisibleDataColumnCount() === 1) {
+            return undefined;
+        }
+
+        return `width: ${column.getSize()}px; min-width: ${column.getSize()}px; max-width: ${column.getSize()}px;`;
+    }
+
     function getFillerColumnCount(): number {
         return hasSelectColumn() && !getFlexibleDataColumnId() ? 1 : 0;
+    }
+
+    function getFlexibleDataColumnId(): string | undefined {
+        const columnSizing = table.atoms.columnSizing?.get() ?? {};
+        const visibleDataColumns = getVisibleDataColumns();
+        if (autoFillColumnId !== undefined) {
+            if (autoFillColumnId === null) {
+                return undefined;
+            }
+
+            const autoFillColumn = visibleDataColumns.find((column) => column.id === autoFillColumnId);
+            return autoFillColumn && columnSizing[autoFillColumn.id] === undefined ? autoFillColumn.id : undefined;
+        }
+
+        const fullWidthColumns = visibleDataColumns.filter((column) => getMetaClass(column.columnDef.meta).split(' ').includes('w-full'));
+        if (fullWidthColumns.length > 0) {
+            return fullWidthColumns.find((column) => columnSizing[column.id] === undefined)?.id;
+        }
+
+        return visibleDataColumns.filter((column) => columnSizing[column.id] === undefined).at(-1)?.id;
     }
 
     function getHeaderColumnClass(header: Header<StockFeatures, TData, unknown>) {
@@ -59,76 +115,21 @@
         return className;
     }
 
-    function getCellClass(cell: Cell<StockFeatures, TData, unknown>) {
-        if (cell.column.id === 'select') {
-            return selectColumnClass;
-        }
-
-        const isOnlyDataColumn = getVisibleDataColumnCount() === 1;
-        const metaClass = isOnlyDataColumn ? removeWidthClasses(getMetaClass(cell.column.columnDef.meta)) : getMetaClass(cell.column.columnDef.meta);
-        const contentClass = isColumnWrapped(cell.column)
-            ? 'group/wrapped whitespace-normal break-words [&_.line-clamp-1]:line-clamp-none [&_.line-clamp-2]:line-clamp-none'
-            : 'truncate';
-        const classes = rowClick
-            ? ['cursor-pointer', contentClass, !isOnlyDataColumn && 'max-w-sm', metaClass]
-            : [contentClass, !isOnlyDataColumn && 'max-w-sm', metaClass];
-        return classes.filter(Boolean).join(' ');
-    }
-
-    function isColumnWrapped(column: Cell<StockFeatures, TData, unknown>['column']): boolean {
-        return supportsColumnWrapping(column.columnDef.meta) && wrappedColumnIds.includes(column.id);
-    }
-
     function getHeaderContentClass(header: Header<StockFeatures, TData, unknown>, headerClass: string): string {
         return header.column.getCanResize() ? removeWidthClasses(headerClass) : headerClass;
-    }
-
-    function getColumnStyle(column: Cell<StockFeatures, TData, unknown>['column'] | Header<StockFeatures, TData, unknown>['column']): string | undefined {
-        if (column.id === 'select') {
-            return `width: ${selectColumnWidth}px; min-width: ${selectColumnWidth}px; max-width: ${selectColumnWidth}px;`;
-        }
-
-        if (hasSelectColumn() && column.id === getFlexibleDataColumnId()) {
-            return 'width: 100%;';
-        }
-
-        if (!column.getCanResize() || getVisibleDataColumnCount() === 1) {
-            return undefined;
-        }
-
-        return `width: ${column.getSize()}px; min-width: ${column.getSize()}px; max-width: ${column.getSize()}px;`;
     }
 
     function getMetaClass(meta: unknown): string {
         return getDataTableColumnMeta(meta).class ?? '';
     }
 
-    function getFlexibleDataColumnId(): string | undefined {
-        const columnSizing = table.atoms.columnSizing?.get() ?? {};
-        const visibleDataColumns = getVisibleDataColumns();
-        if (autoFillColumnId !== undefined) {
-            if (autoFillColumnId === null) {
-                return undefined;
-            }
-
-            const autoFillColumn = visibleDataColumns.find((column) => column.id === autoFillColumnId);
-            return autoFillColumn && columnSizing[autoFillColumn.id] === undefined ? autoFillColumn.id : undefined;
+    function getResizeStartSize(event: KeyboardEvent | MouseEvent | TouchEvent, header: Header<StockFeatures, TData, unknown>): number {
+        if (header.column.id !== getFlexibleDataColumnId()) {
+            return header.column.getSize();
         }
 
-        const fullWidthColumns = visibleDataColumns.filter((column) => getMetaClass(column.columnDef.meta).split(' ').includes('w-full'));
-        if (fullWidthColumns.length > 0) {
-            return fullWidthColumns.find((column) => columnSizing[column.id] === undefined)?.id;
-        }
-
-        return visibleDataColumns.filter((column) => columnSizing[column.id] === undefined).at(-1)?.id;
-    }
-
-    function getVisibleDataColumnCount(): number {
-        return getVisibleDataColumns().length;
-    }
-
-    function getVisibleDataColumns() {
-        return table.getVisibleLeafColumns().filter((column) => column.id !== 'select');
+        const headerElement = (event.currentTarget as HTMLElement | null)?.closest('th');
+        return headerElement?.getBoundingClientRect().width || header.column.getSize();
     }
 
     function getTableStyle(): string | undefined {
@@ -140,8 +141,26 @@
         return getFlexibleDataColumnId() ? `min-width: ${minimumWidth}px;` : `width: 100%; min-width: ${minimumWidth}px;`;
     }
 
+    function getVisibleDataColumnCount(): number {
+        return getVisibleDataColumns().length;
+    }
+
+    function getVisibleDataColumns() {
+        return table.getVisibleLeafColumns().filter((column) => column.id !== 'select');
+    }
+
+    function handleAutoFillColumnResize(header: Header<StockFeatures, TData, unknown>): void {
+        if (header.column.id === autoFillColumnId) {
+            onAutoFillColumnResized?.(header.column.id);
+        }
+    }
+
     function hasSelectColumn(): boolean {
         return table.getVisibleLeafColumns().some((column) => column.id === 'select');
+    }
+
+    function isColumnWrapped(column: Cell<StockFeatures, TData, unknown>['column']): boolean {
+        return supportsColumnWrapping(column.columnDef.meta) && wrappedColumnIds.includes(column.id);
     }
 
     function isWidthClass(className: string): boolean {
@@ -257,14 +276,11 @@
         }
     }
 
-    function handleAutoFillColumnResize(header: Header<StockFeatures, TData, unknown>): void {
-        if (header.column.id === autoFillColumnId) {
-            onAutoFillColumnResized?.(header.column.id);
-        }
-    }
-
-    function getClientPosition(event: MouseEvent | TouchEvent): number | undefined {
-        return event instanceof TouchEvent ? event.touches[0]?.clientX : event.clientX;
+    function removeWidthClasses(className: string): string {
+        return className
+            .split(' ')
+            .filter((part) => !isWidthClass(part))
+            .join(' ');
     }
 
     function setColumnSize(header: Header<StockFeatures, TData, unknown>, size: number): void {
@@ -272,22 +288,6 @@
             ...current,
             [header.column.id]: Math.min(header.column.columnDef.maxSize ?? Number.MAX_SAFE_INTEGER, Math.max(header.column.columnDef.minSize ?? 20, size))
         }));
-    }
-
-    function getResizeStartSize(event: KeyboardEvent | MouseEvent | TouchEvent, header: Header<StockFeatures, TData, unknown>): number {
-        if (header.column.id !== getFlexibleDataColumnId()) {
-            return header.column.getSize();
-        }
-
-        const headerElement = (event.currentTarget as HTMLElement | null)?.closest('th');
-        return headerElement?.getBoundingClientRect().width || header.column.getSize();
-    }
-
-    function removeWidthClasses(className: string): string {
-        return className
-            .split(' ')
-            .filter((part) => !isWidthClass(part))
-            .join(' ');
     }
 </script>
 

@@ -1,7 +1,6 @@
 import type { ResolvedPathname } from '$app/types';
 import type { ShortcutKey } from '$features/shared/keyboard-shortcuts';
 import type { ViewCurrentUser } from '$features/users/models';
-import type { Icon } from '@lucide/svelte';
 import type { Component } from 'svelte';
 
 import { routes as appRoutes } from './(app)/routes.svelte';
@@ -17,7 +16,7 @@ export type NavigationItem = {
     children?: NavigationChild[];
     group: string;
     href: ResolvedPathname | string;
-    icon: Component | typeof Icon;
+    icon: Component;
     keywords?: string[];
     openInNewTab?: boolean;
     shortcut?: readonly ShortcutKey[];

@@ -61,10 +61,9 @@
         return unreadCount > 99 ? '99+' : unreadCount.toString();
     }
 
-    function onMenuClick() {
-        if (sidebar.isMobile) {
-            sidebar.toggle();
-        }
+    function navigateTo(href: string): void {
+        onMenuClick();
+        void goto(href);
     }
 
     function onChatClick() {
@@ -77,15 +76,16 @@
         void openKeyboardShortcuts();
     }
 
-    function navigateTo(href: string): void {
-        onMenuClick();
-        void goto(href);
-    }
-
     async function onLogout(): Promise<void> {
         onMenuClick();
         await logout(queryClient, client);
         await goto(resolve('/(auth)/login'));
+    }
+
+    function onMenuClick() {
+        if (sidebar.isMobile) {
+            sidebar.toggle();
+        }
     }
 
     function openExternalLink(href: string): void {

@@ -18,24 +18,15 @@
 
     import type { NavigationChild, NavigationItem } from '../../../routes.svelte';
 
-    function isSavedItemActive(savedItem: { href: string }, routeHref: string): boolean {
-        const savedId = new URL(savedItem.href, page.url.origin).searchParams.get('saved');
-        const activeSavedParam = page.url.searchParams.get('saved');
-        const isOnRoute = routeHref === page.url.pathname;
+    type Props = ComponentProps<typeof Sidebar.Root> & {
+        footer?: Snippet;
+        header?: Snippet;
+        onSavedViewOrderChange: (viewType: string, savedViewIds: string[]) => Promise<void>;
+        routes: NavigationItem[];
+    };
 
-        return isOnRoute && activeSavedParam === savedId;
-    }
-
-    function isPathActive(href: string | undefined): boolean {
-        if (!href) {
-            return false;
-        }
-
-        return page.url.pathname === href || page.url.pathname.startsWith(href + '/');
-    }
-
-    function isSettingsGroup(group: string): boolean {
-        return group === 'Settings' || group.endsWith(' Settings');
+    function hasSavedViewChildren(route: NavigationItem): boolean {
+        return !!route.view || (route.children?.some((childItem) => isSavedViewChild(childItem)) ?? false);
     }
 
     function isChildItemActive(childItem: { href: string }, routeHref: string): boolean {
@@ -49,12 +40,12 @@
         return isPathActive(childUrl.pathname);
     }
 
-    function isSavedViewChild(childItem: { href: string }): boolean {
-        return new URL(childItem.href, page.url.origin).searchParams.has('saved');
-    }
+    function isPathActive(href: string | undefined): boolean {
+        if (!href) {
+            return false;
+        }
 
-    function hasSavedViewChildren(route: NavigationItem): boolean {
-        return !!route.view || (route.children?.some((childItem) => isSavedViewChild(childItem)) ?? false);
+        return page.url.pathname === href || page.url.pathname.startsWith(href + '/');
     }
 
     function isRouteActive(route: NavigationItem): boolean {
@@ -66,12 +57,21 @@
         return route.children?.some((childItem) => isChildItemActive(childItem, routeHref)) ?? false;
     }
 
-    type Props = ComponentProps<typeof Sidebar.Root> & {
-        footer?: Snippet;
-        header?: Snippet;
-        onSavedViewOrderChange: (viewType: string, savedViewIds: string[]) => Promise<void>;
-        routes: NavigationItem[];
-    };
+    function isSavedItemActive(savedItem: { href: string }, routeHref: string): boolean {
+        const savedId = new URL(savedItem.href, page.url.origin).searchParams.get('saved');
+        const activeSavedParam = page.url.searchParams.get('saved');
+        const isOnRoute = routeHref === page.url.pathname;
+
+        return isOnRoute && activeSavedParam === savedId;
+    }
+
+    function isSavedViewChild(childItem: { href: string }): boolean {
+        return new URL(childItem.href, page.url.origin).searchParams.has('saved');
+    }
+
+    function isSettingsGroup(group: string): boolean {
+        return group === 'Settings' || group.endsWith(' Settings');
+    }
 
     let { footer, header, onSavedViewOrderChange, routes, ...props }: Props = $props();
     const dashboardRoutes = $derived(routes.filter((route) => route.group === 'Dashboards'));
@@ -120,22 +120,41 @@
             }))
     );
 
-    function openSavedViewOrderDialog(event: MouseEvent, route: NavigationItem): void {
-        event.stopPropagation();
-        savedViewOrderRoute = route;
-        savedViewOrderDialogOpen = true;
+    function clearPendingSavedViewOrder(viewType: string): void {
+        pendingSavedViewOrders = Object.fromEntries(Object.entries(pendingSavedViewOrders).filter(([key]) => key !== viewType));
     }
 
-    async function saveSavedViewOrder(savedViewIds: string[]): Promise<void> {
-        if (!savedViewOrderRoute?.view) {
+    function closeHoverMenu(menuId: string) {
+        if (!isIconCollapsed) {
             return;
         }
 
-        await onSavedViewOrderChange(savedViewOrderRoute.view, savedViewIds);
+        if (hoverMenuCloseTimeout) {
+            clearTimeout(hoverMenuCloseTimeout);
+        }
+
+        hoverMenuCloseTimeout = setTimeout(() => {
+            if (hoverMenuId === menuId) {
+                hoverMenuId = undefined;
+            }
+        }, 220);
     }
 
-    function getSavedViewIds(route: NavigationItem): string[] {
-        return (route.children ?? []).flatMap((child) => (child.savedView ? [child.savedView.id] : []));
+    function getDroppedSavedViewIds(route: NavigationItem, draggedSavedViewId: string, targetSavedViewId: string): string[] {
+        const savedViewIds = getSavedViewIds(route);
+        const currentIndex = savedViewIds.indexOf(draggedSavedViewId);
+        const targetIndex = savedViewIds.indexOf(targetSavedViewId);
+        if (currentIndex < 0 || targetIndex < 0) {
+            return savedViewIds;
+        }
+
+        const [movedSavedViewId] = savedViewIds.splice(currentIndex, 1);
+        if (!movedSavedViewId) {
+            return savedViewIds;
+        }
+
+        savedViewIds.splice(targetIndex, 0, movedSavedViewId);
+        return savedViewIds;
     }
 
     function getOrderedRouteChildren(route: NavigationItem): NavigationChild[] {
@@ -156,6 +175,30 @@
         return [...orderedSavedViews, ...unorderedSavedViews, ...builtInChildren];
     }
 
+    function getSavedViewIds(route: NavigationItem): string[] {
+        return (route.children ?? []).flatMap((child) => (child.savedView ? [child.savedView.id] : []));
+    }
+
+    function handleSavedViewDragEnd(route: NavigationItem): void {
+        if (!route.view || draggedSavedView?.viewType !== route.view) {
+            return;
+        }
+
+        draggedSavedView = undefined;
+        clearPendingSavedViewOrder(route.view);
+    }
+
+    function handleSavedViewDragOver(event: DragEvent, route: NavigationItem, targetSavedViewId: string): void {
+        if (!route.view || draggedSavedView?.viewType !== route.view || draggedSavedView.savedViewId === targetSavedViewId) {
+            return;
+        }
+
+        event.preventDefault();
+        if (event.dataTransfer) {
+            event.dataTransfer.dropEffect = 'move';
+        }
+    }
+
     function handleSavedViewDragStart(event: DragEvent, route: NavigationItem, savedViewId: string): void {
         if (!route.view || savingSavedViewOrderType === route.view) {
             event.preventDefault();
@@ -173,36 +216,64 @@
         }
     }
 
-    function handleSavedViewDragOver(event: DragEvent, route: NavigationItem, targetSavedViewId: string): void {
-        if (!route.view || draggedSavedView?.viewType !== route.view || draggedSavedView.savedViewId === targetSavedViewId) {
+    function isHoverMenuOpen(menuId: string): boolean {
+        return isIconCollapsed && hoverMenuId === menuId;
+    }
+
+    function isRouteGroupOpen(route: NavigationItem): boolean {
+        const routeHref = String(route.href);
+
+        return expandedRouteHrefs[routeHref] ?? isRouteActive(route);
+    }
+
+    function isSettingsOpen(): boolean {
+        return settingsExpanded ?? settingsIsActive;
+    }
+
+    function onFlyoutLinkClick(): void {
+        hoverMenuId = undefined;
+        onMenuClick();
+    }
+
+    function onHoverMenuOpenChange(menuId: string, open: boolean): void {
+        if (!isIconCollapsed) {
+            hoverMenuId = undefined;
             return;
         }
 
-        event.preventDefault();
-        if (event.dataTransfer) {
-            event.dataTransfer.dropEffect = 'move';
+        if (open) {
+            openHoverMenu(menuId);
+            return;
+        }
+
+        if (hoverMenuId === menuId) {
+            hoverMenuId = undefined;
         }
     }
 
-    function getDroppedSavedViewIds(route: NavigationItem, draggedSavedViewId: string, targetSavedViewId: string): string[] {
-        const savedViewIds = getSavedViewIds(route);
-        const currentIndex = savedViewIds.indexOf(draggedSavedViewId);
-        const targetIndex = savedViewIds.indexOf(targetSavedViewId);
-        if (currentIndex < 0 || targetIndex < 0) {
-            return savedViewIds;
+    function onMenuClick() {
+        if (sidebar.isMobile) {
+            sidebar.toggle();
         }
-
-        const [movedSavedViewId] = savedViewIds.splice(currentIndex, 1);
-        if (!movedSavedViewId) {
-            return savedViewIds;
-        }
-
-        savedViewIds.splice(targetIndex, 0, movedSavedViewId);
-        return savedViewIds;
     }
 
-    function clearPendingSavedViewOrder(viewType: string): void {
-        pendingSavedViewOrders = Object.fromEntries(Object.entries(pendingSavedViewOrders).filter(([key]) => key !== viewType));
+    function openHoverMenu(menuId: string) {
+        if (!isIconCollapsed) {
+            return;
+        }
+
+        if (hoverMenuCloseTimeout) {
+            clearTimeout(hoverMenuCloseTimeout);
+            hoverMenuCloseTimeout = undefined;
+        }
+
+        hoverMenuId = menuId;
+    }
+
+    function openSavedViewOrderDialog(event: MouseEvent, route: NavigationItem): void {
+        event.stopPropagation();
+        savedViewOrderRoute = route;
+        savedViewOrderDialogOpen = true;
     }
 
     async function persistDraggedSavedViewOrder(route: NavigationItem, targetSavedViewId: string): Promise<void> {
@@ -236,79 +307,12 @@
         }
     }
 
-    function handleSavedViewDragEnd(route: NavigationItem): void {
-        if (!route.view || draggedSavedView?.viewType !== route.view) {
+    async function saveSavedViewOrder(savedViewIds: string[]): Promise<void> {
+        if (!savedViewOrderRoute?.view) {
             return;
         }
 
-        draggedSavedView = undefined;
-        clearPendingSavedViewOrder(route.view);
-    }
-
-    function onMenuClick() {
-        if (sidebar.isMobile) {
-            sidebar.toggle();
-        }
-    }
-
-    function openHoverMenu(menuId: string) {
-        if (!isIconCollapsed) {
-            return;
-        }
-
-        if (hoverMenuCloseTimeout) {
-            clearTimeout(hoverMenuCloseTimeout);
-            hoverMenuCloseTimeout = undefined;
-        }
-
-        hoverMenuId = menuId;
-    }
-
-    function closeHoverMenu(menuId: string) {
-        if (!isIconCollapsed) {
-            return;
-        }
-
-        if (hoverMenuCloseTimeout) {
-            clearTimeout(hoverMenuCloseTimeout);
-        }
-
-        hoverMenuCloseTimeout = setTimeout(() => {
-            if (hoverMenuId === menuId) {
-                hoverMenuId = undefined;
-            }
-        }, 220);
-    }
-
-    function isHoverMenuOpen(menuId: string): boolean {
-        return isIconCollapsed && hoverMenuId === menuId;
-    }
-
-    function onHoverMenuOpenChange(menuId: string, open: boolean): void {
-        if (!isIconCollapsed) {
-            hoverMenuId = undefined;
-            return;
-        }
-
-        if (open) {
-            openHoverMenu(menuId);
-            return;
-        }
-
-        if (hoverMenuId === menuId) {
-            hoverMenuId = undefined;
-        }
-    }
-
-    function onFlyoutLinkClick(): void {
-        hoverMenuId = undefined;
-        onMenuClick();
-    }
-
-    function isRouteGroupOpen(route: NavigationItem): boolean {
-        const routeHref = String(route.href);
-
-        return expandedRouteHrefs[routeHref] ?? isRouteActive(route);
+        await onSavedViewOrderChange(savedViewOrderRoute.view, savedViewIds);
     }
 
     function setRouteGroupOpen(route: NavigationItem, open: boolean): void {
@@ -317,10 +321,6 @@
             ...expandedRouteHrefs,
             [routeHref]: open
         };
-    }
-
-    function isSettingsOpen(): boolean {
-        return settingsExpanded ?? settingsIsActive;
     }
 
     $effect(() => {

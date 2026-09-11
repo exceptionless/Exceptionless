@@ -22,16 +22,16 @@
         await redirectToEventsWithFilter(organization.current, addedOrUpdated, getEventsNavigationOptionsForFilter(addedOrUpdated));
     }
 
+    async function handleDeleted() {
+        await goto(resolve('/(app)/stack'));
+    }
+
     function handleError(problem: ProblemDetails) {
         if (showBillingDialogOnUpgradeProblem(problem, organization.current)) {
             return;
         }
 
         toast.error(problem.title ?? problem.detail ?? 'Unable to load stack event details.');
-    }
-
-    async function handleDeleted() {
-        await goto(resolve('/(app)/stack'));
     }
 
     async function handleEventLoaded(event: PersistentEvent) {
@@ -42,12 +42,12 @@
         });
     }
 
+    async function handleNavigate(newEventId: string) {
+        await goto(buildEventDetailsHref(newEventId, stackId));
+    }
     function handleStackLoaded(stack: Stack) {
         organization.current = stack.organization_id;
         assistantPageContext.setPageStack(stack);
-    }
-    async function handleNavigate(newEventId: string) {
-        await goto(buildEventDetailsHref(newEventId, stackId));
     }
 
     $effect(() => {

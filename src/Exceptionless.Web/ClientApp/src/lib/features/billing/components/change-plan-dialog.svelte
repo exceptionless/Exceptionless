@@ -61,14 +61,6 @@
     const YEARLY_SUFFIX = '_YEARLY';
     const POPULAR_TIER = 'EX_XL';
 
-    function tierOf(planId: string): string {
-        return planId.endsWith(YEARLY_SUFFIX) ? planId.slice(0, -YEARLY_SUFFIX.length) : planId;
-    }
-
-    function intervalOf(planId: string): 'month' | 'year' {
-        return planId.endsWith(YEARLY_SUFFIX) ? 'year' : 'month';
-    }
-
     interface PlanTier {
         id: string;
         monthly: BillingPlan | null;
@@ -77,12 +69,20 @@
         yearly: BillingPlan | null;
     }
 
+    function intervalOf(planId: string): 'month' | 'year' {
+        return planId.endsWith(YEARLY_SUFFIX) ? 'year' : 'month';
+    }
+
     function shouldIncludeInTiers(plan: BillingPlan): boolean {
         if (plan.is_hidden) {
             return false;
         }
 
         return plan.id !== FREE_PLAN_ID;
+    }
+
+    function tierOf(planId: string): string {
+        return planId.endsWith(YEARLY_SUFFIX) ? planId.slice(0, -YEARLY_SUFFIX.length) : planId;
     }
 
     const tiers = $derived.by<PlanTier[]>(() => {
@@ -337,44 +337,20 @@
         }
     });
 
-    function selectTier(tierId: string) {
-        selectedTierId = tierId;
+    function formatRetention(days: number): string {
+        return `${days} day${days === 1 ? '' : 's'}`;
     }
 
-    function setInterval(next: 'month' | 'year') {
-        interval = next;
+    function formatUsers(n: number): string {
+        if (n < 0) {
+            return 'Unlimited users';
+        }
+
+        return `${n} user${n === 1 ? '' : 's'}`;
     }
 
-    function onUseDifferentCard() {
-        paymentExpanded = true;
-        requestAnimationFrame(() =>
-            paymentSectionEl?.scrollIntoView({
-                behavior: 'smooth',
-                block: 'nearest'
-            })
-        );
-    }
-
-    function onKeepCurrentCard() {
-        paymentExpanded = false;
-    }
-
-    function onCouponOpen() {
-        couponOpen = true;
-        couponError = null;
-        requestAnimationFrame(() => {
-            couponSectionEl?.scrollIntoView({
-                behavior: 'smooth',
-                block: 'nearest'
-            });
-            couponInputEl?.focus();
-        });
-    }
-
-    function onCouponCancel() {
-        couponOpen = false;
-        couponInput = '';
-        couponError = null;
+    function handleCancel() {
+        onclose(false);
     }
 
     function onCouponApply() {
@@ -389,25 +365,49 @@
         couponError = null;
     }
 
+    function onCouponCancel() {
+        couponOpen = false;
+        couponInput = '';
+        couponError = null;
+    }
+
+    function onCouponOpen() {
+        couponOpen = true;
+        couponError = null;
+        requestAnimationFrame(() => {
+            couponSectionEl?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest'
+            });
+            couponInputEl?.focus();
+        });
+    }
+
     function onCouponRemove() {
         couponApplied = null;
         couponError = null;
     }
 
-    function handleCancel() {
-        onclose(false);
+    function onKeepCurrentCard() {
+        paymentExpanded = false;
     }
 
-    function formatUsers(n: number): string {
-        if (n < 0) {
-            return 'Unlimited users';
-        }
-
-        return `${n} user${n === 1 ? '' : 's'}`;
+    function onUseDifferentCard() {
+        paymentExpanded = true;
+        requestAnimationFrame(() =>
+            paymentSectionEl?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest'
+            })
+        );
     }
 
-    function formatRetention(days: number): string {
-        return `${days} day${days === 1 ? '' : 's'}`;
+    function selectTier(tierId: string) {
+        selectedTierId = tierId;
+    }
+
+    function setInterval(next: 'month' | 'year') {
+        interval = next;
     }
 
     function tierPrice(tier: PlanTier, billingInterval: 'month' | 'year') {

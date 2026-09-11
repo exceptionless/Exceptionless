@@ -42,6 +42,13 @@
         }
     });
 
+    async function revertToDefaultLogLevel() {
+        removeProjectConfig.mutateAsync({
+            key: `@@log:${source}`
+        });
+        toast.success(`Successfully reverted to default (${defaultLevelDisplayName}) log level`);
+    }
+
     async function setLogLevel(level: LogLevel) {
         await updateProjectConfig.mutateAsync({
             key: `@@log:${source}`,
@@ -49,13 +56,6 @@
         });
 
         toast.success(`Successfully updated Log level to ${getLogLevelDisplayName(level)}`);
-    }
-
-    async function revertToDefaultLogLevel() {
-        removeProjectConfig.mutateAsync({
-            key: `@@log:${source}`
-        });
-        toast.success(`Successfully reverted to default (${defaultLevelDisplayName}) log level`);
     }
 
     const configSettings = $derived(projectConfigQuery.data?.settings ?? {});

@@ -5,6 +5,13 @@
     import * as Card from '$comp/ui/card';
     import * as Select from '$comp/ui/select';
 
+    type AiTool = {
+        description: string;
+        id: AiToolId;
+        name: string;
+        steps: CommandStep[];
+    };
+
     type AiToolId = 'claude' | 'codex' | 'github-copilot' | 'opencode';
 
     type CommandStep = {
@@ -12,13 +19,6 @@
         description: string;
         language: 'json' | 'shellscript';
         title: string;
-    };
-
-    type AiTool = {
-        description: string;
-        id: AiToolId;
-        name: string;
-        steps: CommandStep[];
     };
 
     let mcpEndpoint = $state('/mcp');
