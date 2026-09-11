@@ -132,6 +132,7 @@ public sealed class AssistantService(
             await using var providerRequest = await assistantUsageService.StartProviderRequestAsync(request.OrganizationId, providerInputCharacters);
             using var providerDiagnostics = diagnostics?.StartProviderRequest(cancellationToken);
             bool receivedDone = false;
+            string? providerFailureCode = null;
             try
             {
                 using var response = await SendRequestAsync(messages, options, model, allowTools, request, providerDiagnostics, cancellationToken);
@@ -177,6 +178,17 @@ public sealed class AssistantService(
 
                         if (!document.RootElement.TryGetProperty("choices", out var choices) || choices.GetArrayLength() == 0)
                             continue;
+
+                        if (choices[0].TryGetProperty("finish_reason", out var finishReason) && finishReason.ValueKind == JsonValueKind.String)
+                        {
+                            providerFailureCode ??= finishReason.GetString() switch
+                            {
+                                "length" => "output_limit",
+                                "content_filter" => "content_filter",
+                                "error" => "provider_error",
+                                _ => null
+                            };
+                        }
 
                         var delta = choices[0].GetProperty("delta");
                         if ((delta.TryGetProperty("reasoning", out var reasoning) || delta.TryGetProperty("reasoning_content", out reasoning))
@@ -276,7 +288,7 @@ public sealed class AssistantService(
                 malformedResponseCorrection = null;
             }
 
-            if (!allowTools && toolCalls.Count > 0)
+            if (providerFailureCode is null && !allowTools && toolCalls.Count > 0)
                 providerDiagnostics?.Reject("tool_round_limit");
             else
                 providerDiagnostics?.Complete(assistantContent.Length, toolCalls.Count, receivedDone);
@@ -286,18 +298,18 @@ public sealed class AssistantService(
                 yield return AssistantStreamEvent.TextDelta(text);
             }
 
+            if (providerFailureCode is not null)
+            {
+                yield return AssistantStreamEvent.Error("Exie stopped before completing the answer. Please try again.", providerFailureCode);
+                yield return AssistantStreamEvent.Done();
+                yield break;
+            }
+
             if (toolCalls.Count == 0)
             {
                 if (assistantContent.Length == 0)
                 {
-                    string failureCode = providerDiagnostics?.FinishReason switch
-                    {
-                        "length" => "output_limit",
-                        "content_filter" => "content_filter",
-                        "error" => "provider_error",
-                        _ => "empty_response"
-                    };
-                    yield return AssistantStreamEvent.Error("Exie stopped before providing an answer. Please try again.", failureCode);
+                    yield return AssistantStreamEvent.Error("Exie stopped before providing an answer. Please try again.", "empty_response");
                 }
                 else if (pendingSuggestedActions.Count > 0)
                 {

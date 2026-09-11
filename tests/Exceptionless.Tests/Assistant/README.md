@@ -37,14 +37,14 @@ Server diagnostics exclude conversation text, reasoning text, tool arguments/res
 | `operation_cancelled` | A non-provider operation was cancelled before the shared turn deadline expired; inspect the stage. |
 | `provider_http_error`, `provider_error`, `provider_transport_error`, `provider_stream_error` | Check status, generation ID, provider, and whether the stream completed. |
 | `empty_response` | The provider returned neither answer text nor tool calls. |
-| `output_limit` | The provider returned no answer text and reported `finish_reason=length`; inspect reasoning and completion tokens before changing budgets. |
-| `content_filter` | An empty answer ended with the provider's content-filter finish reason. |
+| `output_limit` | The provider stopped at its output limit (`finish_reason=length`); inspect reasoning and completion tokens before changing budgets. |
+| `content_filter` | The provider stopped because of content filtering, possibly after partial text. |
 | `malformed_response` | Internal provider markup remained after the existing recovery retry. |
 | `tool_round_limit` | The provider continued requesting tools after the final-answer instruction. |
 | `usage_limit`, `context_limit` | A turn reached an organization usage limit or the conversation context bound. |
 | `invalid_provider_response`, `response_write_error`, `tool_execution_error`, `internal_error` | Inspect the stage, exception type/stack, and correlated trace. |
 
-Returned tool errors are logged with the tool name and error code, even when the model recovers and completes the turn. Thrown tool exceptions and deadlines also increment tool failures and record duration; browser disconnects record a separate `cancelled` duration with `client_disconnected`. Tool cancellation reasons distinguish the shared deadline (`turn_timeout`) from other operation cancellation (`operation_cancelled`). Provider error objects inside an HTTP 200 stream record `provider_error` even without a finish reason. Provider `output_limit` or `incomplete_stream` warnings can also accompany a completed turn when text was returned. Diagnostics preserve the existing response and accounting behavior; they do not automatically retry tools or change output budgets.
+Returned tool errors are logged with the tool name and error code, even when the model recovers and completes the turn. Thrown tool exceptions and deadlines also increment tool failures and record duration; browser disconnects record a separate `cancelled` duration with `client_disconnected`. Tool cancellation reasons distinguish the shared deadline (`turn_timeout`) from other operation cancellation (`operation_cancelled`). Provider error objects inside an HTTP 200 stream record `provider_error` even without a finish reason. Provider finish reasons `length`, `content_filter`, and `error` fail the turn even when partial text was returned; that text remains visible alongside the error. An `incomplete_stream` warning can accompany a completed turn when text was returned without a terminal marker. Diagnostics do not automatically retry tools or change output budgets.
 
 The existing `ex.assistant.turn.outcomes` metric remains unchanged. Additional histograms provide immediate duration and outcome counts:
 

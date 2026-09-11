@@ -1246,6 +1246,51 @@ public sealed class AssistantServiceTests
         Assert.DoesNotContain(logger.Entries, entry => entry.Message.Contains("private question", StringComparison.Ordinal));
     }
 
+    [Theory]
+    [InlineData("length", "output_limit", true)]
+    [InlineData("content_filter", "content_filter", true)]
+    [InlineData("error", "provider_error", true)]
+    [InlineData("length", "output_limit", false)]
+    [InlineData("content_filter", "content_filter", false)]
+    [InlineData("error", "provider_error", false)]
+    public async Task StreamAsync_PartialProviderFailure_PreservesTextAndFailsTurn(string finishReason, string failureCode, bool recordDiagnostics)
+    {
+        string payload = JsonSerializer.Serialize(new
+        {
+            choices = new[] { new { delta = new { content = "Partial answer" }, finish_reason = finishReason } }
+        });
+        var handler = new StubHttpMessageHandler($"data: {payload}\n\ndata: [DONE]\n\n");
+        var options = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["BaseURL"] = "https://localhost", ["Assistant:ApiKey"] = "test-key" })
+            .Build());
+        var logger = new RecordingAssistantLogger();
+        using var diagnostics = new AssistantTurnDiagnostics(logger, TimeProvider.System, "organization-id", "conversation-id", "request-id");
+        using var cache = new InMemoryCacheClient();
+        var usageService = new AssistantUsageService(cache, CreateLockProvider(cache, TimeProvider.System),
+            new RecordingAssistantUsageRecorder(), options, TimeProvider.System, NullLogger<AssistantUsageService>.Instance);
+        var service = CreateAssistantService(handler, options, cache, usageService: usageService);
+        var context = new DefaultHttpContext();
+        using var response = new MemoryStream();
+        context.Response.Body = response;
+
+        await AssistantEndpoints.WriteResponseAsync(context,
+            service.StreamAsync(new AssistantChatRequest([new AssistantChatMessage("user", "question")]),
+                "user-id", CreatePlanOptions(), recordDiagnostics ? diagnostics : null, TestContext.Current.CancellationToken),
+            usageService, "organization-id", diagnostics, TestContext.Current.CancellationToken);
+
+        var events = Encoding.UTF8.GetString(response.ToArray()).Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => JsonSerializer.Deserialize<AssistantStreamEvent>(line, new JsonSerializerOptions(JsonSerializerDefaults.Web))!);
+        Assert.Collection(events,
+            item => Assert.Equal("Partial answer", item.Text),
+            item => Assert.Equal("error", item.Type),
+            item => Assert.Equal("done", item.Type));
+        if (recordDiagnostics)
+            Assert.Equal(failureCode, Assert.Single(logger.Entries, entry => entry.Properties.ContainsKey("ProviderOutcome")).Properties["ProviderOutcome"]);
+        var turn = Assert.Single(logger.Entries, entry => entry.Properties.ContainsKey("Outcome"));
+        Assert.Equal("failed", turn.Properties["Outcome"]);
+        Assert.Equal(failureCode, turn.Properties["FailureReason"]);
+    }
+
     [Fact]
     public async Task StreamAsync_ProviderStreamError_RecordsTopLevelErrorMessage()
     {
