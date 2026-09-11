@@ -36,6 +36,7 @@ function props() {
         isAnyOverlayOpen: false,
         isImpersonating: false,
         isMobile: false,
+        isNavigationOverlayOpen: false,
         isSetupPage: false,
         openAssistant: vi.fn(async () => {}),
         organizationId: 'organization',

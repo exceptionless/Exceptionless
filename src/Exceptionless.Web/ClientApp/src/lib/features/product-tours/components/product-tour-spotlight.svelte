@@ -1,12 +1,12 @@
 <script lang="ts">
     import { driver, type Driver } from 'driver.js';
-    import { mount, onMount, type Snippet, tick, unmount } from 'svelte';
+    import { mount, type Snippet, tick, unmount, untrack } from 'svelte';
     import { toast } from 'svelte-sonner';
 
     import type { ProductTourCheckpoint } from '../models';
 
     import { PRODUCT_TOUR_CHECKPOINTS } from '../models';
-    import { productTourCheckpoint } from '../state.svelte';
+    import { productTourCheckpoint, productTourPresentation } from '../state.svelte';
     import ProductTourDescription from './product-tour-description.svelte';
     import 'driver.js/dist/driver.css';
 
@@ -44,52 +44,58 @@
     let dismissing = false;
     let returnFocus: HTMLElement | null = null;
 
-    onMount(() => {
-        const controller = new AbortController();
-        initialize();
-        window.addEventListener('keydown', onKeyDown, {
-            capture: true,
-            signal: controller.signal
-        });
-        let frame = 0;
-        let previousBounds = '';
-        function followTarget(): void {
-            const element = activeDriver?.getActiveElement();
-            const popover = activeDriver?.getState().popover?.wrapper;
-            if (!element || !popover) {
-                return;
-            }
+    $effect(() => {
+        if (productTourPresentation.suspended) {
+            return;
+        }
 
-            // A refreshed list can replace a row while keeping the same report selected.
-            if (!element.isConnected) {
-                popover.style.visibility = 'hidden';
-                if (getTarget()?.isConnected) {
-                    const previousFocus = returnFocus;
-                    destroy();
-                    initialize();
-                    returnFocus = previousFocus;
-                    previousBounds = '';
+        return untrack(() => {
+            const controller = new AbortController();
+            initialize();
+            window.addEventListener('keydown', onKeyDown, {
+                capture: true,
+                signal: controller.signal
+            });
+            let frame = 0;
+            let previousBounds = '';
+            function followTarget(): void {
+                const element = activeDriver?.getActiveElement();
+                const popover = activeDriver?.getState().popover?.wrapper;
+                if (!element || !popover) {
+                    return;
+                }
+
+                // A refreshed list can replace a row while keeping the same report selected.
+                if (!element.isConnected) {
+                    popover.style.visibility = 'hidden';
+                    if (getTarget()?.isConnected) {
+                        const previousFocus = returnFocus;
+                        destroy();
+                        initialize();
+                        returnFocus = previousFocus;
+                        previousBounds = '';
+                    }
+                    frame = requestAnimationFrame(followTarget);
+                    return;
+                }
+
+                // Menus and drawers can move without resizing. Keep the arrow and spotlight attached.
+                const bounds = element.getBoundingClientRect();
+                const currentBounds = [bounds.x, bounds.y, bounds.width, bounds.height, popover.offsetWidth, popover.offsetHeight].join(',');
+                if (currentBounds !== previousBounds) {
+                    previousBounds = currentBounds;
+                    activeDriver?.refresh();
                 }
                 frame = requestAnimationFrame(followTarget);
-                return;
-            }
-
-            // Menus and drawers can move without resizing. Keep the arrow and spotlight attached.
-            const bounds = element.getBoundingClientRect();
-            const currentBounds = [bounds.x, bounds.y, bounds.width, bounds.height, popover.offsetWidth, popover.offsetHeight].join(',');
-            if (currentBounds !== previousBounds) {
-                previousBounds = currentBounds;
-                activeDriver?.refresh();
             }
             frame = requestAnimationFrame(followTarget);
-        }
-        frame = requestAnimationFrame(followTarget);
 
-        return () => {
-            controller.abort();
-            cancelAnimationFrame(frame);
-            destroy();
-        };
+            return () => {
+                controller.abort();
+                cancelAnimationFrame(frame);
+                destroy();
+            };
+        });
     });
 
     function destroy(): void {

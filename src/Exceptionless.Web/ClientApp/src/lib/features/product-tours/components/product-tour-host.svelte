@@ -19,7 +19,7 @@
     import { createProductTourActions } from '../actions.svelte';
     import { getProductTourItems, getRecommendedProductTourName } from '../catalog';
     import { getProductTourRecordedAt, shouldOfferProductTourInvitation } from '../eligibility';
-    import { productTourCheckpoint } from '../state.svelte';
+    import { productTourCheckpoint, productTourPresentation } from '../state.svelte';
     import ProductTourFeatureAnnouncement from './alerts/product-tour-feature-announcement.svelte';
     import ProductTourWelcome from './alerts/product-tour-welcome.svelte';
     import ProductTourCatalogDialog from './dialogs/product-tour-catalog-dialog.svelte';
@@ -32,6 +32,7 @@
         isAnyOverlayOpen: boolean;
         isImpersonating: boolean;
         isMobile: boolean;
+        isNavigationOverlayOpen: boolean;
         isSetupPage: boolean;
         openAssistant: () => Promise<void>;
         organizationId?: string;
@@ -51,6 +52,7 @@
         isAnyOverlayOpen,
         isImpersonating,
         isMobile,
+        isNavigationOverlayOpen,
         isSetupPage,
         openAssistant,
         organizationId,
@@ -62,6 +64,13 @@
     let catalogOpen = $state(false);
     let automaticSurface = $state<'exie-announcement' | 'handled' | 'welcome'>();
     let automaticSurfaceUserId = $state<string>();
+
+    $effect(() => {
+        productTourPresentation.suspended = catalogOpen || isNavigationOverlayOpen;
+        return () => {
+            productTourPresentation.suspended = false;
+        };
+    });
 
     const actions = createProductTourActions();
     const queryClient = useQueryClient();

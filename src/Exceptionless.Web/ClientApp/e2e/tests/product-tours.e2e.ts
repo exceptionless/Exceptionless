@@ -351,6 +351,40 @@ test.describe('shell and identity checkpoints', () => {
     });
 });
 
+for (const title of ['Explore Exceptionless', 'Create a saved view', 'Meet Exie']) {
+    test(`Search and the catalog suspend ${title} until Continue`, async ({ e2eScenario, page }) => {
+        // Arrange
+        await mockAssistantAccess(page);
+        await test.step(`start ${title} for ${e2eScenario.email}`, async () => {
+            await page.goto('/next/event');
+            await startTourFromCommand(page, title);
+        });
+        const calloutTitle = page.locator('.driver-popover-title');
+        await expect(calloutTitle).toBeVisible();
+        const stepTitle = await calloutTitle.innerText();
+
+        // Act
+        await page.keyboard.press('/');
+        await expect(page.getByRole('combobox')).toBeVisible();
+
+        // Assert: the active guide must not compete with either dialog.
+        await expect(page.locator('.driver-popover')).toHaveCount(0);
+        await page.getByRole('option', { exact: true, name: 'Guided Tours' }).click();
+        const catalog = page.getByRole('dialog', { name: 'Guided Tours' });
+        await expect(catalog).toBeVisible();
+        await expect(page.locator('.driver-popover')).toHaveCount(0);
+        await expect(page.locator('.driver-overlay')).toHaveCount(0);
+
+        // Act
+        await catalog.getByRole('button', { exact: true, name: `Continue ${title}` }).click();
+
+        // Assert
+        await expect(catalog).toBeHidden();
+        await expect(calloutTitle).toHaveText(stepTitle);
+        await expectActiveProductTour(page, true);
+    });
+}
+
 test('project guide preserves the current SDK selection', async ({ e2eScenario, page }) => {
     // Arrange
     await page.route('**/api/v2/organizations/*/projects*', async (route) => {

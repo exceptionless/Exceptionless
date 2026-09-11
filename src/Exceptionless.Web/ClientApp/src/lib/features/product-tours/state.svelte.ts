@@ -48,3 +48,8 @@ class ProductTourCheckpointStore {
 }
 
 export const productTourCheckpoint = new ProductTourCheckpointStore();
+
+// The shell host pauses all spotlights while navigation or the catalog takes focus.
+export const productTourPresentation = $state({
+    suspended: false
+});

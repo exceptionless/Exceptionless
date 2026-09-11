@@ -703,9 +703,10 @@
     const setupPath = resolve('/(app)/organization/add');
     const isSetupPage = $derived(page.url.pathname === setupPath);
     const suppressAutomaticProductTours = $derived(isProductTourSetupRoute(page.route.id));
-    const isAnyProductTourOverlayOpen = $derived(
-        isAssistantOpen || isCommandOpen || isImpersonateOrganizationOpen || isKeyboardShortcutsOpen || isOrganizationSwitcherOpen || isUserMenuOpen
+    const isProductTourNavigationOverlayOpen = $derived(
+        isCommandOpen || isImpersonateOrganizationOpen || isKeyboardShortcutsOpen || isOrganizationSwitcherOpen || isUserMenuOpen
     );
+    const isAnyProductTourOverlayOpen = $derived(isAssistantOpen || isProductTourNavigationOverlayOpen);
 
     $effect(() => {
         if (assistantAccessQuery.isSuccess && !isAssistantEnabled) {
@@ -860,6 +861,7 @@
         isAnyOverlayOpen={isAnyProductTourOverlayOpen}
         {isImpersonating}
         isMobile={sidebar.isMobile}
+        isNavigationOverlayOpen={isProductTourNavigationOverlayOpen}
         isSetupPage={suppressAutomaticProductTours}
         openAssistant={openAssistantPanel}
         organizationId={organization.current}
