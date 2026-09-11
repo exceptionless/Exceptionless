@@ -279,6 +279,7 @@ jobs:
 
       - name: Start AppHost
         run: |
+          mkdir -p "$HOME/.aspnet/https"
           aspire run --non-interactive --nologo -- --ci-e2e > aspire-run.log 2>&1 &
           echo "$!" > aspire-run.pid
           sleep 5
