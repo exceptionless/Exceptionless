@@ -6,6 +6,8 @@ title: "Docker"
 
 If you would like to test Exceptionless locally, please follow this section.
 
+See [Infrastructure Configuration](/docs/self-hosting/configuration) for technology-named Redis, RabbitMQ, queue, and storage connection strings. Existing Docker Compose selectors remain supported as compatibility settings.
+
 ## Requirements
 
 * [Docker](https://www.docker.com)

@@ -10,6 +10,7 @@ You can also use Kubernetes while self-hosting Exceptionless. We'll cover both t
 
 * [Docker](/docs/self-hosting/docker)
 * [Kubernetes](/docs/self-hosting/kubernetes)
+* [Infrastructure configuration](/docs/self-hosting/configuration)
 * [Upgrading](/docs/self-hosting/upgrading-self-hosted-instance)
 
 ---

@@ -90,7 +90,7 @@ public partial class Program
             var options = AppOptions.ReadFromConfiguration(configuration);
             options.QueueOptions.MetricsPollingEnabled = options.RunJobsInProcess;
 
-            var apmConfig = new ApmConfig(configuration, "web", options.InformationalVersion, options.CacheOptions.Provider == "redis");
+            var apmConfig = new ApmConfig(configuration, "web", options.InformationalVersion, options.UsesRedis());
 
             Log.Information("Bootstrapping Exceptionless Web in {AppMode} mode ({InformationalVersion}) on {MachineName} with scope {AppScope}", environment, options.InformationalVersion, Environment.MachineName, options.AppScope);
 

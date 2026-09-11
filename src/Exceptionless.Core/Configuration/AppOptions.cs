@@ -83,6 +83,11 @@ public class AppOptions
     public SourceMapOptions SourceMapOptions { get; internal set; } = null!;
     public AssistantOptions AssistantOptions { get; internal set; } = null!;
 
+    internal bool UsesRedis() =>
+        String.Equals(CacheOptions.Provider, "redis", StringComparison.OrdinalIgnoreCase)
+        || String.Equals(MessageBusOptions.Provider, "redis", StringComparison.OrdinalIgnoreCase)
+        || String.Equals(QueueOptions.Provider, "redis", StringComparison.OrdinalIgnoreCase);
+
     public static AppOptions ReadFromConfiguration(IConfiguration config)
     {
         var options = new AppOptions();

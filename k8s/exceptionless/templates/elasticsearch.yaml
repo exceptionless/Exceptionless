@@ -29,11 +29,8 @@ spec:
       labels:
         app: {{ template "exceptionless.name" . }}
         component: {{ template "exceptionless.fullname" . }}-elasticsearch
-        chart: {{ template "exceptionless.chart" . }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
-      annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
     spec:
       priorityClassName: high-priority
       initContainers:
