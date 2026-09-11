@@ -1,6 +1,19 @@
 (function () {
     "use strict";
 
+    function createOAuthState() {
+        if (typeof window.crypto.randomUUID === "function") {
+            return window.crypto.randomUUID();
+        }
+
+        var bytes = window.crypto.getRandomValues(new Uint8Array(16));
+        return Array.prototype.map
+            .call(bytes, function (value) {
+                return ("0" + value.toString(16)).slice(-2);
+            })
+            .join("");
+    }
+
     angular
         .module("app.auth", [
             "directives.inputMatch",
@@ -20,7 +33,15 @@
             "exceptionless.validators",
         ])
         .config(
-            function ($authProvider, $stateProvider, BASE_URL, FACEBOOK_APPID, GOOGLE_APPID, GITHUB_APPID, LIVE_APPID) {
+            function (
+                $authProvider,
+                $stateProvider,
+                BASE_URL,
+                FACEBOOK_APPID,
+                GOOGLE_APPID,
+                GITHUB_APPID,
+                MICROSOFT_APPID
+            ) {
                 $authProvider.baseUrl = BASE_URL + "/api/v2";
                 $authProvider.facebook({
                     clientId: FACEBOOK_APPID,
@@ -34,9 +55,19 @@
                     clientId: GITHUB_APPID,
                 });
 
-                $authProvider.live({
-                    clientId: LIVE_APPID,
-                    scope: ["wl.emails"],
+                $authProvider.oauth2({
+                    name: "microsoft",
+                    url: "/auth/microsoft",
+                    authorizationEndpoint: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+                    clientId: MICROSOFT_APPID,
+                    redirectUri: window.location.origin,
+                    requiredUrlParams: ["scope", "state"],
+                    scope: ["User.Read"],
+                    scopeDelimiter: " ",
+                    state: function () {
+                        return createOAuthState();
+                    },
+                    popupOptions: { width: 500, height: 560 },
                 });
 
                 $stateProvider.state("auth", {

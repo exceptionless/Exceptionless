@@ -16,8 +16,8 @@
         githubLogin,
         googleClientId,
         googleLogin,
-        liveLogin,
-        microsoftClientId
+        microsoftClientId,
+        microsoftLogin
     } from '$features/auth/index.svelte';
     import { getMeQuery } from '$features/users/api.svelte';
     import X from '@lucide/svelte/icons/x';
@@ -57,7 +57,7 @@
             <H4>Add an external login</H4>
             <div class="mt-2 flex flex-wrap gap-2">
                 {#if microsoftClientId}
-                    <Button aria-label="Link Microsoft account" onclick={() => liveLogin()} variant="outline">
+                    <Button aria-label="Link Microsoft account" onclick={() => microsoftLogin()} variant="outline">
                         <MicrosoftIcon class="size-4" /> Microsoft
                     </Button>
                 {/if}
