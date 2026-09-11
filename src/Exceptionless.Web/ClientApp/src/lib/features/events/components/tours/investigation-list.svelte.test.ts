@@ -1,5 +1,5 @@
 import { productTourCheckpoint } from '$features/product-tours/state.svelte';
-import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import InvestigationListTour from './investigation-list.svelte';
@@ -23,7 +23,7 @@ describe('InvestigationListTour', () => {
         );
         target = document.createElement('div');
         target.dataset.tour = 'event-list';
-        target.innerHTML = '<table><tbody><tr tabindex="0"><td>Error</td></tr></tbody></table>';
+        target.innerHTML = '<table><tbody><tr tabindex="0"><td><a href="/next/event/first-error">Error</a></td></tr></tbody></table>';
         target.querySelector('tr')!.scrollIntoView = vi.fn();
         filters = document.createElement('button');
         filters.dataset.tour = 'event-filters';
@@ -64,10 +64,31 @@ describe('InvestigationListTour', () => {
         expect(screen.queryByRole('button', { name: 'Open error' })).toBeNull();
 
         // Act
+        target.querySelector('a')!.setAttribute('href', '/next/event/loaded-error');
         await component.rerender({ firstErrorId: 'loaded-error', onOpenError });
         await fireEvent.click(await screen.findByRole('button', { name: 'Open error' }));
 
         // Assert
         expect(onOpenError).toHaveBeenCalledExactlyOnceWith('loaded-error');
+    });
+
+    it('highlights the same error as its action when resuming on a mixed list', async () => {
+        // Arrange: the event list has a newer log before the selected error.
+        const errorId = '507f1f77bcf86cd799439012';
+        target.innerHTML = `<table><tbody>
+            <tr tabindex="0"><td><a href="/next/event/507f1f77bcf86cd799439011">Newer log</a></td></tr>
+            <tr tabindex="0"><td><a href="/next/event/${errorId}">Checkout error</a></td></tr>
+        </tbody></table>`;
+        const errorRow = target.querySelectorAll('tr')[1];
+        const onOpenError = vi.fn();
+        productTourCheckpoint.start('event-investigate', 'choose-error', 'user');
+
+        // Act: mount the real guide on the existing list.
+        render(InvestigationListTour, { firstErrorId: errorId, onOpenError });
+
+        // Assert
+        await waitFor(() => expect(document.querySelector('.driver-active-element')).toBe(errorRow));
+        await fireEvent.click(document.querySelector('.driver-popover-next-btn')!);
+        expect(onOpenError).toHaveBeenCalledWith(errorId);
     });
 });

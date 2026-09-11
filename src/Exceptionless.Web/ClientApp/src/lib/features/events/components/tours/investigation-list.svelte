@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { buildEventDetailsHref } from '$features/events/components/summary';
     import { createProductTourActions } from '$features/product-tours/actions.svelte';
     import ProductTourSpotlight from '$features/product-tours/components/product-tour-spotlight.svelte';
     import { productTourCheckpoint } from '$features/product-tours/state.svelte';
@@ -30,7 +31,7 @@
             onDismiss={actions.dismiss}
             onNext={firstErrorId ? openFirstError : undefined}
             side="bottom"
-            target={firstErrorId ? "[data-tour='event-list'] tbody tr[tabindex='0']" : "[data-tour='event-filters']"}
+            target={firstErrorId ? `[data-tour='event-list'] tbody tr:has(a[href="${buildEventDetailsHref(firstErrorId)}"])` : "[data-tour='event-filters']"}
             title="Take a closer look"
         />
     {/key}
