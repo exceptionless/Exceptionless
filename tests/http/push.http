@@ -1,0 +1,29 @@
+@url = http://localhost:7110
+@apiUrl = {{url}}/api/v2
+@email = admin@exceptionless.test
+@password = tester
+
+### login to test account
+# @name login
+POST {{apiUrl}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "{{email}}",
+    "password": "{{password}}"
+}
+
+###
+
+@token = {{login.response.body.$.token}}
+
+### SSE push via bearer token
+# This request intentionally stays open. Cancel it manually after verifying headers/events.
+GET {{apiUrl}}/push
+Accept: text/event-stream
+Authorization: Bearer {{token}}
+
+### SSE push via query-string token
+# This request intentionally stays open. Cancel it manually after verifying headers/events.
+GET {{apiUrl}}/push?access_token={{token}}
+Accept: text/event-stream

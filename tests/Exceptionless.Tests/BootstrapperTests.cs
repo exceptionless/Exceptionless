@@ -79,7 +79,7 @@ public class BootstrapperTests
         Assert.Contains(warnings, message => message.StartsWith("Distributed message bus is NOT enabled", StringComparison.Ordinal));
         Assert.Contains(warnings, message => message.StartsWith("Distributed queue is NOT enabled", StringComparison.Ordinal));
         Assert.Contains(warnings, message => message.StartsWith("Distributed storage is NOT enabled", StringComparison.Ordinal));
-        Assert.Contains(warnings, message => message.StartsWith("Web Sockets is NOT enabled", StringComparison.Ordinal));
+        Assert.Contains(warnings, message => message.StartsWith("Real-time push (SSE) is NOT enabled", StringComparison.Ordinal));
         Assert.Contains(warnings, message => message.StartsWith("Emails will NOT be sent", StringComparison.Ordinal));
         Assert.Contains(warnings, message => message.StartsWith("Event Submission is NOT enabled", StringComparison.Ordinal));
         Assert.Contains(warnings, message => message.StartsWith("Account Creation is NOT enabled", StringComparison.Ordinal));
@@ -102,7 +102,7 @@ public class BootstrapperTests
         Assert.Contains(
             logger.Entries,
             entry => entry.Level == LogLevel.Warning
-                && entry.Message.StartsWith("Web Sockets is NOT enabled", StringComparison.Ordinal));
+                && entry.Message.StartsWith("Real-time push (SSE) is NOT enabled", StringComparison.Ordinal));
     }
 
     private static AppOptions CreateConfiguredOptions()
