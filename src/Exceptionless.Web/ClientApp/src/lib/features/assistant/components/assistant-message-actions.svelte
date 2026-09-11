@@ -27,6 +27,12 @@
     });
     let isRegenerating = $state(false);
 
+    async function copyMessage(): Promise<void> {
+        if ((await clipboard.copy(content)) === 'success') {
+            onCopy?.();
+        }
+    }
+
     async function regenerate(): Promise<void> {
         if (!onRegenerate || isRegenerating) {
             return;
@@ -39,12 +45,6 @@
             toast.error('Couldn’t regenerate the response. Please try again.');
         }
         isRegenerating = false;
-    }
-
-    async function copyMessage(): Promise<void> {
-        if ((await clipboard.copy(content)) === 'success') {
-            onCopy?.();
-        }
     }
 
     function updateFeedback(value: AssistantFeedback): void {
