@@ -7,7 +7,12 @@
     import { Separator } from '$comp/ui/separator';
     import { Spinner } from '$comp/ui/spinner';
     import { Switch } from '$comp/ui/switch';
-    import { getAdminAssistantSettingsQuery, putAdminAssistantEnabledSettingsMutation, putAdminAssistantSettingsMutation } from '$features/admin/api.svelte';
+    import {
+        getAdminAssistantSettingsQuery,
+        putAdminAssistantConversationSharingSettingsMutation,
+        putAdminAssistantEnabledSettingsMutation,
+        putAdminAssistantSettingsMutation
+    } from '$features/admin/api.svelte';
     import { type AssistantSettingsFormData, AssistantSettingsSchema } from '$features/admin/schemas';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
@@ -16,9 +21,12 @@
 
     const settingsQuery = getAdminAssistantSettingsQuery();
     const updateEnabledSettings = putAdminAssistantEnabledSettingsMutation();
+    const updateConversationSharingSettings = putAdminAssistantConversationSharingSettingsMutation();
     const updateSettings = putAdminAssistantSettingsMutation();
     let assistantEnabled = $state(false);
+    let conversationSharingDefaultEnabled = $state(false);
     let loadedAvailabilityKey = $state<null | string>(null);
+    let loadedConversationSharingDefaultEnabled = $state<boolean>();
     let loadedSettingsKey = $state<null | string>(null);
     const settings = $derived(settingsQuery.data);
     const availabilityKey = $derived(
@@ -63,6 +71,15 @@
     });
 
     $effect(() => {
+        if (!settings || loadedConversationSharingDefaultEnabled === settings.conversation_sharing_default_enabled) {
+            return;
+        }
+
+        loadedConversationSharingDefaultEnabled = settings.conversation_sharing_default_enabled;
+        conversationSharingDefaultEnabled = settings.conversation_sharing_default_enabled;
+    });
+
+    $effect(() => {
         if (!settings || loadedSettingsKey === settingsKey) {
             return;
         }
@@ -70,18 +87,6 @@
         loadedSettingsKey = settingsKey;
         settingsForm.setFieldValue('model', settings.model);
     });
-
-    async function resetAvailability() {
-        try {
-            const saved = await updateEnabledSettings.mutateAsync({
-                enabled: null
-            });
-            assistantEnabled = saved.enabled;
-            toast.success('Exie availability reset to the deployment default.');
-        } catch {
-            toast.error('Failed to reset Exie availability.');
-        }
-    }
 
     async function resetModel() {
         try {
@@ -104,6 +109,32 @@
             toast.success(saved.enabled ? 'Exie is enabled.' : 'Exie is disabled.');
         } catch {
             toast.error('Failed to update Exie availability.');
+        }
+    }
+
+    async function resetAvailability() {
+        try {
+            const saved = await updateEnabledSettings.mutateAsync({
+                enabled: null
+            });
+            assistantEnabled = saved.enabled;
+            toast.success('Exie availability reset to the deployment default.');
+        } catch {
+            toast.error('Failed to reset Exie availability.');
+        }
+    }
+
+    async function saveConversationSharingDefault() {
+        try {
+            const saved = await updateConversationSharingSettings.mutateAsync({
+                enabled: conversationSharingDefaultEnabled
+            });
+            conversationSharingDefaultEnabled = saved.conversation_sharing_default_enabled;
+            toast.success(
+                saved.conversation_sharing_default_enabled ? 'Exie conversation sharing default is enabled.' : 'Exie conversation sharing default is disabled.'
+            );
+        } catch {
+            toast.error('Failed to update Exie conversation sharing default.');
         }
     }
 </script>
@@ -153,6 +184,34 @@
                 onclick={saveAvailability}
             >
                 {updateEnabledSettings.isPending ? 'Saving...' : 'Save'}
+            </Button>
+        </div>
+    </Field.Field>
+
+    <Separator />
+
+    <Field.Field orientation="responsive" class="gap-4 p-4">
+        <Field.Content>
+            <Field.Label for="assistant-conversation-sharing-default">Conversation sharing default</Field.Label>
+            <Field.Description>
+                Choose whether users share Exie messages and replies by default to help improve the feature. Users can change this in Exie; their saved choice
+                always takes precedence. Usage and error diagnostics remain available either way.
+            </Field.Description>
+        </Field.Content>
+        <div class="flex flex-wrap items-center justify-end gap-2">
+            <Switch
+                id="assistant-conversation-sharing-default"
+                bind:checked={conversationSharingDefaultEnabled}
+                disabled={updateConversationSharingSettings.isPending}
+            />
+            <Button
+                type="button"
+                size="sm"
+                aria-label="Save Exie conversation sharing default"
+                disabled={updateConversationSharingSettings.isPending || conversationSharingDefaultEnabled === settings?.conversation_sharing_default_enabled}
+                onclick={saveConversationSharingDefault}
+            >
+                {updateConversationSharingSettings.isPending ? 'Saving...' : 'Save'}
             </Button>
         </div>
     </Field.Field>

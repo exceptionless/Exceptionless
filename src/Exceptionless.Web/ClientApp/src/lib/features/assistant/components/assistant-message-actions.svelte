@@ -1,7 +1,6 @@
 <script lang="ts">
     import { Button } from '$comp/ui/button';
     import * as Tooltip from '$comp/ui/tooltip';
-    import { submitFeatureUsage } from '$features/auth/exceptionless-session';
     import { UseClipboard } from '$lib/hooks/use-clipboard.svelte';
     import Check from '@lucide/svelte/icons/check';
     import Clipboard from '@lucide/svelte/icons/clipboard';
@@ -16,12 +15,13 @@
         align?: 'end' | 'start';
         content: string;
         feedback?: AssistantFeedback;
+        onCopy?: () => void;
         onFeedback?: (feedback: AssistantFeedback | undefined) => void;
         onRegenerate?: () => Promise<void> | void;
         showFeedback?: boolean;
     }
 
-    let { align = 'start', content, feedback, onFeedback, onRegenerate, showFeedback = false }: Props = $props();
+    let { align = 'start', content, feedback, onCopy, onFeedback, onRegenerate, showFeedback = false }: Props = $props();
     const clipboard = new UseClipboard({
         delay: 1500
     });
@@ -41,16 +41,17 @@
         isRegenerating = false;
     }
 
-    async function updateFeedback(value: AssistantFeedback): Promise<void> {
+    async function copyMessage(): Promise<void> {
+        if ((await clipboard.copy(content)) === 'success') {
+            onCopy?.();
+        }
+    }
+
+    function updateFeedback(value: AssistantFeedback): void {
         const updatedFeedback = feedback === value ? undefined : value;
         onFeedback?.(updatedFeedback);
         if (updatedFeedback) {
             toast.success(updatedFeedback === 'helpful' ? 'Marked as helpful.' : 'Marked as not helpful.');
-            try {
-                await submitFeatureUsage(updatedFeedback === 'helpful' ? 'assistant.ResponseHelpful' : 'assistant.ResponseNotHelpful');
-            } catch {
-                toast.error('Your feedback is selected, but telemetry could not be sent.');
-            }
         }
     }
 </script>
@@ -66,7 +67,7 @@
         <Tooltip.Root>
             <Tooltip.Trigger>
                 {#snippet child({ props })}
-                    <Button {...props} aria-label="Copy message" onclick={() => void clipboard.copy(content)} size="icon-xs" variant="ghost">
+                    <Button {...props} aria-label="Copy message" onclick={() => void copyMessage()} size="icon-xs" variant="ghost">
                         {#if clipboard.copied}<Check aria-hidden="true" />{:else}<Clipboard aria-hidden="true" />{/if}
                     </Button>
                 {/snippet}

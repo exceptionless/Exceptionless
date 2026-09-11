@@ -20,6 +20,70 @@
     }
   ],
   "paths": {
+    "/api/v2/assistant/conversation-sharing": {
+      "get": {
+        "tags": [
+          "AssistantEndpoints"
+        ],
+        "operationId": "GetAssistantConversationSharing",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantConversationSharingSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "AssistantEndpoints"
+        ],
+        "description": "Saves the current user\u0027s choice. Null follows the admin default; true and false remain explicit choices when the default changes.",
+        "operationId": "SetAssistantConversationSharing",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAssistantConversationSharing"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantConversationSharingSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
     "/api/v2/assistant/access": {
       "get": {
         "tags": [
@@ -70,6 +134,7 @@
         "tags": [
           "AssistantEndpoints"
         ],
+        "description": "The X-Exie-Full-Logging response header indicates whether the browser should record prompts and responses for this turn. Missing or false disables conversation logging.",
         "operationId": "StreamAssistantChat",
         "requestBody": {
           "content": {
@@ -264,6 +329,57 @@
             "application/*\u002Bjson": {
               "schema": {
                 "$ref": "#/components/schemas/UpdateAssistantEnabledSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantModelSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/assistant-settings/conversation-sharing": {
+      "put": {
+        "tags": [
+          "AdminEndpoints"
+        ],
+        "summary": "Update Exie full conversation logging",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAssistantConversationSharingSettings"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAssistantConversationSharingSettings"
               }
             }
           },
@@ -11799,6 +11915,25 @@
           }
         }
       },
+      "AssistantConversationSharingSettings": {
+        "required": [
+          "enabled",
+          "default_enabled",
+          "is_overridden"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "default_enabled": {
+            "type": "boolean"
+          },
+          "is_overridden": {
+            "type": "boolean"
+          }
+        }
+      },
       "AssistantModelSettings": {
         "required": [
           "model",
@@ -11807,7 +11942,8 @@
           "enabled",
           "configured_enabled",
           "is_enabled_overridden",
-          "is_configured"
+          "is_configured",
+          "conversation_sharing_default_enabled"
         ],
         "type": "object",
         "properties": {
@@ -11831,6 +11967,10 @@
           },
           "is_configured": {
             "type": "boolean"
+          },
+          "conversation_sharing_default_enabled": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -13573,6 +13713,31 @@
           }
         }
       },
+      "UpdateAssistantConversationSharing": {
+        "required": [
+          "enabled"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        }
+      },
+      "UpdateAssistantConversationSharingSettings": {
+        "required": [
+          "enabled"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        }
+      },
       "UpdateAssistantEnabledSettings": {
         "type": "object",
         "properties": {
@@ -13949,6 +14114,12 @@
           },
           "email_notifications_enabled": {
             "type": "boolean"
+          },
+          "assistant_conversation_sharing_enabled": {
+            "type": [
+              "null",
+              "boolean"
+            ]
           },
           "is_email_address_verified": {
             "type": "boolean"
