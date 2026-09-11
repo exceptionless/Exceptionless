@@ -2,15 +2,15 @@
 
 Configuration is read from `components.json`. See [components.json](https://shadcn-svelte.com/docs/components-json) on the docs site for the full schema.
 
-> **IMPORTANT:** This repo uses npm. Run commands from `src/Exceptionless.Web/ClientApp` with `npx shadcn-svelte@latest ...`.
+> **IMPORTANT:** Always run commands using the project's package runner: `npx shadcn-svelte@latest`, `pnpm dlx shadcn-svelte@latest`, or `bunx --bun shadcn-svelte@latest`. Check `packageManager` from the project (or lockfile) to choose the right one. Examples below use `npx shadcn-svelte@latest` but substitute the correct runner for the project.
 
 > **IMPORTANT:** Only use the flags documented below. Do not invent or guess flags — if a flag isn't listed here, it doesn't exist. The CLI auto-detects the package manager; there is no `--package-manager` flag.
 
 ## Contents
 
-- Commands: `init`, `add`, `update`, `registry build`
+- Commands: `init`, `add`, `apply`, `update`, `registry build`
 - Proxy / outgoing requests
-- Presets (via `init`)
+- Presets (via `init` and `apply`)
 
 ---
 
@@ -65,6 +65,33 @@ Adds components from the configured registry. Arguments are component names from
 
 ---
 
+### `apply` — Apply a preset to an existing project
+
+```bash
+npx shadcn-svelte@latest apply [options]
+```
+
+Applies a design-system preset to a project that has already been initialized. Updates `components.json` with the preset settings, reinstalls existing components (except `utils`) with the new styles, and installs any required dependencies.
+
+Use `--only theme` or `--only font` to apply only part of a preset without reinstalling UI components.
+
+Get a preset code from the builder at [shadcn-svelte.com/create](https://shadcn-svelte.com/create).
+
+| Flag                | Short | Description                                    | Default   |
+| ------------------- | ----- | ---------------------------------------------- | --------- |
+| `--preset <preset>` | —     | Encoded design-system preset string (required) | —         |
+| `--only [parts]`    | —     | Apply only `theme` or `font` from the preset   | —         |
+| `-c, --cwd <path>`  | `-c`  | Working directory                              | current   |
+| `-y, --yes`         | `-y`  | Overwrite existing files without confirmation  | `false`   |
+| `-s, --silent`      | `-s`  | Mute output                                    | `false`   |
+| `--skip-preflight`  | —     | Ignore preflight checks and continue           | `false`   |
+| `--proxy <proxy>`   | —     | Fetch registry items through this proxy        | env-based |
+| `-h, --help`        | `-h`  | Help                                           | —         |
+
+Requires an existing `components.json`. Run `init` first if the project is not yet configured.
+
+---
+
 ### `update` — Update installed components
 
 ```bash
@@ -107,7 +134,7 @@ Reads a `registry.json` and writes registry JSON files for distribution. Default
 
 ### Proxy
 
-The CLI can fetch the registry through a proxy. If `HTTP_PROXY` or `http_proxy` is set, requests respect it. You can also pass `--proxy` on `init`, `add`, or `update`.
+The CLI can fetch the registry through a proxy. If `HTTP_PROXY` or `http_proxy` is set, requests respect it. You can also pass `--proxy` on `init`, `add`, `apply`, or `update`.
 
 ```bash
 HTTP_PROXY="<proxy-url>" npx shadcn-svelte@latest init
@@ -117,9 +144,10 @@ HTTP_PROXY="<proxy-url>" npx shadcn-svelte@latest init
 
 ## Presets
 
-Design-system options (style, theme, icons, fonts, etc.) can be captured as an encoded **preset** string from the builder on [shadcn-svelte.com](https://shadcn-svelte.com/create). Pass it to **`init`** with `--preset <string>`.
+Design-system options (style, theme, icons, fonts, etc.) can be captured as an encoded **preset** string from the builder on [shadcn-svelte.com/create](https://shadcn-svelte.com/create).
 
-Changing presets on an existing project: re-run **`init`** with the new preset (and confirm overwrites when prompted), or edit `components.json` and CSS and then run `add` / `update` as needed.
+- **New project:** pass the preset to **`init`** with `--preset <string>`.
+- **Existing project:** use **`apply --preset <string>`** to update configuration, restyle installed components, and install any new dependencies.
 
 ---
 
@@ -131,8 +159,8 @@ Changing presets on an existing project: re-run **`init`** with the new preset (
 | `tailwind.baseColor` | Base palette (cannot change after init)                          |
 | `aliases.*`          | Import aliases; must match `svelte.config.js` / `tsconfig` paths |
 | `registry`           | Base registry URL (default `https://shadcn-svelte.com/registry`) |
-| `style`              | Registered style name when present (e.g. `nova`, `vega`, …)      |
-| `iconLibrary`        | Icon set key when present. This repo currently omits it and uses `@lucide/svelte` in app code. |
+| `style`              | Registered style name (e.g. `nova`, `vega`, …)                   |
+| `iconLibrary`        | Icon set key (`lucide`, `tabler`, …) — drives generated imports  |
 | `typescript`         | Whether TS and optional custom config path                       |
 
 Resolved paths (including `tailwindCss`, `ui`, `components`) are computed by the CLI from `components.json` and the filesystem. Read `components.json` and list the UI directory when you need a snapshot of what is installed.

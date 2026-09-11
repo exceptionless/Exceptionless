@@ -1,112 +1,29 @@
 ---
 name: tanstack-query
-description: >
-    Use this skill when fetching data, managing server state, or handling API mutations in
-    the Svelte frontend. Covers createQuery, createMutation, query keys, cache invalidation,
-    optimistic updates, and WebSocket-driven refetching. Apply when adding API calls, managing
-    loading/error states, or coordinating cache updates after mutations.
+description: Manage Svelte API queries, mutations, cache updates, and WebSocket invalidation.
 ---
 
 # TanStack Query
 
-> **Documentation:** [tanstack.com/query](https://tanstack.com/query). Use official docs when the local pattern is not enough.
+Centralize API calls in each feature's `api.svelte.ts`, using `@tanstack/svelte-query` and `@exceptionless/fetchclient`.
 
-Centralize API calls in `api.svelte.ts` per feature using TanStack Query with `@exceptionless/fetchclient`.
+Use the current organization and webhook implementations under `src/Exceptionless.Web/ClientApp/src/lib/features/` as examples. Preserve their response/error types and signal handling.
 
-## Query Basics
+- Share a feature's `queryKeys` factory across queries, mutations, and invalidation.
+- Name operations `get{Resource}Query`, `post{Resource}Mutation`, `patch{Resource}Mutation`, and `delete{Resource}Mutation`.
+- Gate queries on required authentication or identifiers.
+- Pass the query cancellation signal through the fetch client.
+- For optimistic updates, cancel competing queries, snapshot the cache, restore on failure, and reconcile with server state after completion.
+- Wire WebSocket changes through the feature's invalidation helper. Match invalidation scope to the message identifiers.
 
-```typescript
-// src/lib/features/organizations/api.svelte.ts
-import { createQuery, createMutation, useQueryClient } from "@tanstack/svelte-query";
-import { type FetchClientResponse, type ProblemDetails, useFetchClient } from "@exceptionless/fetchclient";
-import { accessToken } from "$features/auth/index.svelte";
+Verify failure recovery and relevant cache interactions, not just the successful response.
 
-const queryKeys = {
-    type: ["Organization"] as const,
-};
+## Mutation and cache lifecycle
 
-export function getOrganizationsQuery() {
-    return createQuery<FetchClientResponse<Organization[]>, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.current,
-        queryKey: queryKeys.type,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
-            const client = useFetchClient();
-            const response = await client.getJSON<Organization[]>("/organizations", { signal });
-            return response;
-        },
-    }));
-}
-```
+Keep reactive query options in the factory passed to `createQuery` or `createMutation`, following the current feature implementation. Include identifiers and relevant query parameters in its key factory so distinct results do not share a cache entry.
 
-## Query Keys Convention
+For an optimistic mutation, `onMutate` cancels affected in-flight queries and saves the previous value before updating the cache. `onError` uses that context to roll back; completion reconciles affected queries with server state, commonly through `onSettled`. Preserve unrelated cache entries and consider overlapping mutations before restoring an older snapshot.
 
-Use a `queryKeys` factory per feature for type safety and consistency:
+Await invalidation or refetching when the calling UI depends on it before closing or navigating. Match the existing feature's `FetchClientResponse` and ProblemDetails handling instead of assuming every request throws or every mutation returns an unwrapped model.
 
-```typescript
-export const queryKeys = {
-    type: ["Webhook"] as const,
-    id: (id: string | undefined) => [...queryKeys.type, id] as const,
-    ids: (ids: string[] | undefined) => [...queryKeys.type, ...(ids ?? [])] as const,
-    project: (id: string | undefined) => [...queryKeys.type, "project", id] as const,
-    deleteWebhook: (ids: string[] | undefined) => [...queryKeys.ids(ids), "delete"] as const,
-    postWebhook: () => [...queryKeys.type, "post"] as const,
-};
-```
-
-Prefer the feature's `queryKeys` factory over ad-hoc arrays so WebSocket invalidation and cache updates share the same keys.
-
-## Mutations
-
-```typescript
-export function postOrganizationMutation() {
-    const queryClient = useQueryClient();
-
-    return createMutation(() => ({
-        mutationFn: async (data: CreateOrganizationRequest) => {
-            const client = useFetchClient();
-            const response = await client.postJSON<Organization>("/organizations", data);
-            return response.data!;
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.type });
-        },
-    }));
-}
-```
-
-## Naming Conventions
-
-| Pattern | Naming | Example |
-|---------|--------|---------|
-| Query (GET) | `get{Resource}Query` | `getOrganizationsQuery()` |
-| Create (POST) | `post{Resource}Mutation` | `postOrganizationMutation()` |
-| Update (PATCH) | `patch{Resource}Mutation` | `patchOrganizationMutation()` |
-| Delete (DELETE) | `delete{Resource}Mutation` | `deleteOrganizationMutation()` |
-
-## Dependent Queries
-
-Use `enabled` to conditionally run queries: `enabled: !!projectId`.
-
-## Optimistic Updates
-
-For mutations that update cached data optimistically: use `onMutate` to cancel in-flight queries, snapshot previous value via `getQueryData`, and apply optimistic update via `setQueryData`. Use `onError` to rollback from snapshot, and `onSettled` to always `invalidateQueries` for the final refetch.
-
-## WebSocket-Driven Invalidation
-
-Invalidate queries when WebSocket messages arrive:
-
-```typescript
-export async function invalidateWebhookQueries(
-    queryClient: QueryClient,
-    message: WebSocketMessageValue<"WebhookChanged">,
-) {
-    const { id, organization_id, project_id } = message;
-
-    if (id) await queryClient.invalidateQueries({ queryKey: queryKeys.id(id) });
-    if (project_id) await queryClient.invalidateQueries({ queryKey: queryKeys.project(project_id) });
-    if (!id && !organization_id && !project_id)
-        await queryClient.invalidateQueries({ queryKey: queryKeys.type });
-}
-```
-
-Wire WebSocket messages from the app layout to the feature invalidation helper.
+WebSocket invalidation must use the same key factories as queries. Inspect both the feature helper and its caller when changing message handling; verify identifier-specific and collection updates.

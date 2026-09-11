@@ -29,6 +29,12 @@ Use focused verification while iterating. Do not run broad Svelte validation aft
 - Use installed shadcn-svelte components from `$comp/ui/*`; check `components.json` and the `src/lib/features/shared/components/ui` directory before importing a component.
 - Do not copy structure, state patterns, or styling patterns from `../ClientApp.angular`.
 
+## Applying Installed Skills
+
+- Repository conventions govern application changes when an upstream skill uses generic examples. Keep the existing operational UI, theme, and typography; an ordinary component change does not require a redesign.
+- Run component CLI commands from this directory with `npx shadcn-svelte@latest`. Resolve imports through `components.json`; this app uses `$comp/ui/*`. Use `@lucide/svelte` unless the app's configured icon library changes.
+- Import only installed components. Use existing `RadioGroup` or `Select` for options and `Card`, `Alert`, or other installed primitives for empty states; add `ToggleGroup`, `Empty`, or other registry components only when the requested design needs them.
+
 ## Local URLs
 
 - Svelte app: `https://web-ex.dev.localhost:7131/next/`
