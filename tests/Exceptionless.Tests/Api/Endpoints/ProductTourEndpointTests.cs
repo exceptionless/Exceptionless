@@ -236,6 +236,7 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     [InlineData("tour.name")]
     [InlineData("TourName")]
     [InlineData("tour name")]
+    [InlineData("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklm")]
     public Task RecordCurrentUserProductTourAsync_InvalidIdentifier_ReturnsUnprocessableEntity(string name)
     {
         // Arrange: sample users are created by ResetDataAsync.

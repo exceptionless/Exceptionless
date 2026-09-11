@@ -3967,8 +3967,6 @@
             "description": "A UI-defined product tour identifier using lowercase letters, digits, and hyphens (up to 64 characters).",
             "required": true,
             "schema": {
-              "maxLength": 64,
-              "minLength": 1,
               "type": "string"
             }
           }

@@ -37,7 +37,7 @@ public static class UserEndpoints
             }
         });
 
-        group.MapPut("users/me/product-tours/{tourName:minlength(1):maxlength(64)}/record", async (string tourName, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
+        group.MapPut("users/me/product-tours/{tourName}/record", async (string tourName, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result<RecordProductTourResult>>(new UserMessages.RecordCurrentUserProductTour(tourName))).ToHttpResult(resultMapper))
         .Produces<RecordProductTourResult>()
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
