@@ -111,29 +111,6 @@
             activeTurn?.disableFullLogging();
         }
     });
-
-    async function changeConversationSharing(enabled: boolean | null) {
-        if (!onConversationSharingChange || isSavingSharing) {
-            return;
-        }
-        sharingError = undefined;
-        requestedSharing = enabled;
-        isSavingSharing = true;
-        if (enabled !== true) {
-            sharingSuppressed = true;
-            activeTurn?.disableFullLogging();
-        }
-        try {
-            sharingSettings = await onConversationSharingChange(enabled);
-            sharingSuppressed = !sharingSettings.enabled;
-        } catch {
-            sharingError = sharingSuppressed
-                ? 'Could not save your choice. Sharing is paused on this page. Try again to save it for all devices.'
-                : 'Could not save your sharing choice. Please try again.';
-        } finally {
-            isSavingSharing = false;
-        }
-    }
     $effect(() => {
         if (open && conversationElement) {
             void scrollToLatest('auto', true);
@@ -210,39 +187,144 @@
         });
     });
 
-    async function submitPrompt(value = prompt, options: { action?: AssistantSuggestedAction; source?: AssistantPromptSource } = {}): Promise<void> {
-        const content = value.trim();
-        if (!content || isStreaming) {
+    function applyStreamEvent(assistantMessageId: string, event: AssistantStreamEvent, requestPath: string): void {
+        messages = messages.map((message) => {
+            if (message.id !== assistantMessageId) {
+                return message;
+            }
+
+            if (event.type === 'text_delta') {
+                return {
+                    ...message,
+                    content: message.content + (event.text ?? '')
+                };
+            }
+
+            if (event.type === 'tool_call' && event.tool_call_id && event.tool_name) {
+                return {
+                    ...message,
+                    tools: [
+                        ...message.tools,
+                        {
+                            arguments: event.arguments ?? '{}',
+                            id: event.tool_call_id,
+                            name: event.tool_name,
+                            status: 'running' as const
+                        }
+                    ]
+                };
+            }
+
+            if (event.type === 'tool_result' && event.tool_call_id) {
+                const status = assistantToolResultFailed(event.result) ? ('failed' as const) : ('complete' as const);
+                return {
+                    ...message,
+                    tools: message.tools.map((tool) =>
+                        tool.id === event.tool_call_id
+                            ? {
+                                  ...tool,
+                                  result: event.result,
+                                  status
+                              }
+                            : tool
+                    )
+                };
+            }
+
+            if (event.type === 'suggested_actions') {
+                return {
+                    ...message,
+                    suggestedActions: (event.suggested_actions ?? []).map((action) => ({
+                        ...action,
+                        sourcePath: requestPath
+                    }))
+                };
+            }
+
+            return message;
+        });
+
+        if (event.type === 'error') {
+            errorMessage = event.message ?? 'Exie could not complete this request.';
+        }
+    }
+
+    async function changeConversationSharing(enabled: boolean | null) {
+        if (!onConversationSharingChange || isSavingSharing) {
             return;
         }
-
-        prompt = '';
-        if (content.toLowerCase() === '/tools') {
-            showToolCalls = !showToolCalls;
-            return;
+        sharingError = undefined;
+        requestedSharing = enabled;
+        isSavingSharing = true;
+        if (enabled !== true) {
+            sharingSuppressed = true;
+            activeTurn?.disableFullLogging();
         }
+        try {
+            sharingSettings = await onConversationSharingChange(enabled);
+            sharingSuppressed = !sharingSettings.enabled;
+        } catch {
+            sharingError = sharingSuppressed
+                ? 'Could not save your choice. Sharing is paused on this page. Try again to save it for all devices.'
+                : 'Could not save your sharing choice. Please try again.';
+        } finally {
+            isSavingSharing = false;
+        }
+    }
 
+    function clearConversation(): void {
+        trackConversationEvent('assistant.ConversationCleared');
+        stopStreaming('conversation_cleared');
+        messages = [];
+        conversationId = createConversationId();
         errorMessage = undefined;
-        const userMessage: AssistantChatMessage = {
-            content,
-            conversationId,
-            id: crypto.randomUUID(),
-            isSuggestedAction: options.source === 'suggested_action',
-            role: 'user',
-            suggestedActionLabel: options.action?.label,
-            suggestedActionPath: options.action?.sourcePath,
-            tools: []
+        prompt = '';
+        isNearBottom = true;
+        showScrollToBottom = false;
+        lastOutcome = undefined;
+    }
+
+    function collapseToSidePanel(): void {
+        onCollapse?.();
+    }
+
+    function createConversationId(): string {
+        // Match the server's Guid.ToString("N") representation for exact log correlation.
+        return crypto.randomUUID().replaceAll('-', '');
+    }
+
+    function getTelemetryContext(message?: AssistantChatMessage): AssistantTelemetryContext {
+        return {
+            assistant_message_id: message?.role === 'assistant' ? message.id : undefined,
+            conversation_id: message?.conversationId ?? conversationId,
+            mode,
+            organization_id: conversationOrganizationId ?? organizationId,
+            path: (path ?? page.url.pathname).split(/[?#]/)[0],
+            project_id: projectId,
+            user_message_id: message?.role === 'user' ? message.id : undefined
         };
-        const assistantMessage: AssistantChatMessage = {
-            content: '',
-            conversationId,
-            id: crypto.randomUUID(),
-            role: 'assistant',
-            tools: []
-        };
-        const history = [...messages, userMessage];
-        messages = [...history, assistantMessage];
-        await streamResponse(history, assistantMessage, options.source ?? 'composer');
+    }
+
+    function handleConversationScroll(): void {
+        if (!conversationElement) {
+            return;
+        }
+
+        const distanceFromBottom = conversationElement.scrollHeight - conversationElement.scrollTop - conversationElement.clientHeight;
+        isNearBottom = distanceFromBottom < 80;
+        showScrollToBottom = !isNearBottom;
+    }
+
+    function handleInteractOutside(event: PointerEvent): void {
+        if (event.target instanceof Element && event.target.closest('[data-assistant-trigger]')) {
+            event.preventDefault();
+        }
+    }
+
+    function handlePageHide(): void {
+        if (wasVisible || messages.length > 0) {
+            trackConversationEvent('assistant.PageLeft');
+        }
     }
 
     async function handleSuggestedAction(action: AssistantSuggestedAction, message: AssistantChatMessage): Promise<void> {
@@ -296,6 +378,70 @@
             previous_conversation_id: previousConversationId,
             retry_of_message_id: assistantMessageId
         });
+    }
+
+    async function scrollToLatest(behavior: 'auto' | 'smooth' = 'smooth', force = false): Promise<void> {
+        if (!force && !isNearBottom) {
+            showScrollToBottom = true;
+            return;
+        }
+
+        await tick();
+        conversationElement?.scrollTo({
+            behavior,
+            top: conversationElement.scrollHeight
+        });
+        isNearBottom = true;
+        showScrollToBottom = false;
+    }
+
+    function setMessageFeedback(messageId: string, feedback: AssistantFeedback | undefined): void {
+        const message = messages.find((message) => message.id === messageId);
+        if (!message) {
+            return;
+        }
+        const feature =
+            feedback === 'helpful'
+                ? 'assistant.ResponseHelpful'
+                : feedback === 'not-helpful'
+                  ? 'assistant.ResponseNotHelpful'
+                  : 'assistant.ResponseFeedbackCleared';
+        trackAssistantEvent(feature, getTelemetryContext(message), {
+            feedback: feedback ?? 'cleared'
+        });
+        messages = messages.map((message) =>
+            message.id === messageId
+                ? {
+                      ...message,
+                      feedback
+                  }
+                : message
+        );
+    }
+
+    function stopStreaming(reason: AssistantStopReason = 'user_stopped'): void {
+        const outcome = activeTurn?.finish(reason, {
+            is_visible: mode === 'page' || open
+        });
+        if (outcome) {
+            lastOutcome = outcome;
+        }
+        abortController?.abort();
+        if (!messages.some((message) => message.tools.some((tool) => tool.status === 'running'))) {
+            return;
+        }
+
+        messages = messages.map((message) => ({
+            ...message,
+            tools: message.tools.map((tool) =>
+                tool.status === 'running'
+                    ? {
+                          ...tool,
+                          status: 'cancelled' as const
+                      }
+                    : tool
+            )
+        }));
     }
 
     async function streamResponse(
@@ -383,164 +529,39 @@
         }
     }
 
-    function applyStreamEvent(assistantMessageId: string, event: AssistantStreamEvent, requestPath: string): void {
-        messages = messages.map((message) => {
-            if (message.id !== assistantMessageId) {
-                return message;
-            }
-
-            if (event.type === 'text_delta') {
-                return {
-                    ...message,
-                    content: message.content + (event.text ?? '')
-                };
-            }
-
-            if (event.type === 'tool_call' && event.tool_call_id && event.tool_name) {
-                return {
-                    ...message,
-                    tools: [
-                        ...message.tools,
-                        {
-                            arguments: event.arguments ?? '{}',
-                            id: event.tool_call_id,
-                            name: event.tool_name,
-                            status: 'running' as const
-                        }
-                    ]
-                };
-            }
-
-            if (event.type === 'tool_result' && event.tool_call_id) {
-                const status = assistantToolResultFailed(event.result) ? ('failed' as const) : ('complete' as const);
-                return {
-                    ...message,
-                    tools: message.tools.map((tool) =>
-                        tool.id === event.tool_call_id
-                            ? {
-                                  ...tool,
-                                  result: event.result,
-                                  status
-                              }
-                            : tool
-                    )
-                };
-            }
-
-            if (event.type === 'suggested_actions') {
-                return {
-                    ...message,
-                    suggestedActions: (event.suggested_actions ?? []).map((action) => ({
-                        ...action,
-                        sourcePath: requestPath
-                    }))
-                };
-            }
-
-            return message;
-        });
-
-        if (event.type === 'error') {
-            errorMessage = event.message ?? 'Exie could not complete this request.';
-        }
-    }
-
-    function handleInteractOutside(event: PointerEvent): void {
-        if (event.target instanceof Element && event.target.closest('[data-assistant-trigger]')) {
-            event.preventDefault();
-        }
-    }
-
-    function stopStreaming(reason: AssistantStopReason = 'user_stopped'): void {
-        const outcome = activeTurn?.finish(reason, {
-            is_visible: mode === 'page' || open
-        });
-        if (outcome) {
-            lastOutcome = outcome;
-        }
-        abortController?.abort();
-        if (!messages.some((message) => message.tools.some((tool) => tool.status === 'running'))) {
+    async function submitPrompt(value = prompt, options: { action?: AssistantSuggestedAction; source?: AssistantPromptSource } = {}): Promise<void> {
+        const content = value.trim();
+        if (!content || isStreaming) {
             return;
         }
 
-        messages = messages.map((message) => ({
-            ...message,
-            tools: message.tools.map((tool) =>
-                tool.status === 'running'
-                    ? {
-                          ...tool,
-                          status: 'cancelled' as const
-                      }
-                    : tool
-            )
-        }));
-    }
-
-    function clearConversation(): void {
-        trackConversationEvent('assistant.ConversationCleared');
-        stopStreaming('conversation_cleared');
-        messages = [];
-        conversationId = createConversationId();
-        errorMessage = undefined;
         prompt = '';
-        isNearBottom = true;
-        showScrollToBottom = false;
-        lastOutcome = undefined;
-    }
-
-    function collapseToSidePanel(): void {
-        onCollapse?.();
-    }
-
-    function handleConversationScroll(): void {
-        if (!conversationElement) {
+        if (content.toLowerCase() === '/tools') {
+            showToolCalls = !showToolCalls;
             return;
         }
 
-        const distanceFromBottom = conversationElement.scrollHeight - conversationElement.scrollTop - conversationElement.clientHeight;
-        isNearBottom = distanceFromBottom < 80;
-        showScrollToBottom = !isNearBottom;
-    }
-
-    function setMessageFeedback(messageId: string, feedback: AssistantFeedback | undefined): void {
-        const message = messages.find((message) => message.id === messageId);
-        if (!message) {
-            return;
-        }
-        const feature =
-            feedback === 'helpful'
-                ? 'assistant.ResponseHelpful'
-                : feedback === 'not-helpful'
-                  ? 'assistant.ResponseNotHelpful'
-                  : 'assistant.ResponseFeedbackCleared';
-        trackAssistantEvent(feature, getTelemetryContext(message), {
-            feedback: feedback ?? 'cleared'
-        });
-        messages = messages.map((message) =>
-            message.id === messageId
-                ? {
-                      ...message,
-                      feedback
-                  }
-                : message
-        );
-    }
-
-    function getTelemetryContext(message?: AssistantChatMessage): AssistantTelemetryContext {
-        return {
-            assistant_message_id: message?.role === 'assistant' ? message.id : undefined,
-            conversation_id: message?.conversationId ?? conversationId,
-            mode,
-            organization_id: conversationOrganizationId ?? organizationId,
-            path: (path ?? page.url.pathname).split(/[?#]/)[0],
-            project_id: projectId,
-            user_message_id: message?.role === 'user' ? message.id : undefined
+        errorMessage = undefined;
+        const userMessage: AssistantChatMessage = {
+            content,
+            conversationId,
+            id: crypto.randomUUID(),
+            isSuggestedAction: options.source === 'suggested_action',
+            role: 'user',
+            suggestedActionLabel: options.action?.label,
+            suggestedActionPath: options.action?.sourcePath,
+            tools: []
         };
-    }
-
-    function createConversationId(): string {
-        // Match the server's Guid.ToString("N") representation for exact log correlation.
-        return crypto.randomUUID().replaceAll('-', '');
+        const assistantMessage: AssistantChatMessage = {
+            content: '',
+            conversationId,
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            tools: []
+        };
+        const history = [...messages, userMessage];
+        messages = [...history, assistantMessage];
+        await streamResponse(history, assistantMessage, options.source ?? 'composer');
     }
 
     function trackConversationEvent(feature: string, details: Record<string, unknown> = {}): void {
@@ -558,27 +579,6 @@
                 message_count: messages.length
             }
         );
-    }
-
-    function handlePageHide(): void {
-        if (wasVisible || messages.length > 0) {
-            trackConversationEvent('assistant.PageLeft');
-        }
-    }
-
-    async function scrollToLatest(behavior: 'auto' | 'smooth' = 'smooth', force = false): Promise<void> {
-        if (!force && !isNearBottom) {
-            showScrollToBottom = true;
-            return;
-        }
-
-        await tick();
-        conversationElement?.scrollTo({
-            behavior,
-            top: conversationElement.scrollHeight
-        });
-        isNearBottom = true;
-        showScrollToBottom = false;
     }
 </script>
 
