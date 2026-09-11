@@ -47,6 +47,8 @@ public sealed class StackIndex : VersionedIndex<Stack>
                 .Keyword(e => e.SignatureHash, k => k.IgnoreAbove(1024))
                     .FieldAlias(Alias.SignatureHash, a => a.Path(f => f.SignatureHash))
                 .Keyword(e => e.DuplicateSignature)
+                .Keyword(e => e.RedirectToStackId)
+                .Boolean(e => e.NeedsRedirectReconciliation)
                 .Keyword(e => e.Type, k => k.IgnoreAbove(1024))
                 .Date(e => e.FirstOccurrence)
                     .FieldAlias(Alias.FirstOccurrence, a => a.Path(f => f.FirstOccurrence))
