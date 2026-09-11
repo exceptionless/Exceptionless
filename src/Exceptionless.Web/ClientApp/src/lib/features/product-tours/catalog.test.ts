@@ -17,6 +17,29 @@ function context(overrides: Partial<ProductTourContext> = {}): ProductTourContex
 }
 
 describe('product tour catalog', () => {
+    it.each(['filters', 'saved-views'] as const)('only resumes %s where its controls exist', (checkpoint) => {
+        const guide = productTourCatalog.find((tour) => tour.name === 'app-overview')!;
+        expect(guide.canResume(checkpoint, '/(app)/event')).toBe(true);
+        expect(guide.canResume(checkpoint, '/(app)/project/[projectId]/manage')).toBe(false);
+        expect(guide.canResume(checkpoint, null)).toBe(false);
+    });
+
+    it('allows the View step on every page with a View menu', () => {
+        const guide = productTourCatalog.find((tour) => tour.name === 'app-overview')!;
+        for (const route of ['/(app)/stack', '/(app)/sessions', '/(app)/stream'] as const) {
+            expect(guide.canResume('saved-views', route)).toBe(true);
+            expect(guide.canResume('filters', route)).toBe(false);
+        }
+    });
+
+    it('keeps shell-wide overview steps resumable outside Events', () => {
+        const guide = productTourCatalog.find((tour) => tour.name === 'app-overview')!;
+        for (const checkpoint of ['navigation', 'events', 'exie', 'command-search'] as const) {
+            expect(guide.canResume(checkpoint, '/(app)/project/[projectId]/manage')).toBe(true);
+            expect(guide.canResume(checkpoint, null)).toBe(false);
+        }
+    });
+
     it('resumes project setup using route identity rather than path substrings', () => {
         // Arrange
         const guide = productTourCatalog.find((tour) => tour.name === 'project-configure')!;

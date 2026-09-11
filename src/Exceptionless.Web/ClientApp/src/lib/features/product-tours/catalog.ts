@@ -1,3 +1,4 @@
+import type { RouteId } from '$app/types';
 import type { ProductTourState } from '$features/users/models';
 
 import { resolve } from '$app/paths';
@@ -5,6 +6,8 @@ import { resolve } from '$app/paths';
 import type { ProductTourContext, ProductTourDefinition, ProductTourListItem, ProductTourName } from './models';
 
 import { getProductTourRecordedAt } from './eligibility';
+
+const savedViewRouteIds = new Set<RouteId>(['/(app)/event', '/(app)/sessions', '/(app)/stack', '/(app)/stream']);
 
 function requireApplicationShell(context: ProductTourContext) {
     return context.isSetupPage || !context.organizationId
@@ -38,7 +41,20 @@ function requireOrganization(context: ProductTourContext) {
 export const productTourCatalog: readonly ProductTourDefinition[] = [
     {
         availability: requireApplicationShell,
-        canResume: () => true,
+        canResume: (checkpoint, routeId) => {
+            if (!routeId) {
+                return false;
+            }
+
+            if (checkpoint === 'filters') {
+                return routeId === '/(app)/event';
+            }
+
+            if (checkpoint === 'saved-views') {
+                return savedViewRouteIds.has(routeId);
+            }
+            return true;
+        },
         description: 'Find your way around in about a minute.',
         keywords: ['navigation', 'ui', 'search', 'command palette', 'help', 'saved views', 'stacks', 'occurrences'],
         name: 'app-overview',

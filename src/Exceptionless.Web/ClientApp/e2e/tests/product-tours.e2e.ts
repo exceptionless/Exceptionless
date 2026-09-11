@@ -385,6 +385,41 @@ for (const title of ['Explore Exceptionless', 'Create a saved view', 'Meet Exie'
     });
 }
 
+for (const [stepTitle, advances] of [
+    ['Narrow your results', 2],
+    ['Keep a useful view', 3]
+] as const) {
+    test(`the overview offers Restart when leaving ${stepTitle}`, async ({ e2eScenario, page }) => {
+        // Arrange: start from a page without event filters or a View menu.
+        const projectPath = `/next/project/${e2eScenario.projectId}/manage`;
+        await page.goto(projectPath);
+        await startTourFromCommand(page, 'Explore Exceptionless');
+        await expect(page).toHaveURL(/\/next\/event$/);
+        await expect(page.locator('[data-tour="event-filters"]')).toBeVisible();
+        const callout = page.locator('.driver-popover');
+        const stepTitles = ['Spot repeated problems', 'See each report', 'Narrow your results'];
+        for (let step = 0; step < advances; step++) {
+            await expect(page.locator('.driver-popover-title')).toHaveText(stepTitles[step]);
+            await callout.getByRole('button', { name: 'Next' }).click();
+        }
+        await expect(page.locator('.driver-popover-title')).toHaveText(stepTitle);
+
+        // Act
+        await page.goBack();
+        await expect(page).toHaveURL(new RegExp(`${projectPath}$`));
+        await page.keyboard.press('/');
+        await page.getByRole('option', { exact: true, name: 'Guided Tours' }).click();
+        const catalog = page.getByRole('dialog', { name: 'Guided Tours' });
+
+        // Assert: restarting returns to a page with the tour's controls.
+        const restart = catalog.getByRole('button', { exact: true, name: 'Restart Explore Exceptionless' });
+        await expect(restart).toBeVisible();
+        await restart.click();
+        await expect(page).toHaveURL(/\/next\/event$/);
+        await expect(page.locator('.driver-popover-title')).toHaveText('Spot repeated problems');
+    });
+}
+
 test('project guide preserves the current SDK selection', async ({ e2eScenario, page }) => {
     // Arrange
     await page.route('**/api/v2/organizations/*/projects*', async (route) => {
