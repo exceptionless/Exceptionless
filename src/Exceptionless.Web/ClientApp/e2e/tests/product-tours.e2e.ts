@@ -143,7 +143,7 @@ test.describe('first-run welcome', () => {
         await expect(welcome).toBeHidden();
     });
 
-    test('a failed close is non-blocking and stays dismissed for the session', async ({ e2eScenario, page }) => {
+    test('a failed close is non-blocking and can be retried after reload', async ({ e2eScenario, page }) => {
         // Arrange
         const welcome = page.getByRole('region', { name: 'Welcome to Exceptionless' });
         await test.step(`show the welcome for ${e2eScenario.email}`, async () => {
@@ -161,6 +161,12 @@ test.describe('first-run welcome', () => {
         await expect(welcome).toBeHidden();
         await page.unroute(progressRoute);
         await page.reload();
+
+        // An unsaved preference can be retried when the user returns.
+        await expect(welcome).toBeVisible();
+        const persisted = page.waitForResponse(isSuccessfulTourProgress('app-welcome'));
+        await welcome.getByRole('button', { name: 'Close welcome' }).click();
+        await persisted;
         await expect(welcome).toBeHidden();
     });
 });
