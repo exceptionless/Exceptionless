@@ -1,5 +1,5 @@
 <!doctype html>
-<html ng-app="app">
+<html ng-app="app" ng-csp="no-unsafe-eval">
     <head>
         <title ng-bind="page.title">Exceptionless</title>
         <meta charset="utf-8" />
@@ -93,7 +93,6 @@
         <script src="node_modules/moment/locale/zh-cn.js"></script>
         <script src="node_modules/bootstrap-daterangepicker/daterangepicker.js"></script>
         <script src="node_modules/twix/dist/twix.js"></script>
-        <script src="node_modules/handlebars/dist/handlebars.js"></script>
         <script src="node_modules/trunk8/trunk8.js"></script>
 
         <script src="node_modules/angular/angular.js"></script>
@@ -174,7 +173,6 @@
         <script src="components/notification/notification-service.js"></script>
         <script src="components/object-dump/object-dump.js"></script>
         <script src="components/object-dump/object-dump-directive.js"></script>
-        <script src="components/object-dump/handlebars-service.js"></script>
         <script src="components/objectid/objectid.js"></script>
         <script src="components/objectid/objectid-service.js"></script>
         <script src="components/organization/organization-service.js"></script>

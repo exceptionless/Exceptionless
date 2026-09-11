@@ -1,17 +1,16 @@
-var path = require("path");
-var fs = require("fs");
-var s = require("child_process");
 // eslint-disable-next-line import/no-extraneous-dependencies
 var livereload = require("connect-livereload");
 // eslint-disable-next-line import/no-extraneous-dependencies
 var proxyRequest = require("grunt-connect-proxy2/lib/utils").proxyRequest;
+var csp = require("../csp-middleware");
+var devCertificate = require("../dev-certificate");
 
 module.exports = function () {
     var target = getTarget();
     var useHttps = String(process.env.USE_HTTPS || "").toLowerCase() === "true";
     var port = Number(process.env.PORT) || 7121;
     var liveReloadPort = Number(process.env.LIVERELOAD_PORT) || 35729;
-    var certs = useHttps ? generateCerts() : { cert: undefined, key: undefined };
+    var certs = useHttps ? devCertificate.getDevCertificate() : { cert: undefined, key: undefined };
 
     return {
         main: {
@@ -22,7 +21,12 @@ module.exports = function () {
                 cert: certs.cert,
                 middleware: function (connect, options, middlewares) {
                     middlewares.unshift(proxyRequest);
-                    middlewares.splice(1, 0, livereload({ port: liveReloadPort }));
+                    middlewares.splice(
+                        1,
+                        0,
+                        csp.createCspMiddleware(),
+                        livereload({ disableCompression: true, port: liveReloadPort })
+                    );
                     return middlewares;
                 },
             },
@@ -82,32 +86,4 @@ function getTarget() {
     }
 
     return { host: "localhost", port: 7110, ssl: false };
-}
-
-function generateCerts() {
-    var baseFolder =
-        process.env.APPDATA !== undefined && process.env.APPDATA !== ""
-            ? `${process.env.APPDATA}/ASP.NET/https`
-            : `${process.env.HOME}/.aspnet/https`;
-    var certificateName = process.env.npm_package_name;
-
-    if (!certificateName) {
-        // eslint-disable-next-line no-console
-        console.error("Invalid certificate name. Run this script in the context of an npm script.");
-        process.exit(-1);
-    }
-
-    var certFilePath = path.join(baseFolder, `${certificateName}.pem`);
-    var keyFilePath = path.join(baseFolder, `${certificateName}.key`);
-
-    if (!fs.existsSync(certFilePath) || !fs.existsSync(keyFilePath)) {
-        var outp = s.execSync(`dotnet dev-certs https --export-path "${certFilePath}" --format Pem --no-password`);
-        // eslint-disable-next-line no-console
-        console.log(outp.toString());
-    }
-
-    return {
-        cert: fs.readFileSync(certFilePath, "utf8"),
-        key: fs.readFileSync(keyFilePath, "utf8"),
-    };
 }
