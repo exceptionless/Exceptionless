@@ -75,6 +75,23 @@ describe('persisted product tour state', () => {
         expect(shouldOfferProductTourInvitation(getProductTourRecordedAt(state, 'app_welcome', 'invitation'))).toBe(false);
     });
 
+    it.each([
+        ['new-ui-overview', 'app_overview'],
+        ['ui-overview', 'app_overview'],
+        ['configure-project', 'project_configure'],
+        ['create-saved-view', 'saved_view_create'],
+        ['investigate-error', 'event_investigate'],
+        ['meet-exie', 'exie_overview']
+    ])('recognizes completion of the earlier %s tour', (legacyKey, currentKey) => {
+        const state = { [legacyKey]: { status: 'completed', updated_utc: recordedUtc, version: 1 } };
+        expect(getProductTourRecordedAt(state, currentKey)).toBe(recordedUtc);
+    });
+
+    it.each(['completed', 'dismissed'])('keeps the earlier welcome invitation hidden when %s', (status) => {
+        const state = { welcome: { status, updated_utc: recordedUtc, version: 1 } };
+        expect(shouldOfferProductTourInvitation(getProductTourRecordedAt(state, 'app_welcome', 'invitation'))).toBe(false);
+    });
+
     it('prefers the current timestamp and ignores unrecognized values', () => {
         const state = { 'app-overview': { status: 'dismissed', updated_utc: '2020-01-01T00:00:00Z' }, app_overview: recordedUtc };
         expect(getProductTourRecordedAt(state, 'app_overview')).toBe(recordedUtc);

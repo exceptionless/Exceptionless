@@ -8,6 +8,7 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Models;
 using Xunit;
 
 namespace Exceptionless.Tests.Api.Endpoints;
@@ -244,6 +245,36 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
         Assert.Equal(recordedUtc, persistedUser.ProductTours["guide_0"].GetDateTime());
     }
 
+    [Fact]
+    public async Task GetCurrentUserAsync_CacheReadFinishesAfterCompletion_ReturnsRecordedProgress()
+    {
+        // Arrange
+        var currentUser = await GetTestOrganizationUserAsync();
+        var user = await _userRepository.GetByIdAsync(currentUser.Id, o => o.Cache(false));
+        Assert.NotNull(user);
+        await _userRepository.InvalidateCacheAsync(user);
+        var repository = new PausingCacheUserRepository(GetService<ExceptionlessElasticConfiguration>(), GetService<MiniValidationValidator>(), GetService<AppOptions>());
+        var recordedUtc = TimeProvider.GetUtcNow().UtcDateTime;
+
+        // Act: a lookup writes its old snapshot after the completion has invalidated the cache.
+        var read = repository.GetByIdAsync(user.Id, o => o.Cache());
+        try
+        {
+            await repository.CacheWriteReady.Task.WaitAsync(TimeSpan.FromSeconds(10), TestCancellationToken);
+            await _userRepository.RecordProductTourAsync(user, "app_overview", recordedUtc);
+        }
+        finally
+        {
+            repository.ResumeCacheWrite.TrySetResult();
+            await read;
+        }
+        var result = await SendRequestAsAsync<JsonElement>(r => r.AsTestOrganizationUser()
+            .AppendPath("users/me").StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.Equal(recordedUtc, result.GetProperty("product_tours").GetProperty("app_overview").GetDateTime());
+    }
+
     [Theory]
     [InlineData("tour.name")]
     [InlineData("TourName")]
@@ -319,6 +350,20 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
             SnapshotRead.TrySetResult();
             await ResumeRead.Task;
             return user;
+        }
+    }
+
+    private sealed class PausingCacheUserRepository(ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, AppOptions options)
+        : UserRepository(configuration, validator, options)
+    {
+        public TaskCompletionSource CacheWriteReady { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource ResumeCacheWrite { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<User>> findHits, ICommandOptions options, bool isDirtyRead)
+        {
+            CacheWriteReady.TrySetResult();
+            await ResumeCacheWrite.Task;
+            await base.AddDocumentsToCacheAsync(findHits, options, isDirtyRead);
         }
     }
 
