@@ -9,7 +9,6 @@ Serilog:
       #Exceptionless.Core.Repositories.StackRepository: Verbose
       #Exceptionless.Core.Repositories: Verbose
       Exceptionless.Web.Program: Information
-      Exceptionless.Web.Assistant: Information
       Exceptionless.Web.Security.ApiKeyAuthenticationHandler: Warning
       Foundatio.Metrics: Warning
       Foundatio.Utility.ScheduledTimer: Warning
@@ -32,7 +31,7 @@ Serilog:
 
 Assistant:
   Endpoint: https://openrouter.ai/api/v1/chat/completions
-  Model: "deepseek/deepseek-v4.1-flash"
+  Model: "~deepseek/deepseek-v4-flash-latest"
   ApiKey:
 
 Apm:

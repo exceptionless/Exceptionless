@@ -43,14 +43,10 @@ public sealed record AssistantStreamEvent(
     string? Message = null,
     IReadOnlyCollection<AssistantSuggestedAction>? SuggestedActions = null)
 {
-    [System.Text.Json.Serialization.JsonIgnore]
-    internal string? FailureCode { get; init; }
-
     public static AssistantStreamEvent TextDelta(string text) => new("text_delta", Text: text);
     public static AssistantStreamEvent ToolCall(string id, string name, string arguments) => new("tool_call", ToolCallId: id, ToolName: name, Arguments: arguments);
     public static AssistantStreamEvent ToolResult(string id, string name, string result) => new("tool_result", ToolCallId: id, ToolName: name, Result: result);
     public static AssistantStreamEvent Suggestions(IReadOnlyCollection<AssistantSuggestedAction> actions) => new("suggested_actions", SuggestedActions: actions);
     public static AssistantStreamEvent Error(string message) => new("error", Message: message);
-    internal static AssistantStreamEvent Error(string message, string failureCode) => new("error", Message: message) { FailureCode = failureCode };
     public static AssistantStreamEvent Done() => new("done");
 }

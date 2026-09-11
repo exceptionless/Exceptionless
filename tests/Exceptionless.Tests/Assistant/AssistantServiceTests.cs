@@ -1,5 +1,3 @@
-using System.Diagnostics;
-using System.Diagnostics.Metrics;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -9,7 +7,6 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Services;
-using Exceptionless.Web.Api.Endpoints;
 using Exceptionless.Web.Assistant;
 using Exceptionless.Web.Mcp;
 using Foundatio.Caching;
@@ -25,7 +22,7 @@ using Xunit;
 
 namespace Exceptionless.Tests.Assistant;
 
-public sealed partial class AssistantServiceTests
+public sealed class AssistantServiceTests
 {
     [Theory]
     [InlineData("requested-project", "Named project", "current-project", "requested-project")]
@@ -113,7 +110,7 @@ public sealed partial class AssistantServiceTests
             item => Assert.Equal("done", item.Type));
         Assert.Equal("Bearer", handler.AuthorizationScheme);
         using var providerRequest = JsonDocument.Parse(handler.RequestBody);
-        Assert.Equal("deepseek/deepseek-v4.1-flash", providerRequest.RootElement.GetProperty("model").GetString());
+        Assert.Equal("~deepseek/deepseek-v4-flash-latest", providerRequest.RootElement.GetProperty("model").GetString());
         Assert.Contains($"\"max_tokens\":{AssistantLimits.MaximumOutputTokens}", handler.RequestBody);
         Assert.Contains("get_event", handler.RequestBody);
         Assert.Contains("get_stack", handler.RequestBody);
@@ -209,6 +206,84 @@ public sealed partial class AssistantServiceTests
 
         using var providerRequest = JsonDocument.Parse(handler.RequestBody);
         Assert.Equal("z-ai/glm-5.3-flash", providerRequest.RootElement.GetProperty("model").GetString());
+    }
+
+    [Theory]
+    [InlineData(false, "429", "provider_code")]
+    [InlineData(true, "429", "provider_code")]
+    [InlineData(true, "\"429\"", "provider_error_code")]
+    public async Task StreamAsync_ProviderFailure_LogsCauseAndCorrelation(bool streaming, string code, string upstreamCodeProperty)
+    {
+        string error = $$$$"""
+            {"error":{"code":{{{{code}}}},"message":"Rate limit exceeded","metadata":{
+                "error_type":"rate_limit_exceeded","{{{{upstreamCodeProperty}}}}":"rate_limited",
+                "provider_name":"Fireworks","raw":"private-provider-body-canary","flagged_input":"private-input-canary"
+            }}}
+            """;
+        string content = streaming
+            ? "data: {\"id\":\"gen-stream\",\"provider\":\"Fireworks\",\"choices\":[]}\n\ndata: " + error.ReplaceLineEndings("") + "\n\n"
+            : error;
+        var logger = new ProviderFailureLogger();
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "private-key-canary",
+                ["Assistant:Model"] = "deepseek/deepseek-v4.1-flash"
+            }).Build());
+        var service = CreateAssistantService(new ProviderFailureHandler(streaming ? HttpStatusCode.OK : HttpStatusCode.TooManyRequests, content),
+            appOptions, logger: logger);
+
+        await Assert.ThrowsAsync<AssistantProviderException>(async () =>
+        {
+            await foreach (var _ in service.StreamAsync(new AssistantChatRequest(
+                [new AssistantChatMessage("user", "private-prompt-canary")], OrganizationId: "organization-id", ConversationId: "conversation-id"),
+                "user-id", CreatePlanOptions(), TestContext.Current.CancellationToken))
+            {
+            }
+        });
+
+        var properties = Assert.Single(logger.Entries);
+        Assert.Equal(streaming ? 200 : 429, properties["ProviderStatusCode"]);
+        Assert.Equal("429", properties["ProviderErrorCode"]);
+        Assert.Equal("rate_limit_exceeded", properties["ProviderErrorType"]);
+        Assert.Equal("rate_limited", properties["UpstreamErrorCode"]);
+        Assert.Equal("Rate limit exceeded", properties["ProviderMessage"]);
+        Assert.Equal("Fireworks", properties["ProviderName"]);
+        Assert.Equal("deepseek/deepseek-v4.1-flash", properties["Model"]);
+        Assert.Equal(streaming ? "gen-stream" : "gen-header", properties["ProviderGenerationId"]);
+        Assert.Equal("conversation-id", properties["ConversationId"]);
+        Assert.Equal("organization-id", properties["OrganizationId"]);
+        Assert.DoesNotContain("canary", JsonSerializer.Serialize(properties));
+    }
+
+    [Theory]
+    [InlineData("<html>private-proxy-body-canary</html>")]
+    [InlineData("{invalid-json")]
+    public async Task StreamAsync_InvalidHttpErrorBody_LogsStatusWithoutHidingRejection(string content)
+    {
+        var logger = new ProviderFailureLogger();
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            }).Build());
+        var service = CreateAssistantService(new ProviderFailureHandler(HttpStatusCode.BadGateway, content), appOptions, logger: logger);
+
+        var exception = await Assert.ThrowsAsync<AssistantProviderException>(async () =>
+        {
+            await foreach (var _ in service.StreamAsync(new AssistantChatRequest([new AssistantChatMessage("user", "Hello")]),
+                "user-id", CreatePlanOptions(), TestContext.Current.CancellationToken))
+            {
+            }
+        });
+
+        Assert.Contains("502", exception.Message);
+        var properties = Assert.Single(logger.Entries);
+        Assert.Equal(502, properties["ProviderStatusCode"]);
+        Assert.Equal("gen-header", properties["ProviderGenerationId"]);
+        Assert.DoesNotContain("private-proxy-body-canary", JsonSerializer.Serialize(properties));
     }
 
     [Theory]
@@ -1066,256 +1141,6 @@ public sealed partial class AssistantServiceTests
             item => Assert.Equal("done", item.Type));
     }
 
-    [Theory]
-    [InlineData("length", "output_limit")]
-    [InlineData("content_filter", "content_filter")]
-    [InlineData("stop", "empty_response")]
-    public async Task StreamAsync_EmptyProviderAnswer_RecordsProviderReasonAndGeneration(string finishReason, string failureCode)
-    {
-        string payload = JsonSerializer.Serialize(new
-        {
-            id = "gen-empty-answer",
-            model = "resolved-model",
-            choices = new[] { new { delta = new { content = "" }, finish_reason = finishReason } },
-            usage = new { prompt_tokens = 100, completion_tokens = 2048, completion_tokens_details = new { reasoning_tokens = 2048 } }
-        });
-        var handler = new StubHttpMessageHandler($"data: {payload}\n\ndata: [DONE]\n\n");
-        var options = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?> { ["BaseURL"] = "https://localhost", ["Assistant:ApiKey"] = "test-key" })
-            .Build());
-        var logger = new RecordingAssistantLogger();
-        using var diagnostics = new AssistantTurnDiagnostics(logger, TimeProvider.System, "organization-id", "conversation-id", "request-id");
-        var service = CreateAssistantService(handler, options);
-        var events = new List<AssistantStreamEvent>();
-
-        await foreach (var item in service.StreamAsync(
-            new AssistantChatRequest([new AssistantChatMessage("user", "private question")]),
-            "user-id", CreatePlanOptions(), diagnostics, TestContext.Current.CancellationToken))
-            events.Add(item);
-
-        Assert.Equal(failureCode, Assert.Single(events, item => item.Type == "error").FailureCode);
-        Assert.Equal("gen-empty-answer", diagnostics.Provider?.GenerationId);
-        Assert.Equal("resolved-model", diagnostics.Provider?.Model);
-        Assert.Equal(2048, diagnostics.Provider?.ReasoningTokens);
-        Assert.Equal(1, diagnostics.ProviderRequests);
-        Assert.DoesNotContain(logger.Entries, entry => entry.Message.Contains("private question", StringComparison.Ordinal));
-    }
-
-    [Fact]
-    public async Task StreamAsync_ProviderStreamError_RecordsProviderErrorMessage()
-    {
-        var handler = new StubHttpMessageHandler("""
-            data: {"id":"gen-stream-error","error":{"message":"private provider error"}}
-
-            """);
-        var options = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?> { ["BaseURL"] = "https://localhost", ["Assistant:ApiKey"] = "test-key" })
-            .Build());
-        var logger = new RecordingAssistantLogger();
-        using var diagnostics = new AssistantTurnDiagnostics(logger, TimeProvider.System, "organization-id", "conversation-id", "request-id");
-        var service = CreateAssistantService(handler, options);
-
-        var exception = await Assert.ThrowsAsync<AssistantProviderException>(async () =>
-        {
-            await foreach (var _ in service.StreamAsync(
-                new AssistantChatRequest([new AssistantChatMessage("user", "private question")]),
-                "user-id", CreatePlanOptions(), diagnostics, TestContext.Current.CancellationToken))
-            {
-            }
-        });
-
-        Assert.Equal("provider_error", exception.FailureCode);
-        var entry = Assert.Single(logger.Entries);
-        Assert.Equal("provider_error", entry.Properties["ProviderOutcome"]);
-        Assert.Equal(200, entry.Properties["ProviderStatusCode"]);
-        Assert.Equal("gen-stream-error", entry.Properties["ProviderGenerationId"]);
-        Assert.Contains("private provider error", Assert.IsType<string>(entry.Properties["ProviderErrorDetails"]));
-    }
-
-    [Theory]
-    [InlineData("transport", "provider_transport_error")]
-    [InlineData("stream", "provider_stream_error")]
-    [InlineData("json", "invalid_provider_response")]
-    [InlineData("timeout", "provider_timeout")]
-    public async Task StreamAsync_ProviderThrows_RecordsFailureCategory(string failure, string expectedOutcome)
-    {
-        var options = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?> { ["BaseURL"] = "https://localhost", ["Assistant:ApiKey"] = "test-key" })
-            .Build());
-        var logger = new RecordingAssistantLogger();
-        using var diagnostics = new AssistantTurnDiagnostics(logger, TimeProvider.System, "organization-id", "conversation-id", "request-id");
-        var service = CreateAssistantService(new FailingProviderHttpMessageHandler(failure), options);
-
-        var exception = await Record.ExceptionAsync(async () =>
-        {
-            await foreach (var _ in service.StreamAsync(
-                new AssistantChatRequest([new AssistantChatMessage("user", "private question")]),
-                "user-id", CreatePlanOptions(), diagnostics, TestContext.Current.CancellationToken))
-            {
-            }
-        });
-
-        Assert.NotNull(exception);
-        var entry = Assert.Single(logger.Entries);
-        Assert.Equal(expectedOutcome, entry.Properties["ProviderOutcome"]);
-        Assert.DoesNotContain("private", entry.Message);
-    }
-
-    [Theory]
-    [InlineData("[]")]
-    [InlineData("null")]
-    [InlineData("{\"choices\":{}}")]
-    [InlineData("{\"choices\":[{}]}")]
-    [InlineData("{\"choices\":[{\"delta\":[]}]}")]
-    [InlineData("{\"choices\":[{\"delta\":{\"tool_calls\":[{}]}}]}")]
-    [InlineData("{\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":2147483648}]}}]}")]
-    [InlineData("{\"usage\":{\"prompt_tokens\":\"private invalid token count\"}}")]
-    public async Task StreamAsync_InvalidProviderShape_RecordsProviderAndTurnFailure(string payload)
-    {
-        var options = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?> { ["BaseURL"] = "https://localhost", ["Assistant:ApiKey"] = "test-key" })
-            .Build());
-        var logger = new RecordingAssistantLogger();
-        using var diagnostics = new AssistantTurnDiagnostics(logger, TimeProvider.System, "organization-id", "conversation-id", "request-id");
-        using var cache = new InMemoryCacheClient();
-        var recorder = new RecordingAssistantUsageRecorder();
-        var usageService = new AssistantUsageService(cache, CreateLockProvider(cache, TimeProvider.System), recorder, options,
-            TimeProvider.System, NullLogger<AssistantUsageService>.Instance);
-        var service = CreateAssistantService(new StubHttpMessageHandler($"data: {payload}\n\ndata: [DONE]\n"), options, cache, usageService: usageService);
-        var context = new DefaultHttpContext();
-        using var response = new MemoryStream();
-        context.Response.Body = response;
-
-        await AssistantEndpoints.WriteResponseAsync(context,
-            service.StreamAsync(new AssistantChatRequest([new AssistantChatMessage("user", "private question")]),
-                "user-id", CreatePlanOptions(), diagnostics, TestContext.Current.CancellationToken),
-            usageService, "organization-id", diagnostics, TestContext.Current.CancellationToken);
-
-        var providerEntry = Assert.Single(logger.Entries, entry => entry.Properties.ContainsKey("ProviderOutcome"));
-        var turnEntry = Assert.Single(logger.Entries, entry => entry.Properties.ContainsKey("Outcome"));
-        Assert.Equal("invalid_provider_response", providerEntry.Properties["ProviderOutcome"]);
-        Assert.Equal("invalid_provider_response", turnEntry.Properties["FailureReason"]);
-        Assert.Equal("failed", turnEntry.Properties["Outcome"]);
-        Assert.All(logger.Entries, entry => Assert.DoesNotContain("private", entry.Message));
-    }
-
-    [Theory]
-    [InlineData("exception", "failed", "tool_execution_error")]
-    [InlineData("client", "cancelled", "client_disconnected")]
-    [InlineData("turn", "failed", "turn_timeout")]
-    public async Task StreamAsync_ToolThrows_RecordsToolOutcomeAndDuration(string failure, string outcome, string reason)
-    {
-        var activitySource = AppDiagnostics.AssistantActivitySource;
-        using var activityListener = new ActivityListener
-        {
-            ShouldListenTo = source => source == activitySource,
-            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded
-        };
-        ActivitySource.AddActivityListener(activityListener);
-        var logger = new RecordingAssistantLogger();
-        using var requestAborted = new CancellationTokenSource();
-        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(requestAborted.Token, TestContext.Current.CancellationToken);
-        using var diagnostics = new AssistantTurnDiagnostics(logger, TimeProvider.System, "organization-id", "conversation-id", "request-id", requestAborted.Token);
-        var measurements = new List<Dictionary<string, object?>>();
-        using var meterListener = new MeterListener
-        {
-            InstrumentPublished = (instrument, listener) =>
-            {
-                if (instrument.Name == "ex.assistant.tool.duration")
-                {
-                    listener.EnableMeasurementEvents(instrument);
-                }
-            }
-        };
-        meterListener.SetMeasurementEventCallback<double>((_, _, tags, _) =>
-        {
-            if (Activity.Current?.GetTagItem("assistant.turn.id") as string == diagnostics.TurnId)
-            {
-                measurements.Add(tags.ToArray().ToDictionary(tag => tag.Key, tag => tag.Value));
-            }
-        });
-        meterListener.Start();
-        // An array where a tool argument object is required throws during invocation.
-        var handler = new StubHttpMessageHandler("""
-            data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"tool-1","function":{"name":"search_stacks","arguments":"[]"}}]}}]}
-
-            data: [DONE]
-
-            """);
-        var options = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?> { ["BaseURL"] = "https://localhost", ["Assistant:ApiKey"] = "test-key" })
-            .Build());
-        var service = CreateAssistantService(handler, options);
-        var exception = await Record.ExceptionAsync(async () =>
-        {
-            await foreach (var item in service.StreamAsync(
-                new AssistantChatRequest([new AssistantChatMessage("user", "Find my errors")]),
-                "user-id", CreatePlanOptions(), diagnostics, cancellation.Token))
-            {
-                if (failure == "client" && item.Type == "tool_call")
-                {
-                    requestAborted.Cancel();
-                }
-                else if (failure == "turn" && item.Type == "tool_call")
-                {
-                    cancellation.Cancel();
-                }
-            }
-        });
-
-        if (failure != "exception")
-        {
-            Assert.IsAssignableFrom<OperationCanceledException>(exception);
-        }
-        else
-        {
-            Assert.IsType<InvalidOperationException>(exception);
-        }
-        Assert.Equal(1, diagnostics.ToolCalls);
-        Assert.Equal(failure == "client" ? 0 : 1, diagnostics.ToolFailures);
-        Assert.Equal(reason, diagnostics.LastToolError);
-        var measurement = Assert.Single(measurements);
-        Assert.Equal("search_stacks", measurement["tool"]);
-        Assert.Equal(outcome, measurement["outcome"]);
-        Assert.Equal(diagnostics.LastToolError, measurement["reason"]);
-    }
-
-    [Theory]
-    [InlineData(HttpStatusCode.TemporaryRedirect)]
-    [InlineData(HttpStatusCode.TooManyRequests)]
-    [InlineData(HttpStatusCode.InternalServerError)]
-    public async Task StreamAsync_HttpRejection_RecordsSanitizedProviderError(HttpStatusCode responseStatus)
-    {
-        var handler = new RejectedHttpMessageHandler(responseStatus);
-        var options = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?> { ["BaseURL"] = "https://localhost", ["Assistant:ApiKey"] = "test-key" })
-            .Build());
-        var logger = new RecordingAssistantLogger();
-        using var diagnostics = new AssistantTurnDiagnostics(logger, TimeProvider.System, "organization-id", "conversation-id", "request-id");
-        var service = CreateAssistantService(handler, options, logger: logger);
-
-        var exception = await Assert.ThrowsAsync<AssistantProviderException>(async () =>
-        {
-            await foreach (var _ in service.StreamAsync(
-                new AssistantChatRequest([new AssistantChatMessage("user", "private question")]),
-                "user-id", CreatePlanOptions(), diagnostics, TestContext.Current.CancellationToken))
-            {
-            }
-        });
-
-        Assert.Equal("provider_http_error", exception.FailureCode);
-        var providerEntry = Assert.Single(logger.Entries, entry => entry.Properties.ContainsKey("ProviderOutcome"));
-        Assert.Equal(exception.FailureCode, providerEntry.Properties["ProviderOutcome"]);
-        Assert.Equal((int)responseStatus, diagnostics.Provider?.StatusCode);
-        Assert.Contains(logger.Entries, entry => entry.Properties.TryGetValue("StatusCode", out var status) && status is int code && code == (int)responseStatus);
-        Assert.Contains("Rejected", Assert.IsType<string>(providerEntry.Properties["ProviderErrorDetails"]));
-        Assert.All(logger.Entries, entry =>
-        {
-            Assert.DoesNotContain("private question", entry.Message);
-            Assert.DoesNotContain("test-key", entry.Message);
-        });
-    }
-
     [Fact]
     public async Task StreamAsync_RawDsmlResponse_RetriesWithoutEmittingMarkup()
     {
@@ -1415,14 +1240,11 @@ public sealed partial class AssistantServiceTests
             .Build());
         var service = CreateAssistantService(handler, appOptions);
         var events = new List<AssistantStreamEvent>();
-        var logger = new RecordingAssistantLogger();
-        using var diagnostics = new AssistantTurnDiagnostics(logger, TimeProvider.System, "organization-id", "conversation-id", "request-id");
 
         await foreach (var item in service.StreamAsync(
             new AssistantChatRequest([new AssistantChatMessage("user", "Find recent errors")]),
             "user-id",
             CreatePlanOptions(),
-            diagnostics,
             TestContext.Current.CancellationToken))
         {
             events.Add(item);
@@ -1437,15 +1259,10 @@ public sealed partial class AssistantServiceTests
             },
             item => Assert.Equal("done", item.Type));
         Assert.DoesNotContain(events, item => item.Type == "text_delta");
-        var providerEntries = logger.Entries.Where(entry => entry.Properties.ContainsKey("ProviderOutcome")).ToArray();
-        Assert.Equal(2, providerEntries.Length);
-        Assert.All(providerEntries, entry => Assert.Equal("malformed_response", entry.Properties["ProviderOutcome"]));
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task StreamAsync_ToolBudgetExhausted_RequestsFinalSynthesisWithToolChoiceNone(bool providerIgnoresToolLimit)
+    [Fact]
+    public async Task StreamAsync_ToolBudgetExhausted_RequestsFinalSynthesisWithToolChoiceNone()
     {
         const string toolCallResponse = """
             data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call-1","function":{"name":"unknown_tool","arguments":"{}"}}]}}]}
@@ -1457,7 +1274,7 @@ public sealed partial class AssistantServiceTests
             toolCallResponse,
             toolCallResponse.Replace("call-1", "call-2"),
             toolCallResponse.Replace("call-1", "call-3"),
-            providerIgnoresToolLimit ? toolCallResponse.Replace("call-1", "call-4") : """
+            """
             data: {"choices":[{"delta":{"content":"Here is the available result."}}]}
 
             data: [DONE]
@@ -1472,8 +1289,6 @@ public sealed partial class AssistantServiceTests
             .Build());
         var service = CreateAssistantService(handler, appOptions);
         var events = new List<AssistantStreamEvent>();
-        var logger = new RecordingAssistantLogger();
-        using var diagnostics = new AssistantTurnDiagnostics(logger, TimeProvider.System, "organization-id", "conversation-id", "request-id");
 
         await foreach (var item in service.StreamAsync(
             new AssistantChatRequest(
@@ -1481,7 +1296,6 @@ public sealed partial class AssistantServiceTests
                 OrganizationId: "organization-id"),
             "user-id",
             CreatePlanOptions(),
-            diagnostics,
             TestContext.Current.CancellationToken))
         {
             events.Add(item);
@@ -1493,19 +1307,9 @@ public sealed partial class AssistantServiceTests
         Assert.NotEmpty(finalRequest.RootElement.GetProperty("tools").EnumerateArray());
         Assert.Equal("none", finalRequest.RootElement.GetProperty("tool_choice").GetString());
         Assert.Contains("The tool budget is exhausted", handler.RequestBodies[3]);
+        Assert.Contains(events, item => item.Text == "Here is the available result.");
         Assert.Equal("done", events[^1].Type);
-        var finalProviderEntry = logger.Entries.Last(entry => entry.Properties.ContainsKey("ProviderOutcome"));
-        if (providerIgnoresToolLimit)
-        {
-            Assert.Equal("tool_round_limit", Assert.Single(events, item => item.Type == "error").FailureCode);
-            Assert.Equal("tool_round_limit", finalProviderEntry.Properties["ProviderOutcome"]);
-        }
-        else
-        {
-            Assert.Contains(events, item => item.Text == "Here is the available result.");
-            Assert.DoesNotContain(events, item => item.Type == "error");
-            Assert.Equal("completed", finalProviderEntry.Properties["ProviderOutcome"]);
-        }
+        Assert.DoesNotContain(events, item => item.Type == "error");
     }
 
     [Fact]
@@ -1668,22 +1472,23 @@ public sealed partial class AssistantServiceTests
         }
     }
 
-    private sealed class FailingProviderHttpMessageHandler(string failure) : HttpMessageHandler
+    private sealed class ProviderFailureHandler(HttpStatusCode status, string content) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-            => failure switch
-            {
-                "transport" => Task.FromException<HttpResponseMessage>(new HttpRequestException("private transport detail")),
-                "timeout" => Task.FromException<HttpResponseMessage>(new TaskCanceledException("private timeout detail")),
-                "stream" => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StreamContent(new FailingProviderStream()) }),
-                _ => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("data: invalid-json\n\n") })
-            };
+        {
+            var response = new HttpResponseMessage(status) { Content = new StringContent(content) };
+            response.Headers.Add("X-Generation-Id", "gen-header");
+            return Task.FromResult(response);
+        }
     }
 
-    private sealed class FailingProviderStream : MemoryStream
+    private sealed class ProviderFailureLogger : ILogger<AssistantService>
     {
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
-            => ValueTask.FromException<int>(new IOException("private stream detail"));
+        public List<Dictionary<string, object?>> Entries { get; } = [];
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel logLevel) => true;
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+            => Entries.Add(((IEnumerable<KeyValuePair<string, object?>>)(object)state!).ToDictionary(pair => pair.Key, pair => pair.Value));
     }
 
     private sealed class RejectedHttpMessageHandler(HttpStatusCode statusCode) : HttpMessageHandler
