@@ -74,16 +74,6 @@
         }
     });
 
-    function handleStartCalendarChange(value: DateValue | undefined) {
-        if (value) {
-            utcStartCalendar = new CalendarDate(value.year, value.month, value.day);
-            form.setFieldValue('utcStart', new Date(Date.UTC(value.year, value.month - 1, value.day, 0, 0, 0, 0)));
-        } else {
-            utcStartCalendar = undefined;
-            form.setFieldValue('utcStart', undefined);
-        }
-    }
-
     function handleEndCalendarChange(value: DateValue | undefined) {
         if (value) {
             utcEndCalendar = new CalendarDate(value.year, value.month, value.day);
@@ -91,6 +81,16 @@
         } else {
             utcEndCalendar = undefined;
             form.setFieldValue('utcEnd', undefined);
+        }
+    }
+
+    function handleStartCalendarChange(value: DateValue | undefined) {
+        if (value) {
+            utcStartCalendar = new CalendarDate(value.year, value.month, value.day);
+            form.setFieldValue('utcStart', new Date(Date.UTC(value.year, value.month - 1, value.day, 0, 0, 0, 0)));
+        } else {
+            utcStartCalendar = undefined;
+            form.setFieldValue('utcStart', undefined);
         }
     }
 </script>

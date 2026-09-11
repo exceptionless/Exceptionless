@@ -3985,7 +3985,7 @@
             }
           },
           "422": {
-            "description": "The product tour name is invalid.",
+            "description": "The product tour name is invalid or the limit of 100 recorded product tour entries has been reached.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {

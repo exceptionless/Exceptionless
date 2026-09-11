@@ -244,43 +244,16 @@
         }
     }
 
-    async function recordPreference(name: 'app-welcome' | 'exie-announcement'): Promise<boolean> {
-        if (!currentUser) {
-            return false;
-        }
-        const userId = currentUser.id;
-        automaticSurface = 'handled';
-        void progressMutation
-            .mutateAsync({
-                tourName: name,
-                userId
-            })
-            .catch(() => {
-                if (currentUser?.id === userId) {
-                    toast.error('We could not save your guided-tour preference. Please try again.');
-                }
-            });
-        return true;
+    function getItem(name: ProductTourName): ProductTourListItem {
+        return items.find((item) => item.name === name)!;
     }
 
-    async function onWelcomeStart(): Promise<void> {
-        if (!(await recordPreference('app-welcome'))) {
-            return;
-        }
-
-        await startTour(recommended.name);
+    function isActiveTourRenderable(active: NonNullable<typeof checkpoint>): boolean {
+        return getItem(active.tourName).canResume(active.checkpointName, page.route.id);
     }
 
-    async function onWelcomeBrowse(): Promise<void> {
-        if (!(await recordPreference('app-welcome'))) {
-            return;
-        }
-
-        await openCatalog();
-    }
-
-    async function onWelcomeSkip(): Promise<void> {
-        await recordPreference('app-welcome');
+    async function onExieAnnouncementDismiss(): Promise<void> {
+        await recordPreference('exie-announcement');
     }
 
     async function onExieAnnouncementStart(): Promise<void> {
@@ -300,16 +273,43 @@
         }
     }
 
-    async function onExieAnnouncementDismiss(): Promise<void> {
-        await recordPreference('exie-announcement');
+    async function onWelcomeBrowse(): Promise<void> {
+        if (!(await recordPreference('app-welcome'))) {
+            return;
+        }
+
+        await openCatalog();
     }
 
-    function getItem(name: ProductTourName): ProductTourListItem {
-        return items.find((item) => item.name === name)!;
+    async function onWelcomeSkip(): Promise<void> {
+        await recordPreference('app-welcome');
     }
 
-    function isActiveTourRenderable(active: NonNullable<typeof checkpoint>): boolean {
-        return getItem(active.tourName).canResume(active.checkpointName, page.route.id);
+    async function onWelcomeStart(): Promise<void> {
+        if (!(await recordPreference('app-welcome'))) {
+            return;
+        }
+
+        await startTour(recommended.name);
+    }
+
+    async function recordPreference(name: 'app-welcome' | 'exie-announcement'): Promise<boolean> {
+        if (!currentUser) {
+            return false;
+        }
+        const userId = currentUser.id;
+        automaticSurface = 'handled';
+        void progressMutation
+            .mutateAsync({
+                tourName: name,
+                userId
+            })
+            .catch(() => {
+                if (currentUser?.id === userId) {
+                    toast.error('We could not save your guided-tour preference. Please try again.');
+                }
+            });
+        return true;
     }
 </script>
 

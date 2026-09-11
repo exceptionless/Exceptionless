@@ -81,6 +81,18 @@
         }
     });
 
+    async function handleClearSystemNotification() {
+        try {
+            await clearSystemNotification.mutateAsync();
+            toast.success('System notification cleared.');
+            systemMessage = '';
+            systemLevel = 'Info';
+            systemTarget = 'Both';
+        } catch {
+            toast.error('Failed to clear system notification.');
+        }
+    }
+
     async function handleSetSystemNotification() {
         try {
             await setSystemNotification.mutateAsync({
@@ -91,18 +103,6 @@
             toast.success('System notification set successfully.');
         } catch {
             toast.error('Failed to set system notification.');
-        }
-    }
-
-    async function handleClearSystemNotification() {
-        try {
-            await clearSystemNotification.mutateAsync();
-            toast.success('System notification cleared.');
-            systemMessage = '';
-            systemLevel = 'Info';
-            systemTarget = 'Both';
-        } catch {
-            toast.error('Failed to clear system notification.');
         }
     }
 </script>

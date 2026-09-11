@@ -49,16 +49,6 @@
     import RenameViewDialog from './rename-view-dialog.svelte';
     import SaveViewDialog from './save-view-dialog.svelte';
 
-    function getErrorMessage(error: unknown, fallback: string): string {
-        const problem = error as ProblemDetails;
-        const generalErrors = problem?.errors?.general;
-        if (generalErrors?.[0]) {
-            return generalErrors[0];
-        }
-
-        return problem?.title ?? fallback;
-    }
-
     interface Props {
         activeSavedView?: SavedView;
         autoFillColumnId: AutoFillColumnSelection;
@@ -85,6 +75,16 @@
         time?: string;
         view: string;
         wrappedColumnIds: WrappedColumnIds;
+    }
+
+    function getErrorMessage(error: unknown, fallback: string): string {
+        const problem = error as ProblemDetails;
+        const generalErrors = problem?.errors?.general;
+        if (generalErrors?.[0]) {
+            return generalErrors[0];
+        }
+
+        return problem?.title ?? fallback;
     }
 
     let {
@@ -218,17 +218,6 @@
 
     const reorderableColumns = $derived(table.getAllLeafColumns().filter((column) => column.id !== 'select'));
 
-    async function openSaveDialog() {
-        await tick();
-        isSaveDialogOpen = true;
-        savedViewCreateTour?.openingSaveDialog();
-    }
-
-    async function openRenameDialog() {
-        await tick();
-        isRenameDialogOpen = true;
-    }
-
     function getSavedColumnSettings() {
         const supportedWrappedColumnIds = wrappedColumnIds.filter((columnId) => supportsColumnWrapping(table.getColumn(columnId)?.columnDef.meta));
         return buildColumnSettings(
@@ -242,10 +231,62 @@
         );
     }
 
-    async function openDeleteDialog(savedView: SavedView) {
-        viewToDelete = savedView;
-        await tick();
-        isDeleteDialogOpen = true;
+    function getUpdateBody(): UpdateSavedView {
+        return {
+            columns: getSavedColumnSettings(),
+            filter: currentFilterString || null,
+            filter_definitions: serializeFilters(filters),
+            show_chart: showChart,
+            show_stats: showStats,
+            sort: sort || null,
+            time: time || null
+        };
+    }
+
+    async function handleDelete() {
+        if (!viewToDelete || !organizationId) {
+            return;
+        }
+
+        const target = viewToDelete;
+        const wasActiveView = activeSavedView?.id === target.id;
+        markSavedViewDeleted(target);
+        if (wasActiveView) {
+            await onClearSavedView();
+        }
+
+        try {
+            await removeMutation.mutateAsync(target);
+
+            toast.success(`View "${target.name}" deleted.`);
+        } catch {
+            restoreDeletedSavedView(target);
+            if (wasActiveView) {
+                onLoadView(target);
+            }
+
+            toast.error('Failed to delete view. Please try again.');
+        } finally {
+            isDeleteDialogOpen = false;
+            viewToDelete = null;
+        }
+    }
+
+    async function handleRename(name: string, slug: string) {
+        if (!activeView || !organizationId) {
+            return;
+        }
+
+        try {
+            const result = await updateMutation.mutateAsync({
+                name,
+                slug
+            });
+            isRenameDialogOpen = false;
+            toast.success(`View renamed to "${result.name}".`);
+        } catch (error) {
+            toast.error(getErrorMessage(error, 'Failed to rename view. Please try again.'));
+        }
     }
 
     function handleResetToSaved(): void {
@@ -292,35 +333,6 @@
         }
     }
 
-    async function handleRename(name: string, slug: string) {
-        if (!activeView || !organizationId) {
-            return;
-        }
-
-        try {
-            const result = await updateMutation.mutateAsync({
-                name,
-                slug
-            });
-            isRenameDialogOpen = false;
-            toast.success(`View renamed to "${result.name}".`);
-        } catch (error) {
-            toast.error(getErrorMessage(error, 'Failed to rename view. Please try again.'));
-        }
-    }
-
-    function getUpdateBody(): UpdateSavedView {
-        return {
-            columns: getSavedColumnSettings(),
-            filter: currentFilterString || null,
-            filter_definitions: serializeFilters(filters),
-            show_chart: showChart,
-            show_stats: showStats,
-            sort: sort || null,
-            time: time || null
-        };
-    }
-
     async function handleUpdate() {
         if (!activeView || !organizationId || !canModifySavedView) {
             return;
@@ -335,20 +347,21 @@
         }
     }
 
-    async function toggleUserDefault(): Promise<void> {
-        if (!activeView || !organizationId) {
-            return;
-        }
+    async function openDeleteDialog(savedView: SavedView) {
+        viewToDelete = savedView;
+        await tick();
+        isDeleteDialogOpen = true;
+    }
 
-        const clearingDefault = isUserDefault;
-        try {
-            await userDefaultMutation.mutateAsync({
-                saved_view_id: clearingDefault ? null : activeView.id
-            });
-            toast.success(clearingDefault ? 'Personal home view cleared.' : `"${activeView.name}" is now your home view.`);
-        } catch (error) {
-            toast.error(getErrorMessage(error, 'Failed to update your home view. Please try again.'));
-        }
+    async function openRenameDialog() {
+        await tick();
+        isRenameDialogOpen = true;
+    }
+
+    async function openSaveDialog() {
+        await tick();
+        isSaveDialogOpen = true;
+        savedViewCreateTour?.openingSaveDialog();
     }
 
     async function toggleOrganizationDefault(): Promise<void> {
@@ -367,32 +380,19 @@
         }
     }
 
-    async function handleDelete() {
-        if (!viewToDelete || !organizationId) {
+    async function toggleUserDefault(): Promise<void> {
+        if (!activeView || !organizationId) {
             return;
         }
 
-        const target = viewToDelete;
-        const wasActiveView = activeSavedView?.id === target.id;
-        markSavedViewDeleted(target);
-        if (wasActiveView) {
-            await onClearSavedView();
-        }
-
+        const clearingDefault = isUserDefault;
         try {
-            await removeMutation.mutateAsync(target);
-
-            toast.success(`View "${target.name}" deleted.`);
-        } catch {
-            restoreDeletedSavedView(target);
-            if (wasActiveView) {
-                onLoadView(target);
-            }
-
-            toast.error('Failed to delete view. Please try again.');
-        } finally {
-            isDeleteDialogOpen = false;
-            viewToDelete = null;
+            await userDefaultMutation.mutateAsync({
+                saved_view_id: clearingDefault ? null : activeView.id
+            });
+            toast.success(clearingDefault ? 'Personal home view cleared.' : `"${activeView.name}" is now your home view.`);
+        } catch (error) {
+            toast.error(getErrorMessage(error, 'Failed to update your home view. Please try again.'));
         }
     }
 </script>

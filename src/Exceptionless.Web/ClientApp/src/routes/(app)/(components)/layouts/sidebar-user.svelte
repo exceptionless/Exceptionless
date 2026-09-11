@@ -63,20 +63,14 @@
         return unreadCount > 99 ? '99+' : unreadCount.toString();
     }
 
-    function onMenuClick() {
-        if (sidebar.isMobile) {
-            sidebar.toggle();
-        }
+    function navigateTo(href: string): void {
+        onMenuClick();
+        void goto(href);
     }
 
     function onChatClick() {
         onMenuClick();
         openChat();
-    }
-
-    function onKeyboardShortcutsClick() {
-        onMenuClick();
-        void openKeyboardShortcuts();
     }
 
     function onGuidedToursClick(): void {
@@ -85,15 +79,21 @@
         openGuidedTours();
     }
 
-    function navigateTo(href: string): void {
+    function onKeyboardShortcutsClick() {
         onMenuClick();
-        void goto(href);
+        void openKeyboardShortcuts();
     }
 
     async function onLogout(): Promise<void> {
         onMenuClick();
         await logout(queryClient, client);
         await goto(resolve('/(auth)/login'));
+    }
+
+    function onMenuClick() {
+        if (sidebar.isMobile) {
+            sidebar.toggle();
+        }
     }
 
     function openExternalLink(href: string): void {

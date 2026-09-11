@@ -1,11 +1,6 @@
 ---
 name: foundatio-repositories
-description: >
-    Use this skill when querying, counting, patching, or paginating data through Foundatio.Repositories
-    Elasticsearch abstractions. Covers filter expressions, aggregation queries, partial and script
-    patches, and search-after pagination. Apply when working with normal query/count/patch/pagination
-    repository code; reserve raw IElasticClient for migrations or index maintenance that cannot be
-    expressed through repositories.
+description: Query, aggregate, patch, or paginate Exceptionless data through its Elasticsearch repository abstractions.
 ---
 
 # Foundatio Repositories

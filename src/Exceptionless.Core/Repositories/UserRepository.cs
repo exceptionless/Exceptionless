@@ -10,6 +10,8 @@ namespace Exceptionless.Core.Repositories;
 
 public class UserRepository : RepositoryBase<User>, IUserRepository
 {
+    private const int MaximumProductTourEntries = 100;
+
     public UserRepository(ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, AppOptions options)
         : base(configuration.Users, validator, options)
     {
@@ -17,13 +19,14 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         AddRequiredField(u => u.EmailAddress, u => u.OrganizationIds);
     }
 
-    public async Task RecordProductTourAsync(User user, string stateKey, DateTime recordedUtc)
+    public async Task<User?> RecordProductTourAsync(User user, string stateKey, DateTime recordedUtc)
     {
         const string script = """
             if (ctx._source.product_tours == null) {
                 ctx._source.product_tours = [:];
             }
-            if (ctx._source.product_tours[params.key] instanceof String) {
+            if (ctx._source.product_tours[params.key] instanceof String ||
+                (!ctx._source.product_tours.containsKey(params.key) && ctx._source.product_tours.size() >= params.maximum_entries)) {
                 ctx.op = 'none';
             } else {
                 ctx._source.product_tours[params.key] = params.recorded_utc;
@@ -35,10 +38,17 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
             Params = new Dictionary<string, object>
             {
                 ["key"] = stateKey,
+                ["maximum_entries"] = MaximumProductTourEntries,
                 ["recorded_utc"] = recordedUtc.ToString("O")
             }
         });
         await Cache.RemoveAsync(EmailCacheKey(user.EmailAddress));
+
+        var updatedUser = await GetByIdAsync(user.Id, o => o.Cache(false));
+        if (updatedUser is not null)
+            await AddDocumentsToCacheAsync(updatedUser, ConfigureOptions(new CommandOptions<User>().Cache()), isDirtyRead: false);
+
+        return updatedUser;
     }
 
     public Task<bool> SetSavedViewOrdersAsync(User user, CommandOptionsDescriptor<User>? options = null)

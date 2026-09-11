@@ -50,16 +50,6 @@
         }
     });
 
-    async function remove() {
-        toast.dismiss(toastId);
-        try {
-            await removeOrganization.mutateAsync();
-            toastId = toast.success('Successfully queued the organization for deletion.');
-        } catch (error: unknown) {
-            toastId = toast.error(`An error occurred while trying to delete the organization: ${getProblemMessage(error, 'Please try again.')}`);
-        }
-    }
-
     async function leave() {
         toast.dismiss(toastId);
         try {
@@ -68,6 +58,16 @@
         } catch (error: unknown) {
             console.log(error);
             toastId = toast.error(`An error occurred while trying to leave the organization: ${getProblemMessage(error, 'Please try again.')}`);
+        }
+    }
+
+    async function remove() {
+        toast.dismiss(toastId);
+        try {
+            await removeOrganization.mutateAsync();
+            toastId = toast.success('Successfully queued the organization for deletion.');
+        } catch (error: unknown) {
+            toastId = toast.error(`An error occurred while trying to delete the organization: ${getProblemMessage(error, 'Please try again.')}`);
         }
     }
 </script>

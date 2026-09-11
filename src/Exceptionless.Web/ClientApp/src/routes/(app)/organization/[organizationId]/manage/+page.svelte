@@ -115,10 +115,6 @@
     const debouncedFormSubmit = debounce(1000, () => form.handleSubmit());
     const isIconSaving = $derived(uploadIcon.isPending || removeIcon.isPending);
 
-    function openIconPicker() {
-        iconInput?.click();
-    }
-
     function handleIconFileChange(input: HTMLInputElement) {
         const file = input.files?.[0];
         if (file) {
@@ -151,6 +147,10 @@
         } catch (error: unknown) {
             toastId = toast.error(getProblemMessage(error, 'Error removing organization icon. Please try again.'));
         }
+    }
+
+    function openIconPicker() {
+        iconInput?.click();
     }
 
     // TODO: Add Skeleton

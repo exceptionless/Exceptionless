@@ -71,6 +71,18 @@
         settingsForm.setFieldValue('model', settings.model);
     });
 
+    async function resetAvailability() {
+        try {
+            const saved = await updateEnabledSettings.mutateAsync({
+                enabled: null
+            });
+            assistantEnabled = saved.enabled;
+            toast.success('Exie availability reset to the deployment default.');
+        } catch {
+            toast.error('Failed to reset Exie availability.');
+        }
+    }
+
     async function resetModel() {
         try {
             const saved = await updateSettings.mutateAsync({
@@ -92,18 +104,6 @@
             toast.success(saved.enabled ? 'Exie is enabled.' : 'Exie is disabled.');
         } catch {
             toast.error('Failed to update Exie availability.');
-        }
-    }
-
-    async function resetAvailability() {
-        try {
-            const saved = await updateEnabledSettings.mutateAsync({
-                enabled: null
-            });
-            assistantEnabled = saved.enabled;
-            toast.success('Exie availability reset to the deployment default.');
-        } catch {
-            toast.error('Failed to reset Exie availability.');
         }
     }
 </script>

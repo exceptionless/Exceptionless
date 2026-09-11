@@ -210,7 +210,12 @@ test.describe('shell and identity checkpoints', () => {
             // Assert
             await expect(closeButton).toHaveText('×');
             const closeBounds = await closeButton.boundingBox();
-            const titleBounds = await tour.locator('.driver-popover-title').boundingBox();
+            const titleBounds = await tour.locator('.driver-popover-title').evaluate((element) => {
+                const range = document.createRange();
+                range.selectNodeContents(element);
+                return range.getBoundingClientRect().toJSON();
+            });
+            const tourBounds = await tour.boundingBox();
             const descriptionBounds = await tour.locator('.driver-popover-description').boundingBox();
             const continueBounds = await tour.getByRole('button', { name: 'Next' }).boundingBox();
             expect(closeBounds).not.toBeNull();
@@ -218,6 +223,8 @@ test.describe('shell and identity checkpoints', () => {
             expect(descriptionBounds).not.toBeNull();
             expect(continueBounds?.height).toBeGreaterThanOrEqual(32);
             expect(closeBounds?.height).toBe(32);
+            expect(closeBounds!.x + closeBounds!.width).toBeCloseTo(tourBounds!.x + tourBounds!.width - 5, 0);
+            expect(closeBounds!.y).toBeCloseTo(tourBounds!.y + 5, 0);
             expect(titleBounds!.x + titleBounds!.width).toBeLessThanOrEqual(closeBounds!.x);
             expect(closeBounds!.y + closeBounds!.height).toBeLessThanOrEqual(descriptionBounds!.y);
             // Act

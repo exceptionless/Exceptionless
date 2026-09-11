@@ -92,6 +92,37 @@
         };
     });
 
+    function destroy(): void {
+        const instance = activeDriver;
+        activeDriver = undefined;
+        if (descriptionContent) {
+            void unmount(descriptionContent);
+            descriptionContent = undefined;
+        }
+
+        instance?.setConfig({
+            ...instance.getConfig(),
+            onDestroyStarted: undefined
+        });
+        instance?.destroy();
+        if (!productTourCheckpoint.current && returnFocus?.isConnected) {
+            returnFocus.focus();
+        }
+    }
+
+    async function dismiss(): Promise<void> {
+        if (dismissing || !activeDriver) {
+            return;
+        }
+
+        dismissing = true;
+        if (await onDismiss(checkpoint)) {
+            destroy();
+        } else {
+            dismissing = false;
+        }
+    }
+
     function getTarget(): Element | undefined {
         return typeof target === 'string' ? [...document.querySelectorAll(target)].find((candidate) => candidate.checkVisibility?.() ?? true) : target;
     }
@@ -204,37 +235,6 @@
                 event.preventDefault();
                 void onNext(checkpoint);
             }
-        }
-    }
-
-    async function dismiss(): Promise<void> {
-        if (dismissing || !activeDriver) {
-            return;
-        }
-
-        dismissing = true;
-        if (await onDismiss(checkpoint)) {
-            destroy();
-        } else {
-            dismissing = false;
-        }
-    }
-
-    function destroy(): void {
-        const instance = activeDriver;
-        activeDriver = undefined;
-        if (descriptionContent) {
-            void unmount(descriptionContent);
-            descriptionContent = undefined;
-        }
-
-        instance?.setConfig({
-            ...instance.getConfig(),
-            onDestroyStarted: undefined
-        });
-        instance?.destroy();
-        if (!productTourCheckpoint.current && returnFocus?.isConnected) {
-            returnFocus.focus();
         }
     }
 </script>

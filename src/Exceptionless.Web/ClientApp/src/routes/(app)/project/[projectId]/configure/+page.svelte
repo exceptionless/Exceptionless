@@ -64,6 +64,31 @@
         }
     });
 
+    type CodeBlockLanguage = 'csharp' | 'javascript' | 'json' | 'powershell' | 'shellscript' | 'xml';
+
+    interface JavaScriptClientConfiguration {
+        extraSteps?: JavaScriptConfigurationStep[];
+        installCommand: string;
+        installNote?: string;
+        packageName: string;
+        startupCode: string;
+    }
+
+    interface JavaScriptConfigurationStep {
+        code: string;
+        description: string;
+        language: CodeBlockLanguage;
+        note?: string;
+    }
+
+    interface ProjectType {
+        config?: string;
+        id: string;
+        label: string;
+        package?: string;
+        platform: string;
+    }
+
     async function enableToken() {
         toast.dismiss(toastId);
 
@@ -76,31 +101,6 @@
             toastId = toast.error('Failed to enable API key. Please try again.');
             throw error;
         }
-    }
-
-    interface ProjectType {
-        config?: string;
-        id: string;
-        label: string;
-        package?: string;
-        platform: string;
-    }
-
-    type CodeBlockLanguage = 'csharp' | 'javascript' | 'json' | 'powershell' | 'shellscript' | 'xml';
-
-    interface JavaScriptConfigurationStep {
-        code: string;
-        description: string;
-        language: CodeBlockLanguage;
-        note?: string;
-    }
-
-    interface JavaScriptClientConfiguration {
-        extraSteps?: JavaScriptConfigurationStep[];
-        installCommand: string;
-        installNote?: string;
-        packageName: string;
-        startupCode: string;
     }
 
     const projectTypes: ProjectType[] = [
@@ -445,12 +445,12 @@ public partial class App : Application {
     // Use Intercom from parent provider context
     const intercom = getIntercom();
 
-    function openChat() {
-        openSupportChat(intercom);
-    }
-
     async function goToProjectEvents() {
         await redirectToEventsWithFilter(organization.current, new ProjectFilter([projectId]));
+    }
+
+    function openChat() {
+        openSupportChat(intercom);
     }
 </script>
 

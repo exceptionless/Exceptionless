@@ -51,21 +51,9 @@
         updatedValues = values;
     });
 
-    function cancelAndClose() {
-        updatedValues = values;
+    export function onClearFilter() {
+        updatedValues = [];
         changed(updatedValues);
-        open = false;
-    }
-
-    function onOpenChange(isOpen: boolean) {
-        if (!isOpen) {
-            open = false;
-        }
-    }
-
-    function onEscapeKeydown(e: KeyboardEvent) {
-        e.preventDefault();
-        cancelAndClose();
     }
 
     export function onValueSelected(currentValue: string) {
@@ -73,9 +61,10 @@
         changed(updatedValues);
     }
 
-    export function onClearFilter() {
-        updatedValues = [];
+    function cancelAndClose() {
+        updatedValues = values;
         changed(updatedValues);
+        open = false;
     }
 
     function filter(value: string, search: string) {
@@ -89,6 +78,17 @@
         }
 
         return 0;
+    }
+
+    function onEscapeKeydown(e: KeyboardEvent) {
+        e.preventDefault();
+        cancelAndClose();
+    }
+
+    function onOpenChange(isOpen: boolean) {
+        if (!isOpen) {
+            open = false;
+        }
     }
 </script>
 

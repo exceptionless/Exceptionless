@@ -116,122 +116,6 @@
         void submitPrompt(promptRequest.prompt);
     });
 
-    async function submitPrompt(value = prompt, isSuggestedAction = false, suggestedActionLabel?: string, suggestedActionPath?: string): Promise<void> {
-        const content = value.trim();
-        if (!content || isStreaming) {
-            return;
-        }
-
-        prompt = '';
-        if (content.toLowerCase() === '/tools') {
-            showToolCalls = !showToolCalls;
-            return;
-        }
-
-        errorMessage = undefined;
-        const userMessage: AssistantChatMessage = {
-            content,
-            id: crypto.randomUUID(),
-            isSuggestedAction,
-            role: 'user',
-            suggestedActionLabel,
-            suggestedActionPath,
-            tools: []
-        };
-        const assistantMessage: AssistantChatMessage = {
-            content: '',
-            id: crypto.randomUUID(),
-            role: 'assistant',
-            tools: []
-        };
-        const history = [...messages, userMessage];
-        messages = [...history, assistantMessage];
-        await streamResponse(history, assistantMessage);
-    }
-
-    async function handleSuggestedAction(action: AssistantSuggestedAction): Promise<void> {
-        if (action.href) {
-            open = false;
-            await goto(action.href);
-            return;
-        }
-
-        await submitPrompt(action.prompt, true, action.label, action.sourcePath);
-    }
-
-    async function regenerateResponse(assistantMessageId: string): Promise<void> {
-        if (isStreaming) {
-            return;
-        }
-
-        const assistantMessageIndex = messages.findIndex((message) => message.id === assistantMessageId && message.role === 'assistant');
-        if (assistantMessageIndex < 1) {
-            return;
-        }
-
-        const userMessageIndex = messages.findLastIndex((message, index) => index < assistantMessageIndex && message.role === 'user');
-        if (userMessageIndex < 0) {
-            return;
-        }
-
-        errorMessage = undefined;
-        const history = messages.slice(0, userMessageIndex + 1);
-        const replacement: AssistantChatMessage = {
-            content: '',
-            id: crypto.randomUUID(),
-            role: 'assistant',
-            tools: []
-        };
-        messages = [...history, replacement];
-        conversationId = crypto.randomUUID();
-        await streamResponse(history, replacement);
-    }
-
-    async function streamResponse(history: AssistantChatMessage[], assistantMessage: AssistantChatMessage): Promise<void> {
-        isStreaming = true;
-        abortController = new AbortController();
-        await scrollToLatest('smooth', true);
-        const requestPath = path ?? `${page.url.pathname}${page.url.search}`;
-
-        try {
-            const response = await fetch('/api/v2/assistant/chat', {
-                body: JSON.stringify(createAssistantChatRequest(history, conversationId, organizationId, requestPath, projectId)),
-                headers: {
-                    Authorization: `Bearer ${accessToken.current}`,
-                    'Content-Type': 'application/json'
-                },
-                method: 'POST',
-                signal: abortController.signal
-            });
-
-            if (!response.ok) {
-                const problem = response.headers.get('content-type')?.includes('json')
-                    ? ((await response.json()) as { detail?: string; title?: string })
-                    : undefined;
-                throw new Error(problem?.detail ?? problem?.title ?? `The assistant returned status ${response.status}.`);
-            }
-
-            if (!response.body) {
-                throw new Error('The assistant returned an empty response.');
-            }
-
-            await readAssistantStream(response.body, async (event) => {
-                applyStreamEvent(assistantMessage.id, event, requestPath);
-                await scrollToLatest('auto');
-            });
-        } catch (error) {
-            if (error instanceof DOMException && error.name === 'AbortError') {
-                return;
-            }
-
-            errorMessage = error instanceof Error ? error.message : 'Exie could not complete this request.';
-        } finally {
-            isStreaming = false;
-            abortController = undefined;
-            await scrollToLatest('auto');
-        }
-    }
-
     function applyStreamEvent(assistantMessageId: string, event: AssistantStreamEvent, requestPath: string): void {
         messages = messages.map((message) => {
             if (message.id !== assistantMessageId) {
@@ -294,31 +178,6 @@
         }
     }
 
-    function handleInteractOutside(event: PointerEvent): void {
-        if (event.target instanceof Element && event.target.closest('[data-assistant-trigger]')) {
-            event.preventDefault();
-        }
-    }
-
-    function stopStreaming(): void {
-        abortController?.abort();
-        if (!messages.some((message) => message.tools.some((tool) => tool.status === 'running'))) {
-            return;
-        }
-
-        messages = messages.map((message) => ({
-            ...message,
-            tools: message.tools.map((tool) =>
-                tool.status === 'running'
-                    ? {
-                          ...tool,
-                          status: 'cancelled' as const
-                      }
-                    : tool
-            )
-        }));
-    }
-
     function clearConversation(): void {
         stopStreaming();
         messages = [];
@@ -343,15 +202,48 @@
         showScrollToBottom = !isNearBottom;
     }
 
-    function setMessageFeedback(messageId: string, feedback: AssistantFeedback | undefined): void {
-        messages = messages.map((message) =>
-            message.id === messageId
-                ? {
-                      ...message,
-                      feedback
-                  }
-                : message
-        );
+    function handleInteractOutside(event: PointerEvent): void {
+        if (event.target instanceof Element && event.target.closest('[data-assistant-trigger]')) {
+            event.preventDefault();
+        }
+    }
+
+    async function handleSuggestedAction(action: AssistantSuggestedAction): Promise<void> {
+        if (action.href) {
+            open = false;
+            await goto(action.href);
+            return;
+        }
+
+        await submitPrompt(action.prompt, true, action.label, action.sourcePath);
+    }
+
+    async function regenerateResponse(assistantMessageId: string): Promise<void> {
+        if (isStreaming) {
+            return;
+        }
+
+        const assistantMessageIndex = messages.findIndex((message) => message.id === assistantMessageId && message.role === 'assistant');
+        if (assistantMessageIndex < 1) {
+            return;
+        }
+
+        const userMessageIndex = messages.findLastIndex((message, index) => index < assistantMessageIndex && message.role === 'user');
+        if (userMessageIndex < 0) {
+            return;
+        }
+
+        errorMessage = undefined;
+        const history = messages.slice(0, userMessageIndex + 1);
+        const replacement: AssistantChatMessage = {
+            content: '',
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            tools: []
+        };
+        messages = [...history, replacement];
+        conversationId = crypto.randomUUID();
+        await streamResponse(history, replacement);
     }
 
     async function scrollToLatest(behavior: 'auto' | 'smooth' = 'smooth', force = false): Promise<void> {
@@ -367,6 +259,114 @@
         });
         isNearBottom = true;
         showScrollToBottom = false;
+    }
+
+    function setMessageFeedback(messageId: string, feedback: AssistantFeedback | undefined): void {
+        messages = messages.map((message) =>
+            message.id === messageId
+                ? {
+                      ...message,
+                      feedback
+                  }
+                : message
+        );
+    }
+
+    function stopStreaming(): void {
+        abortController?.abort();
+        if (!messages.some((message) => message.tools.some((tool) => tool.status === 'running'))) {
+            return;
+        }
+
+        messages = messages.map((message) => ({
+            ...message,
+            tools: message.tools.map((tool) =>
+                tool.status === 'running'
+                    ? {
+                          ...tool,
+                          status: 'cancelled' as const
+                      }
+                    : tool
+            )
+        }));
+    }
+
+    async function streamResponse(history: AssistantChatMessage[], assistantMessage: AssistantChatMessage): Promise<void> {
+        isStreaming = true;
+        abortController = new AbortController();
+        await scrollToLatest('smooth', true);
+        const requestPath = path ?? `${page.url.pathname}${page.url.search}`;
+
+        try {
+            const response = await fetch('/api/v2/assistant/chat', {
+                body: JSON.stringify(createAssistantChatRequest(history, conversationId, organizationId, requestPath, projectId)),
+                headers: {
+                    Authorization: `Bearer ${accessToken.current}`,
+                    'Content-Type': 'application/json'
+                },
+                method: 'POST',
+                signal: abortController.signal
+            });
+
+            if (!response.ok) {
+                const problem = response.headers.get('content-type')?.includes('json')
+                    ? ((await response.json()) as { detail?: string; title?: string })
+                    : undefined;
+                throw new Error(problem?.detail ?? problem?.title ?? `The assistant returned status ${response.status}.`);
+            }
+
+            if (!response.body) {
+                throw new Error('The assistant returned an empty response.');
+            }
+
+            await readAssistantStream(response.body, async (event) => {
+                applyStreamEvent(assistantMessage.id, event, requestPath);
+                await scrollToLatest('auto');
+            });
+        } catch (error) {
+            if (error instanceof DOMException && error.name === 'AbortError') {
+                return;
+            }
+
+            errorMessage = error instanceof Error ? error.message : 'Exie could not complete this request.';
+        } finally {
+            isStreaming = false;
+            abortController = undefined;
+            await scrollToLatest('auto');
+        }
+    }
+
+    async function submitPrompt(value = prompt, isSuggestedAction = false, suggestedActionLabel?: string, suggestedActionPath?: string): Promise<void> {
+        const content = value.trim();
+        if (!content || isStreaming) {
+            return;
+        }
+
+        prompt = '';
+        if (content.toLowerCase() === '/tools') {
+            showToolCalls = !showToolCalls;
+            return;
+        }
+
+        errorMessage = undefined;
+        const userMessage: AssistantChatMessage = {
+            content,
+            id: crypto.randomUUID(),
+            isSuggestedAction,
+            role: 'user',
+            suggestedActionLabel,
+            suggestedActionPath,
+            tools: []
+        };
+        const assistantMessage: AssistantChatMessage = {
+            content: '',
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            tools: []
+        };
+        const history = [...messages, userMessage];
+        messages = [...history, assistantMessage];
+        await streamResponse(history, assistantMessage);
     }
 </script>
 

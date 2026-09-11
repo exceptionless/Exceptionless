@@ -67,20 +67,24 @@ public class UserHandler(
         string stateKey = message.TourName.Replace('-', '_');
         try
         {
-            await repository.RecordProductTourAsync(currentUser, stateKey, timeProvider.GetUtcNow().UtcDateTime);
+            currentUser = await repository.RecordProductTourAsync(currentUser, stateKey, timeProvider.GetUtcNow().UtcDateTime);
         }
         catch (DocumentNotFoundException)
         {
             return Result.NotFound("User not found.");
         }
 
-        currentUser = await repository.GetByIdAsync(currentUser.Id, o => o.Cache(false));
         if (currentUser is null)
         {
             return Result.NotFound("User not found.");
         }
 
-        return new RecordProductTourResult(currentUser.ProductTours[stateKey].GetDateTime());
+        if (!currentUser.ProductTours.TryGetValue(stateKey, out var recorded))
+        {
+            return Result.Invalid(ValidationError.Create("tour_name", "The maximum number of recorded product tours has been reached."));
+        }
+
+        return new RecordProductTourResult(recorded.GetDateTime());
     }
 
     public async Task<Result<IReadOnlyCollection<ViewOAuthGrant>>> Handle(GetCurrentUserOAuthGrants message)

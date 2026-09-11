@@ -3,6 +3,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models;
+using Foundatio.Caching;
 using Foundatio.Repositories;
 using Xunit;
 
@@ -147,6 +148,88 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
         var cachedUser = await _userRepository.GetByEmailAddressAsync(user.EmailAddress);
         Assert.NotNull(cachedUser);
         Assert.Equal(5, cachedUser.ProductTours.Count);
+    }
+
+    [Fact]
+    public async Task RecordProductTourAsync_Completed_RefreshesIdAndEmailCacheEntries()
+    {
+        // Arrange
+        var currentUser = await GetTestOrganizationUserAsync();
+        var user = await _userRepository.GetByIdAsync(currentUser.Id, o => o.Cache());
+        Assert.NotNull(user);
+        await _userRepository.GetByEmailAddressAsync(user.EmailAddress);
+        var recordedUtc = TimeProvider.GetUtcNow().UtcDateTime;
+        var cache = Assert.IsType<InMemoryCacheClient>(GetService<ICacheClient>());
+
+        // Act
+        await _userRepository.RecordProductTourAsync(user, "app_overview", recordedUtc);
+        long hits = cache.Hits;
+        long misses = cache.Misses;
+        var byId = await _userRepository.GetByIdAsync(user.Id, o => o.Cache());
+        var byEmail = await _userRepository.GetByEmailAddressAsync(user.EmailAddress);
+
+        // Assert
+        Assert.NotNull(byId);
+        Assert.NotNull(byEmail);
+        Assert.Equal(recordedUtc, byId.ProductTours["app_overview"].GetDateTime());
+        Assert.Equal(recordedUtc, byEmail.ProductTours["app_overview"].GetDateTime());
+        Assert.Equal(hits + 2, cache.Hits);
+        Assert.Equal(misses, cache.Misses);
+    }
+
+    [Theory]
+    [InlineData(100)]
+    [InlineData(101)]
+    public async Task RecordCurrentUserProductTourAsync_AtOrAboveLimit_PreservesExistingEntries(int count)
+    {
+        // Arrange
+        var currentUser = await GetTestOrganizationUserAsync();
+        var user = await _userRepository.GetByIdAsync(currentUser.Id);
+        Assert.NotNull(user);
+        var recordedUtc = new DateTime(2026, 9, 8, 20, 0, 0, DateTimeKind.Utc);
+        for (int i = 0; i < count; i++)
+            user.ProductTours[$"guide_{i}"] = JsonSerializer.SerializeToElement(recordedUtc);
+        await _userRepository.SaveAsync(user);
+
+        // Act
+        await SendRequestAsync(r => r.Put().AsTestOrganizationUser()
+            .AppendPaths("users", "me", "product-tours", "new-guide", "record")
+            .StatusCodeShouldBeUnprocessableEntity());
+        var result = await SendRequestAsAsync<RecordProductTourResult>(r => r.Put().AsTestOrganizationUser()
+            .AppendPaths("users", "me", "product-tours", "guide-0", "record")
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(recordedUtc, result.RecordedUtc);
+        var persistedUser = await _userRepository.GetByIdAsync(user.Id, o => o.Cache(false));
+        Assert.NotNull(persistedUser);
+        Assert.Equal(count, persistedUser.ProductTours.Count);
+        Assert.False(persistedUser.ProductTours.ContainsKey("new_guide"));
+    }
+
+    [Fact]
+    public async Task RecordProductTourAsync_ConcurrentNewKeys_EnforcesLimitAtomically()
+    {
+        // Arrange
+        var currentUser = await GetTestOrganizationUserAsync();
+        var user = await _userRepository.GetByIdAsync(currentUser.Id);
+        Assert.NotNull(user);
+        var recordedUtc = TimeProvider.GetUtcNow().UtcDateTime;
+        for (int i = 0; i < 99; i++)
+            user.ProductTours[$"guide_{i}"] = JsonSerializer.SerializeToElement(recordedUtc);
+        await _userRepository.SaveAsync(user);
+        string[] names = ["future_1", "future_2", "future_3", "future_4"];
+
+        // Act
+        await Task.WhenAll(names.Select(name => _userRepository.RecordProductTourAsync(user, name, recordedUtc)));
+
+        // Assert
+        var persistedUser = await _userRepository.GetByIdAsync(user.Id, o => o.Cache(false));
+        Assert.NotNull(persistedUser);
+        Assert.Equal(100, persistedUser.ProductTours.Count);
+        Assert.Single(names, persistedUser.ProductTours.ContainsKey);
+        Assert.Equal(recordedUtc, persistedUser.ProductTours["guide_0"].GetDateTime());
     }
 
     [Theory]

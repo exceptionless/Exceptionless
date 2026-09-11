@@ -1,70 +1,46 @@
 ---
 name: aspire-diagnostics
-description: >
-  Use when investigating a running Exceptionless Aspire app through resource state, logs,
-  OpenTelemetry logs/traces/spans, metrics, browser telemetry, dashboard data, or telemetry
-  export. Based on Microsoft's official aspire-monitoring workflow skill. Do not use for ordinary
-  code reading, narrow edits, or normal build/test work.
+description: Inspect local Aspire resource health, logs, traces, and browser telemetry.
 ---
 
 # Aspire Diagnostics
 
-Use Aspire diagnostics when local behavior is unclear and runtime evidence will help. Keep normal edit/build/test work out of this skill.
+Use runtime evidence to diagnose a local failure or measure an affected operation. Follow root `AGENTS.md` for runtime startup and endpoint scope.
 
-Basis: Microsoft's official Aspire skills split monitoring into `aspire-monitoring`, which is for resource state, logs, traces, metrics, browser telemetry, and dashboard data. Lifecycle/start/stop belongs to orchestration; AppHost authoring belongs to backend/AppHost work.
+From the repository root, select this AppHost explicitly:
 
-## Local Targets
+```sh
+aspire describe --apphost src/Exceptionless.AppHost --format Json --non-interactive
+```
 
-- Aspire dashboard: `https://ex.dev.localhost:7101`
-- Svelte app: `https://web-ex.dev.localhost:7131/next/`
-- Legacy Angular app: `https://angular-ex.dev.localhost:7121`
-- API health: `https://api-ex.dev.localhost:7111/api/v2/about`
-- API health fallback for command-line tools with local TLS issues: `http://api-ex.dev.localhost:7110/api/v2/about`
+Use the reported resource names and endpoints. Add `--include-hidden` when a resource is not listed.
 
-## When To Use
+| Evidence | Command |
+| --- | --- |
+| Structured logs | `aspire otel logs <resource> --limit 100 --format Json --non-interactive` |
+| Process output | `aspire logs <resource> --tail 100 --timestamps --non-interactive` |
+| Recent traces | `aspire otel traces --limit 20 --format Json --non-interactive` |
+| Trace spans | `aspire otel spans <resource> --trace-id <traceId> --format Json --non-interactive` |
+| Export | `aspire export --output ./dogfood-output/aspire-telemetry.zip --non-interactive` |
 
-- A local request, browser flow, job, queue, Redis, Elasticsearch, or WebSocket behavior is failing.
-- You need logs or traces before deciding whether code should change.
-- A frontend issue may need browser console/network evidence from Aspire browser telemetry.
-- A resource appears unhealthy, missing, stuck, or wired to the wrong endpoint.
-- You need lightweight local performance evidence: how many API, Redis, Elasticsearch, queue, or job calls one app action produces, and where time is spent.
-- You need a telemetry export for a deeper report.
+## Diagnose the affected operation
 
-Do not use this skill just because a file changed.
+Start with resource health and the reported failure. Prefer structured logs for application errors and contextual fields; use console logs for startup failures, crashes, and other process output. Use traces when the failure or latency crosses API, queue, job, or storage boundaries, then inspect the relevant spans.
 
-## Workflow
+Correlate evidence with the user action, timestamp, resource, and trace ID. For a known trace, inspect related logs with `aspire otel logs --trace-id <traceId> --format Json --non-interactive`. A healthy resource alone does not establish that the operation succeeded.
 
-1. Check resource state first: `aspire describe --format Json --non-interactive`; use the endpoints Aspire reports instead of guessing ports.
-2. If a resource is missing, retry with `--include-hidden`.
-3. Inspect structured logs before console logs: `aspire otel logs <resource> --limit 100 --format Json --non-interactive`.
-4. Use console logs for process output: `aspire logs <resource> --tail 100 --timestamps --non-interactive`.
-5. Use traces for cross-resource failures or latency: `aspire otel traces --limit 20 --format Json --non-interactive`.
-6. Use spans for a known trace: `aspire otel spans <resource> --trace-id <traceId> --format Json --non-interactive`.
-7. Export evidence when useful: `aspire export --output .\dogfood-output\aspire-telemetry.zip --non-interactive`.
+## Performance investigation
 
-Prefer `--format Json` when the output will be parsed or summarized. Include exact resource names, trace IDs, error snippets, and dashboard/resource evidence in the report.
+1. Record the app URL, resource names, action, and timestamp; perform the action once.
+2. Locate its trace and inspect spans for repeated API requests, Elasticsearch searches, Redis operations, queue publishes, and job processing.
+3. Count calls by dependency and operation, identify slow spans, and correlate errors with structured logs. Distinguish retries from duplicate work.
+4. Use dashboard metrics for aggregate request counts, error rates, and latency trends. A single trace describes that request, not the workload's overall performance.
+5. Export telemetry when a deeper comparison or report needs the evidence preserved.
 
-## Performance Pass
+Report the exact action, resource names, trace IDs, repeated-call counts, durations, and relevant errors. State any missing telemetry that limits the conclusion.
 
-Use Aspire traces/logs/dashboard metrics to measure one user action before optimizing it.
+## Browser and environment boundaries
 
-1. Start from a clean moment: note the app URL, resource names, user action, and timestamp.
-2. Perform the action once in the local app.
-3. Pull recent traces: `aspire otel traces --limit 50 --format Json --non-interactive`.
-4. Pick the trace for the action and inspect spans: `aspire otel spans --trace-id <traceId> --format Json --non-interactive`.
-5. Count calls by dependency/resource/path, especially API requests, Elasticsearch searches, Redis operations, queue publishes, and repeated frontend API calls.
-6. Check related structured logs: `aspire otel logs --trace-id <traceId> --format Json --non-interactive`.
-7. Use dashboard metrics and telemetry export when aggregate request counts, error rates, or latency trends matter.
+The AppHost enables `WithBrowserLogs()` for frontend resources. Use its dashboard for browser console/network evidence or screenshots when they explain a UI failure, and correlate browser activity with backend traces where available.
 
-Report counts and evidence, not impressions: total spans, repeated calls, slowest spans, resource names, trace ID, and the exact action tested.
-
-## Browser Telemetry
-
-This repo's AppHost enables `WithBrowserLogs()` for both frontend resources. Use the Aspire dashboard when browser console logs, network requests, or screenshots would explain a frontend failure.
-
-## Guardrails
-
-- Investigate before editing code.
-- Do not repeatedly restart the whole AppHost. If lifecycle work is needed, use the normal Aspire/AppHost guidance and state why.
-- Use `--apphost src/Exceptionless.AppHost` when multiple AppHosts or worktrees make the target ambiguous.
-- For deployed or external environments, do not use local Aspire CLI assumptions. Get explicit user scope and use the platform's diagnostics.
+Avoid restarting the whole AppHost as a diagnostic loop. For deployed or external environments, follow the user's explicit scope and the platform's diagnostics; do not assume local Aspire commands or endpoints apply.

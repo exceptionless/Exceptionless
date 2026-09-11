@@ -75,9 +75,10 @@
     const endResolved = $derived(endValidation.valid ? validateAndResolveTime(endValue) : null);
     const isCustomValid = $derived(startValidation.valid && endValidation.valid && !!startValue && !!endValue);
 
-    function selectRange(rangeValue: string) {
-        value = rangeValue;
-        onselect?.(rangeValue);
+    export function apply() {
+        if (showCustom && isCustomValid) {
+            applyCustom();
+        }
     }
 
     function applyCustom() {
@@ -98,10 +99,9 @@
         }
     }
 
-    export function apply() {
-        if (showCustom && isCustomValid) {
-            applyCustom();
-        }
+    function selectRange(rangeValue: string) {
+        value = rangeValue;
+        onselect?.(rangeValue);
     }
 </script>
 

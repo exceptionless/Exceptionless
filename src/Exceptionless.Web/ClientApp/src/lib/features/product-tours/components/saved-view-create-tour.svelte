@@ -20,14 +20,11 @@
         }
     });
 
-    export function openingSaveDialog(): void {
-        if (checkpoint?.checkpointName === 'review-settings') {
-            productTourCheckpoint.advance(checkpoint, 'name-view');
+    export async function closed(): Promise<void> {
+        const active = checkpoint;
+        if (active && active.checkpointName === 'name-view') {
+            await actions.dismiss(active);
         }
-    }
-
-    export function shouldDefaultPrivate(): boolean {
-        return Boolean(checkpoint);
     }
 
     export async function created(): Promise<void> {
@@ -39,11 +36,14 @@
         await actions.complete(active);
     }
 
-    export async function closed(): Promise<void> {
-        const active = checkpoint;
-        if (active && active.checkpointName === 'name-view') {
-            await actions.dismiss(active);
+    export function openingSaveDialog(): void {
+        if (checkpoint?.checkpointName === 'review-settings') {
+            productTourCheckpoint.advance(checkpoint, 'name-view');
         }
+    }
+
+    export function shouldDefaultPrivate(): boolean {
+        return Boolean(checkpoint);
     }
 </script>
 

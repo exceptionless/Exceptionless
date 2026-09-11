@@ -18,12 +18,6 @@
     import { useFetchClient } from '@foundatiofx/fetchclient';
     import { SvelteSet } from 'svelte/reactivity';
 
-    interface OAuthAuthorizeResponse {
-        error?: string;
-        error_description?: string;
-        redirect_uri?: string;
-    }
-
     interface OAuthAuthorizeConsentResponse {
         client_id?: string;
         client_name?: string;
@@ -45,6 +39,12 @@
         response_type: null | string;
         scope: null | string;
         state: null | string;
+    }
+
+    interface OAuthAuthorizeResponse {
+        error?: string;
+        error_description?: string;
+        redirect_uri?: string;
     }
 
     const offlineAccessScope = 'offline_access';
@@ -152,38 +152,6 @@
         }
     });
 
-    async function loadConsentDetails(): Promise<void> {
-        isLoadingConsent = true;
-        consentErrorMessage = null;
-        const client = useFetchClient();
-        const response = await client.postJSON<OAuthAuthorizeConsentResponse>(
-            'oauth/authorize/consent',
-            getAuthorizationRequestBody([], page.url.searchParams.get('scope')),
-            {
-                expectedStatusCodes: [400, 401]
-            }
-        );
-
-        isLoadingConsent = false;
-        if (response.ok && response.data) {
-            consentDetails = response.data;
-            return;
-        }
-
-        if (response.status === 401) {
-            await redirectToLogin();
-            return;
-        }
-
-        consentDetails = null;
-        consentErrorMessage =
-            response.data?.error_description ||
-            response.data?.error ||
-            response.problem?.detail ||
-            response.problem?.title ||
-            'Unable to load application details.';
-    }
-
     async function approveAuthorization(): Promise<void> {
         if (isAuthorizing) {
             return;
@@ -234,13 +202,27 @@
             'Unable to authorize application.';
     }
 
-    async function redirectToLogin(): Promise<void> {
-        clearAuthenticationSession();
-        const returnUrl = `${page.url.pathname}${page.url.search}`;
-        const loginUrl = `${resolve('/(auth)/login')}?redirect=${encodeURIComponent(returnUrl)}`;
-        await goto(loginUrl, {
-            replaceState: true
-        });
+    function cancelAuthorization() {
+        errorMessage = 'Authorization canceled. You can close this tab.';
+    }
+
+    function formatScope(scope: string): string {
+        switch (scope) {
+            case 'events:read':
+                return 'Events Read';
+            case mcpReadScope:
+                return 'MCP';
+            case offlineAccessScope:
+                return 'Offline Access';
+            case 'projects:read':
+                return 'Projects Read';
+            case 'stacks:read':
+                return 'Stacks Read';
+            case 'stacks:write':
+                return 'Stacks Write';
+            default:
+                return scope;
+        }
     }
 
     function getAuthorizationRequestBody(organizationIds: string[], scope: null | string): OAuthAuthorizeRequestBody {
@@ -284,6 +266,47 @@
         return requiredScopes.includes(scope);
     }
 
+    async function loadConsentDetails(): Promise<void> {
+        isLoadingConsent = true;
+        consentErrorMessage = null;
+        const client = useFetchClient();
+        const response = await client.postJSON<OAuthAuthorizeConsentResponse>(
+            'oauth/authorize/consent',
+            getAuthorizationRequestBody([], page.url.searchParams.get('scope')),
+            {
+                expectedStatusCodes: [400, 401]
+            }
+        );
+
+        isLoadingConsent = false;
+        if (response.ok && response.data) {
+            consentDetails = response.data;
+            return;
+        }
+
+        if (response.status === 401) {
+            await redirectToLogin();
+            return;
+        }
+
+        consentDetails = null;
+        consentErrorMessage =
+            response.data?.error_description ||
+            response.data?.error ||
+            response.problem?.detail ||
+            response.problem?.title ||
+            'Unable to load application details.';
+    }
+
+    async function redirectToLogin(): Promise<void> {
+        clearAuthenticationSession();
+        const returnUrl = `${page.url.pathname}${page.url.search}`;
+        const loginUrl = `${resolve('/(auth)/login')}?redirect=${encodeURIComponent(returnUrl)}`;
+        await goto(loginUrl, {
+            replaceState: true
+        });
+    }
+
     function toggleOrganization(organizationId: string | undefined, checked: 'indeterminate' | boolean): void {
         if (!organizationId) {
             return;
@@ -307,29 +330,6 @@
         } else {
             selectedScopes.delete(scope);
         }
-    }
-
-    function formatScope(scope: string): string {
-        switch (scope) {
-            case 'events:read':
-                return 'Events Read';
-            case mcpReadScope:
-                return 'MCP';
-            case offlineAccessScope:
-                return 'Offline Access';
-            case 'projects:read':
-                return 'Projects Read';
-            case 'stacks:read':
-                return 'Stacks Read';
-            case 'stacks:write':
-                return 'Stacks Write';
-            default:
-                return scope;
-        }
-    }
-
-    function cancelAuthorization() {
-        errorMessage = 'Authorization canceled. You can close this tab.';
     }
 </script>
 

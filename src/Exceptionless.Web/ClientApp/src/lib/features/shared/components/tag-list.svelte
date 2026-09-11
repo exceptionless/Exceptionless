@@ -24,6 +24,24 @@
     const tagList = $derived(tags?.join(', ') ?? '');
     const truncatedTags = new SvelteSet<string>();
 
+    async function handleTagClick(event: MouseEvent, tag: string): Promise<void> {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (event.altKey || event.metaKey) {
+            try {
+                await navigator.clipboard.writeText(tag);
+                toast.success(`Copied tag "${tag}" to clipboard.`);
+            } catch {
+                toast.error('Unable to copy tag to clipboard.');
+            }
+
+            return;
+        }
+
+        await onTagClick?.(tag);
+    }
+
     function observeTruncation(tagText: HTMLElement, tag: string) {
         function updateTruncation() {
             const isTruncated = tagText.scrollWidth > tagText.clientWidth;
@@ -52,24 +70,6 @@
                 observer.disconnect();
             }
         };
-    }
-
-    async function handleTagClick(event: MouseEvent, tag: string): Promise<void> {
-        event.preventDefault();
-        event.stopPropagation();
-
-        if (event.altKey || event.metaKey) {
-            try {
-                await navigator.clipboard.writeText(tag);
-                toast.success(`Copied tag "${tag}" to clipboard.`);
-            } catch {
-                toast.error('Unable to copy tag to clipboard.');
-            }
-
-            return;
-        }
-
-        await onTagClick?.(tag);
     }
 </script>
 

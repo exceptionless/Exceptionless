@@ -16,8 +16,21 @@
     let dateRangePickerRef: DateRangePickerType | undefined = $state();
     let shouldApply = $state(true);
 
+    function handleKeyDown(event: KeyboardEvent) {
+        if (event.key === 'Escape') {
+            shouldApply = false;
+        }
+    }
+
     function handleSelect(value: string) {
         filter.value = value;
+        filterChanged(filter);
+        open = false;
+    }
+
+    function onClearFilter() {
+        shouldApply = false;
+        filter.value = undefined;
         filterChanged(filter);
         open = false;
     }
@@ -28,19 +41,6 @@
         }
 
         shouldApply = true;
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-        if (event.key === 'Escape') {
-            shouldApply = false;
-        }
-    }
-
-    function onClearFilter() {
-        shouldApply = false;
-        filter.value = undefined;
-        filterChanged(filter);
-        open = false;
     }
 
     function onRemoveFilter() {

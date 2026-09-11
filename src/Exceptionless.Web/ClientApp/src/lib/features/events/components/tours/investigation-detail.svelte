@@ -58,6 +58,13 @@
         }
     }
 
+    function back(): void {
+        const previous = steps[stepIndex - 1];
+        if (checkpoint && previous && stepIndex > steps.indexOf(firstDetailCheckpoint)) {
+            productTourCheckpoint.advance(checkpoint, previous);
+        }
+    }
+
     async function continueTour(): Promise<void> {
         const active = checkpoint;
         if (!active) {
@@ -69,13 +76,6 @@
             productTourCheckpoint.advance(active, next);
         } else {
             await onCompareEvents();
-        }
-    }
-
-    function back(): void {
-        const previous = steps[stepIndex - 1];
-        if (checkpoint && previous && stepIndex > steps.indexOf(firstDetailCheckpoint)) {
-            productTourCheckpoint.advance(checkpoint, previous);
         }
     }
 </script>

@@ -51,6 +51,19 @@
         normalizedSearch.length === 0 ? availableColumns : availableColumns.filter((column) => getColumnLabel(column).toLowerCase().includes(normalizedSearch))
     );
 
+    function addColumn(column: (typeof allColumns)[number]): void {
+        column.toggleVisibility(true);
+    }
+
+    function applyColumnOrder(columnIds: string[]): void {
+        const hiddenIds = allColumns.filter((c) => !c.getIsVisible()).map((c) => c.id);
+        table.setColumnOrder(['select', ...columnIds, ...hiddenIds]);
+    }
+
+    function canRemoveColumn(column: (typeof allColumns)[number]): boolean {
+        return column.getCanHide() && visibleColumns.length > 1;
+    }
+
     function getColumnLabel(column: (typeof allColumns)[number]): string {
         if (typeof column.columnDef.header === 'string') {
             return column.columnDef.header;
@@ -59,103 +72,12 @@
         return column.id.replace(/[_-]/g, ' ').replace(/\w\S*/g, (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
     }
 
-    function addColumn(column: (typeof allColumns)[number]): void {
-        column.toggleVisibility(true);
-    }
-
-    function removeColumn(column: (typeof allColumns)[number]): void {
-        if (visibleColumns.length > 1) {
-            if (column.id === autoFillColumnId) {
-                selectAutoFillColumn(null);
-            }
-
-            column.toggleVisibility(false);
-        }
-    }
-
     function handleAutoFillValueChange(value: string): void {
         selectAutoFillColumn(value === AUTO_FILL_NONE_VALUE ? null : value);
     }
 
-    function selectAutoFillColumn(columnId: AutoFillColumnSelection): void {
-        if (columnId) {
-            table.setColumnSizing((current) => {
-                const next = {
-                    ...current
-                };
-                delete next[columnId];
-                return next;
-            });
-        }
-
-        setAutoFillColumnId(columnId);
-    }
-
-    function canRemoveColumn(column: (typeof allColumns)[number]): boolean {
-        return column.getCanHide() && visibleColumns.length > 1;
-    }
-
-    function setColumnWrapped(columnId: string, wrapped: boolean): void {
-        if (wrapped) {
-            if (!wrappedColumnIds.includes(columnId)) {
-                setWrappedColumnIds([...wrappedColumnIds, columnId]);
-            }
-            return;
-        }
-
-        setWrappedColumnIds(wrappedColumnIds.filter((id) => id !== columnId));
-    }
-
-    function moveColumnUp(columnId: string): void {
-        const columnIds = visibleColumns.map((c) => c.id);
-        const index = columnIds.indexOf(columnId);
-        if (index <= 0) {
-            return;
-        }
-
-        const temp = columnIds[index]!;
-        columnIds[index] = columnIds[index - 1]!;
-        columnIds[index - 1] = temp;
-        applyColumnOrder(columnIds);
-    }
-
-    function moveColumnDown(columnId: string): void {
-        const columnIds = visibleColumns.map((c) => c.id);
-        const index = columnIds.indexOf(columnId);
-        if (index === -1 || index >= columnIds.length - 1) {
-            return;
-        }
-
-        const temp = columnIds[index]!;
-        columnIds[index] = columnIds[index + 1]!;
-        columnIds[index + 1] = temp;
-        applyColumnOrder(columnIds);
-    }
-
-    function applyColumnOrder(columnIds: string[]): void {
-        const hiddenIds = allColumns.filter((c) => !c.getIsVisible()).map((c) => c.id);
-        table.setColumnOrder(['select', ...columnIds, ...hiddenIds]);
-    }
-
-    function resetColumns(): void {
-        table.resetColumnVisibility();
-        table.resetColumnOrder();
-        table.resetColumnSizing();
-        if (defaultAutoFillColumnId) {
-            setAutoFillColumnId(defaultAutoFillColumnId);
-        } else {
-            setAutoFillColumnId(null);
-        }
-        setWrappedColumnIds([]);
-        search = '';
-    }
-
-    function handleDragStart(event: DragEvent, columnId: string): void {
-        draggedColumnId = columnId;
-        if (event.dataTransfer) {
-            event.dataTransfer.effectAllowed = 'move';
-            event.dataTransfer.setData('text/plain', columnId);
-        }
+    function handleDragEnd(): void {
+        draggedColumnId = null;
     }
 
     function handleDragOver(event: DragEvent, targetColumnId: string): void {
@@ -180,8 +102,86 @@
         }
     }
 
-    function handleDragEnd(): void {
-        draggedColumnId = null;
+    function handleDragStart(event: DragEvent, columnId: string): void {
+        draggedColumnId = columnId;
+        if (event.dataTransfer) {
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', columnId);
+        }
+    }
+
+    function moveColumnDown(columnId: string): void {
+        const columnIds = visibleColumns.map((c) => c.id);
+        const index = columnIds.indexOf(columnId);
+        if (index === -1 || index >= columnIds.length - 1) {
+            return;
+        }
+
+        const temp = columnIds[index]!;
+        columnIds[index] = columnIds[index + 1]!;
+        columnIds[index + 1] = temp;
+        applyColumnOrder(columnIds);
+    }
+
+    function moveColumnUp(columnId: string): void {
+        const columnIds = visibleColumns.map((c) => c.id);
+        const index = columnIds.indexOf(columnId);
+        if (index <= 0) {
+            return;
+        }
+
+        const temp = columnIds[index]!;
+        columnIds[index] = columnIds[index - 1]!;
+        columnIds[index - 1] = temp;
+        applyColumnOrder(columnIds);
+    }
+
+    function removeColumn(column: (typeof allColumns)[number]): void {
+        if (visibleColumns.length > 1) {
+            if (column.id === autoFillColumnId) {
+                selectAutoFillColumn(null);
+            }
+
+            column.toggleVisibility(false);
+        }
+    }
+
+    function resetColumns(): void {
+        table.resetColumnVisibility();
+        table.resetColumnOrder();
+        table.resetColumnSizing();
+        if (defaultAutoFillColumnId) {
+            setAutoFillColumnId(defaultAutoFillColumnId);
+        } else {
+            setAutoFillColumnId(null);
+        }
+        setWrappedColumnIds([]);
+        search = '';
+    }
+
+    function selectAutoFillColumn(columnId: AutoFillColumnSelection): void {
+        if (columnId) {
+            table.setColumnSizing((current) => {
+                const next = {
+                    ...current
+                };
+                delete next[columnId];
+                return next;
+            });
+        }
+
+        setAutoFillColumnId(columnId);
+    }
+
+    function setColumnWrapped(columnId: string, wrapped: boolean): void {
+        if (wrapped) {
+            if (!wrappedColumnIds.includes(columnId)) {
+                setWrappedColumnIds([...wrappedColumnIds, columnId]);
+            }
+            return;
+        }
+
+        setWrappedColumnIds(wrappedColumnIds.filter((id) => id !== columnId));
     }
 </script>
 

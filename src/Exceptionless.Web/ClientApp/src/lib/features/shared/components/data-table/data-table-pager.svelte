@@ -42,12 +42,6 @@
         }
     }
 
-    function goToPreviousPage(event: MouseEvent): void {
-        if (canGoPrevious) {
-            goToPage(currentPage - 2, event);
-        }
-    }
-
     function goToPage(pageIndex: number, event: MouseEvent): void {
         const trigger = event.currentTarget as HTMLElement;
         if (shouldAdjustScroll(trigger)) {
@@ -55,6 +49,12 @@
         }
 
         table.setPageIndex(pageIndex);
+    }
+
+    function goToPreviousPage(event: MouseEvent): void {
+        if (canGoPrevious) {
+            goToPage(currentPage - 2, event);
+        }
     }
 
     function onBeforePageSizeChange(): void {

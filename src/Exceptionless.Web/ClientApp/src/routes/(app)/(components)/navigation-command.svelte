@@ -55,6 +55,8 @@
         value: string;
     };
 
+    type CommandSearchResult = EventSummaryModel<SummaryTemplateKeys> | StackSummaryModel<SummaryTemplateKeys>;
+
     type Props = {
         askExie: (prompt: string) => Promise<void> | void;
         isChatEnabled: boolean;
@@ -74,8 +76,6 @@
         routes: NavigationItem[];
         stopImpersonating: () => Promise<void> | void;
     };
-
-    type CommandSearchResult = EventSummaryModel<SummaryTemplateKeys> | StackSummaryModel<SummaryTemplateKeys>;
 
     const EXIE_ERROR_TRENDS_PROMPT =
         'Analyze error trends in the current context over the last 7 days. Highlight spikes, regressions, and the issues that deserve attention first.';
@@ -191,16 +191,14 @@
         }
     });
 
-    function getCommandGroup(route: NavigationItem): string {
-        return route.group === 'Dashboards' ? route.title : route.group;
-    }
+    function buildSearchHref(path: string, searchText: string): string {
+        const params = new URLSearchParams({
+            filter: searchText,
+            limit: '20',
+            time: ''
+        });
 
-    function getCommandTitle(route: NavigationItem): string {
-        return route.group === 'Dashboards' ? `All ${route.title}` : route.title;
-    }
-
-    function getCommandValue(...parts: Array<string | undefined>): string {
-        return parts.filter(Boolean).join(' ');
+        return `${path}?${params.toString()}`;
     }
 
     function filterCommandItem(value: string, search: string, keywords?: string[]): number {
@@ -213,14 +211,27 @@
         return searchableText.includes(normalizedSearch) ? 1 : 0;
     }
 
-    function buildSearchHref(path: string, searchText: string): string {
-        const params = new URLSearchParams({
-            filter: searchText,
-            limit: '20',
-            time: ''
-        });
+    function getCommandGroup(route: NavigationItem): string {
+        return route.group === 'Dashboards' ? route.title : route.group;
+    }
 
-        return `${path}?${params.toString()}`;
+    function getCommandTitle(route: NavigationItem): string {
+        return route.group === 'Dashboards' ? `All ${route.title}` : route.title;
+    }
+
+    function getCommandValue(...parts: Array<string | undefined>): string {
+        return parts.filter(Boolean).join(' ');
+    }
+
+    function getEventHref(result: CommandSearchResult): string {
+        return buildEventDetailsHref(result.id);
+    }
+
+    function getResultDescription(result: CommandSearchResult): string | undefined {
+        const data = result.data as Record<string, unknown>;
+        const values = [data.Identity, data.Source, data.Path].filter((value): value is string => typeof value === 'string' && value.length > 0);
+
+        return values.join(' · ') || undefined;
     }
 
     function getResultTitle(result: CommandSearchResult): string {
@@ -236,19 +247,8 @@
         return values.join(' ') || result.id;
     }
 
-    function getResultDescription(result: CommandSearchResult): string | undefined {
-        const data = result.data as Record<string, unknown>;
-        const values = [data.Identity, data.Source, data.Path].filter((value): value is string => typeof value === 'string' && value.length > 0);
-
-        return values.join(' · ') || undefined;
-    }
-
     function getResultValue(group: 'Event' | 'Stack', result: CommandSearchResult): string {
         return getCommandValue(group, debouncedSearchText, getResultTitle(result), getResultDescription(result), result.id);
-    }
-
-    function getEventHref(result: CommandSearchResult): string {
-        return buildEventDetailsHref(result.id);
     }
 
     function getStackHref(result: CommandSearchResult): string {
@@ -327,6 +327,16 @@
         }
     });
 
+    async function askExieAssistant(prompt: string): Promise<void> {
+        closeCommandWindow();
+        await askExie(prompt);
+    }
+
+    async function openExieAssistant(): Promise<void> {
+        closeCommandWindow();
+        await openExie();
+    }
+
     function openResetProjectDataDialog(project: ViewProject): void {
         resetProjectTarget = project;
         showResetProjectDataDialog = true;
@@ -347,16 +357,6 @@
         await openOrganizationSwitcher();
     }
 
-    async function openExieAssistant(): Promise<void> {
-        closeCommandWindow();
-        await openExie();
-    }
-
-    async function askExieAssistant(prompt: string): Promise<void> {
-        closeCommandWindow();
-        await askExie(prompt);
-    }
-
     let showInviteUserDialog = $state(false);
     const addOrganizationUserMutation = addOrganizationUser({
         route: {
@@ -365,12 +365,6 @@
             }
         }
     });
-
-    async function openInviteUserDialog(): Promise<void> {
-        closeCommandWindow();
-        await tick();
-        showInviteUserDialog = true;
-    }
 
     async function inviteUser(email: string): Promise<void> {
         try {
@@ -392,9 +386,35 @@
         await openUserMenu();
     }
 
+    function openGuidedTourCatalog(): void {
+        closeCommandWindow();
+        openGuidedTours();
+    }
+
+    async function openImpersonateOrganizationDialog(): Promise<void> {
+        closeCommandWindow();
+        await openImpersonateOrganization();
+    }
+
+    async function openInviteUserDialog(): Promise<void> {
+        closeCommandWindow();
+        await tick();
+        showInviteUserDialog = true;
+    }
+
     async function openKeyboardShortcutsDialog(): Promise<void> {
         closeCommandWindow();
         await openKeyboardShortcuts();
+    }
+
+    function openSupportChat(): void {
+        closeCommandWindow();
+        openChat();
+    }
+
+    async function stopImpersonatingOrganization(): Promise<void> {
+        closeCommandWindow();
+        await stopImpersonating();
     }
 
     async function switchToOrganization(organizationItem: ViewOrganization): Promise<void> {
@@ -403,32 +423,18 @@
         await goto(resolve('/'));
     }
 
-    async function openImpersonateOrganizationDialog(): Promise<void> {
-        closeCommandWindow();
-        await openImpersonateOrganization();
-    }
-
-    async function stopImpersonatingOrganization(): Promise<void> {
-        closeCommandWindow();
-        await stopImpersonating();
-    }
-
-    function openSupportChat(): void {
-        closeCommandWindow();
-        openChat();
-    }
-
-    function openGuidedTourCatalog(): void {
-        closeCommandWindow();
-        openGuidedTours();
-    }
-
     function toggleTheme(): void {
         closeCommandWindow();
         toggleMode();
     }
 
     let isRefreshing = $state(false);
+    async function logOutCurrentUser(): Promise<void> {
+        closeCommandWindow();
+        await logout(queryClient, client);
+        await goto(resolve('/(auth)/login'));
+    }
+
     async function refreshCurrentView(): Promise<void> {
         closeCommandWindow();
         isRefreshing = true;
@@ -447,12 +453,6 @@
         } finally {
             isRefreshing = false;
         }
-    }
-
-    async function logOutCurrentUser(): Promise<void> {
-        closeCommandWindow();
-        await logout(queryClient, client);
-        await goto(resolve('/(auth)/login'));
     }
 
     const PAGE_JUMP_SIZE = 7;

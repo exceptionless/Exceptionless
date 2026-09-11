@@ -102,34 +102,20 @@
         })
     );
 
-    function onFacetSelected(builder: FacetFilterBuilder<IFilter>) {
-        facets.forEach((f) => (f.open = false));
-
-        const filter = builder.create();
-        const existingFilter = filters.find((f) => f.key === filter.key);
-        if (existingFilter) {
-            if (existingFilter.hidden) {
-                showHiddenFilters = true;
-            }
-
-            const existingFacet = facets.find((facet) => facet.filter.id === existingFilter.id);
-            if (existingFacet) {
-                existingFacet.open = true;
-            }
-
-            open = false;
-            lastOpenFilterId = existingFilter.id;
-            return;
-        }
-
-        changed(filter);
-
-        open = false;
-        lastOpenFilterId = filter.id;
-    }
-
     function filterChanged(filter: IFilter) {
         changed(filter);
+    }
+
+    function filterCommand(commandValue: string, searchInput: string, commandKeywords?: string[]) {
+        if (commandValue === CREATE_KEYWORD_FILTER_COMMAND_ITEM) {
+            return 1; // Always visible
+        }
+
+        // For builder keys, include the builder title as keywords for better searchability
+        const builder = builderContext.get(commandValue);
+        const keywords = builder ? [builder.title, ...(commandKeywords ?? [])] : commandKeywords;
+
+        return computeCommandScore(commandValue, searchInput, keywords);
     }
 
     function filterRemoved(filter: IFilter) {
@@ -140,24 +126,8 @@
         remove(filter);
     }
 
-    function onRemoveAll() {
-        lastOpenFilterId = undefined;
-        remove();
-    }
-
     function onClose() {
         open = false;
-    }
-
-    function toggleHiddenFilters() {
-        showHiddenFilters = !showHiddenFilters;
-        open = false;
-    }
-
-    function onOpenChange(isOpen: boolean) {
-        if (!isOpen) {
-            onClose();
-        }
     }
 
     function onCreateKeywordFromSearch() {
@@ -188,16 +158,46 @@
         }
     }
 
-    function filterCommand(commandValue: string, searchInput: string, commandKeywords?: string[]) {
-        if (commandValue === CREATE_KEYWORD_FILTER_COMMAND_ITEM) {
-            return 1; // Always visible
+    function onFacetSelected(builder: FacetFilterBuilder<IFilter>) {
+        facets.forEach((f) => (f.open = false));
+
+        const filter = builder.create();
+        const existingFilter = filters.find((f) => f.key === filter.key);
+        if (existingFilter) {
+            if (existingFilter.hidden) {
+                showHiddenFilters = true;
+            }
+
+            const existingFacet = facets.find((facet) => facet.filter.id === existingFilter.id);
+            if (existingFacet) {
+                existingFacet.open = true;
+            }
+
+            open = false;
+            lastOpenFilterId = existingFilter.id;
+            return;
         }
 
-        // For builder keys, include the builder title as keywords for better searchability
-        const builder = builderContext.get(commandValue);
-        const keywords = builder ? [builder.title, ...(commandKeywords ?? [])] : commandKeywords;
+        changed(filter);
 
-        return computeCommandScore(commandValue, searchInput, keywords);
+        open = false;
+        lastOpenFilterId = filter.id;
+    }
+
+    function onOpenChange(isOpen: boolean) {
+        if (!isOpen) {
+            onClose();
+        }
+    }
+
+    function onRemoveAll() {
+        lastOpenFilterId = undefined;
+        remove();
+    }
+
+    function toggleHiddenFilters() {
+        showHiddenFilters = !showHiddenFilters;
+        open = false;
     }
 </script>
 

@@ -11,14 +11,14 @@
 
     import type { SavedView } from '../models';
 
-    type SavedViewOrderItem = Pick<SavedView, 'id' | 'name' | 'user_id'>;
-
     interface Props {
         onSave: (savedViewIds: string[]) => Promise<void>;
         open: boolean;
         savedViews: SavedViewOrderItem[];
         title: string;
     }
+
+    type SavedViewOrderItem = Pick<SavedView, 'id' | 'name' | 'user_id'>;
 
     let { onSave, open = $bindable(), savedViews, title }: Props = $props();
     let draggedSavedViewId = $state<null | string>(null);
@@ -37,26 +37,6 @@
     function applyOrder(savedViewIds: string[]): void {
         const byId = new Map(orderedSavedViews.map((savedView) => [savedView.id, savedView]));
         orderedSavedViews = savedViewIds.map((id) => byId.get(id)).filter((savedView): savedView is SavedViewOrderItem => !!savedView);
-    }
-
-    function move(savedViewId: string, offset: -1 | 1): void {
-        const savedViewIds = orderedSavedViews.map((savedView) => savedView.id);
-        const currentIndex = savedViewIds.indexOf(savedViewId);
-        const targetIndex = currentIndex + offset;
-        if (currentIndex < 0 || targetIndex < 0 || targetIndex >= savedViewIds.length) {
-            return;
-        }
-
-        [savedViewIds[currentIndex], savedViewIds[targetIndex]] = [savedViewIds[targetIndex]!, savedViewIds[currentIndex]!];
-        applyOrder(savedViewIds);
-    }
-
-    function handleDragStart(event: DragEvent, savedViewId: string): void {
-        draggedSavedViewId = savedViewId;
-        if (event.dataTransfer) {
-            event.dataTransfer.effectAllowed = 'move';
-            event.dataTransfer.setData('text/plain', savedViewId);
-        }
     }
 
     function handleDragOver(event: DragEvent, targetSavedViewId: string): void {
@@ -83,6 +63,30 @@
         }
     }
 
+    function handleDragStart(event: DragEvent, savedViewId: string): void {
+        draggedSavedViewId = savedViewId;
+        if (event.dataTransfer) {
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', savedViewId);
+        }
+    }
+
+    function move(savedViewId: string, offset: -1 | 1): void {
+        const savedViewIds = orderedSavedViews.map((savedView) => savedView.id);
+        const currentIndex = savedViewIds.indexOf(savedViewId);
+        const targetIndex = currentIndex + offset;
+        if (currentIndex < 0 || targetIndex < 0 || targetIndex >= savedViewIds.length) {
+            return;
+        }
+
+        [savedViewIds[currentIndex], savedViewIds[targetIndex]] = [savedViewIds[targetIndex]!, savedViewIds[currentIndex]!];
+        applyOrder(savedViewIds);
+    }
+
+    function resetOrder(): void {
+        void save([], `${title} views reset to alphabetical order.`);
+    }
+
     async function save(savedViewIds: string[], successMessage: string): Promise<void> {
         saving = true;
         try {
@@ -101,10 +105,6 @@
             orderedSavedViews.map((savedView) => savedView.id),
             `${title} view order saved.`
         );
-    }
-
-    function resetOrder(): void {
-        void save([], `${title} views reset to alphabetical order.`);
     }
 </script>
 
