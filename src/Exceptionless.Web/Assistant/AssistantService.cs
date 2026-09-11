@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -42,8 +43,40 @@ public sealed class AssistantService(
         AssistantPlanOptions planOptions,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        long started = timeProvider.GetTimestamp();
+        double? firstTextDuration = null;
+        string? model = null;
+        try
+        {
+            model = (await assistantModelSettingsService.GetAsync()).Model;
+            await foreach (var item in StreamCoreAsync(request, userId, planOptions, model, cancellationToken))
+            {
+                if (firstTextDuration is null && item.Type == "text_delta" && !String.IsNullOrEmpty(item.Text))
+                {
+                    firstTextDuration = timeProvider.GetElapsedTime(started).TotalMilliseconds;
+                    AppDiagnostics.AssistantFirstTextDuration.Record(firstTextDuration.Value, new KeyValuePair<string, object?>("model", model));
+                }
+                yield return item;
+            }
+        }
+        finally
+        {
+            double duration = timeProvider.GetElapsedTime(started).TotalMilliseconds;
+            AppDiagnostics.AssistantTurnDuration.Record(duration, new KeyValuePair<string, object?>("model", model));
+            logger.LogInformation(
+                "Assistant response timing: duration={DurationMs} ms first_text={FirstTextDurationMs} ms model={Model} organization={OrganizationId} conversation={ConversationId} trace={TraceId}",
+                duration, firstTextDuration, model, request.OrganizationId, request.ConversationId, Activity.Current?.TraceId.ToString());
+        }
+    }
+
+    private async IAsyncEnumerable<AssistantStreamEvent> StreamCoreAsync(
+        AssistantChatRequest request,
+        string userId,
+        AssistantPlanOptions planOptions,
+        string model,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
         var options = appOptions.AssistantOptions;
-        string model = (await assistantModelSettingsService.GetAsync()).Model;
         AssistantConversationState? conversationState = null;
         if (!String.IsNullOrWhiteSpace(request.OrganizationId) && !String.IsNullOrWhiteSpace(request.ConversationId))
         {
@@ -116,7 +149,8 @@ public sealed class AssistantService(
             }
 
             await using var providerRequest = await assistantUsageService.StartProviderRequestAsync(request.OrganizationId, providerInputCharacters);
-            using var response = await SendRequestAsync(messages, options, model, allowTools, request, cancellationToken);
+            using var providerTiming = new AssistantProviderTiming(logger, timeProvider, request, model);
+            using var response = await SendRequestAsync(messages, options, model, allowTools, request, providerTiming, cancellationToken);
             providerRequest.MarkAccepted();
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
             using var reader = new StreamReader(stream);
@@ -132,9 +166,12 @@ public sealed class AssistantService(
                 if (payload.Length == 0 || payload == "[DONE]")
                     continue;
 
+                providerTiming.FirstChunkDuration ??= providerTiming.ElapsedMilliseconds;
                 using var document = JsonDocument.Parse(payload);
                 generationId = GetProviderValue(document.RootElement, "id") ?? generationId;
                 providerName = GetProviderValue(document.RootElement, "provider") ?? providerName;
+                providerTiming.GenerationId = generationId;
+                providerTiming.ProviderName = providerName;
                 if (document.RootElement.TryGetProperty("error", out var error))
                 {
                     LogProviderFailure(response, document.RootElement, model, request, generationId, providerName);
@@ -208,6 +245,9 @@ public sealed class AssistantService(
                         pending.Arguments.Append(arguments.GetString());
                 }
             }
+
+            // Stop before yielding text or running tools so provider time excludes that work.
+            providerTiming.Complete();
 
             if (s_rawDsmlPattern.IsMatch(assistantContent.ToString()))
             {
@@ -387,7 +427,7 @@ public sealed class AssistantService(
         }
     }
 
-    private async Task<HttpResponseMessage> SendRequestAsync(List<object> messages, AssistantOptions options, string model, bool allowTools, AssistantChatRequest chatRequest, CancellationToken cancellationToken)
+    private async Task<HttpResponseMessage> SendRequestAsync(List<object> messages, AssistantOptions options, string model, bool allowTools, AssistantChatRequest chatRequest, AssistantProviderTiming timing, CancellationToken cancellationToken)
     {
         var client = httpClientFactory.CreateClient(nameof(AssistantService));
         using var providerRequest = new HttpRequestMessage(HttpMethod.Post, options.Endpoint);
@@ -420,6 +460,7 @@ public sealed class AssistantService(
         providerRequest.Content = JsonContent.Create(payload);
 
         var response = await client.SendAsync(providerRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        timing.HeadersDuration = timing.ElapsedMilliseconds;
         if (response.IsSuccessStatusCode)
             return response;
 
@@ -477,6 +518,7 @@ public sealed class AssistantService(
         AssistantChatRequest request,
         CancellationToken cancellationToken)
     {
+        using var toolTimer = AppDiagnostics.AssistantToolDuration.StartTimer();
         cancellationToken.ThrowIfCancellationRequested();
         using var _ = assistantToolContext.BeginTools(request.OrganizationId);
         using var document = ParseArguments(arguments);

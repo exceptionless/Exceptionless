@@ -1,3 +1,4 @@
+using System.Diagnostics.Metrics;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -18,6 +19,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 
 namespace Exceptionless.Tests.Assistant;
@@ -208,6 +210,92 @@ public sealed class AssistantServiceTests
         Assert.Equal("z-ai/glm-5.3-flash", providerRequest.RootElement.GetProperty("model").GetString());
     }
 
+    [Fact]
+    public async Task StreamAsync_Timing_SeparatesProviderStreamingFromVisibleResponse()
+    {
+        var timeProvider = new FakeTimeProvider();
+        var logger = new RecordingAssistantLogger();
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key",
+                ["Assistant:Model"] = "timing-test-model"
+            }).Build());
+        var measurements = new Dictionary<string, List<double>>();
+        using var listener = new MeterListener();
+        listener.InstrumentPublished = (instrument, meterListener) =>
+        {
+            if (instrument.Meter.Name == "Exceptionless" && instrument.Name.StartsWith("ex.assistant.", StringComparison.Ordinal))
+                meterListener.EnableMeasurementEvents(instrument);
+        };
+        listener.SetMeasurementEventCallback<double>((instrument, measurement, tags, _) =>
+        {
+            foreach (var tag in tags)
+            {
+                if (tag.Key != "model" || !Equals(tag.Value, "timing-test-model"))
+                    continue;
+
+                if (!measurements.TryGetValue(instrument.Name, out var values))
+                    measurements[instrument.Name] = values = [];
+                values.Add(measurement);
+            }
+        });
+        listener.Start();
+        var service = CreateAssistantService(new TimingHttpMessageHandler(timeProvider), appOptions, logger: logger, timeProvider: timeProvider);
+
+        await foreach (var item in service.StreamAsync(new AssistantChatRequest([new AssistantChatMessage("user", "Hello")]),
+            "user-id", CreatePlanOptions(), TestContext.Current.CancellationToken))
+        {
+            if (item.Type == "text_delta")
+                timeProvider.Advance(TimeSpan.FromMilliseconds(1000));
+        }
+
+        var provider = Assert.Single(logger.Entries, entry => entry.ContainsKey("HeadersDurationMs"));
+        Assert.Equal(200d, provider["HeadersDurationMs"]);
+        Assert.Equal(700d, provider["FirstChunkDurationMs"]);
+        Assert.Equal(700d, provider["DurationMs"]);
+        Assert.Equal(true, provider["ProviderStreamCompleted"]);
+        var turn = Assert.Single(logger.Entries, entry => entry.ContainsKey("FirstTextDurationMs"));
+        Assert.Equal(700d, turn["FirstTextDurationMs"]);
+        Assert.Equal(2700d, turn["DurationMs"]);
+        Assert.Equal(700d, Assert.Single(measurements["ex.assistant.provider.duration"]));
+        Assert.Equal(700d, Assert.Single(measurements["ex.assistant.turn.first_text.duration"]));
+        Assert.Equal(2700d, Assert.Single(measurements["ex.assistant.turn.duration"]));
+    }
+
+    [Fact]
+    public async Task StreamAsync_Cancellation_RecordsElapsedTimeWithoutFirstText()
+    {
+        var timeProvider = new FakeTimeProvider();
+        var logger = new RecordingAssistantLogger();
+        using var cancellation = new CancellationTokenSource();
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            }).Build());
+        var service = CreateAssistantService(new TimingHttpMessageHandler(timeProvider, cancellation.Cancel),
+            appOptions, logger: logger, timeProvider: timeProvider);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+        {
+            await foreach (var _ in service.StreamAsync(new AssistantChatRequest([new AssistantChatMessage("user", "Hello")]),
+                "user-id", CreatePlanOptions(), cancellation.Token))
+            {
+            }
+        });
+
+        var provider = Assert.Single(logger.Entries, entry => entry.ContainsKey("HeadersDurationMs"));
+        Assert.Equal(200d, provider["DurationMs"]);
+        Assert.Null(provider["HeadersDurationMs"]);
+        Assert.Equal(false, provider["ProviderStreamCompleted"]);
+        var turn = Assert.Single(logger.Entries, entry => entry.ContainsKey("FirstTextDurationMs"));
+        Assert.Equal(200d, turn["DurationMs"]);
+        Assert.Null(turn["FirstTextDurationMs"]);
+    }
+
     [Theory]
     [InlineData(false, "429", "provider_code")]
     [InlineData(true, "429", "provider_code")]
@@ -223,7 +311,7 @@ public sealed class AssistantServiceTests
         string content = streaming
             ? "data: {\"id\":\"gen-stream\",\"provider\":\"Fireworks\",\"choices\":[]}\n\ndata: " + error.ReplaceLineEndings("") + "\n\n"
             : error;
-        var logger = new ProviderFailureLogger();
+        var logger = new RecordingAssistantLogger();
         var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
@@ -243,7 +331,7 @@ public sealed class AssistantServiceTests
             }
         });
 
-        var properties = Assert.Single(logger.Entries);
+        var properties = Assert.Single(logger.Entries, entry => entry.ContainsKey("ProviderStatusCode"));
         Assert.Equal(streaming ? 200 : 429, properties["ProviderStatusCode"]);
         Assert.Equal("429", properties["ProviderErrorCode"]);
         Assert.Equal("rate_limit_exceeded", properties["ProviderErrorType"]);
@@ -255,6 +343,11 @@ public sealed class AssistantServiceTests
         Assert.Equal("conversation-id", properties["ConversationId"]);
         Assert.Equal("organization-id", properties["OrganizationId"]);
         Assert.DoesNotContain("canary", JsonSerializer.Serialize(properties));
+        var providerTiming = Assert.Single(logger.Entries, entry => entry.ContainsKey("HeadersDurationMs"));
+        Assert.Equal(false, providerTiming["ProviderStreamCompleted"]);
+        Assert.NotNull(providerTiming["HeadersDurationMs"]);
+        var turnTiming = Assert.Single(logger.Entries, entry => entry.ContainsKey("FirstTextDurationMs"));
+        Assert.Null(turnTiming["FirstTextDurationMs"]);
     }
 
     [Theory]
@@ -262,7 +355,7 @@ public sealed class AssistantServiceTests
     [InlineData("{invalid-json")]
     public async Task StreamAsync_InvalidHttpErrorBody_LogsStatusWithoutHidingRejection(string content)
     {
-        var logger = new ProviderFailureLogger();
+        var logger = new RecordingAssistantLogger();
         var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
@@ -280,7 +373,7 @@ public sealed class AssistantServiceTests
         });
 
         Assert.Contains("502", exception.Message);
-        var properties = Assert.Single(logger.Entries);
+        var properties = Assert.Single(logger.Entries, entry => entry.ContainsKey("ProviderStatusCode"));
         Assert.Equal(502, properties["ProviderStatusCode"]);
         Assert.Equal("gen-header", properties["ProviderGenerationId"]);
         Assert.DoesNotContain("private-proxy-body-canary", JsonSerializer.Serialize(properties));
@@ -1387,7 +1480,8 @@ public sealed class AssistantServiceTests
         ILockProvider? lockProvider = null,
         AssistantUsageService? usageService = null,
         AssistantModelSettingsService? modelSettingsService = null,
-        ILogger<AssistantService>? logger = null)
+        ILogger<AssistantService>? logger = null,
+        TimeProvider? timeProvider = null)
     {
         cache ??= new InMemoryCacheClient(new InMemoryCacheClientOptions
         {
@@ -1413,7 +1507,7 @@ public sealed class AssistantServiceTests
             new AssistantConversationService(cache, lockProvider, NullLogger<AssistantConversationService>.Instance),
             modelSettingsService,
             usageService,
-            TimeProvider.System,
+            timeProvider ?? TimeProvider.System,
             logger ?? NullLogger<AssistantService>.Instance);
     }
 
@@ -1472,6 +1566,38 @@ public sealed class AssistantServiceTests
         }
     }
 
+    private sealed class TimingHttpMessageHandler(FakeTimeProvider timeProvider, Action? beforeHeaders = null) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            timeProvider.Advance(TimeSpan.FromMilliseconds(200));
+            beforeHeaders?.Invoke();
+            cancellationToken.ThrowIfCancellationRequested();
+            const string content = """
+                data: {"choices":[{"delta":{"content":"Hello"}}]}
+
+                data: {"choices":[{"delta":{"content":" again"}}]}
+
+                data: [DONE]
+
+                """;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StreamContent(new TimingStream(timeProvider, Encoding.UTF8.GetBytes(content)))
+            });
+        }
+    }
+
+    private sealed class TimingStream(FakeTimeProvider timeProvider, byte[] content) : MemoryStream(content)
+    {
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (Position < Length)
+                timeProvider.Advance(TimeSpan.FromMilliseconds(500));
+            return base.ReadAsync(buffer, cancellationToken);
+        }
+    }
+
     private sealed class ProviderFailureHandler(HttpStatusCode status, string content) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -1482,7 +1608,7 @@ public sealed class AssistantServiceTests
         }
     }
 
-    private sealed class ProviderFailureLogger : ILogger<AssistantService>
+    private sealed class RecordingAssistantLogger : ILogger<AssistantService>
     {
         public List<Dictionary<string, object?>> Entries { get; } = [];
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;

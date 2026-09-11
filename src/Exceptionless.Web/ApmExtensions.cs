@@ -129,6 +129,14 @@ public static partial class ApmExtensions
                 b.AddRuntimeInstrumentation();
                 b.AddProcessInstrumentation();
 
+                foreach (string name in new[] { "ex.assistant.turn.duration", "ex.assistant.turn.first_text.duration", "ex.assistant.provider.duration", "ex.assistant.tool.duration" })
+                {
+                    b.AddView(name, new ExplicitBucketHistogramConfiguration
+                    {
+                        Boundaries = [50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000, 60000, 120000]
+                    });
+                }
+
                 b.AddView(
                     "http.server.request.duration",
                     new ExplicitBucketHistogramConfiguration

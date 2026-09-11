@@ -9,6 +9,7 @@ Serilog:
       #Exceptionless.Core.Repositories.StackRepository: Verbose
       #Exceptionless.Core.Repositories: Verbose
       Exceptionless.Web.Program: Information
+      Exceptionless.Web.Assistant.AssistantService: Information
       Exceptionless.Web.Security.ApiKeyAuthenticationHandler: Warning
       Foundatio.Metrics: Warning
       Foundatio.Utility.ScheduledTimer: Warning
