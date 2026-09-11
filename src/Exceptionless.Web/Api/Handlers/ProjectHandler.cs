@@ -513,7 +513,7 @@ public class ProjectHandler(
             viewProject.HasPremiumFeatures = organization.HasPremiumFeatures;
 
             var realTimeUsage = await usageService.GetUsageAsync(organization.Id, viewProject.Id);
-            viewProject.EnsureUsage(organization.GetMaxEventsPerMonthWithBonus(timeProvider), timeProvider);
+            viewProject.EnsureUsage(organization.GetMaxEventsPerMonthWithBonus(timeProvider), organization.CreatedUtc, timeProvider);
             viewProject.TrimUsage(timeProvider);
 
             var currentUsage = viewProject.GetCurrentUsage(organization.GetMaxEventsPerMonthWithBonus(timeProvider), timeProvider);
