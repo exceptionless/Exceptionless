@@ -2738,8 +2738,8 @@
   },
   {
     "method": "PUT",
-    "route": "/api/v2/users/me/product-tours/{tourName:minlength(1):maxlength(64)}/record",
-    "displayName": "HTTP: PUT api/v2/users/me/product-tours/{tourName:minlength(1):maxlength(64)}/record",
+    "route": "/api/v2/users/me/product-tours/{tourName}/record",
+    "displayName": "HTTP: PUT api/v2/users/me/product-tours/{tourName}/record",
     "tags": [
       "User"
     ],

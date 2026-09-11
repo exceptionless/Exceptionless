@@ -45,8 +45,9 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         await Cache.RemoveAsync(EmailCacheKey(user.EmailAddress));
 
         var updatedUser = await GetByIdAsync(user.Id, o => o.Cache(false));
+        // A concurrent writer may have advanced the document since this read; do not cache this snapshot.
         if (updatedUser is not null)
-            await AddDocumentsToCacheAsync(updatedUser, ConfigureOptions(new CommandOptions<User>().Cache()), isDirtyRead: false);
+            await InvalidateCacheAsync(updatedUser);
 
         return updatedUser;
     }

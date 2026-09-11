@@ -1,9 +1,12 @@
 using System.Text.Json;
+using Exceptionless.Core;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Validation;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models;
-using Foundatio.Caching;
 using Foundatio.Repositories;
 using Xunit;
 
@@ -151,30 +154,39 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task RecordProductTourAsync_Completed_RefreshesIdAndEmailCacheEntries()
+    public async Task RecordProductTourAsync_OlderConcurrentRead_DoesNotCacheOutdatedProgress()
     {
         // Arrange
         var currentUser = await GetTestOrganizationUserAsync();
-        var user = await _userRepository.GetByIdAsync(currentUser.Id, o => o.Cache());
+        var user = await _userRepository.GetByIdAsync(currentUser.Id);
         Assert.NotNull(user);
-        await _userRepository.GetByEmailAddressAsync(user.EmailAddress);
+        var repository = new PausingUserRepository(GetService<ExceptionlessElasticConfiguration>(), GetService<MiniValidationValidator>(), GetService<AppOptions>());
         var recordedUtc = TimeProvider.GetUtcNow().UtcDateTime;
-        var cache = Assert.IsType<InMemoryCacheClient>(GetService<ICacheClient>());
 
-        // Act
-        await _userRepository.RecordProductTourAsync(user, "app_overview", recordedUtc);
-        long hits = cache.Hits;
-        long misses = cache.Misses;
+        // Act: hold the first snapshot while a second completion is recorded and cached.
+        var first = repository.RecordProductTourAsync(user, "first_guide", recordedUtc);
+        try
+        {
+            await repository.SnapshotRead.Task.WaitAsync(TimeSpan.FromSeconds(10), TestCancellationToken);
+            await _userRepository.RecordProductTourAsync(user, "second_guide", recordedUtc);
+            await _userRepository.GetByIdAsync(user.Id, o => o.Cache());
+            await _userRepository.GetByEmailAddressAsync(user.EmailAddress);
+        }
+        finally
+        {
+            repository.ResumeRead.TrySetResult();
+            await first;
+        }
         var byId = await _userRepository.GetByIdAsync(user.Id, o => o.Cache());
         var byEmail = await _userRepository.GetByEmailAddressAsync(user.EmailAddress);
 
         // Assert
         Assert.NotNull(byId);
         Assert.NotNull(byEmail);
-        Assert.Equal(recordedUtc, byId.ProductTours["app_overview"].GetDateTime());
-        Assert.Equal(recordedUtc, byEmail.ProductTours["app_overview"].GetDateTime());
-        Assert.Equal(hits + 2, cache.Hits);
-        Assert.Equal(misses, cache.Misses);
+        Assert.Equal(recordedUtc, byId.ProductTours["second_guide"].GetDateTime());
+        Assert.Equal(recordedUtc, byEmail.ProductTours["second_guide"].GetDateTime());
+        Assert.Equal(2, byId.ProductTours.Count);
+        Assert.Equal(2, byEmail.ProductTours.Count);
     }
 
     [Theory]
@@ -294,4 +306,20 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
         Assert.NotNull(user);
         return user;
     }
+
+    private sealed class PausingUserRepository(ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, AppOptions options)
+        : UserRepository(configuration, validator, options)
+    {
+        public TaskCompletionSource SnapshotRead { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource ResumeRead { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public override async Task<User?> GetByIdAsync(Id id, ICommandOptions? options = null)
+        {
+            var user = await base.GetByIdAsync(id, options);
+            SnapshotRead.TrySetResult();
+            await ResumeRead.Task;
+            return user;
+        }
+    }
+
 }

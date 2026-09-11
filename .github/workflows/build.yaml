@@ -288,6 +288,7 @@ jobs:
           fi
 
       - name: Wait for Aspire Resources
+        timeout-minutes: 5
         run: |
           for attempt in {1..60}; do
             if curl --connect-timeout 5 --max-time 20 -fksS https://web-ex.dev.localhost:7131/api/v2/about > /dev/null &&
