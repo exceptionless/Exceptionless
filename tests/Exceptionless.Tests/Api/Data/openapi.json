@@ -3954,6 +3954,57 @@
         }
       }
     },
+    "/api/v2/users/me/product-tours/{tourName}/record": {
+      "put": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Record current user product tour",
+        "parameters": [
+          {
+            "name": "tourName",
+            "in": "path",
+            "description": "A UI-defined product tour identifier using lowercase letters, digits, and hyphens (up to 64 characters).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordProductTourResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The product tour name is invalid or the limit of 100 recorded product tour entries has been reached.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The current user could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/users/me/oauth-grants": {
       "get": {
         "tags": [
@@ -13229,6 +13280,18 @@
           }
         }
       },
+      "RecordProductTourResult": {
+        "required": [
+          "recorded_utc"
+        ],
+        "type": "object",
+        "properties": {
+          "recorded_utc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "ResetPasswordModel": {
         "required": [
           "password_reset_token",
@@ -13866,6 +13929,7 @@
           "o_auth_accounts",
           "organization_preferences",
           "saved_view_orders",
+          "product_tours",
           "email_notifications_enabled",
           "is_email_address_verified",
           "verify_email_address_token_expiration",
@@ -13930,6 +13994,9 @@
             "items": {
               "$ref": "#/components/schemas/UserSavedViewOrderPreference"
             }
+          },
+          "product_tours": {
+            "type": "object"
           },
           "full_name": {
             "type": "string",
@@ -14062,6 +14129,7 @@
           "o_auth_accounts",
           "organization_preferences",
           "saved_view_orders",
+          "product_tours",
           "id",
           "organization_ids",
           "full_name",
@@ -14100,6 +14168,9 @@
             "items": {
               "$ref": "#/components/schemas/UserSavedViewOrderPreference"
             }
+          },
+          "product_tours": {
+            "type": "object"
           },
           "id": {
             "maxLength": 24,

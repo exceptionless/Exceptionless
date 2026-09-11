@@ -14,8 +14,9 @@ using Exceptionless.Web.Models;
 using Exceptionless.Web.Models.OAuth;
 using Exceptionless.Web.Utility;
 using Foundatio.Caching;
-using Foundatio.Repositories;
 using Foundatio.Mediator;
+using Foundatio.Repositories;
+using Foundatio.Repositories.Exceptions;
 
 namespace Exceptionless.Web.Api.Handlers;
 
@@ -39,7 +40,8 @@ public class UserHandler(
 
     public async Task<Result<ViewCurrentUser>> Handle(GetCurrentUser message)
     {
-        var currentUser = await GetModelAsync(GetCurrentUserId());
+        // Preferences must reflect completed writes even if an in-flight lookup repopulates an older cache entry.
+        var currentUser = await GetModelAsync(GetCurrentUserId(), useCache: false);
         if (currentUser is null)
             return Result.NotFound("User not found.");
 
@@ -47,6 +49,43 @@ public class UserHandler(
         {
             AvatarUrl = GetUserAvatarUrl(currentUser.Id, currentUser.AvatarFileName)
         };
+    }
+
+    public async Task<Result<RecordProductTourResult>> Handle(RecordCurrentUserProductTour message)
+    {
+        if (message.TourName.Length is < 1 or > 64 || message.TourName.Any(c => !Char.IsAsciiLetterLower(c) && !Char.IsAsciiDigit(c) && c != '-'))
+        {
+            return Result.Invalid(ValidationError.Create("tour_name", "Use lowercase letters, digits, and hyphens for the product tour name."));
+        }
+
+        var currentUser = await GetModelAsync(GetCurrentUserId());
+        if (currentUser is null)
+        {
+            return Result.NotFound("User not found.");
+        }
+
+        // Keep the existing JSON keys while letting the UI define new tour identifiers.
+        string stateKey = message.TourName.Replace('-', '_');
+        try
+        {
+            currentUser = await repository.RecordProductTourAsync(currentUser, stateKey, timeProvider.GetUtcNow().UtcDateTime);
+        }
+        catch (DocumentNotFoundException)
+        {
+            return Result.NotFound("User not found.");
+        }
+
+        if (currentUser is null)
+        {
+            return Result.NotFound("User not found.");
+        }
+
+        if (!currentUser.ProductTours.TryGetValue(stateKey, out var recorded))
+        {
+            return Result.Invalid(ValidationError.Create("tour_name", "The maximum number of recorded product tours has been reached."));
+        }
+
+        return new RecordProductTourResult(recorded.GetDateTime());
     }
 
     public async Task<Result<IReadOnlyCollection<ViewOAuthGrant>>> Handle(GetCurrentUserOAuthGrants message)

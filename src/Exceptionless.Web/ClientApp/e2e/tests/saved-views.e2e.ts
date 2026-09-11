@@ -5,6 +5,7 @@ import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
 import { getVisibleText } from '../support/page-helpers';
 
 test('home navigation honors personal and organization saved views and survives deletion', async ({ e2eApi, e2eScenario, page, request }) => {
+    // Arrange
     const failedApiRequests = captureFailedApiRequests(page);
     const savedViewListLimits: string[] = [];
     page.on('request', (request) => {
@@ -17,28 +18,45 @@ test('home navigation honors personal and organization saved views and survives 
     const viewName = `E2E Home ${journey.run.slice(-36)}`;
     const viewSlug = savedViewSlug(viewName);
 
+    // Act & Assert: each step exercises and verifies a home-view transition.
     await test.step('fall back to the first Stacks saved view when no default is configured', async () => {
+        // Act
         await page.goto('/next/');
+        // Assert
         await expect(page).toHaveURL(/\/next\/stack\/all(?:[?#]|$)/);
         await expect(page.getByRole('heading', { name: 'All' })).toBeVisible({ timeout: 30_000 });
         await expect.poll(() => savedViewListLimits).toContain('100');
     });
 
     await test.step('prefer the personal saved view', async () => {
+        // Arrange
         await journey.submitRepresentativeEvent();
         await page.goto(`/next/event?reference=${encodeURIComponent(journey.referenceId)}&time=all`);
         await expect(getVisibleText(page, journey.message)).toBeVisible({ timeout: 30_000 });
 
+        // Act
         await openViewMenu(page);
         await page.getByRole('menuitem', { name: 'Save As...' }).click();
         const dialog = page.getByRole('dialog', { name: 'Save View' });
+        // Assert
+        await expect(dialog.getByRole('switch', { exact: true, name: 'Private' })).not.toBeChecked();
+        // Act
+        await dialog.getByRole('button', { exact: true, name: 'Cancel' }).click();
+        // Assert
+        await expect(dialog).toBeHidden();
+        // Act
+        await openViewMenu(page);
+        await page.getByRole('menuitem', { name: 'Save As...' }).click();
         await dialog.getByLabel('Name', { exact: true }).fill(viewName);
         await dialog.getByRole('button', { name: 'Save' }).click();
+        // Assert
         await expect(dialog).toBeHidden({ timeout: 30_000 });
         await expect(page.getByRole('heading', { name: viewName })).toBeVisible({ timeout: 30_000 });
 
+        // Act
         await openViewMenu(page);
         await page.getByRole('menuitem', { name: 'Set as my home view' }).click();
+        // Assert
         await expect(page.getByText(`"${viewName}" is now your home view.`)).toBeVisible();
 
         await expect
@@ -54,24 +72,33 @@ test('home navigation honors personal and organization saved views and survives 
             )
             .toBe(true);
 
+        // Act
         await page.goto('/next/');
+        // Assert
         await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(viewSlug)}(?:[?#]|$)`));
     });
 
     await test.step('fall back to the organization saved view after clearing the personal preference', async () => {
+        // Act
         await openViewMenu(page);
         await page.getByRole('menuitem', { name: 'Set as organization home' }).click();
+        // Assert
         await expect(page.getByText(`"${viewName}" is now the organization home view.`)).toBeVisible();
 
+        // Act
         await openViewMenu(page);
         await page.getByRole('menuitem', { name: 'Clear my home view' }).click();
+        // Assert
         await expect(page.getByText('Personal home view cleared.')).toBeVisible();
 
+        // Act
         await page.goto('/next/');
+        // Assert
         await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(viewSlug)}(?:[?#]|$)`));
     });
 
     await test.step('clear deleted defaults and return to the first Stacks saved view', async () => {
+        // Act
         const deletion = await page.evaluate(
             async ({ organizationId, token, viewName }) => {
                 const headers = { Authorization: `Bearer ${token}` };
@@ -86,12 +113,16 @@ test('home navigation honors personal and organization saved views and survives 
             },
             { organizationId: e2eScenario.organizationId, token: e2eScenario.userToken, viewName }
         );
+        // Assert
         expect(deletion).toBe(202);
 
+        // Act
         await page.goto('/next/');
+        // Assert
         await expect(page).toHaveURL(/\/next\/stack\/all(?:[?#]|$)/);
     });
 
+    // Assert
     expect(failedApiRequests).toEqual([]);
 });
 

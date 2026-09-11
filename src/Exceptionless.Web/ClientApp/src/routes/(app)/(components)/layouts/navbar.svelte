@@ -41,6 +41,7 @@
                 <Button
                     aria-label="Search Exceptionless"
                     class="w-9 justify-center sm:w-56 sm:justify-start md:w-72"
+                    data-tour="command-search"
                     onclick={openCommand}
                     size="default"
                     variant="outline"
@@ -55,6 +56,7 @@
                         aria-label={isAssistantOpen ? 'Close Exie' : 'Open Exie'}
                         class="px-2"
                         data-assistant-trigger
+                        data-tour="exie-trigger"
                         onclick={toggleAssistant}
                         title="Ask Exie"
                         variant="outline"

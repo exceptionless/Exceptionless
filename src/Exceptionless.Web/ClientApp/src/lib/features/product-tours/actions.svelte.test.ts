@@ -1,0 +1,185 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { createProductTourActions } from './actions.svelte';
+import { productTourCheckpoint } from './state.svelte';
+
+const mocks = vi.hoisted(() => ({
+    error: vi.fn(),
+    mutateAsync: vi.fn<() => Promise<void>>(),
+    openCatalog: vi.fn(),
+    submitFeatureUsage: vi.fn(),
+    success: vi.fn()
+}));
+vi.mock('./activity', () => ({ submitProductTourActivity: mocks.submitFeatureUsage }));
+vi.mock('$features/users/api.svelte', () => ({ putCurrentUserProductTour: () => ({ mutateAsync: mocks.mutateAsync }) }));
+vi.mock('./controls.svelte', () => ({ tryUseProductTourControls: () => ({ openCatalog: mocks.openCatalog }) }));
+vi.mock('svelte-sonner', () => ({ toast: { error: mocks.error, success: mocks.success } }));
+
+describe('product tour completion', () => {
+    beforeEach(() => mocks.mutateAsync.mockResolvedValue(undefined));
+
+    it('finishes without waiting for telemetry', async () => {
+        // Arrange
+        const checkpoint = productTourCheckpoint.start('saved-view-create', 'name-view', 'user');
+        mocks.submitFeatureUsage.mockReturnValue(new Promise<void>(() => {}));
+
+        // Act
+        const completed = await createProductTourActions().complete(checkpoint);
+
+        // Assert
+        expect(completed).toBe(true);
+        expect(productTourCheckpoint.current).toBeUndefined();
+        expect(mocks.success).toHaveBeenCalledOnce();
+    });
+
+    afterEach(() => {
+        productTourCheckpoint.clear();
+        vi.resetAllMocks();
+    });
+
+    it('offers an actionable next step when the guide finishes', async () => {
+        // Arrange
+        const checkpoint = productTourCheckpoint.start('event-investigate', 'filter-stack-events', 'user');
+        const actions = createProductTourActions();
+
+        // Act
+        const completed = await actions.complete(checkpoint);
+
+        // Assert
+        expect(completed).toBe(true);
+        expect(productTourCheckpoint.current).toBeUndefined();
+        expect(mocks.success).toHaveBeenCalledExactlyOnceWith('You’ve explored an error and its occurrences', {
+            action: { label: 'Browse guides', onClick: mocks.openCatalog },
+            description: 'Find more tours in Search → Guided Tours.'
+        });
+
+        // Act
+        const options = mocks.success.mock.calls[0]![1];
+        options.action.onClick();
+
+        // Assert
+        expect(mocks.openCatalog).toHaveBeenCalledOnce();
+    });
+
+    it('leaves the overview menu handoff unobstructed by a completion toast', async () => {
+        // Arrange
+        const checkpoint = productTourCheckpoint.start('app-overview', 'command-search', 'user');
+
+        // Act
+        const completed = await createProductTourActions().complete(checkpoint);
+
+        // Assert
+        expect(completed).toBe(true);
+        expect(mocks.success).not.toHaveBeenCalled();
+    });
+
+    it('closes immediately when persistence cannot be saved', async () => {
+        // Arrange
+        const checkpoint = productTourCheckpoint.start('app-overview', 'command-search', 'user');
+        mocks.mutateAsync.mockRejectedValueOnce(new Error('Unavailable'));
+
+        // Act
+        const completed = await createProductTourActions().complete(checkpoint);
+
+        // Assert
+        expect(completed).toBe(true);
+        expect(productTourCheckpoint.current).toBeUndefined();
+        expect(mocks.openCatalog).not.toHaveBeenCalled();
+    });
+
+    it('closes immediately when completion persistence never settles', async () => {
+        // Arrange
+        const checkpoint = productTourCheckpoint.start('saved-view-create', 'name-view', 'user');
+        mocks.mutateAsync.mockReturnValue(new Promise<void>(() => {}));
+
+        // Act
+        const completed = await createProductTourActions().complete(checkpoint);
+
+        // Assert
+        expect(completed).toBe(true);
+        expect(productTourCheckpoint.current).toBeUndefined();
+    });
+
+    it('does not submit completion for a dismissed checkpoint', async () => {
+        // Arrange
+        const checkpoint = productTourCheckpoint.start('app-overview', 'command-search', 'user');
+        const actions = createProductTourActions();
+
+        // Act
+        await actions.dismiss(checkpoint);
+        const completed = await actions.complete(checkpoint);
+
+        // Assert
+        expect(completed).toBe(false);
+        expect(mocks.mutateAsync).not.toHaveBeenCalled();
+        expect(mocks.success).not.toHaveBeenCalled();
+        expect(mocks.openCatalog).not.toHaveBeenCalled();
+    });
+
+    it('does not submit dismissal after another guide replaces the checkpoint', async () => {
+        // Arrange
+        const previous = productTourCheckpoint.start('app-overview', 'command-search', 'user');
+        const current = productTourCheckpoint.start('saved-view-create', 'open-view-menu', 'user');
+
+        // Act
+        const dismissed = await createProductTourActions().dismiss(previous);
+
+        // Assert
+        expect(dismissed).toBe(false);
+        expect(productTourCheckpoint.current).toBe(current);
+        expect(mocks.mutateAsync).not.toHaveBeenCalled();
+        expect(mocks.submitFeatureUsage).not.toHaveBeenCalled();
+    });
+
+    it('offers the next guide once after a first event succeeds', async () => {
+        // Arrange
+        const checkpoint = productTourCheckpoint.start('project-configure', 'sdk-instructions', 'user');
+        mocks.mutateAsync.mockResolvedValueOnce(undefined);
+        const actions = createProductTourActions();
+
+        // Act
+        await Promise.all([actions.complete(checkpoint), actions.complete(checkpoint)]);
+
+        // Assert
+        expect(mocks.mutateAsync).toHaveBeenCalledOnce();
+        expect(mocks.success).toHaveBeenCalledExactlyOnceWith(
+            'Your project received its first event',
+            expect.objectContaining({
+                action: { label: 'Browse guides', onClick: mocks.openCatalog }
+            })
+        );
+    });
+
+    it('does not submit a second outcome while progress is being saved', async () => {
+        // Arrange
+        const checkpoint = productTourCheckpoint.start('app-overview', 'command-search', 'user');
+        const pending = Promise.withResolvers<void>();
+        mocks.mutateAsync.mockReturnValue(pending.promise);
+        const actions = createProductTourActions();
+
+        // Act
+        const completion = actions.complete(checkpoint);
+        const dismissed = await actions.dismiss(checkpoint);
+        pending.resolve();
+        const completed = await completion;
+
+        // Assert
+        expect(dismissed).toBe(false);
+        expect(completed).toBe(true);
+        expect(mocks.mutateAsync).toHaveBeenCalledOnce();
+        expect(mocks.submitFeatureUsage).toHaveBeenCalledExactlyOnceWith('completed', 'app-overview');
+    });
+
+    it('clears a domain-success checkpoint even when persistence fails', async () => {
+        // Arrange
+        const checkpoint = productTourCheckpoint.start('project-configure', 'sdk-instructions', 'user');
+        mocks.mutateAsync.mockRejectedValueOnce(new Error('Unavailable'));
+
+        // Act
+        await createProductTourActions().complete(checkpoint);
+
+        // Assert
+        expect(productTourCheckpoint.current).toBeUndefined();
+        expect(mocks.success).toHaveBeenCalledOnce();
+    });
+});

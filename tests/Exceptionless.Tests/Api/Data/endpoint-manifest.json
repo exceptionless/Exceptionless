@@ -2737,6 +2737,20 @@
     "authenticationSchemes": []
   },
   {
+    "method": "PUT",
+    "route": "/api/v2/users/me/product-tours/{tourName}/record",
+    "displayName": "HTTP: PUT api/v2/users/me/product-tours/{tourName}/record",
+    "tags": [
+      "User"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
     "method": "POST",
     "route": "/api/v2/users/unverify-email-address",
     "displayName": "HTTP: POST api/v2/users/unverify-email-address",

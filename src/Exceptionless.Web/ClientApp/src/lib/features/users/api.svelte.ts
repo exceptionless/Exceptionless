@@ -1,3 +1,4 @@
+import type { ProductTourKey } from '$features/product-tours/models';
 import type { WebSocketMessageValue } from '$features/websockets/models';
 import type { WorkInProgressResult } from '$shared/models';
 
@@ -7,7 +8,7 @@ import { fetchApiJson } from '$features/shared/api/api.svelte';
 import { type FetchClientResponse, ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
-import type { OAuthGrant, UpdateEmailAddressResult, UpdateUser, UpdateUserEmailAddress, ViewCurrentUser, ViewUser } from './models';
+import type { OAuthGrant, RecordProductTourResult, UpdateEmailAddressResult, UpdateUser, UpdateUserEmailAddress, ViewCurrentUser, ViewUser } from './models';
 
 export async function invalidateUserQueries(queryClient: QueryClient, message: WebSocketMessageValue<'UserChanged'>) {
     const { id } = message;
@@ -41,6 +42,7 @@ export const queryKeys = {
     organization: (id: string | undefined) => [...queryKeys.type, 'organization', id] as const,
     patchUser: (id: string | undefined) => [...queryKeys.id(id), 'patch'] as const,
     postEmailAddress: (id: string | undefined) => [...queryKeys.idEmailAddress(id), 'update'] as const,
+    productTour: () => [...queryKeys.me(), 'product-tour'] as const,
     type: ['User'] as const
 };
 
@@ -257,6 +259,27 @@ export function postEmailAddress(request: PostEmailAddressRequest) {
                 });
             }
         }
+    }));
+}
+
+export function putCurrentUserProductTour() {
+    const queryClient = useQueryClient();
+    return createMutation<RecordProductTourResult, ProblemDetails, { tourName: ProductTourKey; userId: string }>(() => ({
+        enabled: () => !!accessToken.current,
+        mutationFn: async ({ tourName, userId }) => {
+            if (queryClient.getQueryData<ViewCurrentUser>(queryKeys.me())?.id !== userId) {
+                throw new Error('The current user changed before the product tour preference was recorded.');
+            }
+
+            return await fetchApiJson<RecordProductTourResult>(`users/me/product-tours/${tourName}/record`, {
+                method: 'PUT'
+            });
+        },
+        mutationKey: queryKeys.productTour(),
+        onSuccess: () =>
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.type
+            })
     }));
 }
 
