@@ -158,7 +158,9 @@ public class OAuthApplicationHandler(
         var organizations = organizationIds.Length > 0
             ? await organizationRepository.GetByIdsAsync(organizationIds, options => options.Cache())
             : [];
-        var organizationNames = organizations.ToDictionary(organization => organization.Id, organization => organization.Name, StringComparer.Ordinal);
+        var organizationNames = organizations
+            .Where(organization => !organization.IsDeleted)
+            .ToDictionary(organization => organization.Id, organization => organization.Name, StringComparer.Ordinal);
         return applications.Select(application => ViewOAuthApplication.FromApplication(application, organizationNames)).ToArray();
     }
 

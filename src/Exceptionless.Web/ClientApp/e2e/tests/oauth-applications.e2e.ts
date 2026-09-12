@@ -13,8 +13,9 @@ test('OAuth applications default to authorized and expose configuration and orga
         name: 'Recently authorized application',
         notes: 'OAuth configuration for browser verification.',
         organizations: [
-            { id: e2eScenario.organizationId, name: e2eScenario.organizationName },
-            { id: '000000000000000000000103', name: 'Second authorized organization' }
+            { id: e2eScenario.organizationId, is_available: true, name: e2eScenario.organizationName },
+            { id: '000000000000000000000103', is_available: true, name: 'Second authorized organization' },
+            { id: '000000000000000000000104', is_available: false, name: '000000000000000000000104' }
         ],
         redirect_uris: ['https://client.example/oauth/callback', 'http://localhost:54321/callback'],
         scopes: ['mcp:read', 'events:read'],
@@ -50,6 +51,8 @@ test('OAuth applications default to authorized and expose configuration and orga
     await expect(page.getByRole('link', { exact: true, name: unauthorizedApplication.name })).toHaveCount(0);
     await expect(page.getByRole('columnheader', { name: 'Client ID' })).toHaveCount(0);
     await expect(page.getByText(authorizedApplication.client_id, { exact: true })).toHaveCount(0);
+    await expect(page.getByText('000000000000000000000104', { exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { exact: true, name: '000000000000000000000104' })).toHaveCount(0);
 
     await page.getByRole('button', { name: `Show details for ${authorizedApplication.name}` }).click();
     await expect(page.getByText(authorizedApplication.client_id, { exact: true })).toBeVisible();

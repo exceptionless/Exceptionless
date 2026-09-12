@@ -79,6 +79,7 @@ Content-Type: application/json
 }
 
 ### List OAuth Applications
+# Organizations include is_available; only available organizations can be opened from administration.
 GET {{apiUrl}}/admin/oauth-applications?page=1&limit=20&criteria=Codex&organization=Acme&authorized=true&sort=-updated_utc
 Authorization: Bearer {{login.response.body.token}}
 

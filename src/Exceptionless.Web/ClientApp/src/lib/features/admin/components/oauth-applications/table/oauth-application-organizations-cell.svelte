@@ -11,9 +11,11 @@
     <div class="flex flex-wrap gap-1">
         {#each application.organizations as organization (organization.id)}
             <Badge
-                href={resolve('/(app)/organization/[organizationId]/manage', {
-                    organizationId: organization.id
-                })}
+                href={organization.is_available
+                    ? resolve('/(app)/organization/[organizationId]/manage', {
+                          organizationId: organization.id
+                      })
+                    : undefined}
                 variant="outline"
                 class="max-w-56"
                 title={organization.name}

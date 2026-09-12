@@ -239,6 +239,41 @@ public sealed class OAuthApplicationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetAllAsync_WithUnavailableOrganizations_PreservesHistoryWithoutMarkingItAvailable()
+    {
+        const string missingOrganizationId = "000000000000000000000099";
+        var deletedOrganization = await _organizationRepository.AddAsync(new Organization
+        {
+            Name = "Deleted OAuth Organization",
+            PlanId = _plans.FreePlan.Id,
+            IsDeleted = true
+        });
+        var created = await CreateApplicationAsync(CreateModel("organization-availability", "Organization Availability"));
+        Assert.NotNull(created);
+        await _repository.AddOrganizationIdsAsync(created.ClientId, [SampleDataService.TEST_ORG_ID, deletedOrganization.Id, missingOrganizationId]);
+
+        var applications = await SendRequestAsAsync<IReadOnlyCollection<ViewOAuthApplication>>(request => request
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "oauth-applications")
+            .QueryString("criteria", created.ClientId)
+            .QueryString("authorized", true)
+            .StatusCodeShouldBeOk());
+        Assert.NotNull(applications);
+        var application = Assert.Single(applications);
+
+        Assert.Equal(3, application.Organizations.Count);
+        var available = Assert.Single(application.Organizations, organization => organization.IsAvailable);
+        Assert.Equal(SampleDataService.TEST_ORG_ID, available.Id);
+        Assert.Equal("Acme", available.Name);
+        var missing = Assert.Single(application.Organizations, organization => organization.Id == missingOrganizationId);
+        Assert.False(missing.IsAvailable);
+        Assert.Equal(missingOrganizationId, missing.Name);
+        var deleted = Assert.Single(application.Organizations, organization => organization.Id == deletedOrganization.Id);
+        Assert.False(deleted.IsAvailable);
+        Assert.Equal(deletedOrganization.Id, deleted.Name);
+    }
+
+    [Fact]
     public async Task GetByIdAsync_AsGlobalAdmin_ReturnsOAuthApplication()
     {
         var created = await CreateApplicationAsync(CreateModel("oauth-by-id", "OAuth By Id"));
